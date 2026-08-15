@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.integration.tacz;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.noise.NoiseEvent;
+import com.antaurora.apofirstlight.noise.NoiseSystem;
+import com.antaurora.apofirstlight.noise.NoiseType;
 import com.tacz.guns.api.event.common.GunShootEvent;
 import com.tacz.guns.api.item.IGun;
 import net.minecraft.resources.ResourceLocation;
@@ -10,8 +13,8 @@ import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public final class TaczDebugEvents {
-    private TaczDebugEvents() {
+public final class TaczNoiseEvents {
+    private TaczNoiseEvents() {
     }
 
     @SubscribeEvent
@@ -21,10 +24,14 @@ public final class TaczDebugEvents {
         }
 
         IGun gun = IGun.getIGunOrNull(event.getGunItemStack());
-        ResourceLocation gunId = gun != null ? gun.getGunId(event.getGunItemStack()) : null;
+        ResourceLocation gunId = gun == null ? null : gun.getGunId(event.getGunItemStack());
 
-        ApocalypseFirstLight.LOGGER.info("[AFL DEBUG] Player fired TaCZ weapon");
-        ApocalypseFirstLight.LOGGER.info("[AFL DEBUG] Player: {}", player.getGameProfile().getName());
-        ApocalypseFirstLight.LOGGER.info("[AFL DEBUG] Gun ID: {}", gunId != null ? gunId : "unknown");
+        NoiseSystem.emit(new NoiseEvent(
+                player,
+                player.position(),
+                NoiseType.GUNSHOT,
+                player.level().getGameTime(),
+                gunId
+        ));
     }
 }
