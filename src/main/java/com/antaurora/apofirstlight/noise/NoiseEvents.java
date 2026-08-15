@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.noise;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.debug.SoundDataDebug;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,6 +23,7 @@ public final class NoiseEvents {
         BlockPos pos = event.getPos();
         BlockState state = event.getState();
         ResourceLocation blockId = state.getBlock().builtInRegistryHolder().key().location();
+        SoundDataDebug.logBlockSound(blockId, state);
 
         NoiseSystem.emit(new NoiseEvent(
                 event.getPlayer(),
