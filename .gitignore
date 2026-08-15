@@ -1,0 +1,67 @@
+# ==============================
+# Eclipse
+# ==============================
+bin/
+*.launch
+.settings/
+.metadata/
+.classpath
+.project
+
+# ==============================
+# IntelliJ IDEA
+# ==============================
+.idea/
+out/
+*.ipr
+*.iws
+*.iml
+
+# ==============================
+# Gradle
+# ==============================
+.gradle/
+.gradle-user/
+.gradle-wrapper/
+build/
+
+# ==============================
+# Minecraft / Forge runtime
+# ==============================
+run/
+logs/
+crash-reports/
+
+# ==============================
+# Generated / temporary files
+# ==============================
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# ==============================
+# OS generated files
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Forge MDK generated files
+# ==============================
+forge*changelog.txt
+
+# ==============================
+# IDE generated module folders
+# ==============================
+*.main/
+*.test/
+
+# ==============================
+# Local environment / cache
+# ==============================
+.cache/
+.temp/
+tmp/
