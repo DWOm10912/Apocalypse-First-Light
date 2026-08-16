@@ -12,7 +12,7 @@ import java.util.WeakHashMap;
 
 /** Maintains the short-lived, hearing-derived Breach authorization. */
 public final class InfectedBreachAuthorization {
-    public static final double HIGH_INTENSITY_BREACH_THRESHOLD = 40.0;
+    public static final double HIGH_INTENSITY_BREACH_THRESHOLD = 10.0;
     private static final Map<Zombie, InfectedBreachContext> NOISE_CONTEXTS =
             Collections.synchronizedMap(new WeakHashMap<>());
 

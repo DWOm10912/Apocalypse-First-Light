@@ -18,6 +18,7 @@ public final class NoiseSystem {
             case GUNSHOT -> "Gun";
             case BLOCK_BREAK -> "Block";
             case FOOTSTEP, LANDING -> "Movement";
+            case INTERACTION -> "Block";
         };
 
         ApocalypseFirstLight.LOGGER.debug(

@@ -4,5 +4,6 @@ public enum NoiseType {
     GUNSHOT,
     BLOCK_BREAK,
     FOOTSTEP,
-    LANDING
+    LANDING,
+    INTERACTION
 }
