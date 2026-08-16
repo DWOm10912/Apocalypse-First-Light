@@ -29,9 +29,16 @@ public final class InfectedEvents {
     @SubscribeEvent
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Zombie zombie)
-                || event.getEntity().getType() != EntityType.ZOMBIE
-                || !InfectedEntityRules.isNoiseResponsive(zombie)
-                || !GOALS_ADDED.add(zombie)) {
+                || event.getEntity().getType() != EntityType.ZOMBIE) {
+            return;
+        }
+        if (zombie.isBaby()) {
+            zombie.setBaby(false);
+            ApocalypseFirstLight.LOGGER.debug(
+                    "[AFL INFECTED] Converted baby minecraft:zombie to adult entity={}", zombie.getId()
+            );
+        }
+        if (!InfectedEntityRules.isNoiseResponsive(zombie) || !GOALS_ADDED.add(zombie)) {
             return;
         }
         zombie.goalSelector.addGoal(1, new InfectedBreachGoal(zombie));
