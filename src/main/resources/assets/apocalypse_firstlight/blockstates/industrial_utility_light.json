@@ -1,0 +1,9 @@
+{
+  "variants": {
+    "facing=down": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 180},
+    "facing=north": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90},
+    "facing=south": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 270},
+    "facing=east": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90, "y": 90},
+    "facing=west": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90, "y": 270}
+  }
+}

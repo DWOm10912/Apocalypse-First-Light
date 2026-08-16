@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
+import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -42,6 +43,13 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion(), AflBlockSetTypes.AFL_STEEL));
+    public static final RegistryObject<Block> INDUSTRIAL_UTILITY_LIGHT = BLOCKS.register("industrial_utility_light",
+            () -> new IndustrialUtilityLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .lightLevel(state -> 14)));
 
     private AflBlocks() {
     }
