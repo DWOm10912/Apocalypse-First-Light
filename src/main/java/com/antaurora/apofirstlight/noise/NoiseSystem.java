@@ -14,7 +14,11 @@ public final class NoiseSystem {
                 ? player.getGameProfile().getName()
                 : event.source() == null ? "none" : event.source().getName().getString();
         String sourceId = event.sourceId() == null ? "none" : event.sourceId().toString();
-        String sourceLabel = event.type() == NoiseType.GUNSHOT ? "Gun" : "Block";
+        String sourceLabel = switch (event.type()) {
+            case GUNSHOT -> "Gun";
+            case BLOCK_BREAK -> "Block";
+            case FOOTSTEP, LANDING -> "Movement";
+        };
 
         ApocalypseFirstLight.LOGGER.debug(
                 "[AFL NOISE] Type={} Radius={} Player={} {}={} Pos=({}, {}, {})",
