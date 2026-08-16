@@ -15,15 +15,15 @@ import java.util.WeakHashMap;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class MovementNoiseEvents {
-    private static final double SNEAK_RADIUS = 3.0;
-    private static final double WALK_RADIUS = 6.0;
-    private static final double SPRINT_RADIUS = 12.0;
+    private static final double SNEAK_RADIUS = 2.0;
+    private static final double WALK_RADIUS = 4.0;
+    private static final double SPRINT_RADIUS = 8.0;
     private static final double SNEAK_STEP_DISTANCE = 1.0;
     private static final double WALK_STEP_DISTANCE = 0.9;
     private static final double SPRINT_STEP_DISTANCE = 1.2;
-    private static final double LIGHT_LANDING_RADIUS = 10.0;
-    private static final double HEAVY_LANDING_RADIUS = 16.0;
-    private static final double VERY_HEAVY_LANDING_RADIUS = 24.0;
+    private static final double LIGHT_LANDING_RADIUS = 5.0;
+    private static final double HEAVY_LANDING_RADIUS = 8.0;
+    private static final double VERY_HEAVY_LANDING_RADIUS = 12.0;
     private static final Map<ServerPlayer, MovementNoiseState> STATES = Collections.synchronizedMap(new WeakHashMap<>());
 
     private MovementNoiseEvents() {

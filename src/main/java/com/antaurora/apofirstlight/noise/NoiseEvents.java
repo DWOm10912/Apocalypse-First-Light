@@ -10,8 +10,6 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class NoiseEvents {
-    private static final double BLOCK_BREAK_RADIUS_PLACEHOLDER = 16.0;
-
     private NoiseEvents() {
     }
 
@@ -23,6 +21,7 @@ public final class NoiseEvents {
 
         BlockPos pos = event.getPos();
         BlockState state = event.getState();
+        BlockBreakNoiseResolver.Result result = BlockBreakNoiseResolver.resolve(state);
         ResourceLocation blockId = state.getBlock().builtInRegistryHolder().key().location();
         NoiseSystem.emit(new NoiseEvent(
                 event.getPlayer(),
@@ -30,7 +29,8 @@ public final class NoiseEvents {
                 NoiseType.BLOCK_BREAK,
                 event.getPlayer().level().getGameTime(),
                 blockId,
-                BLOCK_BREAK_RADIUS_PLACEHOLDER
+                result.radius()
         ));
+        ApocalypseFirstLight.LOGGER.debug("[AFL NOISE] BlockBreak block={} category={} radius={}", blockId, result.category(), result.radius());
     }
 }
