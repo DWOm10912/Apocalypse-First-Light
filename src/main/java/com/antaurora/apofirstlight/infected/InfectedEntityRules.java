@@ -20,6 +20,10 @@ public final class InfectedEntityRules {
         return isInfected(entity);
     }
 
+    public static boolean hasVanillaReinforcementsDisabled(LivingEntity entity) {
+        return isInfected(entity);
+    }
+
     public static boolean isDirectSunlight(LivingEntity entity) {
         Level level = entity.level();
         return level.isDay() && level.canSeeSky(entity.blockPosition());

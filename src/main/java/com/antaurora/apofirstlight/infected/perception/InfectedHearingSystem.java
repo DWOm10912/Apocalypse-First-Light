@@ -25,7 +25,20 @@ public final class InfectedHearingSystem {
             if (distanceSquared > radiusSquared) {
                 continue;
             }
+            boolean wasSearching = InfectedHearingState.phase(infected) == InfectedHearingState.Phase.SEARCHING;
+            Vec3 previousPosition = InfectedHearingState.lastHeardPosition(infected);
             InfectedHearingState.hear(infected, position, event.gameTime(), event.type().name());
+            ApocalypseFirstLight.LOGGER.debug(
+                    "[AFL HEARING DEBUG] Zombie={} accepted noise state={} -> INVESTIGATING pos=({}, {}, {})",
+                    infected.getId(), wasSearching ? "SEARCHING" : "IDLE_OR_INVESTIGATING",
+                    position.x(), position.y(), position.z()
+            );
+            if (wasSearching && (previousPosition == null || previousPosition.distanceToSqr(position) > 4.0)) {
+                ApocalypseFirstLight.LOGGER.debug(
+                        "[AFL SEARCH] Zombie={} InterruptedByNoise NewPos=({}, {}, {})",
+                        infected.getId(), position.x(), position.y(), position.z()
+                );
+            }
             ApocalypseFirstLight.LOGGER.debug(
                     "[AFL HEARING] Zombie={} Heard={} Pos=({}, {}, {}) Distance={}",
                     infected.getId(), event.type(), position.x(), position.y(), position.z(), Math.sqrt(distanceSquared)

@@ -6,12 +6,18 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.ZombieEvent;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
+
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class InfectedEvents {
-    private static final String GOAL_ADDED = "apocalypse_firstlight_hearing_goal_added";
+    private static final Set<Zombie> GOALS_ADDED = Collections.newSetFromMap(new WeakHashMap<>());
 
     private InfectedEvents() {
     }
@@ -20,11 +26,14 @@ public final class InfectedEvents {
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Zombie zombie)
                 || event.getEntity().getType() != EntityType.ZOMBIE
-                || zombie.getPersistentData().getBoolean(GOAL_ADDED)) {
+                || !InfectedEntityRules.isNoiseResponsive(zombie)
+                || !GOALS_ADDED.add(zombie)) {
             return;
         }
         zombie.goalSelector.addGoal(4, new InvestigateNoiseGoal(zombie));
-        zombie.getPersistentData().putBoolean(GOAL_ADDED, true);
+        ApocalypseFirstLight.LOGGER.debug(
+                "[AFL INFECTED DEBUG] Added InvestigateNoiseGoal Zombie={}", zombie.getId()
+        );
     }
 
     @SubscribeEvent
@@ -43,6 +52,17 @@ public final class InfectedEvents {
         zombie.clearFire();
         ApocalypseFirstLight.LOGGER.debug(
                 "[AFL INFECTED] Prevented daylight ignition for Zombie={}", zombie.getId()
+        );
+    }
+
+    @SubscribeEvent
+    public static void onZombieSummonAid(ZombieEvent.SummonAidEvent event) {
+        if (!InfectedEntityRules.hasVanillaReinforcementsDisabled(event.getEntity())) {
+            return;
+        }
+        event.setResult(Event.Result.DENY);
+        ApocalypseFirstLight.LOGGER.debug(
+                "[AFL INFECTED] Disabled vanilla reinforcement for Zombie={}", event.getEntity().getId()
         );
     }
 }
