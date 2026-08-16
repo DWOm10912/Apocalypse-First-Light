@@ -77,6 +77,7 @@ public final class InfectedBreachGoal extends Goal {
             zombie.level().destroyBlockProgress(zombie.getId(), breachPos, -1);
             zombie.level().destroyBlock(breachPos, false, zombie);
             ApocalypseFirstLight.LOGGER.debug("[AFL BREACH] Zombie={} Broken pos={}", zombie.getId(), breachPos);
+            InfectedEntrySeekingSystem.onEntryBreachCompleted(zombie, breachPos);
             breachPos = null;
             zombie.getNavigation().recomputePath();
         }
@@ -100,6 +101,8 @@ public final class InfectedBreachGoal extends Goal {
         if (context == null || !ForgeEventFactory.getMobGriefingEvent(zombie.level(), zombie)) {
             return null;
         }
+        BlockPos explicit = InfectedEntrySeekingSystem.explicitObstacle(zombie, context);
+        if (explicit != null && isDirectBlockingObstacle(explicit, zombie.level().getBlockState(explicit))) return explicit;
         Vec3 horizontal = context.targetPosition().subtract(zombie.position());
         horizontal = new Vec3(horizontal.x(), 0.0, horizontal.z());
         if (horizontal.lengthSqr() < 0.001) {
