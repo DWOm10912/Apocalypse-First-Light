@@ -19,8 +19,8 @@ public final class InfectedBreachAuthorization {
     private InfectedBreachAuthorization() {
     }
 
-    public static void updateFromHeardNoise(Zombie zombie, NoiseEvent event) {
-        if (event.radius() < HIGH_INTENSITY_BREACH_THRESHOLD) {
+    public static void updateFromHeardNoise(Zombie zombie, NoiseEvent event, double effectiveRadius) {
+        if (effectiveRadius < HIGH_INTENSITY_BREACH_THRESHOLD) {
             clearNoiseAuthorization(zombie, "LowIntensityNoise");
             return;
         }
@@ -33,7 +33,7 @@ public final class InfectedBreachAuthorization {
         NOISE_CONTEXTS.put(zombie, context);
         ApocalypseFirstLight.LOGGER.debug(
                 "[AFL BREACH] Authorized source=HIGH_INTENSITY_NOISE Zombie={} radius={} target={}",
-                zombie.getId(), event.radius(), event.position()
+                zombie.getId(), effectiveRadius, event.position()
         );
     }
 

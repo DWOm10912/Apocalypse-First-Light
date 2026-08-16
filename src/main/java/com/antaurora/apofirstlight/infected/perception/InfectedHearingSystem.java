@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.infected.perception;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.InfectedEntityRules;
 import com.antaurora.apofirstlight.infected.breach.InfectedBreachAuthorization;
+import com.antaurora.apofirstlight.noise.AcousticOcclusionResolver;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,16 +36,24 @@ public final class InfectedHearingSystem {
         double radiusSquared = radius * radius;
         AABB searchBox = AABB.ofSize(position, radius * 2.0, radius * 2.0, radius * 2.0);
         for (LivingEntity infected : level.getEntitiesOfClass(LivingEntity.class, searchBox, InfectedEntityRules::isNoiseResponsive)) {
-            double distanceSquared = infected.position().distanceToSqr(position);
+            double distanceSquared = infected.getEyePosition().distanceToSqr(position);
             if (distanceSquared > radiusSquared) {
+                continue;
+            }
+            var acoustic = AcousticOcclusionResolver.resolve(level, position, infected.getEyePosition(), radius);
+            double effectiveRadius = acoustic.effectiveRadius();
+            if (distanceSquared > effectiveRadius * effectiveRadius) {
                 continue;
             }
             boolean wasSearching = InfectedHearingState.phase(infected) == InfectedHearingState.Phase.SEARCHING;
             Vec3 previousPosition = InfectedHearingState.lastHeardPosition(infected);
             InfectedHearingState.hear(infected, position, event.gameTime(), event.type().name());
             if (infected instanceof Zombie zombie) {
-                InfectedBreachAuthorization.updateFromHeardNoise(zombie, event);
+                InfectedBreachAuthorization.updateFromHeardNoise(zombie, event, effectiveRadius);
             }
+            if (acoustic.woolLayers() > 0) ApocalypseFirstLight.LOGGER.debug(
+                    "[AFL ACOUSTIC] type={} base={} woolLayers={} effective={} listener={}",
+                    event.type(), radius, acoustic.woolLayers(), effectiveRadius, infected.getId());
             ApocalypseFirstLight.LOGGER.debug(
                     "[AFL HEARING DEBUG] Zombie={} accepted noise state={} -> INVESTIGATING pos=({}, {}, {})",
                     infected.getId(), wasSearching ? "SEARCHING" : "IDLE_OR_INVESTIGATING",
