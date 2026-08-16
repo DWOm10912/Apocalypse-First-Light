@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.noise;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.infected.perception.InfectedHearingSystem;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 
 public final class NoiseSystem {
@@ -19,5 +21,9 @@ public final class NoiseSystem {
                 event.type(), event.radius(), sourceName, sourceLabel, sourceId,
                 event.position().x(), event.position().y(), event.position().z()
         );
+        if (event.source() instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() instanceof ServerLevel level) {
+            InfectedHearingSystem.handle(event, level);
+        }
     }
 }

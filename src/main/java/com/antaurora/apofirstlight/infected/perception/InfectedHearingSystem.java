@@ -1,0 +1,35 @@
+package com.antaurora.apofirstlight.infected.perception;
+
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.infected.InfectedEntityRules;
+import com.antaurora.apofirstlight.noise.NoiseEvent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+public final class InfectedHearingSystem {
+    private InfectedHearingSystem() {
+    }
+
+    public static void handle(NoiseEvent event, ServerLevel level) {
+        double radius = event.radius();
+        if (radius < 0) {
+            return;
+        }
+        Vec3 position = event.position();
+        double radiusSquared = radius * radius;
+        AABB searchBox = AABB.ofSize(position, radius * 2.0, radius * 2.0, radius * 2.0);
+        for (LivingEntity infected : level.getEntitiesOfClass(LivingEntity.class, searchBox, InfectedEntityRules::isNoiseResponsive)) {
+            double distanceSquared = infected.position().distanceToSqr(position);
+            if (distanceSquared > radiusSquared) {
+                continue;
+            }
+            InfectedHearingState.hear(infected, position, event.gameTime(), event.type().name());
+            ApocalypseFirstLight.LOGGER.debug(
+                    "[AFL HEARING] Zombie={} Heard={} Pos=({}, {}, {}) Distance={}",
+                    infected.getId(), event.type(), position.x(), position.y(), position.z(), Math.sqrt(distanceSquared)
+            );
+        }
+    }
+}
