@@ -4,7 +4,10 @@
   "block.apocalypse_firstlight.steel_block": "钢块",
   "block.apocalypse_firstlight.steel_grate": "钢格栅",
   "block.apocalypse_firstlight.steel_plate": "钢板",
+  "item.apocalypse_firstlight.steel_scrap": "钢废料",
+  "item.apocalypse_firstlight.concrete_rubble": "混凝土碎块",
   "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",
+  "itemGroup.apocalypse_firstlight.items": "黎明启示录 物品",
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"
 }

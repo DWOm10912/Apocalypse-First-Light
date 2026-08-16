@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:steel_scrap"
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:reinforced_concrete",
+    "count": 1
+  }
+}

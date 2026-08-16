@@ -18,6 +18,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_GRATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE = ITEMS.register("steel_plate",
             () -> new BlockItem(AflBlocks.STEEL_PLATE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_SCRAP = ITEMS.register("steel_scrap",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> CONCRETE_RUBBLE = ITEMS.register("concrete_rubble",
+            () -> new Item(new Item.Properties()));
 
     private AflItems() {
     }

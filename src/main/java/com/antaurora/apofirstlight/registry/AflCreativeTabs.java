@@ -24,6 +24,16 @@ public final class AflCreativeTabs {
                     })
                     .build());
 
+    public static final RegistryObject<CreativeModeTab> ITEMS = CREATIVE_MODE_TABS.register("items", () ->
+            CreativeModeTab.builder()
+                    .icon(() -> new ItemStack(AflItems.STEEL_SCRAP.get()))
+                    .title(Component.translatable("itemGroup.apocalypse_firstlight.items"))
+                    .displayItems((parameters, output) -> {
+                        output.accept(AflItems.STEEL_SCRAP.get());
+                        output.accept(AflItems.CONCRETE_RUBBLE.get());
+                    })
+                    .build());
+
     private AflCreativeTabs() {
     }
 }

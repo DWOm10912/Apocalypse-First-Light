@@ -4,7 +4,10 @@
   "block.apocalypse_firstlight.steel_block": "Steel Block",
   "block.apocalypse_firstlight.steel_grate": "Steel Grate",
   "block.apocalypse_firstlight.steel_plate": "Steel Plate",
+  "item.apocalypse_firstlight.steel_scrap": "Steel Scrap",
+  "item.apocalypse_firstlight.concrete_rubble": "Concrete Rubble",
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
+  "itemGroup.apocalypse_firstlight.items": "Apocalypse: First Light Items",
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."
 }
