@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.infected.breach;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.infected.vision.InfectedVisionSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -97,7 +96,7 @@ public final class InfectedBreachGoal extends Goal {
     }
 
     private BlockPos findDirectObstacle() {
-        InfectedVisionSystem.BreachContext context = InfectedVisionSystem.getBreachContext(zombie);
+        InfectedBreachContext context = InfectedBreachAuthorization.getBreachContext(zombie);
         if (context == null || !ForgeEventFactory.getMobGriefingEvent(zombie.level(), zombie)) {
             return null;
         }
@@ -131,7 +130,7 @@ public final class InfectedBreachGoal extends Goal {
     }
 
     private boolean isBreachAuthorized() {
-        return InfectedVisionSystem.getBreachContext(zombie) != null
+        return InfectedBreachAuthorization.getBreachContext(zombie) != null
                 && ForgeEventFactory.getMobGriefingEvent(zombie.level(), zombie);
     }
 }

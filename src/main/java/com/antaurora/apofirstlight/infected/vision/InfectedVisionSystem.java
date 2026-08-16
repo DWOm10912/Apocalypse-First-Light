@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.infected.vision;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.infected.breach.InfectedBreachContext;
 import com.antaurora.apofirstlight.infected.perception.InfectedHearingSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,13 +14,6 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 public final class InfectedVisionSystem {
-    public enum BreachSource {
-        VISION_CONFIRMED,
-        LAST_VISIBLE
-    }
-
-    public record BreachContext(Vec3 targetPosition, BreachSource source) {
-    }
     public static final double MAX_VISION_DISTANCE = 32.0;
     public static final double HORIZONTAL_FOV_DEGREES = 120.0;
     public static final double CLOSE_AWARENESS_DISTANCE = 3.0;
@@ -95,16 +89,18 @@ public final class InfectedVisionSystem {
      * Exposes only vision-authorized pursuit data. Once visual pursuit hands
      * off to Search, the confirmed state is cleared and this returns null.
      */
-    public static BreachContext getBreachContext(Zombie zombie) {
+    public static InfectedBreachContext getVisionBreachContext(Zombie zombie) {
         InfectedVisionState state = STATES.get(zombie);
         if (state == null || state.confirmedPlayer == null) {
             return null;
         }
         if (state.wasVisible && isCandidateUsable(zombie, state.confirmedPlayer)) {
-            return new BreachContext(state.confirmedPlayer.position(), BreachSource.VISION_CONFIRMED);
+            return new InfectedBreachContext(state.confirmedPlayer.position(), InfectedBreachContext.Source.VISION_CONFIRMED,
+                    state.lastVisibleGameTime, null);
         }
         return state.lastVisiblePosition == null ? null
-                : new BreachContext(state.lastVisiblePosition, BreachSource.LAST_VISIBLE);
+                : new InfectedBreachContext(state.lastVisiblePosition, InfectedBreachContext.Source.LAST_VISIBLE,
+                state.lastVisibleGameTime, null);
     }
 
     private static void tickConfirmedTarget(Zombie zombie, InfectedVisionState state, long now) {

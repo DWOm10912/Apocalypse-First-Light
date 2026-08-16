@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.infected.ai;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.infected.breach.InfectedBreachAuthorization;
 import com.antaurora.apofirstlight.infected.perception.InfectedHearingState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -88,6 +89,7 @@ public final class InvestigateNoiseGoal extends Goal {
                     clearState("NoSearchPoints");
                 } else {
                     InfectedHearingState.beginSearching(zombie, now, points);
+                    InfectedBreachAuthorization.clearNoiseAuthorization(zombie, "SearchStarted");
                     ApocalypseFirstLight.LOGGER.debug("[AFL SEARCH] Zombie={} Enter Search Center=({}, {}, {})", zombie.getId(), center.x(), center.y(), center.z());
                     moveToCurrentSearchPoint();
                 }

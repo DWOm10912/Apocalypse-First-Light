@@ -2,9 +2,11 @@ package com.antaurora.apofirstlight.infected.perception;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.InfectedEntityRules;
+import com.antaurora.apofirstlight.infected.breach.InfectedBreachAuthorization;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -18,6 +20,9 @@ public final class InfectedHearingSystem {
      * target for its grace period.
      */
     public static void investigatePosition(LivingEntity infected, Vec3 position, long gameTime) {
+        if (infected instanceof Zombie zombie) {
+            InfectedBreachAuthorization.clearNoiseAuthorization(zombie, "NonNoiseInvestigate");
+        }
         InfectedHearingState.hear(infected, position, gameTime, "VISION");
     }
 
@@ -37,6 +42,9 @@ public final class InfectedHearingSystem {
             boolean wasSearching = InfectedHearingState.phase(infected) == InfectedHearingState.Phase.SEARCHING;
             Vec3 previousPosition = InfectedHearingState.lastHeardPosition(infected);
             InfectedHearingState.hear(infected, position, event.gameTime(), event.type().name());
+            if (infected instanceof Zombie zombie) {
+                InfectedBreachAuthorization.updateFromHeardNoise(zombie, event);
+            }
             ApocalypseFirstLight.LOGGER.debug(
                     "[AFL HEARING DEBUG] Zombie={} accepted noise state={} -> INVESTIGATING pos=({}, {}, {})",
                     infected.getId(), wasSearching ? "SEARCHING" : "IDLE_OR_INVESTIGATING",
