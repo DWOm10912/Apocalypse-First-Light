@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.infected;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.ai.InvestigateNoiseGoal;
 import com.antaurora.apofirstlight.infected.ai.AflPlayerTargetGoal;
+import com.antaurora.apofirstlight.infected.breach.InfectedBreachGoal;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Zombie;
@@ -32,6 +33,7 @@ public final class InfectedEvents {
                 || !GOALS_ADDED.add(zombie)) {
             return;
         }
+        zombie.goalSelector.addGoal(1, new InfectedBreachGoal(zombie));
         zombie.goalSelector.addGoal(4, new InvestigateNoiseGoal(zombie));
         zombie.targetSelector.getAvailableGoals().stream()
                 .filter(wrapped -> wrapped.getPriority() == 2

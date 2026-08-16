@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:glass",
+    "minecraft:glass_pane",
+    "#minecraft:leaves",
+    "#minecraft:wooden_doors",
+    "#minecraft:wooden_trapdoors",
+    "#minecraft:wooden_fences",
+    "#minecraft:fence_gates"
+  ]
+}
