@@ -1,6 +1,9 @@
 {
   "variants": {
-    "": {
+    "waterlogged=false": {
+      "model": "apocalypse_firstlight:block/steel_grate"
+    },
+    "waterlogged=true": {
       "model": "apocalypse_firstlight:block/steel_grate"
     }
   }

@@ -21,6 +21,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.STEEL_BLOCK.get());
                         output.accept(AflItems.STEEL_PLATE.get());
                         output.accept(AflItems.STEEL_GRATE.get());
+                        output.accept(AflItems.STEEL_DOOR.get());
                     })
                     .build());
 

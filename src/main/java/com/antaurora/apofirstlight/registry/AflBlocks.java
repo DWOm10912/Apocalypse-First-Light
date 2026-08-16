@@ -1,8 +1,11 @@
 package com.antaurora.apofirstlight.registry;
 
+import com.antaurora.apofirstlight.block.SteelGrateBlock;
+import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
@@ -23,7 +26,7 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_GRATE = BLOCKS.register("steel_grate",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+            () -> new SteelGrateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 7.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
@@ -33,6 +36,12 @@ public final class AflBlocks {
                     .strength(6.0F, 10.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> STEEL_DOOR = BLOCKS.register("steel_door",
+            () -> new SteelDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(6.0F, 10.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), AflBlockSetTypes.AFL_STEEL));
 
     private AflBlocks() {
     }
