@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.integration.tacz;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
+import com.antaurora.apofirstlight.noise.GunshotNoiseResolver;
 import com.antaurora.apofirstlight.noise.NoiseSystem;
 import com.antaurora.apofirstlight.noise.NoiseType;
 import com.tacz.guns.api.event.common.GunShootEvent;
@@ -25,12 +26,15 @@ public final class TaczNoiseEvents {
 
         IGun gun = IGun.getIGunOrNull(event.getGunItemStack());
         ResourceLocation gunId = gun == null ? null : gun.getGunId(event.getGunItemStack());
+        double radius = gunId == null ? GunshotNoiseResolver.MIN_RADIUS
+                : GunshotNoiseResolver.resolveRadius(event.getGunItemStack(), gunId);
         NoiseSystem.emit(new NoiseEvent(
                 player,
                 player.position(),
                 NoiseType.GUNSHOT,
                 player.level().getGameTime(),
-                gunId
+                gunId,
+                radius
         ));
     }
 }

@@ -10,6 +10,12 @@ public record NoiseEvent(
         Vec3 position,
         NoiseType type,
         long gameTime,
-        @Nullable ResourceLocation sourceId
+        @Nullable ResourceLocation sourceId,
+        double radius
 ) {
+    public NoiseEvent {
+        if (radius < 0) {
+            throw new IllegalArgumentException("Noise event radius cannot be negative");
+        }
+    }
 }
