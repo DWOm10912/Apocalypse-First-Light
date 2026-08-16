@@ -15,7 +15,7 @@ import java.util.WeakHashMap;
 public final class InfectedVisionSystem {
     public static final double MAX_VISION_DISTANCE = 32.0;
     public static final double HORIZONTAL_FOV_DEGREES = 120.0;
-    public static final double CLOSE_AWARENESS_DISTANCE = 4.0;
+    public static final double CLOSE_AWARENESS_DISTANCE = 3.0;
     public static final float DETECTION_PER_TICK = 1.0F / 20.0F;
     public static final float DETECTION_DECAY_PER_TICK = 0.1F;
     public static final long LOST_VISUAL_GRACE_TICKS = 60L;
