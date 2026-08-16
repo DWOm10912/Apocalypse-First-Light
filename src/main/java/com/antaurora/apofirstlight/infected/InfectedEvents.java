@@ -2,7 +2,9 @@ package com.antaurora.apofirstlight.infected;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.ai.InvestigateNoiseGoal;
+import com.antaurora.apofirstlight.infected.ai.AflPlayerTargetGoal;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -31,8 +33,15 @@ public final class InfectedEvents {
             return;
         }
         zombie.goalSelector.addGoal(4, new InvestigateNoiseGoal(zombie));
+        zombie.targetSelector.getAvailableGoals().stream()
+                .filter(wrapped -> wrapped.getPriority() == 2
+                        && wrapped.getGoal() instanceof NearestAttackableTargetGoal<?>)
+                .map(wrapped -> wrapped.getGoal())
+                .toList()
+                .forEach(zombie.targetSelector::removeGoal);
+        zombie.targetSelector.addGoal(2, new AflPlayerTargetGoal(zombie));
         ApocalypseFirstLight.LOGGER.debug(
-                "[AFL INFECTED DEBUG] Added InvestigateNoiseGoal Zombie={}", zombie.getId()
+                "[AFL INFECTED DEBUG] Added InvestigateNoiseGoal and AFL player vision target goal Zombie={}", zombie.getId()
         );
     }
 

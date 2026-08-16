@@ -12,6 +12,15 @@ public final class InfectedHearingSystem {
     private InfectedHearingSystem() {
     }
 
+    /**
+     * Starts the existing investigate/search flow from a known position without
+     * inventing a noise event. Vision uses this after it has lost a confirmed
+     * target for its grace period.
+     */
+    public static void investigatePosition(LivingEntity infected, Vec3 position, long gameTime) {
+        InfectedHearingState.hear(infected, position, gameTime, "VISION");
+    }
+
     public static void handle(NoiseEvent event, ServerLevel level) {
         double radius = event.radius();
         if (radius < 0) {
