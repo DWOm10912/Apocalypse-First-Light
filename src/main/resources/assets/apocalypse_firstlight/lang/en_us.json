@@ -1,5 +1,10 @@
 {
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
+  "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
+  "block.apocalypse_firstlight.steel_block": "Steel Block",
+  "block.apocalypse_firstlight.steel_grate": "Steel Grate",
+  "block.apocalypse_firstlight.steel_plate": "Steel Plate",
+  "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."
 }

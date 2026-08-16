@@ -1,5 +1,10 @@
 {
   "mod.apocalypse_firstlight.name": "黎明启示录",
+  "block.apocalypse_firstlight.reinforced_concrete": "钢筋混凝土",
+  "block.apocalypse_firstlight.steel_block": "钢块",
+  "block.apocalypse_firstlight.steel_grate": "钢格栅",
+  "block.apocalypse_firstlight.steel_plate": "钢板",
+  "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"
 }

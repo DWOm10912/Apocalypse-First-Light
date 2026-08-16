@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:reinforced_concrete",
+    "apocalypse_firstlight:steel_block",
+    "apocalypse_firstlight:steel_plate",
+    "apocalypse_firstlight:steel_grate"
+  ]
+}
