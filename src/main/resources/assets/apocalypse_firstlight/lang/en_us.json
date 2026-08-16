@@ -1,3 +1,5 @@
 {
-  "mod.apocalypse_firstlight.name": "Apocalypse: First Light"
+  "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
+  "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
+  "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."
 }

@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.integration.tacz;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.debug.SoundDataDebug;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
 import com.antaurora.apofirstlight.noise.NoiseSystem;
 import com.antaurora.apofirstlight.noise.NoiseType;
@@ -26,10 +25,6 @@ public final class TaczNoiseEvents {
 
         IGun gun = IGun.getIGunOrNull(event.getGunItemStack());
         ResourceLocation gunId = gun == null ? null : gun.getGunId(event.getGunItemStack());
-        if (gunId != null) {
-            SoundDataDebug.logGunSound(gunId, event.getGunItemStack());
-        }
-
         NoiseSystem.emit(new NoiseEvent(
                 player,
                 player.position(),

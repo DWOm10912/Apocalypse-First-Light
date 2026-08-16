@@ -1,3 +1,5 @@
 {
-  "mod.apocalypse_firstlight.name": "黎明启示录"
+  "mod.apocalypse_firstlight.name": "黎明启示录",
+  "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
+  "message.apocalypse_firstlight.end_disabled": "末地无法进入"
 }
