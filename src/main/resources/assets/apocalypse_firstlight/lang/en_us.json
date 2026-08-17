@@ -1,9 +1,13 @@
 {
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
+  "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
+  "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",
   "block.apocalypse_firstlight.steel_block": "Steel Block",
   "block.apocalypse_firstlight.steel_grate": "Steel Grate",
   "block.apocalypse_firstlight.steel_plate": "Steel Plate",
+  "block.apocalypse_firstlight.steel_plate_slab": "Steel Plate Slab",
+  "block.apocalypse_firstlight.steel_plate_stairs": "Steel Plate Stairs",
   "block.apocalypse_firstlight.steel_door": "Industrial Steel Door",
   "block.apocalypse_firstlight.industrial_utility_light": "Industrial Utility Light",
   "block.apocalypse_firstlight.industrial_electrical_box": "Industrial Electrical Box",

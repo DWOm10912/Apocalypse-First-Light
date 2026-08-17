@@ -1,9 +1,13 @@
 {
   "mod.apocalypse_firstlight.name": "黎明启示录",
   "block.apocalypse_firstlight.reinforced_concrete": "钢筋混凝土",
+  "block.apocalypse_firstlight.reinforced_concrete_slab": "钢筋混凝土台阶",
+  "block.apocalypse_firstlight.reinforced_concrete_stairs": "钢筋混凝土楼梯",
   "block.apocalypse_firstlight.steel_block": "钢块",
   "block.apocalypse_firstlight.steel_grate": "钢格栅",
   "block.apocalypse_firstlight.steel_plate": "钢板",
+  "block.apocalypse_firstlight.steel_plate_slab": "钢板台阶",
+  "block.apocalypse_firstlight.steel_plate_stairs": "钢板楼梯",
   "block.apocalypse_firstlight.steel_door": "工业钢门",
   "block.apocalypse_firstlight.industrial_utility_light": "工业照明灯",
   "block.apocalypse_firstlight.industrial_electrical_box": "工业配电箱",

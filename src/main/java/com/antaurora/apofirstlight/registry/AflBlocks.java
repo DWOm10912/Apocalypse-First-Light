@@ -9,6 +9,8 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
@@ -23,6 +25,10 @@ public final class AflBlocks {
                     .strength(6.0F, 15.0F)
                     .sound(SoundType.STONE)
                     .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> REINFORCED_CONCRETE_SLAB = BLOCKS.register("reinforced_concrete_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get())));
+    public static final RegistryObject<Block> REINFORCED_CONCRETE_STAIRS = BLOCKS.register("reinforced_concrete_stairs",
+            () -> new StairBlock(REINFORCED_CONCRETE.get().defaultBlockState(), BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get())));
     public static final RegistryObject<Block> STEEL_BLOCK = BLOCKS.register("steel_block",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(7.0F, 12.0F)
@@ -39,6 +45,10 @@ public final class AflBlocks {
                     .strength(6.0F, 10.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> STEEL_PLATE_SLAB = BLOCKS.register("steel_plate_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_PLATE.get())));
+    public static final RegistryObject<Block> STEEL_PLATE_STAIRS = BLOCKS.register("steel_plate_stairs",
+            () -> new StairBlock(STEEL_PLATE.get().defaultBlockState(), BlockBehaviour.Properties.copy(STEEL_PLATE.get())));
     public static final RegistryObject<Block> STEEL_DOOR = BLOCKS.register("steel_door",
             () -> new SteelDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(6.0F, 10.0F)

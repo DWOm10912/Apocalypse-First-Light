@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "type=bottom,waterlogged=false": {"model": "apocalypse_firstlight:block/reinforced_concrete_slab"},
+    "type=bottom,waterlogged=true": {"model": "apocalypse_firstlight:block/reinforced_concrete_slab"},
+    "type=top,waterlogged=false": {"model": "apocalypse_firstlight:block/reinforced_concrete_slab_top"},
+    "type=top,waterlogged=true": {"model": "apocalypse_firstlight:block/reinforced_concrete_slab_top"},
+    "type=double,waterlogged=false": {"model": "apocalypse_firstlight:block/reinforced_concrete"},
+    "type=double,waterlogged=true": {"model": "apocalypse_firstlight:block/reinforced_concrete"}
+  }
+}

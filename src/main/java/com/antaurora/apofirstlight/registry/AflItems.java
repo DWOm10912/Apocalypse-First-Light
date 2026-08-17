@@ -12,12 +12,20 @@ public final class AflItems {
 
     public static final RegistryObject<Item> REINFORCED_CONCRETE = ITEMS.register("reinforced_concrete",
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> REINFORCED_CONCRETE_SLAB = ITEMS.register("reinforced_concrete_slab",
+            () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> REINFORCED_CONCRETE_STAIRS = ITEMS.register("reinforced_concrete_stairs",
+            () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK = ITEMS.register("steel_block",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_GRATE = ITEMS.register("steel_grate",
             () -> new BlockItem(AflBlocks.STEEL_GRATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE = ITEMS.register("steel_plate",
             () -> new BlockItem(AflBlocks.STEEL_PLATE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_PLATE_SLAB = ITEMS.register("steel_plate_slab",
+            () -> new BlockItem(AflBlocks.STEEL_PLATE_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_PLATE_STAIRS = ITEMS.register("steel_plate_stairs",
+            () -> new BlockItem(AflBlocks.STEEL_PLATE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_DOOR = ITEMS.register("steel_door",
             () -> new BlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",

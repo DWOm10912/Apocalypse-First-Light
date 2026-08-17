@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "apocalypse_firstlight:block/reinforced_concrete",
+    "top": "apocalypse_firstlight:block/reinforced_concrete",
+    "side": "apocalypse_firstlight:block/reinforced_concrete"
+  }
+}
+

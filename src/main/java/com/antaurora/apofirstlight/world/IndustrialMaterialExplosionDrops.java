@@ -47,6 +47,14 @@ public final class IndustrialMaterialExplosionDrops {
                 drop(level, position, AflItems.STEEL_SCRAP.get(), 1, 2);
             } else if (block == AflBlocks.REINFORCED_CONCRETE.get()) {
                 drop(level, position, AflItems.CONCRETE_RUBBLE.get(), 2, 4);
+            } else if (block == AflBlocks.REINFORCED_CONCRETE_SLAB.get()) {
+                drop(level, position, AflItems.CONCRETE_RUBBLE.get(), 1, 2);
+            } else if (block == AflBlocks.REINFORCED_CONCRETE_STAIRS.get()) {
+                drop(level, position, AflItems.CONCRETE_RUBBLE.get(), 1, 3);
+            } else if (block == AflBlocks.STEEL_PLATE_SLAB.get()) {
+                drop(level, position, AflItems.STEEL_SCRAP.get(), 0, 2);
+            } else if (block == AflBlocks.STEEL_PLATE_STAIRS.get()) {
+                drop(level, position, AflItems.STEEL_SCRAP.get(), 1, 2);
             } else if (block == AflBlocks.STEEL_DOOR.get()) {
                 if (salvagedDoors.add(SteelDoorBlock.canonicalPosition(position, level.getBlockState(position)))) {
                     drop(level, position, AflItems.STEEL_SCRAP.get(), 1, 2);

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+    "bottom": "apocalypse_firstlight:block/steel_plate",
+    "top": "apocalypse_firstlight:block/steel_plate",
+    "side": "apocalypse_firstlight:block/steel_plate"
+  }
+}
+
