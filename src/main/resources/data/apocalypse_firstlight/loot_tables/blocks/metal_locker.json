@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:block",
+  "pools": [{
+    "rolls": 1.0,
+    "entries": [{"type": "minecraft:item", "name": "apocalypse_firstlight:metal_locker"}],
+    "conditions": [{"condition": "minecraft:match_tool", "predicate": {"tag": "apocalypse_firstlight:metal_locker_recovery_tools"}}]
+  }]
+}

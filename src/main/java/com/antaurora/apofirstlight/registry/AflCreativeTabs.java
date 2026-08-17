@@ -31,6 +31,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_UTILITY_LIGHT.get());
                         output.accept(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get());
                         output.accept(AflItems.INDUSTRIAL_LOCKER.get());
+                        output.accept(AflItems.METAL_LOCKER.get());
                     })
                     .build());
 
