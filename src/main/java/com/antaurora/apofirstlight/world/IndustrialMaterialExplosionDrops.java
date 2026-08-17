@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.MetalLockerBlock;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.MetalLockerBlockEntity;
+import com.antaurora.apofirstlight.blockentity.SupermarketShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.SupermarketShelfSingleBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
@@ -109,6 +110,8 @@ public final class IndustrialMaterialExplosionDrops {
             if (level.getBlockState(position).getBlock() == AflBlocks.SUPERMARKET_SHELF_SINGLE.get()
                     && salvagedShelves.add(shelfLowerPosition(level, position).immutable())) {
                 BlockPos lower = shelfLowerPosition(level, position);
+                SupermarketShelfSingleBlock.markExplosion(lower);
+                dropShelfContents(level, lower);
                 drop(level, lower, AflItems.PLASTIC_SCRAP.get(), 1, 3);
                 drop(level, lower, Items.IRON_NUGGET, 1, 2);
             }
@@ -156,6 +159,8 @@ public final class IndustrialMaterialExplosionDrops {
                     && level.getBlockState(lower).getValue(com.antaurora.apofirstlight.block.SupermarketShelfSingleBlock.HALF)
                     == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
                     && salvagedShelves.add(lower.immutable())) {
+                SupermarketShelfSingleBlock.markExplosion(lower);
+                dropShelfContents(level, lower);
                 drop(level, lower, AflItems.PLASTIC_SCRAP.get(), 1, 3);
                 drop(level, lower, Items.IRON_NUGGET, 1, 2);
             }
@@ -165,6 +170,7 @@ public final class IndustrialMaterialExplosionDrops {
         level.getServer().execute(IndustrialElectricalBoxBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialLockerBlock::clearExplosionMarks);
         level.getServer().execute(MetalLockerBlock::clearExplosionMarks);
+        level.getServer().execute(SupermarketShelfSingleBlock::clearExplosionMarks);
     }
 
     private static void drop(Level level, BlockPos position, Item item, int minimum, int maximum) {
@@ -202,5 +208,11 @@ public final class IndustrialMaterialExplosionDrops {
 
     private static void dropMetalLockerContents(Level level, BlockPos lower) {
         if (level.getBlockEntity(lower) instanceof MetalLockerBlockEntity locker) locker.dropContentsOnce();
+    }
+
+    private static void dropShelfContents(Level level, BlockPos lower) {
+        if (level.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf) {
+            shelf.dropContentsOnce();
+        }
     }
 }

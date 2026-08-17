@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 public class SupermarketShelfSingleBlockEntity extends BlockEntity {
     public static final int SIZE = 12;
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
+    private boolean contentsDropped;
 
     public SupermarketShelfSingleBlockEntity(BlockPos position, BlockState state) {
         super(AflBlockEntities.SUPERMARKET_SHELF_SINGLE.get(), position, state);
@@ -39,6 +40,20 @@ public class SupermarketShelfSingleBlockEntity extends BlockEntity {
         items.set(slot, ItemStack.EMPTY);
         sync();
         return removed;
+    }
+
+    public void dropContentsOnce() {
+        if (contentsDropped || level == null) {
+            return;
+        }
+        contentsDropped = true;
+        for (ItemStack item : items) {
+            if (!item.isEmpty()) {
+                Block.popResource(level, worldPosition, item.copy());
+            }
+        }
+        items.replaceAll(ignored -> ItemStack.EMPTY);
+        setChanged();
     }
 
     @Override

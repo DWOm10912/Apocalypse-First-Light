@@ -87,10 +87,9 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> SUPERMARKET_SHELF_SINGLE = BLOCKS.register("supermarket_shelf_single",
-            () -> new SupermarketShelfSingleBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(3.5F, 6.0F)
+            () -> new SupermarketShelfSingleBlock(BlockBehaviour.Properties.of()
+                    .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
                     .noOcclusion()));
 
     private AflBlocks() {

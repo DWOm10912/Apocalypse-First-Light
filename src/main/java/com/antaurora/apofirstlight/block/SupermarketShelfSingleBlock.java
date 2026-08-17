@@ -28,8 +28,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
+    private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
     private static final double[] LAYER_BOUNDARIES = {0.20D, 0.56D, 0.94D, 1.31D, 1.69D};
 
     private static final VoxelShape NORTH_LOWER_SHAPE = Shapes.or(
@@ -111,6 +115,9 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
         }
         if (half == DoubleBlockHalf.LOWER && direction == Direction.DOWN
                 && !neighborState.isFaceSturdy(level, neighborPos, Direction.UP)) {
+            if (!EXPLOSION_DESTROYING.remove(currentPos.immutable())) {
+                dropContents(level, currentPos);
+            }
             return Blocks.AIR.defaultBlockState();
         }
         return super.updateShape(state, direction, neighborState, level, currentPos, neighborPos);
@@ -121,15 +128,30 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
                                   net.minecraft.world.entity.player.Player player) {
         BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER
                 ? position.below() : position;
-        if (!player.isCreative() && level.getBlockState(lower).getBlock() == this
-                && player.getMainHandItem().isCorrectToolForDrops(state)) {
+        if (!player.isCreative() && level.getBlockState(lower).getBlock() == this) {
             popResource(level, lower, new ItemStack(AflItems.SUPERMARKET_SHELF_SINGLE.get()));
         }
+        dropContents(level, lower);
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER
                 && level.getBlockState(lower).is(this)) {
             level.setBlock(lower, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
         super.playerWillDestroy(level, position, state, player);
+    }
+
+    private static void dropContents(LevelAccessor level, BlockPos lower) {
+        if (level instanceof Level serverLevel
+                && serverLevel.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf) {
+            shelf.dropContentsOnce();
+        }
+    }
+
+    public static void markExplosion(BlockPos lower) {
+        EXPLOSION_DESTROYING.add(lower.immutable());
+    }
+
+    public static void clearExplosionMarks() {
+        EXPLOSION_DESTROYING.clear();
     }
 
     @Override
