@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.MetalLockerBlock;
+import com.antaurora.apofirstlight.block.SupermarketShelfSingleBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -82,6 +83,12 @@ public final class AflBlocks {
     public static final RegistryObject<Block> METAL_LOCKER = BLOCKS.register("metal_locker",
             () -> new MetalLockerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(4.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> SUPERMARKET_SHELF_SINGLE = BLOCKS.register("supermarket_shelf_single",
+            () -> new SupermarketShelfSingleBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5F, 6.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
