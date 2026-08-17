@@ -43,6 +43,9 @@ public final class AflCreativeTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
+                        output.accept(AflItems.PLASTIC_SCRAP.get());
+                        output.accept(AflItems.PLASTIC_PELLETS.get());
+                        output.accept(AflItems.PLASTIC_SHEET.get());
                     })
                     .build());
 

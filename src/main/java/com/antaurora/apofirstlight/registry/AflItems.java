@@ -46,6 +46,12 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> CONCRETE_RUBBLE = ITEMS.register("concrete_rubble",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> PLASTIC_SCRAP = ITEMS.register("plastic_scrap",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> PLASTIC_PELLETS = ITEMS.register("plastic_pellets",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> PLASTIC_SHEET = ITEMS.register("plastic_sheet",
+            () -> new Item(new Item.Properties()));
 
     private AflItems() {
     }

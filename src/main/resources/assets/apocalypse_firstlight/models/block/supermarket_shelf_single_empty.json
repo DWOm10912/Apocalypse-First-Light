@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:block/air",
   "textures": {
-    "particle": "apocalypse_firstlight:block/supermarket_shelf_single"
+    "particle": "apocalypse_firstlight:item/plastic_pellets"
   }
 }

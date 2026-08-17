@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -111,11 +112,15 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock {
     @Override
     public void playerWillDestroy(Level level, BlockPos position, BlockState state,
                                   net.minecraft.world.entity.player.Player player) {
-        BlockPos partner = state.getValue(HALF) == DoubleBlockHalf.UPPER
-                ? position.below() : position.above();
-        if (level.getBlockState(partner).is(this)) {
-            level.setBlock(partner, Blocks.AIR.defaultBlockState(),
-                    Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
+        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER
+                ? position.below() : position;
+        if (!player.isCreative() && level.getBlockState(lower).getBlock() == this
+                && player.getMainHandItem().isCorrectToolForDrops(state)) {
+            popResource(level, lower, new ItemStack(AflItems.SUPERMARKET_SHELF_SINGLE.get()));
+        }
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER
+                && level.getBlockState(lower).is(this)) {
+            level.setBlock(lower, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
         super.playerWillDestroy(level, position, state, player);
     }
