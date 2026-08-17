@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.block.SteelGrateBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
+import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -53,6 +54,12 @@ public final class AflBlocks {
                     .lightLevel(state -> 14)));
     public static final RegistryObject<Block> INDUSTRIAL_ELECTRICAL_BOX = BLOCKS.register("industrial_electrical_box",
             () -> new IndustrialElectricalBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> INDUSTRIAL_LOCKER = BLOCKS.register("industrial_locker",
+            () -> new IndustrialLockerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()

@@ -24,6 +24,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.STEEL_DOOR.get());
                         output.accept(AflItems.INDUSTRIAL_UTILITY_LIGHT.get());
                         output.accept(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get());
+                        output.accept(AflItems.INDUSTRIAL_LOCKER.get());
                     })
                     .build());
 
