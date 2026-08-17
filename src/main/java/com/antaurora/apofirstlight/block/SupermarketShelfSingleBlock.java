@@ -1,8 +1,12 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.blockentity.SupermarketShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -11,6 +15,7 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -20,24 +25,26 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
-public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock {
+public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
+    private static final double[] LAYER_BOUNDARIES = {0.20D, 0.56D, 0.94D, 1.31D, 1.69D};
 
     private static final VoxelShape NORTH_LOWER_SHAPE = Shapes.or(
             Shapes.box(0, 2 / 16.0, 15 / 16.0, 1, 1, 1),
-            Shapes.box(0, 0, 4 / 16.0, 1, 2 / 16.0, 1),
-            Shapes.box(0, 6 / 16.0, 7 / 16.0, 1, 7 / 16.0, 15 / 16.0),
-            Shapes.box(0, 12 / 16.0, 7 / 16.0, 1, 13 / 16.0, 15 / 16.0),
+            Shapes.box(0, 0, 7 / 16.0, 1, 2 / 16.0, 1),
+            Shapes.box(0, 6 / 16.0, 10 / 16.0, 1, 7 / 16.0, 15 / 16.0),
+            Shapes.box(0, 12 / 16.0, 10 / 16.0, 1, 13 / 16.0, 15 / 16.0),
             Shapes.box(1 / 16.0, 4 / 16.0, 13 / 16.0, 2 / 16.0, 6 / 16.0, 15 / 16.0),
             Shapes.box(14 / 16.0, 4 / 16.0, 13 / 16.0, 15 / 16.0, 6 / 16.0, 15 / 16.0)
     );
 
     private static final VoxelShape NORTH_UPPER_SHAPE = Shapes.or(
             Shapes.box(0, 0, 15 / 16.0, 1, 1, 1),
-            Shapes.box(0, 2 / 16.0, 7 / 16.0, 1, 3 / 16.0, 15 / 16.0),
-            Shapes.box(0, 8 / 16.0, 7 / 16.0, 1, 9 / 16.0, 15 / 16.0),
+            Shapes.box(0, 2 / 16.0, 10 / 16.0, 1, 3 / 16.0, 15 / 16.0),
+            Shapes.box(0, 8 / 16.0, 10 / 16.0, 1, 9 / 16.0, 15 / 16.0),
             Shapes.box(1 / 16.0, 0, 13 / 16.0, 2 / 16.0, 2 / 16.0, 15 / 16.0),
             Shapes.box(14 / 16.0, 0, 13 / 16.0, 15 / 16.0, 2 / 16.0, 15 / 16.0)
     );
@@ -126,11 +133,84 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock {
     }
 
     @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
+                                 InteractionHand hand, BlockHitResult hit) {
+        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
+        if (!(level.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf)) {
+            return InteractionResult.PASS;
+        }
+
+        int slot = getClickedSlot(level.getBlockState(lower).getValue(FACING), lower, hit);
+        if (slot < 0) {
+            return InteractionResult.PASS;
+        }
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+
+        ItemStack held = player.getItemInHand(hand);
+        if (shelf.isEmpty(slot) && !held.isEmpty()) {
+            shelf.insertOne(slot, held);
+            if (!player.getAbilities().instabuild) {
+                held.shrink(1);
+            }
+            return InteractionResult.CONSUME;
+        }
+        if (!shelf.isEmpty(slot) && held.isEmpty()) {
+            ItemStack removed = shelf.removeOne(slot);
+            if (!player.getInventory().add(removed)) {
+                player.drop(removed, false);
+            }
+            return InteractionResult.CONSUME;
+        }
+        return InteractionResult.PASS;
+    }
+
+    private static int getClickedSlot(Direction facing, BlockPos lower, BlockHitResult hit) {
+        double localX = hit.getLocation().x - lower.getX();
+        double localY = hit.getLocation().y - lower.getY();
+        double localZ = hit.getLocation().z - lower.getZ();
+        int layer = getLayer(localY);
+        if (layer < 0) {
+            return -1;
+        }
+
+        double frontLeftToRight = switch (facing) {
+            case NORTH -> 1.0D - localX;
+            case SOUTH -> localX;
+            case EAST -> localZ;
+            case WEST -> 1.0D - localZ;
+            default -> -1.0D;
+        };
+        if (frontLeftToRight < 0.0D || frontLeftToRight >= 1.0D) {
+            return -1;
+        }
+        int column = Math.min(2, (int) (frontLeftToRight * 3.0D));
+        return layer * 3 + column;
+    }
+
+    private static int getLayer(double localY) {
+        for (int layer = 0; layer < 4; layer++) {
+            if (localY >= LAYER_BOUNDARIES[layer] && localY < LAYER_BOUNDARIES[layer + 1]) {
+                return layer;
+            }
+        }
+        return -1;
+    }
+
+    @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position,
                                CollisionContext context) {
         VoxelShape canonical = state.getValue(HALF) == DoubleBlockHalf.LOWER
                 ? NORTH_LOWER_SHAPE : NORTH_UPPER_SHAPE;
         return rotateShape(canonical, state.getValue(FACING));
+    }
+
+    @Override
+    @Nullable
+    public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos position, BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER
+                ? new SupermarketShelfSingleBlockEntity(position, state) : null;
     }
 
     private static VoxelShape rotateShape(VoxelShape shape, Direction facing) {

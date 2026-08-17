@@ -15,8 +15,9 @@ public class ApocalypseFirstLight {
     public static final String MOD_ID = "apocalypse_firstlight";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public ApocalypseFirstLight() {
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public ApocalypseFirstLight(FMLJavaModLoadingContext context) {
+        IEventBus modEventBus = context.getModEventBus();
+
         AflBlocks.BLOCKS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
