@@ -1,0 +1,4 @@
+{
+  "type": "minecraft:block",
+  "pools": [{"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "apocalypse_firstlight:steel_block_stairs"}], "conditions": [{"condition": "minecraft:match_tool", "predicate": {"tag": "apocalypse_firstlight:industrial_material_recovery_tools"}}]}]
+}

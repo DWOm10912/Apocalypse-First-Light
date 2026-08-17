@@ -34,6 +34,10 @@ public final class AflBlocks {
                     .strength(7.0F, 12.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> STEEL_BLOCK_SLAB = BLOCKS.register("steel_block_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get())));
+    public static final RegistryObject<Block> STEEL_BLOCK_STAIRS = BLOCKS.register("steel_block_stairs",
+            () -> new StairBlock(STEEL_BLOCK.get().defaultBlockState(), BlockBehaviour.Properties.copy(STEEL_BLOCK.get())));
     public static final RegistryObject<Block> STEEL_GRATE = BLOCKS.register("steel_grate",
             () -> new SteelGrateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 7.0F)

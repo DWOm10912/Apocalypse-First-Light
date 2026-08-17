@@ -1,0 +1,23 @@
+{
+  "variants": {
+    "type=bottom,waterlogged=false": {
+      "model": "apocalypse_firstlight:block/steel_block_slab"
+    },
+    "type=bottom,waterlogged=true": {
+      "model": "apocalypse_firstlight:block/steel_block_slab"
+    },
+    "type=top,waterlogged=false": {
+      "model": "apocalypse_firstlight:block/steel_block_slab_top"
+    },
+    "type=top,waterlogged=true": {
+      "model": "apocalypse_firstlight:block/steel_block_slab_top"
+    },
+    "type=double,waterlogged=false": {
+      "model": "apocalypse_firstlight:block/steel_block"
+    },
+    "type=double,waterlogged=true": {
+      "model": "apocalypse_firstlight:block/steel_block"
+    }
+  }
+}
+

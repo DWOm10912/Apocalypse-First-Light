@@ -18,6 +18,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK = ITEMS.register("steel_block",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
+            () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
+            () -> new BlockItem(AflBlocks.STEEL_BLOCK_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_GRATE = ITEMS.register("steel_grate",
             () -> new BlockItem(AflBlocks.STEEL_GRATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE = ITEMS.register("steel_plate",
