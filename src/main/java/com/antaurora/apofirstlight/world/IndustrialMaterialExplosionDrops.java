@@ -14,6 +14,7 @@ import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -103,7 +104,7 @@ public final class IndustrialMaterialExplosionDrops {
                 BlockPos lower = metalLockerLowerPosition(level, position);
                 MetalLockerBlock.markExplosion(lower);
                 dropMetalLockerContents(level, lower);
-                drop(level, lower, AflItems.STEEL_SCRAP.get(), 0, 2);
+                drop(level, lower, Items.IRON_NUGGET, 2, 6);
             }
             if (level.getBlockState(position).getBlock() == AflBlocks.SUPERMARKET_SHELF_SINGLE.get()
                     && salvagedShelves.add(shelfLowerPosition(level, position).immutable())) {
@@ -146,7 +147,7 @@ public final class IndustrialMaterialExplosionDrops {
                     && salvagedMetalLockers.add(lower.immutable())) {
                 MetalLockerBlock.markExplosion(lower);
                 dropMetalLockerContents(level, lower);
-                drop(level, lower, AflItems.STEEL_SCRAP.get(), 0, 2);
+                drop(level, lower, Items.IRON_NUGGET, 2, 6);
             }
         }
         for (BlockPos supportPosition : event.getAffectedBlocks()) {
