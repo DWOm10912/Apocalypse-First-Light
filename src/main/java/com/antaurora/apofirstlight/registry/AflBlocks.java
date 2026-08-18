@@ -112,6 +112,8 @@ public final class AflBlocks {
             () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_SLAB)));
     public static final RegistryObject<Block> POPLAR_DOOR = BLOCKS.register("poplar_door",
             () -> new DoorBlock(BlockBehaviour.Properties.copy(Blocks.OAK_DOOR), AflBlockSetTypes.AFL_POPLAR));
+    public static final RegistryObject<Block> POPLAR_TRAPDOOR = BLOCKS.register("poplar_trapdoor",
+            () -> new net.minecraft.world.level.block.TrapDoorBlock(BlockBehaviour.Properties.copy(Blocks.OAK_TRAPDOOR), AflBlockSetTypes.AFL_POPLAR));
     public static final RegistryObject<Block> POPLAR_LEAVES = BLOCKS.register("poplar_leaves",
             () -> new LeavesBlock(BlockBehaviour.Properties.copy(Blocks.BIRCH_LEAVES)));
     public static final RegistryObject<Block> POPLAR_SAPLING = BLOCKS.register("poplar_sapling",

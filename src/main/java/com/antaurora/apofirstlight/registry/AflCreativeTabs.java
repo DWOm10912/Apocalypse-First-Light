@@ -41,6 +41,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.POPLAR_STAIRS.get());
                         output.accept(AflItems.POPLAR_SLAB.get());
                         output.accept(AflItems.POPLAR_DOOR.get());
+                        output.accept(AflItems.POPLAR_TRAPDOOR.get());
                         output.accept(AflItems.POPLAR_LEAVES.get());
                         output.accept(AflItems.POPLAR_SAPLING.get());
                     })

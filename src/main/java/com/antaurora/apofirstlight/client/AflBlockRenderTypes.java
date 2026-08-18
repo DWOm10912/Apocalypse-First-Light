@@ -20,6 +20,7 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_DOOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_TRAPDOOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_LEAVES.get(), RenderType.cutoutMipped());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_SAPLING.get(), RenderType.cutout());
         });
