@@ -14,7 +14,7 @@ public final class AflBlockEntityRenderers {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(AflBlockEntities.SUPERMARKET_SHELF_SINGLE.get(),
-                SupermarketShelfSingleBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.RETAIL_SHELF_SINGLE.get(),
+                RetailShelfSingleBlockEntityRenderer::new);
     }
 }

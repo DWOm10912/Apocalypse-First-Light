@@ -4,7 +4,7 @@
 	"ambientocclusion": false,
 	"texture_size": [128, 128],
 	"textures": {
-		"0": "apocalypse_firstlight:block/supermarket_shelf_single",
+		"0": "apocalypse_firstlight:block/retail_shelf",
 		"particle": "apocalypse_firstlight:item/plastic_pellets"
 	},
 	"elements": [

@@ -1,6 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
-import com.antaurora.apofirstlight.blockentity.SupermarketShelfSingleBlockEntity;
+import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
     private static final double[] LAYER_BOUNDARIES = {0.20D, 0.56D, 0.94D, 1.31D, 1.69D};
@@ -53,7 +53,7 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
             Shapes.box(14 / 16.0, 0, 13 / 16.0, 15 / 16.0, 2 / 16.0, 15 / 16.0)
     );
 
-    public SupermarketShelfSingleBlock(Properties properties) {
+    public RetailShelfSingleBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
@@ -129,7 +129,7 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
         BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER
                 ? position.below() : position;
         if (!player.isCreative() && level.getBlockState(lower).getBlock() == this) {
-            popResource(level, lower, new ItemStack(AflItems.SUPERMARKET_SHELF_SINGLE.get()));
+            popResource(level, lower, new ItemStack(AflItems.RETAIL_SHELF_SINGLE.get()));
         }
         dropContents(level, lower);
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER
@@ -141,7 +141,7 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
 
     private static void dropContents(LevelAccessor level, BlockPos lower) {
         if (level instanceof Level serverLevel
-                && serverLevel.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf) {
+                && serverLevel.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf) {
             shelf.dropContentsOnce();
         }
     }
@@ -158,7 +158,7 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
-        if (!(level.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf)) {
+        if (!(level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf)) {
             return InteractionResult.PASS;
         }
 
@@ -232,7 +232,7 @@ public class SupermarketShelfSingleBlock extends HorizontalDirectionalBlock impl
     @Nullable
     public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos position, BlockState state) {
         return state.getValue(HALF) == DoubleBlockHalf.LOWER
-                ? new SupermarketShelfSingleBlockEntity(position, state) : null;
+                ? new RetailShelfSingleBlockEntity(position, state) : null;
     }
 
     private static VoxelShape rotateShape(VoxelShape shape, Direction facing) {

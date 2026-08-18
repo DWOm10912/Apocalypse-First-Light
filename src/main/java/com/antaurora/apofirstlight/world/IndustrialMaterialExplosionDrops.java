@@ -7,9 +7,9 @@ import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.MetalLockerBlock;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.MetalLockerBlockEntity;
-import com.antaurora.apofirstlight.blockentity.SupermarketShelfSingleBlockEntity;
+import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
-import com.antaurora.apofirstlight.block.SupermarketShelfSingleBlock;
+import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
@@ -107,10 +107,10 @@ public final class IndustrialMaterialExplosionDrops {
                 dropMetalLockerContents(level, lower);
                 drop(level, lower, Items.IRON_NUGGET, 2, 6);
             }
-            if (level.getBlockState(position).getBlock() == AflBlocks.SUPERMARKET_SHELF_SINGLE.get()
+            if (level.getBlockState(position).getBlock() == AflBlocks.RETAIL_SHELF_SINGLE.get()
                     && salvagedShelves.add(shelfLowerPosition(level, position).immutable())) {
                 BlockPos lower = shelfLowerPosition(level, position);
-                SupermarketShelfSingleBlock.markExplosion(lower);
+                RetailShelfSingleBlock.markExplosion(lower);
                 dropShelfContents(level, lower);
                 drop(level, lower, AflItems.PLASTIC_SCRAP.get(), 1, 3);
                 drop(level, lower, Items.IRON_NUGGET, 1, 2);
@@ -155,11 +155,11 @@ public final class IndustrialMaterialExplosionDrops {
         }
         for (BlockPos supportPosition : event.getAffectedBlocks()) {
             BlockPos lower = supportPosition.above();
-            if (level.getBlockState(lower).getBlock() == AflBlocks.SUPERMARKET_SHELF_SINGLE.get()
-                    && level.getBlockState(lower).getValue(com.antaurora.apofirstlight.block.SupermarketShelfSingleBlock.HALF)
+            if (level.getBlockState(lower).getBlock() == AflBlocks.RETAIL_SHELF_SINGLE.get()
+                    && level.getBlockState(lower).getValue(com.antaurora.apofirstlight.block.RetailShelfSingleBlock.HALF)
                     == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
                     && salvagedShelves.add(lower.immutable())) {
-                SupermarketShelfSingleBlock.markExplosion(lower);
+                RetailShelfSingleBlock.markExplosion(lower);
                 dropShelfContents(level, lower);
                 drop(level, lower, AflItems.PLASTIC_SCRAP.get(), 1, 3);
                 drop(level, lower, Items.IRON_NUGGET, 1, 2);
@@ -170,7 +170,7 @@ public final class IndustrialMaterialExplosionDrops {
         level.getServer().execute(IndustrialElectricalBoxBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialLockerBlock::clearExplosionMarks);
         level.getServer().execute(MetalLockerBlock::clearExplosionMarks);
-        level.getServer().execute(SupermarketShelfSingleBlock::clearExplosionMarks);
+        level.getServer().execute(RetailShelfSingleBlock::clearExplosionMarks);
     }
 
     private static void drop(Level level, BlockPos position, Item item, int minimum, int maximum) {
@@ -202,7 +202,7 @@ public final class IndustrialMaterialExplosionDrops {
     }
 
     private static BlockPos shelfLowerPosition(Level level, BlockPos position) {
-        return level.getBlockState(position).getValue(SupermarketShelfSingleBlock.HALF)
+        return level.getBlockState(position).getValue(RetailShelfSingleBlock.HALF)
                 == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER ? position.below() : position;
     }
 
@@ -211,7 +211,7 @@ public final class IndustrialMaterialExplosionDrops {
     }
 
     private static void dropShelfContents(Level level, BlockPos lower) {
-        if (level.getBlockEntity(lower) instanceof SupermarketShelfSingleBlockEntity shelf) {
+        if (level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf) {
             shelf.dropContentsOnce();
         }
     }

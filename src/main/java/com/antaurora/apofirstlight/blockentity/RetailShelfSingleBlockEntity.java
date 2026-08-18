@@ -13,13 +13,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class SupermarketShelfSingleBlockEntity extends BlockEntity {
+public class RetailShelfSingleBlockEntity extends BlockEntity {
     public static final int SIZE = 12;
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
     private boolean contentsDropped;
 
-    public SupermarketShelfSingleBlockEntity(BlockPos position, BlockState state) {
-        super(AflBlockEntities.SUPERMARKET_SHELF_SINGLE.get(), position, state);
+    public RetailShelfSingleBlockEntity(BlockPos position, BlockState state) {
+        super(AflBlockEntities.RETAIL_SHELF_SINGLE.get(), position, state);
     }
 
     public boolean isEmpty(int slot) {

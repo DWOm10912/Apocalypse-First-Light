@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,half=lower": {"model": "apocalypse_firstlight:block/retail_shelf_single", "y": 0},
+    "facing=east,half=lower": {"model": "apocalypse_firstlight:block/retail_shelf_single", "y": 90},
+    "facing=south,half=lower": {"model": "apocalypse_firstlight:block/retail_shelf_single", "y": 180},
+    "facing=west,half=lower": {"model": "apocalypse_firstlight:block/retail_shelf_single", "y": 270},
+    "facing=north,half=upper": {"model": "apocalypse_firstlight:block/retail_shelf_single_empty", "y": 0},
+    "facing=east,half=upper": {"model": "apocalypse_firstlight:block/retail_shelf_single_empty", "y": 90},
+    "facing=south,half=upper": {"model": "apocalypse_firstlight:block/retail_shelf_single_empty", "y": 180},
+    "facing=west,half=upper": {"model": "apocalypse_firstlight:block/retail_shelf_single_empty", "y": 270}
+  }
+}
