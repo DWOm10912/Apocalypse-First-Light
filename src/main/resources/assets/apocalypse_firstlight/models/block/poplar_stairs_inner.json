@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {"bottom": "apocalypse_firstlight:block/poplar_planks", "top": "apocalypse_firstlight:block/poplar_planks", "side": "apocalypse_firstlight:block/poplar_planks"}
+}

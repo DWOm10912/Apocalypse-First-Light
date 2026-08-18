@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "type=bottom": {"model": "apocalypse_firstlight:block/poplar_slab"},
+    "type=double": {"model": "apocalypse_firstlight:block/poplar_planks"},
+    "type=top": {"model": "apocalypse_firstlight:block/poplar_slab_top"}
+  }
+}
