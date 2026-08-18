@@ -56,6 +56,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.POPLAR_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_SLAB = ITEMS.register("poplar_slab",
             () -> new BlockItem(AflBlocks.POPLAR_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POPLAR_DOOR = ITEMS.register("poplar_door",
+            () -> new BlockItem(AflBlocks.POPLAR_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_LEAVES = ITEMS.register("poplar_leaves",
             () -> new BlockItem(AflBlocks.POPLAR_LEAVES.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_SAPLING = ITEMS.register("poplar_sapling",

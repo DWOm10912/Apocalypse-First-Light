@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:poplar_door"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "apocalypse_firstlight:poplar_door",
+          "properties": {"half": "lower"}
+        },
+        {"condition": "minecraft:survives_explosion"}
+      ]
+    }
+  ]
+}

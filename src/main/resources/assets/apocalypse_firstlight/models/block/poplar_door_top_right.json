@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/door_top_right",
+  "textures": {"top": "apocalypse_firstlight:block/poplar_door_top"}
+}

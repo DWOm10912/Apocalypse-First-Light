@@ -38,6 +38,7 @@ public class ApocalypseFirstLight {
             fire.setFlammable(AflBlocks.POPLAR_PLANKS.get(), 5, 20);
             fire.setFlammable(AflBlocks.POPLAR_STAIRS.get(), 5, 20);
             fire.setFlammable(AflBlocks.POPLAR_SLAB.get(), 5, 20);
+            fire.setFlammable(AflBlocks.POPLAR_DOOR.get(), 5, 20);
             fire.setFlammable(AflBlocks.POPLAR_LEAVES.get(), 30, 60);
             fire.setFlammable(AflBlocks.POPLAR_SAPLING.get(), 60, 80);
         });

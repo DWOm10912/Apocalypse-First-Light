@@ -5,6 +5,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
 
 public final class AflBlockSetTypes {
+    public static final BlockSetType AFL_POPLAR = BlockSetType.OAK;
     public static final BlockSetType AFL_STEEL = BlockSetType.register(new BlockSetType(
             "apocalypse_firstlight_steel",
             true,
