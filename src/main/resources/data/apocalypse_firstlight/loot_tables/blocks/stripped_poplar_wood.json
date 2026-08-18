@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:block",
+  "pools": [{
+    "rolls": 1,
+    "entries": [{"type": "minecraft:item", "name": "apocalypse_firstlight:stripped_poplar_wood"}],
+    "conditions": [{"condition": "minecraft:survives_explosion"}]
+  }]
+}

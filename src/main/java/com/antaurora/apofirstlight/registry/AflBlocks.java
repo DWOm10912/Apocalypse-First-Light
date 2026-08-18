@@ -100,6 +100,10 @@ public final class AflBlocks {
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
             () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG), STRIPPED_POPLAR_LOG));
+    public static final RegistryObject<Block> STRIPPED_POPLAR_WOOD = BLOCKS.register("stripped_poplar_wood",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_WOOD)));
+    public static final RegistryObject<Block> POPLAR_WOOD = BLOCKS.register("poplar_wood",
+            () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_WOOD), STRIPPED_POPLAR_WOOD));
     public static final RegistryObject<Block> POPLAR_PLANKS = BLOCKS.register("poplar_planks",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
     public static final RegistryObject<Block> POPLAR_LEAVES = BLOCKS.register("poplar_leaves",

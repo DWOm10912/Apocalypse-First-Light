@@ -33,6 +33,8 @@ public class ApocalypseFirstLight {
             FireBlock fire = (FireBlock) Blocks.FIRE;
             fire.setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5);
             fire.setFlammable(AflBlocks.STRIPPED_POPLAR_LOG.get(), 5, 5);
+            fire.setFlammable(AflBlocks.POPLAR_WOOD.get(), 5, 5);
+            fire.setFlammable(AflBlocks.STRIPPED_POPLAR_WOOD.get(), 5, 5);
             fire.setFlammable(AflBlocks.POPLAR_PLANKS.get(), 5, 20);
             fire.setFlammable(AflBlocks.POPLAR_LEAVES.get(), 30, 60);
             fire.setFlammable(AflBlocks.POPLAR_SAPLING.get(), 60, 80);

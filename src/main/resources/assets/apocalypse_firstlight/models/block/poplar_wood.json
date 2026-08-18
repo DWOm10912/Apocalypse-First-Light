@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "apocalypse_firstlight:block/poplar_log",
+    "end": "apocalypse_firstlight:block/poplar_log"
+  }
+}

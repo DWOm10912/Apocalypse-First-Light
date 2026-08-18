@@ -3,6 +3,8 @@
   "values": [
     "apocalypse_firstlight:poplar_log",
     "apocalypse_firstlight:stripped_poplar_log",
-    "apocalypse_firstlight:poplar_planks"
+    "apocalypse_firstlight:poplar_planks",
+    "apocalypse_firstlight:poplar_wood",
+    "apocalypse_firstlight:stripped_poplar_wood"
   ]
 }
