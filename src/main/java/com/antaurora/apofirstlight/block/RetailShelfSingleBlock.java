@@ -26,6 +26,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
@@ -34,7 +35,11 @@ import java.util.Set;
 public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
-    private static final double[] LAYER_BOUNDARIES = {0.20D, 0.56D, 0.94D, 1.31D, 1.69D};
+    private static final double INTERACTION_DEPTH = 0.78125D;
+    private static final double[] INTERACTION_COLUMN_X = {0.78D, 0.50D, 0.22D};
+    private static final double[] INTERACTION_LAYER_Y = {0.55D, 0.925D, 1.30D, 1.675D};
+    private static final double MAX_COLUMN_DISTANCE = 0.16D;
+    private static final double MAX_LAYER_DISTANCE = 0.19D;
 
     private static final VoxelShape NORTH_LOWER_SHAPE = Shapes.or(
             Shapes.box(0, 2 / 16.0, 15 / 16.0, 1, 1, 1),
@@ -162,7 +167,7 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
             return InteractionResult.PASS;
         }
 
-        int slot = getClickedSlot(level.getBlockState(lower).getValue(FACING), lower, hit);
+        int slot = getClickedSlot(player, level.getBlockState(lower).getValue(FACING), lower, hit);
         if (slot < 0) {
             return InteractionResult.PASS;
         }
@@ -188,36 +193,60 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         return InteractionResult.PASS;
     }
 
-    private static int getClickedSlot(Direction facing, BlockPos lower, BlockHitResult hit) {
-        double localX = hit.getLocation().x - lower.getX();
-        double localY = hit.getLocation().y - lower.getY();
-        double localZ = hit.getLocation().z - lower.getZ();
-        int layer = getLayer(localY);
-        if (layer < 0) {
+    private static int getClickedSlot(Player player, Direction facing, BlockPos lower, BlockHitResult hit) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 eyeCanonical = toCanonical(facing, eye.x - lower.getX(), eye.y - lower.getY(), eye.z - lower.getZ());
+        Vec3 hitLocation = hit.getLocation();
+        Vec3 hitCanonical = toCanonical(facing, hitLocation.x - lower.getX(), hitLocation.y - lower.getY(),
+                hitLocation.z - lower.getZ());
+
+        if (eyeCanonical.z >= INTERACTION_DEPTH) {
             return -1;
         }
 
-        double frontLeftToRight = switch (facing) {
-            case NORTH -> 1.0D - localX;
-            case SOUTH -> localX;
-            case EAST -> localZ;
-            case WEST -> 1.0D - localZ;
-            default -> -1.0D;
-        };
-        if (frontLeftToRight < 0.0D || frontLeftToRight >= 1.0D) {
+        double dz = hitCanonical.z - eyeCanonical.z;
+        if (Math.abs(dz) < 1.0E-7D) {
             return -1;
         }
-        int column = Math.min(2, (int) (frontLeftToRight * 3.0D));
+
+        double t = (INTERACTION_DEPTH - eyeCanonical.z) / dz;
+        if (t < 0.0D || t > 1.0D) {
+            return -1;
+        }
+
+        double projectedX = eyeCanonical.x + t * (hitCanonical.x - eyeCanonical.x);
+        double projectedY = eyeCanonical.y + t * (hitCanonical.y - eyeCanonical.y);
+        int column = findNearestIndex(projectedX, INTERACTION_COLUMN_X);
+        int layer = findNearestIndex(projectedY, INTERACTION_LAYER_Y);
+
+        if (Math.abs(projectedX - INTERACTION_COLUMN_X[column]) > MAX_COLUMN_DISTANCE
+                || Math.abs(projectedY - INTERACTION_LAYER_Y[layer]) > MAX_LAYER_DISTANCE) {
+            return -1;
+        }
         return layer * 3 + column;
     }
 
-    private static int getLayer(double localY) {
-        for (int layer = 0; layer < 4; layer++) {
-            if (localY >= LAYER_BOUNDARIES[layer] && localY < LAYER_BOUNDARIES[layer + 1]) {
-                return layer;
+    private static Vec3 toCanonical(Direction facing, double localX, double localY, double localZ) {
+        return switch (facing) {
+            case NORTH -> new Vec3(localX, localY, localZ);
+            case SOUTH -> new Vec3(1.0D - localX, localY, 1.0D - localZ);
+            case EAST -> new Vec3(localZ, localY, 1.0D - localX);
+            case WEST -> new Vec3(1.0D - localZ, localY, localX);
+            default -> new Vec3(localX, localY, localZ);
+        };
+    }
+
+    private static int findNearestIndex(double value, double[] centers) {
+        int nearest = 0;
+        double nearestDistance = Math.abs(value - centers[0]);
+        for (int index = 1; index < centers.length; index++) {
+            double distance = Math.abs(value - centers[index]);
+            if (distance < nearestDistance) {
+                nearest = index;
+                nearestDistance = distance;
             }
         }
-        return -1;
+        return nearest;
     }
 
     @Override
