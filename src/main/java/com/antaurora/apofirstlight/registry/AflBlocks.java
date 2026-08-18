@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.MetalLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -92,8 +93,10 @@ public final class AflBlocks {
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()));
+    public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
-            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG)));
+            () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG), STRIPPED_POPLAR_LOG));
 
     private AflBlocks() {
     }

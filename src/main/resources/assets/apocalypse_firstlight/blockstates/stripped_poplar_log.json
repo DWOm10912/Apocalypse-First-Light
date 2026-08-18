@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "axis=y": {"model": "apocalypse_firstlight:block/stripped_poplar_log"},
+    "axis=z": {"model": "apocalypse_firstlight:block/stripped_poplar_log", "x": 90},
+    "axis=x": {"model": "apocalypse_firstlight:block/stripped_poplar_log", "x": 90, "y": 90}
+  }
+}

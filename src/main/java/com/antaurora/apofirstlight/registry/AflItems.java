@@ -44,6 +44,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_LOG = ITEMS.register("poplar_log",
             () -> new BlockItem(AflBlocks.POPLAR_LOG.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STRIPPED_POPLAR_LOG = ITEMS.register("stripped_poplar_log",
+            () -> new BlockItem(AflBlocks.STRIPPED_POPLAR_LOG.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_SCRAP = ITEMS.register("steel_scrap",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> CONCRETE_RUBBLE = ITEMS.register("concrete_rubble",

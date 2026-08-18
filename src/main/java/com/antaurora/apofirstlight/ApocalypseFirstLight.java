@@ -29,6 +29,10 @@ public class ApocalypseFirstLight {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(() -> ((FireBlock) Blocks.FIRE).setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5));
+        event.enqueueWork(() -> {
+            FireBlock fire = (FireBlock) Blocks.FIRE;
+            fire.setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5);
+            fire.setFlammable(AflBlocks.STRIPPED_POPLAR_LOG.get(), 5, 5);
+        });
     }
 }

@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "apocalypse_firstlight:poplar_log"
+    "apocalypse_firstlight:poplar_log",
+    "apocalypse_firstlight:stripped_poplar_log"
   ]
 }
