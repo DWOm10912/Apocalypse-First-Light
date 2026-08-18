@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -91,6 +92,8 @@ public final class AflBlocks {
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()));
+    public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG)));
 
     private AflBlocks() {
     }

@@ -33,6 +33,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_LOCKER.get());
                         output.accept(AflItems.METAL_LOCKER.get());
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
+                        output.accept(AflItems.POPLAR_LOG.get());
                     })
                     .build());
 

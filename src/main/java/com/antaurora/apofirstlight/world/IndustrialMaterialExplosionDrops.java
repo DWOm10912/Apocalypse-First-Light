@@ -210,9 +210,11 @@ public final class IndustrialMaterialExplosionDrops {
         if (level.getBlockEntity(lower) instanceof MetalLockerBlockEntity locker) locker.dropContentsOnce();
     }
 
+
     private static void dropShelfContents(Level level, BlockPos lower) {
         if (level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf) {
             shelf.dropContentsOnce();
         }
     }
+
 }
