@@ -35,6 +35,9 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
                         output.accept(AflItems.POPLAR_LOG.get());
                         output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
+                        output.accept(AflItems.POPLAR_PLANKS.get());
+                        output.accept(AflItems.POPLAR_LEAVES.get());
+                        output.accept(AflItems.POPLAR_SAPLING.get());
                     })
                     .build());
 

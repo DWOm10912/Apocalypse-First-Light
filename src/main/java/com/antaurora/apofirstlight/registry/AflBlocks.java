@@ -8,6 +8,7 @@ import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.MetalLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
+import com.antaurora.apofirstlight.world.PoplarTreeGrower;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -16,6 +17,8 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -97,6 +100,12 @@ public final class AflBlocks {
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
             () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG), STRIPPED_POPLAR_LOG));
+    public static final RegistryObject<Block> POPLAR_PLANKS = BLOCKS.register("poplar_planks",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
+    public static final RegistryObject<Block> POPLAR_LEAVES = BLOCKS.register("poplar_leaves",
+            () -> new LeavesBlock(BlockBehaviour.Properties.copy(Blocks.BIRCH_LEAVES)));
+    public static final RegistryObject<Block> POPLAR_SAPLING = BLOCKS.register("poplar_sapling",
+            () -> new SaplingBlock(new PoplarTreeGrower(), BlockBehaviour.Properties.copy(Blocks.OAK_SAPLING)));
 
     private AflBlocks() {
     }

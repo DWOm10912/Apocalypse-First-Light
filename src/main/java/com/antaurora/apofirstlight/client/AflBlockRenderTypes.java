@@ -19,6 +19,8 @@ public final class AflBlockRenderTypes {
         event.enqueueWork(() -> {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_LEAVES.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_SAPLING.get(), RenderType.cutout());
         });
     }
 }

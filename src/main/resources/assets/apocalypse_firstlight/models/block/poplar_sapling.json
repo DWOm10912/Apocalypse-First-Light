@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cross",
+  "textures": {
+    "cross": "apocalypse_firstlight:block/poplar_sapling"
+  }
+}
