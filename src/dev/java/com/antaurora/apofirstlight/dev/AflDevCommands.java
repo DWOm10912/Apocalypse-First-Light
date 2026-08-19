@@ -7,6 +7,8 @@ import com.mojang.brigadier.tree.CommandNode;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -36,6 +38,9 @@ public final class AflDevCommands {
                 .requires(source -> source.hasPermission(2));
         dev.then(schem);
         dev.then(mask);
+        dev.then(Commands.literal("bunker")
+                .then(Commands.literal("status")
+                        .executes(AflDevCommands::bunkerStatus)));
 
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
@@ -71,5 +76,19 @@ public final class AflDevCommands {
             context.getSource().sendFailure(Component.literal("AFL exterior air mask failed: " + exception.getMessage()));
             return 0;
         }
+    }
+
+    private static int bunkerStatus(CommandContext<CommandSourceStack> context) {
+        ServerLevel overworld = context.getSource().getServer().overworld();
+        BunkerSavedData data = overworld.getDataStorage().computeIfAbsent(BunkerSavedData::load,
+                BunkerSavedData::new, BunkerSavedData.ID);
+        if (!data.isGenerated()) {
+            context.getSource().sendSuccess(() -> Component.literal("Generated: false"), false);
+            return 1;
+        }
+        context.getSource().sendSuccess(() -> Component.literal("Generated: true | Origin: "
+                + data.getOrigin().toShortString() + " | Rotation: " + data.getRotation()
+                + " | Reference Surface Y: " + data.getReferenceSurfaceY()), false);
+        return 1;
     }
 }
