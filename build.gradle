@@ -172,6 +172,7 @@ dependencies {
     // Development-runtime helpers only. AFL neither compiles against nor declares these mods.
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.49.0.188")
     runtimeOnly fg.deobf("curse.maven:jade-324717:5493390")
+    runtimeOnly fg.deobf("curse.maven:worldedit-225608:4586218")
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
