@@ -25,6 +25,18 @@ base {
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+sourceSets {
+    dev {
+        java.srcDir 'src/dev/java'
+        compileClasspath += sourceSets.main.output + configurations.runtimeClasspath
+        runtimeClasspath += output + sourceSets.main.output + configurations.runtimeClasspath
+    }
+}
+
+// Forge's automatic event-subscriber scan indexes the main ModFile output.
+// Include dev command sources there for runClient, then exclude them from the published jar.
+sourceSets.main.java.srcDir 'src/dev/java'
+
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
@@ -173,6 +185,8 @@ dependencies {
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.49.0.188")
     runtimeOnly fg.deobf("curse.maven:jade-324717:5493390")
     runtimeOnly fg.deobf("curse.maven:worldedit-225608:4586218")
+    compileOnly fg.deobf("curse.maven:worldedit-225608:4586218")
+    devCompileOnly fg.deobf("curse.maven:worldedit-225608:4586218")
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
@@ -205,6 +219,7 @@ tasks.named('processResources', ProcessResources).configure {
 
 // Example for how to get properties into the manifest for reading at runtime.
 tasks.named('jar', Jar).configure {
+    exclude 'com/antaurora/apofirstlight/dev/**'
     manifest {
         attributes([
                 'Specification-Title'     : mod_id,

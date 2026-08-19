@@ -39,6 +39,7 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
     private static final VoxelShape EAST_SHAPE = Shapes.box(1 / 16.0, 0, 2 / 16.0, 14 / 16.0, 1, 14 / 16.0);
     private static final VoxelShape WEST_SHAPE = Shapes.box(2 / 16.0, 0, 2 / 16.0, 15 / 16.0, 1, 14 / 16.0);
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
+    private static final Set<BlockPos> SUPPORT_DESTROYING = new HashSet<>();
 
     public IndustrialLockerBlock(Properties properties) {
         super(properties);
@@ -83,9 +84,7 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
                                   LevelAccessor level, BlockPos currentPos, BlockPos neighborPos) {
         if (state.getValue(HALF) == DoubleBlockHalf.LOWER && direction == Direction.DOWN
                 && !neighborState.isFaceSturdy(level, neighborPos, Direction.UP)) {
-            if (!EXPLOSION_DESTROYING.remove(currentPos.immutable())) {
-                dropContents(level, currentPos);
-            }
+            destroyFromSupport(level, currentPos);
             return Blocks.AIR.defaultBlockState();
         }
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER && direction == Direction.DOWN
@@ -125,6 +124,28 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
     private static void dropContents(LevelAccessor level, BlockPos lower) {
         if (level instanceof Level serverLevel && serverLevel.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker) {
             locker.dropContentsOnce();
+        }
+    }
+
+    private void destroyFromSupport(LevelAccessor level, BlockPos lower) {
+        BlockPos canonicalLower = lower.immutable();
+        if (!SUPPORT_DESTROYING.add(canonicalLower)) {
+            return;
+        }
+        try {
+            if (level instanceof Level serverLevel && !serverLevel.isClientSide()
+                    && !EXPLOSION_DESTROYING.remove(canonicalLower)) {
+                popResource(serverLevel, canonicalLower, new ItemStack(AflItems.INDUSTRIAL_LOCKER.get()));
+                dropContents(serverLevel, canonicalLower);
+            }
+
+            BlockPos upper = canonicalLower.above();
+            if (level.getBlockState(upper).is(this)
+                    && level.getBlockState(upper).getValue(HALF) == DoubleBlockHalf.UPPER) {
+                level.setBlock(upper, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            }
+        } finally {
+            SUPPORT_DESTROYING.remove(canonicalLower);
         }
     }
 
