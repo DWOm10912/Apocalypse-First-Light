@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
-import com.antaurora.apofirstlight.blockentity.MetalLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -16,9 +15,6 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<IndustrialLockerBlockEntity>> INDUSTRIAL_LOCKER =
             BLOCK_ENTITIES.register("industrial_locker", () ->
                     BlockEntityType.Builder.of(IndustrialLockerBlockEntity::new, AflBlocks.INDUSTRIAL_LOCKER.get()).build(null));
-    public static final RegistryObject<BlockEntityType<MetalLockerBlockEntity>> METAL_LOCKER =
-            BLOCK_ENTITIES.register("metal_locker", () ->
-                    BlockEntityType.Builder.of(MetalLockerBlockEntity::new, AflBlocks.METAL_LOCKER.get()).build(null));
     public static final RegistryObject<BlockEntityType<RetailShelfSingleBlockEntity>> RETAIL_SHELF_SINGLE =
             BLOCK_ENTITIES.register("retail_shelf_single", () ->
                     BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,

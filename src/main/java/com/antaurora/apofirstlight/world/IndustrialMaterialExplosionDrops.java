@@ -4,9 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
-import com.antaurora.apofirstlight.block.MetalLockerBlock;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
-import com.antaurora.apofirstlight.blockentity.MetalLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
@@ -42,7 +40,6 @@ public final class IndustrialMaterialExplosionDrops {
         Set<BlockPos> salvagedLights = new HashSet<>();
         Set<BlockPos> salvagedBoxes = new HashSet<>();
         Set<BlockPos> salvagedLockers = new HashSet<>();
-        Set<BlockPos> salvagedMetalLockers = new HashSet<>();
         Set<BlockPos> salvagedShelves = new HashSet<>();
         for (BlockPos position : event.getAffectedBlocks()) {
             Block block = level.getBlockState(position).getBlock();
@@ -100,13 +97,6 @@ public final class IndustrialMaterialExplosionDrops {
                 dropLockerContents(level, lower);
                 drop(level, lower, AflItems.STEEL_SCRAP.get(), 0, 3);
             }
-            if (level.getBlockState(position).getBlock() == AflBlocks.METAL_LOCKER.get()
-                    && salvagedMetalLockers.add(metalLockerLowerPosition(level, position).immutable())) {
-                BlockPos lower = metalLockerLowerPosition(level, position);
-                MetalLockerBlock.markExplosion(lower);
-                dropMetalLockerContents(level, lower);
-                drop(level, lower, Items.IRON_NUGGET, 2, 6);
-            }
             if (level.getBlockState(position).getBlock() == AflBlocks.RETAIL_SHELF_SINGLE.get()
                     && salvagedShelves.add(shelfLowerPosition(level, position).immutable())) {
                 BlockPos lower = shelfLowerPosition(level, position);
@@ -144,17 +134,6 @@ public final class IndustrialMaterialExplosionDrops {
         }
         for (BlockPos supportPosition : event.getAffectedBlocks()) {
             BlockPos lower = supportPosition.above();
-            if (level.getBlockState(lower).getBlock() == AflBlocks.METAL_LOCKER.get()
-                    && level.getBlockState(lower).getValue(MetalLockerBlock.HALF)
-                    == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
-                    && salvagedMetalLockers.add(lower.immutable())) {
-                MetalLockerBlock.markExplosion(lower);
-                dropMetalLockerContents(level, lower);
-                drop(level, lower, Items.IRON_NUGGET, 2, 6);
-            }
-        }
-        for (BlockPos supportPosition : event.getAffectedBlocks()) {
-            BlockPos lower = supportPosition.above();
             if (level.getBlockState(lower).getBlock() == AflBlocks.RETAIL_SHELF_SINGLE.get()
                     && level.getBlockState(lower).getValue(com.antaurora.apofirstlight.block.RetailShelfSingleBlock.HALF)
                     == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
@@ -169,7 +148,6 @@ public final class IndustrialMaterialExplosionDrops {
         level.getServer().execute(IndustrialUtilityLightBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialElectricalBoxBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialLockerBlock::clearExplosionMarks);
-        level.getServer().execute(MetalLockerBlock::clearExplosionMarks);
         level.getServer().execute(RetailShelfSingleBlock::clearExplosionMarks);
     }
 
@@ -196,20 +174,11 @@ public final class IndustrialMaterialExplosionDrops {
         }
     }
 
-    private static BlockPos metalLockerLowerPosition(Level level, BlockPos position) {
-        return level.getBlockState(position).getValue(MetalLockerBlock.HALF)
-                == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER ? position.below() : position;
-    }
 
     private static BlockPos shelfLowerPosition(Level level, BlockPos position) {
         return level.getBlockState(position).getValue(RetailShelfSingleBlock.HALF)
                 == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER ? position.below() : position;
     }
-
-    private static void dropMetalLockerContents(Level level, BlockPos lower) {
-        if (level.getBlockEntity(lower) instanceof MetalLockerBlockEntity locker) locker.dropContentsOnce();
-    }
-
 
     private static void dropShelfContents(Level level, BlockPos lower) {
         if (level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf) {
