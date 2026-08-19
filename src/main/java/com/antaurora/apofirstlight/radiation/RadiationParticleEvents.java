@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import com.antaurora.apofirstlight.network.AflNetwork;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RadiationParticleEvents {
@@ -17,6 +18,10 @@ public final class RadiationParticleEvents {
         for (ServerLevel level : event.getServer().getAllLevels()) {
             if (level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
                 AmbientRadiationParticleManager.tick(level);
+                for (net.minecraft.server.level.ServerPlayer player : level.players()) {
+                    AflNetwork.sendRadiation(player,
+                            RadiationManager.getFinalRadiation(level, player.blockPosition()));
+                }
             }
         }
     }

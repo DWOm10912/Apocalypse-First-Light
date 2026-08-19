@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflParticles;
+import com.antaurora.apofirstlight.network.AflNetwork;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -22,6 +23,7 @@ public class ApocalypseFirstLight {
     public ApocalypseFirstLight(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
+        AflNetwork.register();
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
