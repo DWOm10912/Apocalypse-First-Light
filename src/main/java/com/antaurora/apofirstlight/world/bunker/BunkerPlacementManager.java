@@ -167,10 +167,14 @@ public final class BunkerPlacementManager {
 
     public static BlockPos localToWorld(StructureTemplate template, BlockPos origin, Rotation rotation,
                                         BlockPos localPosition) {
-        BlockPos zero = template.getZeroPositionWithTransform(origin, net.minecraft.world.level.block.Mirror.NONE, rotation);
-        BlockPos transformed = StructureTemplate.transform(localPosition, net.minecraft.world.level.block.Mirror.NONE,
-                rotation, BlockPos.ZERO);
-        return zero.offset(transformed.getX(), transformed.getY(), transformed.getZ());
+        // origin is the exact first BlockPos passed to StructureTemplate#placeInWorld.
+        // Vanilla calculates each block as origin + calculateRelativePosition(settings, localPos).
+        StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setMirror(net.minecraft.world.level.block.Mirror.NONE)
+                .setRotation(rotation);
+        BlockPos transformed = StructureTemplate.transform(localPosition, settings.getMirror(),
+                settings.getRotation(), settings.getRotationPivot());
+        return origin.offset(transformed.getX(), transformed.getY(), transformed.getZ());
     }
 
     public static Rotation parseRotation(String value) {

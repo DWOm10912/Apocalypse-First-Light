@@ -4,11 +4,14 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.CommandNode;
+import net.minecraft.core.BlockPos;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
+import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
+import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -86,9 +89,16 @@ public final class AflDevCommands {
             context.getSource().sendSuccess(() -> Component.literal("Generated: false"), false);
             return 1;
         }
+        BlockPos preferred = BunkerPlayerSpawnEvents.preferredSpawn(overworld, data);
+        BlockPos safe = BunkerPlayerSpawnEvents.findSafePosition(overworld, preferred);
+        String playerInfo = " | Player Spawn Local: " + BunkerPlacementManager.PLAYER_SPAWN_LOCAL.toShortString()
+                + " | Player Spawn World: " + (preferred == null ? "unavailable" : preferred.toShortString())
+                + " | Player Spawn Safe: " + (preferred != null && BunkerPlayerSpawnEvents.isSafe(overworld, preferred));
+        if (safe != null && !safe.equals(preferred)) playerInfo += " | Resolved Safe Spawn: " + safe.toShortString();
+        final String playerStatus = playerInfo;
         context.getSource().sendSuccess(() -> Component.literal("Generated: true | Origin: "
                 + data.getOrigin().toShortString() + " | Rotation: " + data.getRotation()
-                + " | Reference Surface Y: " + data.getReferenceSurfaceY()), false);
+                + " | Reference Surface Y: " + data.getReferenceSurfaceY() + playerStatus), false);
         return 1;
     }
 }

@@ -44,8 +44,7 @@ public final class BunkerPlayerSpawnEvents {
         }
 
         StructureTemplate template = templateOptional.get();
-        BlockPos preferred = BunkerPlacementManager.localToWorld(template, data.getOrigin(),
-                BunkerPlacementManager.parseRotation(data.getRotation()), BunkerPlacementManager.PLAYER_SPAWN_LOCAL);
+        BlockPos preferred = preferredSpawn(overworld, data);
         BlockPos safe = findSafePosition(overworld, preferred);
         if (safe == null) {
             LOGGER.warn("[AFL Bunker] No safe initial player spawn found near {} for {}", preferred, player.getGameProfile().getName());
@@ -71,7 +70,15 @@ public final class BunkerPlayerSpawnEvents {
         }
     }
 
-    private static BlockPos findSafePosition(ServerLevel level, BlockPos preferred) {
+    public static BlockPos preferredSpawn(ServerLevel level, BunkerSavedData data) {
+        Optional<StructureTemplate> templateOptional = level.getServer().getStructureManager().get(BUNKER_ID);
+        if (templateOptional.isEmpty()) return null;
+        return BunkerPlacementManager.localToWorld(templateOptional.get(), data.getOrigin(),
+                BunkerPlacementManager.parseRotation(data.getRotation()), BunkerPlacementManager.PLAYER_SPAWN_LOCAL);
+    }
+
+    public static BlockPos findSafePosition(ServerLevel level, BlockPos preferred) {
+        if (preferred == null) return null;
         for (int radius = 0; radius <= 2; radius++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 for (int dz = -radius; dz <= radius; dz++) {
@@ -86,7 +93,7 @@ public final class BunkerPlayerSpawnEvents {
         return isSafe(level, preferred) ? preferred : null;
     }
 
-    private static boolean isSafe(ServerLevel level, BlockPos feet) {
+    public static boolean isSafe(ServerLevel level, BlockPos feet) {
         BlockPos head = feet.above();
         BlockPos support = feet.below();
         BlockState feetState = level.getBlockState(feet);
