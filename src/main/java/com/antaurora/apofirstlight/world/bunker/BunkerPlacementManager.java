@@ -26,6 +26,7 @@ public final class BunkerPlacementManager {
     private static final int FALLBACK_MAX_RADIUS = 256;
     private static final int PRIMARY_MAX_SURFACE_DELTA = 4;
     private static final int FALLBACK_MAX_SURFACE_DELTA = 7;
+    private static final double MAX_UNDERGROUND_CAVITY_RATIO = 0.20D;
     private static final int TOP_BURIAL_DEPTH = 2;
     private static final int PLACEMENT_VERSION = 1;
     private static final long BUNKER_SALT = 0x0A1B00B5EEDL;
@@ -50,6 +51,8 @@ public final class BunkerPlacementManager {
         int rejectedWater = 0;
         int rejectedSlope = 0;
         int rejectedHeight = 0;
+        int rejectedUndergroundFluid = 0;
+        int rejectedCavity = 0;
         int placementFailures = 0;
         for (int radius = SEARCH_MIN_RADIUS; radius <= FALLBACK_MAX_RADIUS; radius += 16) {
             for (BlockPos candidate : candidates(spawn, radius)) {
@@ -61,6 +64,8 @@ public final class BunkerPlacementManager {
                     case WATER -> { rejectedWater++; continue; }
                     case SLOPE -> { rejectedSlope++; continue; }
                     case HEIGHT -> { rejectedHeight++; continue; }
+                    case UNDERGROUND_FLUID -> { rejectedUndergroundFluid++; continue; }
+                    case MAJOR_CAVITY -> { rejectedCavity++; continue; }
                     case OK -> { }
                 }
                 Candidate fit = result.candidate;
@@ -69,14 +74,15 @@ public final class BunkerPlacementManager {
                     continue;
                 }
                 data.markGenerated(fit.origin, rotation.name(), fit.surfaceY, PLACEMENT_VERSION);
-                LOGGER.info("[AFL Bunker] Generated bunker at {} {}, rotation={}, surfaceY={}, tier={}, attempts={}, chunks={}",
+                LOGGER.info("[AFL Bunker] Generated bunker at {} {}, rotation={}, surfaceY={}, tier={}, attempts={}, chunks={}, undergroundSamples={}, cavityRatio={}",
                         fit.origin.getX(), fit.origin.getY(), fit.origin.getZ(), rotation, fit.surfaceY,
-                        radius <= SEARCH_MAX_RADIUS ? "PRIMARY" : "FALLBACK", attempts, fit.chunkCount);
+                        radius <= SEARCH_MAX_RADIUS ? "PRIMARY" : "FALLBACK", attempts, fit.chunkCount,
+                        result.undergroundSamples, result.cavityRatio);
                 return;
             }
         }
-        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker after {} attempts; water={}, slope={}, height={}, placementFailures={}",
-                attempts, rejectedWater, rejectedSlope, rejectedHeight, placementFailures);
+        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker after {} attempts; surfaceWater={}, undergroundFluid={}, undergroundCavity={}, slope={}, height={}, placementFailures={}",
+                attempts, rejectedWater, rejectedUndergroundFluid, rejectedCavity, rejectedSlope, rejectedHeight, placementFailures);
     }
 
     private static FitResult findFit(ServerLevel level, StructureTemplate template, BlockPos candidate, Rotation rotation,
@@ -116,11 +122,51 @@ public final class BunkerPlacementManager {
         if (box.minY() < level.getMinBuildHeight() + 3 || box.maxY() >= level.getMaxBuildHeight()) {
             return FitResult.height();
         }
+        FitResult underground = checkUnderground(level, box);
+        if (underground.reason != RejectReason.OK) return underground;
         int minChunkX = box.minX() >> 4, maxChunkX = box.maxX() >> 4;
         int minChunkZ = box.minZ() >> 4, maxChunkZ = box.maxZ() >> 4;
         int chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
         return FitResult.ok(new Candidate(origin, referenceSurface, box, minChunkX, maxChunkX,
-                minChunkZ, maxChunkZ, chunkCount));
+                minChunkZ, maxChunkZ, chunkCount), underground.undergroundSamples, underground.cavityRatio);
+    }
+
+    private static FitResult checkUnderground(ServerLevel level, BoundingBox box) {
+        int undergroundSamples = 0;
+        int undergroundAirSamples = 0;
+        int undergroundFluidSamples = 0;
+        for (int xi = 0; xi < 5; xi++) {
+            int x = sampleCoordinate(box.minX(), box.maxX(), xi, 5);
+            for (int zi = 0; zi < 5; zi++) {
+                int z = sampleCoordinate(box.minZ(), box.maxZ(), zi, 5);
+                int terrainSurfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+                for (int yi = 0; yi < 5; yi++) {
+                    int y = sampleCoordinate(box.minY(), box.maxY(), yi, 5);
+                    if (y >= terrainSurfaceY - 2) continue;
+                    BlockPos sample = new BlockPos(x, y, z);
+                    undergroundSamples++;
+                    if (!level.getFluidState(sample).isEmpty()) undergroundFluidSamples++;
+                    if (level.getBlockState(sample).isAir()) undergroundAirSamples++;
+                }
+            }
+        }
+        if (undergroundFluidSamples > 0) {
+            return FitResult.undergroundFluid(undergroundSamples, ratio(undergroundAirSamples, undergroundSamples));
+        }
+        double cavityRatio = ratio(undergroundAirSamples, undergroundSamples);
+        if (cavityRatio > MAX_UNDERGROUND_CAVITY_RATIO) {
+            return FitResult.majorCavity(undergroundSamples, cavityRatio);
+        }
+        return FitResult.undergroundOk(undergroundSamples, cavityRatio);
+    }
+
+    private static int sampleCoordinate(int min, int max, int index, int count) {
+        if (count <= 1 || min == max) return min;
+        return min + (int) Math.round((max - min) * (index / (double) (count - 1)));
+    }
+
+    private static double ratio(int numerator, int denominator) {
+        return denominator == 0 ? 0.0D : numerator / (double) denominator;
     }
 
     private static boolean isIceOrWaterSurface(ServerLevel level, BlockPos surface) {
@@ -186,13 +232,25 @@ public final class BunkerPlacementManager {
         }
     }
 
-    private enum RejectReason { OK, WATER, SLOPE, HEIGHT }
+    private enum RejectReason { OK, WATER, SLOPE, HEIGHT, UNDERGROUND_FLUID, MAJOR_CAVITY }
 
-    private record FitResult(Candidate candidate, RejectReason reason) {
-        private static FitResult ok(Candidate candidate) { return new FitResult(candidate, RejectReason.OK); }
-        private static FitResult water() { return new FitResult(null, RejectReason.WATER); }
-        private static FitResult slope() { return new FitResult(null, RejectReason.SLOPE); }
-        private static FitResult height() { return new FitResult(null, RejectReason.HEIGHT); }
+    private record FitResult(Candidate candidate, RejectReason reason, int undergroundSamples, double cavityRatio) {
+        private static FitResult ok(Candidate candidate) { return new FitResult(candidate, RejectReason.OK, 0, 0.0D); }
+        private static FitResult ok(Candidate candidate, int samples, double ratio) {
+            return new FitResult(candidate, RejectReason.OK, samples, ratio);
+        }
+        private static FitResult water() { return new FitResult(null, RejectReason.WATER, 0, 0.0D); }
+        private static FitResult slope() { return new FitResult(null, RejectReason.SLOPE, 0, 0.0D); }
+        private static FitResult height() { return new FitResult(null, RejectReason.HEIGHT, 0, 0.0D); }
+        private static FitResult undergroundFluid(int samples, double ratio) {
+            return new FitResult(null, RejectReason.UNDERGROUND_FLUID, samples, ratio);
+        }
+        private static FitResult majorCavity(int samples, double ratio) {
+            return new FitResult(null, RejectReason.MAJOR_CAVITY, samples, ratio);
+        }
+        private static FitResult undergroundOk(int samples, double ratio) {
+            return new FitResult(null, RejectReason.OK, samples, ratio);
+        }
     }
 
     private record Candidate(BlockPos origin, int surfaceY, BoundingBox box, int minChunkX, int maxChunkX,
