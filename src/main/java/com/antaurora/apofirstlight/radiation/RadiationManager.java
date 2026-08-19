@@ -43,11 +43,15 @@ public final class RadiationManager {
     public static RadiationZone getRadiationZone(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).zone(); }
 
     public static boolean isNaturalSafe(ServerLevel level, BlockPos pos) {
+        return isNaturalZone(level, pos, RadiationZone.SAFE);
+    }
+
+    public static boolean isNaturalZone(ServerLevel level, BlockPos pos, RadiationZone target) {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
             return false;
         }
         RadiationSample sample = getRadiationSample(level, pos);
-        return zoneFor(sample.baseField()) == RadiationZone.SAFE
+        return zoneFor(sample.baseField()) == target
                 && !sample.spawnSafeCore()
                 && sample.spawnSuppression() >= 1.0;
     }

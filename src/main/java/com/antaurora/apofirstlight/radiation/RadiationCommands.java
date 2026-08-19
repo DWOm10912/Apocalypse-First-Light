@@ -12,6 +12,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RadiationCommands {
@@ -20,14 +21,29 @@ public final class RadiationCommands {
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        LiteralArgumentBuilder<CommandSourceStack> locate = Commands.literal("locate");
+        locate.then(zoneCommand("natural_safe", null));
+        locate.then(zoneCommand("irradiated", RadiationZone.IRRADIATED));
+        locate.then(zoneCommand("heavy_fallout", RadiationZone.HEAVY_FALLOUT));
+        locate.then(zoneCommand("scorched", RadiationZone.SCORCHED));
         dispatcher.register(Commands.literal("afl").then(Commands.literal("radiation")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("here").executes(context -> execute(context.getSource())))
-                .then(Commands.literal("locate").then(Commands.literal("natural_safe")
-                        .executes(context -> locate(context.getSource(), RadiationSafeAreaFinder.DEFAULT_MAX_RADIUS))
-                        .then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 50_000))
-                                .executes(context -> locate(context.getSource(),
-                                        IntegerArgumentType.getInteger(context, "maxRadius"))))))));
+                .then(locate)));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> zoneCommand(String name, RadiationZone zone) {
+        LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(name);
+        if (zone == null) {
+            command.executes(context -> locate(context.getSource(), RadiationSafeAreaFinder.DEFAULT_MAX_RADIUS));
+            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 50_000))
+                    .executes(context -> locate(context.getSource(), IntegerArgumentType.getInteger(context, "maxRadius"))));
+        } else {
+            command.executes(context -> locateZone(context.getSource(), zone, RadiationSafeAreaFinder.DEFAULT_MAX_RADIUS));
+            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 50_000))
+                    .executes(context -> locateZone(context.getSource(), zone, IntegerArgumentType.getInteger(context, "maxRadius"))));
+        }
+        return command;
     }
 
     private static int execute(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
@@ -66,6 +82,27 @@ public final class RadiationCommands {
                 pos.getX(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, result.distance(),
                 result.baseField(), result.baseZone(), result.safeSamples(), result.totalSamples(),
                 result.validationRadius(), pos.getX(), pos.getZ())), false);
+        return 1;
+    }
+
+    private static int locateZone(CommandSourceStack source, RadiationZone target, int maxRadius) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        ServerLevel level = player.serverLevel();
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
+            source.sendFailure(Component.literal("[AFL Radiation] Zone search is Overworld-only."));
+            return 0;
+        }
+        RadiationZoneAreaResult result = RadiationSafeAreaFinder.findNearestZoneArea(level, player.blockPosition(), target, maxRadius);
+        source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
+        if (result == null) {
+            source.sendFailure(Component.literal(String.format("No %s area found within %,d blocks.", target, maxRadius)));
+            return 0;
+        }
+        BlockPos pos = result.center();
+        source.sendSuccess(() -> Component.literal(String.format(
+                "%s area found | Position: %d, ?, %d | Chunk: %d, %d | Distance: %.0f blocks | Base Field: %.4f | Base Zone: %s | Spawn Suppression: 1.00 | Sample Check: %d/%d %s | Validation Radius: %d blocks | Teleport: /tp @s %d 120 %d",
+                target, pos.getX(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, result.distance(), result.baseField(),
+                result.baseZone(), result.matchingSamples(), result.totalSamples(), target, result.validationRadius(), pos.getX(), pos.getZ())), false);
         return 1;
     }
 }

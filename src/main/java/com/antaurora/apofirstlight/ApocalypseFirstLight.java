@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import com.antaurora.apofirstlight.registry.AflParticles;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -25,6 +26,7 @@ public class ApocalypseFirstLight {
         AflBlocks.BLOCKS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        AflParticles.PARTICLE_TYPES.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
     }
 

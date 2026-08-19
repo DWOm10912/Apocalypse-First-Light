@@ -15,22 +15,29 @@ public final class RadiationSafeAreaFinder {
     }
 
     public static NaturalSafeAreaResult findNearestNaturalSafeArea(ServerLevel level, BlockPos origin, int maxRadius) {
+        RadiationZoneAreaResult result = findNearestZoneArea(level, origin, RadiationZone.SAFE, maxRadius);
+        return result == null ? null : new NaturalSafeAreaResult(result.center(), result.distance(),
+                result.baseField(), result.baseZone(), result.matchingSamples(), result.totalSamples(), result.validationRadius());
+    }
+
+    public static RadiationZoneAreaResult findNearestZoneArea(ServerLevel level, BlockPos origin,
+                                                               RadiationZone target, int maxRadius) {
         int radius = Math.max(SEARCH_STEP, maxRadius);
         for (int ring = 0; ring * SEARCH_STEP <= radius; ring++) {
             int offset = ring * SEARCH_STEP;
             if (ring == 0) {
-                NaturalSafeAreaResult result = testCandidate(level, origin.getX(), origin.getZ(), origin);
+                RadiationZoneAreaResult result = testCandidate(level, origin.getX(), origin.getZ(), origin, target);
                 if (result != null) return result;
                 continue;
             }
             for (int i = -ring; i <= ring; i++) {
-                NaturalSafeAreaResult result = testCandidate(level, origin.getX() + offset, origin.getZ() + i * SEARCH_STEP, origin);
+                RadiationZoneAreaResult result = testCandidate(level, origin.getX() + offset, origin.getZ() + i * SEARCH_STEP, origin, target);
                 if (result != null) return result;
-                result = testCandidate(level, origin.getX() - offset, origin.getZ() + i * SEARCH_STEP, origin);
+                result = testCandidate(level, origin.getX() - offset, origin.getZ() + i * SEARCH_STEP, origin, target);
                 if (result != null) return result;
-                result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() + offset, origin);
+                result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() + offset, origin, target);
                 if (result != null) return result;
-                result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() - offset, origin);
+                result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() - offset, origin, target);
                 if (result != null) return result;
             }
         }
@@ -38,33 +45,38 @@ public final class RadiationSafeAreaFinder {
     }
 
     public static boolean isNaturalSafeArea(ServerLevel level, BlockPos center) {
+        return isZoneArea(level, center, RadiationZone.SAFE);
+    }
+
+    public static boolean isZoneArea(ServerLevel level, BlockPos center, RadiationZone target) {
         int safe = 0;
         for (int x = -2; x <= 2; x++) {
             for (int z = -2; z <= 2; z++) {
-                if (RadiationManager.isNaturalSafe(level,
-                        new BlockPos(center.getX() + x * GRID_STEP, 64, center.getZ() + z * GRID_STEP))) {
+                if (RadiationManager.isNaturalZone(level,
+                        new BlockPos(center.getX() + x * GRID_STEP, 64, center.getZ() + z * GRID_STEP), target)) {
                     safe++;
                 }
             }
         }
-        return RadiationManager.isNaturalSafe(level, center) && safe >= REQUIRED_SAFE_SAMPLES;
+        return RadiationManager.isNaturalZone(level, center, target) && safe >= REQUIRED_SAFE_SAMPLES;
     }
 
-    private static NaturalSafeAreaResult testCandidate(ServerLevel level, int x, int z, BlockPos origin) {
+    private static RadiationZoneAreaResult testCandidate(ServerLevel level, int x, int z, BlockPos origin,
+                                                         RadiationZone target) {
         BlockPos candidate = new BlockPos(x, 64, z);
         RadiationSample sample = RadiationManager.getRadiationSample(level, candidate);
-        if (!RadiationManager.isNaturalSafe(level, candidate)) return null;
+        if (!RadiationManager.isNaturalZone(level, candidate, target)) return null;
 
         int safe = 0;
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 BlockPos point = new BlockPos(x + dx * GRID_STEP, 64, z + dz * GRID_STEP);
-                if (RadiationManager.isNaturalSafe(level, point)) safe++;
+                if (RadiationManager.isNaturalZone(level, point, target)) safe++;
             }
         }
         if (safe < REQUIRED_SAFE_SAMPLES) return null;
         double distance = Math.sqrt(origin.distSqr(candidate));
-        return new NaturalSafeAreaResult(candidate, distance, sample.baseField(),
-                RadiationZone.SAFE, safe, GRID_SIZE * GRID_SIZE, VALIDATION_RADIUS);
+        return new RadiationZoneAreaResult(candidate, distance, sample.baseField(),
+                target, safe, GRID_SIZE * GRID_SIZE, VALIDATION_RADIUS);
     }
 }
