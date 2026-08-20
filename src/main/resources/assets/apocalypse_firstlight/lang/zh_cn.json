@@ -36,7 +36,7 @@
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",
   "hud.apocalypse_firstlight.geiger.residual": "残留辐射",
   "hud.apocalypse_firstlight.geiger.over_range": "超量程",
-  "hud.apocalypse_firstlight.geiger.dose": "累计剂量",
+  "hud.apocalypse_firstlight.geiger.dose": "吸收剂量",
   "hud.apocalypse_firstlight.geiger.zone": "区域",
   "radiation_zone.apocalypse_firstlight.safe": "安全区",
   "radiation_zone.apocalypse_firstlight.irradiated": "轻度辐射区",

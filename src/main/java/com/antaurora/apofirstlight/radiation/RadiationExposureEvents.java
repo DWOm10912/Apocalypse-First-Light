@@ -36,7 +36,11 @@ public final class RadiationExposureEvents {
                 event.getEntity().getCapability(RadiationExposureProvider.CAPABILITY)
                         .ifPresent(copy -> {
                             copy.setDose(original.getDose());
-                            copy.setResidualRadiationRate(original.getResidualRadiationRate());
+                            if (event.isWasDeath()) {
+                                copy.resetResidualRadiation();
+                            } else {
+                                copy.setResidualRadiationRate(original.getResidualRadiationRate());
+                            }
                         }));
         event.getOriginal().invalidateCaps();
     }
