@@ -1,13 +1,24 @@
 package com.antaurora.apofirstlight.radiation;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
+import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+
+import java.util.Optional;
 
 public final class RadiationManager {
     private static final double SAFE_THRESHOLD = 0.08;
     private static final double HEAVY_THRESHOLD = 0.62;
     private static final double SCORCHED_THRESHOLD = 0.84;
-    private static final double FALLOFF_RADIUS = 64.0;
+    private static final double FULL_SAFE_RADIUS = 40.0;
+    private static final double FALLOFF_RADIUS = 96.0;
+    public static final BlockPos BUNKER_RADIATION_SAFE_LOCAL = new BlockPos(16, 1, 9);
+    private static final ResourceLocation BUNKER_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "bunker");
     private static final java.util.Map<ServerLevel, RadiationField> FIELDS =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
@@ -20,18 +31,21 @@ public final class RadiationManager {
         RadiationWorldData data = RadiationWorldData.get(level);
         long chunkX = pos.getX() >> 4;
         long chunkZ = pos.getZ() >> 4;
-        boolean core = chunkX == data.safeChunkX() && chunkZ == data.safeChunkZ();
+        double distance = distanceFromAnchor(pos, data);
+        boolean core = distance <= FULL_SAFE_RADIUS;
         double base = field(level).sample(pos.getX(), pos.getZ());
-        double suppression = core ? 0.0 : smoothstep(Math.min(1.0, distanceFromCore(pos, data) / FALLOFF_RADIUS));
+        double suppression = distance <= FULL_SAFE_RADIUS ? 0.0
+                : smoothstep(Math.min(1.0, (distance - FULL_SAFE_RADIUS) / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
         double effectiveField = base * suppression;
         double ambient = rateFor(effectiveField);
+        double local = getLocalRadiation(level, pos);
         RadiationZone zone = zoneFor(effectiveField);
-        if (core) {
+        if (core && local <= 0.0) {
             ambient = 0.0;
             zone = RadiationZone.SAFE;
         }
-        return new RadiationSample(base, zone, ambient, 0.0, ambient, core, suppression,
-                data.safeChunkX(), data.safeChunkZ());
+        return new RadiationSample(base, zone, ambient, local, ambient + local, core, suppression,
+                data.safeAnchorX(), data.safeAnchorZ(), data.anchorSource());
     }
 
     public static double getAmbientRadiation(ServerLevel level, BlockPos pos) {
@@ -57,18 +71,36 @@ public final class RadiationManager {
     }
 
     public static void setSpawnSafeChunk(ServerLevel level, long chunkX, long chunkZ) {
-        RadiationWorldData.get(level).setSpawnSafeChunk(chunkX, chunkZ);
+        // Kept for compatibility with existing callers; new bunker integration does not use it.
+        RadiationWorldData data = RadiationWorldData.get(level);
+        data.setBunkerAnchor(new BlockPos((int) (chunkX * 16L + 8L), 0, (int) (chunkZ * 16L + 8L)));
+    }
+
+    public static boolean ensureBunkerAnchor(ServerLevel level) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return false;
+        BunkerSavedData bunker = level.getDataStorage().computeIfAbsent(BunkerSavedData::load,
+                BunkerSavedData::new, BunkerSavedData.ID);
+        if (!bunker.isGenerated()) return false;
+        Optional<StructureTemplate> template = level.getServer().getStructureManager().get(BUNKER_ID);
+        if (template.isEmpty()) return false;
+        BlockPos anchor = BunkerPlacementManager.localToWorld(template.get(), bunker.getOrigin(),
+                BunkerPlacementManager.parseRotation(bunker.getRotation()), BUNKER_RADIATION_SAFE_LOCAL);
+        RadiationWorldData.get(level).setBunkerAnchor(anchor);
+        return true;
+    }
+
+    public static BlockPos safeAnchor(ServerLevel level) {
+        RadiationWorldData data = RadiationWorldData.get(level);
+        return new BlockPos(data.safeAnchorX(), 0, data.safeAnchorZ());
     }
 
     private static RadiationField field(ServerLevel level) {
         return FIELDS.computeIfAbsent(level, ignored -> new RadiationField(level.getSeed()));
     }
 
-    private static double distanceFromCore(BlockPos pos, RadiationWorldData data) {
-        double minX = data.safeChunkX() * 16.0;
-        double minZ = data.safeChunkZ() * 16.0;
-        double dx = Math.max(minX - pos.getX(), Math.max(0.0, pos.getX() - (minX + 15.999)));
-        double dz = Math.max(minZ - pos.getZ(), Math.max(0.0, pos.getZ() - (minZ + 15.999)));
+    private static double distanceFromAnchor(BlockPos pos, RadiationWorldData data) {
+        double dx = pos.getX() - data.safeAnchorX();
+        double dz = pos.getZ() - data.safeAnchorZ();
         return Math.sqrt(dx * dx + dz * dz);
     }
 

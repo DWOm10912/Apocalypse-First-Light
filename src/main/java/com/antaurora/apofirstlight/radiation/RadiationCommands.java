@@ -53,10 +53,11 @@ public final class RadiationCommands {
         RadiationSample sample = RadiationManager.getRadiationSample(level, pos);
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         source.sendSuccess(() -> Component.literal(String.format(
-                "Position: %d, %d, %d | Chunk: %d, %d | Zone: %s | Base Field: %.4f | World Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor Chunk: %d, %d",
+                "Position: %d, %d, %d | Chunk: %d, %d | Zone: %s | Base Field: %.4f | World Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
                 pos.getX(), pos.getY(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, sample.zone(),
                 sample.baseField(), sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation(),
-                sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeChunkX(), sample.safeChunkZ())), false);
+                sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeAnchorX(), sample.safeAnchorZ(),
+                sample.safeAnchorSource())), false);
         return 1;
     }
 

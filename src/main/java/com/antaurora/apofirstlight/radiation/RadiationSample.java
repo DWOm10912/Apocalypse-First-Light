@@ -8,11 +8,12 @@ public record RadiationSample(
         double finalRadiation,
         boolean spawnSafeCore,
         double spawnSuppression,
-        long safeChunkX,
-        long safeChunkZ
+        int safeAnchorX,
+        int safeAnchorZ,
+        String safeAnchorSource
 ) {
     public static RadiationSample safe(long safeChunkX, long safeChunkZ) {
         return new RadiationSample(0.0, RadiationZone.SAFE, 0.0, 0.0, 0.0,
-                false, 1.0, safeChunkX, safeChunkZ);
+                false, 1.0, (int) (safeChunkX * 16L + 8L), (int) (safeChunkZ * 16L + 8L), "FALLBACK");
     }
 }

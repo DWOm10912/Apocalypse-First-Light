@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.world.bunker;
 
+import com.antaurora.apofirstlight.radiation.RadiationManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,5 +14,6 @@ public final class BunkerWorldEvents {
     public static void onServerStarted(ServerStartedEvent event) {
         ServerLevel overworld = event.getServer().overworld();
         BunkerPlacementManager.ensureGenerated(overworld);
+        RadiationManager.ensureBunkerAnchor(overworld);
     }
 }
