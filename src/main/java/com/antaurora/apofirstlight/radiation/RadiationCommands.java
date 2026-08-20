@@ -12,6 +12,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -26,9 +27,17 @@ public final class RadiationCommands {
         locate.then(zoneCommand("irradiated", RadiationZone.IRRADIATED));
         locate.then(zoneCommand("heavy_fallout", RadiationZone.HEAVY_FALLOUT));
         locate.then(zoneCommand("scorched", RadiationZone.SCORCHED));
+        LiteralArgumentBuilder<CommandSourceStack> dose = Commands.literal("dose")
+                .executes(context -> doseStatus(context.getSource()))
+                .then(Commands.literal("reset").executes(context -> doseReset(context.getSource())))
+                .then(Commands.literal("add").then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(context -> doseAdd(context.getSource(), DoubleArgumentType.getDouble(context, "amount")))))
+                .then(Commands.literal("set").then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(context -> doseSet(context.getSource(), DoubleArgumentType.getDouble(context, "amount")))));
         dispatcher.register(Commands.literal("afl").then(Commands.literal("radiation")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("here").executes(context -> execute(context.getSource())))
+                .then(dose)
                 .then(locate)));
     }
 
@@ -61,6 +70,52 @@ public final class RadiationCommands {
                 sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeAnchorX(), sample.safeAnchorZ(),
                 sample.safeAnchorSource())), false);
         return 1;
+    }
+
+    private static int doseStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            double rate = RadiationManager.getFinalRadiation(player.serverLevel(), player.blockPosition());
+            source.sendSuccess(() -> Component.literal(String.format("Current Rate: %.2f RU/h | Cumulative Dose: %.4f RU",
+                    rate, exposure.getDose())), false);
+            return 1;
+        }).orElseGet(() -> {
+            source.sendFailure(Component.literal("[AFL Radiation] Exposure data unavailable."));
+            return 0;
+        });
+    }
+
+    private static int doseReset(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            exposure.resetDose();
+            source.sendSuccess(() -> Component.literal("Cumulative Dose reset to 0.0000 RU"), false);
+            return 1;
+        }).orElse(0);
+    }
+
+    private static int doseAdd(CommandSourceStack source, double amount) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            if (!exposure.addDose(amount)) {
+                source.sendFailure(Component.literal("[AFL Radiation] Dose amount must be finite and non-negative."));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal(String.format("Cumulative Dose: %.4f RU", exposure.getDose())), false);
+            return 1;
+        }).orElse(0);
+    }
+
+    private static int doseSet(CommandSourceStack source, double amount) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            if (!exposure.setDose(amount)) {
+                source.sendFailure(Component.literal("[AFL Radiation] Dose amount must be finite and non-negative."));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal(String.format("Cumulative Dose: %.4f RU", exposure.getDose())), false);
+            return 1;
+        }).orElse(0);
     }
 
     private static int locate(CommandSourceStack source, int maxRadius) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
