@@ -16,6 +16,9 @@ import net.minecraftforge.fml.common.Mod;
 public final class RadiationExposureEvents {
     private static final ResourceLocation CAPABILITY_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "radiation_exposure");
     private static final int UPDATE_INTERVAL_TICKS = 20;
+    private static final double RESIDUAL_ACCUMULATION_FACTOR_PER_SECOND = 0.02;
+    private static final double RESIDUAL_DECAY_MULTIPLIER_PER_SECOND = 0.9995;
+    private static final double RESIDUAL_ZERO_THRESHOLD = 0.01;
 
     private RadiationExposureEvents() {}
 
@@ -31,7 +34,10 @@ public final class RadiationExposureEvents {
         event.getOriginal().reviveCaps();
         event.getOriginal().getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(original ->
                 event.getEntity().getCapability(RadiationExposureProvider.CAPABILITY)
-                        .ifPresent(copy -> copy.setDose(original.getDose())));
+                        .ifPresent(copy -> {
+                            copy.setDose(original.getDose());
+                            copy.setResidualRadiationRate(original.getResidualRadiationRate());
+                        }));
         event.getOriginal().invalidateCaps();
     }
 
@@ -39,9 +45,15 @@ public final class RadiationExposureEvents {
     public static void accumulateDose(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
                 || player.tickCount % UPDATE_INTERVAL_TICKS != 0) return;
-        double rate = RadiationManager.getFinalRadiation(player.serverLevel(), player.blockPosition());
-        player.getCapability(RadiationExposureProvider.CAPABILITY)
-                .ifPresent(exposure -> exposure.addDose(rate / 3600.0));
+        RadiationSample sample = RadiationManager.getRadiationSample(player.serverLevel(), player.blockPosition());
+        player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
+            exposure.addDose(sample.finalRadiation() / 3600.0);
+            if (sample.zone() != RadiationZone.SAFE && sample.finalRadiation() > exposure.getResidualRadiationRate()) {
+                exposure.accumulateResidualToward(sample.finalRadiation(), RESIDUAL_ACCUMULATION_FACTOR_PER_SECOND);
+            } else if (sample.zone() == RadiationZone.SAFE) {
+                exposure.decayResidual(RESIDUAL_DECAY_MULTIPLIER_PER_SECOND, RESIDUAL_ZERO_THRESHOLD);
+            }
+        });
     }
 
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)

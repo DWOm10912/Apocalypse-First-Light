@@ -25,7 +25,8 @@ public final class RadiationParticleEvents {
                     if (player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
                             || player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get())) {
                         player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure ->
-                                AflNetwork.sendGeigerData(player, sample.finalRadiation(), exposure.getDose(), sample.zone()));
+                                AflNetwork.sendGeigerData(player, sample.finalRadiation(), exposure.getDose(),
+                                        exposure.getResidualRadiationRate(), sample.zone()));
                     }
                 }
             }

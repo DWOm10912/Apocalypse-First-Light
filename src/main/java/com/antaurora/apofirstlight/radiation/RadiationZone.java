@@ -4,5 +4,5 @@ public enum RadiationZone {
     SAFE,
     IRRADIATED,
     HEAVY_FALLOUT,
-    SCORCHED
+    EXTREME
 }

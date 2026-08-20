@@ -26,7 +26,7 @@ public final class RadiationCommands {
         locate.then(zoneCommand("natural_safe", null));
         locate.then(zoneCommand("irradiated", RadiationZone.IRRADIATED));
         locate.then(zoneCommand("heavy_fallout", RadiationZone.HEAVY_FALLOUT));
-        locate.then(zoneCommand("scorched", RadiationZone.SCORCHED));
+        locate.then(zoneCommand("extreme", RadiationZone.EXTREME));
         LiteralArgumentBuilder<CommandSourceStack> dose = Commands.literal("dose")
                 .executes(context -> doseStatus(context.getSource()))
                 .then(Commands.literal("reset").executes(context -> doseReset(context.getSource())))
@@ -34,10 +34,16 @@ public final class RadiationCommands {
                         .executes(context -> doseAdd(context.getSource(), DoubleArgumentType.getDouble(context, "amount")))))
                 .then(Commands.literal("set").then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
                         .executes(context -> doseSet(context.getSource(), DoubleArgumentType.getDouble(context, "amount")))));
+        LiteralArgumentBuilder<CommandSourceStack> residual = Commands.literal("residual")
+                .executes(context -> residualStatus(context.getSource()))
+                .then(Commands.literal("reset").executes(context -> residualReset(context.getSource())))
+                .then(Commands.literal("set").then(Commands.argument("amount", DoubleArgumentType.doubleArg(0.0))
+                        .executes(context -> residualSet(context.getSource(), DoubleArgumentType.getDouble(context, "amount")))));
         dispatcher.register(Commands.literal("afl").then(Commands.literal("radiation")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("here").executes(context -> execute(context.getSource())))
                 .then(dose)
+                .then(residual)
                 .then(locate)));
     }
 
@@ -114,6 +120,37 @@ public final class RadiationCommands {
                 return 0;
             }
             source.sendSuccess(() -> Component.literal(String.format("Cumulative Dose: %.4f RU", exposure.getDose())), false);
+            return 1;
+        }).orElse(0);
+    }
+
+    private static int residualStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            source.sendSuccess(() -> Component.literal(String.format("Residual Radiation: %.4f RU/h",
+                    exposure.getResidualRadiationRate())), false);
+            return 1;
+        }).orElse(0);
+    }
+
+    private static int residualReset(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            exposure.resetResidualRadiation();
+            source.sendSuccess(() -> Component.literal("Residual Radiation reset to 0.0000 RU/h"), false);
+            return 1;
+        }).orElse(0);
+    }
+
+    private static int residualSet(CommandSourceStack source, double amount) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
+            if (!exposure.setResidualRadiationRate(amount)) {
+                source.sendFailure(Component.literal("[AFL Radiation] Residual Radiation must be finite and non-negative."));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal(String.format("Residual Radiation: %.4f RU/h",
+                    exposure.getResidualRadiationRate())), false);
             return 1;
         }).orElse(0);
     }

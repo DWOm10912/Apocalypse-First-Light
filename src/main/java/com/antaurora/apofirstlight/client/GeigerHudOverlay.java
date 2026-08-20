@@ -47,8 +47,14 @@ public final class GeigerHudOverlay {
         pose.popPose();
 
         ClientGeigerData.Snapshot data = ClientGeigerData.snapshot();
-        String rate = String.format(Locale.ROOT, "%s: %.2f RU/h",
-                Component.translatable("hud.apocalypse_firstlight.geiger.rate").getString(), data.currentRate());
+        boolean residualMode = data.zone() == RadiationZone.SAFE;
+        double measuredRate = residualMode ? data.residualRadiationRate() : data.currentRate();
+        String rateValue = measuredRate >= 12.0
+                ? Component.translatable("hud.apocalypse_firstlight.geiger.over_range").getString()
+                : String.format(Locale.ROOT, "%.2f RU/h", measuredRate);
+        String rateLabel = residualMode ? "hud.apocalypse_firstlight.geiger.residual"
+                : "hud.apocalypse_firstlight.geiger.ambient";
+        String rate = Component.translatable(rateLabel).getString() + ": " + rateValue;
         String dose = String.format(Locale.ROOT, "%s: %.4f RU",
                 Component.translatable("hud.apocalypse_firstlight.geiger.dose").getString(), data.cumulativeDose());
         String zone = Component.translatable("hud.apocalypse_firstlight.geiger.zone").getString() + ": "

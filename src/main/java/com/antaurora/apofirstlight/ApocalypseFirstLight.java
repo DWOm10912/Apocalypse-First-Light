@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflParticles;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -29,6 +30,7 @@ public class ApocalypseFirstLight {
         AflItems.ITEMS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         AflParticles.PARTICLE_TYPES.register(modEventBus);
+        AflSounds.SOUND_EVENTS.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
     }
 

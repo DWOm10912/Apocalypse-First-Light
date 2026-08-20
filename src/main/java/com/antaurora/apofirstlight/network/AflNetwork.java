@@ -13,7 +13,7 @@ import net.minecraftforge.fml.DistExecutor;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "2";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -42,9 +42,9 @@ public final class AflNetwork {
     }
 
     public static void sendGeigerData(ServerPlayer player, double finalRadiation, double cumulativeDose,
-                                      RadiationZone zone) {
+                                      double residualRadiationRate, RadiationZone zone) {
         if (channel == null) throw new IllegalStateException("AFL network channel was not registered during mod initialization");
-        channel.sendTo(new GeigerDataS2CPacket(finalRadiation, cumulativeDose, zone), player.connection.connection,
+        channel.sendTo(new GeigerDataS2CPacket(finalRadiation, cumulativeDose, residualRadiationRate, zone), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -66,22 +66,25 @@ public final class AflNetwork {
         }
     }
 
-    public record GeigerDataS2CPacket(double finalRadiation, double cumulativeDose, RadiationZone zone) {
+    public record GeigerDataS2CPacket(double finalRadiation, double cumulativeDose,
+                                      double residualRadiationRate, RadiationZone zone) {
         public static void encode(GeigerDataS2CPacket packet, FriendlyByteBuf buffer) {
             buffer.writeDouble(packet.finalRadiation);
             buffer.writeDouble(packet.cumulativeDose);
+            buffer.writeDouble(packet.residualRadiationRate);
             buffer.writeEnum(packet.zone);
         }
 
         public static GeigerDataS2CPacket decode(FriendlyByteBuf buffer) {
-            return new GeigerDataS2CPacket(buffer.readDouble(), buffer.readDouble(), buffer.readEnum(RadiationZone.class));
+            return new GeigerDataS2CPacket(buffer.readDouble(), buffer.readDouble(), buffer.readDouble(),
+                    buffer.readEnum(RadiationZone.class));
         }
 
         public static void handle(GeigerDataS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientGeigerData
-                            .update(packet.finalRadiation, packet.cumulativeDose, packet.zone)));
+                            .update(packet.finalRadiation, packet.cumulativeDose, packet.residualRadiationRate, packet.zone)));
             context.setPacketHandled(true);
         }
     }

@@ -14,7 +14,7 @@ import java.util.Optional;
 public final class RadiationManager {
     private static final double SAFE_THRESHOLD = 0.08;
     private static final double HEAVY_THRESHOLD = 0.62;
-    private static final double SCORCHED_THRESHOLD = 0.84;
+    private static final double EXTREME_THRESHOLD = 0.84;
     private static final double FULL_SAFE_RADIUS = 40.0;
     private static final double FALLOFF_RADIUS = 96.0;
     public static final BlockPos BUNKER_RADIATION_SAFE_LOCAL = new BlockPos(16, 1, 9);
@@ -137,15 +137,15 @@ public final class RadiationManager {
     private static RadiationZone zoneFor(double field) {
         if (field < SAFE_THRESHOLD) return RadiationZone.SAFE;
         if (field < HEAVY_THRESHOLD) return RadiationZone.IRRADIATED;
-        if (field < SCORCHED_THRESHOLD) return RadiationZone.HEAVY_FALLOUT;
-        return RadiationZone.SCORCHED;
+        if (field < EXTREME_THRESHOLD) return RadiationZone.HEAVY_FALLOUT;
+        return RadiationZone.EXTREME;
     }
 
     private static double rateFor(double field) {
         if (field < SAFE_THRESHOLD) return 0.0;
         if (field < HEAVY_THRESHOLD) return lerp(0.10, 1.50, (field - SAFE_THRESHOLD) / (HEAVY_THRESHOLD - SAFE_THRESHOLD));
-        if (field < SCORCHED_THRESHOLD) return lerp(1.50, 6.00, (field - HEAVY_THRESHOLD) / (SCORCHED_THRESHOLD - HEAVY_THRESHOLD));
-        return lerp(6.00, 20.00, (field - SCORCHED_THRESHOLD) / (1.00 - SCORCHED_THRESHOLD));
+        if (field < EXTREME_THRESHOLD) return lerp(1.50, 6.00, (field - HEAVY_THRESHOLD) / (EXTREME_THRESHOLD - HEAVY_THRESHOLD));
+        return lerp(6.00, 20.00, (field - EXTREME_THRESHOLD) / (1.00 - EXTREME_THRESHOLD));
     }
 
     private static double smoothstep(double t) { return t * t * (3.0 - 2.0 * t); }
