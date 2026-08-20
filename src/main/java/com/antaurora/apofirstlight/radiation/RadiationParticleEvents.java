@@ -6,6 +6,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import com.antaurora.apofirstlight.network.AflNetwork;
+import com.antaurora.apofirstlight.registry.AflItems;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RadiationParticleEvents {
@@ -19,8 +20,13 @@ public final class RadiationParticleEvents {
             if (level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
                 AmbientRadiationParticleManager.tick(level);
                 for (net.minecraft.server.level.ServerPlayer player : level.players()) {
-                    AflNetwork.sendRadiation(player,
-                            RadiationManager.getFinalRadiation(level, player.blockPosition()));
+                    RadiationSample sample = RadiationManager.getRadiationSample(level, player.blockPosition());
+                    AflNetwork.sendRadiation(player, sample.finalRadiation());
+                    if (player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
+                            || player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get())) {
+                        player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure ->
+                                AflNetwork.sendGeigerData(player, sample.finalRadiation(), exposure.getDose(), sample.zone()));
+                    }
                 }
             }
         }

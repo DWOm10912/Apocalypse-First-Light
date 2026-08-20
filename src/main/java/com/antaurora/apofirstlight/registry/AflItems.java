@@ -72,6 +72,8 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PLASTIC_SHEET = ITEMS.register("plastic_sheet",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
+            () -> new Item(new Item.Properties().stacksTo(1)));
 
     private AflItems() {
     }

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.network;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.radiation.RadiationZone;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
@@ -25,6 +26,8 @@ public final class AflNetwork {
                 () -> PROTOCOL, PROTOCOL::equals, PROTOCOL::equals);
         channel.registerMessage(nextId++, RadiationSyncPacket.class,
                 RadiationSyncPacket::encode, RadiationSyncPacket::decode, RadiationSyncPacket::handle);
+        channel.registerMessage(nextId++, GeigerDataS2CPacket.class,
+                GeigerDataS2CPacket::encode, GeigerDataS2CPacket::decode, GeigerDataS2CPacket::handle);
     }
 
     private AflNetwork() {
@@ -35,6 +38,13 @@ public final class AflNetwork {
             throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         }
         channel.sendTo(new RadiationSyncPacket(finalRadiation), player.connection.connection,
+                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendGeigerData(ServerPlayer player, double finalRadiation, double cumulativeDose,
+                                      RadiationZone zone) {
+        if (channel == null) throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        channel.sendTo(new GeigerDataS2CPacket(finalRadiation, cumulativeDose, zone), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -52,6 +62,26 @@ public final class AflNetwork {
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.radiation.client.RadiationAtmosphereClient
                             .setTargetRadiation(packet.finalRadiation)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record GeigerDataS2CPacket(double finalRadiation, double cumulativeDose, RadiationZone zone) {
+        public static void encode(GeigerDataS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeDouble(packet.finalRadiation);
+            buffer.writeDouble(packet.cumulativeDose);
+            buffer.writeEnum(packet.zone);
+        }
+
+        public static GeigerDataS2CPacket decode(FriendlyByteBuf buffer) {
+            return new GeigerDataS2CPacket(buffer.readDouble(), buffer.readDouble(), buffer.readEnum(RadiationZone.class));
+        }
+
+        public static void handle(GeigerDataS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientGeigerData
+                            .update(packet.finalRadiation, packet.cumulativeDose, packet.zone)));
             context.setPacketHandled(true);
         }
     }
