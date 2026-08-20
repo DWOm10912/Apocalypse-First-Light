@@ -9,6 +9,8 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
@@ -95,10 +97,22 @@ public final class AflDevCommands {
                 + " | Player Spawn World: " + (preferred == null ? "unavailable" : preferred.toShortString())
                 + " | Player Spawn Safe: " + (preferred != null && BunkerPlayerSpawnEvents.isSafe(overworld, preferred));
         if (safe != null && !safe.equals(preferred)) playerInfo += " | Resolved Safe Spawn: " + safe.toShortString();
+        String entranceInfo = "";
+        ResourceLocation bunkerId = new ResourceLocation("apocalypse_firstlight", "bunker");
+        java.util.Optional<StructureTemplate> template = overworld.getServer().getStructureManager().get(bunkerId);
+        if (template.isPresent()) {
+            BlockPos entrance = BunkerPlacementManager.localToWorld(template.get(), data.getOrigin(),
+                    BunkerPlacementManager.parseRotation(data.getRotation()),
+                    BunkerPlacementManager.ENTRANCE_SURFACE_LOCAL);
+            entranceInfo = " | Entrance Local: " + BunkerPlacementManager.ENTRANCE_SURFACE_LOCAL.toShortString()
+                    + " | Entrance World: " + entrance.toShortString()
+                    + " | Entrance Surface Delta: " + (entrance.getY() - data.getReferenceSurfaceY());
+        }
+        final String finalEntranceInfo = entranceInfo;
         final String playerStatus = playerInfo;
         context.getSource().sendSuccess(() -> Component.literal("Generated: true | Origin: "
                 + data.getOrigin().toShortString() + " | Rotation: " + data.getRotation()
-                + " | Reference Surface Y: " + data.getReferenceSurfaceY() + playerStatus), false);
+                + " | Reference Surface Y: " + data.getReferenceSurfaceY() + finalEntranceInfo + playerStatus), false);
         return 1;
     }
 }
