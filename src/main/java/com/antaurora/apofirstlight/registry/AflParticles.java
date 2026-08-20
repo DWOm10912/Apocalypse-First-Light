@@ -13,6 +13,8 @@ public final class AflParticles {
 
     public static final RegistryObject<SimpleParticleType> DEAD_LEAF_DEBRIS =
             PARTICLE_TYPES.register("dead_leaf_debris", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> FALLOUT_DUST =
+            PARTICLE_TYPES.register("fallout_dust", () -> new SimpleParticleType(false));
 
     private AflParticles() {
     }

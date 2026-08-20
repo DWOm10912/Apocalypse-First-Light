@@ -40,7 +40,9 @@ public final class BiomeRadiationResolver {
         int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
         BlockPos surface = new BlockPos(x, Math.max(level.getMinBuildHeight(), surfaceY - 1), z);
         var biome = level.getBiome(surface);
-        BiomeRadiationProfile profile = biome.is(AflBiomes.IRRADIATED_WOODLAND)
+        BiomeRadiationProfile profile = biome.is(AflBiomes.FALLOUT_BARRENS)
+                ? BiomeRadiationProfile.HEAVY_FALLOUT
+                : biome.is(AflBiomes.IRRADIATED_WOODLAND)
                 ? BiomeRadiationProfile.IRRADIATED
                 : biome.is(net.minecraft.world.level.biome.Biomes.PLAINS)
                 ? BiomeRadiationProfile.SAFE

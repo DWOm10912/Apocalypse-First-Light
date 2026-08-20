@@ -40,6 +40,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties()));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",
             () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",
+            () -> new BlockItem(AflBlocks.FALLOUT_SOIL.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_LOG = ITEMS.register("poplar_log",
             () -> new BlockItem(AflBlocks.POPLAR_LOG.get(), new Item.Properties()));
     public static final RegistryObject<Item> STRIPPED_POPLAR_LOG = ITEMS.register("stripped_poplar_log",

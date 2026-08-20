@@ -89,6 +89,8 @@ public final class AflBlocks {
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
                     .noOcclusion()));
+    public static final RegistryObject<Block> FALLOUT_SOIL = BLOCKS.register("fallout_soil",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.COARSE_DIRT)));
     public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",

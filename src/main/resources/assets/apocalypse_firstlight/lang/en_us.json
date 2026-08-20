@@ -1,6 +1,7 @@
 {
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
   "biome.apocalypse_firstlight.irradiated_woodland": "Irradiated Woodland",
+  "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",
@@ -16,6 +17,7 @@
   "block.apocalypse_firstlight.industrial_electrical_box": "Industrial Electrical Box",
   "block.apocalypse_firstlight.industrial_locker": "Industrial Locker",
   "block.apocalypse_firstlight.retail_shelf_single": "Retail Shelf",
+  "block.apocalypse_firstlight.fallout_soil": "Fallout Soil",
   "block.apocalypse_firstlight.poplar_log": "Poplar Log",
   "block.apocalypse_firstlight.stripped_poplar_log": "Stripped Poplar Log",
   "block.apocalypse_firstlight.poplar_planks": "Poplar Planks",

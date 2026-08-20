@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.world.feature.DegradedGroundPatchFeature;
 import com.antaurora.apofirstlight.world.feature.IrradiatedTreeFeature;
 import net.minecraft.world.level.block.Blocks;
@@ -26,6 +27,8 @@ public final class AflFeatures {
             () -> new DegradedGroundPatchFeature(Blocks.PODZOL.defaultBlockState(), 1));
     public static final RegistryObject<Feature<?>> DIRT_PATCH = FEATURES.register("dirt_patch",
             () -> new DegradedGroundPatchFeature(Blocks.DIRT.defaultBlockState(), 1));
+    public static final RegistryObject<Feature<?>> FALLOUT_SOIL_PATCH = FEATURES.register("fallout_soil_patch",
+            () -> new DegradedGroundPatchFeature(AflBlocks.FALLOUT_SOIL.get().defaultBlockState(), 3));
 
     private AflFeatures() {
     }

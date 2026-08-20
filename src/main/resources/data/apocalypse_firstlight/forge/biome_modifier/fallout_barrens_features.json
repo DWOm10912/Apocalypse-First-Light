@@ -1,0 +1,12 @@
+{
+  "type": "forge:add_features",
+  "biomes": "apocalypse_firstlight:fallout_barrens",
+  "features": [
+    "apocalypse_firstlight:fallout_soil_patch",
+    "apocalypse_firstlight:coarse_dirt_patch",
+    "apocalypse_firstlight:dirt_patch",
+    "minecraft:patch_dead_bush",
+    "apocalypse_firstlight:sparse_grass"
+  ],
+  "step": "vegetal_decoration"
+}

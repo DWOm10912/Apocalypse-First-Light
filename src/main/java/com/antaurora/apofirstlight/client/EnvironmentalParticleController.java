@@ -16,7 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 /** Low-frequency, biome-driven client ambience with short gusts and a small particle cap. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class EnvironmentalParticleController {
-    private static final int MAX_ACTIVE_PARTICLES = 48;
+    private static final int MAX_ACTIVE_PARTICLES = 64;
     private static final int MIN_SAMPLE_RADIUS = 12;
     private static final int MAX_SAMPLE_RADIUS = 96;
     private static final int NORMAL_PARTICLE_RADIUS = 32;
@@ -92,7 +92,8 @@ public final class EnvironmentalParticleController {
             return false;
         }
         BlockPos surface = new BlockPos(x, level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) - 1, z);
-        if (EnvironmentalParticleProfile.at(level, surface) != EnvironmentalParticleProfile.DEAD_LEAF_DEBRIS) {
+        EnvironmentalParticleProfile profile = EnvironmentalParticleProfile.at(level, surface);
+        if (profile == EnvironmentalParticleProfile.NONE) {
             diagnosticBiomeReject++;
             return false;
         }
@@ -126,19 +127,27 @@ public final class EnvironmentalParticleController {
             return false;
         }
 
-        double speed = 0.008D + random.nextDouble() * 0.017D;
+        double speed = profile == EnvironmentalParticleProfile.FALLOUT_DUST
+                ? 0.003D + random.nextDouble() * 0.010D
+                : 0.008D + random.nextDouble() * 0.017D;
         double driftAngle = angle + Math.PI + (random.nextDouble() - 0.5D) * 0.8D;
         double particleX = candidate.getX() + 0.5D;
         double particleY = candidate.getY() + 0.5D;
         double particleZ = candidate.getZ() + 0.5D;
         double velocityX = Math.cos(driftAngle) * speed;
-        double velocityY = -(0.004D + random.nextDouble() * 0.008D);
+        double velocityY = profile == EnvironmentalParticleProfile.FALLOUT_DUST
+                ? -(0.0015D + random.nextDouble() * 0.0035D)
+                : -(0.004D + random.nextDouble() * 0.008D);
         double velocityZ = Math.sin(driftAngle) * speed;
         if (distance > NORMAL_PARTICLE_RADIUS) {
-            level.addAlwaysVisibleParticle(AflParticles.DEAD_LEAF_DEBRIS.get(), false,
+            var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
+                    ? AflParticles.FALLOUT_DUST.get() : AflParticles.DEAD_LEAF_DEBRIS.get();
+            level.addAlwaysVisibleParticle(particle, false,
                     particleX, particleY, particleZ, velocityX, velocityY, velocityZ);
         } else {
-            level.addParticle(AflParticles.DEAD_LEAF_DEBRIS.get(),
+            var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
+                    ? AflParticles.FALLOUT_DUST.get() : AflParticles.DEAD_LEAF_DEBRIS.get();
+            level.addParticle(particle,
                     particleX, particleY, particleZ, velocityX, velocityY, velocityZ);
         }
         diagnosticSpawnSuccess++;
