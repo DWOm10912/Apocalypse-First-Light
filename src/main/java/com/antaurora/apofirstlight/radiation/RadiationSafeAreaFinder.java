@@ -5,11 +5,13 @@ import net.minecraft.server.level.ServerLevel;
 
 public final class RadiationSafeAreaFinder {
     public static final int DEFAULT_MAX_RADIUS = 20_000;
-    public static final int SEARCH_STEP = 128;
+    public static final int SEARCH_STEP = 256;
+    public static final int MAX_CANDIDATE_SAMPLES = 25_000;
     public static final int VALIDATION_RADIUS = 64;
     public static final int GRID_STEP = 32;
     public static final int GRID_SIZE = 5;
     public static final int REQUIRED_SAFE_SAMPLES = 21;
+    private static volatile SearchStats lastSearchStats = new SearchStats(0, 0, DEFAULT_MAX_RADIUS, SEARCH_STEP);
 
     private RadiationSafeAreaFinder() {
     }
@@ -22,26 +24,37 @@ public final class RadiationSafeAreaFinder {
 
     public static RadiationZoneAreaResult findNearestZoneArea(ServerLevel level, BlockPos origin,
                                                                RadiationZone target, int maxRadius) {
-        int radius = Math.max(SEARCH_STEP, maxRadius);
+        long start = System.nanoTime();
+        int radius = Math.min(DEFAULT_MAX_RADIUS, Math.max(SEARCH_STEP, maxRadius));
+        int samples = 0;
         for (int ring = 0; ring * SEARCH_STEP <= radius; ring++) {
             int offset = ring * SEARCH_STEP;
             if (ring == 0) {
+                if (++samples > MAX_CANDIDATE_SAMPLES) break;
                 RadiationZoneAreaResult result = testCandidate(level, origin.getX(), origin.getZ(), origin, target);
-                if (result != null) return result;
+                if (result != null) return finish(result, samples, start, radius);
                 continue;
             }
             for (int i = -ring; i <= ring; i++) {
+                if (samples >= MAX_CANDIDATE_SAMPLES) return finish(null, samples, start, radius);
+                samples++;
                 RadiationZoneAreaResult result = testCandidate(level, origin.getX() + offset, origin.getZ() + i * SEARCH_STEP, origin, target);
-                if (result != null) return result;
+                if (result != null) return finish(result, samples, start, radius);
+                if (samples >= MAX_CANDIDATE_SAMPLES) return finish(null, samples, start, radius);
+                samples++;
                 result = testCandidate(level, origin.getX() - offset, origin.getZ() + i * SEARCH_STEP, origin, target);
-                if (result != null) return result;
+                if (result != null) return finish(result, samples, start, radius);
+                if (samples >= MAX_CANDIDATE_SAMPLES) return finish(null, samples, start, radius);
+                samples++;
                 result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() + offset, origin, target);
-                if (result != null) return result;
+                if (result != null) return finish(result, samples, start, radius);
+                if (samples >= MAX_CANDIDATE_SAMPLES) return finish(null, samples, start, radius);
+                samples++;
                 result = testCandidate(level, origin.getX() + i * SEARCH_STEP, origin.getZ() - offset, origin, target);
-                if (result != null) return result;
+                if (result != null) return finish(result, samples, start, radius);
             }
         }
-        return null;
+        return finish(null, samples, start, radius);
     }
 
     public static boolean isNaturalSafeArea(ServerLevel level, BlockPos center) {
@@ -64,7 +77,6 @@ public final class RadiationSafeAreaFinder {
     private static RadiationZoneAreaResult testCandidate(ServerLevel level, int x, int z, BlockPos origin,
                                                          RadiationZone target) {
         BlockPos candidate = new BlockPos(x, 64, z);
-        RadiationSample sample = RadiationManager.getRadiationSample(level, candidate);
         if (!RadiationManager.isNaturalZone(level, candidate, target)) return null;
 
         int safe = 0;
@@ -76,7 +88,16 @@ public final class RadiationSafeAreaFinder {
         }
         if (safe < REQUIRED_SAFE_SAMPLES) return null;
         double distance = Math.sqrt(origin.distSqr(candidate));
-        return new RadiationZoneAreaResult(candidate, distance, sample.baseField(),
+        return new RadiationZoneAreaResult(candidate, distance, RadiationManager.getNaturalBaseField(level, x, z),
                 target, safe, GRID_SIZE * GRID_SIZE, VALIDATION_RADIUS);
     }
+
+    public static SearchStats lastSearchStats() { return lastSearchStats; }
+
+    private static RadiationZoneAreaResult finish(RadiationZoneAreaResult result, int samples, long start, int radius) {
+        lastSearchStats = new SearchStats(samples, (System.nanoTime() - start) / 1_000_000L, radius, SEARCH_STEP);
+        return result;
+    }
+
+    public record SearchStats(int samples, long elapsedMs, int maxRadius, int searchStep) {}
 }

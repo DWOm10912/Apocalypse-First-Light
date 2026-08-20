@@ -21,6 +21,8 @@ public final class RadiationManager {
     private static final ResourceLocation BUNKER_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "bunker");
     private static final java.util.Map<ServerLevel, RadiationField> FIELDS =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+    private static final java.util.Map<ServerLevel, java.util.Map<BlockPos, CachedShielding>> SHIELDING_CACHE =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
     private RadiationManager() {}
 
@@ -38,18 +40,27 @@ public final class RadiationManager {
                 : smoothstep(Math.min(1.0, (distance - FULL_SAFE_RADIUS) / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
         double effectiveField = base * suppression;
         double ambient = rateFor(effectiveField);
+        RadiationShielding.Sample shielding = shielding(level, pos);
+        double shieldedAmbient = ambient * shielding.transmission();
         double local = getLocalRadiation(level, pos);
         RadiationZone zone = zoneFor(effectiveField);
         if (core && local <= 0.0) {
-            ambient = 0.0;
+            shieldedAmbient = 0.0;
             zone = RadiationZone.SAFE;
         }
-        return new RadiationSample(base, zone, ambient, local, ambient + local, core, suppression,
+        return new RadiationSample(base, zone, shieldedAmbient, local, shieldedAmbient + local,
+                shielding.transmission(), shielding.shieldingRaysHit(), shielding.shieldingBlocksCounted(), core, suppression,
                 data.safeAnchorX(), data.safeAnchorZ(), data.anchorSource());
     }
 
     public static double getAmbientRadiation(ServerLevel level, BlockPos pos) {
         return getRadiationSample(level, pos).worldAmbientRadiation();
+    }
+
+    /** Pure field query for chunk-independent radiation searches. */
+    public static double getNaturalBaseField(ServerLevel level, int x, int z) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0;
+        return field(level).sample(x, z);
     }
 
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
@@ -64,10 +75,11 @@ public final class RadiationManager {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
             return false;
         }
-        RadiationSample sample = getRadiationSample(level, pos);
-        return zoneFor(sample.baseField()) == target
-                && !sample.spawnSafeCore()
-                && sample.spawnSuppression() >= 1.0;
+        RadiationWorldData data = RadiationWorldData.get(level);
+        double dx = pos.getX() - data.safeAnchorX();
+        double dz = pos.getZ() - data.safeAnchorZ();
+        double distance = Math.sqrt(dx * dx + dz * dz);
+        return distance >= FALLOFF_RADIUS && zoneFor(getNaturalBaseField(level, pos.getX(), pos.getZ())) == target;
     }
 
     public static void setSpawnSafeChunk(ServerLevel level, long chunkX, long chunkZ) {
@@ -97,6 +109,19 @@ public final class RadiationManager {
     private static RadiationField field(ServerLevel level) {
         return FIELDS.computeIfAbsent(level, ignored -> new RadiationField(level.getSeed()));
     }
+
+    private static RadiationShielding.Sample shielding(ServerLevel level, BlockPos pos) {
+        long tick = level.getGameTime();
+        java.util.Map<BlockPos, CachedShielding> cache = SHIELDING_CACHE.computeIfAbsent(level,
+                ignored -> new java.util.HashMap<>());
+        CachedShielding cached = cache.get(pos);
+        if (cached != null && tick - cached.tick < 10) return cached.sample;
+        RadiationShielding.Sample sample = RadiationShielding.sample(level, pos);
+        cache.put(pos.immutable(), new CachedShielding(tick, sample));
+        return sample;
+    }
+
+    private record CachedShielding(long tick, RadiationShielding.Sample sample) {}
 
     private static double distanceFromAnchor(BlockPos pos, RadiationWorldData data) {
         double dx = pos.getX() - data.safeAnchorX();

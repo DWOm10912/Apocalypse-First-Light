@@ -36,11 +36,11 @@ public final class RadiationCommands {
         LiteralArgumentBuilder<CommandSourceStack> command = Commands.literal(name);
         if (zone == null) {
             command.executes(context -> locate(context.getSource(), RadiationSafeAreaFinder.DEFAULT_MAX_RADIUS));
-            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 50_000))
+            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 20_000))
                     .executes(context -> locate(context.getSource(), IntegerArgumentType.getInteger(context, "maxRadius"))));
         } else {
             command.executes(context -> locateZone(context.getSource(), zone, RadiationSafeAreaFinder.DEFAULT_MAX_RADIUS));
-            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 50_000))
+            command.then(Commands.argument("maxRadius", IntegerArgumentType.integer(512, 20_000))
                     .executes(context -> locateZone(context.getSource(), zone, IntegerArgumentType.getInteger(context, "maxRadius"))));
         }
         return command;
@@ -53,9 +53,11 @@ public final class RadiationCommands {
         RadiationSample sample = RadiationManager.getRadiationSample(level, pos);
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         source.sendSuccess(() -> Component.literal(String.format(
-                "Position: %d, %d, %d | Chunk: %d, %d | Zone: %s | Base Field: %.4f | World Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
+                "Position: %d, %d, %d | Chunk: %d, %d | Zone: %s | Base Field: %.4f | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
                 pos.getX(), pos.getY(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, sample.zone(),
-                sample.baseField(), sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation(),
+                sample.baseField(), sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),
+                sample.shelterTransmission(), (1.0 - sample.shelterTransmission()) * 100.0,
+                sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation(),
                 sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeAnchorX(), sample.safeAnchorZ(),
                 sample.safeAnchorSource())), false);
         return 1;
@@ -73,8 +75,9 @@ public final class RadiationCommands {
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         if (result == null) {
             source.sendFailure(Component.literal(String.format(
-                    "No natural SAFE area found within %,d blocks. Search step: %d blocks.",
-                    maxRadius, RadiationSafeAreaFinder.SEARCH_STEP)));
+                    "No natural SAFE area found within %,d blocks. Samples: %,d | Time: %d ms | Search step: %d blocks.",
+                    maxRadius, RadiationSafeAreaFinder.lastSearchStats().samples(),
+                    RadiationSafeAreaFinder.lastSearchStats().elapsedMs(), RadiationSafeAreaFinder.SEARCH_STEP)));
             return 0;
         }
         BlockPos pos = result.center();
@@ -82,7 +85,10 @@ public final class RadiationCommands {
                 "Natural SAFE area found | Position: %d, ?, %d | Chunk: %d, %d | Distance: %.0f blocks | Base Field: %.4f | Base Zone: %s | Spawn Suppression: 1.00 | Sample Check: %d/%d SAFE | Validation Radius: %d blocks | Natural Safe: true | Teleport: /tp @s %d 120 %d",
                 pos.getX(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, result.distance(),
                 result.baseField(), result.baseZone(), result.safeSamples(), result.totalSamples(),
-                result.validationRadius(), pos.getX(), pos.getZ())), false);
+                result.validationRadius(), pos.getX(), pos.getZ())
+                + String.format(" | Search Samples: %,d | Search Time: %d ms | Search Step: %d",
+                RadiationSafeAreaFinder.lastSearchStats().samples(), RadiationSafeAreaFinder.lastSearchStats().elapsedMs(),
+                RadiationSafeAreaFinder.SEARCH_STEP)), false);
         return 1;
     }
 
@@ -96,14 +102,19 @@ public final class RadiationCommands {
         RadiationZoneAreaResult result = RadiationSafeAreaFinder.findNearestZoneArea(level, player.blockPosition(), target, maxRadius);
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         if (result == null) {
-            source.sendFailure(Component.literal(String.format("No %s area found within %,d blocks.", target, maxRadius)));
+            source.sendFailure(Component.literal(String.format("No %s area found within %,d blocks. Samples: %,d | Time: %d ms | Search step: %d",
+                    target, maxRadius, RadiationSafeAreaFinder.lastSearchStats().samples(),
+                    RadiationSafeAreaFinder.lastSearchStats().elapsedMs(), RadiationSafeAreaFinder.SEARCH_STEP)));
             return 0;
         }
         BlockPos pos = result.center();
         source.sendSuccess(() -> Component.literal(String.format(
                 "%s area found | Position: %d, ?, %d | Chunk: %d, %d | Distance: %.0f blocks | Base Field: %.4f | Base Zone: %s | Spawn Suppression: 1.00 | Sample Check: %d/%d %s | Validation Radius: %d blocks | Teleport: /tp @s %d 120 %d",
                 target, pos.getX(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, result.distance(), result.baseField(),
-                result.baseZone(), result.matchingSamples(), result.totalSamples(), target, result.validationRadius(), pos.getX(), pos.getZ())), false);
+                result.baseZone(), result.matchingSamples(), result.totalSamples(), target, result.validationRadius(), pos.getX(), pos.getZ())
+                + String.format(" | Search Samples: %,d | Search Time: %d ms | Search Step: %d",
+                RadiationSafeAreaFinder.lastSearchStats().samples(), RadiationSafeAreaFinder.lastSearchStats().elapsedMs(),
+                RadiationSafeAreaFinder.SEARCH_STEP)), false);
         return 1;
     }
 }
