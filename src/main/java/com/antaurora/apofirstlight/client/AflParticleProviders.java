@@ -14,6 +14,6 @@ public final class AflParticleProviders {
 
     @SubscribeEvent
     public static void register(RegisterParticleProvidersEvent event) {
-        event.registerSpriteSet(AflParticles.CONTAMINATION_MOTE.get(), ContaminationMoteParticle.Provider::new);
+        event.registerSpriteSet(AflParticles.DEAD_LEAF_DEBRIS.get(), DeadLeafDebrisParticle.Provider::new);
     }
 }

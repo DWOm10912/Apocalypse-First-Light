@@ -5,12 +5,12 @@
   "offsetY": 0,
   "hudScale": 0.85,
   "symbol": {
-    "x": 18,
+    "x": 14,
     "y": 18,
     "scale": 0.7
   },
   "text": {
-    "x": 40,
+    "x": 30,
     "y": 13,
     "fontScale": 0.7,
     "lineSpacing": 8

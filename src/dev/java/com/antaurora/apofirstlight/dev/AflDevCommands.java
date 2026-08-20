@@ -19,6 +19,9 @@ import com.antaurora.apofirstlight.world.WildlifeSpawnPolicy;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
+import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -57,6 +60,12 @@ public final class AflDevCommands {
                 .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
         dev.then(Commands.literal("wildlife_spawn")
                 .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
+        dev.then(Commands.literal("particle")
+                .then(Commands.literal("dead_leaf_debris")
+                        .executes(AflDevCommands::forcedDeadLeafDebris)));
+        dev.then(Commands.literal("env_particles")
+                .then(Commands.literal("status").executes(AflDevCommands::environmentalParticleStatus))
+                .then(Commands.literal("reset").executes(AflDevCommands::resetEnvironmentalParticleStatus)));
 
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
@@ -174,6 +183,31 @@ public final class AflDevCommands {
                 + " | Natural Zone: " + zone + " | Natural SAFE: " + (zone == com.antaurora.apofirstlight.radiation.RadiationZone.SAFE)
                 + " | Policy Enabled: true | Vanilla Natural Passive Spawn Allowed Here: " + allowed
                 + " | Target Categories: " + WildlifeSpawnPolicy.targetCategories()), false);
+        return 1;
+    }
+
+    private static int forcedDeadLeafDebris(CommandContext<CommandSourceStack> context) {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+                EnvironmentalParticleController.debugSpawnForced());
+        context.getSource().sendSuccess(() -> Component.literal("Forced dead_leaf_debris particle test queued."), false);
+        return 1;
+    }
+
+    private static int environmentalParticleStatus(CommandContext<CommandSourceStack> context) {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            String status = EnvironmentalParticleController.debugStatus();
+            net.minecraft.client.Minecraft.getInstance().player.sendSystemMessage(
+                    Component.literal("[AFL ENV PARTICLES] " + status));
+        });
+        return 1;
+    }
+
+    private static int resetEnvironmentalParticleStatus(CommandContext<CommandSourceStack> context) {
+        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+            EnvironmentalParticleController.resetDiagnostics();
+            net.minecraft.client.Minecraft.getInstance().player.sendSystemMessage(
+                    Component.literal("[AFL ENV PARTICLES] diagnostics reset."));
+        });
         return 1;
     }
 }

@@ -11,8 +11,8 @@ public final class AflParticles {
     public static final DeferredRegister<ParticleType<?>> PARTICLE_TYPES =
             DeferredRegister.create(ForgeRegistries.PARTICLE_TYPES, ApocalypseFirstLight.MOD_ID);
 
-    public static final RegistryObject<SimpleParticleType> CONTAMINATION_MOTE =
-            PARTICLE_TYPES.register("contamination_mote", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> DEAD_LEAF_DEBRIS =
+            PARTICLE_TYPES.register("dead_leaf_debris", () -> new SimpleParticleType(false));
 
     private AflParticles() {
     }
