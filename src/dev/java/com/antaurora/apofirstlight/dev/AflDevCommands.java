@@ -132,7 +132,8 @@ public final class AflDevCommands {
         final String playerStatus = playerInfo;
         context.getSource().sendSuccess(() -> Component.literal("Generated: true | Origin: "
                 + data.getOrigin().toShortString() + " | Rotation: " + data.getRotation()
-                + " | Reference Surface Y: " + data.getReferenceSurfaceY() + finalEntranceInfo + playerStatus), false);
+                + " | Reference Surface Y: " + data.getReferenceSurfaceY()
+                + finalEntranceInfo + playerStatus), false);
         return 1;
     }
 

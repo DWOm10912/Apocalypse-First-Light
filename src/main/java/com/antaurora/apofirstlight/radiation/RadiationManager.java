@@ -35,7 +35,9 @@ public final class RadiationManager {
         long chunkZ = pos.getZ() >> 4;
         double distance = distanceFromAnchor(pos, data);
         boolean core = distance <= FULL_SAFE_RADIUS;
-        double base = field(level).sample(pos.getX(), pos.getZ());
+        double rawWorldField = field(level).sample(pos.getX(), pos.getZ());
+        BiomeRadiationResolver.Resolution biomeResolution = BiomeRadiationResolver.resolve(level, pos.getX(), pos.getZ());
+        double base = biomeResolution.profile().constrain(rawWorldField);
         double suppression = distance <= FULL_SAFE_RADIUS ? 0.0
                 : smoothstep(Math.min(1.0, (distance - FULL_SAFE_RADIUS) / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
         double effectiveField = base * suppression;
@@ -48,7 +50,7 @@ public final class RadiationManager {
             shieldedAmbient = 0.0;
             zone = RadiationZone.SAFE;
         }
-        return new RadiationSample(base, zone, shieldedAmbient, local, shieldedAmbient + local,
+        return new RadiationSample(rawWorldField, base, zone, shieldedAmbient, local, shieldedAmbient + local,
                 shielding.transmission(), shielding.shieldingRaysHit(), shielding.shieldingBlocksCounted(), core, suppression,
                 data.safeAnchorX(), data.safeAnchorZ(), data.anchorSource());
     }
@@ -59,6 +61,11 @@ public final class RadiationManager {
 
     /** Pure field query for chunk-independent radiation searches. */
     public static double getNaturalBaseField(ServerLevel level, int x, int z) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0;
+        return field(level).sample(x, z);
+    }
+
+    public static double getNaturalRawField(ServerLevel level, int x, int z) {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0;
         return field(level).sample(x, z);
     }

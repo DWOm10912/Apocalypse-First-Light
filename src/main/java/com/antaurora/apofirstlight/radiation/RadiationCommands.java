@@ -66,11 +66,13 @@ public final class RadiationCommands {
         ServerLevel level = player.serverLevel();
         BlockPos pos = player.blockPosition();
         RadiationSample sample = RadiationManager.getRadiationSample(level, pos);
+        BiomeRadiationResolver.Resolution biome = BiomeRadiationResolver.resolve(level, pos.getX(), pos.getZ());
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         source.sendSuccess(() -> Component.literal(String.format(
-                "Position: %d, %d, %d | Chunk: %d, %d | Zone: %s | Base Field: %.4f | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
-                pos.getX(), pos.getY(), pos.getZ(), pos.getX() >> 4, pos.getZ() >> 4, sample.zone(),
-                sample.baseField(), sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),
+                "Position: %d, %d, %d | Surface Y: %d | Surface Biome: %s | Biome Profile: %s | Raw World Radiation: %.4f | Biome Base Radiation: %.4f | Zone: %s | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
+                pos.getX(), pos.getY(), pos.getZ(), biome.surfaceY(), biome.biomeId(), biome.profile(),
+                sample.rawWorldField(), sample.baseField(), sample.zone(),
+                sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),
                 sample.shelterTransmission(), (1.0 - sample.shelterTransmission()) * 100.0,
                 sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation(),
                 sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeAnchorX(), sample.safeAnchorZ(),

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.world.bunker;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.world.biome.StartupBiomeEligibility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -59,6 +60,7 @@ public final class BunkerPlacementManager {
         int rejectedUndergroundFluid = 0;
         int rejectedCavity = 0;
         int rejectedEntranceSupport = 0;
+        int rejectedStartupBiome = 0;
         int placementFailures = 0;
         int emergencyAttempts = 0;
         HeightRejectDiagnostics heightDiagnostics = new HeightRejectDiagnostics();
@@ -76,6 +78,7 @@ public final class BunkerPlacementManager {
                     case UNDERGROUND_FLUID -> { rejectedUndergroundFluid++; continue; }
                     case MAJOR_CAVITY -> { rejectedCavity++; continue; }
                     case ENTRANCE_SUPPORT -> { rejectedEntranceSupport++; continue; }
+                    case STARTUP_BIOME_INELIGIBLE -> { rejectedStartupBiome++; continue; }
                     case OK -> { }
                 }
                 Candidate fit = result.candidate;
@@ -87,9 +90,9 @@ public final class BunkerPlacementManager {
                 BunkerSurfaceIntegration.IntegrationStats integration = BunkerSurfaceIntegration.apply(
                         overworld, template, fit.origin, rotation, overworld.getSeed());
                 data.markGenerated(fit.origin, rotation.name(), fit.surfaceY, PLACEMENT_VERSION);
-                LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, tier={}, attempts={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
+                LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, startupBiome={}, startupEligible=true, rejectedStartupBiome={}, tier={}, attempts={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
                         fit.origin.getX(), fit.origin.getY(), fit.origin.getZ(), rotation, fit.surfaceY,
-                        radius <= SEARCH_MAX_RADIUS ? "PRIMARY" : "FALLBACK", attempts, fit.chunkCount,
+                        fit.surfaceBiome, rejectedStartupBiome, radius <= SEARCH_MAX_RADIUS ? "PRIMARY" : "FALLBACK", attempts, fit.chunkCount,
                         result.undergroundSamples, result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
                         integration.logsCleared(), integration.leavesCleared(),
                         integration.otherVegetationCleared(), integration.burialPlaced());
@@ -101,8 +104,8 @@ public final class BunkerPlacementManager {
         for (int radius = EMERGENCY_MIN_RADIUS; radius <= EMERGENCY_MAX_RADIUS; radius += 32) {
             for (BlockPos candidate : candidates(spawn, radius)) {
                 attempts++;
-                emergencyAttempts++;
                 Rotation rotation = randomRotation(random);
+                emergencyAttempts++;
                 FitResult result = findFit(overworld, template, candidate, rotation,
                         EMERGENCY_MAX_SURFACE_DELTA, heightDiagnostics);
                 switch (result.reason) {
@@ -112,6 +115,7 @@ public final class BunkerPlacementManager {
                     case UNDERGROUND_FLUID -> { rejectedUndergroundFluid++; continue; }
                     case MAJOR_CAVITY -> { rejectedCavity++; continue; }
                     case ENTRANCE_SUPPORT -> { rejectedEntranceSupport++; continue; }
+                    case STARTUP_BIOME_INELIGIBLE -> { rejectedStartupBiome++; continue; }
                     case OK -> { }
                 }
                 Candidate fit = result.candidate;
@@ -123,9 +127,9 @@ public final class BunkerPlacementManager {
                 BunkerSurfaceIntegration.IntegrationStats integration = BunkerSurfaceIntegration.apply(
                         overworld, template, fit.origin, rotation, overworld.getSeed());
                 data.markGenerated(fit.origin, rotation.name(), fit.surfaceY, PLACEMENT_VERSION);
-                LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, tier=EMERGENCY, attempts={}, emergencyAttempts={}, radius={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
+                LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, startupBiome={}, startupEligible=true, rejectedStartupBiome={}, tier=EMERGENCY, attempts={}, emergencyAttempts={}, radius={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
                         fit.origin.getX(), fit.origin.getY(), fit.origin.getZ(), rotation, fit.surfaceY,
-                        attempts, emergencyAttempts, radius, fit.chunkCount, result.undergroundSamples,
+                        fit.surfaceBiome, rejectedStartupBiome, attempts, emergencyAttempts, radius, fit.chunkCount, result.undergroundSamples,
                         result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
                         integration.logsCleared(), integration.leavesCleared(),
                         integration.otherVegetationCleared(), integration.burialPlaced());
@@ -134,9 +138,9 @@ public final class BunkerPlacementManager {
                 return;
             }
         }
-        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker after {} attempts; surfaceWater={}, undergroundFluid={}, undergroundCavity={}, entranceSupport={}, slope={}, height={}, placementFailures={}",
+        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker after {} attempts; surfaceWater={}, undergroundFluid={}, undergroundCavity={}, entranceSupport={}, startupBiomeRejected={}, slope={}, height={}, placementFailures={}",
                 attempts, rejectedWater, rejectedUndergroundFluid, rejectedCavity, rejectedEntranceSupport,
-                rejectedSlope, rejectedHeight, placementFailures);
+                rejectedStartupBiome, rejectedSlope, rejectedHeight, placementFailures);
         LOGGER.error("[AFL Bunker] Emergency search exhausted: emergencyAttempts={}, radiusRange={}..{}, heightDiagnostics={}",
                 emergencyAttempts, EMERGENCY_MIN_RADIUS, EMERGENCY_MAX_RADIUS, heightDiagnostics.summary(overworld));
         heightDiagnostics.logSamples();
@@ -177,6 +181,10 @@ public final class BunkerPlacementManager {
                 candidate.getX() + entranceAtZero.getX(), candidate.getZ() + entranceAtZero.getZ());
         BlockPos entranceSurface = new BlockPos(candidate.getX() + entranceAtZero.getX(),
                 referenceSurface - 1, candidate.getZ() + entranceAtZero.getZ());
+        var surfaceBiome = level.getBiome(entranceSurface);
+        if (!StartupBiomeEligibility.isStartupEligible(surfaceBiome)) {
+            return FitResult.startupBiomeIneligible();
+        }
         if (isIceOrWaterSurface(level, entranceSurface)
                 || hasFluidBelowSurface(level, entranceSurface, 4)) return FitResult.water();
         int originY = referenceSurface + ENTRANCE_SURFACE_Y_OFFSET - ENTRANCE_SURFACE_LOCAL.getY();
@@ -194,8 +202,10 @@ public final class BunkerPlacementManager {
         int minChunkX = box.minX() >> 4, maxChunkX = box.maxX() >> 4;
         int minChunkZ = box.minZ() >> 4, maxChunkZ = box.maxZ() >> 4;
         int chunkCount = (maxChunkX - minChunkX + 1) * (maxChunkZ - minChunkZ + 1);
+        ResourceLocation surfaceBiomeId = surfaceBiome.unwrapKey().map(key -> key.location())
+                .orElse(new ResourceLocation("minecraft", "unknown"));
         return FitResult.ok(new Candidate(origin, referenceSurface, box, minChunkX, maxChunkX,
-                minChunkZ, maxChunkZ, chunkCount), underground.undergroundSamples, underground.cavityRatio);
+                minChunkZ, maxChunkZ, chunkCount, surfaceBiomeId), underground.undergroundSamples, underground.cavityRatio);
     }
 
     private static boolean hasFluidBelowSurface(ServerLevel level, BlockPos surface, int depth) {
@@ -310,7 +320,7 @@ public final class BunkerPlacementManager {
         }
     }
 
-    private enum RejectReason { OK, WATER, SLOPE, HEIGHT, UNDERGROUND_FLUID, MAJOR_CAVITY, ENTRANCE_SUPPORT }
+    private enum RejectReason { OK, WATER, SLOPE, HEIGHT, UNDERGROUND_FLUID, MAJOR_CAVITY, ENTRANCE_SUPPORT, STARTUP_BIOME_INELIGIBLE }
 
     private record FitResult(Candidate candidate, RejectReason reason, int undergroundSamples, double cavityRatio) {
         private static FitResult ok(Candidate candidate) { return new FitResult(candidate, RejectReason.OK, 0, 0.0D); }
@@ -327,13 +337,14 @@ public final class BunkerPlacementManager {
             return new FitResult(null, RejectReason.MAJOR_CAVITY, samples, ratio);
         }
         private static FitResult entranceSupport() { return new FitResult(null, RejectReason.ENTRANCE_SUPPORT, 0, 0.0D); }
+        private static FitResult startupBiomeIneligible() { return new FitResult(null, RejectReason.STARTUP_BIOME_INELIGIBLE, 0, 0.0D); }
         private static FitResult undergroundOk(int samples, double ratio) {
             return new FitResult(null, RejectReason.OK, samples, ratio);
         }
     }
 
     private record Candidate(BlockPos origin, int surfaceY, BoundingBox box, int minChunkX, int maxChunkX,
-                             int minChunkZ, int maxChunkZ, int chunkCount) {}
+                             int minChunkZ, int maxChunkZ, int chunkCount, ResourceLocation surfaceBiome) {}
 
     private static final class HeightRejectDiagnostics {
         private int count;

@@ -7,8 +7,8 @@ import net.minecraft.world.level.biome.Biomes;
 import java.util.Set;
 
 public final class AflVanillaBiomePolicy {
-    public static final int DISABLED_COUNT = 40;
-    public static final int ALLOWED_VANILLA_COUNT = 13;
+    public static final int DISABLED_COUNT = 50;
+    public static final int ALLOWED_VANILLA_COUNT = 3;
     public static final Set<ResourceKey<Biome>> DISABLED_OVERWORLD_BIOMES = Set.of(
             Biomes.FLOWER_FOREST, Biomes.DARK_FOREST, Biomes.TAIGA, Biomes.OLD_GROWTH_PINE_TAIGA,
             Biomes.OLD_GROWTH_SPRUCE_TAIGA, Biomes.SNOWY_TAIGA, Biomes.MANGROVE_SWAMP,
@@ -20,7 +20,11 @@ public final class AflVanillaBiomePolicy {
             Biomes.OCEAN, Biomes.DEEP_OCEAN, Biomes.COLD_OCEAN, Biomes.DEEP_COLD_OCEAN,
             Biomes.LUKEWARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN, Biomes.WARM_OCEAN,
             Biomes.FROZEN_OCEAN, Biomes.DEEP_FROZEN_OCEAN, Biomes.LUSH_CAVES, Biomes.DEEP_DARK,
-            Biomes.BEACH, Biomes.STONY_SHORE
+            Biomes.BEACH, Biomes.STONY_SHORE,
+            Biomes.SUNFLOWER_PLAINS, Biomes.FOREST, Biomes.BIRCH_FOREST,
+            Biomes.OLD_GROWTH_BIRCH_FOREST, Biomes.SWAMP, Biomes.WINDSWEPT_HILLS,
+            Biomes.WINDSWEPT_GRAVELLY_HILLS, Biomes.WINDSWEPT_FOREST,
+            Biomes.STONY_PEAKS, Biomes.JAGGED_PEAKS
     );
 
     private AflVanillaBiomePolicy() {}
