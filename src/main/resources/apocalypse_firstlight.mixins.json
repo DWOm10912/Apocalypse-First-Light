@@ -1,0 +1,9 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.antaurora.apofirstlight.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "apocalypse_firstlight.refmap.json",
+  "mixins": ["OverworldBiomeBuilderMixin"],
+  "injectors": {"defaultRequire": 1}
+}

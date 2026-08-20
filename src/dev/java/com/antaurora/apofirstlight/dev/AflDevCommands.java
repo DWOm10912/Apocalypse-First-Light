@@ -11,6 +11,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
+import com.antaurora.apofirstlight.world.biome.AflVanillaBiomePolicy;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
@@ -46,6 +49,10 @@ public final class AflDevCommands {
         dev.then(Commands.literal("bunker")
                 .then(Commands.literal("status")
                         .executes(AflDevCommands::bunkerStatus)));
+        dev.then(Commands.literal("biome_policy")
+                .then(Commands.literal("status").executes(AflDevCommands::biomePolicyStatus)));
+        dev.then(Commands.literal("inland_terrain")
+                .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
 
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
@@ -113,6 +120,37 @@ public final class AflDevCommands {
         context.getSource().sendSuccess(() -> Component.literal("Generated: true | Origin: "
                 + data.getOrigin().toShortString() + " | Rotation: " + data.getRotation()
                 + " | Reference Surface Y: " + data.getReferenceSurfaceY() + finalEntranceInfo + playerStatus), false);
+        return 1;
+    }
+
+    private static int biomePolicyStatus(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getServer().overworld();
+        java.util.Set<Holder<Biome>> possible = level.getChunkSource().getGenerator().getBiomeSource().possibleBiomes();
+        long disabledPresent = possible.stream().map(Holder::unwrapKey).flatMap(java.util.Optional::stream)
+                .filter(AflVanillaBiomePolicy::isDisabled).count();
+        String sourceClass = level.getChunkSource().getGenerator().getBiomeSource().getClass().getName();
+        context.getSource().sendSuccess(() -> Component.literal("Policy Enabled: true | Disabled Count: "
+                + AflVanillaBiomePolicy.DISABLED_COUNT + " | Allowed Vanilla Base Count: "
+                + AflVanillaBiomePolicy.ALLOWED_VANILLA_COUNT + " | BiomeSource class: " + sourceClass
+                + " | Possible biome count: " + possible.size() + " | Disabled keys present count: " + disabledPresent), false);
+        return 1;
+    }
+
+    private static int inlandTerrainStatus(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        BlockPos pos = BlockPos.containing(context.getSource().getPosition());
+        int surfaceY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE,
+                pos.getX(), pos.getZ());
+        int seaLevel = level.getSeaLevel();
+        String biome = level.getBiome(pos).unwrapKey().map(key -> key.location().toString()).orElse("unknown");
+        context.getSource().sendSuccess(() -> Component.literal("Policy Enabled: true | Overworld Guard: "
+                + (level.dimension() == net.minecraft.world.level.Level.OVERWORLD)
+                + " | Continents Clamp: [-0.11, 1.0] | Biome: " + biome
+                + " | Surface Y: " + surfaceY + " | Sea Level: " + seaLevel), false);
         return 1;
     }
 }

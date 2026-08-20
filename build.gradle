@@ -33,6 +33,11 @@ sourceSets {
     }
 }
 
+mixin {
+    add sourceSets.main, 'apocalypse_firstlight.refmap.json'
+    config 'apocalypse_firstlight.mixins.json'
+}
+
 // Forge's automatic event-subscriber scan indexes the main ModFile output.
 // Include dev command sources there for runClient, then exclude them from the published jar.
 sourceSets.main.java.srcDir 'src/dev/java'
@@ -175,6 +180,7 @@ dependencies {
     // If the group id is "net.minecraft" and the artifact id is one of ["client", "server", "joined"],
     // then special handling is done to allow a setup of a vanilla dependency without the use of an external repository.
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
