@@ -1,0 +1,18 @@
+{
+  "type": "forge:add_features",
+  "biomes": "apocalypse_firstlight:irradiated_woodland",
+  "features": [
+    "apocalypse_firstlight:damaged_oak",
+    "apocalypse_firstlight:damaged_birch",
+    "apocalypse_firstlight:dead_oak",
+    "apocalypse_firstlight:dead_birch",
+    "apocalypse_firstlight:healthy_oak",
+    "apocalypse_firstlight:healthy_birch",
+    "apocalypse_firstlight:coarse_dirt_patch",
+    "apocalypse_firstlight:podzol_patch",
+    "apocalypse_firstlight:dirt_patch",
+    "minecraft:patch_dead_bush",
+    "apocalypse_firstlight:sparse_grass"
+  ],
+  "step": "vegetal_decoration"
+}

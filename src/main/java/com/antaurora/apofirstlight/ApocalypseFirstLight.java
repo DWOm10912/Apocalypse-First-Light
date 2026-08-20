@@ -7,7 +7,11 @@ import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflParticles;
 import com.antaurora.apofirstlight.registry.AflSounds;
+import com.antaurora.apofirstlight.registry.AflFeatures;
 import com.antaurora.apofirstlight.network.AflNetwork;
+import com.antaurora.apofirstlight.world.biome.AflOverworldRegion;
+import terrablender.api.Regions;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -31,10 +35,13 @@ public class ApocalypseFirstLight {
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         AflParticles.PARTICLE_TYPES.register(modEventBus);
         AflSounds.SOUND_EVENTS.register(modEventBus);
+        AflFeatures.FEATURES.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> Regions.register(new AflOverworldRegion(
+                new ResourceLocation(MOD_ID, "overworld"), 2)));
         event.enqueueWork(() -> {
             FireBlock fire = (FireBlock) Blocks.FIRE;
             fire.setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5);
