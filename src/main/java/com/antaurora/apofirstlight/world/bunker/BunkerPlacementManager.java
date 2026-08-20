@@ -79,6 +79,7 @@ public final class BunkerPlacementManager {
                     case OK -> { }
                 }
                 Candidate fit = result.candidate;
+                BunkerPlacementHygiene.Stats hygiene = preparePlacement(overworld, fit);
                 if (!place(overworld, template, fit, rotation)) {
                     placementFailures++;
                     continue;
@@ -92,6 +93,8 @@ public final class BunkerPlacementManager {
                         result.undergroundSamples, result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
                         integration.logsCleared(), integration.leavesCleared(),
                         integration.otherVegetationCleared(), integration.burialPlaced());
+                LOGGER.info("[AFL Bunker] Placement hygiene: vegetationCleared={}, entitiesFound={}, entitiesMoved={}, entitiesMoveFailed={}",
+                        hygiene.vegetationCleared(), hygiene.livingEntitiesFound(), hygiene.livingEntitiesMoved(), hygiene.livingEntitiesMoveFailed());
                 return;
             }
         }
@@ -112,6 +115,7 @@ public final class BunkerPlacementManager {
                     case OK -> { }
                 }
                 Candidate fit = result.candidate;
+                BunkerPlacementHygiene.Stats hygiene = preparePlacement(overworld, fit);
                 if (!place(overworld, template, fit, rotation)) {
                     placementFailures++;
                     continue;
@@ -125,6 +129,8 @@ public final class BunkerPlacementManager {
                         result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
                         integration.logsCleared(), integration.leavesCleared(),
                         integration.otherVegetationCleared(), integration.burialPlaced());
+                LOGGER.info("[AFL Bunker] Placement hygiene: vegetationCleared={}, entitiesFound={}, entitiesMoved={}, entitiesMoveFailed={}",
+                        hygiene.vegetationCleared(), hygiene.livingEntitiesFound(), hygiene.livingEntitiesMoved(), hygiene.livingEntitiesMoveFailed());
                 return;
             }
         }
@@ -252,6 +258,10 @@ public final class BunkerPlacementManager {
         StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(rotation)
                 .setMirror(net.minecraft.world.level.block.Mirror.NONE);
         return template.placeInWorld(level, fit.origin, fit.origin, settings, RandomSource.create(level.getSeed()), 2);
+    }
+
+    private static BunkerPlacementHygiene.Stats preparePlacement(ServerLevel level, Candidate fit) {
+        return BunkerPlacementHygiene.prepareForPlacement(level, fit.box, fit.surfaceY);
     }
 
     private static List<BlockPos> candidates(BlockPos spawn, int radius) {
