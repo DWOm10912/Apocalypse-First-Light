@@ -39,7 +39,11 @@ public final class GeigerHudOverlay {
         pose.translate(x, y, 0);
         pose.scale(config.hudScale(), config.hudScale(), 1.0F);
         graphics.blit(BACKGROUND, 0, 0, 0, 0, WIDTH, HEIGHT, WIDTH, HEIGHT);
-        graphics.blit(SYMBOL, 6, 15, 0, 0, 18, 18, 18, 18);
+        pose.pushPose();
+        pose.translate(config.symbol().x(), config.symbol().y(), 0);
+        pose.scale(config.symbol().scale(), config.symbol().scale(), 1.0F);
+        graphics.blit(SYMBOL, 0, 0, 0, 0, 18, 18, 18, 18);
+        pose.popPose();
         pose.popPose();
 
         ClientGeigerData.Snapshot data = ClientGeigerData.snapshot();
@@ -49,16 +53,19 @@ public final class GeigerHudOverlay {
                 Component.translatable("hud.apocalypse_firstlight.geiger.dose").getString(), data.cumulativeDose());
         String zone = Component.translatable("hud.apocalypse_firstlight.geiger.zone").getString() + ": "
                 + Component.translatable(zoneKey(data.zone())).getString();
-        drawText(graphics, minecraft.font, rate, x + 28 * config.hudScale(), y + 5 * config.hudScale(), config.fontScale());
-        drawText(graphics, minecraft.font, dose, x + 28 * config.hudScale(), y + 19 * config.hudScale(), config.fontScale());
-        drawText(graphics, minecraft.font, zone, x + 28 * config.hudScale(), y + 33 * config.hudScale(), config.fontScale());
+        drawText(graphics, minecraft.font, rate, x, y, config, config.rows().radiation(), 0);
+        drawText(graphics, minecraft.font, dose, x, y, config, config.rows().dose(), 1);
+        drawText(graphics, minecraft.font, zone, x, y, config, config.rows().zone(), 2);
     }
 
-    private static void drawText(GuiGraphics graphics, Font font, String text, float x, float y, float scale) {
+    private static void drawText(GuiGraphics graphics, Font font, String text, float hudX, float hudY,
+                                 GeigerHudConfig config, GeigerHudConfig.RowOffset row, int index) {
+        float x = hudX + (config.text().x() + row.offsetX()) * config.hudScale();
+        float y = hudY + (config.text().y() + config.text().lineSpacing() * index + row.offsetY()) * config.hudScale();
         var pose = graphics.pose();
         pose.pushPose();
         pose.translate(x, y, 0);
-        pose.scale(scale, scale, 1.0F);
+        pose.scale(config.text().fontScale(), config.text().fontScale(), 1.0F);
         graphics.drawString(font, text, 0, 0, 0xE8F2C4, false);
         pose.popPose();
     }

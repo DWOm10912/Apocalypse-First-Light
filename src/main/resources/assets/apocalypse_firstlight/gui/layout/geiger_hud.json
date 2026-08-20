@@ -3,6 +3,21 @@
   "anchor": "bottom_right",
   "offsetX": 0,
   "offsetY": 0,
-  "hudScale": 1.0,
-  "fontScale": 1.0
+  "hudScale": 0.85,
+  "symbol": {
+    "x": 18,
+    "y": 18,
+    "scale": 0.7
+  },
+  "text": {
+    "x": 40,
+    "y": 13,
+    "fontScale": 0.7,
+    "lineSpacing": 8
+  },
+  "rows": {
+    "radiation": { "offsetX": 0, "offsetY": 0 },
+    "dose": { "offsetX": 0, "offsetY": 0 },
+    "zone": { "offsetX": 0, "offsetY": 0 }
+  }
 }

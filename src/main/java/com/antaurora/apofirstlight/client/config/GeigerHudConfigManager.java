@@ -50,13 +50,48 @@ public final class GeigerHudConfigManager {
 
     private static GeigerHudConfig sanitize(JsonObject object) {
         GeigerHudConfig defaults = GeigerHudConfig.defaults();
+        JsonObject symbol = object(object, "symbol");
+        JsonObject text = object(object, "text");
+        JsonObject rows = object(object, "rows");
         return new GeigerHudConfig(
                 readBoolean(object, "enabled", defaults.enabled()),
                 readAnchor(object, defaults.anchor()),
                 readInteger(object, "offsetX", defaults.offsetX()),
                 readInteger(object, "offsetY", defaults.offsetY()),
                 readScale(object, "hudScale", defaults.hudScale()),
-                readScale(object, "fontScale", defaults.fontScale())
+                new GeigerHudConfig.SymbolLayout(
+                        readInteger(symbol, "x", defaults.symbol().x()),
+                        readInteger(symbol, "y", defaults.symbol().y()),
+                        readScale(symbol, "scale", defaults.symbol().scale())
+                ),
+                new GeigerHudConfig.TextLayout(
+                        readInteger(text, "x", defaults.text().x()),
+                        readInteger(text, "y", defaults.text().y()),
+                        readScale(text, "fontScale", defaults.text().fontScale()),
+                        readInteger(text, "lineSpacing", defaults.text().lineSpacing())
+                ),
+                new GeigerHudConfig.Rows(
+                        rowOffset(rows, "radiation", defaults.rows().radiation()),
+                        rowOffset(rows, "dose", defaults.rows().dose()),
+                        rowOffset(rows, "zone", defaults.rows().zone())
+                )
+        );
+    }
+
+    private static JsonObject object(JsonObject parent, String key) {
+        try {
+            return parent.has(key) && parent.get(key).isJsonObject() ? parent.getAsJsonObject(key) : new JsonObject();
+        } catch (Exception ignored) {
+            return new JsonObject();
+        }
+    }
+
+    private static GeigerHudConfig.RowOffset rowOffset(JsonObject rows, String key,
+                                                         GeigerHudConfig.RowOffset fallback) {
+        JsonObject row = object(rows, key);
+        return new GeigerHudConfig.RowOffset(
+                readInteger(row, "offsetX", fallback.offsetX()),
+                readInteger(row, "offsetY", fallback.offsetY())
         );
     }
 
