@@ -63,6 +63,11 @@ public final class RadiationManager {
         return field(level).sample(x, z);
     }
 
+    public static RadiationZone getNaturalZone(ServerLevel level, BlockPos pos) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return RadiationZone.SAFE;
+        return zoneFor(getNaturalBaseField(level, pos.getX(), pos.getZ()));
+    }
+
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
     public static double getFinalRadiation(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).finalRadiation(); }
     public static RadiationZone getRadiationZone(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).zone(); }

@@ -14,6 +14,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.biome.Biome;
 import com.antaurora.apofirstlight.world.biome.AflVanillaBiomePolicy;
+import com.antaurora.apofirstlight.radiation.RadiationManager;
+import com.antaurora.apofirstlight.world.WildlifeSpawnPolicy;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
@@ -53,6 +55,8 @@ public final class AflDevCommands {
                 .then(Commands.literal("status").executes(AflDevCommands::biomePolicyStatus)));
         dev.then(Commands.literal("inland_terrain")
                 .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
+        dev.then(Commands.literal("wildlife_spawn")
+                .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
 
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
@@ -151,6 +155,25 @@ public final class AflDevCommands {
                 + (level.dimension() == net.minecraft.world.level.Level.OVERWORLD)
                 + " | Continents Clamp: [-0.11, 1.0] | Biome: " + biome
                 + " | Surface Y: " + surfaceY + " | Sea Level: " + seaLevel), false);
+        return 1;
+    }
+
+    private static int wildlifeSpawnStatus(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        BlockPos pos = BlockPos.containing(context.getSource().getPosition());
+        boolean overworld = level.dimension() == net.minecraft.world.level.Level.OVERWORLD;
+        com.antaurora.apofirstlight.radiation.RadiationZone zone = RadiationManager.getNaturalZone(level, pos);
+        boolean allowed = overworld && zone == com.antaurora.apofirstlight.radiation.RadiationZone.SAFE;
+        context.getSource().sendSuccess(() -> Component.literal("Dimension: "
+                + level.dimension().location() + " | Natural Base Field: "
+                + String.format("%.4f", RadiationManager.getNaturalBaseField(level, pos.getX(), pos.getZ()))
+                + " | Natural Zone: " + zone + " | Natural SAFE: " + (zone == com.antaurora.apofirstlight.radiation.RadiationZone.SAFE)
+                + " | Policy Enabled: true | Vanilla Natural Passive Spawn Allowed Here: " + allowed
+                + " | Target Categories: " + WildlifeSpawnPolicy.targetCategories()), false);
         return 1;
     }
 }

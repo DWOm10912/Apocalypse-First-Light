@@ -20,12 +20,17 @@ public final class WorldSpawnRules {
 
     @SubscribeEvent
     public static void onSpawnPlacementCheck(MobSpawnEvent.SpawnPlacementCheck event) {
-        if (event.getSpawnType() != MobSpawnType.NATURAL) {
-            return;
-        }
         if (!event.getLevel().getLevel().dimension().location().equals(OVERWORLD)) {
             return;
         }
+        if (WildlifeSpawnPolicy.shouldDenyNaturalSpawn(event.getLevel().getLevel(), event.getEntityType(),
+                event.getPos(), event.getSpawnType())) {
+            event.setResult(Event.Result.DENY);
+            ApocalypseFirstLight.LOGGER.debug("[AFL WILDLIFE] Blocked natural spawn Entity={} Pos={}",
+                    EntityType.getKey(event.getEntityType()), event.getPos());
+            return;
+        }
+        if (event.getSpawnType() != MobSpawnType.NATURAL) return;
         if (event.getEntityType().getCategory() != MobCategory.MONSTER) {
             return;
         }
