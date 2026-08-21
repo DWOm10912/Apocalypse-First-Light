@@ -66,6 +66,11 @@ public final class AflDevCommands {
                 .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
                         .executes(context -> scorchedSurfaceSample(context,
                                 IntegerArgumentType.getInteger(context, "size")))));
+        dev.then(Commands.literal("scorched_liquid_sample")
+                .executes(context -> scorchedLiquidSample(context, 128))
+                .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
+                        .executes(context -> scorchedLiquidSample(context,
+                                IntegerArgumentType.getInteger(context, "size")))));
         dev.then(Commands.literal("wildlife_spawn")
                 .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
         dev.then(Commands.literal("particle")
@@ -230,6 +235,27 @@ public final class AflDevCommands {
 
     private static double ratio(int value, int total) {
         return total == 0 ? 0.0D : (double) value / total;
+    }
+
+    private static int scorchedLiquidSample(CommandContext<CommandSourceStack> context, int size) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = BlockPos.containing(context.getSource().getPosition());
+        ScorchedLiquidSampler.Result result = ScorchedLiquidSampler.sample(level, center, size);
+        context.getSource().sendSuccess(() -> Component.literal(String.format(
+                "[AFL SCORCHED LIQUID SAMPLE] size=%d total=%d loaded=%d scorched=%d directSkyWater=%d nearSurfaceAccessibleWater=%d surfaceAccessibleWater=%d directSkyLava=%d nearSurfaceAccessibleLava=%d surfaceAccessibleLava=%d deepUndergroundLiquid=%d surfaceAccessibleWaterRatio=%.4f representative=%s",
+                result.size(), result.total(), result.loaded(), result.scorched(), result.directSkyWater(),
+                result.nearSurfaceAccessibleWater(), result.surfaceAccessibleWater(), result.directSkyLava(),
+                result.nearSurfaceAccessibleLava(), result.surfaceAccessibleLava(), result.deepUndergroundLiquid(),
+                result.surfaceAccessibleWaterRatio(), result.scorched() >= Math.max(64, result.total() / 20))), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "[AFL SCORCHED LIQUID DEPTH] window=surfaceY-12..surfaceY classification=DIRECT_SKY_UNION_NEAR_SURFACE_BFS bfsRadius=8 bfsMaxVisited=256 verticalRange=surfaceY-12..surfaceY+3"), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "[AFL SCORCHED LIQUID DIAG] sourceCandidate=UNKNOWN featureFix=lake_water_unproven biomeScoped=true runtimeSetBlock=false"), false);
+        return 1;
     }
 
     private static int wildlifeSpawnStatus(CommandContext<CommandSourceStack> context) {
