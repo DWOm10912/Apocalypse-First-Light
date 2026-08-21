@@ -1,0 +1,9 @@
+{
+  "type": "minecraft:add",
+  "argument1": {
+    "type": "minecraft:mul",
+    "argument1": 0.88,
+    "argument2": "apocalypse_firstlight:terrain/surface_relief"
+  },
+  "argument2": "minecraft:overworld/base_3d_noise"
+}
