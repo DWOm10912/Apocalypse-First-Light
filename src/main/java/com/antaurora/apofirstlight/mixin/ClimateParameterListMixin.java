@@ -31,7 +31,7 @@ public abstract class ClimateParameterListMixin {
      * cancellable HEAD path of MultiNoiseBiomeSource#getNoiseBiome.
      */
     @Dynamic("Added by TerraBlender's MixinParameterList")
-    @Inject(method = "findValuePositional(Lnet/minecraft/world/level/biome/Climate$TargetPoint;III)Ljava/lang/Object;",
+    @Inject(method = "findValuePositional",
             at = @At("RETURN"), cancellable = true, remap = false)
     private void apocalypse$applyStartupPlainsEnclave(Climate.TargetPoint target, int quartX, int quartY, int quartZ,
                                                        CallbackInfoReturnable<Object> callback) {

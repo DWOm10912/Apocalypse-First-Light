@@ -58,6 +58,8 @@ public final class AflDevCommands {
                 .then(Commands.literal("status").executes(AflDevCommands::biomePolicyStatus)));
         dev.then(Commands.literal("inland_terrain")
                 .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
+        dev.then(Commands.literal("terrain_sample")
+                .executes(AflDevCommands::terrainSample));
         dev.then(Commands.literal("wildlife_spawn")
                 .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
         dev.then(Commands.literal("particle")
@@ -165,6 +167,23 @@ public final class AflDevCommands {
                 + (level.dimension() == net.minecraft.world.level.Level.OVERWORLD)
                 + " | Continents Clamp: [-0.11, 1.0] | Biome: " + biome
                 + " | Surface Y: " + surfaceY + " | Sea Level: " + seaLevel), false);
+        return 1;
+    }
+
+    private static int terrainSample(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = BlockPos.containing(context.getSource().getPosition());
+        for (int size : new int[]{64, 128, 256}) {
+            TerrainSuitabilitySampler.Result result = TerrainSuitabilitySampler.sample(level, center, size);
+            String message = String.format("[AFL TERRAIN SAMPLE] size=%d minY=%d maxY=%d deltaY=%d avgY=%.2f maxLocalSlope=%d waterRatio=%.3f CITY_FRIENDLY=%s",
+                    result.size(), result.minY(), result.maxY(), result.deltaY(), result.averageY(),
+                    result.maxLocalSlope(), result.waterRatio(), result.cityFriendly());
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+        }
         return 1;
     }
 
