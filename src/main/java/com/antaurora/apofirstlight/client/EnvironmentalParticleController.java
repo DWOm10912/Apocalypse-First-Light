@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraftforge.api.distmarker.Dist;
@@ -36,6 +37,7 @@ public final class EnvironmentalParticleController {
     private static long diagnosticSkyReject;
     private static long diagnosticChanceReject;
     private static long diagnosticSpawnSuccess;
+    private static int whiteAshSpawnedInWindow;
 
     private EnvironmentalParticleController() {
     }
@@ -119,6 +121,10 @@ public final class EnvironmentalParticleController {
             diagnosticSkyReject++;
             return false;
         }
+        if (profile == EnvironmentalParticleProfile.WHITE_ASH
+                && whiteAshSpawnedInWindow >= MAX_ACTIVE_PARTICLES) {
+            return false;
+        }
 
         double weight = distance <= 32.0D ? 1.0D : distance <= 64.0D ? 0.65D : 0.35D;
         double spawnChance = (gusting ? 0.72D : 0.45D) * weight;
@@ -139,17 +145,19 @@ public final class EnvironmentalParticleController {
                 ? -(0.0015D + random.nextDouble() * 0.0035D)
                 : -(0.004D + random.nextDouble() * 0.008D);
         double velocityZ = Math.sin(driftAngle) * speed;
+        var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
+                ? AflParticles.FALLOUT_DUST.get()
+                : profile == EnvironmentalParticleProfile.WHITE_ASH
+                ? ParticleTypes.WHITE_ASH
+                : AflParticles.DEAD_LEAF_DEBRIS.get();
         if (distance > NORMAL_PARTICLE_RADIUS) {
-            var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
-                    ? AflParticles.FALLOUT_DUST.get() : AflParticles.DEAD_LEAF_DEBRIS.get();
             level.addAlwaysVisibleParticle(particle, false,
                     particleX, particleY, particleZ, velocityX, velocityY, velocityZ);
         } else {
-            var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
-                    ? AflParticles.FALLOUT_DUST.get() : AflParticles.DEAD_LEAF_DEBRIS.get();
             level.addParticle(particle,
                     particleX, particleY, particleZ, velocityX, velocityY, velocityZ);
         }
+        if (profile == EnvironmentalParticleProfile.WHITE_ASH) whiteAshSpawnedInWindow++;
         diagnosticSpawnSuccess++;
         return true;
     }
@@ -211,6 +219,7 @@ public final class EnvironmentalParticleController {
         diagnosticSkyReject = 0L;
         diagnosticChanceReject = 0L;
         diagnosticSpawnSuccess = 0L;
+        whiteAshSpawnedInWindow = 0;
     }
 
     static void onParticleCreated() {
