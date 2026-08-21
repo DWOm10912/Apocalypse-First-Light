@@ -64,7 +64,7 @@ public final class RadiationManager {
         return getRadiationSample(level, pos).worldAmbientRadiation();
     }
 
-    /** Pure field query for chunk-independent radiation searches. */
+    /** Natural, unsuppressed field for chunk-independent ecology/search consumers; not player radiation. */
     public static double getNaturalBaseField(ServerLevel level, int x, int z) {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0;
         return field(level).sample(x, z);
@@ -81,6 +81,7 @@ public final class RadiationManager {
     }
 
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
+    /** Shielded ambient component only; player final radiation is {@link #getFinalRadiation}. */
     public static double getFinalRadiation(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).finalRadiation(); }
     public static RadiationZone getRadiationZone(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).zone(); }
 
@@ -92,7 +93,7 @@ public final class RadiationManager {
         double finalField = Double.isNaN(cap) ? environmental.preStartupEffectiveField()
                 : Math.min(environmental.preStartupEffectiveField(), cap);
         StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(x, z, level.getSeed());
-        return new StartupRadiationDebug(x, z, zone,
+        return new StartupRadiationDebug(x, z, Math.sqrt((double) x * x + (double) z * z), zone,
                 StartupPlainsEnclave.plainsBoundary(x, z, level.getSeed()),
                 StartupPlainsEnclave.woodlandOuterBoundary(x, z, level.getSeed()), environmental.rawWorldField(),
                 environmental.biomeResolution().biomeId(), environmental.biomeResolution().profile(),
@@ -228,7 +229,7 @@ public final class RadiationManager {
                                       double safeAnchorSuppression, double preStartupEffectiveField) {
     }
 
-    public record StartupRadiationDebug(int x, int z, StartupPlainsEnclave.Zone startupZone,
+    public record StartupRadiationDebug(int x, int z, double distanceFromStartupCenter, StartupPlainsEnclave.Zone startupZone,
                                         int plainsBoundary, int woodlandBoundary, double rawWorldField,
                                         ResourceLocation biomeId, BiomeRadiationProfile biomeProfile,
                                         double biomeConstrainedField, double safeAnchorDistance,

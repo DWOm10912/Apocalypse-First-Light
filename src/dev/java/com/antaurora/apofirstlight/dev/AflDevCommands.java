@@ -64,8 +64,13 @@ public final class AflDevCommands {
                 .executes(AflDevCommands::terrainSample));
         dev.then(Commands.literal("startup_ecology_sample")
                 .executes(AflDevCommands::startupEcologySample));
+        dev.then(Commands.literal("startup_ecology_here")
+                .executes(AflDevCommands::startupEcologyHere));
         dev.then(Commands.literal("startup_radiation_sample")
                 .executes(AflDevCommands::startupRadiationSample));
+        dev.then(Commands.literal("settlement_prototype")
+                .executes(context -> settlementPrototype(context))
+                .then(Commands.literal("here").executes(context -> settlementPrototype(context))));
         dev.then(Commands.literal("scorched_surface_sample")
                 .executes(context -> scorchedSurfaceSample(context, 128))
                 .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
@@ -179,6 +184,8 @@ public final class AflDevCommands {
                 pos.getX(), pos.getZ());
         int seaLevel = level.getSeaLevel();
         String biome = level.getBiome(pos).unwrapKey().map(key -> key.location().toString()).orElse("unknown");
+        com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave.Zone startupZone =
+                StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), level.getSeed());
         context.getSource().sendSuccess(() -> Component.literal("Policy Enabled: true | Overworld Guard: "
                 + (level.dimension() == net.minecraft.world.level.Level.OVERWORLD)
                 + " | Continents Clamp: [-0.11, 1.0] | Biome: " + biome
@@ -235,6 +242,35 @@ public final class AflDevCommands {
         return 1;
     }
 
+    private static int startupEcologyHere(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos pos = BlockPos.containing(context.getSource().getPosition());
+        long seed = level.getSeed();
+        int surfaceY = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ());
+        int surfaceQuartY = (surfaceY - 1) >> 2;
+        String surfaceBiome = level.getBiome(new BlockPos(pos.getX(), surfaceY - 1, pos.getZ())).unwrapKey()
+                .map(key -> key.location().toString()).orElse("unknown");
+        String playerBiome = level.getBiome(pos).unwrapKey()
+                .map(key -> key.location().toString()).orElse("unknown");
+        StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), seed);
+        String expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
+                ? "apocalypse_firstlight:irradiated_woodland"
+                : zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
+        boolean match = "original".equals(expected) || expected.equals(surfaceBiome);
+        context.getSource().sendSuccess(() -> Component.literal(String.format(
+                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d zone=%s plainsBoundary=%d woodlandBoundary=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=Climate.ParameterList#findValuePositional:RETURN",
+                pos.getX(), pos.getY(), pos.getZ(), seed, zone,
+                StartupPlainsEnclave.plainsBoundary(pos.getX(), pos.getZ(), seed),
+                StartupPlainsEnclave.woodlandOuterBoundary(pos.getX(), pos.getZ(), seed), expected, surfaceY,
+                surfaceQuartY, surfaceBiome, playerBiome,
+                match, match ? "RESOLVED" : "MISMATCH_OR_UNRESOLVED")), false);
+        return 1;
+    }
+
     private static int startupRadiationSample(CommandContext<CommandSourceStack> context) {
         if (context.getSource().getEntity() == null) {
             context.getSource().sendFailure(Component.literal("Run this command as a player."));
@@ -268,6 +304,29 @@ public final class AflDevCommands {
                         + " woodlandMin=" + RadiationManager.STARTUP_WOODLAND_MIN
                         + " woodlandMax=" + RadiationManager.STARTUP_WOODLAND_MAX
                         + " semantics=MIN(original,startupCap) doseShieldingUnchanged=true"), false);
+        return 1;
+    }
+
+    private static int settlementPrototype(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos player = BlockPos.containing(context.getSource().getPosition());
+        SettlementPrototype.Result result = SettlementPrototype.generateHere(level, player);
+        if (!result.success()) {
+            context.getSource().sendFailure(Component.literal("[AFL SETTLEMENT PROTOTYPE] rejected reason=" + result.reason()));
+            return 0;
+        }
+        SettlementPrototype.Plan plan = result.plan();
+        String orientation = plan.northSouth() ? "NORTH_SOUTH" : "EAST_WEST";
+        SettlementPrototype.TerrainStats terrain = plan.terrain();
+        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:irradiated_woodland archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s",
+                plan.anchor().toShortString(), orientation, plan.bounds(), terrain.sampleCount(), terrain.minY(), terrain.p10(), terrain.median(), terrain.p90(), terrain.maxY(), terrain.effectiveRelief(), terrain.outlierCount(), terrain.outlierRatio(),
+                1, 4, 4, 4, 2, result.logsCleared() + result.leavesCleared(), result.logsCleared(),
+                result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT");
+        context.getSource().sendSuccess(() -> Component.literal(message), true);
         return 1;
     }
 
@@ -336,13 +395,19 @@ public final class AflDevCommands {
         }
         BlockPos pos = BlockPos.containing(context.getSource().getPosition());
         boolean overworld = level.dimension() == net.minecraft.world.level.Level.OVERWORLD;
+        String biome = level.getBiome(pos).unwrapKey().map(key -> key.location().toString()).orElse("unknown");
+        StartupPlainsEnclave.Zone startupZone = StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), level.getSeed());
         com.antaurora.apofirstlight.radiation.RadiationZone zone = RadiationManager.getNaturalZone(level, pos);
-        boolean allowed = overworld && zone == com.antaurora.apofirstlight.radiation.RadiationZone.SAFE;
+        com.antaurora.apofirstlight.world.WildlifeSpawnPolicy.Decision decision =
+                WildlifeSpawnPolicy.decision(level, net.minecraft.world.entity.EntityType.COW, pos,
+                        net.minecraft.world.entity.MobSpawnType.NATURAL);
         context.getSource().sendSuccess(() -> Component.literal("Dimension: "
                 + level.dimension().location() + " | Natural Base Field: "
                 + String.format("%.4f", RadiationManager.getNaturalBaseField(level, pos.getX(), pos.getZ()))
+                + " | Runtime Biome: " + biome + " | Startup Zone: " + startupZone
                 + " | Natural Zone: " + zone + " | Natural SAFE: " + (zone == com.antaurora.apofirstlight.radiation.RadiationZone.SAFE)
-                + " | Policy Enabled: true | Vanilla Natural Passive Spawn Allowed Here: " + allowed
+                + " | Startup Ecological Safe: " + (startupZone == StartupPlainsEnclave.Zone.CORE_PLAINS || startupZone == StartupPlainsEnclave.Zone.FRINGE_PLAINS)
+                + " | AFL Decision: " + (decision.deny() ? "DENY" : "PASS") + " | Reason: " + decision.reason()
                 + " | Target Categories: " + WildlifeSpawnPolicy.targetCategories()), false);
         return 1;
     }

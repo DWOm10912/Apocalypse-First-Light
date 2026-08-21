@@ -67,6 +67,7 @@ public final class RadiationCommands {
         BlockPos pos = player.blockPosition();
         RadiationSample sample = RadiationManager.getRadiationSample(level, pos);
         BiomeRadiationResolver.Resolution biome = BiomeRadiationResolver.resolve(level, pos.getX(), pos.getZ());
+        RadiationManager.StartupRadiationDebug startup = RadiationManager.startupRadiationDebug(level, pos.getX(), pos.getZ());
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         source.sendSuccess(() -> Component.literal(String.format(
                 "Position: %d, %d, %d | Surface Y: %d | Surface Biome: %s | Biome Profile: %s | Raw World Radiation: %.4f | Biome Base Radiation: %.4f | Zone: %s | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
@@ -77,6 +78,13 @@ public final class RadiationCommands {
                 sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation(),
                 sample.spawnSafeCore(), sample.spawnSuppression(), sample.safeAnchorX(), sample.safeAnchorZ(),
                 sample.safeAnchorSource())), false);
+        source.sendSuccess(() -> Component.literal(String.format(
+                "[AFL RADIATION HERE] Startup Zone: %s | Startup Distance: %.1f | Plains Boundary: %d | Woodland Boundary: %d | Biome Constrained: %.4f | Safe Anchor Distance: %.1f | Safe Anchor Suppression: %.4f | Pre-Startup: %.4f | Startup Cap: %s | Post-Startup: %.4f | Radiation Zone: %s | Ambient Before Shielding: %.2f RU/h | Shielding Transmission: %.3f | Shielded Ambient: %.2f RU/h | Local: %.2f RU/h | Final: %.2f RU/h",
+                startup.startupZone(), startup.distanceFromStartupCenter(), startup.plainsBoundary(), startup.woodlandBoundary(),
+                startup.biomeConstrainedField(), startup.safeAnchorDistance(), startup.safeAnchorSuppression(),
+                startup.preStartupEffectiveField(), startup.startupCap() == null ? "none" : String.format("%.4f", startup.startupCap()),
+                startup.finalEffectiveField(), sample.zone(), sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),
+                sample.shelterTransmission(), sample.worldAmbientRadiation(), sample.localRadiation(), sample.finalRadiation())), false);
         return 1;
     }
 

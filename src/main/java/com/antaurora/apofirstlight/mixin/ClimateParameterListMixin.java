@@ -5,8 +5,10 @@ import com.antaurora.apofirstlight.debug.BiomeTraceContext;
 import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import com.antaurora.apofirstlight.worldgen.aquifer.ScorchedAquiferContext;
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
@@ -19,10 +21,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 @Mixin(value = Climate.ParameterList.class, priority = 900)
 public abstract class ClimateParameterListMixin {
-    private static final int APOCALYPSE_LOG_LIMIT_PER_SOURCE = 10;
+    private static final int APOCALYPSE_LOG_LIMIT_PER_TARGET = 1;
+    /** Flat-Country surface ecology band: block Y 48..112; lower cave biomes remain untouched. */
+    private static final int APOCALYPSE_SURFACE_BAND_MIN_QUART_Y = 12;
+    private static final int APOCALYPSE_SURFACE_BAND_MAX_QUART_Y = 28;
     private static final ConcurrentHashMap<String, AtomicInteger> APOCALYPSE_LOG_COUNTS = new ConcurrentHashMap<>();
     @Unique
     private volatile Holder<Biome> apocalypse$plainsHolder;
@@ -47,7 +53,8 @@ public abstract class ClimateParameterListMixin {
             }
             @SuppressWarnings("unchecked")
             Holder<Biome> original = (Holder<Biome>) rawHolder;
-            if (!apocalypse$isSurfaceBiome(original)) {
+            if (quartY < APOCALYPSE_SURFACE_BAND_MIN_QUART_Y
+                    || quartY > APOCALYPSE_SURFACE_BAND_MAX_QUART_Y) {
                 return;
             }
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(
@@ -55,73 +62,39 @@ public abstract class ClimateParameterListMixin {
             if (zone == StartupPlainsEnclave.Zone.OUTSIDE) {
                 return;
             }
-            Holder<Biome> targetHolder = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
-                    ? apocalypse$findWoodlandHolder() : apocalypse$findPlainsHolder();
+            ResourceKey<Biome> targetKey = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
+                    ? AflBiomes.IRRADIATED_WOODLAND : Biomes.PLAINS;
+            Holder<Biome> targetHolder = apocalypse$resolveHolder(targetKey);
             if (targetHolder == null) {
                 AtomicInteger count = APOCALYPSE_LOG_COUNTS.computeIfAbsent(
-                        context.sourceIdentity(), ignored -> new AtomicInteger());
-                if (count.getAndIncrement() < APOCALYPSE_LOG_LIMIT_PER_SOURCE) {
+                        context.sourceIdentity() + '|' + targetKey.location(), ignored -> new AtomicInteger());
+                if (count.getAndIncrement() < APOCALYPSE_LOG_LIMIT_PER_TARGET) {
                     ApocalypseFirstLight.LOGGER.error(
-                            "[AFL STARTUP ENCLAVE] PLAINS_HOLDER_RESOLUTION_FAILED thread={} sourceIdentity={} quart=({}, {}, {}) originalBiome={}",
+                            "[AFL STARTUP ENCLAVE] HOLDER_RESOLUTION_FAILED target={} thread={} sourceIdentity={} quart=({}, {}, {}) zone={} originalBiome={}",
+                            targetKey.location(),
                             Thread.currentThread().getName(), context.sourceIdentity(), quartX, quartY, quartZ,
-                            BiomeTraceContext.biomeId(original));
+                            zone, BiomeTraceContext.biomeId(original));
                 }
                 return;
             }
             callback.setReturnValue(targetHolder);
-            AtomicInteger count = APOCALYPSE_LOG_COUNTS.computeIfAbsent(
-                    context.sourceIdentity(), ignored -> new AtomicInteger());
-            if (count.getAndIncrement() < APOCALYPSE_LOG_LIMIT_PER_SOURCE) {
-                ApocalypseFirstLight.LOGGER.info(
-                        "[AFL STARTUP ECOLOGY] thread={} sourceIdentity={} quart=({}, {}, {}) block=({}, {}) originalBiome={} zone={} overrideBiome={} hook=Climate.ParameterList#findValuePositional:RETURN",
-                        Thread.currentThread().getName(), context.sourceIdentity(), quartX, quartY, quartZ,
-                        quartX << 2, quartZ << 2, BiomeTraceContext.biomeId(original), zone,
-                        targetHolder.unwrapKey().map(key -> key.location()).orElse(null));
-            }
         } finally {
             BiomeTraceContext.CURRENT.remove();
         }
     }
 
-    private static boolean apocalypse$isSurfaceBiome(Holder<Biome> biome) {
-        return biome.is(Biomes.PLAINS)
-                || biome.is(AflBiomes.IRRADIATED_WOODLAND)
-                || biome.is(AflBiomes.FALLOUT_BARRENS)
-                || biome.is(AflBiomes.SCORCHED_LANDS);
-    }
-
     @Unique
-    private Holder<Biome> apocalypse$findPlainsHolder() {
-        Holder<Biome> cached = apocalypse$plainsHolder;
-        if (cached != null) {
-            return cached;
-        }
-        for (Pair<Climate.ParameterPoint, ?> entry : ((Climate.ParameterList<?>) (Object) this).values()) {
-            if (entry.getSecond() instanceof Holder<?> rawHolder) {
-                @SuppressWarnings("unchecked")
-                Holder<Biome> holder = (Holder<Biome>) rawHolder;
-                if (holder.is(Biomes.PLAINS) && holder.kind() == Holder.Kind.REFERENCE) {
-                    apocalypse$plainsHolder = holder;
-                    return holder;
-                }
-            }
-        }
-        return null;
-    }
-
-    @Unique
-    private Holder<Biome> apocalypse$findWoodlandHolder() {
-        Holder<Biome> cached = apocalypse$woodlandHolder;
+    private Holder<Biome> apocalypse$resolveHolder(ResourceKey<Biome> key) {
+        Holder<Biome> cached = key.equals(Biomes.PLAINS) ? apocalypse$plainsHolder : apocalypse$woodlandHolder;
         if (cached != null) return cached;
-        for (Pair<Climate.ParameterPoint, ?> entry : ((Climate.ParameterList<?>) (Object) this).values()) {
-            if (entry.getSecond() instanceof Holder<?> rawHolder) {
-                @SuppressWarnings("unchecked") Holder<Biome> holder = (Holder<Biome>) rawHolder;
-                if (holder.is(AflBiomes.IRRADIATED_WOODLAND) && holder.kind() == Holder.Kind.REFERENCE) {
-                    apocalypse$woodlandHolder = holder;
-                    return holder;
-                }
-            }
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return null;
+        Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
+        Holder<Biome> resolved = biomes.getHolder(key).orElse(null);
+        if (resolved != null) {
+            if (key.equals(Biomes.PLAINS)) apocalypse$plainsHolder = resolved;
+            else apocalypse$woodlandHolder = resolved;
         }
-        return null;
+        return resolved;
     }
 }
