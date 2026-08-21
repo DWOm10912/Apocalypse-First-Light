@@ -17,27 +17,34 @@ public abstract class OverworldBiomeBuilderMixin {
             target = "Lnet/minecraft/world/level/biome/OverworldBiomeBuilder;addOffCoastBiomes(Ljava/util/function/Consumer;)V"), index = 0)
     private Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filterOffCoast(
             Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> consumer) {
-        return apocalypse$filtered(consumer);
+        return apocalypse$filterSurface(consumer);
     }
 
     @ModifyArg(method = "addBiomes", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/biome/OverworldBiomeBuilder;addInlandBiomes(Ljava/util/function/Consumer;)V"), index = 0)
     private Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filterInland(
             Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> consumer) {
-        return apocalypse$filtered(consumer);
+        return apocalypse$filterSurface(consumer);
     }
 
     @ModifyArg(method = "addBiomes", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/biome/OverworldBiomeBuilder;addUndergroundBiomes(Ljava/util/function/Consumer;)V"), index = 0)
     private Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filterUnderground(
             Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> consumer) {
-        return apocalypse$filtered(consumer);
+        return apocalypse$filterUndergroundBranch(consumer);
     }
 
-    private static Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filtered(
+    private static Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filterSurface(
             Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> consumer) {
         return mapping -> {
-            if (!AflVanillaBiomePolicy.isDisabled(mapping.getSecond())) consumer.accept(mapping);
+            if (AflVanillaBiomePolicy.isAllowedSurfaceBiome(mapping.getSecond())) consumer.accept(mapping);
+        };
+    }
+
+    private static Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> apocalypse$filterUndergroundBranch(
+            Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> consumer) {
+        return mapping -> {
+            if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(mapping.getSecond())) consumer.accept(mapping);
         };
     }
 }

@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.world.biome;
 
-import com.antaurora.apofirstlight.registry.AflBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
@@ -15,10 +14,10 @@ public final class StartupBiomeEligibility {
     }
 
     public static boolean isStartupEligible(Holder<Biome> biome) {
-        return biome != null && (biome.is(Biomes.PLAINS) || biome.is(AflBiomes.IRRADIATED_WOODLAND));
+        return biome != null && biome.is(Biomes.PLAINS);
     }
 
     public static boolean isStartupEligible(ResourceKey<Biome> biome) {
-        return Biomes.PLAINS.equals(biome) || AflBiomes.IRRADIATED_WOODLAND.equals(biome);
+        return Biomes.PLAINS.equals(biome);
     }
 }

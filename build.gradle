@@ -166,6 +166,15 @@ repositories {
         }
     }
 
+    maven {
+        name = "Xaero's Maven"
+        url = 'https://chocolateminecraft.com/maven'
+        content {
+            includeGroup 'xaero.map'
+            includeGroup 'xaero.lib'
+        }
+    }
+
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
     // flatDir {
@@ -193,6 +202,10 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:worldedit-225608:4586218")
     compileOnly fg.deobf("curse.maven:worldedit-225608:4586218")
     devCompileOnly fg.deobf("curse.maven:worldedit-225608:4586218")
+    implementation("xaero.map:xaeroworldmap-forge-1.20.1:1.41.2:dev") {
+        exclude group: 'xaero.lib', module: 'xaerolib-forge-1.20.1'
+    }
+    implementation "xaero.lib:xaerolib-forge-1.20.1:1.1.15:dev"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar

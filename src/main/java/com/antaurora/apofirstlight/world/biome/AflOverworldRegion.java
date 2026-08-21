@@ -13,6 +13,13 @@ import terrablender.api.RegionType;
 import java.util.function.Consumer;
 
 public final class AflOverworldRegion extends Region {
+    /**
+     * With TerraBlender's vanilla overworld weight left at its default 10,
+     * this produces roughly 95% AFL-owned macro-regions and leaves roughly
+     * 5% of the world for rare vanilla Plains pockets.
+     */
+    public static final int REGION_WEIGHT = 190;
+
     public AflOverworldRegion(ResourceLocation name, int weight) {
         super(name, RegionType.OVERWORLD, weight);
     }
@@ -21,8 +28,8 @@ public final class AflOverworldRegion extends Region {
     public void addBiomes(Registry<Biome> biomeRegistry,
                           Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper) {
         addBiome(mapper,
-                Climate.Parameter.span(-0.5F, 0.5F),
-                Climate.Parameter.span(0.0F, 1.0F),
+                Climate.Parameter.span(-1.0F, 1.0F),
+                Climate.Parameter.span(0.25F, 1.0F),
                 Climate.Parameter.span(-0.11F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
@@ -30,8 +37,8 @@ public final class AflOverworldRegion extends Region {
                 0.0F,
                 AflBiomes.IRRADIATED_WOODLAND);
         addBiome(mapper,
-                Climate.Parameter.span(-1.0F, -0.2F),
-                Climate.Parameter.span(-1.0F, -0.1F),
+                Climate.Parameter.span(-1.0F, 1.0F),
+                Climate.Parameter.span(-1.0F, 0.25F),
                 Climate.Parameter.span(-0.11F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
