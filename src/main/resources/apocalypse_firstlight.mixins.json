@@ -4,6 +4,6 @@
   "package": "com.antaurora.apofirstlight.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "apocalypse_firstlight.refmap.json",
-  "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkScorchedAquiferMixin"],
+  "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkScorchedAquiferMixin", "RandomStateSeedMixin"],
   "injectors": {"defaultRequire": 1}
 }

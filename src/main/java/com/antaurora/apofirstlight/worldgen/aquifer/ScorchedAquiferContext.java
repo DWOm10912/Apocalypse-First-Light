@@ -11,8 +11,8 @@ public final class ScorchedAquiferContext {
     private ScorchedAquiferContext() {
     }
 
-    public static void begin(BiomeSource biomeSource, Climate.Sampler sampler) {
-        CURRENT.set(new Context(biomeSource, sampler));
+    public static void begin(BiomeSource biomeSource, Climate.Sampler sampler, long seed) {
+        CURRENT.set(new Context(biomeSource, sampler, seed));
     }
 
     public static void end() {
@@ -24,6 +24,6 @@ public final class ScorchedAquiferContext {
         return CURRENT.get();
     }
 
-    public record Context(BiomeSource biomeSource, Climate.Sampler sampler) {
+    public record Context(BiomeSource biomeSource, Climate.Sampler sampler, long seed) {
     }
 }

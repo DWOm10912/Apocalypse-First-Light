@@ -20,6 +20,7 @@ import com.antaurora.apofirstlight.world.WildlifeSpawnPolicy;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
+import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -61,6 +62,10 @@ public final class AflDevCommands {
                 .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
         dev.then(Commands.literal("terrain_sample")
                 .executes(AflDevCommands::terrainSample));
+        dev.then(Commands.literal("startup_ecology_sample")
+                .executes(AflDevCommands::startupEcologySample));
+        dev.then(Commands.literal("startup_radiation_sample")
+                .executes(AflDevCommands::startupRadiationSample));
         dev.then(Commands.literal("scorched_surface_sample")
                 .executes(context -> scorchedSurfaceSample(context, 128))
                 .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
@@ -198,6 +203,71 @@ public final class AflDevCommands {
                     result.cityFriendly(), result.reason());
             context.getSource().sendSuccess(() -> Component.literal(message), false);
         }
+        return 1;
+    }
+
+    private static int startupEcologySample(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        long seed = level.getSeed();
+        int[][] directions = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
+        String[] names = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+        for (int i = 0; i < directions.length; i++) {
+            int[] direction = directions[i];
+            int sampleX = direction[0] * 512;
+            int sampleZ = direction[1] * 512;
+            int plains = StartupPlainsEnclave.plainsBoundary(sampleX, sampleZ, seed);
+            int woodland = StartupPlainsEnclave.woodlandOuterBoundary(sampleX, sampleZ, seed);
+            StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(sampleX, sampleZ, seed);
+            final String line = String.format("[AFL STARTUP ECOLOGY] dir=%s plains=%d woodland=%d zone=%s",
+                    names[i], plains, woodland, zone);
+            context.getSource().sendSuccess(() -> Component.literal(line), false);
+        }
+        context.getSource().sendSuccess(() -> Component.literal(String.format(
+                "[AFL STARTUP ECOLOGY CONFIG] seed=%d core=%d plainsBase=%d plainsAmplitude=%d woodlandBase=%d woodlandAmplitude=%d minBuffer=%d maxBuffer=%d",
+                seed, StartupPlainsEnclave.CORE_RADIUS_BLOCKS, StartupPlainsEnclave.PLAINS_BASE_RADIUS,
+                StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE, StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS,
+                StartupPlainsEnclave.WOODLAND_NOISE_AMPLITUDE, StartupPlainsEnclave.MIN_WOODLAND_BUFFER,
+                StartupPlainsEnclave.MAX_WOODLAND_BUFFER)), false);
+        return 1;
+    }
+
+    private static int startupRadiationSample(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        int[][] directions = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
+        String[] names = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+        int[] distances = {0, 160, 200, 240, 280, 320, 360, 400};
+        for (int directionIndex = 0; directionIndex < directions.length; directionIndex++) {
+            int[] direction = directions[directionIndex];
+            for (int distance : distances) {
+                int x = Math.round(direction[0] * distance);
+                int z = Math.round(direction[1] * distance);
+                RadiationManager.StartupRadiationDebug sample =
+                        RadiationManager.startupRadiationDebug(level, x, z);
+                String line = String.format(
+                        "[AFL STARTUP RADIATION] dir=%s distance=%d startupZone=%s plainsBoundary=%d woodlandBoundary=%d biome=%s profile=%s raw=%.4f constrained=%.4f suppression=%.4f preStartup=%.4f cap=%s final=%.4f zone=%s",
+                        names[directionIndex], distance, sample.startupZone(),
+                        sample.plainsBoundary(), sample.woodlandBoundary(), sample.biomeId(), sample.biomeProfile(),
+                        sample.rawWorldField(), sample.biomeConstrainedField(), sample.safeAnchorSuppression(),
+                        sample.preStartupEffectiveField(),
+                        sample.startupCap() == null ? "OUTSIDE" : String.format("%.4f", sample.startupCap()),
+                        sample.finalEffectiveField(), sample.finalZone());
+                context.getSource().sendSuccess(() -> Component.literal(line), false);
+            }
+        }
+        context.getSource().sendSuccess(() -> Component.literal(
+                        "[AFL STARTUP RADIATION CONFIG] handoffWidth="
+                        + RadiationManager.STARTUP_RADIATION_HANDOFF_WIDTH
+                        + " woodlandMin=" + RadiationManager.STARTUP_WOODLAND_MIN
+                        + " woodlandMax=" + RadiationManager.STARTUP_WOODLAND_MAX
+                        + " semantics=MIN(original,startupCap) doseShieldingUnchanged=true"), false);
         return 1;
     }
 

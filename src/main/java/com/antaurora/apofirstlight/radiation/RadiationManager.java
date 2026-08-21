@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.radiation;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
+import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -17,6 +18,9 @@ public final class RadiationManager {
     private static final double EXTREME_THRESHOLD = 0.84;
     private static final double FULL_SAFE_RADIUS = 40.0;
     private static final double FALLOFF_RADIUS = 96.0;
+    public static final int STARTUP_RADIATION_HANDOFF_WIDTH = 48;
+    public static final double STARTUP_WOODLAND_MIN = 0.10D;
+    public static final double STARTUP_WOODLAND_MAX = 0.42D;
     public static final BlockPos BUNKER_RADIATION_SAFE_LOCAL = new BlockPos(16, 1, 9);
     private static final ResourceLocation BUNKER_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "bunker");
     private static final java.util.Map<ServerLevel, RadiationField> FIELDS =
@@ -31,16 +35,17 @@ public final class RadiationManager {
             return RadiationSample.safe(0, 0);
         }
         RadiationWorldData data = RadiationWorldData.get(level);
-        long chunkX = pos.getX() >> 4;
-        long chunkZ = pos.getZ() >> 4;
         double distance = distanceFromAnchor(pos, data);
         boolean core = distance <= FULL_SAFE_RADIUS;
-        double rawWorldField = field(level).sample(pos.getX(), pos.getZ());
-        BiomeRadiationResolver.Resolution biomeResolution = BiomeRadiationResolver.resolve(level, pos.getX(), pos.getZ());
-        double base = biomeResolution.profile().constrain(rawWorldField);
-        double suppression = distance <= FULL_SAFE_RADIUS ? 0.0
-                : smoothstep(Math.min(1.0, (distance - FULL_SAFE_RADIUS) / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
-        double effectiveField = base * suppression;
+        EnvironmentalField environmental = computeEnvironmentalField(level, pos.getX(), pos.getZ(), data);
+        double rawWorldField = environmental.rawWorldField();
+        double base = environmental.biomeConstrainedField();
+        double suppression = environmental.safeAnchorSuppression();
+        double effectiveField = environmental.preStartupEffectiveField();
+        double startupCap = startupRadiationCap(level.getSeed(), pos.getX(), pos.getZ(), effectiveField);
+        if (!Double.isNaN(startupCap)) {
+            effectiveField = Math.min(effectiveField, startupCap);
+        }
         double ambient = rateFor(effectiveField);
         RadiationShielding.Sample shielding = shielding(level, pos);
         double shieldedAmbient = ambient * shielding.transmission();
@@ -78,6 +83,23 @@ public final class RadiationManager {
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
     public static double getFinalRadiation(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).finalRadiation(); }
     public static RadiationZone getRadiationZone(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).zone(); }
+
+    /** Read-only, chunk-independent startup radiation diagnostic. */
+    public static StartupRadiationDebug startupRadiationDebug(ServerLevel level, int x, int z) {
+        RadiationWorldData data = RadiationWorldData.get(level);
+        EnvironmentalField environmental = computeEnvironmentalField(level, x, z, data);
+        double cap = startupRadiationCap(level.getSeed(), x, z, environmental.preStartupEffectiveField());
+        double finalField = Double.isNaN(cap) ? environmental.preStartupEffectiveField()
+                : Math.min(environmental.preStartupEffectiveField(), cap);
+        StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(x, z, level.getSeed());
+        return new StartupRadiationDebug(x, z, zone,
+                StartupPlainsEnclave.plainsBoundary(x, z, level.getSeed()),
+                StartupPlainsEnclave.woodlandOuterBoundary(x, z, level.getSeed()), environmental.rawWorldField(),
+                environmental.biomeResolution().biomeId(), environmental.biomeResolution().profile(),
+                environmental.biomeConstrainedField(), environmental.safeAnchorDistance(),
+                environmental.safeAnchorSuppression(), environmental.preStartupEffectiveField(),
+                Double.isNaN(cap) ? null : cap, finalField, zoneFor(finalField));
+    }
 
     public static boolean isNaturalSafe(ServerLevel level, BlockPos pos) {
         return isNaturalZone(level, pos, RadiationZone.SAFE);
@@ -155,6 +177,62 @@ public final class RadiationManager {
         return lerp(6.00, 20.00, (field - EXTREME_THRESHOLD) / (1.00 - EXTREME_THRESHOLD));
     }
 
+    private static double startupRadiationCap(long seed, int x, int z, double originalField) {
+        double distance = Math.sqrt((double) x * x + (double) z * z);
+        int plainsBoundary = StartupPlainsEnclave.plainsBoundary(x, z, seed);
+        int woodlandBoundary = StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed);
+        if (distance <= StartupPlainsEnclave.CORE_RADIUS_BLOCKS) {
+            return SAFE_THRESHOLD - 0.001D;
+        }
+        if (distance <= plainsBoundary) {
+            double t = smoothstep(clamp01((distance - StartupPlainsEnclave.CORE_RADIUS_BLOCKS)
+                    / Math.max(1.0D, plainsBoundary - StartupPlainsEnclave.CORE_RADIUS_BLOCKS)));
+            return lerp(0.0D, SAFE_THRESHOLD - 0.001D, t);
+        }
+        if (distance <= woodlandBoundary) {
+            double t = smoothstep(clamp01((distance - plainsBoundary)
+                    / Math.max(1.0D, woodlandBoundary - plainsBoundary)));
+            return lerp(STARTUP_WOODLAND_MIN, STARTUP_WOODLAND_MAX, t);
+        }
+        double handoff = woodlandBoundary + STARTUP_RADIATION_HANDOFF_WIDTH;
+        if (distance <= handoff) {
+            double t = smoothstep((distance - woodlandBoundary) / STARTUP_RADIATION_HANDOFF_WIDTH);
+            return lerp(STARTUP_WOODLAND_MAX, originalField, t);
+        }
+        return Double.NaN;
+    }
+
+    private static double clamp01(double value) {
+        return Math.max(0.0D, Math.min(1.0D, value));
+    }
+
     private static double smoothstep(double t) { return t * t * (3.0 - 2.0 * t); }
     private static double lerp(double a, double b, double t) { return a + (b - a) * t; }
+
+    private static EnvironmentalField computeEnvironmentalField(ServerLevel level, int x, int z,
+                                                                 RadiationWorldData data) {
+        double raw = field(level).sample(x, z);
+        BiomeRadiationResolver.Resolution resolution = BiomeRadiationResolver.resolve(level, x, z);
+        double constrained = resolution.profile().constrain(raw);
+        double anchorDistance = Math.sqrt((double) (x - data.safeAnchorX()) * (x - data.safeAnchorX())
+                + (double) (z - data.safeAnchorZ()) * (z - data.safeAnchorZ()));
+        double suppression = anchorDistance <= FULL_SAFE_RADIUS ? 0.0
+                : smoothstep(Math.min(1.0D, (anchorDistance - FULL_SAFE_RADIUS)
+                / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
+        return new EnvironmentalField(raw, resolution, constrained, anchorDistance, suppression,
+                constrained * suppression);
+    }
+
+    private record EnvironmentalField(double rawWorldField, BiomeRadiationResolver.Resolution biomeResolution,
+                                      double biomeConstrainedField, double safeAnchorDistance,
+                                      double safeAnchorSuppression, double preStartupEffectiveField) {
+    }
+
+    public record StartupRadiationDebug(int x, int z, StartupPlainsEnclave.Zone startupZone,
+                                        int plainsBoundary, int woodlandBoundary, double rawWorldField,
+                                        ResourceLocation biomeId, BiomeRadiationProfile biomeProfile,
+                                        double biomeConstrainedField, double safeAnchorDistance,
+                                        double safeAnchorSuppression, double preStartupEffectiveField,
+                                        Double startupCap, double finalEffectiveField, RadiationZone finalZone) {
+    }
 }
