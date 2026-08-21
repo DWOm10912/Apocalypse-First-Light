@@ -1,9 +1,5 @@
 {
-  "type": "minecraft:add",
-  "argument1": {
-    "type": "minecraft:mul",
-    "argument1": 0.88,
-    "argument2": "apocalypse_firstlight:terrain/surface_relief"
-  },
-  "argument2": "apocalypse_firstlight:terrain/base_3d_noise_scaled"
+  "type": "minecraft:mul",
+  "argument1": 1.0,
+  "argument2": "apocalypse_firstlight:terrain/flat_surface_density"
 }

@@ -1,0 +1,10 @@
+{
+  "type": "forge:remove_features",
+  "biomes": "apocalypse_firstlight:scorched_lands",
+  "features": [
+    "minecraft:lake_lava_surface"
+  ],
+  "steps": [
+    "lakes"
+  ]
+}
