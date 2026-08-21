@@ -330,23 +330,20 @@
       {
         "type": "minecraft:condition",
         "if_true": {
-          "type": "minecraft:biome",
-          "biome_is": [
-            "apocalypse_firstlight:scorched_lands"
-          ]
+          "type": "minecraft:above_preliminary_surface"
         },
         "then_run": {
-          "type": "minecraft:sequence",
-          "sequence": [
-            {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:water",
-                "add_stone_depth": false,
-                "offset": 0,
-                "surface_depth_multiplier": 0
-              },
-              "then_run": {
+          "type": "minecraft:condition",
+          "if_true": {
+            "type": "minecraft:biome",
+            "biome_is": [
+              "apocalypse_firstlight:scorched_lands"
+            ]
+          },
+          "then_run": {
+            "type": "minecraft:sequence",
+            "sequence": [
+              {
                 "type": "minecraft:condition",
                 "if_true": {
                   "type": "minecraft:stone_depth",
@@ -356,49 +353,44 @@
                   "surface_type": "floor"
                 },
                 "then_run": {
+                  "type": "minecraft:sequence",
+                  "sequence": [
+                    {
+                      "type": "minecraft:condition",
+                      "if_true": {
+                        "type": "minecraft:noise_threshold",
+                        "noise": "minecraft:surface",
+                        "min_threshold": 0.0,
+                        "max_threshold": 1.7976931348623157e+308
+                      },
+                      "then_run": {
+                        "type": "minecraft:block",
+                        "result_state": { "Name": "apocalypse_firstlight:fused_ground" }
+                      }
+                    },
+                    {
+                      "type": "minecraft:block",
+                      "result_state": { "Name": "apocalypse_firstlight:scorched_soil" }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "minecraft:condition",
+                "if_true": {
+                  "type": "minecraft:stone_depth",
+                  "add_surface_depth": true,
+                  "offset": 10,
+                  "secondary_depth_range": 0,
+                  "surface_type": "floor"
+                },
+                "then_run": {
                   "type": "minecraft:block",
                   "result_state": { "Name": "apocalypse_firstlight:scorched_soil" }
                 }
               }
-            },
-            {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:stone_depth",
-                "add_surface_depth": true,
-                "offset": 0,
-                "secondary_depth_range": 0,
-                "surface_type": "floor"
-              },
-              "then_run": {
-                "type": "minecraft:condition",
-                "if_true": {
-                  "type": "minecraft:noise_threshold",
-                  "noise": "minecraft:surface",
-                  "min_threshold": 0.55,
-                  "max_threshold": 1.7976931348623157e+308
-                },
-                "then_run": {
-                  "type": "minecraft:block",
-                  "result_state": { "Name": "apocalypse_firstlight:fused_ground" }
-                }
-              }
-            },
-            {
-              "type": "minecraft:condition",
-              "if_true": {
-                "type": "minecraft:stone_depth",
-                "add_surface_depth": true,
-                "offset": 10,
-                "secondary_depth_range": 0,
-                "surface_type": "floor"
-              },
-              "then_run": {
-                "type": "minecraft:block",
-                "result_state": { "Name": "apocalypse_firstlight:scorched_soil" }
-              }
-            }
-          ]
+            ]
+          }
         }
       },
       {
