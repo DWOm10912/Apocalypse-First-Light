@@ -16,13 +16,17 @@ public final class StartupPlainsEnclave {
     public static final int CENTER_X = 0;
     public static final int CENTER_Z = 0;
     public static final int CORE_RADIUS_BLOCKS = 160;
-    public static final int OUTER_RADIUS_BLOCKS = 240;
     public static final int PLAINS_BASE_RADIUS = 208;
     public static final int PLAINS_NOISE_AMPLITUDE = 32;
-    public static final int WOODLAND_BASE_OUTER_RADIUS = 320;
-    public static final int WOODLAND_NOISE_AMPLITUDE = 40;
-    public static final int MIN_WOODLAND_BUFFER = 64;
-    public static final int MAX_WOODLAND_BUFFER = 160;
+    public static final int WOODLAND_BASE_OUTER_RADIUS = 480;
+    public static final int WOODLAND_NOISE_AMPLITUDE = 56;
+    public static final int WOODLAND_NOISE_SCALE = 256;
+    public static final int MIN_WOODLAND_BUFFER = 208;
+    public static final int MAX_WOODLAND_BUFFER = 336;
+    public static final int SURFACE_BAND_MIN_BLOCK_Y = 48;
+    public static final int SURFACE_BAND_MAX_BLOCK_Y = 112;
+    public static final int SURFACE_BAND_MIN_QUART_Y = 12;
+    public static final int SURFACE_BAND_MAX_QUART_Y = 28;
 
     public enum Zone {
         CORE_PLAINS,
@@ -46,6 +50,10 @@ public final class StartupPlainsEnclave {
         return containsBlock(quartX << 2, quartZ << 2);
     }
 
+    public static boolean isSurfaceQuartY(int quartY) {
+        return quartY >= SURFACE_BAND_MIN_QUART_Y && quartY <= SURFACE_BAND_MAX_QUART_Y;
+    }
+
     public static Zone zoneAt(int x, int z, long seed) {
         double distance = distance(x, z);
         if (distance <= CORE_RADIUS_BLOCKS) {
@@ -67,7 +75,7 @@ public final class StartupPlainsEnclave {
     public static int woodlandOuterBoundary(int x, int z, long seed) {
         int plains = plainsBoundary(x, z, seed);
         double noisy = WOODLAND_BASE_OUTER_RADIUS
-                + smoothNoise(x, z, seed ^ 0x9E3779B97F4A7C15L, 192.0D) * WOODLAND_NOISE_AMPLITUDE;
+                + smoothNoise(x, z, seed ^ 0x9E3779B97F4A7C15L, WOODLAND_NOISE_SCALE) * WOODLAND_NOISE_AMPLITUDE;
         return (int) Math.round(Math.min(plains + MAX_WOODLAND_BUFFER,
                 Math.max(plains + MIN_WOODLAND_BUFFER, noisy)));
     }

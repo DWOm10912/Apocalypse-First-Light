@@ -49,4 +49,5 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
                                              CallbackInfo ci) {
         ScorchedAquiferContext.end();
     }
+
 }

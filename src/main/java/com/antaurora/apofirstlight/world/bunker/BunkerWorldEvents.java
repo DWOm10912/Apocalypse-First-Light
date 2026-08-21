@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.world.bunker;
 import com.antaurora.apofirstlight.radiation.RadiationManager;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
+import com.antaurora.apofirstlight.world.biome.StartupSettlementProtection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
@@ -24,9 +25,14 @@ public final class BunkerWorldEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         ServerLevel overworld = event.getServer().overworld();
-        ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE] center=({}, {}), coreRadius={}, outerRadius={}, coordinateSpace=BLOCK",
+        ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE] center=({}, {}) coreRadius={} plainsBaseRadius={} plainsNoiseAmplitude={} plainsNoiseScale={} woodlandBaseOuterRadius={} woodlandNoiseAmplitude={} woodlandNoiseScale={} minWoodlandBuffer={} maxWoodlandBuffer={} settlementProtectionDepth={} coordinateSpace=BLOCK",
                 StartupPlainsEnclave.CENTER_X, StartupPlainsEnclave.CENTER_Z,
-                StartupPlainsEnclave.CORE_RADIUS_BLOCKS, StartupPlainsEnclave.OUTER_RADIUS_BLOCKS);
+                StartupPlainsEnclave.CORE_RADIUS_BLOCKS, StartupPlainsEnclave.PLAINS_BASE_RADIUS,
+                StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE, 128,
+                StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS, StartupPlainsEnclave.WOODLAND_NOISE_AMPLITUDE,
+                StartupPlainsEnclave.WOODLAND_NOISE_SCALE, StartupPlainsEnclave.MIN_WOODLAND_BUFFER,
+                StartupPlainsEnclave.MAX_WOODLAND_BUFFER,
+                StartupSettlementProtection.STARTUP_SETTLEMENT_WOODLAND_PROTECTION_DEPTH);
         probeLiveBiomeSource(overworld);
         auditStartupSurface(overworld);
         BunkerPlacementManager.ensureGenerated(overworld);

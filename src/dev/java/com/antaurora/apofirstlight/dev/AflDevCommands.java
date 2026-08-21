@@ -21,7 +21,9 @@ import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlayerSpawnEvents;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
+import com.antaurora.apofirstlight.world.biome.StartupSettlementProtection;
 import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -66,11 +68,16 @@ public final class AflDevCommands {
                 .executes(AflDevCommands::startupEcologySample));
         dev.then(Commands.literal("startup_ecology_here")
                 .executes(AflDevCommands::startupEcologyHere));
+        dev.then(Commands.literal("startup_ecology_radial")
+                .executes(AflDevCommands::startupEcologyRadial));
         dev.then(Commands.literal("startup_radiation_sample")
                 .executes(AflDevCommands::startupRadiationSample));
         dev.then(Commands.literal("settlement_prototype")
                 .executes(context -> settlementPrototype(context))
                 .then(Commands.literal("here").executes(context -> settlementPrototype(context))));
+        dev.then(Commands.literal("settlement_terrain_check")
+                .executes(AflDevCommands::settlementTerrainCheck)
+                .then(Commands.literal("here").executes(AflDevCommands::settlementTerrainCheck)));
         dev.then(Commands.literal("scorched_surface_sample")
                 .executes(context -> scorchedSurfaceSample(context, 128))
                 .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
@@ -257,17 +264,46 @@ public final class AflDevCommands {
         String playerBiome = level.getBiome(pos).unwrapKey()
                 .map(key -> key.location().toString()).orElse("unknown");
         StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), seed);
+        int settlementBoundary = StartupSettlementProtection.settlementProtectionBoundary(pos.getX(), pos.getZ(), seed);
+        StartupSettlementProtection.ProtectionClass protection =
+                StartupSettlementProtection.protectionAt(pos.getX(), pos.getZ(), seed);
         String expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
                 ? "apocalypse_firstlight:irradiated_woodland"
                 : zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
         boolean match = "original".equals(expected) || expected.equals(surfaceBiome);
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d zone=%s plainsBoundary=%d woodlandBoundary=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=Climate.ParameterList#findValuePositional:RETURN",
-                pos.getX(), pos.getY(), pos.getZ(), seed, zone,
-                StartupPlainsEnclave.plainsBoundary(pos.getX(), pos.getZ(), seed),
-                StartupPlainsEnclave.woodlandOuterBoundary(pos.getX(), pos.getZ(), seed), expected, surfaceY,
+                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s woodlandBoundary=%d eligibleWoodlandWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
+                pos.getX(), pos.getY(), pos.getZ(), seed,
+                StartupSettlementProtection.distanceFromCenter(pos.getX(), pos.getZ()), zone,
+                StartupPlainsEnclave.plainsBoundary(pos.getX(), pos.getZ(), seed), settlementBoundary,
+                protection != StartupSettlementProtection.ProtectionClass.NONE, protection,
+                StartupPlainsEnclave.woodlandOuterBoundary(pos.getX(), pos.getZ(), seed),
+                StartupSettlementProtection.eligibleWoodlandWidth(pos.getX(), pos.getZ(), seed), expected, surfaceY,
                 surfaceQuartY, surfaceBiome, playerBiome,
                 match, match ? "RESOLVED" : "MISMATCH_OR_UNRESOLVED")), false);
+        return 1;
+    }
+
+    private static int startupEcologyRadial(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        long seed = level.getSeed();
+        String[] names = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+        int[][] directions = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}};
+        for (int i = 0; i < directions.length; i++) {
+            final int directionIndex = i;
+            int x = directions[directionIndex][0] * 600;
+            int z = directions[directionIndex][1] * 600;
+            int plains = StartupPlainsEnclave.plainsBoundary(x, z, seed);
+            int protection = StartupSettlementProtection.settlementProtectionBoundary(x, z, seed);
+            int woodland = StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed);
+            context.getSource().sendSuccess(() -> Component.literal(String.format(
+                    "[AFL STARTUP RADIAL] dir=%s sample=(%d,%d) plainsBoundary=%d settlementProtectionBoundary=%d woodlandBoundary=%d eligibleWoodlandWidth=%d",
+                    names[directionIndex], x, z, plains, protection, woodland, Math.max(0, woodland - protection))), false);
+        }
         return 1;
     }
 
@@ -314,9 +350,14 @@ public final class AflDevCommands {
         }
         ServerLevel level = context.getSource().getLevel();
         BlockPos player = BlockPos.containing(context.getSource().getPosition());
+        String version = "[AFL SETTLEMENT PROTOTYPE] validatorVersion=" + SettlementPrototype.VALIDATOR_VERSION;
+        context.getSource().sendSuccess(() -> Component.literal(version), false);
+        ApocalypseFirstLight.LOGGER.info(version);
         SettlementPrototype.Result result = SettlementPrototype.generateHere(level, player);
         if (!result.success()) {
-            context.getSource().sendFailure(Component.literal("[AFL SETTLEMENT PROTOTYPE] rejected reason=" + result.reason()));
+            String diagnostic = "[AFL SETTLEMENT PROTOTYPE] rejected " + SettlementPrototype.rejectDiagnostic(result);
+            context.getSource().sendFailure(Component.literal(diagnostic));
+            ApocalypseFirstLight.LOGGER.info(diagnostic);
             return 0;
         }
         SettlementPrototype.Plan plan = result.plan();
@@ -328,6 +369,24 @@ public final class AflDevCommands {
                 result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT");
         context.getSource().sendSuccess(() -> Component.literal(message), true);
         return 1;
+    }
+
+    private static int settlementTerrainCheck(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player."));
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos pos = BlockPos.containing(context.getSource().getPosition());
+        SettlementPrototype.TerrainStats stats = SettlementPrototype.terrainCheckHere(level, pos);
+        boolean pass = SettlementPrototype.passesGlobalTerrain(stats);
+        String line = String.format("[AFL SETTLEMENT TERRAIN] validatorVersion=%s stage=GLOBAL_ROBUST anchor=%s sampleSpacing=%d samples=%d minY=%d p10=%d p25=%d median=%d p75=%d p90=%d maxY=%d effectiveRelief=%d maxEffectiveRelief=12 outliers=%d outlierRatio=%.3f maxOutlierRatio=0.150 heightmapType=MOTION_BLOCKING_NO_LEAVES result=%s",
+                SettlementPrototype.VALIDATOR_VERSION, pos.toShortString(), SettlementPrototype.GLOBAL_SAMPLE_SPACING,
+                stats.sampleCount(), stats.minY(), stats.p10(), stats.p25(), stats.median(), stats.p75(), stats.p90(),
+                stats.maxY(), stats.effectiveRelief(), stats.outlierCount(), stats.outlierRatio(), pass ? "PASS" : "FAIL");
+        context.getSource().sendSuccess(() -> Component.literal(line), false);
+        ApocalypseFirstLight.LOGGER.info(line);
+        return pass ? 1 : 0;
     }
 
     private static int scorchedSurfaceSample(CommandContext<CommandSourceStack> context, int size) {
