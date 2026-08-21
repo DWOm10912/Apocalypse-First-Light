@@ -1,0 +1,1 @@
+{ "parent": "minecraft:block/cube_all", "textures": { "all": "apocalypse_firstlight:block/scorched_soil" } }

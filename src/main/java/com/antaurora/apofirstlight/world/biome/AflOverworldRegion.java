@@ -38,12 +38,21 @@ public final class AflOverworldRegion extends Region {
                 AflBiomes.IRRADIATED_WOODLAND);
         addBiome(mapper,
                 Climate.Parameter.span(-1.0F, 1.0F),
-                Climate.Parameter.span(-1.0F, 0.25F),
+                Climate.Parameter.span(-0.35F, 0.25F),
                 Climate.Parameter.span(-0.11F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.point(0.0F),
                 0.0F,
                 AflBiomes.FALLOUT_BARRENS);
+        addBiome(mapper,
+                Climate.Parameter.span(-1.0F, 1.0F),
+                Climate.Parameter.span(-1.0F, -0.35F),
+                Climate.Parameter.span(-0.11F, 1.0F),
+                Climate.Parameter.span(-1.0F, 1.0F),
+                Climate.Parameter.span(-1.0F, 1.0F),
+                Climate.Parameter.span(-1.0F, 1.0F),
+                0.0F,
+                AflBiomes.SCORCHED_LANDS);
     }
 }

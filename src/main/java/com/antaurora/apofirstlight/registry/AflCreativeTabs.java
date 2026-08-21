@@ -33,6 +33,8 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_LOCKER.get());
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
                         output.accept(AflItems.FALLOUT_SOIL.get());
+                        output.accept(AflItems.SCORCHED_SOIL.get());
+                        output.accept(AflItems.FUSED_GROUND.get());
                         output.accept(AflItems.POPLAR_LOG.get());
                         output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
                         output.accept(AflItems.POPLAR_WOOD.get());

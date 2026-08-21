@@ -12,6 +12,8 @@ public final class AflBiomes {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "irradiated_woodland"));
     public static final ResourceKey<Biome> FALLOUT_BARRENS = ResourceKey.create(Registries.BIOME,
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fallout_barrens"));
+    public static final ResourceKey<Biome> SCORCHED_LANDS = ResourceKey.create(Registries.BIOME,
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "scorched_lands"));
 
     private AflBiomes() {
     }

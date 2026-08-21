@@ -75,7 +75,8 @@ public abstract class ClimateParameterListMixin {
     private static boolean apocalypse$isSurfaceBiome(Holder<Biome> biome) {
         return biome.is(Biomes.PLAINS)
                 || biome.is(AflBiomes.IRRADIATED_WOODLAND)
-                || biome.is(AflBiomes.FALLOUT_BARRENS);
+                || biome.is(AflBiomes.FALLOUT_BARRENS)
+                || biome.is(AflBiomes.SCORCHED_LANDS);
     }
 
     @Unique

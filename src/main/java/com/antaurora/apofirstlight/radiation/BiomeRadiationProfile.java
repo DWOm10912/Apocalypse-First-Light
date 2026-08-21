@@ -5,7 +5,8 @@ public enum BiomeRadiationProfile {
     UNKNOWN(0.0D, 1.0D),
     SAFE(0.0D, 0.075D),
     IRRADIATED(0.10D, 0.58D),
-    HEAVY_FALLOUT(0.62D, 0.82D);
+    HEAVY_FALLOUT(0.62D, 0.82D),
+    EXTREME(0.86D, 1.0D);
 
     private final double minimum;
     private final double maximum;

@@ -107,16 +107,18 @@ public abstract class MultiNoiseBiomeSourceMixin {
         boolean hasPlains = false;
         boolean hasWoodland = false;
         boolean hasBarrens = false;
+        boolean hasScorched = false;
         for (Pair<Climate.ParameterPoint, Holder<Biome>> entry : parameters().values()) {
             parameterCount++;
             hasPlains |= entry.getSecond().is(Biomes.PLAINS);
             hasWoodland |= entry.getSecond().is(AflBiomes.IRRADIATED_WOODLAND);
             hasBarrens |= entry.getSecond().is(AflBiomes.FALLOUT_BARRENS);
+            hasScorched |= entry.getSecond().is(AflBiomes.SCORCHED_LANDS);
         }
         ApocalypseFirstLight.LOGGER.info(
-                "[AFL BIOME TRACE][SOURCE] identity={} thread={} parameterCount={} hasPlains={} hasIrradiatedWoodland={} hasFalloutBarrens={}",
+                "[AFL BIOME TRACE][SOURCE] identity={} thread={} parameterCount={} hasPlains={} hasIrradiatedWoodland={} hasFalloutBarrens={} hasScorchedLands={}",
                 Integer.toHexString(System.identityHashCode(this)), Thread.currentThread().getName(), parameterCount,
-                hasPlains, hasWoodland, hasBarrens);
+                hasPlains, hasWoodland, hasBarrens, hasScorched);
     }
 
 }

@@ -179,9 +179,12 @@ public final class AflDevCommands {
         BlockPos center = BlockPos.containing(context.getSource().getPosition());
         for (int size : new int[]{64, 128, 256}) {
             TerrainSuitabilitySampler.Result result = TerrainSuitabilitySampler.sample(level, center, size);
-            String message = String.format("[AFL TERRAIN SAMPLE] size=%d minY=%d maxY=%d deltaY=%d avgY=%.2f maxLocalSlope=%d waterRatio=%.3f CITY_FRIENDLY=%s",
+            String cityFriendly = result.reliable() ? Boolean.toString(result.cityFriendly()) : "UNKNOWN";
+            String coverageStatus = result.reliable() ? "" : " LOW_COVERAGE";
+            String message = String.format("[AFL TERRAIN SAMPLE] size=%d minY=%d maxY=%d deltaY=%d avgY=%.2f maxLocalSlope=%d waterRatio=%.3f sampledColumns=%d skippedColumns=%d coverage=%.3f sampledSlopeEdges=%d skippedSlopeEdges=%d reliable=%s CITY_FRIENDLY=%s%s",
                     result.size(), result.minY(), result.maxY(), result.deltaY(), result.averageY(),
-                    result.maxLocalSlope(), result.waterRatio(), result.cityFriendly());
+                    result.maxLocalSlope(), result.waterRatio(), result.sampledColumns(), result.skippedColumns(),
+                    result.coverage(), result.sampledSlopeEdges(), result.skippedSlopeEdges(), result.reliable(), cityFriendly, coverageStatus);
             context.getSource().sendSuccess(() -> Component.literal(message), false);
         }
         return 1;
