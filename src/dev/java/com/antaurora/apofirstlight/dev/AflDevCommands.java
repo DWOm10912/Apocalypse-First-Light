@@ -64,6 +64,10 @@ public final class AflDevCommands {
                 .then(Commands.literal("status").executes(AflDevCommands::inlandTerrainStatus)));
         dev.then(Commands.literal("terrain_sample")
                 .executes(AflDevCommands::terrainSample));
+        dev.then(Commands.literal("terrain_calibration")
+                .executes(AflDevCommands::terrainCalibration));
+        dev.then(Commands.literal("terrain_profile")
+                .executes(AflDevCommands::terrainProfile));
         dev.then(Commands.literal("startup_ecology_sample")
                 .executes(AflDevCommands::startupEcologySample));
         dev.then(Commands.literal("startup_ecology_here")
@@ -218,6 +222,36 @@ public final class AflDevCommands {
             context.getSource().sendSuccess(() -> Component.literal(message), false);
         }
         return 1;
+    }
+
+    private static int terrainCalibration(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = new BlockPos(0, 0, 0);
+        TerrainV2Diagnostics.Calibration result = TerrainV2Diagnostics.calibration(level, center);
+        String message = String.format("[AFL TERRAIN CALIBRATION] center=%s fromY=-64 toY=204 fromValue=1.000000 toValue=-1.000000 densityDelta=2.000000 heightDelta=268 densityPerBlock=%.9f baseDensityPerBlock=%.9f targetMacroHeight=%d macroDensityAmplitude=%.6f macroNoiseMin=%.4f macroNoiseMax=%.4f expectedHeightMin=%.2f expectedHeightMax=%.2f macroFunctionResolved=%s",
+                center.toShortString(), result.baseDensityPerBlock(), result.baseDensityPerBlock(), result.targetMacroHeight(), result.macroDensityAmplitude(),
+                result.macroNoiseMin(), result.macroNoiseMax(), result.expectedHeightMin(), result.expectedHeightMax(), result.macroFunctionResolved());
+        ApocalypseFirstLight.LOGGER.info(message);
+        context.getSource().sendSuccess(() -> Component.literal(message), false);
+        return 1;
+    }
+
+    private static int terrainProfile(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = new BlockPos(0, 0, 0);
+        sendTerrainProfile(context, "GLOBAL", TerrainV2Diagnostics.globalProfile(level, center));
+        sendTerrainProfile(context, "CORE", TerrainV2Diagnostics.coreProfile(level, center));
+        sendTerrainProfile(context, "OUTER", TerrainV2Diagnostics.outerProfile(level, center));
+        return 1;
+    }
+
+    private static void sendTerrainProfile(CommandContext<CommandSourceStack> context, String region,
+                                           TerrainV2Diagnostics.Profile result) {
+        String message = String.format("[AFL TERRAIN PROFILE %s] center=(0,0) sampleCount=%d skippedSamples=%d minSurfaceY=%d p10=%d p25=%d median=%d p75=%d p90=%d maxSurfaceY=%d p90MinusP10=%d totalRelief=%d",
+                region, result.sampleCount(), result.skippedSamples(), result.minSurfaceY(), result.p10(), result.p25(),
+                result.median(), result.p75(), result.p90(), result.maxSurfaceY(), result.p90MinusP10(), result.totalRelief());
+        ApocalypseFirstLight.LOGGER.info(message);
+        context.getSource().sendSuccess(() -> Component.literal(message), false);
     }
 
     private static int startupEcologySample(CommandContext<CommandSourceStack> context) {

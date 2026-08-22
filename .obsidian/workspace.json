@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 系统设计/声音系统.md",
+                "file": "docs/01 - 系统设计/生存状态.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "声音系统"
+              "title": "生存状态"
             }
           }
         ]
@@ -40,7 +40,7 @@
             "state": {
               "type": "file-explorer",
               "state": {
-                "sortOrder": "alphabetical",
+                "sortOrder": "byCreatedTimeReverse",
                 "autoReveal": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/01 - 系统设计/声音系统.md",
+                "file": "docs/01 - 系统设计/生存状态.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -118,7 +118,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "docs/01 - 系统设计/声音系统.md",
+                "file": "docs/01 - 系统设计/生存状态.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
@@ -161,7 +161,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "docs/01 - 系统设计/声音系统.md",
+                "file": "docs/01 - 系统设计/生存状态.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -190,19 +190,36 @@
   },
   "active": "b1f68e95b15290ae",
   "lastOpenFiles": [
-    "run/saves/新的世界/level13324879575847353470.dat",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_-3.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-3.xwmc.outdated",
+    "run/saves/新的世界/level15562464495574790127.dat",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
-    "run/saves/新的世界/level8658874963916728336.dat",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-1955001764699822518.dat",
-    "docs/01 - 系统设计/声音系统.md",
-    "docs/01 - 系统设计/声音系统.md",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/1/cache_1",
+    "run/xaero/world-map/新的世界/null/caves/4/cache_1",
+    "run/xaero/world-map/新的世界/null/caves/5/cache_1",
+    "run/xaero/world-map/新的世界/null/caves/3/cache_1",
+    "run/xaero/world-map/新的世界/null/caves/6/cache_1",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-14574004508693758703.dat",
+    "run/saves/新的世界/icon.png",
+    "docs/02 - 内容设计/未命名.md",
+    "docs/01 - 系统设计/生存状态.md",
+    "docs/01 - 系统设计/食物.md",
+    "docs/01 - 系统设计/空气污染.md",
+    "docs/02 - 内容设计/方块/新矿物.md",
+    "docs/02 - 内容设计/方块/机器.md",
+    "docs/01 - 系统设计/枪械保养.md",
+    "docs/01 - 系统设计/蓝图.md",
+    "docs/02 - 内容设计/物品.md",
+    "docs/01 - 系统设计/工业.md",
+    "docs/01 - 系统设计/声音.md",
+    "docs/01 - 系统设计/辐射.md",
+    "docs/01 - 系统设计/新群系.md",
+    "docs/01 - 系统设计/战利品.md",
+    "docs/01 - 系统设计/城市规划.md",
+    "docs/01 - 系统设计/原版改动.md",
+    "docs/02 - 内容设计/方块.md",
+    "docs/02 - 内容设计/生物.md",
     "docs/00 - 项目总览.md",
     "docs/03 - 开发记录.md",
     "docs/01 - 系统设计.md",
