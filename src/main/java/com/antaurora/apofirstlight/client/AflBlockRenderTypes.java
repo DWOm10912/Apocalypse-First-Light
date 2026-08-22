@@ -26,6 +26,8 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get(), RenderType.cutout());
         });
     }
 }

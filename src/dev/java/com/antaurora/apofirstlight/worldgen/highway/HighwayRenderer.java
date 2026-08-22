@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
+import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +56,11 @@ public final class HighwayRenderer {
         stats.duplicateXZDifferentRoadYSurfaceKeys = corridor.duplicateXZDifferentRoadYSurfaceKeys();
         stats.coreRoadColumnsPlanned = corridor.coreRoadColumns().size();
         stats.markingsSkippedUnsupportedDiagonal = corridor.markingsSkippedUnsupportedDiagonal();
+        stats.roadStepTransitions = corridor.roadStepTransitions();
+        stats.roadStepRiseTransitions = corridor.roadStepRiseTransitions();
+        stats.roadStepDropTransitions = corridor.roadStepDropTransitions();
+        stats.laneDividerStepConnectorSkipped = corridor.laneDividerStepConnectorSkipped();
+        stats.unsupportedMarkingStepHeight = corridor.unsupportedMarkingStepHeight();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
@@ -69,6 +75,7 @@ public final class HighwayRenderer {
         placeRoadStructure(level, edit, stats, corridor);
         placeParapetsAndMedian(level, edit, stats, corridor);
         placeRoadMarkings(level, edit, stats, corridor);
+        placeRoadMarkingStepConnectors(level, edit, stats, corridor);
         placePiers(level, edit, stats, corridor, profile);
 
         HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
@@ -105,6 +112,16 @@ public final class HighwayRenderer {
         stats.actualWhiteLaneDividerMarkings = validation.actualWhiteLaneDividerMarkings();
         stats.missingWhiteLaneDividerMarkings = validation.missingWhiteLaneDividerMarkings();
         stats.wrongMarkingTypeBlocks = validation.wrongMarkingTypeBlocks();
+        stats.expectedWhiteEdgeStepConnectors = validation.expectedWhiteEdgeStepConnectors();
+        stats.actualWhiteEdgeStepConnectors = validation.actualWhiteEdgeStepConnectors();
+        stats.missingWhiteEdgeStepConnectors = validation.missingWhiteEdgeStepConnectors();
+        stats.expectedYellowEdgeStepConnectors = validation.expectedYellowEdgeStepConnectors();
+        stats.actualYellowEdgeStepConnectors = validation.actualYellowEdgeStepConnectors();
+        stats.missingYellowEdgeStepConnectors = validation.missingYellowEdgeStepConnectors();
+        stats.expectedLaneDividerStepConnectors = validation.expectedLaneDividerStepConnectors();
+        stats.actualLaneDividerStepConnectors = validation.actualLaneDividerStepConnectors();
+        stats.missingLaneDividerStepConnectors = validation.missingLaneDividerStepConnectors();
+        stats.wrongStepConnectorTypeBlocks = validation.wrongStepConnectorTypeBlocks();
         return stats;
     }
 
@@ -290,6 +307,31 @@ public final class HighwayRenderer {
             case WHITE_LANE_DIVIDER -> AflBlocks.WHITE_LANE_DIVIDER.get().defaultBlockState();
         };
         return state.setValue(RoadMarkingBlock.FACING, marking.facing());
+    }
+
+    private static void placeRoadMarkingStepConnectors(ServerLevel level, HighwayEditSession edit,
+                                                        HighwayRenderStats stats,
+                                                        HighwayCorridor corridor) {
+        for (HighwayCorridor.RoadMarkingStepConnector connector : corridor.roadMarkingStepConnectors()) {
+            BlockState state = roadMarkingStepConnectorState(connector);
+            if (edit.set(new BlockPos(connector.x(), connector.y(), connector.z()), state)) {
+                stats.blocksPlaced++;
+                stats.stepConnectorBlocksPlaced++;
+            }
+        }
+    }
+
+    private static BlockState roadMarkingStepConnectorState(
+            HighwayCorridor.RoadMarkingStepConnector connector) {
+        BlockState state = switch (connector.type()) {
+            case WHITE_EDGE -> AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get().defaultBlockState();
+            case YELLOW_EDGE -> AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get().defaultBlockState();
+            case WHITE_LANE_DIVIDER -> throw new IllegalArgumentException(
+                    "Lane divider step connectors require a painted dash boundary");
+        };
+        return state
+                .setValue(RoadMarkingStepConnectorBlock.FACING, connector.facing())
+                .setValue(RoadMarkingStepConnectorBlock.LEFT_SIDE, connector.leftSide());
     }
 
     private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,

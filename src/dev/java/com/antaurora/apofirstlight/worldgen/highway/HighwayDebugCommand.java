@@ -59,7 +59,7 @@ public final class HighwayDebugCommand {
         SESSIONS.put(level, edit);
         int minPierHeight = stats.piersPlaced == 0 ? 0 : stats.minPierHeight;
         int avgPierHeight = stats.piersPlaced == 0 ? 0 : stats.pierHeightTotal / stats.piersPlaced;
-        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.7 VISUAL V1]");
+        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.7 VISUAL V1.1A]");
         message.append(" start=(").append(start.getX()).append(',').append(start.getY()).append(',')
                 .append(start.getZ()).append(')');
         message.append(" end=(").append((int) Math.round(main.sample(main.length()).x())).append(',')
@@ -114,6 +114,22 @@ public final class HighwayDebugCommand {
         stat(message, "markingsSkippedUnsupportedDiagonal",
                 stats.markingsSkippedUnsupportedDiagonal);
         stat(message, "roadMarkingBlocksPlaced", stats.roadMarkingBlocksPlaced);
+        stat(message, "roadStepTransitions", stats.roadStepTransitions);
+        stat(message, "roadStepRiseTransitions", stats.roadStepRiseTransitions);
+        stat(message, "roadStepDropTransitions", stats.roadStepDropTransitions);
+        stat(message, "expectedWhiteEdgeStepConnectors", stats.expectedWhiteEdgeStepConnectors);
+        stat(message, "actualWhiteEdgeStepConnectors", stats.actualWhiteEdgeStepConnectors);
+        stat(message, "missingWhiteEdgeStepConnectors", stats.missingWhiteEdgeStepConnectors);
+        stat(message, "expectedYellowEdgeStepConnectors", stats.expectedYellowEdgeStepConnectors);
+        stat(message, "actualYellowEdgeStepConnectors", stats.actualYellowEdgeStepConnectors);
+        stat(message, "missingYellowEdgeStepConnectors", stats.missingYellowEdgeStepConnectors);
+        stat(message, "expectedLaneDividerStepConnectors", stats.expectedLaneDividerStepConnectors);
+        stat(message, "actualLaneDividerStepConnectors", stats.actualLaneDividerStepConnectors);
+        stat(message, "missingLaneDividerStepConnectors", stats.missingLaneDividerStepConnectors);
+        stat(message, "laneDividerStepConnectorSkipped", stats.laneDividerStepConnectorSkipped);
+        stat(message, "wrongStepConnectorTypeBlocks", stats.wrongStepConnectorTypeBlocks);
+        stat(message, "unsupportedMarkingStepHeight", stats.unsupportedMarkingStepHeight);
+        stat(message, "stepConnectorBlocksPlaced", stats.stepConnectorBlocksPlaced);
         stat(message, "vegetationClearanceViolations", stats.vegetationClearanceViolations);
         stat(message, "remainingRowLogs", stats.remainingRowLogs);
         stat(message, "remainingRowLeaves", stats.remainingRowLeaves);

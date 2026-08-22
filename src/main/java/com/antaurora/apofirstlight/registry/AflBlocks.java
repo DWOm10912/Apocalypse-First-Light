@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
+import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
 import com.antaurora.apofirstlight.world.PoplarTreeGrower;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
@@ -104,15 +105,29 @@ public final class AflBlocks {
                     .strength(0.1F)
                     .sound(SoundType.STONE)
                     .noCollission()
-                    .noOcclusion()));
+                    .noOcclusion(), RoadMarkingBlock.MarkingType.EDGE));
     public static final RegistryObject<Block> EDGE_LANE_YELLOW = BLOCKS.register("edge_lane_yellow",
             () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
                     .strength(0.1F)
                     .sound(SoundType.STONE)
                     .noCollission()
-                    .noOcclusion()));
+                    .noOcclusion(), RoadMarkingBlock.MarkingType.EDGE));
     public static final RegistryObject<Block> WHITE_LANE_DIVIDER = BLOCKS.register("white_lane_divider",
             () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion(), RoadMarkingBlock.MarkingType.DIVIDER));
+    public static final RegistryObject<Block> EDGE_LANE_WHITE_STEP_CONNECTOR = BLOCKS.register(
+            "edge_lane_white_step_connector",
+            () -> new RoadMarkingStepConnectorBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> EDGE_LANE_YELLOW_STEP_CONNECTOR = BLOCKS.register(
+            "edge_lane_yellow_step_connector",
+            () -> new RoadMarkingStepConnectorBlock(BlockBehaviour.Properties.of()
                     .strength(0.1F)
                     .sound(SoundType.STONE)
                     .noCollission()

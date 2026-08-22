@@ -103,6 +103,22 @@ public final class HighwayRenderStats {
     public int wrongMarkingTypeBlocks;
     public int markingsSkippedUnsupportedDiagonal;
     public int roadMarkingBlocksPlaced;
+    public int roadStepTransitions;
+    public int roadStepRiseTransitions;
+    public int roadStepDropTransitions;
+    public int expectedWhiteEdgeStepConnectors;
+    public int actualWhiteEdgeStepConnectors;
+    public int missingWhiteEdgeStepConnectors;
+    public int expectedYellowEdgeStepConnectors;
+    public int actualYellowEdgeStepConnectors;
+    public int missingYellowEdgeStepConnectors;
+    public int expectedLaneDividerStepConnectors;
+    public int actualLaneDividerStepConnectors;
+    public int missingLaneDividerStepConnectors;
+    public int laneDividerStepConnectorSkipped;
+    public int wrongStepConnectorTypeBlocks;
+    public int unsupportedMarkingStepHeight;
+    public int stepConnectorBlocksPlaced;
 
     public void addCellMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -227,5 +243,21 @@ public final class HighwayRenderStats {
         wrongMarkingTypeBlocks += other.wrongMarkingTypeBlocks;
         markingsSkippedUnsupportedDiagonal += other.markingsSkippedUnsupportedDiagonal;
         roadMarkingBlocksPlaced += other.roadMarkingBlocksPlaced;
+        roadStepTransitions += other.roadStepTransitions;
+        roadStepRiseTransitions += other.roadStepRiseTransitions;
+        roadStepDropTransitions += other.roadStepDropTransitions;
+        expectedWhiteEdgeStepConnectors += other.expectedWhiteEdgeStepConnectors;
+        actualWhiteEdgeStepConnectors += other.actualWhiteEdgeStepConnectors;
+        missingWhiteEdgeStepConnectors += other.missingWhiteEdgeStepConnectors;
+        expectedYellowEdgeStepConnectors += other.expectedYellowEdgeStepConnectors;
+        actualYellowEdgeStepConnectors += other.actualYellowEdgeStepConnectors;
+        missingYellowEdgeStepConnectors += other.missingYellowEdgeStepConnectors;
+        expectedLaneDividerStepConnectors += other.expectedLaneDividerStepConnectors;
+        actualLaneDividerStepConnectors += other.actualLaneDividerStepConnectors;
+        missingLaneDividerStepConnectors += other.missingLaneDividerStepConnectors;
+        laneDividerStepConnectorSkipped += other.laneDividerStepConnectorSkipped;
+        wrongStepConnectorTypeBlocks += other.wrongStepConnectorTypeBlocks;
+        unsupportedMarkingStepHeight += other.unsupportedMarkingStepHeight;
+        stepConnectorBlocksPlaced += other.stepConnectorBlocksPlaced;
     }
 }

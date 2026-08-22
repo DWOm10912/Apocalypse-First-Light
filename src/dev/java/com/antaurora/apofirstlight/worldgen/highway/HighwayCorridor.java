@@ -33,6 +33,8 @@ public final class HighwayCorridor {
     private final Set<SurfaceKey> roadFurniturePositions;
     private final List<RoadMarking> roadMarkings;
     private final Map<SurfaceKey, RoadMarking> roadMarkingPositions;
+    private final List<RoadMarkingStepConnector> roadMarkingStepConnectors;
+    private final Map<SurfaceKey, RoadMarkingStepConnector> roadMarkingStepConnectorPositions;
     private final List<CoreRoadColumnSnapshot> coreRoadColumns;
     private final List<CutColumn> cutColumns;
     private final Set<Key> cutColumnPositions;
@@ -43,17 +45,26 @@ public final class HighwayCorridor {
     private final int bridgeApproachSupportFailures;
     private final int duplicateXZDifferentRoadYSurfaceKeys;
     private final int markingsSkippedUnsupportedDiagonal;
+    private final int roadStepTransitions;
+    private final int roadStepRiseTransitions;
+    private final int roadStepDropTransitions;
+    private final int laneDividerStepConnectorSkipped;
+    private final int unsupportedMarkingStepHeight;
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
                             List<Column> rowEnvelope, List<CenterCell> centerline,
                             Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
                             List<RoadMarking> roadMarkings,
+                            List<RoadMarkingStepConnector> roadMarkingStepConnectors,
                             List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
                             List<StructuralSpan> structuralBridgeSpans,
                             int structuralApproachStations, int bridgeApproachStartExtensions,
                             int bridgeApproachEndExtensions, int bridgeApproachSupportFailures,
                             int duplicateXZDifferentRoadYSurfaceKeys,
-                            int markingsSkippedUnsupportedDiagonal) {
+                            int markingsSkippedUnsupportedDiagonal,
+                            int roadStepTransitions, int roadStepRiseTransitions,
+                            int roadStepDropTransitions, int laneDividerStepConnectorSkipped,
+                            int unsupportedMarkingStepHeight) {
         this.plan = plan;
         this.cells = List.copyOf(cells);
         this.bridgeCells = List.copyOf(bridgeCells);
@@ -67,6 +78,12 @@ public final class HighwayCorridor {
             markingPositions.put(new SurfaceKey(marking.x(), marking.y(), marking.z()), marking);
         }
         this.roadMarkingPositions = Map.copyOf(markingPositions);
+        this.roadMarkingStepConnectors = List.copyOf(roadMarkingStepConnectors);
+        Map<SurfaceKey, RoadMarkingStepConnector> connectorPositions = new LinkedHashMap<>();
+        for (RoadMarkingStepConnector connector : roadMarkingStepConnectors) {
+            connectorPositions.put(new SurfaceKey(connector.x(), connector.y(), connector.z()), connector);
+        }
+        this.roadMarkingStepConnectorPositions = Map.copyOf(connectorPositions);
         this.coreRoadColumns = List.copyOf(coreRoadColumns);
         this.cutColumns = List.copyOf(cutColumns);
         Set<Key> cutPositions = new LinkedHashSet<>();
@@ -79,6 +96,11 @@ public final class HighwayCorridor {
         this.bridgeApproachSupportFailures = bridgeApproachSupportFailures;
         this.duplicateXZDifferentRoadYSurfaceKeys = duplicateXZDifferentRoadYSurfaceKeys;
         this.markingsSkippedUnsupportedDiagonal = markingsSkippedUnsupportedDiagonal;
+        this.roadStepTransitions = roadStepTransitions;
+        this.roadStepRiseTransitions = roadStepRiseTransitions;
+        this.roadStepDropTransitions = roadStepDropTransitions;
+        this.laneDividerStepConnectorSkipped = laneDividerStepConnectorSkipped;
+        this.unsupportedMarkingStepHeight = unsupportedMarkingStepHeight;
     }
 
     public static HighwayCorridor build(ServerLevel level, HighwayPlan plan, HighwayProfile profile) {
@@ -166,15 +188,19 @@ public final class HighwayCorridor {
                 roadFurniturePositions.add(new SurfaceKey(cell.x(), cell.roadY() + 1, cell.z()));
             }
         }
-        RoadMarkingResolution markings = buildRoadMarkings(unique.values(), tangent);
+        RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
         List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
                 new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
-                markings.markings(), coreRoadColumns, cutColumns, structural.spans(), approachStations,
+                markings.markings(), markings.stepConnectors(), coreRoadColumns, cutColumns,
+                structural.spans(), approachStations,
                 structural.startExtensions(), structural.endExtensions(), structural.supportFailures(),
-                duplicateXZDifferentRoadY.size(), markings.skippedUnsupportedDiagonal());
+                duplicateXZDifferentRoadY.size(), markings.skippedUnsupportedDiagonal(),
+                markings.roadStepTransitions(), markings.roadStepRiseTransitions(),
+                markings.roadStepDropTransitions(), markings.laneDividerStepConnectorSkipped(),
+                markings.unsupportedMarkingStepHeight());
     }
 
     private static boolean prefer(Cell next, Cell existing) {
@@ -195,30 +221,95 @@ public final class HighwayCorridor {
     }
 
     private static RoadMarkingResolution buildRoadMarkings(Iterable<Cell> cells,
-                                                            HighwayPlan.Tangent tangent) {
+                                                            List<CenterCell> centerline,
+                                                            HighwayPlan.Tangent tangent,
+                                                            HighwayProfile profile) {
         Direction longitudinal = cardinalDirection(tangent);
         if (longitudinal == null) {
             int skipped = 0;
             for (Cell cell : cells) {
                 if (markingType(cell.lateral()) != null) skipped++;
             }
-            return new RoadMarkingResolution(List.of(), skipped);
+            return new RoadMarkingResolution(List.of(), List.of(), skipped, 0, 0, 0, 0, 0);
         }
 
         Direction right = longitudinal.getClockWise();
+        double rightX = -tangent.z();
+        double rightZ = tangent.x();
         List<RoadMarking> markings = new ArrayList<>();
         for (Cell cell : cells) {
             RoadMarkingType type = markingType(cell.lateral());
             if (type == null) continue;
-            Direction facing = switch (cell.lateral()) {
-                case -9, 3 -> right.getOpposite();
-                case 9, -3 -> right;
-                case -6, 6 -> longitudinal;
-                default -> throw new IllegalStateException("Unexpected marking lateral " + cell.lateral());
-            };
+            Direction facing = markingFacing(cell.lateral(), right, longitudinal);
             markings.add(new RoadMarking(cell.x(), cell.roadY() + 1, cell.z(), type, facing));
         }
-        return new RoadMarkingResolution(markings, 0);
+
+        List<RoadMarkingStepConnector> stepConnectors = new ArrayList<>();
+        int roadStepTransitions = 0;
+        int roadStepRiseTransitions = 0;
+        int roadStepDropTransitions = 0;
+        int laneDividerStepConnectorSkipped = 0;
+        int unsupportedMarkingStepHeight = 0;
+        for (int i = 0; i + 1 < centerline.size(); i++) {
+            CenterCell current = centerline.get(i);
+            CenterCell next = centerline.get(i + 1);
+            Direction transitionDirection = directionBetween(current, next);
+            if (transitionDirection == null) continue;
+            int currentRoadY = profile.sampleAt(current.distance()).roadY();
+            int nextRoadY = profile.sampleAt(next.distance()).roadY();
+            int deltaY = nextRoadY - currentRoadY;
+            if (deltaY == 0) continue;
+
+            roadStepTransitions++;
+            if (Math.abs(deltaY) > 1) {
+                unsupportedMarkingStepHeight++;
+                continue;
+            }
+            if (deltaY > 0) roadStepRiseTransitions++;
+            else roadStepDropTransitions++;
+
+            CenterCell lower = deltaY > 0 ? current : next;
+            Direction higherDirection = deltaY > 0
+                    ? transitionDirection : transitionDirection.getOpposite();
+            int connectorY = Math.max(currentRoadY, nextRoadY) + 1;
+            for (int lateral : new int[] {-9, 9, -3, 3, -6, 6}) {
+                RoadMarkingType type = markingType(lateral);
+                if (type == RoadMarkingType.WHITE_LANE_DIVIDER) {
+                    // The current divider model paints Z=2..6 and Z=10..14. Every block boundary
+                    // is therefore a two-pixel gap on both sides, so there is no paint to connect.
+                    laneDividerStepConnectorSkipped++;
+                    continue;
+                }
+                int x = (int) Math.round(lower.x() + rightX * lateral);
+                int z = (int) Math.round(lower.z() + rightZ * lateral);
+                Direction markingFacing = markingFacing(lateral, right, longitudinal);
+                boolean leftSide = markingFacing == higherDirection.getCounterClockWise();
+                stepConnectors.add(new RoadMarkingStepConnector(
+                        x, connectorY, z, type, higherDirection, leftSide));
+            }
+        }
+        return new RoadMarkingResolution(markings, stepConnectors, 0, roadStepTransitions,
+                roadStepRiseTransitions, roadStepDropTransitions, laneDividerStepConnectorSkipped,
+                unsupportedMarkingStepHeight);
+    }
+
+    private static Direction markingFacing(int lateral, Direction right, Direction longitudinal) {
+        return switch (lateral) {
+            case -9, 3 -> right.getOpposite();
+            case 9, -3 -> right;
+            case -6, 6 -> longitudinal;
+            default -> throw new IllegalStateException("Unexpected marking lateral " + lateral);
+        };
+    }
+
+    private static Direction directionBetween(CenterCell from, CenterCell to) {
+        int dx = to.x() - from.x();
+        int dz = to.z() - from.z();
+        if (Math.abs(dx) + Math.abs(dz) != 1) return null;
+        if (dx > 0) return Direction.EAST;
+        if (dx < 0) return Direction.WEST;
+        if (dz > 0) return Direction.SOUTH;
+        return Direction.NORTH;
     }
 
     private static RoadMarkingType markingType(int lateral) {
@@ -423,6 +514,7 @@ public final class HighwayCorridor {
     public List<Cell> bridgeCells() { return bridgeCells; }
     public List<Column> rowEnvelope() { return rowEnvelope; }
     public List<RoadMarking> roadMarkings() { return roadMarkings; }
+    public List<RoadMarkingStepConnector> roadMarkingStepConnectors() { return roadMarkingStepConnectors; }
     public List<CoreRoadColumnSnapshot> coreRoadColumns() { return coreRoadColumns; }
     public List<CutColumn> cutColumns() { return cutColumns; }
     public List<CenterCell> centerline() { return centerline; }
@@ -439,6 +531,11 @@ public final class HighwayCorridor {
     public int uniqueCoreRoadXZColumns() { return coreRoadColumns.size(); }
     public int duplicateXZDifferentRoadYSurfaceKeys() { return duplicateXZDifferentRoadYSurfaceKeys; }
     public int markingsSkippedUnsupportedDiagonal() { return markingsSkippedUnsupportedDiagonal; }
+    public int roadStepTransitions() { return roadStepTransitions; }
+    public int roadStepRiseTransitions() { return roadStepRiseTransitions; }
+    public int roadStepDropTransitions() { return roadStepDropTransitions; }
+    public int laneDividerStepConnectorSkipped() { return laneDividerStepConnectorSkipped; }
+    public int unsupportedMarkingStepHeight() { return unsupportedMarkingStepHeight; }
     public int expectedSurfaceCells() { return cells.size(); }
     public boolean isExpectedSurface(int x, int y, int z) { return surfacePositions.contains(new SurfaceKey(x, y, z)); }
     public boolean isExpectedRoadFurniture(int x, int y, int z) {
@@ -446,6 +543,9 @@ public final class HighwayCorridor {
     }
     public RoadMarking expectedRoadMarking(int x, int y, int z) {
         return roadMarkingPositions.get(new SurfaceKey(x, y, z));
+    }
+    public RoadMarkingStepConnector expectedRoadMarkingStepConnector(int x, int y, int z) {
+        return roadMarkingStepConnectorPositions.get(new SurfaceKey(x, y, z));
     }
     public boolean isCutColumn(int x, int z) {
         return cutColumnPositions.contains(new Key(x, z));
@@ -455,6 +555,8 @@ public final class HighwayCorridor {
                        HighwayTerrainMode mode, boolean structuralBridge) {}
     public record Column(int x, int z, int roadY) {}
     public record RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing) {}
+    public record RoadMarkingStepConnector(int x, int y, int z, RoadMarkingType type,
+                                           Direction facing, boolean leftSide) {}
     public record CoreRoadColumnSnapshot(int x, int z, int roadY, int preConstructionTopY,
                                          HighwayTerrainMode mode, double distance, int lateral) {
         public int clearanceTopY(int maxBuildHeight) {
@@ -491,7 +593,14 @@ public final class HighwayCorridor {
                                  boolean edgeColumnsSupported, boolean stable) {}
     private record StructuralResolution(List<StructuralSpan> spans, int startExtensions, int endExtensions,
                                        int supportFailures) {}
-    private record RoadMarkingResolution(List<RoadMarking> markings, int skippedUnsupportedDiagonal) {}
+    private record RoadMarkingResolution(List<RoadMarking> markings,
+                                         List<RoadMarkingStepConnector> stepConnectors,
+                                         int skippedUnsupportedDiagonal,
+                                         int roadStepTransitions,
+                                         int roadStepRiseTransitions,
+                                         int roadStepDropTransitions,
+                                         int laneDividerStepConnectorSkipped,
+                                         int unsupportedMarkingStepHeight) {}
 
     public enum RoadMarkingType {
         WHITE_EDGE,
