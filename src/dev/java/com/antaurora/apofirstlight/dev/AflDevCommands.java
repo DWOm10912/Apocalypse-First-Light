@@ -24,6 +24,7 @@ import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import com.antaurora.apofirstlight.world.biome.StartupSettlementProtection;
 import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.worldgen.highway.HighwayDebugCommand;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -104,8 +105,9 @@ public final class AflDevCommands {
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
             afl.addChild(dev.build());
+            afl.addChild(HighwayDebugCommand.build().build());
         } else {
-            event.getDispatcher().register(Commands.literal("afl").then(dev));
+            event.getDispatcher().register(Commands.literal("afl").then(dev).then(HighwayDebugCommand.build()));
         }
     }
 
