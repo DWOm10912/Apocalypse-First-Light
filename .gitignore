@@ -65,3 +65,7 @@ forge*changelog.txt
 .cache/
 .temp/
 tmp/
+
+
+# Obsidian local settings
+docs/.obsidian/

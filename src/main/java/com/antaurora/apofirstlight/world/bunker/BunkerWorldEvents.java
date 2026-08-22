@@ -33,6 +33,21 @@ public final class BunkerWorldEvents {
                 StartupPlainsEnclave.WOODLAND_NOISE_SCALE, StartupPlainsEnclave.MIN_WOODLAND_BUFFER,
                 StartupPlainsEnclave.MAX_WOODLAND_BUFFER,
                 StartupSettlementProtection.STARTUP_SETTLEMENT_WOODLAND_PROTECTION_DEPTH);
+        long seed = overworld.getSeed();
+        ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ECOLOGY SHAPE] seed={} center=({}, {}) baseRingOuter={} primaryAngleDeg={} primaryExtraLength={} primaryHalfWidth={} secondaryCount={} secondary0AngleDeg={} secondary0ExtraLength={} secondary0HalfWidth={} secondary1AngleDeg={} secondary1ExtraLength={} secondary1HalfWidth={} lobeStartOverlap={} shapeSource=BASE_PRIMARY_SECONDARY_ORIGINAL_OUTSIDE",
+                seed, StartupPlainsEnclave.CENTER_X, StartupPlainsEnclave.CENTER_Z,
+                StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS,
+                StartupPlainsEnclave.primaryLobeAngleDegrees(seed),
+                StartupPlainsEnclave.primaryLobeExtraLength(seed),
+                StartupPlainsEnclave.primaryLobeHalfWidth(seed),
+                StartupPlainsEnclave.secondaryLobeCount(seed),
+                StartupPlainsEnclave.secondaryLobeAngleDegrees(seed, 0),
+                StartupPlainsEnclave.secondaryLobeExtraLength(seed, 0),
+                StartupPlainsEnclave.secondaryLobeHalfWidth(seed, 0),
+                StartupPlainsEnclave.secondaryLobeAngleDegrees(seed, 1),
+                StartupPlainsEnclave.secondaryLobeExtraLength(seed, 1),
+                StartupPlainsEnclave.secondaryLobeHalfWidth(seed, 1),
+                128);
         probeLiveBiomeSource(overworld);
         auditStartupSurface(overworld);
         BunkerPlacementManager.ensureGenerated(overworld);

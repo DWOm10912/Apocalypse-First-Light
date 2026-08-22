@@ -267,14 +267,25 @@ public final class AflDevCommands {
         int settlementBoundary = StartupSettlementProtection.settlementProtectionBoundary(pos.getX(), pos.getZ(), seed);
         StartupSettlementProtection.ProtectionClass protection =
                 StartupSettlementProtection.protectionAt(pos.getX(), pos.getZ(), seed);
+        StartupPlainsEnclave.ShapeSource shapeSource =
+                StartupPlainsEnclave.woodlandShapeSource(pos.getX(), pos.getZ(), seed);
+        int lobeIndex = shapeSource == StartupPlainsEnclave.ShapeSource.PRIMARY_LOBE ? -1
+                : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_0 ? 0
+                : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_1 ? 1 : -2;
         String expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
                 ? "apocalypse_firstlight:irradiated_woodland"
                 : zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
         boolean match = "original".equals(expected) || expected.equals(surfaceBiome);
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s woodlandBoundary=%d eligibleWoodlandWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
+                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s woodlandShapeSource=%s primaryLobeAngleDeg=%.1f primaryLobeExtraLength=%d primaryLobeHalfWidth=%d secondaryLobeCount=%d lobeForward=%.1f lobeSide=%.1f lobeBoundaryMargin=%.1f plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s woodlandBoundary=%d eligibleWoodlandWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
                 pos.getX(), pos.getY(), pos.getZ(), seed,
                 StartupSettlementProtection.distanceFromCenter(pos.getX(), pos.getZ()), zone,
+                shapeSource, StartupPlainsEnclave.primaryLobeAngleDegrees(seed),
+                StartupPlainsEnclave.primaryLobeExtraLength(seed), StartupPlainsEnclave.primaryLobeHalfWidth(seed),
+                StartupPlainsEnclave.secondaryLobeCount(seed),
+                lobeIndex == -2 ? 0.0D : StartupPlainsEnclave.lobeForward(pos.getX(), pos.getZ(), seed, lobeIndex),
+                lobeIndex == -2 ? 0.0D : StartupPlainsEnclave.lobeSide(pos.getX(), pos.getZ(), seed, lobeIndex),
+                lobeIndex == -2 ? 0.0D : StartupPlainsEnclave.lobeBoundaryMargin(pos.getX(), pos.getZ(), seed, lobeIndex),
                 StartupPlainsEnclave.plainsBoundary(pos.getX(), pos.getZ(), seed), settlementBoundary,
                 protection != StartupSettlementProtection.ProtectionClass.NONE, protection,
                 StartupPlainsEnclave.woodlandOuterBoundary(pos.getX(), pos.getZ(), seed),
@@ -363,10 +374,13 @@ public final class AflDevCommands {
         SettlementPrototype.Plan plan = result.plan();
         String orientation = plan.northSouth() ? "NORTH_SOUTH" : "EAST_WEST";
         SettlementPrototype.TerrainStats terrain = plan.terrain();
-        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:irradiated_woodland archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s",
+        int localRoads = Math.max(0, plan.roadPlans().size() - 1);
+        long residentialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.RESIDENTIAL).count();
+        long commercialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.COMMERCIAL).count();
+        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:irradiated_woodland archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s %s",
                 plan.anchor().toShortString(), orientation, plan.bounds(), terrain.sampleCount(), terrain.minY(), terrain.p10(), terrain.median(), terrain.p90(), terrain.maxY(), terrain.effectiveRelief(), terrain.outlierCount(), terrain.outlierRatio(),
-                1, 4, 4, 4, 2, result.logsCleared() + result.leavesCleared(), result.logsCleared(),
-                result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT");
+                1, localRoads, localRoads, residentialLots, commercialLots, result.logsCleared() + result.leavesCleared(), result.logsCleared(),
+                result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT", result.detail() == null ? "" : result.detail());
         context.getSource().sendSuccess(() -> Component.literal(message), true);
         return 1;
     }
