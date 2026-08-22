@@ -132,6 +132,13 @@ public final class AflBlocks {
                     .sound(SoundType.STONE)
                     .noCollission()
                     .noOcclusion()));
+    public static final RegistryObject<Block> WHITE_LANE_DIVIDER_STEP_CONNECTOR = BLOCKS.register(
+            "white_lane_divider_step_connector",
+            () -> new RoadMarkingStepConnectorBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion(), true));
     public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",

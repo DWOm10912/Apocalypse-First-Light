@@ -23,6 +23,9 @@ public final class HighwayCorridor {
     public static final int MAX_CORE_VERTICAL_CLEARANCE_HEIGHT = 128;
     public static final double STRUCTURAL_SUPPORT_RATIO_THRESHOLD = 0.80;
     public static final int MAX_STRUCTURAL_APPROACH_LENGTH = 32;
+    public static final int LANE_DIVIDER_DASH_ON = 3;
+    public static final int LANE_DIVIDER_DASH_OFF = 6;
+    public static final int LANE_DIVIDER_DASH_CYCLE = LANE_DIVIDER_DASH_ON + LANE_DIVIDER_DASH_OFF;
 
     private final HighwayPlan plan;
     private final List<Cell> cells;
@@ -35,6 +38,7 @@ public final class HighwayCorridor {
     private final Map<SurfaceKey, RoadMarking> roadMarkingPositions;
     private final List<RoadMarkingStepConnector> roadMarkingStepConnectors;
     private final Map<SurfaceKey, RoadMarkingStepConnector> roadMarkingStepConnectorPositions;
+    private final Set<SurfaceKey> laneDividerStepConnectorGapPositions;
     private final List<CoreRoadColumnSnapshot> coreRoadColumns;
     private final List<CutColumn> cutColumns;
     private final Set<Key> cutColumnPositions;
@@ -56,6 +60,7 @@ public final class HighwayCorridor {
                             Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
                             List<RoadMarking> roadMarkings,
                             List<RoadMarkingStepConnector> roadMarkingStepConnectors,
+                            Set<SurfaceKey> laneDividerStepConnectorGapPositions,
                             List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
                             List<StructuralSpan> structuralBridgeSpans,
                             int structuralApproachStations, int bridgeApproachStartExtensions,
@@ -84,6 +89,7 @@ public final class HighwayCorridor {
             connectorPositions.put(new SurfaceKey(connector.x(), connector.y(), connector.z()), connector);
         }
         this.roadMarkingStepConnectorPositions = Map.copyOf(connectorPositions);
+        this.laneDividerStepConnectorGapPositions = Set.copyOf(laneDividerStepConnectorGapPositions);
         this.coreRoadColumns = List.copyOf(coreRoadColumns);
         this.cutColumns = List.copyOf(cutColumns);
         Set<Key> cutPositions = new LinkedHashSet<>();
@@ -194,13 +200,24 @@ public final class HighwayCorridor {
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
                 new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
-                markings.markings(), markings.stepConnectors(), coreRoadColumns, cutColumns,
+                markings.markings(), markings.stepConnectors(), markings.laneDividerStepConnectorGapPositions(),
+                coreRoadColumns, cutColumns,
                 structural.spans(), approachStations,
                 structural.startExtensions(), structural.endExtensions(), structural.supportFailures(),
                 duplicateXZDifferentRoadY.size(), markings.skippedUnsupportedDiagonal(),
                 markings.roadStepTransitions(), markings.roadStepRiseTransitions(),
                 markings.roadStepDropTransitions(), markings.laneDividerStepConnectorSkipped(),
                 markings.unsupportedMarkingStepHeight());
+    }
+
+    public static boolean isLaneDividerPainted(double distance) {
+        long station = (long) Math.floor(distance);
+        return Math.floorMod(station, (long) LANE_DIVIDER_DASH_CYCLE) < LANE_DIVIDER_DASH_ON;
+    }
+
+    public static int laneDividerPhase(double distance) {
+        long station = (long) Math.floor(distance);
+        return (int) Math.floorMod(station, (long) LANE_DIVIDER_DASH_CYCLE);
     }
 
     private static boolean prefer(Cell next, Cell existing) {
@@ -230,7 +247,7 @@ public final class HighwayCorridor {
             for (Cell cell : cells) {
                 if (markingType(cell.lateral()) != null) skipped++;
             }
-            return new RoadMarkingResolution(List.of(), List.of(), skipped, 0, 0, 0, 0, 0);
+            return new RoadMarkingResolution(List.of(), List.of(), Set.of(), skipped, 0, 0, 0, 0, 0);
         }
 
         Direction right = longitudinal.getClockWise();
@@ -240,6 +257,8 @@ public final class HighwayCorridor {
         for (Cell cell : cells) {
             RoadMarkingType type = markingType(cell.lateral());
             if (type == null) continue;
+            if (type == RoadMarkingType.WHITE_LANE_DIVIDER
+                    && !isLaneDividerPainted(cell.distance())) continue;
             Direction facing = markingFacing(cell.lateral(), right, longitudinal);
             markings.add(new RoadMarking(cell.x(), cell.roadY() + 1, cell.z(), type, facing));
         }
@@ -250,6 +269,7 @@ public final class HighwayCorridor {
         int roadStepDropTransitions = 0;
         int laneDividerStepConnectorSkipped = 0;
         int unsupportedMarkingStepHeight = 0;
+        Set<SurfaceKey> laneDividerStepConnectorGapPositions = new LinkedHashSet<>();
         for (int i = 0; i + 1 < centerline.size(); i++) {
             CenterCell current = centerline.get(i);
             CenterCell next = centerline.get(i + 1);
@@ -272,23 +292,26 @@ public final class HighwayCorridor {
             Direction higherDirection = deltaY > 0
                     ? transitionDirection : transitionDirection.getOpposite();
             int connectorY = Math.max(currentRoadY, nextRoadY) + 1;
+            boolean dividerPainted = isLaneDividerPainted(lower.distance());
             for (int lateral : new int[] {-9, 9, -3, 3, -6, 6}) {
                 RoadMarkingType type = markingType(lateral);
-                if (type == RoadMarkingType.WHITE_LANE_DIVIDER) {
-                    // The current divider model paints Z=2..6 and Z=10..14. Every block boundary
-                    // is therefore a two-pixel gap on both sides, so there is no paint to connect.
-                    laneDividerStepConnectorSkipped++;
-                    continue;
-                }
                 int x = (int) Math.round(lower.x() + rightX * lateral);
                 int z = (int) Math.round(lower.z() + rightZ * lateral);
+                if (type == RoadMarkingType.WHITE_LANE_DIVIDER) {
+                    if (!dividerPainted) {
+                        laneDividerStepConnectorSkipped++;
+                        laneDividerStepConnectorGapPositions.add(new SurfaceKey(x, connectorY, z));
+                        continue;
+                    }
+                }
                 Direction markingFacing = markingFacing(lateral, right, longitudinal);
                 boolean leftSide = markingFacing == higherDirection.getCounterClockWise();
                 stepConnectors.add(new RoadMarkingStepConnector(
                         x, connectorY, z, type, higherDirection, leftSide));
             }
         }
-        return new RoadMarkingResolution(markings, stepConnectors, 0, roadStepTransitions,
+        return new RoadMarkingResolution(markings, stepConnectors, laneDividerStepConnectorGapPositions,
+                0, roadStepTransitions,
                 roadStepRiseTransitions, roadStepDropTransitions, laneDividerStepConnectorSkipped,
                 unsupportedMarkingStepHeight);
     }
@@ -547,6 +570,13 @@ public final class HighwayCorridor {
     public RoadMarkingStepConnector expectedRoadMarkingStepConnector(int x, int y, int z) {
         return roadMarkingStepConnectorPositions.get(new SurfaceKey(x, y, z));
     }
+    public Set<BlockPos> laneDividerStepConnectorGapPositions() {
+        Set<BlockPos> positions = new LinkedHashSet<>();
+        for (SurfaceKey key : laneDividerStepConnectorGapPositions) {
+            positions.add(new BlockPos(key.x(), key.y(), key.z()));
+        }
+        return Set.copyOf(positions);
+    }
     public boolean isCutColumn(int x, int z) {
         return cutColumnPositions.contains(new Key(x, z));
     }
@@ -595,6 +625,7 @@ public final class HighwayCorridor {
                                        int supportFailures) {}
     private record RoadMarkingResolution(List<RoadMarking> markings,
                                          List<RoadMarkingStepConnector> stepConnectors,
+                                         Set<SurfaceKey> laneDividerStepConnectorGapPositions,
                                          int skippedUnsupportedDiagonal,
                                          int roadStepTransitions,
                                          int roadStepRiseTransitions,

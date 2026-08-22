@@ -150,6 +150,22 @@ public final class HighwayContinuityValidator {
             if (!correct && !isClear(level, pos)) wrongMarkingType++;
         }
 
+        int laneDividerDashOnBlocks = 0;
+        int laneDividerDashGapBlocks = 0;
+        int unexpectedWhiteLaneDividerInGap = 0;
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            if (cell.lateral() != -6 && cell.lateral() != 6) continue;
+            BlockPos pos = new BlockPos(cell.x(), cell.roadY() + 1, cell.z());
+            if (HighwayCorridor.isLaneDividerPainted(cell.distance())) {
+                laneDividerDashOnBlocks++;
+            } else {
+                laneDividerDashGapBlocks++;
+                if (level.getBlockState(pos).is(AflBlocks.WHITE_LANE_DIVIDER.get())) {
+                    unexpectedWhiteLaneDividerInGap++;
+                }
+            }
+        }
+
         int expectedWhiteEdgeStepConnector = 0;
         int actualWhiteEdgeStepConnector = 0;
         int expectedYellowEdgeStepConnector = 0;
@@ -177,6 +193,12 @@ public final class HighwayContinuityValidator {
             }
             if (!correct && !isClear(level, pos)) wrongStepConnectorType++;
         }
+        int unexpectedLaneDividerStepConnectorInGap = 0;
+        for (BlockPos pos : corridor.laneDividerStepConnectorGapPositions()) {
+            if (level.getBlockState(pos).is(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get())) {
+                unexpectedLaneDividerStepConnectorInGap++;
+            }
+        }
 
         return new Result(actual, missing, unexpectedAirspace, missingViaductDeck, wrongMaterial,
                 bridgeInternalNonViaduct, bridgeNormalBaseIntrusions, elevatedNormalBaseIntrusions,
@@ -188,13 +210,15 @@ public final class HighwayContinuityValidator {
                 expectedYellowEdge, actualYellowEdge, expectedYellowEdge - actualYellowEdge,
                 expectedWhiteLaneDivider, actualWhiteLaneDivider,
                 expectedWhiteLaneDivider - actualWhiteLaneDivider, wrongMarkingType,
+                laneDividerDashOnBlocks, laneDividerDashGapBlocks,
+                unexpectedWhiteLaneDividerInGap,
                 expectedWhiteEdgeStepConnector, actualWhiteEdgeStepConnector,
                 expectedWhiteEdgeStepConnector - actualWhiteEdgeStepConnector,
                 expectedYellowEdgeStepConnector, actualYellowEdgeStepConnector,
                 expectedYellowEdgeStepConnector - actualYellowEdgeStepConnector,
                 expectedLaneDividerStepConnector, actualLaneDividerStepConnector,
                 expectedLaneDividerStepConnector - actualLaneDividerStepConnector,
-                wrongStepConnectorType);
+                wrongStepConnectorType, unexpectedLaneDividerStepConnectorInGap);
     }
 
     private static boolean isNormalRoadBase(BlockState state) {
@@ -233,7 +257,7 @@ public final class HighwayContinuityValidator {
         return switch (expected.type()) {
             case WHITE_EDGE -> state.is(AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get());
             case YELLOW_EDGE -> state.is(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get());
-            case WHITE_LANE_DIVIDER -> false;
+            case WHITE_LANE_DIVIDER -> state.is(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get());
         };
     }
 
@@ -264,6 +288,9 @@ public final class HighwayContinuityValidator {
                           int actualWhiteLaneDividerMarkings,
                           int missingWhiteLaneDividerMarkings,
                           int wrongMarkingTypeBlocks,
+                          int laneDividerDashOnBlocks,
+                          int laneDividerDashGapBlocks,
+                          int unexpectedWhiteLaneDividerInGap,
                           int expectedWhiteEdgeStepConnectors,
                           int actualWhiteEdgeStepConnectors,
                           int missingWhiteEdgeStepConnectors,
@@ -273,7 +300,8 @@ public final class HighwayContinuityValidator {
                           int expectedLaneDividerStepConnectors,
                           int actualLaneDividerStepConnectors,
                           int missingLaneDividerStepConnectors,
-                          int wrongStepConnectorTypeBlocks) {
+                          int wrongStepConnectorTypeBlocks,
+                          int unexpectedLaneDividerStepConnectorInGap) {
         public int airspaceClearanceViolations() { return clearanceViolations; }
     }
 }

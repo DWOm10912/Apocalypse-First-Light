@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=east,left_side=true": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_left"
+    },
+    "facing=east,left_side=false": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_right"
+    },
+    "facing=south,left_side=true": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_left",
+      "y": 90
+    },
+    "facing=south,left_side=false": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_right",
+      "y": 90
+    },
+    "facing=west,left_side=true": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_left",
+      "y": 180
+    },
+    "facing=west,left_side=false": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_right",
+      "y": 180
+    },
+    "facing=north,left_side=true": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_left",
+      "y": 270
+    },
+    "facing=north,left_side=false": {
+      "model": "apocalypse_firstlight:block/white_lane_divider_step_connector_right",
+      "y": 270
+    }
+  }
+}

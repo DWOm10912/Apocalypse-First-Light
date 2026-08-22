@@ -28,8 +28,21 @@ public final class RoadMarkingStepConnectorBlock extends HorizontalDirectionalBl
     private static final VoxelShape RIGHT_WEST_SHAPE = rotateY90(RIGHT_SOUTH_SHAPE);
     private static final VoxelShape RIGHT_NORTH_SHAPE = rotateY90(RIGHT_WEST_SHAPE);
 
+    private static final VoxelShape CENTERED_EAST_SHAPE = Block.box(
+            15.0, -16.0, 7.0, 16.0, 0.0, 9.0);
+    private static final VoxelShape CENTERED_SOUTH_SHAPE = rotateY90(CENTERED_EAST_SHAPE);
+    private static final VoxelShape CENTERED_WEST_SHAPE = rotateY90(CENTERED_SOUTH_SHAPE);
+    private static final VoxelShape CENTERED_NORTH_SHAPE = rotateY90(CENTERED_WEST_SHAPE);
+
+    private final boolean centeredStrip;
+
     public RoadMarkingStepConnectorBlock(Properties properties) {
+        this(properties, false);
+    }
+
+    public RoadMarkingStepConnectorBlock(Properties properties, boolean centeredStrip) {
         super(properties);
+        this.centeredStrip = centeredStrip;
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.EAST)
                 .setValue(LEFT_SIDE, true));
@@ -42,6 +55,15 @@ public final class RoadMarkingStepConnectorBlock extends HorizontalDirectionalBl
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if (centeredStrip) {
+            return switch (state.getValue(FACING)) {
+                case EAST -> CENTERED_EAST_SHAPE;
+                case SOUTH -> CENTERED_SOUTH_SHAPE;
+                case WEST -> CENTERED_WEST_SHAPE;
+                case NORTH -> CENTERED_NORTH_SHAPE;
+                default -> CENTERED_EAST_SHAPE;
+            };
+        }
         boolean leftSide = state.getValue(LEFT_SIDE);
         return switch (state.getValue(FACING)) {
             case EAST -> leftSide ? LEFT_EAST_SHAPE : RIGHT_EAST_SHAPE;

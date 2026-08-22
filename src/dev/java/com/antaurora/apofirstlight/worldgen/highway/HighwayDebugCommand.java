@@ -110,6 +110,13 @@ public final class HighwayDebugCommand {
                 stats.actualWhiteLaneDividerMarkings);
         stat(message, "missingWhiteLaneDividerMarkings",
                 stats.missingWhiteLaneDividerMarkings);
+        stat(message, "laneDividerDashOnBlocks", stats.laneDividerDashOnBlocks);
+        stat(message, "laneDividerDashGapBlocks", stats.laneDividerDashGapBlocks);
+        stat(message, "unexpectedWhiteLaneDividerInGap",
+                stats.unexpectedWhiteLaneDividerInGap);
+        stat(message, "laneDividerDashCycle", HighwayCorridor.LANE_DIVIDER_DASH_CYCLE);
+        stat(message, "laneDividerDashOn", HighwayCorridor.LANE_DIVIDER_DASH_ON);
+        stat(message, "laneDividerDashOff", HighwayCorridor.LANE_DIVIDER_DASH_OFF);
         stat(message, "wrongMarkingTypeBlocks", stats.wrongMarkingTypeBlocks);
         stat(message, "markingsSkippedUnsupportedDiagonal",
                 stats.markingsSkippedUnsupportedDiagonal);
@@ -127,6 +134,8 @@ public final class HighwayDebugCommand {
         stat(message, "actualLaneDividerStepConnectors", stats.actualLaneDividerStepConnectors);
         stat(message, "missingLaneDividerStepConnectors", stats.missingLaneDividerStepConnectors);
         stat(message, "laneDividerStepConnectorSkipped", stats.laneDividerStepConnectorSkipped);
+        stat(message, "unexpectedLaneDividerStepConnectorInGap",
+                stats.unexpectedLaneDividerStepConnectorInGap);
         stat(message, "wrongStepConnectorTypeBlocks", stats.wrongStepConnectorTypeBlocks);
         stat(message, "unsupportedMarkingStepHeight", stats.unsupportedMarkingStepHeight);
         stat(message, "stepConnectorBlocksPlaced", stats.stepConnectorBlocksPlaced);

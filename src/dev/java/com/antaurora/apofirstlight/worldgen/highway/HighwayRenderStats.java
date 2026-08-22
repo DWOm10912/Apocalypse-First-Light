@@ -100,6 +100,9 @@ public final class HighwayRenderStats {
     public int expectedWhiteLaneDividerMarkings;
     public int actualWhiteLaneDividerMarkings;
     public int missingWhiteLaneDividerMarkings;
+    public int laneDividerDashOnBlocks;
+    public int laneDividerDashGapBlocks;
+    public int unexpectedWhiteLaneDividerInGap;
     public int wrongMarkingTypeBlocks;
     public int markingsSkippedUnsupportedDiagonal;
     public int roadMarkingBlocksPlaced;
@@ -116,6 +119,7 @@ public final class HighwayRenderStats {
     public int actualLaneDividerStepConnectors;
     public int missingLaneDividerStepConnectors;
     public int laneDividerStepConnectorSkipped;
+    public int unexpectedLaneDividerStepConnectorInGap;
     public int wrongStepConnectorTypeBlocks;
     public int unsupportedMarkingStepHeight;
     public int stepConnectorBlocksPlaced;
@@ -240,6 +244,9 @@ public final class HighwayRenderStats {
         expectedWhiteLaneDividerMarkings += other.expectedWhiteLaneDividerMarkings;
         actualWhiteLaneDividerMarkings += other.actualWhiteLaneDividerMarkings;
         missingWhiteLaneDividerMarkings += other.missingWhiteLaneDividerMarkings;
+        laneDividerDashOnBlocks += other.laneDividerDashOnBlocks;
+        laneDividerDashGapBlocks += other.laneDividerDashGapBlocks;
+        unexpectedWhiteLaneDividerInGap += other.unexpectedWhiteLaneDividerInGap;
         wrongMarkingTypeBlocks += other.wrongMarkingTypeBlocks;
         markingsSkippedUnsupportedDiagonal += other.markingsSkippedUnsupportedDiagonal;
         roadMarkingBlocksPlaced += other.roadMarkingBlocksPlaced;
@@ -256,6 +263,7 @@ public final class HighwayRenderStats {
         actualLaneDividerStepConnectors += other.actualLaneDividerStepConnectors;
         missingLaneDividerStepConnectors += other.missingLaneDividerStepConnectors;
         laneDividerStepConnectorSkipped += other.laneDividerStepConnectorSkipped;
+        unexpectedLaneDividerStepConnectorInGap += other.unexpectedLaneDividerStepConnectorInGap;
         wrongStepConnectorTypeBlocks += other.wrongStepConnectorTypeBlocks;
         unsupportedMarkingStepHeight += other.unsupportedMarkingStepHeight;
         stepConnectorBlocksPlaced += other.stepConnectorBlocksPlaced;

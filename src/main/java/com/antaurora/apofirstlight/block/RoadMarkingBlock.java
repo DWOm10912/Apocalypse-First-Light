@@ -26,9 +26,8 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
     private static final VoxelShape EDGE_WEST_SHAPE = rotateY90(EDGE_SOUTH_SHAPE);
     private static final VoxelShape EDGE_NORTH_SHAPE = rotateY90(EDGE_WEST_SHAPE);
 
-    private static final VoxelShape DIVIDER_CANONICAL_SHAPE = Shapes.or(
-            Block.box(7.0, 0.0, 2.0, 9.0, 0.75, 6.0),
-            Block.box(7.0, 0.0, 10.0, 9.0, 0.75, 14.0));
+    private static final VoxelShape DIVIDER_CANONICAL_SHAPE = Block.box(
+            7.0, 0.0, 2.0, 9.0, 0.75, 14.0);
     private static final VoxelShape DIVIDER_TURNED_SHAPE = rotateY90(DIVIDER_CANONICAL_SHAPE);
 
     private final MarkingType markingType;

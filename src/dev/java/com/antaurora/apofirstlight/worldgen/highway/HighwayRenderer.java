@@ -111,6 +111,9 @@ public final class HighwayRenderer {
         stats.expectedWhiteLaneDividerMarkings = validation.expectedWhiteLaneDividerMarkings();
         stats.actualWhiteLaneDividerMarkings = validation.actualWhiteLaneDividerMarkings();
         stats.missingWhiteLaneDividerMarkings = validation.missingWhiteLaneDividerMarkings();
+        stats.laneDividerDashOnBlocks = validation.laneDividerDashOnBlocks();
+        stats.laneDividerDashGapBlocks = validation.laneDividerDashGapBlocks();
+        stats.unexpectedWhiteLaneDividerInGap = validation.unexpectedWhiteLaneDividerInGap();
         stats.wrongMarkingTypeBlocks = validation.wrongMarkingTypeBlocks();
         stats.expectedWhiteEdgeStepConnectors = validation.expectedWhiteEdgeStepConnectors();
         stats.actualWhiteEdgeStepConnectors = validation.actualWhiteEdgeStepConnectors();
@@ -121,6 +124,8 @@ public final class HighwayRenderer {
         stats.expectedLaneDividerStepConnectors = validation.expectedLaneDividerStepConnectors();
         stats.actualLaneDividerStepConnectors = validation.actualLaneDividerStepConnectors();
         stats.missingLaneDividerStepConnectors = validation.missingLaneDividerStepConnectors();
+        stats.unexpectedLaneDividerStepConnectorInGap =
+                validation.unexpectedLaneDividerStepConnectorInGap();
         stats.wrongStepConnectorTypeBlocks = validation.wrongStepConnectorTypeBlocks();
         return stats;
     }
@@ -326,8 +331,7 @@ public final class HighwayRenderer {
         BlockState state = switch (connector.type()) {
             case WHITE_EDGE -> AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get().defaultBlockState();
             case YELLOW_EDGE -> AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get().defaultBlockState();
-            case WHITE_LANE_DIVIDER -> throw new IllegalArgumentException(
-                    "Lane divider step connectors require a painted dash boundary");
+            case WHITE_LANE_DIVIDER -> AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get().defaultBlockState();
         };
         return state
                 .setValue(RoadMarkingStepConnectorBlock.FACING, connector.facing())
