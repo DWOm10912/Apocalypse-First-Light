@@ -46,6 +46,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.SCORCHED_SOIL.get(), new Item.Properties()));
     public static final RegistryObject<Item> FUSED_GROUND = ITEMS.register("fused_ground",
             () -> new BlockItem(AflBlocks.FUSED_GROUND.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
+            () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_LOG = ITEMS.register("poplar_log",
             () -> new BlockItem(AflBlocks.POPLAR_LOG.get(), new Item.Properties()));
     public static final RegistryObject<Item> STRIPPED_POPLAR_LOG = ITEMS.register("stripped_poplar_log",

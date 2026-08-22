@@ -96,6 +96,8 @@ public final class AflBlocks {
     public static final RegistryObject<Block> FUSED_GROUND = BLOCKS.register("fused_ground",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(3.0F, 6.0F)
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)));
     public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
