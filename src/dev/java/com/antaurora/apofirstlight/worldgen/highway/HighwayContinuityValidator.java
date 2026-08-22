@@ -17,6 +17,7 @@ public final class HighwayContinuityValidator {
         int terrainIntrusions = 0;
         int directlyAboveSurface = 0;
         for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            if (corridor.isTunnelStation(column.distance())) continue;
             int top = column.clearanceTopY(level.getMaxBuildHeight());
             if (column.capped(level.getMaxBuildHeight())) {
                 // A capped column has an unvalidated remainder above the safety limit and must not report success.
@@ -80,6 +81,7 @@ public final class HighwayContinuityValidator {
         int remainingLogs = 0;
         int remainingLeaves = 0;
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
             for (int y = column.roadY() + 1;
                  y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
                 BlockPos pos = new BlockPos(column.x(), y, column.z());
@@ -98,6 +100,7 @@ public final class HighwayContinuityValidator {
         int terrainAirspaceViolations = 0;
         int cutColumnsWithIntrusion = 0;
         for (HighwayCorridor.CutColumn column : corridor.cutColumns()) {
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
             boolean intrusion = column.capped(level.getMaxBuildHeight());
             int top = column.clearanceTopY(level.getMaxBuildHeight());
             for (int y = column.roadY() + 1; y <= top; y++) {
@@ -218,6 +221,33 @@ public final class HighwayContinuityValidator {
             }
         }
 
+        int tunnelRoofOpenToSky = 0;
+        int tunnelInteriorObstruction = 0;
+        for (HighwayTunnelGeometry.TunnelSection section : corridor.tunnelSections()) {
+            if (!corridor.isTunnelInterior(section.distance())) continue;
+            Integer top = preConstructionTopY(corridor, section.x(), section.z());
+            if (top == null || top - 1 - HighwayTunnelSpanResolver.tunnelOuterCrownY(section.roadY())
+                    < HighwayTunnelSpanResolver.MIN_TUNNEL_ROCK_COVER) {
+                tunnelRoofOpenToSky++;
+            }
+        }
+        for (BlockPos pos : corridor.tunnelBorePositions()) {
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir() && !corridor.isExpectedTunnelRoadFeature(pos.getX(), pos.getY(), pos.getZ())) {
+                tunnelInteriorObstruction++;
+            }
+        }
+        int actualTunnelLining = 0;
+        for (BlockPos pos : corridor.tunnelLiningPositions()) {
+            if (level.getBlockState(pos).is(HighwayPalette.REINFORCED_CONCRETE.getBlock())) {
+                actualTunnelLining++;
+            }
+        }
+        int actualPortal = 0;
+        for (BlockPos pos : corridor.portalPositions()) {
+            if (level.getBlockState(pos).is(HighwayPalette.REINFORCED_CONCRETE.getBlock())) actualPortal++;
+        }
+
         return new Result(actual, missing, unexpectedAirspace, missingViaductDeck, wrongMaterial,
                 bridgeInternalNonViaduct, bridgeNormalBaseIntrusions, elevatedNormalBaseIntrusions,
                 viaductOutsideStructural, structuralMissingConcrete, cutColumnsWithIntrusion,
@@ -239,7 +269,16 @@ public final class HighwayContinuityValidator {
                 wrongStepConnectorType, unexpectedLaneDividerStepConnectorInGap,
                 expectedMedianStepConnector, actualMedianStepConnector,
                 expectedMedianStepConnector - actualMedianStepConnector,
-                wrongMedianStepConnectorType);
+                wrongMedianStepConnectorType, tunnelRoofOpenToSky, tunnelInteriorObstruction,
+                actualTunnelLining, corridor.tunnelLiningPositions().size() - actualTunnelLining,
+                actualPortal, corridor.portalPositions().size() - actualPortal);
+    }
+
+    private static Integer preConstructionTopY(HighwayCorridor corridor, int x, int z) {
+        for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            if (column.x() == x && column.z() == z) return column.preConstructionTopY();
+        }
+        return null;
     }
 
     private static boolean isMedianBarrier(BlockState state) {
@@ -254,6 +293,9 @@ public final class HighwayContinuityValidator {
     }
 
     private static boolean isExpectedRoadFurniture(HighwayCorridor corridor, BlockPos pos, BlockState state) {
+        if ((corridor.isTunnelLining(pos.getX(), pos.getY(), pos.getZ())
+                || corridor.isPortal(pos.getX(), pos.getY(), pos.getZ()))
+                && state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock())) return true;
         return (corridor.isExpectedRoadFurniture(pos.getX(), pos.getY(), pos.getZ())
                 && (state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())
                 || (corridor.isExpectedOuterEdge(pos.getX(), pos.getY(), pos.getZ())
@@ -335,7 +377,13 @@ public final class HighwayContinuityValidator {
                            int expectedMedianStepConnectors,
                            int actualMedianStepConnectors,
                            int missingMedianStepConnectors,
-                           int wrongMedianStepConnectorTypeBlocks) {
+                          int wrongMedianStepConnectorTypeBlocks,
+                          int tunnelRoofOpenToSkyViolations,
+                          int tunnelInteriorObstructionCells,
+                          int actualTunnelLiningBlocks,
+                          int missingTunnelLiningBlocks,
+                          int actualPortalBlocks,
+                          int missingPortalBlocks) {
         public int airspaceClearanceViolations() { return clearanceViolations; }
     }
 }

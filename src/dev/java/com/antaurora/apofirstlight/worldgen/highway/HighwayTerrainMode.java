@@ -4,5 +4,6 @@ public enum HighwayTerrainMode {
     GROUND,
     CUT,
     FILL,
-    VIADUCT
+    VIADUCT,
+    TUNNEL
 }

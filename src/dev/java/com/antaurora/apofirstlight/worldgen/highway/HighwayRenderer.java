@@ -66,6 +66,37 @@ public final class HighwayRenderer {
         stats.medianStepDropTransitions = corridor.medianStepDropTransitions();
         stats.unsupportedMedianStepHeight = corridor.unsupportedMedianStepHeight();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
+        HighwayTunnelSpanResolver.Resolution tunnels = corridor.tunnelResolution();
+        stats.tunnelCandidateStations = tunnels.tunnelCandidateStations();
+        stats.tunnelQualifiedStations = tunnels.tunnelQualifiedStations();
+        stats.tunnelRejectedShortSpanStations = tunnels.tunnelRejectedShortSpanStations();
+        stats.tunnelRejectedLowCoverStations = tunnels.tunnelRejectedLowCoverStations();
+        stats.tunnelRejectedSideExposureStations = tunnels.tunnelRejectedSideExposureStations();
+        stats.tunnelRejectedWaterStations = tunnels.tunnelRejectedWaterStations();
+        stats.tunnelRejectedViaductStations = tunnels.tunnelRejectedViaductStations();
+        stats.rawTunnelSpanCount = tunnels.rawTunnelSpanCount();
+        stats.resolvedTunnelSpanCount = tunnels.resolvedTunnelSpanCount();
+        stats.tunnelGapClosures = tunnels.tunnelGapClosures();
+        stats.minTunnelLength = tunnels.minTunnelLength();
+        stats.maxTunnelLength = tunnels.maxTunnelLength();
+        stats.avgTunnelLength = tunnels.averageTunnelLength();
+        stats.minRockCoverObserved = tunnels.minRockCoverObserved();
+        stats.maxRockCoverObserved = tunnels.maxRockCoverObserved();
+        stats.avgRockCoverObserved = tunnels.averageRockCoverObserved();
+        stats.portalCount = tunnels.resolvedTunnelSpanCount() * 2;
+        stats.portalStartCount = tunnels.resolvedTunnelSpanCount();
+        stats.portalEndCount = tunnels.resolvedTunnelSpanCount();
+        stats.tunnelInteriorStations = (int) corridor.tunnelSections().stream()
+                .filter(section -> !section.portal()).count();
+        stats.tunnelPortalStations = (int) corridor.tunnelSections().stream()
+                .filter(HighwayTunnelGeometry.TunnelSection::portal).count();
+        stats.expectedTunnelLiningBlocks = corridor.tunnelLiningPositions().size();
+        stats.expectedPortalBlocks = corridor.portalPositions().size();
+        stats.openSkyClearanceBypassedTunnelStations = corridor.tunnelSections().size();
+        stats.tunnelInteriorWidth = corridor.tunnelInteriorWidth();
+        stats.tunnelInteriorHeight = corridor.tunnelInteriorHeight();
+        stats.tunnelOuterWidth = corridor.tunnelOuterWidth();
+        stats.tunnelOuterHeight = corridor.tunnelOuterHeight();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
         clearRow(level, edit, stats, corridor);
@@ -82,6 +113,7 @@ public final class HighwayRenderer {
         placeMedianStepConnectors(edit, stats, corridor);
         placeRoadMarkings(level, edit, stats, corridor);
         placeRoadMarkingStepConnectors(level, edit, stats, corridor);
+        placeTunnel(level, edit, stats, corridor);
         placePiers(level, edit, stats, corridor, profile);
 
         HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
@@ -137,6 +169,12 @@ public final class HighwayRenderer {
         stats.actualMedianStepConnectors = validation.actualMedianStepConnectors();
         stats.missingMedianStepConnectors = validation.missingMedianStepConnectors();
         stats.wrongMedianStepConnectorTypeBlocks = validation.wrongMedianStepConnectorTypeBlocks();
+        stats.tunnelRoofOpenToSkyViolations = validation.tunnelRoofOpenToSkyViolations();
+        stats.tunnelInteriorObstructionCells = validation.tunnelInteriorObstructionCells();
+        stats.actualTunnelLiningBlocks = validation.actualTunnelLiningBlocks();
+        stats.missingTunnelLiningBlocks = validation.missingTunnelLiningBlocks();
+        stats.actualPortalBlocks = validation.actualPortalBlocks();
+        stats.missingPortalBlocks = validation.missingPortalBlocks();
         return stats;
     }
 
@@ -144,6 +182,9 @@ public final class HighwayRenderer {
                                                       HighwayRenderStats stats,
                                                       HighwayCorridor corridor) {
         for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            if (corridor.isTunnelStation(column.distance())) {
+                continue;
+            }
             if (column.hasOriginalObstruction()) stats.coreRoadColumnsWithOriginalObstruction++;
             if (column.capped(level.getMaxBuildHeight())) stats.coreRoadClearanceTruncatedColumns++;
             int top = column.clearanceTopY(level.getMaxBuildHeight());
@@ -168,6 +209,7 @@ public final class HighwayRenderer {
                                  HighwayCorridor corridor) {
         Set<BlockPos> vegetation = new LinkedHashSet<>();
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
             for (int y = column.roadY() + 1;
                  y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
                 BlockPos pos = new BlockPos(column.x(), y, column.z());
@@ -183,6 +225,7 @@ public final class HighwayRenderer {
             }
         }
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
             if (corridor.isCutColumn(column.x(), column.z())) continue;
             for (int y = column.roadY() + 1;
                  y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
@@ -194,6 +237,7 @@ public final class HighwayRenderer {
     private static void clearCutEnvelope(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
                                           HighwayCorridor corridor) {
         for (HighwayCorridor.CutColumn column : corridor.cutColumns()) {
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
             int top = column.clearanceTopY(level.getMaxBuildHeight());
             stats.maxCutClearanceHeightObserved = Math.max(stats.maxCutClearanceHeightObserved,
                     Math.max(0, top - column.roadY()));
@@ -358,6 +402,32 @@ public final class HighwayRenderer {
         }
     }
 
+    private static void placeTunnel(ServerLevel level, HighwayEditSession edit,
+                                    HighwayRenderStats stats, HighwayCorridor corridor) {
+        if (corridor.tunnelSections().isEmpty()) return;
+        for (BlockPos pos : corridor.tunnelBorePositions()) {
+            if (corridor.isExpectedTunnelRoadFeature(pos.getX(), pos.getY(), pos.getZ())) continue;
+            if (clear(level, edit, pos)) {
+                stats.blocksCleared++;
+                stats.tunnelInteriorBlocksCleared++;
+            }
+        }
+        for (BlockPos pos : corridor.tunnelLiningPositions()) {
+            if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
+                stats.blocksPlaced++;
+                stats.reinforcedConcreteBlocks++;
+                stats.tunnelLiningBlocksPlaced++;
+            }
+        }
+        for (BlockPos pos : corridor.portalPositions()) {
+            if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
+                stats.blocksPlaced++;
+                stats.reinforcedConcreteBlocks++;
+                stats.portalBlocksPlaced++;
+            }
+        }
+    }
+
     private static BlockState roadMarkingStepConnectorState(
             HighwayCorridor.RoadMarkingStepConnector connector) {
         BlockState state = switch (connector.type()) {
@@ -492,6 +562,7 @@ public final class HighwayRenderer {
             case CUT -> stats.cutAsphaltSurfaceBlocks++;
             case FILL -> stats.fillAsphaltSurfaceBlocks++;
             case VIADUCT -> stats.viaductAsphaltSurfaceBlocks++;
+            case TUNNEL -> stats.tunnelAsphaltSurfaceBlocks++;
         }
     }
 

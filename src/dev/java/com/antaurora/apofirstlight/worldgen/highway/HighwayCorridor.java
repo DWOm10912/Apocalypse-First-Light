@@ -33,6 +33,8 @@ public final class HighwayCorridor {
     private final List<Cell> bridgeCells;
     private final List<Column> rowEnvelope;
     private final List<CenterCell> centerline;
+    private final HighwayTunnelSpanResolver.Resolution tunnelResolution;
+    private final HighwayTunnelGeometry.Geometry tunnelGeometry;
     private final Set<SurfaceKey> surfacePositions;
     private final Set<SurfaceKey> roadFurniturePositions;
     private final Set<SurfaceKey> outerEdgePositions;
@@ -65,6 +67,8 @@ public final class HighwayCorridor {
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
                              List<Column> rowEnvelope, List<CenterCell> centerline,
+                             HighwayTunnelSpanResolver.Resolution tunnelResolution,
+                             HighwayTunnelGeometry.Geometry tunnelGeometry,
                              Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
                              Set<SurfaceKey> outerEdgePositions, Set<SurfaceKey> outerEdgeRiserPositions,
                              Set<SurfaceKey> medianStepConnectorPositions,
@@ -87,6 +91,8 @@ public final class HighwayCorridor {
         this.bridgeCells = List.copyOf(bridgeCells);
         this.rowEnvelope = List.copyOf(rowEnvelope);
         this.centerline = List.copyOf(centerline);
+        this.tunnelResolution = tunnelResolution;
+        this.tunnelGeometry = tunnelGeometry;
         this.surfacePositions = Set.copyOf(surfacePositions);
         this.roadFurniturePositions = Set.copyOf(roadFurniturePositions);
         this.outerEdgePositions = Set.copyOf(outerEdgePositions);
@@ -154,6 +160,8 @@ public final class HighwayCorridor {
         }
 
         StructuralResolution structural = resolveStructuralBridge(level, profile);
+        HighwayTunnelSpanResolver.Resolution tunnelResolution =
+                HighwayTunnelSpanResolver.resolve(profile.samples());
         Map<Key, Cell> unique = new LinkedHashMap<>();
         Map<Key, Integer> firstRoadYByXZ = new LinkedHashMap<>();
         Set<Key> duplicateXZDifferentRoadY = new LinkedHashSet<>();
@@ -165,8 +173,12 @@ public final class HighwayCorridor {
                 int x = (int) Math.round(center.x() + rightX * lateral);
                 int z = (int) Math.round(center.z() + rightZ * lateral);
                 Key key = new Key(x, z);
+                HighwayTerrainMode mode = sample.mode() == HighwayTerrainMode.VIADUCT
+                        ? sample.mode()
+                        : (tunnelResolution.isTunnel(center.distance())
+                        ? HighwayTerrainMode.TUNNEL : sample.mode());
                 Cell next = new Cell(x, z, center.distance(), lateral, role(plan.width(), lateral),
-                        sample.roadY(), sample.terrainY(), sample.mode(), structuralBridge);
+                        sample.roadY(), sample.terrainY(), mode, structuralBridge);
                 Integer firstRoadY = firstRoadYByXZ.putIfAbsent(key, next.roadY());
                 if (firstRoadY != null && firstRoadY != next.roadY()) {
                     duplicateXZDifferentRoadY.add(key);
@@ -226,9 +238,12 @@ public final class HighwayCorridor {
         RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
         List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
+        HighwayTunnelGeometry.Geometry tunnelGeometry = HighwayTunnelGeometry.build(
+                plan, profile, centerline, tunnelResolution);
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
-                new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
+                new ArrayList<>(row.values()), centerline, tunnelResolution, tunnelGeometry,
+                surfacePositions, roadFurniturePositions,
                 outerEdgePositions, outerEdgeRiserPositions,
                 medianSteps.positions(),
                 markings.markings(), markings.stepConnectors(), markings.laneDividerStepConnectorGapPositions(),
@@ -255,7 +270,9 @@ public final class HighwayCorridor {
 
     private static boolean prefer(Cell next, Cell existing) {
         if (next.structuralBridge() != existing.structuralBridge()) return next.structuralBridge();
-        return next.mode() == HighwayTerrainMode.VIADUCT && existing.mode() != HighwayTerrainMode.VIADUCT;
+        return (next.mode() == HighwayTerrainMode.VIADUCT || next.mode() == HighwayTerrainMode.TUNNEL)
+                && existing.mode() != HighwayTerrainMode.VIADUCT
+                && existing.mode() != HighwayTerrainMode.TUNNEL;
     }
 
     private static List<CoreRoadColumnSnapshot> buildCoreRoadColumns(ServerLevel level,
@@ -632,6 +649,35 @@ public final class HighwayCorridor {
     public List<CoreRoadColumnSnapshot> coreRoadColumns() { return coreRoadColumns; }
     public List<CutColumn> cutColumns() { return cutColumns; }
     public List<CenterCell> centerline() { return centerline; }
+    public HighwayTunnelSpanResolver.Resolution tunnelResolution() { return tunnelResolution; }
+    public HighwayTunnelGeometry.Geometry tunnelGeometry() { return tunnelGeometry; }
+    public List<HighwayTunnelGeometry.TunnelSection> tunnelSections() { return tunnelGeometry.sections(); }
+    public Set<BlockPos> tunnelBorePositions() { return tunnelGeometry.borePositions(); }
+    public Set<BlockPos> tunnelLiningPositions() { return tunnelGeometry.liningPositions(); }
+    public Set<BlockPos> portalPositions() { return tunnelGeometry.portalPositions(); }
+    public int tunnelInteriorWidth() { return HighwayTunnelGeometry.INTERIOR_HALF_WIDTH * 2 + 1; }
+    public int tunnelInteriorHeight() { return HighwayTunnelGeometry.INTERIOR_HEIGHT; }
+    public int tunnelOuterWidth() { return HighwayTunnelGeometry.OUTER_HALF_WIDTH * 2 + 1; }
+    public int tunnelOuterHeight() { return HighwayTunnelGeometry.OUTER_HEIGHT; }
+    public boolean isTunnelStation(double distance) { return tunnelResolution.isTunnel(distance); }
+    public boolean isTunnelInterior(double distance) {
+        HighwayTunnelSpanResolver.TunnelSpan span = tunnelResolution.spanAt(distance);
+        return span != null && span.isInterior(distance);
+    }
+    public boolean isTunnelArea(int x, int z) {
+        return tunnelGeometry.areaColumns().contains(new HighwayTunnelGeometry.ColumnKey(x, z));
+    }
+    public boolean isTunnelLining(int x, int y, int z) {
+        return tunnelGeometry.liningPositions().contains(new BlockPos(x, y, z));
+    }
+    public boolean isPortal(int x, int y, int z) {
+        return tunnelGeometry.portalPositions().contains(new BlockPos(x, y, z));
+    }
+    public boolean isExpectedTunnelRoadFeature(int x, int y, int z) {
+        return isExpectedRoadFurniture(x, y, z)
+                || expectedRoadMarking(x, y, z) != null
+                || expectedRoadMarkingStepConnector(x, y, z) != null;
+    }
     public List<StructuralSpan> structuralBridgeSpans() { return structuralBridgeSpans; }
     public int structuralApproachStations() { return structuralApproachStations; }
     public int structuralBridgeCells() { return (int) cells.stream().filter(Cell::structuralBridge).count(); }

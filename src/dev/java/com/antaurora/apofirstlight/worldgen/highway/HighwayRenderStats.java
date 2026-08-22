@@ -5,6 +5,7 @@ public final class HighwayRenderStats {
     public int cutSegments;
     public int fillSegments;
     public int viaductSegments;
+    public int tunnelSegments;
     public int blocksPlaced;
     public int blocksCleared;
     public int fillBlocks;
@@ -20,6 +21,7 @@ public final class HighwayRenderStats {
     public int cutCells;
     public int fillCells;
     public int viaductCells;
+    public int tunnelCells;
     public int viaductDeckCells;
     public int viaductStructuralBlocks;
     public int rawViaductSamples;
@@ -45,6 +47,7 @@ public final class HighwayRenderStats {
     public int cutAsphaltSurfaceBlocks;
     public int fillAsphaltSurfaceBlocks;
     public int viaductAsphaltSurfaceBlocks;
+    public int tunnelAsphaltSurfaceBlocks;
     public int reinforcedConcreteBlocks;
     public int missingViaductDeckCells;
     public int wrongSurfaceMaterialCells;
@@ -132,6 +135,46 @@ public final class HighwayRenderStats {
     public int wrongMedianStepConnectorTypeBlocks;
     public int unsupportedMedianStepHeight;
     public int medianStepConnectorBlocksPlaced;
+    public int tunnelCandidateStations;
+    public int tunnelQualifiedStations;
+    public int tunnelRejectedShortSpanStations;
+    public int tunnelRejectedLowCoverStations;
+    public int tunnelRejectedSideExposureStations;
+    public int tunnelRejectedWaterStations;
+    public int tunnelRejectedViaductStations;
+    public int rawTunnelSpanCount;
+    public int resolvedTunnelSpanCount;
+    public int tunnelGapClosures;
+    public double minTunnelLength;
+    public double maxTunnelLength;
+    public double avgTunnelLength;
+    public double minRockCoverObserved;
+    public double maxRockCoverObserved;
+    public double avgRockCoverObserved;
+    public int portalCount;
+    public int portalStartCount;
+    public int portalEndCount;
+    public int portalInsetAdjustments;
+    public int portalPlacementFailures;
+    public int tunnelInteriorStations;
+    public int tunnelPortalStations;
+    public int tunnelRoofOpenToSkyViolations;
+    public int tunnelInteriorObstructionCells;
+    public int expectedTunnelLiningBlocks;
+    public int actualTunnelLiningBlocks;
+    public int missingTunnelLiningBlocks;
+    public int expectedPortalBlocks;
+    public int actualPortalBlocks;
+    public int missingPortalBlocks;
+    public int tunnelStationsTouchedByOpenSkyClearance;
+    public int openSkyClearanceBypassedTunnelStations;
+    public int tunnelInteriorBlocksCleared;
+    public int tunnelLiningBlocksPlaced;
+    public int portalBlocksPlaced;
+    public int tunnelInteriorWidth;
+    public int tunnelInteriorHeight;
+    public int tunnelOuterWidth;
+    public int tunnelOuterHeight;
 
     public void addCellMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -139,6 +182,7 @@ public final class HighwayRenderStats {
             case CUT -> cutCells++;
             case FILL -> fillCells++;
             case VIADUCT -> viaductCells++;
+            case TUNNEL -> tunnelCells++;
         }
     }
 
@@ -148,6 +192,7 @@ public final class HighwayRenderStats {
             case CUT -> cutSegments++;
             case FILL -> fillSegments++;
             case VIADUCT -> viaductSegments++;
+            case TUNNEL -> tunnelSegments++;
         }
     }
 
@@ -156,6 +201,7 @@ public final class HighwayRenderStats {
         cutSegments += other.cutSegments;
         fillSegments += other.fillSegments;
         viaductSegments += other.viaductSegments;
+        tunnelSegments += other.tunnelSegments;
         blocksPlaced += other.blocksPlaced;
         blocksCleared += other.blocksCleared;
         fillBlocks += other.fillBlocks;
@@ -171,6 +217,7 @@ public final class HighwayRenderStats {
         cutCells += other.cutCells;
         fillCells += other.fillCells;
         viaductCells += other.viaductCells;
+        tunnelCells += other.tunnelCells;
         viaductDeckCells += other.viaductDeckCells;
         viaductStructuralBlocks += other.viaductStructuralBlocks;
         rawViaductSamples += other.rawViaductSamples;
@@ -196,6 +243,7 @@ public final class HighwayRenderStats {
         cutAsphaltSurfaceBlocks += other.cutAsphaltSurfaceBlocks;
         fillAsphaltSurfaceBlocks += other.fillAsphaltSurfaceBlocks;
         viaductAsphaltSurfaceBlocks += other.viaductAsphaltSurfaceBlocks;
+        tunnelAsphaltSurfaceBlocks += other.tunnelAsphaltSurfaceBlocks;
         reinforcedConcreteBlocks += other.reinforcedConcreteBlocks;
         missingViaductDeckCells += other.missingViaductDeckCells;
         wrongSurfaceMaterialCells += other.wrongSurfaceMaterialCells;
@@ -285,5 +333,51 @@ public final class HighwayRenderStats {
         wrongMedianStepConnectorTypeBlocks += other.wrongMedianStepConnectorTypeBlocks;
         unsupportedMedianStepHeight += other.unsupportedMedianStepHeight;
         medianStepConnectorBlocksPlaced += other.medianStepConnectorBlocksPlaced;
+        tunnelCandidateStations += other.tunnelCandidateStations;
+        tunnelQualifiedStations += other.tunnelQualifiedStations;
+        tunnelRejectedShortSpanStations += other.tunnelRejectedShortSpanStations;
+        tunnelRejectedLowCoverStations += other.tunnelRejectedLowCoverStations;
+        tunnelRejectedSideExposureStations += other.tunnelRejectedSideExposureStations;
+        tunnelRejectedWaterStations += other.tunnelRejectedWaterStations;
+        tunnelRejectedViaductStations += other.tunnelRejectedViaductStations;
+        rawTunnelSpanCount += other.rawTunnelSpanCount;
+        resolvedTunnelSpanCount += other.resolvedTunnelSpanCount;
+        tunnelGapClosures += other.tunnelGapClosures;
+        minTunnelLength = mergeMin(minTunnelLength, other.minTunnelLength);
+        maxTunnelLength = Math.max(maxTunnelLength, other.maxTunnelLength);
+        avgTunnelLength += other.avgTunnelLength;
+        minRockCoverObserved = mergeMin(minRockCoverObserved, other.minRockCoverObserved);
+        maxRockCoverObserved = Math.max(maxRockCoverObserved, other.maxRockCoverObserved);
+        avgRockCoverObserved += other.avgRockCoverObserved;
+        portalCount += other.portalCount;
+        portalStartCount += other.portalStartCount;
+        portalEndCount += other.portalEndCount;
+        portalInsetAdjustments += other.portalInsetAdjustments;
+        portalPlacementFailures += other.portalPlacementFailures;
+        tunnelInteriorStations += other.tunnelInteriorStations;
+        tunnelPortalStations += other.tunnelPortalStations;
+        tunnelRoofOpenToSkyViolations += other.tunnelRoofOpenToSkyViolations;
+        tunnelInteriorObstructionCells += other.tunnelInteriorObstructionCells;
+        expectedTunnelLiningBlocks += other.expectedTunnelLiningBlocks;
+        actualTunnelLiningBlocks += other.actualTunnelLiningBlocks;
+        missingTunnelLiningBlocks += other.missingTunnelLiningBlocks;
+        expectedPortalBlocks += other.expectedPortalBlocks;
+        actualPortalBlocks += other.actualPortalBlocks;
+        missingPortalBlocks += other.missingPortalBlocks;
+        tunnelStationsTouchedByOpenSkyClearance += other.tunnelStationsTouchedByOpenSkyClearance;
+        openSkyClearanceBypassedTunnelStations += other.openSkyClearanceBypassedTunnelStations;
+        tunnelInteriorBlocksCleared += other.tunnelInteriorBlocksCleared;
+        tunnelLiningBlocksPlaced += other.tunnelLiningBlocksPlaced;
+        portalBlocksPlaced += other.portalBlocksPlaced;
+        tunnelInteriorWidth = Math.max(tunnelInteriorWidth, other.tunnelInteriorWidth);
+        tunnelInteriorHeight = Math.max(tunnelInteriorHeight, other.tunnelInteriorHeight);
+        tunnelOuterWidth = Math.max(tunnelOuterWidth, other.tunnelOuterWidth);
+        tunnelOuterHeight = Math.max(tunnelOuterHeight, other.tunnelOuterHeight);
+    }
+
+    private static double mergeMin(double current, double other) {
+        if (current == 0.0) return other;
+        if (other == 0.0) return current;
+        return Math.min(current, other);
     }
 }
