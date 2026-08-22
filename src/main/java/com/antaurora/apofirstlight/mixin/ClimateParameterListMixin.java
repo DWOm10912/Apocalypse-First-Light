@@ -23,6 +23,7 @@ import terrablender.api.RegionType;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Mixin(value = Climate.ParameterList.class, priority = 900)
 public abstract class ClimateParameterListMixin {
@@ -30,6 +31,12 @@ public abstract class ClimateParameterListMixin {
     private static final int APOCALYPSE_REASON_LOG_LIMIT = 2;
     private static final ConcurrentHashMap<String, AtomicInteger> APOCALYPSE_LOG_COUNTS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, AtomicInteger> APOCALYPSE_REASON_COUNTS = new ConcurrentHashMap<>();
+    private static final AtomicLong SURFACE_UNDERGROUND_BIOME_REJECTS = new AtomicLong();
+    private static final AtomicLong SURFACE_LUSH_CAVES_REJECTS = new AtomicLong();
+    private static final AtomicLong SURFACE_DRIPSTONE_CAVES_REJECTS = new AtomicLong();
+    private static final AtomicLong SURFACE_DEEP_DARK_REJECTS = new AtomicLong();
+    private static final AtomicLong SURFACE_UNDERGROUND_BIOME_REPLACED_BY_AFL_BIOME = new AtomicLong();
+    private static final AtomicLong SURFACE_UNDERGROUND_BIOME_FALLBACK_TO_PLAINS = new AtomicLong();
     @Unique
     private volatile Holder<Biome> apocalypse$plainsHolder;
     @Unique
@@ -83,20 +90,44 @@ public abstract class ClimateParameterListMixin {
             }
             @SuppressWarnings("unchecked")
             Holder<Biome> original = (Holder<Biome>) rawHolder;
-            if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(original.unwrapKey().orElse(null))) {
+            ResourceKey<Biome> originalKey = original.unwrapKey().orElse(null);
+            boolean undergroundBiome = AflVanillaBiomePolicy.isAllowedUndergroundBiome(originalKey);
+            boolean surfaceContext = StartupPlainsEnclave.isSurfaceQuartY(quartY);
+            if (undergroundBiome && !surfaceContext) {
                 if (diagnostic) apocalypse$logReason("UNDERGROUND_BYPASS", quartX, quartY, quartZ,
                         context, BiomeTraceContext.biomeId(original), true, true);
                 return;
             }
+            boolean surfaceUndergroundReject = undergroundBiome && surfaceContext;
+            if (surfaceUndergroundReject) {
+                SURFACE_UNDERGROUND_BIOME_REJECTS.incrementAndGet();
+                if (Biomes.LUSH_CAVES.equals(originalKey)) {
+                    SURFACE_LUSH_CAVES_REJECTS.incrementAndGet();
+                } else if (Biomes.DRIPSTONE_CAVES.equals(originalKey)) {
+                    SURFACE_DRIPSTONE_CAVES_REJECTS.incrementAndGet();
+                } else if (Biomes.DEEP_DARK.equals(originalKey)) {
+                    SURFACE_DEEP_DARK_REJECTS.incrementAndGet();
+                }
+                if (diagnostic) apocalypse$logReason("SURFACE_UNDERGROUND_REJECT", quartX, quartY, quartZ,
+                        context, BiomeTraceContext.biomeId(original), true, true);
+            }
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(
                     quartX << 2, quartZ << 2, context.seed());
-            if (zone == StartupPlainsEnclave.Zone.OUTSIDE) {
+            if (zone == StartupPlainsEnclave.Zone.OUTSIDE && !surfaceUndergroundReject) {
                 if (diagnostic) apocalypse$logReason("ZONE_OUTSIDE", quartX, quartY, quartZ,
                         context, BiomeTraceContext.biomeId(original), true, true);
                 return;
             }
             ResourceKey<Biome> targetKey = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
                     ? AflBiomes.IRRADIATED_WOODLAND : Biomes.PLAINS;
+            if (surfaceUndergroundReject) {
+                if (zone == StartupPlainsEnclave.Zone.OUTSIDE) {
+                    SURFACE_UNDERGROUND_BIOME_FALLBACK_TO_PLAINS.incrementAndGet();
+                    targetKey = Biomes.PLAINS;
+                } else if (zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER) {
+                    SURFACE_UNDERGROUND_BIOME_REPLACED_BY_AFL_BIOME.incrementAndGet();
+                }
+            }
             Holder<Biome> targetHolder = apocalypse$resolveHolder(targetKey);
             if (targetHolder == null) {
                 AtomicInteger count = APOCALYPSE_LOG_COUNTS.computeIfAbsent(
