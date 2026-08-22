@@ -11,6 +11,24 @@ public final class HighwayRenderStats {
     public int cutBlocks;
     public int viaductBlocks;
     public int piersPlaced;
+    public int corridorCellCount;
+    public int expectedSurfaceCells;
+    public int actualSurfaceCells;
+    public int missingSurfaceCells;
+    public int clearanceViolations;
+    public int groundCells;
+    public int cutCells;
+    public int fillCells;
+    public int viaductCells;
+
+    public void addCellMode(HighwayTerrainMode mode) {
+        switch (mode) {
+            case GROUND -> groundCells++;
+            case CUT -> cutCells++;
+            case FILL -> fillCells++;
+            case VIADUCT -> viaductCells++;
+        }
+    }
 
     public void addMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -32,5 +50,14 @@ public final class HighwayRenderStats {
         cutBlocks += other.cutBlocks;
         viaductBlocks += other.viaductBlocks;
         piersPlaced += other.piersPlaced;
+        corridorCellCount += other.corridorCellCount;
+        expectedSurfaceCells += other.expectedSurfaceCells;
+        actualSurfaceCells += other.actualSurfaceCells;
+        missingSurfaceCells += other.missingSurfaceCells;
+        clearanceViolations += other.clearanceViolations;
+        groundCells += other.groundCells;
+        cutCells += other.cutCells;
+        fillCells += other.fillCells;
+        viaductCells += other.viaductCells;
     }
 }

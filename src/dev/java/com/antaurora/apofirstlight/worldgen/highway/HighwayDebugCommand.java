@@ -56,14 +56,13 @@ public final class HighwayDebugCommand {
         long started = System.nanoTime();
         HighwayProfile profile = HighwayProfile.sample(level, main);
         HighwayRenderStats stats = HighwayRenderer.render(level, profile, edit);
-        HighwayRenderStats interchange = HighwayInterchangeRenderer.render(level, main, edit);
-        stats.add(interchange);
         SESSIONS.put(level, edit);
-        String message = String.format("[AFL HIGHWAY V1A] start=(%d,%d,%d) end=(%d,%d) length=%d heading=%s sampleCount=%d actualWidth=%d profileMinY=%d profileMaxY=%d maxGradeObserved=%d GROUND segments=%d CUT segments=%d FILL segments=%d VIADUCT segments=%d blocksPlaced=%d blocksCleared=%d fillBlocks=%d cutBlocks=%d viaductBlocks=%d piersPlaced=%d interchangeGenerated=AT_GRADE_DIAMOND elapsedMs=%d",
+        String message = String.format("[AFL HIGHWAY V1A.1] start=(%d,%d,%d) end=(%d,%d) heading=%s length=%d actualWidth=%d routeMode=STRAIGHT interchangeDisabled=true profileSampleCount=%d corridorCellCount=%d expectedSurfaceCells=%d actualSurfaceCells=%d missingSurfaceCells=%d clearanceViolations=%d profileMinY=%d profileMaxY=%d maxGradeObserved=%d GROUND cells=%d CUT cells=%d FILL cells=%d VIADUCT cells=%d blocksPlaced=%d blocksCleared=%d fillBlocks=%d cutBlocks=%d viaductBlocks=%d piersPlaced=%d elapsedCommandMs=%d",
                 start.getX(), start.getY(), start.getZ(), (int) Math.round(main.sample(main.length()).x()),
-                (int) Math.round(main.sample(main.length()).z()), length, heading.name(), profile.samples().size(),
-                main.width(), profile.minRoadY(), profile.maxRoadY(), profile.observedMaxGrade(), stats.groundSegments,
-                stats.cutSegments, stats.fillSegments, stats.viaductSegments, stats.blocksPlaced, stats.blocksCleared,
+                (int) Math.round(main.sample(main.length()).z()), heading.name(), length, main.width(), profile.samples().size(),
+                stats.corridorCellCount, stats.expectedSurfaceCells, stats.actualSurfaceCells, stats.missingSurfaceCells,
+                stats.clearanceViolations, profile.minRoadY(), profile.maxRoadY(), profile.observedMaxGrade(), stats.groundCells,
+                stats.cutCells, stats.fillCells, stats.viaductCells, stats.blocksPlaced, stats.blocksCleared,
                 stats.fillBlocks, stats.cutBlocks, stats.viaductBlocks, stats.piersPlaced,
                 (System.nanoTime() - started) / 1_000_000L);
         context.getSource().sendSuccess(() -> Component.literal(message), true);

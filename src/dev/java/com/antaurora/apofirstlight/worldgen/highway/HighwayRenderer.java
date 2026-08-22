@@ -2,133 +2,137 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Applies a HighwayProfile to a bounded corridor in a loaded ServerLevel. */
+import java.util.HashMap;
+import java.util.Map;
+
+/** V1A.1 renderer: one corridor mask, one ordered construction pass. */
 public final class HighwayRenderer {
-    private static final int HALF_WIDTH_CLEARANCE = 5;
+    private static final int VERTICAL_CLEARANCE = 6;
     private static final int PIER_SPACING = 28;
 
     private HighwayRenderer() {}
 
     public static HighwayRenderStats render(ServerLevel level, HighwayProfile profile, HighwayEditSession edit) {
+        HighwayCorridor corridor = HighwayCorridor.build(profile.plan(), profile);
         HighwayRenderStats stats = new HighwayRenderStats();
-        var samples = profile.samples();
-        double lastPier = -PIER_SPACING;
-        for (int i = 0; i < samples.size() - 1; i++) {
-            HighwayProfile.Sample a = samples.get(i);
-            HighwayProfile.Sample b = samples.get(i + 1);
-            HighwayTerrainMode mode = a.mode() == HighwayTerrainMode.VIADUCT || b.mode() == HighwayTerrainMode.VIADUCT
-                    ? HighwayTerrainMode.VIADUCT : a.mode();
-            stats.addMode(mode);
-            int steps = Math.max(1, (int) Math.ceil(b.distance() - a.distance()));
-            for (int step = 0; step < steps; step++) {
-                double fraction = step / (double) steps;
-                double distance = a.distance() + (b.distance() - a.distance()) * fraction;
-                HighwayPlan.Point point = profile.plan().sample(distance);
-                HighwayPlan.Tangent tangent = profile.plan().tangent(distance);
-                int roadY = (int) Math.round(a.roadY() + (b.roadY() - a.roadY()) * fraction);
-                int terrainY = (int) Math.round(a.terrainY() + (b.terrainY() - a.terrainY()) * fraction);
-                renderCrossSection(level, edit, stats, point, tangent, roadY, terrainY, mode, profile.plan().width());
-                if (mode == HighwayTerrainMode.VIADUCT && distance - lastPier >= PIER_SPACING) {
-                    renderPier(level, edit, stats, point, tangent, roadY, terrainY, profile.plan().width());
-                    lastPier = distance;
-                }
-            }
-        }
-        HighwayProfile.Sample last = samples.get(samples.size() - 1);
-        renderCrossSection(level, edit, stats, new HighwayPlan.Point(last.x(), last.z()),
-                new HighwayPlan.Tangent(last.tangentX(), last.tangentZ()), last.roadY(), last.terrainY(), last.mode(), profile.plan().width());
+        stats.corridorCellCount = corridor.cells().size();
+        stats.expectedSurfaceCells = corridor.expectedSurfaceCells();
+        for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
+        clearRow(level, edit, stats, corridor);
+        clearCutEnvelope(level, edit, stats, corridor);
+        placeRoadStructure(level, edit, stats, corridor);
+        placePiers(level, edit, stats, corridor);
+        HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor);
+        stats.actualSurfaceCells = validation.actualSurfaceCells();
+        stats.missingSurfaceCells = validation.missingSurfaceCells();
+        stats.clearanceViolations = validation.clearanceViolations();
         return stats;
     }
 
-    private static void renderCrossSection(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
-                                           HighwayPlan.Point point, HighwayPlan.Tangent tangent, int roadY,
-                                           int terrainY, HighwayTerrainMode mode, int width) {
-        int half = width / 2;
-        double rightX = -tangent.z();
-        double rightZ = tangent.x();
-        for (int lateral = -half; lateral <= half; lateral++) {
-            BlockPos column = new BlockPos((int) Math.round(point.x() + rightX * lateral), roadY,
-                    (int) Math.round(point.z() + rightZ * lateral));
-            BlockState surface = surfaceState(width, lateral);
-            if (edit.set(column, surface)) {
-                stats.blocksPlaced++;
-                if (mode == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
+    private static void clearRow(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                 HighwayCorridor corridor) {
+        for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            for (int y = column.roadY() + 1; y <= column.roadY() + VERTICAL_CLEARANCE; y++) {
+                if (clear(level, edit, new BlockPos(column.x(), y, column.z()))) stats.blocksCleared++;
             }
-            if (edit.set(column.below(), HighwayPalette.BASE)) {
-                stats.blocksPlaced++;
-                if (mode == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
-            }
-            if (edit.set(column.below(2), HighwayPalette.SUB_BASE)) {
-                stats.blocksPlaced++;
-                if (mode == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
-            }
+        }
+    }
 
-            if (mode == HighwayTerrainMode.FILL) {
-                int lower = Math.max(level.getMinBuildHeight(), roadY - HighwayProfile.MAX_FILL_DEPTH);
-                for (int y = roadY - 3; y >= Math.max(lower, terrainY); y--) {
-                    int depth = roadY - 3 - y;
-                    int taper = Math.max(1, half - (depth + 1) / 2);
-                    if (Math.abs(lateral) <= taper && edit.set(new BlockPos(column.getX(), y, column.getZ()), HighwayPalette.FILL)) {
+    private static void clearCutEnvelope(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                          HighwayCorridor corridor) {
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            if (cell.mode() != HighwayTerrainMode.CUT) continue;
+            int top = Math.min(cell.terrainY() + 1, cell.roadY() + HighwayProfile.MAX_CUT_DEPTH);
+            for (int y = cell.roadY() + VERTICAL_CLEARANCE + 1; y <= top; y++) {
+                for (int dx = -HighwayCorridor.ROW_MARGIN; dx <= HighwayCorridor.ROW_MARGIN; dx++) {
+                    for (int dz = -HighwayCorridor.ROW_MARGIN; dz <= HighwayCorridor.ROW_MARGIN; dz++) {
+                        if (clear(level, edit, new BlockPos(cell.x() + dx, y, cell.z() + dz))) {
+                            stats.blocksCleared++;
+                            stats.cutBlocks++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void placeRoadStructure(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                           HighwayCorridor corridor) {
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            BlockPos surface = new BlockPos(cell.x(), cell.roadY(), cell.z());
+            BlockState surfaceState = surfaceState(cell.role());
+            if (edit.set(surface, surfaceState)) {
+                stats.blocksPlaced++;
+                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
+            }
+            if (edit.set(surface.below(), HighwayPalette.BASE)) {
+                stats.blocksPlaced++;
+                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
+            }
+            if (edit.set(surface.below(2), HighwayPalette.SUB_BASE)) {
+                stats.blocksPlaced++;
+                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
+            }
+            if (cell.mode() == HighwayTerrainMode.FILL) {
+                int bottom = Math.max(level.getMinBuildHeight(), cell.roadY() - HighwayProfile.MAX_FILL_DEPTH);
+                for (int y = cell.roadY() - 3; y >= Math.max(bottom, cell.terrainY()); y--) {
+                    if (edit.set(new BlockPos(cell.x(), y, cell.z()), HighwayPalette.FILL)) {
                         stats.blocksPlaced++;
                         stats.fillBlocks++;
                     }
                 }
-            } else if (mode == HighwayTerrainMode.CUT) {
-                int top = Math.min(terrainY + 1, roadY + HighwayProfile.MAX_CUT_DEPTH);
-                for (int y = roadY + 1; y <= top; y++) {
-                    int distanceAbove = y - roadY;
-                    int allowed = half + HALF_WIDTH_CLEARANCE - distanceAbove / 3;
-                    if (Math.abs(lateral) <= allowed && clear(level, edit, new BlockPos(column.getX(), y, column.getZ()))) {
-                        stats.blocksCleared++;
-                        stats.cutBlocks++;
-                    }
-                }
-            } else if (mode == HighwayTerrainMode.GROUND) {
-                int top = Math.min(terrainY + 1, roadY + 4);
-                for (int y = roadY + 1; y <= top; y++) {
-                    if (clear(level, edit, new BlockPos(column.getX(), y, column.getZ()))) stats.blocksCleared++;
-                }
             }
         }
     }
 
-    private static void renderPier(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
-                                   HighwayPlan.Point point, HighwayPlan.Tangent tangent, int roadY, int terrainY, int width) {
-        int x = (int) Math.round(point.x());
-        int z = (int) Math.round(point.z());
-        int foundation = findFoundation(level, x, z, terrainY);
-        int bottom = Math.max(level.getMinBuildHeight(), foundation + 1);
-        int top = roadY - 3;
-        if (bottom > top) return;
-        BlockPos pier = new BlockPos(x, top, z);
-        for (int y = top; y >= bottom; y--) {
-            if (edit.set(new BlockPos(pier.getX(), y, pier.getZ()), HighwayPalette.PIER)) {
-                stats.blocksPlaced++;
-                stats.piersPlaced++;
-                stats.viaductBlocks++;
+    private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                   HighwayCorridor corridor) {
+        double lastPier = -PIER_SPACING;
+        Map<Long, HighwayCorridor.Cell> centerCells = new HashMap<>();
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            centerCells.putIfAbsent(columnKey(cell.x(), cell.z()), cell);
+        }
+        for (HighwayCorridor.CenterCell center : corridor.centerline()) {
+            HighwayCorridor.Cell cell = centerCells.get(columnKey(center.x(), center.z()));
+            if (cell == null || cell.mode() != HighwayTerrainMode.VIADUCT) continue;
+            if (center.distance() - lastPier >= PIER_SPACING) {
+                int foundation = findFoundation(level, center.x(), center.z(), cell.terrainY());
+                for (int y = cell.roadY() - 3; y > foundation; y--) {
+                    if (edit.set(new BlockPos(center.x(), y, center.z()), HighwayPalette.PIER)) {
+                        stats.blocksPlaced++;
+                        stats.viaductBlocks++;
+                        stats.piersPlaced++;
+                    }
+                }
+                lastPier = center.distance();
             }
         }
     }
+
+    private static long columnKey(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
 
     private static int findFoundation(ServerLevel level, int x, int z, int terrainY) {
         int bottom = Math.max(level.getMinBuildHeight(), terrainY - 64);
         for (int y = terrainY - 1; y >= bottom; y--) {
             BlockPos pos = new BlockPos(x, y, z);
-            if (!level.getFluidState(pos).isEmpty()) continue;
-            if (!level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) return y;
+            if (level.getFluidState(pos).isEmpty()
+                    && !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) return y;
         }
         return bottom;
     }
 
     private static boolean clear(ServerLevel level, HighwayEditSession edit, BlockPos pos) {
-        return !level.getBlockState(pos).isAir() && edit.set(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+        return !level.getBlockState(pos).isAir() && edit.set(pos, Blocks.AIR.defaultBlockState());
     }
 
-    private static BlockState surfaceState(int width, int lateral) {
-        if (width == HighwayPlan.MAIN_WIDTH && Math.abs(lateral) <= 1) return HighwayPalette.MEDIAN;
-        if (Math.abs(lateral) >= width / 2 - 1) return HighwayPalette.SHOULDER;
-        return HighwayPalette.CARRIAGEWAY;
+    private static BlockState surfaceState(HighwayCorridor.Role role) {
+        return switch (role) {
+            case OUTER_SHOULDER, INNER_SHOULDER_LEFT, INNER_SHOULDER_RIGHT -> HighwayPalette.SHOULDER;
+            case MEDIAN -> HighwayPalette.MEDIAN;
+            case CARRIAGEWAY_LEFT, CARRIAGEWAY_RIGHT -> HighwayPalette.CARRIAGEWAY;
+        };
     }
 }

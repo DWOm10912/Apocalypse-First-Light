@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import net.minecraft.core.BlockPos;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /** Geometry-only route plan. It never reads or writes a level. */
@@ -27,20 +26,11 @@ public final class HighwayPlan {
         double magnitude = Math.sqrt(headingX * headingX + headingZ * headingZ);
         double hx = headingX / magnitude;
         double hz = headingZ / magnitude;
-        double rx = -hz;
-        double rz = hx;
-        int segmentLength = Math.max(192, Math.min(320, length / 4));
-        int pointCount = Math.max(2, (int) Math.ceil(length / (double) segmentLength) + 1);
-        List<Point> points = new ArrayList<>();
-        java.util.Random random = new java.util.Random(seed ^ ((long) start.getX() * 341873128712L)
-                ^ ((long) start.getZ() * 132897987541L));
-        for (int i = 0; i < pointCount; i++) {
-            double distance = i == pointCount - 1 ? length : Math.min(length, (double) i * length / (pointCount - 1));
-            double lateral = i == 0 || i == pointCount - 1 ? 0.0 : (random.nextDouble() * 2.0 - 1.0) * 56.0;
-            points.add(new Point(start.getX() + hx * distance + rx * lateral,
-                    start.getZ() + hz * distance + rz * lateral));
-        }
-        return new HighwayPlan(points, length, MAIN_WIDTH, Curve.CATMULL_ROM);
+        // V1A.1 deliberately makes the mainline a single engineering segment.
+        // Turn geometry belongs to a future explicit junction module.
+        return new HighwayPlan(List.of(new Point(start.getX(), start.getZ()),
+                new Point(start.getX() + hx * length, start.getZ() + hz * length)),
+                length, MAIN_WIDTH, Curve.LINEAR);
     }
 
     public static HighwayPlan linear(Point start, Point end, int width) {

@@ -73,6 +73,21 @@ public final class HighwayProfile {
 
     public HighwayPlan plan() { return plan; }
     public List<Sample> samples() { return samples; }
+    public Sample sampleAt(double distance) {
+        if (distance <= samples.get(0).distance()) return samples.get(0);
+        if (distance >= samples.get(samples.size() - 1).distance()) return samples.get(samples.size() - 1);
+        int high = 1;
+        while (high < samples.size() && samples.get(high).distance() < distance) high++;
+        Sample a = samples.get(high - 1);
+        Sample b = samples.get(high);
+        double fraction = (distance - a.distance()) / (b.distance() - a.distance());
+        return new Sample(distance, plan.sample(distance).x(), plan.sample(distance).z(),
+                plan.tangent(distance).x(), plan.tangent(distance).z(),
+                (int) Math.round(a.terrainY() + (b.terrainY() - a.terrainY()) * fraction),
+                (int) Math.round(a.roadY() + (b.roadY() - a.roadY()) * fraction),
+                a.mode() == HighwayTerrainMode.VIADUCT || b.mode() == HighwayTerrainMode.VIADUCT
+                        ? HighwayTerrainMode.VIADUCT : a.mode(), a.water() || b.water());
+    }
     public int minRoadY() { return samples.stream().mapToInt(Sample::roadY).min().orElse(0); }
     public int maxRoadY() { return samples.stream().mapToInt(Sample::roadY).max().orElse(0); }
     public int observedMaxGrade() {
