@@ -61,6 +61,10 @@ public final class HighwayRenderer {
         stats.roadStepDropTransitions = corridor.roadStepDropTransitions();
         stats.laneDividerStepConnectorSkipped = corridor.laneDividerStepConnectorSkipped();
         stats.unsupportedMarkingStepHeight = corridor.unsupportedMarkingStepHeight();
+        stats.medianStepTransitions = corridor.medianStepTransitions();
+        stats.medianStepRiseTransitions = corridor.medianStepRiseTransitions();
+        stats.medianStepDropTransitions = corridor.medianStepDropTransitions();
+        stats.unsupportedMedianStepHeight = corridor.unsupportedMedianStepHeight();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
@@ -75,6 +79,7 @@ public final class HighwayRenderer {
         placeRoadStructure(level, edit, stats, corridor);
         placeOuterEdge(level, edit, stats, corridor);
         placeParapetsAndMedian(level, edit, stats, corridor);
+        placeMedianStepConnectors(edit, stats, corridor);
         placeRoadMarkings(level, edit, stats, corridor);
         placeRoadMarkingStepConnectors(level, edit, stats, corridor);
         placePiers(level, edit, stats, corridor, profile);
@@ -128,6 +133,10 @@ public final class HighwayRenderer {
         stats.unexpectedLaneDividerStepConnectorInGap =
                 validation.unexpectedLaneDividerStepConnectorInGap();
         stats.wrongStepConnectorTypeBlocks = validation.wrongStepConnectorTypeBlocks();
+        stats.expectedMedianStepConnectors = validation.expectedMedianStepConnectors();
+        stats.actualMedianStepConnectors = validation.actualMedianStepConnectors();
+        stats.missingMedianStepConnectors = validation.missingMedianStepConnectors();
+        stats.wrongMedianStepConnectorTypeBlocks = validation.wrongMedianStepConnectorTypeBlocks();
         return stats;
     }
 
@@ -291,6 +300,18 @@ public final class HighwayRenderer {
                     HighwayPalette.REINFORCED_CONCRETE_SLAB)) {
                 stats.blocksPlaced++;
                 stats.medianBarrierBlocks++;
+            }
+        }
+    }
+
+    private static void placeMedianStepConnectors(HighwayEditSession edit,
+                                                   HighwayRenderStats stats,
+                                                   HighwayCorridor corridor) {
+        for (BlockPos pos : corridor.medianStepConnectorPositions()) {
+            if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
+                stats.blocksPlaced++;
+                stats.reinforcedConcreteBlocks++;
+                stats.medianStepConnectorBlocksPlaced++;
             }
         }
     }

@@ -123,6 +123,15 @@ public final class HighwayRenderStats {
     public int wrongStepConnectorTypeBlocks;
     public int unsupportedMarkingStepHeight;
     public int stepConnectorBlocksPlaced;
+    public int medianStepTransitions;
+    public int medianStepRiseTransitions;
+    public int medianStepDropTransitions;
+    public int expectedMedianStepConnectors;
+    public int actualMedianStepConnectors;
+    public int missingMedianStepConnectors;
+    public int wrongMedianStepConnectorTypeBlocks;
+    public int unsupportedMedianStepHeight;
+    public int medianStepConnectorBlocksPlaced;
 
     public void addCellMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -267,5 +276,14 @@ public final class HighwayRenderStats {
         wrongStepConnectorTypeBlocks += other.wrongStepConnectorTypeBlocks;
         unsupportedMarkingStepHeight += other.unsupportedMarkingStepHeight;
         stepConnectorBlocksPlaced += other.stepConnectorBlocksPlaced;
+        medianStepTransitions += other.medianStepTransitions;
+        medianStepRiseTransitions += other.medianStepRiseTransitions;
+        medianStepDropTransitions += other.medianStepDropTransitions;
+        expectedMedianStepConnectors += other.expectedMedianStepConnectors;
+        actualMedianStepConnectors += other.actualMedianStepConnectors;
+        missingMedianStepConnectors += other.missingMedianStepConnectors;
+        wrongMedianStepConnectorTypeBlocks += other.wrongMedianStepConnectorTypeBlocks;
+        unsupportedMedianStepHeight += other.unsupportedMedianStepHeight;
+        medianStepConnectorBlocksPlaced += other.medianStepConnectorBlocksPlaced;
     }
 }

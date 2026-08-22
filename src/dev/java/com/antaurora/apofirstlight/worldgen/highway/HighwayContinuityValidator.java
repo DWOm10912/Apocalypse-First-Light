@@ -121,9 +121,23 @@ public final class HighwayContinuityValidator {
 
         int medianBarrier = 0;
         for (HighwayCorridor.Cell cell : corridor.cells()) {
+            BlockState medianState = level.getBlockState(new BlockPos(cell.x(), cell.roadY() + 1, cell.z()));
             if (cell.role() == HighwayCorridor.Role.MEDIAN && cell.lateral() == 0
-                    && level.getBlockState(new BlockPos(cell.x(), cell.roadY() + 1, cell.z()))
-                    .is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())) medianBarrier++;
+                    && isMedianBarrier(medianState)) {
+                medianBarrier++;
+            }
+        }
+
+        int expectedMedianStepConnector = corridor.medianStepConnectorPositions().size();
+        int actualMedianStepConnector = 0;
+        int wrongMedianStepConnectorType = 0;
+        for (BlockPos pos : corridor.medianStepConnectorPositions()) {
+            BlockState state = level.getBlockState(pos);
+            if (state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock())) {
+                actualMedianStepConnector++;
+            } else if (!isClear(level, pos)) {
+                wrongMedianStepConnectorType++;
+            }
         }
 
         int expectedWhiteEdge = 0;
@@ -222,7 +236,15 @@ public final class HighwayContinuityValidator {
                 expectedYellowEdgeStepConnector - actualYellowEdgeStepConnector,
                 expectedLaneDividerStepConnector, actualLaneDividerStepConnector,
                 expectedLaneDividerStepConnector - actualLaneDividerStepConnector,
-                wrongStepConnectorType, unexpectedLaneDividerStepConnectorInGap);
+                wrongStepConnectorType, unexpectedLaneDividerStepConnectorInGap,
+                expectedMedianStepConnector, actualMedianStepConnector,
+                expectedMedianStepConnector - actualMedianStepConnector,
+                wrongMedianStepConnectorType);
+    }
+
+    private static boolean isMedianBarrier(BlockState state) {
+        return state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())
+                || state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock());
     }
 
     private static boolean isNormalRoadBase(BlockState state) {
@@ -236,6 +258,8 @@ public final class HighwayContinuityValidator {
                 && (state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())
                 || (corridor.isExpectedOuterEdge(pos.getX(), pos.getY(), pos.getZ())
                 && state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock()))))
+                || (corridor.isExpectedMedianStepConnector(pos.getX(), pos.getY(), pos.getZ())
+                && state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock()))
                 || isExpectedRoadMarking(corridor, pos, state)
                 || isExpectedRoadMarkingStepConnector(corridor, pos, state);
     }
@@ -306,8 +330,12 @@ public final class HighwayContinuityValidator {
                           int expectedLaneDividerStepConnectors,
                           int actualLaneDividerStepConnectors,
                           int missingLaneDividerStepConnectors,
-                          int wrongStepConnectorTypeBlocks,
-                          int unexpectedLaneDividerStepConnectorInGap) {
+                           int wrongStepConnectorTypeBlocks,
+                           int unexpectedLaneDividerStepConnectorInGap,
+                           int expectedMedianStepConnectors,
+                           int actualMedianStepConnectors,
+                           int missingMedianStepConnectors,
+                           int wrongMedianStepConnectorTypeBlocks) {
         public int airspaceClearanceViolations() { return clearanceViolations; }
     }
 }

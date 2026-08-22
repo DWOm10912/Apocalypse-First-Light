@@ -124,6 +124,16 @@ public final class HighwayDebugCommand {
         stat(message, "roadStepTransitions", stats.roadStepTransitions);
         stat(message, "roadStepRiseTransitions", stats.roadStepRiseTransitions);
         stat(message, "roadStepDropTransitions", stats.roadStepDropTransitions);
+        stat(message, "medianStepTransitions", stats.medianStepTransitions);
+        stat(message, "medianStepRiseTransitions", stats.medianStepRiseTransitions);
+        stat(message, "medianStepDropTransitions", stats.medianStepDropTransitions);
+        stat(message, "expectedMedianStepConnectors", stats.expectedMedianStepConnectors);
+        stat(message, "actualMedianStepConnectors", stats.actualMedianStepConnectors);
+        stat(message, "missingMedianStepConnectors", stats.missingMedianStepConnectors);
+        stat(message, "wrongMedianStepConnectorTypeBlocks",
+                stats.wrongMedianStepConnectorTypeBlocks);
+        stat(message, "unsupportedMedianStepHeight", stats.unsupportedMedianStepHeight);
+        stat(message, "medianStepConnectorBlocksPlaced", stats.medianStepConnectorBlocksPlaced);
         stat(message, "expectedWhiteEdgeStepConnectors", stats.expectedWhiteEdgeStepConnectors);
         stat(message, "actualWhiteEdgeStepConnectors", stats.actualWhiteEdgeStepConnectors);
         stat(message, "missingWhiteEdgeStepConnectors", stats.missingWhiteEdgeStepConnectors);

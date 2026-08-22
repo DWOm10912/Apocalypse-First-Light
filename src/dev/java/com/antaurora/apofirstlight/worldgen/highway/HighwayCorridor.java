@@ -37,6 +37,7 @@ public final class HighwayCorridor {
     private final Set<SurfaceKey> roadFurniturePositions;
     private final Set<SurfaceKey> outerEdgePositions;
     private final Set<SurfaceKey> outerEdgeRiserPositions;
+    private final Set<SurfaceKey> medianStepConnectorPositions;
     private final List<RoadMarking> roadMarkings;
     private final Map<SurfaceKey, RoadMarking> roadMarkingPositions;
     private final List<RoadMarkingStepConnector> roadMarkingStepConnectors;
@@ -57,12 +58,17 @@ public final class HighwayCorridor {
     private final int roadStepDropTransitions;
     private final int laneDividerStepConnectorSkipped;
     private final int unsupportedMarkingStepHeight;
+    private final int medianStepTransitions;
+    private final int medianStepRiseTransitions;
+    private final int medianStepDropTransitions;
+    private final int unsupportedMedianStepHeight;
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
-                            List<Column> rowEnvelope, List<CenterCell> centerline,
+                             List<Column> rowEnvelope, List<CenterCell> centerline,
                              Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
                              Set<SurfaceKey> outerEdgePositions, Set<SurfaceKey> outerEdgeRiserPositions,
-                            List<RoadMarking> roadMarkings,
+                             Set<SurfaceKey> medianStepConnectorPositions,
+                             List<RoadMarking> roadMarkings,
                             List<RoadMarkingStepConnector> roadMarkingStepConnectors,
                             Set<SurfaceKey> laneDividerStepConnectorGapPositions,
                             List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
@@ -71,9 +77,11 @@ public final class HighwayCorridor {
                             int bridgeApproachEndExtensions, int bridgeApproachSupportFailures,
                             int duplicateXZDifferentRoadYSurfaceKeys,
                             int markingsSkippedUnsupportedDiagonal,
-                            int roadStepTransitions, int roadStepRiseTransitions,
-                            int roadStepDropTransitions, int laneDividerStepConnectorSkipped,
-                            int unsupportedMarkingStepHeight) {
+                             int roadStepTransitions, int roadStepRiseTransitions,
+                             int roadStepDropTransitions, int laneDividerStepConnectorSkipped,
+                             int unsupportedMarkingStepHeight,
+                             int medianStepTransitions, int medianStepRiseTransitions,
+                             int medianStepDropTransitions, int unsupportedMedianStepHeight) {
         this.plan = plan;
         this.cells = List.copyOf(cells);
         this.bridgeCells = List.copyOf(bridgeCells);
@@ -83,6 +91,7 @@ public final class HighwayCorridor {
         this.roadFurniturePositions = Set.copyOf(roadFurniturePositions);
         this.outerEdgePositions = Set.copyOf(outerEdgePositions);
         this.outerEdgeRiserPositions = Set.copyOf(outerEdgeRiserPositions);
+        this.medianStepConnectorPositions = Set.copyOf(medianStepConnectorPositions);
         this.roadMarkings = List.copyOf(roadMarkings);
         Map<SurfaceKey, RoadMarking> markingPositions = new LinkedHashMap<>();
         for (RoadMarking marking : roadMarkings) {
@@ -113,6 +122,10 @@ public final class HighwayCorridor {
         this.roadStepDropTransitions = roadStepDropTransitions;
         this.laneDividerStepConnectorSkipped = laneDividerStepConnectorSkipped;
         this.unsupportedMarkingStepHeight = unsupportedMarkingStepHeight;
+        this.medianStepTransitions = medianStepTransitions;
+        this.medianStepRiseTransitions = medianStepRiseTransitions;
+        this.medianStepDropTransitions = medianStepDropTransitions;
+        this.unsupportedMedianStepHeight = unsupportedMedianStepHeight;
     }
 
     public static HighwayCorridor build(ServerLevel level, HighwayPlan plan, HighwayProfile profile) {
@@ -208,6 +221,8 @@ public final class HighwayCorridor {
         }
         Set<SurfaceKey> outerEdgeRiserPositions = buildOuterEdgeRisers(centerline, profile, rightX, rightZ);
         roadFurniturePositions.addAll(outerEdgeRiserPositions);
+        MedianStepResolution medianSteps = buildMedianStepConnectors(centerline, profile);
+        roadFurniturePositions.addAll(medianSteps.positions());
         RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
         List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
@@ -215,6 +230,7 @@ public final class HighwayCorridor {
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
                 new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
                 outerEdgePositions, outerEdgeRiserPositions,
+                medianSteps.positions(),
                 markings.markings(), markings.stepConnectors(), markings.laneDividerStepConnectorGapPositions(),
                 coreRoadColumns, cutColumns,
                 structural.spans(), approachStations,
@@ -222,7 +238,9 @@ public final class HighwayCorridor {
                 duplicateXZDifferentRoadY.size(), markings.skippedUnsupportedDiagonal(),
                 markings.roadStepTransitions(), markings.roadStepRiseTransitions(),
                 markings.roadStepDropTransitions(), markings.laneDividerStepConnectorSkipped(),
-                markings.unsupportedMarkingStepHeight());
+                markings.unsupportedMarkingStepHeight(),
+                medianSteps.transitions(), medianSteps.riseTransitions(), medianSteps.dropTransitions(),
+                medianSteps.unsupportedStepHeight());
     }
 
     public static boolean isLaneDividerPainted(double distance) {
@@ -364,6 +382,38 @@ public final class HighwayCorridor {
             }
         }
         return risers;
+    }
+
+    private static MedianStepResolution buildMedianStepConnectors(List<CenterCell> centerline,
+                                                                    HighwayProfile profile) {
+        Set<SurfaceKey> positions = new LinkedHashSet<>();
+        int transitions = 0;
+        int riseTransitions = 0;
+        int dropTransitions = 0;
+        int unsupportedStepHeight = 0;
+        for (int i = 0; i + 1 < centerline.size(); i++) {
+            CenterCell current = centerline.get(i);
+            CenterCell next = centerline.get(i + 1);
+            if (directionBetween(current, next) == null) continue;
+
+            int currentRoadY = profile.sampleAt(current.distance()).roadY();
+            int nextRoadY = profile.sampleAt(next.distance()).roadY();
+            int deltaY = nextRoadY - currentRoadY;
+            if (deltaY == 0) continue;
+
+            transitions++;
+            if (Math.abs(deltaY) > 1) {
+                unsupportedStepHeight++;
+                continue;
+            }
+            if (deltaY > 0) riseTransitions++;
+            else dropTransitions++;
+
+            CenterCell lower = deltaY > 0 ? current : next;
+            positions.add(new SurfaceKey(lower.x(), Math.min(currentRoadY, nextRoadY) + 1, lower.z()));
+        }
+        return new MedianStepResolution(positions, transitions, riseTransitions, dropTransitions,
+                unsupportedStepHeight);
     }
 
     private static Direction directionBetween(CenterCell from, CenterCell to) {
@@ -600,6 +650,10 @@ public final class HighwayCorridor {
     public int roadStepDropTransitions() { return roadStepDropTransitions; }
     public int laneDividerStepConnectorSkipped() { return laneDividerStepConnectorSkipped; }
     public int unsupportedMarkingStepHeight() { return unsupportedMarkingStepHeight; }
+    public int medianStepTransitions() { return medianStepTransitions; }
+    public int medianStepRiseTransitions() { return medianStepRiseTransitions; }
+    public int medianStepDropTransitions() { return medianStepDropTransitions; }
+    public int unsupportedMedianStepHeight() { return unsupportedMedianStepHeight; }
     public int expectedSurfaceCells() { return cells.size(); }
     public boolean isExpectedSurface(int x, int y, int z) { return surfacePositions.contains(new SurfaceKey(x, y, z)); }
     public boolean isExpectedRoadFurniture(int x, int y, int z) {
@@ -610,6 +664,12 @@ public final class HighwayCorridor {
     }
     public Set<BlockPos> outerEdgeRiserPositions() {
         return toBlockPositions(outerEdgeRiserPositions);
+    }
+    public Set<BlockPos> medianStepConnectorPositions() {
+        return toBlockPositions(medianStepConnectorPositions);
+    }
+    public boolean isExpectedMedianStepConnector(int x, int y, int z) {
+        return medianStepConnectorPositions.contains(new SurfaceKey(x, y, z));
     }
     public boolean isExpectedOuterEdge(int x, int y, int z) {
         SurfaceKey key = new SurfaceKey(x, y, z);
@@ -673,6 +733,9 @@ public final class HighwayCorridor {
     private record SurfaceKey(int x, int y, int z) {}
     private record SupportSample(int supportedColumns, int unsupportedColumns, double supportRatio,
                                  boolean edgeColumnsSupported, boolean stable) {}
+    private record MedianStepResolution(Set<SurfaceKey> positions, int transitions,
+                                        int riseTransitions, int dropTransitions,
+                                        int unsupportedStepHeight) {}
     private record StructuralResolution(List<StructuralSpan> spans, int startExtensions, int endExtensions,
                                        int supportFailures) {}
     private record RoadMarkingResolution(List<RoadMarking> markings,
