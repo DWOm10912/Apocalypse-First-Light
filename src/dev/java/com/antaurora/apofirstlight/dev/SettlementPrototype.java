@@ -15,6 +15,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,6 +55,13 @@ public final class SettlementPrototype {
     private static final int INTERSECTION_OVERLAP_DISTANCE = MAIN_ROAD_WIDTH / 2;
     private static final int INTERSECTION_TRANSITION_DISTANCE = 16;
     private static final int ROAD_CLEARANCE_HEIGHT = 4;
+    private static final int ROAD_ROW_MARGIN = 2;
+    private static final int CLEARANCE_SCAN_HEIGHT = 16;
+    private static final int REMAINING_CLEARANCE_HEIGHT = 8;
+    private static final int TREE_HORIZONTAL_RADIUS = 8;
+    private static final int TREE_SCAN_UP = 16;
+    private static final int TREE_SCAN_DOWN = 4;
+    private static final int MAX_EDGE_CLOSURE_DEPTH = 4;
     private static final int MAX_CONSTRUCTION_SURFACE_SCAN = 16;
     private static final int MAX_ISOLATED_FOUNDATION_DEPTH = 6;
     private static final int MAIN_MAX_ISOLATED_UNSUPPORTED_COLUMNS = 8;
@@ -673,29 +681,247 @@ public final class SettlementPrototype {
             roadCells.put(footprint, targetGround);
         }
 
-        for (Map.Entry<BlockPos, Integer> entry : roadCells.entrySet()) {
-            BlockPos footprint = entry.getKey();
+        Map<BlockPos, Integer> rowColumns = buildRowColumns(plan, roadTargetMap, roadCells);
+        RowClearanceResult rowClearance = clearRoadRow(level, roadCells, rowColumns);
+        logs += rowClearance.logsRemoved();
+        leaves += rowClearance.leavesRemoved();
+        other += rowClearance.otherVegetationRemoved();
+
+        EdgeClosureResult edgeClosure = closeRoadEdgeCavities(level, roadCells, rowColumns);
+
+        long applyElapsed = elapsedMs(applyStart);
+        String detail = (plan.detail() == null ? "" : plan.detail() + " ") + String.format("roadApply=APPLIED roads=%d mainCandidates=%d cutBlocks=%d fillBlocks=%d waterFillBlocks=%d roadbedFilledBlocks=%d roadbedSupportedColumns=%d roadbedUnsupportedColumns=%d foundationRepairableColumns=%d foundationFilledBlocks=%d unresolvedColumns=%d intersectionAdjustedStations=%d postClearLeaves=%d postClearLogs=%d postClearVegetation=%d applyElapsedMs=%d vegetationCleared=%d rowColumns=%d rowMarginColumns=%d scanHeight=%d treeSeedsFound=%d treesFullyRemoved=%d remainingRoadLogs=%d remainingRoadLeaves=%d remainingRoadVegetation=%d edgeColumnsChecked=%d cavityColumnsFound=%d cavityColumnsClosed=%d deepCavityColumnsSkipped=%d edgeFillBlocks=%d maxEdgeClosureDepth=%d",
+                plan.roadPlans().size(), plan.mainCandidateCount(), cut, roadbedFilledBlocks, water, roadbedFilledBlocks,
+                consistency.supportedColumns(), consistency.unsupportedColumns(), consistency.foundationRepairableColumns(), consistency.foundationFilledBlocks(),
+                consistency.unresolvedColumns(), roadTargetMap.intersectionAdjustedStations(), rowClearance.leavesRemoved(),
+                rowClearance.logsRemoved(), rowClearance.otherVegetationRemoved(), applyElapsed, rowClearance.logsRemoved() + rowClearance.leavesRemoved() + rowClearance.otherVegetationRemoved(),
+                rowClearance.rowColumns(), rowClearance.rowMarginColumns(), rowClearance.scanHeight(), rowClearance.treeSeedsFound(), rowClearance.treesFullyRemoved(),
+                rowClearance.remainingRoadLogs(), rowClearance.remainingRoadLeaves(), rowClearance.remainingRoadVegetation(), edgeClosure.edgeColumnsChecked(),
+                edgeClosure.cavityColumnsFound(), edgeClosure.cavityColumnsClosed(), edgeClosure.deepCavityColumnsSkipped(), edgeClosure.edgeFillBlocks(), edgeClosure.maxEdgeClosureDepth());
+        ApocalypseFirstLight.LOGGER.info("[AFL ROAD ROW CLEARANCE] roadColumns={} rowColumns={} rowMarginColumns={} scanHeight={} logsRemoved={} leavesRemoved={} otherVegetationRemoved={} treeSeedsFound={} treesFullyRemoved={} remainingRoadLogs={} remainingRoadLeaves={} remainingRoadVegetation={}",
+                rowClearance.roadColumns(), rowClearance.rowColumns(), rowClearance.rowMarginColumns(), rowClearance.scanHeight(), rowClearance.logsRemoved(),
+                rowClearance.leavesRemoved(), rowClearance.otherVegetationRemoved(), rowClearance.treeSeedsFound(), rowClearance.treesFullyRemoved(),
+                rowClearance.remainingRoadLogs(), rowClearance.remainingRoadLeaves(), rowClearance.remainingRoadVegetation());
+        ApocalypseFirstLight.LOGGER.info("[AFL ROAD EDGE CLOSURE] edgeColumnsChecked={} cavityColumnsFound={} cavityColumnsClosed={} deepCavityColumnsSkipped={} edgeFillBlocks={} maxEdgeClosureDepth={}",
+                edgeClosure.edgeColumnsChecked(), edgeClosure.cavityColumnsFound(), edgeClosure.cavityColumnsClosed(), edgeClosure.deepCavityColumnsSkipped(),
+                edgeClosure.edgeFillBlocks(), edgeClosure.maxEdgeClosureDepth());
+        ApocalypseFirstLight.LOGGER.info("[AFL ROAD APPLY] {}", detail);
+        return new Result(true, "OK", plan, rowClearance.logsRemoved(), rowClearance.leavesRemoved(), rowClearance.otherVegetationRemoved(), detail);
+    }
+
+    private static Map<BlockPos, Integer> buildRowColumns(Plan plan, RoadTargetMap roadTargetMap, Map<BlockPos, Integer> roadCells) {
+        Map<BlockPos, Integer> rowColumns = new HashMap<>();
+        for (RoadPlan road : plan.roadPlans()) {
+            for (BlockPos cell : road.segment().withMargin(ROAD_ROW_MARGIN).cells()) {
+                int target = targetAt(road, cell.getX(), cell.getZ());
+                if (roadTargetMap.targets().containsKey(cell)) target = roadTargetMap.targets().get(cell);
+                rowColumns.putIfAbsent(cell, target);
+            }
+        }
+        rowColumns.putAll(roadCells);
+        return rowColumns;
+    }
+
+    private static RowClearanceResult clearRoadRow(ServerLevel level, Map<BlockPos, Integer> roadCells,
+                                                   Map<BlockPos, Integer> rowColumns) {
+        Set<BlockPos> processedLogs = new HashSet<>();
+        List<TreeCleanup> trees = new ArrayList<>();
+        for (Map.Entry<BlockPos, Integer> entry : rowColumns.entrySet()) {
+            BlockPos column = entry.getKey();
             int targetGround = entry.getValue();
-            for (int dy = 1; dy <= ROAD_CLEARANCE_HEIGHT; dy++) {
-                BlockPos p = new BlockPos(footprint.getX(), targetGround + dy, footprint.getZ());
-                BlockState state = level.getBlockState(p);
-                if (isRoadClearable(state)) {
-                    level.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
-                    if (state.is(BlockTags.LOGS)) logs++;
-                    else if (state.is(BlockTags.LEAVES)) leaves++;
-                    else other++;
-                }
+            for (int y = targetGround + 1; y <= targetGround + CLEARANCE_SCAN_HEIGHT; y++) {
+                BlockPos pos = new BlockPos(column.getX(), y, column.getZ());
+                if (!level.getBlockState(pos).is(BlockTags.LOGS) || !processedLogs.add(pos)) continue;
+                TreeCleanup tree = collectTree(level, pos);
+                processedLogs.addAll(tree.logs());
+                trees.add(tree);
             }
         }
 
-        long applyElapsed = elapsedMs(applyStart);
-        String detail = (plan.detail() == null ? "" : plan.detail() + " ") + String.format("roadApply=APPLIED roads=%d mainCandidates=%d cutBlocks=%d fillBlocks=%d waterFillBlocks=%d roadbedFilledBlocks=%d roadbedSupportedColumns=%d roadbedUnsupportedColumns=%d foundationRepairableColumns=%d foundationFilledBlocks=%d unresolvedColumns=%d intersectionAdjustedStations=%d postClearLeaves=%d postClearLogs=%d postClearVegetation=%d applyElapsedMs=%d vegetationCleared=%d",
-                plan.roadPlans().size(), plan.mainCandidateCount(), cut, roadbedFilledBlocks, water, roadbedFilledBlocks,
-                consistency.supportedColumns(), consistency.unsupportedColumns(), consistency.foundationRepairableColumns(), consistency.foundationFilledBlocks(),
-                consistency.unresolvedColumns(), roadTargetMap.intersectionAdjustedStations(), leaves,
-                logs, other, applyElapsed, logs + leaves + other);
-        ApocalypseFirstLight.LOGGER.info("[AFL ROAD APPLY] {}", detail);
-        return new Result(true, "OK", plan, logs, leaves, other, detail);
+        int logsRemoved = 0;
+        int leavesRemoved = 0;
+        int otherVegetationRemoved = 0;
+        int treesFullyRemoved = 0;
+        for (TreeCleanup tree : trees) {
+            for (BlockPos pos : tree.logs()) {
+                BlockState state = level.getBlockState(pos);
+                if (!isRoadVegetation(state)) continue;
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                if (state.is(BlockTags.LOGS)) logsRemoved++;
+                else if (state.is(BlockTags.LEAVES)) leavesRemoved++;
+                else otherVegetationRemoved++;
+            }
+            for (BlockPos pos : tree.leaves()) {
+                BlockState state = level.getBlockState(pos);
+                if (!isRoadVegetation(state)) continue;
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                if (state.is(BlockTags.LOGS)) logsRemoved++;
+                else if (state.is(BlockTags.LEAVES)) leavesRemoved++;
+                else otherVegetationRemoved++;
+            }
+            boolean logsRemain = tree.logs().stream().anyMatch(pos -> level.getBlockState(pos).is(BlockTags.LOGS));
+            if (!logsRemain) treesFullyRemoved++;
+        }
+
+        for (Map.Entry<BlockPos, Integer> entry : rowColumns.entrySet()) {
+            BlockPos column = entry.getKey();
+            int targetGround = entry.getValue();
+            for (int y = targetGround + 1; y <= targetGround + CLEARANCE_SCAN_HEIGHT; y++) {
+                BlockPos pos = new BlockPos(column.getX(), y, column.getZ());
+                BlockState state = level.getBlockState(pos);
+                if (!isRoadVegetation(state)) continue;
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                if (state.is(BlockTags.LOGS)) logsRemoved++;
+                else if (state.is(BlockTags.LEAVES)) leavesRemoved++;
+                else otherVegetationRemoved++;
+            }
+        }
+
+        int remainingRoadLogs = 0;
+        int remainingRoadLeaves = 0;
+        int remainingRoadVegetation = 0;
+        for (Map.Entry<BlockPos, Integer> entry : roadCells.entrySet()) {
+            BlockPos column = entry.getKey();
+            for (int y = entry.getValue() + 1; y <= entry.getValue() + REMAINING_CLEARANCE_HEIGHT; y++) {
+                BlockState state = level.getBlockState(new BlockPos(column.getX(), y, column.getZ()));
+                if (!isRoadVegetation(state)) continue;
+                remainingRoadVegetation++;
+                if (state.is(BlockTags.LOGS)) remainingRoadLogs++;
+                else if (state.is(BlockTags.LEAVES)) remainingRoadLeaves++;
+            }
+        }
+        int rowMarginColumns = Math.max(0, rowColumns.size() - roadCells.size());
+        return new RowClearanceResult(roadCells.size(), rowColumns.size(), rowMarginColumns, CLEARANCE_SCAN_HEIGHT,
+                logsRemoved, leavesRemoved, otherVegetationRemoved, trees.size(), treesFullyRemoved,
+                remainingRoadLogs, remainingRoadLeaves, remainingRoadVegetation);
+    }
+
+    private static TreeCleanup collectTree(ServerLevel level, BlockPos seed) {
+        Set<BlockPos> logs = new HashSet<>();
+        Set<BlockPos> leaves = new HashSet<>();
+        ArrayDeque<BlockPos> logQueue = new ArrayDeque<>();
+        logQueue.add(seed);
+        int minX = seed.getX() - TREE_HORIZONTAL_RADIUS;
+        int maxX = seed.getX() + TREE_HORIZONTAL_RADIUS;
+        int minZ = seed.getZ() - TREE_HORIZONTAL_RADIUS;
+        int maxZ = seed.getZ() + TREE_HORIZONTAL_RADIUS;
+        int minY = seed.getY() - TREE_SCAN_DOWN;
+        int maxY = seed.getY() + TREE_SCAN_UP;
+        while (!logQueue.isEmpty()) {
+            BlockPos pos = logQueue.removeFirst();
+            if (!insideTreeBounds(pos, minX, maxX, minY, maxY, minZ, maxZ) || !logs.add(pos)) continue;
+            if (!level.getBlockState(pos).is(BlockTags.LOGS)) {
+                logs.remove(pos);
+                continue;
+            }
+            for (Direction direction : Direction.values()) {
+                BlockPos next = pos.relative(direction);
+                if (insideTreeBounds(next, minX, maxX, minY, maxY, minZ, maxZ)
+                        && level.getBlockState(next).is(BlockTags.LOGS)) logQueue.addLast(next);
+            }
+        }
+
+        ArrayDeque<BlockPos> leafQueue = new ArrayDeque<>();
+        for (BlockPos log : logs) {
+            for (int dx = -2; dx <= 2; dx++) for (int dy = -2; dy <= 2; dy++) for (int dz = -2; dz <= 2; dz++) {
+                BlockPos next = log.offset(dx, dy, dz);
+                if (insideTreeBounds(next, minX, maxX, minY, maxY, minZ, maxZ)
+                        && level.getBlockState(next).is(BlockTags.LEAVES)) leafQueue.addLast(next);
+            }
+        }
+        while (!leafQueue.isEmpty()) {
+            BlockPos pos = leafQueue.removeFirst();
+            if (!insideTreeBounds(pos, minX, maxX, minY, maxY, minZ, maxZ) || !leaves.add(pos)) continue;
+            if (!level.getBlockState(pos).is(BlockTags.LEAVES)) {
+                leaves.remove(pos);
+                continue;
+            }
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dy == 0 && dz == 0) continue;
+                BlockPos next = pos.offset(dx, dy, dz);
+                if (insideTreeBounds(next, minX, maxX, minY, maxY, minZ, maxZ)
+                        && level.getBlockState(next).is(BlockTags.LEAVES)) leafQueue.addLast(next);
+            }
+        }
+        return new TreeCleanup(logs, leaves);
+    }
+
+    private static boolean insideTreeBounds(BlockPos pos, int minX, int maxX, int minY, int maxY, int minZ, int maxZ) {
+        return pos.getX() >= minX && pos.getX() <= maxX && pos.getY() >= minY && pos.getY() <= maxY
+                && pos.getZ() >= minZ && pos.getZ() <= maxZ;
+    }
+
+    private static EdgeClosureResult closeRoadEdgeCavities(ServerLevel level, Map<BlockPos, Integer> roadCells,
+                                                           Map<BlockPos, Integer> rowColumns) {
+        int edgeColumnsChecked = 0;
+        int cavityColumnsFound = 0;
+        int cavityColumnsClosed = 0;
+        int deepCavityColumnsSkipped = 0;
+        int edgeFillBlocks = 0;
+        int maxEdgeClosureDepth = 0;
+        Set<BlockPos> checked = new HashSet<>();
+        for (BlockPos road : roadCells.keySet()) {
+            int roadGround = roadCells.get(road);
+            for (int dx = -ROAD_ROW_MARGIN; dx <= ROAD_ROW_MARGIN; dx++) for (int dz = -ROAD_ROW_MARGIN; dz <= ROAD_ROW_MARGIN; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) == 0) continue;
+                BlockPos edge = new BlockPos(road.getX() + dx, 0, road.getZ() + dz);
+                if (!rowColumns.containsKey(edge) || roadCells.containsKey(edge) || !checked.add(edge)) continue;
+                boolean adjacent = false;
+                for (int nx = -1; nx <= 1; nx++) for (int nz = -1; nz <= 1; nz++) {
+                    if (nx == 0 && nz == 0) continue;
+                    if (roadCells.containsKey(new BlockPos(edge.getX() + nx, 0, edge.getZ() + nz))) adjacent = true;
+                }
+                if (!adjacent) continue;
+                edgeColumnsChecked++;
+                int targetGround = rowColumns.get(edge);
+                BlockPos top = new BlockPos(edge.getX(), targetGround, edge.getZ());
+                if (!isEdgeCavity(level, top)) continue;
+                cavityColumnsFound++;
+                EdgeSupport support = findEdgeSupport(level, top);
+                if (!support.found()) {
+                    deepCavityColumnsSkipped++;
+                    continue;
+                }
+                int fillDepth = targetGround - support.supportY();
+                maxEdgeClosureDepth = Math.max(maxEdgeClosureDepth, fillDepth);
+                for (int y = support.supportY() + 1; y <= targetGround; y++) {
+                    BlockPos fill = new BlockPos(edge.getX(), y, edge.getZ());
+                    BlockState desired = y == targetGround ? edgeTopMaterial(level, edge.getX(), edge.getZ(), roadGround) : Blocks.STONE.defaultBlockState();
+                    if (!level.getBlockState(fill).equals(desired)) {
+                        level.setBlock(fill, desired, 3);
+                        edgeFillBlocks++;
+                    }
+                }
+                cavityColumnsClosed++;
+            }
+        }
+        return new EdgeClosureResult(edgeColumnsChecked, cavityColumnsFound, cavityColumnsClosed, deepCavityColumnsSkipped,
+                edgeFillBlocks, maxEdgeClosureDepth);
+    }
+
+    private static boolean isEdgeCavity(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir() || !level.getFluidState(pos).isEmpty() || level.getBlockState(pos).canBeReplaced();
+    }
+
+    private static EdgeSupport findEdgeSupport(ServerLevel level, BlockPos top) {
+        for (int depth = 1; depth <= MAX_EDGE_CLOSURE_DEPTH; depth++) {
+            BlockPos pos = top.below(depth);
+            BlockState state = level.getBlockState(pos);
+            if (isStableRoadbed(level, pos, state)) return new EdgeSupport(true, pos.getY());
+            if (!isRoadbedFillable(level, pos, state)) return new EdgeSupport(false, 0);
+        }
+        return new EdgeSupport(false, 0);
+    }
+
+    private static BlockState edgeTopMaterial(ServerLevel level, int x, int z, int referenceGround) {
+        for (int radius = 1; radius <= ROAD_ROW_MARGIN + 1; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+                BlockState state = level.getBlockState(new BlockPos(x + dx, referenceGround, z + dz));
+                if (state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT) || state.is(Blocks.COARSE_DIRT)
+                        || state.is(Blocks.GRAVEL)) return state;
+            }
+        }
+        return Blocks.DIRT.defaultBlockState();
     }
 
     private static RoadTargetMap buildRoadTargetMap(Plan plan) {
@@ -808,9 +1034,12 @@ public final class SettlementPrototype {
         return state.isAir() || !level.getFluidState(pos).isEmpty() || state.canBeReplaced();
     }
 
-    private static boolean isRoadClearable(BlockState state) {
+    private static boolean isRoadVegetation(BlockState state) {
+        if (state.isAir() || !state.getFluidState().isEmpty()) return false;
         return state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES) || state.is(BlockTags.FLOWERS)
-                || state.is(BlockTags.SAPLINGS) || state.canBeReplaced();
+                || state.is(BlockTags.SAPLINGS) || state.is(Blocks.GRASS) || state.is(Blocks.TALL_GRASS)
+                || state.is(Blocks.FERN) || state.is(Blocks.LARGE_FERN) || state.is(Blocks.VINE)
+                || state.is(Blocks.SNOW) || state.canBeReplaced();
     }
 
     private static int targetAt(RoadPlan road, int x, int z) {
@@ -967,9 +1196,17 @@ public final class SettlementPrototype {
     private record RoadbedSupportProbe(boolean supportFound, int requiredFillDepth, boolean unsupported,
                                        int fluidDepth, BlockState supportBlock) {}
     private record RoadbedConsistency(int roadColumns, int supportedColumns, int filledColumns, int unsupportedColumns,
-                                      int foundationRepairableColumns, int foundationFilledBlocks, int unresolvedColumns,
-                                      int maxActualFillDepth, int plannerMaxFillDepth, int maxFoundationDepth, int mismatchCount,
-                                      Map<BlockPos, RoadbedColumn> columns, int filledBlocks) {}
+                                       int foundationRepairableColumns, int foundationFilledBlocks, int unresolvedColumns,
+                                       int maxActualFillDepth, int plannerMaxFillDepth, int maxFoundationDepth, int mismatchCount,
+                                       Map<BlockPos, RoadbedColumn> columns, int filledBlocks) {}
+    private record TreeCleanup(Set<BlockPos> logs, Set<BlockPos> leaves) {}
+    private record RowClearanceResult(int roadColumns, int rowColumns, int rowMarginColumns, int scanHeight,
+                                      int logsRemoved, int leavesRemoved, int otherVegetationRemoved,
+                                      int treeSeedsFound, int treesFullyRemoved, int remainingRoadLogs,
+                                      int remainingRoadLeaves, int remainingRoadVegetation) {}
+    private record EdgeSupport(boolean found, int supportY) {}
+    private record EdgeClosureResult(int edgeColumnsChecked, int cavityColumnsFound, int cavityColumnsClosed,
+                                     int deepCavityColumnsSkipped, int edgeFillBlocks, int maxEdgeClosureDepth) {}
     private record CandidateValidation(boolean valid, String reason, int totalSamples, int validSamples, int invalidSamples,
                                        int woodlandSamples, int outsideBiomeSamples, int falloutSamples,
                                        int scorchedSamples, int otherBiomeSamples, boolean crossBiome) {
