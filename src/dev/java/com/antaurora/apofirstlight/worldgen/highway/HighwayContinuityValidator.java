@@ -5,9 +5,29 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Read-only V1A.6 validator for the authoritative rendered corridor. */
+/** Read-only validators for the authoritative rendered corridor. */
 public final class HighwayContinuityValidator {
     private HighwayContinuityValidator() {}
+
+    public static CoreClearanceResult validateCoreRoadClearance(ServerLevel level,
+                                                                HighwayCorridor corridor) {
+        int terrainIntrusions = 0;
+        int directlyAboveSurface = 0;
+        for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            int top = column.clearanceTopY(level.getMaxBuildHeight());
+            if (column.capped(level.getMaxBuildHeight())) {
+                // A capped column has an unvalidated remainder above the safety limit and must not report success.
+                terrainIntrusions++;
+            }
+            for (int y = column.roadY() + 1; y <= top; y++) {
+                BlockPos pos = new BlockPos(column.x(), y, column.z());
+                if (isClear(level, pos)) continue;
+                terrainIntrusions++;
+                if (y == column.roadY() + 1) directlyAboveSurface++;
+            }
+        }
+        return new CoreClearanceResult(terrainIntrusions, directlyAboveSurface);
+    }
 
     public static Result validate(ServerLevel level, HighwayCorridor corridor, HighwayProfile profile) {
         int actual = 0;
@@ -117,6 +137,13 @@ public final class HighwayContinuityValidator {
         return corridor.isExpectedRoadFurniture(pos.getX(), pos.getY(), pos.getZ())
                 && state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock());
     }
+
+    private static boolean isClear(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir() && level.getFluidState(pos).isEmpty();
+    }
+
+    public record CoreClearanceResult(int coreRoadTerrainIntrusions,
+                                      int nonFurnitureBlockDirectlyAboveSurface) {}
 
     public record Result(int actualSurfaceCells, int missingSurfaceCells, int clearanceViolations,
                          int missingViaductDeckCells, int wrongSurfaceMaterialCells,

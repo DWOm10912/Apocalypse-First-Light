@@ -13,12 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** The authoritative V1A.5 footprint consumed by clearance and construction. */
+/** The authoritative road footprint consumed by clearance and construction. */
 public final class HighwayCorridor {
     public static final int ROW_MARGIN = 3;
     public static final int BRIDGE_WIDTH = HighwayPlan.MAIN_WIDTH + 2;
     public static final int VERTICAL_CLEARANCE = 6;
     public static final int MAX_CUT_CLEARANCE_HEIGHT = 128;
+    public static final int MAX_CORE_VERTICAL_CLEARANCE_HEIGHT = 128;
     public static final double STRUCTURAL_SUPPORT_RATIO_THRESHOLD = 0.80;
     public static final int MAX_STRUCTURAL_APPROACH_LENGTH = 32;
 
@@ -29,6 +30,7 @@ public final class HighwayCorridor {
     private final List<CenterCell> centerline;
     private final Set<SurfaceKey> surfacePositions;
     private final Set<SurfaceKey> roadFurniturePositions;
+    private final List<CoreRoadColumnSnapshot> coreRoadColumns;
     private final List<CutColumn> cutColumns;
     private final Set<Key> cutColumnPositions;
     private final List<StructuralSpan> structuralBridgeSpans;
@@ -36,13 +38,16 @@ public final class HighwayCorridor {
     private final int bridgeApproachStartExtensions;
     private final int bridgeApproachEndExtensions;
     private final int bridgeApproachSupportFailures;
+    private final int duplicateXZDifferentRoadYSurfaceKeys;
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
                             List<Column> rowEnvelope, List<CenterCell> centerline,
                             Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
-                            List<CutColumn> cutColumns, List<StructuralSpan> structuralBridgeSpans,
+                            List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
+                            List<StructuralSpan> structuralBridgeSpans,
                             int structuralApproachStations, int bridgeApproachStartExtensions,
-                            int bridgeApproachEndExtensions, int bridgeApproachSupportFailures) {
+                            int bridgeApproachEndExtensions, int bridgeApproachSupportFailures,
+                            int duplicateXZDifferentRoadYSurfaceKeys) {
         this.plan = plan;
         this.cells = List.copyOf(cells);
         this.bridgeCells = List.copyOf(bridgeCells);
@@ -50,6 +55,7 @@ public final class HighwayCorridor {
         this.centerline = List.copyOf(centerline);
         this.surfacePositions = Set.copyOf(surfacePositions);
         this.roadFurniturePositions = Set.copyOf(roadFurniturePositions);
+        this.coreRoadColumns = List.copyOf(coreRoadColumns);
         this.cutColumns = List.copyOf(cutColumns);
         Set<Key> cutPositions = new LinkedHashSet<>();
         for (CutColumn column : cutColumns) cutPositions.add(new Key(column.x(), column.z()));
@@ -59,6 +65,7 @@ public final class HighwayCorridor {
         this.bridgeApproachStartExtensions = bridgeApproachStartExtensions;
         this.bridgeApproachEndExtensions = bridgeApproachEndExtensions;
         this.bridgeApproachSupportFailures = bridgeApproachSupportFailures;
+        this.duplicateXZDifferentRoadYSurfaceKeys = duplicateXZDifferentRoadYSurfaceKeys;
     }
 
     public static HighwayCorridor build(ServerLevel level, HighwayPlan plan, HighwayProfile profile) {
@@ -88,6 +95,8 @@ public final class HighwayCorridor {
 
         StructuralResolution structural = resolveStructuralBridge(level, profile);
         Map<Key, Cell> unique = new LinkedHashMap<>();
+        Map<Key, Integer> firstRoadYByXZ = new LinkedHashMap<>();
+        Set<Key> duplicateXZDifferentRoadY = new LinkedHashSet<>();
         for (CenterCell center : centerline) {
             HighwayProfile.Sample sample = profile.sampleAt(center.distance());
             boolean structuralBridge = isStructuralStation(sample, structural.spans(), center.distance());
@@ -98,6 +107,10 @@ public final class HighwayCorridor {
                 Key key = new Key(x, z);
                 Cell next = new Cell(x, z, center.distance(), lateral, role(plan.width(), lateral),
                         sample.roadY(), sample.terrainY(), sample.mode(), structuralBridge);
+                Integer firstRoadY = firstRoadYByXZ.putIfAbsent(key, next.roadY());
+                if (firstRoadY != null && firstRoadY != next.roadY()) {
+                    duplicateXZDifferentRoadY.add(key);
+                }
                 Cell existing = unique.get(key);
                 if (existing == null || prefer(next, existing)) unique.put(key, next);
             }
@@ -140,17 +153,31 @@ public final class HighwayCorridor {
                 roadFurniturePositions.add(new SurfaceKey(cell.x(), cell.roadY() + 1, cell.z()));
             }
         }
+        List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
-                new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions, cutColumns,
-                structural.spans(), approachStations, structural.startExtensions(), structural.endExtensions(),
-                structural.supportFailures());
+                new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
+                coreRoadColumns, cutColumns, structural.spans(), approachStations,
+                structural.startExtensions(), structural.endExtensions(), structural.supportFailures(),
+                duplicateXZDifferentRoadY.size());
     }
 
     private static boolean prefer(Cell next, Cell existing) {
         if (next.structuralBridge() != existing.structuralBridge()) return next.structuralBridge();
         return next.mode() == HighwayTerrainMode.VIADUCT && existing.mode() != HighwayTerrainMode.VIADUCT;
+    }
+
+    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumns(ServerLevel level,
+                                                                     Iterable<Cell> cells) {
+        List<CoreRoadColumnSnapshot> result = new ArrayList<>();
+        for (Cell cell : cells) {
+            int preConstructionTopY = level.getHeight(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cell.x(), cell.z()) - 1;
+            result.add(new CoreRoadColumnSnapshot(cell.x(), cell.z(), cell.roadY(),
+                    preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
+        }
+        return result;
     }
 
     private static List<CutColumn> buildCutColumns(ServerLevel level, Iterable<Cell> cells,
@@ -333,6 +360,7 @@ public final class HighwayCorridor {
     public List<Cell> cells() { return cells; }
     public List<Cell> bridgeCells() { return bridgeCells; }
     public List<Column> rowEnvelope() { return rowEnvelope; }
+    public List<CoreRoadColumnSnapshot> coreRoadColumns() { return coreRoadColumns; }
     public List<CutColumn> cutColumns() { return cutColumns; }
     public List<CenterCell> centerline() { return centerline; }
     public List<StructuralSpan> structuralBridgeSpans() { return structuralBridgeSpans; }
@@ -344,6 +372,9 @@ public final class HighwayCorridor {
     public int bridgeApproachStartExtensions() { return bridgeApproachStartExtensions; }
     public int bridgeApproachEndExtensions() { return bridgeApproachEndExtensions; }
     public int bridgeApproachSupportFailures() { return bridgeApproachSupportFailures; }
+    public int authoritativeSurfaceKeys() { return surfacePositions.size(); }
+    public int uniqueCoreRoadXZColumns() { return coreRoadColumns.size(); }
+    public int duplicateXZDifferentRoadYSurfaceKeys() { return duplicateXZDifferentRoadYSurfaceKeys; }
     public int expectedSurfaceCells() { return cells.size(); }
     public boolean isExpectedSurface(int x, int y, int z) { return surfacePositions.contains(new SurfaceKey(x, y, z)); }
     public boolean isExpectedRoadFurniture(int x, int y, int z) {
@@ -356,6 +387,21 @@ public final class HighwayCorridor {
     public record Cell(int x, int z, double distance, int lateral, Role role, int roadY, int terrainY,
                        HighwayTerrainMode mode, boolean structuralBridge) {}
     public record Column(int x, int z, int roadY) {}
+    public record CoreRoadColumnSnapshot(int x, int z, int roadY, int preConstructionTopY,
+                                         HighwayTerrainMode mode, double distance, int lateral) {
+        public int clearanceTopY(int maxBuildHeight) {
+            return Math.min(maxBuildHeight - 1,
+                    Math.min(roadY + MAX_CORE_VERTICAL_CLEARANCE_HEIGHT, preConstructionTopY));
+        }
+
+        public boolean hasOriginalObstruction() {
+            return preConstructionTopY >= roadY + 1;
+        }
+
+        public boolean capped(int maxBuildHeight) {
+            return preConstructionTopY > clearanceTopY(maxBuildHeight);
+        }
+    }
     public record CutColumn(int x, int z, int roadY, int terrainTopY) {
         public int clearanceTopY(int maxBuildHeight) {
             int desiredTop = Math.max(roadY + VERTICAL_CLEARANCE, terrainTopY);

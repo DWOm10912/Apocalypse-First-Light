@@ -11,7 +11,7 @@ import java.util.ArrayDeque;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** V1A.6 renderer: authoritative bridge structure and bounded full CUT clearance. */
+/** V1A.7 renderer: authoritative core clearance plus the existing V1A.6 engineering passes. */
 public final class HighwayRenderer {
     private static final int PIER_SPACING = 32;
     private static final int PIER_CAP_HALF_WIDTH = 9;
@@ -48,11 +48,21 @@ public final class HighwayRenderer {
         stats.bridgeApproachStartExtensions = corridor.bridgeApproachStartExtensions();
         stats.bridgeApproachEndExtensions = corridor.bridgeApproachEndExtensions();
         stats.bridgeApproachSupportFailures = corridor.bridgeApproachSupportFailures();
+        stats.authoritativeSurfaceKeys = corridor.authoritativeSurfaceKeys();
+        stats.uniqueCoreRoadXZColumns = corridor.uniqueCoreRoadXZColumns();
+        stats.duplicateXZDifferentRoadYSurfaceKeys = corridor.duplicateXZDifferentRoadYSurfaceKeys();
+        stats.coreRoadColumnsPlanned = corridor.coreRoadColumns().size();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
         clearRow(level, edit, stats, corridor);
+        clearCoreRoadVerticalEnvelope(level, edit, stats, corridor);
         clearCutEnvelope(level, edit, stats, corridor);
+        HighwayContinuityValidator.CoreClearanceResult coreClearance =
+                HighwayContinuityValidator.validateCoreRoadClearance(level, corridor);
+        stats.coreRoadTerrainIntrusions = coreClearance.coreRoadTerrainIntrusions();
+        stats.nonFurnitureBlockDirectlyAboveSurface =
+                coreClearance.nonFurnitureBlockDirectlyAboveSurface();
         placeRoadStructure(level, edit, stats, corridor);
         placeParapetsAndMedian(level, edit, stats, corridor);
         placePiers(level, edit, stats, corridor, profile);
@@ -82,6 +92,30 @@ public final class HighwayRenderer {
         stats.remainingRowLeaves = validation.remainingRowLeaves();
         stats.vegetationClearanceViolations = validation.vegetationClearanceViolations();
         return stats;
+    }
+
+    private static void clearCoreRoadVerticalEnvelope(ServerLevel level, HighwayEditSession edit,
+                                                      HighwayRenderStats stats,
+                                                      HighwayCorridor corridor) {
+        for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            if (column.hasOriginalObstruction()) stats.coreRoadColumnsWithOriginalObstruction++;
+            if (column.capped(level.getMaxBuildHeight())) stats.coreRoadClearanceTruncatedColumns++;
+            int top = column.clearanceTopY(level.getMaxBuildHeight());
+            for (int y = column.roadY() + 1; y <= top; y++) {
+                stats.coreRoadVerticalBlocksScanned++;
+                BlockPos pos = new BlockPos(column.x(), y, column.z());
+                BlockState state = level.getBlockState(pos);
+                if (state.isAir() && level.getFluidState(pos).isEmpty()) continue;
+                if (isProtectedObstruction(level, pos, state)) {
+                    stats.coreRoadProtectedObstructionFailures++;
+                    continue;
+                }
+                if (clear(level, edit, pos)) {
+                    stats.blocksCleared++;
+                    stats.coreRoadVerticalBlocksCleared++;
+                }
+            }
+        }
     }
 
     private static void clearRow(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
@@ -364,8 +398,14 @@ public final class HighwayRenderer {
                 && !state.getCollisionShape(level, pos).isEmpty();
     }
 
+    private static boolean isProtectedObstruction(ServerLevel level, BlockPos pos, BlockState state) {
+        return level.getBlockEntity(pos) != null || state.getDestroySpeed(level, pos) < 0.0F;
+    }
+
     private static boolean clear(ServerLevel level, HighwayEditSession edit, BlockPos pos) {
-        return !level.getBlockState(pos).isAir() && edit.set(pos, Blocks.AIR.defaultBlockState());
+        BlockState state = level.getBlockState(pos);
+        return !state.isAir() && !isProtectedObstruction(level, pos, state)
+                && edit.set(pos, Blocks.AIR.defaultBlockState());
     }
 
     private record Foundation(boolean found, int y, boolean crossedWater) {}

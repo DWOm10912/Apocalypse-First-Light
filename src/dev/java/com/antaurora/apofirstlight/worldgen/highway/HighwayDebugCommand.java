@@ -59,7 +59,7 @@ public final class HighwayDebugCommand {
         SESSIONS.put(level, edit);
         int minPierHeight = stats.piersPlaced == 0 ? 0 : stats.minPierHeight;
         int avgPierHeight = stats.piersPlaced == 0 ? 0 : stats.pierHeightTotal / stats.piersPlaced;
-        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.6]");
+        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.7]");
         message.append(" start=(").append(start.getX()).append(',').append(start.getY()).append(',')
                 .append(start.getZ()).append(')');
         message.append(" end=(").append((int) Math.round(main.sample(main.length()).x())).append(',')
@@ -72,6 +72,22 @@ public final class HighwayDebugCommand {
         stat(message, "interchangeDisabled", true);
         stat(message, "profileSampleCount", profile.samples().size());
         stat(message, "corridorCellCount", stats.corridorCellCount);
+        stat(message, "authoritativeSurfaceKeys", stats.authoritativeSurfaceKeys);
+        stat(message, "uniqueCoreRoadXZColumns", stats.uniqueCoreRoadXZColumns);
+        stat(message, "duplicateXZDifferentRoadYSurfaceKeys",
+                stats.duplicateXZDifferentRoadYSurfaceKeys);
+        stat(message, "coreRoadColumnsPlanned", stats.coreRoadColumnsPlanned);
+        stat(message, "coreRoadColumnsWithOriginalObstruction",
+                stats.coreRoadColumnsWithOriginalObstruction);
+        stat(message, "coreRoadVerticalBlocksScanned", stats.coreRoadVerticalBlocksScanned);
+        stat(message, "coreRoadVerticalBlocksCleared", stats.coreRoadVerticalBlocksCleared);
+        stat(message, "coreRoadClearanceTruncatedColumns",
+                stats.coreRoadClearanceTruncatedColumns);
+        stat(message, "coreRoadProtectedObstructionFailures",
+                stats.coreRoadProtectedObstructionFailures);
+        stat(message, "coreRoadTerrainIntrusions", stats.coreRoadTerrainIntrusions);
+        stat(message, "nonFurnitureBlockDirectlyAboveSurface",
+                stats.nonFurnitureBlockDirectlyAboveSurface);
         stat(message, "expectedSurfaceCells", stats.expectedSurfaceCells);
         stat(message, "actualSurfaceCells", stats.actualSurfaceCells);
         stat(message, "missingSurfaceCells", stats.missingSurfaceCells);

@@ -80,6 +80,17 @@ public final class HighwayRenderStats {
     public int terrainAirspaceViolations;
     public int unexpectedAirspaceObstructions;
     public int roadFurnitureBlocksIgnoredByAirspaceValidator;
+    public int authoritativeSurfaceKeys;
+    public int uniqueCoreRoadXZColumns;
+    public int duplicateXZDifferentRoadYSurfaceKeys;
+    public int coreRoadColumnsPlanned;
+    public int coreRoadColumnsWithOriginalObstruction;
+    public int coreRoadVerticalBlocksScanned;
+    public int coreRoadVerticalBlocksCleared;
+    public int coreRoadClearanceTruncatedColumns;
+    public int coreRoadProtectedObstructionFailures;
+    public int coreRoadTerrainIntrusions;
+    public int nonFurnitureBlockDirectlyAboveSurface;
 
     public void addCellMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -181,5 +192,16 @@ public final class HighwayRenderStats {
         unexpectedAirspaceObstructions += other.unexpectedAirspaceObstructions;
         roadFurnitureBlocksIgnoredByAirspaceValidator +=
                 other.roadFurnitureBlocksIgnoredByAirspaceValidator;
+        authoritativeSurfaceKeys += other.authoritativeSurfaceKeys;
+        uniqueCoreRoadXZColumns += other.uniqueCoreRoadXZColumns;
+        duplicateXZDifferentRoadYSurfaceKeys += other.duplicateXZDifferentRoadYSurfaceKeys;
+        coreRoadColumnsPlanned += other.coreRoadColumnsPlanned;
+        coreRoadColumnsWithOriginalObstruction += other.coreRoadColumnsWithOriginalObstruction;
+        coreRoadVerticalBlocksScanned += other.coreRoadVerticalBlocksScanned;
+        coreRoadVerticalBlocksCleared += other.coreRoadVerticalBlocksCleared;
+        coreRoadClearanceTruncatedColumns += other.coreRoadClearanceTruncatedColumns;
+        coreRoadProtectedObstructionFailures += other.coreRoadProtectedObstructionFailures;
+        coreRoadTerrainIntrusions += other.coreRoadTerrainIntrusions;
+        nonFurnitureBlockDirectlyAboveSurface += other.nonFurnitureBlockDirectlyAboveSurface;
     }
 }
