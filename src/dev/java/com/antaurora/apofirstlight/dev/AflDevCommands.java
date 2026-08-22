@@ -177,10 +177,10 @@ public final class AflDevCommands {
         long disabledPresent = possible.stream().map(Holder::unwrapKey).flatMap(java.util.Optional::stream)
                 .filter(AflVanillaBiomePolicy::isDisabled).count();
         String sourceClass = level.getChunkSource().getGenerator().getBiomeSource().getClass().getName();
-        context.getSource().sendSuccess(() -> Component.literal("Policy Enabled: true | Disabled Count: "
-                + AflVanillaBiomePolicy.DISABLED_COUNT + " | Allowed Vanilla Base Count: "
-                + AflVanillaBiomePolicy.ALLOWED_VANILLA_COUNT + " | BiomeSource class: " + sourceClass
-                + " | Possible biome count: " + possible.size() + " | Disabled keys present count: " + disabledPresent), false);
+        context.getSource().sendSuccess(() -> Component.literal("Policy Enabled: true | Allowed Vanilla Surface Count: 1"
+                + " | Allowed Vanilla Surface: [minecraft:plains] | Disabled Surface Keys Present: "
+                + disabledPresent + " | BiomeSource class: " + sourceClass
+                + " | Possible biome count: " + possible.size()), false);
         return 1;
     }
 

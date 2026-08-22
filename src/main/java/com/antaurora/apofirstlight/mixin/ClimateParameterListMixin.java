@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.mixin;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.debug.BiomeTraceContext;
 import com.antaurora.apofirstlight.registry.AflBiomes;
+import com.antaurora.apofirstlight.world.biome.AflVanillaBiomePolicy;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import com.antaurora.apofirstlight.worldgen.aquifer.ScorchedAquiferContext;
 import net.minecraft.core.Holder;
@@ -57,7 +58,7 @@ public abstract class ClimateParameterListMixin {
                     || quartY > APOCALYPSE_SURFACE_BAND_MAX_QUART_Y) {
                 return;
             }
-            if (StartupPlainsEnclave.isAquaticSurfaceBiome(original)) {
+            if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(original.unwrapKey().orElse(null))) {
                 return;
             }
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(
