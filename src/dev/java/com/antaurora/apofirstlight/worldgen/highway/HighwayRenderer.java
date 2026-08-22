@@ -73,6 +73,7 @@ public final class HighwayRenderer {
         stats.nonFurnitureBlockDirectlyAboveSurface =
                 coreClearance.nonFurnitureBlockDirectlyAboveSurface();
         placeRoadStructure(level, edit, stats, corridor);
+        placeOuterEdge(level, edit, stats, corridor);
         placeParapetsAndMedian(level, edit, stats, corridor);
         placeRoadMarkings(level, edit, stats, corridor);
         placeRoadMarkingStepConnectors(level, edit, stats, corridor);
@@ -294,6 +295,16 @@ public final class HighwayRenderer {
         }
     }
 
+    private static void placeOuterEdge(ServerLevel level, HighwayEditSession edit,
+                                       HighwayRenderStats stats, HighwayCorridor corridor) {
+        for (BlockPos pos : corridor.outerEdgePositions()) {
+            placeRoadEdgeConcrete(edit, stats, pos);
+        }
+        for (BlockPos pos : corridor.outerEdgeRiserPositions()) {
+            placeRoadEdgeConcrete(edit, stats, pos);
+        }
+    }
+
     private static void placeRoadMarkings(ServerLevel level, HighwayEditSession edit,
                                           HighwayRenderStats stats, HighwayCorridor corridor) {
         for (HighwayCorridor.RoadMarking marking : corridor.roadMarkings()) {
@@ -436,6 +447,14 @@ public final class HighwayRenderer {
             stats.blocksPlaced++;
             stats.viaductBlocks++;
             stats.viaductStructuralBlocks++;
+            stats.reinforcedConcreteBlocks++;
+        }
+    }
+
+    private static void placeRoadEdgeConcrete(HighwayEditSession edit, HighwayRenderStats stats,
+                                              BlockPos pos) {
+        if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
+            stats.blocksPlaced++;
             stats.reinforcedConcreteBlocks++;
         }
     }

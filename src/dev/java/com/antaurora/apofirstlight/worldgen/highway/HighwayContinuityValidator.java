@@ -42,7 +42,11 @@ public final class HighwayContinuityValidator {
             BlockState state = level.getBlockState(new BlockPos(cell.x(), cell.roadY(), cell.z()));
             if (state.isAir()) missing++;
             else actual++;
-            if (!state.is(HighwayPalette.ASPHALT.getBlock())) wrongMaterial++;
+            if (!state.is(HighwayPalette.ASPHALT.getBlock())
+                    && !(corridor.isExpectedOuterEdge(cell.x(), cell.roadY(), cell.z())
+                    && state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock()))) {
+                wrongMaterial++;
+            }
             if (profile.isWithinResolvedBridgeSpan(cell.distance())
                     && cell.mode() != HighwayTerrainMode.VIADUCT) bridgeInternalNonViaduct++;
             if (cell.mode() == HighwayTerrainMode.VIADUCT && !cell.structuralBridge()) {
@@ -229,7 +233,9 @@ public final class HighwayContinuityValidator {
 
     private static boolean isExpectedRoadFurniture(HighwayCorridor corridor, BlockPos pos, BlockState state) {
         return (corridor.isExpectedRoadFurniture(pos.getX(), pos.getY(), pos.getZ())
-                && state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock()))
+                && (state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())
+                || (corridor.isExpectedOuterEdge(pos.getX(), pos.getY(), pos.getZ())
+                && state.is(HighwayPalette.REINFORCED_CONCRETE.getBlock()))))
                 || isExpectedRoadMarking(corridor, pos, state)
                 || isExpectedRoadMarkingStepConnector(corridor, pos, state);
     }

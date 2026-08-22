@@ -26,6 +26,7 @@ public final class HighwayCorridor {
     public static final int LANE_DIVIDER_DASH_ON = 3;
     public static final int LANE_DIVIDER_DASH_OFF = 6;
     public static final int LANE_DIVIDER_DASH_CYCLE = LANE_DIVIDER_DASH_ON + LANE_DIVIDER_DASH_OFF;
+    public static final int OUTER_EDGE_LATERAL = HighwayPlan.MAIN_WIDTH / 2;
 
     private final HighwayPlan plan;
     private final List<Cell> cells;
@@ -34,6 +35,8 @@ public final class HighwayCorridor {
     private final List<CenterCell> centerline;
     private final Set<SurfaceKey> surfacePositions;
     private final Set<SurfaceKey> roadFurniturePositions;
+    private final Set<SurfaceKey> outerEdgePositions;
+    private final Set<SurfaceKey> outerEdgeRiserPositions;
     private final List<RoadMarking> roadMarkings;
     private final Map<SurfaceKey, RoadMarking> roadMarkingPositions;
     private final List<RoadMarkingStepConnector> roadMarkingStepConnectors;
@@ -57,7 +60,8 @@ public final class HighwayCorridor {
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
                             List<Column> rowEnvelope, List<CenterCell> centerline,
-                            Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
+                             Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
+                             Set<SurfaceKey> outerEdgePositions, Set<SurfaceKey> outerEdgeRiserPositions,
                             List<RoadMarking> roadMarkings,
                             List<RoadMarkingStepConnector> roadMarkingStepConnectors,
                             Set<SurfaceKey> laneDividerStepConnectorGapPositions,
@@ -77,6 +81,8 @@ public final class HighwayCorridor {
         this.centerline = List.copyOf(centerline);
         this.surfacePositions = Set.copyOf(surfacePositions);
         this.roadFurniturePositions = Set.copyOf(roadFurniturePositions);
+        this.outerEdgePositions = Set.copyOf(outerEdgePositions);
+        this.outerEdgeRiserPositions = Set.copyOf(outerEdgeRiserPositions);
         this.roadMarkings = List.copyOf(roadMarkings);
         Map<SurfaceKey, RoadMarking> markingPositions = new LinkedHashMap<>();
         for (RoadMarking marking : roadMarkings) {
@@ -194,12 +200,21 @@ public final class HighwayCorridor {
                 roadFurniturePositions.add(new SurfaceKey(cell.x(), cell.roadY() + 1, cell.z()));
             }
         }
+        Set<SurfaceKey> outerEdgePositions = new LinkedHashSet<>();
+        for (Cell cell : unique.values()) {
+            if (Math.abs(cell.lateral()) == OUTER_EDGE_LATERAL) {
+                outerEdgePositions.add(new SurfaceKey(cell.x(), cell.roadY(), cell.z()));
+            }
+        }
+        Set<SurfaceKey> outerEdgeRiserPositions = buildOuterEdgeRisers(centerline, profile, rightX, rightZ);
+        roadFurniturePositions.addAll(outerEdgeRiserPositions);
         RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
         List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
                 new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
+                outerEdgePositions, outerEdgeRiserPositions,
                 markings.markings(), markings.stepConnectors(), markings.laneDividerStepConnectorGapPositions(),
                 coreRoadColumns, cutColumns,
                 structural.spans(), approachStations,
@@ -293,7 +308,7 @@ public final class HighwayCorridor {
                     ? transitionDirection : transitionDirection.getOpposite();
             int connectorY = Math.max(currentRoadY, nextRoadY) + 1;
             boolean dividerPainted = isLaneDividerPainted(lower.distance());
-            for (int lateral : new int[] {-9, 9, -3, 3, -6, 6}) {
+            for (int lateral : new int[] {-10, 10, -2, 2, -6, 6}) {
                 RoadMarkingType type = markingType(lateral);
                 int x = (int) Math.round(lower.x() + rightX * lateral);
                 int z = (int) Math.round(lower.z() + rightZ * lateral);
@@ -318,11 +333,37 @@ public final class HighwayCorridor {
 
     private static Direction markingFacing(int lateral, Direction right, Direction longitudinal) {
         return switch (lateral) {
-            case -9, 3 -> right.getOpposite();
-            case 9, -3 -> right;
+            case -10, -2 -> right.getOpposite();
+            case 10, 2 -> right;
             case -6, 6 -> longitudinal;
             default -> throw new IllegalStateException("Unexpected marking lateral " + lateral);
         };
+    }
+
+    private static Set<SurfaceKey> buildOuterEdgeRisers(List<CenterCell> centerline,
+                                                          HighwayProfile profile,
+                                                          double rightX, double rightZ) {
+        Set<SurfaceKey> risers = new LinkedHashSet<>();
+        for (int i = 0; i + 1 < centerline.size(); i++) {
+            CenterCell current = centerline.get(i);
+            CenterCell next = centerline.get(i + 1);
+            Direction transitionDirection = directionBetween(current, next);
+            if (transitionDirection == null) continue;
+
+            int currentRoadY = profile.sampleAt(current.distance()).roadY();
+            int nextRoadY = profile.sampleAt(next.distance()).roadY();
+            int deltaY = nextRoadY - currentRoadY;
+            if (Math.abs(deltaY) != 1) continue;
+
+            CenterCell lower = deltaY > 0 ? current : next;
+            int riserY = Math.min(currentRoadY, nextRoadY) + 1;
+            for (int lateral : new int[] {-OUTER_EDGE_LATERAL, OUTER_EDGE_LATERAL}) {
+                int x = (int) Math.round(lower.x() + rightX * lateral);
+                int z = (int) Math.round(lower.z() + rightZ * lateral);
+                risers.add(new SurfaceKey(x, riserY, z));
+            }
+        }
+        return risers;
     }
 
     private static Direction directionBetween(CenterCell from, CenterCell to) {
@@ -337,8 +378,8 @@ public final class HighwayCorridor {
 
     private static RoadMarkingType markingType(int lateral) {
         return switch (lateral) {
-            case -9, 9 -> RoadMarkingType.WHITE_EDGE;
-            case -3, 3 -> RoadMarkingType.YELLOW_EDGE;
+            case -10, 10 -> RoadMarkingType.WHITE_EDGE;
+            case -2, 2 -> RoadMarkingType.YELLOW_EDGE;
             case -6, 6 -> RoadMarkingType.WHITE_LANE_DIVIDER;
             default -> null;
         };
@@ -564,6 +605,16 @@ public final class HighwayCorridor {
     public boolean isExpectedRoadFurniture(int x, int y, int z) {
         return roadFurniturePositions.contains(new SurfaceKey(x, y, z));
     }
+    public Set<BlockPos> outerEdgePositions() {
+        return toBlockPositions(outerEdgePositions);
+    }
+    public Set<BlockPos> outerEdgeRiserPositions() {
+        return toBlockPositions(outerEdgeRiserPositions);
+    }
+    public boolean isExpectedOuterEdge(int x, int y, int z) {
+        SurfaceKey key = new SurfaceKey(x, y, z);
+        return outerEdgePositions.contains(key) || outerEdgeRiserPositions.contains(key);
+    }
     public RoadMarking expectedRoadMarking(int x, int y, int z) {
         return roadMarkingPositions.get(new SurfaceKey(x, y, z));
     }
@@ -571,10 +622,11 @@ public final class HighwayCorridor {
         return roadMarkingStepConnectorPositions.get(new SurfaceKey(x, y, z));
     }
     public Set<BlockPos> laneDividerStepConnectorGapPositions() {
+        return toBlockPositions(laneDividerStepConnectorGapPositions);
+    }
+    private static Set<BlockPos> toBlockPositions(Set<SurfaceKey> keys) {
         Set<BlockPos> positions = new LinkedHashSet<>();
-        for (SurfaceKey key : laneDividerStepConnectorGapPositions) {
-            positions.add(new BlockPos(key.x(), key.y(), key.z()));
-        }
+        for (SurfaceKey key : keys) positions.add(new BlockPos(key.x(), key.y(), key.z()));
         return Set.copyOf(positions);
     }
     public boolean isCutColumn(int x, int z) {
