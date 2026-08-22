@@ -1,41 +1,111 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayDeque;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-/** V1A.1 renderer: one corridor mask, one ordered construction pass. */
+/** V1A.6 renderer: authoritative bridge structure and bounded full CUT clearance. */
 public final class HighwayRenderer {
-    private static final int VERTICAL_CLEARANCE = 6;
-    private static final int PIER_SPACING = 28;
+    private static final int PIER_SPACING = 32;
+    private static final int PIER_CAP_HALF_WIDTH = 9;
+    private static final int PIER_CAP_HALF_LONGITUDINAL = 1;
+    private static final int PIER_SHAFT_HALF_WIDTH = 2;
+    private static final int PIER_SHAFT_HALF_LONGITUDINAL = 1;
+    private static final int MAX_PIER_SEARCH_DEPTH = 128;
+    private static final int MAX_TREE_VISIT_BLOCKS = 1024;
+    private static final int MAX_TREE_HORIZONTAL_RADIUS = 10;
+    private static final int MAX_TREE_VERTICAL_RADIUS = 24;
+    private static final int PIER_BOUNDARY_MARGIN = 8;
 
     private HighwayRenderer() {}
 
     public static HighwayRenderStats render(ServerLevel level, HighwayProfile profile, HighwayEditSession edit) {
-        HighwayCorridor corridor = HighwayCorridor.build(profile.plan(), profile);
+        HighwayCorridor corridor = HighwayCorridor.build(level, profile.plan(), profile);
         HighwayRenderStats stats = new HighwayRenderStats();
         stats.corridorCellCount = corridor.cells().size();
         stats.expectedSurfaceCells = corridor.expectedSurfaceCells();
+        stats.rawViaductSamples = profile.rawViaductSamples();
+        stats.resolvedBridgeSpanCount = profile.bridgeSpans().size();
+        stats.resolvedViaductStations = profile.resolvedViaductStations();
+        stats.rawViaductLength = (int) Math.round(profile.rawViaductLength());
+        stats.resolvedViaductLength = (int) Math.round(profile.bridgeSpans().stream()
+                .mapToDouble(span -> span.endStation() - span.startStation()).sum());
+        stats.bridgeGapClosures = profile.bridgeGapClosures();
+        stats.shortBridgeCandidatesRejected = profile.shortBridgeCandidatesRejected();
+        stats.maxCrossSlopeObserved = profile.maxCrossSlopeObserved();
+        stats.maxWaterCoverageObserved = profile.maxWaterCoverageObserved();
+        stats.extremeCrossSectionEncountered = profile.extremeCrossSectionEncountered();
+        stats.structuralApproachStations = corridor.structuralApproachStations();
+        stats.structuralApproachCells = corridor.structuralApproachCells();
+        stats.structuralBridgeCells = corridor.structuralBridgeCells();
+        stats.bridgeApproachStartExtensions = corridor.bridgeApproachStartExtensions();
+        stats.bridgeApproachEndExtensions = corridor.bridgeApproachEndExtensions();
+        stats.bridgeApproachSupportFailures = corridor.bridgeApproachSupportFailures();
+        stats.cutColumnsPlanned = corridor.cutColumns().size();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
+
         clearRow(level, edit, stats, corridor);
         clearCutEnvelope(level, edit, stats, corridor);
         placeRoadStructure(level, edit, stats, corridor);
-        placePiers(level, edit, stats, corridor);
-        HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor);
+        placeParapetsAndMedian(level, edit, stats, corridor);
+        placePiers(level, edit, stats, corridor, profile);
+
+        HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
         stats.actualSurfaceCells = validation.actualSurfaceCells();
         stats.missingSurfaceCells = validation.missingSurfaceCells();
         stats.clearanceViolations = validation.clearanceViolations();
+        stats.airspaceClearanceViolations = validation.airspaceClearanceViolations();
+        stats.missingViaductDeckCells = validation.missingViaductDeckCells();
+        stats.wrongSurfaceMaterialCells = validation.wrongSurfaceMaterialCells();
+        stats.bridgeSpanInternalNonViaductCells = validation.bridgeSpanInternalNonViaductCells();
+        stats.bridgeSpanNormalBaseIntrusions = validation.bridgeSpanNormalBaseIntrusions();
+        stats.elevatedNormalBaseIntrusions = validation.elevatedNormalBaseIntrusions();
+        stats.viaductOutsideStructuralBridgeCells = validation.viaductOutsideStructuralBridgeCells();
+        stats.structuralBridgeMissingConcreteCells = validation.structuralBridgeMissingConcreteCells();
+        stats.cutColumnsWithRemainingTerrainIntrusion = validation.cutColumnsWithRemainingTerrainIntrusion();
+        stats.terrainAirspaceViolations = validation.terrainAirspaceViolations();
+        stats.unexpectedAirspaceObstructions = validation.unexpectedAirspaceObstructions();
+        stats.roadFurnitureBlocksIgnoredByAirspaceValidator =
+                validation.roadFurnitureBlocksIgnoredByAirspaceValidator();
+        stats.expectedParapetBlocks = validation.expectedParapetBlocks();
+        stats.actualParapetBlocks = validation.actualParapetBlocks();
+        stats.missingParapetBlocks = validation.missingParapetBlocks();
+        stats.medianBarrierBlocks = validation.medianBarrierBlocks();
+        stats.remainingRowLogs = validation.remainingRowLogs();
+        stats.remainingRowLeaves = validation.remainingRowLeaves();
+        stats.vegetationClearanceViolations = validation.vegetationClearanceViolations();
         return stats;
     }
 
     private static void clearRow(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
                                  HighwayCorridor corridor) {
+        Set<BlockPos> vegetation = new LinkedHashSet<>();
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
-            for (int y = column.roadY() + 1; y <= column.roadY() + VERTICAL_CLEARANCE; y++) {
+            for (int y = column.roadY() + 1;
+                 y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
+                BlockPos pos = new BlockPos(column.x(), y, column.z());
+                if (isVegetation(level.getBlockState(pos)) && !vegetation.contains(pos)) {
+                    vegetation.addAll(collectVegetation(level, pos, stats));
+                }
+            }
+        }
+        for (BlockPos pos : vegetation) {
+            if (clear(level, edit, pos)) {
+                stats.blocksCleared++;
+                stats.vegetationBlocksCleared++;
+            }
+        }
+        for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (corridor.isCutColumn(column.x(), column.z())) continue;
+            for (int y = column.roadY() + 1;
+                 y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
                 if (clear(level, edit, new BlockPos(column.x(), y, column.z()))) stats.blocksCleared++;
             }
         }
@@ -43,39 +113,75 @@ public final class HighwayRenderer {
 
     private static void clearCutEnvelope(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
                                           HighwayCorridor corridor) {
-        for (HighwayCorridor.Cell cell : corridor.cells()) {
-            if (cell.mode() != HighwayTerrainMode.CUT) continue;
-            int top = Math.min(cell.terrainY() + 1, cell.roadY() + HighwayProfile.MAX_CUT_DEPTH);
-            for (int y = cell.roadY() + VERTICAL_CLEARANCE + 1; y <= top; y++) {
-                for (int dx = -HighwayCorridor.ROW_MARGIN; dx <= HighwayCorridor.ROW_MARGIN; dx++) {
-                    for (int dz = -HighwayCorridor.ROW_MARGIN; dz <= HighwayCorridor.ROW_MARGIN; dz++) {
-                        if (clear(level, edit, new BlockPos(cell.x() + dx, y, cell.z() + dz))) {
-                            stats.blocksCleared++;
-                            stats.cutBlocks++;
-                        }
-                    }
+        for (HighwayCorridor.CutColumn column : corridor.cutColumns()) {
+            int top = column.clearanceTopY(level.getMaxBuildHeight());
+            stats.maxCutClearanceHeightObserved = Math.max(stats.maxCutClearanceHeightObserved,
+                    Math.max(0, top - column.roadY()));
+            for (int y = column.roadY() + 1; y <= top; y++) {
+                if (clear(level, edit, new BlockPos(column.x(), y, column.z()))) {
+                    stats.blocksCleared++;
+                    stats.cutBlocks++;
+                    stats.cutTerrainBlocksCleared++;
                 }
             }
+            boolean clear = !column.capped(level.getMaxBuildHeight());
+            for (int y = column.roadY() + 1; clear && y <= top; y++) {
+                clear = level.getBlockState(new BlockPos(column.x(), y, column.z())).isAir();
+            }
+            if (clear) stats.cutColumnsCleared++;
         }
+    }
+
+    private static Set<BlockPos> collectVegetation(ServerLevel level, BlockPos seed,
+                                                   HighwayRenderStats stats) {
+        Set<BlockPos> component = new LinkedHashSet<>();
+        if (!isVegetation(level.getBlockState(seed))) return component;
+        ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+        queue.add(seed.immutable());
+        while (!queue.isEmpty()) {
+            BlockPos pos = queue.removeFirst();
+            if (component.contains(pos) || !withinTreeBounds(seed, pos)
+                    || !isVegetation(level.getBlockState(pos))) continue;
+            component.add(pos);
+            if (component.size() >= MAX_TREE_VISIT_BLOCKS) {
+                stats.vegetationCleanupTruncated++;
+                break;
+            }
+            queue.add(pos.above());
+            queue.add(pos.below());
+            queue.add(pos.north());
+            queue.add(pos.south());
+            queue.add(pos.east());
+            queue.add(pos.west());
+        }
+        if (!component.isEmpty()) stats.vegetationComponentsCleared++;
+        return component;
+    }
+
+    private static boolean withinTreeBounds(BlockPos origin, BlockPos pos) {
+        return Math.abs(pos.getX() - origin.getX()) <= MAX_TREE_HORIZONTAL_RADIUS
+                && Math.abs(pos.getZ() - origin.getZ()) <= MAX_TREE_HORIZONTAL_RADIUS
+                && Math.abs(pos.getY() - origin.getY()) <= MAX_TREE_VERTICAL_RADIUS;
+    }
+
+    private static boolean isVegetation(BlockState state) {
+        return state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES);
     }
 
     private static void placeRoadStructure(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
                                            HighwayCorridor corridor) {
         for (HighwayCorridor.Cell cell : corridor.cells()) {
             BlockPos surface = new BlockPos(cell.x(), cell.roadY(), cell.z());
-            BlockState surfaceState = surfaceState(cell.role());
-            if (edit.set(surface, surfaceState)) {
-                stats.blocksPlaced++;
-                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
+            placeAsphaltSurface(level, edit, stats, surface, cell.mode());
+            if (cell.structuralBridge()) {
+                placeConcrete(level, edit, stats, surface.below());
+                placeConcrete(level, edit, stats, surface.below(2));
+                placeConcrete(level, edit, stats, surface.below(3));
+                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductDeckCells++;
+                continue;
             }
-            if (edit.set(surface.below(), HighwayPalette.BASE)) {
-                stats.blocksPlaced++;
-                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
-            }
-            if (edit.set(surface.below(2), HighwayPalette.SUB_BASE)) {
-                stats.blocksPlaced++;
-                if (cell.mode() == HighwayTerrainMode.VIADUCT) stats.viaductBlocks++;
-            }
+            if (edit.set(surface.below(), HighwayPalette.BASE)) stats.blocksPlaced++;
+            if (edit.set(surface.below(2), HighwayPalette.SUB_BASE)) stats.blocksPlaced++;
             if (cell.mode() == HighwayTerrainMode.FILL) {
                 int bottom = Math.max(level.getMinBuildHeight(), cell.roadY() - HighwayProfile.MAX_FILL_DEPTH);
                 for (int y = cell.roadY() - 3; y >= Math.max(bottom, cell.terrainY()); y--) {
@@ -86,53 +192,181 @@ public final class HighwayRenderer {
                 }
             }
         }
-    }
 
-    private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
-                                   HighwayCorridor corridor) {
-        double lastPier = -PIER_SPACING;
-        Map<Long, HighwayCorridor.Cell> centerCells = new HashMap<>();
-        for (HighwayCorridor.Cell cell : corridor.cells()) {
-            centerCells.putIfAbsent(columnKey(cell.x(), cell.z()), cell);
-        }
-        for (HighwayCorridor.CenterCell center : corridor.centerline()) {
-            HighwayCorridor.Cell cell = centerCells.get(columnKey(center.x(), center.z()));
-            if (cell == null || cell.mode() != HighwayTerrainMode.VIADUCT) continue;
-            if (center.distance() - lastPier >= PIER_SPACING) {
-                int foundation = findFoundation(level, center.x(), center.z(), cell.terrainY());
-                for (int y = cell.roadY() - 3; y > foundation; y--) {
-                    if (edit.set(new BlockPos(center.x(), y, center.z()), HighwayPalette.PIER)) {
-                        stats.blocksPlaced++;
-                        stats.viaductBlocks++;
-                        stats.piersPlaced++;
-                    }
-                }
-                lastPier = center.distance();
+        for (HighwayCorridor.Cell cell : corridor.bridgeCells()) {
+            if (!cell.structuralBridge() || cell.role() != HighwayCorridor.Role.BRIDGE_EDGE) continue;
+            placeConcrete(level, edit, stats, new BlockPos(cell.x(), cell.roadY(), cell.z()));
+            for (int offset = 1; offset <= 3; offset++) {
+                placeConcrete(level, edit, stats,
+                        new BlockPos(cell.x(), cell.roadY() - offset, cell.z()));
             }
         }
     }
 
-    private static long columnKey(int x, int z) { return ((long) x << 32) ^ (z & 0xffffffffL); }
-
-    private static int findFoundation(ServerLevel level, int x, int z, int terrainY) {
-        int bottom = Math.max(level.getMinBuildHeight(), terrainY - 64);
-        for (int y = terrainY - 1; y >= bottom; y--) {
-            BlockPos pos = new BlockPos(x, y, z);
-            if (level.getFluidState(pos).isEmpty()
-                    && !level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()) return y;
+    private static void placeParapetsAndMedian(ServerLevel level, HighwayEditSession edit,
+                                               HighwayRenderStats stats, HighwayCorridor corridor) {
+        for (HighwayCorridor.Cell cell : corridor.bridgeCells()) {
+            if (cell.structuralBridge() && cell.role() == HighwayCorridor.Role.BRIDGE_EDGE) {
+                if (edit.set(new BlockPos(cell.x(), cell.roadY() + 1, cell.z()),
+                        HighwayPalette.REINFORCED_CONCRETE_SLAB)) {
+                    stats.blocksPlaced++;
+                    stats.parapetSlabBlocks++;
+                }
+            }
         }
-        return bottom;
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            if (cell.role() != HighwayCorridor.Role.MEDIAN || cell.lateral() != 0) continue;
+            if (edit.set(new BlockPos(cell.x(), cell.roadY() + 1, cell.z()),
+                    HighwayPalette.REINFORCED_CONCRETE_SLAB)) {
+                stats.blocksPlaced++;
+                stats.medianBarrierBlocks++;
+            }
+        }
+    }
+
+    private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                   HighwayCorridor corridor, HighwayProfile profile) {
+        HighwayPlan.Tangent tangent = corridor.plan().tangent(0.0);
+        for (double station = 0.0; station <= corridor.plan().length(); station += PIER_SPACING) {
+            HighwayCorridor.CenterCell center = nearestCenterline(corridor, station);
+            HighwayCorridor.Cell roadCell = center == null ? null : centerCell(corridor, center);
+            HighwayBridgeSpanResolver.Span span = profile.spanAt(station);
+            if (center == null || roadCell == null || roadCell.mode() != HighwayTerrainMode.VIADUCT || span == null) continue;
+            if (station < span.startStation() + PIER_BOUNDARY_MARGIN
+                    || station > span.endStation() - PIER_BOUNDARY_MARGIN) continue;
+            stats.pierStationsPlanned++;
+
+            int deckBottom = roadCell.roadY() - 3;
+            Foundation foundation = findFoundation(level, center.x(), center.z(), deckBottom);
+            if (!foundation.found()) {
+                stats.piersSkipped++;
+                stats.pierFoundationFailures++;
+                ApocalypseFirstLight.LOGGER.warn("[AFL HIGHWAY] PIER_FOUNDATION_FAILED station={} x={} z={} depth={}",
+                        (int) station, center.x(), center.z(), MAX_PIER_SEARCH_DEPTH);
+                continue;
+            }
+
+            stats.piersPlaced++;
+            if (foundation.crossedWater()) stats.waterPiers++;
+            else stats.landPiers++;
+
+            placeLocalRect(level, edit, stats, center.x(), center.z(), tangent,
+                    -PIER_CAP_HALF_WIDTH, PIER_CAP_HALF_WIDTH,
+                    -PIER_CAP_HALF_LONGITUDINAL, PIER_CAP_HALF_LONGITUDINAL,
+                    roadCell.roadY() - 5, roadCell.roadY() - 4);
+            placeLocalRect(level, edit, stats, center.x(), center.z(), tangent,
+                    -PIER_SHAFT_HALF_WIDTH, PIER_SHAFT_HALF_WIDTH,
+                    -PIER_SHAFT_HALF_LONGITUDINAL, PIER_SHAFT_HALF_LONGITUDINAL,
+                    foundation.y() + 2, roadCell.roadY() - 6);
+            placeLocalRect(level, edit, stats, center.x(), center.z(), tangent,
+                    -4, 4, -3, 3, foundation.y(), foundation.y());
+            placeLocalRect(level, edit, stats, center.x(), center.z(), tangent,
+                    -3, 3, -2, 2, foundation.y() + 1, foundation.y() + 1);
+
+            int height = Math.max(0, roadCell.roadY() - foundation.y());
+            stats.minPierHeight = Math.min(stats.minPierHeight, height);
+            stats.maxPierHeight = Math.max(stats.maxPierHeight, height);
+            stats.pierHeightTotal += height;
+            if (!isStableTerrain(level, new BlockPos(center.x(), foundation.y() - 1, center.z()))) {
+                stats.floatingPierCount++;
+            }
+        }
+    }
+
+    private static HighwayCorridor.CenterCell nearestCenterline(HighwayCorridor corridor, double station) {
+        HighwayCorridor.CenterCell nearest = null;
+        double best = Double.MAX_VALUE;
+        for (HighwayCorridor.CenterCell center : corridor.centerline()) {
+            double distance = Math.abs(center.distance() - station);
+            if (distance < best) {
+                best = distance;
+                nearest = center;
+            }
+        }
+        return nearest;
+    }
+
+    private static HighwayCorridor.Cell centerCell(HighwayCorridor corridor, HighwayCorridor.CenterCell center) {
+        HighwayCorridor.Cell nearest = null;
+        int bestLateral = Integer.MAX_VALUE;
+        for (HighwayCorridor.Cell cell : corridor.cells()) {
+            if (cell.x() != center.x() || cell.z() != center.z()) continue;
+            if (Math.abs(cell.lateral()) < bestLateral) {
+                bestLateral = Math.abs(cell.lateral());
+                nearest = cell;
+            }
+        }
+        return nearest;
+    }
+
+    private static void placeLocalRect(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                       int centerX, int centerZ, HighwayPlan.Tangent tangent,
+                                       int lateralMin, int lateralMax, int longitudinalMin, int longitudinalMax,
+                                       int yMin, int yMax) {
+        double rightX = -tangent.z();
+        double rightZ = tangent.x();
+        for (int longitudinal = longitudinalMin; longitudinal <= longitudinalMax; longitudinal++) {
+            for (int lateral = lateralMin; lateral <= lateralMax; lateral++) {
+                int x = (int) Math.round(centerX + tangent.x() * longitudinal + rightX * lateral);
+                int z = (int) Math.round(centerZ + tangent.z() * longitudinal + rightZ * lateral);
+                for (int y = yMin; y <= yMax; y++) {
+                    placeConcrete(level, edit, stats, new BlockPos(x, y, z));
+                }
+            }
+        }
+    }
+
+    private static void placeConcrete(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+                                      BlockPos pos) {
+        if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
+            stats.blocksPlaced++;
+            stats.viaductBlocks++;
+            stats.viaductStructuralBlocks++;
+            stats.reinforcedConcreteBlocks++;
+        }
+    }
+
+    private static void placeAsphaltSurface(ServerLevel level, HighwayEditSession edit,
+                                            HighwayRenderStats stats, BlockPos pos,
+                                            HighwayTerrainMode mode) {
+        if (edit.set(pos, HighwayPalette.ASPHALT)) stats.blocksPlaced++;
+        if (!level.getBlockState(pos).is(HighwayPalette.ASPHALT.getBlock())) return;
+
+        stats.asphaltSurfaceBlocks++;
+        switch (mode) {
+            case GROUND -> stats.groundAsphaltSurfaceBlocks++;
+            case CUT -> stats.cutAsphaltSurfaceBlocks++;
+            case FILL -> stats.fillAsphaltSurfaceBlocks++;
+            case VIADUCT -> stats.viaductAsphaltSurfaceBlocks++;
+        }
+    }
+
+    private static Foundation findFoundation(ServerLevel level, int x, int z, int deckBottomY) {
+        boolean crossedWater = false;
+        int bottom = Math.max(level.getMinBuildHeight(), deckBottomY - MAX_PIER_SEARCH_DEPTH);
+        for (int y = deckBottomY - 1; y >= bottom; y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (!level.getFluidState(pos).isEmpty()) {
+                crossedWater = true;
+                continue;
+            }
+            if (isStableTerrain(level, pos)) return new Foundation(true, y, crossedWater);
+        }
+        return new Foundation(false, bottom, crossedWater);
+    }
+
+    private static boolean isStableTerrain(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.isAir()
+                && level.getFluidState(pos).isEmpty()
+                && !state.is(BlockTags.LEAVES)
+                && !state.canBeReplaced()
+                && !state.getCollisionShape(level, pos).isEmpty();
     }
 
     private static boolean clear(ServerLevel level, HighwayEditSession edit, BlockPos pos) {
         return !level.getBlockState(pos).isAir() && edit.set(pos, Blocks.AIR.defaultBlockState());
     }
 
-    private static BlockState surfaceState(HighwayCorridor.Role role) {
-        return switch (role) {
-            case OUTER_SHOULDER, INNER_SHOULDER_LEFT, INNER_SHOULDER_RIGHT -> HighwayPalette.SHOULDER;
-            case MEDIAN -> HighwayPalette.MEDIAN;
-            case CARRIAGEWAY_LEFT, CARRIAGEWAY_RIGHT -> HighwayPalette.CARRIAGEWAY;
-        };
-    }
+    private record Foundation(boolean found, int y, boolean crossedWater) {}
 }

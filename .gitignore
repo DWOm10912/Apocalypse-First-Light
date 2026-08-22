@@ -69,3 +69,4 @@ tmp/
 
 # Obsidian local settings
 docs/.obsidian/
+/.obsidian/core-plugins.json

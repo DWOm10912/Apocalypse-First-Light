@@ -57,15 +57,107 @@ public final class HighwayDebugCommand {
         HighwayProfile profile = HighwayProfile.sample(level, main);
         HighwayRenderStats stats = HighwayRenderer.render(level, profile, edit);
         SESSIONS.put(level, edit);
-        String message = String.format("[AFL HIGHWAY V1A.1] start=(%d,%d,%d) end=(%d,%d) heading=%s length=%d actualWidth=%d routeMode=STRAIGHT interchangeDisabled=true profileSampleCount=%d corridorCellCount=%d expectedSurfaceCells=%d actualSurfaceCells=%d missingSurfaceCells=%d clearanceViolations=%d profileMinY=%d profileMaxY=%d maxGradeObserved=%d GROUND cells=%d CUT cells=%d FILL cells=%d VIADUCT cells=%d blocksPlaced=%d blocksCleared=%d fillBlocks=%d cutBlocks=%d viaductBlocks=%d piersPlaced=%d elapsedCommandMs=%d",
-                start.getX(), start.getY(), start.getZ(), (int) Math.round(main.sample(main.length()).x()),
-                (int) Math.round(main.sample(main.length()).z()), heading.name(), length, main.width(), profile.samples().size(),
-                stats.corridorCellCount, stats.expectedSurfaceCells, stats.actualSurfaceCells, stats.missingSurfaceCells,
-                stats.clearanceViolations, profile.minRoadY(), profile.maxRoadY(), profile.observedMaxGrade(), stats.groundCells,
-                stats.cutCells, stats.fillCells, stats.viaductCells, stats.blocksPlaced, stats.blocksCleared,
-                stats.fillBlocks, stats.cutBlocks, stats.viaductBlocks, stats.piersPlaced,
-                (System.nanoTime() - started) / 1_000_000L);
-        context.getSource().sendSuccess(() -> Component.literal(message), true);
+        int minPierHeight = stats.piersPlaced == 0 ? 0 : stats.minPierHeight;
+        int avgPierHeight = stats.piersPlaced == 0 ? 0 : stats.pierHeightTotal / stats.piersPlaced;
+        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.6]");
+        message.append(" start=(").append(start.getX()).append(',').append(start.getY()).append(',')
+                .append(start.getZ()).append(')');
+        message.append(" end=(").append((int) Math.round(main.sample(main.length()).x())).append(',')
+                .append((int) Math.round(main.sample(main.length()).z())).append(')');
+        stat(message, "heading", heading.name());
+        stat(message, "length", length);
+        stat(message, "actualWidth", main.width());
+        stat(message, "bridgeWidth", HighwayCorridor.BRIDGE_WIDTH);
+        stat(message, "routeMode", "STRAIGHT");
+        stat(message, "interchangeDisabled", true);
+        stat(message, "profileSampleCount", profile.samples().size());
+        stat(message, "corridorCellCount", stats.corridorCellCount);
+        stat(message, "expectedSurfaceCells", stats.expectedSurfaceCells);
+        stat(message, "actualSurfaceCells", stats.actualSurfaceCells);
+        stat(message, "missingSurfaceCells", stats.missingSurfaceCells);
+        stat(message, "wrongSurfaceMaterialCells", stats.wrongSurfaceMaterialCells);
+        stat(message, "clearanceViolations", stats.clearanceViolations);
+        stat(message, "airspaceClearanceViolations", stats.airspaceClearanceViolations);
+        stat(message, "terrainAirspaceViolations", stats.terrainAirspaceViolations);
+        stat(message, "unexpectedAirspaceObstructions", stats.unexpectedAirspaceObstructions);
+        stat(message, "roadFurnitureBlocksIgnoredByAirspaceValidator",
+                stats.roadFurnitureBlocksIgnoredByAirspaceValidator);
+        stat(message, "vegetationClearanceViolations", stats.vegetationClearanceViolations);
+        stat(message, "remainingRowLogs", stats.remainingRowLogs);
+        stat(message, "remainingRowLeaves", stats.remainingRowLeaves);
+        stat(message, "viaductDeckCells", stats.viaductDeckCells);
+        stat(message, "viaductStructuralBlocks", stats.viaductStructuralBlocks);
+        stat(message, "missingViaductDeckCells", stats.missingViaductDeckCells);
+        stat(message, "bridgeSpanNormalBaseIntrusions", stats.bridgeSpanNormalBaseIntrusions);
+        stat(message, "bridgeSpanInternalNonViaductCells", stats.bridgeSpanInternalNonViaductCells);
+        stat(message, "viaductOutsideStructuralBridgeCells", stats.viaductOutsideStructuralBridgeCells);
+        stat(message, "structuralBridgeMissingConcreteCells", stats.structuralBridgeMissingConcreteCells);
+        stat(message, "structuralApproachStations", stats.structuralApproachStations);
+        stat(message, "structuralApproachCells", stats.structuralApproachCells);
+        stat(message, "structuralBridgeCells", stats.structuralBridgeCells);
+        stat(message, "bridgeApproachStartExtensions", stats.bridgeApproachStartExtensions);
+        stat(message, "bridgeApproachEndExtensions", stats.bridgeApproachEndExtensions);
+        stat(message, "bridgeApproachSupportFailures", stats.bridgeApproachSupportFailures);
+        stat(message, "elevatedNormalBaseIntrusions", stats.elevatedNormalBaseIntrusions);
+        stat(message, "cutColumnsPlanned", stats.cutColumnsPlanned);
+        stat(message, "cutColumnsCleared", stats.cutColumnsCleared);
+        stat(message, "cutTerrainBlocksCleared", stats.cutTerrainBlocksCleared);
+        stat(message, "cutColumnsWithRemainingTerrainIntrusion",
+                stats.cutColumnsWithRemainingTerrainIntrusion);
+        stat(message, "maxCutClearanceHeightObserved", stats.maxCutClearanceHeightObserved);
+        stat(message, "expectedParapetBlocks", stats.expectedParapetBlocks);
+        stat(message, "actualParapetBlocks", stats.actualParapetBlocks);
+        stat(message, "missingParapetBlocks", stats.missingParapetBlocks);
+        stat(message, "parapetSlabBlocks", stats.parapetSlabBlocks);
+        stat(message, "medianBarrierBlocks", stats.medianBarrierBlocks);
+        stat(message, "rawViaductSamples", stats.rawViaductSamples);
+        stat(message, "rawViaductLength", stats.rawViaductLength);
+        stat(message, "resolvedBridgeSpanCount", stats.resolvedBridgeSpanCount);
+        stat(message, "resolvedViaductLength", stats.resolvedViaductLength);
+        stat(message, "resolvedViaductStations", stats.resolvedViaductStations);
+        stat(message, "bridgeGapClosures", stats.bridgeGapClosures);
+        stat(message, "shortBridgeCandidatesRejected", stats.shortBridgeCandidatesRejected);
+        stat(message, "crossSectionTerrainMin", profile.samples().stream()
+                .mapToInt(HighwayProfile.Sample::terrainMinY).min().orElse(0));
+        stat(message, "crossSectionTerrainMax", profile.samples().stream()
+                .mapToInt(HighwayProfile.Sample::terrainMaxY).max().orElse(0));
+        stat(message, "maxCrossSlopeObserved", profile.maxCrossSlopeObserved());
+        stat(message, "maxWaterCoverageObserved",
+                String.format(java.util.Locale.ROOT, "%.2f", profile.maxWaterCoverageObserved()));
+        stat(message, "extremeCrossSectionEncountered", profile.extremeCrossSectionEncountered());
+        stat(message, "profileMinY", profile.minRoadY());
+        stat(message, "profileMaxY", profile.maxRoadY());
+        stat(message, "maxGradeObserved", profile.observedMaxGrade());
+        stat(message, "GROUND_cells", stats.groundCells);
+        stat(message, "CUT_cells", stats.cutCells);
+        stat(message, "FILL_cells", stats.fillCells);
+        stat(message, "VIADUCT_cells", stats.viaductCells);
+        stat(message, "pierStationsPlanned", stats.pierStationsPlanned);
+        stat(message, "piersPlaced", stats.piersPlaced);
+        stat(message, "piersSkipped", stats.piersSkipped);
+        stat(message, "pierFoundationFailures", stats.pierFoundationFailures);
+        stat(message, "minPierHeight", minPierHeight);
+        stat(message, "maxPierHeight", stats.maxPierHeight);
+        stat(message, "avgPierHeight", avgPierHeight);
+        stat(message, "floatingPierCount", stats.floatingPierCount);
+        stat(message, "waterPiers", stats.waterPiers);
+        stat(message, "landPiers", stats.landPiers);
+        stat(message, "asphaltSurfaceBlocks", stats.asphaltSurfaceBlocks);
+        stat(message, "groundAsphaltSurfaceBlocks", stats.groundAsphaltSurfaceBlocks);
+        stat(message, "cutAsphaltSurfaceBlocks", stats.cutAsphaltSurfaceBlocks);
+        stat(message, "fillAsphaltSurfaceBlocks", stats.fillAsphaltSurfaceBlocks);
+        stat(message, "viaductAsphaltSurfaceBlocks", stats.viaductAsphaltSurfaceBlocks);
+        stat(message, "reinforcedConcreteBlocks", stats.reinforcedConcreteBlocks);
+        stat(message, "vegetationBlocksCleared", stats.vegetationBlocksCleared);
+        stat(message, "vegetationComponentsCleared", stats.vegetationComponentsCleared);
+        stat(message, "vegetationCleanupTruncated", stats.vegetationCleanupTruncated);
+        stat(message, "blocksPlaced", stats.blocksPlaced);
+        stat(message, "blocksCleared", stats.blocksCleared);
+        stat(message, "fillBlocks", stats.fillBlocks);
+        stat(message, "cutBlocks", stats.cutBlocks);
+        stat(message, "viaductBlocks", stats.viaductBlocks);
+        stat(message, "elapsedCommandMs", (System.nanoTime() - started) / 1_000_000L);
+        context.getSource().sendSuccess(() -> Component.literal(message.toString()), true);
         return 1;
     }
 
@@ -79,6 +171,10 @@ public final class HighwayDebugCommand {
         int restored = session.restore();
         context.getSource().sendSuccess(() -> Component.literal("[AFL HIGHWAY V1A] clear restoredBlocks=" + restored), true);
         return 1;
+    }
+
+    private static void stat(StringBuilder message, String name, Object value) {
+        message.append(' ').append(name).append('=').append(value);
     }
 
     private static void ensureChunks(ServerLevel level, HighwayPlan plan) {
