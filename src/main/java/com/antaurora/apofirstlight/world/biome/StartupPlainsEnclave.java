@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.registry.AflBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 
@@ -160,11 +161,23 @@ public final class StartupPlainsEnclave {
     }
 
     public static ResourceKey<Biome> resolveBiome(int x, int z, long seed, Holder<Biome> original) {
+        if (isAquaticSurfaceBiome(original)) {
+            return original.unwrapKey().orElse(null);
+        }
         return switch (zoneAt(x, z, seed)) {
             case CORE_PLAINS, FRINGE_PLAINS -> Biomes.PLAINS;
             case WOODLAND_BUFFER -> AflBiomes.IRRADIATED_WOODLAND;
             case OUTSIDE -> original.unwrapKey().orElse(null);
         };
+    }
+
+    /**
+     * Aquatic surface biomes remain authoritative even inside the startup
+     * geometry.  The holder tags are the 1.20.1 source of truth and cover the
+     * ocean/deep-ocean family plus river/frozen-river.
+     */
+    public static boolean isAquaticSurfaceBiome(Holder<Biome> biome) {
+        return biome != null && (biome.is(BiomeTags.IS_OCEAN) || biome.is(BiomeTags.IS_RIVER));
     }
 
     private static double distance(int x, int z) {

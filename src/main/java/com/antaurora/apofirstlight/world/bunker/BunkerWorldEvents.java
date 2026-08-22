@@ -8,18 +8,28 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.MultiNoiseBiomeSource;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BunkerWorldEvents {
+    private static final Map<MinecraftServer, Integer> PENDING_PLACEMENT_TICKS = new WeakHashMap<>();
+
     private BunkerWorldEvents() {}
 
     @SubscribeEvent
@@ -50,8 +60,44 @@ public final class BunkerWorldEvents {
                 128);
         probeLiveBiomeSource(overworld);
         auditStartupSurface(overworld);
+        PENDING_PLACEMENT_TICKS.put(event.getServer(), 0);
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        MinecraftServer server = event.getServer();
+        Integer pending = PENDING_PLACEMENT_TICKS.get(server);
+        if (pending == null) return;
+
+        int ticks = pending + 1;
+        if (ticks < 20) {
+            PENDING_PLACEMENT_TICKS.put(server, ticks);
+            return;
+        }
+
+        ServerLevel overworld = server.overworld();
+        if (!BunkerPlacementManager.isStartupAreaReady(overworld)) {
+            PENDING_PLACEMENT_TICKS.put(server, ticks);
+            if (ticks % 20 == 0) {
+                ApocalypseFirstLight.LOGGER.info("[AFL Bunker] Waiting for reliable startup chunks before placement; ticks={} loadedChunks={}",
+                        ticks, overworld.getChunkSource().getLoadedChunksCount());
+            }
+            return;
+        }
+
         BunkerPlacementManager.ensureGenerated(overworld);
+        BunkerSavedData data = overworld.getDataStorage().computeIfAbsent(BunkerSavedData::load,
+                BunkerSavedData::new, BunkerSavedData.ID);
+        if (!data.isGenerated()) {
+            PENDING_PLACEMENT_TICKS.remove(server);
+            return;
+        }
         RadiationManager.ensureBunkerAnchor(overworld);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            BunkerPlayerSpawnEvents.tryInitialSpawn(player);
+        }
+        PENDING_PLACEMENT_TICKS.remove(server);
     }
 
     private static void probeLiveBiomeSource(ServerLevel overworld) {
@@ -112,23 +158,36 @@ public final class BunkerWorldEvents {
     private static void auditStartupSurface(ServerLevel level) {
         int[][] samples = {{0, 0}, {64, 0}, {-64, 0}, {0, 64}, {0, -64}, {160, 0}};
         for (int[] sample : samples) {
-            int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, sample[0], sample[1]);
-            BlockPos surface = new BlockPos(sample[0], surfaceY - 1, sample[1]);
-            ResourceLocation biomeId = level.getBiome(surface).unwrapKey()
-                    .map(key -> key.location()).orElse(new ResourceLocation("minecraft", "unknown"));
-            boolean plains = "minecraft".equals(biomeId.getNamespace()) && "plains".equals(biomeId.getPath());
-            ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected=plains result={}",
-                    sample[0], sample[1], surfaceY, biomeId, plains ? "PASS" : "FAIL");
+            logSurfaceAudit(level, sample[0], sample[1], true);
         }
         int[][] boundarySamples = {{208, 0}, {-208, 0}, {0, 208}, {0, -208}};
         for (int[] sample : boundarySamples) {
-            int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, sample[0], sample[1]);
-            BlockPos surface = new BlockPos(sample[0], surfaceY - 1, sample[1]);
-            ResourceLocation biomeId = level.getBiome(surface).unwrapKey()
-                    .map(key -> key.location()).orElse(new ResourceLocation("minecraft", "unknown"));
+            logSurfaceAudit(level, sample[0], sample[1], false);
+        }
+    }
+
+    private static void logSurfaceAudit(ServerLevel level, int x, int z, boolean startupCoreSample) {
+        ChunkAccess chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+        boolean loaded = chunk != null;
+        String status = loaded ? String.valueOf(chunk.getHighestGeneratedStatus()) : "UNLOADED";
+        boolean primed = loaded && chunk.hasPrimedHeightmap(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES);
+        boolean ready = loaded && chunk.getHighestGeneratedStatus().isOrAfter(ChunkStatus.FULL) && primed;
+        if (!ready) {
+            ApocalypseFirstLight.LOGGER.info("[AFL BUNKER SURFACE SAMPLE] candidate=({}, {}) chunkLoaded={} chunkStatus={} heightmapType=MOTION_BLOCKING_NO_LEAVES surfaceY=UNAVAILABLE surfaceAvailable=false rejectReason=UNAVAILABLE_SURFACE startupAudit=true",
+                    x, z, loaded, status);
+            return;
+        }
+        int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        BlockPos surface = new BlockPos(x, surfaceY - 1, z);
+        ResourceLocation biomeId = level.getBiome(surface).unwrapKey()
+                .map(key -> key.location()).orElse(new ResourceLocation("minecraft", "unknown"));
+        if (startupCoreSample) {
+            boolean plains = "minecraft".equals(biomeId.getNamespace()) && "plains".equals(biomeId.getPath());
+            ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected=plains result={}",
+                    x, z, surfaceY, biomeId, plains ? "PASS" : "FAIL");
+        } else {
             ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE BOUNDARY AUDIT] pos=({}, {}) surfaceY={} biome={} insideCore={}",
-                    sample[0], sample[1], surfaceY, biomeId,
-                    StartupPlainsEnclave.containsBlock(sample[0], sample[1]));
+                    x, z, surfaceY, biomeId, StartupPlainsEnclave.containsBlock(x, z));
         }
     }
 }

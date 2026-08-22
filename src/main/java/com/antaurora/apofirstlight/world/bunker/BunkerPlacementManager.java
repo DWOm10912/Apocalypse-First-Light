@@ -9,6 +9,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -28,12 +30,9 @@ public final class BunkerPlacementManager {
     private static final ResourceLocation BUNKER_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "bunker");
     private static final int SEARCH_MIN_RADIUS = 32;
     private static final int SEARCH_MAX_RADIUS = 160;
-    private static final int FALLBACK_MAX_RADIUS = StartupPlainsEnclave.CORE_RADIUS_BLOCKS;
-    private static final int EMERGENCY_MIN_RADIUS = 288;
-    private static final int EMERGENCY_MAX_RADIUS = 768;
-    private static final int PRIMARY_MAX_SURFACE_DELTA = 4;
-    private static final int FALLBACK_MAX_SURFACE_DELTA = 7;
-    private static final int EMERGENCY_MAX_SURFACE_DELTA = 9;
+    /** Moderate natural relief is accepted; only severe local cliffs are rejected. */
+    private static final int SOFT_SURFACE_RELIEF = 8;
+    private static final int MAX_SURFACE_RELIEF = 12;
     private static final double MAX_UNDERGROUND_CAVITY_RATIO = 0.20D;
     private static final int ENTRANCE_SURFACE_Y_OFFSET = 0;
     private static final int PLACEMENT_VERSION = 1;
@@ -41,52 +40,39 @@ public final class BunkerPlacementManager {
 
     private BunkerPlacementManager() {}
 
-    public static void ensureGenerated(ServerLevel overworld) {
-        if (overworld.dimension() != Level.OVERWORLD) return;
+    /** Only reports readiness; it never loads or generates a chunk. */
+    public static boolean isStartupAreaReady(ServerLevel level) {
+        return readChunkReadiness(level, 0, 0).available();
+    }
+
+    public static boolean ensureGenerated(ServerLevel overworld) {
+        if (overworld.dimension() != Level.OVERWORLD) return false;
         BunkerSavedData data = overworld.getDataStorage().computeIfAbsent(BunkerSavedData::load,
                 BunkerSavedData::new, BunkerSavedData.ID);
-        if (data.isGenerated()) return;
+        if (data.isGenerated()) return true;
 
         Optional<StructureTemplate> templateOptional = overworld.getServer().getStructureManager().get(BUNKER_ID);
         if (templateOptional.isEmpty()) {
             LOGGER.error("[AFL Bunker] Missing structure template {}", BUNKER_ID);
-            return;
+            return false;
         }
         StructureTemplate template = templateOptional.get();
         BlockPos spawn = StartupPlainsEnclave.referenceCenter(overworld.getSharedSpawnPos().getY());
         RandomSource random = RandomSource.create(overworld.getSeed() ^ BUNKER_SALT);
         int attempts = 0;
-        int rejectedWater = 0;
-        int rejectedSlope = 0;
-        int rejectedHeight = 0;
-        int rejectedUndergroundFluid = 0;
-        int rejectedCavity = 0;
-        int rejectedEntranceSupport = 0;
-        int rejectedStartupBiome = 0;
-        int placementFailures = 0;
-        int emergencyAttempts = 0;
-        HeightRejectDiagnostics heightDiagnostics = new HeightRejectDiagnostics();
-        for (int radius = SEARCH_MIN_RADIUS; radius <= FALLBACK_MAX_RADIUS; radius += 16) {
+        PlacementDiagnostics diagnostics = new PlacementDiagnostics();
+        for (int radius = SEARCH_MIN_RADIUS; radius <= SEARCH_MAX_RADIUS; radius += 16) {
             for (BlockPos candidate : candidates(spawn, radius)) {
                 attempts++;
                 Rotation rotation = randomRotation(random);
                 FitResult result = findFit(overworld, template, candidate, rotation,
-                        radius <= SEARCH_MAX_RADIUS ? PRIMARY_MAX_SURFACE_DELTA : FALLBACK_MAX_SURFACE_DELTA,
-                        heightDiagnostics);
-                switch (result.reason) {
-                    case WATER -> { rejectedWater++; continue; }
-                    case SLOPE -> { rejectedSlope++; continue; }
-                    case HEIGHT -> { rejectedHeight++; continue; }
-                    case UNDERGROUND_FLUID -> { rejectedUndergroundFluid++; continue; }
-                    case MAJOR_CAVITY -> { rejectedCavity++; continue; }
-                    case ENTRANCE_SUPPORT -> { rejectedEntranceSupport++; continue; }
-                    case STARTUP_BIOME_INELIGIBLE -> { rejectedStartupBiome++; continue; }
-                    case OK -> { }
-                }
+                        diagnostics);
+                diagnostics.record(result);
+                if (result.reason != RejectReason.OK) continue;
                 Candidate fit = result.candidate;
                 BunkerPlacementHygiene.Stats hygiene = preparePlacement(overworld, fit);
                 if (!place(overworld, template, fit, rotation)) {
-                    placementFailures++;
+                    diagnostics.placementFailures++;
                     continue;
                 }
                 BunkerSurfaceIntegration.IntegrationStats integration = BunkerSurfaceIntegration.apply(
@@ -95,81 +81,60 @@ public final class BunkerPlacementManager {
                 boolean startupEnclave = isInsideStartupEnclave(fit);
                 LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, startupBiome={}, startupEligible=true, startupEnclave={}, rejectedStartupBiome={}, tier={}, attempts={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
                         fit.origin.getX(), fit.origin.getY(), fit.origin.getZ(), rotation, fit.surfaceY,
-                        fit.surfaceBiome, startupEnclave, rejectedStartupBiome, radius <= SEARCH_MAX_RADIUS ? "PRIMARY" : "FALLBACK", attempts, fit.chunkCount,
+                        fit.surfaceBiome, startupEnclave, diagnostics.startupBiomeRejected, "STARTUP", attempts, fit.chunkCount,
                         result.undergroundSamples, result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
                         integration.logsCleared(), integration.leavesCleared(),
                         integration.otherVegetationCleared(), integration.burialPlaced());
                 logStartupEnclaveMiss(fit, startupEnclave);
                 LOGGER.info("[AFL Bunker] Placement hygiene: vegetationCleared={}, entitiesFound={}, entitiesMoved={}, entitiesMoveFailed={}",
                         hygiene.vegetationCleared(), hygiene.livingEntitiesFound(), hygiene.livingEntitiesMoved(), hygiene.livingEntitiesMoveFailed());
-                return;
+                LOGGER.info("[AFL BUNKER NATURAL TERRAIN] attempts={} validSurfaceCandidates={} unavailableSurfaceCandidates={} aquaticRejected={} hardSlopeRejected={} softSlopeAccepted={} heightRejected={} selectedCandidate=({}, {}) selectedSurfaceY={} localRelief={} entranceCutBlocks=0 entranceFillBlocks={} placed=true",
+                        attempts, diagnostics.validSurfaceCandidates, diagnostics.unavailableSurfaceCandidates,
+                        diagnostics.aquaticRejected, diagnostics.hardSlopeRejected, diagnostics.softSlopeAccepted,
+                        diagnostics.heightRejected, fit.entranceSurface.getX(), fit.entranceSurface.getZ(),
+                        fit.surfaceY, fit.localRelief, integration.supportFilled());
+                return true;
             }
         }
-        for (int radius = EMERGENCY_MIN_RADIUS; radius <= EMERGENCY_MAX_RADIUS; radius += 32) {
-            for (BlockPos candidate : candidates(spawn, radius)) {
-                attempts++;
-                Rotation rotation = randomRotation(random);
-                emergencyAttempts++;
-                FitResult result = findFit(overworld, template, candidate, rotation,
-                        EMERGENCY_MAX_SURFACE_DELTA, heightDiagnostics);
-                switch (result.reason) {
-                    case WATER -> { rejectedWater++; continue; }
-                    case SLOPE -> { rejectedSlope++; continue; }
-                    case HEIGHT -> { rejectedHeight++; continue; }
-                    case UNDERGROUND_FLUID -> { rejectedUndergroundFluid++; continue; }
-                    case MAJOR_CAVITY -> { rejectedCavity++; continue; }
-                    case ENTRANCE_SUPPORT -> { rejectedEntranceSupport++; continue; }
-                    case STARTUP_BIOME_INELIGIBLE -> { rejectedStartupBiome++; continue; }
-                    case OK -> { }
-                }
-                Candidate fit = result.candidate;
-                BunkerPlacementHygiene.Stats hygiene = preparePlacement(overworld, fit);
-                if (!place(overworld, template, fit, rotation)) {
-                    placementFailures++;
-                    continue;
-                }
-                BunkerSurfaceIntegration.IntegrationStats integration = BunkerSurfaceIntegration.apply(
-                        overworld, template, fit.origin, rotation, overworld.getSeed());
-                data.markGenerated(fit.origin, rotation.name(), fit.surfaceY, PLACEMENT_VERSION);
-                boolean startupEnclave = isInsideStartupEnclave(fit);
-                LOGGER.info("[AFL Bunker] Generated bunker at {}, {}, {}, rotation={}, surfaceY={}, startupBiome={}, startupEligible=true, startupEnclave={}, rejectedStartupBiome={}, tier=EMERGENCY, attempts={}, emergencyAttempts={}, radius={}, chunks={}, undergroundSamples={}, cavityRatio={}, trees={}, supportFill={}, logsCleared={}, leavesCleared={}, otherVegetationCleared={}, burialBlocks={}",
-                        fit.origin.getX(), fit.origin.getY(), fit.origin.getZ(), rotation, fit.surfaceY,
-                        fit.surfaceBiome, startupEnclave, rejectedStartupBiome, attempts, emergencyAttempts, radius, fit.chunkCount, result.undergroundSamples,
-                        result.cavityRatio, integration.conflictingTrees(), integration.supportFilled(),
-                        integration.logsCleared(), integration.leavesCleared(),
-                        integration.otherVegetationCleared(), integration.burialPlaced());
-                logStartupEnclaveMiss(fit, startupEnclave);
-                LOGGER.info("[AFL Bunker] Placement hygiene: vegetationCleared={}, entitiesFound={}, entitiesMoved={}, entitiesMoveFailed={}",
-                        hygiene.vegetationCleared(), hygiene.livingEntitiesFound(), hygiene.livingEntitiesMoved(), hygiene.livingEntitiesMoveFailed());
-                return;
-            }
-        }
-        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker after {} attempts; surfaceWater={}, undergroundFluid={}, undergroundCavity={}, entranceSupport={}, startupBiomeRejected={}, slope={}, height={}, placementFailures={}",
-                attempts, rejectedWater, rejectedUndergroundFluid, rejectedCavity, rejectedEntranceSupport,
-                rejectedStartupBiome, rejectedSlope, rejectedHeight, placementFailures);
-        LOGGER.error("[AFL Bunker] Emergency search exhausted: emergencyAttempts={}, radiusRange={}..{}, heightDiagnostics={}",
-                emergencyAttempts, EMERGENCY_MIN_RADIUS, EMERGENCY_MAX_RADIUS, heightDiagnostics.summary(overworld));
+        LOGGER.error("[AFL Bunker] Failed to find/place startup bunker in reliable startup area after {} attempts; aquaticRejected={}, unavailableSurfaceCandidates={}, undergroundFluid={}, undergroundCavity={}, entranceSupport={}, startupBiomeRejected={}, hardSlopeRejected={}, height={}, placementFailures={}",
+                attempts, diagnostics.aquaticRejected, diagnostics.unavailableSurfaceCandidates,
+                diagnostics.undergroundFluid, diagnostics.undergroundCavity, diagnostics.entranceSupport,
+                diagnostics.startupBiomeRejected, diagnostics.hardSlopeRejected, diagnostics.heightRejected,
+                diagnostics.placementFailures);
         LOGGER.error("[AFL Bunker] Startup enclave exhausted: center=({}, {}), coreRadius={}, attempts={}, startupBiomeRejected={}",
                 StartupPlainsEnclave.CENTER_X, StartupPlainsEnclave.CENTER_Z,
-                StartupPlainsEnclave.CORE_RADIUS_BLOCKS, attempts, rejectedStartupBiome);
-        heightDiagnostics.logSamples();
+                StartupPlainsEnclave.CORE_RADIUS_BLOCKS, attempts, diagnostics.startupBiomeRejected);
+        LOGGER.error("[AFL BUNKER NATURAL TERRAIN] attempts={} validSurfaceCandidates={} unavailableSurfaceCandidates={} aquaticRejected={} hardSlopeRejected={} softSlopeAccepted={} heightRejected={} selectedCandidate=NONE selectedSurfaceY=NONE localRelief=NONE entranceCutBlocks=0 entranceFillBlocks=0 placed=false",
+                attempts, diagnostics.validSurfaceCandidates, diagnostics.unavailableSurfaceCandidates,
+                diagnostics.aquaticRejected, diagnostics.hardSlopeRejected, diagnostics.softSlopeAccepted,
+                diagnostics.heightRejected);
+        diagnostics.logSurfaceSamples();
+        return false;
     }
 
     private static FitResult findFit(ServerLevel level, StructureTemplate template, BlockPos candidate, Rotation rotation,
-                                     int allowedSlopeDelta, HeightRejectDiagnostics heightDiagnostics) {
+                                     PlacementDiagnostics diagnostics) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(rotation).setMirror(net.minecraft.world.level.block.Mirror.NONE);
         BoundingBox atZero = template.getBoundingBox(settings, BlockPos.ZERO);
         int minX = atZero.minX() + candidate.getX();
         int maxX = atZero.maxX() + candidate.getX();
         int minZ = atZero.minZ() + candidate.getZ();
         int maxZ = atZero.maxZ() + candidate.getZ();
+        if (!isFootprintReady(level, minX, maxX, minZ, maxZ, candidate, rotation, diagnostics)) {
+            return FitResult.unavailableSurface();
+        }
         int[] samplesX = {minX, (minX + maxX) / 2, maxX};
         int[] samplesZ = {minZ, (minZ + maxZ) / 2, maxZ};
         int minSurface = Integer.MAX_VALUE;
         int maxSurface = Integer.MIN_VALUE;
         int waterSamples = 0;
         for (int x : samplesX) for (int z : samplesZ) {
-            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+            SurfaceColumn column = readSurfaceColumn(level, x, z);
+            if (!column.available()) {
+                diagnostics.recordSurfaceSample(candidate, rotation, x, z, column);
+                return FitResult.unavailableSurface();
+            }
+            int y = column.surfaceY();
             boolean fluidDetected = false;
             for (int depth = 1; depth <= 4; depth++) {
                 BlockPos sample = new BlockPos(x, y - depth, z);
@@ -184,10 +149,19 @@ public final class BunkerPlacementManager {
             maxSurface = Math.max(maxSurface, y);
         }
         if (waterSamples > 0) return FitResult.water();
-        if (maxSurface - minSurface > allowedSlopeDelta) return FitResult.slope();
+        int localRelief = maxSurface - minSurface;
+        diagnostics.validSurfaceCandidates++;
+        if (localRelief > MAX_SURFACE_RELIEF) return FitResult.slope();
+        if (localRelief > SOFT_SURFACE_RELIEF) diagnostics.softSlopeAccepted++;
         BlockPos entranceAtZero = localToWorld(template, BlockPos.ZERO, rotation, ENTRANCE_SURFACE_LOCAL);
-        int referenceSurface = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
-                candidate.getX() + entranceAtZero.getX(), candidate.getZ() + entranceAtZero.getZ());
+        int entranceX = candidate.getX() + entranceAtZero.getX();
+        int entranceZ = candidate.getZ() + entranceAtZero.getZ();
+        SurfaceColumn entranceColumn = readSurfaceColumn(level, entranceX, entranceZ);
+        if (!entranceColumn.available()) {
+            diagnostics.recordSurfaceSample(candidate, rotation, entranceX, entranceZ, entranceColumn);
+            return FitResult.unavailableSurface();
+        }
+        int referenceSurface = entranceColumn.surfaceY();
         BlockPos entranceSurface = new BlockPos(candidate.getX() + entranceAtZero.getX(),
                 referenceSurface - 1, candidate.getZ() + entranceAtZero.getZ());
         var surfaceBiome = level.getBiome(entranceSurface);
@@ -203,7 +177,6 @@ public final class BunkerPlacementManager {
         if (!support.accepted()) return FitResult.entranceSupport();
         BoundingBox box = template.getBoundingBox(settings, origin);
         if (box.minY() < level.getMinBuildHeight() + 3 || box.maxY() >= level.getMaxBuildHeight()) {
-            heightDiagnostics.record(candidate, rotation, referenceSurface, originY, box);
             return FitResult.height();
         }
         FitResult underground = checkUnderground(level, box);
@@ -214,7 +187,40 @@ public final class BunkerPlacementManager {
         ResourceLocation surfaceBiomeId = surfaceBiome.unwrapKey().map(key -> key.location())
                 .orElse(new ResourceLocation("minecraft", "unknown"));
         return FitResult.ok(new Candidate(origin, entranceSurface, referenceSurface, box, minChunkX, maxChunkX,
-                minChunkZ, maxChunkZ, chunkCount, surfaceBiomeId), underground.undergroundSamples, underground.cavityRatio);
+                minChunkZ, maxChunkZ, chunkCount, surfaceBiomeId, localRelief), underground.undergroundSamples, underground.cavityRatio);
+    }
+
+    private static boolean isFootprintReady(ServerLevel level, int minX, int maxX, int minZ, int maxZ,
+                                             BlockPos candidate, Rotation rotation, PlacementDiagnostics diagnostics) {
+        for (int chunkX = minX >> 4; chunkX <= maxX >> 4; chunkX++) {
+            for (int chunkZ = minZ >> 4; chunkZ <= maxZ >> 4; chunkZ++) {
+                SurfaceColumn column = readChunkReadiness(level, chunkX, chunkZ);
+                if (!column.available()) {
+                    diagnostics.recordSurfaceSample(candidate, rotation, chunkX << 4, chunkZ << 4, column);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static SurfaceColumn readSurfaceColumn(ServerLevel level, int x, int z) {
+        SurfaceColumn readiness = readChunkReadiness(level, x >> 4, z >> 4);
+        if (!readiness.available()) return readiness;
+        int surfaceY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        return new SurfaceColumn(surfaceY, surfaceY > level.getMinBuildHeight(), true,
+                readiness.chunkStatus(), readiness.heightmapPrimed());
+    }
+
+    private static SurfaceColumn readChunkReadiness(ServerLevel level, int chunkX, int chunkZ) {
+        ChunkAccess chunk = level.getChunkSource().getChunkNow(chunkX, chunkZ);
+        if (chunk == null) {
+            return SurfaceColumn.unavailable(false, "UNLOADED", false, level.getMinBuildHeight());
+        }
+        String status = String.valueOf(chunk.getHighestGeneratedStatus());
+        boolean heightmapPrimed = chunk.hasPrimedHeightmap(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES);
+        boolean full = chunk.getHighestGeneratedStatus().isOrAfter(ChunkStatus.FULL);
+        return new SurfaceColumn(level.getMinBuildHeight(), full && heightmapPrimed, true, status, heightmapPrimed);
     }
 
     private static boolean isInsideStartupEnclave(Candidate fit) {
@@ -341,13 +347,14 @@ public final class BunkerPlacementManager {
         }
     }
 
-    private enum RejectReason { OK, WATER, SLOPE, HEIGHT, UNDERGROUND_FLUID, MAJOR_CAVITY, ENTRANCE_SUPPORT, STARTUP_BIOME_INELIGIBLE }
+    private enum RejectReason { OK, UNAVAILABLE_SURFACE, WATER, SLOPE, HEIGHT, UNDERGROUND_FLUID, MAJOR_CAVITY, ENTRANCE_SUPPORT, STARTUP_BIOME_INELIGIBLE }
 
     private record FitResult(Candidate candidate, RejectReason reason, int undergroundSamples, double cavityRatio) {
         private static FitResult ok(Candidate candidate) { return new FitResult(candidate, RejectReason.OK, 0, 0.0D); }
         private static FitResult ok(Candidate candidate, int samples, double ratio) {
             return new FitResult(candidate, RejectReason.OK, samples, ratio);
         }
+        private static FitResult unavailableSurface() { return new FitResult(null, RejectReason.UNAVAILABLE_SURFACE, 0, 0.0D); }
         private static FitResult water() { return new FitResult(null, RejectReason.WATER, 0, 0.0D); }
         private static FitResult slope() { return new FitResult(null, RejectReason.SLOPE, 0, 0.0D); }
         private static FitResult height() { return new FitResult(null, RejectReason.HEIGHT, 0, 0.0D); }
@@ -365,36 +372,55 @@ public final class BunkerPlacementManager {
     }
 
     private record Candidate(BlockPos origin, BlockPos entranceSurface, int surfaceY, BoundingBox box, int minChunkX, int maxChunkX,
-                             int minChunkZ, int maxChunkZ, int chunkCount, ResourceLocation surfaceBiome) {}
+                             int minChunkZ, int maxChunkZ, int chunkCount, ResourceLocation surfaceBiome,
+                             int localRelief) {}
 
-    private static final class HeightRejectDiagnostics {
-        private int count;
-        private int minOriginY = Integer.MAX_VALUE, maxOriginY = Integer.MIN_VALUE;
-        private int minBoxMinY = Integer.MAX_VALUE, maxBoxMinY = Integer.MIN_VALUE;
-        private int minBoxMaxY = Integer.MAX_VALUE, maxBoxMaxY = Integer.MIN_VALUE;
-        private int minReferenceY = Integer.MAX_VALUE, maxReferenceY = Integer.MIN_VALUE;
-        private final List<String> samples = new java.util.ArrayList<>();
+    private record SurfaceColumn(int surfaceY, boolean available, boolean chunkLoaded, String chunkStatus,
+                                 boolean heightmapPrimed) {
+        private static SurfaceColumn unavailable(boolean chunkLoaded, String status, boolean heightmapPrimed, int minBuildHeight) {
+            return new SurfaceColumn(minBuildHeight, false, chunkLoaded, status, heightmapPrimed);
+        }
+    }
 
-        private void record(BlockPos candidate, Rotation rotation, int referenceY, int originY, BoundingBox box) {
-            count++;
-            minOriginY = Math.min(minOriginY, originY); maxOriginY = Math.max(maxOriginY, originY);
-            minBoxMinY = Math.min(minBoxMinY, box.minY()); maxBoxMinY = Math.max(maxBoxMinY, box.minY());
-            minBoxMaxY = Math.min(minBoxMaxY, box.maxY()); maxBoxMaxY = Math.max(maxBoxMaxY, box.maxY());
-            minReferenceY = Math.min(minReferenceY, referenceY); maxReferenceY = Math.max(maxReferenceY, referenceY);
-            if (samples.size() < 5) samples.add("candidate=" + candidate.getX() + "," + candidate.getZ()
-                    + ", rotation=" + rotation + ", referenceSurfaceY=" + referenceY + ", originY=" + originY
-                    + ", boxY=[" + box.minY() + "," + box.maxY() + "]");
+    private static final class PlacementDiagnostics {
+        private int validSurfaceCandidates;
+        private int unavailableSurfaceCandidates;
+        private int aquaticRejected;
+        private int hardSlopeRejected;
+        private int softSlopeAccepted;
+        private int heightRejected;
+        private int undergroundFluid;
+        private int undergroundCavity;
+        private int entranceSupport;
+        private int startupBiomeRejected;
+        private int placementFailures;
+        private final List<String> surfaceSamples = new java.util.ArrayList<>();
+
+        private void record(FitResult result) {
+            switch (result.reason) {
+                case UNAVAILABLE_SURFACE -> unavailableSurfaceCandidates++;
+                case WATER -> aquaticRejected++;
+                case SLOPE -> hardSlopeRejected++;
+                case HEIGHT -> heightRejected++;
+                case UNDERGROUND_FLUID -> undergroundFluid++;
+                case MAJOR_CAVITY -> undergroundCavity++;
+                case ENTRANCE_SUPPORT -> entranceSupport++;
+                case STARTUP_BIOME_INELIGIBLE -> startupBiomeRejected++;
+                case OK -> { }
+            }
         }
 
-        private String summary(ServerLevel level) {
-            return "count=" + count + ", originYRange=[" + minOriginY + "," + maxOriginY
-                    + "], boxMinYRange=[" + minBoxMinY + "," + maxBoxMinY + "], boxMaxYRange=["
-                    + minBoxMaxY + "," + maxBoxMaxY + "], referenceSurfaceYRange=[" + minReferenceY + ","
-                    + maxReferenceY + "], worldY=[" + level.getMinBuildHeight() + "," + level.getMaxBuildHeight() + ")";
+        private void recordSurfaceSample(BlockPos candidate, Rotation rotation, int x, int z, SurfaceColumn column) {
+            if (surfaceSamples.size() >= 6) return;
+            surfaceSamples.add("candidate=(" + candidate.getX() + "," + candidate.getZ() + ")"
+                    + " rotation=" + rotation + " sample=(" + x + "," + z + ")"
+                    + " chunkLoaded=" + column.chunkLoaded() + " chunkStatus=" + column.chunkStatus()
+                    + " heightmapType=MOTION_BLOCKING_NO_LEAVES surfaceY=" + column.surfaceY()
+                    + " surfaceAvailable=" + column.available() + " rejectReason=UNAVAILABLE_SURFACE");
         }
 
-        private void logSamples() {
-            for (String sample : samples) LOGGER.error("[AFL Bunker] HEIGHT reject sample: {}", sample);
+        private void logSurfaceSamples() {
+            for (String sample : surfaceSamples) LOGGER.error("[AFL BUNKER SURFACE SAMPLE] {}", sample);
         }
     }
 }

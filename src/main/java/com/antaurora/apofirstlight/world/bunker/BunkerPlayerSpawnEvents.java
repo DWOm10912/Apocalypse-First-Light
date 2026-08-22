@@ -27,6 +27,11 @@ public final class BunkerPlayerSpawnEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        tryInitialSpawn(player);
+    }
+
+    /** Called on login and once more after delayed startup bunker placement. */
+    public static void tryInitialSpawn(ServerPlayer player) {
         CompoundTag persistent = player.getPersistentData();
         if (persistent.getBoolean(INITIAL_SPAWN_KEY)) return;
 

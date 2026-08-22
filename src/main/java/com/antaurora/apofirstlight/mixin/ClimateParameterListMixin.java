@@ -57,6 +57,9 @@ public abstract class ClimateParameterListMixin {
                     || quartY > APOCALYPSE_SURFACE_BAND_MAX_QUART_Y) {
                 return;
             }
+            if (StartupPlainsEnclave.isAquaticSurfaceBiome(original)) {
+                return;
+            }
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(
                     quartX << 2, quartZ << 2, ecology.seed());
             if (zone == StartupPlainsEnclave.Zone.OUTSIDE) {
