@@ -91,6 +91,18 @@ public final class HighwayRenderStats {
     public int coreRoadProtectedObstructionFailures;
     public int coreRoadTerrainIntrusions;
     public int nonFurnitureBlockDirectlyAboveSurface;
+    public int expectedWhiteEdgeMarkings;
+    public int actualWhiteEdgeMarkings;
+    public int missingWhiteEdgeMarkings;
+    public int expectedYellowEdgeMarkings;
+    public int actualYellowEdgeMarkings;
+    public int missingYellowEdgeMarkings;
+    public int expectedWhiteLaneDividerMarkings;
+    public int actualWhiteLaneDividerMarkings;
+    public int missingWhiteLaneDividerMarkings;
+    public int wrongMarkingTypeBlocks;
+    public int markingsSkippedUnsupportedDiagonal;
+    public int roadMarkingBlocksPlaced;
 
     public void addCellMode(HighwayTerrainMode mode) {
         switch (mode) {
@@ -203,5 +215,17 @@ public final class HighwayRenderStats {
         coreRoadProtectedObstructionFailures += other.coreRoadProtectedObstructionFailures;
         coreRoadTerrainIntrusions += other.coreRoadTerrainIntrusions;
         nonFurnitureBlockDirectlyAboveSurface += other.nonFurnitureBlockDirectlyAboveSurface;
+        expectedWhiteEdgeMarkings += other.expectedWhiteEdgeMarkings;
+        actualWhiteEdgeMarkings += other.actualWhiteEdgeMarkings;
+        missingWhiteEdgeMarkings += other.missingWhiteEdgeMarkings;
+        expectedYellowEdgeMarkings += other.expectedYellowEdgeMarkings;
+        actualYellowEdgeMarkings += other.actualYellowEdgeMarkings;
+        missingYellowEdgeMarkings += other.missingYellowEdgeMarkings;
+        expectedWhiteLaneDividerMarkings += other.expectedWhiteLaneDividerMarkings;
+        actualWhiteLaneDividerMarkings += other.actualWhiteLaneDividerMarkings;
+        missingWhiteLaneDividerMarkings += other.missingWhiteLaneDividerMarkings;
+        wrongMarkingTypeBlocks += other.wrongMarkingTypeBlocks;
+        markingsSkippedUnsupportedDiagonal += other.markingsSkippedUnsupportedDiagonal;
+        roadMarkingBlocksPlaced += other.roadMarkingBlocksPlaced;
     }
 }

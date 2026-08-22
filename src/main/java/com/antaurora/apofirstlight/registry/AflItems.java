@@ -48,6 +48,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUSED_GROUND.get(), new Item.Properties()));
     public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
             () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",
+            () -> new BlockItem(AflBlocks.EDGE_LANE_WHITE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> EDGE_LANE_YELLOW = ITEMS.register("edge_lane_yellow",
+            () -> new BlockItem(AflBlocks.EDGE_LANE_YELLOW.get(), new Item.Properties()));
+    public static final RegistryObject<Item> WHITE_LANE_DIVIDER = ITEMS.register("white_lane_divider",
+            () -> new BlockItem(AflBlocks.WHITE_LANE_DIVIDER.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_LOG = ITEMS.register("poplar_log",
             () -> new BlockItem(AflBlocks.POPLAR_LOG.get(), new Item.Properties()));
     public static final RegistryObject<Item> STRIPPED_POPLAR_LOG = ITEMS.register("stripped_poplar_log",

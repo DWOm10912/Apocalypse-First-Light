@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,6 +31,8 @@ public final class HighwayCorridor {
     private final List<CenterCell> centerline;
     private final Set<SurfaceKey> surfacePositions;
     private final Set<SurfaceKey> roadFurniturePositions;
+    private final List<RoadMarking> roadMarkings;
+    private final Map<SurfaceKey, RoadMarking> roadMarkingPositions;
     private final List<CoreRoadColumnSnapshot> coreRoadColumns;
     private final List<CutColumn> cutColumns;
     private final Set<Key> cutColumnPositions;
@@ -39,15 +42,18 @@ public final class HighwayCorridor {
     private final int bridgeApproachEndExtensions;
     private final int bridgeApproachSupportFailures;
     private final int duplicateXZDifferentRoadYSurfaceKeys;
+    private final int markingsSkippedUnsupportedDiagonal;
 
     private HighwayCorridor(HighwayPlan plan, List<Cell> cells, List<Cell> bridgeCells,
                             List<Column> rowEnvelope, List<CenterCell> centerline,
                             Set<SurfaceKey> surfacePositions, Set<SurfaceKey> roadFurniturePositions,
+                            List<RoadMarking> roadMarkings,
                             List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
                             List<StructuralSpan> structuralBridgeSpans,
                             int structuralApproachStations, int bridgeApproachStartExtensions,
                             int bridgeApproachEndExtensions, int bridgeApproachSupportFailures,
-                            int duplicateXZDifferentRoadYSurfaceKeys) {
+                            int duplicateXZDifferentRoadYSurfaceKeys,
+                            int markingsSkippedUnsupportedDiagonal) {
         this.plan = plan;
         this.cells = List.copyOf(cells);
         this.bridgeCells = List.copyOf(bridgeCells);
@@ -55,6 +61,12 @@ public final class HighwayCorridor {
         this.centerline = List.copyOf(centerline);
         this.surfacePositions = Set.copyOf(surfacePositions);
         this.roadFurniturePositions = Set.copyOf(roadFurniturePositions);
+        this.roadMarkings = List.copyOf(roadMarkings);
+        Map<SurfaceKey, RoadMarking> markingPositions = new LinkedHashMap<>();
+        for (RoadMarking marking : roadMarkings) {
+            markingPositions.put(new SurfaceKey(marking.x(), marking.y(), marking.z()), marking);
+        }
+        this.roadMarkingPositions = Map.copyOf(markingPositions);
         this.coreRoadColumns = List.copyOf(coreRoadColumns);
         this.cutColumns = List.copyOf(cutColumns);
         Set<Key> cutPositions = new LinkedHashSet<>();
@@ -66,6 +78,7 @@ public final class HighwayCorridor {
         this.bridgeApproachEndExtensions = bridgeApproachEndExtensions;
         this.bridgeApproachSupportFailures = bridgeApproachSupportFailures;
         this.duplicateXZDifferentRoadYSurfaceKeys = duplicateXZDifferentRoadYSurfaceKeys;
+        this.markingsSkippedUnsupportedDiagonal = markingsSkippedUnsupportedDiagonal;
     }
 
     public static HighwayCorridor build(ServerLevel level, HighwayPlan plan, HighwayProfile profile) {
@@ -153,14 +166,15 @@ public final class HighwayCorridor {
                 roadFurniturePositions.add(new SurfaceKey(cell.x(), cell.roadY() + 1, cell.z()));
             }
         }
+        RoadMarkingResolution markings = buildRoadMarkings(unique.values(), tangent);
         List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
         List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
         int approachStations = countApproachStations(profile, structural.spans());
         return new HighwayCorridor(plan, new ArrayList<>(unique.values()), new ArrayList<>(bridge.values()),
                 new ArrayList<>(row.values()), centerline, surfacePositions, roadFurniturePositions,
-                coreRoadColumns, cutColumns, structural.spans(), approachStations,
+                markings.markings(), coreRoadColumns, cutColumns, structural.spans(), approachStations,
                 structural.startExtensions(), structural.endExtensions(), structural.supportFailures(),
-                duplicateXZDifferentRoadY.size());
+                duplicateXZDifferentRoadY.size(), markings.skippedUnsupportedDiagonal());
     }
 
     private static boolean prefer(Cell next, Cell existing) {
@@ -178,6 +192,54 @@ public final class HighwayCorridor {
                     preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
         }
         return result;
+    }
+
+    private static RoadMarkingResolution buildRoadMarkings(Iterable<Cell> cells,
+                                                            HighwayPlan.Tangent tangent) {
+        Direction longitudinal = cardinalDirection(tangent);
+        if (longitudinal == null) {
+            int skipped = 0;
+            for (Cell cell : cells) {
+                if (markingType(cell.lateral()) != null) skipped++;
+            }
+            return new RoadMarkingResolution(List.of(), skipped);
+        }
+
+        Direction right = longitudinal.getClockWise();
+        List<RoadMarking> markings = new ArrayList<>();
+        for (Cell cell : cells) {
+            RoadMarkingType type = markingType(cell.lateral());
+            if (type == null) continue;
+            Direction facing = switch (cell.lateral()) {
+                case -9, 3 -> right.getOpposite();
+                case 9, -3 -> right;
+                case -6, 6 -> longitudinal;
+                default -> throw new IllegalStateException("Unexpected marking lateral " + cell.lateral());
+            };
+            markings.add(new RoadMarking(cell.x(), cell.roadY() + 1, cell.z(), type, facing));
+        }
+        return new RoadMarkingResolution(markings, 0);
+    }
+
+    private static RoadMarkingType markingType(int lateral) {
+        return switch (lateral) {
+            case -9, 9 -> RoadMarkingType.WHITE_EDGE;
+            case -3, 3 -> RoadMarkingType.YELLOW_EDGE;
+            case -6, 6 -> RoadMarkingType.WHITE_LANE_DIVIDER;
+            default -> null;
+        };
+    }
+
+    private static Direction cardinalDirection(HighwayPlan.Tangent tangent) {
+        double x = tangent.x();
+        double z = tangent.z();
+        if (Math.abs(x) > 0.999 && Math.abs(z) < 0.001) {
+            return x > 0.0 ? Direction.EAST : Direction.WEST;
+        }
+        if (Math.abs(z) > 0.999 && Math.abs(x) < 0.001) {
+            return z > 0.0 ? Direction.SOUTH : Direction.NORTH;
+        }
+        return null;
     }
 
     private static List<CutColumn> buildCutColumns(ServerLevel level, Iterable<Cell> cells,
@@ -360,6 +422,7 @@ public final class HighwayCorridor {
     public List<Cell> cells() { return cells; }
     public List<Cell> bridgeCells() { return bridgeCells; }
     public List<Column> rowEnvelope() { return rowEnvelope; }
+    public List<RoadMarking> roadMarkings() { return roadMarkings; }
     public List<CoreRoadColumnSnapshot> coreRoadColumns() { return coreRoadColumns; }
     public List<CutColumn> cutColumns() { return cutColumns; }
     public List<CenterCell> centerline() { return centerline; }
@@ -375,10 +438,14 @@ public final class HighwayCorridor {
     public int authoritativeSurfaceKeys() { return surfacePositions.size(); }
     public int uniqueCoreRoadXZColumns() { return coreRoadColumns.size(); }
     public int duplicateXZDifferentRoadYSurfaceKeys() { return duplicateXZDifferentRoadYSurfaceKeys; }
+    public int markingsSkippedUnsupportedDiagonal() { return markingsSkippedUnsupportedDiagonal; }
     public int expectedSurfaceCells() { return cells.size(); }
     public boolean isExpectedSurface(int x, int y, int z) { return surfacePositions.contains(new SurfaceKey(x, y, z)); }
     public boolean isExpectedRoadFurniture(int x, int y, int z) {
         return roadFurniturePositions.contains(new SurfaceKey(x, y, z));
+    }
+    public RoadMarking expectedRoadMarking(int x, int y, int z) {
+        return roadMarkingPositions.get(new SurfaceKey(x, y, z));
     }
     public boolean isCutColumn(int x, int z) {
         return cutColumnPositions.contains(new Key(x, z));
@@ -387,6 +454,7 @@ public final class HighwayCorridor {
     public record Cell(int x, int z, double distance, int lateral, Role role, int roadY, int terrainY,
                        HighwayTerrainMode mode, boolean structuralBridge) {}
     public record Column(int x, int z, int roadY) {}
+    public record RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing) {}
     public record CoreRoadColumnSnapshot(int x, int z, int roadY, int preConstructionTopY,
                                          HighwayTerrainMode mode, double distance, int lateral) {
         public int clearanceTopY(int maxBuildHeight) {
@@ -423,6 +491,13 @@ public final class HighwayCorridor {
                                  boolean edgeColumnsSupported, boolean stable) {}
     private record StructuralResolution(List<StructuralSpan> spans, int startExtensions, int endExtensions,
                                        int supportFailures) {}
+    private record RoadMarkingResolution(List<RoadMarking> markings, int skippedUnsupportedDiagonal) {}
+
+    public enum RoadMarkingType {
+        WHITE_EDGE,
+        YELLOW_EDGE,
+        WHITE_LANE_DIVIDER
+    }
 
     public enum Role {
         OUTER_SHOULDER,

@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.RoadMarkingBlock;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -52,6 +54,7 @@ public final class HighwayRenderer {
         stats.uniqueCoreRoadXZColumns = corridor.uniqueCoreRoadXZColumns();
         stats.duplicateXZDifferentRoadYSurfaceKeys = corridor.duplicateXZDifferentRoadYSurfaceKeys();
         stats.coreRoadColumnsPlanned = corridor.coreRoadColumns().size();
+        stats.markingsSkippedUnsupportedDiagonal = corridor.markingsSkippedUnsupportedDiagonal();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
@@ -65,6 +68,7 @@ public final class HighwayRenderer {
                 coreClearance.nonFurnitureBlockDirectlyAboveSurface();
         placeRoadStructure(level, edit, stats, corridor);
         placeParapetsAndMedian(level, edit, stats, corridor);
+        placeRoadMarkings(level, edit, stats, corridor);
         placePiers(level, edit, stats, corridor, profile);
 
         HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
@@ -91,6 +95,16 @@ public final class HighwayRenderer {
         stats.remainingRowLogs = validation.remainingRowLogs();
         stats.remainingRowLeaves = validation.remainingRowLeaves();
         stats.vegetationClearanceViolations = validation.vegetationClearanceViolations();
+        stats.expectedWhiteEdgeMarkings = validation.expectedWhiteEdgeMarkings();
+        stats.actualWhiteEdgeMarkings = validation.actualWhiteEdgeMarkings();
+        stats.missingWhiteEdgeMarkings = validation.missingWhiteEdgeMarkings();
+        stats.expectedYellowEdgeMarkings = validation.expectedYellowEdgeMarkings();
+        stats.actualYellowEdgeMarkings = validation.actualYellowEdgeMarkings();
+        stats.missingYellowEdgeMarkings = validation.missingYellowEdgeMarkings();
+        stats.expectedWhiteLaneDividerMarkings = validation.expectedWhiteLaneDividerMarkings();
+        stats.actualWhiteLaneDividerMarkings = validation.actualWhiteLaneDividerMarkings();
+        stats.missingWhiteLaneDividerMarkings = validation.missingWhiteLaneDividerMarkings();
+        stats.wrongMarkingTypeBlocks = validation.wrongMarkingTypeBlocks();
         return stats;
     }
 
@@ -256,6 +270,26 @@ public final class HighwayRenderer {
                 stats.medianBarrierBlocks++;
             }
         }
+    }
+
+    private static void placeRoadMarkings(ServerLevel level, HighwayEditSession edit,
+                                          HighwayRenderStats stats, HighwayCorridor corridor) {
+        for (HighwayCorridor.RoadMarking marking : corridor.roadMarkings()) {
+            BlockState state = roadMarkingState(marking);
+            if (edit.set(new BlockPos(marking.x(), marking.y(), marking.z()), state)) {
+                stats.blocksPlaced++;
+                stats.roadMarkingBlocksPlaced++;
+            }
+        }
+    }
+
+    private static BlockState roadMarkingState(HighwayCorridor.RoadMarking marking) {
+        BlockState state = switch (marking.type()) {
+            case WHITE_EDGE -> AflBlocks.EDGE_LANE_WHITE.get().defaultBlockState();
+            case YELLOW_EDGE -> AflBlocks.EDGE_LANE_YELLOW.get().defaultBlockState();
+            case WHITE_LANE_DIVIDER -> AflBlocks.WHITE_LANE_DIVIDER.get().defaultBlockState();
+        };
+        return state.setValue(RoadMarkingBlock.FACING, marking.facing());
     }
 
     private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,

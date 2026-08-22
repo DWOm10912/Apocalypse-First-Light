@@ -36,6 +36,9 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.SCORCHED_SOIL.get());
                         output.accept(AflItems.FUSED_GROUND.get());
                         output.accept(AflItems.ASPHALT.get());
+                        output.accept(AflItems.EDGE_LANE_WHITE.get());
+                        output.accept(AflItems.EDGE_LANE_YELLOW.get());
+                        output.accept(AflItems.WHITE_LANE_DIVIDER.get());
                         output.accept(AflItems.POPLAR_LOG.get());
                         output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
                         output.accept(AflItems.POPLAR_WOOD.get());

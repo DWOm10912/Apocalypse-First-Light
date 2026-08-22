@@ -1,5 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
+import com.antaurora.apofirstlight.block.RoadMarkingBlock;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -119,12 +121,44 @@ public final class HighwayContinuityValidator {
                     .is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock())) medianBarrier++;
         }
 
+        int expectedWhiteEdge = 0;
+        int actualWhiteEdge = 0;
+        int expectedYellowEdge = 0;
+        int actualYellowEdge = 0;
+        int expectedWhiteLaneDivider = 0;
+        int actualWhiteLaneDivider = 0;
+        int wrongMarkingType = 0;
+        for (HighwayCorridor.RoadMarking marking : corridor.roadMarkings()) {
+            BlockPos pos = new BlockPos(marking.x(), marking.y(), marking.z());
+            BlockState state = level.getBlockState(pos);
+            boolean correct = isExpectedRoadMarking(corridor, pos, state);
+            switch (marking.type()) {
+                case WHITE_EDGE -> {
+                    expectedWhiteEdge++;
+                    if (correct) actualWhiteEdge++;
+                }
+                case YELLOW_EDGE -> {
+                    expectedYellowEdge++;
+                    if (correct) actualYellowEdge++;
+                }
+                case WHITE_LANE_DIVIDER -> {
+                    expectedWhiteLaneDivider++;
+                    if (correct) actualWhiteLaneDivider++;
+                }
+            }
+            if (!correct && !isClear(level, pos)) wrongMarkingType++;
+        }
+
         return new Result(actual, missing, unexpectedAirspace, missingViaductDeck, wrongMaterial,
                 bridgeInternalNonViaduct, bridgeNormalBaseIntrusions, elevatedNormalBaseIntrusions,
                 viaductOutsideStructural, structuralMissingConcrete, cutColumnsWithIntrusion,
                 terrainAirspaceViolations, unexpectedAirspace, roadFurnitureIgnored,
                 expectedParapet, actualParapet, expectedParapet - actualParapet, medianBarrier,
-                remainingLogs, remainingLeaves, remainingLogs + remainingLeaves);
+                remainingLogs, remainingLeaves, remainingLogs + remainingLeaves,
+                expectedWhiteEdge, actualWhiteEdge, expectedWhiteEdge - actualWhiteEdge,
+                expectedYellowEdge, actualYellowEdge, expectedYellowEdge - actualYellowEdge,
+                expectedWhiteLaneDivider, actualWhiteLaneDivider,
+                expectedWhiteLaneDivider - actualWhiteLaneDivider, wrongMarkingType);
     }
 
     private static boolean isNormalRoadBase(BlockState state) {
@@ -134,8 +168,21 @@ public final class HighwayContinuityValidator {
     }
 
     private static boolean isExpectedRoadFurniture(HighwayCorridor corridor, BlockPos pos, BlockState state) {
-        return corridor.isExpectedRoadFurniture(pos.getX(), pos.getY(), pos.getZ())
-                && state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock());
+        return (corridor.isExpectedRoadFurniture(pos.getX(), pos.getY(), pos.getZ())
+                && state.is(HighwayPalette.REINFORCED_CONCRETE_SLAB.getBlock()))
+                || isExpectedRoadMarking(corridor, pos, state);
+    }
+
+    private static boolean isExpectedRoadMarking(HighwayCorridor corridor, BlockPos pos, BlockState state) {
+        HighwayCorridor.RoadMarking expected = corridor.expectedRoadMarking(
+                pos.getX(), pos.getY(), pos.getZ());
+        if (expected == null || !state.hasProperty(RoadMarkingBlock.FACING)
+                || state.getValue(RoadMarkingBlock.FACING) != expected.facing()) return false;
+        return switch (expected.type()) {
+            case WHITE_EDGE -> state.is(AflBlocks.EDGE_LANE_WHITE.get());
+            case YELLOW_EDGE -> state.is(AflBlocks.EDGE_LANE_YELLOW.get());
+            case WHITE_LANE_DIVIDER -> state.is(AflBlocks.WHITE_LANE_DIVIDER.get());
+        };
     }
 
     private static boolean isClear(ServerLevel level, BlockPos pos) {
@@ -156,7 +203,15 @@ public final class HighwayContinuityValidator {
                          int expectedParapetBlocks, int actualParapetBlocks,
                          int missingParapetBlocks, int medianBarrierBlocks,
                          int remainingRowLogs, int remainingRowLeaves,
-                         int vegetationClearanceViolations) {
+                         int vegetationClearanceViolations,
+                         int expectedWhiteEdgeMarkings, int actualWhiteEdgeMarkings,
+                         int missingWhiteEdgeMarkings,
+                         int expectedYellowEdgeMarkings, int actualYellowEdgeMarkings,
+                         int missingYellowEdgeMarkings,
+                         int expectedWhiteLaneDividerMarkings,
+                         int actualWhiteLaneDividerMarkings,
+                         int missingWhiteLaneDividerMarkings,
+                         int wrongMarkingTypeBlocks) {
         public int airspaceClearanceViolations() { return clearanceViolations; }
     }
 }

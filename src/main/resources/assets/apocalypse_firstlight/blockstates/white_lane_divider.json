@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/white_lane_divider"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/white_lane_divider",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/white_lane_divider"
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/white_lane_divider",
+      "y": 90
+    }
+  }
+}

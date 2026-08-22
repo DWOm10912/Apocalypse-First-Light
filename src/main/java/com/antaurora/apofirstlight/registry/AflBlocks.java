@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
 import com.antaurora.apofirstlight.world.PoplarTreeGrower;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
@@ -98,6 +99,24 @@ public final class AflBlocks {
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)));
+    public static final RegistryObject<Block> EDGE_LANE_WHITE = BLOCKS.register("edge_lane_white",
+            () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> EDGE_LANE_YELLOW = BLOCKS.register("edge_lane_yellow",
+            () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> WHITE_LANE_DIVIDER = BLOCKS.register("white_lane_divider",
+            () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion()));
     public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
             () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
     public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",

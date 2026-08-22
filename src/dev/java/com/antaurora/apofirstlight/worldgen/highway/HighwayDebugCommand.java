@@ -59,7 +59,7 @@ public final class HighwayDebugCommand {
         SESSIONS.put(level, edit);
         int minPierHeight = stats.piersPlaced == 0 ? 0 : stats.minPierHeight;
         int avgPierHeight = stats.piersPlaced == 0 ? 0 : stats.pierHeightTotal / stats.piersPlaced;
-        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.7]");
+        StringBuilder message = new StringBuilder("[AFL HIGHWAY V1A.7 VISUAL V1]");
         message.append(" start=(").append(start.getX()).append(',').append(start.getY()).append(',')
                 .append(start.getZ()).append(')');
         message.append(" end=(").append((int) Math.round(main.sample(main.length()).x())).append(',')
@@ -98,6 +98,22 @@ public final class HighwayDebugCommand {
         stat(message, "unexpectedAirspaceObstructions", stats.unexpectedAirspaceObstructions);
         stat(message, "roadFurnitureBlocksIgnoredByAirspaceValidator",
                 stats.roadFurnitureBlocksIgnoredByAirspaceValidator);
+        stat(message, "expectedWhiteEdgeMarkings", stats.expectedWhiteEdgeMarkings);
+        stat(message, "actualWhiteEdgeMarkings", stats.actualWhiteEdgeMarkings);
+        stat(message, "missingWhiteEdgeMarkings", stats.missingWhiteEdgeMarkings);
+        stat(message, "expectedYellowEdgeMarkings", stats.expectedYellowEdgeMarkings);
+        stat(message, "actualYellowEdgeMarkings", stats.actualYellowEdgeMarkings);
+        stat(message, "missingYellowEdgeMarkings", stats.missingYellowEdgeMarkings);
+        stat(message, "expectedWhiteLaneDividerMarkings",
+                stats.expectedWhiteLaneDividerMarkings);
+        stat(message, "actualWhiteLaneDividerMarkings",
+                stats.actualWhiteLaneDividerMarkings);
+        stat(message, "missingWhiteLaneDividerMarkings",
+                stats.missingWhiteLaneDividerMarkings);
+        stat(message, "wrongMarkingTypeBlocks", stats.wrongMarkingTypeBlocks);
+        stat(message, "markingsSkippedUnsupportedDiagonal",
+                stats.markingsSkippedUnsupportedDiagonal);
+        stat(message, "roadMarkingBlocksPlaced", stats.roadMarkingBlocksPlaced);
         stat(message, "vegetationClearanceViolations", stats.vegetationClearanceViolations);
         stat(message, "remainingRowLogs", stats.remainingRowLogs);
         stat(message, "remainingRowLeaves", stats.remainingRowLeaves);
