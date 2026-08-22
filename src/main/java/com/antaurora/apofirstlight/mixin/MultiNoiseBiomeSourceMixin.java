@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.debug.BiomeTraceContext;
 import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.world.biome.AflVanillaBiomePolicy;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
+import com.antaurora.apofirstlight.worldgen.StartupBiomeGenerationContext;
 import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.Holder;
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Final guard at the point where the overworld parameter list becomes the
@@ -38,6 +41,8 @@ public abstract class MultiNoiseBiomeSourceMixin {
     private boolean apocalypse$sourceCensusLogged;
     @Unique
     private final Map<Long, Integer> apocalypse$traceCounts = new HashMap<>();
+    @Unique
+    private static final ConcurrentHashMap<String, AtomicInteger> apocalypse$traceSetCounts = new ConcurrentHashMap<>();
 
     @Shadow
     private Climate.ParameterList<Holder<Biome>> parameters() {
@@ -71,8 +76,13 @@ public abstract class MultiNoiseBiomeSourceMixin {
             at = @At("HEAD"))
     private void apocalypse$traceEnter(int quartX, int quartY, int quartZ, Climate.Sampler sampler,
                                        CallbackInfoReturnable<Holder<Biome>> callback) {
+        long sourceIdentity = System.identityHashCode(this);
+        Long seed = StartupBiomeGenerationContext.seedFor((net.minecraft.world.level.biome.BiomeSource) (Object) this);
         BiomeTraceContext.CURRENT.set(new BiomeTraceContext.Context(
-                quartX, quartY, quartZ, Integer.toHexString(System.identityHashCode(this))));
+                quartX, quartY, quartZ, Long.toHexString(sourceIdentity), seed));
+        if (apocalypse$isDiagnosticQuart(quartX, quartZ)) {
+            apocalypse$logTraceSet(quartX, quartY, quartZ);
+        }
         if (apocalypse$isDiagnosticQuart(quartX, quartZ)) {
             apocalypse$logSourceCensus();
             long xz = (((long) quartX) << 32) ^ (quartZ & 0xffffffffL);
@@ -94,7 +104,20 @@ public abstract class MultiNoiseBiomeSourceMixin {
                 || (quartX == -16 && quartZ == 0)
                 || (quartX == 0 && quartZ == 16)
                 || (quartX == 0 && quartZ == -16)
-                || (quartX == 40 && quartZ == 0);
+                || (quartX == 40 && quartZ == 0)
+                || (quartX == 0 && quartZ == 52);
+    }
+
+    @Unique
+    private void apocalypse$logTraceSet(int quartX, int quartY, int quartZ) {
+        String key = quartX + "|" + quartZ;
+        AtomicInteger count = apocalypse$traceSetCounts.computeIfAbsent(key, ignored -> new AtomicInteger());
+        if (count.getAndIncrement() >= 2) return;
+        ApocalypseFirstLight.LOGGER.info(
+                "[AFL STARTUP DIAG] reason=TRACE_SET thread={} quart=({}, {}, {}) blockApprox=({}, {}, {}) sourceIdentity={} biomeTraceContext=YES",
+                Thread.currentThread().getName(), quartX, quartY, quartZ,
+                quartX << 2, quartY << 2, quartZ << 2,
+                Integer.toHexString(System.identityHashCode(this)));
     }
 
     @Unique

@@ -10,7 +10,7 @@ public final class BiomeTraceContext {
     private BiomeTraceContext() {
     }
 
-    public record Context(int quartX, int quartY, int quartZ, String sourceIdentity) {
+    public record Context(int quartX, int quartY, int quartZ, String sourceIdentity, Long seed) {
     }
 
     public static String biomeId(Holder<Biome> biome) {

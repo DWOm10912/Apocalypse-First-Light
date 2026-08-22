@@ -5,21 +5,21 @@ import com.antaurora.apofirstlight.debug.BiomeTraceContext;
 import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.world.biome.AflVanillaBiomePolicy;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
-import com.antaurora.apofirstlight.worldgen.aquifer.ScorchedAquiferContext;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import terrablender.api.RegionType;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,14 +27,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Mixin(value = Climate.ParameterList.class, priority = 900)
 public abstract class ClimateParameterListMixin {
     private static final int APOCALYPSE_LOG_LIMIT_PER_TARGET = 1;
-    /** Flat-Country surface ecology band: block Y 48..112; lower cave biomes remain untouched. */
-    private static final int APOCALYPSE_SURFACE_BAND_MIN_QUART_Y = 12;
-    private static final int APOCALYPSE_SURFACE_BAND_MAX_QUART_Y = 28;
+    private static final int APOCALYPSE_REASON_LOG_LIMIT = 2;
     private static final ConcurrentHashMap<String, AtomicInteger> APOCALYPSE_LOG_COUNTS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, AtomicInteger> APOCALYPSE_REASON_COUNTS = new ConcurrentHashMap<>();
     @Unique
     private volatile Holder<Biome> apocalypse$plainsHolder;
     @Unique
     private volatile Holder<Biome> apocalypse$woodlandHolder;
+
+    /**
+     * TerraBlender resolves Region biome keys into registry-backed holders while
+     * building its generation-time R-trees.  Capture the same holders here once;
+     * worker threads then only read these immutable references.
+     */
+    @Dynamic("Added by TerraBlender's MixinParameterList")
+    @Inject(method = "initializeForTerraBlender", at = @At("RETURN"), remap = false)
+    private void apocalypse$captureGenerationHolders(RegistryAccess registryAccess, RegionType regionType,
+                                                       long seed, org.spongepowered.asm.mixin.injection.callback.CallbackInfo callback) {
+        var biomeRegistry = registryAccess.registryOrThrow(Registries.BIOME);
+        apocalypse$plainsHolder = biomeRegistry.getHolder(Biomes.PLAINS).orElse(null);
+        apocalypse$woodlandHolder = biomeRegistry.getHolder(AflBiomes.IRRADIATED_WOODLAND).orElse(null);
+    }
 
     /**
      * TerraBlender adds this method to ParameterList and uses its result in the
@@ -46,24 +59,40 @@ public abstract class ClimateParameterListMixin {
     private void apocalypse$applyStartupPlainsEnclave(Climate.TargetPoint target, int quartX, int quartY, int quartZ,
                                                        CallbackInfoReturnable<Object> callback) {
         BiomeTraceContext.Context context = BiomeTraceContext.CURRENT.get();
+        boolean diagnostic = apocalypse$isDiagnosticQuart(quartX, quartZ);
+        String originalBiome = apocalypse$returnBiome(callback);
+        if (diagnostic) {
+            apocalypse$logReason("CALL_ENTER", quartX, quartY, quartZ, context,
+                    originalBiome, false, false);
+        }
         try {
-            ScorchedAquiferContext.Context ecology = ScorchedAquiferContext.current();
-            if (context == null || ecology == null
-                    || !(callback.getReturnValue() instanceof Holder<?> rawHolder)) {
+            if (context == null) {
+                if (diagnostic) apocalypse$logReason("CONTEXT_MISSING", quartX, quartY, quartZ,
+                        context, originalBiome, false, false);
+                return;
+            }
+            if (context.seed() == null) {
+                if (diagnostic) apocalypse$logReason("SEED_CONTEXT_MISSING", quartX, quartY, quartZ,
+                        context, originalBiome, true, false);
+                return;
+            }
+            if (!(callback.getReturnValue() instanceof Holder<?> rawHolder)) {
+                if (diagnostic) apocalypse$logReason("RETURN_NOT_HOLDER", quartX, quartY, quartZ,
+                        context, originalBiome, true, true);
                 return;
             }
             @SuppressWarnings("unchecked")
             Holder<Biome> original = (Holder<Biome>) rawHolder;
-            if (quartY < APOCALYPSE_SURFACE_BAND_MIN_QUART_Y
-                    || quartY > APOCALYPSE_SURFACE_BAND_MAX_QUART_Y) {
-                return;
-            }
             if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(original.unwrapKey().orElse(null))) {
+                if (diagnostic) apocalypse$logReason("UNDERGROUND_BYPASS", quartX, quartY, quartZ,
+                        context, BiomeTraceContext.biomeId(original), true, true);
                 return;
             }
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(
-                    quartX << 2, quartZ << 2, ecology.seed());
+                    quartX << 2, quartZ << 2, context.seed());
             if (zone == StartupPlainsEnclave.Zone.OUTSIDE) {
+                if (diagnostic) apocalypse$logReason("ZONE_OUTSIDE", quartX, quartY, quartZ,
+                        context, BiomeTraceContext.biomeId(original), true, true);
                 return;
             }
             ResourceKey<Biome> targetKey = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
@@ -79,26 +108,82 @@ public abstract class ClimateParameterListMixin {
                             Thread.currentThread().getName(), context.sourceIdentity(), quartX, quartY, quartZ,
                             zone, BiomeTraceContext.biomeId(original));
                 }
+                if (diagnostic) apocalypse$logReason("TARGET_HOLDER_MISSING", quartX, quartY, quartZ,
+                        context, BiomeTraceContext.biomeId(original), true, true);
                 return;
             }
             callback.setReturnValue(targetHolder);
+            if (diagnostic) apocalypse$logReason("OVERRIDE_APPLIED", quartX, quartY, quartZ,
+                    context, BiomeTraceContext.biomeId(original), true, true,
+                    targetKey.location().toString());
         } finally {
+            if (diagnostic) apocalypse$logReason("TRACE_CLEAR", quartX, quartY, quartZ,
+                    context, originalBiome, context != null, context != null && context.seed() != null);
             BiomeTraceContext.CURRENT.remove();
         }
+    }
+
+    @Unique
+    private static String apocalypse$returnBiome(CallbackInfoReturnable<Object> callback) {
+        Object value = callback.getReturnValue();
+        if (!(value instanceof Holder<?> holder)) return "<non-holder>";
+        if (!(holder.value() instanceof Biome)) return "<holder-non-biome>";
+        @SuppressWarnings("unchecked")
+        Holder<Biome> biome = (Holder<Biome>) holder;
+        return BiomeTraceContext.biomeId(biome);
+    }
+
+    @Unique
+    private static boolean apocalypse$isDiagnosticQuart(int quartX, int quartZ) {
+        int[][] points = {{0, 0}, {16, 0}, {-16, 0}, {0, 16}, {0, -16}, {40, 0}, {0, 52}};
+        for (int[] point : points) {
+            if (Math.abs(quartX - point[0]) <= 1 && Math.abs(quartZ - point[1]) <= 1) return true;
+        }
+        return false;
+    }
+
+    @Unique
+    private static void apocalypse$logReason(String reason, int quartX, int quartY, int quartZ,
+                                              BiomeTraceContext.Context context,
+                                              String originalBiome, boolean tracePresent,
+                                              boolean seedPresent) {
+        apocalypse$logReason(reason, quartX, quartY, quartZ, context, originalBiome,
+                tracePresent, seedPresent, "<none>");
+    }
+
+    @Unique
+    private static void apocalypse$logReason(String reason, int quartX, int quartY, int quartZ,
+                                              BiomeTraceContext.Context context,
+                                              String originalBiome, boolean tracePresent,
+                                              boolean seedPresent, String targetBiome) {
+        String key = reason + '|' + quartX + '|' + quartZ;
+        AtomicInteger count = APOCALYPSE_REASON_COUNTS.computeIfAbsent(key, ignored -> new AtomicInteger());
+        if (count.getAndIncrement() >= APOCALYPSE_REASON_LOG_LIMIT) return;
+        String zone = context == null || context.seed() == null ? "<unknown>"
+                : StartupPlainsEnclave.zoneAt(quartX << 2, quartZ << 2, context.seed()).name();
+        ApocalypseFirstLight.LOGGER.info(
+                "[AFL STARTUP DIAG] reason={} thread={} quart=({}, {}, {}) blockApprox=({}, {}, {}) sourceIdentity={} originalBiome={} zone={} biomeTraceContext={} startupSeedContext={} targetBiome={} overrideApplied={}",
+                reason, Thread.currentThread().getName(), quartX, quartY, quartZ,
+                quartX << 2, quartY << 2, quartZ << 2,
+                context == null ? "<none>" : context.sourceIdentity(), originalBiome, zone,
+                tracePresent ? "YES" : "NO", seedPresent ? "YES" : "NO", targetBiome,
+                "OVERRIDE_APPLIED".equals(reason) ? "YES" : "NO");
     }
 
     @Unique
     private Holder<Biome> apocalypse$resolveHolder(ResourceKey<Biome> key) {
         Holder<Biome> cached = key.equals(Biomes.PLAINS) ? apocalypse$plainsHolder : apocalypse$woodlandHolder;
         if (cached != null) return cached;
-        var server = ServerLifecycleHooks.getCurrentServer();
-        if (server == null) return null;
-        Registry<Biome> biomes = server.registryAccess().registryOrThrow(Registries.BIOME);
-        Holder<Biome> resolved = biomes.getHolder(key).orElse(null);
-        if (resolved != null) {
-            if (key.equals(Biomes.PLAINS)) apocalypse$plainsHolder = resolved;
-            else apocalypse$woodlandHolder = resolved;
+        for (Pair<Climate.ParameterPoint, ?> entry : ((Climate.ParameterList<?>) (Object) this).values()) {
+            if (!(entry.getSecond() instanceof Holder<?> rawHolder)) continue;
+            @SuppressWarnings("unchecked")
+            Holder<Biome> holder = (Holder<Biome>) rawHolder;
+            if (key.equals(holder.unwrapKey().orElse(null)) && holder.kind() == Holder.Kind.REFERENCE) {
+                if (key.equals(Biomes.PLAINS)) apocalypse$plainsHolder = holder;
+                else apocalypse$woodlandHolder = holder;
+                return holder;
+            }
         }
-        return resolved;
+        return null;
     }
 }
