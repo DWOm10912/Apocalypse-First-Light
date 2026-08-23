@@ -59,6 +59,7 @@ public final class AflCreativeTabs {
                     .icon(() -> new ItemStack(AflItems.STEEL_SCRAP.get()))
                     .title(Component.translatable("itemGroup.apocalypse_firstlight.items"))
                     .displayItems((parameters, output) -> {
+                        output.accept(AflItems.STEEL_INGOT.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 系统设计/辐射.md",
+                "file": "docs/02 - 内容设计/物品/金属.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "辐射"
+              "title": "金属"
             }
           }
         ]
@@ -190,17 +190,21 @@
   },
   "active": "b1f68e95b15290ae",
   "lastOpenFiles": [
-    "run/xaero/world-map/新的世界/null/cache_1/-2_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_0.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/-3_-1.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/-2_0.xwmc",
+    "run/saves/TEST/level8592229820457073329.dat",
+    "run/saves/TEST/playerdata/380df991-f603-344c-a090-369bad2a924a-9190785939142250504.dat",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-3/cache_1/-1_-1.xwmc.outdated",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/steel_ingot.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/item/steel_ingot.png",
+    "docs/01 - 系统设计/辐射.md",
+    "docs/02 - 内容设计/物品/金属.md",
     "run/saves/新的世界 (1)/icon.png",
     "run/screenshots/2026-08-23_02.16.22.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
@@ -218,7 +222,6 @@
     "docs/02 - 内容设计/物品.md",
     "docs/01 - 系统设计/工业.md",
     "docs/01 - 系统设计/声音.md",
-    "docs/01 - 系统设计/辐射.md",
     "docs/01 - 系统设计/新群系.md",
     "docs/01 - 系统设计/战利品.md",
     "docs/01 - 系统设计/城市规划.md",
