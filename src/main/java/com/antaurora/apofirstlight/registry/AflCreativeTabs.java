@@ -22,6 +22,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.REINFORCED_CONCRETE_STAIRS.get());
                         output.accept(AflItems.STEEL_BLOCK.get());
                         output.accept(AflItems.ALUMINUM_BLOCK.get());
+                        output.accept(AflItems.BAUXITE_ORE.get());
                         output.accept(AflItems.STEEL_BLOCK_SLAB.get());
                         output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
                         output.accept(AflItems.STEEL_PLATE.get());
@@ -62,6 +63,8 @@ public final class AflCreativeTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(AflItems.STEEL_INGOT.get());
                         output.accept(AflItems.ALUMINUM_INGOT.get());
+                        output.accept(AflItems.BAUXITE.get());
+                        output.accept(AflItems.ALUMINA.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());
