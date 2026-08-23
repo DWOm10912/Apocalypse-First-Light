@@ -18,6 +18,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK = ITEMS.register("steel_block",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
+            () -> new BlockItem(AflBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -33,6 +35,8 @@ public final class AflItems {
     public static final RegistryObject<Item> STEEL_DOOR = ITEMS.register("steel_door",
             () -> new BlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_INGOT = ITEMS.register("steel_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_INGOT = ITEMS.register("aluminum_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));

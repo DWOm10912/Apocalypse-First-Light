@@ -9,6 +9,7 @@
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",
   "block.apocalypse_firstlight.steel_block": "Steel Block",
+  "block.apocalypse_firstlight.aluminum_block": "Aluminum Block",
   "block.apocalypse_firstlight.steel_block_slab": "Steel Block Slab",
   "block.apocalypse_firstlight.steel_block_stairs": "Steel Block Stairs",
   "block.apocalypse_firstlight.steel_grate": "Steel Grate",
@@ -44,6 +45,7 @@
   "block.apocalypse_firstlight.stripped_poplar_wood": "Stripped Poplar Wood",
 
   "item.apocalypse_firstlight.steel_ingot": "Steel Ingot",
+  "item.apocalypse_firstlight.aluminum_ingot": "Aluminum Ingot",
   "item.apocalypse_firstlight.steel_scrap": "Steel Scrap",
   "item.apocalypse_firstlight.concrete_rubble": "Concrete Rubble",
   "item.apocalypse_firstlight.plastic_scrap": "Plastic Scrap",

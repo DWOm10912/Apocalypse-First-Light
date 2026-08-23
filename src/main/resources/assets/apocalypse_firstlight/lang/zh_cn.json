@@ -9,6 +9,7 @@
   "block.apocalypse_firstlight.reinforced_concrete_slab": "钢筋混凝土台阶",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "钢筋混凝土楼梯",
   "block.apocalypse_firstlight.steel_block": "钢块",
+  "block.apocalypse_firstlight.aluminum_block": "铝块",
   "block.apocalypse_firstlight.steel_block_slab": "钢块台阶",
   "block.apocalypse_firstlight.steel_block_stairs": "钢块楼梯",
   "block.apocalypse_firstlight.steel_grate": "钢格栅",
@@ -44,6 +45,7 @@
   "block.apocalypse_firstlight.stripped_poplar_wood": "去皮白杨木",
 
   "item.apocalypse_firstlight.steel_ingot": "钢锭",
+  "item.apocalypse_firstlight.aluminum_ingot": "铝锭",
   "item.apocalypse_firstlight.steel_scrap": "钢废料",
   "item.apocalypse_firstlight.concrete_rubble": "混凝土碎块",
   "item.apocalypse_firstlight.plastic_scrap": "废塑料",
