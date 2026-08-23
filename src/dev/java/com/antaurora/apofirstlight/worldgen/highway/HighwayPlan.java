@@ -14,12 +14,15 @@ public final class HighwayPlan {
     private final double length;
     private final int width;
     private final Curve curve;
+    private final double stationOffset;
 
-    private HighwayPlan(List<Point> controlPoints, double length, int width, Curve curve) {
+    private HighwayPlan(List<Point> controlPoints, double length, int width, Curve curve,
+                        double stationOffset) {
         this.controlPoints = List.copyOf(controlPoints);
         this.length = length;
         this.width = width;
         this.curve = curve;
+        this.stationOffset = stationOffset;
     }
 
     public static HighwayPlan main(BlockPos start, double headingX, double headingZ, int length, long seed) {
@@ -30,16 +33,21 @@ public final class HighwayPlan {
         // Turn geometry belongs to a future explicit junction module.
         return new HighwayPlan(List.of(new Point(start.getX(), start.getZ()),
                 new Point(start.getX() + hx * length, start.getZ() + hz * length)),
-                length, MAIN_WIDTH, Curve.LINEAR);
+                length, MAIN_WIDTH, Curve.LINEAR, 0.0);
     }
 
     public static HighwayPlan linear(Point start, Point end, int width) {
-        return new HighwayPlan(List.of(start, end), distance(start, end), width, Curve.LINEAR);
+        return linear(start, end, width, 0.0);
+    }
+
+    public static HighwayPlan linear(Point start, Point end, int width, double stationOffset) {
+        return new HighwayPlan(List.of(start, end), distance(start, end), width, Curve.LINEAR,
+                stationOffset);
     }
 
     public static HighwayPlan bezier(Point p0, Point p1, Point p2, Point p3, int width) {
         double length = approximateBezierLength(p0, p1, p2, p3);
-        return new HighwayPlan(List.of(p0, p1, p2, p3), length, width, Curve.BEZIER);
+        return new HighwayPlan(List.of(p0, p1, p2, p3), length, width, Curve.BEZIER, 0.0);
     }
 
     public Point sample(double distance) {
@@ -64,6 +72,9 @@ public final class HighwayPlan {
     public List<Point> controlPoints() { return controlPoints; }
     public double length() { return length; }
     public int width() { return width; }
+    public double stationOffset() { return stationOffset; }
+    public double globalStation(double localDistance) { return stationOffset + localDistance; }
+    public double localDistance(double globalStation) { return globalStation - stationOffset; }
 
     private Point catmullRom(double t) {
         if (controlPoints.size() < 3) return lerp(controlPoints.get(0), controlPoints.get(controlPoints.size() - 1), t);

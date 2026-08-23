@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -99,23 +100,13 @@ public final class HighwayRenderer {
         stats.tunnelOuterHeight = corridor.tunnelOuterHeight();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
-        clearRow(level, edit, stats, corridor);
-        clearCoreRoadVerticalEnvelope(level, edit, stats, corridor);
-        clearCutEnvelope(level, edit, stats, corridor);
+        runClearancePasses(level, edit, stats, corridor);
         HighwayContinuityValidator.CoreClearanceResult coreClearance =
                 HighwayContinuityValidator.validateCoreRoadClearance(level, corridor);
         stats.coreRoadTerrainIntrusions = coreClearance.coreRoadTerrainIntrusions();
         stats.nonFurnitureBlockDirectlyAboveSurface =
                 coreClearance.nonFurnitureBlockDirectlyAboveSurface();
-        placeRoadStructure(level, edit, stats, corridor);
-        placeOuterEdge(level, edit, stats, corridor);
-        placeParapetsAndMedian(level, edit, stats, corridor);
-        placeMedianStepConnectors(edit, stats, corridor);
-        placeRoadMarkings(level, edit, stats, corridor);
-        placeRoadMarkingStepConnectors(level, edit, stats, corridor);
-        placeTunnel(level, edit, stats, corridor);
-        placePiers(level, edit, stats, corridor, profile);
-
+        runPlacementPasses(level, edit, stats, corridor, profile);
         HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
         stats.actualSurfaceCells = validation.actualSurfaceCells();
         stats.missingSurfaceCells = validation.missingSurfaceCells();
@@ -178,10 +169,59 @@ public final class HighwayRenderer {
         return stats;
     }
 
-    private static void clearCoreRoadVerticalEnvelope(ServerLevel level, HighwayEditSession edit,
+    /** Executes the same engineering passes as highway_test, without its post-build global validator. */
+    public static HighwayRenderStats renderNatural(WorldGenLevel level, HighwayProfile profile,
+                                                   HighwayBlockWriter writer) {
+        HighwayCorridor corridor = HighwayCorridor.buildNatural(level, profile.plan(), profile);
+        return renderNatural(level, profile, corridor, writer);
+    }
+
+    /** Renders a cached immutable engineering segment into the current chunk-owned writer. */
+    public static HighwayRenderStats renderNatural(WorldGenLevel level, HighwayProfile profile,
+                                                   HighwayCorridor corridor,
+                                                   HighwayBlockWriter writer) {
+        HighwayRenderStats stats = new HighwayRenderStats();
+        stats.corridorCellCount = corridor.cells().size();
+        stats.expectedSurfaceCells = corridor.expectedSurfaceCells();
+        stats.rawViaductSamples = profile.rawViaductSamples();
+        stats.resolvedBridgeSpanCount = profile.bridgeSpans().size();
+        stats.resolvedViaductStations = profile.resolvedViaductStations();
+        stats.rawViaductLength = (int) Math.round(profile.rawViaductLength());
+        stats.resolvedViaductLength = (int) Math.round(profile.bridgeSpans().stream()
+                .mapToDouble(span -> span.endStation() - span.startStation()).sum());
+        stats.bridgeGapClosures = profile.bridgeGapClosures();
+        stats.shortBridgeCandidatesRejected = profile.shortBridgeCandidatesRejected();
+        for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
+        runClearancePasses(level, writer, stats, corridor);
+        runPlacementPasses(level, writer, stats, corridor, profile);
+        return stats;
+    }
+
+    private static void runClearancePasses(WorldGenLevel level, HighwayBlockWriter writer,
+                                           HighwayRenderStats stats, HighwayCorridor corridor) {
+        clearRow(level, writer, stats, corridor);
+        clearCoreRoadVerticalEnvelope(level, writer, stats, corridor);
+        clearCutEnvelope(level, writer, stats, corridor);
+    }
+
+    private static void runPlacementPasses(WorldGenLevel level, HighwayBlockWriter writer,
+                                           HighwayRenderStats stats, HighwayCorridor corridor,
+                                           HighwayProfile profile) {
+        placeRoadStructure(level, writer, stats, corridor);
+        placeOuterEdge(level, writer, stats, corridor);
+        placeParapetsAndMedian(level, writer, stats, corridor);
+        placeMedianStepConnectors(writer, stats, corridor);
+        placeRoadMarkings(level, writer, stats, corridor);
+        placeRoadMarkingStepConnectors(level, writer, stats, corridor);
+        placeTunnel(level, writer, stats, corridor);
+        placePiers(level, writer, stats, corridor, profile);
+    }
+
+    private static void clearCoreRoadVerticalEnvelope(WorldGenLevel level, HighwayBlockWriter edit,
                                                       HighwayRenderStats stats,
                                                       HighwayCorridor corridor) {
         for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+            if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelStation(column.distance())) {
                 continue;
             }
@@ -205,10 +245,11 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void clearRow(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void clearRow(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                  HighwayCorridor corridor) {
         Set<BlockPos> vegetation = new LinkedHashSet<>();
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
             for (int y = column.roadY() + 1;
                  y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
@@ -219,12 +260,14 @@ public final class HighwayRenderer {
             }
         }
         for (BlockPos pos : vegetation) {
+            if (!edit.owns(pos)) continue;
             if (clear(level, edit, pos)) {
                 stats.blocksCleared++;
                 stats.vegetationBlocksCleared++;
             }
         }
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
             if (corridor.isCutColumn(column.x(), column.z())) continue;
             for (int y = column.roadY() + 1;
@@ -234,9 +277,10 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void clearCutEnvelope(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void clearCutEnvelope(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                           HighwayCorridor corridor) {
         for (HighwayCorridor.CutColumn column : corridor.cutColumns()) {
+            if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
             int top = column.clearanceTopY(level.getMaxBuildHeight());
             stats.maxCutClearanceHeightObserved = Math.max(stats.maxCutClearanceHeightObserved,
@@ -256,7 +300,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static Set<BlockPos> collectVegetation(ServerLevel level, BlockPos seed,
+    private static Set<BlockPos> collectVegetation(WorldGenLevel level, BlockPos seed,
                                                    HighwayRenderStats stats) {
         Set<BlockPos> component = new LinkedHashSet<>();
         if (!isVegetation(level.getBlockState(seed))) return component;
@@ -292,7 +336,7 @@ public final class HighwayRenderer {
         return state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES);
     }
 
-    private static void placeRoadStructure(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void placeRoadStructure(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                            HighwayCorridor corridor) {
         for (HighwayCorridor.Cell cell : corridor.cells()) {
             BlockPos surface = new BlockPos(cell.x(), cell.roadY(), cell.z());
@@ -327,7 +371,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeParapetsAndMedian(ServerLevel level, HighwayEditSession edit,
+    private static void placeParapetsAndMedian(WorldGenLevel level, HighwayBlockWriter edit,
                                                HighwayRenderStats stats, HighwayCorridor corridor) {
         for (HighwayCorridor.Cell cell : corridor.bridgeCells()) {
             if (cell.structuralBridge() && cell.role() == HighwayCorridor.Role.BRIDGE_EDGE) {
@@ -348,7 +392,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeMedianStepConnectors(HighwayEditSession edit,
+    private static void placeMedianStepConnectors(HighwayBlockWriter edit,
                                                    HighwayRenderStats stats,
                                                    HighwayCorridor corridor) {
         for (BlockPos pos : corridor.medianStepConnectorPositions()) {
@@ -360,7 +404,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeOuterEdge(ServerLevel level, HighwayEditSession edit,
+    private static void placeOuterEdge(WorldGenLevel level, HighwayBlockWriter edit,
                                        HighwayRenderStats stats, HighwayCorridor corridor) {
         for (BlockPos pos : corridor.outerEdgePositions()) {
             placeRoadEdgeConcrete(edit, stats, pos);
@@ -370,7 +414,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeRoadMarkings(ServerLevel level, HighwayEditSession edit,
+    private static void placeRoadMarkings(WorldGenLevel level, HighwayBlockWriter edit,
                                           HighwayRenderStats stats, HighwayCorridor corridor) {
         for (HighwayCorridor.RoadMarking marking : corridor.roadMarkings()) {
             BlockState state = roadMarkingState(marking);
@@ -390,7 +434,7 @@ public final class HighwayRenderer {
         return state.setValue(RoadMarkingBlock.FACING, marking.facing());
     }
 
-    private static void placeRoadMarkingStepConnectors(ServerLevel level, HighwayEditSession edit,
+    private static void placeRoadMarkingStepConnectors(WorldGenLevel level, HighwayBlockWriter edit,
                                                         HighwayRenderStats stats,
                                                         HighwayCorridor corridor) {
         for (HighwayCorridor.RoadMarkingStepConnector connector : corridor.roadMarkingStepConnectors()) {
@@ -402,10 +446,11 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeTunnel(ServerLevel level, HighwayEditSession edit,
+    private static void placeTunnel(WorldGenLevel level, HighwayBlockWriter edit,
                                     HighwayRenderStats stats, HighwayCorridor corridor) {
         if (corridor.tunnelSections().isEmpty()) return;
         for (BlockPos pos : corridor.tunnelBorePositions()) {
+            if (!edit.owns(pos)) continue;
             if (corridor.isExpectedTunnelRoadFeature(pos.getX(), pos.getY(), pos.getZ())) continue;
             if (clear(level, edit, pos)) {
                 stats.blocksCleared++;
@@ -440,14 +485,21 @@ public final class HighwayRenderer {
                 .setValue(RoadMarkingStepConnectorBlock.LEFT_SIDE, connector.leftSide());
     }
 
-    private static void placePiers(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void placePiers(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                    HighwayCorridor corridor, HighwayProfile profile) {
         HighwayPlan.Tangent tangent = corridor.plan().tangent(0.0);
-        for (double station = 0.0; station <= corridor.plan().length(); station += PIER_SPACING) {
+        double globalStart = corridor.plan().globalStation(0.0);
+        double globalEnd = corridor.plan().globalStation(corridor.plan().length());
+        double firstGlobalStation = Math.ceil(globalStart / PIER_SPACING) * PIER_SPACING;
+        for (double globalStation = firstGlobalStation;
+             globalStation <= globalEnd; globalStation += PIER_SPACING) {
+            double station = corridor.plan().localDistance(globalStation);
+            if (!profile.pierAllowed(station)) continue;
             HighwayCorridor.CenterCell center = nearestCenterline(corridor, station);
             HighwayCorridor.Cell roadCell = center == null ? null : centerCell(corridor, center);
             HighwayBridgeSpanResolver.Span span = profile.spanAt(station);
             if (center == null || roadCell == null || roadCell.mode() != HighwayTerrainMode.VIADUCT || span == null) continue;
+            if (!edit.mayAffectHorizontal(center.x(), center.z(), PIER_CAP_HALF_WIDTH + 2)) continue;
             if (station < span.startStation() + PIER_BOUNDARY_MARGIN
                     || station > span.endStation() - PIER_BOUNDARY_MARGIN) continue;
             stats.pierStationsPlanned++;
@@ -458,7 +510,7 @@ public final class HighwayRenderer {
                 stats.piersSkipped++;
                 stats.pierFoundationFailures++;
                 ApocalypseFirstLight.LOGGER.warn("[AFL HIGHWAY] PIER_FOUNDATION_FAILED station={} x={} z={} depth={}",
-                        (int) station, center.x(), center.z(), MAX_PIER_SEARCH_DEPTH);
+                        (int) globalStation, center.x(), center.z(), MAX_PIER_SEARCH_DEPTH);
                 continue;
             }
 
@@ -515,7 +567,7 @@ public final class HighwayRenderer {
         return nearest;
     }
 
-    private static void placeLocalRect(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void placeLocalRect(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                        int centerX, int centerZ, HighwayPlan.Tangent tangent,
                                        int lateralMin, int lateralMax, int longitudinalMin, int longitudinalMax,
                                        int yMin, int yMax) {
@@ -532,7 +584,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeConcrete(ServerLevel level, HighwayEditSession edit, HighwayRenderStats stats,
+    private static void placeConcrete(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
                                       BlockPos pos) {
         if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
             stats.blocksPlaced++;
@@ -542,7 +594,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeRoadEdgeConcrete(HighwayEditSession edit, HighwayRenderStats stats,
+    private static void placeRoadEdgeConcrete(HighwayBlockWriter edit, HighwayRenderStats stats,
                                               BlockPos pos) {
         if (edit.set(pos, HighwayPalette.REINFORCED_CONCRETE)) {
             stats.blocksPlaced++;
@@ -550,9 +602,10 @@ public final class HighwayRenderer {
         }
     }
 
-    private static void placeAsphaltSurface(ServerLevel level, HighwayEditSession edit,
+    private static void placeAsphaltSurface(WorldGenLevel level, HighwayBlockWriter edit,
                                             HighwayRenderStats stats, BlockPos pos,
                                             HighwayTerrainMode mode) {
+        if (!edit.owns(pos)) return;
         if (edit.set(pos, HighwayPalette.ASPHALT)) stats.blocksPlaced++;
         if (!level.getBlockState(pos).is(HighwayPalette.ASPHALT.getBlock())) return;
 
@@ -566,7 +619,7 @@ public final class HighwayRenderer {
         }
     }
 
-    private static Foundation findFoundation(ServerLevel level, int x, int z, int deckBottomY) {
+    private static Foundation findFoundation(WorldGenLevel level, int x, int z, int deckBottomY) {
         boolean crossedWater = false;
         int bottom = Math.max(level.getMinBuildHeight(), deckBottomY - MAX_PIER_SEARCH_DEPTH);
         for (int y = deckBottomY - 1; y >= bottom; y--) {
@@ -580,7 +633,7 @@ public final class HighwayRenderer {
         return new Foundation(false, bottom, crossedWater);
     }
 
-    private static boolean isStableTerrain(ServerLevel level, BlockPos pos) {
+    private static boolean isStableTerrain(WorldGenLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         return !state.isAir()
                 && level.getFluidState(pos).isEmpty()
@@ -589,11 +642,12 @@ public final class HighwayRenderer {
                 && !state.getCollisionShape(level, pos).isEmpty();
     }
 
-    private static boolean isProtectedObstruction(ServerLevel level, BlockPos pos, BlockState state) {
+    private static boolean isProtectedObstruction(WorldGenLevel level, BlockPos pos, BlockState state) {
         return level.getBlockEntity(pos) != null || state.getDestroySpeed(level, pos) < 0.0F;
     }
 
-    private static boolean clear(ServerLevel level, HighwayEditSession edit, BlockPos pos) {
+    private static boolean clear(WorldGenLevel level, HighwayBlockWriter edit, BlockPos pos) {
+        if (!edit.owns(pos)) return false;
         BlockState state = level.getBlockState(pos);
         return !state.isAir() && !isProtectedObstruction(level, pos, state)
                 && edit.set(pos, Blocks.AIR.defaultBlockState());

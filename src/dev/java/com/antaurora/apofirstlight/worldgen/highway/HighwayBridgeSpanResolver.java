@@ -12,6 +12,8 @@ public final class HighwayBridgeSpanResolver {
     private HighwayBridgeSpanResolver() {}
 
     public static Resolution resolve(List<HighwayProfile.Sample> rawSamples) {
+        NaturalHighwayRuntimeStats.bridgeResolverCall();
+        long started = System.nanoTime();
         boolean[] candidates = new boolean[rawSamples.size()];
         int rawViaductSamples = 0;
         double rawViaductLength = 0.0;
@@ -92,8 +94,15 @@ public final class HighwayBridgeSpanResolver {
             i = end + 1;
         }
 
-        return new Resolution(resultSamples, spans, rawViaductSamples, rawViaductLength,
+        Resolution result = new Resolution(resultSamples, spans, rawViaductSamples, rawViaductLength,
                 resolvedViaductStations, bridgeGapClosures, shortBridgeCandidatesRejected);
+        NaturalHighwayRuntimeStats.bridgeResolver(System.nanoTime() - started);
+        return result;
+    }
+
+    /** Exact passthrough for a profile whose cheap pass found no viaduct candidate. */
+    public static Resolution noCandidates(List<HighwayProfile.Sample> rawSamples) {
+        return new Resolution(List.copyOf(rawSamples), List.of(), 0, 0.0, 0, 0, 0);
     }
 
     public record Span(double startStation, double endStation) {

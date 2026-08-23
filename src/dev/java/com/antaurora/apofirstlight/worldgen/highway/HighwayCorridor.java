@@ -2,8 +2,8 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -134,7 +134,17 @@ public final class HighwayCorridor {
         this.unsupportedMedianStepHeight = unsupportedMedianStepHeight;
     }
 
-    public static HighwayCorridor build(ServerLevel level, HighwayPlan plan, HighwayProfile profile) {
+    public static HighwayCorridor build(WorldGenLevel level, HighwayPlan plan, HighwayProfile profile) {
+        return build(level, plan, profile, false);
+    }
+
+    public static HighwayCorridor buildNatural(WorldGenLevel level, HighwayPlan plan,
+                                               HighwayProfile profile) {
+        return build(level, plan, profile, true);
+    }
+
+    private static HighwayCorridor build(WorldGenLevel level, HighwayPlan plan, HighwayProfile profile,
+                                         boolean useSampledTerrain) {
         HighwayPlan.Tangent tangent = plan.tangent(0.0);
         double rightX = -tangent.z();
         double rightZ = tangent.x();
@@ -159,9 +169,12 @@ public final class HighwayCorridor {
             centerline.add(new CenterCell(entry.getKey().x(), entry.getKey().z(), entry.getValue()));
         }
 
-        StructuralResolution structural = resolveStructuralBridge(level, profile);
+        StructuralResolution structural = useSampledTerrain
+                ? resolveStructuralBridgeFromProfile(profile) : resolveStructuralBridge(level, profile);
         HighwayTunnelSpanResolver.Resolution tunnelResolution =
-                HighwayTunnelSpanResolver.resolve(profile.samples());
+                HighwayTunnelSpanResolver.mightContainTunnel(profile.samples(), profile::tunnelAllowed)
+                        ? HighwayTunnelSpanResolver.resolve(profile.samples(), profile::tunnelAllowed)
+                        : HighwayTunnelSpanResolver.empty();
         Map<Key, Cell> unique = new LinkedHashMap<>();
         Map<Key, Integer> firstRoadYByXZ = new LinkedHashMap<>();
         Set<Key> duplicateXZDifferentRoadY = new LinkedHashSet<>();
@@ -236,8 +249,12 @@ public final class HighwayCorridor {
         MedianStepResolution medianSteps = buildMedianStepConnectors(centerline, profile);
         roadFurniturePositions.addAll(medianSteps.positions());
         RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
-        List<CoreRoadColumnSnapshot> coreRoadColumns = buildCoreRoadColumns(level, unique.values());
-        List<CutColumn> cutColumns = buildCutColumns(level, unique.values(), row);
+        List<CoreRoadColumnSnapshot> coreRoadColumns = useSampledTerrain
+                ? buildCoreRoadColumnsFromProfile(profile, unique.values())
+                : buildCoreRoadColumns(level, unique.values());
+        List<CutColumn> cutColumns = useSampledTerrain
+                ? buildCutColumnsFromProfile(profile, unique.values(), row)
+                : buildCutColumns(level, unique.values(), row);
         HighwayTunnelGeometry.Geometry tunnelGeometry = HighwayTunnelGeometry.build(
                 plan, profile, centerline, tunnelResolution);
         int approachStations = countApproachStations(profile, structural.spans());
@@ -275,12 +292,23 @@ public final class HighwayCorridor {
                 && existing.mode() != HighwayTerrainMode.TUNNEL;
     }
 
-    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumns(ServerLevel level,
+    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumns(WorldGenLevel level,
                                                                      Iterable<Cell> cells) {
         List<CoreRoadColumnSnapshot> result = new ArrayList<>();
         for (Cell cell : cells) {
             int preConstructionTopY = level.getHeight(
                     Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cell.x(), cell.z()) - 1;
+            result.add(new CoreRoadColumnSnapshot(cell.x(), cell.z(), cell.roadY(),
+                    preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
+        }
+        return result;
+    }
+
+    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumnsFromProfile(
+            HighwayProfile profile, Iterable<Cell> cells) {
+        List<CoreRoadColumnSnapshot> result = new ArrayList<>();
+        for (Cell cell : cells) {
+            int preConstructionTopY = profile.sampleAt(cell.distance()).terrainMaxY() - 1;
             result.add(new CoreRoadColumnSnapshot(cell.x(), cell.z(), cell.roadY(),
                     preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
         }
@@ -308,7 +336,7 @@ public final class HighwayCorridor {
             RoadMarkingType type = markingType(cell.lateral());
             if (type == null) continue;
             if (type == RoadMarkingType.WHITE_LANE_DIVIDER
-                    && !isLaneDividerPainted(cell.distance())) continue;
+                    && !isLaneDividerPainted(profile.plan().globalStation(cell.distance()))) continue;
             Direction facing = markingFacing(cell.lateral(), right, longitudinal);
             markings.add(new RoadMarking(cell.x(), cell.roadY() + 1, cell.z(), type, facing));
         }
@@ -342,7 +370,7 @@ public final class HighwayCorridor {
             Direction higherDirection = deltaY > 0
                     ? transitionDirection : transitionDirection.getOpposite();
             int connectorY = Math.max(currentRoadY, nextRoadY) + 1;
-            boolean dividerPainted = isLaneDividerPainted(lower.distance());
+            boolean dividerPainted = isLaneDividerPainted(profile.plan().globalStation(lower.distance()));
             for (int lateral : new int[] {-10, 10, -2, 2, -6, 6}) {
                 RoadMarkingType type = markingType(lateral);
                 int x = (int) Math.round(lower.x() + rightX * lateral);
@@ -464,7 +492,7 @@ public final class HighwayCorridor {
         return null;
     }
 
-    private static List<CutColumn> buildCutColumns(ServerLevel level, Iterable<Cell> cells,
+    private static List<CutColumn> buildCutColumns(WorldGenLevel level, Iterable<Cell> cells,
                                                    Map<Key, Column> rowEnvelope) {
         Set<Key> positions = new LinkedHashSet<>();
         for (Cell cell : cells) {
@@ -485,7 +513,38 @@ public final class HighwayCorridor {
         return result;
     }
 
-    private static StructuralResolution resolveStructuralBridge(ServerLevel level, HighwayProfile profile) {
+    private static List<CutColumn> buildCutColumnsFromProfile(HighwayProfile profile,
+                                                               Iterable<Cell> cells,
+                                                               Map<Key, Column> rowEnvelope) {
+        Set<Key> positions = new LinkedHashSet<>();
+        Map<Key, Double> distances = new LinkedHashMap<>();
+        for (Cell cell : cells) {
+            if (cell.mode() != HighwayTerrainMode.CUT) continue;
+            for (int dx = -ROW_MARGIN; dx <= ROW_MARGIN; dx++) {
+                for (int dz = -ROW_MARGIN; dz <= ROW_MARGIN; dz++) {
+                    Key key = new Key(cell.x() + dx, cell.z() + dz);
+                    positions.add(key);
+                    distances.putIfAbsent(key, cell.distance());
+                }
+            }
+        }
+        List<CutColumn> result = new ArrayList<>(positions.size());
+        for (Key key : positions) {
+            Column row = rowEnvelope.get(key);
+            if (row == null) continue;
+            int terrainTopY = profile.sampleAt(distances.getOrDefault(key, 0.0)).terrainMaxY() - 1;
+            result.add(new CutColumn(key.x(), key.z(), row.roadY(), terrainTopY));
+        }
+        return result;
+    }
+
+    private static StructuralResolution resolveStructuralBridgeFromProfile(HighwayProfile profile) {
+        List<StructuralSpan> spans = profile.bridgeSpans().stream()
+                .map(span -> new StructuralSpan(span.startStation(), span.endStation())).toList();
+        return new StructuralResolution(spans, 0, 0, 0);
+    }
+
+    private static StructuralResolution resolveStructuralBridge(WorldGenLevel level, HighwayProfile profile) {
         List<HighwayProfile.Sample> samples = profile.samples();
         List<SupportSample> support = new ArrayList<>(samples.size());
         for (HighwayProfile.Sample sample : samples) support.add(evaluateSupport(level, sample));
@@ -520,7 +579,7 @@ public final class HighwayCorridor {
         return new StructuralResolution(spans, startExtensions, endExtensions, supportFailures);
     }
 
-    private static SupportSample evaluateSupport(ServerLevel level, HighwayProfile.Sample sample) {
+    private static SupportSample evaluateSupport(WorldGenLevel level, HighwayProfile.Sample sample) {
         int supported = 0;
         boolean leftEdge = false;
         boolean rightEdge = false;
@@ -539,14 +598,14 @@ public final class HighwayCorridor {
                 ratio >= STRUCTURAL_SUPPORT_RATIO_THRESHOLD && leftEdge && rightEdge);
     }
 
-    private static boolean supportedColumn(ServerLevel level, int x, int z, int roadY) {
+    private static boolean supportedColumn(WorldGenLevel level, int x, int z, int roadY) {
         BlockPos upper = new BlockPos(x, roadY - 1, z);
         BlockPos lower = new BlockPos(x, roadY - 2, z);
         if (!level.getFluidState(upper).isEmpty() || !level.getFluidState(lower).isEmpty()) return false;
         return stable(level, upper) || stable(level, lower);
     }
 
-    private static boolean stable(ServerLevel level, BlockPos pos) {
+    private static boolean stable(WorldGenLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         return !state.isAir() && !state.is(BlockTags.LEAVES)
                 && !state.canBeReplaced() && !state.getCollisionShape(level, pos).isEmpty();

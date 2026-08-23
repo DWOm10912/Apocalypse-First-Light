@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.DoublePredicate;
 
 /** Resolves conservative, continuous solid-mountain tunnel spans from the pre-construction profile. */
 public final class HighwayTunnelSpanResolver {
@@ -20,6 +21,13 @@ public final class HighwayTunnelSpanResolver {
     }
 
     public static Resolution resolve(List<HighwayProfile.Sample> samples) {
+        return resolve(samples, ignored -> true);
+    }
+
+    public static Resolution resolve(List<HighwayProfile.Sample> samples,
+                                     DoublePredicate stationAllowed) {
+        NaturalHighwayRuntimeStats.tunnelResolverCall();
+        long started = System.nanoTime();
         boolean[] candidates = new boolean[samples.size()];
         int candidateStations = 0;
         int lowCoverRejected = 0;
@@ -31,6 +39,9 @@ public final class HighwayTunnelSpanResolver {
         for (int i = 0; i < samples.size(); i++) {
             HighwayProfile.Sample sample = samples.get(i);
             cover[i] = sample.terrainMinY() - 1.0 - tunnelOuterCrownY(sample.roadY());
+            if (!stationAllowed.test(sample.distance())) {
+                continue;
+            }
             if (sample.mode() == HighwayTerrainMode.VIADUCT) {
                 viaductRejected++;
                 continue;
@@ -94,7 +105,7 @@ public final class HighwayTunnelSpanResolver {
         int resolvedCount = resolvedSpans.size();
         int candidateSpanStations = rawSpans.stream()
                 .mapToInt(raw -> raw.end() - raw.start() + 1).sum();
-        return new Resolution(List.copyOf(resolvedSpans), candidateStations,
+        Resolution result = new Resolution(List.copyOf(resolvedSpans), candidateStations,
                 candidateSpanStations, qualifiedStations,
                 rejectedShortSpanStations, lowCoverRejected, sideExposureRejected,
                 waterRejected, viaductRejected, rawSpans.size(), resolvedCount, 0,
@@ -104,6 +115,26 @@ public final class HighwayTunnelSpanResolver {
                 resolvedCount == 0 ? 0.0 : minCover,
                 resolvedCount == 0 ? 0.0 : maxCover,
                 resolvedCount == 0 ? 0.0 : totalCover / resolvedCount);
+        NaturalHighwayRuntimeStats.tunnelResolver(System.nanoTime() - started);
+        return result;
+    }
+
+    /** Cheap semantic-equivalent reject before allocating the exact resolver arrays. */
+    public static boolean mightContainTunnel(List<HighwayProfile.Sample> samples,
+                                             DoublePredicate stationAllowed) {
+        for (HighwayProfile.Sample sample : samples) {
+            if (!stationAllowed.test(sample.distance())) continue;
+            if (sample.mode() == HighwayTerrainMode.VIADUCT) continue;
+            if (sample.water() || sample.waterColumnCount() > 0) continue;
+            double cover = sample.terrainMinY() - 1.0 - tunnelOuterCrownY(sample.roadY());
+            if (cover >= MIN_TUNNEL_ROCK_COVER) return true;
+        }
+        return false;
+    }
+
+    public static Resolution empty() {
+        return new Resolution(List.of(), 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     }
 
     private static List<IndexSpan> collectSpans(boolean[] candidates) {

@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.world.feature.DegradedGroundPatchFeature;
 import com.antaurora.apofirstlight.world.feature.IrradiatedTreeFeature;
+import com.antaurora.apofirstlight.world.feature.PrimaryHighwayFeature;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraftforge.registries.DeferredRegister;
@@ -29,6 +30,8 @@ public final class AflFeatures {
             () -> new DegradedGroundPatchFeature(Blocks.DIRT.defaultBlockState(), 1));
     public static final RegistryObject<Feature<?>> FALLOUT_SOIL_PATCH = FEATURES.register("fallout_soil_patch",
             () -> new DegradedGroundPatchFeature(AflBlocks.FALLOUT_SOIL.get().defaultBlockState(), 3));
+    public static final RegistryObject<Feature<?>> PRIMARY_HIGHWAY = FEATURES.register("primary_highway",
+            PrimaryHighwayFeature::new);
 
     private AflFeatures() {
     }

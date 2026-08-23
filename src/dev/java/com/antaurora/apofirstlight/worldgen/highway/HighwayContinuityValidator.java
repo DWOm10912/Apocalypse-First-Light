@@ -177,7 +177,7 @@ public final class HighwayContinuityValidator {
         for (HighwayCorridor.Cell cell : corridor.cells()) {
             if (cell.lateral() != -6 && cell.lateral() != 6) continue;
             BlockPos pos = new BlockPos(cell.x(), cell.roadY() + 1, cell.z());
-            if (HighwayCorridor.isLaneDividerPainted(cell.distance())) {
+            if (HighwayCorridor.isLaneDividerPainted(profile.plan().globalStation(cell.distance()))) {
                 laneDividerDashOnBlocks++;
             } else {
                 laneDividerDashGapBlocks++;

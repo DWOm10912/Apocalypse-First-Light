@@ -28,10 +28,12 @@ public final class HighwayProfile {
     private final int maxCrossSlopeObserved;
     private final double maxWaterCoverageObserved;
     private final boolean extremeCrossSectionEncountered;
+    private final HighwayNodeConstraints nodeConstraints;
 
     private HighwayProfile(HighwayPlan plan, HighwayBridgeSpanResolver.Resolution resolution,
                            int maxCrossSlopeObserved, double maxWaterCoverageObserved,
-                           boolean extremeCrossSectionEncountered) {
+                           boolean extremeCrossSectionEncountered,
+                           HighwayNodeConstraints nodeConstraints) {
         this.plan = plan;
         this.samples = List.copyOf(resolution.samples());
         this.bridgeSpans = List.copyOf(resolution.spans());
@@ -43,6 +45,7 @@ public final class HighwayProfile {
         this.maxCrossSlopeObserved = maxCrossSlopeObserved;
         this.maxWaterCoverageObserved = maxWaterCoverageObserved;
         this.extremeCrossSectionEncountered = extremeCrossSectionEncountered;
+        this.nodeConstraints = nodeConstraints;
     }
 
     public static HighwayProfile sample(ServerLevel level, HighwayPlan plan) {
@@ -126,7 +129,56 @@ public final class HighwayProfile {
         }
 
         HighwayBridgeSpanResolver.Resolution resolution = HighwayBridgeSpanResolver.resolve(rawSamples);
-        return new HighwayProfile(plan, resolution, maxCrossSlope, maxWaterCoverage, extremeCrossSection);
+        return new HighwayProfile(plan, resolution, maxCrossSlope, maxWaterCoverage,
+                extremeCrossSection, HighwayNodeConstraints.NONE);
+    }
+
+    /** Builds a random-access global profile from pre-decoration terrain rather than chunk-local state. */
+    public static HighwayProfile sampleNatural(HighwayPlan plan,
+                                               PrimaryHighwayNetwork.Corridor corridor,
+                                               HighwayTerrainSampler terrain,
+                                               HighwayNodeConstraints nodeConstraints) {
+        NaturalHighwayRuntimeStats.profileBuildCall();
+        long profileStarted = System.nanoTime();
+        int count = Math.max(2, (int) Math.ceil(plan.length() / SAMPLE_SPACING) + 1);
+        List<Sample> rawSamples = new ArrayList<>(count);
+        int maxCrossSlope = 0;
+        double maxWaterCoverage = 0.0;
+        boolean extremeCrossSection = false;
+        boolean bridgeCandidate = false;
+        for (int i = 0; i < count; i++) {
+            double distance = i == count - 1 ? plan.length()
+                    : Math.min(plan.length(), (double) i * SAMPLE_SPACING);
+            double globalStation = plan.globalStation(distance);
+            int roadY = terrain.globalRoadY(corridor, globalStation);
+            roadY = nodeConstraints.adjustRoadY(globalStation, roadY);
+            HighwayTerrainSampler.CrossSection cross = terrain.crossSection(corridor, globalStation);
+            int crossSlope = cross.maxY() - cross.minY();
+            double waterCoverage = cross.waterColumns() / (double) HighwayPlan.MAIN_WIDTH;
+            int cutDepthMax = Math.max(0, cross.maxY() - roadY);
+            int fillDepthMax = Math.max(0, roadY - cross.minY());
+            HighwayTerrainMode rawMode = mode(roadY - cross.medianY(), waterCoverage,
+                    crossSlope, cutDepthMax, fillDepthMax);
+            rawMode = nodeConstraints.overrideMode(globalStation, rawMode);
+            bridgeCandidate |= rawMode == HighwayTerrainMode.VIADUCT;
+            HighwayPlan.Point point = plan.sample(distance);
+            HighwayPlan.Tangent tangent = plan.tangent(distance);
+            rawSamples.add(new Sample(distance, point.x(), point.z(), tangent.x(), tangent.z(),
+                    cross.medianY(), roadY, rawMode, rawMode, cross.waterColumns() > 0,
+                    cross.minY(), cross.maxY(), cross.medianY(), cross.centerY(),
+                    cross.waterColumns(), cross.solidColumns(), crossSlope, waterCoverage,
+                    cutDepthMax, fillDepthMax));
+            maxCrossSlope = Math.max(maxCrossSlope, crossSlope);
+            maxWaterCoverage = Math.max(maxWaterCoverage, waterCoverage);
+            extremeCrossSection |= crossSlope >= CROSS_SLOPE_EXTREME_THRESHOLD;
+        }
+        HighwayBridgeSpanResolver.Resolution resolution = bridgeCandidate
+                ? HighwayBridgeSpanResolver.resolve(rawSamples)
+                : HighwayBridgeSpanResolver.noCandidates(rawSamples);
+        HighwayProfile result = new HighwayProfile(plan, resolution, maxCrossSlope, maxWaterCoverage,
+                extremeCrossSection, nodeConstraints);
+        NaturalHighwayRuntimeStats.profileBuild(System.nanoTime() - profileStarted);
+        return result;
     }
 
     private static int clampAdjacent(int previous, int target) {
@@ -156,6 +208,12 @@ public final class HighwayProfile {
     public int maxCrossSlopeObserved() { return maxCrossSlopeObserved; }
     public double maxWaterCoverageObserved() { return maxWaterCoverageObserved; }
     public boolean extremeCrossSectionEncountered() { return extremeCrossSectionEncountered; }
+    public boolean tunnelAllowed(double localDistance) {
+        return nodeConstraints.tunnelAllowed(plan.globalStation(localDistance));
+    }
+    public boolean pierAllowed(double localDistance) {
+        return nodeConstraints.pierAllowed(plan.globalStation(localDistance));
+    }
 
     public Sample sampleAt(double distance) {
         if (distance <= samples.get(0).distance()) return samples.get(0);
