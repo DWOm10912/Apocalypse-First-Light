@@ -1,8 +1,10 @@
 {
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
+
   "biome.apocalypse_firstlight.irradiated_woodland": "Irradiated Woodland",
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
   "biome.apocalypse_firstlight.scorched_lands": "Scorched Lands",
+
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",
@@ -40,6 +42,7 @@
   "block.apocalypse_firstlight.poplar_sapling": "Poplar Sapling",
   "block.apocalypse_firstlight.poplar_wood": "Poplar Wood",
   "block.apocalypse_firstlight.stripped_poplar_wood": "Stripped Poplar Wood",
+
   "item.apocalypse_firstlight.steel_ingot": "Steel Ingot",
   "item.apocalypse_firstlight.steel_scrap": "Steel Scrap",
   "item.apocalypse_firstlight.concrete_rubble": "Concrete Rubble",
@@ -47,18 +50,22 @@
   "item.apocalypse_firstlight.plastic_pellets": "Plastic Pellets",
   "item.apocalypse_firstlight.plastic_sheet": "Plastic Sheet",
   "item.apocalypse_firstlight.geiger_counter": "Geiger Counter",
+
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",
   "hud.apocalypse_firstlight.geiger.residual": "Residual Radiation",
   "hud.apocalypse_firstlight.geiger.over_range": "OVER RANGE",
   "hud.apocalypse_firstlight.geiger.dose": "Dose",
   "hud.apocalypse_firstlight.geiger.zone": "Zone",
+
   "radiation_zone.apocalypse_firstlight.safe": "Safe",
   "radiation_zone.apocalypse_firstlight.irradiated": "Irradiated",
   "radiation_zone.apocalypse_firstlight.heavy_fallout": "Heavy Fallout",
   "radiation_zone.apocalypse_firstlight.extreme": "Extreme Radiation",
+
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
   "itemGroup.apocalypse_firstlight.items": "Apocalypse: First Light Items",
+
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."
 }

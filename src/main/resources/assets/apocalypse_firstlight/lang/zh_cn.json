@@ -1,8 +1,10 @@
 {
   "mod.apocalypse_firstlight.name": "黎明启示录",
+
   "biome.apocalypse_firstlight.irradiated_woodland": "污染疏林",
   "biome.apocalypse_firstlight.fallout_barrens": "沉降荒原",
   "biome.apocalypse_firstlight.scorched_lands": "焦土",
+
   "block.apocalypse_firstlight.reinforced_concrete": "钢筋混凝土",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "钢筋混凝土台阶",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "钢筋混凝土楼梯",
@@ -40,6 +42,7 @@
   "block.apocalypse_firstlight.poplar_sapling": "白杨树苗",
   "block.apocalypse_firstlight.poplar_wood": "白杨木",
   "block.apocalypse_firstlight.stripped_poplar_wood": "去皮白杨木",
+
   "item.apocalypse_firstlight.steel_ingot": "钢锭",
   "item.apocalypse_firstlight.steel_scrap": "钢废料",
   "item.apocalypse_firstlight.concrete_rubble": "混凝土碎块",
@@ -47,18 +50,22 @@
   "item.apocalypse_firstlight.plastic_pellets": "塑料颗粒",
   "item.apocalypse_firstlight.plastic_sheet": "塑料板",
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
+
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",
   "hud.apocalypse_firstlight.geiger.residual": "残留辐射",
   "hud.apocalypse_firstlight.geiger.over_range": "超量程",
   "hud.apocalypse_firstlight.geiger.dose": "吸收剂量",
   "hud.apocalypse_firstlight.geiger.zone": "区域",
+
   "radiation_zone.apocalypse_firstlight.safe": "安全区",
   "radiation_zone.apocalypse_firstlight.irradiated": "轻度辐射区",
   "radiation_zone.apocalypse_firstlight.heavy_fallout": "重度沉降区",
   "radiation_zone.apocalypse_firstlight.extreme": "极危辐射区",
+
   "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",
   "itemGroup.apocalypse_firstlight.items": "黎明启示录 物品",
+
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"
 }
