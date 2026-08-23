@@ -88,6 +88,15 @@ public final class HighwayDebugCommand {
         stat(message, "coreRoadTerrainIntrusions", stats.coreRoadTerrainIntrusions);
         stat(message, "nonFurnitureBlockDirectlyAboveSurface",
                 stats.nonFurnitureBlockDirectlyAboveSurface);
+        stat(message, "preConstructionSnapshotColumns", stats.preConstructionSnapshotColumns);
+        stat(message, "snapshotColumnsMissing", stats.snapshotColumnsMissing);
+        stat(message, "snapshotBlockStatesScanned", stats.snapshotBlockStatesScanned);
+        stat(message, "snapshotCaptureMicros", stats.snapshotCaptureNanos / 1_000.0);
+        stat(message, "clearancePassMicros", stats.clearancePassNanos / 1_000.0);
+        stat(message, "coreRoadColumnsChecked", stats.naturalCoreRoadColumnsChecked);
+        stat(message, "rowColumnsChecked", stats.rowColumnsChecked);
+        stat(message, "airspaceColumnsChecked", stats.airspaceColumnsChecked);
+        stat(message, "remainingRowVegetation", stats.remainingRowVegetation);
         stat(message, "expectedSurfaceCells", stats.expectedSurfaceCells);
         stat(message, "actualSurfaceCells", stats.actualSurfaceCells);
         stat(message, "missingSurfaceCells", stats.missingSurfaceCells);

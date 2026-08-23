@@ -23,6 +23,8 @@ public final class NaturalHighwayRuntimeStats {
     private static final LongAdder SEGMENT_NANOS = new LongAdder();
     private static final LongAdder RENDER_NANOS = new LongAdder();
     private static final LongAdder WRITE_NANOS = new LongAdder();
+    private static final LongAdder SNAPSHOT_NANOS = new LongAdder();
+    private static final LongAdder CLEARANCE_NANOS = new LongAdder();
 
     private static final LongAdder BASE_HEIGHT_CALLS = new LongAdder();
     private static final LongAdder BASE_COLUMN_CALLS = new LongAdder();
@@ -62,6 +64,50 @@ public final class NaturalHighwayRuntimeStats {
     private static final LongAdder BRIDGE_MISMATCH = new LongAdder();
     private static final LongAdder TUNNEL_MISMATCH = new LongAdder();
     private static final LongAdder SEGMENT_BOUNDARY_MISMATCH = new LongAdder();
+    private static final LongAdder CLEARANCE_PASS_RUNS = new LongAdder();
+    private static final LongAdder SNAPSHOT_COLUMNS = new LongAdder();
+    private static final LongAdder SNAPSHOT_COLUMNS_MISSING = new LongAdder();
+    private static final LongAdder CORE_ROAD_COLUMNS_CHECKED = new LongAdder();
+    private static final LongAdder ROW_COLUMNS_CHECKED = new LongAdder();
+    private static final LongAdder AIRSPACE_COLUMNS_CHECKED = new LongAdder();
+    private static final LongAdder REMAINING_ROW_LOGS = new LongAdder();
+    private static final LongAdder REMAINING_ROW_LEAVES = new LongAdder();
+    private static final LongAdder REMAINING_ROW_VEGETATION = new LongAdder();
+    private static final LongAdder CLEARANCE_BLOCKS_REMOVED = new LongAdder();
+    private static final LongAdder VEGETATION_BLOCKS_REMOVED = new LongAdder();
+    private static final LongAdder FLOATING_TERRAIN_PREVENTED = new LongAdder();
+    private static final LongAdder TUNNEL_STATIONS_TOUCHED = new LongAdder();
+    private static final LongAdder LEGAL_INTERCHANGE_BLOCKS_IGNORED = new LongAdder();
+    private static final LongAdder LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS = new LongAdder();
+    private static final LongAdder SNAPSHOT_WORLD_SURFACE_COLUMNS = new LongAdder();
+    private static final LongAdder SNAPSHOT_UNDERREPORTED_TOP_COLUMNS = new LongAdder();
+    private static final LongAdder SNAPSHOT_UPWARD_CORRECTION_BLOCKS = new LongAdder();
+    private static final LongAdder SNAPSHOT_TOP_VERIFICATION_FAILURES = new LongAdder();
+    private static final LongAdder HYGIENE_INVOCATIONS = new LongAdder();
+    private static final LongAdder HYGIENE_FAST_REJECTS = new LongAdder();
+    private static final LongAdder HYGIENE_ACCEPTED_CHUNKS = new LongAdder();
+    private static final LongAdder HYGIENE_BLOCKS_SCANNED = new LongAdder();
+    private static final LongAdder HYGIENE_BLOCKS_CLEARED = new LongAdder();
+    private static final LongAdder HYGIENE_VEGETATION_COMPONENTS = new LongAdder();
+    private static final LongAdder HYGIENE_LOGS_CLEARED = new LongAdder();
+    private static final LongAdder HYGIENE_LEAVES_CLEARED = new LongAdder();
+    private static final LongAdder HYGIENE_PLANTS_CLEARED = new LongAdder();
+    private static final LongAdder HYGIENE_SUPPORT_BLOCKS_CLEARED = new LongAdder();
+    private static final LongAdder HYGIENE_CROSS_CHUNK_WRITES = new LongAdder();
+    private static final LongAdder HYGIENE_ILLEGAL_WRITES = new LongAdder();
+    private static final LongAdder HYGIENE_CANDIDATES_GENERATED = new LongAdder();
+    private static final LongAdder HYGIENE_CANDIDATES_CLIPPED_OUT_OF_REGION = new LongAdder();
+    private static final LongAdder HYGIENE_LIVE_READS = new LongAdder();
+    private static final LongAdder HYGIENE_OUT_OF_REGION_READ_ATTEMPTS = new LongAdder();
+    private static final LongAdder HYGIENE_BFS_NEIGHBORS_REJECTED_OUT_OF_REGION = new LongAdder();
+    private static final LongAdder POST_HYGIENE_CORE_OBSTRUCTIONS = new LongAdder();
+    private static final LongAdder POST_HYGIENE_ROW_LOGS = new LongAdder();
+    private static final LongAdder POST_HYGIENE_ROW_LEAVES = new LongAdder();
+    private static final LongAdder POST_HYGIENE_ROW_VEGETATION = new LongAdder();
+    private static final LongAdder FINAL_HYGIENE_TUNNEL_EXTERIOR_VIOLATIONS = new LongAdder();
+    private static final LongAdder LEGAL_INTERCHANGE_STRUCTURE_CLEARANCE_VIOLATIONS = new LongAdder();
+    private static final LongAdder HYGIENE_NANOS = new LongAdder();
+    private static final LongAccumulator MAX_HYGIENE_NANOS = new LongAccumulator(Long::max, 0L);
 
     private static final ThreadLocal<FeatureScope> CURRENT = new ThreadLocal<>();
 
@@ -119,6 +165,59 @@ public final class NaturalHighwayRuntimeStats {
     }
     public static void render(long nanos) { RENDER_NANOS.add(nanos); }
     public static void blockWrite(long nanos) { WRITE_NANOS.add(nanos); }
+    public static void constructionSnapshot(HighwayPreConstructionSnapshot snapshot) {
+        SNAPSHOT_NANOS.add(snapshot.captureNanos());
+        SNAPSHOT_COLUMNS.add(snapshot.capturedColumns());
+        SNAPSHOT_COLUMNS_MISSING.add(snapshot.missingColumns());
+        SNAPSHOT_WORLD_SURFACE_COLUMNS.add(snapshot.worldSurfaceColumns());
+        SNAPSHOT_UNDERREPORTED_TOP_COLUMNS.add(snapshot.underreportedTopColumns());
+        SNAPSHOT_UPWARD_CORRECTION_BLOCKS.add(snapshot.upwardCorrectionBlocks());
+        SNAPSHOT_TOP_VERIFICATION_FAILURES.add(snapshot.topVerificationFailures());
+    }
+    public static void hygieneFastReject() { HYGIENE_FAST_REJECTS.increment(); }
+    public static void hygiene(HighwayFinalHygienePass.Result result) {
+        HYGIENE_INVOCATIONS.increment();
+        HYGIENE_ACCEPTED_CHUNKS.increment();
+        HYGIENE_BLOCKS_SCANNED.add(result.blocksScanned());
+        HYGIENE_BLOCKS_CLEARED.add(result.blocksCleared());
+        HYGIENE_VEGETATION_COMPONENTS.add(result.vegetationComponents());
+        HYGIENE_LOGS_CLEARED.add(result.logsCleared());
+        HYGIENE_LEAVES_CLEARED.add(result.leavesCleared());
+        HYGIENE_PLANTS_CLEARED.add(result.plantsCleared());
+        HYGIENE_SUPPORT_BLOCKS_CLEARED.add(result.supportBlocksCleared());
+        HYGIENE_CROSS_CHUNK_WRITES.add(result.crossChunkWrites());
+        HYGIENE_ILLEGAL_WRITES.add(result.illegalWrites());
+        HYGIENE_CANDIDATES_GENERATED.add(result.candidatesGenerated());
+        HYGIENE_CANDIDATES_CLIPPED_OUT_OF_REGION.add(result.candidatesClippedOutOfRegion());
+        HYGIENE_LIVE_READS.add(result.liveReads());
+        HYGIENE_OUT_OF_REGION_READ_ATTEMPTS.add(result.outOfRegionReadAttempts());
+        HYGIENE_BFS_NEIGHBORS_REJECTED_OUT_OF_REGION.add(result.bfsNeighborsRejectedOutOfRegion());
+        POST_HYGIENE_CORE_OBSTRUCTIONS.add(result.postCoreObstructions());
+        POST_HYGIENE_ROW_LOGS.add(result.postRowLogs());
+        POST_HYGIENE_ROW_LEAVES.add(result.postRowLeaves());
+        POST_HYGIENE_ROW_VEGETATION.add(result.postRowVegetation());
+        FINAL_HYGIENE_TUNNEL_EXTERIOR_VIOLATIONS.add(result.tunnelExteriorViolations());
+        LEGAL_INTERCHANGE_STRUCTURE_CLEARANCE_VIOLATIONS.add(
+                result.legalInterchangeStructureClearanceViolations());
+        HYGIENE_NANOS.add(result.nanos());
+        MAX_HYGIENE_NANOS.accumulate(result.nanos());
+    }
+    public static void clearance(HighwayRenderStats stats) {
+        CLEARANCE_NANOS.add(stats.clearancePassNanos);
+        CLEARANCE_PASS_RUNS.add(stats.naturalClearancePassRuns);
+        CORE_ROAD_COLUMNS_CHECKED.add(stats.naturalCoreRoadColumnsChecked);
+        ROW_COLUMNS_CHECKED.add(stats.rowColumnsChecked);
+        AIRSPACE_COLUMNS_CHECKED.add(stats.airspaceColumnsChecked);
+        REMAINING_ROW_LOGS.add(stats.remainingRowLogs);
+        REMAINING_ROW_LEAVES.add(stats.remainingRowLeaves);
+        REMAINING_ROW_VEGETATION.add(stats.remainingRowVegetation);
+        CLEARANCE_BLOCKS_REMOVED.add(stats.naturalClearanceBlocksRemoved);
+        VEGETATION_BLOCKS_REMOVED.add(stats.naturalVegetationBlocksRemoved);
+        FLOATING_TERRAIN_PREVENTED.add(stats.naturalFloatingTerrainPrevented);
+        TUNNEL_STATIONS_TOUCHED.add(stats.tunnelStationsTouchedByOpenSkyClearance);
+        LEGAL_INTERCHANGE_BLOCKS_IGNORED.add(stats.legalInterchangeStructureBlocksIgnored);
+        LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS.add(stats.legalInterchangeStructureClearanceViolations);
+    }
 
     public static void getBaseHeightCall() { BASE_HEIGHT_CALLS.increment(); markTerrain(); }
     public static void getBaseColumnCall() { BASE_COLUMN_CALLS.increment(); markTerrain(); }
@@ -172,7 +271,26 @@ public final class NaturalHighwayRuntimeStats {
                 REJECTED_VIOLATIONS.sum(), MAX_ACCEPTED_NANOS.get(), MAX_SEGMENT_NANOS.get(),
                 SURFACE_BLOCKS.sum(), BLOCKS_CLEARED.sum(), NODES.sum(), UPPER_NS.sum(), UPPER_EW.sum(),
                 PROFILE_MISMATCH.sum(), STATION_MISMATCH.sum(), MARKING_MISMATCH.sum(), BRIDGE_MISMATCH.sum(),
-                TUNNEL_MISMATCH.sum(), SEGMENT_BOUNDARY_MISMATCH.sum(), DUPLICATE_ATTEMPTS.sum(), ILLEGAL_WRITES.sum());
+                TUNNEL_MISMATCH.sum(), SEGMENT_BOUNDARY_MISMATCH.sum(), DUPLICATE_ATTEMPTS.sum(), ILLEGAL_WRITES.sum(),
+                CLEARANCE_PASS_RUNS.sum(), SNAPSHOT_COLUMNS.sum(), SNAPSHOT_COLUMNS_MISSING.sum(),
+                CORE_ROAD_COLUMNS_CHECKED.sum(), ROW_COLUMNS_CHECKED.sum(), AIRSPACE_COLUMNS_CHECKED.sum(),
+                REMAINING_ROW_LOGS.sum(), REMAINING_ROW_LEAVES.sum(), REMAINING_ROW_VEGETATION.sum(),
+                CLEARANCE_BLOCKS_REMOVED.sum(), VEGETATION_BLOCKS_REMOVED.sum(), FLOATING_TERRAIN_PREVENTED.sum(),
+                TUNNEL_STATIONS_TOUCHED.sum(), LEGAL_INTERCHANGE_BLOCKS_IGNORED.sum(),
+                LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS.sum(), SNAPSHOT_NANOS.sum(), CLEARANCE_NANOS.sum(),
+                SNAPSHOT_WORLD_SURFACE_COLUMNS.sum(), SNAPSHOT_UNDERREPORTED_TOP_COLUMNS.sum(),
+                SNAPSHOT_UPWARD_CORRECTION_BLOCKS.sum(), SNAPSHOT_TOP_VERIFICATION_FAILURES.sum(),
+                HYGIENE_INVOCATIONS.sum(), HYGIENE_FAST_REJECTS.sum(), HYGIENE_ACCEPTED_CHUNKS.sum(),
+                HYGIENE_BLOCKS_SCANNED.sum(), HYGIENE_BLOCKS_CLEARED.sum(), HYGIENE_VEGETATION_COMPONENTS.sum(),
+                HYGIENE_LOGS_CLEARED.sum(), HYGIENE_LEAVES_CLEARED.sum(), HYGIENE_PLANTS_CLEARED.sum(),
+                HYGIENE_SUPPORT_BLOCKS_CLEARED.sum(), HYGIENE_CROSS_CHUNK_WRITES.sum(), HYGIENE_ILLEGAL_WRITES.sum(),
+                HYGIENE_CANDIDATES_GENERATED.sum(), HYGIENE_CANDIDATES_CLIPPED_OUT_OF_REGION.sum(),
+                HYGIENE_LIVE_READS.sum(), HYGIENE_OUT_OF_REGION_READ_ATTEMPTS.sum(),
+                HYGIENE_BFS_NEIGHBORS_REJECTED_OUT_OF_REGION.sum(),
+                POST_HYGIENE_CORE_OBSTRUCTIONS.sum(), POST_HYGIENE_ROW_LOGS.sum(), POST_HYGIENE_ROW_LEAVES.sum(),
+                POST_HYGIENE_ROW_VEGETATION.sum(), FINAL_HYGIENE_TUNNEL_EXTERIOR_VIOLATIONS.sum(),
+                LEGAL_INTERCHANGE_STRUCTURE_CLEARANCE_VIOLATIONS.sum(), HYGIENE_NANOS.sum(),
+                MAX_HYGIENE_NANOS.get());
     }
 
     public static final class FeatureScope {
@@ -205,7 +323,29 @@ public final class NaturalHighwayRuntimeStats {
             long crossChunkProfileMismatch, long crossChunkStationMismatch, long crossChunkMarkingPhaseMismatch,
             long crossChunkBridgeSpanMismatch, long crossChunkTunnelSpanMismatch,
             long engineeringSegmentBoundaryMismatch,
-            long duplicateNaturalPlacementAttempts, long illegalCrossChunkWriteAttempts) {
+            long duplicateNaturalPlacementAttempts, long illegalCrossChunkWriteAttempts,
+            long naturalClearancePassRuns, long preConstructionSnapshotColumns,
+            long snapshotColumnsMissing, long naturalCoreRoadColumnsChecked,
+            long rowColumnsChecked, long airspaceColumnsChecked,
+            long remainingRowLogs, long remainingRowLeaves, long remainingRowVegetation,
+            long naturalClearanceBlocksRemoved, long naturalVegetationBlocksRemoved,
+            long naturalFloatingTerrainPrevented, long tunnelStationsTouchedByOpenSkyClearance,
+            long legalInterchangeStructureBlocksIgnored,
+            long legalInterchangeStructureClearanceViolations,
+            long preConstructionSnapshotNanos, long clearancePassNanos,
+            long snapshotWorldSurfaceColumns, long snapshotUnderreportedTopColumns,
+            long snapshotUpwardCorrectionBlocks, long snapshotTopVerificationFailures,
+            long hygieneInvocations, long hygieneFastRejects, long hygieneAcceptedChunks,
+            long hygieneBlocksScanned, long hygieneBlocksCleared, long hygieneVegetationComponents,
+            long hygieneLogsCleared, long hygieneLeavesCleared, long hygienePlantsCleared,
+            long hygieneSupportBlocksCleared, long hygieneCrossChunkWrites, long hygieneIllegalWrites,
+            long hygieneCandidatesGenerated, long hygieneCandidatesClippedOutOfRegion,
+            long hygieneLiveReads, long hygieneOutOfRegionReadAttempts,
+            long hygieneBfsNeighborsRejectedOutOfRegion,
+            long postHygieneCoreObstructions, long postHygieneRowLogs, long postHygieneRowLeaves,
+            long postHygieneRowVegetation, long finalHygieneTunnelExteriorViolations,
+            long finalHygieneLegalInterchangeStructureClearanceViolations,
+            long hygieneNanos, long maxHygieneNanos) {
         public double avgRejectedFeatureMicros() {
             return highwayFastRejects == 0 ? 0.0 : fastRejectNanos / 1_000.0 / highwayFastRejects;
         }
@@ -219,6 +359,10 @@ public final class NaturalHighwayRuntimeStats {
                     : engineeringSegmentBuildNanos / 1_000_000.0 / engineeringSegmentCacheMisses;
         }
         public double maxEngineeringSegmentBuildMillis() { return maxEngineeringSegmentBuildNanos / 1_000_000.0; }
+        public double avgHygieneMillis() {
+            return hygieneInvocations == 0 ? 0.0 : hygieneNanos / 1_000_000.0 / hygieneInvocations;
+        }
+        public double maxHygieneMillis() { return maxHygieneNanos / 1_000_000.0; }
         public double getBaseColumnCallsPerAcceptedChunk() {
             return highwayAcceptedChunks == 0 ? 0.0 : getBaseColumnCalls / (double) highwayAcceptedChunks;
         }

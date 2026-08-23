@@ -91,6 +91,47 @@ public final class HighwayNetworkCommand {
                 s.interchangePlanningNanos() / 1_000_000.0, s.engineeringSegmentBuildNanos() / 1_000_000.0,
                 s.renderNanos() / 1_000_000.0, s.blockWriteNanos() / 1_000_000.0)), false);
         context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
+                "clearance runs=%d snapshotColumns=%d missing=%d coreChecked=%d rowChecked=%d airspaceChecked=%d removed=%d vegetationRemoved=%d remainingLogs=%d remainingLeaves=%d remainingVegetation=%d floatingPrevented=%d snapshotMs=%.2f clearanceMs=%.2f",
+                s.naturalClearancePassRuns(), s.preConstructionSnapshotColumns(),
+                s.snapshotColumnsMissing(), s.naturalCoreRoadColumnsChecked(), s.rowColumnsChecked(),
+                s.airspaceColumnsChecked(), s.naturalClearanceBlocksRemoved(),
+                s.naturalVegetationBlocksRemoved(), s.remainingRowLogs(), s.remainingRowLeaves(),
+                s.remainingRowVegetation(), s.naturalFloatingTerrainPrevented(),
+                s.preConstructionSnapshotNanos() / 1_000_000.0,
+                s.clearancePassNanos() / 1_000_000.0)), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "snapshot heightmap=WORLD_SURFACE worldSurfaceColumns=" + s.snapshotWorldSurfaceColumns()
+                        + " underreportedTopColumns=" + s.snapshotUnderreportedTopColumns()
+                        + " upwardCorrectionBlocks=" + s.snapshotUpwardCorrectionBlocks()
+                        + " topVerificationFailures=" + s.snapshotTopVerificationFailures()), false);
+        context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
+                "hygiene invocations=%d accepted=%d fastRejects=%d scanned=%d cleared=%d components=%d logs=%d leaves=%d plants=%d support=%d crossChunkWrites=%d illegalWrites=%d avgMs=%.3f maxMs=%.3f",
+                s.hygieneInvocations(), s.hygieneAcceptedChunks(), s.hygieneFastRejects(),
+                s.hygieneBlocksScanned(), s.hygieneBlocksCleared(), s.hygieneVegetationComponents(),
+                s.hygieneLogsCleared(), s.hygieneLeavesCleared(), s.hygienePlantsCleared(),
+                s.hygieneSupportBlocksCleared(), s.hygieneCrossChunkWrites(), s.hygieneIllegalWrites(),
+                s.avgHygieneMillis(), s.maxHygieneMillis())), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "hygieneBounds candidates=" + s.hygieneCandidatesGenerated()
+                        + " clippedOutOfRegion=" + s.hygieneCandidatesClippedOutOfRegion()
+                        + " liveReads=" + s.hygieneLiveReads()
+                        + " outOfRegionReadAttempts=" + s.hygieneOutOfRegionReadAttempts()
+                        + " bfsNeighborsRejectedOutOfRegion="
+                        + s.hygieneBfsNeighborsRejectedOutOfRegion()), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "postHygiene coreObstructions=" + s.postHygieneCoreObstructions()
+                        + " rowLogs=" + s.postHygieneRowLogs()
+                        + " rowLeaves=" + s.postHygieneRowLeaves()
+                        + " rowVegetation=" + s.postHygieneRowVegetation()
+                        + " tunnelExteriorViolations=" + s.finalHygieneTunnelExteriorViolations()
+                        + " interchangeStructureViolations="
+                        + s.finalHygieneLegalInterchangeStructureClearanceViolations()), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "clearanceSafety tunnelTouched=" + s.tunnelStationsTouchedByOpenSkyClearance()
+                        + " legalInterchangeIgnored=" + s.legalInterchangeStructureBlocksIgnored()
+                        + " legalInterchangeViolations="
+                        + s.legalInterchangeStructureClearanceViolations()), false);
+        context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "calls baseHeight=%d baseColumn=%d terrainSamples=%d profiles=%d bridgeResolvers=%d tunnelResolvers=%d nodePlans=%d baseColumnPerAccepted=%.2f baseColumnPerSegment=%.2f",
                 s.getBaseHeightCalls(), s.getBaseColumnCalls(), s.terrainSampleCalls(), s.profileBuildCalls(),
                 s.bridgeResolverCalls(), s.tunnelResolverCalls(), s.nodePlanCalls(),

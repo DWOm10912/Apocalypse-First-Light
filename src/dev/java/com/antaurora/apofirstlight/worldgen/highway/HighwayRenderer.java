@@ -100,14 +100,17 @@ public final class HighwayRenderer {
         stats.tunnelOuterHeight = corridor.tunnelOuterHeight();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
-        runClearancePasses(level, edit, stats, corridor);
+        HighwayPreConstructionSnapshot snapshot = HighwayPreConstructionSnapshot.capture(level, corridor, edit);
+        applySnapshotStats(stats, snapshot);
+        runClearancePasses(level, edit, stats, corridor, snapshot, false);
         HighwayContinuityValidator.CoreClearanceResult coreClearance =
-                HighwayContinuityValidator.validateCoreRoadClearance(level, corridor);
+                HighwayContinuityValidator.validateCoreRoadClearance(level, corridor, snapshot);
         stats.coreRoadTerrainIntrusions = coreClearance.coreRoadTerrainIntrusions();
         stats.nonFurnitureBlockDirectlyAboveSurface =
                 coreClearance.nonFurnitureBlockDirectlyAboveSurface();
         runPlacementPasses(level, edit, stats, corridor, profile);
-        HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(level, corridor, profile);
+        HighwayContinuityValidator.Result validation = HighwayContinuityValidator.validate(
+                level, corridor, profile, snapshot);
         stats.actualSurfaceCells = validation.actualSurfaceCells();
         stats.missingSurfaceCells = validation.missingSurfaceCells();
         stats.clearanceViolations = validation.clearanceViolations();
@@ -173,12 +176,22 @@ public final class HighwayRenderer {
     public static HighwayRenderStats renderNatural(WorldGenLevel level, HighwayProfile profile,
                                                    HighwayBlockWriter writer) {
         HighwayCorridor corridor = HighwayCorridor.buildNatural(level, profile.plan(), profile);
-        return renderNatural(level, profile, corridor, writer);
+        HighwayPreConstructionSnapshot snapshot = HighwayPreConstructionSnapshot.capture(level, corridor, writer);
+        return renderNatural(level, profile, corridor, snapshot, writer);
     }
 
     /** Renders a cached immutable engineering segment into the current chunk-owned writer. */
     public static HighwayRenderStats renderNatural(WorldGenLevel level, HighwayProfile profile,
                                                    HighwayCorridor corridor,
+                                                   HighwayBlockWriter writer) {
+        HighwayPreConstructionSnapshot snapshot = HighwayPreConstructionSnapshot.capture(level, corridor, writer);
+        return renderNatural(level, profile, corridor, snapshot, writer);
+    }
+
+    /** Renders from a target-chunk snapshot captured before any corridor at an interchange mutates the chunk. */
+    public static HighwayRenderStats renderNatural(WorldGenLevel level, HighwayProfile profile,
+                                                   HighwayCorridor corridor,
+                                                   HighwayPreConstructionSnapshot snapshot,
                                                    HighwayBlockWriter writer) {
         HighwayRenderStats stats = new HighwayRenderStats();
         stats.corridorCellCount = corridor.cells().size();
@@ -192,16 +205,36 @@ public final class HighwayRenderer {
         stats.bridgeGapClosures = profile.bridgeGapClosures();
         stats.shortBridgeCandidatesRejected = profile.shortBridgeCandidatesRejected();
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
-        runClearancePasses(level, writer, stats, corridor);
+        applySnapshotStats(stats, snapshot);
+        runClearancePasses(level, writer, stats, corridor, snapshot, true);
         runPlacementPasses(level, writer, stats, corridor, profile);
         return stats;
     }
 
     private static void runClearancePasses(WorldGenLevel level, HighwayBlockWriter writer,
-                                           HighwayRenderStats stats, HighwayCorridor corridor) {
-        clearRow(level, writer, stats, corridor);
-        clearCoreRoadVerticalEnvelope(level, writer, stats, corridor);
-        clearCutEnvelope(level, writer, stats, corridor);
+                                           HighwayRenderStats stats, HighwayCorridor corridor,
+                                           HighwayPreConstructionSnapshot snapshot,
+                                           boolean natural) {
+        long started = System.nanoTime();
+        int blocksBefore = stats.blocksCleared;
+        int vegetationBefore = stats.vegetationBlocksCleared;
+        clearRow(level, writer, stats, corridor, snapshot);
+        clearCoreRoadVerticalEnvelope(level, writer, stats, corridor, snapshot);
+        clearCutEnvelope(level, writer, stats, corridor, snapshot);
+        stats.clearancePassNanos += System.nanoTime() - started;
+        if (natural) {
+            stats.naturalClearancePassRuns++;
+            stats.naturalClearanceBlocksRemoved += stats.blocksCleared - blocksBefore;
+            stats.naturalVegetationBlocksRemoved += stats.vegetationBlocksCleared - vegetationBefore;
+        }
+    }
+
+    private static void applySnapshotStats(HighwayRenderStats stats,
+                                           HighwayPreConstructionSnapshot snapshot) {
+        stats.preConstructionSnapshotColumns = snapshot.capturedColumns();
+        stats.snapshotColumnsMissing = snapshot.missingColumns();
+        stats.snapshotBlockStatesScanned = snapshot.blockStatesScanned();
+        stats.snapshotCaptureNanos = snapshot.captureNanos();
     }
 
     private static void runPlacementPasses(WorldGenLevel level, HighwayBlockWriter writer,
@@ -219,15 +252,21 @@ public final class HighwayRenderer {
 
     private static void clearCoreRoadVerticalEnvelope(WorldGenLevel level, HighwayBlockWriter edit,
                                                       HighwayRenderStats stats,
-                                                      HighwayCorridor corridor) {
-        for (HighwayCorridor.CoreRoadColumnSnapshot column : corridor.coreRoadColumns()) {
+                                                      HighwayCorridor corridor,
+                                                      HighwayPreConstructionSnapshot snapshot) {
+        for (HighwayCorridor.CoreRoadColumn column : corridor.coreRoadColumns()) {
             if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelStation(column.distance())) {
                 continue;
             }
-            if (column.hasOriginalObstruction()) stats.coreRoadColumnsWithOriginalObstruction++;
-            if (column.capped(level.getMaxBuildHeight())) stats.coreRoadClearanceTruncatedColumns++;
-            int top = column.clearanceTopY(level.getMaxBuildHeight());
+            stats.naturalCoreRoadColumnsChecked++;
+            Integer capturedTop = snapshot.topY(column.x(), column.z());
+            if (capturedTop == null) {
+                stats.snapshotColumnsMissing++;
+                continue;
+            }
+            int top = Math.min(level.getMaxBuildHeight() - 1, capturedTop);
+            if (top >= column.roadY() + 1) stats.coreRoadColumnsWithOriginalObstruction++;
             for (int y = column.roadY() + 1; y <= top; y++) {
                 stats.coreRoadVerticalBlocksScanned++;
                 BlockPos pos = new BlockPos(column.x(), y, column.z());
@@ -240,19 +279,26 @@ public final class HighwayRenderer {
                 if (clear(level, edit, pos)) {
                     stats.blocksCleared++;
                     stats.coreRoadVerticalBlocksCleared++;
+                    if (y > column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE) {
+                        stats.naturalFloatingTerrainPrevented++;
+                    }
                 }
             }
         }
     }
 
     private static void clearRow(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
-                                 HighwayCorridor corridor) {
+                                 HighwayCorridor corridor,
+                                 HighwayPreConstructionSnapshot snapshot) {
         Set<BlockPos> vegetation = new LinkedHashSet<>();
         for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
             if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
-            for (int y = column.roadY() + 1;
-                 y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
+            stats.rowColumnsChecked++;
+            Integer capturedTop = snapshot.topY(column.x(), column.z());
+            if (capturedTop == null) continue;
+            int top = Math.min(level.getMaxBuildHeight() - 1, capturedTop);
+            for (int y = column.roadY() + 1; y <= top; y++) {
                 BlockPos pos = new BlockPos(column.x(), y, column.z());
                 if (isVegetation(level.getBlockState(pos)) && !vegetation.contains(pos)) {
                     vegetation.addAll(collectVegetation(level, pos, stats));
@@ -270,19 +316,41 @@ public final class HighwayRenderer {
             if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
             if (corridor.isCutColumn(column.x(), column.z())) continue;
+            stats.airspaceColumnsChecked++;
             for (int y = column.roadY() + 1;
                  y <= column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE; y++) {
                 if (clear(level, edit, new BlockPos(column.x(), y, column.z()))) stats.blocksCleared++;
             }
         }
+        for (HighwayCorridor.Column column : corridor.rowEnvelope()) {
+            if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
+            if (corridor.isTunnelArea(column.x(), column.z())) continue;
+            Integer capturedTop = snapshot.topY(column.x(), column.z());
+            if (capturedTop == null) continue;
+            for (int y = column.roadY() + 1; y <= capturedTop; y++) {
+                BlockState state = level.getBlockState(new BlockPos(column.x(), y, column.z()));
+                if (state.is(BlockTags.LOGS)) stats.remainingRowLogs++;
+                if (state.is(BlockTags.LEAVES)) stats.remainingRowLeaves++;
+                if (isVegetation(state)) {
+                    stats.remainingRowVegetation++;
+                }
+            }
+        }
     }
 
     private static void clearCutEnvelope(WorldGenLevel level, HighwayBlockWriter edit, HighwayRenderStats stats,
-                                          HighwayCorridor corridor) {
+                                          HighwayCorridor corridor,
+                                          HighwayPreConstructionSnapshot snapshot) {
         for (HighwayCorridor.CutColumn column : corridor.cutColumns()) {
             if (!edit.owns(new BlockPos(column.x(), column.roadY(), column.z()))) continue;
             if (corridor.isTunnelArea(column.x(), column.z())) continue;
-            int top = column.clearanceTopY(level.getMaxBuildHeight());
+            Integer capturedTop = snapshot.topY(column.x(), column.z());
+            if (capturedTop == null) {
+                stats.snapshotColumnsMissing++;
+                continue;
+            }
+            int top = Math.min(level.getMaxBuildHeight() - 1,
+                    Math.max(column.roadY() + HighwayCorridor.VERTICAL_CLEARANCE, capturedTop));
             stats.maxCutClearanceHeightObserved = Math.max(stats.maxCutClearanceHeightObserved,
                     Math.max(0, top - column.roadY()));
             for (int y = column.roadY() + 1; y <= top; y++) {
@@ -292,7 +360,7 @@ public final class HighwayRenderer {
                     stats.cutTerrainBlocksCleared++;
                 }
             }
-            boolean clear = !column.capped(level.getMaxBuildHeight());
+            boolean clear = true;
             for (int y = column.roadY() + 1; clear && y <= top; y++) {
                 clear = level.getBlockState(new BlockPos(column.x(), y, column.z())).isAir();
             }

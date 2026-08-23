@@ -10,12 +10,16 @@ import net.minecraft.world.level.levelgen.RandomState;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /** Tier-0 corridor reject, cached engineering fetch, then target-chunk-owned rendering. */
 public final class NaturalHighwayGenerationAdapter {
+    private static final int HYGIENE_NEIGHBOR_WRITE_RADIUS = 16;
+
     private NaturalHighwayGenerationAdapter() {}
 
     public static boolean generate(WorldGenLevel level, ChunkGenerator generator) {
@@ -35,8 +39,19 @@ public final class NaturalHighwayGenerationAdapter {
             List<PrimaryHighwayNetwork.Corridor> ew = network.nearby(
                     PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST,
                     target.getMinBlockZ(), target.getMaxBlockZ(), PrimaryHighwayNetwork.FOOTPRINT_HALF_WIDTH);
-            NaturalHighwayRuntimeStats.plannerQuery(System.nanoTime() - plannerStarted, ns.size(), ew.size());
-            if (ns.isEmpty() && ew.isEmpty()) {
+            // A neighbour's vegetation feature may legally write one chunk into this target.
+            // Query that narrow halo before doing any profile/engineering work.
+            int hygieneRadius = PrimaryHighwayNetwork.FOOTPRINT_HALF_WIDTH + HYGIENE_NEIGHBOR_WRITE_RADIUS;
+            List<PrimaryHighwayNetwork.Corridor> hygieneNs = network.nearby(
+                    PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH,
+                    target.getMinBlockX(), target.getMaxBlockX(), hygieneRadius);
+            List<PrimaryHighwayNetwork.Corridor> hygieneEw = network.nearby(
+                    PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST,
+                    target.getMinBlockZ(), target.getMaxBlockZ(), hygieneRadius);
+            NaturalHighwayRuntimeStats.plannerQuery(System.nanoTime() - plannerStarted,
+                    hygieneNs.size(), hygieneEw.size());
+            if (hygieneNs.isEmpty() && hygieneEw.isEmpty()) {
+                NaturalHighwayRuntimeStats.hygieneFastReject();
                 NaturalHighwayRuntimeStats.finishRejected(feature);
                 return false;
             }
@@ -45,18 +60,26 @@ public final class NaturalHighwayGenerationAdapter {
             NaturalHighwayCacheManager.WorldCache cache = NaturalHighwayCacheManager.forLevel(
                     region.getLevel(), generator, randomState);
             HighwayTerrainSampler terrain = new HighwayTerrainSampler(level, generator, randomState, cache);
+            Map<String, CorridorEngineeringSegment> segmentById = new LinkedHashMap<>();
+            for (PrimaryHighwayNetwork.Corridor corridor : hygieneNs) {
+                segmentById.put(corridor.id(), segmentForChunk(target, network, corridor, terrain, cache, level));
+            }
+            for (PrimaryHighwayNetwork.Corridor corridor : hygieneEw) {
+                segmentById.put(corridor.id(), segmentForChunk(target, network, corridor, terrain, cache, level));
+            }
             List<CorridorEngineeringSegment> segments = new ArrayList<>(ns.size() + ew.size());
-            for (PrimaryHighwayNetwork.Corridor corridor : ns) {
-                segments.add(segmentForChunk(target, network, corridor, terrain, cache, level));
-            }
-            for (PrimaryHighwayNetwork.Corridor corridor : ew) {
-                segments.add(segmentForChunk(target, network, corridor, terrain, cache, level));
-            }
+            for (PrimaryHighwayNetwork.Corridor corridor : ns) segments.add(segmentById.get(corridor.id()));
+            for (PrimaryHighwayNetwork.Corridor corridor : ew) segments.add(segmentById.get(corridor.id()));
             // At a shared crossing, the lower carriageway is authoritative before the overpass.
             segments.sort(Comparator.comparingInt(segment -> segment.upperAtNode() ? 1 : 0));
 
             Set<String> encounteredNodes = new HashSet<>();
             ChunkOwnedHighwayWriter writer = new ChunkOwnedHighwayWriter(level, target);
+            // All intersecting corridors share one actual target-chunk snapshot captured before
+            // lower/upper interchange render order is allowed to mutate any block.
+            HighwayPreConstructionSnapshot constructionSnapshot = HighwayPreConstructionSnapshot.capture(
+                    level, segments.stream().map(CorridorEngineeringSegment::engineeredCorridor).toList(), writer);
+            NaturalHighwayRuntimeStats.constructionSnapshot(constructionSnapshot);
             for (CorridorEngineeringSegment segment : segments) {
                 for (InterstateInterchangeNode node : segment.nodes()) {
                     if (node.x() + InterstateInterchangeNode.INTERCHANGE_RESERVE_RADIUS < target.getMinBlockX()
@@ -74,14 +97,21 @@ public final class NaturalHighwayGenerationAdapter {
                     }
                 }
                 long renderStarted = System.nanoTime();
-                HighwayRenderer.renderNatural(level, segment.profile(), segment.engineeredCorridor(), writer);
+                HighwayRenderStats renderStats = HighwayRenderer.renderNatural(level, segment.profile(),
+                        segment.engineeredCorridor(), constructionSnapshot, writer);
                 NaturalHighwayRuntimeStats.render(System.nanoTime() - renderStarted);
+                NaturalHighwayRuntimeStats.clearance(renderStats);
             }
+            // This is deliberately after all target-owned construction.  It may only remove
+            // natural obstruction from planned airspace and bounded, triggered tree components.
+            HighwayFinalHygienePass.Result hygiene = HighwayFinalHygienePass.run(level, target,
+                    segmentById.values().stream().map(CorridorEngineeringSegment::engineeredCorridor).toList());
+            NaturalHighwayRuntimeStats.hygiene(hygiene);
             NaturalHighwayRuntimeStats.placement(writer.asphaltSurfaceBlocks(), writer.clearedBlocks(),
                     writer.duplicateAttempts(), writer.illegalWrites());
             NaturalHighwayRuntimeStats.blockWrite(writer.blockWriteNanos());
             NaturalHighwayRuntimeStats.finishAccepted(feature);
-            return writer.changedBlocks() > 0;
+            return writer.changedBlocks() > 0 || hygiene.writerWrites() > 0;
         } catch (RuntimeException | Error failure) {
             NaturalHighwayRuntimeStats.finishFailed(feature);
             throw failure;

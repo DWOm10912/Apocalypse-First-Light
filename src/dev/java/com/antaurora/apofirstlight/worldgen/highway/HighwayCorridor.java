@@ -5,7 +5,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -19,8 +18,6 @@ public final class HighwayCorridor {
     public static final int ROW_MARGIN = 3;
     public static final int BRIDGE_WIDTH = HighwayPlan.MAIN_WIDTH + 2;
     public static final int VERTICAL_CLEARANCE = 6;
-    public static final int MAX_CUT_CLEARANCE_HEIGHT = 128;
-    public static final int MAX_CORE_VERTICAL_CLEARANCE_HEIGHT = 128;
     public static final double STRUCTURAL_SUPPORT_RATIO_THRESHOLD = 0.80;
     public static final int MAX_STRUCTURAL_APPROACH_LENGTH = 32;
     public static final int LANE_DIVIDER_DASH_ON = 3;
@@ -45,7 +42,7 @@ public final class HighwayCorridor {
     private final List<RoadMarkingStepConnector> roadMarkingStepConnectors;
     private final Map<SurfaceKey, RoadMarkingStepConnector> roadMarkingStepConnectorPositions;
     private final Set<SurfaceKey> laneDividerStepConnectorGapPositions;
-    private final List<CoreRoadColumnSnapshot> coreRoadColumns;
+    private final List<CoreRoadColumn> coreRoadColumns;
     private final List<CutColumn> cutColumns;
     private final Set<Key> cutColumnPositions;
     private final List<StructuralSpan> structuralBridgeSpans;
@@ -75,7 +72,7 @@ public final class HighwayCorridor {
                              List<RoadMarking> roadMarkings,
                             List<RoadMarkingStepConnector> roadMarkingStepConnectors,
                             Set<SurfaceKey> laneDividerStepConnectorGapPositions,
-                            List<CoreRoadColumnSnapshot> coreRoadColumns, List<CutColumn> cutColumns,
+                            List<CoreRoadColumn> coreRoadColumns, List<CutColumn> cutColumns,
                             List<StructuralSpan> structuralBridgeSpans,
                             int structuralApproachStations, int bridgeApproachStartExtensions,
                             int bridgeApproachEndExtensions, int bridgeApproachSupportFailures,
@@ -249,12 +246,8 @@ public final class HighwayCorridor {
         MedianStepResolution medianSteps = buildMedianStepConnectors(centerline, profile);
         roadFurniturePositions.addAll(medianSteps.positions());
         RoadMarkingResolution markings = buildRoadMarkings(unique.values(), centerline, tangent, profile);
-        List<CoreRoadColumnSnapshot> coreRoadColumns = useSampledTerrain
-                ? buildCoreRoadColumnsFromProfile(profile, unique.values())
-                : buildCoreRoadColumns(level, unique.values());
-        List<CutColumn> cutColumns = useSampledTerrain
-                ? buildCutColumnsFromProfile(profile, unique.values(), row)
-                : buildCutColumns(level, unique.values(), row);
+        List<CoreRoadColumn> coreRoadColumns = buildCoreRoadColumns(unique.values());
+        List<CutColumn> cutColumns = buildCutColumns(unique.values(), row);
         HighwayTunnelGeometry.Geometry tunnelGeometry = HighwayTunnelGeometry.build(
                 plan, profile, centerline, tunnelResolution);
         int approachStations = countApproachStations(profile, structural.spans());
@@ -292,25 +285,11 @@ public final class HighwayCorridor {
                 && existing.mode() != HighwayTerrainMode.TUNNEL;
     }
 
-    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumns(WorldGenLevel level,
-                                                                     Iterable<Cell> cells) {
-        List<CoreRoadColumnSnapshot> result = new ArrayList<>();
+    private static List<CoreRoadColumn> buildCoreRoadColumns(Iterable<Cell> cells) {
+        List<CoreRoadColumn> result = new ArrayList<>();
         for (Cell cell : cells) {
-            int preConstructionTopY = level.getHeight(
-                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cell.x(), cell.z()) - 1;
-            result.add(new CoreRoadColumnSnapshot(cell.x(), cell.z(), cell.roadY(),
-                    preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
-        }
-        return result;
-    }
-
-    private static List<CoreRoadColumnSnapshot> buildCoreRoadColumnsFromProfile(
-            HighwayProfile profile, Iterable<Cell> cells) {
-        List<CoreRoadColumnSnapshot> result = new ArrayList<>();
-        for (Cell cell : cells) {
-            int preConstructionTopY = profile.sampleAt(cell.distance()).terrainMaxY() - 1;
-            result.add(new CoreRoadColumnSnapshot(cell.x(), cell.z(), cell.roadY(),
-                    preConstructionTopY, cell.mode(), cell.distance(), cell.lateral()));
+            result.add(new CoreRoadColumn(cell.x(), cell.z(), cell.roadY(),
+                    cell.mode(), cell.distance(), cell.lateral()));
         }
         return result;
     }
@@ -492,7 +471,7 @@ public final class HighwayCorridor {
         return null;
     }
 
-    private static List<CutColumn> buildCutColumns(WorldGenLevel level, Iterable<Cell> cells,
+    private static List<CutColumn> buildCutColumns(Iterable<Cell> cells,
                                                    Map<Key, Column> rowEnvelope) {
         Set<Key> positions = new LinkedHashSet<>();
         for (Cell cell : cells) {
@@ -507,33 +486,7 @@ public final class HighwayCorridor {
         for (Key key : positions) {
             Column row = rowEnvelope.get(key);
             if (row == null) continue;
-            int terrainTopY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, key.x(), key.z()) - 1;
-            result.add(new CutColumn(key.x(), key.z(), row.roadY(), terrainTopY));
-        }
-        return result;
-    }
-
-    private static List<CutColumn> buildCutColumnsFromProfile(HighwayProfile profile,
-                                                               Iterable<Cell> cells,
-                                                               Map<Key, Column> rowEnvelope) {
-        Set<Key> positions = new LinkedHashSet<>();
-        Map<Key, Double> distances = new LinkedHashMap<>();
-        for (Cell cell : cells) {
-            if (cell.mode() != HighwayTerrainMode.CUT) continue;
-            for (int dx = -ROW_MARGIN; dx <= ROW_MARGIN; dx++) {
-                for (int dz = -ROW_MARGIN; dz <= ROW_MARGIN; dz++) {
-                    Key key = new Key(cell.x() + dx, cell.z() + dz);
-                    positions.add(key);
-                    distances.putIfAbsent(key, cell.distance());
-                }
-            }
-        }
-        List<CutColumn> result = new ArrayList<>(positions.size());
-        for (Key key : positions) {
-            Column row = rowEnvelope.get(key);
-            if (row == null) continue;
-            int terrainTopY = profile.sampleAt(distances.getOrDefault(key, 0.0)).terrainMaxY() - 1;
-            result.add(new CutColumn(key.x(), key.z(), row.roadY(), terrainTopY));
+            result.add(new CutColumn(key.x(), key.z(), row.roadY()));
         }
         return result;
     }
@@ -705,7 +658,7 @@ public final class HighwayCorridor {
     public List<Column> rowEnvelope() { return rowEnvelope; }
     public List<RoadMarking> roadMarkings() { return roadMarkings; }
     public List<RoadMarkingStepConnector> roadMarkingStepConnectors() { return roadMarkingStepConnectors; }
-    public List<CoreRoadColumnSnapshot> coreRoadColumns() { return coreRoadColumns; }
+    public List<CoreRoadColumn> coreRoadColumns() { return coreRoadColumns; }
     public List<CutColumn> cutColumns() { return cutColumns; }
     public List<CenterCell> centerline() { return centerline; }
     public HighwayTunnelSpanResolver.Resolution tunnelResolution() { return tunnelResolution; }
@@ -804,32 +757,9 @@ public final class HighwayCorridor {
     public record RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing) {}
     public record RoadMarkingStepConnector(int x, int y, int z, RoadMarkingType type,
                                            Direction facing, boolean leftSide) {}
-    public record CoreRoadColumnSnapshot(int x, int z, int roadY, int preConstructionTopY,
-                                         HighwayTerrainMode mode, double distance, int lateral) {
-        public int clearanceTopY(int maxBuildHeight) {
-            return Math.min(maxBuildHeight - 1,
-                    Math.min(roadY + MAX_CORE_VERTICAL_CLEARANCE_HEIGHT, preConstructionTopY));
-        }
-
-        public boolean hasOriginalObstruction() {
-            return preConstructionTopY >= roadY + 1;
-        }
-
-        public boolean capped(int maxBuildHeight) {
-            return preConstructionTopY > clearanceTopY(maxBuildHeight);
-        }
-    }
-    public record CutColumn(int x, int z, int roadY, int terrainTopY) {
-        public int clearanceTopY(int maxBuildHeight) {
-            int desiredTop = Math.max(roadY + VERTICAL_CLEARANCE, terrainTopY);
-            return Math.min(maxBuildHeight - 1,
-                    Math.min(roadY + MAX_CUT_CLEARANCE_HEIGHT, desiredTop));
-        }
-
-        public boolean capped(int maxBuildHeight) {
-            return terrainTopY > clearanceTopY(maxBuildHeight);
-        }
-    }
+    public record CoreRoadColumn(int x, int z, int roadY, HighwayTerrainMode mode,
+                                 double distance, int lateral) {}
+    public record CutColumn(int x, int z, int roadY) {}
     public record CenterCell(int x, int z, double distance) {}
     public record StructuralSpan(double startStation, double endStation) {
         public boolean contains(double distance) { return distance >= startStation && distance <= endStation; }
