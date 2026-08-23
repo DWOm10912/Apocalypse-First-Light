@@ -125,7 +125,8 @@ public final class HighwayProfile {
             rawSamples.add(new Sample(distances[i], point.x(), point.z(), tangent.x(), tangent.z(),
                     terrainMedian[i], road[i], mode, mode, waterColumns[i] > 0, terrainMin[i], terrainMax[i],
                     terrainMedian[i], centerTerrain[i], waterColumns[i], solidColumns[i],
-                    terrainMax[i] - terrainMin[i], waterCoverage, cutDepthMax, fillDepthMax));
+                    terrainMax[i] - terrainMin[i], waterCoverage, cutDepthMax, fillDepthMax,
+                    terrainMax[i], terrainMax[i], false, false));
         }
 
         HighwayBridgeSpanResolver.Resolution resolution = HighwayBridgeSpanResolver.resolve(rawSamples);
@@ -167,7 +168,8 @@ public final class HighwayProfile {
                     cross.medianY(), roadY, rawMode, rawMode, cross.waterColumns() > 0,
                     cross.minY(), cross.maxY(), cross.medianY(), cross.centerY(),
                     cross.waterColumns(), cross.solidColumns(), crossSlope, waterCoverage,
-                    cutDepthMax, fillDepthMax));
+                    cutDepthMax, fillDepthMax, cross.leftTerrainY(), cross.rightTerrainY(),
+                    cross.leftSideWater(), cross.rightSideWater()));
             maxCrossSlope = Math.max(maxCrossSlope, crossSlope);
             maxWaterCoverage = Math.max(maxWaterCoverage, waterCoverage);
             extremeCrossSection |= crossSlope >= CROSS_SLOPE_EXTREME_THRESHOLD;
@@ -240,7 +242,10 @@ public final class HighwayProfile {
                 interpolate(a.crossSlope(), b.crossSlope(), fraction),
                 a.waterCoverage() + (b.waterCoverage() - a.waterCoverage()) * fraction,
                 interpolate(a.cutDepthMax(), b.cutDepthMax(), fraction),
-                interpolate(a.fillDepthMax(), b.fillDepthMax(), fraction));
+                interpolate(a.fillDepthMax(), b.fillDepthMax(), fraction),
+                interpolate(a.leftTerrainY(), b.leftTerrainY(), fraction),
+                interpolate(a.rightTerrainY(), b.rightTerrainY(), fraction),
+                a.leftSideWater() || b.leftSideWater(), a.rightSideWater() || b.rightSideWater());
     }
 
     public boolean isWithinResolvedBridgeSpan(double distance) {
@@ -267,11 +272,14 @@ public final class HighwayProfile {
                          int terrainY, int roadY, HighwayTerrainMode rawMode, HighwayTerrainMode mode,
                          boolean water, int terrainMinY, int terrainMaxY, int terrainMedianY,
                          int centerTerrainY, int waterColumnCount, int solidColumnCount, int crossSlope,
-                         double waterCoverage, int cutDepthMax, int fillDepthMax) {
+                         double waterCoverage, int cutDepthMax, int fillDepthMax,
+                         int leftTerrainY, int rightTerrainY,
+                         boolean leftSideWater, boolean rightSideWater) {
         public Sample withMode(HighwayTerrainMode resolvedMode) {
             return new Sample(distance, x, z, tangentX, tangentZ, terrainY, roadY, rawMode, resolvedMode,
                     water, terrainMinY, terrainMaxY, terrainMedianY, centerTerrainY, waterColumnCount,
-                    solidColumnCount, crossSlope, waterCoverage, cutDepthMax, fillDepthMax);
+                    solidColumnCount, crossSlope, waterCoverage, cutDepthMax, fillDepthMax,
+                    leftTerrainY, rightTerrainY, leftSideWater, rightSideWater);
         }
     }
 }

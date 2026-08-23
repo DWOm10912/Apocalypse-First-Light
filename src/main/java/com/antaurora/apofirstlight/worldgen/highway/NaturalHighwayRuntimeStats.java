@@ -77,6 +77,19 @@ public final class NaturalHighwayRuntimeStats {
     private static final LongAdder VEGETATION_BLOCKS_REMOVED = new LongAdder();
     private static final LongAdder FLOATING_TERRAIN_PREVENTED = new LongAdder();
     private static final LongAdder TUNNEL_STATIONS_TOUCHED = new LongAdder();
+    private static final LongAdder NORMAL_TUNNEL_CANDIDATES = new LongAdder();
+    private static final LongAdder PROMOTED_TUNNEL_CANDIDATES = new LongAdder();
+    private static final LongAdder DEEP_CUT_STATIONS_EVALUATED = new LongAdder();
+    private static final LongAdder DEEP_CUT_PROMOTION_CANDIDATES = new LongAdder();
+    private static final LongAdder DEEP_CUT_PROMOTED_STATIONS = new LongAdder();
+    private static final LongAdder DEEP_CUT_PROMOTED_SPANS = new LongAdder();
+    private static final LongAdder FINAL_TUNNEL_SPANS = new LongAdder();
+    private static final LongAdder DEEP_CUT_REJECTED_TOO_SHORT = new LongAdder();
+    private static final LongAdder DEEP_CUT_REJECTED_TOO_OPEN = new LongAdder();
+    private static final LongAdder DEEP_CUT_REJECTED_LOW_COVER = new LongAdder();
+    private static final LongAdder DEEP_CUT_GAP_CLOSURES = new LongAdder();
+    private static final LongAdder DEEP_CUT_PORTAL_ADJUSTMENTS = new LongAdder();
+    private static final LongAdder DEEP_CUT_EVALUATION_NANOS = new LongAdder();
     private static final LongAdder LEGAL_INTERCHANGE_BLOCKS_IGNORED = new LongAdder();
     private static final LongAdder LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS = new LongAdder();
     private static final LongAdder SNAPSHOT_WORLD_SURFACE_COLUMNS = new LongAdder();
@@ -215,6 +228,19 @@ public final class NaturalHighwayRuntimeStats {
         VEGETATION_BLOCKS_REMOVED.add(stats.naturalVegetationBlocksRemoved);
         FLOATING_TERRAIN_PREVENTED.add(stats.naturalFloatingTerrainPrevented);
         TUNNEL_STATIONS_TOUCHED.add(stats.tunnelStationsTouchedByOpenSkyClearance);
+        NORMAL_TUNNEL_CANDIDATES.add(stats.normalTunnelCandidateStations);
+        PROMOTED_TUNNEL_CANDIDATES.add(stats.promotedTunnelCandidateStations);
+        DEEP_CUT_STATIONS_EVALUATED.add(stats.deepCutStationsEvaluated);
+        DEEP_CUT_PROMOTION_CANDIDATES.add(stats.deepCutPromotionCandidates);
+        DEEP_CUT_PROMOTED_STATIONS.add(stats.deepCutPromotedStations);
+        DEEP_CUT_PROMOTED_SPANS.add(stats.deepCutPromotedSpans);
+        FINAL_TUNNEL_SPANS.add(stats.resolvedTunnelSpanCount);
+        DEEP_CUT_REJECTED_TOO_SHORT.add(stats.deepCutRejectedTooShort);
+        DEEP_CUT_REJECTED_TOO_OPEN.add(stats.deepCutRejectedTooOpen);
+        DEEP_CUT_REJECTED_LOW_COVER.add(stats.deepCutRejectedLowCover);
+        DEEP_CUT_GAP_CLOSURES.add(stats.deepCutGapClosures);
+        DEEP_CUT_PORTAL_ADJUSTMENTS.add(stats.deepCutPortalAdjustments);
+        DEEP_CUT_EVALUATION_NANOS.add(stats.deepCutEvaluationNanos);
         LEGAL_INTERCHANGE_BLOCKS_IGNORED.add(stats.legalInterchangeStructureBlocksIgnored);
         LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS.add(stats.legalInterchangeStructureClearanceViolations);
     }
@@ -277,6 +303,13 @@ public final class NaturalHighwayRuntimeStats {
                 REMAINING_ROW_LOGS.sum(), REMAINING_ROW_LEAVES.sum(), REMAINING_ROW_VEGETATION.sum(),
                 CLEARANCE_BLOCKS_REMOVED.sum(), VEGETATION_BLOCKS_REMOVED.sum(), FLOATING_TERRAIN_PREVENTED.sum(),
                 TUNNEL_STATIONS_TOUCHED.sum(), LEGAL_INTERCHANGE_BLOCKS_IGNORED.sum(),
+                NORMAL_TUNNEL_CANDIDATES.sum(), PROMOTED_TUNNEL_CANDIDATES.sum(),
+                DEEP_CUT_STATIONS_EVALUATED.sum(), DEEP_CUT_PROMOTION_CANDIDATES.sum(),
+                DEEP_CUT_PROMOTED_STATIONS.sum(), DEEP_CUT_PROMOTED_SPANS.sum(),
+                FINAL_TUNNEL_SPANS.sum(),
+                DEEP_CUT_REJECTED_TOO_SHORT.sum(), DEEP_CUT_REJECTED_TOO_OPEN.sum(),
+                DEEP_CUT_REJECTED_LOW_COVER.sum(), DEEP_CUT_GAP_CLOSURES.sum(),
+                DEEP_CUT_PORTAL_ADJUSTMENTS.sum(), DEEP_CUT_EVALUATION_NANOS.sum(),
                 LEGAL_INTERCHANGE_CLEARANCE_VIOLATIONS.sum(), SNAPSHOT_NANOS.sum(), CLEARANCE_NANOS.sum(),
                 SNAPSHOT_WORLD_SURFACE_COLUMNS.sum(), SNAPSHOT_UNDERREPORTED_TOP_COLUMNS.sum(),
                 SNAPSHOT_UPWARD_CORRECTION_BLOCKS.sum(), SNAPSHOT_TOP_VERIFICATION_FAILURES.sum(),
@@ -331,6 +364,13 @@ public final class NaturalHighwayRuntimeStats {
             long naturalClearanceBlocksRemoved, long naturalVegetationBlocksRemoved,
             long naturalFloatingTerrainPrevented, long tunnelStationsTouchedByOpenSkyClearance,
             long legalInterchangeStructureBlocksIgnored,
+            long normalTunnelCandidateStations, long promotedTunnelCandidateStations,
+            long deepCutStationsEvaluated, long deepCutPromotionCandidates,
+            long deepCutPromotedStations, long deepCutPromotedSpans,
+            long finalTunnelSpans,
+            long deepCutRejectedTooShort, long deepCutRejectedTooOpen,
+            long deepCutRejectedLowCover, long deepCutGapClosures,
+            long deepCutPortalAdjustments, long deepCutEvaluationNanos,
             long legalInterchangeStructureClearanceViolations,
             long preConstructionSnapshotNanos, long clearancePassNanos,
             long snapshotWorldSurfaceColumns, long snapshotUnderreportedTopColumns,

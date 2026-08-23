@@ -67,37 +67,7 @@ public final class HighwayRenderer {
         stats.medianStepDropTransitions = corridor.medianStepDropTransitions();
         stats.unsupportedMedianStepHeight = corridor.unsupportedMedianStepHeight();
         stats.cutColumnsPlanned = corridor.cutColumns().size();
-        HighwayTunnelSpanResolver.Resolution tunnels = corridor.tunnelResolution();
-        stats.tunnelCandidateStations = tunnels.tunnelCandidateStations();
-        stats.tunnelQualifiedStations = tunnels.tunnelQualifiedStations();
-        stats.tunnelRejectedShortSpanStations = tunnels.tunnelRejectedShortSpanStations();
-        stats.tunnelRejectedLowCoverStations = tunnels.tunnelRejectedLowCoverStations();
-        stats.tunnelRejectedSideExposureStations = tunnels.tunnelRejectedSideExposureStations();
-        stats.tunnelRejectedWaterStations = tunnels.tunnelRejectedWaterStations();
-        stats.tunnelRejectedViaductStations = tunnels.tunnelRejectedViaductStations();
-        stats.rawTunnelSpanCount = tunnels.rawTunnelSpanCount();
-        stats.resolvedTunnelSpanCount = tunnels.resolvedTunnelSpanCount();
-        stats.tunnelGapClosures = tunnels.tunnelGapClosures();
-        stats.minTunnelLength = tunnels.minTunnelLength();
-        stats.maxTunnelLength = tunnels.maxTunnelLength();
-        stats.avgTunnelLength = tunnels.averageTunnelLength();
-        stats.minRockCoverObserved = tunnels.minRockCoverObserved();
-        stats.maxRockCoverObserved = tunnels.maxRockCoverObserved();
-        stats.avgRockCoverObserved = tunnels.averageRockCoverObserved();
-        stats.portalCount = tunnels.resolvedTunnelSpanCount() * 2;
-        stats.portalStartCount = tunnels.resolvedTunnelSpanCount();
-        stats.portalEndCount = tunnels.resolvedTunnelSpanCount();
-        stats.tunnelInteriorStations = (int) corridor.tunnelSections().stream()
-                .filter(section -> !section.portal()).count();
-        stats.tunnelPortalStations = (int) corridor.tunnelSections().stream()
-                .filter(HighwayTunnelGeometry.TunnelSection::portal).count();
-        stats.expectedTunnelLiningBlocks = corridor.tunnelLiningPositions().size();
-        stats.expectedPortalBlocks = corridor.portalPositions().size();
-        stats.openSkyClearanceBypassedTunnelStations = corridor.tunnelSections().size();
-        stats.tunnelInteriorWidth = corridor.tunnelInteriorWidth();
-        stats.tunnelInteriorHeight = corridor.tunnelInteriorHeight();
-        stats.tunnelOuterWidth = corridor.tunnelOuterWidth();
-        stats.tunnelOuterHeight = corridor.tunnelOuterHeight();
+        applyTunnelResolutionStats(stats, corridor);
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
 
         HighwayPreConstructionSnapshot snapshot = HighwayPreConstructionSnapshot.capture(level, corridor, edit);
@@ -204,6 +174,7 @@ public final class HighwayRenderer {
                 .mapToDouble(span -> span.endStation() - span.startStation()).sum());
         stats.bridgeGapClosures = profile.bridgeGapClosures();
         stats.shortBridgeCandidatesRejected = profile.shortBridgeCandidatesRejected();
+        applyTunnelResolutionStats(stats, corridor);
         for (HighwayCorridor.Cell cell : corridor.cells()) stats.addCellMode(cell.mode());
         applySnapshotStats(stats, snapshot);
         runClearancePasses(level, writer, stats, corridor, snapshot, true);
@@ -235,6 +206,53 @@ public final class HighwayRenderer {
         stats.snapshotColumnsMissing = snapshot.missingColumns();
         stats.snapshotBlockStatesScanned = snapshot.blockStatesScanned();
         stats.snapshotCaptureNanos = snapshot.captureNanos();
+    }
+
+    private static void applyTunnelResolutionStats(HighwayRenderStats stats,
+                                                   HighwayCorridor corridor) {
+        HighwayTunnelSpanResolver.Resolution tunnels = corridor.tunnelResolution();
+        stats.tunnelCandidateStations = tunnels.tunnelCandidateStations();
+        stats.tunnelQualifiedStations = tunnels.tunnelQualifiedStations();
+        stats.tunnelRejectedShortSpanStations = tunnels.tunnelRejectedShortSpanStations();
+        stats.tunnelRejectedLowCoverStations = tunnels.tunnelRejectedLowCoverStations();
+        stats.tunnelRejectedSideExposureStations = tunnels.tunnelRejectedSideExposureStations();
+        stats.tunnelRejectedWaterStations = tunnels.tunnelRejectedWaterStations();
+        stats.tunnelRejectedViaductStations = tunnels.tunnelRejectedViaductStations();
+        stats.rawTunnelSpanCount = tunnels.rawTunnelSpanCount();
+        stats.resolvedTunnelSpanCount = tunnels.resolvedTunnelSpanCount();
+        stats.tunnelGapClosures = tunnels.tunnelGapClosures();
+        stats.minTunnelLength = tunnels.minTunnelLength();
+        stats.maxTunnelLength = tunnels.maxTunnelLength();
+        stats.avgTunnelLength = tunnels.averageTunnelLength();
+        stats.minRockCoverObserved = tunnels.minRockCoverObserved();
+        stats.maxRockCoverObserved = tunnels.maxRockCoverObserved();
+        stats.avgRockCoverObserved = tunnels.averageRockCoverObserved();
+        stats.normalTunnelCandidateStations = tunnels.normalTunnelCandidateStations();
+        stats.promotedTunnelCandidateStations = tunnels.promotedTunnelCandidateStations();
+        stats.deepCutStationsEvaluated = tunnels.deepCutStationsEvaluated();
+        stats.deepCutPromotionCandidates = tunnels.deepCutPromotionCandidates();
+        stats.deepCutPromotedStations = tunnels.deepCutPromotedStations();
+        stats.deepCutPromotedSpans = tunnels.deepCutPromotedSpans();
+        stats.deepCutRejectedTooShort = tunnels.deepCutRejectedTooShort();
+        stats.deepCutRejectedTooOpen = tunnels.deepCutRejectedTooOpen();
+        stats.deepCutRejectedLowCover = tunnels.deepCutRejectedLowCover();
+        stats.deepCutGapClosures = tunnels.deepCutGapClosures();
+        stats.deepCutPortalAdjustments = tunnels.deepCutPortalAdjustments();
+        stats.deepCutEvaluationNanos = tunnels.deepCutEvaluationNanos();
+        stats.portalCount = tunnels.resolvedTunnelSpanCount() * 2;
+        stats.portalStartCount = tunnels.resolvedTunnelSpanCount();
+        stats.portalEndCount = tunnels.resolvedTunnelSpanCount();
+        stats.tunnelInteriorStations = (int) corridor.tunnelSections().stream()
+                .filter(section -> !section.portal()).count();
+        stats.tunnelPortalStations = (int) corridor.tunnelSections().stream()
+                .filter(HighwayTunnelGeometry.TunnelSection::portal).count();
+        stats.expectedTunnelLiningBlocks = corridor.tunnelLiningPositions().size();
+        stats.expectedPortalBlocks = corridor.portalPositions().size();
+        stats.openSkyClearanceBypassedTunnelStations = corridor.tunnelSections().size();
+        stats.tunnelInteriorWidth = corridor.tunnelInteriorWidth();
+        stats.tunnelInteriorHeight = corridor.tunnelInteriorHeight();
+        stats.tunnelOuterWidth = corridor.tunnelOuterWidth();
+        stats.tunnelOuterHeight = corridor.tunnelOuterHeight();
     }
 
     private static void runPlacementPasses(WorldGenLevel level, HighwayBlockWriter writer,

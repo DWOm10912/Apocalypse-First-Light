@@ -12,6 +12,8 @@ import java.util.Arrays;
 /** Random-access pre-decoration sampling backed by the per-world bounded cache. */
 public final class HighwayTerrainSampler {
     public static final int PROFILE_ANCHOR_SPACING = 512;
+    /** Immediate terrain outside the 23-block road structural footprint. */
+    private static final int[] SIDE_SAMPLE_LATERALS = {-16, -14, -12, 12, 14, 16};
     private static final int[] ANCHOR_SAMPLE_OFFSETS = {-256, -128, 0, 128, 256};
     private static final int[] ANCHOR_SAMPLE_WEIGHTS = {1, 2, 3, 2, 1};
 
@@ -67,7 +69,9 @@ public final class HighwayTerrainSampler {
             }
         }
         NaturalHighwayRuntimeStats.terrainSampling(System.nanoTime() - started);
-        return new CrossSection(cheap.medianY, cheap.minY, cheap.maxY, cheap.centerY, water, solid);
+        return new CrossSection(cheap.medianY, cheap.minY, cheap.maxY, cheap.centerY, water, solid,
+                cheap.leftTerrainY, cheap.rightTerrainY,
+                cheap.leftSideWater, cheap.rightSideWater);
     }
 
     private int roadAnchor(PrimaryHighwayNetwork.Corridor corridor, long station) {
@@ -119,8 +123,30 @@ public final class HighwayTerrainSampler {
                 }
             }
         }
+        int[] leftSamples = new int[SIDE_SAMPLE_LATERALS.length / 2];
+        int[] rightSamples = new int[SIDE_SAMPLE_LATERALS.length / 2];
+        boolean leftWater = false;
+        boolean rightWater = false;
+        for (int i = 0; i < SIDE_SAMPLE_LATERALS.length; i++) {
+            int lateral = SIDE_SAMPLE_LATERALS[i];
+            int x = worldX(corridor, station, lateral);
+            int z = worldZ(corridor, station, lateral);
+            int surface = baseHeight(x, z, NaturalHighwayCacheManager.HeightKind.SURFACE);
+            if (i < leftSamples.length) {
+                leftSamples[i] = surface;
+                leftWater |= surface > baseHeight(x, z, NaturalHighwayCacheManager.HeightKind.OCEAN_FLOOR);
+            } else {
+                int rightIndex = i - leftSamples.length;
+                rightSamples[rightIndex] = surface;
+                rightWater |= surface > baseHeight(x, z, NaturalHighwayCacheManager.HeightKind.OCEAN_FLOOR);
+            }
+        }
+        Arrays.sort(leftSamples);
+        Arrays.sort(rightSamples);
         return new HeightCrossSection(heights, sorted[sorted.length / 2], sorted[0],
-                sorted[sorted.length - 1], centerHeight, possibleWater, possibleWaterColumns);
+                sorted[sorted.length - 1], centerHeight, possibleWater, possibleWaterColumns,
+                leftSamples[leftSamples.length / 2], rightSamples[rightSamples.length / 2],
+                leftWater, rightWater);
     }
 
     private int baseHeight(int x, int z, NaturalHighwayCacheManager.HeightKind kind) {
@@ -154,9 +180,13 @@ public final class HighwayTerrainSampler {
     }
 
     public record CrossSection(int medianY, int minY, int maxY, int centerY,
-                               int waterColumns, int solidColumns) {}
+                               int waterColumns, int solidColumns,
+                               int leftTerrainY, int rightTerrainY,
+                               boolean leftSideWater, boolean rightSideWater) {}
 
     private record HeightCrossSection(int[] heights, int medianY, int minY, int maxY,
                                       int centerY, boolean[] possibleWater,
-                                      int possibleWaterColumns) {}
+                                      int possibleWaterColumns, int leftTerrainY,
+                                      int rightTerrainY, boolean leftSideWater,
+                                      boolean rightSideWater) {}
 }

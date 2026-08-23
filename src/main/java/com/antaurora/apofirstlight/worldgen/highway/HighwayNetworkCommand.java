@@ -131,6 +131,20 @@ public final class HighwayNetworkCommand {
                         + " legalInterchangeIgnored=" + s.legalInterchangeStructureBlocksIgnored()
                         + " legalInterchangeViolations="
                         + s.legalInterchangeStructureClearanceViolations()), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "tunnelPolicy normalCandidates=" + s.normalTunnelCandidateStations()
+                        + " promotedCandidates=" + s.promotedTunnelCandidateStations()
+                        + " promotedSpans=" + s.deepCutPromotedSpans()
+                        + " finalSpans=" + s.finalTunnelSpans()
+                        + " deepCutEvaluated=" + s.deepCutStationsEvaluated()
+                        + " deepCutCandidates=" + s.deepCutPromotionCandidates()
+                        + " gapClosures=" + s.deepCutGapClosures()
+                        + " portalAdjustments=" + s.deepCutPortalAdjustments()), false);
+        context.getSource().sendSuccess(() -> Component.literal(
+                "tunnelPolicy rejects tooShort=" + s.deepCutRejectedTooShort()
+                        + " tooOpen=" + s.deepCutRejectedTooOpen()
+                        + " lowCover=" + s.deepCutRejectedLowCover()
+                        + " evaluationMs=" + s.deepCutEvaluationNanos() / 1_000_000.0), false);
         context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "calls baseHeight=%d baseColumn=%d terrainSamples=%d profiles=%d bridgeResolvers=%d tunnelResolvers=%d nodePlans=%d baseColumnPerAccepted=%.2f baseColumnPerSegment=%.2f",
                 s.getBaseHeightCalls(), s.getBaseColumnCalls(), s.terrainSampleCalls(), s.profileBuildCalls(),
