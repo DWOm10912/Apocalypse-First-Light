@@ -1,0 +1,8 @@
+{
+  "multipart": [
+    {
+      "when": { "part": "lower_left" },
+      "apply": { "model": "minecraft:block/air" }
+    }
+  ]
+}

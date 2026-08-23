@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "apocalypse_firstlight:item/commercial_glass_double_door"
+  }
+}

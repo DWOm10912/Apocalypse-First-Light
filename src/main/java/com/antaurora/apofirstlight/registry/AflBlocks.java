@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
@@ -90,6 +91,11 @@ public final class AflBlocks {
             () -> new RetailShelfSingleBlock(BlockBehaviour.Properties.of()
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
+                    .noOcclusion()));
+    public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
+            () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.GLASS)
+                    .strength(1.5F, 3.0F)
+                    .sound(SoundType.GLASS)
                     .noOcclusion()));
     public static final RegistryObject<Block> FALLOUT_SOIL = BLOCKS.register("fallout_soil",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.COARSE_DIRT)));

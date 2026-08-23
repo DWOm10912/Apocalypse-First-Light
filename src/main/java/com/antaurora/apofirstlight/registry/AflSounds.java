@@ -14,6 +14,12 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> GEIGER_CLICK = SOUND_EVENTS.register("geiger_click",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_click")));
+    public static final RegistryObject<SoundEvent> GLASS_DOOR_OPEN = SOUND_EVENTS.register("glass_door_open",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "glass_door_open")));
+    public static final RegistryObject<SoundEvent> GLASS_DOOR_CLOSE = SOUND_EVENTS.register("glass_door_close",
+            () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "glass_door_close")));
 
     private AflSounds() {
     }

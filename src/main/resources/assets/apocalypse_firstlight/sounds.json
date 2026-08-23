@@ -3,5 +3,15 @@
     "sounds": [
       "apocalypse_firstlight:geiger_click"
     ]
+  },
+  "glass_door_open": {
+    "sounds": [
+      "apocalypse_firstlight:glass_door_open"
+    ]
+  },
+  "glass_door_close": {
+    "sounds": [
+      "apocalypse_firstlight:glass_door_close"
+    ]
   }
 }

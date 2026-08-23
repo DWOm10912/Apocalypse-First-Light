@@ -16,5 +16,7 @@ public final class AflBlockEntityRenderers {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(AflBlockEntities.RETAIL_SHELF_SINGLE.get(),
                 RetailShelfSingleBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
+                CommercialGlassDoubleDoorRenderer::new);
     }
 }
