@@ -61,6 +61,7 @@ public final class AflCreativeTabs {
                     .title(Component.translatable("itemGroup.apocalypse_firstlight.items"))
                     .displayItems((parameters, output) -> {
                         output.accept(AflItems.STEEL_INGOT.get());
+                        output.accept(AflItems.STEEL_SHEET.get());
                         output.accept(AflItems.ALUMINUM_INGOT.get());
                         output.accept(AflItems.BAUXITE.get());
                         output.accept(AflItems.ALUMINA.get());

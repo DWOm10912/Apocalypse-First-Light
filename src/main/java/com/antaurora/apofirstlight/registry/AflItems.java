@@ -42,6 +42,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_INGOT = ITEMS.register("steel_ingot",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_SHEET = ITEMS.register("steel_sheet",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> ALUMINUM_INGOT = ITEMS.register("aluminum_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> BAUXITE = ITEMS.register("bauxite",
