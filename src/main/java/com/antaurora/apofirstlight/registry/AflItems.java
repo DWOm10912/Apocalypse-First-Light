@@ -40,6 +40,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.NICKEL_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> SILVER_BLOCK = ITEMS.register("silver_block",
             () -> new BlockItem(AflBlocks.SILVER_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> WOLFRAMITE_ORE = ITEMS.register("wolframite_ore",
+            () -> new BlockItem(AflBlocks.WOLFRAMITE_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_BLOCK = ITEMS.register("tungsten_block",
+            () -> new BlockItem(AflBlocks.TUNGSTEN_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -95,6 +99,12 @@ public final class AflItems {
     public static final RegistryObject<Item> SILVER_INGOT = ITEMS.register("silver_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SILVER_SHEET = ITEMS.register("silver_sheet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WOLFRAMITE = ITEMS.register("wolframite",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_INGOT = ITEMS.register("tungsten_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_SHEET = ITEMS.register("tungsten_sheet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));

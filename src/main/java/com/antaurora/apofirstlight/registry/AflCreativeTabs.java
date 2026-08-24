@@ -27,11 +27,13 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.TIN_BLOCK.get());
                         output.accept(AflItems.NICKEL_BLOCK.get());
                         output.accept(AflItems.SILVER_BLOCK.get());
+                        output.accept(AflItems.TUNGSTEN_BLOCK.get());
                         output.accept(AflItems.BAUXITE_ORE.get());
                         output.accept(AflItems.GALENA_ORE.get());
                         output.accept(AflItems.SPHALERITE_ORE.get());
                         output.accept(AflItems.CASSITERITE_ORE.get());
                         output.accept(AflItems.PENTLANDITE_ORE.get());
+                        output.accept(AflItems.WOLFRAMITE_ORE.get());
                         output.accept(AflItems.STEEL_BLOCK_SLAB.get());
                         output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
                         output.accept(AflItems.STEEL_PLATE.get());
@@ -77,6 +79,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.SPHALERITE.get());
                         output.accept(AflItems.CASSITERITE.get());
                         output.accept(AflItems.PENTLANDITE.get());
+                        output.accept(AflItems.WOLFRAMITE.get());
                         output.accept(AflItems.LEAD_INGOT.get());
                         output.accept(AflItems.LEAD_SHEET.get());
                         output.accept(AflItems.ZINC_INGOT.get());
@@ -88,6 +91,8 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.SILVER_SCRAP.get());
                         output.accept(AflItems.SILVER_INGOT.get());
                         output.accept(AflItems.SILVER_SHEET.get());
+                        output.accept(AflItems.TUNGSTEN_INGOT.get());
+                        output.accept(AflItems.TUNGSTEN_SHEET.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());
