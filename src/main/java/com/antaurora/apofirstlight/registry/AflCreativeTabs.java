@@ -23,6 +23,8 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.STEEL_BLOCK.get());
                         output.accept(AflItems.ALUMINUM_BLOCK.get());
                         output.accept(AflItems.BAUXITE_ORE.get());
+                        output.accept(AflItems.GALENA_ORE.get());
+                        output.accept(AflItems.LEAD_BLOCK.get());
                         output.accept(AflItems.STEEL_BLOCK_SLAB.get());
                         output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
                         output.accept(AflItems.STEEL_PLATE.get());
@@ -39,9 +41,6 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.SCORCHED_SOIL.get());
                         output.accept(AflItems.FUSED_GROUND.get());
                         output.accept(AflItems.ASPHALT.get());
-                        output.accept(AflItems.EDGE_LANE_WHITE.get());
-                        output.accept(AflItems.EDGE_LANE_YELLOW.get());
-                        output.accept(AflItems.WHITE_LANE_DIVIDER.get());
                         output.accept(AflItems.POPLAR_LOG.get());
                         output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
                         output.accept(AflItems.POPLAR_WOOD.get());
@@ -65,6 +64,9 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.ALUMINUM_INGOT.get());
                         output.accept(AflItems.BAUXITE.get());
                         output.accept(AflItems.ALUMINA.get());
+                        output.accept(AflItems.GALENA.get());
+                        output.accept(AflItems.LEAD_INGOT.get());
+                        output.accept(AflItems.LEAD_SHEET.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());
