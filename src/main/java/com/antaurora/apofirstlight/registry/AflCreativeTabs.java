@@ -25,10 +25,12 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.LEAD_BLOCK.get());
                         output.accept(AflItems.ZINC_BLOCK.get());
                         output.accept(AflItems.TIN_BLOCK.get());
+                        output.accept(AflItems.NICKEL_BLOCK.get());
                         output.accept(AflItems.BAUXITE_ORE.get());
                         output.accept(AflItems.GALENA_ORE.get());
                         output.accept(AflItems.SPHALERITE_ORE.get());
                         output.accept(AflItems.CASSITERITE_ORE.get());
+                        output.accept(AflItems.PENTLANDITE_ORE.get());
                         output.accept(AflItems.STEEL_BLOCK_SLAB.get());
                         output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
                         output.accept(AflItems.STEEL_PLATE.get());
@@ -73,12 +75,15 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.GALENA.get());
                         output.accept(AflItems.SPHALERITE.get());
                         output.accept(AflItems.CASSITERITE.get());
+                        output.accept(AflItems.PENTLANDITE.get());
                         output.accept(AflItems.LEAD_INGOT.get());
                         output.accept(AflItems.LEAD_SHEET.get());
                         output.accept(AflItems.ZINC_INGOT.get());
                         output.accept(AflItems.ZINC_SHEET.get());
                         output.accept(AflItems.TIN_INGOT.get());
                         output.accept(AflItems.TIN_SHEET.get());
+                        output.accept(AflItems.NICKEL_INGOT.get());
+                        output.accept(AflItems.NICKEL_SHEET.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());
