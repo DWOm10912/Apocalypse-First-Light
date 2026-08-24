@@ -51,6 +51,10 @@ public final class AflBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
     public static final RegistryObject<Block> LEAD_BLOCK = BLOCKS.register("lead_block",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+    public static final RegistryObject<Block> SPHALERITE_ORE = BLOCKS.register("sphalerite_ore",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+    public static final RegistryObject<Block> ZINC_BLOCK = BLOCKS.register("zinc_block",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
     public static final RegistryObject<Block> STEEL_BLOCK_SLAB = BLOCKS.register("steel_block_slab",
             () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get())));
     public static final RegistryObject<Block> STEEL_BLOCK_STAIRS = BLOCKS.register("steel_block_stairs",
