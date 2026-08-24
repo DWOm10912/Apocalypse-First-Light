@@ -30,6 +30,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.SPHALERITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> ZINC_BLOCK = ITEMS.register("zinc_block",
             () -> new BlockItem(AflBlocks.ZINC_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CASSITERITE_ORE = ITEMS.register("cassiterite_ore",
+            () -> new BlockItem(AflBlocks.CASSITERITE_ORE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TIN_BLOCK = ITEMS.register("tin_block",
+            () -> new BlockItem(AflBlocks.TIN_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -60,6 +64,8 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SPHALERITE = ITEMS.register("sphalerite",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> CASSITERITE = ITEMS.register("cassiterite",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> LEAD_INGOT = ITEMS.register("lead_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> LEAD_SHEET = ITEMS.register("lead_sheet",
@@ -67,6 +73,10 @@ public final class AflItems {
     public static final RegistryObject<Item> ZINC_INGOT = ITEMS.register("zinc_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> ZINC_SHEET = ITEMS.register("zinc_sheet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TIN_INGOT = ITEMS.register("tin_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TIN_SHEET = ITEMS.register("tin_sheet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
