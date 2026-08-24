@@ -26,6 +26,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.ZINC_BLOCK.get());
                         output.accept(AflItems.TIN_BLOCK.get());
                         output.accept(AflItems.NICKEL_BLOCK.get());
+                        output.accept(AflItems.SILVER_BLOCK.get());
                         output.accept(AflItems.BAUXITE_ORE.get());
                         output.accept(AflItems.GALENA_ORE.get());
                         output.accept(AflItems.SPHALERITE_ORE.get());
@@ -84,6 +85,9 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.TIN_SHEET.get());
                         output.accept(AflItems.NICKEL_INGOT.get());
                         output.accept(AflItems.NICKEL_SHEET.get());
+                        output.accept(AflItems.SILVER_SCRAP.get());
+                        output.accept(AflItems.SILVER_INGOT.get());
+                        output.accept(AflItems.SILVER_SHEET.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());

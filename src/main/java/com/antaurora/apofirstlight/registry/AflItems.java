@@ -38,6 +38,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.PENTLANDITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> NICKEL_BLOCK = ITEMS.register("nickel_block",
             () -> new BlockItem(AflBlocks.NICKEL_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SILVER_BLOCK = ITEMS.register("silver_block",
+            () -> new BlockItem(AflBlocks.SILVER_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -87,6 +89,12 @@ public final class AflItems {
     public static final RegistryObject<Item> NICKEL_INGOT = ITEMS.register("nickel_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> NICKEL_SHEET = ITEMS.register("nickel_sheet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SILVER_SCRAP = ITEMS.register("silver_scrap",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SILVER_INGOT = ITEMS.register("silver_ingot",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SILVER_SHEET = ITEMS.register("silver_sheet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
