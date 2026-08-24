@@ -34,6 +34,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.CASSITERITE_ORE.get());
                         output.accept(AflItems.PENTLANDITE_ORE.get());
                         output.accept(AflItems.WOLFRAMITE_ORE.get());
+                        output.accept(AflItems.SPODUMENE_ORE.get());
                         output.accept(AflItems.STEEL_BLOCK_SLAB.get());
                         output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
                         output.accept(AflItems.STEEL_PLATE.get());
@@ -80,6 +81,8 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.CASSITERITE.get());
                         output.accept(AflItems.PENTLANDITE.get());
                         output.accept(AflItems.WOLFRAMITE.get());
+                        output.accept(AflItems.KUNZITE.get());
+                        output.accept(AflItems.LITHIUM_CARBONATE.get());
                         output.accept(AflItems.LEAD_INGOT.get());
                         output.accept(AflItems.LEAD_SHEET.get());
                         output.accept(AflItems.ZINC_INGOT.get());
