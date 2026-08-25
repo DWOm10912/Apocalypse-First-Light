@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/01 - 系统设计/辐射.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 制作清单"
+              "title": "辐射"
             }
           }
         ]
@@ -190,26 +190,26 @@
   },
   "active": "4967b007c31f056e",
   "lastOpenFiles": [
-    "run/config/xaero/lib/common.cfg.temp.backup0",
-    "run/config/xaero/lib/common.cfg.temp",
-    "run/logs/2026-08-24-45.log.gz",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/lithium_carbonate.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/kunzite.png",
-    "run/saves/TEST/level14746527357621323965.dat",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-3/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-3/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
-    "docs/02 - 内容设计/物品/金属.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/spodumene.png",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.temp",
+    "run/logs/debug-1.log",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "docs/03 - 制作清单.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/lithium_carbonate.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/item/kunzite.png",
+    "docs/02 - 内容设计/物品/金属.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/spodumene.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/steel_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/lead_block.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/lead_sheet.png",

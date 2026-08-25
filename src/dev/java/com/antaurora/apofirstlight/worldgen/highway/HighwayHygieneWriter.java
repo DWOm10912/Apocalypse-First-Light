@@ -6,11 +6,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Narrow worldgen-only writer for final natural-feature cleanup.  Unlike the
- * construction writer it may use the FEATURES region's vanilla radius-one
- * write permission, but it never receives arbitrary construction positions.
- */
+/** Narrow worldgen-only writer for final natural-feature cleanup. */
 public final class HighwayHygieneWriter {
     private final WorldGenLevel level;
     private final ChunkPos sourceChunk;
@@ -23,9 +19,17 @@ public final class HighwayHygieneWriter {
         this.sourceChunk = sourceChunk;
     }
 
-    /** Single WorldGenRegion-safe predicate for every Final Hygiene read and write. */
+    /**
+     * Single predicate for every Final Hygiene read and write.
+     *
+     * The FEATURES WorldGenRegion may expose a small writable halo around its
+     * center chunk.  That permission is useful for some vanilla features, but
+     * it is not ownership for this chunk-owned highway pass: allowing it here
+     * makes a highway feature invoked for one chunk clear vegetation in a
+     * neighbouring chunk and triggers WorldGenRegion's far-chunk diagnostic.
+     */
     public boolean canAccess(BlockPos pos) {
-        return level.ensureCanWrite(pos);
+        return owns(pos) && level.ensureCanWrite(pos);
     }
 
     public boolean canWrite(BlockPos pos) {
@@ -49,4 +53,8 @@ public final class HighwayHygieneWriter {
     public int writes() { return writes; }
     public int crossChunkWrites() { return crossChunkWrites; }
     public int illegalWrites() { return illegalWrites; }
+
+    private boolean owns(BlockPos pos) {
+        return (pos.getX() >> 4) == sourceChunk.x && (pos.getZ() >> 4) == sourceChunk.z;
+    }
 }

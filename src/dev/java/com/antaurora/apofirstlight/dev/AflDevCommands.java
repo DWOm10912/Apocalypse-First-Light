@@ -25,6 +25,8 @@ import com.antaurora.apofirstlight.world.biome.StartupSettlementProtection;
 import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.highway.HighwayDebugCommand;
+import com.antaurora.apofirstlight.worldgen.rural.RuralGenerator;
+import com.antaurora.apofirstlight.worldgen.rural.RuralPlan;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -101,13 +103,23 @@ public final class AflDevCommands {
         dev.then(Commands.literal("env_particles")
                 .then(Commands.literal("status").executes(AflDevCommands::environmentalParticleStatus))
                 .then(Commands.literal("reset").executes(AflDevCommands::resetEnvironmentalParticleStatus)));
+        LiteralArgumentBuilder<CommandSourceStack> rural = Commands.literal("rural")
+                .then(Commands.literal("plan").executes(AflDevCommands::ruralPlan))
+                .then(Commands.literal("generate")
+                        .executes(AflDevCommands::ruralGenerate)
+                        .then(Commands.argument("x", IntegerArgumentType.integer())
+                                .then(Commands.argument("y", IntegerArgumentType.integer())
+                                        .then(Commands.argument("z", IntegerArgumentType.integer())
+                                                .executes(AflDevCommands::ruralGenerateAt)))));
 
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
             afl.addChild(dev.build());
+            afl.addChild(rural.build());
             afl.addChild(HighwayDebugCommand.build().build());
         } else {
-            event.getDispatcher().register(Commands.literal("afl").then(dev).then(HighwayDebugCommand.build()));
+            event.getDispatcher().register(Commands.literal("afl").then(dev).then(rural)
+                    .then(HighwayDebugCommand.build()));
         }
     }
 
@@ -122,6 +134,96 @@ public final class AflDevCommands {
         } catch (Exception exception) {
             context.getSource().sendFailure(Component.literal("AFL schematic conversion failed: " + exception.getMessage()));
             return 0;
+        }
+    }
+
+    private static int ruralPlan(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = commandPosition(context);
+        if (center == null) return 0;
+        RuralPlan plan = RuralGenerator.plan(level, center);
+        sendRuralPlan(context, plan);
+        return plan.valid() ? 1 : 0;
+    }
+
+    private static int ruralGenerate(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = commandPosition(context);
+        if (center == null) return 0;
+        return executeRuralGenerate(context, level, center);
+    }
+
+    private static int executeRuralGenerate(CommandContext<CommandSourceStack> context, ServerLevel level,
+                                            BlockPos center) {
+        RuralGenerator.GenerationResult result;
+        try {
+            result = RuralGenerator.generate(level, center);
+        } catch (Throwable throwable) {
+            if (throwable instanceof RuralGenerator.GenerationCrashedException crashed) {
+                ApocalypseFirstLight.LOGGER.error("[Rural] generation crashed {}", crashed.context(), throwable);
+            } else {
+                ApocalypseFirstLight.LOGGER.error(
+                        "[Rural] generation crashed center={} phase=COMMAND_BOUNDARY PARTIAL_COMMIT=UNKNOWN",
+                        center, throwable);
+            }
+            context.getSource().sendFailure(Component.literal(
+                    "[Rural] generation failed; see latest.log for the phase and stack trace."));
+            return 0;
+        }
+        if (!result.success()) {
+            context.getSource().sendFailure(Component.literal("[Rural] generation aborted: " + result.message()));
+            sendRuralPlan(context, result.plan());
+            return 0;
+        }
+        context.getSource().sendSuccess(() -> Component.literal(String.format(
+                "[Rural] generated buildings=%d mainRoadBlocks=%d branchRoadBlocks=%d terrainBlocks=%d logsCleared=%d leavesCleared=%d vegetationCleared=%d center=%s",
+                result.buildingsPlaced(), result.mainRoadBlocks(), result.branchRoadBlocks(), result.terrainBlocks(), result.logsCleared(),
+                result.leavesCleared(), result.vegetationCleared(), center.toShortString())), true);
+        sendRuralPlan(context, result.plan());
+        return 1;
+    }
+
+    private static int ruralGenerateAt(CommandContext<CommandSourceStack> context) {
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = new BlockPos(IntegerArgumentType.getInteger(context, "x"),
+                IntegerArgumentType.getInteger(context, "y"), IntegerArgumentType.getInteger(context, "z"));
+        return executeRuralGenerate(context, level, center);
+    }
+
+    private static BlockPos commandPosition(CommandContext<CommandSourceStack> context) {
+        if (context.getSource().getEntity() == null) {
+            context.getSource().sendFailure(Component.literal("Run this command as a player or provide coordinates."));
+            return null;
+        }
+        return BlockPos.containing(context.getSource().getPosition());
+    }
+
+    private static void sendRuralPlan(CommandContext<CommandSourceStack> context, RuralPlan plan) {
+        String rejectionSummary = java.util.Arrays.stream(RuralPlan.RejectionReason.values())
+                .map(reason -> reason.name() + "=" + plan.rejectionCounts().getOrDefault(reason, 0))
+                .collect(java.util.stream.Collectors.joining(","));
+        context.getSource().sendSuccess(() -> Component.literal(String.format(
+                "[Rural] plan valid=%s reason=%s siteScore=%.3f targetBuildings=%d finalBuildings=%d candidateLots=%d acceptedLots=%d rejectedLots=%d fallbackUsed=%s sampleCount=%d validGroundSamples=%d correctedVegetationSamples=%d waterSamples=%d waterRatio=%.3f steepSamples=%d steepRatio=%.3f p10Y=%d medianY=%d p90Y=%d robustRelief=%d mainRoad=%s mainRoadBounds=%s branchCount=%d reservation=%s",
+                plan.valid(), plan.failureReason(), plan.site().score(), plan.targetBuildings(), plan.lots().size(),
+                plan.candidateLots(), plan.acceptedLots(), plan.rejectedLots(), plan.fallbackUsed(),
+                plan.site().sampledColumns(), plan.site().validGroundSamples(),
+                plan.site().correctedVegetationSamples(), plan.site().waterSamples(), plan.site().waterRatio(),
+                plan.site().steepSamples(), plan.site().steepRatio(), plan.site().p10Y(), plan.site().medianY(),
+                plan.site().p90Y(), plan.site().robustRelief(), plan.road().direction(), plan.road().bounds(),
+                plan.branchRoads().size(), plan.reservation())), false);
+        context.getSource().sendSuccess(() -> Component.literal("[Rural] rejectionSummary=" + rejectionSummary), false);
+        for (String detail : plan.barnRejectionDetails()) {
+            context.getSource().sendSuccess(() -> Component.literal("[Rural] barnCandidateFailure " + detail), false);
+        }
+        for (RuralPlan.Road branch : plan.branchRoads()) {
+            context.getSource().sendSuccess(() -> Component.literal(String.format(
+                    "[Rural] branch direction=%s bounds=%s width=%d", branch.direction(), branch.bounds(), branch.width())), false);
+        }
+        for (RuralPlan.Lot lot : plan.lots()) {
+            context.getSource().sendSuccess(() -> Component.literal(String.format(
+                    "[Rural] lot role=%s structure=%s origin=%s rotation=%s facing=%s bounds=%s naturalGroundY=%d baseY=%d groundAnchorOffsetY=%d",
+                    lot.structure().role(), lot.structure().id(), lot.origin().toShortString(), lot.rotation(),
+                    lot.roadFacing(), lot.bounds(), lot.baseY(), lot.baseY(), lot.structure().groundAnchorOffsetY())), false);
         }
     }
 
