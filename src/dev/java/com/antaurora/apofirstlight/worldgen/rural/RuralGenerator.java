@@ -16,6 +16,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -35,7 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/** Deterministic, command-only Rural V1.1 planner and commit phase. */
+/** Deterministic, command-only Rural V1.2 planner and commit phase. */
 public final class RuralGenerator {
     public static final int RESERVATION_SIZE = 128;
     public static final int ROAD_LENGTH = 80;
@@ -168,11 +169,22 @@ public final class RuralGenerator {
             return invalid(center, reservation, site, mainRoad, branchRoads, target, candidates, accepted,
                     rejectionTracker, "ideal site did not reach target building count: " + accepted.size() + "/" + target);
         }
+        RuralFarmPlanner.Result farm;
+        try {
+            farm = RuralFarmPlanner.plan(level, center, reservation, allRoads, accepted);
+        } catch (Throwable throwable) {
+            LOGGER.warn("[Rural] optional farm planning skipped center={} reason={}", center, throwable.toString());
+            farm = new RuralFarmPlanner.Result(0, List.of(),
+                    List.of("planning_exception=" + throwable.getClass().getSimpleName()), 0);
+        }
+        LOGGER.debug("[Rural] farm plan target={} accepted={} attempts={} rejected={}",
+                farm.target(), farm.count(), farm.attempts(), farm.rejections().size());
         int rejectedLots = Math.max(0, candidates.size() - accepted.size());
         LOGGER.debug("[Rural] final plan validation result=OK lots={} target={} fallbackUsed={} mainRoad={} branches={}",
                 accepted.size(), target, fallbackUsed, mainRoad.bounds(), branchRoads.size());
         return RuralPlan.valid(center, reservation, site, mainRoad, branchRoads, accepted, target,
-                candidates.size(), rejectedLots, fallbackUsed, rejectionTracker.counts(), rejectionTracker.barnDetails());
+                candidates.size(), rejectedLots, fallbackUsed, rejectionTracker.counts(), rejectionTracker.barnDetails(),
+                farm.target(), farm.plots(), farm.rejections());
     }
 
     public static GenerationResult generate(ServerLevel level, BlockPos center) {
@@ -216,13 +228,19 @@ public final class RuralGenerator {
                 tracker.completedSteps.add("STRUCTURE_" + index);
                 placed++;
             }
+            FarmPlacementResult farmPlacement = placeFarmPlots(level, plan, tracker);
             tracker.phase = "POST_COMMIT";
             tracker.completedSteps.add("POST_COMMIT");
-            LOGGER.debug("[Rural] commit success lots={} mainRoadBlocks={} branchRoadBlocks={} terrainBlocks={} logsCleared={} leavesCleared={} vegetationCleared={}",
+            LOGGER.debug("[Rural] commit success lots={} mainRoadBlocks={} branchRoadBlocks={} terrainBlocks={} logsCleared={} leavesCleared={} vegetationCleared={} farmPlots={} farmlandBlocks={} cropBlocks={} fenceBlocks={} gateBlocks={} irrigationBlocks={} pathBlocks={} farmlandLogsCleared={} farmlandLeavesCleared={} farmlandVegetationCleared={}",
                     placed, roadPlacement.mainRoadBlocks(), roadPlacement.branchRoadBlocks(), terrainBlocks,
-                    logsCleared, leavesCleared, vegetationCleared);
+                    logsCleared, leavesCleared, vegetationCleared, farmPlacement.farmPlots(), farmPlacement.farmlandBlocks(),
+                    farmPlacement.cropBlocks(), farmPlacement.fenceBlocks(), farmPlacement.gateBlocks(),
+                    farmPlacement.irrigationBlocks(), farmPlacement.pathBlocks(), farmPlacement.logsCleared(),
+                    farmPlacement.leavesCleared(), farmPlacement.vegetationCleared());
             return GenerationResult.success(plan, placed, roadPlacement.mainRoadBlocks(), roadPlacement.branchRoadBlocks(),
-                    terrainBlocks, logsCleared, leavesCleared, vegetationCleared);
+                    terrainBlocks + farmPlacement.terrainBlocks(), logsCleared + farmPlacement.logsCleared(),
+                    leavesCleared + farmPlacement.leavesCleared(), vegetationCleared + farmPlacement.vegetationCleared(),
+                    farmPlacement);
         } catch (Throwable throwable) {
             throw new GenerationCrashedException(tracker.context(), throwable);
         }
@@ -270,6 +288,10 @@ public final class RuralGenerator {
             }
             checked.add(lot);
             tracker.completedSteps.add("PRE_COMMIT_LOT_" + index);
+        }
+        for (RuralFarmPlot plot : plan.farmPlots()) {
+            if (!plot.valid()) return "farm plot " + plot.index() + " invalid: " + plot.rejectionReason();
+            if (!inside(plot.bounds(), plan.reservation())) return "farm plot " + plot.index() + " outside reservation";
         }
         return null;
     }
@@ -655,6 +677,148 @@ public final class RuralGenerator {
         return new RoadPlacementResult(mainPositions.size(), branchPositions.size(), allPositions.size());
     }
 
+    private static FarmPlacementResult placeFarmPlots(ServerLevel level, RuralPlan plan, CommitTracker tracker) {
+        int farmPlots = 0;
+        int terrainBlocks = 0;
+        int farmlandBlocks = 0;
+        int cropBlocks = 0;
+        int fenceBlocks = 0;
+        int gateBlocks = 0;
+        int irrigationBlocks = 0;
+        int pathBlocks = 0;
+        int logsCleared = 0;
+        int leavesCleared = 0;
+        int vegetationCleared = 0;
+        for (RuralFarmPlot plot : plan.farmPlots()) {
+            FarmPlotPlacementPlan placement;
+            try {
+                placement = preflightFarmPlot(level, plot);
+            } catch (Throwable throwable) {
+                ApocalypseFirstLight.LOGGER.warn("[Rural] optional farm plot preflight skipped index={} owner={} reason={}",
+                        plot.index(), plot.ownerId(), throwable.toString());
+                continue;
+            }
+            FarmPlotCommitJournal journal = new FarmPlotCommitJournal();
+            try {
+                for (int x = plot.bounds().minX() - 1 >> 4; x <= plot.bounds().maxX() + 1 >> 4; x++) {
+                    for (int z = plot.bounds().minZ() - 1 >> 4; z <= plot.bounds().maxZ() + 1 >> 4; z++) {
+                        level.getChunk(x, z);
+                    }
+                }
+                journal.captureRegion(level, plot);
+                tracker.phase = "FARMLAND_PREP";
+                RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(level, plot);
+                int plotTerrainBlocks = preparation.changed();
+                int plotLogsCleared = preparation.logsCleared();
+                int plotLeavesCleared = preparation.leavesCleared();
+                int plotVegetationCleared = preparation.vegetationCleared();
+                for (BlockPos pos : plot.irrigationCells()) {
+                    BlockPos placed = new BlockPos(pos.getX(), plot.baseY(), pos.getZ());
+                    level.setBlock(placed, Blocks.WATER.defaultBlockState(), 3);
+                }
+                int plotIrrigationBlocks = plot.irrigationCells().size();
+                for (BlockPos pos : plot.pathCells()) {
+                    BlockPos placed = new BlockPos(pos.getX(), plot.baseY(), pos.getZ());
+                    level.setBlock(placed, Blocks.DIRT_PATH.defaultBlockState(), 3);
+                }
+                int plotPathBlocks = plot.pathCells().size();
+                int plotFarmlandBlocks = 0;
+                int plotCropBlocks = 0;
+                for (RuralFarmPlot.Cell cell : plot.cells()) {
+                    long key = cell.key();
+                    if (placement.irrigation().contains(key) || placement.path().contains(key)) continue;
+                    BlockPos farmland = new BlockPos(cell.x(), plot.baseY(), cell.z());
+                    level.setBlock(farmland, Blocks.FARMLAND.defaultBlockState(), 3);
+                    plotFarmlandBlocks++;
+                    level.setBlock(farmland.above(), placement.crops().get(key), 3);
+                    plotCropBlocks++;
+                }
+                int plotFenceBlocks = 0;
+                for (RuralFarmPlot.Fence fence : plot.fences()) {
+                    level.setBlock(fence.pos(), Blocks.OAK_FENCE.defaultBlockState(), 3);
+                    plotFenceBlocks++;
+                }
+                int plotGateBlocks = 0;
+                for (RuralFarmPlot.Gate gate : plot.gates()) {
+                    level.setBlock(gate.pos(), Blocks.OAK_FENCE_GATE.defaultBlockState()
+                            .setValue(BlockStateProperties.HORIZONTAL_FACING, gate.facing()), 3);
+                    plotGateBlocks++;
+                }
+                journal.discard();
+                terrainBlocks += plotTerrainBlocks;
+                logsCleared += plotLogsCleared;
+                leavesCleared += plotLeavesCleared;
+                vegetationCleared += plotVegetationCleared;
+                irrigationBlocks += plotIrrigationBlocks;
+                pathBlocks += plotPathBlocks;
+                farmlandBlocks += plotFarmlandBlocks;
+                cropBlocks += plotCropBlocks;
+                fenceBlocks += plotFenceBlocks;
+                gateBlocks += plotGateBlocks;
+                farmPlots++;
+            } catch (Throwable throwable) {
+                try {
+                    journal.rollback(level);
+                } catch (Throwable rollbackFailure) {
+                    ApocalypseFirstLight.LOGGER.error("[Rural] farm plot rollback failed index={} owner={}",
+                            plot.index(), plot.ownerId(), rollbackFailure);
+                }
+                ApocalypseFirstLight.LOGGER.warn("[Rural] optional farm plot skipped index={} owner={} reason={}",
+                        plot.index(), plot.ownerId(), throwable.toString());
+            }
+        }
+        return new FarmPlacementResult(farmPlots, terrainBlocks, farmlandBlocks, cropBlocks,
+                fenceBlocks, gateBlocks, irrigationBlocks, pathBlocks, logsCleared, leavesCleared, vegetationCleared);
+    }
+
+    private static FarmPlotPlacementPlan preflightFarmPlot(ServerLevel level, RuralFarmPlot plot) {
+        Set<Long> irrigation = new HashSet<>();
+        Map<Long, net.minecraft.world.level.block.state.BlockState> fixedStates = new LinkedHashMap<>();
+        for (BlockPos pos : plot.irrigationCells()) {
+            long key = BlockPos.asLong(pos.getX(), 0, pos.getZ());
+            if (!plot.contains(pos.getX(), pos.getZ()) || !irrigation.add(key)) {
+                throw new IllegalStateException("invalid irrigation cell " + pos);
+            }
+            fixedStates.put(key, Blocks.WATER.defaultBlockState());
+        }
+        Set<Long> path = new HashSet<>();
+        for (BlockPos pos : plot.pathCells()) {
+            long key = BlockPos.asLong(pos.getX(), 0, pos.getZ());
+            if (!path.add(key) || irrigation.contains(key)) {
+                throw new IllegalStateException("invalid path cell " + pos);
+            }
+            fixedStates.put(key, Blocks.DIRT_PATH.defaultBlockState());
+        }
+        Map<Long, net.minecraft.world.level.block.state.BlockState> crops = new LinkedHashMap<>();
+        for (RuralFarmPlot.Cell cell : plot.cells()) {
+            if (irrigation.contains(cell.key()) || path.contains(cell.key())) continue;
+            RuralFarmPlot.GrowthBand band = growthBand(level.getSeed(), plot.index(), cell.key());
+            net.minecraft.world.level.block.state.BlockState cropState = plot.crop().state(band);
+            crops.put(cell.key(), cropState);
+            fixedStates.put(cell.key(), Blocks.FARMLAND.defaultBlockState());
+        }
+        for (RuralFarmPlot.Fence fence : plot.fences()) {
+            fixedStates.put(BlockPos.asLong(fence.pos().getX(), 0, fence.pos().getZ()),
+                    Blocks.OAK_FENCE.defaultBlockState());
+        }
+        for (RuralFarmPlot.Gate gate : plot.gates()) {
+            fixedStates.put(BlockPos.asLong(gate.pos().getX(), 0, gate.pos().getZ()),
+                    Blocks.OAK_FENCE_GATE.defaultBlockState()
+                            .setValue(BlockStateProperties.HORIZONTAL_FACING, gate.facing()));
+        }
+        if (crops.isEmpty()) throw new IllegalStateException("farm plot has no crop cells");
+        if (fixedStates.isEmpty()) throw new IllegalStateException("farm plot has no final states");
+        return new FarmPlotPlacementPlan(Set.copyOf(irrigation), Set.copyOf(path), Map.copyOf(crops));
+    }
+
+    private static RuralFarmPlot.GrowthBand growthBand(long seed, int plotIndex, long cellKey) {
+        int roll = (int) Math.floorMod(seed ^ (long) plotIndex * 0x9E3779B97F4A7C15L ^ cellKey, 100L);
+        if (roll < 10) return RuralFarmPlot.GrowthBand.EARLY;
+        if (roll < 40) return RuralFarmPlot.GrowthBand.MID;
+        if (roll < 80) return RuralFarmPlot.GrowthBand.LATE;
+        return RuralFarmPlot.GrowthBand.MATURE;
+    }
+
     private static boolean place(ServerLevel level, StructureTemplate template, RuralPlan.Lot lot) {
         for (int x = lot.bounds().minX() >> 4; x <= lot.bounds().maxX() >> 4; x++) {
             for (int z = lot.bounds().minZ() >> 4; z <= lot.bounds().maxZ() >> 4; z++) level.getChunk(x, z);
@@ -748,6 +912,15 @@ public final class RuralGenerator {
     private record RoadPlacementResult(int mainRoadBlocks, int branchRoadBlocks, int totalRoadBlocks) {
     }
 
+    private record FarmPlacementResult(int farmPlots, int terrainBlocks, int farmlandBlocks, int cropBlocks,
+                                       int fenceBlocks, int gateBlocks, int irrigationBlocks, int pathBlocks,
+                                       int logsCleared, int leavesCleared, int vegetationCleared) {
+    }
+
+    private record FarmPlotPlacementPlan(Set<Long> irrigation, Set<Long> path,
+                                         Map<Long, net.minecraft.world.level.block.state.BlockState> crops) {
+    }
+
     public static final class GenerationCrashedException extends RuntimeException {
         private final String context;
 
@@ -800,20 +973,28 @@ public final class RuralGenerator {
 
     public record GenerationResult(boolean success, String message, RuralPlan plan,
                                    int buildingsPlaced, int mainRoadBlocks, int branchRoadBlocks, int terrainBlocks,
-                                   int logsCleared, int leavesCleared, int vegetationCleared) {
+                                   int logsCleared, int leavesCleared, int vegetationCleared,
+                                   int farmPlots, int farmlandBlocks, int cropBlocks, int fenceBlocks,
+                                   int gateBlocks, int irrigationBlocks, int pathBlocks,
+                                   int farmlandLogsCleared, int farmlandLeavesCleared,
+                                   int farmlandVegetationCleared) {
         public int roadBlocks() {
             return mainRoadBlocks + branchRoadBlocks;
         }
 
         public static GenerationResult success(RuralPlan plan, int buildings, int mainRoadBlocks, int branchRoadBlocks,
                                                 int terrainBlocks,
-                                                int logsCleared, int leavesCleared, int vegetationCleared) {
+                                                int logsCleared, int leavesCleared, int vegetationCleared,
+                                                FarmPlacementResult farm) {
             return new GenerationResult(true, "OK", plan, buildings, mainRoadBlocks, branchRoadBlocks, terrainBlocks,
-                    logsCleared, leavesCleared, vegetationCleared);
+                    logsCleared, leavesCleared, vegetationCleared, farm.farmPlots(), farm.farmlandBlocks(),
+                    farm.cropBlocks(), farm.fenceBlocks(), farm.gateBlocks(), farm.irrigationBlocks(), farm.pathBlocks(),
+                    farm.logsCleared(), farm.leavesCleared(), farm.vegetationCleared());
         }
 
         public static GenerationResult failed(String message, RuralPlan plan) {
-            return new GenerationResult(false, message, plan, 0, 0, 0, 0, 0, 0, 0);
+            return new GenerationResult(false, message, plan, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 

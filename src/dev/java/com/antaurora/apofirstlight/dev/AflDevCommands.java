@@ -26,6 +26,7 @@ import com.antaurora.apofirstlight.client.EnvironmentalParticleController;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.highway.HighwayDebugCommand;
 import com.antaurora.apofirstlight.worldgen.rural.RuralGenerator;
+import com.antaurora.apofirstlight.worldgen.rural.RuralFarmPlot;
 import com.antaurora.apofirstlight.worldgen.rural.RuralPlan;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -176,9 +177,11 @@ public final class AflDevCommands {
             return 0;
         }
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[Rural] generated buildings=%d mainRoadBlocks=%d branchRoadBlocks=%d terrainBlocks=%d logsCleared=%d leavesCleared=%d vegetationCleared=%d center=%s",
+                "[Rural] generated buildings=%d mainRoadBlocks=%d branchRoadBlocks=%d terrainBlocks=%d logsCleared=%d leavesCleared=%d vegetationCleared=%d farmPlots=%d farmlandBlocks=%d cropBlocks=%d fenceBlocks=%d gateBlocks=%d irrigationBlocks=%d pathBlocks=%d farmlandLogsCleared=%d farmlandLeavesCleared=%d farmlandVegetationCleared=%d center=%s",
                 result.buildingsPlaced(), result.mainRoadBlocks(), result.branchRoadBlocks(), result.terrainBlocks(), result.logsCleared(),
-                result.leavesCleared(), result.vegetationCleared(), center.toShortString())), true);
+                result.leavesCleared(), result.vegetationCleared(), result.farmPlots(), result.farmlandBlocks(), result.cropBlocks(),
+                result.fenceBlocks(), result.gateBlocks(), result.irrigationBlocks(), result.pathBlocks(),
+                result.farmlandLogsCleared(), result.farmlandLeavesCleared(), result.farmlandVegetationCleared(), center.toShortString())), true);
         sendRuralPlan(context, result.plan());
         return 1;
     }
@@ -203,14 +206,14 @@ public final class AflDevCommands {
                 .map(reason -> reason.name() + "=" + plan.rejectionCounts().getOrDefault(reason, 0))
                 .collect(java.util.stream.Collectors.joining(","));
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[Rural] plan valid=%s reason=%s siteScore=%.3f targetBuildings=%d finalBuildings=%d candidateLots=%d acceptedLots=%d rejectedLots=%d fallbackUsed=%s sampleCount=%d validGroundSamples=%d correctedVegetationSamples=%d waterSamples=%d waterRatio=%.3f steepSamples=%d steepRatio=%.3f p10Y=%d medianY=%d p90Y=%d robustRelief=%d mainRoad=%s mainRoadBounds=%s branchCount=%d reservation=%s",
+                "[Rural] plan valid=%s reason=%s siteScore=%.3f targetBuildings=%d finalBuildings=%d candidateLots=%d acceptedLots=%d rejectedLots=%d fallbackUsed=%s sampleCount=%d validGroundSamples=%d correctedVegetationSamples=%d waterSamples=%d waterRatio=%.3f steepSamples=%d steepRatio=%.3f p10Y=%d medianY=%d p90Y=%d robustRelief=%d mainRoad=%s mainRoadBounds=%s branchCount=%d farmPlotTarget=%d farmPlotCount=%d reservation=%s",
                 plan.valid(), plan.failureReason(), plan.site().score(), plan.targetBuildings(), plan.lots().size(),
                 plan.candidateLots(), plan.acceptedLots(), plan.rejectedLots(), plan.fallbackUsed(),
                 plan.site().sampledColumns(), plan.site().validGroundSamples(),
                 plan.site().correctedVegetationSamples(), plan.site().waterSamples(), plan.site().waterRatio(),
                 plan.site().steepSamples(), plan.site().steepRatio(), plan.site().p10Y(), plan.site().medianY(),
                 plan.site().p90Y(), plan.site().robustRelief(), plan.road().direction(), plan.road().bounds(),
-                plan.branchRoads().size(), plan.reservation())), false);
+                plan.branchRoads().size(), plan.farmPlotTarget(), plan.farmPlotCount(), plan.reservation())), false);
         context.getSource().sendSuccess(() -> Component.literal("[Rural] rejectionSummary=" + rejectionSummary), false);
         for (String detail : plan.barnRejectionDetails()) {
             context.getSource().sendSuccess(() -> Component.literal("[Rural] barnCandidateFailure " + detail), false);
@@ -224,6 +227,17 @@ public final class AflDevCommands {
                     "[Rural] lot role=%s structure=%s origin=%s rotation=%s facing=%s bounds=%s naturalGroundY=%d baseY=%d groundAnchorOffsetY=%d",
                     lot.structure().role(), lot.structure().id(), lot.origin().toShortString(), lot.rotation(),
                     lot.roadFacing(), lot.bounds(), lot.baseY(), lot.baseY(), lot.structure().groundAnchorOffsetY())), false);
+        }
+        for (RuralFarmPlot plot : plan.farmPlots()) {
+            context.getSource().sendSuccess(() -> Component.literal(String.format(
+                    "[Rural] farmPlot index=%d owner=%s shape=%s bounds=%s dimensions=%dx%d cellCount=%d crop=%s gateCount=%d irrigationType=%s irrigationBlocks=%d baseY=%d valid=%s reason=%s",
+                    plot.index(), plot.ownerId(), plot.shape(), plot.bounds(),
+                    plot.bounds().getXSpan(), plot.bounds().getZSpan(), plot.cellCount(), plot.crop(),
+                    plot.gates().size(), plot.irrigationType(), plot.irrigationCells().size(), plot.baseY(),
+                    plot.valid(), plot.rejectionReason())), false);
+        }
+        for (String rejection : plan.farmPlotRejections()) {
+            context.getSource().sendSuccess(() -> Component.literal("[Rural] farmPlotRejected " + rejection), false);
         }
     }
 

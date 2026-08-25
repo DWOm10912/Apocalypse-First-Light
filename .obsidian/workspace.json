@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 系统设计/辐射.md",
+                "file": "docs/03 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "辐射"
+              "title": "03 - 制作清单"
             }
           }
         ]
@@ -188,18 +188,20 @@
       "bases:新建数据库": false
     }
   },
-  "active": "4967b007c31f056e",
+  "active": "b1f68e95b15290ae",
   "lastOpenFiles": [
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-3/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-3/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/1_0.xwmc.outdated",
+    "docs/01 - 系统设计/灾难系统.md",
+    "docs/01 - 系统设计/辐射.md",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/1_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/1_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
     "run/logs/debug-1.log",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
@@ -215,7 +217,6 @@
     "build/resources/main/assets/apocalypse_firstlight/textures/item/lead_sheet.png",
     "docs/01 - 系统设计/工业.md",
     "docs/01 - 系统设计/蓝图.md",
-    "docs/01 - 系统设计/辐射.md",
     "docs/01 - 系统设计/生存状态.md",
     "docs/02 - 内容设计/未命名.md",
     "docs/01 - 系统设计/食物.md",
@@ -234,7 +235,6 @@
     "docs/00 - 项目总览.md",
     "docs/03 - 开发记录.md",
     "docs/01 - 系统设计.md",
-    "docs/04 - 更新日志.md",
-    "docs/02 - 内容设计.md"
+    "docs/04 - 更新日志.md"
   ]
 }

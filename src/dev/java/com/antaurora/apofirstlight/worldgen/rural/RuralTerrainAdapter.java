@@ -58,6 +58,52 @@ public final class RuralTerrainAdapter {
         return new PreparationResult(changed, logsCleared, leavesCleared, vegetationCleared);
     }
 
+    /** Clears only the planned farm footprint and its one-block vegetation margin. */
+    public static PreparationResult prepare(ServerLevel level, RuralFarmPlot plot) {
+        int changed = 0;
+        int logsCleared = 0;
+        int leavesCleared = 0;
+        int vegetationCleared = 0;
+        BoundingBox box = plot.bounds();
+        for (int x = box.minX() - RuralFarmPlanner.FARM_CLEARANCE_MARGIN;
+             x <= box.maxX() + RuralFarmPlanner.FARM_CLEARANCE_MARGIN; x++) {
+            for (int z = box.minZ() - RuralFarmPlanner.FARM_CLEARANCE_MARGIN;
+                 z <= box.maxZ() + RuralFarmPlanner.FARM_CLEARANCE_MARGIN; z++) {
+                int surfaceY = plot.surfaceYs().getOrDefault(BlockPos.asLong(x, 0, z), plot.baseY());
+                int minY = Math.min(surfaceY, plot.baseY());
+                int maxY = Math.max(surfaceY, plot.baseY()) + 4;
+                for (int y = minY; y <= maxY; y++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockState state = level.getBlockState(pos);
+                    if (!isVegetation(state)) continue;
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                    changed++;
+                    if (state.is(BlockTags.LOGS)) logsCleared++;
+                    else if (state.is(BlockTags.LEAVES)) leavesCleared++;
+                    else vegetationCleared++;
+                }
+            }
+        }
+        for (RuralFarmPlot.Cell cell : plot.cells()) {
+            int surfaceY = plot.surfaceYs().getOrDefault(cell.key(), plot.baseY());
+            if (surfaceY < plot.baseY()) {
+                for (int y = surfaceY; y < plot.baseY(); y++) {
+                    level.setBlock(new BlockPos(cell.x(), y, cell.z()), Blocks.DIRT.defaultBlockState(), 3);
+                    changed++;
+                }
+            } else if (surfaceY > plot.baseY()) {
+                for (int y = plot.baseY(); y < surfaceY; y++) {
+                    BlockPos pos = new BlockPos(cell.x(), y, cell.z());
+                    if (!level.getBlockState(pos).isAir()) {
+                        level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                        changed++;
+                    }
+                }
+            }
+        }
+        return new PreparationResult(changed, logsCleared, leavesCleared, vegetationCleared);
+    }
+
     private static boolean isVegetation(BlockState state) {
         return state.is(BlockTags.LOGS)
                 || state.is(BlockTags.LEAVES)

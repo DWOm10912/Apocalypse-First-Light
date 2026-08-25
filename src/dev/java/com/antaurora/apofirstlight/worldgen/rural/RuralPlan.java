@@ -25,11 +25,15 @@ public final class RuralPlan {
     private final String failureReason;
     private final Map<RejectionReason, Integer> rejectionCounts;
     private final List<String> barnRejectionDetails;
+    private final int farmPlotTarget;
+    private final List<RuralFarmPlot> farmPlots;
+    private final List<String> farmPlotRejections;
 
     private RuralPlan(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
                       List<Road> branchRoads, List<Lot> lots, int targetBuildings, int candidateLots,
                       int rejectedLots, boolean fallbackUsed, boolean valid, String failureReason,
-                      Map<RejectionReason, Integer> rejectionCounts, List<String> barnRejectionDetails) {
+                      Map<RejectionReason, Integer> rejectionCounts, List<String> barnRejectionDetails,
+                      int farmPlotTarget, List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections) {
         this.center = center;
         this.reservation = reservation;
         this.site = site;
@@ -48,6 +52,9 @@ public final class RuralPlan {
         }
         this.rejectionCounts = Map.copyOf(counts);
         this.barnRejectionDetails = List.copyOf(barnRejectionDetails);
+        this.farmPlotTarget = farmPlotTarget;
+        this.farmPlots = List.copyOf(farmPlots);
+        this.farmPlotRejections = List.copyOf(farmPlotRejections);
     }
 
     public static RuralPlan valid(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
@@ -56,7 +63,19 @@ public final class RuralPlan {
                                   Map<RejectionReason, Integer> rejectionCounts,
                                   List<String> barnRejectionDetails) {
         return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
-                candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails);
+                candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails,
+                0, List.of(), List.of());
+    }
+
+    public static RuralPlan valid(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
+                                  List<Road> branchRoads, List<Lot> lots, int targetBuildings,
+                                  int candidateLots, int rejectedLots, boolean fallbackUsed,
+                                  Map<RejectionReason, Integer> rejectionCounts,
+                                  List<String> barnRejectionDetails, int farmPlotTarget,
+                                  List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections) {
+        return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
+                candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails,
+                farmPlotTarget, farmPlots, farmPlotRejections);
     }
 
     public static RuralPlan invalid(BlockPos center, BoundingBox reservation, SiteScore site,
@@ -65,7 +84,8 @@ public final class RuralPlan {
                                     Map<RejectionReason, Integer> rejectionCounts,
                                     List<String> barnRejectionDetails) {
         return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
-                candidateLots, rejectedLots, false, false, failureReason, rejectionCounts, barnRejectionDetails);
+                candidateLots, rejectedLots, false, false, failureReason, rejectionCounts, barnRejectionDetails,
+                0, List.of(), List.of());
     }
 
     public BlockPos center() { return center; }
@@ -89,6 +109,10 @@ public final class RuralPlan {
     public String failureReason() { return failureReason; }
     public Map<RejectionReason, Integer> rejectionCounts() { return rejectionCounts; }
     public List<String> barnRejectionDetails() { return barnRejectionDetails; }
+    public int farmPlotTarget() { return farmPlotTarget; }
+    public List<RuralFarmPlot> farmPlots() { return farmPlots; }
+    public int farmPlotCount() { return farmPlots.size(); }
+    public List<String> farmPlotRejections() { return farmPlotRejections; }
 
     public enum RejectionReason {
         ROLE_MISMATCH,
