@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -47,13 +48,14 @@ public final class RuralGenerator {
     public static final int MAX_SITE_ROBUST_RELIEF = 18;
     public static final double MAX_SITE_STEEP_RATIO = 0.20D;
     public static final int MAX_LOT_RELIEF = 6;
+    /** Per-lot vertical adaptation budget. The site may slope, but a building may not need more than this. */
+    public static final int MAX_LOT_CORRECTION = 3;
     public static final int MAX_LOT_FILL_DEPTH = 3;
     public static final int CLEARANCE_MARGIN = 1;
     public static final int CLEARANCE_TOP_MARGIN = 1;
     public static final int LOT_MARGIN = 2;
 
     private static final int SITE_SAMPLE_STEP = 8;
-    private static final int MAIN_LOT_SIDE_OFFSET = 18;
     private static final long RANDOM_SALT = 0x524D4C5F56311L;
     private static final long TARGET_SALT = 0x544152474554L;
     private static final org.slf4j.Logger LOGGER = ApocalypseFirstLight.LOGGER;
@@ -68,7 +70,7 @@ public final class RuralGenerator {
         RuralPlan.Road mainRoad = road(center, mainDirection, false);
         List<RuralPlan.Road> branchRoads = branchRoads(center, mainDirection, level.getSeed());
         int target = targetBuildingCount(level.getSeed(), center);
-        List<LotCandidate> candidates = List.of();
+        List<RuralLayoutPlanner.Candidate> candidates = List.of();
         RejectionTracker rejectionTracker = new RejectionTracker();
         LOGGER.debug("[Rural] candidate origin={} reservation={} siteScore={} waterRatio={} robustRelief={} steepRatio={} targetBuildings={}",
                 center, reservation, site.score(), site.waterRatio(), site.robustRelief(), site.steepRatio(), target);
@@ -99,7 +101,8 @@ public final class RuralGenerator {
             }
             templates.put(definition, template.get());
         }
-        candidates = candidates(center, mainDirection, branchRoads.get(0).direction(), templates.get(RuralStructurePool.BARN));
+        candidates = RuralLayoutPlanner.candidates(center, mainDirection, branchRoads.get(0).direction(),
+                templates.get(RuralStructurePool.BARN));
         LOGGER.debug("[Rural] candidate origin={} reservation={} siteScore={} waterRatio={} robustRelief={} steepRatio={} targetBuildings={} candidateLots={} barnTemplateSize={}",
                 center, reservation, site.score(), site.waterRatio(), site.robustRelief(), site.steepRatio(), target,
                 candidates.size(), templates.get(RuralStructurePool.BARN).getSize());
@@ -127,7 +130,7 @@ public final class RuralGenerator {
 
         for (int index = 0; index < candidates.size() && accepted.size() < target; index++) {
             if (usedSlots.contains(index)) continue;
-            LotCandidate candidate = candidates.get(index);
+            RuralLayoutPlanner.Candidate candidate = candidates.get(index);
             List<RuralStructurePool.Definition> available = availableFor(candidate.role(), counts);
             boolean acceptedCandidate = false;
             while (!available.isEmpty()) {
@@ -201,6 +204,7 @@ public final class RuralGenerator {
             }
 
             RoadPlacementResult roadPlacement = placeRoad(level, plan, tracker);
+            placeDriveways(level, plan, null, null);
             int terrainBlocks = 0;
             int logsCleared = 0;
             int leavesCleared = 0;
@@ -243,6 +247,232 @@ public final class RuralGenerator {
                     farmPlacement);
         } catch (Throwable throwable) {
             throw new GenerationCrashedException(tracker.context(), throwable);
+        }
+    }
+
+    /**
+     * Replays a validated natural plan inside one structure-generation chunk only.
+     * Unlike the developer command path this method never loads neighboring chunks.
+     */
+    public static NaturalPlacementSummary generateNaturalChunk(WorldGenLevel level, RuralPlan plan,
+                                                               BoundingBox chunkBox) {
+        if (!plan.valid()) return NaturalPlacementSummary.empty();
+        NaturalPlacementStats stats = new NaturalPlacementStats();
+        placeNaturalRoad(level, plan, chunkBox, stats);
+        placeDriveways(level, plan, chunkBox, stats);
+        for (RuralPlan.Lot lot : plan.lots()) {
+            RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(level, lot, chunkBox);
+            stats.addPreparation(preparation);
+            StructureTemplate template = level.getLevel().getServer().getStructureManager()
+                    .get(lot.structure().id()).orElse(null);
+            if (template == null) continue;
+            StructurePlaceSettings settings = new StructurePlaceSettings()
+                    .setMirror(Mirror.NONE)
+                    .setRotation(lot.rotation())
+                    .setBoundingBox(chunkBox)
+                    .setIgnoreEntities(true);
+            stats.blocksAttempted++;
+            if (template.placeInWorld(level, lot.origin(), lot.origin(), settings,
+                    RandomSource.create(plan.deterministicSeed() ^ lot.origin().asLong()), 2)) {
+                stats.blocksWritten++;
+                stats.structureBlocks++;
+            }
+        }
+        for (RuralFarmPlot plot : plan.farmPlots()) {
+            RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(level, plot, chunkBox);
+            stats.addPreparation(preparation);
+            placeNaturalFarmPlot(level, plot, plan.deterministicSeed(), chunkBox, stats);
+        }
+        return stats.summary();
+    }
+
+    private static void placeNaturalRoad(WorldGenLevel level, RuralPlan plan, BoundingBox chunkBox,
+                                         NaturalPlacementStats stats) {
+        for (RuralPlan.Road road : plan.roads()) {
+            BoundingBox bounds = road.bounds();
+            for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
+                for (int z = bounds.minZ(); z <= bounds.maxZ(); z++) {
+                    if (x < chunkBox.minX() || x > chunkBox.maxX()
+                            || z < chunkBox.minZ() || z > chunkBox.maxZ()) continue;
+                    int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                    BlockPos pos = new BlockPos(x, y, z);
+                    stats.blocksAttempted++;
+                    if (level.setBlock(pos, Blocks.GRAVEL.defaultBlockState(), 3)) {
+                        stats.blocksWritten++;
+                        stats.roadBlocks++;
+                    }
+                }
+            }
+        }
+    }
+
+    private static void placeDriveways(WorldGenLevel level, RuralPlan plan, BoundingBox chunkBox,
+                                       NaturalPlacementStats stats) {
+        for (RuralPlan.Lot lot : plan.lots()) {
+            BlockPos start = frontMidpoint(lot.bounds(), lot.roadFacing()).relative(lot.roadFacing());
+            BlockPos target = nearestRoadCell(start, plan.roads());
+            Direction travel = dominantDirection(start, target);
+            Direction width = travel.getClockWise();
+            int length = Math.max(Math.abs(target.getX() - start.getX()), Math.abs(target.getZ() - start.getZ()));
+            for (int step = 0; step <= length; step++) {
+                double progress = length == 0 ? 0.0D : step / (double) length;
+                BlockPos center = new BlockPos(Mth.floor(Mth.lerp(progress, start.getX(), target.getX())), 0,
+                        Mth.floor(Mth.lerp(progress, start.getZ(), target.getZ())));
+                for (int lateral = -1; lateral <= 1; lateral++) {
+                    int x = center.getX() + width.getStepX() * lateral;
+                    int z = center.getZ() + width.getStepZ() * lateral;
+                    if (chunkBox != null && (x < chunkBox.minX() || x > chunkBox.maxX()
+                            || z < chunkBox.minZ() || z > chunkBox.maxZ())) continue;
+                    int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z) - 1;
+                    if (stats != null) stats.blocksAttempted++;
+                    if (level.setBlock(new BlockPos(x, y, z), Blocks.GRAVEL.defaultBlockState(), 3)
+                            && stats != null) {
+                        stats.blocksWritten++;
+                        stats.roadBlocks++;
+                    }
+                }
+            }
+        }
+    }
+
+    private static BlockPos frontMidpoint(BoundingBox bounds, Direction facing) {
+        int x = (bounds.minX() + bounds.maxX()) / 2;
+        int z = (bounds.minZ() + bounds.maxZ()) / 2;
+        return switch (facing) {
+            case NORTH -> new BlockPos(x, 0, bounds.minZ());
+            case SOUTH -> new BlockPos(x, 0, bounds.maxZ());
+            case WEST -> new BlockPos(bounds.minX(), 0, z);
+            case EAST -> new BlockPos(bounds.maxX(), 0, z);
+            default -> throw new IllegalArgumentException("Horizontal road facing required: " + facing);
+        };
+    }
+
+    private static BlockPos nearestRoadCell(BlockPos start, List<RuralPlan.Road> roads) {
+        BlockPos best = start;
+        int bestDistance = Integer.MAX_VALUE;
+        for (RuralPlan.Road road : roads) {
+            int x = Mth.clamp(start.getX(), road.bounds().minX(), road.bounds().maxX());
+            int z = Mth.clamp(start.getZ(), road.bounds().minZ(), road.bounds().maxZ());
+            int distance = Math.abs(x - start.getX()) + Math.abs(z - start.getZ());
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = new BlockPos(x, 0, z);
+            }
+        }
+        return best;
+    }
+
+    private static Direction dominantDirection(BlockPos from, BlockPos to) {
+        int dx = to.getX() - from.getX();
+        int dz = to.getZ() - from.getZ();
+        if (Math.abs(dx) >= Math.abs(dz)) return dx >= 0 ? Direction.EAST : Direction.WEST;
+        return dz >= 0 ? Direction.SOUTH : Direction.NORTH;
+    }
+
+    private static void placeNaturalFarmPlot(WorldGenLevel level, RuralFarmPlot plot, long seed,
+                                             BoundingBox chunkBox, NaturalPlacementStats stats) {
+        for (BlockPos pos : plot.irrigationCells()) {
+            BlockPos placed = new BlockPos(pos.getX(), plot.baseY(), pos.getZ());
+            if (!chunkBox.isInside(placed)) continue;
+            stats.blocksAttempted++;
+            if (level.setBlock(placed, Blocks.WATER.defaultBlockState(), 3)) {
+                stats.blocksWritten++;
+                stats.irrigationBlocks++;
+                stats.farmBlocks++;
+            }
+        }
+        for (BlockPos pos : plot.pathCells()) {
+            BlockPos placed = new BlockPos(pos.getX(), plot.baseY(), pos.getZ());
+            if (!chunkBox.isInside(placed)) continue;
+            stats.blocksAttempted++;
+            if (level.setBlock(placed, Blocks.DIRT_PATH.defaultBlockState(), 3)) {
+                stats.blocksWritten++;
+                stats.farmBlocks++;
+            }
+        }
+        Set<Long> irrigationKeys = plot.irrigationCells().stream()
+                .map(pos -> BlockPos.asLong(pos.getX(), 0, pos.getZ())).collect(java.util.stream.Collectors.toSet());
+        Set<Long> pathKeys = plot.pathCells().stream()
+                .map(pos -> BlockPos.asLong(pos.getX(), 0, pos.getZ())).collect(java.util.stream.Collectors.toSet());
+        for (RuralFarmPlot.Cell cell : plot.cells()) {
+            if (irrigationKeys.contains(cell.key()) || pathKeys.contains(cell.key())) continue;
+            BlockPos farmland = new BlockPos(cell.x(), plot.baseY(), cell.z());
+            if (!chunkBox.isInside(farmland)) continue;
+            stats.blocksAttempted++;
+            if (level.setBlock(farmland, Blocks.FARMLAND.defaultBlockState(), 3)) {
+                stats.blocksWritten++;
+                stats.farmBlocks++;
+            }
+            stats.blocksAttempted++;
+            if (level.setBlock(farmland.above(), plot.crop().state(growthBand(seed, plot.index(), cell.key())), 3)) {
+                stats.blocksWritten++;
+                stats.cropBlocks++;
+                stats.farmBlocks++;
+            }
+        }
+        for (RuralFarmPlot.Fence fence : plot.fences()) {
+            if (!chunkBox.isInside(fence.pos())) continue;
+            stats.blocksAttempted++;
+            if (level.setBlock(fence.pos(), Blocks.OAK_FENCE.defaultBlockState(), 3)) {
+                stats.blocksWritten++;
+                stats.farmBlocks++;
+            }
+        }
+        for (RuralFarmPlot.Gate gate : plot.gates()) {
+            if (chunkBox.isInside(gate.pos())) {
+                stats.blocksAttempted++;
+                if (level.setBlock(gate.pos(), Blocks.OAK_FENCE_GATE.defaultBlockState()
+                        .setValue(BlockStateProperties.HORIZONTAL_FACING, gate.facing()), 3)) {
+                    stats.blocksWritten++;
+                    stats.farmBlocks++;
+                }
+            }
+        }
+    }
+
+    public record NaturalPlacementSummary(int blocksAttempted, int blocksWritten, int roadBlocks,
+                                          int terrainPrepBlocks, int vegetationCleared, int structureBlocks,
+                                          int farmBlocks, int cropBlocks, int irrigationBlocks,
+                                          int totalCutBlocks, int totalFillBlocks, int maxCutDepth,
+                                          int maxFillDepth, int terrainBlendBlocks, int exposedFillSurfaceBlocks) {
+        private static NaturalPlacementSummary empty() {
+            return new NaturalPlacementSummary(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+    }
+
+    private static final class NaturalPlacementStats {
+        private int blocksAttempted;
+        private int blocksWritten;
+        private int roadBlocks;
+        private int terrainPrepBlocks;
+        private int vegetationCleared;
+        private int structureBlocks;
+        private int farmBlocks;
+        private int cropBlocks;
+        private int irrigationBlocks;
+        private int totalCutBlocks;
+        private int totalFillBlocks;
+        private int maxCutDepth;
+        private int maxFillDepth;
+        private int terrainBlendBlocks;
+        private int exposedFillSurfaceBlocks;
+
+        private void addPreparation(RuralTerrainAdapter.PreparationResult preparation) {
+            terrainPrepBlocks += preparation.changed();
+            vegetationCleared += preparation.vegetationCleared();
+            totalCutBlocks += preparation.cutBlocks();
+            totalFillBlocks += preparation.fillBlocks();
+            maxCutDepth = Math.max(maxCutDepth, preparation.maxCutDepth());
+            maxFillDepth = Math.max(maxFillDepth, preparation.maxFillDepth());
+            terrainBlendBlocks += preparation.terrainBlendBlocks();
+            exposedFillSurfaceBlocks += preparation.exposedFillSurfaceBlocks();
+        }
+
+        private NaturalPlacementSummary summary() {
+            return new NaturalPlacementSummary(blocksAttempted, blocksWritten, roadBlocks, terrainPrepBlocks,
+                    vegetationCleared, structureBlocks, farmBlocks, cropBlocks, irrigationBlocks,
+                    totalCutBlocks, totalFillBlocks, maxCutDepth, maxFillDepth, terrainBlendBlocks,
+                    exposedFillSurfaceBlocks);
         }
     }
 
@@ -357,7 +587,7 @@ public final class RuralGenerator {
 
     private static RuralPlan invalid(BlockPos center, BoundingBox reservation, RuralPlan.SiteScore site,
                                      RuralPlan.Road mainRoad, List<RuralPlan.Road> branchRoads, int target,
-                                     List<LotCandidate> candidates, List<RuralPlan.Lot> accepted,
+                                     List<RuralLayoutPlanner.Candidate> candidates, List<RuralPlan.Lot> accepted,
                                      RejectionTracker rejectionTracker, String reason) {
         return RuralPlan.invalid(center, reservation, site, mainRoad, branchRoads, target, accepted,
                 candidates.size(), Math.max(0, candidates.size() - accepted.size()),
@@ -366,7 +596,7 @@ public final class RuralGenerator {
     }
 
     private static int forceDefinition(RuralStructurePool.Definition definition, RuralStructurePool.Role role,
-                                       List<LotCandidate> candidates,
+                                       List<RuralLayoutPlanner.Candidate> candidates,
                                        Map<RuralStructurePool.Definition, StructureTemplate> templates,
                                        ServerLevel level, BoundingBox reservation, List<RuralPlan.Road> roads,
                                        List<RuralPlan.Lot> accepted,
@@ -466,124 +696,21 @@ public final class RuralGenerator {
                 water, steep, waterRatio, p10, median, p90, p90 - p10, steepRatio, score);
     }
 
-    private static List<LotCandidate> candidates(BlockPos center, Direction mainDirection,
-                                                  Direction branchDirection, StructureTemplate barnTemplate) {
-        List<LotCandidate> result = new ArrayList<>();
-        Direction mainPositiveSide = mainDirection.getClockWise();
-        Direction branchPositiveSide = branchDirection.getClockWise();
-
-        for (int side : new int[]{-1, 1}) {
-            result.add(new LotCandidate(offset(center, branchDirection, 10, branchPositiveSide, side * 18),
-                    faceTowardRoad(branchPositiveSide, side), RuralStructurePool.Role.FARMHOUSE));
-            result.add(new LotCandidate(offset(center, mainDirection, 0, mainPositiveSide, side * MAIN_LOT_SIDE_OFFSET),
-                    faceTowardRoad(mainPositiveSide, side), RuralStructurePool.Role.FARMHOUSE));
-        }
-
-        addBarnCandidates(result, center, branchDirection, branchPositiveSide, barnTemplate);
-
-        for (int distance : new int[]{10, 26}) {
-            for (int side : new int[]{-1, 1}) {
-                result.add(new LotCandidate(offset(center, branchDirection, distance, branchPositiveSide,
-                        side * 30), faceTowardRoad(branchPositiveSide, side),
-                        RuralStructurePool.Role.AGRICULTURAL_UTILITY));
-            }
-        }
-
-        for (int longitudinal : new int[]{-30, -10, 10, 30}) {
-            for (int side : new int[]{-1, 1}) {
-                result.add(new LotCandidate(offset(center, mainDirection, longitudinal, mainPositiveSide,
-                        side * MAIN_LOT_SIDE_OFFSET), faceTowardRoad(mainPositiveSide, side),
-                        RuralStructurePool.Role.RESIDENTIAL));
-            }
-        }
-
-        for (int longitudinal : new int[]{-34, 34}) {
-            for (int side : new int[]{-1, 1}) {
-                result.add(new LotCandidate(offset(center, mainDirection, longitudinal, mainPositiveSide,
-                        side * 30), faceTowardRoad(mainPositiveSide, side), RuralStructurePool.Role.FLEX));
-            }
-        }
-
-        for (int side : new int[]{-1, 1}) {
-            result.add(new LotCandidate(offset(center, mainDirection, 36, mainPositiveSide, side * 28),
-                    faceTowardRoad(mainPositiveSide, side), RuralStructurePool.Role.LANDMARK));
-        }
-        return result;
-    }
-
-    private static void addBarnCandidates(List<LotCandidate> result, BlockPos center, Direction branchDirection,
-                                          Direction branchSide, StructureTemplate barnTemplate) {
-        RuralPlan.Road branchRoad = road(center, branchDirection, true);
-        Vec3i size = barnTemplate.getSize();
-        for (int side : new int[]{-1, 1}) {
-            Direction roadFacing = faceTowardRoad(branchSide, side);
-            Rotation preferred = rotationFor(RuralStructurePool.BARN.frontDirection(), roadFacing);
-            int distance = BRANCH_LENGTH - 6;
-            for (Rotation rotation : new Rotation[]{preferred, rotate180(preferred)}) {
-                BlockPos anchor = barnAnchorOutsideRoad(center, branchDirection, branchSide, side,
-                        distance, rotation, barnTemplate, branchRoad);
-                BoundingBox bounds = barnBoundsAt(barnTemplate, rotation, anchor);
-                result.add(new LotCandidate(anchor, roadFacing, RuralStructurePool.Role.AGRICULTURAL_LARGE,
-                        rotation, side < 0 ? "left" : "right", horizontalGap(bounds, branchRoad.bounds())));
-                LOGGER.debug("[Rural] barn candidate anchor={} size={} rotation={} roadSide={} distanceFromRoad={} bounds={}",
-                        anchor, size, rotation, side < 0 ? "left" : "right",
-                        horizontalGap(bounds, branchRoad.bounds()), bounds);
-            }
-        }
-    }
-
-    private static BlockPos barnAnchorOutsideRoad(BlockPos center, Direction branchDirection, Direction branchSide,
-                                                  int side, int forwardDistance, Rotation rotation,
-                                                  StructureTemplate template, RuralPlan.Road branchRoad) {
-        for (int lateral = 0; lateral <= RESERVATION_SIZE / 2; lateral++) {
-            BlockPos anchor = offset(center, branchDirection, forwardDistance, branchSide, side * lateral);
-            if (!intersects2d(barnBoundsAt(template, rotation, anchor), branchRoad.bounds(), LOT_MARGIN)) {
-                return anchor;
-            }
-        }
-        return offset(center, branchDirection, forwardDistance, branchSide, side * (RESERVATION_SIZE / 2));
-    }
-
-    private static BoundingBox barnBoundsAt(StructureTemplate template, Rotation rotation, BlockPos anchor) {
-        StructurePlaceSettings settings = new StructurePlaceSettings().setMirror(Mirror.NONE).setRotation(rotation);
-        return template.getBoundingBox(settings, new BlockPos(anchor.getX(), 0, anchor.getZ()));
-    }
-
-    private static Rotation rotate180(Rotation rotation) {
-        return switch (rotation) {
-            case NONE -> Rotation.CLOCKWISE_180;
-            case CLOCKWISE_90 -> Rotation.COUNTERCLOCKWISE_90;
-            case CLOCKWISE_180 -> Rotation.NONE;
-            case COUNTERCLOCKWISE_90 -> Rotation.CLOCKWISE_90;
-        };
-    }
-
-    private static int horizontalGap(BoundingBox first, BoundingBox second) {
-        int xGap = Math.max(second.minX() - first.maxX() - 1, first.minX() - second.maxX() - 1);
-        int zGap = Math.max(second.minZ() - first.maxZ() - 1, first.minZ() - second.maxZ() - 1);
-        if (xGap <= 0 && zGap <= 0) return 0;
-        return Math.max(xGap, zGap);
-    }
-
-    private static BlockPos offset(BlockPos center, Direction forward, int forwardDistance,
-                                   Direction side, int sideDistance) {
-        return center.relative(forward, forwardDistance).relative(side, sideDistance);
-    }
-
-    private static Direction faceTowardRoad(Direction sideDirection, int side) {
-        return side > 0 ? sideDirection.getOpposite() : sideDirection;
-    }
-
     private static LotFit fit(ServerLevel level, StructureTemplate template, RuralStructurePool.Definition definition,
-                              LotCandidate candidate, BoundingBox reservation, List<RuralPlan.Road> roads,
+                              RuralLayoutPlanner.Candidate candidate, BoundingBox reservation, List<RuralPlan.Road> roads,
                               List<RuralPlan.Lot> accepted) {
         Vec3i size = template.getSize();
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             return LotFit.rejected(RuralPlan.RejectionReason.TOO_SMALL, "template size=" + size);
         }
         Rotation rotation = candidate.rotationOverride() == null
-                ? rotationFor(definition.frontDirection(), candidate.roadFacing())
+                ? RuralLayoutPlanner.rotationFor(definition.frontDirection(), candidate.roadFacing())
                 : candidate.rotationOverride();
+        if (!RuralLayoutPlanner.facesRoad(definition, rotation, candidate.roadFacing())) {
+            return LotFit.rejected(RuralPlan.RejectionReason.FRONT_ROAD_FACING_MISMATCH,
+                    "front=" + definition.frontDirection() + " rotation=" + rotation
+                            + " roadFacing=" + candidate.roadFacing());
+        }
         StructurePlaceSettings settings = new StructurePlaceSettings().setMirror(Mirror.NONE).setRotation(rotation);
         BoundingBox atGround = template.getBoundingBox(settings,
                 new BlockPos(candidate.anchor().getX(), 0, candidate.anchor().getZ()));
@@ -874,13 +1001,6 @@ public final class RuralGenerator {
         };
     }
 
-    private static Rotation rotationFor(Direction defaultFront, Direction targetFront) {
-        for (Rotation rotation : Rotation.values()) {
-            if (rotation.rotate(defaultFront) == targetFront) return rotation;
-        }
-        return Rotation.NONE;
-    }
-
     private static RuralStructurePool.Definition weightedPick(List<RuralStructurePool.Definition> definitions,
                                                                RandomSource random) {
         int total = definitions.stream().mapToInt(RuralStructurePool.Definition::weight).sum();
@@ -998,13 +1118,6 @@ public final class RuralGenerator {
         }
     }
 
-    private record LotCandidate(BlockPos anchor, Direction roadFacing, RuralStructurePool.Role role,
-                                Rotation rotationOverride, String roadSide, int distanceFromRoad) {
-        private LotCandidate(BlockPos anchor, Direction roadFacing, RuralStructurePool.Role role) {
-            this(anchor, roadFacing, role, null, "unspecified", -1);
-        }
-    }
-
     private record LotFit(RuralPlan.Lot lot, boolean accepted, RuralPlan.RejectionReason reason, String detail) {
         private static LotFit accepted(RuralPlan.Lot lot) {
             return new LotFit(lot, true, null, "OK");
@@ -1027,19 +1140,19 @@ public final class RuralGenerator {
             if (reason != null) counts.merge(reason, 1, Integer::sum);
         }
 
-        private void recordBarnFailure(RuralStructurePool.Definition definition, LotCandidate candidate,
+        private void recordBarnFailure(RuralStructurePool.Definition definition, RuralLayoutPlanner.Candidate candidate,
                                        StructureTemplate template, LotFit fit) {
             if (barnDetails.size() >= 5) return;
             Vec3i size = template.getSize();
             barnDetails.add(String.format(
                     "reason=%s detail=%s candidate=%s bounds=%s requiredFootprint=%dx%dx%d rotation=%s roadSide=%s distanceFromRoad=%d",
                     fit.reason(), fit.detail(), candidate.anchor().toShortString(),
-                    barnBoundsAt(template, candidate.rotationOverride() == null
-                            ? rotationFor(definition.frontDirection(), candidate.roadFacing())
+                    RuralLayoutPlanner.boundsAt(template, candidate.rotationOverride() == null
+                            ? RuralLayoutPlanner.rotationFor(definition.frontDirection(), candidate.roadFacing())
                             : candidate.rotationOverride(), candidate.anchor()),
                     size.getX(), size.getY(), size.getZ(),
                     candidate.rotationOverride() == null
-                            ? rotationFor(definition.frontDirection(), candidate.roadFacing())
+                            ? RuralLayoutPlanner.rotationFor(definition.frontDirection(), candidate.roadFacing())
                             : candidate.rotationOverride(),
                     candidate.roadSide(), candidate.distanceFromRoad()));
         }

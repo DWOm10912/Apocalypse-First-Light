@@ -2,9 +2,9 @@ package com.antaurora.apofirstlight.worldgen.rural;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.LevelReader;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,10 +31,23 @@ public final class RuralFarmPlanner {
     private RuralFarmPlanner() {
     }
 
-    public static Result plan(ServerLevel level, BlockPos center, BoundingBox reservation,
+    public static Result plan(net.minecraft.server.level.ServerLevel level, BlockPos center, BoundingBox reservation,
                               List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots) {
-        int target = MIN_PLOTS + (int) Math.floorMod(level.getSeed() ^ center.asLong() ^ FARM_SALT,
-                (long) (MAX_PLOTS - MIN_PLOTS + 1));
+        return plan(RuralTerrainSampler.source(level), level.getSeed(), center, reservation, roads, lots,
+                MIN_PLOTS, MAX_PLOTS);
+    }
+
+    public static Result plan(LevelReader level, long seed, BlockPos center, BoundingBox reservation,
+                              List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
+                              int minPlots, int maxPlots) {
+        return plan(RuralTerrainSampler.source(level), seed, center, reservation, roads, lots, minPlots, maxPlots);
+    }
+
+    public static Result plan(RuralTerrainSource terrain, long seed, BlockPos center, BoundingBox reservation,
+                              List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
+                              int minPlots, int maxPlots) {
+        int target = minPlots + (int) Math.floorMod(seed ^ center.asLong() ^ FARM_SALT,
+                (long) (maxPlots - minPlots + 1));
         List<RuralPlan.Lot> owners = new ArrayList<>(lots.stream()
                 .filter(lot -> lot.structure() == RuralStructurePool.FARMHOUSE
                         || lot.structure() == RuralStructurePool.BARN)
@@ -48,10 +61,10 @@ public final class RuralFarmPlanner {
 
         for (RuralPlan.Lot owner : owners) {
             if (plots.size() >= target) break;
-            RandomSource random = RandomSource.create(level.getSeed() ^ center.asLong() ^ FARM_SALT
+            RandomSource random = RandomSource.create(seed ^ center.asLong() ^ FARM_SALT
                     ^ (long) (plots.size() + 1) * 0x9E3779B97F4A7C15L);
             for (Candidate candidate : ownerCandidates(owner, reservation, random)) {
-                Validation validation = validate(level, center, reservation, roads, lots, occupiedPlotCells,
+                Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
                         owner, candidate, plots.size(), random);
                 attempt++;
                 if (validation.plot() != null) {
@@ -67,13 +80,13 @@ public final class RuralFarmPlanner {
         }
 
         if (plots.size() < target) {
-            RandomSource fallbackRandom = RandomSource.create(level.getSeed() ^ center.asLong() ^ FARM_SALT ^ 0xFA11BACCL);
+            RandomSource fallbackRandom = RandomSource.create(seed ^ center.asLong() ^ FARM_SALT ^ 0xFA11BACCL);
             List<RuralPlan.Lot> fallbackOwners = owners.isEmpty() ? lots : owners;
             for (Candidate candidate : fallbackCandidates(reservation, fallbackRandom)) {
                 if (plots.size() >= target) break;
                 RuralPlan.Lot owner = nearestOwner(fallbackOwners, candidate);
-                Validation validation = validate(level, center, reservation, roads, lots, occupiedPlotCells,
-                        owner, candidate, plots.size(), fallbackRandom);
+                    Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
+                            owner, candidate, plots.size(), fallbackRandom);
                 attempt++;
                 if (validation.plot() != null) {
                     plots.add(validation.plot());
@@ -147,7 +160,7 @@ public final class RuralFarmPlanner {
         })).orElse(null);
     }
 
-    private static Validation validate(ServerLevel level, BlockPos center, BoundingBox reservation,
+    private static Validation validate(RuralTerrainSource terrain, BlockPos center, BoundingBox reservation,
                                        List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
                                        Set<Long> occupiedPlotCells, RuralPlan.Lot owner,
                                        Candidate candidate, int plotIndex, RandomSource random) {
@@ -185,8 +198,7 @@ public final class RuralFarmPlanner {
                 if (!mask[x][z]) continue;
                 int worldX = minX + x;
                 int worldZ = minZ + z;
-                level.getChunk(worldX >> 4, worldZ >> 4);
-                RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, worldX, worldZ);
+                RuralTerrainSampler.Sample sample = terrain.sample(worldX, worldZ);
                 if (!sample.valid()) return Validation.rejected("invalid_ground");
                 if (sample.water()) return Validation.rejected("natural_water");
                 long key = BlockPos.asLong(worldX, 0, worldZ);

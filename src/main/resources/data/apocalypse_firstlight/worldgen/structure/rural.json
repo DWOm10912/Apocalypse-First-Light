@@ -1,0 +1,7 @@
+{
+  "type": "apocalypse_firstlight:rural",
+  "biomes": "#apocalypse_firstlight:has_structure/rural",
+  "step": "surface_structures",
+  "spawn_overrides": {},
+  "terrain_adaptation": "none"
+}

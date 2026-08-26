@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "apocalypse_firstlight:rural",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 1374512467,
+    "separation": 32,
+    "spacing": 64
+  }
+}

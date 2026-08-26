@@ -33,6 +33,10 @@ public final class RuralStructurePool {
         return DEFINITIONS;
     }
 
+    public static Definition definition(ResourceLocation id) {
+        return DEFINITIONS.stream().filter(definition -> definition.id().equals(id)).findFirst().orElse(null);
+    }
+
     public enum Role {
         RESIDENTIAL,
         FARMHOUSE,

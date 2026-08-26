@@ -28,12 +28,16 @@ public final class RuralPlan {
     private final int farmPlotTarget;
     private final List<RuralFarmPlot> farmPlots;
     private final List<String> farmPlotRejections;
+    private final RuralScaleTier scaleTier;
+    private final long deterministicSeed;
+    private final String roadLayout;
 
     private RuralPlan(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
                       List<Road> branchRoads, List<Lot> lots, int targetBuildings, int candidateLots,
                       int rejectedLots, boolean fallbackUsed, boolean valid, String failureReason,
                       Map<RejectionReason, Integer> rejectionCounts, List<String> barnRejectionDetails,
-                      int farmPlotTarget, List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections) {
+                      int farmPlotTarget, List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections,
+                      RuralScaleTier scaleTier, long deterministicSeed, String roadLayout) {
         this.center = center;
         this.reservation = reservation;
         this.site = site;
@@ -55,6 +59,9 @@ public final class RuralPlan {
         this.farmPlotTarget = farmPlotTarget;
         this.farmPlots = List.copyOf(farmPlots);
         this.farmPlotRejections = List.copyOf(farmPlotRejections);
+        this.scaleTier = scaleTier;
+        this.deterministicSeed = deterministicSeed;
+        this.roadLayout = roadLayout;
     }
 
     public static RuralPlan valid(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
@@ -64,7 +71,7 @@ public final class RuralPlan {
                                   List<String> barnRejectionDetails) {
         return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
                 candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails,
-                0, List.of(), List.of());
+                0, List.of(), List.of(), RuralScaleTier.FULL_RURAL, 0L, "MAIN_T_BRANCH");
     }
 
     public static RuralPlan valid(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
@@ -75,7 +82,19 @@ public final class RuralPlan {
                                   List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections) {
         return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
                 candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails,
-                farmPlotTarget, farmPlots, farmPlotRejections);
+                farmPlotTarget, farmPlots, farmPlotRejections, RuralScaleTier.FULL_RURAL, 0L, "MAIN_T_BRANCH");
+    }
+
+    public static RuralPlan validNatural(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
+                                         List<Road> branchRoads, List<Lot> lots, int targetBuildings,
+                                         int candidateLots, int rejectedLots, boolean fallbackUsed,
+                                         Map<RejectionReason, Integer> rejectionCounts,
+                                         List<String> barnRejectionDetails, int farmPlotTarget,
+                                         List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections,
+                                         RuralScaleTier scaleTier, long deterministicSeed, String roadLayout) {
+        return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
+                candidateLots, rejectedLots, fallbackUsed, true, "OK", rejectionCounts, barnRejectionDetails,
+                farmPlotTarget, farmPlots, farmPlotRejections, scaleTier, deterministicSeed, roadLayout);
     }
 
     public static RuralPlan invalid(BlockPos center, BoundingBox reservation, SiteScore site,
@@ -85,7 +104,19 @@ public final class RuralPlan {
                                     List<String> barnRejectionDetails) {
         return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
                 candidateLots, rejectedLots, false, false, failureReason, rejectionCounts, barnRejectionDetails,
-                0, List.of(), List.of());
+                0, List.of(), List.of(), RuralScaleTier.FULL_RURAL, 0L, "MAIN_T_BRANCH");
+    }
+
+    public static RuralPlan invalidNatural(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
+                                           List<Road> branchRoads, int targetBuildings, List<Lot> lots,
+                                           int candidateLots, int rejectedLots, String failureReason,
+                                           Map<RejectionReason, Integer> rejectionCounts,
+                                           List<String> barnRejectionDetails, RuralScaleTier scaleTier,
+                                           long deterministicSeed, String roadLayout, int farmPlotTarget,
+                                           List<RuralFarmPlot> farmPlots, List<String> farmPlotRejections) {
+        return new RuralPlan(center, reservation, site, road, branchRoads, lots, targetBuildings,
+                candidateLots, rejectedLots, false, false, failureReason, rejectionCounts, barnRejectionDetails,
+                farmPlotTarget, farmPlots, farmPlotRejections, scaleTier, deterministicSeed, roadLayout);
     }
 
     public BlockPos center() { return center; }
@@ -113,6 +144,37 @@ public final class RuralPlan {
     public List<RuralFarmPlot> farmPlots() { return farmPlots; }
     public int farmPlotCount() { return farmPlots.size(); }
     public List<String> farmPlotRejections() { return farmPlotRejections; }
+    public RuralScaleTier scaleTier() { return scaleTier; }
+    public long deterministicSeed() { return deterministicSeed; }
+    public String roadLayout() { return roadLayout; }
+
+    public int naturalSuitableLots() {
+        return (int) lots.stream().filter(lot -> lot.classification() == LotClassification.NATURALLY_SUITABLE).count();
+    }
+
+    public int adaptableLots() {
+        return (int) lots.stream().filter(lot -> lot.classification() == LotClassification.ADAPTABLE).count();
+    }
+
+    public int unusableLots() {
+        return Math.max(0, candidateLots - lots.size());
+    }
+
+    public int totalCutBlocks() {
+        return lots.stream().mapToInt(Lot::predictedCutBlocks).sum();
+    }
+
+    public int totalFillBlocks() {
+        return lots.stream().mapToInt(Lot::predictedFillBlocks).sum();
+    }
+
+    public int maxCutDepth() {
+        return lots.stream().mapToInt(Lot::maxCutDepth).max().orElse(0);
+    }
+
+    public int maxFillDepth() {
+        return lots.stream().mapToInt(Lot::maxFillDepth).max().orElse(0);
+    }
 
     public enum RejectionReason {
         ROLE_MISMATCH,
@@ -124,7 +186,14 @@ public final class RuralPlan {
         WATER,
         INVALID_GROUND,
         ROTATED_FOOTPRINT,
+        FRONT_ROAD_FACING_MISMATCH,
         OTHER
+    }
+
+    public enum LotClassification {
+        NATURALLY_SUITABLE,
+        ADAPTABLE,
+        UNUSABLE
     }
 
     public record SiteScore(int sampledColumns, int validGroundSamples, int correctedVegetationSamples,
@@ -137,6 +206,13 @@ public final class RuralPlan {
     }
 
     public record Lot(RuralStructurePool.Definition structure, BlockPos origin, Rotation rotation,
-                      BoundingBox bounds, int baseY, Direction roadFacing) {
+                      BoundingBox bounds, int baseY, Direction roadFacing,
+                      LotClassification classification, int minSurfaceY, int maxSurfaceY,
+                      int predictedCutBlocks, int predictedFillBlocks, int maxCutDepth, int maxFillDepth) {
+        public Lot(RuralStructurePool.Definition structure, BlockPos origin, Rotation rotation,
+                   BoundingBox bounds, int baseY, Direction roadFacing) {
+            this(structure, origin, rotation, bounds, baseY, roadFacing,
+                    LotClassification.NATURALLY_SUITABLE, baseY, baseY, 0, 0, 0, 0);
+        }
     }
 }

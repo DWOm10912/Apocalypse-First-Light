@@ -10,6 +10,7 @@ import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.registry.AflFeatures;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.world.biome.AflOverworldRegion;
+import com.antaurora.apofirstlight.worldgen.rural.RuralNaturalWorldgen;
 import terrablender.api.Regions;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -37,6 +38,8 @@ public class ApocalypseFirstLight {
         AflSounds.SOUND_EVENTS.register(modEventBus);
         AflFeatures.FEATURES.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
+        RuralNaturalWorldgen.STRUCTURE_TYPES.register(modEventBus);
+        RuralNaturalWorldgen.STRUCTURE_PIECES.register(modEventBus);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
