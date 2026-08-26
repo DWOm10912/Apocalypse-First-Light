@@ -25,15 +25,7 @@ public final class RuralNaturalStructure extends Structure {
     protected Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
         ChunkPos chunk = context.chunkPos();
         BlockPos center = new BlockPos(chunk.getMiddleBlockX(), 0, chunk.getMiddleBlockZ());
-        long fastStart = System.nanoTime();
-        if (!RuralNaturalGenerator.fastSiteCheck(context, center)) {
-            ApocalypseFirstLight.LOGGER.debug(
-                    "[AFL RURAL NATURAL][FIND_GENERATION_POINT] REJECT_FAST candidateChunk={} center={} fastSiteCheckMs={}",
-                    chunk, center, (System.nanoTime() - fastStart) / 1_000_000.0D);
-            return Optional.empty();
-        }
-        double fastSiteCheckMs = (System.nanoTime() - fastStart) / 1_000_000.0D;
-        RuralPlan plan = RuralNaturalGenerator.plan(context, center, fastSiteCheckMs);
+        RuralPlan plan = RuralNaturalGenerator.plan(context, center);
         if (!plan.valid()) {
             ApocalypseFirstLight.LOGGER.debug(
                     "[AFL RURAL NATURAL][FIND_GENERATION_POINT] REJECT candidateChunk={} center={} tier={} seed={} reason={} targetBuildings={} finalBuildings={} farmPlotTarget={} farmPlotCount={} roadLayout={} bounds={}",

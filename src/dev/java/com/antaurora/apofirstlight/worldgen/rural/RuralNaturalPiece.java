@@ -73,8 +73,10 @@ public final class RuralNaturalPiece extends StructurePiece {
         }
         try {
             if (!planningAttempted) {
-                cachedPlan = RuralNaturalGenerator.plan(region, center);
                 planningAttempted = true;
+                ApocalypseFirstLight.LOGGER.warn(
+                        "[AFL RURAL NATURAL][PLAN_MISSING] center={} currentChunk={} saved structure piece has no serialized plan; skipping replanning",
+                        center, chunkPos);
             }
             RuralPlan plan = cachedPlan;
             if (plan == null) {

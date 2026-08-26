@@ -46,6 +46,18 @@ public final class RuralFarmPlanner {
     public static Result plan(RuralTerrainSource terrain, long seed, BlockPos center, BoundingBox reservation,
                               List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
                               int minPlots, int maxPlots) {
+        return planInternal(terrain, seed, center, reservation, roads, lots, minPlots, maxPlots, false);
+    }
+
+    public static Result planBounded(RuralTerrainSource terrain, long seed, BlockPos center, BoundingBox reservation,
+                                     List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
+                                     int minPlots, int maxPlots) {
+        return planInternal(terrain, seed, center, reservation, roads, lots, minPlots, maxPlots, true);
+    }
+
+    private static Result planInternal(RuralTerrainSource terrain, long seed, BlockPos center, BoundingBox reservation,
+                                       List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
+                                       int minPlots, int maxPlots, boolean bounded) {
         int target = minPlots + (int) Math.floorMod(seed ^ center.asLong() ^ FARM_SALT,
                 (long) (maxPlots - minPlots + 1));
         List<RuralPlan.Lot> owners = new ArrayList<>(lots.stream()
@@ -63,9 +75,11 @@ public final class RuralFarmPlanner {
             if (plots.size() >= target) break;
             RandomSource random = RandomSource.create(seed ^ center.asLong() ^ FARM_SALT
                     ^ (long) (plots.size() + 1) * 0x9E3779B97F4A7C15L);
-            for (Candidate candidate : ownerCandidates(owner, reservation, random)) {
+            for (Candidate candidate : (bounded
+                    ? ownerCandidatesBounded(owner, reservation, random) : ownerCandidates(owner, reservation, random))) {
+                if (bounded && attempt >= RuralGenerator.MAX_NATURAL_FARM_CANDIDATES) break;
                 Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
-                        owner, candidate, plots.size(), random);
+                        owner, candidate, plots.size(), random, bounded);
                 attempt++;
                 if (validation.plot() != null) {
                     plots.add(validation.plot());
@@ -82,11 +96,13 @@ public final class RuralFarmPlanner {
         if (plots.size() < target) {
             RandomSource fallbackRandom = RandomSource.create(seed ^ center.asLong() ^ FARM_SALT ^ 0xFA11BACCL);
             List<RuralPlan.Lot> fallbackOwners = owners.isEmpty() ? lots : owners;
-            for (Candidate candidate : fallbackCandidates(reservation, fallbackRandom)) {
+            for (Candidate candidate : (bounded
+                    ? fallbackCandidatesBounded(reservation, fallbackRandom) : fallbackCandidates(reservation, fallbackRandom))) {
                 if (plots.size() >= target) break;
+                if (bounded && attempt >= RuralGenerator.MAX_NATURAL_FARM_CANDIDATES) break;
                 RuralPlan.Lot owner = nearestOwner(fallbackOwners, candidate);
                     Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
-                            owner, candidate, plots.size(), fallbackRandom);
+                            owner, candidate, plots.size(), fallbackRandom, bounded);
                 attempt++;
                 if (validation.plot() != null) {
                     plots.add(validation.plot());
@@ -98,6 +114,33 @@ public final class RuralFarmPlanner {
         }
 
         return new Result(target, List.copyOf(plots), List.copyOf(rejections), attempt);
+    }
+
+    private static List<Candidate> ownerCandidatesBounded(RuralPlan.Lot owner, BoundingBox reservation,
+                                                           RandomSource random) {
+        List<Candidate> result = new ArrayList<>();
+        Direction back = owner.roadFacing().getOpposite();
+        Direction side = back.getClockWise();
+        int minWidth = owner.structure() == RuralStructurePool.BARN ? 12 : 7;
+        int maxWidth = owner.structure() == RuralStructurePool.BARN ? 19 : 11;
+        int minDepth = owner.structure() == RuralStructurePool.BARN ? 14 : 8;
+        int maxDepth = owner.structure() == RuralStructurePool.BARN ? 22 : 13;
+        for (Direction direction : new Direction[]{back, side, side.getOpposite()}) {
+            for (int distance : new int[]{7, 15, 23, 31}) {
+                int width = between(random, minWidth, maxWidth);
+                int depth = between(random, minDepth, maxDepth);
+                if (random.nextBoolean()) {
+                    int swap = width;
+                    width = depth;
+                    depth = swap;
+                }
+                int x = owner.bounds().getCenter().getX() + direction.getStepX() * distance;
+                int z = owner.bounds().getCenter().getZ() + direction.getStepZ() * distance;
+                result.add(new Candidate(x - width / 2, z - depth / 2, width, depth,
+                        shape(random, owner.structure() == RuralStructurePool.BARN), owner.structure().id().toString()));
+            }
+        }
+        return result;
     }
 
     private static List<Candidate> ownerCandidates(RuralPlan.Lot owner, BoundingBox reservation,
@@ -152,6 +195,23 @@ public final class RuralFarmPlanner {
         return result;
     }
 
+    private static List<Candidate> fallbackCandidatesBounded(BoundingBox reservation, RandomSource random) {
+        List<Candidate> result = new ArrayList<>();
+        int minX = reservation.minX() + 10;
+        int maxX = reservation.maxX() - 24;
+        int minZ = reservation.minZ() + 10;
+        int maxZ = reservation.maxZ() - 24;
+        for (int ix = 0; ix < 4; ix++) {
+            for (int iz = 0; iz < 4; iz++) {
+                int x = minX + (maxX - minX) * ix / 3;
+                int z = minZ + (maxZ - minZ) * iz / 3;
+                result.add(new Candidate(x, z, between(random, 8, 15), between(random, 9, 17),
+                        shape(random, false), "fallback"));
+            }
+        }
+        return result;
+    }
+
     private static RuralPlan.Lot nearestOwner(List<RuralPlan.Lot> owners, Candidate candidate) {
         return owners.stream().min(Comparator.comparingLong(owner -> {
             long dx = owner.bounds().getCenter().getX() - candidate.centerX();
@@ -163,7 +223,7 @@ public final class RuralFarmPlanner {
     private static Validation validate(RuralTerrainSource terrain, BlockPos center, BoundingBox reservation,
                                        List<RuralPlan.Road> roads, List<RuralPlan.Lot> lots,
                                        Set<Long> occupiedPlotCells, RuralPlan.Lot owner,
-                                       Candidate candidate, int plotIndex, RandomSource random) {
+                                       Candidate candidate, int plotIndex, RandomSource random, boolean bounded) {
         boolean[][] mask = buildMask(candidate.width(), candidate.depth(), candidate.shape());
         String maskError = validateMask(mask, candidate.shape());
         if (maskError != null) return Validation.rejected(maskError);
@@ -193,27 +253,56 @@ public final class RuralFarmPlanner {
         Map<Long, Integer> surfaceYs = new HashMap<>();
         int minY = Integer.MAX_VALUE;
         int maxY = Integer.MIN_VALUE;
-        for (int x = 0; x < candidate.width(); x++) {
-            for (int z = 0; z < candidate.depth(); z++) {
-                if (!mask[x][z]) continue;
-                int worldX = minX + x;
-                int worldZ = minZ + z;
-                RuralTerrainSampler.Sample sample = terrain.sample(worldX, worldZ);
+        int boundedBaseY = 0;
+        if (bounded) {
+            int midX = (minX + bounds.maxX()) / 2;
+            int midZ = (minZ + bounds.maxZ()) / 2;
+            int[][] points = {{minX, minZ}, {minX, bounds.maxZ()}, {bounds.maxX(), minZ},
+                    {bounds.maxX(), bounds.maxZ()}, {midX, minZ}, {midX, bounds.maxZ()},
+                    {minX, midZ}, {bounds.maxX(), midZ}, {midX, midZ}};
+            List<Integer> probeHeights = new ArrayList<>();
+            for (int[] point : points) {
+                RuralTerrainSampler.Sample sample = terrain.sample(point[0], point[1]);
                 if (!sample.valid()) return Validation.rejected("invalid_ground");
                 if (sample.water()) return Validation.rejected("natural_water");
-                long key = BlockPos.asLong(worldX, 0, worldZ);
-                cells.add(new RuralFarmPlot.Cell(worldX, worldZ, key));
-                surfaceYs.put(key, sample.surfaceY());
+                probeHeights.add(sample.surfaceY());
                 minY = Math.min(minY, sample.surfaceY());
                 maxY = Math.max(maxY, sample.surfaceY());
             }
+            if (maxY - minY > MAX_RELIEF) return Validation.rejected("relief=" + (maxY - minY));
+            boundedBaseY = median(probeHeights.stream().sorted().toList());
+            for (int surfaceY : probeHeights) {
+                if (Math.abs(surfaceY - boundedBaseY) > MAX_CELL_ADJUST) {
+                    return Validation.rejected("adjustment=" + Math.abs(surfaceY - boundedBaseY));
+                }
+            }
+            for (int x = 0; x < candidate.width(); x++) for (int z = 0; z < candidate.depth(); z++) {
+                if (mask[x][z]) {
+                    int worldX = minX + x;
+                    int worldZ = minZ + z;
+                    cells.add(new RuralFarmPlot.Cell(worldX, worldZ, BlockPos.asLong(worldX, 0, worldZ)));
+                }
+            }
+        } else {
+            for (int x = 0; x < candidate.width(); x++) {
+                for (int z = 0; z < candidate.depth(); z++) {
+                    if (!mask[x][z]) continue;
+                    int worldX = minX + x;
+                    int worldZ = minZ + z;
+                    RuralTerrainSampler.Sample sample = terrain.sample(worldX, worldZ);
+                    if (!sample.valid()) return Validation.rejected("invalid_ground");
+                    if (sample.water()) return Validation.rejected("natural_water");
+                    long key = BlockPos.asLong(worldX, 0, worldZ);
+                    cells.add(new RuralFarmPlot.Cell(worldX, worldZ, key));
+                    surfaceYs.put(key, sample.surfaceY());
+                    minY = Math.min(minY, sample.surfaceY());
+                    maxY = Math.max(maxY, sample.surfaceY());
+                }
+            }
+            if (maxY - minY > MAX_RELIEF) return Validation.rejected("relief=" + (maxY - minY));
         }
         if (cells.isEmpty()) return Validation.rejected("empty_mask");
-        if (maxY - minY > MAX_RELIEF) return Validation.rejected("relief=" + (maxY - minY));
-        int baseY = median(surfaceYs.values().stream().sorted().toList());
-        for (int surfaceY : surfaceYs.values()) {
-            if (Math.abs(surfaceY - baseY) > MAX_CELL_ADJUST) return Validation.rejected("adjustment=" + Math.abs(surfaceY - baseY));
-        }
+        int baseY = bounded ? boundedBaseY : median(surfaceYs.values().stream().sorted().toList());
 
         Map<Long, RuralFarmPlot.Fence> fenceMap = new HashMap<>();
         List<Edge> edges = new ArrayList<>();

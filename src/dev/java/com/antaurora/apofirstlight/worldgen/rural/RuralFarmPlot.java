@@ -24,6 +24,7 @@ public final class RuralFarmPlot {
     private final IrrigationType irrigationType;
     private final List<Cell> cells;
     private final Set<Long> cellKeys;
+    private final Set<Long> perimeterKeys;
     private final List<Fence> fences;
     private final List<Gate> gates;
     private final List<BlockPos> irrigationCells;
@@ -48,6 +49,10 @@ public final class RuralFarmPlot {
         Set<Long> keys = new HashSet<>();
         for (Cell cell : cells) keys.add(cell.key());
         this.cellKeys = Set.copyOf(keys);
+        Set<Long> perimeter = new HashSet<>();
+        for (Fence fence : fences) perimeter.add(BlockPos.asLong(fence.pos().getX(), 0, fence.pos().getZ()));
+        for (Gate gate : gates) perimeter.add(BlockPos.asLong(gate.pos().getX(), 0, gate.pos().getZ()));
+        this.perimeterKeys = Set.copyOf(perimeter);
         this.fences = List.copyOf(fences);
         this.gates = List.copyOf(gates);
         this.irrigationCells = List.copyOf(irrigationCells);
@@ -74,6 +79,9 @@ public final class RuralFarmPlot {
     public String rejectionReason() { return rejectionReason; }
     public int cellCount() { return cells.size(); }
     public boolean contains(int x, int z) { return cellKeys.contains(BlockPos.asLong(x, 0, z)); }
+    public boolean hasPerimeterCell(int x, int z) {
+        return perimeterKeys.contains(BlockPos.asLong(x, 0, z));
+    }
 
     public enum ShapeType {
         RECTANGLE,

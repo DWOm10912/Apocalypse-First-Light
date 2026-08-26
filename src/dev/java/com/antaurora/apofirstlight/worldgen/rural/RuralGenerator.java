@@ -16,6 +16,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.SignText;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -51,6 +52,7 @@ public final class RuralGenerator {
     /** Per-lot vertical adaptation budget. The site may slope, but a building may not need more than this. */
     public static final int MAX_LOT_CORRECTION = 3;
     public static final int MAX_LOT_FILL_DEPTH = 3;
+    public static final int MAX_NATURAL_FARM_CANDIDATES = 32;
     public static final int CLEARANCE_MARGIN = 1;
     public static final int CLEARANCE_TOP_MARGIN = 1;
     public static final int LOT_MARGIN = 2;
@@ -261,11 +263,14 @@ public final class RuralGenerator {
         placeNaturalRoad(level, plan, chunkBox, stats);
         placeDriveways(level, plan, chunkBox, stats);
         for (RuralPlan.Lot lot : plan.lots()) {
-            RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(level, lot, chunkBox);
-            stats.addPreparation(preparation);
             StructureTemplate template = level.getLevel().getServer().getStructureManager()
                     .get(lot.structure().id()).orElse(null);
             if (template == null) continue;
+            RuralFoundationSupport.TemplateSupportMetadata foundationMetadata =
+                    RuralFoundationSupport.metadata(lot.structure(), template);
+            RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(
+                    level, lot, foundationMetadata, chunkBox);
+            stats.addPreparation(preparation);
             StructurePlaceSettings settings = new StructurePlaceSettings()
                     .setMirror(Mirror.NONE)
                     .setRotation(lot.rotation())
@@ -413,7 +418,7 @@ public final class RuralGenerator {
         for (RuralFarmPlot.Fence fence : plot.fences()) {
             if (!chunkBox.isInside(fence.pos())) continue;
             stats.blocksAttempted++;
-            if (level.setBlock(fence.pos(), Blocks.OAK_FENCE.defaultBlockState(), 3)) {
+            if (level.setBlock(fence.pos(), fenceState(plot, fence.pos()), 3)) {
                 stats.blocksWritten++;
                 stats.farmBlocks++;
             }
@@ -428,6 +433,18 @@ public final class RuralGenerator {
                 }
             }
         }
+    }
+
+    private static BlockState fenceState(RuralFarmPlot plot, BlockPos pos) {
+        return Blocks.OAK_FENCE.defaultBlockState()
+                .setValue(net.minecraft.world.level.block.CrossCollisionBlock.NORTH,
+                        plot.hasPerimeterCell(pos.getX(), pos.getZ() - 1))
+                .setValue(net.minecraft.world.level.block.CrossCollisionBlock.SOUTH,
+                        plot.hasPerimeterCell(pos.getX(), pos.getZ() + 1))
+                .setValue(net.minecraft.world.level.block.CrossCollisionBlock.WEST,
+                        plot.hasPerimeterCell(pos.getX() - 1, pos.getZ()))
+                .setValue(net.minecraft.world.level.block.CrossCollisionBlock.EAST,
+                        plot.hasPerimeterCell(pos.getX() + 1, pos.getZ()));
     }
 
     public record NaturalPlacementSummary(int blocksAttempted, int blocksWritten, int roadBlocks,
@@ -862,7 +879,7 @@ public final class RuralGenerator {
                 }
                 int plotFenceBlocks = 0;
                 for (RuralFarmPlot.Fence fence : plot.fences()) {
-                    level.setBlock(fence.pos(), Blocks.OAK_FENCE.defaultBlockState(), 3);
+                    level.setBlock(fence.pos(), fenceState(plot, fence.pos()), 3);
                     plotFenceBlocks++;
                 }
                 int plotGateBlocks = 0;

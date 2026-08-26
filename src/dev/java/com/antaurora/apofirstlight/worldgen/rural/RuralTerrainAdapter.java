@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.worldgen.rural;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 
 /** Small per-lot terrain preparation. It never flattens the reservation envelope. */
 public final class RuralTerrainAdapter {
@@ -101,6 +103,48 @@ public final class RuralTerrainAdapter {
         return stats.result();
     }
 
+    /**
+     * Natural StructurePiece entry point. Ordinary lot preparation remains the
+     * bounded superset operation; this overload applies only the template-derived
+     * support columns that fall inside the current generation chunk.
+     */
+    public static PreparationResult prepare(WorldGenLevel level, RuralPlan.Lot lot,
+                                             RuralFoundationSupport.TemplateSupportMetadata foundationMetadata,
+                                             BoundingBox chunkBox) {
+        StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setMirror(net.minecraft.world.level.block.Mirror.NONE).setRotation(lot.rotation());
+        PreparationResult result = prepare(level, lot, chunkBox);
+        RuralFoundationSupport.SupportMask support = RuralFoundationSupport.worldMask(
+                foundationMetadata, settings, lot.origin());
+        int excessiveColumns = 0;
+        for (BlockPos supportPos : support.columns()) {
+            if (supportPos.getX() < chunkBox.minX() || supportPos.getX() > chunkBox.maxX()
+                    || supportPos.getZ() < chunkBox.minZ() || supportPos.getZ() > chunkBox.maxZ()) continue;
+            RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, supportPos.getX(), supportPos.getZ());
+            if (!sample.valid() || sample.water()) continue;
+            int depth = supportPos.getY() - sample.surfaceY();
+            if (depth <= 0) continue;
+            if (depth > 6) {
+                excessiveColumns++;
+                continue;
+            }
+            for (int y = sample.surfaceY(); y < supportPos.getY(); y++) {
+                BlockPos fill = new BlockPos(supportPos.getX(), y, supportPos.getZ());
+                if (!chunkBox.isInside(fill)) continue;
+                BlockState state = level.getBlockState(fill);
+                if (state.isAir() || state.canBeReplaced()) {
+                    level.setBlock(fill, Blocks.COBBLESTONE.defaultBlockState(), 3);
+                }
+            }
+        }
+        if (excessiveColumns > 0) {
+            ApocalypseFirstLight.LOGGER.warn(
+                    "[AFL RURAL NATURAL][FOUNDATION_SUPPORT_EXTENSION_EXCEEDED] structure={} origin={} columns={} maxDepth={}",
+                    lot.structure().id(), lot.origin(), excessiveColumns, 6);
+        }
+        return result;
+    }
+
     private static void applyBlendRing(WorldGenLevel level, RuralPlan.Lot lot, BoundingBox chunkBox,
                                        PreparationStats stats) {
         final int radius = 2;
@@ -184,6 +228,10 @@ public final class RuralTerrainAdapter {
             for (int z = box.minZ() - RuralFarmPlanner.FARM_CLEARANCE_MARGIN;
                  z <= box.maxZ() + RuralFarmPlanner.FARM_CLEARANCE_MARGIN; z++) {
                 int surfaceY = plot.surfaceYs().getOrDefault(BlockPos.asLong(x, 0, z), plot.baseY());
+                if (!plot.surfaceYs().containsKey(BlockPos.asLong(x, 0, z))) {
+                    RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, x, z);
+                    if (sample.valid() && !sample.water()) surfaceY = sample.surfaceY();
+                }
                 int minY = Math.min(surfaceY, plot.baseY());
                 int maxY = Math.max(surfaceY, plot.baseY()) + 4;
                 for (int y = minY; y <= maxY; y++) {
@@ -201,6 +249,11 @@ public final class RuralTerrainAdapter {
         }
         for (RuralFarmPlot.Cell cell : plot.cells()) {
             int surfaceY = plot.surfaceYs().getOrDefault(cell.key(), plot.baseY());
+            if (!plot.surfaceYs().containsKey(cell.key())) {
+                RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, cell.x(), cell.z());
+                if (sample.valid() && !sample.water()) surfaceY = sample.surfaceY();
+            }
+            if (Math.abs(surfaceY - plot.baseY()) > RuralFarmPlanner.MAX_CELL_ADJUST) continue;
             if (surfaceY < plot.baseY()) {
                 for (int y = surfaceY; y < plot.baseY(); y++) {
                     BlockPos pos = new BlockPos(cell.x(), y, cell.z());
