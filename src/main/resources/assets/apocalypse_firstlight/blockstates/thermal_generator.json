@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 0 },
+    "facing=south": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 180 },
+    "facing=west": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 90 },
+    "facing=east": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 270 }
+  }
+}

@@ -130,6 +130,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUSED_GROUND.get(), new Item.Properties()));
     public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
             () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> THERMAL_GENERATOR = ITEMS.register("thermal_generator",
+            () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",
             () -> new BlockItem(AflBlocks.EDGE_LANE_WHITE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_YELLOW = ITEMS.register("edge_lane_yellow",

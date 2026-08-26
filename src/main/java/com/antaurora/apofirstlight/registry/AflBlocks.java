@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
+import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
@@ -134,6 +135,8 @@ public final class AflBlocks {
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)));
+    public static final RegistryObject<Block> THERMAL_GENERATOR = BLOCKS.register("thermal_generator",
+            () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
     public static final RegistryObject<Block> EDGE_LANE_WHITE = BLOCKS.register("edge_lane_white",
             () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
                     .strength(0.1F)
