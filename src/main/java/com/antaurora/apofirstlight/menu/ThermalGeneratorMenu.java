@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.menu;
 
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
+import com.antaurora.apofirstlight.client.ClientThermalGeneratorFuelData;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflMenus;
@@ -30,6 +31,7 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
 
     private final Container container;
     private final ContainerData data;
+    private final boolean clientSide;
 
     public ThermalGeneratorMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory,
@@ -44,6 +46,7 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         checkContainerDataCount(data, ThermalGeneratorBlockEntity.DATA_COUNT);
         this.container = generator;
         this.data = data;
+        this.clientSide = inventory.player.level().isClientSide();
 
         addSlot(new Slot(generator, ThermalGeneratorBlockEntity.FUEL_SLOT, FUEL_SLOT_X, FUEL_SLOT_Y) {
             @Override
@@ -73,8 +76,10 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         throw new IllegalStateException("Thermal Generator block entity is missing");
     }
 
-    private static boolean isFuel(ItemStack stack) {
-        return MachineBalanceManager.isThermalGeneratorFuel(stack);
+    private boolean isFuel(ItemStack stack) {
+        return clientSide
+                ? ClientThermalGeneratorFuelData.isThermalGeneratorFuel(stack)
+                : MachineBalanceManager.isThermalGeneratorFuel(stack);
     }
 
     @Override

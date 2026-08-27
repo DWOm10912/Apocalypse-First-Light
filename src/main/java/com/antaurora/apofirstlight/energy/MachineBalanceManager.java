@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.energy;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.network.AflNetwork;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -15,6 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.AddReloadListenerEvent;
+import net.minecraftforge.event.OnDatapackSyncEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
@@ -59,9 +61,22 @@ public final class MachineBalanceManager {
         return !stack.isEmpty() && thermalGenerator.fuels().containsKey(stack.getItem());
     }
 
+    public static Map<ResourceLocation, Integer> thermalGeneratorFuelEnergies() {
+        Map<ResourceLocation, Integer> energies = new LinkedHashMap<>();
+        thermalGenerator.fuels().forEach((item, fuel) ->
+                energies.put(BuiltInRegistries.ITEM.getKey(item), fuel.energyFe()));
+        return Map.copyOf(energies);
+    }
+
     @Nullable
     public static FuelBalance thermalGeneratorFuel(ItemStack stack) {
         return stack.isEmpty() ? null : thermalGenerator.fuels().get(stack.getItem());
+    }
+
+    @SubscribeEvent
+    public static void syncThermalGeneratorFuels(OnDatapackSyncEvent event) {
+        Map<ResourceLocation, Integer> fuelEnergies = thermalGeneratorFuelEnergies();
+        event.getPlayers().forEach(player -> AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies));
     }
 
     public record ThermalGeneratorBalance(int capacityFe, int generationFePerTick,
@@ -97,6 +112,7 @@ public final class MachineBalanceManager {
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Energy Cell balance: capacity={} FE, receive={} FE/t, extract={} FE/t (DEVELOPMENT / NOT FROZEN)",
                     loadedCell.capacityFe(), loadedCell.maxReceiveFePerTick(), loadedCell.maxExtractFePerTick());
+
         }
     }
 

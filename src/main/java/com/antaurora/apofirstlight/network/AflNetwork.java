@@ -10,6 +10,8 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.fml.DistExecutor;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
@@ -28,6 +30,9 @@ public final class AflNetwork {
                 RadiationSyncPacket::encode, RadiationSyncPacket::decode, RadiationSyncPacket::handle);
         channel.registerMessage(nextId++, GeigerDataS2CPacket.class,
                 GeigerDataS2CPacket::encode, GeigerDataS2CPacket::decode, GeigerDataS2CPacket::handle);
+        channel.registerMessage(nextId++, ThermalGeneratorFuelSyncS2CPacket.class,
+                ThermalGeneratorFuelSyncS2CPacket::encode, ThermalGeneratorFuelSyncS2CPacket::decode,
+                ThermalGeneratorFuelSyncS2CPacket::handle);
     }
 
     private AflNetwork() {
@@ -45,6 +50,15 @@ public final class AflNetwork {
                                       double residualRadiationRate, RadiationZone zone) {
         if (channel == null) throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         channel.sendTo(new GeigerDataS2CPacket(finalRadiation, cumulativeDose, residualRadiationRate, zone), player.connection.connection,
+                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendThermalGeneratorFuels(ServerPlayer player,
+                                                  Map<ResourceLocation, Integer> fuelEnergies) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        channel.sendTo(new ThermalGeneratorFuelSyncS2CPacket(fuelEnergies), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -85,6 +99,38 @@ public final class AflNetwork {
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientGeigerData
                             .update(packet.finalRadiation, packet.cumulativeDose, packet.residualRadiationRate, packet.zone)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record ThermalGeneratorFuelSyncS2CPacket(Map<ResourceLocation, Integer> fuelEnergies) {
+        public ThermalGeneratorFuelSyncS2CPacket {
+            fuelEnergies = Map.copyOf(fuelEnergies);
+        }
+
+        public static void encode(ThermalGeneratorFuelSyncS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.fuelEnergies.size());
+            packet.fuelEnergies.forEach((itemId, energyFe) -> {
+                buffer.writeResourceLocation(itemId);
+                buffer.writeVarInt(energyFe);
+            });
+        }
+
+        public static ThermalGeneratorFuelSyncS2CPacket decode(FriendlyByteBuf buffer) {
+            int size = buffer.readVarInt();
+            Map<ResourceLocation, Integer> fuelEnergies = new LinkedHashMap<>();
+            for (int index = 0; index < size; index++) {
+                fuelEnergies.put(buffer.readResourceLocation(), buffer.readVarInt());
+            }
+            return new ThermalGeneratorFuelSyncS2CPacket(fuelEnergies);
+        }
+
+        public static void handle(ThermalGeneratorFuelSyncS2CPacket packet,
+                                  Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientThermalGeneratorFuelData
+                            .replace(packet.fuelEnergies)));
             context.setPacketHandled(true);
         }
     }

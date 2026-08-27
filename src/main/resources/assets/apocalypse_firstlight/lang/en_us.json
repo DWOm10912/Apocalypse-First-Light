@@ -93,6 +93,8 @@
   "item.apocalypse_firstlight.plastic_sheet": "Plastic Sheet",
   "item.apocalypse_firstlight.geiger_counter": "Geiger Counter",
 
+  "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
+
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",
   "hud.apocalypse_firstlight.geiger.residual": "Residual Radiation",
