@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
+import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.energy.PowerCableTransfer;
 import com.antaurora.apofirstlight.menu.ThermalGeneratorMenu;
@@ -137,6 +138,7 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
         }
 
         MachineBalanceManager.ThermalGeneratorBalance balance = MachineBalanceManager.thermalGenerator();
+        boolean convertedThisTick = false;
         if (generator.fuelEnergyRemaining > 0
                 && (!balance.pauseBurnWhenFull() || generator.energyStored < balance.capacityFe())) {
             int converted = Math.min(balance.generationFePerTick(),
@@ -144,6 +146,7 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
             if (converted > 0) {
                 generator.fuelEnergyRemaining -= converted;
                 generator.energyStored += converted;
+                convertedThisTick = true;
                 changed = true;
             }
         }
@@ -153,6 +156,11 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
             generator.getCapability(ForgeCapabilities.ENERGY, outputFace).resolve().ifPresent(source ->
                     PowerCableTransfer.transferFrom(serverLevel, position, outputFace, source,
                             balance.maxOutputFePerTick()));
+        }
+
+        if (state.getValue(ThermalGeneratorBlock.LIT) != convertedThisTick) {
+            level.setBlock(position, state.setValue(ThermalGeneratorBlock.LIT, convertedThisTick),
+                    net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
         }
 
         if (changed) {

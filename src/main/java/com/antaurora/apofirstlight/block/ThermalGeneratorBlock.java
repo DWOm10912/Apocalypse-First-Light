@@ -4,7 +4,11 @@ import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.energy.MachineStoredEnergy;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -20,8 +24,10 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
@@ -31,9 +37,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock {
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+
     public ThermalGeneratorBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH));
+        registerDefaultState(stateDefinition.any()
+                .setValue(FACING, net.minecraft.core.Direction.NORTH)
+                .setValue(LIT, false));
     }
 
     @Override
@@ -62,6 +72,30 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
             NetworkHooks.openScreen(serverPlayer, generator, position);
         }
         return InteractionResult.CONSUME;
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos position, RandomSource random) {
+        if (!state.getValue(LIT)) {
+            return;
+        }
+
+        double centerX = position.getX() + 0.5D;
+        double centerZ = position.getZ() + 0.5D;
+        if (random.nextDouble() < 0.1D) {
+            float pitch = 0.95F + random.nextFloat() * 0.1F;
+            level.playLocalSound(centerX, position.getY() + 0.5D, centerZ,
+                    SoundEvents.BLASTFURNACE_FIRE_CRACKLE, SoundSource.BLOCKS,
+                    0.5F, pitch, false);
+        }
+
+        if (random.nextDouble() < 0.1D) {
+            double particleX = centerX + (random.nextDouble() - 0.5D) * 0.16D;
+            double particleZ = centerZ + (random.nextDouble() - 0.5D) * 0.16D;
+            level.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                    particleX, position.getY() + 1.05D, particleZ,
+                    0.0D, 0.03D, 0.0D);
+        }
     }
 
     @Override
@@ -108,6 +142,6 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, LIT);
     }
 }

@@ -1,8 +1,12 @@
 {
   "variants": {
-    "facing=north": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 0 },
-    "facing=south": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 180 },
-    "facing=east": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 90 },
-    "facing=west": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 270 }
+    "facing=north,lit=false": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 0 },
+    "facing=south,lit=false": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 180 },
+    "facing=east,lit=false": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 90 },
+    "facing=west,lit=false": { "model": "apocalypse_firstlight:block/thermal_generator", "y": 270 },
+    "facing=north,lit=true": { "model": "apocalypse_firstlight:block/thermal_generator_running", "y": 0 },
+    "facing=south,lit=true": { "model": "apocalypse_firstlight:block/thermal_generator_running", "y": 180 },
+    "facing=east,lit=true": { "model": "apocalypse_firstlight:block/thermal_generator_running", "y": 90 },
+    "facing=west,lit=true": { "model": "apocalypse_firstlight:block/thermal_generator_running", "y": 270 }
   }
 }
