@@ -15,7 +15,9 @@ public final class AflMenuScreens {
 
     @SubscribeEvent
     public static void clientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() -> MenuScreens.register(
-                AflMenus.THERMAL_GENERATOR.get(), ThermalGeneratorScreen::new));
+        event.enqueueWork(() -> {
+            MenuScreens.register(AflMenus.THERMAL_GENERATOR.get(), ThermalGeneratorScreen::new);
+            MenuScreens.register(AflMenus.ENERGY_CELL.get(), EnergyCellScreen::new);
+        });
     }
 }

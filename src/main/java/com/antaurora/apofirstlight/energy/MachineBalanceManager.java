@@ -110,7 +110,7 @@ public final class MachineBalanceManager {
                     loadedThermal.maxOutputFePerTick(), loadedThermal.pauseBurnWhenFull(),
                     loadedThermal.fuels().size());
             ApocalypseFirstLight.LOGGER.info(
-                    "[AFL ELECTRICITY] Energy Cell balance: capacity={} FE, receive={} FE/t, extract={} FE/t (DEVELOPMENT / NOT FROZEN)",
+                    "[AFL ELECTRICITY] Energy Cell balance: capacity={} FE, receive={} FE/t, extract={} FE/t",
                     loadedCell.capacityFe(), loadedCell.maxReceiveFePerTick(), loadedCell.maxExtractFePerTick());
 
         }
@@ -173,16 +173,11 @@ public final class MachineBalanceManager {
     }
 
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
-        Map<Item, FuelBalance> fuels = new LinkedHashMap<>();
-        fuels.put(Items.COAL, new FuelBalance(4_000, null));
-        fuels.put(Items.CHARCOAL, new FuelBalance(4_000, null));
-        fuels.put(Items.COAL_BLOCK, new FuelBalance(40_000, null));
-        fuels.put(Items.LAVA_BUCKET, new FuelBalance(50_000, Items.BUCKET));
-        return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.copyOf(fuels));
+        return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
     }
 
     private static EnergyCellBalance fallbackEnergyCell() {
-        return new EnergyCellBalance(1_000_000, 1_024, 1_024);
+        return new EnergyCellBalance(1_000_000, 128, 128);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {

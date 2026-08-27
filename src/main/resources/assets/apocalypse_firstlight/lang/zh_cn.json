@@ -94,6 +94,7 @@
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
 
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",
+  "tooltip.apocalypse_firstlight.stored_energy": "储存的能量：%s FE",
 
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",

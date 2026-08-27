@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
+import com.antaurora.apofirstlight.energy.MachineStoredEnergy;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,6 +10,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
@@ -21,8 +23,12 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public ThermalGeneratorBlock(Properties properties) {
@@ -65,6 +71,21 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
             Containers.dropContents(level, position, generator);
         }
         super.onRemove(state, level, position, newState, movedByPiston);
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        List<ItemStack> drops = super.getDrops(state, builder);
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY)
+                instanceof ThermalGeneratorBlockEntity generator) {
+            for (ItemStack drop : drops) {
+                if (drop.is(asItem())) {
+                    MachineStoredEnergy.write(drop, AflBlockEntities.THERMAL_GENERATOR.get(),
+                            generator.getStoredEnergy());
+                }
+            }
+        }
+        return drops;
     }
 
     @Override

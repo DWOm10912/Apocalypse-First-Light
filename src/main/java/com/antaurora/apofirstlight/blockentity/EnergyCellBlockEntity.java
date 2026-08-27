@@ -3,10 +3,17 @@ package com.antaurora.apofirstlight.blockentity;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.menu.EnergyCellMenu;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,7 +24,9 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class EnergyCellBlockEntity extends BlockEntity {
+public final class EnergyCellBlockEntity extends BlockEntity implements MenuProvider {
+    public static final int DATA_COUNT = 4;
+
     private int energyStored;
     private int balanceRevision = -1;
     private long transferBudgetTick = Long.MIN_VALUE;
@@ -79,12 +88,55 @@ public final class EnergyCellBlockEntity extends BlockEntity {
     };
     private LazyOptional<IEnergyStorage> energyCapability = LazyOptional.of(() -> energyStorage);
 
+    private final ContainerData data = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> lowWord(energyStored);
+                case 1 -> highWord(energyStored);
+                case 2 -> lowWord(MachineBalanceManager.energyCell().capacityFe());
+                case 3 -> highWord(MachineBalanceManager.energyCell().capacityFe());
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            switch (index) {
+                case 0 -> energyStored = withLowWord(energyStored, value);
+                case 1 -> energyStored = withHighWord(energyStored, value);
+                default -> {
+                }
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return DATA_COUNT;
+        }
+    };
+
     public EnergyCellBlockEntity(BlockPos position, BlockState state) {
         super(AflBlockEntities.ENERGY_CELL.get(), position, state);
     }
 
     public static void serverTick(Level level, BlockPos position, BlockState state, EnergyCellBlockEntity cell) {
         cell.applyCurrentBalance();
+    }
+
+    public int getStoredEnergy() {
+        return energyStored;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.apocalypse_firstlight.energy_cell");
+    }
+
+    @Override
+    @Nullable
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new EnergyCellMenu(containerId, inventory, this, data);
     }
 
     private void applyCurrentBalance() {
@@ -146,5 +198,21 @@ public final class EnergyCellBlockEntity extends BlockEntity {
     public void reviveCaps() {
         super.reviveCaps();
         energyCapability = LazyOptional.of(() -> energyStorage);
+    }
+
+    private static int lowWord(int value) {
+        return value & 0xFFFF;
+    }
+
+    private static int highWord(int value) {
+        return value >>> 16 & 0xFFFF;
+    }
+
+    private static int withLowWord(int value, int lowWord) {
+        return (value & 0xFFFF0000) | (lowWord & 0xFFFF);
+    }
+
+    private static int withHighWord(int value, int highWord) {
+        return (value & 0xFFFF) | ((highWord & 0xFFFF) << 16);
     }
 }

@@ -138,9 +138,11 @@ public final class AflBlocks {
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)));
     public static final RegistryObject<Block> THERMAL_GENERATOR = BLOCKS.register("thermal_generator",
-            () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ENERGY_CELL = BLOCKS.register("energy_cell",
-            () -> new EnergyCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new EnergyCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> POWER_CABLE = BLOCKS.register("power_cable",
             () -> new PowerCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion()));
     public static final RegistryObject<Block> EDGE_LANE_WHITE = BLOCKS.register("edge_lane_white",
