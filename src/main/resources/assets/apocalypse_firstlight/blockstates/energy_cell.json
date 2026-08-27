@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "apocalypse_firstlight:block/energy_cell", "y": 0 },
+    "facing=south": { "model": "apocalypse_firstlight:block/energy_cell", "y": 180 },
+    "facing=east": { "model": "apocalypse_firstlight:block/energy_cell", "y": 90 },
+    "facing=west": { "model": "apocalypse_firstlight:block/energy_cell", "y": 270 }
+  }
+}

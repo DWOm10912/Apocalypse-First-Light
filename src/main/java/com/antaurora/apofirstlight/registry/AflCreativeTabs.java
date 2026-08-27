@@ -52,6 +52,8 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.FUSED_GROUND.get());
                         output.accept(AflItems.ASPHALT.get());
                         output.accept(AflItems.THERMAL_GENERATOR.get());
+                        output.accept(AflItems.ENERGY_CELL.get());
+                        output.accept(AflItems.POWER_CABLE.get());
                         output.accept(AflItems.POPLAR_LOG.get());
                         output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
                         output.accept(AflItems.POPLAR_WOOD.get());
