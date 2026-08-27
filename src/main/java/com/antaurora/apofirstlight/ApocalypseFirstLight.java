@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import com.antaurora.apofirstlight.registry.AflMenus;
 import com.antaurora.apofirstlight.registry.AflParticles;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.registry.AflFeatures;
@@ -34,6 +35,7 @@ public class ApocalypseFirstLight {
         AflBlocks.BLOCKS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        AflMenus.MENUS.register(modEventBus);
         AflParticles.PARTICLE_TYPES.register(modEventBus);
         AflSounds.SOUND_EVENTS.register(modEventBus);
         AflFeatures.FEATURES.register(modEventBus);

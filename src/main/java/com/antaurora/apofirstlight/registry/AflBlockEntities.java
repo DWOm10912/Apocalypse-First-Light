@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -24,6 +26,14 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<ThermalGeneratorBlockEntity>> THERMAL_GENERATOR =
+            BLOCK_ENTITIES.register("thermal_generator", () ->
+                    BlockEntityType.Builder.of(ThermalGeneratorBlockEntity::new,
+                            AflBlocks.THERMAL_GENERATOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<EnergyCellBlockEntity>> ENERGY_CELL =
+            BLOCK_ENTITIES.register("energy_cell", () ->
+                    BlockEntityType.Builder.of(EnergyCellBlockEntity::new,
+                            AflBlocks.ENERGY_CELL.get()).build(null));
 
     private AflBlockEntities() {
     }

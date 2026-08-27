@@ -1,14 +1,30 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
+import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
+import org.jetbrains.annotations.Nullable;
 
-public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock {
+public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public ThermalGeneratorBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH));
@@ -27,6 +43,46 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock {
     @Override
     public BlockState mirror(BlockState state, Mirror mirror) {
         return state.rotate(mirror.getRotation(state.getValue(FACING)));
+    }
+
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
+                                 InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide()) {
+            return InteractionResult.SUCCESS;
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && level.getBlockEntity(position) instanceof ThermalGeneratorBlockEntity generator) {
+            NetworkHooks.openScreen(serverPlayer, generator, position);
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos position, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())
+                && level.getBlockEntity(position) instanceof ThermalGeneratorBlockEntity generator) {
+            Containers.dropContents(level, position, generator);
+        }
+        super.onRemove(state, level, position, newState, movedByPiston);
+    }
+
+    @Override
+    @Nullable
+    public BlockEntity newBlockEntity(BlockPos position, BlockState state) {
+        return new ThermalGeneratorBlockEntity(position, state);
+    }
+
+    @Override
+    @Nullable
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                  BlockEntityType<T> type) {
+        if (level.isClientSide() || type != AflBlockEntities.THERMAL_GENERATOR.get()) {
+            return null;
+        }
+        return (tickerLevel, tickerPosition, tickerState, blockEntity) ->
+                ThermalGeneratorBlockEntity.serverTick(tickerLevel, tickerPosition, tickerState,
+                        (ThermalGeneratorBlockEntity) blockEntity);
     }
 
     @Override

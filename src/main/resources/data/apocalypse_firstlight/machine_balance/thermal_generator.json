@@ -1,0 +1,21 @@
+{
+  "capacity_fe": 100000,
+  "generation_fe_per_tick": 16,
+  "max_output_fe_per_tick": 16,
+  "pause_burn_when_full": true,
+  "fuels": {
+    "minecraft:coal": {
+      "energy_fe": 4000
+    },
+    "minecraft:charcoal": {
+      "energy_fe": 4000
+    },
+    "minecraft:coal_block": {
+      "energy_fe": 40000
+    },
+    "minecraft:lava_bucket": {
+      "energy_fe": 50000,
+      "remainder": "minecraft:bucket"
+    }
+  }
+}

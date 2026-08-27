@@ -47,14 +47,25 @@ public final class PowerCableBlock extends PipeBlock {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
     }
 
+    public static boolean isConnected(BlockState cableState, Direction direction) {
+        return cableState.is(AflBlocks.POWER_CABLE.get())
+                && cableState.getValue(PROPERTY_BY_DIRECTION.get(direction));
+    }
+
+    public static Direction utilityPortFace(BlockState machineState) {
+        return machineState.getValue(HorizontalDirectionalBlock.FACING).getOpposite();
+    }
+
+    public static boolean isUtilityPortFace(BlockState machineState, Direction face) {
+        return (machineState.is(AflBlocks.THERMAL_GENERATOR.get())
+                || machineState.is(AflBlocks.ENERGY_CELL.get()))
+                && face == utilityPortFace(machineState);
+    }
+
     private static boolean connectsTo(Direction directionToNeighbor, BlockState neighborState) {
         if (neighborState.is(AflBlocks.POWER_CABLE.get())) {
             return true;
         }
-        if (neighborState.is(AflBlocks.THERMAL_GENERATOR.get())
-                || neighborState.is(AflBlocks.ENERGY_CELL.get())) {
-            return directionToNeighbor == neighborState.getValue(HorizontalDirectionalBlock.FACING);
-        }
-        return false;
+        return isUtilityPortFace(neighborState, directionToNeighbor.getOpposite());
     }
 }
