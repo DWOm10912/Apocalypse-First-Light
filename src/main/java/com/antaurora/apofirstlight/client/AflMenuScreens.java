@@ -18,6 +18,7 @@ public final class AflMenuScreens {
         event.enqueueWork(() -> {
             MenuScreens.register(AflMenus.THERMAL_GENERATOR.get(), ThermalGeneratorScreen::new);
             MenuScreens.register(AflMenus.ENERGY_CELL.get(), EnergyCellScreen::new);
+            MenuScreens.register(AflMenus.CRUSHER.get(), CrusherScreen::new);
         });
     }
 }

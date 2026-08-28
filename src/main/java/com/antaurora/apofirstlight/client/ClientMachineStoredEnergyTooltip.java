@@ -22,7 +22,9 @@ public final class ClientMachineStoredEnergyTooltip {
     @SubscribeEvent
     public static void appendStoredEnergy(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
-        if (!stack.is(AflItems.THERMAL_GENERATOR.get()) && !stack.is(AflItems.ENERGY_CELL.get())) {
+        if (!stack.is(AflItems.THERMAL_GENERATOR.get())
+                && !stack.is(AflItems.ENERGY_CELL.get())
+                && !stack.is(AflItems.CRUSHER.get())) {
             return;
         }
         int storedEnergy = MachineStoredEnergy.read(stack);

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "down": "apocalypse_firstlight:block/machine_bottom",
+    "up": "apocalypse_firstlight:block/machine_top",
+    "north": "apocalypse_firstlight:block/crusher_front_idle",
+    "south": "apocalypse_firstlight:block/machine_back",
+    "west": "apocalypse_firstlight:block/machine_side_left",
+    "east": "apocalypse_firstlight:block/machine_side_right",
+    "particle": "apocalypse_firstlight:block/crusher_front_idle"
+  }
+}

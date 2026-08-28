@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
+import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -34,6 +35,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("energy_cell", () ->
                     BlockEntityType.Builder.of(EnergyCellBlockEntity::new,
                             AflBlocks.ENERGY_CELL.get()).build(null));
+    public static final RegistryObject<BlockEntityType<CrusherBlockEntity>> CRUSHER =
+            BLOCK_ENTITIES.register("crusher", () ->
+                    BlockEntityType.Builder.of(CrusherBlockEntity::new,
+                            AflBlocks.CRUSHER.get()).build(null));
 
     private AflBlockEntities() {
     }

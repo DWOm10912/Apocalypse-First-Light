@@ -32,9 +32,12 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "thermal_generator");
     private static final ResourceLocation ENERGY_CELL_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "energy_cell");
+    private static final ResourceLocation CRUSHER_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "crusher");
 
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
+    private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile int revision;
 
     private MachineBalanceManager() {
@@ -51,6 +54,10 @@ public final class MachineBalanceManager {
 
     public static EnergyCellBalance energyCell() {
         return energyCell;
+    }
+
+    public static CrusherBalance crusher() {
+        return crusher;
     }
 
     public static int revision() {
@@ -90,6 +97,9 @@ public final class MachineBalanceManager {
     public record EnergyCellBalance(int capacityFe, int maxReceiveFePerTick, int maxExtractFePerTick) {
     }
 
+    public record CrusherBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
+    }
+
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
         private BalanceReloadListener() {
             super(GSON, "machine_balance");
@@ -100,8 +110,10 @@ public final class MachineBalanceManager {
                              ProfilerFiller profiler) {
             ThermalGeneratorBalance loadedThermal = loadThermalGenerator(resources.get(THERMAL_GENERATOR_ID));
             EnergyCellBalance loadedCell = loadEnergyCell(resources.get(ENERGY_CELL_ID));
+            CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
+            crusher = loadedCrusher;
             revision++;
 
             ApocalypseFirstLight.LOGGER.info(
@@ -112,6 +124,9 @@ public final class MachineBalanceManager {
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Energy Cell balance: capacity={} FE, receive={} FE/t, extract={} FE/t",
                     loadedCell.capacityFe(), loadedCell.maxReceiveFePerTick(), loadedCell.maxExtractFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Crusher balance: capacity={} FE, receive={} FE/t, work={} FE/t",
+                    loadedCrusher.capacityFe(), loadedCrusher.maxReceiveFePerTick(), loadedCrusher.workFePerTick());
 
         }
     }
@@ -172,12 +187,31 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static CrusherBalance loadCrusher(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "crusher.json");
+            return new CrusherBalance(
+                    requirePositiveInt(root, "capacity_fe", "crusher.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "crusher.json"),
+                    requirePositiveInt(root, "work_fe_per_tick", "crusher.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/crusher.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackCrusher();
+        }
+    }
+
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
         return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
     }
 
     private static EnergyCellBalance fallbackEnergyCell() {
         return new EnergyCellBalance(1_000_000, 128, 128);
+    }
+
+    private static CrusherBalance fallbackCrusher() {
+        return new CrusherBalance(20_000, 32, 16);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {

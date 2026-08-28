@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:thermal_generator",
-    "apocalypse_firstlight:energy_cell"
+    "apocalypse_firstlight:energy_cell",
+    "apocalypse_firstlight:crusher"
   ]
 }

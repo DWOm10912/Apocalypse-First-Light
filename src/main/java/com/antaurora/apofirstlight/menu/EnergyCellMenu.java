@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.menu;
 
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
+import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
+import com.antaurora.apofirstlight.menu.layout.MachineGuiLayouts;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflMenus;
 import net.minecraft.network.FriendlyByteBuf;
@@ -14,9 +16,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public final class EnergyCellMenu extends AbstractContainerMenu {
-    public static final int PLAYER_INVENTORY_X = 8;
-    public static final int PLAYER_INVENTORY_Y = 84;
-    public static final int HOTBAR_Y = 142;
+    private static final MachineGuiLayout LAYOUT = MachineGuiLayouts.energyCell();
 
     private static final int PLAYER_INVENTORY_END = 27;
     private static final int HOTBAR_START = PLAYER_INVENTORY_END;
@@ -36,15 +36,18 @@ public final class EnergyCellMenu extends AbstractContainerMenu {
         this.data = data;
         this.access = ContainerLevelAccess.create(inventory.player.level(), cell.getBlockPos());
 
-        for (int row = 0; row < 3; row++) {
-            for (int column = 0; column < 9; column++) {
+        MachineGuiLayout.Grid playerInventory = LAYOUT.playerInventory();
+        for (int row = 0; row < playerInventory.rows(); row++) {
+            for (int column = 0; column < playerInventory.columns(); column++) {
                 addSlot(new Slot(inventory, column + row * 9 + 9,
-                        PLAYER_INVENTORY_X + column * 18, PLAYER_INVENTORY_Y + row * 18));
+                        playerInventory.x() + column * playerInventory.spacing(),
+                        playerInventory.y() + row * playerInventory.spacing()));
             }
         }
-        for (int column = 0; column < 9; column++) {
+        MachineGuiLayout.Grid hotbar = LAYOUT.hotbar();
+        for (int column = 0; column < hotbar.columns(); column++) {
             addSlot(new Slot(inventory, column,
-                    PLAYER_INVENTORY_X + column * 18, HOTBAR_Y));
+                    hotbar.x() + column * hotbar.spacing(), hotbar.y()));
         }
 
         addDataSlots(data);

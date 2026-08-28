@@ -1,8 +1,6 @@
 package com.antaurora.apofirstlight.menu;
 
-import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
-import com.antaurora.apofirstlight.client.ClientThermalGeneratorFuelData;
-import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayouts;
 import com.antaurora.apofirstlight.registry.AflBlocks;
@@ -18,10 +16,9 @@ import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public final class ThermalGeneratorMenu extends AbstractContainerMenu {
-    private static final MachineGuiLayout LAYOUT = MachineGuiLayouts.thermalGenerator();
-
-    private static final int MACHINE_SLOT_COUNT = 1;
+public final class CrusherMenu extends AbstractContainerMenu {
+    private static final MachineGuiLayout LAYOUT = MachineGuiLayouts.crusher();
+    private static final int MACHINE_SLOT_COUNT = CrusherBlockEntity.CONTAINER_SIZE;
     private static final int PLAYER_INVENTORY_START = MACHINE_SLOT_COUNT;
     private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 27;
     private static final int HOTBAR_START = PLAYER_INVENTORY_END;
@@ -29,30 +26,31 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
 
     private final Container container;
     private final ContainerData data;
-    private final boolean clientSide;
 
-    public ThermalGeneratorMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
-        this(containerId, inventory,
-                requireBlockEntity(inventory, buffer),
-                new SimpleContainerData(ThermalGeneratorBlockEntity.DATA_COUNT));
+    public CrusherMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
+        this(containerId, inventory, requireBlockEntity(inventory, buffer),
+                new SimpleContainerData(CrusherBlockEntity.DATA_COUNT));
     }
 
-    public ThermalGeneratorMenu(int containerId, Inventory inventory, ThermalGeneratorBlockEntity generator,
-                                ContainerData data) {
-        super(AflMenus.THERMAL_GENERATOR.get(), containerId);
-        checkContainerSize(generator, ThermalGeneratorBlockEntity.CONTAINER_SIZE);
-        checkContainerDataCount(data, ThermalGeneratorBlockEntity.DATA_COUNT);
-        this.container = generator;
+    public CrusherMenu(int containerId, Inventory inventory, CrusherBlockEntity crusher, ContainerData data) {
+        super(AflMenus.CRUSHER.get(), containerId);
+        checkContainerSize(crusher, CrusherBlockEntity.CONTAINER_SIZE);
+        checkContainerDataCount(data, CrusherBlockEntity.DATA_COUNT);
+        this.container = crusher;
         this.data = data;
-        this.clientSide = inventory.player.level().isClientSide();
 
-        MachineGuiLayout.Element fuelSlot = LAYOUT.element("fuel_slot");
-        addSlot(new Slot(generator, ThermalGeneratorBlockEntity.FUEL_SLOT, fuelSlot.x(), fuelSlot.y()) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return isFuel(stack);
-            }
-        });
+        MachineGuiLayout.Element inputSlot = LAYOUT.element("input_slot");
+        addSlot(new Slot(crusher, CrusherBlockEntity.INPUT_SLOT, inputSlot.x(), inputSlot.y()));
+        for (int index = 0; index < CrusherBlockEntity.OUTPUT_SLOT_COUNT; index++) {
+            MachineGuiLayout.Element outputSlot = LAYOUT.outputSlots().get(index);
+            addSlot(new Slot(crusher, CrusherBlockEntity.FIRST_OUTPUT_SLOT + index,
+                    outputSlot.x(), outputSlot.y()) {
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return false;
+                }
+            });
+        }
 
         MachineGuiLayout.Grid playerInventory = LAYOUT.playerInventory();
         for (int row = 0; row < playerInventory.rows(); row++) {
@@ -72,24 +70,18 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         container.startOpen(inventory.player);
     }
 
-    private static ThermalGeneratorBlockEntity requireBlockEntity(Inventory inventory, FriendlyByteBuf buffer) {
-        if (inventory.player.level().getBlockEntity(buffer.readBlockPos()) instanceof ThermalGeneratorBlockEntity generator) {
-            return generator;
+    private static CrusherBlockEntity requireBlockEntity(Inventory inventory, FriendlyByteBuf buffer) {
+        if (inventory.player.level().getBlockEntity(buffer.readBlockPos()) instanceof CrusherBlockEntity crusher) {
+            return crusher;
         }
-        throw new IllegalStateException("Thermal Generator block entity is missing");
-    }
-
-    private boolean isFuel(ItemStack stack) {
-        return clientSide
-                ? ClientThermalGeneratorFuelData.isThermalGeneratorFuel(stack)
-                : MachineBalanceManager.isThermalGeneratorFuel(stack);
+        throw new IllegalStateException("Crusher block entity is missing");
     }
 
     @Override
     public boolean stillValid(Player player) {
         return stillValid(net.minecraft.world.inventory.ContainerLevelAccess.create(
-                player.level(), ((ThermalGeneratorBlockEntity) container).getBlockPos()),
-                player, AflBlocks.THERMAL_GENERATOR.get());
+                player.level(), ((CrusherBlockEntity) container).getBlockPos()),
+                player, AflBlocks.CRUSHER.get());
     }
 
     @Override
@@ -105,16 +97,16 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
             if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START, HOTBAR_END, true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (isFuel(stackInSlot)) {
-            if (!moveItemStackTo(stackInSlot, 0, MACHINE_SLOT_COUNT, false)) {
+        } else if (!moveItemStackTo(stackInSlot, CrusherBlockEntity.INPUT_SLOT,
+                CrusherBlockEntity.INPUT_SLOT + 1, false)) {
+            if (slotIndex < PLAYER_INVENTORY_END) {
+                if (!moveItemStackTo(stackInSlot, HOTBAR_START, HOTBAR_END, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START,
+                    PLAYER_INVENTORY_END, false)) {
                 return ItemStack.EMPTY;
             }
-        } else if (slotIndex < PLAYER_INVENTORY_END) {
-            if (!moveItemStackTo(stackInSlot, HOTBAR_START, HOTBAR_END, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, false)) {
-            return ItemStack.EMPTY;
         }
 
         if (stackInSlot.isEmpty()) {
@@ -135,20 +127,6 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         container.stopOpen(player);
     }
 
-    public int getFireProgress() {
-        int total = getFuelEnergyTotal();
-        return total <= 0 ? 0 : Mth.clamp((int) ((long) getFuelEnergyRemaining() * 13 / total), 0, 13);
-    }
-
-    public int getArrowProgress() {
-        int total = getFuelEnergyTotal();
-        if (total <= 0) {
-            return 0;
-        }
-        int consumed = Math.max(0, total - getFuelEnergyRemaining());
-        return Mth.clamp((int) ((long) consumed * 24 / total), 0, 24);
-    }
-
     public int getStoredEnergy() {
         return readInt(0);
     }
@@ -157,12 +135,9 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         return readInt(2);
     }
 
-    public int getFuelEnergyRemaining() {
-        return readInt(4);
-    }
-
-    public int getFuelEnergyTotal() {
-        return readInt(6);
+    public int getArrowProgress() {
+        int total = readInt(6);
+        return total <= 0 ? 0 : Mth.clamp((int) ((long) readInt(4) * 24 / total), 0, 24);
     }
 
     private int readInt(int lowWordIndex) {

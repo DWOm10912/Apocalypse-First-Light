@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.registry;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.menu.ThermalGeneratorMenu;
 import com.antaurora.apofirstlight.menu.EnergyCellMenu;
+import com.antaurora.apofirstlight.menu.CrusherMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -17,6 +18,8 @@ public final class AflMenus {
             MENUS.register("thermal_generator", () -> IForgeMenuType.create(ThermalGeneratorMenu::new));
     public static final RegistryObject<MenuType<EnergyCellMenu>> ENERGY_CELL =
             MENUS.register("energy_cell", () -> IForgeMenuType.create(EnergyCellMenu::new));
+    public static final RegistryObject<MenuType<CrusherMenu>> CRUSHER =
+            MENUS.register("crusher", () -> IForgeMenuType.create(CrusherMenu::new));
 
     private AflMenus() {
     }

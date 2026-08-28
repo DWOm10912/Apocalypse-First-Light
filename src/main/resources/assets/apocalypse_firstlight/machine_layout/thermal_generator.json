@@ -1,0 +1,60 @@
+{
+  "gui": {
+    "width": 176,
+    "height": 166
+  },
+  "title": {
+    "x": 8,
+    "y": 6
+  },
+  "inventory_label": {
+    "x": 8,
+    "y": 72
+  },
+  "player_inventory": {
+    "x": 8,
+    "y": 84,
+    "columns": 9,
+    "rows": 3,
+    "spacing": 18
+  },
+  "hotbar": {
+    "x": 8,
+    "y": 142,
+    "columns": 9,
+    "rows": 1,
+    "spacing": 18
+  },
+  "elements": {
+    "fuel_slot": {
+      "x": 44,
+      "y": 34,
+      "width": 16,
+      "height": 16
+    },
+    "fire_icon": {
+      "x": 67,
+      "y": 36,
+      "width": 14,
+      "height": 14
+    },
+    "progress_arrow": {
+      "x": 91,
+      "y": 35,
+      "width": 24,
+      "height": 17
+    },
+    "energy_bar": {
+      "x": 150,
+      "y": 18,
+      "width": 12,
+      "height": 54
+    },
+    "energy_fill": {
+      "x": 152,
+      "y": 21,
+      "width": 8,
+      "height": 48
+    }
+  }
+}
