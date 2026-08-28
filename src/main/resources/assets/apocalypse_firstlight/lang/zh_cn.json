@@ -97,6 +97,11 @@
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "储存的能量：%s FE",
 
+  "jei.apocalypse_firstlight.category.crushing": "粉碎",
+  "jei.apocalypse_firstlight.processing_time": "加工时间：%s 秒",
+  "jei.apocalypse_firstlight.total_energy": "能耗：%s FE",
+  "jei.apocalypse_firstlight.output_range": "产量：%s–%s",
+
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",
   "hud.apocalypse_firstlight.geiger.residual": "残留辐射",

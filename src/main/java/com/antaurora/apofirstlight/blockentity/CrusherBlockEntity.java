@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.ContainerHelper;
@@ -32,6 +33,8 @@ import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 public final class CrusherBlockEntity extends BaseContainerBlockEntity {
     public static final int INPUT_SLOT = 0;
     public static final int FIRST_OUTPUT_SLOT = 1;
@@ -43,6 +46,7 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
     private static final String PROGRESS_KEY = "ProcessingProgress";
     private static final String PROCESSING_TIME_KEY = "ProcessingTime";
     private static final String ACTIVE_RECIPE_KEY = "ActiveRecipe";
+    private static final String PENDING_RESULTS_KEY = "PendingResults";
 
     private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
     private int energyStored;
@@ -50,6 +54,8 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
     private int processingTime;
     @Nullable
     private ResourceLocation activeRecipeId;
+    private NonNullList<ItemStack> pendingResults =
+            NonNullList.withSize(CrushingRecipe.MAX_RESULTS, ItemStack.EMPTY);
     private int balanceRevision = -1;
     private long receiveBudgetTick = Long.MIN_VALUE;
     private int receivedThisTick;
@@ -151,28 +157,27 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
                 crusher.activeRecipeId = recipe.getId();
                 crusher.processingProgress = 0;
                 crusher.processingTime = recipe.processingTime();
+                crusher.clearPendingResults();
                 changed = true;
             } else if (crusher.processingTime != recipe.processingTime()) {
                 crusher.processingTime = recipe.processingTime();
                 changed = true;
             }
 
-            NonNullList<ItemStack> plannedOutputs = crusher.planOutputs(recipe);
-            int workCost = MachineBalanceManager.crusher().workFePerTick();
-            if (plannedOutputs != null && crusher.energyStored >= workCost) {
-                crusher.energyStored -= workCost;
-                crusher.processingProgress++;
-                workedThisTick = true;
-                changed = true;
+            if (crusher.hasPendingResults()) {
+                changed |= crusher.tryCommitPendingResults(recipe, level);
+            } else {
+                NonNullList<ItemStack> plannedOutputs = crusher.planOutputs(recipe.maximumResults());
+                int workCost = MachineBalanceManager.crusher().workFePerTick();
+                if (plannedOutputs != null && crusher.energyStored >= workCost) {
+                    crusher.energyStored -= workCost;
+                    crusher.processingProgress++;
+                    workedThisTick = true;
+                    changed = true;
 
-                if (crusher.processingProgress >= recipe.processingTime()) {
-                    NonNullList<ItemStack> finalOutputs = crusher.planOutputs(recipe);
-                    if (finalOutputs != null && recipe.matches(crusher.recipeInput(), level)) {
-                        crusher.items.get(INPUT_SLOT).shrink(1);
-                        for (int index = 0; index < OUTPUT_SLOT_COUNT; index++) {
-                            crusher.items.set(FIRST_OUTPUT_SLOT + index, finalOutputs.get(index));
-                        }
-                        crusher.processingProgress = 0;
+                    if (crusher.processingProgress >= recipe.processingTime()) {
+                        crusher.setPendingResults(recipe.rollResults(level.random));
+                        changed |= crusher.tryCommitPendingResults(recipe, level);
                     }
                 }
             }
@@ -203,13 +208,16 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
     }
 
     @Nullable
-    private NonNullList<ItemStack> planOutputs(CrushingRecipe recipe) {
+    private NonNullList<ItemStack> planOutputs(List<ItemStack> results) {
         NonNullList<ItemStack> planned = NonNullList.withSize(OUTPUT_SLOT_COUNT, ItemStack.EMPTY);
         for (int index = 0; index < OUTPUT_SLOT_COUNT; index++) {
             planned.set(index, items.get(FIRST_OUTPUT_SLOT + index).copy());
         }
 
-        for (ItemStack result : recipe.results()) {
+        for (ItemStack result : results) {
+            if (result.isEmpty()) {
+                continue;
+            }
             ItemStack remaining = result.copy();
             for (int index = 0; index < OUTPUT_SLOT_COUNT && !remaining.isEmpty(); index++) {
                 ItemStack existing = planned.get(index);
@@ -237,6 +245,40 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
             }
         }
         return planned;
+    }
+
+    private boolean tryCommitPendingResults(CrushingRecipe recipe, Level level) {
+        if (!recipe.matches(recipeInput(), level)) {
+            return resetProgress();
+        }
+        NonNullList<ItemStack> finalOutputs = planOutputs(pendingResults);
+        if (finalOutputs == null) {
+            return false;
+        }
+
+        items.get(INPUT_SLOT).shrink(1);
+        for (int index = 0; index < OUTPUT_SLOT_COUNT; index++) {
+            items.set(FIRST_OUTPUT_SLOT + index, finalOutputs.get(index));
+        }
+        resetProgress();
+        return true;
+    }
+
+    private boolean hasPendingResults() {
+        return pendingResults.stream().anyMatch(stack -> !stack.isEmpty());
+    }
+
+    private void setPendingResults(List<ItemStack> results) {
+        clearPendingResults();
+        for (int index = 0; index < results.size(); index++) {
+            pendingResults.set(index, results.get(index).copy());
+        }
+    }
+
+    private void clearPendingResults() {
+        for (int index = 0; index < pendingResults.size(); index++) {
+            pendingResults.set(index, ItemStack.EMPTY);
+        }
     }
 
     public int getStoredEnergy() {
@@ -269,12 +311,14 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
     }
 
     private boolean resetProgress() {
-        if (processingProgress == 0 && processingTime == 0 && activeRecipeId == null) {
+        if (processingProgress == 0 && processingTime == 0 && activeRecipeId == null
+                && !hasPendingResults()) {
             return false;
         }
         processingProgress = 0;
         processingTime = 0;
         activeRecipeId = null;
+        clearPendingResults();
         return true;
     }
 
@@ -365,6 +409,10 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
         activeRecipeId = tag.contains(ACTIVE_RECIPE_KEY)
                 ? ResourceLocation.tryParse(tag.getString(ACTIVE_RECIPE_KEY))
                 : null;
+        pendingResults = NonNullList.withSize(CrushingRecipe.MAX_RESULTS, ItemStack.EMPTY);
+        if (tag.contains(PENDING_RESULTS_KEY, Tag.TAG_COMPOUND)) {
+            ContainerHelper.loadAllItems(tag.getCompound(PENDING_RESULTS_KEY), pendingResults);
+        }
         balanceRevision = -1;
     }
 
@@ -377,6 +425,11 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
         tag.putInt(PROCESSING_TIME_KEY, processingTime);
         if (activeRecipeId != null) {
             tag.putString(ACTIVE_RECIPE_KEY, activeRecipeId.toString());
+        }
+        if (hasPendingResults()) {
+            CompoundTag pendingTag = new CompoundTag();
+            ContainerHelper.saveAllItems(pendingTag, pendingResults, true);
+            tag.put(PENDING_RESULTS_KEY, pendingTag);
         }
     }
 

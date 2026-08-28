@@ -9,6 +9,7 @@ import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -22,17 +23,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class CrushingRecipe implements Recipe<Container> {
-    private static final int MAX_RESULTS = 6;
+    public static final int MAX_RESULTS = 6;
 
     private final ResourceLocation id;
     private final Ingredient ingredient;
-    private final List<ItemStack> results;
+    private final List<Result> results;
     private final int processingTime;
 
-    public CrushingRecipe(ResourceLocation id, Ingredient ingredient, List<ItemStack> results, int processingTime) {
+    private CrushingRecipe(ResourceLocation id, Ingredient ingredient, List<Result> results, int processingTime) {
         this.id = id;
         this.ingredient = ingredient;
-        this.results = results.stream().map(ItemStack::copy).toList();
+        this.results = List.copyOf(results);
         this.processingTime = processingTime;
     }
 
@@ -43,7 +44,7 @@ public final class CrushingRecipe implements Recipe<Container> {
 
     @Override
     public ItemStack assemble(Container container, RegistryAccess registryAccess) {
-        return results.get(0).copy();
+        return results.get(0).create(results.get(0).minCount);
     }
 
     @Override
@@ -53,7 +54,7 @@ public final class CrushingRecipe implements Recipe<Container> {
 
     @Override
     public ItemStack getResultItem(RegistryAccess registryAccess) {
-        return results.get(0).copy();
+        return results.get(0).create(results.get(0).minCount);
     }
 
     @Override
@@ -76,8 +77,16 @@ public final class CrushingRecipe implements Recipe<Container> {
         return AflRecipes.CRUSHING_TYPE.get();
     }
 
-    public List<ItemStack> results() {
-        return results.stream().map(ItemStack::copy).toList();
+    public List<ItemStack> maximumResults() {
+        return results.stream().map(result -> result.create(result.maxCount)).toList();
+    }
+
+    public List<Result> results() {
+        return results;
+    }
+
+    public List<ItemStack> rollResults(RandomSource random) {
+        return results.stream().map(result -> result.roll(random)).toList();
     }
 
     public int processingTime() {
@@ -97,16 +106,11 @@ public final class CrushingRecipe implements Recipe<Container> {
                 throw new JsonParseException("Crushing recipe " + id + " results must contain 1 to "
                         + MAX_RESULTS + " entries");
             }
-            List<ItemStack> results = new ArrayList<>(resultArray.size());
+            List<Result> results = new ArrayList<>(resultArray.size());
             for (int index = 0; index < resultArray.size(); index++) {
                 JsonObject resultObject = GsonHelper.convertToJsonObject(
                         resultArray.get(index), "results[" + index + "]");
-                ItemStack result = ShapedRecipe.itemStackFromJson(resultObject);
-                if (result.isEmpty() || result.getCount() <= 0) {
-                    throw new JsonParseException("Crushing recipe " + id
-                            + " result " + index + " must have count > 0");
-                }
-                results.add(result);
+                results.add(parseResult(id, index, resultObject));
             }
 
             int processingTime = GsonHelper.getAsInt(root, "processing_time");
@@ -123,9 +127,12 @@ public final class CrushingRecipe implements Recipe<Container> {
             if (resultCount < 1 || resultCount > MAX_RESULTS) {
                 throw new IllegalArgumentException("Invalid crushing result count " + resultCount);
             }
-            List<ItemStack> results = new ArrayList<>(resultCount);
+            List<Result> results = new ArrayList<>(resultCount);
             for (int index = 0; index < resultCount; index++) {
-                results.add(buffer.readItem());
+                ItemStack template = buffer.readItem();
+                int minCount = buffer.readVarInt();
+                int maxCount = buffer.readVarInt();
+                results.add(new Result(template, minCount, maxCount));
             }
             int processingTime = buffer.readVarInt();
             if (processingTime <= 0) {
@@ -138,8 +145,108 @@ public final class CrushingRecipe implements Recipe<Container> {
         public void toNetwork(FriendlyByteBuf buffer, CrushingRecipe recipe) {
             recipe.ingredient.toNetwork(buffer);
             buffer.writeVarInt(recipe.results.size());
-            recipe.results.forEach(buffer::writeItem);
+            for (Result result : recipe.results) {
+                buffer.writeItem(result.template);
+                buffer.writeVarInt(result.minCount);
+                buffer.writeVarInt(result.maxCount);
+            }
             buffer.writeVarInt(recipe.processingTime);
+        }
+
+        private static Result parseResult(ResourceLocation recipeId, int index, JsonObject object) {
+            boolean hasCount = object.has("count");
+            boolean hasMinCount = object.has("min_count");
+            boolean hasMaxCount = object.has("max_count");
+            String context = "Crushing recipe " + recipeId + " result " + index;
+
+            if (hasCount && (hasMinCount || hasMaxCount)) {
+                throw new JsonParseException(context
+                        + " cannot declare count together with min_count or max_count");
+            }
+            if (hasMinCount != hasMaxCount) {
+                throw new JsonParseException(context
+                        + " must declare min_count and max_count together");
+            }
+            if (!hasCount && !hasMinCount) {
+                throw new JsonParseException(context
+                        + " must declare either count or min_count and max_count");
+            }
+
+            int minCount;
+            int maxCount;
+            JsonObject stackObject = object.deepCopy();
+            if (hasCount) {
+                minCount = GsonHelper.getAsInt(object, "count");
+                maxCount = minCount;
+            } else {
+                minCount = GsonHelper.getAsInt(object, "min_count");
+                maxCount = GsonHelper.getAsInt(object, "max_count");
+                stackObject.remove("min_count");
+                stackObject.remove("max_count");
+                stackObject.addProperty("count", 1);
+            }
+            if (minCount <= 0) {
+                throw new JsonParseException(context + " minimum count must be > 0");
+            }
+            if (maxCount < minCount) {
+                throw new JsonParseException(context + " max_count must be >= min_count");
+            }
+
+            ItemStack template = ShapedRecipe.itemStackFromJson(stackObject);
+            if (template.isEmpty()) {
+                throw new JsonParseException(context + " item must not be empty");
+            }
+            template.setCount(1);
+            return new Result(template, minCount, maxCount);
+        }
+    }
+
+    public static final class Result {
+        private final ItemStack template;
+        private final int minCount;
+        private final int maxCount;
+
+        private Result(ItemStack template, int minCount, int maxCount) {
+            if (template.isEmpty()) {
+                throw new IllegalArgumentException("Crushing result item must not be empty");
+            }
+            if (minCount <= 0 || maxCount < minCount) {
+                throw new IllegalArgumentException("Invalid crushing result range "
+                        + minCount + ".." + maxCount);
+            }
+            this.template = template.copy();
+            this.template.setCount(1);
+            this.minCount = minCount;
+            this.maxCount = maxCount;
+        }
+
+        private ItemStack roll(RandomSource random) {
+            int count = minCount == maxCount
+                    ? minCount
+                    : random.nextIntBetweenInclusive(minCount, maxCount);
+            return create(count);
+        }
+
+        private ItemStack create(int count) {
+            ItemStack stack = template.copy();
+            stack.setCount(count);
+            return stack;
+        }
+
+        public ItemStack displayStack() {
+            return create(minCount == maxCount ? minCount : 1);
+        }
+
+        public int minCount() {
+            return minCount;
+        }
+
+        public int maxCount() {
+            return maxCount;
+        }
+
+        public boolean hasVariableCount() {
+            return minCount != maxCount;
         }
     }
 }

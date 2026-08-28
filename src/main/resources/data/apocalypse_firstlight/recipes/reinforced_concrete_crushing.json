@@ -1,0 +1,19 @@
+{
+  "type": "apocalypse_firstlight:crushing",
+  "ingredient": {
+    "item": "apocalypse_firstlight:reinforced_concrete"
+  },
+  "results": [
+    {
+      "item": "apocalypse_firstlight:concrete_rubble",
+      "min_count": 3,
+      "max_count": 5
+    },
+    {
+      "item": "apocalypse_firstlight:steel_scrap",
+      "min_count": 3,
+      "max_count": 5
+    }
+  ],
+  "processing_time": 200
+}

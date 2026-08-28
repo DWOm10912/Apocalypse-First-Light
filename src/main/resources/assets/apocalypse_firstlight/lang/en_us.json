@@ -97,6 +97,11 @@
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "Stored Energy: %s FE",
 
+  "jei.apocalypse_firstlight.category.crushing": "Crushing",
+  "jei.apocalypse_firstlight.processing_time": "Processing Time: %s s",
+  "jei.apocalypse_firstlight.total_energy": "Energy: %s FE",
+  "jei.apocalypse_firstlight.output_range": "Output: %s–%s",
+
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",
   "hud.apocalypse_firstlight.geiger.residual": "Residual Radiation",

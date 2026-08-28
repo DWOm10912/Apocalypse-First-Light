@@ -196,8 +196,12 @@ dependencies {
     implementation("com.eliotlash.mclib:mclib:20")
     implementation fg.deobf("curse.maven:terrablender-563928:${terrablender_file_id}")
 
-    // Development-runtime helpers only. AFL neither compiles against nor declares these mods.
+    // Optional JEI client integration. API jars compile compat code; the full mod is dev-runtime only.
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.49.0.188")
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.49.0.188")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.49.0.188")
+
+    // Development-runtime helpers only. AFL neither compiles against nor declares these mods.
     runtimeOnly fg.deobf("curse.maven:jade-324717:5493390")
     runtimeOnly fg.deobf("curse.maven:worldedit-225608:4586218")
     compileOnly fg.deobf("curse.maven:worldedit-225608:4586218")

@@ -13,5 +13,13 @@
     "sounds": [
       "apocalypse_firstlight:glass_door_close"
     ]
+  },
+  "crusher_running": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:crusher_running",
+        "stream": true
+      }
+    ]
   }
 }

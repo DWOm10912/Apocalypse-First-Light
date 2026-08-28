@@ -81,9 +81,13 @@ public final class MachineBalanceManager {
     }
 
     @SubscribeEvent
-    public static void syncThermalGeneratorFuels(OnDatapackSyncEvent event) {
+    public static void syncMachineBalanceData(OnDatapackSyncEvent event) {
         Map<ResourceLocation, Integer> fuelEnergies = thermalGeneratorFuelEnergies();
-        event.getPlayers().forEach(player -> AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies));
+        int crusherWorkFePerTick = crusher.workFePerTick();
+        event.getPlayers().forEach(player -> {
+            AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies);
+            AflNetwork.sendCrusherBalance(player, crusherWorkFePerTick);
+        });
     }
 
     public record ThermalGeneratorBalance(int capacityFe, int generationFePerTick,
