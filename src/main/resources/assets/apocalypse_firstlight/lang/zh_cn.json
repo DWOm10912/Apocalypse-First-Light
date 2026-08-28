@@ -42,6 +42,7 @@
   "block.apocalypse_firstlight.thermal_generator": "热力发电机",
   "block.apocalypse_firstlight.energy_cell": "能量单元",
   "block.apocalypse_firstlight.crusher": "粉碎机",
+  "block.apocalypse_firstlight.industrial_furnace": "冶炼工厂",
   "block.apocalypse_firstlight.power_cable": "能源线缆",
   "block.apocalypse_firstlight.edge_lane_white": "白色边缘线",
   "block.apocalypse_firstlight.edge_lane_yellow": "黄色边缘线",
@@ -124,6 +125,10 @@
 
   "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",
   "itemGroup.apocalypse_firstlight.items": "黎明启示录 物品",
+
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "自动配平：开启",
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "自动配平：关闭",
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "将相同原料自动均分到三个处理通道。",
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"

@@ -34,10 +34,13 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "energy_cell");
     private static final ResourceLocation CRUSHER_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "crusher");
+    private static final ResourceLocation INDUSTRIAL_FURNACE_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_furnace");
 
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
     private static volatile CrusherBalance crusher = fallbackCrusher();
+    private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile int revision;
 
     private MachineBalanceManager() {
@@ -58,6 +61,10 @@ public final class MachineBalanceManager {
 
     public static CrusherBalance crusher() {
         return crusher;
+    }
+
+    public static IndustrialFurnaceBalance industrialFurnace() {
+        return industrialFurnace;
     }
 
     public static int revision() {
@@ -104,6 +111,11 @@ public final class MachineBalanceManager {
     public record CrusherBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
+    public record IndustrialFurnaceBalance(int capacityFe, int maxReceiveFePerTick,
+                                           int workFePerTickPerLane,
+                                           double processingTimeMultiplier) {
+    }
+
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
         private BalanceReloadListener() {
             super(GSON, "machine_balance");
@@ -115,9 +127,12 @@ public final class MachineBalanceManager {
             ThermalGeneratorBalance loadedThermal = loadThermalGenerator(resources.get(THERMAL_GENERATOR_ID));
             EnergyCellBalance loadedCell = loadEnergyCell(resources.get(ENERGY_CELL_ID));
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
+            IndustrialFurnaceBalance loadedIndustrialFurnace =
+                    loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
             crusher = loadedCrusher;
+            industrialFurnace = loadedIndustrialFurnace;
             revision++;
 
             ApocalypseFirstLight.LOGGER.info(
@@ -131,6 +146,11 @@ public final class MachineBalanceManager {
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Crusher balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedCrusher.capacityFe(), loadedCrusher.maxReceiveFePerTick(), loadedCrusher.workFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Smelting Factory balance: capacity={} FE, receive={} FE/t, work/lane={} FE/t, time multiplier={}",
+                    loadedIndustrialFurnace.capacityFe(), loadedIndustrialFurnace.maxReceiveFePerTick(),
+                    loadedIndustrialFurnace.workFePerTickPerLane(),
+                    loadedIndustrialFurnace.processingTimeMultiplier());
 
         }
     }
@@ -206,6 +226,22 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static IndustrialFurnaceBalance loadIndustrialFurnace(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "industrial_furnace.json");
+            return new IndustrialFurnaceBalance(
+                    requirePositiveInt(root, "capacity_fe", "industrial_furnace.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "industrial_furnace.json"),
+                    requirePositiveInt(root, "work_fe_per_tick_per_lane", "industrial_furnace.json"),
+                    requirePositiveDouble(root, "processing_time_multiplier", "industrial_furnace.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/industrial_furnace.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackIndustrialFurnace();
+        }
+    }
+
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
         return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
     }
@@ -216,6 +252,10 @@ public final class MachineBalanceManager {
 
     private static CrusherBalance fallbackCrusher() {
         return new CrusherBalance(20_000, 32, 16);
+    }
+
+    private static IndustrialFurnaceBalance fallbackIndustrialFurnace() {
+        return new IndustrialFurnaceBalance(60_000, 128, 24, 0.5D);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {
@@ -243,6 +283,19 @@ public final class MachineBalanceManager {
         } catch (ArithmeticException exception) {
             throw new IllegalArgumentException(context + " field " + field + " must be a 32-bit integer");
         }
+    }
+
+    private static double requirePositiveDouble(JsonObject object, String field, String context) {
+        JsonElement element = object.get(field);
+        if (element == null || !element.isJsonPrimitive()
+                || !element.getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException(context + " missing numeric field " + field);
+        }
+        double value = element.getAsDouble();
+        if (!Double.isFinite(value) || value <= 0.0D) {
+            throw new IllegalArgumentException(context + " field " + field + " must be finite and > 0");
+        }
+        return value;
     }
 
     private static boolean requireBoolean(JsonObject object, String field, String context) {

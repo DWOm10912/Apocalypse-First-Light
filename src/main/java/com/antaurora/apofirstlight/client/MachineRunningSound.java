@@ -1,19 +1,19 @@
 package com.antaurora.apofirstlight.client;
 
-import com.antaurora.apofirstlight.block.CrusherBlock;
-import com.antaurora.apofirstlight.registry.AflBlocks;
-import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
+import net.minecraft.client.resources.sounds.Sound;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.client.sounds.SoundBufferLibrary;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import org.lwjgl.BufferUtils;
 
 import javax.sound.sampled.AudioFormat;
@@ -21,23 +21,27 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-public final class CrusherRunningSound extends AbstractTickableSoundInstance {
-    private static final float RUNNING_VOLUME = 0.40F;
+public final class MachineRunningSound extends AbstractTickableSoundInstance {
     public static final double AUDIBLE_RADIUS_BLOCKS = 10.0D;
     public static final double AUDIBLE_RADIUS_SQR = AUDIBLE_RADIUS_BLOCKS * AUDIBLE_RADIUS_BLOCKS;
 
     private final ClientLevel level;
     private final BlockPos position;
+    private final Block machineBlock;
+    private final BooleanProperty litProperty;
 
-    public CrusherRunningSound(ClientLevel level, BlockPos position) {
-        super(AflSounds.CRUSHER_RUNNING.get(), SoundSource.BLOCKS, RandomSource.create());
+    public MachineRunningSound(ClientLevel level, BlockPos position, SoundEvent soundEvent,
+                               Block machineBlock, BooleanProperty litProperty, float volume) {
+        super(soundEvent, SoundSource.BLOCKS, RandomSource.create());
         this.level = level;
         this.position = position.immutable();
+        this.machineBlock = machineBlock;
+        this.litProperty = litProperty;
         this.looping = true;
         this.delay = 0;
         this.attenuation = SoundInstance.Attenuation.LINEAR;
         this.relative = false;
-        this.volume = RUNNING_VOLUME;
+        this.volume = volume;
         this.pitch = 1.0F;
         this.x = position.getX() + 0.5D;
         this.y = position.getY() + 0.5D;
@@ -56,7 +60,7 @@ public final class CrusherRunningSound extends AbstractTickableSoundInstance {
         }
 
         BlockState state = level.getBlockState(position);
-        if (!state.is(AflBlocks.CRUSHER.get()) || !state.getValue(CrusherBlock.LIT)) {
+        if (!state.is(machineBlock) || !state.hasProperty(litProperty) || !state.getValue(litProperty)) {
             stop();
         }
     }
@@ -89,7 +93,7 @@ public final class CrusherRunningSound extends AbstractTickableSoundInstance {
             this.source = source;
             AudioFormat sourceFormat = source.getFormat();
             if (sourceFormat.getChannels() != 2 || sourceFormat.getSampleSizeInBits() != 16) {
-                throw new IllegalArgumentException("Crusher running sound must be mono or 16-bit stereo");
+                throw new IllegalArgumentException("Machine running sound must be mono or 16-bit stereo");
             }
             this.monoFormat = new AudioFormat(sourceFormat.getSampleRate(), 16, 1, true, false);
         }

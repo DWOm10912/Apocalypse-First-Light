@@ -25,6 +25,12 @@ public final class MachineGuiLayouts {
             "energy_cell", Set.of("storage_bar", "storage_fill"), 0);
     private static final MachineGuiLayout CRUSHER = load(
             "crusher", Set.of("input_slot", "progress_arrow", "energy_bar", "energy_fill"), 6);
+    private static final MachineGuiLayout INDUSTRIAL_FURNACE = load(
+            "industrial_furnace",
+            Set.of("input_slot_0", "input_slot_1", "input_slot_2",
+                    "progress_arrow_0", "progress_arrow_1", "progress_arrow_2",
+                    "energy_bar", "energy_fill", "auto_balance_button"),
+            3);
 
     private MachineGuiLayouts() {
     }
@@ -39,6 +45,10 @@ public final class MachineGuiLayouts {
 
     public static MachineGuiLayout crusher() {
         return CRUSHER;
+    }
+
+    public static MachineGuiLayout industrialFurnace() {
+        return INDUSTRIAL_FURNACE;
     }
 
     private static MachineGuiLayout load(String name, Set<String> requiredElements, int outputSlotCount) {

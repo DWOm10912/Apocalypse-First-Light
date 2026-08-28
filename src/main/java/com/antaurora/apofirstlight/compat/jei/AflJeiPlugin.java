@@ -9,6 +9,7 @@ import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflRecipes;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -53,6 +54,8 @@ public final class AflJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(AflBlocks.CRUSHER.get(), CRUSHING);
+        registration.addRecipeCatalyst(AflBlocks.INDUSTRIAL_FURNACE.get(),
+                RecipeTypes.SMELTING, RecipeTypes.BLASTING);
     }
 
     @Override

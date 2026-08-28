@@ -19,6 +19,7 @@ public final class AflMenuScreens {
             MenuScreens.register(AflMenus.THERMAL_GENERATOR.get(), ThermalGeneratorScreen::new);
             MenuScreens.register(AflMenus.ENERGY_CELL.get(), EnergyCellScreen::new);
             MenuScreens.register(AflMenus.CRUSHER.get(), CrusherScreen::new);
+            MenuScreens.register(AflMenus.INDUSTRIAL_FURNACE.get(), IndustrialFurnaceScreen::new);
         });
     }
 }

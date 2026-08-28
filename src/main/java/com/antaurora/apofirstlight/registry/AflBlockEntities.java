@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEnt
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
+import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -39,6 +40,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("crusher", () ->
                     BlockEntityType.Builder.of(CrusherBlockEntity::new,
                             AflBlocks.CRUSHER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<IndustrialFurnaceBlockEntity>> INDUSTRIAL_FURNACE =
+            BLOCK_ENTITIES.register("industrial_furnace", () ->
+                    BlockEntityType.Builder.of(IndustrialFurnaceBlockEntity::new,
+                            AflBlocks.INDUSTRIAL_FURNACE.get()).build(null));
 
     private AflBlockEntities() {
     }

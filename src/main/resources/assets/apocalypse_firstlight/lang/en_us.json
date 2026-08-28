@@ -42,6 +42,7 @@
   "block.apocalypse_firstlight.thermal_generator": "Thermal Generator",
   "block.apocalypse_firstlight.energy_cell": "Energy Cell",
   "block.apocalypse_firstlight.crusher": "Crusher",
+  "block.apocalypse_firstlight.industrial_furnace": "Smelting Factory",
   "block.apocalypse_firstlight.power_cable": "Power Cable",
   "block.apocalypse_firstlight.edge_lane_white": "White Edge Line",
   "block.apocalypse_firstlight.edge_lane_yellow": "Yellow Edge Line",
@@ -124,6 +125,10 @@
 
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
   "itemGroup.apocalypse_firstlight.items": "Apocalypse: First Light Items",
+
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "Auto Balance: On",
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "Auto Balance: Off",
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "Evenly distributes identical inputs across the three processing lanes.",
 
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."

@@ -3,6 +3,7 @@
   "values": [
     "apocalypse_firstlight:thermal_generator",
     "apocalypse_firstlight:energy_cell",
-    "apocalypse_firstlight:crusher"
+    "apocalypse_firstlight:crusher",
+    "apocalypse_firstlight:industrial_furnace"
   ]
 }

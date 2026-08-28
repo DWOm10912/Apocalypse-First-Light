@@ -27,6 +27,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
 
     private static final int BAR_OUTER_WIDTH = 98;
     private static final int BAR_OUTER_HEIGHT = 12;
+    private static final int PROCESSING_BAR_WIDTH = 76;
 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
@@ -42,6 +43,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
         switch (data.getString(MachineJadeServerDataProvider.MACHINE_TYPE)) {
             case MachineJadeServerDataProvider.THERMAL_GENERATOR -> addThermalGenerator(tooltip, data);
             case MachineJadeServerDataProvider.CRUSHER -> addCrusher(tooltip, data);
+            case MachineJadeServerDataProvider.INDUSTRIAL_FURNACE -> addIndustrialFurnace(tooltip, data);
             default -> {
             }
         }
@@ -89,6 +91,50 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
             tooltip.add(helper.progress(ratio, null,
                             helper.progressStyle(), BoxStyle.DEFAULT, false)
                     .size(new Vec2(BAR_OUTER_WIDTH, BAR_OUTER_HEIGHT)));
+        }
+
+        addOutputs(tooltip, data);
+    }
+
+    private static void addIndustrialFurnace(ITooltip tooltip, CompoundTag data) {
+        if (data.contains(MachineJadeServerDataProvider.PROCESSING_LANES, Tag.TAG_LIST)) {
+            ListTag laneTags = data.getList(
+                    MachineJadeServerDataProvider.PROCESSING_LANES, Tag.TAG_COMPOUND);
+            IElementHelper helper = tooltip.getElementHelper();
+            boolean processingLabelAdded = false;
+            for (Tag laneTag : laneTags) {
+                if (!(laneTag instanceof CompoundTag laneData)) {
+                    continue;
+                }
+                int progress = Math.max(0,
+                        laneData.getInt(MachineJadeServerDataProvider.PROCESSING_PROGRESS));
+                if (progress <= 0 || !laneData.contains(
+                        MachineJadeServerDataProvider.INPUT, Tag.TAG_COMPOUND)) {
+                    continue;
+                }
+                ItemStack input = ItemStack.of(
+                        laneData.getCompound(MachineJadeServerDataProvider.INPUT));
+                if (input.isEmpty()) {
+                    continue;
+                }
+
+                if (!processingLabelAdded) {
+                    tooltip.add(Component.translatable("jade.apocalypse_firstlight.processing"));
+                    processingLabelAdded = true;
+                }
+                int requiredTicks = Math.max(0,
+                        laneData.getInt(MachineJadeServerDataProvider.PROCESSING_TIME));
+                float ratio = requiredTicks <= 0
+                        ? 0.0F
+                        : Math.min(1.0F, (float) progress / requiredTicks);
+                List<IElement> row = new ArrayList<>();
+                row.add(helper.item(input));
+                row.add(helper.spacer(4, 0));
+                row.add(helper.progress(ratio, null,
+                                helper.progressStyle(), BoxStyle.DEFAULT, false)
+                        .size(new Vec2(PROCESSING_BAR_WIDTH, BAR_OUTER_HEIGHT)));
+                tooltip.add(row);
+            }
         }
 
         addOutputs(tooltip, data);

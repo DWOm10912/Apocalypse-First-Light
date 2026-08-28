@@ -59,7 +59,8 @@ public final class PowerCableBlock extends PipeBlock {
     public static boolean isUtilityPortFace(BlockState machineState, Direction face) {
         return (machineState.is(AflBlocks.THERMAL_GENERATOR.get())
                 || machineState.is(AflBlocks.ENERGY_CELL.get())
-                || machineState.is(AflBlocks.CRUSHER.get()))
+                || machineState.is(AflBlocks.CRUSHER.get())
+                || machineState.is(AflBlocks.INDUSTRIAL_FURNACE.get()))
                 && face == utilityPortFace(machineState);
     }
 

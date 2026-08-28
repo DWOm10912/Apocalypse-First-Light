@@ -21,5 +21,13 @@
         "stream": true
       }
     ]
+  },
+  "industrial_furnace_running": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:industrial_furnace_running",
+        "stream": true
+      }
+    ]
   }
 }

@@ -2,11 +2,18 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.CrusherBlock;
+import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
+import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.api.distmarker.Dist;
@@ -22,7 +29,9 @@ import java.util.Map;
 public final class CrusherSoundController {
     private static final int SCAN_RADIUS_CHUNKS = 2;
     private static final int SCAN_INTERVAL_TICKS = 5;
-    private static final Map<BlockPos, CrusherRunningSound> ACTIVE_SOUNDS = new HashMap<>();
+    private static final float CRUSHER_VOLUME = 0.40F;
+    private static final float INDUSTRIAL_FURNACE_VOLUME = 0.35F;
+    private static final Map<BlockPos, MachineRunningSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;
     private static int scanDelay;
@@ -58,30 +67,44 @@ public final class CrusherSoundController {
                     continue;
                 }
                 chunk.getBlockEntities().forEach((position, blockEntity) -> {
-                    if (blockEntity instanceof CrusherBlockEntity
-                            && level.getBlockState(position).is(AflBlocks.CRUSHER.get())
-                            && level.getBlockState(position).getValue(CrusherBlock.LIT)
-                            && CrusherRunningSound.isInAudibleRange(
+                    BlockState state = level.getBlockState(position);
+                    if (!MachineRunningSound.isInAudibleRange(
                             minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ(), position)) {
-                        startIfAbsent(minecraft, level, position);
+                        return;
+                    }
+                    if (blockEntity instanceof CrusherBlockEntity
+                            && state.is(AflBlocks.CRUSHER.get())
+                            && state.getValue(CrusherBlock.LIT)) {
+                        startIfAbsent(minecraft, level, position,
+                                AflSounds.CRUSHER_RUNNING.get(), AflBlocks.CRUSHER.get(),
+                                CrusherBlock.LIT, CRUSHER_VOLUME);
+                    } else if (blockEntity instanceof IndustrialFurnaceBlockEntity
+                            && state.is(AflBlocks.INDUSTRIAL_FURNACE.get())
+                            && state.getValue(IndustrialFurnaceBlock.LIT)) {
+                        startIfAbsent(minecraft, level, position,
+                                AflSounds.INDUSTRIAL_FURNACE_RUNNING.get(), AflBlocks.INDUSTRIAL_FURNACE.get(),
+                                IndustrialFurnaceBlock.LIT, INDUSTRIAL_FURNACE_VOLUME);
                     }
                 });
             }
         }
     }
 
-    private static void startIfAbsent(Minecraft minecraft, ClientLevel level, BlockPos position) {
+    private static void startIfAbsent(Minecraft minecraft, ClientLevel level, BlockPos position,
+                                      SoundEvent soundEvent, Block machineBlock,
+                                      BooleanProperty litProperty, float volume) {
         BlockPos key = position.immutable();
         if (ACTIVE_SOUNDS.containsKey(key)) {
             return;
         }
-        CrusherRunningSound sound = new CrusherRunningSound(level, key);
+        MachineRunningSound sound = new MachineRunningSound(
+                level, key, soundEvent, machineBlock, litProperty, volume);
         minecraft.getSoundManager().play(sound);
         ACTIVE_SOUNDS.put(key, sound);
     }
 
     private static void reset(ClientLevel level) {
-        ACTIVE_SOUNDS.values().forEach(CrusherRunningSound::stopNow);
+        ACTIVE_SOUNDS.values().forEach(MachineRunningSound::stopNow);
         ACTIVE_SOUNDS.clear();
         trackedLevel = level;
         scanDelay = 0;

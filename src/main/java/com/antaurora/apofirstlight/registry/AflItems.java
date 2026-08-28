@@ -136,6 +136,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.ENERGY_CELL.get(), new Item.Properties()));
     public static final RegistryObject<Item> CRUSHER = ITEMS.register("crusher",
             () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> INDUSTRIAL_FURNACE = ITEMS.register("industrial_furnace",
+            () -> new BlockItem(AflBlocks.INDUSTRIAL_FURNACE.get(), new Item.Properties()));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",

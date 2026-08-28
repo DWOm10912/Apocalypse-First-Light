@@ -1,0 +1,6 @@
+{
+  "capacity_fe": 60000,
+  "max_receive_fe_per_tick": 128,
+  "work_fe_per_tick_per_lane": 24,
+  "processing_time_multiplier": 0.5
+}
