@@ -172,6 +172,14 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
         return energyStored;
     }
 
+    public int getFuelEnergyRemaining() {
+        return fuelEnergyRemaining;
+    }
+
+    public int getFuelEnergyTotal() {
+        return fuelEnergyTotal;
+    }
+
     private boolean applyCurrentBalance() {
         int currentRevision = MachineBalanceManager.revision();
         if (balanceRevision == currentRevision) {

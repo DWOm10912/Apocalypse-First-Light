@@ -102,6 +102,14 @@
   "jei.apocalypse_firstlight.total_energy": "Energy: %s FE",
   "jei.apocalypse_firstlight.output_range": "Output: %s–%s",
 
+  "jade.apocalypse_firstlight.energy": "Energy",
+  "jade.apocalypse_firstlight.energy_value": "%s / %s FE",
+  "jade.apocalypse_firstlight.fuel": "Fuel",
+  "jade.apocalypse_firstlight.output": "Output",
+  "jade.apocalypse_firstlight.processing": "Processing",
+
+  "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL Machine Status",
+
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",
   "hud.apocalypse_firstlight.geiger.residual": "Residual Radiation",

@@ -285,6 +285,14 @@ public final class CrusherBlockEntity extends BaseContainerBlockEntity {
         return energyStored;
     }
 
+    public int getProcessingProgress() {
+        return processingProgress;
+    }
+
+    public int getProcessingTime() {
+        return processingTime;
+    }
+
     private boolean applyCurrentBalance() {
         int currentRevision = MachineBalanceManager.revision();
         if (balanceRevision == currentRevision) {

@@ -102,6 +102,14 @@
   "jei.apocalypse_firstlight.total_energy": "能耗：%s FE",
   "jei.apocalypse_firstlight.output_range": "产量：%s–%s",
 
+  "jade.apocalypse_firstlight.energy": "能量",
+  "jade.apocalypse_firstlight.energy_value": "%s / %s FE",
+  "jade.apocalypse_firstlight.fuel": "燃料",
+  "jade.apocalypse_firstlight.output": "输出",
+  "jade.apocalypse_firstlight.processing": "处理中",
+
+  "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL 机器状态",
+
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",
   "hud.apocalypse_firstlight.geiger.residual": "残留辐射",
