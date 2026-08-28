@@ -9,12 +9,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -26,12 +29,22 @@ import org.jetbrains.annotations.Nullable;
 
 public final class EnergyCellBlockEntity extends BlockEntity implements MenuProvider {
     public static final int DATA_COUNT = 4;
+    private static final String ENERGY_KEY = "EnergyStored";
+    private static final String VISUAL_CAPACITY_KEY = "EnergyCapacity";
+    private static final int VISUAL_SYNC_INTERVAL_TICKS = 5;
+    private static final float VISUAL_SMOOTHING = 0.2F;
+    private static final float VISUAL_SNAP_THRESHOLD = 0.0005F;
 
     private int energyStored;
+    private int visualCapacity;
     private int balanceRevision = -1;
     private long transferBudgetTick = Long.MIN_VALUE;
+    private long lastVisualSyncTick = Long.MIN_VALUE;
     private int receivedThisTick;
     private int extractedThisTick;
+    private boolean visualSyncPending;
+    private float displayedEnergyRatio;
+    private boolean displayedEnergyInitialized;
 
     private final IEnergyStorage energyStorage = new IEnergyStorage() {
         @Override
@@ -46,6 +59,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
                 energyStored += accepted;
                 receivedThisTick += accepted;
                 setChanged();
+                markVisualSyncNeeded();
             }
             return accepted;
         }
@@ -61,6 +75,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
                 energyStored -= extracted;
                 extractedThisTick += extracted;
                 setChanged();
+                markVisualSyncNeeded();
             }
             return extracted;
         }
@@ -122,10 +137,29 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
 
     public static void serverTick(Level level, BlockPos position, BlockState state, EnergyCellBlockEntity cell) {
         cell.applyCurrentBalance();
+        cell.syncVisualEnergy(level);
     }
 
     public int getStoredEnergy() {
         return energyStored;
+    }
+
+    public float getDisplayedEnergyRatio() {
+        int capacity = visualCapacity > 0
+                ? visualCapacity
+                : MachineBalanceManager.energyCell().capacityFe();
+        float targetRatio = capacity <= 0
+                ? 0.0F
+                : Mth.clamp((float) energyStored / capacity, 0.0F, 1.0F);
+        if (!displayedEnergyInitialized) {
+            displayedEnergyRatio = targetRatio;
+            displayedEnergyInitialized = true;
+        } else if (Math.abs(targetRatio - displayedEnergyRatio) < VISUAL_SNAP_THRESHOLD) {
+            displayedEnergyRatio = targetRatio;
+        } else {
+            displayedEnergyRatio += (targetRatio - displayedEnergyRatio) * VISUAL_SMOOTHING;
+        }
+        return displayedEnergyRatio;
     }
 
     @Override
@@ -152,7 +186,30 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
                     worldPosition, energyStored, capacity);
             energyStored = capacity;
             setChanged();
+            markVisualSyncNeeded();
         }
+    }
+
+    private void markVisualSyncNeeded() {
+        visualSyncPending = true;
+    }
+
+    private void syncVisualEnergy(Level level) {
+        if (!visualSyncPending || level.isClientSide()) {
+            return;
+        }
+        long gameTime = level.getGameTime();
+        int capacity = MachineBalanceManager.energyCell().capacityFe();
+        boolean endpoint = energyStored <= 0 || energyStored >= capacity;
+        if (!endpoint && lastVisualSyncTick != Long.MIN_VALUE
+                && gameTime - lastVisualSyncTick < VISUAL_SYNC_INTERVAL_TICKS) {
+            return;
+        }
+
+        visualSyncPending = false;
+        lastVisualSyncTick = gameTime;
+        BlockState state = getBlockState();
+        level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
     }
 
     private void resetTransferBudget() {
@@ -167,15 +224,33 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
-        tag.putInt("EnergyStored", energyStored);
+        tag.putInt(ENERGY_KEY, energyStored);
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
-        energyStored = Math.max(0, Math.min(tag.getInt("EnergyStored"),
+        energyStored = Math.max(0, Math.min(tag.getInt(ENERGY_KEY),
                 MachineBalanceManager.energyCell().capacityFe()));
+        visualCapacity = tag.contains(VISUAL_CAPACITY_KEY)
+                ? Math.max(0, tag.getInt(VISUAL_CAPACITY_KEY))
+                : MachineBalanceManager.energyCell().capacityFe();
         balanceRevision = -1;
+        visualSyncPending = true;
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = new CompoundTag();
+        tag.putInt(ENERGY_KEY, energyStored);
+        tag.putInt(VISUAL_CAPACITY_KEY, MachineBalanceManager.energyCell().capacityFe());
+        return tag;
+    }
+
+    @Override
+    @Nullable
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override

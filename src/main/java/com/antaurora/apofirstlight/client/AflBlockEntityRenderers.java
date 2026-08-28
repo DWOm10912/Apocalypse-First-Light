@@ -18,5 +18,7 @@ public final class AflBlockEntityRenderers {
                 RetailShelfSingleBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
                 CommercialGlassDoubleDoorRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
+                EnergyCellBlockEntityRenderer::new);
     }
 }

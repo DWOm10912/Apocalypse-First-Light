@@ -34,6 +34,11 @@ public final class ThermalGeneratorScreen extends AbstractContainerScreen<Therma
     private static final int ENERGY_FILL_Y = ENERGY_BAR_Y + 3;
     private static final int ENERGY_FILL_WIDTH = 8;
     private static final int ENERGY_FILL_HEIGHT = 48;
+    private static final int ENERGY_FILL_FRAME_SIZE = 8;
+    private static final int ENERGY_FILL_FRAME_COUNT = 6;
+    private static final int ENERGY_FILL_FRAME_TICKS = 8;
+    private static final int ENERGY_FILL_TEXTURE_WIDTH = 8;
+    private static final int ENERGY_FILL_TEXTURE_HEIGHT = 48;
 
     public ThermalGeneratorScreen(ThermalGeneratorMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -120,30 +125,35 @@ public final class ThermalGeneratorScreen extends AbstractContainerScreen<Therma
         double fillPixels = ENERGY_FILL_HEIGHT * ratio;
         int fullRows = Mth.floor(fillPixels);
         float fractionalRowAlpha = (float) (fillPixels - fullRows);
+        long gameTime = minecraft == null || minecraft.level == null
+                ? 0L
+                : minecraft.level.getGameTime();
+        int frameIndex = (int) ((gameTime / ENERGY_FILL_FRAME_TICKS) % ENERGY_FILL_FRAME_COUNT);
+        int frameV = frameIndex * ENERGY_FILL_FRAME_SIZE;
         int cursorY = ENERGY_FILL_Y + ENERGY_FILL_HEIGHT;
         int remaining = fullRows;
 
         while (remaining > 0) {
-            int tileHeight = Math.min(8, remaining);
+            int tileHeight = Math.min(ENERGY_FILL_FRAME_SIZE, remaining);
             cursorY -= tileHeight;
             graphics.blit(ENERGY_FILL_TEXTURE,
                     left + ENERGY_FILL_X, top + cursorY,
-                    0, 8 - tileHeight,
+                    0, frameV + ENERGY_FILL_FRAME_SIZE - tileHeight,
                     ENERGY_FILL_WIDTH, tileHeight,
-                    8, 8);
+                    ENERGY_FILL_TEXTURE_WIDTH, ENERGY_FILL_TEXTURE_HEIGHT);
             remaining -= tileHeight;
         }
 
         if (fractionalRowAlpha > 0.0F && fullRows < ENERGY_FILL_HEIGHT) {
             int rowY = ENERGY_FILL_Y + ENERGY_FILL_HEIGHT - fullRows - 1;
-            int tileV = 7 - fullRows % 8;
+            int tileV = frameV + ENERGY_FILL_FRAME_SIZE - 1 - fullRows % ENERGY_FILL_FRAME_SIZE;
             try {
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, fractionalRowAlpha);
                 graphics.blit(ENERGY_FILL_TEXTURE,
                         left + ENERGY_FILL_X, top + rowY,
                         0, tileV,
                         ENERGY_FILL_WIDTH, 1,
-                        8, 8);
+                        ENERGY_FILL_TEXTURE_WIDTH, ENERGY_FILL_TEXTURE_HEIGHT);
             } finally {
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
