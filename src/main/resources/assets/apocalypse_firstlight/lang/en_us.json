@@ -5,6 +5,8 @@
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
   "biome.apocalypse_firstlight.scorched_lands": "Scorched Lands",
 
+  "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
+
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",

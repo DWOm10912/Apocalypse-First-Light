@@ -58,6 +58,7 @@ public final class RadiationExposureEvents {
                 exposure.decayResidual(RESIDUAL_DECAY_MULTIPLIER_PER_SECOND, RESIDUAL_ZERO_THRESHOLD);
             }
         });
+        RadiationSicknessManager.update(player);
     }
 
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
