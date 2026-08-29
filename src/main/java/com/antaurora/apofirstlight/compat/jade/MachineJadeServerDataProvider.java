@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -32,6 +33,7 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
     public static final String ENERGY_CELL = "energy_cell";
     public static final String CRUSHER = "crusher";
     public static final String INDUSTRIAL_FURNACE = "industrial_furnace";
+    public static final String COMPRESSOR = "compressor";
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
@@ -106,6 +108,30 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
                 }
             }
             if (!outputs.isEmpty()) {
+                data.put(OUTPUTS, outputs);
+            }
+            return;
+        }
+
+        if (accessor.getBlockEntity() instanceof CompressorBlockEntity compressor) {
+            data.putString(MACHINE_TYPE, COMPRESSOR);
+            putEnergy(data, compressor.getStoredEnergy(), compressor.getEnergyCapacity());
+
+            int progress = compressor.getProcessingProgress();
+            if (progress > 0) {
+                ItemStack input = compressor.getInputStack();
+                if (!input.isEmpty()) {
+                    input.setCount(1);
+                    putStack(data, INPUT, input);
+                }
+                data.putInt(PROCESSING_PROGRESS, progress);
+                data.putInt(PROCESSING_TIME, compressor.getProcessingTime());
+            }
+
+            ItemStack output = compressor.getOutputStack();
+            if (!output.isEmpty()) {
+                ListTag outputs = new ListTag();
+                outputs.add(output.save(new CompoundTag()));
                 data.put(OUTPUTS, outputs);
             }
         }

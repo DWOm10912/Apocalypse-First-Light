@@ -8,6 +8,7 @@ import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
+import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -44,6 +45,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("industrial_furnace", () ->
                     BlockEntityType.Builder.of(IndustrialFurnaceBlockEntity::new,
                             AflBlocks.INDUSTRIAL_FURNACE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<CompressorBlockEntity>> COMPRESSOR =
+            BLOCK_ENTITIES.register("compressor", () ->
+                    BlockEntityType.Builder.of(CompressorBlockEntity::new,
+                            AflBlocks.COMPRESSOR.get()).build(null));
 
     private AflBlockEntities() {
     }

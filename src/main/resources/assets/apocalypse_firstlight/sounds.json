@@ -29,5 +29,13 @@
         "stream": true
       }
     ]
+  },
+  "compressor_running": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:compressor_running",
+        "stream": true
+      }
+    ]
   }
 }

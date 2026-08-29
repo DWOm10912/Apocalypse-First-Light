@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "3";
+    private static final String PROTOCOL = "4";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -36,6 +36,9 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, CrusherBalanceSyncS2CPacket.class,
                 CrusherBalanceSyncS2CPacket::encode, CrusherBalanceSyncS2CPacket::decode,
                 CrusherBalanceSyncS2CPacket::handle);
+        channel.registerMessage(nextId++, CompressorBalanceSyncS2CPacket.class,
+                CompressorBalanceSyncS2CPacket::encode, CompressorBalanceSyncS2CPacket::decode,
+                CompressorBalanceSyncS2CPacket::handle);
     }
 
     private AflNetwork() {
@@ -70,6 +73,14 @@ public final class AflNetwork {
             throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         }
         channel.sendTo(new CrusherBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
+                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendCompressorBalance(ServerPlayer player, int workFePerTick) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        channel.sendTo(new CompressorBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -160,6 +171,25 @@ public final class AflNetwork {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientCrusherBalanceData
+                            .update(packet.workFePerTick)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record CompressorBalanceSyncS2CPacket(int workFePerTick) {
+        public static void encode(CompressorBalanceSyncS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.workFePerTick);
+        }
+
+        public static CompressorBalanceSyncS2CPacket decode(FriendlyByteBuf buffer) {
+            return new CompressorBalanceSyncS2CPacket(buffer.readVarInt());
+        }
+
+        public static void handle(CompressorBalanceSyncS2CPacket packet,
+                                  Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientCompressorBalanceData
                             .update(packet.workFePerTick)));
             context.setPacketHandled(true);
         }

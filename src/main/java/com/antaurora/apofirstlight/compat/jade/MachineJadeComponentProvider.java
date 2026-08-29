@@ -44,6 +44,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
             case MachineJadeServerDataProvider.THERMAL_GENERATOR -> addThermalGenerator(tooltip, data);
             case MachineJadeServerDataProvider.CRUSHER -> addCrusher(tooltip, data);
             case MachineJadeServerDataProvider.INDUSTRIAL_FURNACE -> addIndustrialFurnace(tooltip, data);
+            case MachineJadeServerDataProvider.COMPRESSOR -> addCrusher(tooltip, data);
             default -> {
             }
         }

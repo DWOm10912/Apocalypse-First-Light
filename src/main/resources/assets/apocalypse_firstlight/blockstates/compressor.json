@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "apocalypse_firstlight:block/compressor", "y": 0 },
+    "facing=south,lit=false": { "model": "apocalypse_firstlight:block/compressor", "y": 180 },
+    "facing=east,lit=false": { "model": "apocalypse_firstlight:block/compressor", "y": 90 },
+    "facing=west,lit=false": { "model": "apocalypse_firstlight:block/compressor", "y": 270 },
+    "facing=north,lit=true": { "model": "apocalypse_firstlight:block/compressor_running", "y": 0 },
+    "facing=south,lit=true": { "model": "apocalypse_firstlight:block/compressor_running", "y": 180 },
+    "facing=east,lit=true": { "model": "apocalypse_firstlight:block/compressor_running", "y": 90 },
+    "facing=west,lit=true": { "model": "apocalypse_firstlight:block/compressor_running", "y": 270 }
+  }
+}

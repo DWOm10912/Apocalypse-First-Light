@@ -1,0 +1,11 @@
+{
+  "type": "apocalypse_firstlight:compressing",
+  "ingredient": {
+    "item": "apocalypse_firstlight:aluminum_ingot"
+  },
+  "result": {
+    "item": "apocalypse_firstlight:aluminum_sheet",
+    "count": 1
+  },
+  "processing_time": 80
+}

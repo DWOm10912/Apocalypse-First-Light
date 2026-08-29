@@ -36,11 +36,14 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "crusher");
     private static final ResourceLocation INDUSTRIAL_FURNACE_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_furnace");
+    private static final ResourceLocation COMPRESSOR_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "compressor");
 
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
+    private static volatile CompressorBalance compressor = fallbackCompressor();
     private static volatile int revision;
 
     private MachineBalanceManager() {
@@ -67,6 +70,10 @@ public final class MachineBalanceManager {
         return industrialFurnace;
     }
 
+    public static CompressorBalance compressor() {
+        return compressor;
+    }
+
     public static int revision() {
         return revision;
     }
@@ -91,9 +98,11 @@ public final class MachineBalanceManager {
     public static void syncMachineBalanceData(OnDatapackSyncEvent event) {
         Map<ResourceLocation, Integer> fuelEnergies = thermalGeneratorFuelEnergies();
         int crusherWorkFePerTick = crusher.workFePerTick();
+        int compressorWorkFePerTick = compressor.workFePerTick();
         event.getPlayers().forEach(player -> {
             AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies);
             AflNetwork.sendCrusherBalance(player, crusherWorkFePerTick);
+            AflNetwork.sendCompressorBalance(player, compressorWorkFePerTick);
         });
     }
 
@@ -116,6 +125,9 @@ public final class MachineBalanceManager {
                                            double processingTimeMultiplier) {
     }
 
+    public record CompressorBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
+    }
+
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
         private BalanceReloadListener() {
             super(GSON, "machine_balance");
@@ -129,10 +141,12 @@ public final class MachineBalanceManager {
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
+            CompressorBalance loadedCompressor = loadCompressor(resources.get(COMPRESSOR_ID));
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
+            compressor = loadedCompressor;
             revision++;
 
             ApocalypseFirstLight.LOGGER.info(
@@ -151,6 +165,10 @@ public final class MachineBalanceManager {
                     loadedIndustrialFurnace.capacityFe(), loadedIndustrialFurnace.maxReceiveFePerTick(),
                     loadedIndustrialFurnace.workFePerTickPerLane(),
                     loadedIndustrialFurnace.processingTimeMultiplier());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Compressor balance: capacity={} FE, receive={} FE/t, work={} FE/t",
+                    loadedCompressor.capacityFe(), loadedCompressor.maxReceiveFePerTick(),
+                    loadedCompressor.workFePerTick());
 
         }
     }
@@ -242,6 +260,21 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static CompressorBalance loadCompressor(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "compressor.json");
+            return new CompressorBalance(
+                    requirePositiveInt(root, "capacity_fe", "compressor.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "compressor.json"),
+                    requirePositiveInt(root, "work_fe_per_tick", "compressor.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/compressor.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackCompressor();
+        }
+    }
+
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
         return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
     }
@@ -256,6 +289,10 @@ public final class MachineBalanceManager {
 
     private static IndustrialFurnaceBalance fallbackIndustrialFurnace() {
         return new IndustrialFurnaceBalance(60_000, 128, 24, 0.5D);
+    }
+
+    private static CompressorBalance fallbackCompressor() {
+        return new CompressorBalance(20_000, 32, 16);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {

@@ -1,0 +1,5 @@
+{
+  "capacity_fe": 20000,
+  "max_receive_fe_per_tick": 32,
+  "work_fe_per_tick": 16
+}

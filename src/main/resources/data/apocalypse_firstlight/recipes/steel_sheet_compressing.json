@@ -1,0 +1,11 @@
+{
+  "type": "apocalypse_firstlight:compressing",
+  "ingredient": {
+    "item": "apocalypse_firstlight:steel_ingot"
+  },
+  "result": {
+    "item": "apocalypse_firstlight:steel_sheet",
+    "count": 1
+  },
+  "processing_time": 80
+}
