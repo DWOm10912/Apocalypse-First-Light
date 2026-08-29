@@ -33,6 +33,9 @@ public final class MachineGuiLayouts {
             3);
     private static final MachineGuiLayout COMPRESSOR = load(
             "compressor", Set.of("input_slot", "progress_arrow", "energy_bar", "energy_fill"), 1);
+    private static final MachineGuiLayout ALLOY_FURNACE = load(
+            "alloy_furnace",
+            Set.of("input_slot_a", "input_slot_b", "progress_arrow", "energy_bar", "energy_fill"), 1);
 
     private MachineGuiLayouts() {
     }
@@ -55,6 +58,10 @@ public final class MachineGuiLayouts {
 
     public static MachineGuiLayout compressor() {
         return COMPRESSOR;
+    }
+
+    public static MachineGuiLayout alloyFurnace() {
+        return ALLOY_FURNACE;
     }
 
     private static MachineGuiLayout load(String name, Set<String> requiredElements, int outputSlotCount) {

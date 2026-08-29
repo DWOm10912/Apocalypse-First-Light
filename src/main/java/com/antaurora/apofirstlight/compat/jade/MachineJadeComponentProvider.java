@@ -45,6 +45,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
             case MachineJadeServerDataProvider.CRUSHER -> addCrusher(tooltip, data);
             case MachineJadeServerDataProvider.INDUSTRIAL_FURNACE -> addIndustrialFurnace(tooltip, data);
             case MachineJadeServerDataProvider.COMPRESSOR -> addCrusher(tooltip, data);
+            case MachineJadeServerDataProvider.ALLOY_FURNACE -> addAlloyFurnace(tooltip, data);
             default -> {
             }
         }
@@ -135,6 +136,37 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
                                 helper.progressStyle(), BoxStyle.DEFAULT, false)
                         .size(new Vec2(PROCESSING_BAR_WIDTH, BAR_OUTER_HEIGHT)));
                 tooltip.add(row);
+            }
+        }
+
+        addOutputs(tooltip, data);
+    }
+
+    private static void addAlloyFurnace(ITooltip tooltip, CompoundTag data) {
+        int progress = Math.max(0, data.getInt(MachineJadeServerDataProvider.PROCESSING_PROGRESS));
+        int processingTime = Math.max(0, data.getInt(MachineJadeServerDataProvider.PROCESSING_TIME));
+        if (progress > 0 && data.contains(MachineJadeServerDataProvider.PROCESSING_INPUTS, Tag.TAG_LIST)) {
+            ListTag inputTags = data.getList(
+                    MachineJadeServerDataProvider.PROCESSING_INPUTS, Tag.TAG_COMPOUND);
+            List<IElement> inputRow = new ArrayList<>();
+            IElementHelper helper = tooltip.getElementHelper();
+            for (Tag inputTag : inputTags) {
+                if (inputTag instanceof CompoundTag stackTag) {
+                    ItemStack stack = ItemStack.of(stackTag);
+                    if (!stack.isEmpty()) {
+                        inputRow.add(helper.item(stack));
+                    }
+                }
+            }
+            if (!inputRow.isEmpty()) {
+                tooltip.add(Component.translatable("jade.apocalypse_firstlight.processing"));
+                tooltip.add(inputRow);
+                if (processingTime > 0) {
+                    float ratio = Math.min(1.0F, (float) progress / processingTime);
+                    tooltip.add(helper.progress(ratio, null,
+                                    helper.progressStyle(), BoxStyle.DEFAULT, false)
+                            .size(new Vec2(BAR_OUTER_WIDTH, BAR_OUTER_HEIGHT)));
+                }
             }
         }
 

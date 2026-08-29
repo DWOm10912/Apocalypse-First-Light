@@ -5,11 +5,13 @@ import com.antaurora.apofirstlight.block.EnergyCellBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
+import com.antaurora.apofirstlight.block.AlloyFurnaceBlock;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
@@ -29,6 +31,8 @@ public final class AflJadePlugin implements IWailaPlugin {
                 IndustrialFurnaceBlockEntity.class);
         registration.registerBlockDataProvider(MachineJadeServerDataProvider.INSTANCE,
                 CompressorBlockEntity.class);
+        registration.registerBlockDataProvider(MachineJadeServerDataProvider.INSTANCE,
+                AlloyFurnaceBlockEntity.class);
     }
 
     @Override
@@ -43,5 +47,7 @@ public final class AflJadePlugin implements IWailaPlugin {
                 IndustrialFurnaceBlock.class);
         registration.registerBlockComponent(MachineJadeComponentProvider.INSTANCE,
                 CompressorBlock.class);
+        registration.registerBlockComponent(MachineJadeComponentProvider.INSTANCE,
+                AlloyFurnaceBlock.class);
     }
 }

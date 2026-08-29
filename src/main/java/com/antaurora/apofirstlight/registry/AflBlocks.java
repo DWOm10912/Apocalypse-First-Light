@@ -13,6 +13,7 @@ import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
+import com.antaurora.apofirstlight.block.AlloyFurnaceBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
@@ -151,6 +152,9 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> INDUSTRIAL_FURNACE = BLOCKS.register("industrial_furnace",
             () -> new IndustrialFurnaceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> ALLOY_FURNACE = BLOCKS.register("alloy_furnace",
+            () -> new AlloyFurnaceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> COMPRESSOR = BLOCKS.register("compressor",
             () -> new CompressorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

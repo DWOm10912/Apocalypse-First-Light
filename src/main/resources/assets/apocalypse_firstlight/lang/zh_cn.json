@@ -43,6 +43,7 @@
   "block.apocalypse_firstlight.energy_cell": "能量单元",
   "block.apocalypse_firstlight.crusher": "粉碎机",
   "block.apocalypse_firstlight.industrial_furnace": "工业熔炉",
+  "block.apocalypse_firstlight.alloy_furnace": "合金炉",
   "block.apocalypse_firstlight.compressor": "压缩机",
   "block.apocalypse_firstlight.power_cable": "能源线缆",
   "block.apocalypse_firstlight.edge_lane_white": "白色边缘线",
@@ -101,6 +102,7 @@
 
   "jei.apocalypse_firstlight.category.crushing": "粉碎",
   "jei.apocalypse_firstlight.category.compressing": "压缩",
+  "jei.apocalypse_firstlight.category.alloying": "合金冶炼",
   "jei.apocalypse_firstlight.processing_time": "加工时间：%s 秒",
   "jei.apocalypse_firstlight.total_energy": "能耗：%s FE",
   "jei.apocalypse_firstlight.output_range": "产量：%s–%s",
@@ -130,7 +132,7 @@
 
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "自动配平：开启",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "自动配平：关闭",
-  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "将相同原料自动均分到三个处理通道。",
+  "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "将相同原料自动均分到三个处理通道",
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"

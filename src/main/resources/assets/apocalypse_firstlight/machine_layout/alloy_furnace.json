@@ -1,0 +1,63 @@
+{
+  "gui": {
+    "width": 176,
+    "height": 166
+  },
+  "title": {
+    "x": 8,
+    "y": 6
+  },
+  "inventory_label": {
+    "x": 8,
+    "y": 72
+  },
+  "player_inventory": {
+    "x": 8,
+    "y": 84,
+    "columns": 9,
+    "rows": 3,
+    "spacing": 18
+  },
+  "hotbar": {
+    "x": 8,
+    "y": 142,
+    "columns": 9,
+    "rows": 1,
+    "spacing": 18
+  },
+  "elements": {
+    "input_slot_a": {
+      "x": 38,
+      "y": 27,
+      "width": 16,
+      "height": 16
+    },
+    "input_slot_b": {
+      "x": 38,
+      "y": 45,
+      "width": 16,
+      "height": 16
+    },
+    "output_slots": [
+      { "x": 112, "y": 35, "width": 16, "height": 16 }
+    ],
+    "progress_arrow": {
+      "x": 68,
+      "y": 35,
+      "width": 24,
+      "height": 17
+    },
+    "energy_bar": {
+      "x": 150,
+      "y": 18,
+      "width": 12,
+      "height": 54
+    },
+    "energy_fill": {
+      "x": 152,
+      "y": 21,
+      "width": 8,
+      "height": 48
+    }
+  }
+}

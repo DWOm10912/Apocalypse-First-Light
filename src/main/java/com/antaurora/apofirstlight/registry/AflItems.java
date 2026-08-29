@@ -138,6 +138,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_FURNACE = ITEMS.register("industrial_furnace",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_FURNACE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ALLOY_FURNACE = ITEMS.register("alloy_furnace",
+            () -> new BlockItem(AflBlocks.ALLOY_FURNACE.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMPRESSOR = ITEMS.register("compressor",
             () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",

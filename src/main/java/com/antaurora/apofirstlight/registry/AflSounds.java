@@ -30,6 +30,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> COMPRESSOR_RUNNING = SOUND_EVENTS.register("compressor_running",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "compressor_running")));
+    public static final RegistryObject<SoundEvent> ALLOY_FURNACE_RUNNING =
+            SOUND_EVENTS.register("alloy_furnace_running",
+                    () -> SoundEvent.createVariableRangeEvent(
+                            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloy_furnace_running")));
 
     private AflSounds() {
     }

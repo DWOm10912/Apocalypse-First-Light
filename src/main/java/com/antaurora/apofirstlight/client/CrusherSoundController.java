@@ -4,9 +4,11 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
+import com.antaurora.apofirstlight.block.AlloyFurnaceBlock;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
@@ -34,6 +36,7 @@ public final class CrusherSoundController {
     private static final float CRUSHER_VOLUME = 0.40F;
     private static final float INDUSTRIAL_FURNACE_VOLUME = 0.35F;
     private static final float COMPRESSOR_VOLUME = 0.40F;
+    private static final float ALLOY_FURNACE_VOLUME = 0.35F;
     private static final Map<BlockPos, MachineRunningSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;
@@ -93,6 +96,12 @@ public final class CrusherSoundController {
                         startIfAbsent(minecraft, level, position,
                                 AflSounds.COMPRESSOR_RUNNING.get(), AflBlocks.COMPRESSOR.get(),
                                 CompressorBlock.LIT, COMPRESSOR_VOLUME);
+                    } else if (blockEntity instanceof AlloyFurnaceBlockEntity
+                            && state.is(AflBlocks.ALLOY_FURNACE.get())
+                            && state.getValue(AlloyFurnaceBlock.LIT)) {
+                        startIfAbsent(minecraft, level, position,
+                                AflSounds.ALLOY_FURNACE_RUNNING.get(), AflBlocks.ALLOY_FURNACE.get(),
+                                AlloyFurnaceBlock.LIT, ALLOY_FURNACE_VOLUME);
                     }
                 });
             }

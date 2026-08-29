@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.menu.EnergyCellMenu;
 import com.antaurora.apofirstlight.menu.CrusherMenu;
 import com.antaurora.apofirstlight.menu.IndustrialFurnaceMenu;
 import com.antaurora.apofirstlight.menu.CompressorMenu;
+import com.antaurora.apofirstlight.menu.AlloyFurnaceMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.registries.DeferredRegister;
@@ -24,6 +25,8 @@ public final class AflMenus {
             MENUS.register("crusher", () -> IForgeMenuType.create(CrusherMenu::new));
     public static final RegistryObject<MenuType<IndustrialFurnaceMenu>> INDUSTRIAL_FURNACE =
             MENUS.register("industrial_furnace", () -> IForgeMenuType.create(IndustrialFurnaceMenu::new));
+    public static final RegistryObject<MenuType<AlloyFurnaceMenu>> ALLOY_FURNACE =
+            MENUS.register("alloy_furnace", () -> IForgeMenuType.create(AlloyFurnaceMenu::new));
     public static final RegistryObject<MenuType<CompressorMenu>> COMPRESSOR =
             MENUS.register("compressor", () -> IForgeMenuType.create(CompressorMenu::new));
 

@@ -3,10 +3,12 @@ package com.antaurora.apofirstlight.compat.jei;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.CrusherScreen;
 import com.antaurora.apofirstlight.client.CompressorScreen;
+import com.antaurora.apofirstlight.client.AlloyFurnaceScreen;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayouts;
 import com.antaurora.apofirstlight.recipe.CrushingRecipe;
 import com.antaurora.apofirstlight.recipe.CompressingRecipe;
+import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflRecipes;
 import mezz.jei.api.IModPlugin;
@@ -29,6 +31,8 @@ public final class AflJeiPlugin implements IModPlugin {
             RecipeType.create(ApocalypseFirstLight.MOD_ID, "crushing", CrushingRecipe.class);
     public static final RecipeType<CompressingRecipe> COMPRESSING =
             RecipeType.create(ApocalypseFirstLight.MOD_ID, "compressing", CompressingRecipe.class);
+    public static final RecipeType<AlloyingRecipe> ALLOYING =
+            RecipeType.create(ApocalypseFirstLight.MOD_ID, "alloying", AlloyingRecipe.class);
 
     private static final ResourceLocation PLUGIN_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "jei_plugin");
@@ -42,7 +46,8 @@ public final class AflJeiPlugin implements IModPlugin {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         registration.addRecipeCategories(new CrusherRecipeCategory(
                 registration.getJeiHelpers().getGuiHelper()),
-                new CompressorRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
+                new CompressorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new AlloyFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
     }
 
     @Override
@@ -57,12 +62,16 @@ public final class AflJeiPlugin implements IModPlugin {
         List<CompressingRecipe> compressingRecipes = level.getRecipeManager()
                 .getAllRecipesFor(AflRecipes.COMPRESSING_TYPE.get());
         registration.addRecipes(COMPRESSING, compressingRecipes);
+        List<AlloyingRecipe> alloyingRecipes = level.getRecipeManager()
+                .getAllRecipesFor(AflRecipes.ALLOYING_TYPE.get());
+        registration.addRecipes(ALLOYING, alloyingRecipes);
     }
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(AflBlocks.CRUSHER.get(), CRUSHING);
         registration.addRecipeCatalyst(AflBlocks.COMPRESSOR.get(), COMPRESSING);
+        registration.addRecipeCatalyst(AflBlocks.ALLOY_FURNACE.get(), ALLOYING);
         registration.addRecipeCatalyst(AflBlocks.INDUSTRIAL_FURNACE.get(),
                 RecipeTypes.SMELTING, RecipeTypes.BLASTING);
     }
@@ -76,5 +85,8 @@ public final class AflJeiPlugin implements IModPlugin {
         registration.addRecipeClickArea(CompressorScreen.class,
                 compressorArrow.x(), compressorArrow.y(), compressorArrow.width(), compressorArrow.height(),
                 COMPRESSING);
+        MachineGuiLayout.Element alloyArrow = MachineGuiLayouts.alloyFurnace().element("progress_arrow");
+        registration.addRecipeClickArea(AlloyFurnaceScreen.class,
+                alloyArrow.x(), alloyArrow.y(), alloyArrow.width(), alloyArrow.height(), ALLOYING);
     }
 }

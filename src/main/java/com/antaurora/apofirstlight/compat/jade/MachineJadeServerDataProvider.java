@@ -6,7 +6,9 @@ import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
+import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -28,12 +30,14 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
     public static final String PROCESSING_PROGRESS = "AflProcessingProgress";
     public static final String PROCESSING_TIME = "AflProcessingTime";
     public static final String PROCESSING_LANES = "AflProcessingLanes";
+    public static final String PROCESSING_INPUTS = "AflProcessingInputs";
 
     public static final String THERMAL_GENERATOR = "thermal_generator";
     public static final String ENERGY_CELL = "energy_cell";
     public static final String CRUSHER = "crusher";
     public static final String INDUSTRIAL_FURNACE = "industrial_furnace";
     public static final String COMPRESSOR = "compressor";
+    public static final String ALLOY_FURNACE = "alloy_furnace";
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
@@ -134,7 +138,63 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
                 outputs.add(output.save(new CompoundTag()));
                 data.put(OUTPUTS, outputs);
             }
+            return;
         }
+
+        if (accessor.getBlockEntity() instanceof AlloyFurnaceBlockEntity furnace) {
+            data.putString(MACHINE_TYPE, ALLOY_FURNACE);
+            putEnergy(data, furnace.getStoredEnergy(), furnace.getEnergyCapacity());
+
+            int progress = furnace.getProcessingProgress();
+            AlloyingRecipe recipe = progress > 0 ? furnace.getCurrentRecipe(accessor.getLevel()) : null;
+            if (recipe != null) {
+                ListTag processingInputs = matchedAlloyInputs(
+                        recipe, furnace.getInputStack(0), furnace.getInputStack(1));
+                if (!processingInputs.isEmpty()) {
+                    data.put(PROCESSING_INPUTS, processingInputs);
+                    data.putInt(PROCESSING_PROGRESS, progress);
+                    data.putInt(PROCESSING_TIME, recipe.processingTime());
+                }
+            }
+
+            ItemStack output = furnace.getOutputStack();
+            if (!output.isEmpty()) {
+                ListTag outputs = new ListTag();
+                outputs.add(output.save(new CompoundTag()));
+                data.put(OUTPUTS, outputs);
+            }
+        }
+    }
+
+    private static ListTag matchedAlloyInputs(AlloyingRecipe recipe, ItemStack firstSlot, ItemStack secondSlot) {
+        ListTag inputs = new ListTag();
+        java.util.List<AlloyingRecipe.CountedIngredient> ingredients = recipe.countedIngredients();
+        if (ingredients.size() == 1) {
+            AlloyingRecipe.CountedIngredient ingredient = ingredients.get(0);
+            if (ingredient.matches(firstSlot)) {
+                addDisplayStack(inputs, firstSlot, ingredient.count());
+            } else if (ingredient.matches(secondSlot)) {
+                addDisplayStack(inputs, secondSlot, ingredient.count());
+            }
+            return inputs;
+        }
+
+        AlloyingRecipe.CountedIngredient firstIngredient = ingredients.get(0);
+        AlloyingRecipe.CountedIngredient secondIngredient = ingredients.get(1);
+        if (firstIngredient.matches(firstSlot) && secondIngredient.matches(secondSlot)) {
+            addDisplayStack(inputs, firstSlot, firstIngredient.count());
+            addDisplayStack(inputs, secondSlot, secondIngredient.count());
+        } else if (firstIngredient.matches(secondSlot) && secondIngredient.matches(firstSlot)) {
+            addDisplayStack(inputs, secondSlot, firstIngredient.count());
+            addDisplayStack(inputs, firstSlot, secondIngredient.count());
+        }
+        return inputs;
+    }
+
+    private static void addDisplayStack(ListTag inputs, ItemStack actualStack, int requiredCount) {
+        ItemStack display = actualStack.copy();
+        display.setCount(requiredCount);
+        inputs.add(display.save(new CompoundTag()));
     }
 
     private static void putEnergy(CompoundTag data, int stored, int capacity) {

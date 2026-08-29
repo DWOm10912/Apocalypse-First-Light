@@ -43,6 +43,7 @@
   "block.apocalypse_firstlight.energy_cell": "Energy Cell",
   "block.apocalypse_firstlight.crusher": "Crusher",
   "block.apocalypse_firstlight.industrial_furnace": "Industrial Furnace",
+  "block.apocalypse_firstlight.alloy_furnace": "Alloy Furnace",
   "block.apocalypse_firstlight.compressor": "Compressor",
   "block.apocalypse_firstlight.power_cable": "Power Cable",
   "block.apocalypse_firstlight.edge_lane_white": "White Edge Line",
@@ -101,6 +102,7 @@
 
   "jei.apocalypse_firstlight.category.crushing": "Crushing",
   "jei.apocalypse_firstlight.category.compressing": "Compressing",
+  "jei.apocalypse_firstlight.category.alloying": "Alloying",
   "jei.apocalypse_firstlight.processing_time": "Processing Time: %s s",
   "jei.apocalypse_firstlight.total_energy": "Energy: %s FE",
   "jei.apocalypse_firstlight.output_range": "Output: %s–%s",

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,lit=false": { "model": "apocalypse_firstlight:block/alloy_furnace", "y": 0 },
+    "facing=south,lit=false": { "model": "apocalypse_firstlight:block/alloy_furnace", "y": 180 },
+    "facing=east,lit=false": { "model": "apocalypse_firstlight:block/alloy_furnace", "y": 90 },
+    "facing=west,lit=false": { "model": "apocalypse_firstlight:block/alloy_furnace", "y": 270 },
+    "facing=north,lit=true": { "model": "apocalypse_firstlight:block/alloy_furnace_running", "y": 0 },
+    "facing=south,lit=true": { "model": "apocalypse_firstlight:block/alloy_furnace_running", "y": 180 },
+    "facing=east,lit=true": { "model": "apocalypse_firstlight:block/alloy_furnace_running", "y": 90 },
+    "facing=west,lit=true": { "model": "apocalypse_firstlight:block/alloy_furnace_running", "y": 270 }
+  }
+}
