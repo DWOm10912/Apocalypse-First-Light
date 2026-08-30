@@ -49,7 +49,7 @@ public final class GeigerHudOverlay {
         ClientGeigerData.Snapshot data = ClientGeigerData.snapshot();
         boolean residualMode = data.zone() == RadiationZone.SAFE;
         double measuredRate = residualMode ? data.residualRadiationRate() : data.currentRate();
-        String rateValue = measuredRate >= 12.0
+        String rateValue = measuredRate >= ClientGeigerData.GEIGER_MAX_RATE
                 ? Component.translatable("hud.apocalypse_firstlight.geiger.over_range").getString()
                 : String.format(Locale.ROOT, "%.2f RU/h", measuredRate);
         String rateLabel = residualMode ? "hud.apocalypse_firstlight.geiger.residual"

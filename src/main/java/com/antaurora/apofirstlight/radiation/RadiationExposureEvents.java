@@ -16,8 +16,10 @@ import net.minecraftforge.fml.common.Mod;
 public final class RadiationExposureEvents {
     private static final ResourceLocation CAPABILITY_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "radiation_exposure");
     private static final int UPDATE_INTERVAL_TICKS = 20;
-    private static final double RESIDUAL_ACCUMULATION_FACTOR_PER_SECOND = 0.02;
-    private static final double RESIDUAL_DECAY_MULTIPLIER_PER_SECOND = 0.9995;
+    private static final double RESIDUAL_ENVIRONMENT_FRACTION = 0.05D;
+    private static final double RESIDUAL_MAX_RATE = 12.0D;
+    private static final double RESIDUAL_APPROACH_FACTOR_PER_SECOND = 0.002D;
+    private static final double RESIDUAL_SAFE_DECAY_FACTOR = 0.9995D;
     private static final double RESIDUAL_ZERO_THRESHOLD = 0.01;
 
     private RadiationExposureEvents() {}
@@ -52,13 +54,20 @@ public final class RadiationExposureEvents {
         RadiationSample sample = RadiationManager.getRadiationSample(player.serverLevel(), player.blockPosition());
         player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
             exposure.addDose(sample.finalRadiation() / 3600.0);
-            if (sample.zone() != RadiationZone.SAFE && sample.finalRadiation() > exposure.getResidualRadiationRate()) {
-                exposure.accumulateResidualToward(sample.finalRadiation(), RESIDUAL_ACCUMULATION_FACTOR_PER_SECOND);
-            } else if (sample.zone() == RadiationZone.SAFE) {
-                exposure.decayResidual(RESIDUAL_DECAY_MULTIPLIER_PER_SECOND, RESIDUAL_ZERO_THRESHOLD);
+            if (sample.zone() == RadiationZone.SAFE) {
+                exposure.decayResidual(RESIDUAL_SAFE_DECAY_FACTOR, RESIDUAL_ZERO_THRESHOLD);
+            } else {
+                exposure.approachResidualToward(residualTarget(sample.finalRadiation()),
+                        RESIDUAL_APPROACH_FACTOR_PER_SECOND);
             }
         });
         RadiationSicknessManager.update(player);
+    }
+
+    private static double residualTarget(double finalRadiation) {
+        if (Double.isNaN(finalRadiation) || finalRadiation <= 0.0D) return 0.0D;
+        if (Double.isInfinite(finalRadiation)) return RESIDUAL_MAX_RATE;
+        return Math.min(RESIDUAL_MAX_RATE, finalRadiation * RESIDUAL_ENVIRONMENT_FRACTION);
     }
 
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)

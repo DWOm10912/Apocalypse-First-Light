@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.radiation.RadiationZone;
 import net.minecraft.client.Minecraft;
 
 public final class ClientGeigerData {
+    public static final double GEIGER_MAX_RATE = 20.0D;
+
     private static double currentRate;
     private static double cumulativeDose;
     private static double residualRadiationRate;

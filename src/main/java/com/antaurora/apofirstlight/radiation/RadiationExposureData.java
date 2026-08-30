@@ -37,10 +37,9 @@ public final class RadiationExposureData implements INBTSerializable<CompoundTag
 
     public void resetResidualRadiation() { residualRadiationRate = 0.0; }
 
-    public void accumulateResidualToward(double environmentRate, double factor) {
-        if (!Double.isFinite(environmentRate) || !Double.isFinite(factor)
-                || environmentRate <= residualRadiationRate || factor <= 0.0) return;
-        residualRadiationRate += (environmentRate - residualRadiationRate) * Math.min(1.0, factor);
+    public void approachResidualToward(double targetRate, double factor) {
+        if (!Double.isFinite(targetRate) || targetRate < 0.0 || !Double.isFinite(factor) || factor <= 0.0) return;
+        residualRadiationRate += (targetRate - residualRadiationRate) * Math.min(1.0, factor);
     }
 
     public void decayResidual(double multiplier, double zeroThreshold) {

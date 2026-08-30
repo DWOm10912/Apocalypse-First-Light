@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT,
         bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class GeigerSoundController {
-    private static final double GEIGER_MAX_MEASURABLE_RATE = 12.0;
+    private static final double MAX_CPS = 20.0D;
 
     private GeigerSoundController() {
     }
@@ -45,7 +45,7 @@ public final class GeigerSoundController {
             return;
         }
 
-        if (ThreadLocalRandom.current().nextDouble() < Math.min(1.0, cps / 20.0)) {
+        if (ThreadLocalRandom.current().nextDouble() < Math.min(1.0, cps / MAX_CPS)) {
             float pitch = ThreadLocalRandom.current().nextFloat(0.95F, 1.05F);
             float volume = ThreadLocalRandom.current().nextFloat(0.90F, 1.00F);
             minecraft.getSoundManager().play(SimpleSoundInstance.forUI(AflSounds.GEIGER_CLICK.get(), pitch, volume));
@@ -58,10 +58,11 @@ public final class GeigerSoundController {
     }
 
     private static double radiationCps(double rate) {
-        if (rate >= GEIGER_MAX_MEASURABLE_RATE) return 12.0;
+        if (rate >= ClientGeigerData.GEIGER_MAX_RATE) return MAX_CPS;
         return interpolate(rate, new double[][]{
                 {0.00, 0.0}, {0.10, 0.25}, {0.50, 0.75}, {1.50, 2.0},
-                {3.00, 4.0}, {6.00, 7.0}, {9.00, 10.0}, {12.0, 12.0}
+                {3.00, 4.0}, {6.00, 7.0}, {9.00, 10.0}, {12.0, 12.0},
+                {ClientGeigerData.GEIGER_MAX_RATE, MAX_CPS}
         });
     }
 

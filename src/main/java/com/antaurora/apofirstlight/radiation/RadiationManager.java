@@ -172,10 +172,18 @@ public final class RadiationManager {
     }
 
     private static double rateFor(double field) {
-        if (field < SAFE_THRESHOLD) return 0.0;
-        if (field < HEAVY_THRESHOLD) return lerp(0.10, 1.50, (field - SAFE_THRESHOLD) / (HEAVY_THRESHOLD - SAFE_THRESHOLD));
-        if (field < EXTREME_THRESHOLD) return lerp(1.50, 6.00, (field - HEAVY_THRESHOLD) / (EXTREME_THRESHOLD - HEAVY_THRESHOLD));
-        return lerp(6.00, 20.00, (field - EXTREME_THRESHOLD) / (1.00 - EXTREME_THRESHOLD));
+        double clampedField = clamp01(field);
+        if (clampedField < SAFE_THRESHOLD) return 0.0;
+        if (clampedField < HEAVY_THRESHOLD) {
+            return lerp(1.0, 10.0,
+                    (clampedField - SAFE_THRESHOLD) / (HEAVY_THRESHOLD - SAFE_THRESHOLD));
+        }
+        if (clampedField < EXTREME_THRESHOLD) {
+            return lerp(10.0, 60.0,
+                    (clampedField - HEAVY_THRESHOLD) / (EXTREME_THRESHOLD - HEAVY_THRESHOLD));
+        }
+        return lerp(60.0, 240.0,
+                (clampedField - EXTREME_THRESHOLD) / (1.0 - EXTREME_THRESHOLD));
     }
 
     private static double startupRadiationCap(long seed, int x, int z, double originalField) {
