@@ -28,6 +28,7 @@ public final class RadiationSyncEvents {
                     player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
                         double measuredRate = worldSample.zone() == RadiationZone.SAFE
                                 ? exposure.getResidualRadiationRate() + playerRadiation.carriedItemRadiation()
+                                + playerRadiation.worldLocalRadiation()
                                 : playerRadiation.effectiveRadiation();
                         AflNetwork.sendGeigerData(player, measuredRate, exposure.getDose(),
                                 exposure.getResidualRadiationRate(), worldSample.zone());

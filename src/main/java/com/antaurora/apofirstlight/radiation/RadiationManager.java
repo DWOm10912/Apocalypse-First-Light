@@ -91,12 +91,14 @@ public final class RadiationManager {
 
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
 
-    /** Player-specific exposure. The world sample remains position-only; carried items are added exactly once here. */
+    /** Player-specific exposure. Position-only, carried, and nearby-container sources are each added exactly once here. */
     public static PlayerRadiation getPlayerRadiation(ServerPlayer player) {
         RadiationSample worldSample = getRadiationSample(player.serverLevel(), player.blockPosition());
         double carriedItemRadiation = ItemContamination.getPlayerCarriedSourceRate(player);
-        return new PlayerRadiation(worldSample, carriedItemRadiation,
-                worldSample.finalRadiation() + carriedItemRadiation);
+        ContainerRadiation.ScanResult containerScan = ContainerRadiation.scan(player);
+        double worldLocalRadiation = worldSample.localRadiation() + containerScan.totalRadiation();
+        return new PlayerRadiation(worldSample, carriedItemRadiation, worldLocalRadiation,
+                worldSample.finalRadiation() + carriedItemRadiation + containerScan.totalRadiation());
     }
 
     /** Shielded ambient component only; player final radiation is {@link #getFinalRadiation}. */
@@ -263,7 +265,7 @@ public final class RadiationManager {
     }
 
     public record PlayerRadiation(RadiationSample worldSample, double carriedItemRadiation,
-                                  double effectiveRadiation) {
+                                  double worldLocalRadiation, double effectiveRadiation) {
     }
 
     public record StartupRadiationDebug(int x, int z, double distanceFromStartupCenter, StartupPlainsEnclave.Zone startupZone,
