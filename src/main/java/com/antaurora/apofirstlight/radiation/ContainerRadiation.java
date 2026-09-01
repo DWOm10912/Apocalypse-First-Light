@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.radiation;
 
 import com.antaurora.apofirstlight.contamination.ItemContamination;
+import com.antaurora.apofirstlight.blockentity.LeadChestBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -31,6 +32,7 @@ public final class ContainerRadiation {
     public static final int SEARCH_RADIUS_BLOCKS = 32;
     public static final double SEARCH_RADIUS_SQR = SEARCH_RADIUS_BLOCKS * SEARCH_RADIUS_BLOCKS;
     public static final double ORDINARY_CONTAINER_TRANSMISSION = 1.0D;
+    public static final double LEAD_CHEST_TRANSMISSION = 0.50D;
     private static final int UPDATE_INTERVAL_TICKS = 20;
     private static final double MIN_POINT_TRANSMISSION = 0.01D;
     private static final double SOURCE_EXIT_EPSILON = 1.0E-6D;
@@ -94,7 +96,7 @@ public final class ContainerRadiation {
                     double pointTransmission = pointTrace == null
                             ? pointTransmission(level, sourcePos, sourceCenter, playerCenter)
                             : pointTrace.transmission;
-                    double contribution = internalRadiation * ORDINARY_CONTAINER_TRANSMISSION
+                    double contribution = internalRadiation * containerTransmission(blockEntity)
                             * distanceAttenuation * pointTransmission;
                     totalRadiation += contribution;
                     if (sourceBreakdowns != null) {
@@ -133,6 +135,12 @@ public final class ContainerRadiation {
         return blockEntity.getCapability(ForgeCapabilities.ITEM_HANDLER).resolve()
                 .map(ContainerRadiation::handlerRadiation)
                 .orElse(0.0D);
+    }
+
+    private static double containerTransmission(BlockEntity blockEntity) {
+        return blockEntity instanceof LeadChestBlockEntity
+                ? LEAD_CHEST_TRANSMISSION
+                : ORDINARY_CONTAINER_TRANSMISSION;
     }
 
     private static double handlerRadiation(IItemHandler handler) {

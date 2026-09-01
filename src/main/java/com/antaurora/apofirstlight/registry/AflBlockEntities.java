@@ -10,6 +10,7 @@ import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
+import com.antaurora.apofirstlight.blockentity.LeadChestBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -22,6 +23,9 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<IndustrialLockerBlockEntity>> INDUSTRIAL_LOCKER =
             BLOCK_ENTITIES.register("industrial_locker", () ->
                     BlockEntityType.Builder.of(IndustrialLockerBlockEntity::new, AflBlocks.INDUSTRIAL_LOCKER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<LeadChestBlockEntity>> LEAD_CHEST =
+            BLOCK_ENTITIES.register("lead_chest", () ->
+                    BlockEntityType.Builder.of(LeadChestBlockEntity::new, AflBlocks.LEAD_CHEST.get()).build(null));
     public static final RegistryObject<BlockEntityType<RetailShelfSingleBlockEntity>> RETAIL_SHELF_SINGLE =
             BLOCK_ENTITIES.register("retail_shelf_single", () ->
                     BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,

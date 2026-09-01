@@ -45,6 +45,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_UTILITY_LIGHT.get());
                         output.accept(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get());
                         output.accept(AflItems.INDUSTRIAL_LOCKER.get());
+                        output.accept(AflItems.LEAD_CHEST.get());
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
                         output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.FALLOUT_SOIL.get());

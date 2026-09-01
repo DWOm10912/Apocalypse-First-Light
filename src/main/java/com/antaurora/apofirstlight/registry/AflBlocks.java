@@ -14,6 +14,7 @@ import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
 import com.antaurora.apofirstlight.block.AlloyFurnaceBlock;
+import com.antaurora.apofirstlight.block.LeadChestBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
@@ -58,6 +59,12 @@ public final class AflBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
     public static final RegistryObject<Block> LEAD_BLOCK = BLOCKS.register("lead_block",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+    public static final RegistryObject<Block> LEAD_CHEST = BLOCKS.register("lead_chest",
+            () -> new LeadChestBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
     public static final RegistryObject<Block> SPHALERITE_ORE = BLOCKS.register("sphalerite_ore",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
     public static final RegistryObject<Block> ZINC_BLOCK = BLOCKS.register("zinc_block",

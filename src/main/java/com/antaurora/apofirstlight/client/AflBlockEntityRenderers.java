@@ -20,5 +20,6 @@ public final class AflBlockEntityRenderers {
                 CommercialGlassDoubleDoorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 EnergyCellBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(), LeadChestRenderer::new);
     }
 }

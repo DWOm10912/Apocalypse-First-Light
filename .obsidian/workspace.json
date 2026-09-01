@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "5340a308409eb600",
+        "id": "32bc9c2b8afb6cdf",
         "type": "tabs",
         "children": [
           {
-            "id": "b1f68e95b15290ae",
+            "id": "6cfc6a4c74362551",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/03 - 制作清单.md",
-                "mode": "preview",
+                "file": "docs/04 - 注意事项 重要内容.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 制作清单"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -187,36 +187,36 @@
       "bases:新建数据库": false
     }
   },
-  "active": "b1f68e95b15290ae",
+  "active": "4967b007c31f056e",
   "lastOpenFiles": [
-    "build/reobfJar/mappings.tsrg",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalWorldgen.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalStructure.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalPiece.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralTerrainProbeCache.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator$1.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator$PlanningBudget.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator$Spec.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralTerrainAdapter.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralTerrainAdapter$PreparationResult.class",
-    "docs/04 - 注意事项 重要内容.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
+    "run/saves/test/level6746344000749016600.dat",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/thermal_generator_front_running.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
-    "run/saves/新的世界/icon.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/entity/chest/lead_chest_left.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/entity/chest/lead_chest.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/entity/chest/lead_chest_right.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/entity/chest/lead_chest_left.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/entity/chest/lead_chest.png",
+    "vanilla_chest_textures/normal_right.png",
+    "vanilla_chest_textures/normal_left.png",
+    "vanilla_chest_textures/normal.png",
+    "AGENTS.md",
+    "docs/04 - 注意事项 重要内容.md",
+    "docs/03 - 制作清单.md",
     "docs/01 - 系统设计/辐射系统.md",
     "docs/01 - 系统设计/灾难系统.md",
-    "docs/03 - 制作清单.md",
-    "AGENTS.md",
     "docs/01 - 系统设计/新群系.md",
     "docs/01 - 系统设计/生存状态.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation/heart_severe_half.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation/heart_severe_full.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation/heart_mild_half.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation/heart_mild_full.png",
     "docs/02 - 内容设计/方块/机器.md",
     "docs/02 - 内容设计/方块/新矿物.md",
     "docs/02 - 内容设计/物品/金属.md",
