@@ -51,13 +51,14 @@ public final class RadiationExposureEvents {
     public static void accumulateDose(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)
                 || player.tickCount % UPDATE_INTERVAL_TICKS != 0) return;
-        RadiationSample sample = RadiationManager.getRadiationSample(player.serverLevel(), player.blockPosition());
+        RadiationManager.PlayerRadiation playerRadiation = RadiationManager.getPlayerRadiation(player);
+        RadiationSample worldSample = playerRadiation.worldSample();
         player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
-            exposure.addDose(sample.finalRadiation() / 3600.0);
-            if (sample.zone() == RadiationZone.SAFE) {
+            exposure.addDose(playerRadiation.effectiveRadiation() / 3600.0);
+            if (worldSample.zone() == RadiationZone.SAFE) {
                 exposure.decayResidual(RESIDUAL_SAFE_DECAY_FACTOR, RESIDUAL_ZERO_THRESHOLD);
             } else {
-                exposure.approachResidualToward(residualTarget(sample.finalRadiation()),
+                exposure.approachResidualToward(residualTarget(worldSample.finalRadiation()),
                         RESIDUAL_APPROACH_FACTOR_PER_SECOND);
             }
         });

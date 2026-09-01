@@ -1,10 +1,12 @@
 package com.antaurora.apofirstlight.contamination;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.radiation.RadiationManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,6 +14,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
+import java.util.Locale;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class ContaminationCommands {
@@ -26,6 +30,10 @@ public final class ContaminationCommands {
                         .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("get")
                                 .executes(context -> get(context.getSource())))
+                        .then(Commands.literal("here")
+                                .executes(context -> here(context.getSource())))
+                        .then(Commands.literal("carried")
+                                .executes(context -> carried(context.getSource())))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("level", IntegerArgumentType.integer(0, 5))
                                         .executes(context -> set(context.getSource(),
@@ -43,6 +51,32 @@ public final class ContaminationCommands {
                 "command.apocalypse_firstlight.contamination.get",
                 BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),
                 level.value(), Component.translatable(level.translationKey())), false);
+        return 1;
+    }
+
+    private static int here(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        BlockPos position = player.blockPosition();
+        double ambient = RadiationManager.getAmbientRadiationForContamination(
+                player.serverLevel(), position);
+        ItemContamination.Level target = ItemContamination.getTargetLevel(ambient);
+        source.sendSuccess(() -> Component.translatable(
+                "command.apocalypse_firstlight.contamination.here",
+                position.getX(), position.getY(), position.getZ(),
+                String.format(Locale.ROOT, "%.2f", ambient), target.value(),
+                Component.translatable(target.translationKey())), false);
+        return 1;
+    }
+
+    private static int carried(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        double rate = ItemContamination.getPlayerCarriedSourceRate(player);
+        int contaminatedStacks = ItemContamination.getPlayerContaminatedStackCount(player);
+        source.sendSuccess(() -> Component.translatable(
+                "command.apocalypse_firstlight.contamination.carried",
+                String.format(Locale.ROOT, "%.2f", rate), contaminatedStacks), false);
         return 1;
     }
 

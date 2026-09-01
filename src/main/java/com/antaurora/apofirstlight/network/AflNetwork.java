@@ -52,10 +52,10 @@ public final class AflNetwork {
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
-    public static void sendGeigerData(ServerPlayer player, double finalRadiation, double cumulativeDose,
+    public static void sendGeigerData(ServerPlayer player, double measuredRadiation, double cumulativeDose,
                                       double residualRadiationRate, RadiationZone zone) {
         if (channel == null) throw new IllegalStateException("AFL network channel was not registered during mod initialization");
-        channel.sendTo(new GeigerDataS2CPacket(finalRadiation, cumulativeDose, residualRadiationRate, zone), player.connection.connection,
+        channel.sendTo(new GeigerDataS2CPacket(measuredRadiation, cumulativeDose, residualRadiationRate, zone), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -102,10 +102,10 @@ public final class AflNetwork {
         }
     }
 
-    public record GeigerDataS2CPacket(double finalRadiation, double cumulativeDose,
+    public record GeigerDataS2CPacket(double measuredRadiation, double cumulativeDose,
                                       double residualRadiationRate, RadiationZone zone) {
         public static void encode(GeigerDataS2CPacket packet, FriendlyByteBuf buffer) {
-            buffer.writeDouble(packet.finalRadiation);
+            buffer.writeDouble(packet.measuredRadiation);
             buffer.writeDouble(packet.cumulativeDose);
             buffer.writeDouble(packet.residualRadiationRate);
             buffer.writeEnum(packet.zone);
@@ -120,7 +120,7 @@ public final class AflNetwork {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientGeigerData
-                            .update(packet.finalRadiation, packet.cumulativeDose, packet.residualRadiationRate, packet.zone)));
+                            .update(packet.measuredRadiation, packet.cumulativeDose, packet.residualRadiationRate, packet.zone)));
             context.setPacketHandled(true);
         }
     }

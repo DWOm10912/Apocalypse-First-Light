@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 public final class ClientGeigerData {
     public static final double GEIGER_MAX_RATE = 20.0D;
 
-    private static double currentRate;
+    private static double measuredRate;
     private static double cumulativeDose;
     private static double residualRadiationRate;
     private static RadiationZone zone = RadiationZone.SAFE;
@@ -15,7 +15,7 @@ public final class ClientGeigerData {
     private ClientGeigerData() {}
 
     public static void update(double rate, double dose, double residual, RadiationZone newZone) {
-        currentRate = Math.max(0.0, rate);
+        measuredRate = Math.max(0.0, rate);
         cumulativeDose = Math.max(0.0, dose);
         residualRadiationRate = Math.max(0.0, residual);
         zone = newZone;
@@ -27,9 +27,9 @@ public final class ClientGeigerData {
                 || Minecraft.getInstance().level.getGameTime() - lastUpdateTick > 40) {
             return new Snapshot(0.0, 0.0, 0.0, RadiationZone.SAFE, true);
         }
-        return new Snapshot(currentRate, cumulativeDose, residualRadiationRate, zone, false);
+        return new Snapshot(measuredRate, cumulativeDose, residualRadiationRate, zone, false);
     }
 
-    public record Snapshot(double currentRate, double cumulativeDose, double residualRadiationRate,
+    public record Snapshot(double measuredRate, double cumulativeDose, double residualRadiationRate,
                            RadiationZone zone, boolean stale) {}
 }

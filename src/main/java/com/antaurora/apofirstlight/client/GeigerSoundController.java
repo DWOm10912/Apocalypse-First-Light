@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.radiation.RadiationZone;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
@@ -38,8 +37,7 @@ public final class GeigerSoundController {
             return;
         }
 
-        double measuredRate = data.zone() == RadiationZone.SAFE
-                ? data.residualRadiationRate() : data.currentRate();
+        double measuredRate = data.measuredRate();
         double cps = radiationCps(measuredRate);
         if (cps <= 0.0) {
             return;

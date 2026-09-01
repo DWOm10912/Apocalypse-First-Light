@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.contamination;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 /** Minimal discrete contamination data stored directly on an ItemStack. */
@@ -44,6 +45,70 @@ public final class ItemContamination {
 
     public static boolean isContaminated(ItemStack stack) {
         return getLevel(stack) != Level.CLEAN;
+    }
+
+    /** Raises a stack to at least the supplied level without ever decontaminating it. */
+    public static Level applyMinimumLevel(ItemStack stack, Level minimumLevel) {
+        Level existing = getLevel(stack);
+        Level result = maxLevel(existing, minimumLevel);
+        if (result.value() > existing.value()) {
+            setLevel(stack, result);
+        }
+        return result;
+    }
+
+    public static Level maxLevel(Level first, Level second) {
+        Level left = first == null ? Level.CLEAN : first;
+        Level right = second == null ? Level.CLEAN : second;
+        return left.value() >= right.value() ? left : right;
+    }
+
+    public static double getPerItemSourceRate(Level level) {
+        return switch (level == null ? Level.CLEAN : level) {
+            case CLEAN -> 0.00D;
+            case TRACE -> 0.01D;
+            case LOW -> 0.03D;
+            case MODERATE -> 0.08D;
+            case HIGH -> 0.16D;
+            case SEVERE -> 0.32D;
+        };
+    }
+
+    public static double getStackSourceRate(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return 0.0D;
+        return getStackSourceRate(getLevel(stack), stack.getCount());
+    }
+
+    /** Pure overload for balance checks and callers that already have a resolved level/count. */
+    public static double getStackSourceRate(Level level, int count) {
+        return getPerItemSourceRate(level) * Math.max(0, count);
+    }
+
+    /** Hotbar/main inventory and offhand only; armor and nested inventories are intentionally excluded. */
+    public static double getPlayerCarriedSourceRate(Player player) {
+        if (player == null) return 0.0D;
+        return sumStackSourceRates(player.getInventory().items)
+                + sumStackSourceRates(player.getInventory().offhand);
+    }
+
+    public static int getPlayerContaminatedStackCount(Player player) {
+        if (player == null) return 0;
+        return countContaminatedStacks(player.getInventory().items)
+                + countContaminatedStacks(player.getInventory().offhand);
+    }
+
+    public static double sumStackSourceRates(Iterable<ItemStack> stacks) {
+        double total = 0.0D;
+        for (ItemStack stack : stacks) total += getStackSourceRate(stack);
+        return total;
+    }
+
+    private static int countContaminatedStacks(Iterable<ItemStack> stacks) {
+        int count = 0;
+        for (ItemStack stack : stacks) {
+            if (getLevel(stack) != Level.CLEAN) count++;
+        }
+        return count;
     }
 
     public static Level getTargetLevel(double environmentExposure) {

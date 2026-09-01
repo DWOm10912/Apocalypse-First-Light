@@ -91,7 +91,7 @@ public final class RadiationCommands {
     private static int doseStatus(CommandSourceStack source) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         return player.getCapability(RadiationExposureProvider.CAPABILITY).map(exposure -> {
-            double rate = RadiationManager.getFinalRadiation(player.serverLevel(), player.blockPosition());
+            double rate = RadiationManager.getPlayerRadiation(player).effectiveRadiation();
             source.sendSuccess(() -> Component.literal(String.format("Current Rate: %.2f RU/h | Cumulative Dose: %.4f RU",
                     rate, exposure.getDose())), false);
             return 1;

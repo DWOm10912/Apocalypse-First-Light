@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.registry.AflLootModifiers;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflMenus;
 import com.antaurora.apofirstlight.registry.AflMobEffects;
@@ -36,6 +37,7 @@ public class ApocalypseFirstLight {
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
+        AflLootModifiers.SERIALIZERS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         AflMenus.MENUS.register(modEventBus);
         AflMobEffects.MOB_EFFECTS.register(modEventBus);

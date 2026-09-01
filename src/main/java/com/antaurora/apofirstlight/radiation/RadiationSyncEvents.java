@@ -20,13 +20,18 @@ public final class RadiationSyncEvents {
         for (ServerLevel level : event.getServer().getAllLevels()) {
             if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) continue;
             for (net.minecraft.server.level.ServerPlayer player : level.players()) {
-                RadiationSample sample = RadiationManager.getRadiationSample(level, player.blockPosition());
-                AflNetwork.sendRadiation(player, sample.finalRadiation());
+                RadiationManager.PlayerRadiation playerRadiation = RadiationManager.getPlayerRadiation(player);
+                RadiationSample worldSample = playerRadiation.worldSample();
+                AflNetwork.sendRadiation(player, worldSample.finalRadiation());
                 if (player.getMainHandItem().is(AflItems.GEIGER_COUNTER.get())
                         || player.getOffhandItem().is(AflItems.GEIGER_COUNTER.get())) {
-                    player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure ->
-                            AflNetwork.sendGeigerData(player, sample.finalRadiation(), exposure.getDose(),
-                                    exposure.getResidualRadiationRate(), sample.zone()));
+                    player.getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(exposure -> {
+                        double measuredRate = worldSample.zone() == RadiationZone.SAFE
+                                ? exposure.getResidualRadiationRate() + playerRadiation.carriedItemRadiation()
+                                : playerRadiation.effectiveRadiation();
+                        AflNetwork.sendGeigerData(player, measuredRate, exposure.getDose(),
+                                exposure.getResidualRadiationRate(), worldSample.zone());
+                    });
                 }
             }
         }

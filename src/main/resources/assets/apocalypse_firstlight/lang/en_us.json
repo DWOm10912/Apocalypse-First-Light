@@ -109,6 +109,7 @@
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "Stored Energy: %s FE",
   "tooltip.apocalypse_firstlight.contamination.label": "Radioactive Contamination: ",
+  "tooltip.apocalypse_firstlight.contamination.emission": "Radiation Emission: %s RU/h",
 
   "jei.apocalypse_firstlight.category.crushing": "Crushing",
   "jei.apocalypse_firstlight.category.compressing": "Compressing",
@@ -125,6 +126,8 @@
 
   "command.apocalypse_firstlight.contamination.empty_hand": "The main hand is empty.",
   "command.apocalypse_firstlight.contamination.get": "Item: %1$s | Contamination Level: %2$s (%3$s)",
+  "command.apocalypse_firstlight.contamination.here": "Position: %1$s, %2$s, %3$s | Ambient contamination exposure: %4$s RU/h | Target contamination: %5$s (%6$s)",
+  "command.apocalypse_firstlight.contamination.carried": "Carried contamination radiation: %1$s RU/h | Contaminated stacks: %2$s",
   "command.apocalypse_firstlight.contamination.set": "Set %1$s contamination to Level %2$s (%3$s).",
   "command.apocalypse_firstlight.contamination.clear": "Cleared contamination from %1$s.",
 

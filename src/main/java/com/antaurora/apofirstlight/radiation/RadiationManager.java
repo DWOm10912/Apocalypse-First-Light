@@ -1,12 +1,14 @@
 package com.antaurora.apofirstlight.radiation;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.contamination.ItemContamination;
 import com.antaurora.apofirstlight.world.bunker.BunkerSavedData;
 import com.antaurora.apofirstlight.world.bunker.BunkerPlacementManager;
 import com.antaurora.apofirstlight.world.biome.StartupPlainsEnclave;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -41,11 +43,7 @@ public final class RadiationManager {
         double rawWorldField = environmental.rawWorldField();
         double base = environmental.biomeConstrainedField();
         double suppression = environmental.safeAnchorSuppression();
-        double effectiveField = environmental.preStartupEffectiveField();
-        double startupCap = startupRadiationCap(level.getSeed(), pos.getX(), pos.getZ(), effectiveField);
-        if (!Double.isNaN(startupCap)) {
-            effectiveField = Math.min(effectiveField, startupCap);
-        }
+        double effectiveField = effectiveEnvironmentalField(level, pos.getX(), pos.getZ(), environmental);
         double ambient = rateFor(effectiveField);
         RadiationShielding.Sample shielding = shielding(level, pos);
         double shieldedAmbient = ambient * shielding.transmission();
@@ -62,6 +60,17 @@ public final class RadiationManager {
 
     public static double getAmbientRadiation(ServerLevel level, BlockPos pos) {
         return getRadiationSample(level, pos).worldAmbientRadiation();
+    }
+
+    /**
+     * Ambient world exposure used when newly generated ItemStacks acquire contamination.
+     * Includes biome/startup/safe-anchor constraints, but excludes building shielding and local sources.
+     */
+    public static double getAmbientRadiationForContamination(ServerLevel level, BlockPos pos) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0D;
+        EnvironmentalField environmental = computeEnvironmentalField(level, pos.getX(), pos.getZ(),
+                RadiationWorldData.get(level));
+        return rateFor(effectiveEnvironmentalField(level, pos.getX(), pos.getZ(), environmental));
     }
 
     /** Natural, unsuppressed field for chunk-independent ecology/search consumers; not player radiation. */
@@ -81,6 +90,15 @@ public final class RadiationManager {
     }
 
     public static double getLocalRadiation(ServerLevel level, BlockPos pos) { return 0.0; }
+
+    /** Player-specific exposure. The world sample remains position-only; carried items are added exactly once here. */
+    public static PlayerRadiation getPlayerRadiation(ServerPlayer player) {
+        RadiationSample worldSample = getRadiationSample(player.serverLevel(), player.blockPosition());
+        double carriedItemRadiation = ItemContamination.getPlayerCarriedSourceRate(player);
+        return new PlayerRadiation(worldSample, carriedItemRadiation,
+                worldSample.finalRadiation() + carriedItemRadiation);
+    }
+
     /** Shielded ambient component only; player final radiation is {@link #getFinalRadiation}. */
     public static double getFinalRadiation(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).finalRadiation(); }
     public static RadiationZone getRadiationZone(ServerLevel level, BlockPos pos) { return getRadiationSample(level, pos).zone(); }
@@ -211,6 +229,13 @@ public final class RadiationManager {
         return Double.NaN;
     }
 
+    private static double effectiveEnvironmentalField(ServerLevel level, int x, int z,
+                                                      EnvironmentalField environmental) {
+        double effectiveField = environmental.preStartupEffectiveField();
+        double startupCap = startupRadiationCap(level.getSeed(), x, z, effectiveField);
+        return Double.isNaN(startupCap) ? effectiveField : Math.min(effectiveField, startupCap);
+    }
+
     private static double clamp01(double value) {
         return Math.max(0.0D, Math.min(1.0D, value));
     }
@@ -235,6 +260,10 @@ public final class RadiationManager {
     private record EnvironmentalField(double rawWorldField, BiomeRadiationResolver.Resolution biomeResolution,
                                       double biomeConstrainedField, double safeAnchorDistance,
                                       double safeAnchorSuppression, double preStartupEffectiveField) {
+    }
+
+    public record PlayerRadiation(RadiationSample worldSample, double carriedItemRadiation,
+                                  double effectiveRadiation) {
     }
 
     public record StartupRadiationDebug(int x, int z, double distanceFromStartupCenter, StartupPlainsEnclave.Zone startupZone,
