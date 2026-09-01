@@ -7,6 +7,13 @@
 
   "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
 
+  "contamination_level.apocalypse_firstlight.clean": "Clean",
+  "contamination_level.apocalypse_firstlight.trace": "Trace",
+  "contamination_level.apocalypse_firstlight.low": "Low",
+  "contamination_level.apocalypse_firstlight.moderate": "Moderate",
+  "contamination_level.apocalypse_firstlight.high": "High",
+  "contamination_level.apocalypse_firstlight.severe": "Severe",
+
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
   "block.apocalypse_firstlight.reinforced_concrete_stairs": "Reinforced Concrete Stairs",
@@ -101,6 +108,7 @@
 
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "Stored Energy: %s FE",
+  "tooltip.apocalypse_firstlight.contamination.label": "Radioactive Contamination: ",
 
   "jei.apocalypse_firstlight.category.crushing": "Crushing",
   "jei.apocalypse_firstlight.category.compressing": "Compressing",
@@ -114,6 +122,11 @@
   "jade.apocalypse_firstlight.fuel": "Fuel",
   "jade.apocalypse_firstlight.output": "Output",
   "jade.apocalypse_firstlight.processing": "Processing",
+
+  "command.apocalypse_firstlight.contamination.empty_hand": "The main hand is empty.",
+  "command.apocalypse_firstlight.contamination.get": "Item: %1$s | Contamination Level: %2$s (%3$s)",
+  "command.apocalypse_firstlight.contamination.set": "Set %1$s contamination to Level %2$s (%3$s).",
+  "command.apocalypse_firstlight.contamination.clear": "Cleared contamination from %1$s.",
 
   "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL Machine Status",
 

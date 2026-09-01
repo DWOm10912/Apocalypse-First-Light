@@ -1,0 +1,90 @@
+package com.antaurora.apofirstlight.contamination;
+
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class ContaminationCommands {
+    private ContaminationCommands() {
+    }
+
+    @SubscribeEvent
+    public static void register(RegisterCommandsEvent event) {
+        CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
+        dispatcher.register(Commands.literal("afl")
+                .then(Commands.literal("contamination")
+                        .requires(source -> source.hasPermission(2))
+                        .then(Commands.literal("get")
+                                .executes(context -> get(context.getSource())))
+                        .then(Commands.literal("set")
+                                .then(Commands.argument("level", IntegerArgumentType.integer(0, 5))
+                                        .executes(context -> set(context.getSource(),
+                                                IntegerArgumentType.getInteger(context, "level")))))
+                        .then(Commands.literal("clear")
+                                .executes(context -> clear(context.getSource())))));
+    }
+
+    private static int get(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ItemStack stack = mainHand(source);
+        if (stack == null) return 0;
+        ItemContamination.Level level = ItemContamination.getLevel(stack);
+        source.sendSuccess(() -> Component.translatable(
+                "command.apocalypse_firstlight.contamination.get",
+                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),
+                level.value(), Component.translatable(level.translationKey())), false);
+        return 1;
+    }
+
+    private static int set(CommandSourceStack source, int value)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ItemStack stack = mainHand(source);
+        if (stack == null) return 0;
+        if (value == 0) {
+            return clearStack(source, stack);
+        }
+        ItemContamination.setLevel(stack, value);
+        ItemContamination.Level level = ItemContamination.getLevel(stack);
+        source.sendSuccess(() -> Component.translatable(
+                "command.apocalypse_firstlight.contamination.set",
+                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString(),
+                level.value(), Component.translatable(level.translationKey())), true);
+        return 1;
+    }
+
+    private static int clear(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ItemStack stack = mainHand(source);
+        return stack == null ? 0 : clearStack(source, stack);
+    }
+
+    private static int clearStack(CommandSourceStack source, ItemStack stack) {
+        ItemContamination.clear(stack);
+        source.sendSuccess(() -> Component.translatable(
+                "command.apocalypse_firstlight.contamination.clear",
+                BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()), true);
+        return 1;
+    }
+
+    private static ItemStack mainHand(CommandSourceStack source)
+            throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        ItemStack stack = player.getMainHandItem();
+        if (stack.isEmpty()) {
+            source.sendFailure(Component.translatable(
+                    "command.apocalypse_firstlight.contamination.empty_hand"));
+            return null;
+        }
+        return stack;
+    }
+}
