@@ -147,6 +147,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",
+            () -> new BlockItem(AflBlocks.FLUID_PIPE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",
             () -> new BlockItem(AflBlocks.EDGE_LANE_WHITE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_YELLOW = ITEMS.register("edge_lane_yellow",
