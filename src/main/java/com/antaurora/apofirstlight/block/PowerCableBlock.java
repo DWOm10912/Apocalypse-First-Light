@@ -10,8 +10,11 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.PipeBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 public final class PowerCableBlock extends PipeBlock {
+    public static final BooleanProperty SHOW_CORE = BooleanProperty.create("show_core");
+
     private static final float HALF_WIDTH = 2.0F / 16.0F;
 
     public PowerCableBlock(Properties properties) {
@@ -22,7 +25,8 @@ public final class PowerCableBlock extends PipeBlock {
                 .setValue(EAST, false)
                 .setValue(WEST, false)
                 .setValue(UP, false)
-                .setValue(DOWN, false));
+                .setValue(DOWN, false)
+                .setValue(SHOW_CORE, true));
     }
 
     @Override
@@ -33,18 +37,20 @@ public final class PowerCableBlock extends PipeBlock {
             BlockState neighborState = context.getLevel().getBlockState(pos.relative(direction));
             state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), connectsTo(direction, neighborState));
         }
-        return state;
+        return state.setValue(SHOW_CORE, shouldShowCore(context.getLevel(), pos, state));
     }
 
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        return state.setValue(PROPERTY_BY_DIRECTION.get(direction), connectsTo(direction, neighborState));
+        BlockState updatedState = state.setValue(PROPERTY_BY_DIRECTION.get(direction),
+                connectsTo(direction, neighborState));
+        return updatedState.setValue(SHOW_CORE, shouldShowCore(level, pos, updatedState));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, SHOW_CORE);
     }
 
     public static boolean isConnected(BlockState cableState, Direction direction) {
@@ -71,5 +77,30 @@ public final class PowerCableBlock extends PipeBlock {
             return true;
         }
         return isUtilityPortFace(neighborState, directionToNeighbor.getOpposite());
+    }
+
+    private static boolean shouldShowCore(LevelAccessor level, BlockPos pos, BlockState state) {
+        Direction firstConnection = null;
+        Direction secondConnection = null;
+        int connectionCount = 0;
+
+        for (Direction direction : Direction.values()) {
+            if (!state.getValue(PROPERTY_BY_DIRECTION.get(direction))) {
+                continue;
+            }
+            connectionCount++;
+            if (firstConnection == null) {
+                firstConnection = direction;
+            } else if (secondConnection == null) {
+                secondConnection = direction;
+            }
+        }
+
+        if (connectionCount != 2 || secondConnection != firstConnection.getOpposite()) {
+            return true;
+        }
+
+        return !level.getBlockState(pos.relative(firstConnection)).is(AflBlocks.POWER_CABLE.get())
+                || !level.getBlockState(pos.relative(secondConnection)).is(AflBlocks.POWER_CABLE.get());
     }
 }
