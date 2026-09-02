@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "docs/04 - 注意事项 重要内容.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -187,19 +187,19 @@
       "bases:新建数据库": false
     }
   },
-  "active": "4967b007c31f056e",
+  "active": "6cfc6a4c74362551",
   "lastOpenFiles": [
-    "run/saves/test/level16482284965660453099.dat",
+    "run/saves/test/level10055162079374457143.dat",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-9570858392753391633.dat",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
-    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-8615979930619301704.dat",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/entity/storage/lead_chest.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",

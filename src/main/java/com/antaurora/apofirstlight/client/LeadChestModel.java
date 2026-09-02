@@ -35,11 +35,11 @@ public final class LeadChestModel {
         root.children.add(lid);
         lid.children.add(latch);
 
-        base.cubes.add(box("base_body_rear", 2, 2, 13, 14, 9.75F, 14,
+        base.cubes.add(box("base_body_rear", 2, 2, 13, 14, 10, 14,
                 uv(0, 0, 3, 2), uv(1.5F, 6.25F, 1.75F, 8.25F),
                 uv(0, 0, 3, 2), uv(1.75F, 6.25F, 2, 8.25F),
                 uv(0, 0, 3, 2), uv(3, 5.75F, 0, 6)));
-        base.cubes.add(box("base_body_front", 2, 2, 2, 14, 9.75F, 3,
+        base.cubes.add(box("base_body_front", 2, 2, 2, 14, 10, 3,
                 uv(0, 0, 3, 2), uv(2, 6.25F, 2.25F, 8.25F),
                 uv(0, 0, 3, 2), uv(2.25F, 6.25F, 2.5F, 8.25F),
                 uv(0, 0, 3, 2), uv(3, 6, 0, 6.25F)));

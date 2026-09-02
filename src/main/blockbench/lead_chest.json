@@ -9,7 +9,7 @@
 		{
 			"name": "base_body",
 			"from": [2, 2, 13],
-			"to": [14, 9.75, 14],
+			"to": [14, 10, 14],
 			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 20]},
 			"faces": {
 				"north": {"uv": [0, 0, 3, 2], "texture": "#3"},
@@ -23,7 +23,7 @@
 		{
 			"name": "base_body",
 			"from": [2, 2, 2],
-			"to": [14, 9.75, 3],
+			"to": [14, 10, 3],
 			"rotation": {"angle": 0, "axis": "y", "origin": [8, 0, 9]},
 			"faces": {
 				"north": {"uv": [0, 0, 3, 2], "texture": "#3"},
@@ -189,7 +189,6 @@
 			}
 		}
 	],
-	"display": {},
 	"groups": [
 		{
 			"name": "root",

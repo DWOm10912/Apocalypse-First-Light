@@ -30,3 +30,11 @@ Updated:
 Reason if NO:
 <why this task does not affect documentation>
 ```
+
+# Blockbench Source Models
+
+- All editable Blockbench source models belong under `src/main/blockbench/`.
+- Editable Blockbench sources and runtime Minecraft model JSON are different artifacts.
+- Do not place or overwrite editable Blockbench source geometry under `src/main/resources/assets/.../models/`.
+- BER / `ENTITYBLOCK_ANIMATED` blocks may intentionally use particle-only or builtin runtime model JSON.
+- When a model geometry changes, preserve/update the editable source under `src/main/blockbench/` and update its runtime representation only when the task requires it.
