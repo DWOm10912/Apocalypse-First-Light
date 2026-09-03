@@ -2,6 +2,7 @@
   "parent": "minecraft:block/block",
   "textures": {
     "port": "apocalypse_firstlight:block/fluid_tank",
+    "body": "apocalypse_firstlight:block/fluid_tank",
     "particle": "apocalypse_firstlight:block/fluid_tank"
   },
   "elements": [
@@ -17,6 +18,22 @@
         16
       ],
       "faces": {
+        "north": {
+          "uv": [4, 0, 8, 0.25],
+          "texture": "#body"
+        },
+        "east": {
+          "uv": [4, 0.25, 8, 0.5],
+          "texture": "#body"
+        },
+        "south": {
+          "uv": [4, 0.5, 8, 0.75],
+          "texture": "#body"
+        },
+        "west": {
+          "uv": [4, 0.5, 8, 0.75],
+          "texture": "#body"
+        },
         "up": {
           "uv": [
             4,

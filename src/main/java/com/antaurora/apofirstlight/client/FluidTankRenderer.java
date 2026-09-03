@@ -9,17 +9,16 @@ import net.minecraft.util.Mth;
 import net.minecraftforge.fluids.FluidStack;
 
 public final class FluidTankRenderer implements BlockEntityRenderer<FluidTankBlockEntity> {
-    private static final float INNER_MIN_X_PIXELS = 1.02F;
-    private static final float INNER_MAX_X_PIXELS = 14.98F;
-    private static final float INNER_MIN_Y_PIXELS = 1.02F;
-    private static final float INNER_MAX_Y_PIXELS = 14.98F;
-    private static final float INNER_MIN_Z_PIXELS = 1.02F;
-    private static final float INNER_MAX_Z_PIXELS = 14.98F;
+    private static final float TANK_FLUID_EPSILON_MODEL = 0.125F;
+    private static final float INNER_MIN_X_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
+    private static final float INNER_MAX_X_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
+    private static final float INNER_MIN_Y_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
+    private static final float INNER_MAX_Y_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
+    private static final float INNER_MIN_Z_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
+    private static final float INNER_MAX_Z_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
 
     private static final float MIN_X = INNER_MIN_X_PIXELS / 16.0F;
     private static final float MAX_X = INNER_MAX_X_PIXELS / 16.0F;
-    private static final float MIN_Y = INNER_MIN_Y_PIXELS / 16.0F;
-    private static final float MAX_Y = INNER_MAX_Y_PIXELS / 16.0F;
     private static final float MIN_Z = INNER_MIN_Z_PIXELS / 16.0F;
     private static final float MAX_Z = INNER_MAX_Z_PIXELS / 16.0F;
 
@@ -34,9 +33,24 @@ public final class FluidTankRenderer implements BlockEntityRenderer<FluidTankBlo
             return;
         }
 
+        int stackSize = tank.getStackSize();
+        int stackIndex = tank.getStackIndex();
         float fillRatio = Mth.clamp((float) fluid.getAmount() / tank.getCapacity(), 0.0F, 1.0F);
-        float topY = MIN_Y + (MAX_Y - MIN_Y) * fillRatio;
-        FluidRenderHelper.renderCuboid(fluid, poseStack, buffer, packedLight, packedOverlay,
-                MIN_X, MIN_Y, MIN_Z, MAX_X, topY, MAX_Z);
+        float globalMinYPixels = INNER_MIN_Y_PIXELS;
+        float globalMaxYPixels = stackSize * 16.0F - (16.0F - INNER_MAX_Y_PIXELS);
+        float globalFluidTopPixels = Mth.lerp(fillRatio, globalMinYPixels, globalMaxYPixels);
+        float memberBasePixels = stackIndex * 16.0F;
+        float memberMinPixels = stackIndex == 0 ? INNER_MIN_Y_PIXELS : 0.0F;
+        float memberMaxPixels = stackIndex + 1 == stackSize ? INNER_MAX_Y_PIXELS : 16.0F;
+        float localTopPixels = Mth.clamp(globalFluidTopPixels - memberBasePixels,
+                memberMinPixels, memberMaxPixels);
+        if (localTopPixels <= memberMinPixels) {
+            return;
+        }
+
+        boolean containsSurface = globalFluidTopPixels <= memberBasePixels + memberMaxPixels;
+        FluidRenderHelper.renderTankCuboid(fluid, poseStack, buffer, packedLight, packedOverlay,
+                MIN_X, memberMinPixels / 16.0F, MIN_Z,
+                MAX_X, localTopPixels / 16.0F, MAX_Z, containsSurface);
     }
 }

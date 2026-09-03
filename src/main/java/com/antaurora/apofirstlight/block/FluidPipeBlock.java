@@ -36,37 +36,30 @@ public final class FluidPipeBlock extends PipeBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        BlockState state = defaultBlockState();
-        BlockPos pos = context.getClickedPos();
-        for (Direction direction : Direction.values()) {
-            BlockState neighborState = context.getLevel().getBlockState(pos.relative(direction));
-            state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), canConnectTo(neighborState, direction));
-        }
-        return state.setValue(SHOW_CORE, shouldShowCore(context.getLevel(), pos, state));
+        return withStructuralConnections(context.getLevel(), context.getClickedPos(), defaultBlockState());
     }
 
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        BlockState updatedState = state.setValue(PROPERTY_BY_DIRECTION.get(direction),
-                canConnectTo(neighborState, direction));
-        return updatedState.setValue(SHOW_CORE, shouldShowCore(level, pos, updatedState));
+        return withStructuralConnections(level, pos, state);
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        if (!state.getValue(SHOW_CORE)) {
-            if (state.getValue(NORTH) && state.getValue(SOUTH)) {
+        BlockState structuralState = withStructuralConnections(level, pos, state);
+        if (!structuralState.getValue(SHOW_CORE)) {
+            if (structuralState.getValue(NORTH) && structuralState.getValue(SOUTH)) {
                 return STRAIGHT_Z_SHAPE;
             }
-            if (state.getValue(EAST) && state.getValue(WEST)) {
+            if (structuralState.getValue(EAST) && structuralState.getValue(WEST)) {
                 return STRAIGHT_X_SHAPE;
             }
-            if (state.getValue(UP) && state.getValue(DOWN)) {
+            if (structuralState.getValue(UP) && structuralState.getValue(DOWN)) {
                 return STRAIGHT_Y_SHAPE;
             }
         }
-        return super.getShape(state, level, pos, context);
+        return super.getShape(structuralState, level, pos, context);
     }
 
     @Override
@@ -74,12 +67,84 @@ public final class FluidPipeBlock extends PipeBlock {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, SHOW_CORE);
     }
 
-    private static boolean canConnectTo(BlockState neighborState, Direction directionToNeighbor) {
-        return neighborState.is(AflBlocks.FLUID_PIPE.get())
-                || neighborState.is(AflBlocks.FLUID_TANK.get()) && directionToNeighbor.getAxis().isVertical();
+    public static boolean isConnected(BlockState state, Direction direction) {
+        return state.getBlock() instanceof FluidPipeBlock
+                && state.getValue(PROPERTY_BY_DIRECTION.get(direction));
     }
 
-    private static boolean shouldShowCore(LevelAccessor level, BlockPos pos, BlockState state) {
+    public static boolean canPipeEdgeConnect(BlockGetter level, BlockPos pipePosition,
+                                             BlockPos neighborPosition, Direction directionToNeighbor) {
+        if (!neighborPosition.equals(pipePosition.relative(directionToNeighbor))) {
+            return false;
+        }
+        BlockState neighborState = level.getBlockState(neighborPosition);
+        if (neighborState.is(AflBlocks.FLUID_PIPE.get())) {
+            Direction.Axis firstRunAxis = findUniqueRunAxis(level, pipePosition, neighborPosition);
+            Direction.Axis secondRunAxis = findUniqueRunAxis(level, neighborPosition, pipePosition);
+            return firstRunAxis == null
+                    || secondRunAxis == null
+                    || firstRunAxis != secondRunAxis
+                    || firstRunAxis == directionToNeighbor.getAxis();
+        }
+        return canConnectToTank(neighborState, directionToNeighbor);
+    }
+
+    public static BlockState withStructuralConnections(BlockGetter level, BlockPos position, BlockState state) {
+        BlockState updatedState = state;
+        for (Direction direction : Direction.values()) {
+            updatedState = updatedState.setValue(PROPERTY_BY_DIRECTION.get(direction),
+                    canPipeEdgeConnect(level, position, position.relative(direction), direction));
+        }
+        return updatedState.setValue(SHOW_CORE, shouldShowCore(level, position, updatedState));
+    }
+
+    private static Direction.Axis findUniqueRunAxis(BlockGetter level, BlockPos pipePosition,
+                                                    BlockPos ignoredNeighborPosition) {
+        Direction.Axis runAxis = null;
+        int axisCount = 0;
+        for (Direction.Axis axis : Direction.Axis.values()) {
+            if (!hasContinuationAlongAxis(level, pipePosition, ignoredNeighborPosition, axis)) {
+                continue;
+            }
+            runAxis = axis;
+            axisCount++;
+            if (axisCount > 1) {
+                return null;
+            }
+        }
+        return runAxis;
+    }
+
+    private static boolean hasContinuationAlongAxis(BlockGetter level, BlockPos pipePosition,
+                                                    BlockPos ignoredNeighborPosition,
+                                                    Direction.Axis axis) {
+        for (Direction direction : Direction.values()) {
+            if (direction.getAxis() != axis) {
+                continue;
+            }
+            BlockPos neighborPosition = pipePosition.relative(direction);
+            if (neighborPosition.equals(ignoredNeighborPosition)) {
+                continue;
+            }
+            BlockState neighborState = level.getBlockState(neighborPosition);
+            if (neighborState.is(AflBlocks.FLUID_PIPE.get())
+                    || canConnectToTank(neighborState, direction)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean canConnectToTank(BlockState neighborState, Direction directionToNeighbor) {
+        if (!neighborState.is(AflBlocks.FLUID_TANK.get()) || !directionToNeighbor.getAxis().isVertical()) {
+            return false;
+        }
+        return directionToNeighbor == Direction.DOWN
+                ? !neighborState.getValue(FluidTankBlock.HAS_TANK_ABOVE)
+                : !neighborState.getValue(FluidTankBlock.HAS_TANK_BELOW);
+    }
+
+    private static boolean shouldShowCore(BlockGetter level, BlockPos pos, BlockState state) {
         Direction firstConnection = null;
         Direction secondConnection = null;
         int connectionCount = 0;
@@ -104,11 +169,8 @@ public final class FluidPipeBlock extends PipeBlock {
                 || !isValidStraightThroughEndpoint(level, pos, secondConnection);
     }
 
-    private static boolean isValidStraightThroughEndpoint(LevelAccessor level, BlockPos position,
+    private static boolean isValidStraightThroughEndpoint(BlockGetter level, BlockPos position,
                                                           Direction directionToNeighbor) {
-        BlockState neighborState = level.getBlockState(position.relative(directionToNeighbor));
-        return neighborState.is(AflBlocks.FLUID_PIPE.get())
-                || neighborState.is(AflBlocks.FLUID_TANK.get())
-                && directionToNeighbor.getAxis().isVertical();
+        return canPipeEdgeConnect(level, position, position.relative(directionToNeighbor), directionToNeighbor);
     }
 }

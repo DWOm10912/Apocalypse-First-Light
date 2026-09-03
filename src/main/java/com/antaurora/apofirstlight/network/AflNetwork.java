@@ -2,20 +2,27 @@ package com.antaurora.apofirstlight.network;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.radiation.RadiationZone;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.fml.DistExecutor;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "4";
+    private static final String PROTOCOL = "5";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -39,6 +46,9 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, CompressorBalanceSyncS2CPacket.class,
                 CompressorBalanceSyncS2CPacket::encode, CompressorBalanceSyncS2CPacket::decode,
                 CompressorBalanceSyncS2CPacket::handle);
+        channel.registerMessage(nextId++, FluidPipeVisualS2CPacket.class,
+                FluidPipeVisualS2CPacket::encode, FluidPipeVisualS2CPacket::decode,
+                FluidPipeVisualS2CPacket::handle);
     }
 
     private AflNetwork() {
@@ -82,6 +92,25 @@ public final class AflNetwork {
         }
         channel.sendTo(new CompressorBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendFluidPipeVisuals(ServerLevel level,
+                                            Collection<FluidPipeVisualUpdate> updates) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        Map<ChunkPos, List<FluidPipeVisualUpdate>> byChunk = new LinkedHashMap<>();
+        for (FluidPipeVisualUpdate update : updates) {
+            byChunk.computeIfAbsent(new ChunkPos(update.position()), ignored -> new ArrayList<>())
+                    .add(update);
+        }
+        byChunk.forEach((chunkPosition, chunkUpdates) -> {
+            if (level.getChunkSource().hasChunk(chunkPosition.x, chunkPosition.z)) {
+                channel.send(PacketDistributor.TRACKING_CHUNK.with(
+                                () -> level.getChunk(chunkPosition.x, chunkPosition.z)),
+                        new FluidPipeVisualS2CPacket(chunkUpdates));
+            }
+        });
     }
 
     public record RadiationSyncPacket(double finalRadiation) {
@@ -191,6 +220,60 @@ public final class AflNetwork {
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientCompressorBalanceData
                             .update(packet.workFePerTick)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record FluidPipeVisualUpdate(BlockPos position, ResourceLocation fluidId,
+                                        int directionMask, boolean active) {
+        private static final ResourceLocation EMPTY_FLUID_ID = new ResourceLocation("minecraft", "empty");
+
+        public FluidPipeVisualUpdate {
+            position = position.immutable();
+        }
+
+        public static FluidPipeVisualUpdate clear(BlockPos position) {
+            return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, false);
+        }
+    }
+
+    public record FluidPipeVisualS2CPacket(List<FluidPipeVisualUpdate> updates) {
+        public FluidPipeVisualS2CPacket {
+            updates = List.copyOf(updates);
+        }
+
+        public static void encode(FluidPipeVisualS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.updates.size());
+            for (FluidPipeVisualUpdate update : packet.updates) {
+                buffer.writeBlockPos(update.position());
+                buffer.writeBoolean(update.active());
+                if (update.active()) {
+                    buffer.writeResourceLocation(update.fluidId());
+                    buffer.writeVarInt(update.directionMask());
+                }
+            }
+        }
+
+        public static FluidPipeVisualS2CPacket decode(FriendlyByteBuf buffer) {
+            int size = buffer.readVarInt();
+            List<FluidPipeVisualUpdate> updates = new ArrayList<>(size);
+            for (int index = 0; index < size; index++) {
+                BlockPos position = buffer.readBlockPos();
+                boolean active = buffer.readBoolean();
+                updates.add(active
+                        ? new FluidPipeVisualUpdate(position, buffer.readResourceLocation(),
+                        buffer.readVarInt(), true)
+                        : FluidPipeVisualUpdate.clear(position));
+            }
+            return new FluidPipeVisualS2CPacket(updates);
+        }
+
+        public static void handle(FluidPipeVisualS2CPacket packet,
+                                  Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientFluidPipeVisuals
+                            .apply(packet.updates)));
             context.setPacketHandled(true);
         }
     }

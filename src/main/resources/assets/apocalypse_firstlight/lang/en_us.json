@@ -126,6 +126,8 @@
   "jade.apocalypse_firstlight.fuel": "Fuel",
   "jade.apocalypse_firstlight.output": "Output",
   "jade.apocalypse_firstlight.processing": "Processing",
+  "jade.apocalypse_firstlight.empty_fluid": "Empty",
+  "jade.apocalypse_firstlight.fluid_value": "%s / %s mB",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "The main hand is empty.",
   "command.apocalypse_firstlight.contamination.get": "Item: %1$s | Contamination Level: %2$s (%3$s)",
@@ -147,6 +149,7 @@
   "command.apocalypse_firstlight.contamination.clear": "Cleared contamination from %1$s.",
 
   "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL Machine Status",
+  "config.jade.plugin_apocalypse_firstlight.fluid_tank": "AFL Fluid Tank",
 
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",

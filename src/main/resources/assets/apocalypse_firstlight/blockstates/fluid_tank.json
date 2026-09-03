@@ -7,6 +7,15 @@
     },
     {
       "when": {
+        "has_tank_above": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_join_top"
+      }
+    },
+    {
+      "when": {
+        "has_tank_above": "false",
         "top_connected": "false"
       },
       "apply": {
@@ -15,6 +24,7 @@
     },
     {
       "when": {
+        "has_tank_above": "false",
         "top_connected": "true"
       },
       "apply": {
@@ -23,6 +33,15 @@
     },
     {
       "when": {
+        "has_tank_below": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_join_bottom"
+      }
+    },
+    {
+      "when": {
+        "has_tank_below": "false",
         "bottom_connected": "false"
       },
       "apply": {
@@ -32,6 +51,7 @@
     },
     {
       "when": {
+        "has_tank_below": "false",
         "bottom_connected": "true"
       },
       "apply": {

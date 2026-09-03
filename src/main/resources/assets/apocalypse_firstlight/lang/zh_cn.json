@@ -110,7 +110,7 @@
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
 
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",
-  "tooltip.apocalypse_firstlight.stored_energy": "储存的能量：%s FE",
+  "tooltip.apocalypse_firstlight.stored_energy": "能量：%s FE",
   "tooltip.apocalypse_firstlight.contamination.label": "放射性污染：",
   "tooltip.apocalypse_firstlight.contamination.emission": "辐射释放：%s RU/h",
 
@@ -126,6 +126,8 @@
   "jade.apocalypse_firstlight.fuel": "燃料",
   "jade.apocalypse_firstlight.output": "输出",
   "jade.apocalypse_firstlight.processing": "处理中",
+  "jade.apocalypse_firstlight.empty_fluid": "空",
+  "jade.apocalypse_firstlight.fluid_value": "%s / %s mB",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "主手为空。",
   "command.apocalypse_firstlight.contamination.get": "物品：%1$s | 污染等级：%2$s（%3$s）",
@@ -147,6 +149,7 @@
   "command.apocalypse_firstlight.contamination.clear": "已清除 %1$s 的污染。",
 
   "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL 机器状态",
+  "config.jade.plugin_apocalypse_firstlight.fluid_tank": "AFL 流体储罐",
 
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",

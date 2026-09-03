@@ -7,31 +7,59 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.fluids.FluidStack;
 
 public final class FluidRenderHelper {
+    public static final int ALL_FACES = (1 << Direction.values().length) - 1;
+
     private FluidRenderHelper() {
     }
 
-    public static void renderCuboid(FluidStack fluid, PoseStack poseStack, MultiBufferSource buffer,
-                                    int packedLight, int packedOverlay,
-                                    float minX, float minY, float minZ,
-                                    float maxX, float maxY, float maxZ) {
-        if (fluid.isEmpty() || maxY <= minY) {
+    public static int faceBit(Direction direction) {
+        return 1 << direction.get3DDataValue();
+    }
+
+    public static void renderTankCuboid(FluidStack fluid, PoseStack poseStack, MultiBufferSource buffer,
+                                        int packedLight, int packedOverlay,
+                                        float minX, float minY, float minZ,
+                                        float maxX, float maxY, float maxZ,
+                                        boolean renderTopFace) {
+        int faces = faceBit(Direction.NORTH) | faceBit(Direction.SOUTH)
+                | faceBit(Direction.WEST) | faceBit(Direction.EAST);
+        if (renderTopFace) {
+            faces |= faceBit(Direction.UP);
+        }
+        renderBox(fluid, false, poseStack, buffer, packedLight, packedOverlay,
+                minX, minY, minZ, maxX, maxY, maxZ, faces);
+    }
+
+    public static void renderBox(FluidStack fluid, boolean flowingTexture,
+                                 PoseStack poseStack, MultiBufferSource buffer,
+                                 int packedLight, int packedOverlay,
+                                 float minX, float minY, float minZ,
+                                 float maxX, float maxY, float maxZ,
+                                 int faceMask) {
+        if (fluid.isEmpty() || maxX <= minX || maxY <= minY || maxZ <= minZ || faceMask == 0) {
             return;
         }
 
         IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(fluid.getFluid());
-        ResourceLocation stillTexture = properties.getStillTexture(fluid);
-        if (stillTexture == null) {
+        ResourceLocation texture = flowingTexture
+                ? properties.getFlowingTexture(fluid)
+                : properties.getStillTexture(fluid);
+        if (texture == null && flowingTexture) {
+            texture = properties.getStillTexture(fluid);
+        }
+        if (texture == null) {
             return;
         }
 
         TextureAtlasSprite sprite = Minecraft.getInstance()
                 .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
-                .apply(stillTexture);
+                .apply(texture);
         int tint = properties.getTintColor(fluid);
         int alpha = tint >>> 24 & 0xFF;
         int red = tint >>> 16 & 0xFF;
@@ -41,44 +69,65 @@ public final class FluidRenderHelper {
         VertexConsumer vertices = buffer.getBuffer(RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS));
         PoseStack.Pose pose = poseStack.last();
         float u0 = sprite.getU0();
-        float u1 = sprite.getU1();
         float v0 = sprite.getV0();
         float v1 = sprite.getV1();
-        float sideU = u0 + (u1 - u0) * (maxX - minX);
-        float sideV = v1 - (v1 - v0) * (maxY - minY);
-        float depthU = u0 + (u1 - u0) * (maxZ - minZ);
-        float depthV = v0 + (v1 - v0) * (maxZ - minZ);
+        float widthU = sprite.getU(16.0F * (maxX - minX));
+        float depthU = sprite.getU(16.0F * (maxZ - minZ));
+        float heightV = sprite.getV(16.0F * (1.0F - (maxY - minY)));
+        float depthV = sprite.getV(16.0F * (maxZ - minZ));
 
-        quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
-                minX, minY, minZ, u0, v1,
-                minX, maxY, minZ, u0, sideV,
-                maxX, maxY, minZ, sideU, sideV,
-                maxX, minY, minZ, sideU, v1,
-                0.0F, 0.0F, -1.0F);
-        quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
-                maxX, minY, maxZ, u0, v1,
-                maxX, maxY, maxZ, u0, sideV,
-                minX, maxY, maxZ, sideU, sideV,
-                minX, minY, maxZ, sideU, v1,
-                0.0F, 0.0F, 1.0F);
-        quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
-                minX, minY, maxZ, u0, v1,
-                minX, maxY, maxZ, u0, sideV,
-                minX, maxY, minZ, depthU, sideV,
-                minX, minY, minZ, depthU, v1,
-                -1.0F, 0.0F, 0.0F);
-        quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
-                maxX, minY, minZ, u0, v1,
-                maxX, maxY, minZ, u0, sideV,
-                maxX, maxY, maxZ, depthU, sideV,
-                maxX, minY, maxZ, depthU, v1,
-                1.0F, 0.0F, 0.0F);
-        quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
-                minX, maxY, minZ, u0, v0,
-                minX, maxY, maxZ, u0, depthV,
-                maxX, maxY, maxZ, sideU, depthV,
-                maxX, maxY, minZ, sideU, v0,
-                0.0F, 1.0F, 0.0F);
+        if (hasFace(faceMask, Direction.NORTH)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    minX, minY, minZ, u0, v1,
+                    minX, maxY, minZ, u0, heightV,
+                    maxX, maxY, minZ, widthU, heightV,
+                    maxX, minY, minZ, widthU, v1,
+                    0.0F, 0.0F, -1.0F);
+        }
+        if (hasFace(faceMask, Direction.SOUTH)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    maxX, minY, maxZ, u0, v1,
+                    maxX, maxY, maxZ, u0, heightV,
+                    minX, maxY, maxZ, widthU, heightV,
+                    minX, minY, maxZ, widthU, v1,
+                    0.0F, 0.0F, 1.0F);
+        }
+        if (hasFace(faceMask, Direction.WEST)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    minX, minY, maxZ, u0, v1,
+                    minX, maxY, maxZ, u0, heightV,
+                    minX, maxY, minZ, depthU, heightV,
+                    minX, minY, minZ, depthU, v1,
+                    -1.0F, 0.0F, 0.0F);
+        }
+        if (hasFace(faceMask, Direction.EAST)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    maxX, minY, minZ, u0, v1,
+                    maxX, maxY, minZ, u0, heightV,
+                    maxX, maxY, maxZ, depthU, heightV,
+                    maxX, minY, maxZ, depthU, v1,
+                    1.0F, 0.0F, 0.0F);
+        }
+        if (hasFace(faceMask, Direction.UP)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    minX, maxY, minZ, u0, v0,
+                    minX, maxY, maxZ, u0, depthV,
+                    maxX, maxY, maxZ, widthU, depthV,
+                    maxX, maxY, minZ, widthU, v0,
+                    0.0F, 1.0F, 0.0F);
+        }
+        if (hasFace(faceMask, Direction.DOWN)) {
+            quad(vertices, pose, packedLight, packedOverlay, red, green, blue, alpha,
+                    minX, minY, maxZ, u0, depthV,
+                    minX, minY, minZ, u0, v0,
+                    maxX, minY, minZ, widthU, v0,
+                    maxX, minY, maxZ, widthU, depthV,
+                    0.0F, -1.0F, 0.0F);
+        }
+    }
+
+    private static boolean hasFace(int faceMask, Direction direction) {
+        return (faceMask & faceBit(direction)) != 0;
     }
 
     private static void quad(VertexConsumer vertices, PoseStack.Pose pose,
