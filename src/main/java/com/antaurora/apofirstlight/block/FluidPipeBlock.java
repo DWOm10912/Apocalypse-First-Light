@@ -17,10 +17,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public final class FluidPipeBlock extends PipeBlock {
     public static final BooleanProperty SHOW_CORE = BooleanProperty.create("show_core");
 
-    private static final float HALF_WIDTH = 2.0F / 16.0F;
-    private static final VoxelShape STRAIGHT_X_SHAPE = Block.box(0, 6, 6, 16, 10, 10);
-    private static final VoxelShape STRAIGHT_Y_SHAPE = Block.box(6, 0, 6, 10, 16, 10);
-    private static final VoxelShape STRAIGHT_Z_SHAPE = Block.box(6, 6, 0, 10, 10, 16);
+    private static final float HALF_WIDTH = 3.0F / 16.0F;
+    private static final VoxelShape STRAIGHT_X_SHAPE = Block.box(0, 5, 5, 16, 11, 11);
+    private static final VoxelShape STRAIGHT_Y_SHAPE = Block.box(5, 0, 5, 11, 16, 11);
+    private static final VoxelShape STRAIGHT_Z_SHAPE = Block.box(5, 5, 0, 11, 11, 16);
 
     public FluidPipeBlock(Properties properties) {
         super(HALF_WIDTH, properties);
