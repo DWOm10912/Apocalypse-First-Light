@@ -21,5 +21,6 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 EnergyCellBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(), LeadChestRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.FLUID_TANK.get(), FluidTankRenderer::new);
     }
 }

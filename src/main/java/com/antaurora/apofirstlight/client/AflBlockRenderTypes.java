@@ -30,6 +30,7 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.FLUID_PIPE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.FLUID_TANK.get(), RenderType.translucent());
         });
     }
 }

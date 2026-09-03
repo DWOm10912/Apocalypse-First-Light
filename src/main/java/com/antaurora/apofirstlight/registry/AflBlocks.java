@@ -11,6 +11,7 @@ import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.block.FluidPipeBlock;
+import com.antaurora.apofirstlight.block.FluidTankBlock;
 import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
@@ -171,6 +172,12 @@ public final class AflBlocks {
             () -> new PowerCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion()));
     public static final RegistryObject<Block> FLUID_PIPE = BLOCKS.register("fluid_pipe",
             () -> new FluidPipeBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion()));
+    public static final RegistryObject<Block> FLUID_TANK = BLOCKS.register("fluid_tank",
+            () -> new FluidTankBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
     public static final RegistryObject<Block> EDGE_LANE_WHITE = BLOCKS.register("edge_lane_white",
             () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
                     .strength(0.1F)

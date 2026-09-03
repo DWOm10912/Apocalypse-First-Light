@@ -40,7 +40,7 @@ public final class FluidPipeBlock extends PipeBlock {
         BlockPos pos = context.getClickedPos();
         for (Direction direction : Direction.values()) {
             BlockState neighborState = context.getLevel().getBlockState(pos.relative(direction));
-            state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), canConnectTo(neighborState));
+            state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), canConnectTo(neighborState, direction));
         }
         return state.setValue(SHOW_CORE, shouldShowCore(context.getLevel(), pos, state));
     }
@@ -49,7 +49,7 @@ public final class FluidPipeBlock extends PipeBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         BlockState updatedState = state.setValue(PROPERTY_BY_DIRECTION.get(direction),
-                canConnectTo(neighborState));
+                canConnectTo(neighborState, direction));
         return updatedState.setValue(SHOW_CORE, shouldShowCore(level, pos, updatedState));
     }
 
@@ -74,8 +74,9 @@ public final class FluidPipeBlock extends PipeBlock {
         builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, SHOW_CORE);
     }
 
-    private static boolean canConnectTo(BlockState neighborState) {
-        return neighborState.is(AflBlocks.FLUID_PIPE.get());
+    private static boolean canConnectTo(BlockState neighborState, Direction directionToNeighbor) {
+        return neighborState.is(AflBlocks.FLUID_PIPE.get())
+                || neighborState.is(AflBlocks.FLUID_TANK.get()) && directionToNeighbor.getAxis().isVertical();
     }
 
     private static boolean shouldShowCore(LevelAccessor level, BlockPos pos, BlockState state) {
@@ -99,7 +100,15 @@ public final class FluidPipeBlock extends PipeBlock {
             return true;
         }
 
-        return !level.getBlockState(pos.relative(firstConnection)).is(AflBlocks.FLUID_PIPE.get())
-                || !level.getBlockState(pos.relative(secondConnection)).is(AflBlocks.FLUID_PIPE.get());
+        return !isValidStraightThroughEndpoint(level, pos, firstConnection)
+                || !isValidStraightThroughEndpoint(level, pos, secondConnection);
+    }
+
+    private static boolean isValidStraightThroughEndpoint(LevelAccessor level, BlockPos position,
+                                                          Direction directionToNeighbor) {
+        BlockState neighborState = level.getBlockState(position.relative(directionToNeighbor));
+        return neighborState.is(AflBlocks.FLUID_PIPE.get())
+                || neighborState.is(AflBlocks.FLUID_TANK.get())
+                && directionToNeighbor.getAxis().isVertical();
     }
 }

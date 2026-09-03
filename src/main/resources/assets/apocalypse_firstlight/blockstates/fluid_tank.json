@@ -1,0 +1,43 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_body"
+      }
+    },
+    {
+      "when": {
+        "top_connected": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_port_idle"
+      }
+    },
+    {
+      "when": {
+        "top_connected": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_port_connected"
+      }
+    },
+    {
+      "when": {
+        "bottom_connected": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_port_idle",
+        "x": 180
+      }
+    },
+    {
+      "when": {
+        "bottom_connected": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fluid_tank_port_connected",
+        "x": 180
+      }
+    }
+  ]
+}
