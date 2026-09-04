@@ -108,6 +108,10 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> WOLFRAMITE = ITEMS.register("wolframite",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_OXIDE = ITEMS.register("tungsten_oxide",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_POWDER = ITEMS.register("tungsten_powder",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> KUNZITE = ITEMS.register("kunzite",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> LITHIUM_CARBONATE = ITEMS.register("lithium_carbonate",
@@ -115,6 +119,10 @@ public final class AflItems {
     public static final RegistryObject<Item> TUNGSTEN_INGOT = ITEMS.register("tungsten_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> TUNGSTEN_SHEET = ITEMS.register("tungsten_sheet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> TUNGSTEN_CARBIDE_POWDER = ITEMS.register("tungsten_carbide_powder",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> CEMENTED_CARBIDE_INGOT = ITEMS.register("cemented_carbide_ingot",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
@@ -146,6 +154,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.ALLOY_FURNACE.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMPRESSOR = ITEMS.register("compressor",
             () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CHEMICAL_REACTOR = ITEMS.register("chemical_reactor",
+            () -> new BlockItem(AflBlocks.CHEMICAL_REACTOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",

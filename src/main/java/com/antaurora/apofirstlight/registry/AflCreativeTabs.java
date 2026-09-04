@@ -58,6 +58,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_FURNACE.get());
                         output.accept(AflItems.ALLOY_FURNACE.get());
                         output.accept(AflItems.COMPRESSOR.get());
+                        output.accept(AflItems.CHEMICAL_REACTOR.get());
                         output.accept(AflItems.POWER_CABLE.get());
                         output.accept(AflItems.FLUID_PIPE.get());
                         output.accept(AflItems.FLUID_TANK.get());
@@ -91,6 +92,12 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.CASSITERITE.get());
                         output.accept(AflItems.PENTLANDITE.get());
                         output.accept(AflItems.WOLFRAMITE.get());
+                        output.accept(AflItems.TUNGSTEN_OXIDE.get());
+                        output.accept(AflItems.TUNGSTEN_POWDER.get());
+                        output.accept(AflItems.TUNGSTEN_INGOT.get());
+                        output.accept(AflItems.TUNGSTEN_SHEET.get());
+                        output.accept(AflItems.TUNGSTEN_CARBIDE_POWDER.get());
+                        output.accept(AflItems.CEMENTED_CARBIDE_INGOT.get());
                         output.accept(AflItems.KUNZITE.get());
                         output.accept(AflItems.LITHIUM_CARBONATE.get());
                         output.accept(AflItems.LEAD_INGOT.get());
@@ -104,8 +111,6 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.SILVER_SCRAP.get());
                         output.accept(AflItems.SILVER_INGOT.get());
                         output.accept(AflItems.SILVER_SHEET.get());
-                        output.accept(AflItems.TUNGSTEN_INGOT.get());
-                        output.accept(AflItems.TUNGSTEN_SHEET.get());
                         output.accept(AflItems.STEEL_SCRAP.get());
                         output.accept(AflItems.CONCRETE_RUBBLE.get());
                         output.accept(AflItems.PLASTIC_SCRAP.get());

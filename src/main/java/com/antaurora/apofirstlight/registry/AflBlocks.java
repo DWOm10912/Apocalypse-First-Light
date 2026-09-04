@@ -16,6 +16,7 @@ import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.CompressorBlock;
 import com.antaurora.apofirstlight.block.AlloyFurnaceBlock;
+import com.antaurora.apofirstlight.block.ChemicalReactorBlock;
 import com.antaurora.apofirstlight.block.LeadChestBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
@@ -173,6 +174,9 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> COMPRESSOR = BLOCKS.register("compressor",
             () -> new CompressorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> CHEMICAL_REACTOR = BLOCKS.register("chemical_reactor",
+            () -> new ChemicalReactorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> POWER_CABLE = BLOCKS.register("power_cable",
             () -> new PowerCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
