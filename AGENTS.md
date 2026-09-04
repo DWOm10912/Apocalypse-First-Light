@@ -38,3 +38,13 @@ Reason if NO:
 - Do not place or overwrite editable Blockbench source geometry under `src/main/resources/assets/.../models/`.
 - BER / `ENTITYBLOCK_ANIMATED` blocks may intentionally use particle-only or builtin runtime model JSON.
 - When a model geometry changes, preserve/update the editable source under `src/main/blockbench/` and update its runtime representation only when the task requires it.
+
+# Mining Tools and Salvage Tiers
+
+- Every new block must explicitly audit its intended mining tool, required tier, `requiresCorrectToolForDrops()`, matching `minecraft:mineable/*` tag, and matching `minecraft:needs_*_tool` tag when applicable.
+- Industrial machines, industrial infrastructure, reinforced structures, and high-value metal salvage default to `minecraft:mineable/pickaxe` plus `minecraft:needs_diamond_tool`.
+- Complete industrial or structural blocks based on steel, aluminum, lead, zinc, tin, nickel, silver, or tungsten default to Diamond-tier unless explicitly designed as low-tier content. Aluminum commercial or industrial structures, including the Commercial Glass Double Door, are Diamond-tier.
+- All AFL industrial ores, including bauxite, galena, sphalerite, cassiterite, pentlandite, spodumene, and wolframite, default to Diamond-tier unless explicitly overridden.
+- Natural terrain, road markings, wood, leaves, saplings, and ordinary decorative blocks follow material-appropriate Vanilla-style tool rules instead of inheriting the industrial Diamond-tier default.
+- Slab, stair, and door variants must synchronize mining tags and tier requirements with their parent material in the same task.
+- A block task is not complete until Survival mining and drop behavior has been checked.

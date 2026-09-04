@@ -45,22 +45,24 @@ public final class AflBlocks {
                     .sound(SoundType.STONE)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> REINFORCED_CONCRETE_SLAB = BLOCKS.register("reinforced_concrete_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get())));
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get())
+                    .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> REINFORCED_CONCRETE_STAIRS = BLOCKS.register("reinforced_concrete_stairs",
-            () -> new StairBlock(REINFORCED_CONCRETE.get().defaultBlockState(), BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get())));
+            () -> new StairBlock(REINFORCED_CONCRETE.get().defaultBlockState(),
+                    BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BLOCK = BLOCKS.register("steel_block",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(7.0F, 12.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ALUMINUM_BLOCK = BLOCKS.register("aluminum_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> BAUXITE_ORE = BLOCKS.register("bauxite_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> GALENA_ORE = BLOCKS.register("galena_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> LEAD_BLOCK = BLOCKS.register("lead_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> LEAD_CHEST = BLOCKS.register("lead_chest",
             () -> new LeadChestBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F)
@@ -68,29 +70,30 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> SPHALERITE_ORE = BLOCKS.register("sphalerite_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ZINC_BLOCK = BLOCKS.register("zinc_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> CASSITERITE_ORE = BLOCKS.register("cassiterite_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> TIN_BLOCK = BLOCKS.register("tin_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PENTLANDITE_ORE = BLOCKS.register("pentlandite_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> NICKEL_BLOCK = BLOCKS.register("nickel_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> SILVER_BLOCK = BLOCKS.register("silver_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> WOLFRAMITE_ORE = BLOCKS.register("wolframite_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> SPODUMENE_ORE = BLOCKS.register("spodumene_ore",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> TUNGSTEN_BLOCK = BLOCKS.register("tungsten_block",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BLOCK_SLAB = BLOCKS.register("steel_block_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get())));
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_BLOCK.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BLOCK_STAIRS = BLOCKS.register("steel_block_stairs",
-            () -> new StairBlock(STEEL_BLOCK.get().defaultBlockState(), BlockBehaviour.Properties.copy(STEEL_BLOCK.get())));
+            () -> new StairBlock(STEEL_BLOCK.get().defaultBlockState(),
+                    BlockBehaviour.Properties.copy(STEEL_BLOCK.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_GRATE = BLOCKS.register("steel_grate",
             () -> new SteelGrateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 7.0F)
@@ -103,9 +106,10 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_PLATE_SLAB = BLOCKS.register("steel_plate_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_PLATE.get())));
+            () -> new SlabBlock(BlockBehaviour.Properties.copy(STEEL_PLATE.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_PLATE_STAIRS = BLOCKS.register("steel_plate_stairs",
-            () -> new StairBlock(STEEL_PLATE.get().defaultBlockState(), BlockBehaviour.Properties.copy(STEEL_PLATE.get())));
+            () -> new StairBlock(STEEL_PLATE.get().defaultBlockState(),
+                    BlockBehaviour.Properties.copy(STEEL_PLATE.get()).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_DOOR = BLOCKS.register("steel_door",
             () -> new SteelDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(6.0F, 10.0F)
@@ -135,11 +139,13 @@ public final class AflBlocks {
             () -> new RetailShelfSingleBlock(BlockBehaviour.Properties.of()
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.GLASS)
                     .strength(1.5F, 3.0F)
                     .sound(SoundType.GLASS)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> FALLOUT_SOIL = BLOCKS.register("fallout_soil",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.COARSE_DIRT)));
@@ -149,7 +155,7 @@ public final class AflBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(3.0F, 6.0F)
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)));
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> THERMAL_GENERATOR = BLOCKS.register("thermal_generator",
             () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));
@@ -169,9 +175,11 @@ public final class AflBlocks {
             () -> new CompressorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> POWER_CABLE = BLOCKS.register("power_cable",
-            () -> new PowerCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion()));
+            () -> new PowerCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> FLUID_PIPE = BLOCKS.register("fluid_pipe",
-            () -> new FluidPipeBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).noOcclusion()));
+            () -> new FluidPipeBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> FLUID_TANK = BLOCKS.register("fluid_tank",
             () -> new FluidTankBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F)

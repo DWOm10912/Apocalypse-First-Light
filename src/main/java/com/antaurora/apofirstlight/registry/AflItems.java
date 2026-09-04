@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.item.FluidTankBlockItem;
 import com.antaurora.apofirstlight.item.LeadChestBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -134,23 +135,23 @@ public final class AflItems {
     public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
             () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
     public static final RegistryObject<Item> THERMAL_GENERATOR = ITEMS.register("thermal_generator",
-            () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENERGY_CELL = ITEMS.register("energy_cell",
-            () -> new BlockItem(AflBlocks.ENERGY_CELL.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.ENERGY_CELL.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CRUSHER = ITEMS.register("crusher",
-            () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> INDUSTRIAL_FURNACE = ITEMS.register("industrial_furnace",
-            () -> new BlockItem(AflBlocks.INDUSTRIAL_FURNACE.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.INDUSTRIAL_FURNACE.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ALLOY_FURNACE = ITEMS.register("alloy_furnace",
-            () -> new BlockItem(AflBlocks.ALLOY_FURNACE.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.ALLOY_FURNACE.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMPRESSOR = ITEMS.register("compressor",
-            () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",
             () -> new BlockItem(AflBlocks.FLUID_PIPE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_TANK = ITEMS.register("fluid_tank",
-            () -> new BlockItem(AflBlocks.FLUID_TANK.get(), new Item.Properties()));
+            () -> new FluidTankBlockItem(AflBlocks.FLUID_TANK.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",
             () -> new BlockItem(AflBlocks.EDGE_LANE_WHITE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_YELLOW = ITEMS.register("edge_lane_yellow",

@@ -182,7 +182,8 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
     @Override
     public void playerWillDestroy(Level level, BlockPos position, BlockState state, Player player) {
         BlockPos anchor = anchorPosition(position, state);
-        if (!level.isClientSide() && !player.isCreative() && !state.getValue(PART).isLowerLeft()) {
+        if (!level.isClientSide() && !player.isCreative() && !state.getValue(PART).isLowerLeft()
+                && player.getMainHandItem().isCorrectToolForDrops(state)) {
             Block.popResource(level, anchor, new ItemStack(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get()));
         }
         removeParts(level, anchor, state.getValue(FACING), position);

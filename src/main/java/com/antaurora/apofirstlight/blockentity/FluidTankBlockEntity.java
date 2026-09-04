@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.blockentity;
 import com.antaurora.apofirstlight.block.FluidTankBlock;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
 import com.antaurora.apofirstlight.fluid.FluidTankStacks;
+import com.antaurora.apofirstlight.fluid.FluidTankStoredFluid;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,10 +26,10 @@ import org.jetbrains.annotations.Nullable;
 
 public final class FluidTankBlockEntity extends BlockEntity {
     public static final int CAPACITY_MB = 20_000;
-    private static final String FLUID_KEY = "Fluid";
     private static final String VISUAL_CAPACITY_KEY = "VisualCapacity";
-
     private boolean rebuildingTopology;
+    private boolean playerBreakPrepared;
+    private FluidStack preparedDropFluid = FluidStack.EMPTY;
     private final FluidTank localTank = new FluidTank(CAPACITY_MB) {
         @Override
         protected void onContentsChanged() {
@@ -110,6 +111,41 @@ public final class FluidTankBlockEntity extends BlockEntity {
     public FluidStack getLocalFluidForTopology() {
         FluidStack fluid = localTank.getFluid();
         return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
+    }
+
+    public FluidStack getMemberFluidSlice() {
+        FluidTankBlockEntity controller = resolveController();
+        FluidStack fluid = controller.localTank.getFluid();
+        int localAmount = FluidTankStacks.localAmountForMember(fluid.getAmount(), getStackIndex());
+        if (fluid.isEmpty() || localAmount <= 0) {
+            return FluidStack.EMPTY;
+        }
+        FluidStack slice = fluid.copy();
+        slice.setAmount(localAmount);
+        return slice;
+    }
+
+    public void preparePlayerBreakDrop(boolean preserveInDrop) {
+        if (playerBreakPrepared) {
+            return;
+        }
+        playerBreakPrepared = true;
+
+        FluidTankBlockEntity controller = resolveController();
+        int localAmount = FluidTankStacks.localAmountForMember(
+                controller.localTank.getFluidAmount(), getStackIndex());
+        if (localAmount <= 0) {
+            return;
+        }
+
+        FluidStack extracted = controller.localTank.drain(localAmount, IFluidHandler.FluidAction.EXECUTE);
+        if (preserveInDrop && !extracted.isEmpty()) {
+            preparedDropFluid = extracted.copy();
+        }
+    }
+
+    public FluidStack getPreparedDropFluid() {
+        return preparedDropFluid.isEmpty() ? FluidStack.EMPTY : preparedDropFluid.copy();
     }
 
     public void clearLocalFluidForTopology() {
@@ -196,7 +232,7 @@ public final class FluidTankBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
-        tag.put(FLUID_KEY, localTank.writeToNBT(new CompoundTag()));
+        tag.put(FluidTankStoredFluid.FLUID_KEY, localTank.writeToNBT(new CompoundTag()));
         tag.putInt(VISUAL_CAPACITY_KEY, localTank.getCapacity());
     }
 
@@ -208,8 +244,8 @@ public final class FluidTankBlockEntity extends BlockEntity {
                 ? Math.max(CAPACITY_MB, tag.getInt(VISUAL_CAPACITY_KEY))
                 : CAPACITY_MB;
         localTank.setCapacity(capacity);
-        if (tag.contains(FLUID_KEY, Tag.TAG_COMPOUND)) {
-            localTank.readFromNBT(tag.getCompound(FLUID_KEY));
+        if (tag.contains(FluidTankStoredFluid.FLUID_KEY, Tag.TAG_COMPOUND)) {
+            localTank.readFromNBT(tag.getCompound(FluidTankStoredFluid.FLUID_KEY));
             if (localTank.getFluidAmount() > capacity) {
                 localTank.getFluid().setAmount(capacity);
             }
@@ -222,7 +258,7 @@ public final class FluidTankBlockEntity extends BlockEntity {
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
-        tag.put(FLUID_KEY, localTank.writeToNBT(new CompoundTag()));
+        tag.put(FluidTankStoredFluid.FLUID_KEY, localTank.writeToNBT(new CompoundTag()));
         tag.putInt(VISUAL_CAPACITY_KEY, localTank.getCapacity());
         return tag;
     }

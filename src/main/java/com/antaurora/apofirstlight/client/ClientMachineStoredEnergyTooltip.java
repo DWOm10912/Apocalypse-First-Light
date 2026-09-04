@@ -24,7 +24,10 @@ public final class ClientMachineStoredEnergyTooltip {
         ItemStack stack = event.getItemStack();
         if (!stack.is(AflItems.THERMAL_GENERATOR.get())
                 && !stack.is(AflItems.ENERGY_CELL.get())
-                && !stack.is(AflItems.CRUSHER.get())) {
+                && !stack.is(AflItems.CRUSHER.get())
+                && !stack.is(AflItems.INDUSTRIAL_FURNACE.get())
+                && !stack.is(AflItems.ALLOY_FURNACE.get())
+                && !stack.is(AflItems.COMPRESSOR.get())) {
             return;
         }
         int storedEnergy = MachineStoredEnergy.read(stack);

@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
 import com.antaurora.apofirstlight.fluid.FluidTankStacks;
+import com.antaurora.apofirstlight.fluid.FluidTankStoredFluid;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,9 +25,14 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidUtil;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public final class FluidTankBlock extends BaseEntityBlock {
     public static final BooleanProperty HAS_TANK_ABOVE = BooleanProperty.create("has_tank_above");
@@ -48,12 +54,39 @@ public final class FluidTankBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         BlockPos position = context.getClickedPos();
         Level level = context.getLevel();
-        if (!FluidTankStacks.canPlaceTank(level, position)) {
+        if (!FluidTankStacks.canPlaceTank(level, position,
+                FluidTankStoredFluid.read(context.getItemInHand()))) {
             return null;
         }
         return defaultBlockState()
                 .setValue(TOP_CONNECTED, isFluidPipe(level.getBlockState(position.above())))
                 .setValue(BOTTOM_CONNECTED, isFluidPipe(level.getBlockState(position.below())));
+    }
+
+    @Override
+    public void playerWillDestroy(Level level, BlockPos position, BlockState state, Player player) {
+        if (!level.isClientSide()
+                && level.getBlockEntity(position) instanceof FluidTankBlockEntity tank) {
+            tank.preparePlayerBreakDrop(!player.isCreative());
+        }
+        super.playerWillDestroy(level, position, state, player);
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        List<ItemStack> drops = super.getDrops(state, builder);
+        if (builder.getOptionalParameter(LootContextParams.BLOCK_ENTITY)
+                instanceof FluidTankBlockEntity tank) {
+            FluidStack preservedFluid = tank.getPreparedDropFluid();
+            if (!preservedFluid.isEmpty()) {
+                for (ItemStack drop : drops) {
+                    if (drop.is(asItem())) {
+                        FluidTankStoredFluid.write(drop, preservedFluid);
+                    }
+                }
+            }
+        }
+        return drops;
     }
 
     @Override

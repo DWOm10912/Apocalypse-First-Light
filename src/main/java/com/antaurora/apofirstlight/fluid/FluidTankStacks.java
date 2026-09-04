@@ -22,16 +22,19 @@ public final class FluidTankStacks {
     }
 
     public static boolean canPlaceTank(Level level, BlockPos candidatePosition) {
+        return canPlaceTank(level, candidatePosition, FluidStack.EMPTY);
+    }
+
+    public static boolean canPlaceTank(Level level, BlockPos candidatePosition, FluidStack candidateFluid) {
         List<BlockPos> prospectiveRun = findRunWithCandidate(level, candidatePosition);
         for (int start = 0; start < prospectiveRun.size(); start += MAX_TANK_STACK_HEIGHT) {
             int end = Math.min(start + MAX_TANK_STACK_HEIGHT, prospectiveRun.size());
             FluidStack selectedFluid = FluidStack.EMPTY;
             for (int index = start; index < end; index++) {
-                BlockEntity blockEntity = level.getBlockEntity(prospectiveRun.get(index));
-                if (!(blockEntity instanceof FluidTankBlockEntity tank)) {
-                    continue;
-                }
-                FluidStack localFluid = tank.getLocalFluidForTopology();
+                BlockPos memberPosition = prospectiveRun.get(index);
+                FluidStack localFluid = memberPosition.equals(candidatePosition)
+                        ? candidateFluid
+                        : getMemberFluidSlice(level, memberPosition);
                 if (localFluid.isEmpty()) {
                     continue;
                 }
@@ -43,6 +46,12 @@ public final class FluidTankStacks {
             }
         }
         return true;
+    }
+
+    public static int localAmountForMember(int controllerTotalAmount, int memberIndexFromBottom) {
+        long amountAfterLowerMembers = (long) Math.max(0, controllerTotalAmount)
+                - (long) Math.max(0, memberIndexFromBottom) * FluidTankBlockEntity.CAPACITY_MB;
+        return (int) Math.max(0L, Math.min(FluidTankBlockEntity.CAPACITY_MB, amountAfterLowerMembers));
     }
 
     public static void rebuildColumn(ServerLevel level, BlockPos position) {
@@ -255,5 +264,10 @@ public final class FluidTankStacks {
     private static FluidTankBlockEntity getTank(Level level, BlockPos position) {
         BlockEntity blockEntity = level.getBlockEntity(position);
         return blockEntity instanceof FluidTankBlockEntity tank ? tank : null;
+    }
+
+    private static FluidStack getMemberFluidSlice(Level level, BlockPos position) {
+        FluidTankBlockEntity tank = getTank(level, position);
+        return tank == null ? FluidStack.EMPTY : tank.getMemberFluidSlice();
     }
 }

@@ -133,7 +133,8 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
                                   net.minecraft.world.entity.player.Player player) {
         BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER
                 ? position.below() : position;
-        if (!player.isCreative() && level.getBlockState(lower).getBlock() == this) {
+        if (!player.isCreative() && level.getBlockState(lower).getBlock() == this
+                && player.getMainHandItem().isCorrectToolForDrops(state)) {
             popResource(level, lower, new ItemStack(AflItems.RETAIL_SHELF_SINGLE.get()));
         }
         dropContents(level, lower);

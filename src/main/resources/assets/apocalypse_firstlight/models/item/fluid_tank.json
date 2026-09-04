@@ -1,3 +1,32 @@
 {
-  "parent": "apocalypse_firstlight:block/fluid_tank"
+  "parent": "builtin/entity",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/fluid_tank"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "translation": [0, 3.25, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "thirdperson_lefthand": {
+      "translation": [0, 3.25, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_righthand": {
+      "translation": [0, 2, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "translation": [0, 2, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 3, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "gui": {
+      "rotation": [25, 45, 0],
+      "scale": [0.5, 0.5, 0.5]
+    }
+  }
 }

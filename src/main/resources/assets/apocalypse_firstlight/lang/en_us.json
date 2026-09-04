@@ -111,6 +111,8 @@
 
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "Stored Energy: %s FE",
+  "tooltip.apocalypse_firstlight.stored_fluid": "Fluid: %s",
+  "tooltip.apocalypse_firstlight.stored_fluid_amount": "Amount: %s / %s mB",
   "tooltip.apocalypse_firstlight.contamination.label": "Radioactive Contamination: ",
   "tooltip.apocalypse_firstlight.contamination.emission": "Radiation Emission: %s RU/h",
 

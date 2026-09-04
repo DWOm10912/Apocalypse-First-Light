@@ -111,6 +111,8 @@
 
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "能量：%s FE",
+  "tooltip.apocalypse_firstlight.stored_fluid": "流体：%s",
+  "tooltip.apocalypse_firstlight.stored_fluid_amount": "储量：%s / %s mB",
   "tooltip.apocalypse_firstlight.contamination.label": "放射性污染：",
   "tooltip.apocalypse_firstlight.contamination.emission": "辐射释放：%s RU/h",
 
