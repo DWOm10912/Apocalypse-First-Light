@@ -2,7 +2,10 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
+import com.antaurora.apofirstlight.energy.EnergyCellMode;
+import com.antaurora.apofirstlight.energy.EnergyCellStoredMode;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.energy.PowerCableTransfer;
 import com.antaurora.apofirstlight.menu.EnergyCellMenu;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -10,6 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -28,7 +32,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class EnergyCellBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int DATA_COUNT = 4;
+    public static final int MODE_DATA_INDEX = 4;
+    public static final int DATA_COUNT = 5;
     private static final String ENERGY_KEY = "EnergyStored";
     private static final String VISUAL_CAPACITY_KEY = "EnergyCapacity";
     private static final int VISUAL_SYNC_INTERVAL_TICKS = 5;
@@ -36,6 +41,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
     private static final float VISUAL_SNAP_THRESHOLD = 0.0005F;
 
     private int energyStored;
+    private EnergyCellMode mode = EnergyCellMode.CHARGE;
     private int visualCapacity;
     private int balanceRevision = -1;
     private long transferBudgetTick = Long.MIN_VALUE;
@@ -49,6 +55,9 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
     private final IEnergyStorage energyStorage = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
+            if (mode != EnergyCellMode.CHARGE) {
+                return 0;
+            }
             applyCurrentBalance();
             resetTransferBudget();
             MachineBalanceManager.EnergyCellBalance balance = MachineBalanceManager.energyCell();
@@ -66,6 +75,9 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
 
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
+            if (mode != EnergyCellMode.DISCHARGE) {
+                return 0;
+            }
             applyCurrentBalance();
             resetTransferBudget();
             MachineBalanceManager.EnergyCellBalance balance = MachineBalanceManager.energyCell();
@@ -93,12 +105,12 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
 
         @Override
         public boolean canExtract() {
-            return true;
+            return mode == EnergyCellMode.DISCHARGE;
         }
 
         @Override
         public boolean canReceive() {
-            return true;
+            return mode == EnergyCellMode.CHARGE;
         }
     };
     private LazyOptional<IEnergyStorage> energyCapability = LazyOptional.of(() -> energyStorage);
@@ -111,6 +123,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
                 case 1 -> highWord(energyStored);
                 case 2 -> lowWord(MachineBalanceManager.energyCell().capacityFe());
                 case 3 -> highWord(MachineBalanceManager.energyCell().capacityFe());
+                case MODE_DATA_INDEX -> mode.serializedValue();
                 default -> 0;
             };
         }
@@ -120,6 +133,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
             switch (index) {
                 case 0 -> energyStored = withLowWord(energyStored, value);
                 case 1 -> energyStored = withHighWord(energyStored, value);
+                case MODE_DATA_INDEX -> mode = EnergyCellMode.fromSerialized(value);
                 default -> {
                 }
             }
@@ -137,11 +151,40 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
 
     public static void serverTick(Level level, BlockPos position, BlockState state, EnergyCellBlockEntity cell) {
         cell.applyCurrentBalance();
+        if (level instanceof ServerLevel serverLevel
+                && cell.mode == EnergyCellMode.DISCHARGE
+                && cell.energyStored > 0) {
+            Direction outputFace = PowerCableBlock.utilityPortFace(state);
+            cell.getCapability(ForgeCapabilities.ENERGY, outputFace).resolve().ifPresent(source ->
+                    PowerCableTransfer.transferFrom(serverLevel, position, outputFace, source,
+                            MachineBalanceManager.energyCell().maxExtractFePerTick()));
+        }
         cell.syncVisualEnergy(level);
     }
 
     public int getStoredEnergy() {
         return energyStored;
+    }
+
+    public EnergyCellMode getMode() {
+        return mode;
+    }
+
+    public void toggleMode() {
+        setMode(mode.toggled());
+    }
+
+    public void setMode(EnergyCellMode mode) {
+        EnergyCellMode resolvedMode = mode == null ? EnergyCellMode.CHARGE : mode;
+        if (this.mode == resolvedMode) {
+            return;
+        }
+        this.mode = resolvedMode;
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            BlockState state = getBlockState();
+            level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+        }
     }
 
     public float getDisplayedEnergyRatio() {
@@ -225,6 +268,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putInt(ENERGY_KEY, energyStored);
+        tag.putInt(EnergyCellStoredMode.MODE_KEY, mode.serializedValue());
     }
 
     @Override
@@ -232,6 +276,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
         super.load(tag);
         energyStored = Math.max(0, Math.min(tag.getInt(ENERGY_KEY),
                 MachineBalanceManager.energyCell().capacityFe()));
+        mode = EnergyCellMode.fromSerialized(tag.getInt(EnergyCellStoredMode.MODE_KEY));
         visualCapacity = tag.contains(VISUAL_CAPACITY_KEY)
                 ? Math.max(0, tag.getInt(VISUAL_CAPACITY_KEY))
                 : MachineBalanceManager.energyCell().capacityFe();
@@ -244,6 +289,7 @@ public final class EnergyCellBlockEntity extends BlockEntity implements MenuProv
         CompoundTag tag = new CompoundTag();
         tag.putInt(ENERGY_KEY, energyStored);
         tag.putInt(VISUAL_CAPACITY_KEY, MachineBalanceManager.energyCell().capacityFe());
+        tag.putInt(EnergyCellStoredMode.MODE_KEY, mode.serializedValue());
         return tag;
     }
 

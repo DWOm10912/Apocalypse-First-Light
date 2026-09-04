@@ -168,6 +168,10 @@
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
   "itemGroup.apocalypse_firstlight.items": "Apocalypse: First Light Items",
 
+  "gui.apocalypse_firstlight.energy_cell.mode.charge.title": "Charge Mode",
+  "gui.apocalypse_firstlight.energy_cell.mode.charge.description": "Receives energy only",
+  "gui.apocalypse_firstlight.energy_cell.mode.discharge.title": "Discharge Mode",
+  "gui.apocalypse_firstlight.energy_cell.mode.discharge.description": "Supplies energy to the power network",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "Auto Balance: On",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "Auto Balance: Off",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "Evenly distributes identical inputs across the three processing lanes.",

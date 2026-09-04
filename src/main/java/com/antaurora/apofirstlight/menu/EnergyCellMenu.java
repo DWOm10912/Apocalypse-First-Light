@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.menu;
 
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
+import com.antaurora.apofirstlight.energy.EnergyCellMode;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayouts;
 import com.antaurora.apofirstlight.registry.AflBlocks;
@@ -16,6 +17,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public final class EnergyCellMenu extends AbstractContainerMenu {
+    public static final int MODE_BUTTON_ID = 0;
+
     private static final MachineGuiLayout LAYOUT = MachineGuiLayouts.energyCell();
 
     private static final int PLAYER_INVENTORY_END = 27;
@@ -24,6 +27,7 @@ public final class EnergyCellMenu extends AbstractContainerMenu {
 
     private final ContainerData data;
     private final ContainerLevelAccess access;
+    private final EnergyCellBlockEntity cell;
 
     public EnergyCellMenu(int containerId, Inventory inventory, FriendlyByteBuf buffer) {
         this(containerId, inventory, requireBlockEntity(inventory, buffer),
@@ -34,6 +38,7 @@ public final class EnergyCellMenu extends AbstractContainerMenu {
         super(AflMenus.ENERGY_CELL.get(), containerId);
         checkContainerDataCount(data, EnergyCellBlockEntity.DATA_COUNT);
         this.data = data;
+        this.cell = cell;
         this.access = ContainerLevelAccess.create(inventory.player.level(), cell.getBlockPos());
 
         MachineGuiLayout.Grid playerInventory = LAYOUT.playerInventory();
@@ -100,6 +105,24 @@ public final class EnergyCellMenu extends AbstractContainerMenu {
 
     public int getEnergyCapacity() {
         return readInt(2);
+    }
+
+    public EnergyCellMode getMode() {
+        return EnergyCellMode.fromSerialized(data.get(EnergyCellBlockEntity.MODE_DATA_INDEX));
+    }
+
+    @Override
+    public boolean clickMenuButton(Player player, int buttonId) {
+        if (buttonId != MODE_BUTTON_ID || !stillValid(player)) {
+            return false;
+        }
+        return access.evaluate((level, position) -> {
+            if (level.getBlockEntity(position) != cell) {
+                return false;
+            }
+            cell.toggleMode();
+            return true;
+        }, false);
     }
 
     private int readInt(int lowWordIndex) {

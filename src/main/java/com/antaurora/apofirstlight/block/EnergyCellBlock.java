@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
+import com.antaurora.apofirstlight.energy.EnergyCellStoredMode;
 import com.antaurora.apofirstlight.energy.MachineStoredEnergy;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -71,6 +72,7 @@ public final class EnergyCellBlock extends HorizontalDirectionalBlock implements
             for (ItemStack drop : drops) {
                 if (drop.is(asItem())) {
                     MachineStoredEnergy.write(drop, AflBlockEntities.ENERGY_CELL.get(), cell.getStoredEnergy());
+                    EnergyCellStoredMode.write(drop, cell.getMode());
                 }
             }
         }
