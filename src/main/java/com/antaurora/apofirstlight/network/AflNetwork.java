@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "6";
+    private static final String PROTOCOL = "7";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -255,7 +255,7 @@ public final class AflNetwork {
     }
 
     public record FluidPipeVisualUpdate(BlockPos position, ResourceLocation fluidId,
-                                        int directionMask, boolean active) {
+                                        int directionMask, boolean active, boolean isFlowing) {
         private static final ResourceLocation EMPTY_FLUID_ID = new ResourceLocation("minecraft", "empty");
 
         public FluidPipeVisualUpdate {
@@ -263,7 +263,7 @@ public final class AflNetwork {
         }
 
         public static FluidPipeVisualUpdate clear(BlockPos position) {
-            return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, false);
+            return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, false, false);
         }
     }
 
@@ -280,6 +280,7 @@ public final class AflNetwork {
                 if (update.active()) {
                     buffer.writeResourceLocation(update.fluidId());
                     buffer.writeVarInt(update.directionMask());
+                    buffer.writeBoolean(update.isFlowing());
                 }
             }
         }
@@ -292,7 +293,7 @@ public final class AflNetwork {
                 boolean active = buffer.readBoolean();
                 updates.add(active
                         ? new FluidPipeVisualUpdate(position, buffer.readResourceLocation(),
-                        buffer.readVarInt(), true)
+                        buffer.readVarInt(), true, buffer.readBoolean())
                         : FluidPipeVisualUpdate.clear(position));
             }
             return new FluidPipeVisualS2CPacket(updates);

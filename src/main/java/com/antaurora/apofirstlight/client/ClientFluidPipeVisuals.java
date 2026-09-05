@@ -37,7 +37,7 @@ public final class ClientFluidPipeVisuals {
                 continue;
             }
             ACTIVE.put(update.position().immutable(),
-                    new VisualState(new FluidStack(fluid, 1), update.directionMask()));
+                    new VisualState(new FluidStack(fluid, 1), update.directionMask(), update.isFlowing()));
         }
     }
 
@@ -66,7 +66,7 @@ public final class ClientFluidPipeVisuals {
         ACTIVE.keySet().removeIf(position -> new ChunkPos(position).equals(chunkPosition));
     }
 
-    public record VisualState(FluidStack fluid, int directionMask) {
+    public record VisualState(FluidStack fluid, int directionMask, boolean isFlowing) {
         public VisualState {
             fluid = fluid.copy();
         }

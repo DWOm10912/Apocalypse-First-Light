@@ -183,6 +183,10 @@ public final class FluidPipeBlock extends PipeBlock {
 
     private static boolean isValidStraightThroughEndpoint(BlockGetter level, BlockPos position,
                                                           Direction directionToNeighbor) {
+        // A tank has a fixed port surface; the adjacent pipe keeps its own core.
+        if (level.getBlockState(position.relative(directionToNeighbor)).is(AflBlocks.FLUID_TANK.get())) {
+            return false;
+        }
         return canPipeEdgeConnect(level, position, position.relative(directionToNeighbor), directionToNeighbor);
     }
 }

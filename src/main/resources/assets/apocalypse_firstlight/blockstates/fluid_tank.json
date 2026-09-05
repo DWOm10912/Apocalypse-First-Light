@@ -15,20 +15,10 @@
     },
     {
       "when": {
-        "has_tank_above": "false",
-        "top_connected": "false"
+        "has_tank_above": "false"
       },
       "apply": {
         "model": "apocalypse_firstlight:block/fluid_tank_port_idle"
-      }
-    },
-    {
-      "when": {
-        "has_tank_above": "false",
-        "top_connected": "true"
-      },
-      "apply": {
-        "model": "apocalypse_firstlight:block/fluid_tank_port_connected"
       }
     },
     {
@@ -41,21 +31,10 @@
     },
     {
       "when": {
-        "has_tank_below": "false",
-        "bottom_connected": "false"
+        "has_tank_below": "false"
       },
       "apply": {
         "model": "apocalypse_firstlight:block/fluid_tank_port_idle",
-        "x": 180
-      }
-    },
-    {
-      "when": {
-        "has_tank_below": "false",
-        "bottom_connected": "true"
-      },
-      "apply": {
-        "model": "apocalypse_firstlight:block/fluid_tank_port_connected",
         "x": 180
       }
     }

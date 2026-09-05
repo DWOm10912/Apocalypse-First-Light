@@ -30,7 +30,7 @@ public final class FluidPipeVisualManager {
 
     public static void markRoute(ServerLevel level, List<BlockPos> pipePath,
                                  BlockPos sourceTankPosition, BlockPos sinkTankPosition,
-                                 FluidStack fluid) {
+                                 FluidStack fluid, boolean isFlowing) {
         if (pipePath.isEmpty() || fluid.isEmpty()) {
             return;
         }
@@ -52,10 +52,10 @@ public final class FluidPipeVisualManager {
                     | directionBit(directionFrom(pipePosition, nextPosition));
             BlockPos key = pipePosition.immutable();
             VisualState oldState = active.get(key);
-            active.put(key, new VisualState(fluidId, directionMask, gameTime));
+            active.put(key, new VisualState(fluidId, directionMask, isFlowing, gameTime));
             if (oldState == null || !oldState.fluidId().equals(fluidId)
-                    || oldState.directionMask() != directionMask) {
-                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, true));
+                    || oldState.directionMask() != directionMask || oldState.isFlowing() != isFlowing) {
+                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, true, isFlowing));
             }
         }
         if (!changed.isEmpty()) {
@@ -124,6 +124,7 @@ public final class FluidPipeVisualManager {
         return 1 << direction.get3DDataValue();
     }
 
-    private record VisualState(ResourceLocation fluidId, int directionMask, long lastTransferGameTime) {
+    private record VisualState(ResourceLocation fluidId, int directionMask, boolean isFlowing,
+                               long lastTransferGameTime) {
     }
 }

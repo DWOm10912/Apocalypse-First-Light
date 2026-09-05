@@ -79,7 +79,7 @@ public final class FluidPipeRenderer {
         for (Direction direction : directions) {
             centerFaces &= ~FluidRenderHelper.faceBit(direction);
         }
-        FluidRenderHelper.renderBox(state.fluid(), true, poseStack, buffer, packedLight,
+        FluidRenderHelper.renderBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight,
                 OverlayTexture.NO_OVERLAY, INNER_MIN, INNER_MIN, INNER_MIN,
                 INNER_MAX, INNER_MAX, INNER_MAX, centerFaces);
 
@@ -100,7 +100,7 @@ public final class FluidPipeRenderer {
         int faces = FluidRenderHelper.ALL_FACES
                 & ~FluidRenderHelper.faceBit(firstDirection)
                 & ~FluidRenderHelper.faceBit(secondDirection);
-        FluidRenderHelper.renderBox(state.fluid(), true, poseStack, buffer, packedLight,
+        FluidRenderHelper.renderBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight,
                 OverlayTexture.NO_OVERLAY, minX, minY, minZ, maxX, maxY, maxZ, faces);
     }
 
@@ -115,7 +115,7 @@ public final class FluidPipeRenderer {
         int faces = FluidRenderHelper.ALL_FACES
                 & ~FluidRenderHelper.faceBit(direction)
                 & ~FluidRenderHelper.faceBit(direction.getOpposite());
-        FluidRenderHelper.renderBox(state.fluid(), true, poseStack, buffer, packedLight,
+        FluidRenderHelper.renderBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight,
                 OverlayTexture.NO_OVERLAY, minX, minY, minZ, maxX, maxY, maxZ, faces);
     }
 

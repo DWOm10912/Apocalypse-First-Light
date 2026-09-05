@@ -81,6 +81,7 @@ public final class FluidPipeTransfer {
             return 0;
         }
 
+        SinkRoute blockedFallback = null;
         for (SinkRoute route : searchResult.routes()) {
             BlockEntity blockEntity = level.getBlockEntity(route.sinkPosition());
             if (blockEntity == null) {
@@ -94,12 +95,18 @@ public final class FluidPipeTransfer {
             }
 
             IFluidHandler sink = sinkOptional.get();
-            int accepted = sink.fill(available, IFluidHandler.FluidAction.SIMULATE);
-            if (accepted <= 0) {
+            TargetAssessment assessment = assessTarget(sink, available);
+            if (assessment.status() == TargetStatus.INVALID) {
+                continue;
+            }
+            if (assessment.status() == TargetStatus.BLOCKED_BUT_VALID) {
+                if (blockedFallback == null) {
+                    blockedFallback = route;
+                }
                 continue;
             }
 
-            FluidStack drained = source.drain(Math.min(accepted,
+            FluidStack drained = source.drain(Math.min(assessment.acceptedAmount(),
                             FluidPortTransferBudget.STANDARD_FLUID_TRANSFER_RATE_MB_PER_TICK),
                     IFluidHandler.FluidAction.EXECUTE);
             if (drained.isEmpty()) {
@@ -117,12 +124,15 @@ public final class FluidPipeTransfer {
                 }
             }
             if (filled > 0) {
-                FluidStack visualFluid = drained.copy();
-                visualFluid.setAmount(1);
-                FluidPipeVisualManager.markRoute(level, route.pipePath(), sourcePosition,
-                        route.sinkPosition(), visualFluid);
+                markRouteVisual(level, route, sourcePosition, drained, true);
                 return filled;
             }
+            if (blockedFallback == null) {
+                blockedFallback = route;
+            }
+        }
+        if (blockedFallback != null) {
+            markRouteVisual(level, blockedFallback, sourcePosition, available, false);
         }
         return 0;
     }
@@ -175,32 +185,67 @@ public final class FluidPipeTransfer {
                         distance.put(immutableNeighbor, distance.get(pipePosition) + 1);
                         pending.add(immutableNeighbor);
                     }
-                } else if (canFillFromSide(level, sourceBlockEntity, neighborPosition,
-                        direction.getOpposite(), available)) {
-                    routes.add(new SinkRoute(neighborPosition.immutable(), direction.getOpposite(),
-                            buildPath(firstPipePosition, pipePosition, predecessor)));
+                } else {
+                    Direction targetFace = direction.getOpposite();
+                    TargetStatus targetStatus = classifyTargetFromSide(level, sourceBlockEntity,
+                            neighborPosition, targetFace, available);
+                    if (targetStatus != TargetStatus.INVALID) {
+                        routes.add(new SinkRoute(neighborPosition.immutable(), targetFace,
+                                buildPath(firstPipePosition, pipePosition, predecessor), targetStatus));
+                    }
                 }
             }
         }
 
         routes.sort(Comparator
-                .comparingInt((SinkRoute route) -> route.pipePath().size())
+                .comparingInt((SinkRoute route) -> route.targetStatus().priority())
+                .thenComparingInt(route -> route.pipePath().size())
                 .thenComparingInt(route -> route.sinkPosition().getX())
                 .thenComparingInt(route -> route.sinkPosition().getZ())
                 .thenComparingInt(route -> route.sinkPosition().getY()));
         return new SearchResult(List.copyOf(routes), false);
     }
 
-    private static boolean canFillFromSide(ServerLevel level, BlockEntity sourceBlockEntity,
-                                           BlockPos position,
-                                           Direction targetFace, FluidStack available) {
+    private static TargetStatus classifyTargetFromSide(ServerLevel level,
+                                                       BlockEntity sourceBlockEntity,
+                                                       BlockPos position,
+                                                       Direction targetFace,
+                                                       FluidStack available) {
         BlockEntity blockEntity = level.getBlockEntity(position);
         if (blockEntity == null || sharesFluidStorage(sourceBlockEntity, blockEntity)) {
-            return false;
+            return TargetStatus.INVALID;
         }
         return blockEntity.getCapability(ForgeCapabilities.FLUID_HANDLER, targetFace)
-                .map(handler -> handler.fill(available, IFluidHandler.FluidAction.SIMULATE) > 0)
-                .orElse(false);
+                .map(handler -> assessTarget(handler, available).status())
+                .orElse(TargetStatus.INVALID);
+    }
+
+    private static TargetAssessment assessTarget(IFluidHandler handler, FluidStack available) {
+        int accepted = handler.fill(available, IFluidHandler.FluidAction.SIMULATE);
+        if (accepted > 0) {
+            return new TargetAssessment(TargetStatus.CAN_FILL_NOW,
+                    Math.min(accepted, available.getAmount()));
+        }
+
+        for (int tankIndex = 0; tankIndex < handler.getTanks(); tankIndex++) {
+            if (handler.getTankCapacity(tankIndex) <= 0
+                    || !handler.isFluidValid(tankIndex, available)) {
+                continue;
+            }
+            FluidStack stored = handler.getFluidInTank(tankIndex);
+            if (stored.isEmpty() || available.isFluidEqual(stored)) {
+                return new TargetAssessment(TargetStatus.BLOCKED_BUT_VALID, 0);
+            }
+        }
+        return new TargetAssessment(TargetStatus.INVALID, 0);
+    }
+
+    private static void markRouteVisual(ServerLevel level, SinkRoute route,
+                                        BlockPos sourcePosition, FluidStack fluid, boolean isFlowing) {
+        FluidStack visualFluid = fluid.copy();
+        visualFluid.setAmount(1);
+        FluidPipeVisualManager.markRoute(level, route.pipePath(), sourcePosition,
+                route.sinkPosition(), visualFluid, isFlowing);
     }
 
     private static boolean sharesFluidStorage(BlockEntity source, BlockEntity target) {
@@ -235,6 +280,26 @@ public final class FluidPipeTransfer {
     private record SearchResult(List<SinkRoute> routes, boolean limitExceeded) {
     }
 
-    private record SinkRoute(BlockPos sinkPosition, Direction sinkFace, List<BlockPos> pipePath) {
+    private record SinkRoute(BlockPos sinkPosition, Direction sinkFace, List<BlockPos> pipePath,
+                             TargetStatus targetStatus) {
+    }
+
+    private record TargetAssessment(TargetStatus status, int acceptedAmount) {
+    }
+
+    private enum TargetStatus {
+        CAN_FILL_NOW(0),
+        BLOCKED_BUT_VALID(1),
+        INVALID(2);
+
+        private final int priority;
+
+        TargetStatus(int priority) {
+            this.priority = priority;
+        }
+
+        private int priority() {
+            return priority;
+        }
     }
 }
