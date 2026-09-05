@@ -1,0 +1,11 @@
+// Headless audit against a byte-for-byte snapshot of run/tacz. Never opens the user's saves/client.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file('build/tacz-acoustic-audit/runtime')
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+            property 'afl.taczAudit.output', project.file('build/tacz-acoustic-audit/runtime-guns.json').absolutePath
+        }
+    }
+}

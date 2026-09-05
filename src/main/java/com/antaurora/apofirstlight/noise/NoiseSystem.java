@@ -10,12 +10,26 @@ public final class NoiseSystem {
     }
 
     public static void emit(NoiseEvent event) {
+        log(event);
+        if (event.source() instanceof net.minecraft.server.level.ServerPlayer player
+                && player.level() instanceof ServerLevel level) {
+            InfectedHearingSystem.handle(event, level);
+        }
+    }
+
+    public static void emit(NoiseEvent event, ServerLevel level) {
+        log(event);
+        InfectedHearingSystem.handle(event, level);
+    }
+
+    private static void log(NoiseEvent event) {
         String sourceName = event.source() instanceof Player player
                 ? player.getGameProfile().getName()
                 : event.source() == null ? "none" : event.source().getName().getString();
         String sourceId = event.sourceId() == null ? "none" : event.sourceId().toString();
         String sourceLabel = switch (event.type()) {
             case GUNSHOT -> "Gun";
+            case EXPLOSION -> "Explosion";
             case BLOCK_BREAK -> "Block";
             case FOOTSTEP, LANDING -> "Movement";
             case INTERACTION -> "Block";
@@ -26,9 +40,5 @@ public final class NoiseSystem {
                 event.type(), event.radius(), sourceName, sourceLabel, sourceId,
                 event.position().x(), event.position().y(), event.position().z()
         );
-        if (event.source() instanceof net.minecraft.server.level.ServerPlayer player
-                && player.level() instanceof ServerLevel level) {
-            InfectedHearingSystem.handle(event, level);
-        }
     }
 }
