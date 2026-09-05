@@ -6,12 +6,16 @@ import com.antaurora.apofirstlight.infected.ai.AflPlayerTargetGoal;
 import com.antaurora.apofirstlight.infected.breach.InfectedBreachGoal;
 import com.antaurora.apofirstlight.infected.breach.InfectedEntrySeekingGoal;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.living.LivingConversionEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.ZombieEvent;
 import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -26,10 +30,14 @@ public final class InfectedEvents {
     private InfectedEvents() {
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
-        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Zombie zombie)
-                || event.getEntity().getType() != EntityType.ZOMBIE) {
+        if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Zombie zombie)) {
+            return;
+        }
+        // Runs after normal spawn initialization and also for entities loaded from disk.
+        disableVanillaReinforcements(zombie);
+        if (zombie.getType() != EntityType.ZOMBIE) {
             return;
         }
         if (zombie.isBaby()) {
@@ -75,14 +83,39 @@ public final class InfectedEvents {
         );
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingConversion(LivingConversionEvent.Post event) {
+        if (event.getOutcome() instanceof Zombie zombie && !zombie.level().isClientSide()) {
+            // Zombie conversions reroll attributes after the new entity has joined the level.
+            disableVanillaReinforcements(zombie);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onZombieSummonAid(ZombieEvent.SummonAidEvent event) {
-        if (!InfectedEntityRules.hasVanillaReinforcementsDisabled(event.getEntity())) {
+        if (event.getLevel().isClientSide()
+                || !InfectedEntityRules.hasVanillaReinforcementsDisabled(event.getEntity())) {
             return;
         }
+        // Reassert the attribute rule if another system changed it after world entry.
+        disableVanillaReinforcements(event.getEntity());
         event.setResult(Event.Result.DENY);
         ApocalypseFirstLight.LOGGER.debug(
                 "[AFL INFECTED] Disabled vanilla reinforcement for Zombie={}", event.getEntity().getId()
+        );
+    }
+
+    private static void disableVanillaReinforcements(Zombie zombie) {
+        AttributeInstance chance = zombie.getAttribute(Attributes.SPAWN_REINFORCEMENTS_CHANCE);
+        if (chance == null) {
+            return;
+        }
+        // Only this dedicated attribute is cleared, including permanent leader bonuses.
+        chance.removeModifiers();
+        chance.setBaseValue(0.0D);
+        ApocalypseFirstLight.LOGGER.debug(
+                "[AFL INFECTED] Reinforcement reset Zombie={} base={} effective={} modifiers={}",
+                zombie.getId(), chance.getBaseValue(), chance.getValue(), chance.getModifiers().size()
         );
     }
 }

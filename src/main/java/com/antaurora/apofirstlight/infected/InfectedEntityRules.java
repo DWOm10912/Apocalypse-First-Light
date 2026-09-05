@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.infected;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.Level;
 
 public final class InfectedEntityRules {
@@ -21,7 +22,7 @@ public final class InfectedEntityRules {
     }
 
     public static boolean hasVanillaReinforcementsDisabled(LivingEntity entity) {
-        return isInfected(entity);
+        return entity instanceof Zombie;
     }
 
     public static boolean isDirectSunlight(LivingEntity entity) {
