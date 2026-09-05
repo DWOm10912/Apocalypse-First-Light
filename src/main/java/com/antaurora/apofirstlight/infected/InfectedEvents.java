@@ -12,7 +12,6 @@ import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.living.LivingConversionEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.ZombieEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -61,25 +60,6 @@ public final class InfectedEvents {
         zombie.targetSelector.addGoal(2, new AflPlayerTargetGoal(zombie));
         ApocalypseFirstLight.LOGGER.debug(
                 "[AFL INFECTED DEBUG] Added InvestigateNoiseGoal and AFL player vision target goal Zombie={}", zombie.getId()
-        );
-    }
-
-    @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
-        if (!(event.getEntity() instanceof Zombie zombie)
-                || !InfectedEntityRules.isSunlightImmune(zombie)
-                || !InfectedEntityRules.isDirectSunlight(zombie)
-                || !zombie.isOnFire()
-                || zombie.getRemainingFireTicks() != 160) {
-            return;
-        }
-
-        // Zombie.aiStep() uses setSecondsOnFire(8) for the vanilla sunlight burn.
-        // Only this exact fresh duration in direct sunlight is cleared; other fire
-        // durations, lava, and fire damage are intentionally left untouched.
-        zombie.clearFire();
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL INFECTED] Prevented daylight ignition for Zombie={}", zombie.getId()
         );
     }
 
