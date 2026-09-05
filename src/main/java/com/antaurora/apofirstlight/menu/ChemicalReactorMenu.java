@@ -12,15 +12,17 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
 
 public final class ChemicalReactorMenu extends AbstractContainerMenu {
     private static final MachineGuiLayout LAYOUT = MachineGuiLayouts.chemicalReactor();
-    private static final int PLAYER_INVENTORY_START = 0;
-    private static final int PLAYER_INVENTORY_END = 27;
-    private static final int HOTBAR_START = 27;
-    private static final int HOTBAR_END = 36;
+    private static final int MACHINE_SLOT_COUNT = ChemicalReactorBlockEntity.CONTAINER_SIZE;
+    private static final int PLAYER_INVENTORY_START = MACHINE_SLOT_COUNT;
+    private static final int PLAYER_INVENTORY_END = PLAYER_INVENTORY_START + 27;
+    private static final int HOTBAR_START = PLAYER_INVENTORY_END;
+    private static final int HOTBAR_END = HOTBAR_START + 9;
 
     private final ChemicalReactorBlockEntity reactor;
     private final ContainerData data;
@@ -33,9 +35,22 @@ public final class ChemicalReactorMenu extends AbstractContainerMenu {
     public ChemicalReactorMenu(int containerId, Inventory inventory, ChemicalReactorBlockEntity reactor,
                                ContainerData data) {
         super(AflMenus.CHEMICAL_REACTOR.get(), containerId);
+        checkContainerSize(reactor, ChemicalReactorBlockEntity.CONTAINER_SIZE);
         checkContainerDataCount(data, ChemicalReactorBlockEntity.DATA_COUNT);
         this.reactor = reactor;
         this.data = data;
+
+        MachineGuiLayout.Element inputSlot = LAYOUT.element("item_input_slot");
+        addSlot(new Slot(reactor, ChemicalReactorBlockEntity.INPUT_SLOT,
+                inputSlot.x(), inputSlot.y()));
+        MachineGuiLayout.Element outputSlot = LAYOUT.outputSlots().get(0);
+        addSlot(new Slot(reactor, ChemicalReactorBlockEntity.OUTPUT_SLOT,
+                outputSlot.x(), outputSlot.y()) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return false;
+            }
+        });
 
         MachineGuiLayout.Grid playerGrid = LAYOUT.playerInventory();
         for (int row = 0; row < playerGrid.rows(); row++) {
@@ -75,12 +90,20 @@ public final class ChemicalReactorMenu extends AbstractContainerMenu {
         }
         ItemStack stackInSlot = slot.getItem();
         ItemStack original = stackInSlot.copy();
-        if (slotIndex < PLAYER_INVENTORY_END) {
-            if (!moveItemStackTo(stackInSlot, HOTBAR_START, HOTBAR_END, false)) {
+        if (slotIndex < MACHINE_SLOT_COUNT) {
+            if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START, HOTBAR_END, true)) {
                 return ItemStack.EMPTY;
             }
-        } else if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START, PLAYER_INVENTORY_END, false)) {
-            return ItemStack.EMPTY;
+        } else if (!moveItemStackTo(stackInSlot, ChemicalReactorBlockEntity.INPUT_SLOT,
+                ChemicalReactorBlockEntity.INPUT_SLOT + 1, false)) {
+            if (slotIndex < PLAYER_INVENTORY_END) {
+                if (!moveItemStackTo(stackInSlot, HOTBAR_START, HOTBAR_END, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (!moveItemStackTo(stackInSlot, PLAYER_INVENTORY_START,
+                    PLAYER_INVENTORY_END, false)) {
+                return ItemStack.EMPTY;
+            }
         }
         if (stackInSlot.isEmpty()) {
             slot.setByPlayer(ItemStack.EMPTY);
@@ -116,6 +139,13 @@ public final class ChemicalReactorMenu extends AbstractContainerMenu {
 
     public int getWasteFluidCapacity() {
         return data.get(7);
+    }
+
+    public int getArrowProgress() {
+        int requiredTicks = readInt(10);
+        return requiredTicks <= 0
+                ? 0
+                : Mth.clamp((int) ((long) readInt(8) * 24 / requiredTicks), 0, 24);
     }
 
     public FluidStack getInputFluid() {

@@ -56,14 +56,22 @@ public final class AflJadeFluidFillElement extends Element {
             return;
         }
 
+        // Jade ProgressElement draws its native box first, then invokes this overlay
+        // with only the filled inner dimensions. Flush that background before atlas blits.
+        graphics.flush();
+        graphics.setColor(1, 1, 1, 1);
         int spriteY = startY + (fillHeight - SPRITE_SIZE) / 2;
         enableTransformedScissor(graphics, startX, startY,
                 startX + fillWidth, startY + fillHeight);
-        for (int tileX = startX; tileX < startX + fillWidth; tileX += SPRITE_SIZE) {
-            graphics.blit(tileX, spriteY, 0, SPRITE_SIZE, SPRITE_SIZE,
-                    sprite, red, green, blue, alpha);
+        try {
+            for (int tileX = startX; tileX < startX + fillWidth; tileX += SPRITE_SIZE) {
+                graphics.blit(tileX, spriteY, 0, SPRITE_SIZE, SPRITE_SIZE,
+                        sprite, red, green, blue, alpha);
+            }
+        } finally {
+            graphics.disableScissor();
+            graphics.setColor(1, 1, 1, 1);
         }
-        graphics.disableScissor();
     }
 
     private static void enableTransformedScissor(GuiGraphics graphics,

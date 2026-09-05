@@ -27,8 +27,7 @@ public final class ClientMachineStoredEnergyTooltip {
                 && !stack.is(AflItems.CRUSHER.get())
                 && !stack.is(AflItems.INDUSTRIAL_FURNACE.get())
                 && !stack.is(AflItems.ALLOY_FURNACE.get())
-                && !stack.is(AflItems.COMPRESSOR.get())
-                && !stack.is(AflItems.CHEMICAL_REACTOR.get())) {
+                && !stack.is(AflItems.COMPRESSOR.get())) {
             return;
         }
         int storedEnergy = MachineStoredEnergy.read(stack);

@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflBlocks;
-import com.antaurora.apofirstlight.registry.AflSounds;
 import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,10 +11,12 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -41,7 +42,7 @@ public final class IndustrialWasteAudioGameTests {
     public static void captureSound(PlayLevelSoundEvent.AtPosition event) {
         if (!recording || !(event.getLevel().getServer() instanceof GameTestServer) || event.getSound() == null) return;
         SoundEvent sound = event.getSound().value();
-        if (sound == AflSounds.INDUSTRIAL_WASTE_SPLASH.get() || sound == AflSounds.INDUSTRIAL_WASTE_SWIM.get()) {
+        if (isWaterInteractionSound(sound)) {
             SOUNDS.add(new Played(sound, event.getNewVolume(), event.getNewPitch(), event.getPosition()));
         }
     }
@@ -87,9 +88,10 @@ public final class IndustrialWasteAudioGameTests {
                 }
                 List<Played> normal = swims();
                 h.assertTrue(!normal.isEmpty() && normal.size() < 12, "Normal swim did not use distance cadence");
-                float expected = (float) Math.sqrt(0.2 * 0.2 * 0.2F) * 0.35F;
+                float normalVolume = weightedVolume(new Vec3(0.2, 0, 0), 0.35F);
                 for (Played sound : normal) {
-                    near(h, sound.volume(), expected, "Normal swim volume");
+                    h.assertTrue(sound.sound() == SoundEvents.PLAYER_SWIM, "Normal swim did not use Vanilla Player sound");
+                    near(h, sound.volume(), normalVolume, "Normal swim volume");
                     h.assertTrue(sound.pitch() >= 0.6F && sound.pitch() <= 1.4F, "Normal pitch out of vanilla range");
                 }
                 SOUNDS.clear();
@@ -100,9 +102,11 @@ public final class IndustrialWasteAudioGameTests {
                 }
                 List<Played> fast = swims();
                 h.assertTrue(!fast.isEmpty() && fast.size() < 12, "Fast swim cadence missing or per-move spam");
+                float fastVolume = weightedVolume(new Vec3(0.3, 0, 0), 0.35F);
                 for (Played sound : fast) {
-                    near(h, sound.volume(), (float) Math.sqrt(0.3 * 0.3 * 0.2F) * 0.35F * 1.15F, "Fast volume");
-                    h.assertTrue(sound.pitch() >= 0.645F && sound.pitch() <= 1.45F, "Fast pitch out of range");
+                    h.assertTrue(sound.sound() == SoundEvents.PLAYER_SWIM, "Fast swim invented a separate event");
+                    near(h, sound.volume(), fastVolume, "Fast swim volume");
+                    h.assertTrue(sound.pitch() >= 0.6F && sound.pitch() <= 1.4F, "Fast pitch out of vanilla range");
                 }
                 SOUNDS.clear();
                 for (int i = 0; i < 20; i++) {
@@ -118,7 +122,8 @@ public final class IndustrialWasteAudioGameTests {
                 player.baseTick();
                 h.assertTrue(SOUNDS.isEmpty(), "Silent entity played splash");
                 ApocalypseFirstLight.LOGGER.info("[AFL WASTE AUDIO TEST] player/cow/item entry, re-entry, firstTick, "
-                        + "small/large volume, positional single dispatch, normal/fast cadence, stop and silent passed; normal={}, fast={}",
+                        + "Vanilla small/large events and parameters, positional single dispatch, Vanilla swim cadence/parameters, "
+                        + "stop and silent passed; normal={}, fast={}",
                         normal.size(), fast.size());
                 h.succeed();
             } finally {
@@ -137,8 +142,11 @@ public final class IndustrialWasteAudioGameTests {
         entity.baseTick();
         h.assertTrue(SOUNDS.size() == 1, "Expected exactly one entry sound for " + entity.getType());
         Played large = SOUNDS.get(0);
-        h.assertTrue(large.sound() == AflSounds.INDUSTRIAL_WASTE_SPLASH.get(), "Wrong entry event");
-        near(h, large.volume(), 0.4F, "Large splash volume");
+        SoundEvent expectedLarge = entity instanceof Player
+                ? SoundEvents.PLAYER_SPLASH_HIGH_SPEED : SoundEvents.GENERIC_SPLASH;
+        h.assertTrue(large.sound() == expectedLarge, "Wrong Vanilla high-speed splash event");
+        near(h, large.volume(), 0.5F, "Large splash volume");
+        h.assertTrue(large.pitch() >= 0.6F && large.pitch() <= 1.4F, "Large splash pitch out of vanilla range");
         h.assertTrue(large.position().distanceTo(wet) < 0.001, "Sound not at entity world position");
         for (int i = 0; i < 20; i++) entity.baseTick();
         h.assertTrue(SOUNDS.size() == 1, "Repeated splash while immersed");
@@ -149,13 +157,26 @@ public final class IndustrialWasteAudioGameTests {
         entity.baseTick();
         h.assertTrue(SOUNDS.size() == 2, "Re-entry did not produce exactly one sound");
         Played small = SOUNDS.get(1);
-        h.assertTrue(small.sound() == large.sound(), "Small splash must reuse the same event");
-        near(h, small.volume(), 0.1F * 0.2F * 0.65F, "Small splash volume");
-        h.assertTrue(small.pitch() >= 0.645F && small.pitch() <= 1.45F, "Small splash pitch out of range");
+        SoundEvent expectedSmall = entity instanceof Player ? SoundEvents.PLAYER_SPLASH : SoundEvents.GENERIC_SPLASH;
+        h.assertTrue(small.sound() == expectedSmall, "Wrong Vanilla small splash event");
+        near(h, small.volume(), 0.025F, "Small splash volume");
+        h.assertTrue(small.pitch() >= 0.6F && small.pitch() <= 1.4F, "Small splash pitch out of vanilla range");
     }
 
     private static List<Played> swims() {
-        return SOUNDS.stream().filter(sound -> sound.sound() == AflSounds.INDUSTRIAL_WASTE_SWIM.get()).toList();
+        return SOUNDS.stream().filter(sound -> sound.sound() == SoundEvents.PLAYER_SWIM
+                || sound.sound() == SoundEvents.GENERIC_SWIM).toList();
+    }
+
+    private static boolean isWaterInteractionSound(SoundEvent sound) {
+        return sound == SoundEvents.PLAYER_SPLASH || sound == SoundEvents.PLAYER_SPLASH_HIGH_SPEED
+                || sound == SoundEvents.GENERIC_SPLASH || sound == SoundEvents.PLAYER_SWIM
+                || sound == SoundEvents.GENERIC_SWIM;
+    }
+
+    private static float weightedVolume(Vec3 velocity, float scale) {
+        return Math.min(1.0F, (float) Math.sqrt(velocity.x * velocity.x * 0.2F
+                + velocity.y * velocity.y + velocity.z * velocity.z * 0.2F) * scale);
     }
 
     private static void near(GameTestHelper h, float actual, float expected, String name) {

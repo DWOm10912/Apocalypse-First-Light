@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.compat.jade;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
+import net.minecraftforge.fluids.FluidStack;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
@@ -31,6 +33,10 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
     public static final String PROCESSING_TIME = "AflProcessingTime";
     public static final String PROCESSING_LANES = "AflProcessingLanes";
     public static final String PROCESSING_INPUTS = "AflProcessingInputs";
+    public static final String INPUT_FLUID = "AflInputFluid";
+    public static final String WASTE_FLUID = "AflWasteFluid";
+    public static final String FLUID_CAPACITY = "AflFluidCapacity";
+    public static final String CHEMICAL_REACTOR = "chemical_reactor";
 
     public static final String THERMAL_GENERATOR = "thermal_generator";
     public static final String ENERGY_CELL = "energy_cell";
@@ -41,6 +47,10 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
+        if (accessor.getBlockEntity() instanceof ChemicalReactorBlockEntity reactor) {
+            appendChemicalData(data, reactor);
+            return;
+        }
         if (accessor.getBlockEntity() instanceof ThermalGeneratorBlockEntity generator) {
             data.putString(MACHINE_TYPE, THERMAL_GENERATOR);
             putEnergy(data, generator.getStoredEnergy(),
@@ -164,6 +174,29 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
                 data.put(OUTPUTS, outputs);
             }
         }
+    }
+
+    public static void appendChemicalData(CompoundTag data, ChemicalReactorBlockEntity reactor) {
+        data.putString(MACHINE_TYPE, CHEMICAL_REACTOR);
+        putEnergy(data, reactor.getStoredEnergy(), reactor.getEnergyCapacity());
+        data.putInt(FLUID_CAPACITY, ChemicalReactorBlockEntity.TANK_CAPACITY_MB);
+        putFluid(data, INPUT_FLUID, reactor.getInputFluid());
+        putFluid(data, WASTE_FLUID, reactor.getWasteFluid());
+        if (reactor.getProcessingProgress() > 0) {
+            putStack(data, INPUT, reactor.getItem(ChemicalReactorBlockEntity.INPUT_SLOT));
+            data.putInt(PROCESSING_PROGRESS, reactor.getProcessingProgress());
+            data.putInt(PROCESSING_TIME, reactor.getProcessingTime());
+        }
+        ItemStack output = reactor.getItem(ChemicalReactorBlockEntity.OUTPUT_SLOT);
+        if (!output.isEmpty()) {
+            ListTag outputs = new ListTag();
+            outputs.add(output.copy().save(new CompoundTag()));
+            data.put(OUTPUTS, outputs);
+        }
+    }
+
+    private static void putFluid(CompoundTag data, String key, FluidStack fluid) {
+        if (!fluid.isEmpty()) data.put(key, fluid.writeToNBT(new CompoundTag()));
     }
 
     private static ListTag matchedAlloyInputs(AlloyingRecipe recipe, ItemStack firstSlot, ItemStack secondSlot) {

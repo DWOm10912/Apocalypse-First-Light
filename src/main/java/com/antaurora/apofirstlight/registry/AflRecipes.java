@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.recipe.CrushingRecipe;
 import com.antaurora.apofirstlight.recipe.CompressingRecipe;
 import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
+import com.antaurora.apofirstlight.recipe.ChemicalReactingRecipe;
+import com.antaurora.apofirstlight.recipe.IndustrialSmeltingRecipe;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -18,6 +20,10 @@ public final class AflRecipes {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "compressing");
     private static final ResourceLocation ALLOYING_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloying");
+    private static final ResourceLocation CHEMICAL_REACTING_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chemical_reacting");
+    private static final ResourceLocation INDUSTRIAL_SMELTING_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_smelting");
 
     public static final DeferredRegister<RecipeType<?>> RECIPE_TYPES =
             DeferredRegister.create(ForgeRegistries.RECIPE_TYPES, ApocalypseFirstLight.MOD_ID);
@@ -36,6 +42,14 @@ public final class AflRecipes {
             RECIPE_TYPES.register("alloying", () -> RecipeType.simple(ALLOYING_ID));
     public static final RegistryObject<RecipeSerializer<AlloyingRecipe>> ALLOYING_SERIALIZER =
             RECIPE_SERIALIZERS.register("alloying", AlloyingRecipe.Serializer::new);
+    public static final RegistryObject<RecipeType<ChemicalReactingRecipe>> CHEMICAL_REACTING_TYPE =
+            RECIPE_TYPES.register("chemical_reacting", () -> RecipeType.simple(CHEMICAL_REACTING_ID));
+    public static final RegistryObject<RecipeSerializer<ChemicalReactingRecipe>> CHEMICAL_REACTING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("chemical_reacting", ChemicalReactingRecipe.Serializer::new);
+    public static final RegistryObject<RecipeType<IndustrialSmeltingRecipe>> INDUSTRIAL_SMELTING_TYPE =
+            RECIPE_TYPES.register("industrial_smelting", () -> RecipeType.simple(INDUSTRIAL_SMELTING_ID));
+    public static final RegistryObject<RecipeSerializer<IndustrialSmeltingRecipe>> INDUSTRIAL_SMELTING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("industrial_smelting", IndustrialSmeltingRecipe.Serializer::new);
 
     private AflRecipes() {
     }

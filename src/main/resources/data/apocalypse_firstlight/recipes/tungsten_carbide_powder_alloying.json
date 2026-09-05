@@ -1,0 +1,22 @@
+{
+  "type": "apocalypse_firstlight:alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "apocalypse_firstlight:tungsten_powder"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "tag": "apocalypse_firstlight:steelmaking_carbon"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:tungsten_carbide_powder",
+    "count": 1
+  },
+  "processing_time": 600
+}

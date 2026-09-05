@@ -7,14 +7,18 @@ import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
 import com.antaurora.apofirstlight.fluid.FluidPortTransferBudget;
 import com.antaurora.apofirstlight.menu.ChemicalReactorMenu;
+import com.antaurora.apofirstlight.recipe.ChemicalReactingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import com.antaurora.apofirstlight.registry.AflRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.world.MenuProvider;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -24,7 +28,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -36,15 +40,25 @@ import net.minecraftforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class ChemicalReactorBlockEntity extends BlockEntity implements MenuProvider {
+public final class ChemicalReactorBlockEntity extends BaseContainerBlockEntity {
     public static final int TANK_CAPACITY_MB = 8_000;
-    public static final int DATA_COUNT = 8;
+    public static final int INPUT_SLOT = 0;
+    public static final int OUTPUT_SLOT = 1;
+    public static final int CONTAINER_SIZE = 2;
+    public static final int DATA_COUNT = 12;
 
     private static final String ENERGY_KEY = "EnergyStored";
-    private static final String INPUT_TANK_KEY = "InputTank";
-    private static final String WASTE_TANK_KEY = "WasteTank";
+    public static final String INPUT_TANK_KEY = "InputTank";
+    public static final String WASTE_TANK_KEY = "WasteTank";
+    private static final String PROGRESS_KEY = "Progress";
+    private static final String ACTIVE_RECIPE_KEY = "ActiveRecipe";
 
+    private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
     private int energyStored;
+    private int progress;
+    private int requiredTicks;
+    @Nullable
+    private ResourceLocation activeRecipeId;
     private int balanceRevision = -1;
     private long receiveBudgetTick = Long.MIN_VALUE;
     private int receivedThisTick;
@@ -129,6 +143,10 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
                 case 5 -> inputTank.getCapacity();
                 case 6 -> wasteTank.getFluidAmount();
                 case 7 -> wasteTank.getCapacity();
+                case 8 -> lowWord(progress);
+                case 9 -> highWord(progress);
+                case 10 -> lowWord(requiredTicks);
+                case 11 -> highWord(requiredTicks);
                 default -> 0;
             };
         }
@@ -138,6 +156,10 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
             switch (index) {
                 case 0 -> energyStored = withLowWord(energyStored, value);
                 case 1 -> energyStored = withHighWord(energyStored, value);
+                case 8 -> progress = withLowWord(progress, value);
+                case 9 -> progress = withHighWord(progress, value);
+                case 10 -> requiredTicks = withLowWord(requiredTicks, value);
+                case 11 -> requiredTicks = withHighWord(requiredTicks, value);
                 default -> {
                 }
             }
@@ -155,10 +177,117 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
 
     public static void serverTick(Level level, BlockPos position, BlockState state,
                                   ChemicalReactorBlockEntity reactor) {
+        boolean changed = reactor.applyCurrentBalance();
+        ChemicalReactingRecipe recipe = reactor.findRecipe(level);
+        if (recipe == null) {
+            changed |= reactor.resetProgress();
+        } else {
+            if (!recipe.getId().equals(reactor.activeRecipeId)) {
+                reactor.progress = 0;
+                reactor.activeRecipeId = recipe.getId();
+                changed = true;
+            }
+            if (reactor.requiredTicks != recipe.processingTime()) {
+                reactor.requiredTicks = recipe.processingTime();
+                changed = true;
+            }
+            if (reactor.progress >= reactor.requiredTicks) {
+                reactor.progress = reactor.requiredTicks - 1;
+                changed = true;
+            }
+
+            int workCost = MachineBalanceManager.chemicalReactor().workFePerTick();
+            if (reactor.energyStored >= workCost && reactor.canComplete(recipe)) {
+                reactor.energyStored -= workCost;
+                reactor.progress++;
+                changed = true;
+                if (reactor.progress >= reactor.requiredTicks) {
+                    reactor.completeRecipe(level, recipe);
+                }
+            }
+        }
+
         if (level instanceof ServerLevel serverLevel && !reactor.wasteTank.isEmpty()) {
             FluidPipeTransfer.transferFrom(serverLevel, reactor,
                     ChemicalReactorBlock.wasteFluidFace(state), reactor::restoreWasteFluid);
         }
+        if (changed) {
+            reactor.setChanged();
+        }
+    }
+
+    @Nullable
+    private ChemicalReactingRecipe findRecipe(Level level) {
+        ItemStack input = items.get(INPUT_SLOT);
+        if (input.isEmpty()) {
+            return null;
+        }
+        ChemicalReactingRecipe itemMatch = null;
+        for (ChemicalReactingRecipe recipe : level.getRecipeManager()
+                .getAllRecipesFor(AflRecipes.CHEMICAL_REACTING_TYPE.get())) {
+            if (recipe.itemInput().test(input)) {
+                if (itemMatch == null) {
+                    itemMatch = recipe;
+                }
+                if (recipe.matches(input, inputTank.getFluid())) {
+                    return recipe;
+                }
+            }
+        }
+        return itemMatch;
+    }
+
+    private boolean canComplete(ChemicalReactingRecipe recipe) {
+        if (!recipe.matches(items.get(INPUT_SLOT), inputTank.getFluid())) {
+            return false;
+        }
+        ItemStack result = recipe.itemOutput();
+        ItemStack output = items.get(OUTPUT_SLOT);
+        int outputLimit = Math.min(result.getMaxStackSize(), getMaxStackSize());
+        if ((!output.isEmpty() && !ItemStack.isSameItemSameTags(output, result))
+                || output.getCount() + result.getCount() > outputLimit) {
+            return false;
+        }
+        FluidStack waste = recipe.wasteOutput();
+        FluidStack storedWaste = wasteTank.getFluid();
+        return (storedWaste.isEmpty() || storedWaste.isFluidEqual(waste))
+                && wasteTank.getCapacity() - wasteTank.getFluidAmount() >= waste.getAmount();
+    }
+
+    private boolean completeRecipe(Level level, ChemicalReactingRecipe expectedRecipe) {
+        ChemicalReactingRecipe currentRecipe = findRecipe(level);
+        if (currentRecipe == null || !currentRecipe.getId().equals(expectedRecipe.getId())
+                || currentRecipe.processingTime() != expectedRecipe.processingTime()
+                || !canComplete(currentRecipe)) {
+            resetProgress();
+            return false;
+        }
+
+        ItemStack result = currentRecipe.itemOutput();
+        FluidStack fluidInput = currentRecipe.fluidInput();
+        FluidStack wasteOutput = currentRecipe.wasteOutput();
+        items.get(INPUT_SLOT).shrink(1);
+        inputTank.drain(fluidInput.getAmount(), IFluidHandler.FluidAction.EXECUTE);
+        ItemStack output = items.get(OUTPUT_SLOT);
+        if (output.isEmpty()) {
+            items.set(OUTPUT_SLOT, result.copy());
+        } else {
+            output.grow(result.getCount());
+        }
+        wasteTank.fill(wasteOutput, IFluidHandler.FluidAction.EXECUTE);
+        resetProgress();
+        setChanged();
+        return true;
+    }
+
+    private boolean resetProgress() {
+        if (progress == 0 && requiredTicks == 0 && activeRecipeId == null) {
+            return false;
+        }
+        progress = 0;
+        requiredTicks = 0;
+        activeRecipeId = null;
+        return true;
     }
 
     public int getStoredEnergy() {
@@ -168,6 +297,14 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
 
     public int getEnergyCapacity() {
         return MachineBalanceManager.chemicalReactor().capacityFe();
+    }
+
+    public int getProcessingProgress() {
+        return progress;
+    }
+
+    public int getProcessingTime() {
+        return requiredTicks;
     }
 
     public FluidStack getInputFluid() {
@@ -230,34 +367,113 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
     }
 
     @Override
-    public Component getDisplayName() {
+    protected Component getDefaultName() {
         return Component.translatable("block.apocalypse_firstlight.chemical_reactor");
     }
 
     @Override
     @Nullable
-    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+    protected AbstractContainerMenu createMenu(int containerId, Inventory inventory) {
         return new ChemicalReactorMenu(containerId, inventory, this, data);
+    }
+
+    @Override
+    public int getContainerSize() {
+        return CONTAINER_SIZE;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return items.stream().allMatch(ItemStack::isEmpty);
+    }
+
+    @Override
+    public ItemStack getItem(int slot) {
+        return items.get(slot);
+    }
+
+    @Override
+    public ItemStack removeItem(int slot, int amount) {
+        ItemStack previous = items.get(slot).copy();
+        ItemStack removed = ContainerHelper.removeItem(items, slot, amount);
+        if (!removed.isEmpty()) {
+            if (slot == INPUT_SLOT && !sameItemIdentity(previous, items.get(slot))) {
+                resetProgress();
+            }
+            setChanged();
+        }
+        return removed;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int slot) {
+        ItemStack removed = ContainerHelper.takeItem(items, slot);
+        if (!removed.isEmpty() && slot == INPUT_SLOT) {
+            resetProgress();
+        }
+        return removed;
+    }
+
+    @Override
+    public void setItem(int slot, ItemStack stack) {
+        ItemStack previous = items.get(slot).copy();
+        items.set(slot, stack);
+        if (stack.getCount() > getMaxStackSize()) {
+            stack.setCount(getMaxStackSize());
+        }
+        if (slot == INPUT_SLOT && !sameItemIdentity(previous, stack)) {
+            resetProgress();
+        }
+        setChanged();
+    }
+
+    @Override
+    public boolean canPlaceItem(int slot, ItemStack stack) {
+        return slot == INPUT_SLOT;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return net.minecraft.world.Container.stillValidBlockEntity(this, player);
+    }
+
+    @Override
+    public void clearContent() {
+        items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
+        resetProgress();
+        setChanged();
     }
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
+        items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(tag, items);
         loadingData = true;
         energyStored = Math.max(0, Math.min(tag.getInt(ENERGY_KEY),
                 MachineBalanceManager.chemicalReactor().capacityFe()));
         readTank(tag, INPUT_TANK_KEY, inputTank);
         readTank(tag, WASTE_TANK_KEY, wasteTank);
         loadingData = false;
+        progress = Math.max(0, tag.getInt(PROGRESS_KEY));
+        activeRecipeId = tag.contains(ACTIVE_RECIPE_KEY)
+                ? ResourceLocation.tryParse(tag.getString(ACTIVE_RECIPE_KEY))
+                : null;
+        requiredTicks = 0;
         balanceRevision = -1;
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
+        ContainerHelper.saveAllItems(tag, items);
         tag.putInt(ENERGY_KEY, energyStored);
         tag.put(INPUT_TANK_KEY, inputTank.writeToNBT(new CompoundTag()));
         tag.put(WASTE_TANK_KEY, wasteTank.writeToNBT(new CompoundTag()));
+        tag.putInt(PROGRESS_KEY, progress);
+        if (activeRecipeId != null) {
+            tag.putString(ACTIVE_RECIPE_KEY, activeRecipeId.toString());
+        }
     }
 
     @Override
@@ -320,6 +536,13 @@ public final class ChemicalReactorBlockEntity extends BlockEntity implements Men
 
     private static FluidStack copyFluid(FluidStack fluid) {
         return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
+    }
+
+    private static boolean sameItemIdentity(ItemStack first, ItemStack second) {
+        if (first.isEmpty() || second.isEmpty()) {
+            return first.isEmpty() && second.isEmpty();
+        }
+        return ItemStack.isSameItemSameTags(first, second);
     }
 
     private static int lowWord(int value) {

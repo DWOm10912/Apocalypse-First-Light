@@ -1,0 +1,19 @@
+{
+  "type": "apocalypse_firstlight:chemical_reacting",
+  "item_input": {
+    "item": "apocalypse_firstlight:wolframite"
+  },
+  "fluid_input": {
+    "fluid": "minecraft:water",
+    "amount": 1000
+  },
+  "item_output": {
+    "item": "apocalypse_firstlight:tungsten_oxide",
+    "count": 1
+  },
+  "waste_output": {
+    "fluid": "apocalypse_firstlight:industrial_waste",
+    "amount": 1000
+  },
+  "processing_time": 300
+}

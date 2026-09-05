@@ -5,16 +5,16 @@
   "pause_burn_when_full": true,
   "fuels": {
     "minecraft:coal": {
-      "energy_fe": 4000
+      "energy_fe": 500
     },
     "minecraft:charcoal": {
-      "energy_fe": 4000
+      "energy_fe": 500
     },
     "minecraft:coal_block": {
-      "energy_fe": 40000
+      "energy_fe": 5000
     },
     "minecraft:lava_bucket": {
-      "energy_fe": 50000,
+      "energy_fe": 20000,
       "remainder": "minecraft:bucket"
     }
   }

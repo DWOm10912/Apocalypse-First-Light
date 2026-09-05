@@ -13,6 +13,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
@@ -151,6 +152,10 @@ public final class IndustrialWasteGameTests {
                 SoundActions.BUCKET_FILL, SoundActions.BUCKET_EMPTY, SoundActions.FLUID_VAPORIZE}) {
             h.assertTrue(type.getSound(sound) == water.getSound(sound), "Water sound action mismatch: " + sound);
         }
+        h.assertTrue(type.getSound(SoundActions.BUCKET_FILL) == SoundEvents.BUCKET_FILL,
+                "Industrial Waste bucket fill must use Vanilla Water sound");
+        h.assertTrue(type.getSound(SoundActions.BUCKET_EMPTY) == SoundEvents.BUCKET_EMPTY,
+                "Industrial Waste bucket empty must use Vanilla Water sound");
         h.assertTrue(waste.getTickDelay(h.getLevel()) == Fluids.WATER.getTickDelay(h.getLevel()), "Water tick delay mismatch");
         h.assertTrue(!waste.canConvertToSource(waste.defaultFluidState(), h.getLevel(), eyeBase)
                 && !type.canConvertToSource(new FluidStack(waste, 1000)), "Source conversion must be disabled");

@@ -1,0 +1,14 @@
+{
+  "type": "apocalypse_firstlight:crushing",
+  "ingredient": {
+    "item": "apocalypse_firstlight:wolframite_ore"
+  },
+  "results": [
+    {
+      "item": "apocalypse_firstlight:wolframite",
+      "min_count": 1,
+      "max_count": 3
+    }
+  ],
+  "processing_time": 200
+}

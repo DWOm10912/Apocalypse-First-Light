@@ -20,6 +20,8 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/gui/common/energy_bar.png");
     private static final ResourceLocation ENERGY_FILL_TEXTURE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/gui/common/energy_fill_green_tile.png");
+    private static final ResourceLocation FURNACE_TEXTURE =
+            new ResourceLocation("minecraft", "textures/gui/container/furnace.png");
     private static final ResourceLocation FLUID_BAR_TEXTURE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/gui/common/fluid_bar.png");
     private static final int FLUID_BAR_TICK_U = 8;
@@ -69,6 +71,17 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
         int left = leftPos;
         int top = topPos;
         MachineGuiRenderHelper.drawVanillaStylePanel(graphics, left, top, imageWidth, imageHeight);
+        MachineGuiLayout.Element inputSlot = LAYOUT.element("item_input_slot");
+        MachineGuiRenderHelper.drawSlotFrame(graphics, left + inputSlot.x(), top + inputSlot.y());
+        MachineGuiLayout.Element outputSlot = LAYOUT.outputSlots().get(0);
+        MachineGuiRenderHelper.drawSlotFrame(graphics, left + outputSlot.x(), top + outputSlot.y());
+        MachineGuiLayout.Element arrow = LAYOUT.element("progress_arrow");
+        graphics.blit(FURNACE_TEXTURE, left + arrow.x(), top + arrow.y(), 79, 34, 24, 17);
+        int arrowProgress = menu.getArrowProgress();
+        if (arrowProgress > 0) {
+            graphics.blit(FURNACE_TEXTURE, left + arrow.x(), top + arrow.y(),
+                    176, 14, arrowProgress, 16);
+        }
         MachineGuiRenderHelper.drawGridSlotFrames(graphics, left, top, LAYOUT.playerInventory());
         MachineGuiRenderHelper.drawGridSlotFrames(graphics, left, top, LAYOUT.hotbar());
 

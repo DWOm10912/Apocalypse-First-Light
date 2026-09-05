@@ -4,11 +4,15 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.CrusherScreen;
 import com.antaurora.apofirstlight.client.CompressorScreen;
 import com.antaurora.apofirstlight.client.AlloyFurnaceScreen;
+import com.antaurora.apofirstlight.client.ChemicalReactorScreen;
+import com.antaurora.apofirstlight.client.IndustrialFurnaceScreen;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayouts;
 import com.antaurora.apofirstlight.recipe.CrushingRecipe;
 import com.antaurora.apofirstlight.recipe.CompressingRecipe;
 import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
+import com.antaurora.apofirstlight.recipe.ChemicalReactingRecipe;
+import com.antaurora.apofirstlight.recipe.IndustrialSmeltingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflRecipes;
 import mezz.jei.api.IModPlugin;
@@ -33,6 +37,10 @@ public final class AflJeiPlugin implements IModPlugin {
             RecipeType.create(ApocalypseFirstLight.MOD_ID, "compressing", CompressingRecipe.class);
     public static final RecipeType<AlloyingRecipe> ALLOYING =
             RecipeType.create(ApocalypseFirstLight.MOD_ID, "alloying", AlloyingRecipe.class);
+    public static final RecipeType<ChemicalReactingRecipe> CHEMICAL_REACTING =
+            RecipeType.create(ApocalypseFirstLight.MOD_ID, "chemical_reacting", ChemicalReactingRecipe.class);
+    public static final RecipeType<IndustrialSmeltingRecipe> INDUSTRIAL_SMELTING =
+            RecipeType.create(ApocalypseFirstLight.MOD_ID, "industrial_smelting", IndustrialSmeltingRecipe.class);
 
     private static final ResourceLocation PLUGIN_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "jei_plugin");
@@ -47,7 +55,9 @@ public final class AflJeiPlugin implements IModPlugin {
         registration.addRecipeCategories(new CrusherRecipeCategory(
                 registration.getJeiHelpers().getGuiHelper()),
                 new CompressorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
-                new AlloyFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
+                new AlloyFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new ChemicalReactorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new IndustrialSmeltingRecipeCategory(registration.getJeiHelpers().getGuiHelper()));
     }
 
     @Override
@@ -65,6 +75,10 @@ public final class AflJeiPlugin implements IModPlugin {
         List<AlloyingRecipe> alloyingRecipes = level.getRecipeManager()
                 .getAllRecipesFor(AflRecipes.ALLOYING_TYPE.get());
         registration.addRecipes(ALLOYING, alloyingRecipes);
+        registration.addRecipes(CHEMICAL_REACTING, level.getRecipeManager()
+                .getAllRecipesFor(AflRecipes.CHEMICAL_REACTING_TYPE.get()));
+        registration.addRecipes(INDUSTRIAL_SMELTING, level.getRecipeManager()
+                .getAllRecipesFor(AflRecipes.INDUSTRIAL_SMELTING_TYPE.get()));
     }
 
     @Override
@@ -72,8 +86,9 @@ public final class AflJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(AflBlocks.CRUSHER.get(), CRUSHING);
         registration.addRecipeCatalyst(AflBlocks.COMPRESSOR.get(), COMPRESSING);
         registration.addRecipeCatalyst(AflBlocks.ALLOY_FURNACE.get(), ALLOYING);
+        registration.addRecipeCatalyst(AflBlocks.CHEMICAL_REACTOR.get(), CHEMICAL_REACTING);
         registration.addRecipeCatalyst(AflBlocks.INDUSTRIAL_FURNACE.get(),
-                RecipeTypes.SMELTING, RecipeTypes.BLASTING);
+                INDUSTRIAL_SMELTING, RecipeTypes.SMELTING, RecipeTypes.BLASTING);
     }
 
     @Override
@@ -88,5 +103,16 @@ public final class AflJeiPlugin implements IModPlugin {
         MachineGuiLayout.Element alloyArrow = MachineGuiLayouts.alloyFurnace().element("progress_arrow");
         registration.addRecipeClickArea(AlloyFurnaceScreen.class,
                 alloyArrow.x(), alloyArrow.y(), alloyArrow.width(), alloyArrow.height(), ALLOYING);
+        MachineGuiLayout.Element chemicalArrow = MachineGuiLayouts.chemicalReactor().element("progress_arrow");
+        registration.addRecipeClickArea(ChemicalReactorScreen.class,
+                chemicalArrow.x(), chemicalArrow.y(), chemicalArrow.width(), chemicalArrow.height(),
+                CHEMICAL_REACTING);
+        for (int lane = 0; lane < 3; lane++) {
+            MachineGuiLayout.Element industrialArrow = MachineGuiLayouts.industrialFurnace()
+                    .element("progress_arrow_" + lane);
+            registration.addRecipeClickArea(IndustrialFurnaceScreen.class,
+                    industrialArrow.x(), industrialArrow.y(), industrialArrow.width(), industrialArrow.height(),
+                    INDUSTRIAL_SMELTING, RecipeTypes.BLASTING, RecipeTypes.SMELTING);
+        }
     }
 }

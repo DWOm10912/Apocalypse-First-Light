@@ -1,0 +1,22 @@
+{
+  "type": "apocalypse_firstlight:alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "apocalypse_firstlight:tungsten_carbide_powder"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "apocalypse_firstlight:nickel_ingot"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:cemented_carbide_ingot",
+    "count": 1
+  },
+  "processing_time": 800
+}

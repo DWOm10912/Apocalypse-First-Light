@@ -26,6 +26,26 @@
     "spacing": 18
   },
   "elements": {
+    "item_input_slot": {
+      "x": 38,
+      "y": 36,
+      "width": 16,
+      "height": 16
+    },
+    "progress_arrow": {
+      "x": 64,
+      "y": 36,
+      "width": 24,
+      "height": 17
+    },
+    "output_slots": [
+      {
+        "x": 100,
+        "y": 36,
+        "width": 16,
+        "height": 16
+      }
+    ],
     "input_fluid_bar": {
       "x": 14,
       "y": 18,

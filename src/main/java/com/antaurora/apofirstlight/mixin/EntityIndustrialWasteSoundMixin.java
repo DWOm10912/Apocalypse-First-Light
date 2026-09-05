@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.fluid.IndustrialWasteSounds;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MoverType;
@@ -19,18 +20,19 @@ public abstract class EntityIndustrialWasteSoundMixin {
     @Shadow protected boolean firstTick;
     @Shadow @Final protected RandomSource random;
     @Shadow protected abstract Entity.MovementEmission getMovementEmission();
+    @Shadow protected abstract SoundEvent getSwimSound();
+    @Shadow protected abstract SoundEvent getSwimSplashSound();
+    @Shadow protected abstract SoundEvent getSwimHighSpeedSplashSound();
     @Unique private boolean apocalypse$wasInWaste;
     @Unique private float apocalypse$nextWasteSwim = 1.0F;
     @Unique private float apocalypse$moveDistBefore;
-    @Unique private Vec3 apocalypse$positionBefore;
 
     @Inject(method = "updateInWaterStateAndDoFluidPushing()Z", at = @At("RETURN"))
     private void apocalypse$wasteEntrySound(CallbackInfoReturnable<Boolean> callback) {
         Entity entity = (Entity) (Object) this;
-        if (entity.level().isClientSide()) return;
         boolean inWaste = IndustrialWasteSounds.isInWaste(entity);
         if (inWaste && !apocalypse$wasInWaste && !firstTick) {
-            IndustrialWasteSounds.splash(entity, random);
+            IndustrialWasteSounds.splash(entity, random, getSwimSplashSound(), getSwimHighSpeedSplashSound());
         }
         apocalypse$wasInWaste = inWaste;
     }
@@ -38,15 +40,12 @@ public abstract class EntityIndustrialWasteSoundMixin {
     @Inject(method = "move", at = @At("HEAD"))
     private void apocalypse$beforeWasteMovement(MoverType type, Vec3 movement, CallbackInfo callback) {
         Entity entity = (Entity) (Object) this;
-        if (entity.level().isClientSide()) return;
         apocalypse$moveDistBefore = entity.moveDist;
-        apocalypse$positionBefore = entity.position();
     }
 
     @Inject(method = "move", at = @At("RETURN"))
     private void apocalypse$wasteSwimSound(MoverType type, Vec3 movement, CallbackInfo callback) {
         Entity entity = (Entity) (Object) this;
-        if (entity.level().isClientSide()) return;
         if (!IndustrialWasteSounds.isInWaste(entity)) {
             apocalypse$nextWasteSwim = (int) entity.moveDist + 1.0F;
             return;
@@ -57,6 +56,6 @@ public abstract class EntityIndustrialWasteSoundMixin {
                 || entity.isPassenger() || !getMovementEmission().emitsSounds()
                 || entity.level().getBlockState(entity.getOnPos()).isAir()) return;
         apocalypse$nextWasteSwim = (int) entity.moveDist + 1.0F;
-        IndustrialWasteSounds.swim(entity, entity.position().subtract(apocalypse$positionBefore), random);
+        IndustrialWasteSounds.swim(entity, random, getSwimSound());
     }
 }

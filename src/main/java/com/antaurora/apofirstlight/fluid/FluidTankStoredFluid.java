@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.fluid;
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fluids.FluidStack;
@@ -29,17 +28,8 @@ public final class FluidTankStoredFluid {
     }
 
     public static FluidStack read(ItemStack stack) {
-        CompoundTag blockEntityData = BlockItem.getBlockEntityData(stack);
-        if (blockEntityData == null || !blockEntityData.contains(FLUID_KEY, Tag.TAG_COMPOUND)) {
-            return FluidStack.EMPTY;
-        }
-
-        FluidStack stored = FluidStack.loadFluidStackFromNBT(blockEntityData.getCompound(FLUID_KEY));
-        if (stored.isEmpty() || stored.getAmount() <= 0) {
-            return FluidStack.EMPTY;
-        }
-        stored.setAmount(Math.min(FluidTankBlockEntity.CAPACITY_MB, stored.getAmount()));
-        return stored;
+        return StoredFluidTooltip.read(BlockItem.getBlockEntityData(stack), FLUID_KEY,
+                FluidTankBlockEntity.CAPACITY_MB);
     }
 
     public static void clear(ItemStack stack) {

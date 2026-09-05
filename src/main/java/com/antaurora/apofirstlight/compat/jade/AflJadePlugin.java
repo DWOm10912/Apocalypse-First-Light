@@ -1,5 +1,8 @@
 package com.antaurora.apofirstlight.compat.jade;
 
+import com.antaurora.apofirstlight.block.ChemicalReactorBlock;
+import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
+
 import com.antaurora.apofirstlight.block.CrusherBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
 import com.antaurora.apofirstlight.block.FluidTankBlock;
@@ -24,6 +27,8 @@ public final class AflJadePlugin implements IWailaPlugin {
     @Override
     public void register(IWailaCommonRegistration registration) {
         registration.registerBlockDataProvider(MachineJadeServerDataProvider.INSTANCE,
+                ChemicalReactorBlockEntity.class);
+        registration.registerBlockDataProvider(MachineJadeServerDataProvider.INSTANCE,
                 ThermalGeneratorBlockEntity.class);
         registration.registerBlockDataProvider(MachineJadeServerDataProvider.INSTANCE,
                 EnergyCellBlockEntity.class);
@@ -41,6 +46,8 @@ public final class AflJadePlugin implements IWailaPlugin {
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
+        registration.registerBlockComponent(MachineJadeComponentProvider.INSTANCE,
+                ChemicalReactorBlock.class);
         registration.registerBlockComponent(MachineJadeComponentProvider.INSTANCE,
                 ThermalGeneratorBlock.class);
         registration.registerBlockComponent(MachineJadeComponentProvider.INSTANCE,

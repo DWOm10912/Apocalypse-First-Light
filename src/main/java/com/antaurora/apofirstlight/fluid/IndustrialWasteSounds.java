@@ -1,8 +1,6 @@
 package com.antaurora.apofirstlight.fluid;
 
 import com.antaurora.apofirstlight.registry.AflFluids;
-import com.antaurora.apofirstlight.registry.AflSounds;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -11,6 +9,8 @@ import net.minecraft.world.phys.Vec3;
 
 /** Sound-only counterpart of MC 1.20.1 Entity water splash/swim calculations. */
 public final class IndustrialWasteSounds {
+    private static final float SPLASH_VOLUME_MULTIPLIER = 1.25F;
+
     private IndustrialWasteSounds() {
     }
 
@@ -20,7 +20,7 @@ public final class IndustrialWasteSounds {
     }
 
     public static boolean canSound(Entity entity) {
-        return !entity.level().isClientSide() && !entity.isSilent() && !entity.isInWater()
+        return !entity.isSilent() && !entity.isInWater()
                 && !(entity.getVehicle() instanceof Boat boat && !boat.isUnderWater());
     }
 
@@ -39,40 +39,22 @@ public final class IndustrialWasteSounds {
         return 1.0F + (random.nextFloat() - random.nextFloat()) * 0.4F;
     }
 
-    public static void splash(Entity entity, RandomSource random) {
+    public static void splash(Entity entity, RandomSource random,
+                              SoundEvent splashSound, SoundEvent highSpeedSplashSound) {
         if (!canSound(entity)) return;
         Entity owner = velocityOwner(entity);
-        float volume = weightedVolume(owner.getDeltaMovement(), owner == entity ? 0.2F : 0.9F);
-        boolean small = volume < 0.25F; // Vanilla small/high-speed splash branch.
-        float pitch = vanillaPitch(random);
-        if (small) {
-            volume *= 0.65F;
-            pitch = Math.min(1.45F, pitch * 1.075F);
-        }
-        broadcast(entity, AflSounds.INDUSTRIAL_WASTE_SPLASH.get(), volume, pitch);
+        float vanillaVolume = weightedVolume(owner.getDeltaMovement(), owner == entity ? 0.2F : 0.9F);
+        SoundEvent sound = vanillaVolume < 0.25F ? splashSound : highSpeedSplashSound;
+        float playbackVolume = Math.min(1.0F, vanillaVolume * SPLASH_VOLUME_MULTIPLIER);
+        entity.playSound(sound, playbackVolume, vanillaPitch(random));
     }
 
-    public static void swim(Entity entity, Vec3 actualMovement, RandomSource random) {
+    public static void swim(Entity entity, RandomSource random, SoundEvent swimSound) {
         if (!canSound(entity)) return;
         Entity owner = velocityOwner(entity);
-        // ServerPlayer movement arrives as position updates, not reliable horizontal deltaMovement.
-        // Use the collision-resolved displacement for that case; the vanilla weighting is unchanged.
-        Vec3 velocity = owner == entity && entity instanceof ServerPlayer
-                ? actualMovement : owner.getDeltaMovement();
+        Vec3 velocity = owner.getDeltaMovement();
         float volume = weightedVolume(velocity, owner == entity ? 0.35F : 0.4F);
         if (volume <= 0.0F) return;
-        float pitch = vanillaPitch(random);
-        // Vanilla has no separate fast-swim event/threshold: sprinting selects the requested V1 variation.
-        if (owner.isSprinting()) {
-            volume = Math.min(1.0F, volume * 1.15F);
-            pitch = Math.min(1.45F, pitch * 1.075F);
-        }
-        broadcast(entity, AflSounds.INDUSTRIAL_WASTE_SWIM.get(), volume, pitch);
-    }
-
-    private static void broadcast(Entity entity, SoundEvent sound, float volume, float pitch) {
-        // null excludes nobody: the moving player and nearby players hear the same single server event.
-        entity.level().playSound(null, entity.getX(), entity.getY(), entity.getZ(),
-                sound, entity.getSoundSource(), volume, pitch);
+        entity.playSound(swimSound, volume, vanillaPitch(random));
     }
 }

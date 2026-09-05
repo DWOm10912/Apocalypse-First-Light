@@ -1,0 +1,11 @@
+{
+  "type": "apocalypse_firstlight:industrial_smelting",
+  "ingredient": {
+    "item": "apocalypse_firstlight:tungsten_oxide"
+  },
+  "result": {
+    "item": "apocalypse_firstlight:tungsten_powder",
+    "count": 1
+  },
+  "processing_time": 300
+}

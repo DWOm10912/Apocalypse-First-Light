@@ -5,7 +5,9 @@ import com.antaurora.apofirstlight.block.IndustrialFurnaceBlock;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.menu.IndustrialFurnaceMenu;
+import com.antaurora.apofirstlight.recipe.IndustrialSmeltingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import com.antaurora.apofirstlight.registry.AflRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
@@ -174,13 +176,13 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
         int workCost = MachineBalanceManager.industrialFurnace().workFePerTickPerLane();
 
         for (int lane = 0; lane < LANE_COUNT; lane++) {
-            AbstractCookingRecipe recipe = furnace.findPreferredRecipe(level, lane);
+            LaneRecipe recipe = furnace.findPreferredRecipe(level, lane);
             if (recipe == null) {
                 changed |= furnace.resetLane(lane);
                 continue;
             }
 
-            ItemStack result = recipe.getResultItem(level.registryAccess()).copy();
+            ItemStack result = recipe.result();
             if (result.isEmpty()) {
                 changed |= furnace.resetLane(lane);
                 continue;
@@ -191,7 +193,7 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
                 changed = true;
             }
 
-            int requiredTicks = requiredTicks(recipe.getCookingTime());
+            int requiredTicks = recipe.requiredTicks();
             if (furnace.laneRequiredTicks[lane] != requiredTicks) {
                 furnace.laneRequiredTicks[lane] = requiredTicks;
                 changed = true;
@@ -232,22 +234,35 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
     }
 
     @Nullable
-    private AbstractCookingRecipe findPreferredRecipe(Level level, int lane) {
+    private LaneRecipe findPreferredRecipe(Level level, int lane) {
         return findPreferredRecipe(level, items.get(inputSlot(lane)));
     }
 
     @Nullable
-    private AbstractCookingRecipe findPreferredRecipe(Level level, ItemStack stack) {
+    private LaneRecipe findPreferredRecipe(Level level, ItemStack stack) {
         SimpleContainer input = recipeInput(stack);
         if (input.isEmpty()) {
             return null;
         }
+        IndustrialSmeltingRecipe industrialRecipe = level.getRecipeManager()
+                .getRecipeFor(AflRecipes.INDUSTRIAL_SMELTING_TYPE.get(), input, level)
+                .orElse(null);
+        if (industrialRecipe != null) {
+            return new LaneRecipe(industrialRecipe.getId(), industrialRecipe.processingTime(),
+                    industrialRecipe.processingTime(), industrialRecipe.result());
+        }
         return level.getRecipeManager().getRecipeFor(RecipeType.BLASTING, input, level)
-                .map(recipe -> (AbstractCookingRecipe) recipe)
+                .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, level))
                 .orElseGet(() -> level.getRecipeManager()
                         .getRecipeFor(RecipeType.SMELTING, input, level)
-                        .map(recipe -> (AbstractCookingRecipe) recipe)
+                        .map(recipe -> fromVanillaRecipe((AbstractCookingRecipe) recipe, level))
                         .orElse(null));
+    }
+
+    private static LaneRecipe fromVanillaRecipe(AbstractCookingRecipe recipe, Level level) {
+        return new LaneRecipe(recipe.getId(), recipe.getCookingTime(),
+                requiredTicks(recipe.getCookingTime()),
+                recipe.getResultItem(level.registryAccess()).copy());
     }
 
     private SimpleContainer recipeInput(int lane) {
@@ -260,19 +275,19 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
         return input;
     }
 
-    private boolean matchesActiveRecipe(int lane, AbstractCookingRecipe recipe, ItemStack result) {
+    private boolean matchesActiveRecipe(int lane, LaneRecipe recipe, ItemStack result) {
         ItemStack activeResult = activeResults.get(lane);
-        return recipe.getId().equals(activeRecipeIds[lane])
-                && recipe.getCookingTime() == activeCookingTimes[lane]
+        return recipe.id().equals(activeRecipeIds[lane])
+                && recipe.sourceProcessingTime() == activeCookingTimes[lane]
                 && activeResult.getCount() == result.getCount()
                 && ItemStack.isSameItemSameTags(activeResult, result);
     }
 
-    private void setActiveRecipe(int lane, AbstractCookingRecipe recipe, ItemStack result) {
+    private void setActiveRecipe(int lane, LaneRecipe recipe, ItemStack result) {
         laneProgress[lane] = 0;
         laneRequiredTicks[lane] = 0;
-        activeRecipeIds[lane] = recipe.getId();
-        activeCookingTimes[lane] = recipe.getCookingTime();
+        activeRecipeIds[lane] = recipe.id();
+        activeCookingTimes[lane] = recipe.sourceProcessingTime();
         activeResults.set(lane, result.copy());
     }
 
@@ -287,18 +302,18 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
                 <= Math.min(output.getMaxStackSize(), getMaxStackSize());
     }
 
-    private boolean completeLane(Level level, int lane, AbstractCookingRecipe expectedRecipe,
+    private boolean completeLane(Level level, int lane, LaneRecipe expectedRecipe,
                                  ItemStack expectedResult) {
-        AbstractCookingRecipe currentRecipe = findPreferredRecipe(level, lane);
+        LaneRecipe currentRecipe = findPreferredRecipe(level, lane);
         if (currentRecipe == null
-                || !currentRecipe.getId().equals(expectedRecipe.getId())
-                || !currentRecipe.matches(recipeInput(lane), level)) {
+                || !currentRecipe.id().equals(expectedRecipe.id())) {
             resetLane(lane);
             return false;
         }
 
-        ItemStack currentResult = currentRecipe.getResultItem(level.registryAccess()).copy();
-        if (currentRecipe.getCookingTime() != expectedRecipe.getCookingTime()
+        ItemStack currentResult = currentRecipe.result();
+        if (currentRecipe.sourceProcessingTime() != expectedRecipe.sourceProcessingTime()
+                || currentRecipe.requiredTicks() != expectedRecipe.requiredTicks()
                 || currentResult.getCount() != expectedResult.getCount()
                 || !ItemStack.isSameItemSameTags(currentResult, expectedResult)
                 || !canAcceptResult(lane, currentResult)) {
@@ -316,6 +331,18 @@ public final class IndustrialFurnaceBlockEntity extends BaseContainerBlockEntity
         resetLane(lane);
         rebalanceInputsIfNeeded();
         return true;
+    }
+
+    private record LaneRecipe(ResourceLocation id, int sourceProcessingTime, int requiredTicks,
+                              ItemStack result) {
+        private LaneRecipe {
+            result = result.copy();
+        }
+
+        @Override
+        public ItemStack result() {
+            return result.copy();
+        }
     }
 
     private boolean applyCurrentBalance() {

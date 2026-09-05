@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "7";
+    private static final String PROTOCOL = "8";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -49,6 +49,10 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, AlloyFurnaceBalanceSyncS2CPacket.class,
                 AlloyFurnaceBalanceSyncS2CPacket::encode, AlloyFurnaceBalanceSyncS2CPacket::decode,
                 AlloyFurnaceBalanceSyncS2CPacket::handle);
+        channel.registerMessage(nextId++, ProcessingMachineBalanceSyncS2CPacket.class,
+                ProcessingMachineBalanceSyncS2CPacket::encode,
+                ProcessingMachineBalanceSyncS2CPacket::decode,
+                ProcessingMachineBalanceSyncS2CPacket::handle);
         channel.registerMessage(nextId++, FluidPipeVisualS2CPacket.class,
                 FluidPipeVisualS2CPacket::encode, FluidPipeVisualS2CPacket::decode,
                 FluidPipeVisualS2CPacket::handle);
@@ -103,6 +107,17 @@ public final class AflNetwork {
         }
         channel.sendTo(new AlloyFurnaceBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendProcessingMachineBalance(ServerPlayer player,
+                                                    int chemicalWorkFePerTick,
+                                                    int industrialWorkFePerTickPerLane) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        channel.sendTo(new ProcessingMachineBalanceSyncS2CPacket(
+                        chemicalWorkFePerTick, industrialWorkFePerTickPerLane),
+                player.connection.connection, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
     public static void sendFluidPipeVisuals(ServerLevel level,
@@ -250,6 +265,29 @@ public final class AflNetwork {
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientAlloyFurnaceBalanceData
                             .update(packet.workFePerTick)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record ProcessingMachineBalanceSyncS2CPacket(int chemicalWorkFePerTick,
+                                                         int industrialWorkFePerTickPerLane) {
+        public static void encode(ProcessingMachineBalanceSyncS2CPacket packet,
+                                  FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.chemicalWorkFePerTick);
+            buffer.writeVarInt(packet.industrialWorkFePerTickPerLane);
+        }
+
+        public static ProcessingMachineBalanceSyncS2CPacket decode(FriendlyByteBuf buffer) {
+            return new ProcessingMachineBalanceSyncS2CPacket(buffer.readVarInt(), buffer.readVarInt());
+        }
+
+        public static void handle(ProcessingMachineBalanceSyncS2CPacket packet,
+                                  Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientProcessingMachineBalanceData
+                            .update(packet.chemicalWorkFePerTick,
+                                    packet.industrialWorkFePerTickPerLane)));
             context.setPacketHandled(true);
         }
     }

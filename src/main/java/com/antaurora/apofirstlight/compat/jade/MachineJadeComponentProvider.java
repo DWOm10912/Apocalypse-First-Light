@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.compat.jade;
 
 import com.antaurora.apofirstlight.compat.jade.client.AflJadeEnergyFillElement;
+import com.antaurora.apofirstlight.compat.jade.client.AflJadeFluidFillElement;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -46,6 +48,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
             case MachineJadeServerDataProvider.INDUSTRIAL_FURNACE -> addIndustrialFurnace(tooltip, data);
             case MachineJadeServerDataProvider.COMPRESSOR -> addCrusher(tooltip, data);
             case MachineJadeServerDataProvider.ALLOY_FURNACE -> addAlloyFurnace(tooltip, data);
+            case MachineJadeServerDataProvider.CHEMICAL_REACTOR -> addChemicalReactor(tooltip, data);
             default -> {
             }
         }
@@ -76,6 +79,11 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
     }
 
     private static void addCrusher(ITooltip tooltip, CompoundTag data) {
+        addSingleProcessing(tooltip, data);
+        addOutputs(tooltip, data);
+    }
+
+    private static void addSingleProcessing(ITooltip tooltip, CompoundTag data) {
         ItemStack input = ItemStack.EMPTY;
         if (data.contains(MachineJadeServerDataProvider.INPUT, Tag.TAG_COMPOUND)) {
             input = ItemStack.of(data.getCompound(MachineJadeServerDataProvider.INPUT));
@@ -94,8 +102,33 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
                             helper.progressStyle(), BoxStyle.DEFAULT, false)
                     .size(new Vec2(BAR_OUTER_WIDTH, BAR_OUTER_HEIGHT)));
         }
+    }
 
+    private static void addChemicalReactor(ITooltip tooltip, CompoundTag data) {
+        tooltip.remove(Identifiers.UNIVERSAL_FLUID_STORAGE);
+        tooltip.remove(Identifiers.UNIVERSAL_FLUID_STORAGE_DETAILED);
+        addFluid(tooltip, data, MachineJadeServerDataProvider.INPUT_FLUID,
+                "jade.apocalypse_firstlight.input_fluid");
+        addSingleProcessing(tooltip, data);
+        addFluid(tooltip, data, MachineJadeServerDataProvider.WASTE_FLUID,
+                "jade.apocalypse_firstlight.waste_fluid");
         addOutputs(tooltip, data);
+    }
+
+    private static void addFluid(ITooltip tooltip, CompoundTag data, String key, String label) {
+        if (!data.contains(key, Tag.TAG_COMPOUND)) return;
+        FluidStack fluid = FluidStack.loadFluidStackFromNBT(data.getCompound(key));
+        int capacity = Math.max(0, data.getInt(MachineJadeServerDataProvider.FLUID_CAPACITY));
+        if (fluid.isEmpty() || capacity <= 0) return;
+        int amount = Math.min(capacity, fluid.getAmount());
+        IElementHelper helper = tooltip.getElementHelper();
+        tooltip.add(List.of(helper.text(Component.translatable(label)), helper.spacer(4, 0),
+                helper.text(fluid.getDisplayName()), helper.spacer(4, 0),
+                helper.text(Component.translatable("jade.apocalypse_firstlight.fluid_value",
+                        formatNumber(amount), formatNumber(capacity)))));
+        tooltip.add(helper.progress((float) amount / capacity, null,
+                        helper.progressStyle().overlay(new AflJadeFluidFillElement(fluid)),
+                        BoxStyle.DEFAULT, true).size(new Vec2(BAR_OUTER_WIDTH, BAR_OUTER_HEIGHT)));
     }
 
     private static void addIndustrialFurnace(ITooltip tooltip, CompoundTag data) {

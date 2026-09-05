@@ -35,15 +35,6 @@ public final class AflSounds {
                     () -> SoundEvent.createVariableRangeEvent(
                             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloy_furnace_running")));
 
-    public static final RegistryObject<SoundEvent> INDUSTRIAL_WASTE_SPLASH =
-            SOUND_EVENTS.register("industrial_waste_splash",
-                    () -> SoundEvent.createVariableRangeEvent(
-                            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_waste_splash")));
-    public static final RegistryObject<SoundEvent> INDUSTRIAL_WASTE_SWIM =
-            SOUND_EVENTS.register("industrial_waste_swim",
-                    () -> SoundEvent.createVariableRangeEvent(
-                            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_waste_swim")));
-
     private AflSounds() {
     }
 }

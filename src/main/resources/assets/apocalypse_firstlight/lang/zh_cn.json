@@ -120,6 +120,9 @@
 
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",
   "tooltip.apocalypse_firstlight.stored_energy": "能量：%s FE",
+  "tooltip.apocalypse_firstlight.stored_energy_capacity": "能量：%s / %s FE",
+  "tooltip.apocalypse_firstlight.input_fluid": "输入液体：%s",
+  "tooltip.apocalypse_firstlight.waste_fluid": "废液：%s",
   "tooltip.apocalypse_firstlight.stored_fluid": "流体：%s",
   "tooltip.apocalypse_firstlight.stored_fluid_amount": "储量：%s / %s mB",
   "tooltip.apocalypse_firstlight.contamination.label": "放射性污染：",
@@ -128,6 +131,8 @@
   "jei.apocalypse_firstlight.category.crushing": "粉碎",
   "jei.apocalypse_firstlight.category.compressing": "压缩",
   "jei.apocalypse_firstlight.category.alloying": "合金冶炼",
+  "jei.apocalypse_firstlight.category.chemical_reacting": "化学反应",
+  "jei.apocalypse_firstlight.category.industrial_smelting": "工业冶炼",
   "jei.apocalypse_firstlight.processing_time": "加工时间：%s 秒",
   "jei.apocalypse_firstlight.total_energy": "能耗：%s FE",
   "jei.apocalypse_firstlight.output_range": "产量：%s–%s",
@@ -139,6 +144,8 @@
   "jade.apocalypse_firstlight.processing": "处理中",
   "jade.apocalypse_firstlight.empty_fluid": "空",
   "jade.apocalypse_firstlight.fluid_value": "%s / %s mB",
+  "jade.apocalypse_firstlight.input_fluid": "输入液体",
+  "jade.apocalypse_firstlight.waste_fluid": "废液",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "主手为空。",
   "command.apocalypse_firstlight.contamination.get": "物品：%1$s | 污染等级：%2$s（%3$s）",

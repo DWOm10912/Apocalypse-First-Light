@@ -114,11 +114,15 @@ public final class MachineBalanceManager {
         int crusherWorkFePerTick = crusher.workFePerTick();
         int compressorWorkFePerTick = compressor.workFePerTick();
         int alloyFurnaceWorkFePerTick = alloyFurnace.workFePerTick();
+        int chemicalWorkFePerTick = chemicalReactor.workFePerTick();
+        int industrialWorkFePerTickPerLane = industrialFurnace.workFePerTickPerLane();
         event.getPlayers().forEach(player -> {
             AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies);
             AflNetwork.sendCrusherBalance(player, crusherWorkFePerTick);
             AflNetwork.sendCompressorBalance(player, compressorWorkFePerTick);
             AflNetwork.sendAlloyFurnaceBalance(player, alloyFurnaceWorkFePerTick);
+            AflNetwork.sendProcessingMachineBalance(player, chemicalWorkFePerTick,
+                    industrialWorkFePerTickPerLane);
         });
     }
 
@@ -341,7 +345,11 @@ public final class MachineBalanceManager {
     }
 
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
-        return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
+        return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of(
+                Items.COAL, new FuelBalance(500, null),
+                Items.CHARCOAL, new FuelBalance(500, null),
+                Items.COAL_BLOCK, new FuelBalance(5_000, null),
+                Items.LAVA_BUCKET, new FuelBalance(20_000, Items.BUCKET)));
     }
 
     private static EnergyCellBalance fallbackEnergyCell() {
