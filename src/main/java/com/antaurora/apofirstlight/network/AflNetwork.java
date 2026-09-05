@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "8";
+    private static final String PROTOCOL = "9";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -56,9 +56,45 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, FluidPipeVisualS2CPacket.class,
                 FluidPipeVisualS2CPacket::encode, FluidPipeVisualS2CPacket::decode,
                 FluidPipeVisualS2CPacket::handle);
+        channel.registerMessage(nextId++, ExplosionTinnitusS2CPacket.class,
+                ExplosionTinnitusS2CPacket::encode, ExplosionTinnitusS2CPacket::decode,
+                ExplosionTinnitusS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
     private AflNetwork() {
+    }
+
+    public static void sendExplosionTinnitus(ServerPlayer player, float severity) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        channel.sendTo(new ExplosionTinnitusS2CPacket(severity, player.getId(),
+                        player.level().dimension().location()), player.connection.connection,
+                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public record ExplosionTinnitusS2CPacket(float severity, int playerId, ResourceLocation dimension) {
+        public static void encode(ExplosionTinnitusS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeFloat(packet.severity);
+            buffer.writeVarInt(packet.playerId);
+            buffer.writeResourceLocation(packet.dimension);
+        }
+
+        public static ExplosionTinnitusS2CPacket decode(FriendlyByteBuf buffer) {
+            return new ExplosionTinnitusS2CPacket(buffer.readFloat(), buffer.readVarInt(),
+                    buffer.readResourceLocation());
+        }
+
+        public static void handle(ExplosionTinnitusS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT) {
+                context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                        () -> () -> com.antaurora.apofirstlight.client.ExplosionTinnitusClientState
+                                .trigger(packet.severity, packet.playerId, packet.dimension)));
+            }
+            context.setPacketHandled(true);
+        }
     }
 
     public static void sendRadiation(ServerPlayer player, double finalRadiation) {

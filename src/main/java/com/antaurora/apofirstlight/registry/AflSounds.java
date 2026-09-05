@@ -11,6 +11,11 @@ public final class AflSounds {
     public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
             DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, ApocalypseFirstLight.MOD_ID);
 
+    public static final RegistryObject<SoundEvent> EXPLOSION_TINNITUS =
+            SOUND_EVENTS.register("explosion_tinnitus",
+                    () -> SoundEvent.createVariableRangeEvent(
+                            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "explosion_tinnitus")));
+
     public static final RegistryObject<SoundEvent> GEIGER_CLICK = SOUND_EVENTS.register("geiger_click",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_click")));

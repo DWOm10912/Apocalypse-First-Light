@@ -1,4 +1,9 @@
 {
+  "explosion_tinnitus": {
+    "sounds": [
+      "apocalypse_firstlight:explosion_tinnitus"
+    ]
+  },
   "geiger_click": {
     "sounds": [
       "apocalypse_firstlight:geiger_click"

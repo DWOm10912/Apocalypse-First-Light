@@ -1,0 +1,10 @@
+// Isolated headless verification. Never opens or manipulates the user's client/world.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file('build/tinnitus-gametest')
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+    }
+}
