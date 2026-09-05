@@ -7,6 +7,8 @@
 
   "effect.apocalypse_firstlight.radiation_sickness": "辐射病",
 
+  "fluid.apocalypse_firstlight.industrial_waste": "工业废液",
+
   "contamination_level.apocalypse_firstlight.clean": "洁净",
   "contamination_level.apocalypse_firstlight.trace": "微量",
   "contamination_level.apocalypse_firstlight.low": "轻度",
@@ -59,6 +61,7 @@
   "block.apocalypse_firstlight.power_cable": "能源线缆",
   "block.apocalypse_firstlight.fluid_pipe": "流体管道",
   "block.apocalypse_firstlight.fluid_tank": "流体储罐",
+  "block.apocalypse_firstlight.industrial_waste": "工业废液",
   "block.apocalypse_firstlight.edge_lane_white": "白色边缘线",
   "block.apocalypse_firstlight.edge_lane_yellow": "黄色边缘线",
   "block.apocalypse_firstlight.white_lane_divider": "白色车道分界线",
@@ -78,6 +81,7 @@
   "block.apocalypse_firstlight.stripped_poplar_wood": "去皮白杨木",
 
   "item.apocalypse_firstlight.steel_ingot": "钢锭",
+  "item.apocalypse_firstlight.industrial_waste_bucket": "工业废液桶",
   "item.apocalypse_firstlight.steel_sheet": "钢板",
   "item.apocalypse_firstlight.aluminum_ingot": "铝锭",
   "item.apocalypse_firstlight.aluminum_sheet": "铝板",

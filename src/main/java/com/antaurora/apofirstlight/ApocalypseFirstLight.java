@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight;
 
 import com.mojang.logging.LogUtils;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.registry.AflFluids;
 import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflLootModifiers;
@@ -36,6 +37,8 @@ public class ApocalypseFirstLight {
         AflNetwork.register();
 
         AflBlocks.BLOCKS.register(modEventBus);
+        AflFluids.FLUID_TYPES.register(modEventBus);
+        AflFluids.FLUIDS.register(modEventBus);
         AflItems.ITEMS.register(modEventBus);
         AflLootModifiers.SERIALIZERS.register(modEventBus);
         AflBlockEntities.BLOCK_ENTITIES.register(modEventBus);

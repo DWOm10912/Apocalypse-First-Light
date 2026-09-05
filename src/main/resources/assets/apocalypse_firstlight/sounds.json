@@ -1,4 +1,10 @@
 {
+  "industrial_waste_splash": {
+    "sounds": ["apocalypse_firstlight:industrial_waste_splash"]
+  },
+  "industrial_waste_swim": {
+    "sounds": ["apocalypse_firstlight:industrial_waste_swim"]
+  },
   "geiger_click": {
     "sounds": [
       "apocalypse_firstlight:geiger_click"

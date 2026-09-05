@@ -7,6 +7,8 @@
 
   "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
 
+  "fluid.apocalypse_firstlight.industrial_waste": "Industrial Waste",
+
   "contamination_level.apocalypse_firstlight.clean": "Clean",
   "contamination_level.apocalypse_firstlight.trace": "Trace",
   "contamination_level.apocalypse_firstlight.low": "Low",
@@ -59,6 +61,7 @@
   "block.apocalypse_firstlight.power_cable": "Power Cable",
   "block.apocalypse_firstlight.fluid_pipe": "Fluid Pipe",
   "block.apocalypse_firstlight.fluid_tank": "Fluid Tank",
+  "block.apocalypse_firstlight.industrial_waste": "Industrial Waste",
   "block.apocalypse_firstlight.edge_lane_white": "White Edge Line",
   "block.apocalypse_firstlight.edge_lane_yellow": "Yellow Edge Line",
   "block.apocalypse_firstlight.white_lane_divider": "White Lane Divider",
@@ -78,6 +81,7 @@
   "block.apocalypse_firstlight.stripped_poplar_wood": "Stripped Poplar Wood",
 
   "item.apocalypse_firstlight.steel_ingot": "Steel Ingot",
+  "item.apocalypse_firstlight.industrial_waste_bucket": "Industrial Waste Bucket",
   "item.apocalypse_firstlight.steel_sheet": "Steel Sheet",
   "item.apocalypse_firstlight.aluminum_ingot": "Aluminum Ingot",
   "item.apocalypse_firstlight.aluminum_sheet": "Aluminum Sheet",

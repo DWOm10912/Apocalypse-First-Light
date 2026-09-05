@@ -25,6 +25,7 @@ import com.antaurora.apofirstlight.world.PoplarTreeGrower;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
@@ -39,6 +40,9 @@ import net.minecraftforge.registries.RegistryObject;
 
 public final class AflBlocks {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, ApocalypseFirstLight.MOD_ID);
+
+    public static final RegistryObject<LiquidBlock> INDUSTRIAL_WASTE = BLOCKS.register("industrial_waste",
+            () -> new LiquidBlock(AflFluids.INDUSTRIAL_WASTE, BlockBehaviour.Properties.copy(Blocks.WATER)));
 
     public static final RegistryObject<Block> REINFORCED_CONCRETE = BLOCKS.register("reinforced_concrete",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)

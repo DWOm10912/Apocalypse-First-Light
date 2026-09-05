@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.registry.AflFluids;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraftforge.api.distmarker.Dist;
@@ -17,6 +18,8 @@ public final class AflBlockRenderTypes {
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.INDUSTRIAL_WASTE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.FLOWING_INDUSTRIAL_WASTE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_DOOR.get(), RenderType.cutout());
