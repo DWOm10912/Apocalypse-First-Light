@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "5";
+    private static final String PROTOCOL = "6";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -46,6 +46,9 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, CompressorBalanceSyncS2CPacket.class,
                 CompressorBalanceSyncS2CPacket::encode, CompressorBalanceSyncS2CPacket::decode,
                 CompressorBalanceSyncS2CPacket::handle);
+        channel.registerMessage(nextId++, AlloyFurnaceBalanceSyncS2CPacket.class,
+                AlloyFurnaceBalanceSyncS2CPacket::encode, AlloyFurnaceBalanceSyncS2CPacket::decode,
+                AlloyFurnaceBalanceSyncS2CPacket::handle);
         channel.registerMessage(nextId++, FluidPipeVisualS2CPacket.class,
                 FluidPipeVisualS2CPacket::encode, FluidPipeVisualS2CPacket::decode,
                 FluidPipeVisualS2CPacket::handle);
@@ -91,6 +94,14 @@ public final class AflNetwork {
             throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         }
         channel.sendTo(new CompressorBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
+                net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    public static void sendAlloyFurnaceBalance(ServerPlayer player, int workFePerTick) {
+        if (channel == null) {
+            throw new IllegalStateException("AFL network channel was not registered during mod initialization");
+        }
+        channel.sendTo(new AlloyFurnaceBalanceSyncS2CPacket(workFePerTick), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
@@ -219,6 +230,25 @@ public final class AflNetwork {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientCompressorBalanceData
+                            .update(packet.workFePerTick)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    public record AlloyFurnaceBalanceSyncS2CPacket(int workFePerTick) {
+        public static void encode(AlloyFurnaceBalanceSyncS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.workFePerTick);
+        }
+
+        public static AlloyFurnaceBalanceSyncS2CPacket decode(FriendlyByteBuf buffer) {
+            return new AlloyFurnaceBalanceSyncS2CPacket(buffer.readVarInt());
+        }
+
+        public static void handle(AlloyFurnaceBalanceSyncS2CPacket packet,
+                                  Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientAlloyFurnaceBalanceData
                             .update(packet.workFePerTick)));
             context.setPacketHandled(true);
         }

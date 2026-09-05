@@ -18,6 +18,5 @@
     "item": "apocalypse_firstlight:steel_ingot",
     "count": 1
   },
-  "processing_time": 200,
-  "energy_fe_per_tick": 24
+  "processing_time": 200
 }

@@ -106,10 +106,12 @@ public final class MachineBalanceManager {
         Map<ResourceLocation, Integer> fuelEnergies = thermalGeneratorFuelEnergies();
         int crusherWorkFePerTick = crusher.workFePerTick();
         int compressorWorkFePerTick = compressor.workFePerTick();
+        int alloyFurnaceWorkFePerTick = alloyFurnace.workFePerTick();
         event.getPlayers().forEach(player -> {
             AflNetwork.sendThermalGeneratorFuels(player, fuelEnergies);
             AflNetwork.sendCrusherBalance(player, crusherWorkFePerTick);
             AflNetwork.sendCompressorBalance(player, compressorWorkFePerTick);
+            AflNetwork.sendAlloyFurnaceBalance(player, alloyFurnaceWorkFePerTick);
         });
     }
 
@@ -135,7 +137,7 @@ public final class MachineBalanceManager {
     public record CompressorBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
-    public record AlloyFurnaceBalance(int capacityFe, int maxReceiveFePerTick) {
+    public record AlloyFurnaceBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
@@ -182,8 +184,9 @@ public final class MachineBalanceManager {
                     loadedCompressor.capacityFe(), loadedCompressor.maxReceiveFePerTick(),
                     loadedCompressor.workFePerTick());
             ApocalypseFirstLight.LOGGER.info(
-                    "[AFL ELECTRICITY] Alloy Furnace balance: capacity={} FE, receive={} FE/t",
-                    loadedAlloyFurnace.capacityFe(), loadedAlloyFurnace.maxReceiveFePerTick());
+                    "[AFL ELECTRICITY] Alloy Furnace balance: capacity={} FE, receive={} FE/t, work={} FE/t",
+                    loadedAlloyFurnace.capacityFe(), loadedAlloyFurnace.maxReceiveFePerTick(),
+                    loadedAlloyFurnace.workFePerTick());
 
         }
     }
@@ -295,7 +298,8 @@ public final class MachineBalanceManager {
             JsonObject root = requireObject(element, "alloy_furnace.json");
             return new AlloyFurnaceBalance(
                     requirePositiveInt(root, "capacity_fe", "alloy_furnace.json"),
-                    requirePositiveInt(root, "max_receive_fe_per_tick", "alloy_furnace.json"));
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "alloy_furnace.json"),
+                    requirePositiveInt(root, "work_fe_per_tick", "alloy_furnace.json"));
         } catch (RuntimeException exception) {
             ApocalypseFirstLight.LOGGER.error(
                     "[AFL ELECTRICITY] Invalid or missing machine_balance/alloy_furnace.json; using safe fallback: {}",
@@ -325,7 +329,7 @@ public final class MachineBalanceManager {
     }
 
     private static AlloyFurnaceBalance fallbackAlloyFurnace() {
-        return new AlloyFurnaceBalance(40_000, 64);
+        return new AlloyFurnaceBalance(40_000, 64, 24);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {

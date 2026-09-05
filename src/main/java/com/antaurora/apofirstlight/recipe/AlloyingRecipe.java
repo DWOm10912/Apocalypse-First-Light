@@ -26,15 +26,13 @@ public final class AlloyingRecipe implements Recipe<Container> {
     private final List<CountedIngredient> ingredients;
     private final ItemStack result;
     private final int processingTime;
-    private final int energyFePerTick;
 
     private AlloyingRecipe(ResourceLocation id, List<CountedIngredient> ingredients, ItemStack result,
-                           int processingTime, int energyFePerTick) {
+                           int processingTime) {
         this.id = id;
         this.ingredients = List.copyOf(ingredients);
         this.result = result.copy();
         this.processingTime = processingTime;
-        this.energyFePerTick = energyFePerTick;
     }
 
     @Override
@@ -123,10 +121,6 @@ public final class AlloyingRecipe implements Recipe<Container> {
         return processingTime;
     }
 
-    public int energyFePerTick() {
-        return energyFePerTick;
-    }
-
     public record CountedIngredient(Ingredient ingredient, int count) {
         public boolean matches(ItemStack stack) {
             return ingredient.test(stack) && stack.getCount() >= count;
@@ -157,15 +151,13 @@ public final class AlloyingRecipe implements Recipe<Container> {
 
             ItemStack result = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(root, "result"));
             int processingTime = GsonHelper.getAsInt(root, "processing_time");
-            int energyFePerTick = GsonHelper.getAsInt(root, "energy_fe_per_tick");
             if (result.isEmpty() || result.getCount() <= 0) {
                 throw new JsonParseException("Alloying recipe " + id + " result must not be empty");
             }
-            if (processingTime <= 0 || energyFePerTick <= 0) {
-                throw new JsonParseException("Alloying recipe " + id
-                        + " processing_time and energy_fe_per_tick must be > 0");
+            if (processingTime <= 0) {
+                throw new JsonParseException("Alloying recipe " + id + " processing_time must be > 0");
             }
-            return new AlloyingRecipe(id, ingredients, result, processingTime, energyFePerTick);
+            return new AlloyingRecipe(id, ingredients, result, processingTime);
         }
 
         @Override
@@ -185,11 +177,10 @@ public final class AlloyingRecipe implements Recipe<Container> {
             }
             ItemStack result = buffer.readItem();
             int processingTime = buffer.readVarInt();
-            int energyFePerTick = buffer.readVarInt();
-            if (result.isEmpty() || processingTime <= 0 || energyFePerTick <= 0) {
+            if (result.isEmpty() || processingTime <= 0) {
                 throw new IllegalArgumentException("Invalid alloying recipe " + id);
             }
-            return new AlloyingRecipe(id, ingredients, result, processingTime, energyFePerTick);
+            return new AlloyingRecipe(id, ingredients, result, processingTime);
         }
 
         @Override
@@ -201,7 +192,6 @@ public final class AlloyingRecipe implements Recipe<Container> {
             }
             buffer.writeItem(recipe.result);
             buffer.writeVarInt(recipe.processingTime);
-            buffer.writeVarInt(recipe.energyFePerTick);
         }
     }
 }

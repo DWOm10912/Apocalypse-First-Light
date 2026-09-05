@@ -159,7 +159,7 @@ public final class AlloyFurnaceBlockEntity extends BaseContainerBlockEntity {
             }
 
             ItemStack result = recipe.getResultItem(level.registryAccess());
-            int workCost = recipe.energyFePerTick();
+            int workCost = MachineBalanceManager.alloyFurnace().workFePerTick();
             if (furnace.planOutput(result) != null && furnace.energyStored >= workCost) {
                 furnace.energyStored -= workCost;
                 furnace.processingProgress++;

@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.compat.jei;
 
+import com.antaurora.apofirstlight.client.ClientAlloyFurnaceBalanceData;
 import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -99,12 +100,15 @@ public final class AlloyFurnaceRecipeCategory implements IRecipeCategory<Alloyin
         graphics.drawString(Minecraft.getInstance().font, processingTime,
                 PROCESSING_TIME_X, PROCESSING_TIME_Y, 0xFF404040, false);
 
-        long totalEnergyFe = (long) recipe.processingTime() * recipe.energyFePerTick();
-        Component totalEnergy = Component.translatable(
-                "jei.apocalypse_firstlight.total_energy",
-                String.format(Locale.ROOT, "%,d", totalEnergyFe));
-        graphics.drawString(Minecraft.getInstance().font, totalEnergy,
-                TOTAL_ENERGY_X, TOTAL_ENERGY_Y, 0xFF404040, false);
+        int workFePerTick = ClientAlloyFurnaceBalanceData.workFePerTick();
+        if (workFePerTick > 0) {
+            long totalEnergyFe = (long) recipe.processingTime() * workFePerTick;
+            Component totalEnergy = Component.translatable(
+                    "jei.apocalypse_firstlight.total_energy",
+                    String.format(Locale.ROOT, "%,d", totalEnergyFe));
+            graphics.drawString(Minecraft.getInstance().font, totalEnergy,
+                    TOTAL_ENERGY_X, TOTAL_ENERGY_Y, 0xFF404040, false);
+        }
     }
 
     @Override
