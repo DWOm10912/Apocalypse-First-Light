@@ -36,6 +36,10 @@ public final class MachineGuiLayouts {
     private static final MachineGuiLayout ALLOY_FURNACE = load(
             "alloy_furnace",
             Set.of("input_slot_a", "input_slot_b", "progress_arrow", "energy_bar", "energy_fill"), 1);
+    private static final MachineGuiLayout CHEMICAL_REACTOR = load(
+            "chemical_reactor",
+            Set.of("input_fluid_bar", "input_fluid_fill", "waste_fluid_bar", "waste_fluid_fill",
+                    "energy_bar", "energy_fill"), 0);
 
     private MachineGuiLayouts() {
     }
@@ -62,6 +66,10 @@ public final class MachineGuiLayouts {
 
     public static MachineGuiLayout alloyFurnace() {
         return ALLOY_FURNACE;
+    }
+
+    public static MachineGuiLayout chemicalReactor() {
+        return CHEMICAL_REACTOR;
     }
 
     private static MachineGuiLayout load(String name, Set<String> requiredElements, int outputSlotCount) {

@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.FluidTankBlock;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
+import com.antaurora.apofirstlight.fluid.FluidPortTransferBudget;
 import com.antaurora.apofirstlight.fluid.FluidTankStacks;
 import com.antaurora.apofirstlight.fluid.FluidTankStoredFluid;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -11,6 +12,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -19,6 +22,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidUtil;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +34,8 @@ public final class FluidTankBlockEntity extends BlockEntity {
     private boolean rebuildingTopology;
     private boolean playerBreakPrepared;
     private FluidStack preparedDropFluid = FluidStack.EMPTY;
+    private final FluidPortTransferBudget automaticInputBudget = new FluidPortTransferBudget();
+    private final FluidPortTransferBudget automaticOutputBudget = new FluidPortTransferBudget();
     private final FluidTank localTank = new FluidTank(CAPACITY_MB) {
         @Override
         protected void onContentsChanged() {
@@ -108,6 +114,10 @@ public final class FluidTankBlockEntity extends BlockEntity {
         return size;
     }
 
+    public boolean sharesFluidStorageWith(FluidTankBlockEntity other) {
+        return findControllerPosition().equals(other.findControllerPosition());
+    }
+
     public FluidStack getLocalFluidForTopology() {
         FluidStack fluid = localTank.getFluid();
         return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
@@ -169,6 +179,10 @@ public final class FluidTankBlockEntity extends BlockEntity {
             return 0;
         }
         return localTank.fill(fluid, IFluidHandler.FluidAction.EXECUTE);
+    }
+
+    public boolean interactWithFluidContainer(Player player, InteractionHand hand) {
+        return FluidUtil.interactWithFluidHandler(player, hand, resolveController().localTank);
     }
 
     public void syncAfterTopologyChange() {
@@ -343,17 +357,59 @@ public final class FluidTankBlockEntity extends BlockEntity {
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
-            return fillAllowed() ? controller().localTank.fill(resource, action) : 0;
+            if (!fillAllowed() || resource.isEmpty()) {
+                return 0;
+            }
+            FluidTankBlockEntity controller = controller();
+            int limitedAmount = controller.automaticInputBudget.limit(
+                    controller.level, resource.getAmount());
+            if (limitedAmount <= 0) {
+                return 0;
+            }
+            FluidStack limitedResource = resource.copy();
+            limitedResource.setAmount(limitedAmount);
+            int filled = controller.localTank.fill(limitedResource, action);
+            if (action == FluidAction.EXECUTE && filled > 0) {
+                controller.automaticInputBudget.record(controller.level, filled);
+            }
+            return filled;
         }
 
         @Override
         public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
-            return drainAllowed() ? controller().localTank.drain(resource, action) : FluidStack.EMPTY;
+            if (!drainAllowed() || resource.isEmpty()) {
+                return FluidStack.EMPTY;
+            }
+            FluidTankBlockEntity controller = controller();
+            int limitedAmount = controller.automaticOutputBudget.limit(
+                    controller.level, resource.getAmount());
+            if (limitedAmount <= 0) {
+                return FluidStack.EMPTY;
+            }
+            FluidStack limitedResource = resource.copy();
+            limitedResource.setAmount(limitedAmount);
+            FluidStack drained = controller.localTank.drain(limitedResource, action);
+            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
+                controller.automaticOutputBudget.record(controller.level, drained.getAmount());
+            }
+            return drained;
         }
 
         @Override
         public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
-            return drainAllowed() ? controller().localTank.drain(maxDrain, action) : FluidStack.EMPTY;
+            if (!drainAllowed()) {
+                return FluidStack.EMPTY;
+            }
+            FluidTankBlockEntity controller = controller();
+            int limitedAmount = controller.automaticOutputBudget.limit(controller.level, maxDrain);
+            if (limitedAmount <= 0) {
+                return FluidStack.EMPTY;
+            }
+            FluidStack drained = controller.localTank.drain(limitedAmount, action);
+            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
+                controller.automaticOutputBudget.record(controller.level, drained.getAmount());
+            }
+            return drained;
         }
     }
 }

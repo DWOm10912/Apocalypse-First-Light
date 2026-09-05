@@ -86,7 +86,8 @@ public final class FluidPipeBlock extends PipeBlock {
                     || firstRunAxis != secondRunAxis
                     || firstRunAxis == directionToNeighbor.getAxis();
         }
-        return canConnectToTank(neighborState, directionToNeighbor);
+        return canConnectToTank(neighborState, directionToNeighbor)
+                || canConnectToChemicalReactor(neighborState, directionToNeighbor);
     }
 
     public static BlockState withStructuralConnections(BlockGetter level, BlockPos position, BlockState state) {
@@ -128,7 +129,8 @@ public final class FluidPipeBlock extends PipeBlock {
             }
             BlockState neighborState = level.getBlockState(neighborPosition);
             if (neighborState.is(AflBlocks.FLUID_PIPE.get())
-                    || canConnectToTank(neighborState, direction)) {
+                    || canConnectToTank(neighborState, direction)
+                    || canConnectToChemicalReactor(neighborState, direction)) {
                 return true;
             }
         }
@@ -142,6 +144,16 @@ public final class FluidPipeBlock extends PipeBlock {
         return directionToNeighbor == Direction.DOWN
                 ? !neighborState.getValue(FluidTankBlock.HAS_TANK_ABOVE)
                 : !neighborState.getValue(FluidTankBlock.HAS_TANK_BELOW);
+    }
+
+    private static boolean canConnectToChemicalReactor(BlockState neighborState,
+                                                       Direction directionToNeighbor) {
+        if (!neighborState.is(AflBlocks.CHEMICAL_REACTOR.get())) {
+            return false;
+        }
+        Direction machineFace = directionToNeighbor.getOpposite();
+        return ChemicalReactorBlock.isInputFluidFace(neighborState, machineFace)
+                || ChemicalReactorBlock.isWasteFluidFace(neighborState, machineFace);
     }
 
     private static boolean shouldShowCore(BlockGetter level, BlockPos pos, BlockState state) {

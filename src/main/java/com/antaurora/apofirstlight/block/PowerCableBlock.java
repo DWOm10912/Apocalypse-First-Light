@@ -68,7 +68,8 @@ public final class PowerCableBlock extends PipeBlock {
                 || machineState.is(AflBlocks.CRUSHER.get())
                 || machineState.is(AflBlocks.INDUSTRIAL_FURNACE.get())
                 || machineState.is(AflBlocks.ALLOY_FURNACE.get())
-                || machineState.is(AflBlocks.COMPRESSOR.get()))
+                || machineState.is(AflBlocks.COMPRESSOR.get())
+                || machineState.is(AflBlocks.CHEMICAL_REACTOR.get()))
                 && face == utilityPortFace(machineState);
     }
 

@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.ToIntFunction;
 
 public final class FluidPipeTransfer {
-    public static final int TRANSFER_RATE_MB_PER_TICK = 250;
     public static final int MAX_PIPE_NODES = 512;
     private static boolean nodeLimitWarningLogged;
 
@@ -34,7 +34,6 @@ public final class FluidPipeTransfer {
     }
 
     public static int transferFrom(ServerLevel level, FluidTankBlockEntity sourceTank) {
-        BlockPos sourcePosition = sourceTank.getBlockPos();
         BlockState sourceState = sourceTank.getBlockState();
         if (!sourceTank.isController()
                 || !sourceState.getValue(FluidTankBlock.BOTTOM_CONNECTED)
@@ -42,42 +41,53 @@ public final class FluidPipeTransfer {
             return 0;
         }
 
-        Optional<IFluidHandler> sourceOptional = sourceTank
-                .getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.DOWN)
+        return transferFrom(level, sourceTank, Direction.DOWN, sourceTank::restoreControllerFluid);
+    }
+
+    public static int transferFrom(ServerLevel level, BlockEntity sourceBlockEntity,
+                                   Direction sourceFace,
+                                   ToIntFunction<FluidStack> restoreToSource) {
+        BlockPos sourcePosition = sourceBlockEntity.getBlockPos();
+
+        Optional<IFluidHandler> sourceOptional = sourceBlockEntity
+                .getCapability(ForgeCapabilities.FLUID_HANDLER, sourceFace)
                 .resolve();
         if (sourceOptional.isEmpty()) {
             return 0;
         }
 
-        BlockPos firstPipePosition = sourcePosition.below();
+        BlockPos firstPipePosition = sourcePosition.relative(sourceFace);
         if (!level.hasChunkAt(firstPipePosition)) {
             return 0;
         }
         BlockState firstPipeState = level.getBlockState(firstPipePosition);
         if (!firstPipeState.is(AflBlocks.FLUID_PIPE.get())
                 || !FluidPipeBlock.canPipeEdgeConnect(level, firstPipePosition,
-                sourcePosition, Direction.UP)) {
-            return 0;
-        }
-
-        SearchResult searchResult = findSinkRoutes(level, sourcePosition, firstPipePosition);
-        if (searchResult.limitExceeded()) {
+                sourcePosition, sourceFace.getOpposite())) {
             return 0;
         }
 
         IFluidHandler source = sourceOptional.get();
-        FluidStack available = source.drain(TRANSFER_RATE_MB_PER_TICK, IFluidHandler.FluidAction.SIMULATE);
+        FluidStack available = source.drain(
+                FluidPortTransferBudget.STANDARD_FLUID_TRANSFER_RATE_MB_PER_TICK,
+                IFluidHandler.FluidAction.SIMULATE);
         if (available.isEmpty()) {
             return 0;
         }
 
+        SearchResult searchResult = findSinkRoutes(
+                level, sourceBlockEntity, firstPipePosition, available);
+        if (searchResult.limitExceeded()) {
+            return 0;
+        }
+
         for (SinkRoute route : searchResult.routes()) {
-            BlockEntity blockEntity = level.getBlockEntity(route.sinkTopPosition());
-            if (!(blockEntity instanceof FluidTankBlockEntity sinkTank) || !sinkTank.isTopmost()) {
+            BlockEntity blockEntity = level.getBlockEntity(route.sinkPosition());
+            if (blockEntity == null) {
                 continue;
             }
-            Optional<IFluidHandler> sinkOptional = sinkTank
-                    .getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+            Optional<IFluidHandler> sinkOptional = blockEntity
+                    .getCapability(ForgeCapabilities.FLUID_HANDLER, route.sinkFace())
                     .resolve();
             if (sinkOptional.isEmpty()) {
                 continue;
@@ -89,7 +99,8 @@ public final class FluidPipeTransfer {
                 continue;
             }
 
-            FluidStack drained = source.drain(Math.min(accepted, TRANSFER_RATE_MB_PER_TICK),
+            FluidStack drained = source.drain(Math.min(accepted,
+                            FluidPortTransferBudget.STANDARD_FLUID_TRANSFER_RATE_MB_PER_TICK),
                     IFluidHandler.FluidAction.EXECUTE);
             if (drained.isEmpty()) {
                 return 0;
@@ -98,7 +109,7 @@ public final class FluidPipeTransfer {
             if (filled < drained.getAmount()) {
                 FluidStack remainder = drained.copy();
                 remainder.setAmount(drained.getAmount() - filled);
-                int restored = sourceTank.restoreControllerFluid(remainder);
+                int restored = restoreToSource.applyAsInt(remainder);
                 if (restored != remainder.getAmount()) {
                     ApocalypseFirstLight.LOGGER.error(
                             "[AFL FLUID] Transfer rollback mismatch at source {}: drained={}, filled={}, restored={}",
@@ -109,15 +120,15 @@ public final class FluidPipeTransfer {
                 FluidStack visualFluid = drained.copy();
                 visualFluid.setAmount(1);
                 FluidPipeVisualManager.markRoute(level, route.pipePath(), sourcePosition,
-                        route.sinkTopPosition(), visualFluid);
+                        route.sinkPosition(), visualFluid);
                 return filled;
             }
         }
         return 0;
     }
 
-    private static SearchResult findSinkRoutes(ServerLevel level, BlockPos sourcePosition,
-                                               BlockPos firstPipePosition) {
+    private static SearchResult findSinkRoutes(ServerLevel level, BlockEntity sourceBlockEntity,
+                                               BlockPos firstPipePosition, FluidStack available) {
         Queue<BlockPos> pending = new ArrayDeque<>();
         Set<BlockPos> visited = new HashSet<>();
         Map<BlockPos, BlockPos> predecessor = new HashMap<>();
@@ -164,11 +175,9 @@ public final class FluidPipeTransfer {
                         distance.put(immutableNeighbor, distance.get(pipePosition) + 1);
                         pending.add(immutableNeighbor);
                     }
-                } else if (direction == Direction.DOWN
-                        && neighborState.is(AflBlocks.FLUID_TANK.get())
-                        && !neighborState.getValue(FluidTankBlock.HAS_TANK_ABOVE)
-                        && neighborPosition.getY() < sourcePosition.getY()) {
-                    routes.add(new SinkRoute(neighborPosition.immutable(),
+                } else if (canFillFromSide(level, sourceBlockEntity, neighborPosition,
+                        direction.getOpposite(), available)) {
+                    routes.add(new SinkRoute(neighborPosition.immutable(), direction.getOpposite(),
                             buildPath(firstPipePosition, pipePosition, predecessor)));
                 }
             }
@@ -176,10 +185,31 @@ public final class FluidPipeTransfer {
 
         routes.sort(Comparator
                 .comparingInt((SinkRoute route) -> route.pipePath().size())
-                .thenComparingInt(route -> route.sinkTopPosition().getY())
-                .thenComparingInt(route -> route.sinkTopPosition().getX())
-                .thenComparingInt(route -> route.sinkTopPosition().getZ()));
+                .thenComparingInt(route -> route.sinkPosition().getX())
+                .thenComparingInt(route -> route.sinkPosition().getZ())
+                .thenComparingInt(route -> route.sinkPosition().getY()));
         return new SearchResult(List.copyOf(routes), false);
+    }
+
+    private static boolean canFillFromSide(ServerLevel level, BlockEntity sourceBlockEntity,
+                                           BlockPos position,
+                                           Direction targetFace, FluidStack available) {
+        BlockEntity blockEntity = level.getBlockEntity(position);
+        if (blockEntity == null || sharesFluidStorage(sourceBlockEntity, blockEntity)) {
+            return false;
+        }
+        return blockEntity.getCapability(ForgeCapabilities.FLUID_HANDLER, targetFace)
+                .map(handler -> handler.fill(available, IFluidHandler.FluidAction.SIMULATE) > 0)
+                .orElse(false);
+    }
+
+    private static boolean sharesFluidStorage(BlockEntity source, BlockEntity target) {
+        if (source == target) {
+            return true;
+        }
+        return source instanceof FluidTankBlockEntity sourceTank
+                && target instanceof FluidTankBlockEntity targetTank
+                && sourceTank.sharesFluidStorageWith(targetTank);
     }
 
     private static List<BlockPos> buildPath(BlockPos firstPipePosition, BlockPos lastPipePosition,
@@ -205,6 +235,6 @@ public final class FluidPipeTransfer {
     private record SearchResult(List<SinkRoute> routes, boolean limitExceeded) {
     }
 
-    private record SinkRoute(BlockPos sinkTopPosition, List<BlockPos> pipePath) {
+    private record SinkRoute(BlockPos sinkPosition, Direction sinkFace, List<BlockPos> pipePath) {
     }
 }

@@ -133,13 +133,6 @@ public final class FluidTankBlock extends BaseEntityBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
-        Direction side = hit.getDirection();
-        if ((side == Direction.UP && state.getValue(HAS_TANK_ABOVE))
-                || (side == Direction.DOWN && state.getValue(HAS_TANK_BELOW))
-                || side.getAxis().isHorizontal()) {
-            return InteractionResult.PASS;
-        }
-
         ItemStack heldItem = player.getItemInHand(hand);
         if (!FluidUtil.getFluidHandler(heldItem).isPresent()) {
             return InteractionResult.PASS;
@@ -149,7 +142,10 @@ public final class FluidTankBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
 
-        return FluidUtil.interactWithFluidHandler(player, hand, level, position, side)
+        if (!(level.getBlockEntity(position) instanceof FluidTankBlockEntity tank)) {
+            return InteractionResult.PASS;
+        }
+        return tank.interactWithFluidContainer(player, hand)
                 ? InteractionResult.CONSUME
                 : InteractionResult.PASS;
     }

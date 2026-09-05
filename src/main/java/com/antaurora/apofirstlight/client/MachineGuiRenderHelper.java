@@ -3,8 +3,13 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.menu.layout.MachineGuiLayout;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.minecraftforge.fluids.FluidStack;
 
 public final class MachineGuiRenderHelper {
     private static final int FILL_FRAME_SIZE = 8;
@@ -70,6 +75,48 @@ public final class MachineGuiRenderHelper {
             } finally {
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             }
+        }
+    }
+
+    public static void drawFluidFill(GuiGraphics graphics, int left, int top,
+                                     MachineGuiLayout.Element fill, FluidStack fluid,
+                                     int amount, int capacity) {
+        if (fluid.isEmpty() || amount <= 0 || capacity <= 0) {
+            return;
+        }
+        int fillHeight = Mth.clamp(Mth.ceil((double) amount * fill.height() / capacity), 1, fill.height());
+        int minX = left + fill.x();
+        int maxX = minX + fill.width();
+        int maxY = top + fill.y() + fill.height();
+        int minY = maxY - fillHeight;
+
+        IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(fluid.getFluid());
+        ResourceLocation texture = properties.getStillTexture(fluid);
+        if (texture == null) {
+            return;
+        }
+        TextureAtlasSprite sprite = Minecraft.getInstance()
+                .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                .apply(texture);
+        int tint = properties.getTintColor(fluid);
+        float alpha = (tint >>> 24 & 0xFF) / 255.0F;
+        float red = (tint >>> 16 & 0xFF) / 255.0F;
+        float green = (tint >>> 8 & 0xFF) / 255.0F;
+        float blue = (tint & 0xFF) / 255.0F;
+
+        graphics.enableScissor(minX, minY, maxX, maxY);
+        try {
+            RenderSystem.enableBlend();
+            RenderSystem.setShaderColor(red, green, blue, alpha);
+            for (int tileY = maxY - 16; tileY >= minY - 15; tileY -= 16) {
+                for (int tileX = minX; tileX < maxX; tileX += 16) {
+                    graphics.blit(tileX, tileY, 0, 16, 16, sprite);
+                }
+            }
+        } finally {
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            RenderSystem.disableBlend();
+            graphics.disableScissor();
         }
     }
 

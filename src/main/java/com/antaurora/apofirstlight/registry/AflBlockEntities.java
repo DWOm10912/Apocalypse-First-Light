@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.LeadChestBlockEntity;
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
+import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -63,6 +64,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("fluid_tank", () ->
                     BlockEntityType.Builder.of(FluidTankBlockEntity::new,
                             AflBlocks.FLUID_TANK.get()).build(null));
+    public static final RegistryObject<BlockEntityType<ChemicalReactorBlockEntity>> CHEMICAL_REACTOR =
+            BLOCK_ENTITIES.register("chemical_reactor", () ->
+                    BlockEntityType.Builder.of(ChemicalReactorBlockEntity::new,
+                            AflBlocks.CHEMICAL_REACTOR.get()).build(null));
 
     private AflBlockEntities() {
     }

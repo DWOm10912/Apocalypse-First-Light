@@ -22,6 +22,7 @@ public final class AflMenuScreens {
             MenuScreens.register(AflMenus.INDUSTRIAL_FURNACE.get(), IndustrialFurnaceScreen::new);
             MenuScreens.register(AflMenus.ALLOY_FURNACE.get(), AlloyFurnaceScreen::new);
             MenuScreens.register(AflMenus.COMPRESSOR.get(), CompressorScreen::new);
+            MenuScreens.register(AflMenus.CHEMICAL_REACTOR.get(), ChemicalReactorScreen::new);
         });
     }
 }

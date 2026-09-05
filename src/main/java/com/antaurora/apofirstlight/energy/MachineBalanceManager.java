@@ -40,6 +40,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "compressor");
     private static final ResourceLocation ALLOY_FURNACE_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloy_furnace");
+    private static final ResourceLocation CHEMICAL_REACTOR_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chemical_reactor");
 
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
@@ -47,6 +49,7 @@ public final class MachineBalanceManager {
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
     private static volatile AlloyFurnaceBalance alloyFurnace = fallbackAlloyFurnace();
+    private static volatile ChemicalReactorBalance chemicalReactor = fallbackChemicalReactor();
     private static volatile int revision;
 
     private MachineBalanceManager() {
@@ -79,6 +82,10 @@ public final class MachineBalanceManager {
 
     public static AlloyFurnaceBalance alloyFurnace() {
         return alloyFurnace;
+    }
+
+    public static ChemicalReactorBalance chemicalReactor() {
+        return chemicalReactor;
     }
 
     public static int revision() {
@@ -140,6 +147,9 @@ public final class MachineBalanceManager {
     public record AlloyFurnaceBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
+    public record ChemicalReactorBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
+    }
+
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
         private BalanceReloadListener() {
             super(GSON, "machine_balance");
@@ -155,12 +165,15 @@ public final class MachineBalanceManager {
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
             CompressorBalance loadedCompressor = loadCompressor(resources.get(COMPRESSOR_ID));
             AlloyFurnaceBalance loadedAlloyFurnace = loadAlloyFurnace(resources.get(ALLOY_FURNACE_ID));
+            ChemicalReactorBalance loadedChemicalReactor =
+                    loadChemicalReactor(resources.get(CHEMICAL_REACTOR_ID));
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
             alloyFurnace = loadedAlloyFurnace;
+            chemicalReactor = loadedChemicalReactor;
             revision++;
 
             ApocalypseFirstLight.LOGGER.info(
@@ -187,6 +200,10 @@ public final class MachineBalanceManager {
                     "[AFL ELECTRICITY] Alloy Furnace balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedAlloyFurnace.capacityFe(), loadedAlloyFurnace.maxReceiveFePerTick(),
                     loadedAlloyFurnace.workFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Chemical Reactor balance: capacity={} FE, receive={} FE/t, work={} FE/t",
+                    loadedChemicalReactor.capacityFe(), loadedChemicalReactor.maxReceiveFePerTick(),
+                    loadedChemicalReactor.workFePerTick());
 
         }
     }
@@ -308,6 +325,21 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static ChemicalReactorBalance loadChemicalReactor(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "chemical_reactor.json");
+            return new ChemicalReactorBalance(
+                    requirePositiveInt(root, "capacity_fe", "chemical_reactor.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "chemical_reactor.json"),
+                    requirePositiveInt(root, "work_fe_per_tick", "chemical_reactor.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/chemical_reactor.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackChemicalReactor();
+        }
+    }
+
     private static ThermalGeneratorBalance fallbackThermalGenerator() {
         return new ThermalGeneratorBalance(100_000, 16, 16, true, Map.of());
     }
@@ -330,6 +362,10 @@ public final class MachineBalanceManager {
 
     private static AlloyFurnaceBalance fallbackAlloyFurnace() {
         return new AlloyFurnaceBalance(40_000, 64, 24);
+    }
+
+    private static ChemicalReactorBalance fallbackChemicalReactor() {
+        return new ChemicalReactorBalance(60_000, 128, 32);
     }
 
     private static JsonObject requireObject(@Nullable JsonElement element, String context) {

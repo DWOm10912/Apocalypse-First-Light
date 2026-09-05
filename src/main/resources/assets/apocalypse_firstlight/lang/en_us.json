@@ -180,6 +180,9 @@
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "Auto Balance: On",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "Auto Balance: Off",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "Evenly distributes identical inputs across the three processing lanes.",
+  "gui.apocalypse_firstlight.chemical_reactor.input_tank": "Input Fluid",
+  "gui.apocalypse_firstlight.chemical_reactor.waste_tank": "Waste Fluid",
+  "gui.apocalypse_firstlight.chemical_reactor.empty_fluid": "Empty",
 
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."

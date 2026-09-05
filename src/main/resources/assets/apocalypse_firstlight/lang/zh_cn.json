@@ -180,6 +180,9 @@
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.enabled": "自动配平：开启",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.disabled": "自动配平：关闭",
   "gui.apocalypse_firstlight.industrial_furnace.auto_balance.description": "将相同原料自动均分到三个处理通道",
+  "gui.apocalypse_firstlight.chemical_reactor.input_tank": "输入液体",
+  "gui.apocalypse_firstlight.chemical_reactor.waste_tank": "废液",
+  "gui.apocalypse_firstlight.chemical_reactor.empty_fluid": "空",
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入"

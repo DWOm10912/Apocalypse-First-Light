@@ -1,0 +1,66 @@
+{
+  "gui": {
+    "width": 176,
+    "height": 166
+  },
+  "title": {
+    "x": 8,
+    "y": 6
+  },
+  "inventory_label": {
+    "x": 8,
+    "y": 72
+  },
+  "player_inventory": {
+    "x": 8,
+    "y": 84,
+    "columns": 9,
+    "rows": 3,
+    "spacing": 18
+  },
+  "hotbar": {
+    "x": 8,
+    "y": 142,
+    "columns": 9,
+    "rows": 1,
+    "spacing": 18
+  },
+  "elements": {
+    "input_fluid_bar": {
+      "x": 14,
+      "y": 18,
+      "width": 12,
+      "height": 54
+    },
+    "input_fluid_fill": {
+      "x": 16,
+      "y": 21,
+      "width": 8,
+      "height": 48
+    },
+    "waste_fluid_bar": {
+      "x": 126,
+      "y": 18,
+      "width": 12,
+      "height": 54
+    },
+    "waste_fluid_fill": {
+      "x": 128,
+      "y": 21,
+      "width": 8,
+      "height": 48
+    },
+    "energy_bar": {
+      "x": 150,
+      "y": 18,
+      "width": 12,
+      "height": 54
+    },
+    "energy_fill": {
+      "x": 152,
+      "y": 21,
+      "width": 8,
+      "height": 48
+    }
+  }
+}
