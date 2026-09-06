@@ -19,7 +19,8 @@ public final class InfectedBreachAuthorization {
     private InfectedBreachAuthorization() {
     }
 
-    public static void updateFromHeardNoise(Zombie zombie, NoiseEvent event, double effectiveRadius) {
+    public static void updateFromHeardNoise(Zombie zombie, NoiseEvent event, double effectiveRadius,
+                                            long targetCreatedGameTime) {
         if (effectiveRadius < HIGH_INTENSITY_BREACH_THRESHOLD) {
             clearNoiseAuthorization(zombie, "LowIntensityNoise");
             return;
@@ -27,7 +28,7 @@ public final class InfectedBreachAuthorization {
         InfectedBreachContext context = new InfectedBreachContext(
                 event.position(),
                 InfectedBreachContext.Source.HIGH_INTENSITY_NOISE,
-                event.gameTime(),
+                targetCreatedGameTime,
                 event.type().name()
         );
         NOISE_CONTEXTS.put(zombie, context);

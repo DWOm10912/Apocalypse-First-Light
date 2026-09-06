@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.infected.perception;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.InfectedEntityRules;
+import com.antaurora.apofirstlight.infected.ai.InfectedAiDiagnostics;
 import com.antaurora.apofirstlight.infected.breach.InfectedBreachAuthorization;
 import com.antaurora.apofirstlight.noise.AcousticOcclusionResolver;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
@@ -47,9 +48,12 @@ public final class InfectedHearingSystem {
             }
             boolean wasSearching = InfectedHearingState.phase(infected) == InfectedHearingState.Phase.SEARCHING;
             Vec3 previousPosition = InfectedHearingState.lastHeardPosition(infected);
-            InfectedHearingState.hear(infected, position, event.gameTime(), event.type().name());
+            InfectedHearingState.HearResult hearResult = InfectedHearingState.hear(
+                    infected, position, event.gameTime(), event.type().name());
+            InfectedAiDiagnostics.noiseTargetUpdate(level, hearResult.duplicateRefreshSuppressed());
             if (infected instanceof Zombie zombie) {
-                InfectedBreachAuthorization.updateFromHeardNoise(zombie, event, effectiveRadius);
+                InfectedBreachAuthorization.updateFromHeardNoise(
+                        zombie, event, effectiveRadius, InfectedHearingState.heardGameTime(zombie));
             }
             if (acoustic.woolLayers() > 0) ApocalypseFirstLight.LOGGER.debug(
                     "[AFL ACOUSTIC] type={} base={} woolLayers={} effective={} listener={}",
@@ -59,7 +63,8 @@ public final class InfectedHearingSystem {
                     infected.getId(), wasSearching ? "SEARCHING" : "IDLE_OR_INVESTIGATING",
                     position.x(), position.y(), position.z()
             );
-            if (wasSearching && (previousPosition == null || previousPosition.distanceToSqr(position) > 4.0)) {
+            if (wasSearching && hearResult.targetReplaced()
+                    && (previousPosition == null || previousPosition.distanceToSqr(position) > 4.0)) {
                 ApocalypseFirstLight.LOGGER.debug(
                         "[AFL SEARCH] Zombie={} InterruptedByNoise NewPos=({}, {}, {})",
                         infected.getId(), position.x(), position.y(), position.z()

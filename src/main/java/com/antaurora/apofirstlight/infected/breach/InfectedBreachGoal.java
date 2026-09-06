@@ -1,7 +1,10 @@
 package com.antaurora.apofirstlight.infected.breach;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.infected.ai.InfectedAiDiagnostics;
+import com.antaurora.apofirstlight.infected.ai.InfectedAiScheduler;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.ai.goal.Goal;
@@ -16,12 +19,18 @@ import java.util.EnumSet;
 /** Breaks only a directly blocking, explicitly approved block during visual pursuit. */
 public final class InfectedBreachGoal extends Goal {
     private static final double MAX_OBSTACLE_DISTANCE = 2.0;
+    public static final int SCAN_COOLDOWN_MIN_TICKS = 10;
+    public static final int SCAN_COOLDOWN_MAX_TICKS = 20;
+    public static final int FAILED_SCAN_COOLDOWN_MIN_TICKS = 20;
+    public static final int FAILED_SCAN_COOLDOWN_MAX_TICKS = 40;
 
     private final Zombie zombie;
     private BlockPos breachPos;
     private int breakTicks;
     private int requiredTicks;
     private int lastCrackStage = -1;
+    private long nextScanTick = Long.MIN_VALUE;
+    private long diagnosticScanCount;
 
     public InfectedBreachGoal(Zombie zombie) {
         this.zombie = zombie;
@@ -30,8 +39,24 @@ public final class InfectedBreachGoal extends Goal {
 
     @Override
     public boolean canUse() {
+        long now = zombie.level().getGameTime();
+        if (nextScanTick == Long.MIN_VALUE) {
+            nextScanTick = now + InfectedAiScheduler.stableOffset(zombie, SCAN_COOLDOWN_MAX_TICKS + 1);
+        }
+        if (now < nextScanTick) {
+            return false;
+        }
+        scheduleNextScan(now, SCAN_COOLDOWN_MIN_TICKS, SCAN_COOLDOWN_MAX_TICKS);
+        diagnosticScanCount++;
+        if (zombie.level() instanceof ServerLevel level) {
+            InfectedAiDiagnostics.obstacleScan(level);
+        }
         BlockPos obstacle = findDirectObstacle();
         if (obstacle == null) {
+            scheduleNextScan(now, FAILED_SCAN_COOLDOWN_MIN_TICKS, FAILED_SCAN_COOLDOWN_MAX_TICKS);
+            return false;
+        }
+        if (!InfectedBreakerClaims.tryClaim(zombie, obstacle)) {
             return false;
         }
         breachPos = obstacle;
@@ -40,9 +65,10 @@ public final class InfectedBreachGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        BlockPos directObstacle = findDirectObstacle();
-        return breachPos != null && isBreachAuthorized() && InfectedBreachRules.canBreak(zombie.level().getBlockState(breachPos))
-                && breachPos.equals(directObstacle);
+        return breachPos != null && isBreachAuthorized()
+                && isDirectBlockingObstacle(breachPos, zombie.level().getBlockState(breachPos))
+                && zombie.position().distanceToSqr(Vec3.atCenterOf(breachPos)) <= 9.0
+                && InfectedBreakerClaims.ownsAndRefreshes(zombie, breachPos);
     }
 
     @Override
@@ -75,10 +101,15 @@ public final class InfectedBreachGoal extends Goal {
         }
         if (breakTicks >= requiredTicks) {
             zombie.level().destroyBlockProgress(zombie.getId(), breachPos, -1);
-            zombie.level().destroyBlock(breachPos, false, zombie);
-            ApocalypseFirstLight.LOGGER.debug("[AFL BREACH] Zombie={} Broken pos={}", zombie.getId(), breachPos);
-            InfectedEntrySeekingSystem.onEntryBreachCompleted(zombie, breachPos);
+            BlockPos completed = breachPos;
+            zombie.level().destroyBlock(completed, false, zombie);
+            ApocalypseFirstLight.LOGGER.debug("[AFL BREACH] Zombie={} Broken pos={}", zombie.getId(), completed);
+            InfectedEntrySeekingSystem.onEntryBreachCompleted(zombie, completed);
+            InfectedBreakerClaims.release(zombie, completed);
             breachPos = null;
+            if (zombie.level() instanceof ServerLevel level) {
+                InfectedAiDiagnostics.pathAttempt(level);
+            }
             zombie.getNavigation().recomputePath();
         }
     }
@@ -90,10 +121,13 @@ public final class InfectedBreachGoal extends Goal {
         }
         if (breachPos != null) {
             ApocalypseFirstLight.LOGGER.debug("[AFL BREACH] Zombie={} Cancel pos={}", zombie.getId(), breachPos);
+            InfectedBreakerClaims.release(zombie, breachPos);
         }
         breachPos = null;
         breakTicks = 0;
         lastCrackStage = -1;
+        scheduleNextScan(zombie.level().getGameTime(), FAILED_SCAN_COOLDOWN_MIN_TICKS,
+                FAILED_SCAN_COOLDOWN_MAX_TICKS);
     }
 
     private BlockPos findDirectObstacle() {
@@ -135,5 +169,14 @@ public final class InfectedBreachGoal extends Goal {
     private boolean isBreachAuthorized() {
         return InfectedBreachAuthorization.getBreachContext(zombie) != null
                 && ForgeEventFactory.getMobGriefingEvent(zombie.level(), zombie);
+    }
+
+    private void scheduleNextScan(long now, int minimumTicks, int maximumTicks) {
+        nextScanTick = now + InfectedAiScheduler.staggeredDelay(zombie, minimumTicks, maximumTicks);
+    }
+
+    /** DEV/GameTest-local evidence that does not depend on shared level diagnostics. */
+    public long diagnosticScanCount() {
+        return diagnosticScanCount;
     }
 }

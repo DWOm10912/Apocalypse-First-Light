@@ -66,6 +66,11 @@ public final class AflNetwork {
     }
 
     public static void sendExplosionTinnitus(ServerPlayer player, float severity) {
+        sendTinnitusImpulse(player, severity);
+    }
+
+    /** Shared one-shot tinnitus impulse used by independent explosion and gunshot server calculations. */
+    public static void sendTinnitusImpulse(ServerPlayer player, float severity) {
         if (channel == null) {
             throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         }

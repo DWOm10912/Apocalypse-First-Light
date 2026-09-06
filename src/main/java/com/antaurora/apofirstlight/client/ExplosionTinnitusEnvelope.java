@@ -4,7 +4,7 @@ import com.antaurora.apofirstlight.explosion.ExplosionTinnitusProfile;
 
 /** Small, non-persistent timeline; independent of rendering/audio APIs for deterministic tests. */
 public final class ExplosionTinnitusEnvelope {
-    public enum TriggerResult { IGNORE, RESTART, EXTEND }
+    public enum TriggerResult { IGNORE, START, STRENGTHEN, EXTEND }
 
     private float severity;
     private int elapsedTicks;
@@ -22,12 +22,18 @@ public final class ExplosionTinnitusEnvelope {
     }
 
     private TriggerResult triggerAccepted(float incoming) {
-        if (!active() || incoming > severity) {
-            int remaining = Math.max(0, durationTicks - elapsedTicks);
+        if (!active()) {
             severity = incoming;
             elapsedTicks = 0;
-            durationTicks = Math.max(remaining, ExplosionTinnitusProfile.durationTicks(incoming));
-            return TriggerResult.RESTART;
+            durationTicks = ExplosionTinnitusProfile.durationTicks(incoming);
+            return TriggerResult.START;
+        }
+        if (incoming > severity) {
+            int remaining = remainingTicks();
+            severity = incoming;
+            durationTicks = Math.min(ExplosionTinnitusProfile.MAX_PLAYBACK_TICKS,
+                    elapsedTicks + Math.max(remaining, ExplosionTinnitusProfile.durationTicks(incoming)));
+            return TriggerResult.STRENGTHEN;
         }
         durationTicks = Math.min(ExplosionTinnitusProfile.MAX_PLAYBACK_TICKS,
                 durationTicks + ExplosionTinnitusProfile.WEAK_EXTENSION_TICKS);

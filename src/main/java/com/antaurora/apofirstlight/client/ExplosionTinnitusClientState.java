@@ -20,6 +20,7 @@ public final class ExplosionTinnitusClientState {
     private static ClientLevel trackedLevel;
     private static LocalPlayer trackedPlayer;
     private static ExplosionTinnitusSound activeSound;
+    private static boolean episodeActive;
 
     private ExplosionTinnitusClientState() {}
 
@@ -31,9 +32,9 @@ public final class ExplosionTinnitusClientState {
         trackedLevel = mc.level;
         trackedPlayer = mc.player;
         OVERLAY_ENVELOPE.triggerOverlay(severity);
-        if (ENVELOPE.trigger(severity) == ExplosionTinnitusEnvelope.TriggerResult.RESTART) {
-            // Stop in SoundManager too, before play(): never leave two OpenAL channels ringing.
-            stopSound();
+        if (ENVELOPE.trigger(severity) == ExplosionTinnitusEnvelope.TriggerResult.START
+                && !episodeActive) {
+            episodeActive = true;
             activeSound = new ExplosionTinnitusSound(ENVELOPE);
             mc.getSoundManager().play(activeSound);
         }
@@ -52,6 +53,7 @@ public final class ExplosionTinnitusClientState {
         ENVELOPE.tick();
         OVERLAY_ENVELOPE.tick();
         if (!ENVELOPE.active()) stopSound();
+        if (!ENVELOPE.active() && !OVERLAY_ENVELOPE.active()) episodeActive = false;
     }
 
     public static float overlayAlpha(float partialTick) {
@@ -83,6 +85,7 @@ public final class ExplosionTinnitusClientState {
         stopSound();
         ENVELOPE.clear();
         OVERLAY_ENVELOPE.clear();
+        episodeActive = false;
         trackedLevel = null;
         trackedPlayer = null;
     }

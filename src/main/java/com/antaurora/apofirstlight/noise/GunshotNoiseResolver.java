@@ -76,12 +76,39 @@ public final class GunshotNoiseResolver {
     }
 
     public static double resolveRadius(ItemStack gunStack, ResourceLocation gunId) {
+        return resolveZombieNoiseRadius(gunStack, gunId);
+    }
+
+    public static double resolveBaseRadius(ResourceLocation gunId) {
         Double explicitRadius = REFERENCE_RADII.get(gunId);
         CommonGunIndex gunIndex = TimelessAPI.getCommonGunIndex(gunId).orElse(null);
-        double baseRadius = explicitRadius != null
+        return explicitRadius != null
                 ? explicitRadius
                 : gunIndex == null ? 80.0 : fallbackRadius(gunIndex);
-        return Math.max(MIN_RADIUS, baseRadius + resolveSilenceDistanceAddend(gunStack));
+    }
+
+    /**
+     * Acoustic input retained for player tinnitus. This is the pre-V1 resolver
+     * result and deliberately does not inherit the infected-only suppressor cap.
+     */
+    public static double resolveAcousticRadius(ItemStack gunStack, ResourceLocation gunId) {
+        double baseRadius = resolveBaseRadius(gunId);
+        return Math.max(MIN_RADIUS, baseRadius + resolveMuzzleSilence(gunStack).distanceAddend());
+    }
+
+    public static double resolveZombieNoiseRadius(ItemStack gunStack, ResourceLocation gunId) {
+        double baseRadius = resolveBaseRadius(gunId);
+        MuzzleSilence silence = resolveMuzzleSilence(gunStack);
+        double taczModified = baseRadius + silence.distanceAddend();
+        if (silence.trueSuppressor()) {
+            return applyTrueSuppressorCap(baseRadius, taczModified);
+        }
+        return Math.max(MIN_RADIUS, taczModified);
+    }
+
+    static double applyTrueSuppressorCap(double baseRadius, double taczModified) {
+        double suppressedCap = Math.max(MIN_RADIUS, Math.round(baseRadius * 0.10));
+        return Math.max(MIN_RADIUS, Math.min(taczModified, suppressedCap));
     }
 
     private static Map.Entry<ResourceLocation, Double> radius(String gunPath, double radius) {
@@ -101,26 +128,42 @@ public final class GunshotNoiseResolver {
         };
     }
 
-    private static double resolveSilenceDistanceAddend(ItemStack gunStack) {
+    public static boolean isTrueSuppressor(ResourceLocation attachmentId) {
+        return resolveAttachmentSilence(attachmentId).trueSuppressor();
+    }
+
+    public static boolean isTrueSuppressor(ItemStack gunStack) {
+        return resolveMuzzleSilence(gunStack).trueSuppressor();
+    }
+
+    private static MuzzleSilence resolveMuzzleSilence(ItemStack gunStack) {
         IGun gun = IGun.getIGunOrNull(gunStack);
         if (gun == null) {
-            return 0.0;
+            return MuzzleSilence.NONE;
         }
         ResourceLocation attachmentId = gun.getAttachmentId(gunStack, AttachmentType.MUZZLE);
         if (attachmentId == null || attachmentId.equals(new ResourceLocation("tacz", "empty"))) {
-            return 0.0;
+            return MuzzleSilence.NONE;
         }
+        return resolveAttachmentSilence(attachmentId);
+    }
+
+    private static MuzzleSilence resolveAttachmentSilence(ResourceLocation attachmentId) {
         CommonAttachmentIndex attachment = TimelessAPI.getCommonAttachmentIndex(attachmentId).orElse(null);
         if (attachment == null || attachment.getData() == null) {
-            return 0.0;
+            return MuzzleSilence.NONE;
         }
         JsonProperty<?> silence = attachment.getData().getModifier().get("silence");
         if (silence == null || !(silence.getValue() instanceof Pair<?, ?> pair)) {
-            return 0.0;
+            return MuzzleSilence.NONE;
         }
         if (pair.left() instanceof Modifier modifier) {
-            return modifier.getAddend();
+            return new MuzzleSilence(modifier.getAddend(), Boolean.TRUE.equals(pair.right()));
         }
-        return 0.0;
+        return MuzzleSilence.NONE;
+    }
+
+    private record MuzzleSilence(double distanceAddend, boolean trueSuppressor) {
+        private static final MuzzleSilence NONE = new MuzzleSilence(0.0, false);
     }
 }

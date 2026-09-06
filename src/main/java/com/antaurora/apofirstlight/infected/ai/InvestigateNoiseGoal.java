@@ -4,9 +4,11 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.breach.InfectedBreachAuthorization;
 import com.antaurora.apofirstlight.infected.perception.InfectedHearingState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -25,10 +27,16 @@ public final class InvestigateNoiseGoal extends Goal {
     public static final double SEARCH_MOVE_SPEED = 1.0;
     public static final double SEARCH_ARRIVAL_DISTANCE = 2.5;
     private static final int SEARCH_ATTEMPTS_PER_POINT = 8;
+    public static final int INITIAL_PATH_STAGGER_SLOTS = 10;
+    public static final int FAILED_PATH_COOLDOWN_MIN_TICKS = 30;
+    public static final int FAILED_PATH_COOLDOWN_MAX_TICKS = 40;
 
     private final Zombie zombie;
     private Vec3 activeDestination;
     private boolean reportedCanUse;
+    private long nextPathAttemptAt;
+    private long diagnosticPathAttemptCount;
+    private long diagnosticFailedPathCount;
 
     public InvestigateNoiseGoal(Zombie zombie) {
         this.zombie = zombie;
@@ -51,11 +59,9 @@ public final class InvestigateNoiseGoal extends Goal {
     @Override
     public void start() {
         activeDestination = null;
+        nextPathAttemptAt = zombie.level().getGameTime()
+                + InfectedAiScheduler.stableOffset(zombie, INITIAL_PATH_STAGGER_SLOTS);
         Vec3 center = InfectedHearingState.lastHeardPosition(zombie);
-        if (center != null) {
-            zombie.getNavigation().moveTo(center.x(), center.y(), center.z(), MOVE_SPEED);
-            InfectedHearingState.markPathRefresh(zombie, center, zombie.level().getGameTime());
-        }
         ApocalypseFirstLight.LOGGER.debug("[AFL HEARING DEBUG] Zombie={} InvestigateGoal start pos={}", zombie.getId(), center);
         ApocalypseFirstLight.LOGGER.debug("[AFL HEARING] Zombie={} Investigating Pos={}", zombie.getId(), InfectedHearingState.lastHeardPosition(zombie));
     }
@@ -108,7 +114,11 @@ public final class InvestigateNoiseGoal extends Goal {
         int index = InfectedHearingState.searchIndex(zombie);
         if (index >= points.size()) { clearState("Finished"); return; }
         Vec3 point = points.get(index);
-        if (activeDestination == null || activeDestination.distanceToSqr(point) > 0.01) moveToCurrentSearchPoint();
+        if (activeDestination == null || activeDestination.distanceToSqr(point) > 0.01
+                || (now >= nextPathAttemptAt && zombie.getNavigation().isDone()
+                && zombie.position().distanceTo(point) > SEARCH_ARRIVAL_DISTANCE)) {
+            moveToCurrentSearchPoint();
+        }
         if (zombie.position().distanceTo(point) <= SEARCH_ARRIVAL_DISTANCE) {
             long waitUntil = InfectedHearingState.waitUntil(zombie);
             if (waitUntil == 0L) {
@@ -122,17 +132,29 @@ public final class InvestigateNoiseGoal extends Goal {
     }
 
     private void moveToCurrentSearchPoint() {
+        long now = zombie.level().getGameTime();
+        if (now < nextPathAttemptAt) return;
         List<Vec3> points = InfectedHearingState.searchPoints(zombie);
         int index = InfectedHearingState.searchIndex(zombie);
         if (index >= points.size()) return;
         Vec3 point = points.get(index);
-        if (zombie.getNavigation().createPath(BlockPos.containing(point), 0) == null) {
-            InfectedHearingState.setSearchIndex(zombie, index + 1);
-            activeDestination = null;
+        if (zombie.level() instanceof ServerLevel level) {
+            InfectedAiDiagnostics.pathAttempt(level);
+        }
+        diagnosticPathAttemptCount++;
+        Path path = zombie.getNavigation().createPath(BlockPos.containing(point), 0);
+        if (path == null || !path.canReach()) {
+            if (zombie.level() instanceof ServerLevel level) {
+                InfectedAiDiagnostics.failedPathRetry(level);
+            }
+            diagnosticFailedPathCount++;
+            nextPathAttemptAt = now + InfectedAiScheduler.staggeredDelay(zombie,
+                    FAILED_PATH_COOLDOWN_MIN_TICKS, FAILED_PATH_COOLDOWN_MAX_TICKS);
             return;
         }
-        zombie.getNavigation().moveTo(point.x(), point.y(), point.z(), SEARCH_MOVE_SPEED);
+        zombie.getNavigation().moveTo(path, SEARCH_MOVE_SPEED);
         activeDestination = point;
+        nextPathAttemptAt = now + InfectedHearingState.PATH_REFRESH_INTERVAL_TICKS;
         ApocalypseFirstLight.LOGGER.debug("[AFL SEARCH] Zombie={} Point={} Pos=({}, {}, {})", zombie.getId(), index + 1, point.x(), point.y(), point.z());
     }
 
@@ -140,9 +162,24 @@ public final class InvestigateNoiseGoal extends Goal {
         Vec3 center = InfectedHearingState.lastHeardPosition(zombie);
         if (center == null) return;
         long now = zombie.level().getGameTime();
-        if (InfectedHearingState.shouldRefreshPath(zombie, center, now)) {
-            zombie.getNavigation().moveTo(center.x(), center.y(), center.z(), MOVE_SPEED);
+        if (now >= nextPathAttemptAt && InfectedHearingState.shouldRefreshPath(zombie, center, now)) {
+            if (zombie.level() instanceof ServerLevel level) {
+                InfectedAiDiagnostics.pathAttempt(level);
+            }
+            diagnosticPathAttemptCount++;
+            Path path = zombie.getNavigation().createPath(BlockPos.containing(center), 0);
+            if (path == null || !path.canReach()) {
+                if (zombie.level() instanceof ServerLevel level) {
+                    InfectedAiDiagnostics.failedPathRetry(level);
+                }
+                diagnosticFailedPathCount++;
+                nextPathAttemptAt = now + InfectedAiScheduler.staggeredDelay(zombie,
+                        FAILED_PATH_COOLDOWN_MIN_TICKS, FAILED_PATH_COOLDOWN_MAX_TICKS);
+                return;
+            }
+            zombie.getNavigation().moveTo(path, MOVE_SPEED);
             InfectedHearingState.markPathRefresh(zombie, center, now);
+            nextPathAttemptAt = now + InfectedHearingState.PATH_REFRESH_INTERVAL_TICKS;
         }
     }
 
@@ -158,8 +195,7 @@ public final class InvestigateNoiseGoal extends Goal {
                 BlockPos blockPos = new BlockPos(x, y, z);
                 if (!zombie.level().getFluidState(blockPos).isEmpty()
                         || !zombie.level().getFluidState(blockPos.below()).isEmpty()
-                        || !zombie.level().getBlockState(blockPos).getCollisionShape(zombie.level(), blockPos).isEmpty()
-                        || zombie.getNavigation().createPath(blockPos, 0) == null) continue;
+                        || !zombie.level().getBlockState(blockPos).getCollisionShape(zombie.level(), blockPos).isEmpty()) continue;
                 Vec3 point = Vec3.atBottomCenterOf(blockPos);
                 if (points.stream().noneMatch(existing -> existing.distanceToSqr(point) < 4.0)) { points.add(point); break; }
             }
@@ -178,5 +214,15 @@ public final class InvestigateNoiseGoal extends Goal {
         zombie.getNavigation().stop();
         InfectedHearingState.clear(zombie);
         ApocalypseFirstLight.LOGGER.debug("[AFL SEARCH] Zombie={} {}", zombie.getId(), reason);
+    }
+
+    /** DEV/GameTest-local evidence that does not depend on shared level diagnostics. */
+    public long diagnosticPathAttemptCount() {
+        return diagnosticPathAttemptCount;
+    }
+
+    /** DEV/GameTest-local evidence that does not depend on shared level diagnostics. */
+    public long diagnosticFailedPathCount() {
+        return diagnosticFailedPathCount;
     }
 }

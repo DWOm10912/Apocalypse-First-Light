@@ -7,7 +7,7 @@ import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.Random;
 
-/** Compile/run unchanged against both audited pre-patch and live classes; fingerprints must match. */
+/** Deterministic fingerprint helper for the current shared tinnitus episode timeline. */
 public final class TinnitusAudioRegressionTest {
     public static void main(String[] args) throws Exception {
         var digest = MessageDigest.getInstance("SHA-256");

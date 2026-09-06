@@ -18,6 +18,7 @@ public final class InfectedHearingState {
     private static final String Y = "y";
     private static final String Z = "z";
     private static final String GAME_TIME = "game_time";
+    private static final String LAST_EVENT_TIME = "last_event_time";
     private static final String TYPE = "type";
     private static final String INVESTIGATE_START = "investigate_start";
     private static final String WAIT_UNTIL = "wait_until";
@@ -29,6 +30,8 @@ public final class InfectedHearingState {
     private static final String SEARCH_START = "search_start";
     private static final String SEARCH_INDEX = "search_index";
     private static final String SEARCH_POINTS = "search_points";
+    public static final long PATH_REFRESH_INTERVAL_TICKS = 20L;
+    public static final double DUPLICATE_TARGET_DISTANCE_SQUARED = 4.0;
 
     public enum Phase {
         INVESTIGATING,
@@ -38,7 +41,7 @@ public final class InfectedHearingState {
     private InfectedHearingState() {
     }
 
-    public static void hear(LivingEntity entity, Vec3 position, long gameTime, String type) {
+    public static HearResult hear(LivingEntity entity, Vec3 position, long gameTime, String type) {
         CompoundTag tag = entity.getPersistentData().getCompound(ROOT);
         boolean hadHearingState = tag.getBoolean(VALID);
         long previousInvestigationStart = tag.getLong(INVESTIGATE_START);
@@ -47,20 +50,26 @@ public final class InfectedHearingState {
                 && ((previousInvestigationStart > 0L && gameTime - previousInvestigationStart > 200L)
                 || (Phase.SEARCHING.name().equals(tag.getString(PHASE))
                 && previousSearchStart > 0L && gameTime - previousSearchStart > 160L));
+        Vec3 previousPosition = hadHearingState
+                ? new Vec3(tag.getDouble(X), tag.getDouble(Y), tag.getDouble(Z)) : null;
+        boolean duplicateRefresh = hadHearingState && !expiredState && previousPosition != null
+                && previousPosition.distanceToSqr(position) <= DUPLICATE_TARGET_DISTANCE_SQUARED;
         tag.putBoolean(VALID, true);
         tag.putDouble(X, position.x());
         tag.putDouble(Y, position.y());
         tag.putDouble(Z, position.z());
-        tag.putLong(GAME_TIME, gameTime);
+        tag.putLong(LAST_EVENT_TIME, gameTime);
         tag.putString(TYPE, type);
-        tag.putString(PHASE, Phase.INVESTIGATING.name());
-        if (!hadHearingState || expiredState) {
+        if (!duplicateRefresh) {
+            tag.putLong(GAME_TIME, gameTime);
+            tag.putString(PHASE, Phase.INVESTIGATING.name());
             tag.putLong(INVESTIGATE_START, gameTime);
+            tag.putLong(WAIT_UNTIL, 0L);
+            tag.remove(SEARCH_POINTS);
+            tag.putInt(SEARCH_INDEX, 0);
         }
-        tag.putLong(WAIT_UNTIL, 0L);
-        tag.remove(SEARCH_POINTS);
-        tag.putInt(SEARCH_INDEX, 0);
         entity.getPersistentData().put(ROOT, tag);
+        return new HearResult(!duplicateRefresh, duplicateRefresh);
     }
 
     public static boolean isValid(LivingEntity entity) {
@@ -69,6 +78,10 @@ public final class InfectedHearingState {
 
     public static long heardGameTime(LivingEntity entity) {
         return entity.getPersistentData().getCompound(ROOT).getLong(GAME_TIME);
+    }
+
+    public static long lastEventGameTime(LivingEntity entity) {
+        return entity.getPersistentData().getCompound(ROOT).getLong(LAST_EVENT_TIME);
     }
 
     public static long investigateStart(LivingEntity entity) {
@@ -141,12 +154,11 @@ public final class InfectedHearingState {
 
     public static boolean shouldRefreshPath(LivingEntity entity, Vec3 position, long gameTime) {
         CompoundTag tag = entity.getPersistentData().getCompound(ROOT);
-        long lastRefresh = tag.getLong(LAST_PATH_REFRESH);
-        if (gameTime - lastRefresh >= 10L) {
+        if (!tag.contains(LAST_PATH_REFRESH)) {
             return true;
         }
-        Vec3 lastPath = new Vec3(tag.getDouble(LAST_PATH_X), tag.getDouble(LAST_PATH_Y), tag.getDouble(LAST_PATH_Z));
-        return lastPath.distanceToSqr(position) > 16.0;
+        long lastRefresh = tag.getLong(LAST_PATH_REFRESH);
+        return gameTime - lastRefresh >= PATH_REFRESH_INTERVAL_TICKS;
     }
 
     public static void markPathRefresh(LivingEntity entity, Vec3 position, long gameTime) {
@@ -160,5 +172,8 @@ public final class InfectedHearingState {
 
     public static void clear(LivingEntity entity) {
         entity.getPersistentData().remove(ROOT);
+    }
+
+    public record HearResult(boolean targetReplaced, boolean duplicateRefreshSuppressed) {
     }
 }

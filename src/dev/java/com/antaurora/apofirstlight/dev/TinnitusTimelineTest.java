@@ -16,7 +16,7 @@ public class TinnitusTimelineTest {
         for (int i = 15; i <= 100; i++) {
             float severity = i / 100F;
             ExplosionTinnitusEnvelope state = new ExplosionTinnitusEnvelope();
-            check(state.trigger(severity) == ExplosionTinnitusEnvelope.TriggerResult.RESTART, "initial start");
+            check(state.trigger(severity) == ExplosionTinnitusEnvelope.TriggerResult.START, "initial start");
             check(state.volume() >= previousVolume, "louder when closer");
             check(state.overlayAlpha(0) >= previousAlpha, "stronger overlay when closer");
             check(state.remainingTicks() >= previousDuration, "longer when closer");
@@ -43,8 +43,13 @@ public class TinnitusTimelineTest {
         state.trigger(0.5F);
         for (int i = 0; i < 30; i++) state.tick();
         int remaining = state.remainingTicks();
-        check(state.trigger(0.9F) == ExplosionTinnitusEnvelope.TriggerResult.RESTART, "strong restart");
+        check(state.trigger(0.9F) == ExplosionTinnitusEnvelope.TriggerResult.STRENGTHEN,
+                "strong impulse must strengthen without a sound restart");
         check(state.remainingTicks() >= remaining, "strong extends remaining");
+        var freshStrong = new ExplosionTinnitusEnvelope();
+        freshStrong.trigger(0.9F);
+        check(state.overlayAlpha(0) < freshStrong.overlayAlpha(0),
+                "strong impulse restarted the overlay at its first frame");
         for (int i = 0; i < 30; i++) state.tick();
         float volume = state.volume(), alpha = state.overlayAlpha(0);
         remaining = state.remainingTicks();
@@ -53,9 +58,11 @@ public class TinnitusTimelineTest {
         check(state.severity() == 0.9F && state.volume() >= volume && state.overlayAlpha(0) >= alpha,
                 "weak never downgrades heavy");
         for (int i = 0; i < 500; i++) state.trigger(0.2F);
-        check(state.remainingTicks() == 170, "duration capped to asset length from playback start");
-        for (int i = 0; i < 170; i++) state.tick();
+        check(state.remainingTicks() == 140, "duration was not capped from the original episode start");
+        for (int i = 0; i < 140; i++) state.tick();
         check(!state.active(), "no ghost state after media");
+        check(state.trigger(0.9F) == ExplosionTinnitusEnvelope.TriggerResult.START,
+                "finished episode did not re-arm sound start");
         state.trigger(1);
         state.clear();
         check(!state.active() && state.volume() == 0 && state.overlayAlpha(0) == 0, "cleanup");
@@ -107,9 +114,11 @@ public class TinnitusTimelineTest {
         check(audio.remainingTicks() == audioRemaining && audio.volume() == audioVolume,
                 "visual-only explosion changed current sound duration/volume");
         check(visual.overlayAlpha(0) >= peak && visual.severity() == 0.9F, "weak visual downgraded heavy");
-        check(visual.triggerOverlay(1) == ExplosionTinnitusEnvelope.TriggerResult.RESTART, "strong visual upgrade");
+        check(visual.triggerOverlay(1) == ExplosionTinnitusEnvelope.TriggerResult.STRENGTHEN,
+                "strong visual upgrade restarted the episode");
         for (int i = 0; i < 1000; i++) visual.triggerOverlay(1);
-        check(visual.remainingTicks() == 200 && visual.overlayAlpha(0) <= 0.60F, "stacking/cap regression");
+        check(visual.remainingTicks() == 120 && visual.overlayAlpha(0) <= 0.60F,
+                "episode cap was not measured from the original sound start");
         visual.clear();
         for (float invalid : new float[]{-1, Float.NaN, Float.POSITIVE_INFINITY, 1.01F, 0}) {
             check(visual.triggerOverlay(invalid) == ExplosionTinnitusEnvelope.TriggerResult.IGNORE,

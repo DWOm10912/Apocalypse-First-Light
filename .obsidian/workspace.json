@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 系统设计/枪械.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "枪械"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/01 - 系统设计/枪械.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,33 +189,36 @@
   },
   "active": "6cfc6a4c74362551",
   "lastOpenFiles": [
-    "docs/01 - 系统设计/声音.md",
-    "docs/04 - 注意事项 重要内容.md",
-    "run/saves/test/level13889132093489641399.dat",
-    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-4637155368775798708.dat",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/saves/test/level1231564576209158148.dat",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-3315068840412414604.dat",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45_s.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45_n.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi_s.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi_n.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45_s.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/type_81_s.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45_n.png",
-    "build/noise-system-v2-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45.png",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc",
+    "docs/01 - 系统设计/耐力.md",
+    "docs/01 - 系统设计/负重.md",
+    "docs/03 - 制作清单.md",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45_s.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi_s.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/vector45_n.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/timeless50_n.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi_n.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/uzi.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45_s.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45_n.png",
+    "build/infected-ai-performance-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/uv/ump45.png",
+    "docs/04 - 注意事项 重要内容.md",
+    "docs/01 - 系统设计/声音.md",
     "docs/01 - 系统设计/枪械.md",
     "docs/dev/tacz_weapon_acoustic_audit.md",
     "docs/01 - 系统设计/生存状态.md",
     "docs/01 - 系统设计/原版改动.md",
-    "docs/03 - 制作清单.md",
     "docs/02 - 内容设计/方块/机器.md",
     "docs/01 - 系统设计/工业.md",
     "docs/01 - 系统设计/蓝图.md",
@@ -231,8 +234,6 @@
     "docs/01 - 系统设计/食物.md",
     "docs/01 - 系统设计/空气污染.md",
     "docs/02 - 内容设计/物品.md",
-    "docs/01 - 系统设计/战利品.md",
-    "docs/01 - 系统设计/城市规划.md",
-    "docs/02 - 内容设计/方块.md"
+    "docs/01 - 系统设计/战利品.md"
   ]
 }
