@@ -118,6 +118,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.PLASTIC_PELLETS.get());
                         output.accept(AflItems.PLASTIC_SHEET.get());
                         output.accept(AflItems.GEIGER_COUNTER.get());
+                        output.accept(AflItems.SERVICE_PISTOL.get());
                     })
                     .build());
 

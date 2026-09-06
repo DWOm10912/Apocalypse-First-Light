@@ -42,4 +42,14 @@ public final class AflSounds {
 
     private AflSounds() {
     }
+
+    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_FIRE = pistolSound("fire");
+    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_MAGAZINE_OUT = pistolSound("magazine_out");
+    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_MAGAZINE_IN = pistolSound("magazine_in");
+
+    private static RegistryObject<SoundEvent> pistolSound(String action) {
+        String name = "service_pistol_" + action;
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(
+                new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
+    }
 }

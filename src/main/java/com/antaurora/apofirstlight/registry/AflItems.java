@@ -14,6 +14,9 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ApocalypseFirstLight.MOD_ID);
 
+    public static final RegistryObject<Item> SERVICE_PISTOL = ITEMS.register("service_pistol",
+            com.antaurora.apofirstlight.weapon.ServicePistolItem::new);
+
     public static final RegistryObject<Item> INDUSTRIAL_WASTE_BUCKET = ITEMS.register("industrial_waste_bucket",
             () -> new BucketItem(AflFluids.INDUSTRIAL_WASTE,
                     new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1)));

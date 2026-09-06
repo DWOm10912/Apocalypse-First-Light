@@ -1,4 +1,11 @@
 {
+  "item.apocalypse_firstlight.service_pistol": "制式手枪",
+  "tooltip.apocalypse_firstlight.service_pistol.prototype": "原生武器系统测试版",
+  "key.apocalypse_firstlight.reload": "原生武器换弹",
+  "key.categories.apocalypse_firstlight": "黎明启示录",
+  "subtitles.apocalypse_firstlight.service_pistol.fire": "制式手枪开火",
+  "subtitles.apocalypse_firstlight.service_pistol.magazine_out": "弹匣退出",
+  "subtitles.apocalypse_firstlight.service_pistol.magazine_in": "弹匣插入",
   "mod.apocalypse_firstlight.name": "黎明启示录",
 
   "biome.apocalypse_firstlight.irradiated_woodland": "污染疏林",
