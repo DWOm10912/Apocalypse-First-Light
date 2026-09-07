@@ -39,6 +39,14 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
     public void renderRecursively(PoseStack pose, P901Item item, GeoBone bone, RenderType type,
                                   MultiBufferSource buffers, VertexConsumer buffer, boolean reRender,
                                   float partialTick, int light, int overlay, float red, float green, float blue, float alpha) {
+        // Visual-only spare instance: never leak into idle, canceled reloads,
+        // GUI/ground/third person. The authored scale keys own its visible interval.
+        if (bone.getName().equals("empty_old_magazine")) {
+            if (!isFirstPersonPass() || animatable == null || currentItemStack == null) return;
+            var controller = animatable.getAnimatableInstanceCache().<P901Item>getManagerForId(getInstanceId(animatable))
+                    .getAnimationControllers().get(P901Item.CONTROLLER);
+            if (!(controller instanceof P901AnimationController pistol) || !pistol.isEmptyReloadPlaying()) return;
+        }
         // fp_root is an authoring context container, not a world-item animation.
         // In non-FP contexts traverse its children without applying that container.
         if (!isFirstPersonPass() && bone.getName().equals(RIG.firstPersonRoot())) {
@@ -52,10 +60,12 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
             pose.pushPose();
             preserveNonFirstPersonSize(pose);
         }
+        float[] equipPose = isFirstPersonPass() ? P901Presentation.apply(bone) : null;
         try {
             super.renderRecursively(pose, item, bone, type, buffers, buffer, reRender,
                     partialTick, light, overlay, red, green, blue, alpha);
         } finally {
+            P901Presentation.restore(bone, equipPose);
             if (worldCompatibility) pose.popPose();
         }
     }

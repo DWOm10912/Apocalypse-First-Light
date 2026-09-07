@@ -24,8 +24,7 @@ public final class P901HandLayer extends GeoRenderLayer<P901Item> {
                               RenderType gunType, MultiBufferSource buffers, VertexConsumer gunBuffer,
                               float partialTick, int light, int overlay) {
         var player = Minecraft.getInstance().player;
-        if (!pistolRenderer.isFirstPersonPass() || player == null
-                || !(player.getMainHandItem().getItem() instanceof P901Item)) return;
+        if (!pistolRenderer.isFirstPersonPass() || player == null) return;
         var rig = P901Renderer.RIG;
         boolean right = bone.getName().equals(rig.rightLocator());
         if (!right && !bone.getName().equals(rig.leftLocator())) return;

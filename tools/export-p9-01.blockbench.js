@@ -61,7 +61,7 @@
         }
     }
     const bones = geo['minecraft:geometry'][0].bones;
-    if (bones.some(b => b.name.includes('arm_reference')) || bones.reduce((n, b) => n + (b.cubes || []).length, 0) !== 77)
+    if (bones.some(b => b.name.includes('arm_reference')) || bones.reduce((n, b) => n + (b.cubes || []).length, 0) !== source.elements.filter(e => e.export !== false).length)
         throw new Error('Reference exclusion or geometry count differs');
     display.textures = {particle: 'apocalypse_firstlight:item/p9_01'};
     return {geo, animation, display};

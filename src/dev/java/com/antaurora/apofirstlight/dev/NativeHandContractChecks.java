@@ -31,6 +31,7 @@ public final class NativeHandContractChecks {
     private float previewDisplayScale;
     private float maxScaleError, maxContactError;
     private JsonArray reloadFpKeys;
+    private String handlingCarrier;
 
     private NativeHandContractChecks() throws java.io.IOException {
         Path root=Path.of("").toAbsolutePath();
@@ -44,10 +45,11 @@ public final class NativeHandContractChecks {
             byId.put(g.get("uuid").getAsString(),g);
         }
         outline(source.getAsJsonArray("outliner"),null);
+        handlingCarrier=groups.containsKey("p9_handling") ? "p9_handling" : "fp_root";
         for(var entry:source.getAsJsonArray("animations")) {
             var clip=entry.getAsJsonObject();
             if(clip.get("name").getAsString().equals("animation.p9_01.reload"))
-                reloadFpKeys=clip.getAsJsonObject("animators").getAsJsonObject(groups.get("fp_root").get("uuid").getAsString()).getAsJsonArray("keyframes");
+                reloadFpKeys=clip.getAsJsonObject("animators").getAsJsonObject(groups.get(handlingCarrier).get("uuid").getAsString()).getAsJsonArray("keyframes");
         }
         for (var e:source.getAsJsonArray("elements")) {
             var c=e.getAsJsonObject(); cubes.put(c.get("name").getAsString(),c);
@@ -168,7 +170,7 @@ public final class NativeHandContractChecks {
                     require(gripDrift<EPS,"grip relative matrix drift");
                     if (cycle==0 && action.equals("reload") && seconds>=0 && next<marks.length && seconds+1e-6>=marks[next]) {
                         if(marks[next]<=.24) {
-                            var fp=model.getBone("fp_root").orElseThrow();
+                            var fp=model.getBone(handlingCarrier).orElseThrow();
                             var lift=new Vector3f(-fp.getPosX(),fp.getPosY(),fp.getPosZ());
                             var turn=new Vector3f(fp.getRotX(),fp.getRotY(),fp.getRotZ()).mul((float)(180/Math.PI));
                             require(lift.distance(sampleSourceEntrance("position",seconds))<.0005F,"Gecko/source entrance position at "+seconds);
@@ -230,7 +232,13 @@ public final class NativeHandContractChecks {
         var sight=locator(model,"sight_anchor",base).last().pose().getTranslation(new Vector3f());
         var error=projectRay(muzzle,forward);
         var sightError=projectRay(sight,front.sub(rear).normalize());
-        require(Math.hypot(error.x,error.y)<.05,"Ready muzzle ray calibration at reference plane");
+        // HIP is not ADS: the accepted source can intentionally project below
+        // the camera center. Verify source/runtime agreement, not the obsolete
+        // V052 requirement that HIP itself hit a hard-coded screen coordinate.
+        var sourceMuzzle=sourceMatrix(model,"muzzle_anchor",base)
+                .transformPosition(vector(groups.get("muzzle_anchor"),"origin").div(16));
+        var sourceForward=sourceMatrix(model,"barrel",base).transformDirection(new Vector3f(0,0,-1)).normalize();
+        require(error.distance(projectRay(sourceMuzzle,sourceForward))<.05,"source/runtime Ready muzzle ray mismatch");
         ApocalypseFirstLight.LOGGER.info("[AFL V052 AIMLINE] rightContext={} muzzle={} forward={} READY_AIMLINE_SCREEN_ERROR_X={} READY_AIMLINE_SCREEN_ERROR_Y={} sightError={}; FOV70 H1080 cameraZ=-20, no bob/equip, NOT ADS or visual PASS",
                 right,muzzle,forward,error.x,error.y,sightError);
     }
@@ -243,6 +251,7 @@ public final class NativeHandContractChecks {
     }
 
     private void applyRuntimeDisplay(PoseStack pose,boolean right) {
+        pose.translate(right?P901FirstPerson.COMPOSITION_X:-P901FirstPerson.COMPOSITION_X,P901FirstPerson.COMPOSITION_Y,0);
         var d=runtimeDisplay.getAsJsonObject(right?"firstperson_righthand":"firstperson_lefthand");
         var t=vector(d,"translation").div(16);
         var r=vector(d,"rotation").mul((float)(Math.PI/180));

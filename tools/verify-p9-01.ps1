@@ -6,7 +6,7 @@ $taskSource = Get-Content (Join-Path $taskRoot 'src/main/blockbench/p9_01_v03_8_
 $taskTexture = $taskSource.textures | Where-Object name -eq 'p9_01.png'
 if (@($taskTexture).Count -ne 1 -or $taskTexture.source -notmatch '^data:image/png;base64,') { throw 'Missing embedded pistol PNG' }
 $taskPng = [Convert]::FromBase64String(($taskTexture.source -split ',',2)[1])
-if ([BitConverter]::ToString($taskPng[16..23]) -ne '00-00-00-80-00-00-00-80') { throw 'Expected 128x128 PNG' }
+if ([BitConverter]::ToString($taskPng[16..23]) -ne '00-00-01-00-00-00-01-00') { throw 'Expected 256x256 P9 style atlas (128 logical UV units)' }
 $taskTexturePath = Join-Path $taskAssets 'textures/item/p9_01.png'
 $taskSounds = @{ 'fire'='9mm_fire.ogg'; 'magazine_out'='9mm_magazine_out.ogg'; 'magazine_in'='9mm_magazine_in.ogg' }
 if ($PrepareAssets) {
@@ -34,7 +34,7 @@ if ($FirstPersonDisplayOnly) {
     'PASS: both first-person display contexts exactly match saved source; geometry/other display contexts not checked in this scoped mode.'
     return
 }
-if ($taskRoute.loader -ne 'forge:separate_transforms' -or $taskRoute.perspectives.gui.textures.layer0 -ne 'apocalypse_firstlight:item/p9_01_icon') { throw 'Static icon routing missing' }
+if ($taskRoute.loader -ne 'forge:separate_transforms' -or $taskRoute.perspectives.gui.textures.layer0 -ne 'apocalypse_firstlight:item/p9_01_inventory') { throw 'Static inventory routing missing' }
 $taskBones = $taskGeo.'minecraft:geometry'[0].bones
 # V0.5 saved-source exporter owns exact geometry/key/reference checks.
 & node (Join-Path $PSScriptRoot 'export-native-gun.mjs') --check

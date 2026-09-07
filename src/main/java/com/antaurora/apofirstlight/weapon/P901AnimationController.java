@@ -4,7 +4,6 @@ import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
 import software.bernie.geckolib.core.animatable.model.CoreGeoModel;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.core.state.BoneSnapshot;
 
 import java.util.Map;
@@ -16,9 +15,12 @@ public final class P901AnimationController extends AnimationController<P901Item>
     public P901AnimationController(P901Item item) {
         super(item, P901Item.CONTROLLER, 0, state -> {
             var stack = state.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
-            return stack != null && NativeGunAmmo.read(stack, item.definition()) == 0
+            if (stack == null) return software.bernie.geckolib.core.object.PlayState.STOP;
+            return NativeGunAmmo.read(stack, item.definition()) == 0
                     ? state.setAndContinue(software.bernie.geckolib.core.animation.RawAnimation.begin()
-                        .thenLoop("animation.p9_01.empty_idle")) : PlayState.STOP;
+                        .thenLoop("animation.p9_01.empty_idle"))
+                    : state.setAndContinue(software.bernie.geckolib.core.animation.RawAnimation.begin()
+                        .thenLoop("animation.p9_01.static_idle"));
         });
     }
 
@@ -35,4 +37,9 @@ public final class P901AnimationController extends AnimationController<P901Item>
     }
 
     public double getReloadSeconds() { return reloadSeconds; }
+
+    public boolean isEmptyReloadPlaying() {
+        return reloadSeconds >= 0 && getCurrentAnimation() != null
+                && getCurrentAnimation().animation().name().equals("animation.p9_01.reload_empty");
+    }
 }

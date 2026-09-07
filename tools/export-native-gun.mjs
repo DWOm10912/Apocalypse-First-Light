@@ -63,7 +63,7 @@ export function compile(source, priorGeo, priorDisplay) {
     geometry['minecraft:geometry'][0].bones=bones;
     const animations={format_version:'1.8.0',animations:{}};
     for(const a of source.animations) {
-        assert(['fire','reload','empty_idle','fire_last_round','reload_empty'].some(n=>a.name==='animation.p9_01.'+n));
+        assert(['static_idle','draw','put_away','fire','reload','empty_idle','fire_last_round','reload_empty'].some(n=>a.name==='animation.p9_01.'+n));
         const out={animation_length:a.length,bones:{}};
         if(a.loop==='loop')out.loop=true;
         animations.animations[a.name]=out;
@@ -134,7 +134,10 @@ export function compile(source, priorGeo, priorDisplay) {
                 assert(!a.bones[name]?.scale,'Do not animate hand/ancestor scale');
         }
     }
-    assert.equal(bones.reduce((n,b)=>n+(b.cubes||[]).length,0),77);
+    const cubeCount=bones.reduce((n,b)=>n+(b.cubes||[]).length,0);
+    assert(cubeCount>0 && cubeCount<1000,'P9 runtime geometry budget');
+    assert.equal(cubeCount,source.elements.filter(e=>e.export!==false).length,
+        'Every gun cube must export exactly once; references remain source-only');
     assert(!bones.some(b=>b.name.includes('arm_reference')));
     assert.equal(animations.animations['animation.p9_01.fire'].animation_length,.14);
     assert.equal(animations.animations['animation.p9_01.reload'].animation_length,1.3);
@@ -145,13 +148,16 @@ export function compile(source, priorGeo, priorDisplay) {
 export function outputs() {
     const geo=path.join(assets,'geo/p9_01.geo.json'),anim=path.join(assets,'animations/p9_01.animation.json'),display=path.join(assets,'models/item/p9_01_in_hand.json');
     const result=compile(read(sourcePath),read(geo),read(display));
-    return new Map([[geo,result.geometry],[anim,result.animations],[display,result.display]]);
+    const output = new Map([[geo,result.geometry],[anim,result.animations],[display,result.display]]);
+    if(result.animations.animations['animation.p9_01.draw'])output.set(path.join(assets,'animations/p9_01.equip.json'),
+        {format_version:1,animations:{draw:result.animations.animations['animation.p9_01.draw'],put_away:result.animations.animations['animation.p9_01.put_away']}});
+    return output;
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
     const write=process.argv.includes('--write'),animationsOnly=process.argv.includes('--animations-only');
     assert(process.argv.slice(2).every(a=>['--write','--check','--animations-only'].includes(a)),'Invalid export flag');
     for(const [p,value] of outputs()) {
-        if(animationsOnly && !p.endsWith('p9_01.animation.json'))continue;
+        if(animationsOnly && !p.endsWith('p9_01.animation.json') && !p.endsWith('p9_01.equip.json'))continue;
         if(write)fs.writeFileSync(p,JSON.stringify(value,null,2)+'\n');
         else assert.deepEqual(read(p),value,'Stale export: '+p);
     }
