@@ -4,22 +4,14 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.infected.perception.InfectedHearingState;
 import com.antaurora.apofirstlight.mixin.ExplosionAccessor;
 import com.antaurora.apofirstlight.noise.ExplosionNoiseProfile;
-import com.antaurora.apofirstlight.noise.GunshotNoiseResolver;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
 import com.antaurora.apofirstlight.noise.NoiseSystem;
 import com.antaurora.apofirstlight.noise.NoiseType;
-import com.tacz.guns.api.TimelessAPI;
-import com.tacz.guns.api.item.IGun;
-import com.tacz.guns.api.item.attachment.AttachmentType;
-import com.tacz.guns.api.item.builder.AttachmentItemBuilder;
-import com.tacz.guns.api.item.builder.GunItemBuilder;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.MinecraftForge;
@@ -28,94 +20,35 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.Set;
 
 /** Isolated server checks; this class is excluded from the published JAR. */
 @GameTestHolder(ApocalypseFirstLight.MOD_ID)
 @PrefixGameTestTemplate(false)
 public final class NoiseSystemV2GameTests {
-    private static final Set<ResourceLocation> EXCLUDED = Set.of(
-            id("db_long"), id("db_short"), id("lonetrail"), id("spr15hb"), id("timeless50"),
-            id("deagle_golden"), id("qbz_95"), id("taurus943"), id("minigun")
-    );
 
     private NoiseSystemV2GameTests() {
     }
 
     @GameTest(template = "network_empty", timeoutTicks = 100)
-    public static void explicitGunRadiiAndFallback(GameTestHelper helper) throws Exception {
-        Map<ResourceLocation, Double> explicit = explicitRadii();
-        helper.assertTrue(explicit.size() == 45, "Expected 45 explicit gun radii, got " + explicit.size());
-        helper.assertTrue(TimelessAPI.getAllCommonGunIndex().size() == 54, "Expected 54 runtime TaCZ guns");
-        for (ResourceLocation gunId : explicit.keySet()) {
-            helper.assertTrue(TimelessAPI.getCommonGunIndex(gunId).isPresent(), "Missing runtime gun " + gunId);
-        }
-
-        assertExplicit(helper, explicit, "m1911", 64.0);
-        assertExplicit(helper, explicit, "ump45", 72.0);
-        assertExplicit(helper, explicit, "p90", 80.0);
-        assertExplicit(helper, explicit, "deagle", 88.0);
-        assertExplicit(helper, explicit, "ak47", 96.0);
-        assertExplicit(helper, explicit, "spas_12", 104.0);
-        assertExplicit(helper, explicit, "kar98", 112.0);
-        assertExplicit(helper, explicit, "ai_awp", 128.0);
-        assertExplicit(helper, explicit, "m95", 160.0);
-        assertExplicit(helper, explicit, "m107", 160.0);
-
-        for (ResourceLocation gunId : EXCLUDED) {
-            helper.assertTrue(!explicit.containsKey(gunId), "Excluded gun has explicit radius: " + gunId);
-            ItemStack bareGun = GunItemBuilder.create().setId(gunId).build();
-            double fallback = GunshotNoiseResolver.resolveRadius(bareGun, gunId);
-            helper.assertTrue(Double.isFinite(fallback) && fallback > 0, "Invalid fallback for " + gunId);
-        }
-        helper.succeed();
-    }
-
-    @GameTest(template = "network_empty", timeoutTicks = 100)
-    public static void suppressorKeepsExplicitBase(GameTestHelper helper) throws Exception {
-        assertSuppressorReduction(helper, "m1911", 64.0, 8.0);
-        assertSuppressorReduction(helper, "ak47", 96.0, 10.0);
-        assertSuppressorReduction(helper, "m107", 160.0, 16.0);
-        assertNonSuppressorMuzzle(helper, "ak47", 96.0);
-
-        Method policy = GunshotNoiseResolver.class.getDeclaredMethod(
-                "applyTrueSuppressorCap", double.class, double.class);
-        policy.setAccessible(true);
-        helper.assertTrue((double) policy.invoke(null, 96.0, 8.0) == 8.0,
-                "TaCZ stronger modifier was raised to the AFL ten-percent cap");
-        helper.assertTrue((double) policy.invoke(null, 64.0, -36.0) == 8.0,
-                "True suppressor escaped the eight-block minimum");
-        helper.succeed();
-    }
-
-    @GameTest(template = "network_empty", timeoutTicks = 100)
-    public static void suppressedZombieHearingRadius(GameTestHelper helper) {
-        ResourceLocation gunId = id("ak47");
-        ItemStack suppressedAk = gunWithCompatibleMuzzle(helper, gunId, true);
-        double suppressedRadius = GunshotNoiseResolver.resolveZombieNoiseRadius(suppressedAk, gunId);
-        double bareRadius = GunshotNoiseResolver.resolveZombieNoiseRadius(
-                GunItemBuilder.create().setId(gunId).build(), gunId);
+    public static void internalGunshotHearingRadius(GameTestHelper helper) {
         Vec3 source = helper.absoluteVec(new Vec3(2.0, 3.0, 2.0));
         Zombie zombie = EntityType.ZOMBIE.create(helper.getLevel());
-        helper.assertTrue(zombie != null, "Could not create gunshot listener zombie");
+        helper.assertTrue(zombie != null, "Could not create listener");
         zombie.setInvulnerable(true);
         zombie.setNoAi(true);
         zombie.moveTo(source.x + 12.0, source.y, source.z, 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(zombie);
-
         NoiseSystem.emit(new NoiseEvent(null, source, NoiseType.GUNSHOT,
-                helper.getLevel().getGameTime(), gunId, suppressedRadius), helper.getLevel());
-        helper.assertTrue(!InfectedHearingState.isValid(zombie),
-                "Twelve-block zombie heard suppressed AK radius " + suppressedRadius);
+                helper.getLevel().getGameTime(), null, 10.0), helper.getLevel());
+        helper.assertTrue(!InfectedHearingState.isValid(zombie), "Out-of-range listener heard event");
         NoiseSystem.emit(new NoiseEvent(null, source, NoiseType.GUNSHOT,
-                helper.getLevel().getGameTime(), gunId, bareRadius), helper.getLevel());
-        helper.assertTrue(InfectedHearingState.isValid(zombie),
-                "Twelve-block zombie did not hear bare AK radius " + bareRadius);
+                helper.getLevel().getGameTime(), null, 96.0), helper.getLevel());
+        helper.assertTrue(InfectedHearingState.isValid(zombie), "Internal noise seam did not reach listener");
         helper.succeed();
     }
+
+
+
 
     @GameTest(template = "network_empty", timeoutTicks = 100)
     public static void explosionRadiusFormula(GameTestHelper helper) {
@@ -199,59 +132,9 @@ public final class NoiseSystemV2GameTests {
         });
     }
 
-    private static void assertExplicit(GameTestHelper helper, Map<ResourceLocation, Double> explicit,
-                                       String gunPath, double expected) {
-        ResourceLocation gunId = id(gunPath);
-        helper.assertTrue(Double.valueOf(expected).equals(explicit.get(gunId)),
-                gunId + " explicit radius mismatch");
-        ItemStack bareGun = GunItemBuilder.create().setId(gunId).build();
-        helper.assertTrue(GunshotNoiseResolver.resolveRadius(bareGun, gunId) == expected,
-                gunId + " did not resolve through its explicit radius");
-    }
 
-    private static void assertSuppressorReduction(GameTestHelper helper, String gunPath,
-                                                  double expectedBase, double expectedSuppressed) {
-        ResourceLocation gunId = id(gunPath);
-        ItemStack bareGun = GunItemBuilder.create().setId(gunId).build();
-        helper.assertTrue(GunshotNoiseResolver.resolveZombieNoiseRadius(bareGun, gunId) == expectedBase,
-                gunId + " bare radius changed");
-        ItemStack suppressedGun = gunWithCompatibleMuzzle(helper, gunId, true);
-        double suppressed = GunshotNoiseResolver.resolveZombieNoiseRadius(suppressedGun, gunId);
-        helper.assertTrue(suppressed == expectedSuppressed,
-                gunId + " expected suppressed radius " + expectedSuppressed + " but got " + suppressed);
-    }
 
-    private static void assertNonSuppressorMuzzle(GameTestHelper helper, String gunPath, double expectedBase) {
-        ResourceLocation gunId = id(gunPath);
-        ItemStack gunStack = gunWithCompatibleMuzzle(helper, gunId, false);
-        double acoustic = GunshotNoiseResolver.resolveAcousticRadius(gunStack, gunId);
-        double zombie = GunshotNoiseResolver.resolveZombieNoiseRadius(gunStack, gunId);
-        helper.assertTrue(zombie == acoustic && zombie > Math.max(8.0, Math.round(expectedBase * 0.10)),
-                gunId + " non-suppressor muzzle incorrectly received the ninety-percent cap");
-    }
 
-    private static ItemStack gunWithCompatibleMuzzle(GameTestHelper helper, ResourceLocation gunId,
-                                                      boolean trueSuppressor) {
-        ItemStack gunStack = GunItemBuilder.create().setId(gunId).build();
-        IGun gun = IGun.getIGunOrNull(gunStack);
-        helper.assertTrue(gun != null, "Missing IGun for " + gunId);
-        for (var entry : TimelessAPI.getAllCommonAttachmentIndex()) {
-            if (entry.getValue().getType() != AttachmentType.MUZZLE
-                    || GunshotNoiseResolver.isTrueSuppressor(entry.getKey()) != trueSuppressor) {
-                continue;
-            }
-            ItemStack attachment = AttachmentItemBuilder.create().setId(entry.getKey()).build();
-            if (gun.allowAttachment(gunStack, attachment)) {
-                gun.installAttachment(gunStack, attachment);
-                helper.assertTrue(GunshotNoiseResolver.isTrueSuppressor(gunStack) == trueSuppressor,
-                        "Installed muzzle classification mismatch: " + entry.getKey());
-                return gunStack;
-            }
-        }
-        helper.fail("No compatible " + (trueSuppressor ? "true suppressor" : "non-suppressor muzzle")
-                + " found for " + gunId);
-        return gunStack;
-    }
 
     private static void assertExplosionRadius(GameTestHelper helper, float strength, double expected) {
         helper.assertTrue(ExplosionNoiseProfile.radius(strength) == expected,
@@ -259,16 +142,7 @@ public final class NoiseSystemV2GameTests {
                         + " but got " + ExplosionNoiseProfile.radius(strength));
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<ResourceLocation, Double> explicitRadii() throws Exception {
-        Field field = GunshotNoiseResolver.class.getDeclaredField("REFERENCE_RADII");
-        field.setAccessible(true);
-        return (Map<ResourceLocation, Double>) field.get(null);
-    }
 
-    private static ResourceLocation id(String path) {
-        return new ResourceLocation("tacz", path);
-    }
 
     public static final class DetonateProbe {
         private int detonations;

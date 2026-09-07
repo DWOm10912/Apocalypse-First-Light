@@ -1,5 +1,45 @@
 # Native AFL Gun Framework — Reload Composition V2 Runtime
 
+## 2026-09-07 TaCZ 解耦 — 当前生产边界
+
+### 本轮验证结果
+
+- `clean compileJava --offline --stacktrace`、`processResources --offline`、
+  `build --offline --stacktrace` 和 `git diff --check` 通过。
+- `dependencyInsight --configuration compileClasspath --dependency timeless-and-classics-zero --offline`
+  无匹配依赖；src/main/java及src/dev/java的TaCZ API引用为0，644个编译class无`com/tacz`引用。
+- 默认 `runClient --offline --stacktrace` 成功加载AFL与TaCZ；
+  `runClient -PaflWithoutTacz --offline --stacktrace` 不加载TaCZ也成功启动、进入世界并保存退出。
+  两个客户端均已退出。启动资源元数据下载曾受沙箱网络权限阻挡，获准重试后完成。
+- 两种配置均有相同的既存 `Ready muzzle ray calibration at reference plane`
+  DEV断言失败。此前的item注册、baked model/animation与anchor检查已走过；
+  不能记作完整Native视觉/动作自检通过。本轮不修改该断言或手枪资源来掩盖问题。
+- 无TaCZ隔离回归：`runGameTestServer -PaflWithoutTacz -I src/dev/noise-system-v2-gametest.init.gradle --offline --stacktrace`
+  **44/44 required tests通过**，含内部Gunshot听觉、耳鸣累积/共享Episode、爆炸回归。
+  相比旧49项，删除6项外部集成/审计测试，新增1项纯内部Noise测试；没有以删核心测试冒充回归。
+- 日志：`build/decoupling-verification/with-tacz.log`、`without-tacz.log`，
+  `build/noise-system-v2-gametest/logs/latest.log`（build目录会被clean清除）。
+- 未实际逐发验证TaCZ开火或耳鸣试听；无外部枪声连接的结论来自源码、字节码与编译依赖扫描。
+
+TaCZ 不再是 AFL 强制依赖，`mods.toml` 不再声明 TaCZ；Gradle 仅保留
+`runtimeOnly fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")` 供开发对比。
+`-PaflWithoutTacz` 可省略此开发依赖。Native Gun Framework 是后续枪械功能唯一生产路线。
+已删除 `TaczNoiseEvents`、`GunshotNoiseResolver`、枪械ID/类别fallback、附件silence读取及旧专用审计器。
+TaCZ 开火不再产生 AFL 枪声 Noise / Tinnitus；但任何模组走标准 Forge Detonate 的爆炸
+仍按通用爆炸入口处理，不屏蔽或重复监听第三方弹丸。
+
+保留 NoiseSystem、感染者听觉、Explosion Noise、Explosion Tinnitus、共享Episode、Overlay/音频、
+GunshotExposureTracker/Profile/Accumulator 的通用参数与冷却。未来 successful shot 的接入位置：
+`NoiseSystem.emit(NoiseEvent, ServerLevel)`（类型 `GUNSHOT`）及
+`GunshotExposureTracker.onGunshot(level, shooter, sourcePosition, acousticRadius, false)`。
+后者仅发耳鸣impulse、不代发Noise；布尔参数是保留的通用策略输入，不再读取外部附件。
+当前 Native Service Pistol 尚未调用这两个枪声入口；本轮未实现枪声pipeline或Native消音器。
+Service Pistol 视觉/动画/声音、9mm资产、HUD及弹药逻辑未改。
+
+删除专用TaCZ开发测试；保留爆炸、耳鸣核心测试，并用显式数值输入测试内部Noise听觉入口。
+旧TaCZ测试通过记录仅属历史，不能视为当前集成仍存在或本轮运行验证。
+
+
 ## Reload第0帧转静态基线 — 当前版本 / 待视觉确认
 
 2026-09-07按用户明确要求，将最新Reload第0帧的双手姿势提升为静态anchor；

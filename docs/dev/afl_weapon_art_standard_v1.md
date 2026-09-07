@@ -1,5 +1,28 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
+## 9mm Round / Casing V1 — 独立资产，尚未注册物品
+
+2026-09-07：沿用已有储罐、铅箱源模型所在的 `src/main/blockbench/`，新增
+`9mm_round.bbmodel` 和 `9mm_casing.bbmodel`。不修改 Service Pistol。
+原创 cube-only 普通 Java item 模型，纵轴 Y：Round X/Y/Z=4/12/4，
+Casing=4/8.015/4（包含底火微小突出）。分别14/10个cuboid。
+两者共用完全相同的弹壳局部几何；Round增加四段铜色弹头，
+Casing保留开放四壁和暗色腔底。底缘、抽壳槽和中央底火独立表达。
+共用原创16×16 `textures/item/9mm_palette.png` 色板，源模型嵌入同一PNG。
+
+普通运行时资源为 `assets/apocalypse_firstlight/models/item/9mm_round.json`
+和 `9mm_casing.json`，不使用GeckoLib。每个模型的唯一几何通过七项
+Display适配GUI、左右第一/第三人称、Ground、Fixed；未注册item，
+因此这些资源不会自动出现在创造物品栏，也不代表已实现弹药或抛壳系统。
+未复用第三方资产；未修改Java、HUD、武器动作或音效。
+
+`node tools/export-9mm-assets.mjs` 重建上述生成资产；`--check` 只读检查一致性。
+源文件可独立编辑，但再次执行生成器会覆盖手工修改，编辑后应同步生成器或另行导出。
+结构/尺寸/源与导出一致性已检查；Blockbench实际打开及GUI/Hand/Ground
+实机视觉尚未验证，不能将已配置Display视为视觉通过。
+本轮 `processResources build --offline` 通过（30s），`git diff --check`
+及生成资产一致性、尺寸正值、UV范围、贴图引用检查通过；未启动客户端。
+
 ## Reload第0帧转静态基线 — 当前版本 / 待视觉确认
 
 2026-09-07按用户明确要求，将最新Reload第0帧的双手姿势提升为静态anchor；

@@ -4,22 +4,14 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.ExplosionTinnitusEnvelope;
 import com.antaurora.apofirstlight.explosion.ExplosionTinnitusProfile;
 import com.antaurora.apofirstlight.noise.ExplosionNoiseProfile;
-import com.antaurora.apofirstlight.noise.GunshotNoiseResolver;
 import com.antaurora.apofirstlight.tinnitus.GunshotExposureAccumulator;
 import com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker;
 import com.antaurora.apofirstlight.tinnitus.GunshotTinnitusProfile;
-import com.tacz.guns.api.TimelessAPI;
-import com.tacz.guns.api.item.IGun;
-import com.tacz.guns.api.item.attachment.AttachmentType;
-import com.tacz.guns.api.item.builder.AttachmentItemBuilder;
-import com.tacz.guns.api.item.builder.GunItemBuilder;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
@@ -168,14 +160,6 @@ public final class GunshotTinnitusGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "network_empty", timeoutTicks = 100)
-    public static void suppressorsDisableExposure(GameTestHelper helper) throws Exception {
-        assertSuppressorImmunity(helper, "ak47", 96.0, 10.0);
-        assertSuppressorImmunity(helper, "scar_h", 112.0, 11.0);
-        assertSuppressorImmunity(helper, "m107", 160.0, 16.0);
-        assertNonSuppressorStillExposes(helper, "ak47", 96.0);
-        helper.succeed();
-    }
 
     @GameTest(template = "network_empty", timeoutTicks = 100)
     public static void sharedTimelineAndExplosionRegression(GameTestHelper helper) {
@@ -239,85 +223,9 @@ public final class GunshotTinnitusGameTests {
         return player;
     }
 
-    private static void assertSuppressorImmunity(GameTestHelper helper, String gunPath,
-                                                 double expectedBareRadius,
-                                                 double expectedZombieRadius) throws Exception {
-        ResourceLocation gunId = new ResourceLocation("tacz", gunPath);
-        ItemStack bareGun = GunItemBuilder.create().setId(gunId).build();
-        double bareRadius = GunshotNoiseResolver.resolveAcousticRadius(bareGun, gunId);
-        helper.assertTrue(bareRadius == expectedBareRadius, gunId + " bare radius changed");
-        ItemStack gunStack = gunWithCompatibleMuzzle(helper, gunId, true);
-        double acousticRadius = GunshotNoiseResolver.resolveAcousticRadius(gunStack, gunId);
-        helper.assertTrue(GunshotTinnitusProfile.shotExposure(acousticRadius, 0.0) > 0.0,
-                gunId + " test cannot prove path-level suppression because acoustic input is already zero");
-        helper.assertTrue(GunshotNoiseResolver.resolveZombieNoiseRadius(gunStack, gunId)
-                        == expectedZombieRadius,
-                gunId + " infected suppressor radius changed");
 
-        ServerLevel level = helper.getLevel();
-        Vec3 source = helper.absoluteVec(new Vec3(3.0, 3.0, 3.0));
-        List<ServerPlayer> listeners = new ArrayList<>();
-        ServerPlayer shooter = addPlayer(listeners, level, source, 0.0);
-        addPlayer(listeners, level, source, 3.0);
-        int impulses = 0;
-        for (int shot = 0; shot < 30; shot++) {
-            impulses += accumulateWithoutNetwork(level, shooter, source, acousticRadius, true, listeners);
-        }
-        helper.assertTrue(impulses == 0,
-                gunId + " true suppressor emitted a gunshot tinnitus impulse");
-        for (ServerPlayer listener : listeners) {
-            helper.assertTrue(!hasExposure(level, listener.getUUID()),
-                    gunId + " true suppressor stored exposure for " + listener.getGameProfile().getName());
-        }
-    }
 
-    private static void assertNonSuppressorStillExposes(GameTestHelper helper, String gunPath,
-                                                         double expectedBareRadius) throws Exception {
-        ResourceLocation gunId = new ResourceLocation("tacz", gunPath);
-        ItemStack gunStack = gunWithCompatibleMuzzle(helper, gunId, false);
-        double acousticRadius = GunshotNoiseResolver.resolveAcousticRadius(gunStack, gunId);
-        helper.assertTrue(acousticRadius == expectedBareRadius,
-                gunId + " non-suppressor muzzle changed the existing acoustic input");
-        helper.assertTrue(GunshotNoiseResolver.resolveZombieNoiseRadius(gunStack, gunId) == acousticRadius,
-                gunId + " non-suppressor muzzle received the infected suppressor cap");
 
-        ServerLevel level = helper.getLevel();
-        Vec3 source = helper.absoluteVec(new Vec3(3.0, 3.0, 3.0));
-        List<ServerPlayer> listeners = new ArrayList<>();
-        ServerPlayer shooter = addPlayer(listeners, level, source, 0.0);
-        accumulateWithoutNetwork(level, shooter, source, acousticRadius, false, listeners);
-        int impulses = accumulateWithoutNetwork(level, shooter, source, acousticRadius, false, listeners);
-        helper.assertTrue(impulses == 1 && hasExposure(level, shooter.getUUID()),
-                gunId + " non-suppressor muzzle incorrectly blocked tinnitus accumulation");
-    }
-
-    private static ItemStack gunWithCompatibleMuzzle(GameTestHelper helper, ResourceLocation gunId,
-                                                      boolean trueSuppressor) {
-        ItemStack gunStack = GunItemBuilder.create().setId(gunId).build();
-        IGun gun = IGun.getIGunOrNull(gunStack);
-        helper.assertTrue(gun != null, "Missing IGun for " + gunId);
-        for (var entry : TimelessAPI.getAllCommonAttachmentIndex()) {
-            if (entry.getValue().getType() != AttachmentType.MUZZLE
-                    || GunshotNoiseResolver.isTrueSuppressor(entry.getKey()) != trueSuppressor) continue;
-            ItemStack attachment = AttachmentItemBuilder.create().setId(entry.getKey()).build();
-            if (gun.allowAttachment(gunStack, attachment)) {
-                gun.installAttachment(gunStack, attachment);
-                return gunStack;
-            }
-        }
-        helper.fail("No compatible muzzle with trueSuppressor=" + trueSuppressor + " for " + gunId);
-        return gunStack;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static boolean hasExposure(ServerLevel level, UUID playerId) throws Exception {
-        Field field = GunshotExposureTracker.class.getDeclaredField("EXPOSURE_BY_LEVEL");
-        field.setAccessible(true);
-        Map<ServerLevel, Map<UUID, GunshotExposureAccumulator>> allExposure =
-                (Map<ServerLevel, Map<UUID, GunshotExposureAccumulator>>) field.get(null);
-        Map<UUID, GunshotExposureAccumulator> exposure = allExposure.get(level);
-        return exposure != null && exposure.containsKey(playerId);
-    }
 
     @SuppressWarnings("unchecked")
     private static Map<UUID, GunshotExposureAccumulator> exposureForLevel(ServerLevel level)

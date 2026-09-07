@@ -74,13 +74,6 @@ mixinConfigs=["apocalypse_firstlight.mixins.json"]
     side="BOTH"
 
 [[dependencies.${mod_id}]]
-    modId="tacz"
-    mandatory=true
-    versionRange="[1.1.6,)"
-    ordering="AFTER"
-    side="BOTH"
-
-[[dependencies.${mod_id}]]
     modId="geckolib"
     mandatory=true
     versionRange="[4.7,5)"

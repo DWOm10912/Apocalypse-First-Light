@@ -1,5 +1,12 @@
 # Apocalypse: First Light — Project Handoff Snapshot
 
+> Historical snapshot (2026-08-18), not current dependency or integration authority.
+> 2026-09-07: TaCZ is runtime-only for development comparison; the mandatory
+> mods.toml entry, TaczNoiseEvents and GunshotNoiseResolver have been removed.
+> AFL no longer consumes TaCZ APIs/events. Native Gun is the production route;
+> successful-shot Noise/Tinnitus wiring is still pending. See current
+> docs/01 - 系统设计/声音.md and docs/dev/native-afl-gun-framework-v0.md.
+
 Snapshot: 2026-08-18
 Repository: D:\Minecraft Modding\Apocalypse First Light
 HEAD: 97050c1 (+shelf single V1)

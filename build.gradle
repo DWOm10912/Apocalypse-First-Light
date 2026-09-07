@@ -191,7 +191,10 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    implementation fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")
+    // Comparison mod only; -PaflWithoutTacz omits it for dependency-free launch checks.
+    if (!project.hasProperty('aflWithoutTacz')) {
+        runtimeOnly fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")
+    }
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
     implementation("com.eliotlash.mclib:mclib:20")
     implementation fg.deobf("curse.maven:terrablender-563928:${terrablender_file_id}")

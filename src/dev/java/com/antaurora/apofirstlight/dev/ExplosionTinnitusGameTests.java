@@ -5,7 +5,6 @@ import com.antaurora.apofirstlight.explosion.ExplosionTinnitusProfile;
 import com.antaurora.apofirstlight.mixin.ExplosionAccessor;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.registry.AflSounds;
-import com.tacz.guns.util.block.ProjectileExplosion;
 import io.netty.buffer.Unpooled;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -75,23 +74,6 @@ public final class ExplosionTinnitusGameTests {
         h.succeed();
     }
 
-    @GameTest(template = "network_empty", timeoutTicks = 100)
-    public static void tinnitusTaczHook(GameTestHelper h) {
-        Vec3 center = h.absoluteVec(new Vec3(3, 3, 3));
-        ProjectileExplosion explosion = new ProjectileExplosion(h.getLevel(), null, null, null, null,
-                center.x, center.y, center.z, 0, 0.25F, false, Explosion.BlockInteraction.KEEP);
-        HookProbe probe = new HookProbe(center);
-        MinecraftForge.EVENT_BUS.register(probe);
-        try {
-            h.assertTrue(((ExplosionAccessor) explosion).afl$getRadius() == 0.25F,
-                    "TaCZ radius is not propagated to vanilla base");
-            explosion.explode();
-            h.assertTrue(probe.detonations == 1, "TaCZ did not use shared Forge Detonate exactly once");
-        } finally {
-            MinecraftForge.EVENT_BUS.unregister(probe);
-        }
-        h.succeed();
-    }
 
     public static final class HookProbe {
         private final Vec3 center;
