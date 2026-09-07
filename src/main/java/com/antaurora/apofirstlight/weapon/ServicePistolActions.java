@@ -26,6 +26,8 @@ public final class ServicePistolActions {
     public static final int MAG_IN_TICK = 19;
     private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
     private static final Map<ServerPlayer, Long> NEXT_FIRE = new WeakHashMap<>();
+    private static final Map<ServerPlayer, Long> NEXT_DRY_FIRE = new WeakHashMap<>();
+    public static final int DRY_FIRE_COOLDOWN = 6;
 
     private static final class Session {
         ItemStack stack;
@@ -34,6 +36,7 @@ public final class ServicePistolActions {
         long start;
         long end;
         boolean reload;
+        String clip;
         boolean outPlayed;
         boolean inPlayed;
         int slot;
@@ -57,7 +60,15 @@ public final class ServicePistolActions {
             if (NativeGunAmmo.read(held, definition) >= definition.magazineCapacity()
                     || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
         } else {
-            if (now < NEXT_FIRE.getOrDefault(player, 0L) || !NativeGunAmmo.consumeOne(held, definition)) return;
+            if (now < NEXT_FIRE.getOrDefault(player, 0L)) return;
+            if (NativeGunAmmo.read(held, definition) == 0) {
+                if (now >= NEXT_DRY_FIRE.getOrDefault(player, 0L)) {
+                    NEXT_DRY_FIRE.put(player, now + DRY_FIRE_COOLDOWN);
+                    sound(player, AflSounds.SERVICE_PISTOL_DRY_FIRE.get());
+                }
+                return;
+            }
+            if (!NativeGunAmmo.consumeOne(held, definition)) return;
             NEXT_FIRE.put(player, now + definition.fireIntervalTicks());
         }
         Session state = new Session();
@@ -68,12 +79,18 @@ public final class ServicePistolActions {
         state.end = now + (reload ? definition.reloadDurationTicks() : definition.fireIntervalTicks());
         state.slot = slot;
         state.reload = reload;
+        state.clip = reload ? (NativeGunAmmo.read(held, definition) == 0 ? "reload_empty" : "reload")
+                : (NativeGunAmmo.read(held, definition) == 0 ? "fire_last_round" : "fire");
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
         // Deliver the per-stack render identity before its animation trigger.
         syncInventory(player);
-        item.triggerAnim(player, state.id, ServicePistolItem.CONTROLLER, animationName(reload));
-        if (!reload) sound(player, AflSounds.SERVICE_PISTOL_FIRE.get());
+        item.triggerAnim(player, state.id, ServicePistolItem.CONTROLLER, state.clip);
+        if (!reload) {
+            sound(player, AflSounds.SERVICE_PISTOL_FIRE.get());
+            NativeGunShot.execute(player, definition);
+            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id);
+        }
     }
 
     @SubscribeEvent
@@ -85,7 +102,7 @@ public final class ServicePistolActions {
                 || player.getInventory().selected != state.slot
                 || player.level().dimension() != state.dimension) {
             state.item.stopTriggeredAnim(player, state.id,
-                    ServicePistolItem.CONTROLLER, animationName(state.reload));
+                    ServicePistolItem.CONTROLLER, state.clip);
             SESSIONS.remove(player);
             return;
         }
@@ -121,6 +138,7 @@ public final class ServicePistolActions {
         if (event.getEntity() instanceof ServerPlayer player) {
             SESSIONS.remove(player);
             NEXT_FIRE.remove(player);
+            NEXT_DRY_FIRE.remove(player);
         }
     }
 

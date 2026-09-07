@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "10";
+    private static final String PROTOCOL = "11";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -63,6 +63,24 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, ServicePistolC2SPacket.class,
                 ServicePistolC2SPacket::encode, ServicePistolC2SPacket::decode, ServicePistolC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, NativeShotS2CPacket.class,
+                NativeShotS2CPacket::encode, NativeShotS2CPacket::decode, NativeShotS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void sendNativeShot(ServerPlayer player, int slot, long gunId) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId));
+    }
+
+    public record NativeShotS2CPacket(int slot, long gunId) {
+        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId); }
+        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong()); }
+        static void handle(NativeShotS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
+            var context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId)));
+            context.setPacketHandled(true);
+        }
     }
 
     public static void requestServicePistol(boolean reload, int slot) {

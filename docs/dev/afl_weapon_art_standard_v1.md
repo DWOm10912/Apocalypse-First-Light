@@ -1,5 +1,19 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
+## V0.6.1 — 最小空仓机械状态（当前）
+
+Service Pistol可编辑源仍为 src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel。
+原fire/reload轨道、非animation源字段、Geo、Display、贴图及双手构图保持不变。
+新增fire_last_round、empty_idle、reload_empty，由 tools/add-native-empty-states.mjs 派生；
+tools/export-native-gun.mjs 将五个clip导出至
+src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json。
+empty_idle使用loop；仅slide/front_sight/rear_sight/sight_anchor保持后退1.28模型单位。
+最后一发在0.04s后保持后锁；空仓换弹1.10–1.30s平滑前进，其余原换弹轨道逐值保留。
+这不是独立完整Empty Reload，不新增释放滑套手势，不改0.40/0.95节点或1.30s时长。
+派生器会重新生成这三个clip，手工修改派生clip前应明确源权威，不能误覆盖用户新动画。
+2026-09-07：导出一致性/构建通过，实机截图已核对，用户确认本版测试没有问题。
+服务端50/50测试与视觉验证边界详见 docs/dev/native-afl-gun-framework-v0.md。
+
 ## 9mm Round / Casing V1 — V0.6已注册Round，Casing仅资产
 
 2026-09-07：沿用已有储罐、铅箱源模型所在的 `src/main/blockbench/`，新增

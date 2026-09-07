@@ -57,7 +57,9 @@ public final class ServicePistolItem extends Item implements GeoItem, NativeGunI
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
         controllers.add(new ServicePistolAnimationController(this)
                 .triggerableAnim("fire", RawAnimation.begin().thenPlay("animation.service_pistol.fire"))
-                .triggerableAnim("reload", RawAnimation.begin().thenPlay("animation.service_pistol.reload")));
+                .triggerableAnim("reload", RawAnimation.begin().thenPlay("animation.service_pistol.reload"))
+                .triggerableAnim("fire_last_round", RawAnimation.begin().thenPlay("animation.service_pistol.fire_last_round"))
+                .triggerableAnim("reload_empty", RawAnimation.begin().thenPlay("animation.service_pistol.reload_empty")));
     }
 
     @Override

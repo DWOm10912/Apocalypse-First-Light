@@ -63,8 +63,9 @@ export function compile(source, priorGeo, priorDisplay) {
     geometry['minecraft:geometry'][0].bones=bones;
     const animations={format_version:'1.8.0',animations:{}};
     for(const a of source.animations) {
-        assert(['animation.service_pistol.fire','animation.service_pistol.reload'].includes(a.name));
+        assert(['fire','reload','empty_idle','fire_last_round','reload_empty'].some(n=>a.name==='animation.service_pistol.'+n));
         const out={animation_length:a.length,bones:{}};
+        if(a.loop==='loop')out.loop=true;
         animations.animations[a.name]=out;
         for(const [id,animator] of Object.entries(a.animators)) {
             if(!animator.keyframes?.length)continue;

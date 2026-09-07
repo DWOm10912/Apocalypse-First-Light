@@ -1,6 +1,8 @@
 {
   "item.apocalypse_firstlight.service_pistol": "制式手枪",
-  "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17发弹匣（尚无弹道伤害）",
+  "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17发弹匣 / 半自动",
+  "death.attack.apocalypse_firstlight.native_bullet": "%1$s 被 %2$s 射杀了",
+  "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s 被 %2$s 用 %3$s 射杀了",
   "item.apocalypse_firstlight.9mm_round": "9mm 手枪弹",
   "key.apocalypse_firstlight.reload": "原生武器换弹",
   "key.categories.apocalypse_firstlight": "黎明启示录",

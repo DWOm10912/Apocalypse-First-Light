@@ -14,7 +14,12 @@ public final class ServicePistolAnimationController extends AnimationController<
     private double reloadSeconds = -1;
 
     public ServicePistolAnimationController(ServicePistolItem item) {
-        super(item, ServicePistolItem.CONTROLLER, 0, state -> PlayState.STOP);
+        super(item, ServicePistolItem.CONTROLLER, 0, state -> {
+            var stack = state.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
+            return stack != null && NativeGunAmmo.read(stack, item.definition()) == 0
+                    ? state.setAndContinue(software.bernie.geckolib.core.animation.RawAnimation.begin()
+                        .thenLoop("animation.service_pistol.empty_idle")) : PlayState.STOP;
+        });
     }
 
     @Override
@@ -24,7 +29,8 @@ public final class ServicePistolAnimationController extends AnimationController<
         super.process(model, state, bones, snapshots, seekTime, crashWhenCantFindBone);
         reloadSeconds = getTriggeredAnimation() != null && getAnimationState() != State.STOPPED
                 && getCurrentAnimation() != null
-                && getCurrentAnimation().animation().name().equals("animation.service_pistol.reload")
+                && (getCurrentAnimation().animation().name().equals("animation.service_pistol.reload")
+                    || getCurrentAnimation().animation().name().equals("animation.service_pistol.reload_empty"))
                 ? getAnimationSpeed() * Math.max(seekTime - tickOffset, 0) / 20D : -1;
     }
 

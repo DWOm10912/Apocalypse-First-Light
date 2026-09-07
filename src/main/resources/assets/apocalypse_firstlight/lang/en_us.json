@@ -1,6 +1,8 @@
 {
   "item.apocalypse_firstlight.service_pistol": "Service Pistol",
-  "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17-round magazine (no ballistics yet)",
+  "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17-round magazine / Semi-auto",
+  "death.attack.apocalypse_firstlight.native_bullet": "%1$s was shot by %2$s",
+  "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s was shot by %2$s using %3$s",
   "item.apocalypse_firstlight.9mm_round": "9mm Round",
   "key.apocalypse_firstlight.reload": "Reload native weapon",
   "key.categories.apocalypse_firstlight": "Apocalypse: First Light",
