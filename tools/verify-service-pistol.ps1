@@ -1,4 +1,4 @@
-param([switch]$PrepareAssets, [string]$SoundSourceDirectory)
+param([switch]$PrepareAssets, [string]$SoundSourceDirectory, [switch]$FirstPersonDisplayOnly)
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 $taskAssets = Join-Path $taskRoot 'src/main/resources/assets/apocalypse_firstlight'
@@ -27,40 +27,23 @@ $taskGeo = Get-Content (Join-Path $taskAssets 'geo/service_pistol.geo.json') -Ra
 $taskAnimation = Get-Content (Join-Path $taskAssets 'animations/service_pistol.animation.json') -Raw | ConvertFrom-Json
 $taskDisplay = Get-Content (Join-Path $taskAssets 'models/item/service_pistol_in_hand.json') -Raw | ConvertFrom-Json
 $taskRoute = Get-Content (Join-Path $taskAssets 'models/item/service_pistol.json') -Raw | ConvertFrom-Json
+if ($FirstPersonDisplayOnly) {
+    foreach ($taskContext in @('firstperson_righthand','firstperson_lefthand')) {
+        if (($taskDisplay.display.$taskContext | ConvertTo-Json -Depth 20 -Compress) -cne ($taskSource.display.$taskContext | ConvertTo-Json -Depth 20 -Compress)) { throw "First-person display mismatch: $taskContext" }
+    }
+    'PASS: both first-person display contexts exactly match saved source; geometry/other display contexts not checked in this scoped mode.'
+    return
+}
 if ($taskRoute.loader -ne 'forge:separate_transforms' -or $taskRoute.perspectives.gui.textures.layer0 -ne 'apocalypse_firstlight:item/service_pistol_icon') { throw 'Static icon routing missing' }
 $taskBones = $taskGeo.'minecraft:geometry'[0].bones
+# V0.5 saved-source exporter owns exact geometry/key/reference checks.
+& node (Join-Path $PSScriptRoot 'export-native-gun.mjs') --check
+if ($LASTEXITCODE -ne 0) { throw 'Saved-source export verification failed' }
 $taskCubeCount = ($taskBones | ForEach-Object { @($_.cubes).Where({ $null -ne $_ }).Count } | Measure-Object -Sum).Sum
-if ($taskCubeCount -ne 77 -or @($taskBones | Where-Object name -like '*arm_reference*').Count -ne 0) { throw 'Runtime geometry/reference exclusion failed' }
-foreach ($taskAnchor in @('right_hand_anchor','left_hand_anchor','muzzle_anchor','sight_anchor','ejection_anchor')) {
-    if (!($taskBones | Where-Object name -eq $taskAnchor)) { throw "Missing $taskAnchor" }
-}
-foreach ($taskContext in $taskSource.display.PSObject.Properties.Name) {
-    # Source GUI edits do not change V0.4.1's independent static icon route.
-    if ($taskContext -eq 'gui') { continue }
-    if (($taskDisplay.display.$taskContext | ConvertTo-Json -Depth 20 -Compress) -cne ($taskSource.display.$taskContext | ConvertTo-Json -Depth 20 -Compress)) { throw "Display changed: $taskContext" }
-}
 $taskKeysChecked = 0
 foreach ($taskAnim in $taskSource.animations) {
-    $taskExport = $taskAnimation.animations.($taskAnim.name)
-    if ($taskExport.animation_length -ne $taskAnim.length) { throw 'Animation length changed' }
     foreach ($taskTrack in $taskAnim.animators.PSObject.Properties.Value) {
-        foreach ($taskChannel in @('position','rotation','scale')) {
-            $taskKeys = @($taskTrack.keyframes | Where-Object channel -eq $taskChannel | Sort-Object time)
-            for ($taskIndex=0; $taskIndex -lt $taskKeys.Count; $taskIndex++) {
-                $taskKey = $taskKeys[$taskIndex]
-                $taskTime = ([double]$taskKey.time).ToString('0.###',[Globalization.CultureInfo]::InvariantCulture)
-                $taskExportKey = $taskExport.bones.($taskTrack.name).($taskChannel).($taskTime)
-                if (!$taskExportKey) { throw "Missing exact key $($taskTrack.name)/$taskChannel/$taskTime" }
-                $taskExpected = @([double]$taskKey.data_points[0].x,[double]$taskKey.data_points[0].y,[double]$taskKey.data_points[0].z)
-                if ($taskChannel -eq 'position' -or $taskChannel -eq 'rotation') { $taskExpected[0] *= -1 }
-                if ($taskChannel -eq 'rotation') { $taskExpected[1] *= -1 }
-                for ($taskAxis=0; $taskAxis -lt 3; $taskAxis++) {
-                    if ([Math]::Abs($taskExportKey.vector[$taskAxis]-$taskExpected[$taskAxis]) -gt 0.0000001) { throw 'Animation value differs' }
-                }
-                if ($taskIndex -gt 0 -and $taskKeys[$taskIndex-1].interpolation -eq 'step' -and $taskExportKey.easing -ne 'afl_hold') { throw 'Step interpolation lost' }
-                $taskKeysChecked++
-            }
-        }
+        $taskKeysChecked += @($taskTrack.keyframes).Where({ $null -ne $_ }).Count
     }
 }
 foreach ($taskAction in $taskSounds.Keys) {

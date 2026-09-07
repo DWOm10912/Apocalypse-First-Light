@@ -30,10 +30,10 @@ public final class NativeGunPresentationTrace {
         var root = renderer.getGeoModel().getBone("weapon_root").orElseThrow();
         var mag = renderer.getGeoModel().getBone("magazine").orElseThrow();
         var left = renderer.getGeoModel().getBone("left_hand_anchor").orElseThrow();
-        ApocalypseFirstLight.LOGGER.info("[AFL PRESENTATION V042] renderedId={} heldId={} controller={} animation={} rootZ={} magY={} magScale={} leftY={} skin={} reloadSeconds={} presentationWeight={}",
+        ApocalypseFirstLight.LOGGER.info("[AFL PRESENTATION V05] renderedId={} heldId={} controller={} animation={} rootZ={} magY={} magScale={} leftY={} skin={} reloadSeconds={} sourceSideOpenY={}",
                 GeoItem.getId(stack), GeoItem.getId(mc.player.getMainHandItem()), controller.getAnimationState(),
                 controller.getCurrentAnimation() == null ? "pending" : controller.getCurrentAnimation().animation().name(),
                 root.getRotZ(), mag.getPosY(), mag.getScaleY(), left.getPosY(), mc.player.getModelName(), renderer.getReloadSeconds(),
-                com.antaurora.apofirstlight.weapon.client.ServicePistolPresentation.reloadWeight(renderer.getReloadSeconds()));
+                renderer.getGeoModel().getBone("fp_root").orElseThrow().getRotY());
     }
 }
