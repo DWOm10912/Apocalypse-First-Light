@@ -1,4 +1,7 @@
 {
+  "shell_casings_dropping": {
+    "sounds": [{"name": "apocalypse_firstlight:shell_casings_dropping", "attenuation_distance": 12}]
+  },
   "service_pistol_dry_fire": { "sounds": ["apocalypse_firstlight:dry_fire"] },
   "service_pistol_fire": {
     "subtitle": "subtitles.apocalypse_firstlight.service_pistol.fire",

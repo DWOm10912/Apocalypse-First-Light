@@ -1,5 +1,19 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
+## V0.6.2 — 用户枪焰贴图 / 原创弹壳视觉消费者
+
+原样接入用户128×128 RGBA枪焰图（透明角落、高亮不透明核心）：
+assets/apocalypse_firstlight/textures/effects/service_pistol_muzzle_flash.png。
+不重新绘制，不用TaCZ素材。NativeGunFxLayer读取muzzle_anchor最终遍历矩阵，
+以3个双面正交quad、emissive shader和SRC_ALPHA+ONE混合绘制1tick短闪；不修改枪械资产。
+用户追加尺寸调整：FLASH_SCALE .34→.17（50%）；贴图/面片/寿命/混合及弹壳参数不变，新尺寸尚未实机验收。
+现有9mm_casing.bbmodel及models/item/9mm_casing.json通过export-9mm-assets.mjs --check，
+本轮只注册额外baked model供客户端瞬态FX绘制，不新增物品注册或服务端实体。
+模型几何/黄铜色板/9mm Round/Display不变；V0.6.2.1 casingVisualScale=.072（原.24的30%）仅用于FX绘制。
+同轮仅翻转抛壳局部横向-X→+X，保留其它分量/物理/音效/枪焰；2026-09-07用户确认尺寸、四向与F5回归没有问题。
+落地音原样接入用户shell_casings_dropping.ogg；详见framework V0.6.2节。
+构建与50/50服务端回归通过；第一/第三人称FX实机视觉仍待验收，不以数值代替。
+
 ## V0.6.1 — 最小空仓机械状态（当前）
 
 Service Pistol可编辑源仍为 src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel。

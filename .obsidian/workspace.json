@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 系统设计/枪械.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "枪械"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/01 - 系统设计/枪械.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,29 +189,30 @@
   },
   "active": "6cfc6a4c74362551",
   "lastOpenFiles": [
-    "docs/01 - 系统设计/声音.md",
-    "docs/01 - 系统设计/枪械.md",
-    "docs/04 - 注意事项 重要内容.md",
-    "run/saves/test/level9049436005249852094.dat",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/saves/test/level3911287690112769473.dat",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-4663393913718659426.dat",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
-    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-17019321133494396932.dat",
-    "run/screenshots/afl-v061-099-0-empty_idle-t18.png",
-    "run/screenshots/afl-v061-098-0-empty_idle-t6.png",
-    "run/screenshots/afl-v061-097-0-empty_idle-t3.png",
-    "run/screenshots/afl-v061-096-0-empty_idle-t1.png",
-    "run/screenshots/afl-v061-095-0-fire_last_round-t1.png",
-    "run/screenshots/afl-v061-094-1-fire-t6.png",
-    "run/screenshots/afl-v061-093-1-fire-t3.png",
-    "run/screenshots/afl-v061-092-1-fire-t1.png",
-    "run/screenshots/afl-v061-091-2-fire-t3.png",
-    "run/screenshots/afl-v061-090-2-fire-t1.png",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
+    "run/screenshots/afl-v062-159-FIRST_PERSON-shot18-frame0.png",
+    "run/screenshots/afl-v062-158-FIRST_PERSON-shot17-frame12.png",
+    "run/screenshots/afl-v062-157-FIRST_PERSON-shot17-frame7.png",
+    "run/screenshots/afl-v062-156-FIRST_PERSON-shot17-frame6.png",
+    "run/screenshots/afl-v062-155-FIRST_PERSON-shot17-frame5.png",
+    "run/screenshots/afl-v062-154-FIRST_PERSON-shot17-frame4.png",
+    "run/screenshots/afl-v062-153-FIRST_PERSON-shot17-frame3.png",
+    "run/screenshots/afl-v062-152-FIRST_PERSON-shot17-frame2.png",
+    "run/screenshots/afl-v062-151-FIRST_PERSON-shot17-frame1.png",
+    "run/screenshots/afl-v062-150-FIRST_PERSON-shot17-frame0.png",
+    "docs/01 - 系统设计/枪械.md",
+    "docs/01 - 系统设计/声音.md",
+    "docs/04 - 注意事项 重要内容.md",
     "docs/dev/native-gun-afl-vs-tacz-player-arm-presentation-audit.md",
     "docs/dev/native-gun-first-person-runtime-path-audit.md",
     "docs/dev/native-gun-hand-locator-authoring-standard.md",

@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "11";
+    private static final String PROTOCOL = "12";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -66,10 +66,27 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, NativeShotS2CPacket.class,
                 NativeShotS2CPacket::encode, NativeShotS2CPacket::decode, NativeShotS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, NativeShotFxS2CPacket.class,
+                NativeShotFxS2CPacket::encode, NativeShotFxS2CPacket::decode, NativeShotFxS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static void sendNativeShot(ServerPlayer player, int slot, long gunId) {
         channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId));
+        channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
+                new NativeShotFxS2CPacket(player.getId(), gunId));
+    }
+
+    /** Notification only; ammo, hitscan and HUD remain on their existing paths. */
+    public record NativeShotFxS2CPacket(int shooterId, long gunId) {
+        static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.shooterId); b.writeLong(p.gunId); }
+        static NativeShotFxS2CPacket decode(FriendlyByteBuf b) { return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong()); }
+        static void handle(NativeShotFxS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
+            var context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId)));
+            context.setPacketHandled(true);
+        }
     }
 
     public record NativeShotS2CPacket(int slot, long gunId) {

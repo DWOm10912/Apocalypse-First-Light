@@ -16,10 +16,16 @@ public final class ServicePistolRenderer extends GeoItemRenderer<ServicePistolIt
     public ServicePistolRenderer() {
         super(new ServicePistolModel());
         addRenderLayer(new ServicePistolHandLayer(this));
+        addRenderLayer(new NativeGunFxLayer(this));
     }
 
     public boolean isFirstPersonPass() {
         return renderPerspective != null && renderPerspective.firstPerson();
+    }
+
+    public boolean isHeldFxPass() {
+        return isFirstPersonPass() || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
+                || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
     }
 
     public double getReloadSeconds() {
