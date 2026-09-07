@@ -11,7 +11,7 @@
 
 临时参数：20 发；半自动（按下沿），间隔 4 tick；基础伤害 18 Minecraft HP。
 弹药实际 ID 为 `apocalypse_firstlight:9mm_round`；沿用 `AflGunAmmo/ammoInMagazine`，新物品默认满弹，已有空仓不会初始化补满。
-现有手枪的散布、衰减、射程、Noise、recoil/trail暂为共享占位，不代表最终BR51_01平衡。
+衰减、射程、Noise、recoil/trail暂为共享占位；BR51-01基础散布现为0.30°半角，采用通用姿态精度与BATTLE_RIFLE倍率，见native_stance_accuracy_v1.md。
 BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_and_icons.md。
 7.62×51mm弹药、对应弹壳和最终平衡均为后续，不是当前接入的阻塞点。
 

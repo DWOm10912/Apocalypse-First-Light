@@ -76,7 +76,8 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
 - Successful Shot唯一入口位于P901Actions的成功扣1发分支：同步stack、normal/last-round动画与枪声、
   NativeGunShot服务器hitscan/damage、AFL Noise、给射手的S2C HUD flash。0发只播放限流dry-fire，6 ticks。
 - NativeGunDefinition实际参数：capacity17，damage7，headshotMultiplier3（预留，未启用头部判定），
-  falloffStart24、effectiveRange48（描述性元数据）、maxRange64、minMultiplier.65、spread1.2°、noise64。
+  falloffStart24、effectiveRange48（描述性元数据）、maxRange64、minMultiplier.65、base spread1.2°半角、noise64。
+  最终散布现按通用姿态倍率和3/5tick移动恢复计算，BR51-01基础0.30°；见docs/native_guns/native_stance_accuracy_v1.md。
   24–64格线性衰减；64格伤害4.55。球面圆锥内随机射线由服务器从眼睛/视线生成。
   方块碰撞体和实体AABB取最近交点，无穿透、反弹或弹丸；同载具实体过滤，PvP仍遵循原版判定。
 - 自定义damage_type apocalypse_firstlight:native_bullet 使用projectile标签，保留护甲/盾牌/抗性结算，

@@ -59,7 +59,8 @@ public final class NativeGunShot {
 
     public static Hit execute(ServerPlayer shooter, NativeGunDefinition d) {
         Vec3 start = shooter.getEyePosition();
-        Hit hit = trace(shooter, start, spread(shooter.getLookAngle(), d.spreadDegrees(), shooter.getRandom()), d.maxRange());
+        double spreadDegrees = NativeStanceAccuracy.evaluate(shooter, d).finalDegrees();
+        Hit hit = trace(shooter, start, spread(shooter.getLookAngle(), spreadDegrees, shooter.getRandom()), d.maxRange());
         if (hit.entity() != null && (!(hit.entity() instanceof net.minecraft.world.entity.player.Player player)
                 || shooter.canHarmPlayer(player))) {
             var type = shooter.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(BULLET);
