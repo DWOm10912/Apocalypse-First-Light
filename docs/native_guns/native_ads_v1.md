@@ -1,5 +1,7 @@
 # Native ADS V1：机械瞄准（实现已接入，视觉验收未完成）
 
+> 当前追加 [手枪微型红点 V1](pistol_red_dot_v1.md)：P9 安装兼容 SIGHT 后瞄准红点中心，拆下恢复本页机械 profile。装拆是独立 V 键，非右键交互。以下“无配件”指原机械 ADS 范围，不再描述完整现状。
+
 ## 范围与输入
 
 P9-01 / BR51-01 共用 `weapon/client/NativeGunAds.java`，按住 Vanilla `keyUse`（默认右键）请求 ADS，松开退出。不是 toggle，不新增网络消息、射击代码、散布奖励、配件或 TaCZ 依赖。
@@ -63,4 +65,4 @@ Native准星仅在progress>=.999时隐藏中心点，退出立即恢复；命中
 - 新版BR51机械瞄线/开火/连续后坐、疾跑退出ADS及停止疾跑后重新进入、ADS→reload/switch、P9 ADS/回归、门按钮交互、FOV恢复：NOT_TESTED（代码已接入但实机验收未完成）。
 - VISUAL_VALIDATION_DONE = NO；不能标记整项ADS最终完成。
 
-后续optic_center可替换每枪anchor/eye relief，沿用同一载体与进度；不要让瞄具改变服务端弹道轴。PIP/倍率/配件均未实现。
+SIGHT V1 已允许配置红点中心并沿用同一载体与进度，不改变服务端弹道轴；PIP 和额外倍率仍未实现。仅 P9 首批支持红点，详见专项报告。

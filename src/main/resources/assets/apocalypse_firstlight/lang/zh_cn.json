@@ -1,4 +1,9 @@
 {
+  "block.apocalypse_firstlight.gun_workbench": "枪械工作台",
+  "item.apocalypse_firstlight.pistol_red_dot": "手枪微型红点瞄具",
+  "key.apocalypse_firstlight.sight_exchange": "安装/拆下瞄具",
+  "tooltip.apocalypse_firstlight.sight.install": "主手持兼容手枪、副手持瞄具：按瞄具装拆键安装（默认 V）",
+  "tooltip.apocalypse_firstlight.sight.detach": "主手持枪、副手空手：按装拆键拆下；动作期间不可装拆",
   "item.apocalypse_firstlight.p9_01": "P9-01 制式手枪",
   "item.apocalypse_firstlight.br51_01": "BR51-01 战斗步枪",
   "tooltip.apocalypse_firstlight.br51_01.ammunition": "7.62×51毫米 | 半自动 | 20 发",

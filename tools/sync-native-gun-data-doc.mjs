@@ -24,7 +24,7 @@ for(const id of ids){
  ['蹲姿静止散布',Number((g.accuracy.base_spread_degrees*crouch[g.accuracy.profile]).toFixed(5))+'°（稳定后，锥形半角）'],
  ['噪声半径',g.noise.radius+' 格'],['枪声耳鸣',g.noise.tinnitus?'是':'否'],
  ['普通换弹时间',fixed(Math.ceil(g.reload.tactical_seconds*20)/20)+' 秒'],['空仓换弹时间',fixed(Math.ceil(g.reload.empty_seconds*20)/20)+' 秒'],
- ['ADS','机械瞄准；疾跑时不可使用；无额外精度加成'],['ADS 时间','进入 / 退出均 '+fixed(g.ads.time_seconds)+' 秒'],
+ ['ADS',(g.sight_slot?.accepts?.length?'机械瞄准 / 安装兼容红点后使用红点':'机械瞄准')+'；疾跑时不可使用；无额外精度加成'],['ADS 时间','进入 / 退出均 '+fixed(g.ads.time_seconds)+' 秒'],
  ['ADS FOV 倍率',fixed(g.ads.fov_multiplier)+'×'],
  ['垂直后坐',fixed(r.verticalMin)+'°–'+fixed(r.verticalMax)+'° / 发（累计上限 '+fixed(r.maxVertical,1)+'°）'],
  ['水平偏移','左 '+fixed(r.horizontalLeftMin)+'°–'+fixed(Math.abs(r.horizontalMin))+'° / 右 '+fixed(r.horizontalRightMin)+'°–'+fixed(r.horizontalMax)+'° 每发；累计上限 ±'+fixed(r.maxHorizontal,1)+'°'],

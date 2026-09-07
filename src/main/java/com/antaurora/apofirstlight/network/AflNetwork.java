@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "15";
+    private static final String PROTOCOL = "16";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -74,6 +74,22 @@ public final class AflNetwork {
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, GunDataPacket.class, GunDataPacket::encode, GunDataPacket::decode,
                 GunDataPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, SightExchangePacket.class,SightExchangePacket::encode,SightExchangePacket::decode,
+                SightExchangePacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    public static void requestSightExchange(int slot){if(channel!=null)channel.sendToServer(new SightExchangePacket(slot));}
+    public record SightExchangePacket(int slot){
+        static void encode(SightExchangePacket p,FriendlyByteBuf b){b.writeVarInt(p.slot);}
+        static SightExchangePacket decode(FriendlyByteBuf b){return new SightExchangePacket(b.readVarInt());}
+        static void handle(SightExchangePacket p,Supplier<NetworkEvent.Context> supplier){
+            var c=supplier.get();c.enqueueWork(()->{
+                var player=c.getSender();
+                if(player!=null&&p.slot>=0&&p.slot<9&&player.getInventory().selected==p.slot
+                        &&player.containerMenu==player.inventoryMenu)
+                    com.antaurora.apofirstlight.weapon.NativeAttachments.exchange(player);
+            });c.setPacketHandled(true);
+        }
     }
 
     public static void sendNativeHit(ServerPlayer shooter, boolean head) {

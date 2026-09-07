@@ -59,6 +59,9 @@ public final class P901Actions {
 
     public static String animationName(boolean reload) { return reload ? "reload" : "fire"; }
 
+    /** Read-only guard for atomic attachment changes, sharing the existing action lock. */
+    public static boolean busy(ServerPlayer player) { return SESSIONS.containsKey(player); }
+
     /** Handling actions share the same server lock as fire/reload. */
     public static boolean operation(ServerPlayer player, String clip) {
         if (!player.isAlive() || player.isSpectator() || SESSIONS.containsKey(player)

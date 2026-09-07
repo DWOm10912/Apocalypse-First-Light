@@ -49,8 +49,10 @@ public final class NativeGunAds {
                 ||!(mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun)) {reset();return;}
         if(!same(mc)) {
             reset(); level=mc.level; player=mc.player; slot=mc.player.getInventory().selected;
-            item=mc.player.getMainHandItem().getItem(); profile=NativeAdsProfile.forGun(gun.definition().id());
+            item=mc.player.getMainHandItem().getItem(); profile=NativeAdsProfile.forStack(mc.player.getMainHandItem());
         }
+        var selectedProfile=NativeAdsProfile.forStack(mc.player.getMainHandItem());
+        if(!java.util.Objects.equals(profile,selectedProfile)){PROGRESS.reset();profile=selectedProfile;}
         if(profile==null)return;
         gunId=GeoItem.getId(mc.player.getMainHandItem());
         if(mc.isPaused())return;

@@ -17,11 +17,13 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
         super(new P901Model());
         addRenderLayer(new P901HandLayer(this));
         addRenderLayer(new NativeGunFxLayer(this));
+        addRenderLayer(new P901SightLayer(this));
     }
 
     public boolean isFirstPersonPass() {
         return renderPerspective != null && renderPerspective.firstPerson();
     }
+    public net.minecraft.world.item.ItemStack sightStack(){return currentItemStack;}
 
     public boolean isHeldFxPass() {
         return isFirstPersonPass() || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND

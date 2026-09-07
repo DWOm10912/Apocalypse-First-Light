@@ -21,6 +21,7 @@
 | reload.tactical_seconds / empty_seconds | 非负秒，向上取整到服务端tick |
 | noise.radius / tinnitus | 非负半径；是否参与现有耳鸣累积系统 |
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
+| sight_slot（可选） | anchor 名称、mount_offset 局部 xyz、ads_center 模型 xyz、accepts 兼容 SIGHT 物品 ID 数组；没有此字段即不支持。详见 [手枪红点 V1](pistol_red_dot_v1.md) |
 | recoil | NativeRecoilProfile同名数值字段，见下文 |
 
 recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizontalMax（右侧最大幅度）、horizontalLeftMin/RightMin（正数下限）、maxVertical/Horizontal；recoveryDelay、cameraRecoveryTime、modelRecoveryTime、horizontalRecoveryTime 为秒；modelPitch/Back/Yaw/Roll 为现有模型后坐参数，horizontalContinueChance 为0–1概率。上下限/有限数/恢复时间/cap均校验。
@@ -33,7 +34,7 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 
 ## 重载与同步
 
-使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。协议版本15，双方需同版本模组。
+使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。SIGHT V1 新增装拆请求后协议版本为16，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示，但仍能拆回副手。
 
 后续射击、弹量读取、换弹、噪声/耳鸣、ADS时间/FOV、后坐与弹壳读取新数据。重载取消正在进行的枪械操作与旧射速冷却；现存弹量按新容量安全clamp，不补回被截断的弹药。动画资源/声音marker不随时长改写，因此大幅调整换弹时长需另外校准美术，不能把JSON时长误当成动画关键帧编辑。
 

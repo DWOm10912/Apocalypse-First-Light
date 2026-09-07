@@ -47,5 +47,11 @@
     "horizontalLeftMin": 0.04,
     "horizontalRightMin": 0.06
   },
-  "casing": "apocalypse_firstlight:9x19mm_casing"
+  "casing": "apocalypse_firstlight:9x19mm_casing",
+  "sight_slot": {
+    "anchor": "sight_anchor",
+    "mount_offset": [0, -0.44, 10.55],
+    "ads_center": [-2.98, 12.15, 8.13],
+    "accepts": ["apocalypse_firstlight:pistol_red_dot"]
+  }
 }

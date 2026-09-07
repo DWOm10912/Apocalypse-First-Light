@@ -74,7 +74,7 @@ public final class NativeGunData {
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
                     num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,NativeTrailProfile.SUBTLE_PISTOL,ap,
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
-                    (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate));
+                    (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate));
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

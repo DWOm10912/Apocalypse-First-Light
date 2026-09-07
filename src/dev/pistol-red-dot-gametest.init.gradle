@@ -1,0 +1,10 @@
+// Isolated test world: never touches the user's client save or run/logs.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file('build/pistol-red-dot-gametest')
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+    }
+}

@@ -46,6 +46,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get());
                         output.accept(AflItems.INDUSTRIAL_LOCKER.get());
                         output.accept(AflItems.LEAD_CHEST.get());
+                        output.accept(AflItems.GUN_WORKBENCH.get());
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
                         output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.FALLOUT_SOIL.get());
@@ -131,6 +132,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.CROWBAR.get());
                         output.accept(AflItems.ROUND_9MM.get());
                         output.accept(AflItems.ROUND_762MM.get());
+                        output.accept(AflItems.PISTOL_RED_DOT.get());
                     })
                     .build());
 

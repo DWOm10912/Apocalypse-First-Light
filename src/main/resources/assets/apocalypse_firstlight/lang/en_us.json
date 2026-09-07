@@ -1,4 +1,9 @@
 {
+  "block.apocalypse_firstlight.gun_workbench": "Gun Workbench",
+  "item.apocalypse_firstlight.pistol_red_dot": "Pistol Micro Red Dot",
+  "key.apocalypse_firstlight.sight_exchange": "Install / Remove Sight",
+  "tooltip.apocalypse_firstlight.sight.install": "Compatible pistol in main hand, sight in offhand: attachment key (default V) to install",
+  "tooltip.apocalypse_firstlight.sight.detach": "Pistol in main hand, empty offhand: attachment key to remove; idle only",
   "item.apocalypse_firstlight.p9_01": "P9-01 Service Pistol",
   "item.apocalypse_firstlight.br51_01": "BR51-01 Battle Rifle",
   "tooltip.apocalypse_firstlight.br51_01.ammunition": "7.62×51mm | Semi-auto | 20 rounds",

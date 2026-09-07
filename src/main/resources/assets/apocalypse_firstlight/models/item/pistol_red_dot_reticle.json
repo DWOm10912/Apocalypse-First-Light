@@ -1,0 +1,77 @@
+{
+  "ambientocclusion": false,
+  "textures": {
+    "0": "apocalypse_firstlight:item/pistol_red_dot",
+    "particle": "apocalypse_firstlight:item/pistol_red_dot"
+  },
+  "elements": [
+    {
+      "from": [
+        7.972,
+        8.972,
+        8.938
+      ],
+      "to": [
+        8.028,
+        9.028,
+        8.942
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            1,
+            13.75,
+            2.5
+          ],
+          "texture": "#0"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            5,
+            13.75,
+            6.5
+          ],
+          "texture": "#0"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            3,
+            13.75,
+            4.5
+          ],
+          "texture": "#0"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            7,
+            13.75,
+            8.5
+          ],
+          "texture": "#0"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            9,
+            13.75,
+            10.5
+          ],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            11,
+            13.75,
+            12.5
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ]
+}

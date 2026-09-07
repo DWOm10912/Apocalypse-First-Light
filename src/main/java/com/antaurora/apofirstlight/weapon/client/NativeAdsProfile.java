@@ -26,6 +26,14 @@ public record NativeAdsProfile(String anchor, float ax, float ay, float az, floa
             default -> null;
         };
     }
+    public static NativeAdsProfile forStack(net.minecraft.world.item.ItemStack stack) {
+        if(!(stack.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeGunItem gun))return null;
+        var base=forGun(gun.definition().id());
+        var mount=gun.definition().sightMount();
+        if(base==null||mount==null||com.antaurora.apofirstlight.weapon.NativeAttachments.activeSight(stack).isEmpty())return base;
+        return new NativeAdsProfile(mount.anchor()+"/reticle_dot",mount.aimX(),mount.aimY(),mount.aimZ(),base.eyeRelief,
+                base.hx,base.hy,base.hz,base.rx,base.ry,base.rz,base.scale,base.compositionX,base.compositionY,base.rootPitch);
+    }
     private static float rad(float d) { return (float)Math.toRadians(d); }
     public Matrix4f hip() {
         var m = new Matrix4f().translation(compositionX,compositionY,0)

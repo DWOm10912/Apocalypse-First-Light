@@ -9,7 +9,8 @@ public record NativeGunDefinition(ResourceLocation id, ResourceLocation ammoType
                                   double falloffStart, double effectiveRange, double maxRange,
                                   double minimumDamageMultiplier, double spreadDegrees, double noiseRadius,
                                   NativeRecoilProfile recoil, NativeTrailProfile trail, NativeAccuracyProfile accuracy,
-                                  boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing) {
+                                  boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing,
+                                  NativeSightMount sightMount) {
     public NativeGunDefinition {
         java.util.Objects.requireNonNull(recoil, "recoil");
         java.util.Objects.requireNonNull(trail, "trail");

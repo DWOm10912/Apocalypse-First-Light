@@ -24,6 +24,8 @@ public final class AflItems {
                             java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell", 4.8125F)));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
+    public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
+            com.antaurora.apofirstlight.weapon.NativeSightItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9x19mm_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> ROUND_762MM = ITEMS.register("762x51mm_round",
@@ -55,6 +57,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LEAD_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> LEAD_CHEST = ITEMS.register("lead_chest",
             () -> new LeadChestBlockItem(AflBlocks.LEAD_CHEST.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GUN_WORKBENCH = ITEMS.register("gun_workbench",
+            () -> new com.antaurora.apofirstlight.item.GunWorkbenchBlockItem(AflBlocks.GUN_WORKBENCH.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPHALERITE_ORE = ITEMS.register("sphalerite_ore",
             () -> new BlockItem(AflBlocks.SPHALERITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> ZINC_BLOCK = ITEMS.register("zinc_block",
