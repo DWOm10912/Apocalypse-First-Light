@@ -19,9 +19,9 @@ public record NativeGunDefinition(ResourceLocation id, ResourceLocation ammoType
     public static final NativeGunDefinition SERVICE_PISTOL = new NativeGunDefinition(
             id("service_pistol"), id("9mm_round"), 17,
             id("textures/gui/gun/service_pistol_hud.png"), 26, 19, 3,
-            7, 3, 24, 48, 64, .65, 1.2, 64,
-            new NativeRecoilProfile(.80, 1.10, -.12, .12, 4.5, 1.0,
-                    .05, .18, 5, .04, .75, .75, .10), NativeTrailProfile.SUBTLE_PISTOL);
+            7, 1.5, 24, 48, 64, .65, 1.2, 64,
+            new NativeRecoilProfile(.80, 1.10, -.12, .18, 4.5, 1.0,
+                    .05, .18, 5, .04, .75, .75, .10, .70, .16), NativeTrailProfile.SUBTLE_PISTOL);
 
     private static ResourceLocation id(String path) {
         return new ResourceLocation("apocalypse_firstlight", path);

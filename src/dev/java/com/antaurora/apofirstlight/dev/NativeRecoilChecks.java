@@ -5,7 +5,7 @@ import com.antaurora.apofirstlight.weapon.NativeRecoilState;
 
 /** Deterministic behavior checks; not a substitute for mouse/visual acceptance. */
 public final class NativeRecoilChecks {
-    private static final NativeRecoilProfile P = new NativeRecoilProfile(.8,1.1,-.12,.12,4.5,1,.05,.18,5,.04,.75,.75,.1);
+    private static final NativeRecoilProfile P = new NativeRecoilProfile(.8,1.1,-.12,.18,4.5,1,.05,.18,5,.04,.75,.75,.1,.70,.16);
     private static void check(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
@@ -43,6 +43,32 @@ public final class NativeRecoilChecks {
         double model=a.back(); a.advance(.001);
         check(a.back()>0 && a.back()<model,"Residual decays continuously, including reload");
         a.clear(); check(a.vertical()==0 && a.back()==0,"Lifecycle reset");
-        System.out.println("PASS: single/fast/slow fire, caps, pitch limit, mouse delta, FPS independence, residual/reset");
+        s.clear();
+        s.kick(P,.5,.75,.5,.5,90);
+        double h=s.horizontal();
+        s.kick(P,.5,.8,.5,.5,90);
+        check(s.horizontal()>h,"Direction continues above flip threshold");
+        h=s.horizontal();
+        s.kick(P,.5,.1,.5,.5,90);
+        check(s.horizontal()<h,"Direction flips below threshold");
+        double mouseYaw=123+s.horizontal();
+        mouseYaw-=37;
+        h=s.horizontal();s.advance(10);mouseYaw+=s.horizontal()-h;
+        check(Math.abs(mouseYaw-86)<1e-9,"Yaw recovery preserves independent mouse input");
+        s.clear();for(int i=0;i<1000;i++)s.kick(P,.5,i==0?0:1,.5,.5,90);
+        check(s.horizontal()==-1,"Negative horizontal cap");
+        s.clear();
+        double expectedV=0,expectedDelay=0;
+        var rng=new java.util.Random(631);
+        for(int i=0;i<10000;i++){
+            double dt=rng.nextDouble()*.2;
+            expectedV*=Math.exp(-Math.max(0,dt-expectedDelay)/.18);expectedDelay=Math.max(0,expectedDelay-dt);
+            s.advance(dt);
+            double v=rng.nextDouble();expectedV=Math.min(4.5,expectedV+.8+.3*v);expectedDelay=.05;
+            h=s.horizontal();s.kick(P,v,rng.nextDouble(),.5,.5,90);
+            check(Math.abs(s.vertical()-expectedV)<1e-12,"Vertical golden behavior unchanged");
+            check(s.horizontal()-h>=-.120000001&&s.horizontal()-h<=.180000001,"Horizontal kick bounded");
+        }
+        System.out.println("PASS: recoil caps, direction persistence/flip, horizontal mouse delta, vertical golden sequence, recovery/FPS/reset");
     }
 }

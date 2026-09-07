@@ -35,6 +35,9 @@ public class ApocalypseFirstLight {
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
         AflNetwork.register();
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.weapon.NativeHeadshots.SPEC, "apocalypse_firstlight-guns.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);

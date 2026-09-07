@@ -18,7 +18,7 @@ import net.minecraft.world.phys.Vec3;
 public final class NativeGunShot {
     public static final ResourceKey<DamageType> BULLET = ResourceKey.create(Registries.DAMAGE_TYPE,
             new ResourceLocation("apocalypse_firstlight", "native_bullet"));
-    public record Hit(Entity entity, Vec3 point) {}
+    public record Hit(Entity entity, Vec3 point, boolean head) {}
     private NativeGunShot() {}
 
     public static double damageAt(NativeGunDefinition d, double distance) {
@@ -41,18 +41,20 @@ public final class NativeGunShot {
         var block = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
         double closest = start.distanceToSqr(block.getLocation());
         Entity target = null;
+        boolean head = false;
         Vec3 point = block.getLocation();
         for (Entity entity : level.getEntities(shooter, new AABB(start, end).inflate(1),
                 e -> !e.isSpectator() && e.isAlive() && e.isPickable() && !e.isPassengerOfSameVehicle(shooter))) {
             var bounds = entity.getBoundingBox();
-            var intersection = bounds.contains(start) ? java.util.Optional.of(start) : bounds.clip(start, end);
-            if (intersection.isPresent() && start.distanceToSqr(intersection.get()) < closest) {
-                closest = start.distanceToSqr(intersection.get());
+            var intersection = NativeHeadshots.intersect(bounds, NativeHeadshots.enabled(entity), start, end);
+            if (intersection.isPresent() && start.distanceToSqr(intersection.get().point()) < closest) {
+                closest = start.distanceToSqr(intersection.get().point());
                 target = entity;
-                point = intersection.get();
+                point = intersection.get().point();
+                head = intersection.get().head();
             }
         }
-        return new Hit(target, point);
+        return new Hit(target, point, head);
     }
 
     public static Hit execute(ServerPlayer shooter, NativeGunDefinition d) {
@@ -61,7 +63,10 @@ public final class NativeGunShot {
         if (hit.entity() != null && (!(hit.entity() instanceof net.minecraft.world.entity.player.Player player)
                 || shooter.canHarmPlayer(player))) {
             var type = shooter.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(BULLET);
-            hit.entity().hurt(new DamageSource(type, shooter), (float)damageAt(d, start.distanceTo(hit.point())));
+            boolean damaged = hit.entity().hurt(new DamageSource(type, shooter),
+                    (float)(damageAt(d, start.distanceTo(hit.point())) * (hit.head() ? NativeHeadshots.MULTIPLIER.get() : 1)));
+            if (damaged && hit.entity() instanceof net.minecraft.world.entity.LivingEntity)
+                com.antaurora.apofirstlight.network.AflNetwork.sendNativeHit(shooter, hit.head());
         }
         NoiseSystem.emit(new NoiseEvent(shooter, start, NoiseType.GUNSHOT, shooter.level().getGameTime(),
                 d.id(), d.noiseRadius()), shooter.serverLevel());

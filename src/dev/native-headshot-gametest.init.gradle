@@ -1,0 +1,10 @@
+// Isolated server verification; does not access the player's client save.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file('build/native-headshot-gametest')
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+    }
+}

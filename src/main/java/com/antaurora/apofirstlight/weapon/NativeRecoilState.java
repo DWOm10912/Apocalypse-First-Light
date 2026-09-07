@@ -5,13 +5,24 @@ public final class NativeRecoilState {
     private NativeRecoilProfile profile;
     private double vertical, horizontal, delay;
     private double pitch, back, yaw, roll;
+    private int horizontalDirection;
 
     public void kick(NativeRecoilProfile p, double verticalSample, double horizontalSample,
                      double yawSample, double rollSample, double upwardRoom) {
         profile = p;
         vertical += Math.min(Math.max(0, upwardRoom), Math.max(0,
                 Math.min(p.maxVertical() - vertical, sample(p.verticalMin(), p.verticalMax(), verticalSample))));
-        horizontal = clamp(horizontal + sample(p.horizontalMin(), p.horizontalMax(), horizontalSample), p.maxHorizontal());
+        double u = Math.max(0, Math.min(1, horizontalSample));
+        if (horizontalDirection == 0) {
+            horizontalDirection = u < .5 ? -1 : 1;
+            u = u < .5 ? u * 2 : (u - .5) * 2;
+        } else {
+            double flip = 1 - p.horizontalContinueChance();
+            if (u < flip) { horizontalDirection = -horizontalDirection; u /= flip; }
+            else u = flip == 1 ? 0 : (u - flip) / (1 - flip);
+        }
+        double limit = horizontalDirection < 0 ? Math.abs(p.horizontalMin()) : p.horizontalMax();
+        horizontal = clamp(horizontal + horizontalDirection * sample(limit / 3, limit, u), p.maxHorizontal());
         delay = p.recoveryDelay();
         pitch = Math.min(p.modelPitch() * 3, pitch + p.modelPitch());
         back = Math.min(p.modelBack() * 3, back + p.modelBack());
@@ -25,7 +36,8 @@ public final class NativeRecoilState {
         delay = Math.max(0, delay - seconds);
         double camera = Math.exp(-recovering / profile.cameraRecoveryTime());
         vertical *= camera;
-        horizontal *= camera;
+        horizontal *= Math.exp(-recovering / profile.horizontalRecoveryTime());
+        if (Math.abs(horizontal) < 1e-5 && delay == 0) horizontalDirection = 0;
         double model = Math.exp(-seconds / profile.modelRecoveryTime());
         pitch *= model; back *= model; yaw *= model; roll *= model;
     }
@@ -33,6 +45,7 @@ public final class NativeRecoilState {
     public void clear() {
         profile = null;
         vertical = horizontal = delay = pitch = back = yaw = roll = 0;
+        horizontalDirection = 0;
     }
 
     private static double sample(double min, double max, double value) { return min + (max - min) * Math.max(0, Math.min(1, value)); }

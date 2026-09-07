@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "13";
+    private static final String PROTOCOL = "14";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -69,6 +69,23 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, NativeShotFxS2CPacket.class,
                 NativeShotFxS2CPacket::encode, NativeShotFxS2CPacket::decode, NativeShotFxS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, NativeHitS2CPacket.class,
+                NativeHitS2CPacket::encode, NativeHitS2CPacket::decode, NativeHitS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void sendNativeHit(ServerPlayer shooter, boolean head) {
+        channel.send(PacketDistributor.PLAYER.with(()->shooter),new NativeHitS2CPacket(head));
+    }
+    public record NativeHitS2CPacket(boolean head) {
+        static void encode(NativeHitS2CPacket p,FriendlyByteBuf b) { b.writeBoolean(p.head); }
+        static NativeHitS2CPacket decode(FriendlyByteBuf b) { return new NativeHitS2CPacket(b.readBoolean()); }
+        static void handle(NativeHitS2CPacket p,Supplier<NetworkEvent.Context> supplier) {
+            var context=supplier.get();
+            context.enqueueWork(()->DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    ()->()->com.antaurora.apofirstlight.weapon.client.NativeGunCrosshair.hit(p.head)));
+            context.setPacketHandled(true);
+        }
     }
 
     public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd) {
