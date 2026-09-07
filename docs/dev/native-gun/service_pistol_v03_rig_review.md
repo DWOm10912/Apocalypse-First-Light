@@ -7,7 +7,7 @@ pre-material PNG are recoverable from the hash-verified local ignored archive
 The sole current pistol source is V0.3.8; the reusable rig template is retained.
 V0.3.8 SHA-256: `b4d77e47a5e3b481c21e56064e9a10d44a771103bfbe66979f2ceea4c5195391`.
 Historical no-runtime statements below do not describe V0.4. See
-`docs/dev/native-afl-gun-framework-v0.md` for current runtime integration.
+`docs/dev/native-gun/native-afl-gun-framework-v0.md` for current runtime integration.
 
 Date: 2026-09-06. Blockbench assets only. No Java/gameplay/runtime changes.
 
@@ -86,7 +86,7 @@ follow. Slide reaches +3.2 Z at 0.040 seconds; trigger pulls 8 degrees; root ris
 
 Both cubes are exactly **4 x 12 x 4**, with no stretch or scale animation.
 Reference groups and cubes are marked `export: false`, separate from gun geometry.
-See `docs/dev/afl_weapon_art_standard_v1.md` for reuse/runtime boundaries.
+See `docs/dev/native-gun/afl_weapon_art_standard_v1.md` for reuse/runtime boundaries.
 
 Final hand-anchor authoring origins:
 
@@ -399,3 +399,4 @@ Two fire-only issues were addressed:
 - No screenshots, preview files, external JSON export, Java/runtime/gameplay,
   TaCZ, client launch, dependencies, commit or push. Only source asset and its
   directly related review documents are changed.
+

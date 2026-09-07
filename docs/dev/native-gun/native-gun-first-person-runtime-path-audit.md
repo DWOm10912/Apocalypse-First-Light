@@ -13,10 +13,10 @@
 
 ```text
 M  .obsidian/workspace.json
-M  docs/01 - 系统设计/枪械.md
+M  docs/01 - 系统设计/枪械/枪械系统.md
 M  docs/03 - 制作清单.md
-M  docs/dev/afl_weapon_art_standard_v1.md
-M  docs/dev/native-afl-gun-framework-v0.md
+M  docs/dev/native-gun/afl_weapon_art_standard_v1.md
+M  docs/dev/native-gun/native-afl-gun-framework-v0.md
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunArmChecks.java
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunArmClearance.java
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunArmTrace.java
@@ -32,8 +32,8 @@ M  src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.ani
 M  src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json
 M  src/main/resources/assets/apocalypse_firstlight/models/item/service_pistol_in_hand.json
 M  tools/verify-service-pistol.ps1
-?? docs/dev/native-gun-hand-locator-authoring-standard.md
-?? docs/dev/native-gun-tacz-first-person-hand-audit.md
+?? docs/dev/native-gun/native-gun-hand-locator-authoring-standard.md
+?? docs/dev/native-gun/native-gun-tacz-first-person-hand-audit.md
 ?? src/dev/java/com/antaurora/apofirstlight/dev/LegacyHandMapping.java
 ?? src/dev/java/com/antaurora/apofirstlight/dev/NativeGunReloadGripChecks.java
 ?? src/dev/java/com/antaurora/apofirstlight/dev/NativeHandContractChecks.java

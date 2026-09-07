@@ -95,7 +95,10 @@ public final class AflNetwork {
         static void handle(NativeShotS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                    () -> () -> com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId)));
+                    () -> () -> {
+                        com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId);
+                        com.antaurora.apofirstlight.weapon.client.NativeGunRecoil.confirmedShot(p.slot, p.gunId);
+                    }));
             context.setPacketHandled(true);
         }
     }

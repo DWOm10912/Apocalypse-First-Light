@@ -964,7 +964,7 @@ DEV D：NativeHandVisualGate、NativeHandContractChecks、NativeGunRuntimeSmokeC
 NativeGunArmChecks、NativeGunPresentationTrace。六个删除文件见上。
 工具：新增tools/export-native-gun.mjs，更新tools/verify-service-pistol.ps1。
 文档：本页、native-gun-hand-locator-authoring-standard.md、afl_weapon_art_standard_v1.md、
-docs/01 - 系统设计/枪械.md、docs/03 - 制作清单.md。
+docs/01 - 系统设计/枪械/枪械系统.md、docs/03 - 制作清单.md。
 HandLayer/Binding/RenderMatrices/Model/模板未在本轮另改；其已有dirty状态不冒认成本轮新增。
 
 ## 历史记录：以下V0.4.x参数与“当前”说明均已由上方V0.5取代
@@ -1087,10 +1087,10 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 - `src/dev/java/com/antaurora/apofirstlight/dev/NativeHandContractChecks.java`
 - `src/dev/java/com/antaurora/apofirstlight/dev/NativeHandVisualGate.java`
 - `tools/verify-service-pistol.ps1`
-- `docs/dev/native-afl-gun-framework-v0.md`
-- `docs/dev/native-gun-hand-locator-authoring-standard.md`
-- `docs/dev/afl_weapon_art_standard_v1.md`
-- `docs/01 - 系统设计/枪械.md`
+- `docs/dev/native-gun/native-afl-gun-framework-v0.md`
+- `docs/dev/native-gun/native-gun-hand-locator-authoring-standard.md`
+- `docs/dev/native-gun/afl_weapon_art_standard_v1.md`
+- `docs/01 - 系统设计/枪械/枪械系统.md`
 - `docs/03 - 制作清单.md`
 
 ## 历史记录（以下版本不代表V0.4.9当前缩放契约）

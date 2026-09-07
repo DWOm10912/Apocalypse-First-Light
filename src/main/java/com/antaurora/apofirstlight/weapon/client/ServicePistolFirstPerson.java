@@ -34,6 +34,7 @@ public final class ServicePistolFirstPerson {
         var pose = ServicePistolRenderMatrices.detachedCopy(event.getPoseStack());
         pose.pushPose();
         try {
+            NativeGunRecoil.applyViewmodel(pose);
             pose.translate(right ? COMPOSITION_X : -COMPOSITION_X, COMPOSITION_Y, 0);
             // Display owns static composition; only the upstream equip transition remains.
             ServicePistolPresentation.applyEquip(pose, event.getEquipProgress());

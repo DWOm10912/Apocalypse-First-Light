@@ -26,7 +26,7 @@ empty_idle使用loop；仅slide/front_sight/rear_sight/sight_anchor保持后退1
 这不是独立完整Empty Reload，不新增释放滑套手势，不改0.40/0.95节点或1.30s时长。
 派生器会重新生成这三个clip，手工修改派生clip前应明确源权威，不能误覆盖用户新动画。
 2026-09-07：导出一致性/构建通过，实机截图已核对，用户确认本版测试没有问题。
-服务端50/50测试与视觉验证边界详见 docs/dev/native-afl-gun-framework-v0.md。
+服务端50/50测试与视觉验证边界详见 docs/dev/native-gun/native-afl-gun-framework-v0.md。
 
 ## 9mm Round / Casing V1 — V0.6已注册Round，Casing仅资产
 
@@ -262,3 +262,4 @@ Runtime求值动画、固定绑定与通用presentation，保留皮肤、袖层�
 源/导出数据、真实Vanilla顶点和重复动画数值等价是必要条件，不是用户视觉通过。
 Ready双手、Fire、Reload、重复动作、F5、GUI以及Classic/Slim按序实机验收。
 不自动截图，不生成preview图，不未经用户请求启动客户端。验证记录见framework文档。
+

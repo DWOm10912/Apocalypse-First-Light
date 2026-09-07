@@ -44,7 +44,10 @@ public final class ServicePistolInput {
         if (!event.isAttack() || !ready(mc)) return;
         event.setCanceled(true);
         event.setSwingHand(false);
-        if (!attackHeld) AflNetwork.requestServicePistol(false, mc.player.getInventory().selected);
+        if (!attackHeld) {
+            NativeGunRecoil.syncAimBeforeShot();
+            AflNetwork.requestServicePistol(false, mc.player.getInventory().selected);
+        }
         attackHeld = true;
     }
 

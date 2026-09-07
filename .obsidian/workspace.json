@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "32bc9c2b8afb6cdf",
+        "id": "0233f3a21da483f4",
         "type": "tabs",
         "children": [
           {
-            "id": "6cfc6a4c74362551",
+            "id": "7991be752347a25e",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 系统设计/辐射/辐射系统.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "辐射系统"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 系统设计/辐射/辐射系统.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -174,7 +174,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -187,53 +187,53 @@
       "bases:新建数据库": false
     }
   },
-  "active": "6cfc6a4c74362551",
+  "active": "4967b007c31f056e",
   "lastOpenFiles": [
-    "run/saves/test/level3911287690112769473.dat",
-    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-4663393913718659426.dat",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/saves/test/level10370033637402331971.dat",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
-    "run/screenshots/afl-v062-159-FIRST_PERSON-shot18-frame0.png",
-    "run/screenshots/afl-v062-158-FIRST_PERSON-shot17-frame12.png",
-    "run/screenshots/afl-v062-157-FIRST_PERSON-shot17-frame7.png",
-    "run/screenshots/afl-v062-156-FIRST_PERSON-shot17-frame6.png",
-    "run/screenshots/afl-v062-155-FIRST_PERSON-shot17-frame5.png",
-    "run/screenshots/afl-v062-154-FIRST_PERSON-shot17-frame4.png",
-    "run/screenshots/afl-v062-153-FIRST_PERSON-shot17-frame3.png",
-    "run/screenshots/afl-v062-152-FIRST_PERSON-shot17-frame2.png",
-    "run/screenshots/afl-v062-151-FIRST_PERSON-shot17-frame1.png",
-    "run/screenshots/afl-v062-150-FIRST_PERSON-shot17-frame0.png",
-    "docs/01 - 系统设计/枪械.md",
-    "docs/01 - 系统设计/声音.md",
-    "docs/04 - 注意事项 重要内容.md",
-    "docs/dev/native-gun-afl-vs-tacz-player-arm-presentation-audit.md",
-    "docs/dev/native-gun-first-person-runtime-path-audit.md",
-    "docs/dev/native-gun-hand-locator-authoring-standard.md",
-    "docs/dev/native-gun-tacz-first-person-hand-audit.md",
-    "docs/03 - 制作清单.md",
-    "docs/dev/native-afl-gun-framework-v0.md",
-    "docs/dev/service_pistol_v03_rig_review.md",
-    "docs/dev/afl_weapon_art_standard_v1.md",
-    "docs/dev/service_pistol_v02_model_review.md",
-    "docs/dev/previews/service_pistol_v02/README.md",
-    "docs/01 - 系统设计/耐力.md",
-    "docs/01 - 系统设计/负重.md",
-    "docs/dev/tacz_weapon_acoustic_audit.md",
-    "docs/01 - 系统设计/生存状态.md",
-    "docs/01 - 系统设计/原版改动.md",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
+    "run/screenshots/afl-v062-159-FIRST_PERSON-shot17-frame7.png",
+    "run/screenshots/afl-v062-158-FIRST_PERSON-shot17-frame6.png",
+    "run/screenshots/afl-v062-157-FIRST_PERSON-shot17-frame5.png",
+    "run/screenshots/afl-v062-156-FIRST_PERSON-shot17-frame4.png",
+    "run/screenshots/afl-v062-155-FIRST_PERSON-shot17-frame3.png",
+    "run/screenshots/afl-v062-154-FIRST_PERSON-shot17-frame2.png",
+    "run/screenshots/afl-v062-153-FIRST_PERSON-shot17-frame1.png",
+    "run/screenshots/afl-v062-152-FIRST_PERSON-shot17-frame0.png",
+    "run/screenshots/afl-v062-151-FIRST_PERSON-shot16-frame24.png",
+    "run/screenshots/afl-v062-150-FIRST_PERSON-shot16-frame12.png",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc",
+    "docs/dev/native-gun/后坐力技术契约.md",
+    "docs/README.md",
+    "docs/01 - 系统设计/工业/流体系统.md",
+    "docs/01 - 系统设计/工业/FE系统.md",
+    "docs/01 - 系统设计/感染者/感染者基础规则.md",
+    "docs/01 - 系统设计/世界与环境/原版改动.md",
+    "docs/01 - 系统设计/感染者/声音与感染者听觉.md",
     "docs/02 - 内容设计/方块/机器.md",
-    "docs/01 - 系统设计/工业.md",
-    "docs/01 - 系统设计/蓝图.md",
-    "docs/02 - 内容设计/物品/金属.md",
-    "docs/02 - 内容设计/方块/矿物.md",
-    "AGENTS.md",
-    "docs/01 - 系统设计/辐射系统.md"
+    "docs/01 - 系统设计/枪械/枪械系统.md",
+    "docs/01 - 系统设计/枪械/弹药.md",
+    "docs/01 - 系统设计/枪械/配件.md",
+    "docs/01 - 系统设计/生存/生存状态.md",
+    "docs/01 - 系统设计/世界与环境/灾难系统.md",
+    "docs/01 - 系统设计/世界与环境/城市规划.md",
+    "docs/01 - 系统设计/世界与环境/空气污染.md",
+    "docs/01 - 系统设计/战利品/战利品规则.md",
+    "docs/01 - 系统设计/制作与进度/蓝图.md",
+    "docs/dev/native-gun/service_pistol_v03_rig_review.md",
+    "docs/dev/native-gun/service_pistol_v02_model_review.md",
+    "docs/dev/native-gun/native-gun-tacz-first-person-hand-audit.md",
+    "docs/dev/native-gun/native-gun-hand-locator-authoring-standard.md",
+    "docs/dev/native-gun/native-gun-first-person-runtime-path-audit.md",
+    "docs/dev/native-gun/native-gun-afl-vs-tacz-player-arm-presentation-audit.md",
+    "docs/dev/native-gun/native-afl-gun-framework-v0.md",
+    "docs/dev/native-gun/afl_weapon_art_standard_v1.md"
   ]
 }

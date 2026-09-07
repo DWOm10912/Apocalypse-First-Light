@@ -81,7 +81,7 @@ Forge RenderHandEvent
        └─ left_hand_anchor  → HandLayer
 ```
 
-证据：[FirstPerson](../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolFirstPerson.java)、[Renderer](../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolRenderer.java)、[HandLayer](../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolHandLayer.java)、[Presentation](../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPresentation.java)。这些链接相对本文位于 `docs/dev/`，实际源码统一在仓库 `src/`。
+证据：[FirstPerson](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolFirstPerson.java)、[Renderer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolRenderer.java)、[HandLayer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolHandLayer.java)、[Presentation](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPresentation.java)。这些链接相对本文位于 `docs/dev/native-gun/`，实际源码统一在仓库 `src/`。
 
 ### 累积的变换与分支
 
@@ -109,7 +109,7 @@ Forge RenderHandEvent
 - `reload_magazine` 是存在于源与 runtime 的独立 bone，不能误报缺失，也不能因 TaCZ 有 additional_magazine 就复制其处理方式。
 - 单个 GeckoLib `action` controller 接受服务器 fire/reload 触发；当前通用 Reload 为 26 tick／约 1.30 秒，无 tactical/empty 分支，无真实弹药。不是 TaCZ 式多轨叠加状态机。
 
-来源：[bbmodel](../../src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json)、[runtime animation](../../src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json)、[导出检查](../../tools/export-service-pistol.blockbench.js)、[Item](../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolItem.java)、[Actions](../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolActions.java)。
+来源：[bbmodel](../../../src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../../src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json)、[runtime animation](../../../src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json)、[导出检查](../../../tools/export-service-pistol.blockbench.js)、[Item](../../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolItem.java)、[Actions](../../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolActions.java)。
 
 ## 3. TaCZ first-person render call chain：真正入口不是旧事件类
 

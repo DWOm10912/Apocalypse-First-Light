@@ -284,3 +284,4 @@ Vanilla Classic/Slim全臂/袖层顶点，包含手端、两侧全部角点、�
 
 NUMERIC PASS ≠ USER VISUAL PASS。握持自然、遮挡、前臂出屏和比例须由用户目视判断。
 当前用户对V0.5.1 Ready/Fire反馈暂无问题；这不代表本枪后续Reload构图或所有皮肤外观已全部验收。
+

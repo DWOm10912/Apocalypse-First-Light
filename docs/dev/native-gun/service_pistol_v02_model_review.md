@@ -7,7 +7,7 @@ folder after a hash-verified archive was made at
 Only `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel` remains
 as the current pistol source. Earlier preservation/no-runtime statements describe
 their historical stages, not today's workspace. Runtime status is documented in
-`docs/dev/native-afl-gun-framework-v0.md`.
+`docs/dev/native-gun/native-afl-gun-framework-v0.md`.
 
 Date: 2026-09-06. Static editable asset only. No runtime integration or gameplay.
 
@@ -258,7 +258,8 @@ Only Fire barrel linkage and the port-shadow parent are corrected; duration is
 still 0.14 seconds and slide peak travel is still 3.2 units. The user accepted
 the Blockbench fire visual result. V0.3.7 remains an unchanged rollback point.
 Source/editor checks are not native-runtime or in-game validation.
-See `docs/dev/service_pistol_v03_rig_review.md` for the two-hand reload, magwell,
+See `docs/dev/native-gun/service_pistol_v03_rig_review.md` for the two-hand reload, magwell,
 pose/reference-arm revisions and verification limits, and
-`docs/dev/afl_weapon_art_standard_v1.md` for the reusable authoring convention.
+`docs/dev/native-gun/afl_weapon_art_standard_v1.md` for the reusable authoring convention.
 These are source assets only; no native gun runtime integration is implemented.
+
