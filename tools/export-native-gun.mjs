@@ -69,6 +69,12 @@ export function compile(source, priorGeo, priorDisplay) {
         animations.animations[a.name]=out;
         for(const [id,animator] of Object.entries(a.animators)) {
             if(!animator.keyframes?.length)continue;
+            if(id==='effects') {
+                assert.equal(a.name,'animation.service_pistol.reload_empty');
+                assert(animator.keyframes.every(k=>k.channel==='sound' && k.time===1.25
+                    && k.data_points.every(p=>p.effect==='slide_action')),'Unknown source-only effect');
+                continue; // Blockbench preview only; authoritative server timing plays the sound once.
+            }
             const g=groups.get(id); assert(g && g.export,'Unsupported effects/reference animation');
             assert(!animator.rotation_global && !animator.quaternion_interpolation,'Unsupported animation mode');
             const channels={};out.bones[g.name]=channels;
@@ -142,11 +148,12 @@ export function outputs() {
     return new Map([[geo,result.geometry],[anim,result.animations],[display,result.display]]);
 }
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
-    const write=process.argv.includes('--write');
-    assert(process.argv.slice(2).every(a=>a==='--write'||a==='--check'),'Use --write or --check');
+    const write=process.argv.includes('--write'),animationsOnly=process.argv.includes('--animations-only');
+    assert(process.argv.slice(2).every(a=>['--write','--check','--animations-only'].includes(a)),'Invalid export flag');
     for(const [p,value] of outputs()) {
+        if(animationsOnly && !p.endsWith('service_pistol.animation.json'))continue;
         if(write)fs.writeFileSync(p,JSON.stringify(value,null,2)+'\n');
         else assert.deepEqual(read(p),value,'Stale export: '+p);
     }
-    console.log(write?'Exported saved bbmodel: geo + animations + FP Display only.':'PASS: exact source/export geometry, keys, canonical Classic/Slim references and FP Display.');
+    console.log(animationsOnly?'PASS: saved-source animations only; geo/Display untouched.':write?'Exported saved bbmodel: geo + animations + FP Display only.':'PASS: exact source/export geometry, keys, canonical Classic/Slim references and FP Display.');
 }

@@ -3,6 +3,7 @@
     "sounds": [{"name": "apocalypse_firstlight:shell_casings_dropping", "attenuation_distance": 12}]
   },
   "service_pistol_dry_fire": { "sounds": ["apocalypse_firstlight:dry_fire"] },
+  "service_pistol_slide_action": { "sounds": ["apocalypse_firstlight:weapons/service_pistol/slide_action"] },
   "service_pistol_fire": {
     "subtitle": "subtitles.apocalypse_firstlight.service_pistol.fire",
     "sounds": ["apocalypse_firstlight:weapons/service_pistol/service_pistol_fire"]

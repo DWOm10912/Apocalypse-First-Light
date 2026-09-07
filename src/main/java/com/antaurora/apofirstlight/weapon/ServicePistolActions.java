@@ -21,6 +21,8 @@ import java.util.WeakHashMap;
 public final class ServicePistolActions {
     public static final int FIRE_TICKS = 3;
     public static final int RELOAD_TICKS = 26;
+    public static final int EMPTY_RELOAD_TICKS = 33;
+    public static final int SLIDE_RACK_TICK = 25;
     // Authored withdrawal at 0.42s; seated at 0.93s. Quantize to nearest server tick.
     public static final int MAG_OUT_TICK = 8;
     public static final int MAG_IN_TICK = 19;
@@ -36,6 +38,8 @@ public final class ServicePistolActions {
         long start;
         long end;
         boolean reload;
+        boolean reloadStartedEmpty;
+        boolean rackPlayed;
         String clip;
         boolean outPlayed;
         boolean inPlayed;
@@ -76,10 +80,11 @@ public final class ServicePistolActions {
         state.item = item;
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = now;
-        state.end = now + (reload ? definition.reloadDurationTicks() : definition.fireIntervalTicks());
+        state.reloadStartedEmpty = reload && NativeGunAmmo.read(held, definition) == 0;
+        state.end = now + (reload ? (state.reloadStartedEmpty ? EMPTY_RELOAD_TICKS : definition.reloadDurationTicks()) : definition.fireIntervalTicks());
         state.slot = slot;
         state.reload = reload;
-        state.clip = reload ? (NativeGunAmmo.read(held, definition) == 0 ? "reload_empty" : "reload")
+        state.clip = reload ? (state.reloadStartedEmpty ? "reload_empty" : "reload")
                 : (NativeGunAmmo.read(held, definition) == 0 ? "fire_last_round" : "fire");
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
@@ -117,6 +122,10 @@ public final class ServicePistolActions {
                 syncInventory(player);
                 sound(player, AflSounds.SERVICE_PISTOL_MAGAZINE_IN.get());
                 state.inPlayed = true;
+            }
+            if (state.reloadStartedEmpty && !state.rackPlayed && now >= state.start + SLIDE_RACK_TICK) {
+                sound(player, AflSounds.SERVICE_PISTOL_SLIDE_ACTION.get());
+                state.rackPlayed = true;
             }
         }
         if (now >= state.end) SESSIONS.remove(player);
