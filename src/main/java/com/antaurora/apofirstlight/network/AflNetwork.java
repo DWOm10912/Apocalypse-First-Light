@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "12";
+    private static final String PROTOCOL = "13";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -71,20 +71,29 @@ public final class AflNetwork {
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
-    public static void sendNativeShot(ServerPlayer player, int slot, long gunId) {
+    public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd) {
         channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId));
         channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new NativeShotFxS2CPacket(player.getId(), gunId));
+                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd));
     }
 
     /** Notification only; ammo, hitscan and HUD remain on their existing paths. */
-    public record NativeShotFxS2CPacket(int shooterId, long gunId) {
-        static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.shooterId); b.writeLong(p.gunId); }
-        static NativeShotFxS2CPacket decode(FriendlyByteBuf b) { return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong()); }
+    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd) {
+        static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) {
+            b.writeVarInt(p.shooterId); b.writeLong(p.gunId);
+            b.writeDouble(p.shotEnd.x); b.writeDouble(p.shotEnd.y); b.writeDouble(p.shotEnd.z);
+        }
+        static NativeShotFxS2CPacket decode(FriendlyByteBuf b) {
+            return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong(),
+                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()));
+        }
         static void handle(NativeShotFxS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                    () -> () -> com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId)));
+                    () -> () -> {
+                        com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
+                        com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd);
+                    }));
             context.setPacketHandled(true);
         }
     }

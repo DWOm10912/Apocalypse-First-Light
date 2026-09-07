@@ -88,8 +88,8 @@ public final class ServicePistolActions {
         item.triggerAnim(player, state.id, ServicePistolItem.CONTROLLER, state.clip);
         if (!reload) {
             sound(player, AflSounds.SERVICE_PISTOL_FIRE.get());
-            NativeGunShot.execute(player, definition);
-            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id);
+            var hit = NativeGunShot.execute(player, definition);
+            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point());
         }
     }
 

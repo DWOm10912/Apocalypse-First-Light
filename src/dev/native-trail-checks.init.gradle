@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client { property 'afl.dev.captureTrail', 'true' }
+        tasks.register('nativeTrailChecks', JavaExec) {
+            dependsOn tasks.named('classes')
+            classpath = sourceSets.main.runtimeClasspath
+            mainClass = 'com.antaurora.apofirstlight.dev.NativeTrailChecks'
+        }
+    }
+}

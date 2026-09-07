@@ -63,6 +63,16 @@ public final class NativeGunFx {
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
         double now = clock(partial);
+        if (name.equals("muzzle_anchor") && NativeBulletTrails.needsAnchor(gun, firstPerson)) {
+            // Same projection conversion as the established casing birth position.
+            var matrix = new Matrix4f(WORLD_VIEW).invert();
+            if (firstPerson)
+                matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
+            matrix.mul(anchor.last().pose());
+            var p = matrix.transformProject(new Vector3f());
+            NativeBulletTrails.anchor(gun, firstPerson,
+                    mc.gameRenderer.getMainCamera().getPosition().add(p.x, p.y, p.z), now);
+        }
         for (Shot shot : SHOTS) {
             if (shot.gun != gun || now - shot.received > 3) continue;
             boolean localFirst = mc.player != null && shot.shooter == mc.player.getId()
