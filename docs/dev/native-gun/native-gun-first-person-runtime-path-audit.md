@@ -1,6 +1,8 @@
 # Native Gun 第一人称运行时路径与无效代码审计
 
-审计日期：2026-09-07。范围：Service Pistol 当前工作树；仅审计，不实施 V0.5。
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
+审计日期：2026-09-07。范围：P9-01 Service Pistol 当前工作树；仅审计，不实施 V0.5。
 结论来源：LIVE Java / JSON / bbmodel、全仓库引用搜索、本机依赖与编译产物 javap、现有客户端日志，以及独立只读几何采样。没有新启动客户端，没有截图或视觉通过声明。
 
 ## 1. Workspace state
@@ -22,16 +24,16 @@ M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunArmClearance.java
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunArmTrace.java
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunMatrixChecks.java
 M  src/dev/java/com/antaurora/apofirstlight/dev/NativeGunRuntimeSmokeCheck.java
-M  src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel
-M  src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolFirstPerson.java
-M  src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolHandLayer.java
-M  src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPlayerPose.java
-M  src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPresentation.java
-M  src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolRenderer.java
-M  src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json
-M  src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json
-M  src/main/resources/assets/apocalypse_firstlight/models/item/service_pistol_in_hand.json
-M  tools/verify-service-pistol.ps1
+M  src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel
+M  src/main/java/com/antaurora/apofirstlight/weapon/client/P901FirstPerson.java
+M  src/main/java/com/antaurora/apofirstlight/weapon/client/P901HandLayer.java
+M  src/main/java/com/antaurora/apofirstlight/weapon/client/P901PlayerPose.java
+M  src/main/java/com/antaurora/apofirstlight/weapon/client/P901Presentation.java
+M  src/main/java/com/antaurora/apofirstlight/weapon/client/P901Renderer.java
+M  src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json
+M  src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json
+M  src/main/resources/assets/apocalypse_firstlight/models/item/p9_01_in_hand.json
+M  tools/verify-p9-01.ps1
 ?? docs/dev/native-gun/native-gun-hand-locator-authoring-standard.md
 ?? docs/dev/native-gun/native-gun-tacz-first-person-hand-audit.md
 ?? src/dev/java/com/antaurora/apofirstlight/dev/LegacyHandMapping.java
@@ -43,7 +45,7 @@ M  tools/verify-service-pistol.ps1
 ?? src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunRig.java
 ?? src/main/java/com/antaurora/apofirstlight/weapon/client/NativeHandBinding.java
 ?? src/main/java/com/antaurora/apofirstlight/weapon/client/NativePlayerArmRenderer.java
-?? src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolReloadGrip.java
+?? src/main/java/com/antaurora/apofirstlight/weapon/client/P901ReloadGrip.java
 ```
 
 本轮新增审计文档和 `tools/audit-native-gun-ready.mjs`，只向框架文档末尾追加摘要。没有运行 Gradle、修改生产/DEV Java、模型、动画、贴图、声音、配置或删除旧文件。
@@ -58,7 +60,7 @@ M  tools/verify-service-pistol.ps1
 - 已有 release JAR：`build/libs/apocalypse_firstlight-1.0.0.jar`，2173720 bytes，mtime 2026-09-07 04:42:26。实际 ZIP entries 中 `com/antaurora/apofirstlight/dev/**/*.class` 数量为 **0**；其中 FP right Display 也确为 T[-8.75,-0.25,0] / S[0.5,0.5,0.5]。
 - 现有 `run/logs/latest.log`：04:45:59–04:47:11 这次运行，包含数值检查通过、Slim 玩家与第三人称完成事件、正常退出。是历史运行证据，不是本轮实机验收。
 - 可重跑只读几何探针：`node tools/audit-native-gun-ready.mjs`。脚本不写文件、不连接客户端、不生成图片；对本次参数设防漂移断言，契约变更后必须重新审计。
-- `tools/verify-service-pistol.ps1` 是外部资产检查工具，不是 runtime 自动导出器；有 PrepareAssets 写入开关。本轮不执行写入模式。Runtime 不直接加载 bbmodel。
+- `tools/verify-p9-01.ps1` 是外部资产检查工具，不是 runtime 自动导出器；有 PrepareAssets 写入开关。本轮不执行写入模式。Runtime 不直接加载 bbmodel。
 
 ## 2. Active runtime call chain
 
@@ -67,24 +69,24 @@ M  tools/verify-service-pistol.ps1
 ```text
 Minecraft ItemInHandRenderer.renderHandsWithItems
   → ForgeHooksClient.renderSpecificFirstPersonHand → RenderHandEvent
-  → ServicePistolFirstPerson.renderHands [只接管主手为 ServicePistol 的两次 hand pass]
+  → P901FirstPerson.renderHands [只接管主手为 P901 的两次 hand pass]
   → detachedCopy(camera/equip event PoseStack)
-  → ServicePistolPresentation.applyBaseline
+  → P901Presentation.applyBaseline
   → ItemRenderer.renderStatic → getModel / render
   → ForgeHooksClient.handleCameraTransforms
   → SeparateTransformsModel$Baked.applyTransform → in_hand BakedModel / ItemTransform.apply
   → ItemRenderer T(-.5,-.5,-.5)
   → IClientItemExtensions.getCustomRenderer
-  → ServicePistolRenderer [GeoItemRenderer subclass]
+  → P901Renderer [GeoItemRenderer subclass]
   → GeoItemRenderer.renderByItem → GeoRenderer.defaultRender / preRender
   → GeoItemRenderer.actuallyRender → GeoModel.handleAnimations
-      → per-stack AnimatableManager → AnimationProcessor → ServicePistolAnimationController.process
+      → per-stack AnimatableManager → AnimationProcessor → P901AnimationController.process
   → GeoRenderer.actuallyRender → 每个 top-level bone
-  → ServicePistolRenderer.renderRecursively [root Reload offset / gun_model_root visual scale]
+  → P901Renderer.renderRecursively [root Reload offset / gun_model_root visual scale]
   → GeoItemRenderer.renderRecursively → GeoRenderer.renderRecursively
       → push / RenderUtils.prepMatrixForBone
       ├→ renderCubesOfBone → renderCube → createVerticesOfQuad → VertexConsumer [枪]
-      ├→ applyRenderLayersForBone → ServicePistolHandLayer.renderForBone [anchor 骨骼]
+      ├→ applyRenderLayersForBone → P901HandLayer.renderForBone [anchor 骨骼]
       │    → detachedCopy + translateToPivotPoint
       │    → NativePlayerArmRenderer.render
       │    → canonicalPose + NativeHandBinding.apply
@@ -99,7 +101,7 @@ Minecraft ItemInHandRenderer.renderHandsWithItems
 | FirstPerson.renderHands，C:20–42 | Forge CLIENT @EventBusSubscriber / @SubscribeEvent | 当前主手 ItemStack、惯用手、equip；不是第二套枪械状态机 | event 栈只读，创建独立副本 | ACTIVE |
 | Presentation.applyBaseline，C:23–27 | FirstPerson | Java 每武器固定 camera/equip 数值 | 修改该副本，在 Display 之前 | ACTIVE |
 | ItemRenderer.render / ItemTransform.apply | renderStatic，Forge model route | DisplayContext 和 baked resource | push 后应用 Display、中心偏移 | ACTIVE |
-| Item.initializeClient，W:59–74 | Forge item client extension 初始化 | 惰性缓存 ServicePistolRenderer | 不直接改矩阵 | ACTIVE |
+| Item.initializeClient，W:59–74 | Forge item client extension 初始化 | 惰性缓存 P901Renderer | 不直接改矩阵 | ACTIVE |
 | GeoItemRenderer.renderByItem / actuallyRender | ItemRenderer custom renderer 分支 | currentItemStack / renderPerspective / instance ID；GeoModel 根据 stack manager 评估动画 | Gecko 内部 scopes | ACTIVE |
 | Renderer.renderRecursively，C:33–60 | GeoRenderer 树遍历 | root 额外动作、枪独立 scale 覆盖及 finally 恢复 | push/pop；不能把其变换误认为动画关键帧 | ACTIVE |
 | HandLayer.renderForBone，C:23–38 | 构造器 addRenderLayer；GeoRenderer per-bone layer callback | 选择 right/left anchor，FP gate | 独立 locator 副本，补回当前 bone pivot | ACTIVE |
@@ -125,22 +127,22 @@ Geo 为 19 bones / 77 gun cubes。reference groups/cubes 的 export=false，故�
 
 ### 输入、动作与第三人称旁路
 
-- AflItems 注册 ServicePistolItem；Item 构造创建 Gecko 缓存、注册 synced animatable 和 `afl_hold` easing。
-- ServicePistolInput.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.ServicePistolC2SPacket 发给服务端。
-- AflNetwork.handle 在 server work queue 调 ServicePistolActions.request；校验选中槽位、活体、主手类型与 busy session；给实际 stack 分配 GeckoLibID、同步物品，再 triggerAnim。
-- ServicePistolActions 持有 WeakHashMap<ServerPlayer, Session>；Fire 锁 3 tick，Reload 锁 26 tick；声音 tick 8/19。切槽、死亡、维度变更停止具名动画。它不拥有 camera、hand scale 或 arm matrix。
+- AflItems 注册 P901Item；Item 构造创建 Gecko 缓存、注册 synced animatable 和 `afl_hold` easing。
+- P901Input.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.P901C2SPacket 发给服务端。
+- AflNetwork.handle 在 server work queue 调 P901Actions.request；校验选中槽位、活体、主手类型与 busy session；给实际 stack 分配 GeckoLibID、同步物品，再 triggerAnim。
+- P901Actions 持有 WeakHashMap<ServerPlayer, Session>；Fire 锁 3 tick，Reload 锁 26 tick；声音 tick 8/19。切槽、死亡、维度变更停止具名动画。它不拥有 camera、hand scale 或 arm matrix。
 - Item.registerControllers 注册单个 action controller，fire/reload 都是 thenPlay；动画长度分别 0.14s / 1.30s。controller 只是给 presentation 提供原动画时钟，没有第二个视觉 reload 计时器。
-- 第三人称由 Item extension.getArmPose 返回 ServicePistolPlayerPose.PISTOL = **原版 CROSSBOW_HOLD**，再由 Vanilla PlayerRenderer/PlayerModel/HumanoidModel 应用；不是自定义 ArmPose enum，不经过 FP HandLayer。
-- 非 FP 枪绘制仍走 ServicePistolRenderer，但 gun_model_root=1、gun 局部补偿 ×2。第三人称姿势、GUI 路由、声音本轮全未改。
+- 第三人称由 Item extension.getArmPose 返回 P901PlayerPose.PISTOL = **原版 CROSSBOW_HOLD**，再由 Vanilla PlayerRenderer/PlayerModel/HumanoidModel 应用；不是自定义 ArmPose enum，不经过 FP HandLayer。
+- 非 FP 枪绘制仍走 P901Renderer，但 gun_model_root=1、gun 局部补偿 ×2。第三人称姿势、GUI 路由、声音本轮全未改。
 
 ## 3. Gun render ownership
 
 **枪最终顶点由 GeckoLib GeoRenderer 提交，不是 NativePlayerArmRenderer。**
 
-ServicePistolRenderer 是有生效策略的 wrapper：它注册 hand layer、覆盖 per-bone render 包装；没有自写枪 cube 顶点循环。实际方法为 GeoRenderer.renderCubesOfBone → renderCube → createVerticesOfQuad → VertexConsumer.vertex。GPU draw 批次由 Minecraft buffer/RenderType 提交，不能把 Java wrapper 直接等同 GL draw call。
+P901Renderer 是有生效策略的 wrapper：它注册 hand layer、覆盖 per-bone render 包装；没有自写枪 cube 顶点循环。实际方法为 GeoRenderer.renderCubesOfBone → renderCube → createVerticesOfQuad → VertexConsumer.vertex。GPU draw 批次由 Minecraft buffer/RenderType 提交，不能把 Java wrapper 直接等同 GL draw call。
 
-JSON route 是 `A/models/item/service_pistol.json` 的 `forge:separate_transforms`：
-GUI 选择静态 item_layers icon；第一人称使用 base → `service_pistol_in_hand.json` 的 builtin/entity，随后调用 item extension 的 custom renderer。SeparateTransformsModel 外壳的 isCustomRenderer=false 不意味着 pistol 不走 Gecko；applyTransform 返回的是选中子模型。
+JSON route 是 `A/models/item/p9_01.json` 的 `forge:separate_transforms`：
+GUI 选择静态 item_layers icon；第一人称使用 base → `p9_01_in_hand.json` 的 builtin/entity，随后调用 item extension 的 custom renderer。SeparateTransformsModel 外壳的 isCustomRenderer=false 不意味着 pistol 不走 Gecko；applyTransform 返回的是选中子模型。
 
 五层必须分开：
 
@@ -184,7 +186,7 @@ GUI 选择静态 item_layers icon；第一人称使用 base → `service_pistol_
 | reload_magazine | ACTIVE guide 无 cube | 没有自己的0/1 scale、没有新渲染弹匣类 | 勿误判为第二个绘制器 |
 | Renderer.preserveNonFirstPersonSize ×2 | ACTIVE 非FP | 恢复旧TP/ground/fixed大小；手不走此支路 | 不能在FP cleanup里误删 |
 | GeoItemRenderer scaleWidth/Height=1 | 默认中性 | 没有额外 withScale 调用 | 保持 |
-| ServicePistolReloadGrip.applySurfacePose .30；3.40/2.55×3×.55薄块 | DEAD production / DEV opt-in测量 | 旧Reload特例，默认不会绘制 | 依赖清理后删除 |
+| P901ReloadGrip.applySurfacePose .30；3.40/2.55×3×.55薄块 | DEAD production / DEV opt-in测量 | 旧Reload特例，默认不会绘制 | 依赖清理后删除 |
 | LegacyHandMapping.ARM_VISUAL_SCALE=.30，retainRigidContact | DEV_ONLY historical | 旧完整arm映射测试；默认不执行 | 连旧测试成组移除 |
 | NativeGunArmChecks、MatrixChecks、ReloadGripChecks 的 .3、旧相机样本 | DEV_ONLY historical | 未被默认新契约调用的方法 | 删旧基线，保留当前顶点采样工具 |
 | NativeHandContractChecks PREVIEW_ARM_STYLE=.246，PREVIEW_BINDING_SCALE=1，.6/.8/1等样本 | DEV_ONLY active tests | 正交化“预览”期望值、变形/反射/独立scale测试 | 保留测试价值，移除视觉门耦合并改成真实源契约 |
@@ -309,23 +311,23 @@ D/NativeHandContractChecks:246–288 比较的是“源hierarchy计算后**额�
 
 | Class | 当前职责 / caller → callee | Active / 重复职责 | V0.5建议 |
 | --- | --- | --- | --- |
-| ServicePistolFirstPerson | ForgeRenderHandEvent → Presentation、RenderMatrices、ItemRenderer | ACTIVE；单入口，没有第二个AFL hand入口 | KEEP入口；静态视觉参数后续移交源 |
-| ServicePistolRenderer | Item extension → GeoItemRenderer、Model、HandLayer、Presentation、Rig、controller getter | ACTIVE；模型wrapper兼管legacy presentation/nonFP兼容 | REWRITE，分清数据authority，保留Gecko生命周期 |
-| ServicePistolHandLayer | Renderer构造注册 → per-bone callback → RenderMatrices、RenderUtils、NativePlayerArmRenderer | ACTIVE；仅adapter，无第二套手绘制 | KEEP，可日后内聚进通用renderer |
-| ServicePistolRenderMatrices | FirstPerson/HandLayer → PoseStack复制 | ACTIVE；和DEV copy工具概念重复但不是双绘 | KEEP，未来可通用改名/内聚 |
-| ServicePistolPresentation | FirstPerson/Renderer → 基线与Reload额外变换 | ACTIVE；和BB Display/weapon_root承担叠加视觉职责 | REWRITE，逐步源authoritative迁移，不直接删除 |
-| ServicePistolReloadGrip | **无main caller**；仅DEV ReloadGripChecks/ArmTrace → 旧surface顶点 | DEAD production；仍打包，但默认不加载绘制 | DEAD；DEV调用一起清理后DELETE_LATER |
+| P901FirstPerson | ForgeRenderHandEvent → Presentation、RenderMatrices、ItemRenderer | ACTIVE；单入口，没有第二个AFL hand入口 | KEEP入口；静态视觉参数后续移交源 |
+| P901Renderer | Item extension → GeoItemRenderer、Model、HandLayer、Presentation、Rig、controller getter | ACTIVE；模型wrapper兼管legacy presentation/nonFP兼容 | REWRITE，分清数据authority，保留Gecko生命周期 |
+| P901HandLayer | Renderer构造注册 → per-bone callback → RenderMatrices、RenderUtils、NativePlayerArmRenderer | ACTIVE；仅adapter，无第二套手绘制 | KEEP，可日后内聚进通用renderer |
+| P901RenderMatrices | FirstPerson/HandLayer → PoseStack复制 | ACTIVE；和DEV copy工具概念重复但不是双绘 | KEEP，未来可通用改名/内聚 |
+| P901Presentation | FirstPerson/Renderer → 基线与Reload额外变换 | ACTIVE；和BB Display/weapon_root承担叠加视觉职责 | REWRITE，逐步源authoritative迁移，不直接删除 |
+| P901ReloadGrip | **无main caller**；仅DEV ReloadGripChecks/ArmTrace → 旧surface顶点 | DEAD production；仍打包，但默认不加载绘制 | DEAD；DEV调用一起清理后DELETE_LATER |
 | NativeGunRig | Renderer静态RIG实例 → GeoBone.updateScale | ACTIVE；Java .8和source .8重复维护 | KEEP metadata角色，scale authority需收敛 |
 | NativeHandBinding | NativePlayerArmRenderer → canonical rigid T | ACTIVE；唯一当前B_skin | KEEP，Classic/Slim不可删 |
 | NativePlayerArmRenderer | HandLayer → currentPlayerRenderer/ModelPart、Binding | ACTIVE；唯一真实skin arm/sleeve绘制；DEV可改filter | REWRITE契约/测试隔离；保留完整arm路线 |
-| ServicePistolModel | Renderer → GeoModel三个ResourceLocation | ACTIVE；纯asset lookup，无视觉叠加 | KEEP，可并入Rig resource metadata |
-| ServicePistolPlayerPose | Item extension引用PISTOL → Vanilla CROSSBOW_HOLD | ACTIVE第三人称；deprecated apply仅dead DEV方法引用 | KEEP字段/类；apply后续删，不删整个类 |
-| ServicePistolInput（含Registration） | Forge输入/按键注册/tick → AflNetwork | ACTIVE，输入边沿状态，不改矩阵 | KEEP，本次不重构 |
-| ServicePistolItem（含匿名extension） | 注册/物品实例 → Renderer、PlayerPose、AnimationController、Gecko缓存 | ACTIVE，renderer/client extension及动画入口 | KEEP |
-| ServicePistolAnimationController | Item注册/Gecko process → super.process；Renderer读取reloadSeconds | ACTIVE，共享action时钟 | KEEP |
-| ServicePistolActions（含Session） | packet/server events → synced trigger/stop、sounds | ACTIVE，服务端动作锁/音效；非手臂renderer | KEEP，不借本审计扩玩法 |
-| AflNetwork.ServicePistolC2SPacket | Input请求→channel注册→Actions.request | ACTIVE基础设施；不是FP视觉类 | KEEP |
-| AflItems.SERVICE_PISTOL | DeferredRegister→ServicePistolItem构造 | ACTIVE注册基础设施 | KEEP |
+| P901Model | Renderer → GeoModel三个ResourceLocation | ACTIVE；纯asset lookup，无视觉叠加 | KEEP，可并入Rig resource metadata |
+| P901PlayerPose | Item extension引用PISTOL → Vanilla CROSSBOW_HOLD | ACTIVE第三人称；deprecated apply仅dead DEV方法引用 | KEEP字段/类；apply后续删，不删整个类 |
+| P901Input（含Registration） | Forge输入/按键注册/tick → AflNetwork | ACTIVE，输入边沿状态，不改矩阵 | KEEP，本次不重构 |
+| P901Item（含匿名extension） | 注册/物品实例 → Renderer、PlayerPose、AnimationController、Gecko缓存 | ACTIVE，renderer/client extension及动画入口 | KEEP |
+| P901AnimationController | Item注册/Gecko process → super.process；Renderer读取reloadSeconds | ACTIVE，共享action时钟 | KEEP |
+| P901Actions（含Session） | packet/server events → synced trigger/stop、sounds | ACTIVE，服务端动作锁/音效；非手臂renderer | KEEP，不借本审计扩玩法 |
+| AflNetwork.P901C2SPacket | Input请求→channel注册→Actions.request | ACTIVE基础设施；不是FP视觉类 | KEEP |
+| AflItems.P9_01 | DeferredRegister→P901Item构造 | ACTIVE注册基础设施 | KEEP |
 | AflSounds相关注册 | Actions声音引用 | ACTIVE音频基础设施；不拥有手视觉 | KEEP |
 
 ### 数量口径
@@ -366,10 +368,10 @@ build.gradle明示：虽然目录是src/dev/java，仍通过 `sourceSets.main.ja
 
 经过类级引用、方法级调用与event入口交叉检查：
 
-1. **ServicePistolReloadGrip**：main无任何调用；D/NativeGunReloadGripChecks引用、D/NativeGunArmTrace opt-in Bounds probe引用。生产路径dead，不是全仓库零引用。
+1. **P901ReloadGrip**：main无任何调用；D/NativeGunReloadGripChecks引用、D/NativeGunArmTrace opt-in Bounds probe引用。生产路径dead，不是全仓库零引用。
 2. **NativeGunMatrixChecks.verify / NativeGunReloadGripChecks.verify**：没有外部caller，也没有自动subscriber。可后续单独删这两份DEV文件，不会破坏当前main或默认DEV调用。
 3. **NativeGunRuntimeSmokeCheck.checkPresentation / checkReloadController**：private且只声明，没有tick调用；其辅助projectedMagazineTop / checkReadyForearm只在该死方法群内使用。
-4. **ServicePistolPlayerPose.apply**：仅上述checkPresentation历史私有方法调用；PISTOL字段实际生产仍用，不能整类删除。
+4. **P901PlayerPose.apply**：仅上述checkPresentation历史私有方法调用；PISTOL字段实际生产仍用，不能整类删除。
 5. **NativeGunArmChecks.checkGeometry**：无外部调用；legacyMapping/checkMapping/animatedNearZ属于旧调用群；require/vertices/Bounds必须保留当前Contract使用。
 6. **NativeGunArmClearance**：只供非默认历史群；硬编码root→weapon_root→gun→part漏新gun_model_root，也没通用地遍历parent，旧数值不可拿来验当前姿态。
 7. LegacyHandMapping / ArmTrace不是“绝对不可达”：有显式系统属性可开Probe；默认路径不执行，后续删除需要同时移除入口和引用。
@@ -429,22 +431,22 @@ V0.5 = PLANNED / NOT IMPLEMENTED。没有发现需要本轮越界紧急修改的
 - D/NativeGunArmTrace.java及旧debug property入口。
 - D/LegacyHandMapping.java。
 - D/NativeGunArmClearance.java（或只保留独立通用SAT算法，迁走旧硬编码wrapper）。
-- C/ServicePistolReloadGrip.java。
-- 同时移除D/NativeGunRuntimeSmokeCheck的旧private方法群、D/NativeGunArmChecks的旧legacy调用方法、C/ServicePistolPlayerPose.apply。
+- C/P901ReloadGrip.java。
+- 同时移除D/NativeGunRuntimeSmokeCheck的旧private方法群、D/NativeGunArmChecks的旧legacy调用方法、C/P901PlayerPose.apply。
 - 必須保留ArmChecks.require/vertices/Bounds或先迁移当前Contract的调用；清理后再build+DEV检查+release jar扫描。否则删除main ReloadGrip会让仍参与main编译的src/dev引用报错。
 
 本轮新增只读audit脚本不参与Forge编译/打包/自动执行，也不拥有任何production状态。
 
 ## 15. Files that must not be deleted
 
-- C/ServicePistolFirstPerson.java、ServicePistolRenderer.java、ServicePistolHandLayer.java：当前入口、枪/手接入桥。
+- C/P901FirstPerson.java、P901Renderer.java、P901HandLayer.java：当前入口、枪/手接入桥。
 - C/NativePlayerArmRenderer.java、NativeHandBinding.java、NativeGunRig.java：当前完整skin手臂与canonical/独立gun契约。
-- C/ServicePistolModel.java、ServicePistolRenderMatrices.java：资源定位与独立矩阵所有权。
-- C/ServicePistolPresentation.java：**目前仍active**；只能在等价迁移后替换，不是死类。
-- C/ServicePistolPlayerPose.java中的PISTOL、W/Item/AnimationController/Actions、C/Input与Network/Registry：第三人称、动画与正常输入支持。
+- C/P901Model.java、P901RenderMatrices.java：资源定位与独立矩阵所有权。
+- C/P901Presentation.java：**目前仍active**；只能在等价迁移后替换，不是死类。
+- C/P901PlayerPose.java中的PISTOL、W/Item/AnimationController/Actions、C/Input与Network/Registry：第三人称、动画与正常输入支持。
 - D/NativeHandContractChecks.java、NativeGunRuntimeSmokeCheck.java、NativeHandVisualGate.java及ArmChecks当前工具：先解除依赖和视觉门职责再整理；不要直接删掉留下调用断裂。
 - D/NativePistolArmPoseChecks.java与opt-in NativeGunPresentationTrace：仍有实际回归价值。
-- 唯一编辑源 `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`、arm模板、runtime geo/animation/display资源、纹理/声音/静态图标：不属dead Java清理范围。
+- 唯一编辑源 `src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`、arm模板、runtime geo/animation/display资源、纹理/声音/静态图标：不属dead Java清理范围。
 
 本轮状态：审计完成、生产零改动；真实失败帧原因仍待后续实机确认。检查通过、启动成功、动作矩阵稳定、手臂可见/握持自然，是四种不同证据，不能互相替代。
 

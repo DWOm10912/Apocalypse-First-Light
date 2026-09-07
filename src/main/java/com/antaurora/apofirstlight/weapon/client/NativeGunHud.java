@@ -45,7 +45,7 @@ public final class NativeGunHud {
             graphics.pose().translate(x, y, 0);
             com.mojang.blaze3d.systems.RenderSystem.enableBlend();
             graphics.setColor(1, empty ? .15F : 1, empty ? .15F : 1, 1);
-            graphics.blit(definition.hudIcon(), 0, 0, 36, 22, 0, 0, 1, 1, 1, 1);
+            graphics.blit(definition.hudIcon(), 0, 22 - definition.hudHeight(), definition.hudWidth(), definition.hudHeight(), 0, 0, 1, 1, 1, 1);
             graphics.setColor(1, 1, 1, 1);
             graphics.pose().pushPose();
             graphics.pose().translate(2, 27, 0);

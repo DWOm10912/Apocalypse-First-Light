@@ -20,10 +20,10 @@ public final class NativeGunV061Capture {
         var mc=Minecraft.getInstance();
         if(mc.player==null || mc.level==null || mc.screen!=null || mc.getOverlay()!=null) return;
         var stack=mc.player.getMainHandItem();
-        if(!(stack.getItem() instanceof ServicePistolItem item))return;
+        if(!(stack.getItem() instanceof P901Item item))return;
         var controller=item.getAnimatableInstanceCache().getManagerForId(GeoItem.getId(stack))
-                .getAnimationControllers().get(ServicePistolItem.CONTROLLER);
-        String clip=controller.getCurrentAnimation()==null ? "ready" : controller.getCurrentAnimation().animation().name().replace("animation.service_pistol.","");
+                .getAnimationControllers().get(P901Item.CONTROLLER);
+        String clip=controller.getCurrentAnimation()==null ? "ready" : controller.getCurrentAnimation().animation().name().replace("animation.p9_01.","");
         String state=NativeGunAmmo.read(stack,item.definition())+"-"+clip;
         if(!state.equals(previous)){ previous=state;elapsed=0; }
         int t=elapsed++;

@@ -1,6 +1,6 @@
 package com.antaurora.apofirstlight.weapon.client;
 
-import com.antaurora.apofirstlight.weapon.ServicePistolItem;
+import com.antaurora.apofirstlight.weapon.P901Item;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -10,17 +10,17 @@ import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.util.RenderUtils;
 
 /** Read the actual traversal matrix, including Display, animation and world compatibility. */
-public final class NativeGunFxLayer extends GeoRenderLayer<ServicePistolItem> {
-    private final ServicePistolRenderer renderer;
-    public NativeGunFxLayer(ServicePistolRenderer renderer) { super(renderer); this.renderer = renderer; }
+public final class NativeGunFxLayer extends GeoRenderLayer<P901Item> {
+    private final P901Renderer renderer;
+    public NativeGunFxLayer(P901Renderer renderer) { super(renderer); this.renderer = renderer; }
 
     @Override
-    public void renderForBone(PoseStack pose, ServicePistolItem item, GeoBone bone, RenderType type,
+    public void renderForBone(PoseStack pose, P901Item item, GeoBone bone, RenderType type,
             MultiBufferSource buffers, VertexConsumer buffer, float partial, int light, int overlay) {
         if (!renderer.isHeldFxPass()) return;
         String name = bone.getName();
         if (!name.equals("muzzle_anchor") && !name.equals("ejection_anchor")) return;
-        var anchor = ServicePistolRenderMatrices.detachedCopy(pose);
+        var anchor = P901RenderMatrices.detachedCopy(pose);
         RenderUtils.translateToPivotPoint(anchor, bone);
         try {
             NativeGunFx.anchor(renderer.getInstanceId(item), renderer.isFirstPersonPass(), name,

@@ -1,9 +1,11 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
 ## V0.6.2 — 用户枪焰贴图 / 原创弹壳视觉消费者
 
 原样接入用户128×128 RGBA枪焰图（透明角落、高亮不透明核心）：
-assets/apocalypse_firstlight/textures/effects/service_pistol_muzzle_flash.png。
+assets/apocalypse_firstlight/textures/effects/p9_01_muzzle_flash.png。
 不重新绘制，不用TaCZ素材。NativeGunFxLayer读取muzzle_anchor最终遍历矩阵，
 以3个双面正交quad、emissive shader和SRC_ALPHA+ONE混合绘制1tick短闪；不修改枪械资产。
 用户追加尺寸调整：FLASH_SCALE .34→.17（50%）；贴图/面片/寿命/混合及弹壳参数不变，新尺寸尚未实机验收。
@@ -16,11 +18,11 @@ assets/apocalypse_firstlight/textures/effects/service_pistol_muzzle_flash.png。
 
 ## V0.6.1 — 最小空仓机械状态（当前）
 
-Service Pistol可编辑源仍为 src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel。
+P9-01 Service Pistol可编辑源仍为 src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel。
 原fire/reload轨道、非animation源字段、Geo、Display、贴图及双手构图保持不变。
 新增fire_last_round、empty_idle、reload_empty，由 tools/add-native-empty-states.mjs 派生；
 tools/export-native-gun.mjs 将五个clip导出至
-src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json。
+src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json。
 empty_idle使用loop；仅slide/front_sight/rear_sight/sight_anchor保持后退1.28模型单位。
 最后一发在0.04s后保持后锁；空仓换弹1.10–1.30s平滑前进，其余原换弹轨道逐值保留。
 这不是独立完整Empty Reload，不新增释放滑套手势，不改0.40/0.95节点或1.30s时长。
@@ -31,7 +33,7 @@ empty_idle使用loop；仅slide/front_sight/rear_sight/sight_anchor保持后退1
 ## 9mm Round / Casing V1 — V0.6已注册Round，Casing仅资产
 
 2026-09-07：沿用已有储罐、铅箱源模型所在的 `src/main/blockbench/`，新增
-`9mm_round.bbmodel` 和 `9mm_casing.bbmodel`。不修改 Service Pistol。
+`9mm_round.bbmodel` 和 `9mm_casing.bbmodel`。不修改 P9-01 Service Pistol。
 原创 cube-only 普通 Java item 模型，纵轴 Y：Round X/Y/Z=4/12/4，
 Casing=4/8.015/4（包含底火微小突出）。分别14/10个cuboid。
 两者共用完全相同的弹壳局部几何；Round增加四段铜色弹头，
@@ -42,8 +44,8 @@ Casing保留开放四壁和暗色腔底。底缘、抽壳槽和中央底火独�
 和 `9mm_casing.json`，不使用GeckoLib。每个模型的唯一几何通过七项
 Display适配GUI、左右第一/第三人称、Ground、Fixed。V0.6已注册9mm_round并接入17发弹匣；
 Casing不注册，未实现抛壳。两份几何/色板不变。
-用户授权HUD使用textures/gui/gun/service_pistol_hud.png（925×574），无背景；
-背包图使用textures/item/service_pistol_inventory.png（767×524），原图完整复制，无重新绘制。
+用户授权HUD使用textures/gui/gun/p9_01_hud.png（925×574），无背景；
+背包图使用textures/item/p9_01_inventory.png（767×524），原图完整复制，无重新绘制。
 第一人称枪体UV贴图、源模型、Geo、动画和Display均不改。功能/验收详见Native框架V0.6节。
 
 `node tools/export-9mm-assets.mjs` 重建上述生成资产；`--check` 只读检查一致性。
@@ -207,13 +209,13 @@ Reload只在源fp_root的0–.24秒position/rotation烘焙缓入，每.005秒lin
 
 当前实现/参数以 [Canonical Hand Locator 3.1](native-gun-hand-locator-authoring-standard.md)
 为准；V0.4.x 的 .246 独立手臂缩放、Java gunVisualScale=.8、短掌/薄面、数值视觉门
-全部废弃。Service Pistol V0.5.1已获本轮Ready/Fire用户“目前没有问题”反馈；
+全部废弃。P9-01 Service Pistol V0.5.1已获本轮Ready/Fire用户“目前没有问题”反馈；
 Reload功能暂无回归，深度/展开方向视觉留V0.5.2，不宣称所有皮肤外观均已验证。
 
 ## Source ownership
 
 唯一可编辑枪源：
-`src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`。
+`src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`。
 模型师在此完成枪的物理尺寸、双手 Ready、Fire、Reload 与整套 Display。
 Runtime geo/item JSON 是导出产物，不代替可编辑源文件。
 保留中性参考臂模板 `src/main/blockbench/templates/afl_first_person_player_arm_rig.bbmodel`；
@@ -224,7 +226,7 @@ Runtime geo/item JSON 是导出产物，不代替可编辑源文件。
 - 玩家Classic 4×12×4、Slim 3×12×4，完整原版arm/sleeve和真实skin，不改baked geometry或UV。
   V0.5.1仅在FP矩阵施加全框架固定(.62,.78,.62)非均匀presentation；不是按武器/状态缩放。
 - 枪适配标准手臂；gun-only物理调整须同时处理cube/bone pivot、inflate、机械平移和枪体locator。
-- 当前Service Pistol已包含历史 .5迁移及本轮原 .8视觉效果的实体烘焙；不得重复缩半。
+- 当前P9-01 Service Pistol已包含历史 .5迁移及本轮原 .8视觉效果的实体烘焙；不得重复缩半。
   握把壳宽1.92，套筒主体宽2.24，slide峰值1.28模型单位。
 - 所有参考臂group/cube export=false；Classic默认显示、Slim默认隐藏，可切换核查。
   手端原点、forearm=-Y、palm=+Z、lateral=+X；reference局部rotation=0。
@@ -243,16 +245,16 @@ Fire .14s、Reload1.30s、声音时间不变。source中可见左右手随动、
 
 ## Materials / 导出
 
-枪使用原128×128 service_pistol.png，参考臂使用原16×16中性纹理，不能互绑。
+枪使用原128×128 p9_01.png，参考臂使用原16×16中性纹理，不能互绑。
 缩放几何前固定逐面UV，避免box UV根据新尺寸重新取样。贴图设计和皮肤UV保持。
 FP Display仍需统一缩放；影响枪和接触位置，不决定最终arm/sleeve轴长。
 先用`tools/native-arm-presentation.mjs --patch <source.bbmodel>`同步四个export=false代理并应用patch、核验`--check`。
 保存后执行 `node tools/export-native-gun.mjs --write`，再 `--check` 和
-`tools/verify-service-pistol.ps1`。只同步两个FP Display，不覆盖无关TP/GUI。
+`tools/verify-p9-01.ps1`。只同步两个FP Display，不覆盖无关TP/GUI。
 本轮为文件导出，不声称使用了当前不可用的Blockbench MCP。
 
 Runtime求值动画、固定绑定与通用presentation，保留皮肤、袖层、深度/矩阵隔离。新枪不新增PlayerArmRenderer，
-不增加每枪B_skin或姿态硬编码。非FP历史尺寸兼容是Service Pistol保旧外观的例外，
+不增加每枪B_skin或姿态硬编码。非FP历史尺寸兼容是P9-01 Service Pistol保旧外观的例外，
 不是FP制作参数；若未来重制world资产应单独迁移，不让模型师用它校准握持。
 
 ## 验收

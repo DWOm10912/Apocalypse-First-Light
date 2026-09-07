@@ -51,7 +51,7 @@ public final class NativePlayerArmRenderer {
     public static PoseStack canonicalPose(PoseStack evaluatedLocator) {
         float inherited = inheritedUniformScale(evaluatedLocator);
         if (!Float.isFinite(inherited)) return null;
-        var result = ServicePistolRenderMatrices.detachedCopy(evaluatedLocator);
+        var result = P901RenderMatrices.detachedCopy(evaluatedLocator);
         result.scale(PRESENTATION_X / inherited, PRESENTATION_Y / inherited, PRESENTATION_Z / inherited);
         return result;
     }

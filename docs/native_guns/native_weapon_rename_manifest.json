@@ -1,0 +1,450 @@
+[
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\M14CombatGameTests.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\BR5101CombatGameTests.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunAmmoGameTests.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunAmmoGameTests.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunPresentationTrace.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunPresentationTrace.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunRuntimeSmokeCheck.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunRuntimeSmokeCheck.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunShotGameTests.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunShotGameTests.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunV061Capture.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeGunV061Capture.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeHandContractChecks.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeHandContractChecks.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeHeadshotGameTests.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeHeadshotGameTests.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeNoiseRegressionTests.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativeNoiseRegressionTests.java"
+  },
+  {
+    "from": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativePistolArmPoseChecks.java",
+    "to": "src\\dev\\java\\com\\antaurora\\apofirstlight\\dev\\NativePistolArmPoseChecks.java"
+  },
+  {
+    "from": "src\\dev\\m14-combat-gametest.init.gradle",
+    "to": "src\\dev\\br51_01-combat-gametest.init.gradle"
+  },
+  {
+    "from": "src\\main\\blockbench\\9mm_casing.bbmodel",
+    "to": "src\\main\\blockbench\\9mm_casing.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\9mm_round.bbmodel",
+    "to": "src\\main\\blockbench\\9mm_round.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\crowbar.bbmodel",
+    "to": "src\\main\\blockbench\\crowbar.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\m14.bbmodel",
+    "to": "src\\main\\blockbench\\br51_01.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\service_pistol_v03_8_fire_slide_cleanup.bbmodel",
+    "to": "src\\main\\blockbench\\p9_01_v03_8_fire_slide_cleanup.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\templates\\afl_first_person_player_arm_rig.bbmodel",
+    "to": "src\\main\\blockbench\\templates\\afl_first_person_player_arm_rig.bbmodel"
+  },
+  {
+    "from": "src\\main\\blockbench\\templates\\afl_weapon_rig_template.bbmodel",
+    "to": "src\\main\\blockbench\\templates\\afl_weapon_rig_template.bbmodel"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\network\\AflNetwork.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\network\\AflNetwork.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflCreativeTabs.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflCreativeTabs.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflItems.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflItems.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflSounds.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\registry\\AflSounds.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ConfiguredGunFirstPerson.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ConfiguredGunFirstPerson.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeAnimatedWeaponRenderer.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeAnimatedWeaponRenderer.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeGunFx.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeGunFx.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeGunFxLayer.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativeGunFxLayer.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativePlayerArmRenderer.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\NativePlayerArmRenderer.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolFirstPerson.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901FirstPerson.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolHandLayer.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901HandLayer.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolInput.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901Input.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolModel.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901Model.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolPlayerPose.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901PlayerPose.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolPresentation.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901Presentation.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolRenderer.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901Renderer.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\ServicePistolRenderMatrices.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\client\\P901RenderMatrices.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\ConfiguredNativeGunItem.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\ConfiguredNativeGunItem.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeAnimationCommands.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeAnimationCommands.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeGunDefinition.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeGunDefinition.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeGunItem.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\NativeGunItem.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\ServicePistolActions.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\P901Actions.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\ServicePistolAnimationController.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\P901AnimationController.java"
+  },
+  {
+    "from": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\ServicePistolItem.java",
+    "to": "src\\main\\java\\com\\antaurora\\apofirstlight\\weapon\\P901Item.java"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\animations\\m14.animation.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\animations\\br51_01.animation.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\animations\\service_pistol.animation.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\animations\\p9_01.animation.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\geo\\m14.geo.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\geo\\br51_01.geo.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\geo\\service_pistol.geo.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\geo\\p9_01.geo.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\lang\\en_us.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\lang\\en_us.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\lang\\zh_cn.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\lang\\zh_cn.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\m14.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\br51_01.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\m14_in_hand.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\br51_01_in_hand.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\service_pistol.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\p9_01.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\service_pistol_in_hand.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\models\\item\\p9_01_in_hand.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\draw.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\draw.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\fire.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\fire.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\put_away.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\put_away.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_empty_1.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_empty_1.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_empty_2.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_empty_2.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_empty_3.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_empty_3.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_empty_4.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_empty_4.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_tactical_1.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_tactical_1.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_tactical_2.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_tactical_2.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\m14\\reload_tactical_3.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\br51_01\\reload_tactical_3.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\service_pistol\\service_pistol_fire.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\p9_01\\p9_01_fire.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\service_pistol\\service_pistol_magazine_in.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\p9_01\\p9_01_magazine_in.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\service_pistol\\service_pistol_magazine_out.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\p9_01\\p9_01_magazine_out.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\service_pistol\\slide_action.ogg",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds\\weapons\\p9_01\\slide_action.ogg"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds.json",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\sounds.json"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\effects\\service_pistol_muzzle_flash.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\effects\\p9_01_muzzle_flash.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\gui\\gun\\m14_hud.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\gui\\gun\\br51_01_hud.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\gui\\gun\\service_pistol_hud.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\gui\\gun\\p9_01_hud.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\m14.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\br51_01.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\m14_inventory.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\br51_01_inventory.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\service_pistol.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\p9_01.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\service_pistol_icon.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\p9_01_icon.png"
+  },
+  {
+    "from": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\service_pistol_inventory.png",
+    "to": "src\\main\\resources\\assets\\apocalypse_firstlight\\textures\\item\\p9_01_inventory.png"
+  },
+  {
+    "from": "tools\\add-m14-reference-arms.mjs",
+    "to": "tools\\add-br51_01-reference-arms.mjs"
+  },
+  {
+    "from": "tools\\add-native-empty-states.mjs",
+    "to": "tools\\add-native-empty-states.mjs"
+  },
+  {
+    "from": "tools\\apply-m14-hip-pose.mjs",
+    "to": "tools\\apply-br51_01-hip-pose.mjs"
+  },
+  {
+    "from": "tools\\apply-m14-world-icons.mjs",
+    "to": "tools\\apply-br51_01-world-icons.mjs"
+  },
+  {
+    "from": "tools\\audit-native-gun-ready.mjs",
+    "to": "tools\\audit-native-gun-ready.mjs"
+  },
+  {
+    "from": "tools\\audit-player-arm-presentation.mjs",
+    "to": "tools\\audit-player-arm-presentation.mjs"
+  },
+  {
+    "from": "tools\\author-service-pistol-empty-reload.mjs",
+    "to": "tools\\author-p9-01-empty-reload.mjs"
+  },
+  {
+    "from": "tools\\author-service-pistol-reload.mjs",
+    "to": "tools\\author-p9-01-reload.mjs"
+  },
+  {
+    "from": "tools\\calibrate-m14-binding.mjs",
+    "to": "tools\\calibrate-br51_01-binding.mjs"
+  },
+  {
+    "from": "tools\\check-native-arm-presentation.mjs",
+    "to": "tools\\check-native-arm-presentation.mjs"
+  },
+  {
+    "from": "tools\\check-native-gun-aimline.mjs",
+    "to": "tools\\check-native-gun-aimline.mjs"
+  },
+  {
+    "from": "tools\\draw-service-pistol-icon.ps1",
+    "to": "tools\\draw-p9-01-icon.ps1"
+  },
+  {
+    "from": "tools\\export-native-gun.mjs",
+    "to": "tools\\export-native-gun.mjs"
+  },
+  {
+    "from": "tools\\export-service-pistol.blockbench.js",
+    "to": "tools\\export-p9-01.blockbench.js"
+  },
+  {
+    "from": "tools\\migrate-m14.mjs",
+    "to": "tools\\migrate-br51_01.mjs"
+  },
+  {
+    "from": "tools\\prepare-m14-white-gun.mjs",
+    "to": "tools\\prepare-br51_01-white-gun.mjs"
+  },
+  {
+    "from": "tools\\restore-m14-empty-magazine.mjs",
+    "to": "tools\\restore-br51_01-empty-magazine.mjs"
+  },
+  {
+    "from": "tools\\verify-service-pistol.ps1",
+    "to": "tools\\verify-p9-01.ps1"
+  },
+  {
+    "from": "docs\\01 - 系统设计\\枪械\\弹药.md",
+    "to": "docs\\01 - 系统设计\\枪械\\弹药.md"
+  },
+  {
+    "from": "docs\\01 - 系统设计\\枪械\\枪械系统.md",
+    "to": "docs\\01 - 系统设计\\枪械\\枪械系统.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\afl_weapon_art_standard_v1.md",
+    "to": "docs\\dev\\native-gun\\afl_weapon_art_standard_v1.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\native-afl-gun-framework-v0.md",
+    "to": "docs\\dev\\native-gun\\native-afl-gun-framework-v0.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\native-gun-afl-vs-tacz-player-arm-presentation-audit.md",
+    "to": "docs\\dev\\native-gun\\native-gun-afl-vs-tacz-player-arm-presentation-audit.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\native-gun-first-person-runtime-path-audit.md",
+    "to": "docs\\dev\\native-gun\\native-gun-first-person-runtime-path-audit.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\native-gun-hand-locator-authoring-standard.md",
+    "to": "docs\\dev\\native-gun\\native-gun-hand-locator-authoring-standard.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\native-gun-tacz-first-person-hand-audit.md",
+    "to": "docs\\dev\\native-gun\\native-gun-tacz-first-person-hand-audit.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\service_pistol_v02_model_review.md",
+    "to": "docs\\dev\\native-gun\\p9_01_v02_model_review.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\service_pistol_v03_rig_review.md",
+    "to": "docs\\dev\\native-gun\\p9_01_v03_rig_review.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\原生枪声回归检查.md",
+    "to": "docs\\dev\\native-gun\\原生枪声回归检查.md"
+  },
+  {
+    "from": "docs\\dev\\native-gun\\空仓换弹源动画契约.md",
+    "to": "docs\\dev\\native-gun\\空仓换弹源动画契约.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_cleanup_audit.md",
+    "to": "docs\\native_guns\\br51_01_cleanup_audit.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_first_person_hip_pose_fix.md",
+    "to": "docs\\native_guns\\br51_01_first_person_hip_pose_fix.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_native_combat_completion.md",
+    "to": "docs\\native_guns\\br51_01_native_combat_completion.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_reference_arm_preview.md",
+    "to": "docs\\native_guns\\br51_01_reference_arm_preview.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_third_person_and_icons.md",
+    "to": "docs\\native_guns\\br51_01_third_person_and_icons.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_v1_white_gun_asset_cleanup.md",
+    "to": "docs\\native_guns\\br51_01_v1_white_gun_asset_cleanup.md"
+  },
+  {
+    "from": "docs\\native_guns\\m14_visual_animation_fix_report.md",
+    "to": "docs\\native_guns\\br51_01_visual_animation_fix_report.md"
+  }
+]

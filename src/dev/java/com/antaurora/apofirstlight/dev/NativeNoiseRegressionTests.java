@@ -23,29 +23,29 @@ public final class NativeNoiseRegressionTests {
     public static void successfulShotNoiseMatrix(GameTestHelper h) {
         var level=h.getLevel();var p=FakePlayerFactory.get(level,new GameProfile(UUID.randomUUID(),"noise_matrix"));
         p.setPos(h.absoluteVec(new Vec3(3.5,2,3.5)));p.getInventory().selected=0;
-        var gun=new net.minecraft.world.item.ItemStack(com.antaurora.apofirstlight.registry.AflItems.SERVICE_PISTOL.get());p.getInventory().setItem(0,gun);
+        var gun=new net.minecraft.world.item.ItemStack(com.antaurora.apofirstlight.registry.AflItems.P9_01.get());p.getInventory().setItem(0,gun);
         var listener=h.spawn(EntityType.ZOMBIE,new BlockPos(10,2,3));listener.setNoAi(true);
         String[] cases={"MISS","BLOCK","BODY","HEAD","ANIMAL","LAST"};
         for(int index=0;index<cases.length;index++) {final int n=index;
             h.runAfterDelay(2+index*5,()->{
-                ServicePistolActions.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END,p));
+                P901Actions.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END,p));
                 p.setXRot(-90);p.setYRot(0);net.minecraft.world.entity.LivingEntity target=null;
                 if(n==1)h.setBlock(new BlockPos(3,5,3),Blocks.STONE);
                 if(n>=2&&n<=4){target=n==4?h.spawn(EntityType.COW,new BlockPos(3,2,7)):h.spawn(EntityType.ZOMBIE,new BlockPos(3,2,7));((net.minecraft.world.entity.Mob)target).setNoAi(true);
                     Vec3 aim=new Vec3(target.getX(),n==3?target.getBoundingBox().maxY-.25:target.getY()+.8,target.getZ()).subtract(p.getEyePosition());
                     p.setYRot((float)Math.toDegrees(Math.atan2(-aim.x,aim.z)));p.setXRot((float)-Math.toDegrees(Math.atan2(aim.y,Math.hypot(aim.x,aim.z))));}
-                NativeGunAmmo.set(gun,NativeGunDefinition.SERVICE_PISTOL,n==5?1:17);InfectedHearingState.clear(listener);
-                ServicePistolActions.request(p,false,0);
+                NativeGunAmmo.set(gun,NativeGunDefinition.P9_01,n==5?1:17);InfectedHearingState.clear(listener);
+                P901Actions.request(p,false,0);
                 h.assertTrue(InfectedHearingState.isValid(listener),cases[n]+" emits noise");
-                InfectedHearingState.clear(listener);ServicePistolActions.request(p,false,0);
+                InfectedHearingState.clear(listener);P901Actions.request(p,false,0);
                 h.assertTrue(!InfectedHearingState.isValid(listener),"Cooldown rejection silent");
                 if(target!=null)target.discard();h.setBlock(new BlockPos(3,5,3),Blocks.AIR);
                 ApocalypseFirstLight.LOGGER.info("[AFL NOISE MATRIX] {} PASS",cases[n]);
             });
         }
         h.runAfterDelay(34,()->{
-            ServicePistolActions.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END,p));
-            NativeGunAmmo.set(gun,NativeGunDefinition.SERVICE_PISTOL,0);InfectedHearingState.clear(listener);ServicePistolActions.request(p,false,0);
+            P901Actions.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END,p));
+            NativeGunAmmo.set(gun,NativeGunDefinition.P9_01,0);InfectedHearingState.clear(listener);P901Actions.request(p,false,0);
             h.assertTrue(!InfectedHearingState.isValid(listener),"Dry silent");listener.discard();h.succeed();
         });
     }
@@ -65,7 +65,7 @@ public final class NativeNoiseRegressionTests {
         h.runAfterDelay(50,()->{
             listeners.forEach(InfectedHearingState::clear);
             listeners.forEach(z->z.setNoAi(false));
-            NativeGunShot.execute(p,NativeGunDefinition.SERVICE_PISTOL);
+            NativeGunShot.execute(p,NativeGunDefinition.P9_01);
             for(int i=0;i<listeners.size();i++) {
                 var z=listeners.get(i);var a=AcousticOcclusionResolver.resolve(level,p.getEyePosition(),z.getEyePosition(),64);
                 boolean heard=InfectedHearingState.isValid(z);

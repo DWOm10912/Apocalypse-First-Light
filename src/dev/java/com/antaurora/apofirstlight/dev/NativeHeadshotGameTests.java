@@ -27,7 +27,7 @@ public final class NativeHeadshotGameTests {
         for(var type:new EntityType<?>[]{EntityType.COW,EntityType.PIG,EntityType.SHEEP,EntityType.HUSK,EntityType.DROWNED,EntityType.ZOMBIE_VILLAGER}) {
             var e=type.create(h.getLevel());h.assertTrue(!NativeHeadshots.enabled(e),"Exact allowlist excludes "+type);
         }
-        h.assertTrue(Math.abs(NativeGunShot.damageAt(NativeGunDefinition.SERVICE_PISTOL,64)*NativeHeadshots.MULTIPLIER.get()-6.825)<1e-8,"Falloff before multiplier");
+        h.assertTrue(Math.abs(NativeGunShot.damageAt(NativeGunDefinition.P9_01,64)*NativeHeadshots.MULTIPLIER.get()-6.825)<1e-8,"Falloff before multiplier");
         h.succeed();
     }
     @GameTest(template="network_empty")
@@ -37,13 +37,13 @@ public final class NativeHeadshotGameTests {
         z.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR).setBaseValue(0);
         var box=z.getBoundingBox();
         p.setPos(z.getX(),box.maxY-.25-p.getEyeHeight(),z.getZ()-3);p.setYRot(0);p.setXRot(0);
-        float before=z.getHealth();var hit=NativeGunShot.execute(p,NativeGunDefinition.SERVICE_PISTOL);
+        float before=z.getHealth();var hit=NativeGunShot.execute(p,NativeGunDefinition.P9_01);
         h.assertTrue(hit.entity()==z&&hit.head(),"Real spread ray classifies zombie head");
         h.assertTrue(Math.abs(before-z.getHealth()-10.5)<.001,"Near head damage10.5");
         z.setHealth(20);p.setPos(z.getX(),box.minY+.8-p.getEyeHeight(),z.getZ()-3);
-        hit=NativeGunShot.execute(p,NativeGunDefinition.SERVICE_PISTOL);
+        hit=NativeGunShot.execute(p,NativeGunDefinition.P9_01);
         h.assertTrue(hit.entity()==z&&!hit.head()&&Math.abs(z.getHealth()-13)<.001,"Body damage7");
-        z.setInvulnerable(true);before=z.getHealth();NativeGunShot.execute(p,NativeGunDefinition.SERVICE_PISTOL);
+        z.setInvulnerable(true);before=z.getHealth();NativeGunShot.execute(p,NativeGunDefinition.P9_01);
         h.assertTrue(z.getHealth()==before,"Invulnerability remains effective");
         z.discard();h.succeed();
     }

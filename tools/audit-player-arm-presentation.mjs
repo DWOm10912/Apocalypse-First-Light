@@ -28,7 +28,7 @@ const tg=tjson('geo_models/gun/glock_17_geo.json')['minecraft:geometry'][0].bone
 const ta=tjson('animations/glock_17.animation.json').animations;
 const td=tjson('display/guns/glock_17_display.json');
 const ap='src/main/resources/assets/apocalypse_firstlight/';
-const ag=read(ap+'geo/service_pistol.geo.json')['minecraft:geometry'][0].bones,aa=read(ap+'animations/service_pistol.animation.json').animations,ad=read(ap+'models/item/service_pistol_in_hand.json').display.firstperson_righthand;
+const ag=read(ap+'geo/p9_01.geo.json')['minecraft:geometry'][0].bones,aa=read(ap+'animations/p9_01.animation.json').animations,ad=read(ap+'models/item/p9_01_in_hand.json').display.firstperson_righthand;
 assert.match(fs.readFileSync(path.join(root,'src/main/java/com/antaurora/apofirstlight/weapon/client/NativePlayerArmRenderer.java'),'utf8'),/PLAYER_ARM_SCALE = 1F/);
 assert(ad.scale.every(n=>n===.41),'Re-audit changed common Display');
 const I=()=>[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1];
@@ -69,7 +69,7 @@ function sample(channel,t,fallback){
 const pivotA=b=>[-b.pivot[0],b.pivot[1],b.pivot[2]];
 const angleA=r=>[-r[0],-r[1],r[2]];
 function aflScene(action,t){
- const anim=aa['animation.service_pistol.'+action]?.bones||{},by=new Map(ag.map(b=>[b.name,b])),cache=new Map();
+ const anim=aa['animation.p9_01.'+action]?.bones||{},by=new Map(ag.map(b=>[b.name,b])),cache=new Map();
  const base=chain(T(div(ad.translation)),rot(0,ad.rotation[0]),rot(1,ad.rotation[1]),rot(2,ad.rotation[2]),S(ad.scale),T([0,.01,0]));
  function bm(name){if(!name)return base;if(cache.has(name))return cache.get(name);
   const b=by.get(name),a=anim[name]||{},p=div(pivotA(b)),r=add(angleA(b.rotation||zero),angleA(sample(a.rotation,t,zero))),pos=sample(a.position,t,zero);pos[0]*=-1;
@@ -162,7 +162,7 @@ function analyze(scene,side,width,inflate=0){
 }
 function digest(p){return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex')}
 const packChecks=['geo_models/gun/glock_17_geo.json','animations/glock_17.animation.json','display/guns/glock_17_display.json'].map(p=>({path:p,run_pack_matches_bundled:fs.readFileSync(path.join(root,'run/tacz/tacz_default_gun/assets/tacz',p)).equals(entries.get(prefix+p)())}));
-const result={assumptions:{fov,aspect,height:H,near:.05,stance:'standing right-handed equip=0 ADS=0, loaded standard magazine, no bob/sway/camera animation, opaque gun OBBs; no HUD/arm-vs-arm occlusion',animation:'raw clip numeric channels linearly interpolated; no live state blending; pinned keyframe t=.5 for both',palm_normal:'canonical +Z front/back-plane proxy, NOT anatomical palm; inward_skin_side_normal is local right +X / left -X',primary_visible_ratio:'fraction of 400 whole-arm longitudinal stations with at least one visible facing-surface sample'},source:{jar_sha256:digest(jarPath),afl_geo_sha256:digest(path.join(root,ap+'geo/service_pistol.geo.json')),packChecks},tacz_asset:{idle_hand_scale:ta.static_idle.bones.righthand.scale,reload_hand_scale:ta.reload_tactical.bones.righthand.scale,display:td.transform,reload_length:ta.reload_tactical.animation_length,camera_track_present:!!ta.reload_tactical.bones.camera},rows:[]};
+const result={assumptions:{fov,aspect,height:H,near:.05,stance:'standing right-handed equip=0 ADS=0, loaded standard magazine, no bob/sway/camera animation, opaque gun OBBs; no HUD/arm-vs-arm occlusion',animation:'raw clip numeric channels linearly interpolated; no live state blending; pinned keyframe t=.5 for both',palm_normal:'canonical +Z front/back-plane proxy, NOT anatomical palm; inward_skin_side_normal is local right +X / left -X',primary_visible_ratio:'fraction of 400 whole-arm longitudinal stations with at least one visible facing-surface sample'},source:{jar_sha256:digest(jarPath),afl_geo_sha256:digest(path.join(root,ap+'geo/p9_01.geo.json')),packChecks},tacz_asset:{idle_hand_scale:ta.static_idle.bones.righthand.scale,reload_hand_scale:ta.reload_tactical.bones.righthand.scale,display:td.transform,reload_length:ta.reload_tactical.animation_length,camera_track_present:!!ta.reload_tactical.bones.camera},rows:[]};
 for(const[system,fn,states]of[['AFL',aflScene,['ready','reload']],['TaCZ',taczScene,['static_idle','reload_tactical']]])
  for(const state of states){const t=state.includes('reload')?.5:0,scene=fn(state,t);
   for(const side of['right','left'])for(const width of[3,4])result.rows.push({system,state,t,side,width,...analyze(scene,side,width)});

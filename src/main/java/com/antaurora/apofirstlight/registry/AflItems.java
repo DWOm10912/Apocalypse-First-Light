@@ -14,8 +14,14 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ApocalypseFirstLight.MOD_ID);
 
-    public static final RegistryObject<Item> SERVICE_PISTOL = ITEMS.register("service_pistol",
-            com.antaurora.apofirstlight.weapon.ServicePistolItem::new);
+    public static final RegistryObject<Item> P9_01 = ITEMS.register("p9_01",
+            com.antaurora.apofirstlight.weapon.P901Item::new);
+    public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(com.antaurora.apofirstlight.weapon.NativeGunDefinition.BR51_01,
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01", "static_idle",
+                            java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
+                                    "inspect", "shoot", "put_away", "draw"),
+                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell")));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9mm_round",

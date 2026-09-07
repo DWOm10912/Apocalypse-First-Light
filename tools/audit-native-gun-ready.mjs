@@ -6,19 +6,19 @@ import assert from 'node:assert/strict';
 const client='src/main/java/com/antaurora/apofirstlight/weapon/client/';
 const resources='src/main/resources/assets/apocalypse_firstlight/';
 const json=p=>JSON.parse(readFileSync(p,'utf8').replace(/^\uFEFF/,''));
-const display=json(resources+'models/item/service_pistol_in_hand.json').display.firstperson_righthand;
+const display=json(resources+'models/item/p9_01_in_hand.json').display.firstperson_righthand;
 assert.deepEqual(display.translation,[-8.75,-.25,0]);
 assert.deepEqual(display.scale,[.5,.5,.5]);
 assert.deepEqual(display.rotation||[0,0,0],[0,0,0]);
-const presentation=readFileSync(client+'ServicePistolPresentation.java','utf8');
+const presentation=readFileSync(client+'P901Presentation.java','utf8');
 for(const [key,value] of Object.entries({BASE_X:.51,BASE_Y:-.44,BASE_Z:-.70,BASE_SCALE:.82,BASE_PITCH:-4,BASE_YAW:-4})) {
   const match=presentation.match(new RegExp(key+'\\s*=\\s*([-0-9.]+)F'));
   assert.equal(Number(match?.[1]),value,'Re-audit changed presentation: '+key);
 }
-assert.match(readFileSync(client+'ServicePistolRenderer.java','utf8'), /"gun_model_root", "right_hand_anchor", "left_hand_anchor", \.8F/);
+assert.match(readFileSync(client+'P901Renderer.java','utf8'), /"gun_model_root", "right_hand_anchor", "left_hand_anchor", \.8F/);
 assert.match(readFileSync(client+'NativePlayerArmRenderer.java','utf8'), /PLAYER_ARM_SCALE = \.246F/);
 assert.match(readFileSync(client+'NativeHandBinding.java','utf8'), /DISTAL_Y = 10F/);
-const geometry=json(resources+'geo/service_pistol.geo.json')['minecraft:geometry'][0].bones;
+const geometry=json(resources+'geo/p9_01.geo.json')['minecraft:geometry'][0].bones;
 assert.equal(geometry.reduce((n,b)=>n+(b.cubes||[]).length,0),77);
 for(const b of geometry) {
   assert.ok(!b.neverRender && !b.inflate,'Unsupported bone: '+b.name);

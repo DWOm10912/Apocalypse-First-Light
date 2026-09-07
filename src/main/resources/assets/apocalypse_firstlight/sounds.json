@@ -1,20 +1,39 @@
 {
   "shell_casings_dropping": {
-    "sounds": [{"name": "apocalypse_firstlight:shell_casings_dropping", "attenuation_distance": 12}]
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:shell_casings_dropping",
+        "attenuation_distance": 12
+      }
+    ]
   },
-  "service_pistol_dry_fire": { "sounds": ["apocalypse_firstlight:dry_fire"] },
-  "service_pistol_slide_action": { "sounds": ["apocalypse_firstlight:weapons/service_pistol/slide_action"] },
-  "service_pistol_fire": {
-    "subtitle": "subtitles.apocalypse_firstlight.service_pistol.fire",
-    "sounds": ["apocalypse_firstlight:weapons/service_pistol/service_pistol_fire"]
+  "p9_01_dry_fire": {
+    "sounds": [
+      "apocalypse_firstlight:dry_fire"
+    ]
   },
-  "service_pistol_magazine_out": {
-    "subtitle": "subtitles.apocalypse_firstlight.service_pistol.magazine_out",
-    "sounds": ["apocalypse_firstlight:weapons/service_pistol/service_pistol_magazine_out"]
+  "p9_01_slide_action": {
+    "sounds": [
+      "apocalypse_firstlight:weapons/p9_01/slide_action"
+    ]
   },
-  "service_pistol_magazine_in": {
-    "subtitle": "subtitles.apocalypse_firstlight.service_pistol.magazine_in",
-    "sounds": ["apocalypse_firstlight:weapons/service_pistol/service_pistol_magazine_in"]
+  "p9_01_fire": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.fire",
+    "sounds": [
+      "apocalypse_firstlight:weapons/p9_01/p9_01_fire"
+    ]
+  },
+  "p9_01_magazine_out": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.magazine_out",
+    "sounds": [
+      "apocalypse_firstlight:weapons/p9_01/p9_01_magazine_out"
+    ]
+  },
+  "p9_01_magazine_in": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.magazine_in",
+    "sounds": [
+      "apocalypse_firstlight:weapons/p9_01/p9_01_magazine_in"
+    ]
   },
   "explosion_tinnitus": {
     "sounds": [
@@ -65,6 +84,86 @@
       {
         "name": "apocalypse_firstlight:alloy_furnace_running",
         "stream": true
+      }
+    ]
+  },
+  "br51_01_fire": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/fire",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_empty_1": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_empty_1",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_empty_2": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_empty_2",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_empty_3": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_empty_3",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_empty_4": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_empty_4",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_tactical_1": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_tactical_1",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_tactical_2": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_tactical_2",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_reload_tactical_3": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/reload_tactical_3",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_draw": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/draw",
+        "stream": false
+      }
+    ]
+  },
+  "br51_01_put_away": {
+    "sounds": [
+      {
+        "name": "apocalypse_firstlight:br51_01/put_away",
+        "stream": false
       }
     ]
   }

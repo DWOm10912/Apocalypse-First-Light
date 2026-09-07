@@ -22,7 +22,7 @@ export function scene(source,context='firstperson_righthand',action='ready',t=0)
  const groups=new Map(source.groups.map(g=>[g.uuid,g])),by=new Map(source.groups.map(g=>[g.name,g])),parents=new Map();
  function walk(nodes,parent){for(const n of nodes)if(typeof n!=='string'){let g=groups.get(n.uuid);parents.set(g.name,parent);walk(n.children,g.name)}}walk(source.outliner,null);
  const d=source.display[context],r=d.rotation||[0,0,0],tr=d.translation.map(n=>n/16),left=context.endsWith('lefthand');
- const java=fs.readFileSync(new URL('../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolFirstPerson.java',import.meta.url),'utf8');
+ const java=fs.readFileSync(new URL('../src/main/java/com/antaurora/apofirstlight/weapon/client/P901FirstPerson.java',import.meta.url),'utf8');
  const offset=['X','Y'].map(axis=>Number(java.match(new RegExp('COMPOSITION_'+axis+' = ([.0-9]+)F'))?.[1]||0));
  const base=chain(T([left?-offset[0]:offset[0],offset[1],0]),T([left?-tr[0]:tr[0],tr[1],tr[2]]),R(0,r[0]),R(1,left?-r[1]:r[1]),R(2,left?-r[2]:r[2]),S(d.scale),T([0,.01,0]));
  const anim=source.animations.find(a=>a.name.endsWith('.'+action)),cache=new Map();
@@ -57,9 +57,9 @@ export function entrance(source){
   let row={t,p,r,translationSpeed:dt?Math.hypot(...sub(p,previous.p))/dt:0,rotationSpeed:dt?Math.hypot(...sub(r,previous.r))/dt:0};previous={p,r,t};return row});
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
- const source=read(sourcePath),out=compile(source,read(assets+'/geo/service_pistol.geo.json'),read(assets+'/models/item/service_pistol_in_hand.json'));
- assert.deepEqual(out.animations,read(assets+'/animations/service_pistol.animation.json'),'Saved-source animation export');
- assert.deepEqual(out.display,read(assets+'/models/item/service_pistol_in_hand.json'),'Saved-source FP Display export');
+ const source=read(sourcePath),out=compile(source,read(assets+'/geo/p9_01.geo.json'),read(assets+'/models/item/p9_01_in_hand.json'));
+ assert.deepEqual(out.animations,read(assets+'/animations/p9_01.animation.json'),'Saved-source animation export');
+ assert.deepEqual(out.display,read(assets+'/models/item/p9_01_in_hand.json'),'Saved-source FP Display export');
  for(const c of ['firstperson_righthand','firstperson_lefthand'])assert(Math.hypot(...aimline(source,c).muzzleRay20)<.05);
  const g=source.groups.find(g=>g.name==='fp_root'),keys=source.animations.find(a=>a.name.endsWith('.reload')).animators[g.uuid].keyframes;
  let firstSpeed=0,lastSpeed=0,peakSpeed=0,previous=sample(keys,'position',0);

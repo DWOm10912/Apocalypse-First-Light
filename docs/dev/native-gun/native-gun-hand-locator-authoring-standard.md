@@ -1,5 +1,7 @@
 # AFL Canonical Hand Locator — Authoring Equivalence 3.1 / V0.5.2
 
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
 ## Reload第0帧转静态基线 — 当前版本 / 待视觉确认
 
 2026-09-07按用户明确要求，将最新Reload第0帧的双手姿势提升为静态anchor；
@@ -153,8 +155,8 @@ Ready/Fire通过，Reload功能无已知回归，深度/展开方向视觉仍留
 
 ## 唯一源与坐标契约
 
-Service Pistol 源：
-`src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`。
+P9-01 Service Pistol 源：
+`src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`。
 Runtime 不直接读取 bbmodel；保存后必须显式导出资源，再构建。
 
 ```text
@@ -177,7 +179,7 @@ root
 编辑 anchor / motion，不手工移动reference cube。源参考cube是规范几何的显示代理，
 由tools/native-arm-presentation.mjs围绕手端烘焙presentation尺寸；导出检查拒绝过期代理。
 旧四臂模板仍是4×12×4/3×12×4的中性单位标尺，不是最终FP尺寸预览；它没有hand_anchor制作层级。
-Service Pistol是当前presentation参考实现候选，尚非视觉批准的成品。
+P9-01 Service Pistol是当前presentation参考实现候选，尚非视觉批准的成品。
 
 - origin = 手端 distal-cap 中心，前臂沿 -Y，掌面法线 +Z，横向 +X。
 - 原始Classic局部bounds=(-2,-12,-2)..(2,0,2)，4×12×4。
@@ -205,7 +207,7 @@ S_presentation全Native共用、跨动作固定，禁止per-gun/per-state覆盖�
 完整 PlayerModel arm/sleeve、实际 skin、Classic/Slim，
 PartPose/visible/skipDraw/scale 在 finally 恢复，枪与手矩阵/材质 buffer 分离。
 
-FirstPerson 仅接管当前 Native Service Pistol、保留 incoming camera 与 -0.6×equipProgress。
+FirstPerson 仅接管当前 Native P9-01 Service Pistol、保留 incoming camera 与 -0.6×equipProgress。
 Presentation 仅剩 applyEquip。Renderer 不在第一人称添加任何美术 pose/scale。
 保留的非FP历史尺寸兼容逆变换不作用于双手或FP：先撤销本次围绕(.1,7.75,9.2)
 的 .8 烘焙，再撤销历史围绕(0,8,6)的 .5；第三人称 CROSSBOW_HOLD 不变。
@@ -258,11 +260,11 @@ S=(.41,.41,.41)不变。依据muzzle/barrel -Z射线在camera Z=-20参考平面�
 1. 在指定源文件中用标准参考臂审查物理比例与握持；用 anchor/motion 控制姿态。
 2. 在动画模式编辑 Fire/Reload，所有侧开和手部动作必须在源中看得到。
 3. 在Display中摆放rig，只允许统一scale；它控制枪与接触位置，不决定最终手臂厚长。
-4. 保存；执行 `node tools/native-arm-presentation.mjs --patch src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`，
+4. 保存；执行 `node tools/native-arm-presentation.mjs --patch src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`，
    由Codex应用输出patch；该操作只更新四个source-only参考cube的from/to，不改枪/anchor/keys/UV。
    执行同命令的`--check`核验；重新打开磁盘源后，BB普通模型/Display视图可直接看代理尺寸。
    Display scale改变后必须重同步代理；不要用旧BB缓存覆盖磁盘文件。再执行`node tools/export-native-gun.mjs --write`。
-5. 执行 `node tools/export-native-gun.mjs --check`、`tools/verify-service-pistol.ps1`，
+5. 执行 `node tools/export-native-gun.mjs --check`、`tools/verify-p9-01.ps1`，
    再 processResources/build。此为文件导出器，不声称调用 Blockbench MCP。
    V0.5.2只同步animation/FP Display并用`node tools/check-native-gun-aimline.mjs`检查；
    geo因冻结约束保留旧format/guard精度差异，全量export --check仍可能报告该既有差异。

@@ -31,7 +31,7 @@ import java.util.List;
 /** Ephemeral successful-shot consumers. No entities, ammo state, prediction or server physics. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeGunFx {
-    public static final ResourceLocation FLASH_TEXTURE = id("textures/effects/service_pistol_muzzle_flash.png");
+    public static final ResourceLocation FLASH_TEXTURE = id("textures/effects/p9_01_muzzle_flash.png");
     public static final ResourceLocation CASING_MODEL = id("item/9mm_casing");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
@@ -114,7 +114,7 @@ public final class NativeGunFx {
     }
 
     private static void drawFlash(PoseStack source, MultiBufferSource buffers, float age, Shot shot) {
-        var pose = ServicePistolRenderMatrices.detachedCopy(source);
+        var pose = P901RenderMatrices.detachedCopy(source);
         // Remove inherited model scale for a single preset size in both perspectives.
         Vector3f scale = pose.last().pose().getScale(new Vector3f());
         pose.scale(1 / scale.x, 1 / scale.y, 1 / scale.z);

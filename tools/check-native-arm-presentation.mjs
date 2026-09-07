@@ -5,8 +5,8 @@ import {presentationScale,syncReferences} from './native-arm-presentation.mjs';
 import {read,sourcePath,assets,compile} from './export-native-gun.mjs';
 const source=read(sourcePath),target=presentationScale();
 assert.deepEqual(source,syncReferences(source),'Saved reference presentation must match framework');
-const outputs=compile(source,read(assets+'/geo/service_pistol.geo.json'),read(assets+'/models/item/service_pistol_in_hand.json'));
-assert.deepEqual(outputs.animations,read(assets+'/animations/service_pistol.animation.json'),'Animation unchanged');
+const outputs=compile(source,read(assets+'/geo/p9_01.geo.json'),read(assets+'/models/item/p9_01_in_hand.json'));
+assert.deepEqual(outputs.animations,read(assets+'/animations/p9_01.animation.json'),'Animation unchanged');
 // Existing geo-format/guard-rounding and Display rounding mismatches are not fixed here.
 function capWidth(m,width) {
  const xs=[];for(const x of[-width/32,width/32])for(const z of[-.125,.125]) {

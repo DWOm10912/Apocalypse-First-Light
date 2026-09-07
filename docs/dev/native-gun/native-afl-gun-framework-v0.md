@@ -1,5 +1,14 @@
 # Native AFL Gun Framework — Reload Composition V2 Runtime
 
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
+## BR51_01 第二把战斗枪接入（2026-09-08，实机验收待完成）
+
+BR51_01 已从动画测试物品改为 `ConfiguredNativeGunItem implements NativeGunItem`。
+共用服务端战斗入口按每枪definition和动画资源配置处理；P9-01 Service Pistol原时长、音效、资源与姿势不变。
+BR51_01临时20发9mm、4tick半自动、18HP；普通/空仓换弹52/57tick结束补弹。
+实现范围、切出动画限制与真实验证状态见 [BR51_01战斗补完报告](../../native_guns/br51_01_native_combat_completion.md)。
+
 ## Native Gun V0.6.2.1 — 弹壳尺寸 / 横向修正（用户实机验收通过）
 
 用户确认V0.6.2枪焰、落地、弹跳与音效可保留；只修弹壳过大和向左抛出。
@@ -24,11 +33,11 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
 - V0.6.1成功射击入口不改；sendNativeShot额外发送NativeShotFxS2CPacket(shooterId,gunId)
   到TRACKING_ENTITY_AND_SELF，协议12。原HUD通知仍只发射手，不改HUD逻辑或弹量/伤害/Noise。
   Dry Fire不进入该入口，最后一发仍正常产生FX。
-- NativeGunFxLayer复用ServicePistolRenderer实际bone遍历矩阵及pivot：
+- NativeGunFxLayer复用P901Renderer实际bone遍历矩阵及pivot：
   muzzle_anchor驱动枪焰，ejection_anchor驱动弹壳。只接受手持FP/TP pass，排除GUI/掉落物。
   不另算枪械动画，不动源bbmodel、Geo、Display、Ready/Fire/Reload姿态及空仓状态。
 - 枪焰原样使用用户E:/Download/muzzle_flash.png，保存为
-  assets/apocalypse_firstlight/textures/effects/service_pistol_muzzle_flash.png。
+  assets/apocalypse_firstlight/textures/effects/p9_01_muzzle_flash.png。
   3个正交双面quad；emissive shader、SRC_ALPHA+ONE加法混合，仅写颜色不写深度。
   lifetime1.0 tick，从首个可见anchor帧开始；alpha在0/.6/1tick为1/.75/0。
   preset尺寸.17（用户追加要求：原.34的50%），随机±10%，轴向roll±12°，alpha .95–1。
@@ -64,7 +73,7 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
 属于冻结构图的既有校准检查，本轮没有改姿态或放宽断言；不记为全部旧烟测通过。
 
 - 保留live开火间隔3 ticks（150ms），不是任务建议的4 ticks；半自动点击边沿、服务端弹量/冷却/换弹校验。
-- Successful Shot唯一入口位于ServicePistolActions的成功扣1发分支：同步stack、normal/last-round动画与枪声、
+- Successful Shot唯一入口位于P901Actions的成功扣1发分支：同步stack、normal/last-round动画与枪声、
   NativeGunShot服务器hitscan/damage、AFL Noise、给射手的S2C HUD flash。0发只播放限流dry-fire，6 ticks。
 - NativeGunDefinition实际参数：capacity17，damage7，headshotMultiplier3（预留，未启用头部判定），
   falloffStart24、effectiveRange48（描述性元数据）、maxRange64、minMultiplier.65、spread1.2°、noise64。
@@ -74,7 +83,7 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
   仅bypasses_cooldown，避免合法150ms连发被原版hurt免疫窗口吞掉。无armor penetration。
   通用Headshot未实现，所有命中使用body damage，未用错误的通用头部box冒充。
 - 成功射击调用NoiseSystem.emit(GUNSHOT, radius64)，沿用既有遮蔽/僵尸听觉链；
-  不调用枪声耳鸣入口（Service Pistol tinnitus=false），爆炸耳鸣不改，生产TaCZ引用仍为0。
+  不调用枪声耳鸣入口（P9-01 Service Pistol tinnitus=false），爆炸耳鸣不改，生产TaCZ引用仍为0。
 - HUD尺寸/位置不变：仅current成功射击后5 ticks红闪，ammo0时current和中性剪影持续红；
   reserve始终白色，非空剪影正常。S2C只传slot/render ID作展示计时，不复制弹药状态。
   Network协议10→11。换槽/不同gun ID/不同世界不会错用另一把枪的flash。
@@ -85,7 +94,7 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
   保留所有原reload轨道，1.10–1.30s仅机械骨骼smoothstep前进。未制作完整Empty Reload/释放滑套手势。
   trigger优先于empty-idle predicate，后者仅在0发且无进行中trigger时运行。
 - 现有E:/Download/dry_fire.ogg原样复制为textures之外的sounds/dry_fire.ogg，
-  注册service_pistol_dry_fire；不复用正常fire声音，不产生hitscan/damage/Noise/HUD shot flash。
+  注册p9_01_dry_fire；不复用正常fire声音，不产生hitscan/damage/Noise/HUD shot flash。
 - 生成工具tools/add-native-empty-states.mjs只派生机械clip；tools/export-native-gun.mjs识别并导出新增clip。
   bbmodel其余字段、Geo、Display、原双手姿态/动画、贴图不变。
 - DEV新增NativeGunShotGameTests；截图入口 -I src/dev/native-gun-v061-validation.init.gradle，
@@ -96,10 +105,10 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
 
 ## Native Gun V0.6 — 9mm / 弹匣 / 功能HUD（已实现，部分验证边界见下）
 
-`apocalypse_firstlight:9mm_round` 已注册为64堆叠普通Item，位于创造标签Service Pistol之后，
+`apocalypse_firstlight:9mm_round` 已注册为64堆叠普通Item，位于创造标签P9-01 Service Pistol之后，
 中英文名9mm手枪弹/9mm Round，复用既有3D物品模型。Casing仍只保留资产，没有抛壳实现。
 `NativeGunDefinition`/`NativeGunItem`提供id、ammoType、capacity、hudIcon、26tick时长、19tick装填点、3tick开火间隔。
-Service Pistol容量17，无chamber/17+1；每把枪NBT `AflGunAmmo.ammoInMagazine` 范围0..17。
+P9-01 Service Pistol容量17，无chamber/17+1；每把枪NBT `AflGunAmmo.ammoInMagazine` 范围0..17。
 无状态的新枪逻辑默认17，服务端首次物品tick/开火持久化；已有0绝不自动补满。
 V0.6历史行为：服务端每次获准开火扣1，0发不播放正常动画/声音；当时无dry-fire，现已由V0.6.1补齐。
 Reload满匣/零reserve拒绝，19tick重新统计背包并一次性扣弹补匣，26tick结束；8tick抽匣音不改。
@@ -107,12 +116,12 @@ Reload满匣/零reserve拒绝，19tick重新统计背包并一次性扣弹补匣
 背包所有原版槽位（含副手）按definition.ammoType计数；不读取其他容器或嵌套背包。
 所有模式包括Creative均真实扣弹，不实现无限弹特例。状态通过原版ItemStack/Inventory同步，HUD无独立缓存。
 
-用户明确取消背景框：HUD仅复用925×574剪影 `textures/gui/gun/service_pistol_hud.png` 和突出current/次级reserve数字。
-767×524渲染图另存 `textures/item/service_pistol_inventory.png`，仅供背包图；不覆盖128×128枪体UV贴图。
+用户明确取消背景框：HUD仅复用925×574剪影 `textures/gui/gun/p9_01_hud.png` 和突出current/次级reserve数字。
+767×524渲染图另存 `textures/item/p9_01_inventory.png`，仅供背包图；不覆盖128×128枪体UV贴图。
 HUD右下GUI坐标布局，当前主手实现NativeGunItem时显示，其他物品/隐藏HUD/旁观时不显示。
 实机首轮发现剪影过大，已从98×60收至36×22 GUI单位；坐标(width-70,height-99)，
 current字号1.25、reserve字号1，无背景，底部留空间避开默认盖革计/HUD。
-ServicePistolItem通过Forge shouldCauseReequipAnimation忽略仅弹量NBT更新/首次GeckoLibID初始化；
+P901Item通过Forge shouldCauseReequipAnimation忽略仅弹量NBT更新/首次GeckoLibID初始化；
 换槽、不同枪身份及其它NBT变化仍触发装备动作，避免每次扣弹让整枪下沉再抬起。未改Fire动画。
 手枪源、Geo、Fire/Reload动画、Display、臂渲染规则和音效资源均冻结；GUI物品图按用户新授权替换。
 V0.6历史阶段尚无Hitscan/Damage/Native Noise；这些已由上方V0.6.1实现取代。
@@ -175,8 +184,8 @@ GunshotExposureTracker/Profile/Accumulator 的通用参数与冷却。未来 suc
 `NoiseSystem.emit(NoiseEvent, ServerLevel)`（类型 `GUNSHOT`）及
 `GunshotExposureTracker.onGunshot(level, shooter, sourcePosition, acousticRadius, false)`。
 后者仅发耳鸣impulse、不代发Noise；布尔参数是保留的通用策略输入，不再读取外部附件。
-当前 Native Service Pistol 尚未调用这两个枪声入口；本轮未实现枪声pipeline或Native消音器。
-Service Pistol 视觉/动画/声音、9mm资产、HUD及弹药逻辑未改。
+当前 Native P9-01 Service Pistol 尚未调用这两个枪声入口；本轮未实现枪声pipeline或Native消音器。
+P9-01 Service Pistol 视觉/动画/声音、9mm资产、HUD及弹药逻辑未改。
 
 删除专用TaCZ开发测试；保留爆炸、耳鸣核心测试，并用显式数值输入测试内部Noise听觉入口。
 旧TaCZ测试通过记录仅属历史，不能视为当前集成仍存在或本轮运行验证。
@@ -345,7 +354,7 @@ STATE_BASED_GRIP_SEPARATION_DONE / READY_VISUAL_PASS / RELOAD_VISUAL_PASS仍为N
 ## Ready Minor Hand Position Polish — 用户最新源同步 / 待目视
 
 2026-09-07以用户09:17:40再次保存的bbmodel为权威，替代本轮先前的左手微调候选。
-实际Runtime手臂由ServicePistolHandLayer读取animated right_hand_anchor/left_hand_anchor，
+实际Runtime手臂由P901HandLayer读取animated right_hand_anchor/left_hand_anchor，
 通过NativePlayerArmRenderer与B_skin渲染；仅移动reference cube不会驱动Runtime。
 
 - 右anchor保留最新源坐标(.50,6.43023,4.37350)，旋转(-79.96258,4.92385,.87038)不变。
@@ -378,8 +387,8 @@ processResources/build --offline --stacktrace通过（30s，compileJava UP-TO-DA
 ## 上轮 Reload Composition Rework V2 — Blockbench PASS / Runtime待实机验收
 
 2026-09-07：用户明确确认 **Blockbench Preview Gate = PASS**，保留当前V2源构图。
-本轮未修改 `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`，
-已只同步Runtime `animations/service_pistol.animation.json`，构建并启动客户端。
+本轮未修改 `src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`，
+已只同步Runtime `animations/p9_01.animation.json`，构建并启动客户端。
 Ready/Fire、geo、Display、所有Java与声音文件未改；下方V0.5.2是历史Reload，不再代表当前运行时。
 
 ### 旧问题与新构图
@@ -425,7 +434,7 @@ c=(0.35,6.4302294997,4.3735038416) 为旋转中心，固定它在 Ready 的原�
 
 ### 数值辅助（不是视觉通过）
 
-工具：`tools/author-service-pistol-reload.mjs`，只读审计/候选stdout，不导出资源、不写图片。
+工具：`tools/author-p9-01-reload.mjs`，只读审计/候选stdout，不导出资源、不写图片。
 投影参考1920×1080、竖直FOV70，原点准心，X向右、Y向下；不是实际游戏截图坐标。
 共1041个时点、步长.00125s，包含关键帧之间的插值，不能只测烘焙点。
 
@@ -596,8 +605,8 @@ magazine/reload_magazine全部保持原值；Reload仍1.30s，mag_out=.40s / mag
 
 ### 文件、检查与验收边界
 
-- 修改唯一源src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel；
-  从保存源编译同步animations/service_pistol.animation.json、models/item/service_pistol_in_hand.json。
+- 修改唯一源src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel；
+  从保存源编译同步animations/p9_01.animation.json、models/item/p9_01_in_hand.json。
   geo字节冻结：既有geo格式版本/guard小数差异本轮不顺便重写，不能声称全geo精确导出一致。
 - 新tools/check-native-gun-aimline.mjs：source矩阵、muzzle/sight投影、入口速度、
   资源同步、Fire/Reload回Ready；只读stdout，无图片，无TaCZ依赖或读取。
@@ -748,7 +757,7 @@ tools/check-native-arm-presentation.mjs：70°垂直FOV/16:9/1080高、同一静
 
 Production：NativePlayerArmRenderer.java（通用presentation）、NativeHandBinding.java（注释与矩阵顺序说明）。
 DEV：NativeHandContractChecks.java（五种parent scale、手端、source代理/真实arm+sleeve、动作回归）。
-源：service_pistol_v03_8_fire_slide_cleanup.bbmodel（仅四个reference cube from/to）。
+源：p9_01_v03_8_fire_slide_cleanup.bbmodel（仅四个reference cube from/to）。
 Tools：native-arm-presentation.mjs、check-native-arm-presentation.mjs（新增）；
 export-native-gun.mjs（验证显示代理）、audit-player-arm-presentation.mjs（导出既有数学函数供Before估算）。
 Docs：本页、native-gun-hand-locator-authoring-standard.md、afl_weapon_art_standard_v1.md、docs/03 - 制作清单.md。
@@ -838,9 +847,9 @@ PUSH = NO
 
 ### Authority 与保留职责
 
-- Blockbench源：`src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`。
+- Blockbench源：`src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`。
   枪物理尺寸、Ready双手、Fire/Reload手部、fp_root侧开和FP Display在此制作。
-- FirstPerson仅接管主手Service Pistol并取消原版两次hand pass，保留camera/equip context；
+- FirstPerson仅接管主手P9-01 Service Pistol并取消原版两次hand pass，保留camera/equip context；
   Presentation只剩`applyEquip`的-0.6×equipProgress，无静态艺术BASE/Reload曲线。
 - Renderer保持Gecko生命周期、RIG节点元数据、手部layer；第一人称不重写bone scale或手部pose。
 - HandLayer→NativePlayerArmRenderer→B_skin→当前PlayerModel完整arm/sleeve是唯一生产手部路径。
@@ -863,7 +872,7 @@ PUSH = NO
 - D/LegacyHandMapping.java
 - D/NativeGunArmTrace.java
 - D/NativeGunArmClearance.java
-- C/ServicePistolReloadGrip.java
+- C/P901ReloadGrip.java
 
 D=src/dev/java/com/antaurora/apofirstlight/dev/；
 C=src/main/java/com/antaurora/apofirstlight/weapon/client/。
@@ -923,7 +932,7 @@ gun分支先应用历史around(0,8,6)×2，再应用around(.1,7.75,9.2)×1.25。
 ### 艺术工作流 / 导出工具
 
 保存指定bbmodel，执行`node tools/export-native-gun.mjs --write`，
-再执行`node tools/export-native-gun.mjs --check`、`tools/verify-service-pistol.ps1`。
+再执行`node tools/export-native-gun.mjs --check`、`tools/verify-p9-01.ps1`。
 文件导出器明确支持当前numeric position/rotation/scale、linear/step、cube/bone/逐面UV子集，
 不支持的模式会报错；不会悄悄丢弃动画或参考臂额外变换。它不写源/贴图/声音，
 仅生成geo、animation和两个FP Display。当前无可调用的Blockbench MCP，不虚报原生GUI导出。
@@ -949,20 +958,20 @@ gun分支先应用历史around(0,8,6)×2，再应用around(.1,7.75,9.2)×1.25。
 - 数值动画delta取同帧Gecko求值；source/export key另行核对，不把这种数学一致性称为GPU视觉等价。
   新版完整手掌遮挡、双手角色、magwell可读性、F5/GUI实际按键回归仍待用户。
   用户实机反馈“能用，但是后面还需要改”；记录为基本可用，不等于各姿势视觉批准。
-  READY/FIRE/RELOAD USER VISUAL=PENDING_USER；未将Service Pistol标成正式视觉批准资产。
+  READY/FIRE/RELOAD USER VISUAL=PENDING_USER；未将P9-01 Service Pistol标成正式视觉批准资产。
   用户已进入世界，本轮不再自行调参；05:54:36日志确认所有维度存档完成，05:54:37客户端Stopping。
 - 不新增ADS/真实弹药/empty reload/slide lock/shell/damage/hitscan/Noise/Tinnitus/Suppressor。
   无截图/preview文件、commit、push。
 
 ### 本轮文件
 
-编辑：上述bbmodel；A/geo/service_pistol.geo.json；A/animations/service_pistol.animation.json；
-A/models/item/service_pistol_in_hand.json（A=src/main/resources/assets/apocalypse_firstlight/）。
-生产C：NativeGunRig、NativePlayerArmRenderer、ServicePistolFirstPerson、
-ServicePistolPresentation、ServicePistolRenderer、ServicePistolPlayerPose。
+编辑：上述bbmodel；A/geo/p9_01.geo.json；A/animations/p9_01.animation.json；
+A/models/item/p9_01_in_hand.json（A=src/main/resources/assets/apocalypse_firstlight/）。
+生产C：NativeGunRig、NativePlayerArmRenderer、P901FirstPerson、
+P901Presentation、P901Renderer、P901PlayerPose。
 DEV D：NativeHandVisualGate、NativeHandContractChecks、NativeGunRuntimeSmokeCheck、
 NativeGunArmChecks、NativeGunPresentationTrace。六个删除文件见上。
-工具：新增tools/export-native-gun.mjs，更新tools/verify-service-pistol.ps1。
+工具：新增tools/export-native-gun.mjs，更新tools/verify-p9-01.ps1。
 文档：本页、native-gun-hand-locator-authoring-standard.md、afl_weapon_art_standard_v1.md、
 docs/01 - 系统设计/枪械/枪械系统.md、docs/03 - 制作清单.md。
 HandLayer/Binding/RenderMatrices/Model/模板未在本轮另改；其已有dirty状态不冒认成本轮新增。
@@ -976,7 +985,7 @@ HandLayer/Binding/RenderMatrices/Model/模板未在本轮另改；其已有dirty
 ### 最新：再次同步用户 First-Person Display（2026-09-07）
 
 - FP right translation=(-8.75,-.25,0)、left=(-9.25,-.25,0)，两者统一scale=(.5,.5,.5)，无rotation。
-  仅更新service_pistol_in_hand.json的两个FP项；bbmodel、geo、animation、生产Java及其他display不改。
+  仅更新p9_01_in_hand.json的两个FP项；bbmodel、geo、animation、生产Java及其他display不改。
 - 相较上一轮：Y从.5降至-.25，非均匀scale替换为均匀.5。gunVisualScale=.8、
   framework arm style=.246仍冻结；源里第三人称新translation/scale不在本次导出范围。
 - FP专项核对、构建输出参数与diff-check通过；processResources/build离线29s成功。
@@ -990,7 +999,7 @@ HandLayer/Binding/RenderMatrices/Model/模板未在本轮另改；其已有dirty
 
 - 保存的bbmodel FP right translation=(-8.75,.5,0)、left=(-9.25,.5,0)，
   两者scale=(.76484,.3,.41133)，无rotation。仅同步到
-  `src/main/resources/assets/apocalypse_firstlight/models/item/service_pistol_in_hand.json`
+  `src/main/resources/assets/apocalypse_firstlight/models/item/p9_01_in_hand.json`
   的这两个display项，未导入source新第三人称参数，GUI route/icon不改。
 - 用户保存的source仍为reference cube带变换的authoring形式，与已转换geo的姿势等价。
   本次不覆盖bbmodel，不再转换geo/animation。DEV比较在内存中等价折算reference，
@@ -999,7 +1008,7 @@ HandLayer/Binding/RenderMatrices/Model/模板未在本轮另改；其已有dirty
 - 生产camera、gunVisualScale=.8、framework arm style=.246、B_skin均不改；
   用户非均匀display会改变枪体轴向尺寸，但玩家arm/sleeve仍使用固定框架尺寸。
   Reload原补偿分母.3保持旧校准，不在本次额外重调Reload路径。
-- `tools/verify-service-pistol.ps1 -FirstPersonDisplayOnly`只检查两项FP同步；不将
+- `tools/verify-p9-01.ps1 -FirstPersonDisplayOnly`只检查两项FP同步；不将
   未同步的第三人称或未canonical化source误报为已完成全资源导出。完整旧验证仍严格。
 - processResources/build离线执行41s成功，构建输出的两项FP参数逐项确认；diff-check PASS。
   本次runtime仅改in-hand JSON，DEV检查与FP专项验证脚本同步，其余生产代码/geo/animation/source不改。
@@ -1032,12 +1041,12 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 ### V0.4.9 架构与前一候选验证（姿态数值以下方历史记录为准）
 
 - Live audit：此前枪体资产 .5 迁移并没有缩小 locator/reference；B_skin=1。
-  残余耦合来自 ServicePistolHandLayer 直接继承共同 PoseStack 的 .82×.30=.246
+  残余耦合来自 P901HandLayer 直接继承共同 PoseStack 的 .82×.30=.246
   basis，camera/display 改小也会缩手；不是 locator 驱动失效。
 - 新增 source/geo `weapon_root → gun_model_root → gun`，双手 motion/anchor
   仍为同级独立分支。77 cubes、UV、贴图、原组 pivot/rotation 与132原关键帧不改。
   新根 pivot=(.1,7.75,9.2)，绕 READY 手端缩枪；right anchor/carrier/ref 不再微调。
-- `ServicePistolRenderer.RIG` = NativeGunRig(root、左右locator、gunVisualScale=.8)。
+- `P901Renderer.RIG` = NativeGunRig(root、左右locator、gunVisualScale=.8)。
   Root scale 绘制时设置而非叠乘，finally 恢复；所有FP动作同值，非FP值1。
   原 non-FP gun 分支2倍逆物理补偿保留，不改 CROSSBOW_HOLD、GUI icon 或 HUD。
 - 新 `NativePlayerArmRenderer` 不依赖任何具体枪械。输入动画后的 locator，保留其
@@ -1074,19 +1083,19 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 
 ### V0.4.9 本轮文件清单（不含进入任务前已有的其他dirty文件）
 
-- `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`
+- `src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`
 - `src/main/blockbench/templates/afl_first_person_player_arm_rig.bbmodel`（新增）
-- `src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json`
-- `src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json`
+- `src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json`
+- `src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json`
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunRig.java`（新增）
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativePlayerArmRenderer.java`（新增）
-- `src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolRenderer.java`
-- `src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolHandLayer.java`
+- `src/main/java/com/antaurora/apofirstlight/weapon/client/P901Renderer.java`
+- `src/main/java/com/antaurora/apofirstlight/weapon/client/P901HandLayer.java`
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeHandBinding.java`（仅注释）
-- `src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPresentation.java`（仅注释）
+- `src/main/java/com/antaurora/apofirstlight/weapon/client/P901Presentation.java`（仅注释）
 - `src/dev/java/com/antaurora/apofirstlight/dev/NativeHandContractChecks.java`
 - `src/dev/java/com/antaurora/apofirstlight/dev/NativeHandVisualGate.java`
-- `tools/verify-service-pistol.ps1`
+- `tools/verify-p9-01.ps1`
 - `docs/dev/native-gun/native-afl-gun-framework-v0.md`
 - `docs/dev/native-gun/native-gun-hand-locator-authoring-standard.md`
 - `docs/dev/native-gun/afl_weapon_art_standard_v1.md`
@@ -1140,7 +1149,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 - User explicitly rejected V0.4.8.1 and its screenshot: the gun remained too
   large and hand read as a narrow post behind it. That implementation is FAILED,
   not merely awaiting approval. This pass changes the asset, not just its camera.
-- In editable `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`,
+- In editable `src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`,
   only **gun + its 11 descendants / 77 cubes** receive `F(p)=P+0.5*(p-P)`,
   P=(0,8,6). Cube bounds/origins and bone pivots are baked at the new dimensions;
   no runtime first-person scale trick and no scaled weapon_root/hand hierarchy.
@@ -1189,7 +1198,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 - Validation: offline compileJava (34s), processResources (24s), build (26s),
   verifier (77 cubes/18 bones/132 exact keys) and diff-check PASS. Entry source
   hash comparison confirms only bbmodel/geo/animation, NativeHandBinding,
-  ServicePistolRenderer and DEV NativeHandContractChecks changed. Camera,
+  P901Renderer and DEV NativeHandContractChecks changed. Camera,
   third-person ArmPose/display JSON, textures, sounds and gameplay are unchanged.
 - Client launched 2026-09-07 03:14:25. At 03:14:48 the actual GeckoLib cube baker
   validated **77 cubes / 1,848 per-corner UV correspondences**, including the
@@ -1241,7 +1250,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
   Third-person, sounds, icon, HUD, ammo and TaCZ remain untouched.
 - Offline compileJava (36s), processResources (26s), build (26s), resource
   verifier and diff-check PASS. Entry SHA-256 comparison: only NativeHandBinding,
-  ServicePistolPresentation, DEV NativeHandContractChecks, source bbmodel and
+  P901Presentation, DEV NativeHandContractChecks, source bbmodel and
   runtime geo changed under src; no source deletions. Source semantic diff is
   limited to right locator/reference groups and the right reference cube.
 - Client launched 2026-09-07 02:51:52; 02:52:14 numeric PASS: Classic
@@ -1262,7 +1271,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
   `(0.60,-0.54,-0.64)`, no extra rotation/scale. Now `T(0.55,-0.47,-0.66) ×
   Ry(-4°) × Rx(-4°) × S(0.92)` for right dominance; left dominance mirrors X
   translation and yaw. Equip lowering remains `-equipProgress * 0.6` on Y.
-  `ServicePistolFirstPerson` calls `ServicePistolPresentation.applyBaseline` once,
+  `P901FirstPerson` calls `P901Presentation.applyBaseline` once,
   before item display and the animated hierarchy, with no action-state input.
 - Source/item display is still 0.30; **effective common scale is 0.276**, for
   the gun and full arm/sleeve alike. Canonical locators, source reference arms,
@@ -1301,7 +1310,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
 - Crash evidence: `run/crash-reports/crash-2026-09-07_02.14.19-client.txt`, local
   player rendering, `HumanoidModel.poseRightArm:234`, index 10 / array length 10.
   Root cause **CUSTOM_ARMPOSE_ENUM_SWITCH_OOB**: the lazily initialized
-  `ServicePistolPlayerPose.PISTOL` created `AFL_SERVICE_PISTOL` after the synthetic
+  `P901PlayerPose.PISTOL` created `AFL_P9_01` after the synthetic
   switch map was sized. Local bytecode sizes the array from `ArmPose.values()`
   once; it does not resize after enum extension. Forge's default applyTransform
   branch cannot run because the array lookup fails first. This is not proof that
@@ -1325,7 +1334,7 @@ geo/animation为直接文件同步，不声称调用不可用的MCP导出器。D
   rendering per camera mode; this is not a visual PASS or automated F5 press.
 - Offline compileJava (37s), processResources (25s), build (28s), asset verifier
   (77 cubes/18 bones/132 keys) and git diff --check passed. Entry SHA-256 comparison
-  shows only ServicePistolPlayerPose changed under existing src files, plus the
+  shows only P901PlayerPose changed under existing src files, plus the
   new DEV NativePistolArmPoseChecks; all first-person/B1 files and assets are exact.
   Release JAR contains zero DEV entries. Client launched at 02:22:45; world entry
   at 02:23:20 ran **960 setupAnim calls PASS** on detached Classic/Slim models,
@@ -1348,7 +1357,7 @@ Implemented, not yet visually accepted. Artist-facing contract:
   right=-1/left=+1, Slim right=-0.5/left=+0.5. Binding scale=1; inherits the
   source 0.30 display scale once (V0.4.8 common parent adds 0.92). No orthonormalization, weapon quaternion,
   contact-offset guessing, per-state scale or geometry switch.
-- `ServicePistolHandLayer` renders full current-player Vanilla arm/sleeve in
+- `P901HandLayer` renders full current-player Vanilla arm/sleeve in
   Ready/Fire/Reload, restores ModelPart state, respects invisibility/sleeve
   settings and uses normal lighting/depth. Detached matrices remain unchanged.
 - Original source anchors retain UUIDs as `right_hand_motion` / `left_hand_motion`.
@@ -1361,7 +1370,7 @@ Implemented, not yet visually accepted. Artist-facing contract:
   gun cubes**, no exported reference geometry. The runtime animation only renames
   the left target. No full native Blockbench MCP export was performed this turn;
   no unavailable exporter success is claimed. Existing native export script remains usable.
-- `ServicePistolReloadGrip` is deprecated and uncalled by the default renderer,
+- `P901ReloadGrip` is deprecated and uncalled by the default renderer,
   retained until all visual gates pass. Legacy mapping/checks remain in DEV
   for reference, no longer startup acceptance checks. No automatic fallback.
 - `NativeHandContractChecks` compares real baked Classic/Slim base/sleeve vertices
@@ -1429,9 +1438,9 @@ The original source hashes below are historical, not hashes of the V0.4.7 locato
   source PNG, display and OGG; `git diff --check` passed (only line-ending warnings).
   Release JAR has NativeHandBinding, zero DEV entries and zero TaCZ asset entries;
   Native weapon source has zero TaCZ imports. No screenshots/previews, commit/push.
-- Changed production: `NativeHandBinding` (new), `ServicePistolHandLayer`,
-  `ServicePistolReloadGrip` (historical self-containment only). Source `.bbmodel`,
-  runtime geo and animation changed only as above. Tool: `verify-service-pistol.ps1`.
+- Changed production: `NativeHandBinding` (new), `P901HandLayer`,
+  `P901ReloadGrip` (historical self-containment only). Source `.bbmodel`,
+  runtime geo and animation changed only as above. Tool: `verify-p9-01.ps1`.
   DEV: new `LegacyHandMapping`, `NativeHandContractChecks`, `NativeHandVisualGate`;
   redirected historical `NativeGunArmChecks`, `NativeGunArmTrace`,
   `NativeGunMatrixChecks`, `NativeGunReloadGripChecks`, `NativeGunRuntimeSmokeCheck`.
@@ -1443,7 +1452,7 @@ Minecraft 1.20.1 / Forge 47.4.22 / Java 17. Existing GeckoLib **4.7.4** and Mave
 configuration are retained, not upgraded. TaCZ remains installed with unchanged
 dependencies, compat, assets and behavior. Native pistol code has no TaCZ imports.
 
-Item `apocalypse_firstlight:service_pistol` / Service Pistol / 制式手枪 is registered
+Item `apocalypse_firstlight:p9_01` / P9-01 Service Pistol / 制式手枪 is registered
 in `AflItems` and appended to the AFL **Items** creative tab. Its development
 tooltip is Native weapon system prototype / 原生武器系统测试版.
 
@@ -1455,7 +1464,7 @@ custom gameplay NBT is added. Source-only reference arms are not runtime geometr
 
 ## Source and export gate
 
-Accepted source: `src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel`.
+Accepted source: `src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel`.
 V0.4 source SHA-256: `b4d77e47a5e3b481c21e56064e9a10d44a771103bfbe66979f2ceea4c5195391`.
 During V0.4.1 the user saved a GUI-display edit and requested a fresh geo export.
 The saved/live native exporter agreed; the new geo and animation objects exactly
@@ -1483,34 +1492,34 @@ replacement geometry. Compatibility normalization is applied to the outputs:
   source times are restored. There are 132 keys, two animations, with no lost
   endpoint after animation_length.
 - Source step interpolation is encoded as `easing: afl_hold` on the incoming
-  segment. `ServicePistolItem` registers this easing through GeckoLibUtil: hold
+  segment. `P901Item` registers this easing through GeckoLibUtil: hold
   start value until GeckoLib's segment-end branch selects the end value. The
   built-in subdivided `step` easing is deliberately not used. This retains the
   magazine's exact 0.52/0.60-second hide/reappear boundaries without partial scale.
 - Runtime has 77 cubes, 16 bones. `right_arm_reference` and `left_arm_reference`
   are excluded; hand, muzzle, ejection and sight anchors remain. All named action
   bones remain, including the empty `reload_magazine` guide.
-- The embedded 128×128 `service_pistol.png` is decoded byte-for-byte. No material
+- The embedded 128×128 `p9_01.png` is decoded byte-for-byte. No material
   or texture generation. Non-GUI runtime display parameters match the saved source.
 
 Resources, relative to `src/main/resources/assets/apocalypse_firstlight/`:
 
-- `geo/service_pistol.geo.json`
-- `animations/service_pistol.animation.json`
-- `textures/item/service_pistol.png`
-- `models/item/service_pistol.json` (`forge:separate_transforms`, GUI routing)
-- `models/item/service_pistol_in_hand.json` (`builtin/entity`, exported display settings)
-- `textures/item/service_pistol_icon.png` (original 32x32 RGBA pixel artwork)
-- `sounds/weapons/service_pistol/service_pistol_fire.ogg`
-- `sounds/weapons/service_pistol/service_pistol_magazine_out.ogg`
-- `sounds/weapons/service_pistol/service_pistol_magazine_in.ogg`
+- `geo/p9_01.geo.json`
+- `animations/p9_01.animation.json`
+- `textures/item/p9_01.png`
+- `models/item/p9_01.json` (`forge:separate_transforms`, GUI routing)
+- `models/item/p9_01_in_hand.json` (`builtin/entity`, exported display settings)
+- `textures/item/p9_01_icon.png` (original 32x32 RGBA pixel artwork)
+- `sounds/weapons/p9_01/p9_01_fire.ogg`
+- `sounds/weapons/p9_01/p9_01_magazine_out.ogg`
+- `sounds/weapons/p9_01/p9_01_magazine_in.ogg`
 
-`tools/verify-service-pistol.ps1` checks source/export key fidelity, duration,
+`tools/verify-p9-01.ps1` checks source/export key fidelity, duration,
 cube/reference counts, anchors, display and texture bytes. Optional
 `-PrepareAssets -SoundSourceDirectory E:/Download` decodes the source PNG and
 copies the three supplied OGG files; no images are rendered or captured.
 
-`tools/export-service-pistol.blockbench.js` repeats the actual native export and
+`tools/export-p9-01.blockbench.js` repeats the actual native export and
 normalization from a matching saved/live V0.3.8 in Blockbench MCP. It returns
 geo/animation/display objects for the above paths, refuses unsaved differences,
 and never writes the source. Run the verifier after saving returned assets.
@@ -1521,17 +1530,17 @@ the installed 4.7.4 source JAR was used to check the actual runtime API/parser.
 
 Implementation under `src/main/java/com/antaurora/apofirstlight/weapon/`:
 
-- `ServicePistolItem.java`: GeoItem, synced instance, zero-transition triggerable
+- `P901Item.java`: GeoItem, synced instance, zero-transition triggerable
   controller `action`, `fire`/`reload`, prototype tooltip, no melee/block attack.
-- `client/ServicePistolModel.java`, `client/ServicePistolRenderer.java`: GeoModel/
+- `client/P901Model.java`, `client/P901Renderer.java`: GeoModel/
   GeoItemRenderer with the animated hand layer and V0.4.2 first-person-only
   presentation parent. Exported display JSON is not rewritten.
-- `client/ServicePistolInput.java`: client-only `InteractionKeyMappingTriggered`
+- `client/P901Input.java`: client-only `InteractionKeyMappingTriggered`
   cancels vanilla attack/swing for this item, sends once per press using an
   attack latch. R is a remappable IN_GAME KeyMapping, category AFL; consuming
   clicks plus held latch avoids OS key-repeat reload requests. GUI, focus,
   spectator and dead-player guards are applied.
-- `ServicePistolActions.java`: server-side ephemeral player session, 3 tick fire
+- `P901Actions.java`: server-side ephemeral player session, 3 tick fire
   minimum and 26 tick reload lock. R during an active action is ignored, including
   the short fire lock; fire during reload is ignored. Held stack change, dimension
   change, death or logout clears/cancels active interaction. No persistent state
@@ -1552,9 +1561,9 @@ Only three sounds are copied/registered in `AflSounds` and `sounds.json`:
 
 | Source in E:/Download | AFL event | Time |
 | --- | --- | --- |
-| 9mm_fire.ogg | service_pistol_fire | Immediately on accepted fire, once |
-| 9mm_magazine_out.ogg | service_pistol_magazine_out | Reload tick 8 (0.40s), source fully clear at 0.42s |
-| 9mm_magazine_in.ogg | service_pistol_magazine_in | Reload tick 19 (0.95s), source seated at 0.93s |
+| 9mm_fire.ogg | p9_01_fire | Immediately on accepted fire, once |
+| 9mm_magazine_out.ogg | p9_01_magazine_out | Reload tick 8 (0.40s), source fully clear at 0.42s |
+| 9mm_magazine_in.ogg | p9_01_magazine_in | Reload tick 19 (0.95s), source seated at 0.93s |
 
 SoundSource.PLAYERS, volume/pitch 1.0, source at player position, server world
 broadcast including shooter. Quantization error is 0.02s for each reload cue.
@@ -1583,7 +1592,7 @@ Audible range is not infected Noise radius; no AFL Noise event is emitted here.
   This is an AFL integration defect, not a model or TaCZ defect.
 - Fixed cancellation to use the shared explicit fire/reload name, and retained
   the item instance independently of the mutable stack so dropping its last item
-  cannot cast AIR to ServicePistolItem. Server cancellation guards run at highest
+  cannot cast AIR to P901Item. Server cancellation guards run at highest
   priority before other ordinary attack/break subscribers.
 - DEV-only `NativeGunRuntimeSmokeCheck` checks the actual loaded GeckoLib model,
   animation cache, reference exclusion, anchors, registered hold easing and both
@@ -1605,7 +1614,7 @@ Audible range is not infected Noise radius; no AFL Noise event is emitted here.
 Only the accepted V0.3.8 pistol remains as a loose source. Eleven obsolete pistol
 bbmodels plus the pre-material-pass PNG were removed after every archived entry's
 SHA-256 was checked. Recovery archive (local, ignored by Git):
-`.gradle-user/asset-backups/service-pistol-pre-v038-20260906.zip`.
+`.gradle-user/asset-backups/p9-01-pre-v038-20260906.zip`.
 The rig template `src/main/blockbench/templates/afl_weapon_rig_template.bbmodel`
 and non-pistol models remain. Older review files are retained as explicitly
 historical records, not deleted or presented as current runtime documentation.
@@ -1619,15 +1628,15 @@ superseded by V0.4.2. The GUI and third-person implementation remain current.
   2D icon for GUI/Hotbar/Inventory. All other contexts use the exported
   `builtin/entity` model. No recursive custom-renderer GUI call, screenshot,
   resampling, TaCZ icon or third-party image is involved. Reproducible native-pixel
-  drawing source: `tools/draw-service-pistol-icon.ps1`.
-- **First-person pass**: `ServicePistolFirstPerson` intercepts `RenderHandEvent`
+  drawing source: `tools/draw-p9-01-icon.ps1`.
+- **First-person pass**: `P901FirstPerson` intercepts `RenderHandEvent`
   only while the main hand is this item, cancels both vanilla hand passes and
   renders the current main-hand stack once. It retains vanilla resting/equip
   translation and exported first-person transforms, but does not apply melee
   swing. This avoids rendering ItemInHandRenderer's stale pre-GeckoLibID stack
   during equip interpolation. Offhand items are visually suppressed while this
   two-handed gun is held; their inventory state and gameplay are not changed.
-- **Skin arms**: `ServicePistolHandLayer` renders only the actual PlayerRenderer
+- **Skin arms**: `P901HandLayer` renders only the actual PlayerRenderer
   model's arm/sleeve parts using the current player's `getSkinTextureLocation()`.
   `getModelName()` selects Classic/Slim hand-center compensation; the actual
   PlayerRenderer supplies the corresponding 4px/3px arm mesh and vanilla skin UV.
@@ -1639,7 +1648,7 @@ superseded by V0.4.2. The GUI and third-person implementation remain current.
   center lands exactly at the anchor for both Classic and Slim widths. No
   reference cube, reference texture, full player model copy or source offset is
   exported into gun geometry.
-- **Third-person pose**: `ServicePistolPlayerPose` uses Forge's item-specific
+- **Third-person pose**: `P901PlayerPose` uses Forge's item-specific
   `IClientItemExtensions.getArmPose` / extensible two-handed ArmPose, inside normal
   HumanoidModel.setupAnim. Both arms raise and converge with head pitch/yaw;
   normal skin sleeves and held-item layers follow. Main hand and support roles
@@ -1714,7 +1723,7 @@ mapping below describes the historical V0.4.2 pass, superseded for arms only.
   Lift and pullback expose the long existing magazine travel; moving closer
   would worsen lower-screen clipping. No second magazine or hand timeline is
   authored. The empty reload_magazine guide remains empty.
-- `ServicePistolAnimationController` reads clip time after the existing controller
+- `P901AnimationController` reads clip time after the existing controller
   processing, using its tickOffset and speed; it adds no gameplay/network state.
   The hand layer continues reading each fully animated anchor transform.
   Fire has zero reload offset; all original animation bytes are retained.
@@ -1873,9 +1882,9 @@ Historical attempt, superseded by the V0.4.4 baseline restore below.
   recoverable from the V0.4.2 implementation record above, the unchanged assets,
   and file hashes retained at the V0.4.3 entry audit. Before V0.4.4 edits, all
   14 audited frozen files still matched that snapshot. In particular:
-  `ServicePistolPresentation.java` SHA-256
+  `P901Presentation.java` SHA-256
   `dc6a1c7499fb17b0adb5d9589881dc4bd015a9f5feae21e7c3d246457787e07a`,
-  old `ServicePistolFirstPerson.java` SHA-256
+  old `P901FirstPerson.java` SHA-256
   `186075f62c2ada7a627f5caabbf9d25f93a8c2864549a5d3e74f5553e6327f83`,
   and animation SHA-256 `ae04019755413def1170af9a42708f4bb52bb5c27d2b2ccfc0ee2e024cfcd30e`.
 - **Current vs V0.4.2 READY**: camera translation `(0.60,-0.54,-0.64)`, no extra
@@ -1905,7 +1914,7 @@ Historical attempt, superseded by the V0.4.4 baseline restore below.
   return by 1.18s. Full 1.30s weapon_root/magazine/reload_magazine/left-anchor
   evaluation remains. Hand rendering uses the restored reference mapping in
   every state; gun side-open and hand-anchor motion are not rolled back.
-- **Ownership isolation**: `ServicePistolRenderMatrices.detachedCopy` creates
+- **Ownership isolation**: `P901RenderMatrices.detachedCopy` creates
   separate pose AND normal matrix objects. The weapon entry copies the caller's
   camera stack and owns its push/finally/pop scope. The hand layer only reads
   the animated per-bone pose, copies it, and calibrates/renders on its own scoped
@@ -1948,8 +1957,8 @@ Historical attempt, superseded by the V0.4.4 baseline restore below.
   Whole-repo `git diff --check` still reports five pre-existing trailing-space
   lines in the user's appended future-ammo/HUD checklist; they were preserved.
   The check excluding that checklist passes. No screenshots or previews were made.
-- **V0.4.4 changed files**: production `weapon/client/ServicePistolFirstPerson.java`,
-  `ServicePistolHandLayer.java`, new `ServicePistolRenderMatrices.java`; DEV
+- **V0.4.4 changed files**: production `weapon/client/P901FirstPerson.java`,
+  `P901HandLayer.java`, new `P901RenderMatrices.java`; DEV
   `NativeGunMatrixChecks.java`, `NativeGunRuntimeSmokeCheck.java`,
   `NativeGunArmChecks.java`, `NativeGunArmClearance.java`,
   `NativeGunPresentationTrace.java`, `NativeGunArmTrace.java`. The four directly
@@ -1971,7 +1980,7 @@ Historical, unaccepted attempt; superseded by V0.4.5.1 below.
 - **Live audit**: entry branch `master`, HEAD `7685f61`. The user has committed
   the native module since the V0.4.4 audit; the earlier uncommitted status above
   is historical. Existing documentation/sign-off and workspace edits are retained.
-- **Reported broken-sleeve cause**: the old `ServicePistolHandLayer` called
+- **Reported broken-sleeve cause**: the old `P901HandLayer` called
   `renderPart` for the whole vanilla right arm AND enabled sleeve during every
   state, including Reload. The complete finite 12-pixel arm has no connected
   shoulder/body mesh in this first-person layer; side-opening exposes its end
@@ -1982,7 +1991,7 @@ Historical, unaccepted attempt; superseded by V0.4.5.1 below.
   `(-4.265,9.1,6.3)`, rotation `(22,0,0)` in exported coordinates. Reload has
   **no independent right-anchor track**; the left anchor has its existing
   magazine-handling track. No source/bone/animation edit is needed.
-- **Reload-only geometry route**: `ServicePistolReloadGrip.active` uses the
+- **Reload-only geometry route**: `P901ReloadGrip.active` uses the
   existing renderer/controller clip time, right-hand-only, finite and >=0.
   The same evaluated anchor and unchanged `orientAtHandTip` matrix rigidly
   attach the compact hand to the grip. There is no new position, rotation,
@@ -2094,8 +2103,8 @@ Historical, unaccepted attempt; superseded by V0.4.5.1 below.
   screenshots/previews are used; numerical tests do not set visual PASS flags.
   Existing full-arm baseline intersection and partial magazine frustum warnings
   remain recorded separately; the former is not the new thin-surface geometry.
-- **Changed files this pass**: production `weapon/client/ServicePistolHandLayer.java`
-  and new `ServicePistolReloadGrip.java`; DEV `NativeGunReloadGripChecks.java`,
+- **Changed files this pass**: production `weapon/client/P901HandLayer.java`
+  and new `P901ReloadGrip.java`; DEV `NativeGunReloadGripChecks.java`,
   `NativeGunRuntimeSmokeCheck.java`, `NativeGunArmChecks.java`,
   `NativeGunArmClearance.java`, `NativeGunArmTrace.java`; the four directly related
   framework/checklist/gun-system/art-standard documents. Existing unrelated user
@@ -2125,7 +2134,7 @@ for version-pinned sources, the actual call chain, H1-H6 verdicts, comparison an
 - Next step, only after authorization: define a canonical AFL hand frame and prove
   Classic/Slim preview/runtime equivalence; use one full-arm adapter across Ready,
   Fire and Reload; retain existing action/audio/gun behavior in the first slice.
-  Deprecate ServicePistolReloadGrip only after its replacement is visually accepted.
+  Deprecate P901ReloadGrip only after its replacement is visually accepted.
   Do not blindly replace the current constant 0.30 scale with 1 or import TaCZ offsets.
 - This pass changed documentation only. No runtime/DEV code, model, animation,
   audio or dependencies changed; no new client run, screenshots, previews, commit or push.
@@ -2145,8 +2154,8 @@ in this V0.4 prototype. Manual visual/audio testing does not imply those feature
 [第一人称运行时路径与无效代码审计](native-gun-first-person-runtime-path-audit.md)。
 本段记录 LIVE 状态，优先于上文历史版本的当前路径描述；V0.5 尚未实施。
 
-- 当前主链：RenderHandEvent → ServicePistolFirstPerson → Java baseline →
-  ItemRenderer / exported Display → ServicePistolRenderer / GeckoLib animation
+- 当前主链：RenderHandEvent → P901FirstPerson → Java baseline →
+  ItemRenderer / exported Display → P901Renderer / GeckoLib animation
   evaluation → per-bone HandLayer → NativePlayerArmRenderer → B_skin → 完整玩家 arm/sleeve。
   枪顶点由 GeoRenderer 的 cube/quad 路线提交；手顶点由真实 PlayerModel ModelPart 提交。
 - 直接 FP 绘制相关为9个 AFL 顶层类；加 Item/AnimationController 为11个。
@@ -2156,7 +2165,7 @@ in this V0.4 prototype. Manual visual/audio testing does not imply those feature
   gun最终轴长=.328，arm basis固定=.246，而locator位置仍继承公共父变换。
   Java BASE及Reload side-open仍active；旧Reload除数.3未跟Display变化。
   普通Blockbench显示不自动执行arm正交化，数值测试的“preview equivalence”不是窗口视觉等价。
-- ServicePistolReloadGrip薄掌面没有main调用，不影响默认画面；LegacyHandMapping等主要是旧DEV群。
+- P901ReloadGrip薄掌面没有main调用，不影响默认画面；LegacyHandMapping等主要是旧DEV群。
   NativeGunMatrixChecks和NativeGunReloadGripChecks是零caller独立清理候选；
   其余旧类须连引用成组清理，本轮未删除。
 - DEV NativeHandVisualGate确实改变main Renderer的handFilter：数值失败可能保持全隐藏，

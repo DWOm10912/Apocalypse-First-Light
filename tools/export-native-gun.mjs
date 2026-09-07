@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {previewFactors} from './native-arm-presentation.mjs';
 export const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const sourcePath=path.join(root,'src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel');
+export const sourcePath=path.join(root,'src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel');
 export const assets=path.join(root,'src/main/resources/assets/apocalypse_firstlight');
 export const read=p=>JSON.parse(fs.readFileSync(p,'utf8').replace(/^\uFEFF/,''));
 const clean=n=>Math.round(n*1e10)/1e10 || 0;
@@ -63,14 +63,14 @@ export function compile(source, priorGeo, priorDisplay) {
     geometry['minecraft:geometry'][0].bones=bones;
     const animations={format_version:'1.8.0',animations:{}};
     for(const a of source.animations) {
-        assert(['fire','reload','empty_idle','fire_last_round','reload_empty'].some(n=>a.name==='animation.service_pistol.'+n));
+        assert(['fire','reload','empty_idle','fire_last_round','reload_empty'].some(n=>a.name==='animation.p9_01.'+n));
         const out={animation_length:a.length,bones:{}};
         if(a.loop==='loop')out.loop=true;
         animations.animations[a.name]=out;
         for(const [id,animator] of Object.entries(a.animators)) {
             if(!animator.keyframes?.length)continue;
             if(id==='effects') {
-                assert.equal(a.name,'animation.service_pistol.reload_empty');
+                assert.equal(a.name,'animation.p9_01.reload_empty');
                 assert(animator.keyframes.every(k=>k.channel==='sound' && k.time===1.25
                     && k.data_points.every(p=>p.effect==='slide_action')),'Unknown source-only effect');
                 continue; // Blockbench preview only; authoritative server timing plays the sound once.
@@ -136,14 +136,14 @@ export function compile(source, priorGeo, priorDisplay) {
     }
     assert.equal(bones.reduce((n,b)=>n+(b.cubes||[]).length,0),77);
     assert(!bones.some(b=>b.name.includes('arm_reference')));
-    assert.equal(animations.animations['animation.service_pistol.fire'].animation_length,.14);
-    assert.equal(animations.animations['animation.service_pistol.reload'].animation_length,1.3);
-    const png=source.textures.find(t=>t.name==='service_pistol.png');
-    assert(Buffer.from(png.source.split(',')[1],'base64').equals(fs.readFileSync(path.join(assets,'textures/item/service_pistol.png'))),'Texture changed');
+    assert.equal(animations.animations['animation.p9_01.fire'].animation_length,.14);
+    assert.equal(animations.animations['animation.p9_01.reload'].animation_length,1.3);
+    const png=source.textures.find(t=>t.name==='p9_01.png');
+    assert(Buffer.from(png.source.split(',')[1],'base64').equals(fs.readFileSync(path.join(assets,'textures/item/p9_01.png'))),'Texture changed');
     return {geometry,animations,display};
 }
 export function outputs() {
-    const geo=path.join(assets,'geo/service_pistol.geo.json'),anim=path.join(assets,'animations/service_pistol.animation.json'),display=path.join(assets,'models/item/service_pistol_in_hand.json');
+    const geo=path.join(assets,'geo/p9_01.geo.json'),anim=path.join(assets,'animations/p9_01.animation.json'),display=path.join(assets,'models/item/p9_01_in_hand.json');
     const result=compile(read(sourcePath),read(geo),read(display));
     return new Map([[geo,result.geometry],[anim,result.animations],[display,result.display]]);
 }
@@ -151,7 +151,7 @@ if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.
     const write=process.argv.includes('--write'),animationsOnly=process.argv.includes('--animations-only');
     assert(process.argv.slice(2).every(a=>['--write','--check','--animations-only'].includes(a)),'Invalid export flag');
     for(const [p,value] of outputs()) {
-        if(animationsOnly && !p.endsWith('service_pistol.animation.json'))continue;
+        if(animationsOnly && !p.endsWith('p9_01.animation.json'))continue;
         if(write)fs.writeFileSync(p,JSON.stringify(value,null,2)+'\n');
         else assert.deepEqual(read(p),value,'Stale export: '+p);
     }

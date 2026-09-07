@@ -43,16 +43,23 @@ public final class AflSounds {
     private AflSounds() {
     }
 
-    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_FIRE = pistolSound("fire");
-    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_DRY_FIRE = pistolSound("dry_fire");
-    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_SLIDE_ACTION = pistolSound("slide_action");
+    public static final java.util.List<RegistryObject<SoundEvent>> BR51_01 = java.util.stream.Stream.of(
+            "fire", "reload_empty_1", "reload_empty_2", "reload_empty_3", "reload_empty_4",
+            "reload_tactical_1", "reload_tactical_2", "reload_tactical_3", "draw", "put_away")
+            .map(action -> SOUND_EVENTS.register("br51_01_" + action, () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "br51_01_" + action))))
+            .toList();
+
+    public static final RegistryObject<SoundEvent> P9_01_FIRE = pistolSound("fire");
+    public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
+    public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");
     public static final RegistryObject<SoundEvent> CASING_LANDING = SOUND_EVENTS.register("shell_casings_dropping",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "shell_casings_dropping")));
-    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_MAGAZINE_OUT = pistolSound("magazine_out");
-    public static final RegistryObject<SoundEvent> SERVICE_PISTOL_MAGAZINE_IN = pistolSound("magazine_in");
+    public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_OUT = pistolSound("magazine_out");
+    public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_IN = pistolSound("magazine_in");
 
     private static RegistryObject<SoundEvent> pistolSound(String action) {
-        String name = "service_pistol_" + action;
+        String name = "p9_01_" + action;
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(
                 new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
     }

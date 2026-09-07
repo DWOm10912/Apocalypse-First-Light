@@ -1,5 +1,7 @@
 # Native AFL Gun Framework V0.4.6 — 第一人称手臂与换弹架构审计
 
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
 研究日期：2026-09-07。范围：只读源码、二进制与资源结构审计；只写本文和框架文档研究摘要。**不是新的 runtime 版本，不代表视觉修复完成。**
 
 ## 结论先行
@@ -70,10 +72,10 @@ SBM 源码固定在 tag `2.2.2-forge-mc1.20.1` → `0a4a4084eca9e5f055d63fdd2fee
 
 ```text
 Forge RenderHandEvent
-  → ServicePistolFirstPerson：只在主手 Native Pistol 时接管双方 hand pass
+  → P901FirstPerson：只在主手 Native Pistol 时接管双方 hand pass
   → 独立 weapon PoseStack；base camera translation / equip 下沉
   → Vanilla ItemRenderer + exported first-person display
-  → ServicePistolRenderer / GeoItemRenderer：求值 action 动画
+  → P901Renderer / GeoItemRenderer：求值 action 动画
   → root：叠加仅 Reload 的共同 presentation
   → animated weapon_root
        ├─ gun → frame / slide / barrel / magazine / reload_magazine ...
@@ -81,7 +83,7 @@ Forge RenderHandEvent
        └─ left_hand_anchor  → HandLayer
 ```
 
-证据：[FirstPerson](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolFirstPerson.java)、[Renderer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolRenderer.java)、[HandLayer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolHandLayer.java)、[Presentation](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/ServicePistolPresentation.java)。这些链接相对本文位于 `docs/dev/native-gun/`，实际源码统一在仓库 `src/`。
+证据：[FirstPerson](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/P901FirstPerson.java)、[Renderer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/P901Renderer.java)、[HandLayer](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/P901HandLayer.java)、[Presentation](../../../src/main/java/com/antaurora/apofirstlight/weapon/client/P901Presentation.java)。这些链接相对本文位于 `docs/dev/native-gun/`，实际源码统一在仓库 `src/`。
 
 ### 累积的变换与分支
 
@@ -89,7 +91,7 @@ Forge RenderHandEvent
 2. Reload 共同父补偿：相机等价平移 `(0.05,+0.28,-0.25)`、Z/Y/X 旋转 `(-16,+32,+8)` 度；0–0.24 秒进入，保持到 0.85，1.18 回零。另叠加源 `weapon_root` 动画，不是右手独立动作。
 3. 正常手臂：先取得 evaluated anchor 的 pivot；加左右不同的 contact offset；`retainRigidContact` 去掉继承缩放但保留平移／正交基；追加硬编码左右 forearm quaternion；重设统一 arm scale `0.30`；再以 `palmY=8/9.5` 和 Classic/Slim 横向中心补偿。
 4. 正常路线从当前 PlayerRenderer 取完整 arm/sleeve ModelPart，但用 `PartPose.ZERO` 去掉原始 part pose；随后恢复其状态。两种标准几何和真实玩家 skin 已存在，不是固定肤色。
-5. Reload 右手改走 `ServicePistolReloadGrip`：不绘制完整 arm/sleeve，改用固定 anchor-relative offset、额外 -90 度局部 Y 转向、薄表面和右手末端 UV；当前尺寸 Classic `3.40×3.00×0.55`、Slim `2.55×3.00×0.55`。此视觉方案已失败，保留在工作区只是因为用户终止而未回滚。
+5. Reload 右手改走 `P901ReloadGrip`：不绘制完整 arm/sleeve，改用固定 anchor-relative offset、额外 -90 度局部 Y 转向、薄表面和右手末端 UV；当前尺寸 Classic `3.40×3.00×0.55`、Slim `2.55×3.00×0.55`。此视觉方案已失败，保留在工作区只是因为用户终止而未回滚。
 
 **不要把历史尝试写成当前三层同时渲染。** 4×4×4 短掌块已被薄表面替换；当前不是“全臂 + 短块 + 薄面同时画”。当前也没有随 READY/FIRE/RELOAD 变化的数值 arm-scale 曲线：`0.30` 是常量，发生变化的是右手几何和映射分支。
 
@@ -109,7 +111,7 @@ Forge RenderHandEvent
 - `reload_magazine` 是存在于源与 runtime 的独立 bone，不能误报缺失，也不能因 TaCZ 有 additional_magazine 就复制其处理方式。
 - 单个 GeckoLib `action` controller 接受服务器 fire/reload 触发；当前通用 Reload 为 26 tick／约 1.30 秒，无 tactical/empty 分支，无真实弹药。不是 TaCZ 式多轨叠加状态机。
 
-来源：[bbmodel](../../../src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../../src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json)、[runtime animation](../../../src/main/resources/assets/apocalypse_firstlight/animations/service_pistol.animation.json)、[导出检查](../../../tools/export-service-pistol.blockbench.js)、[Item](../../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolItem.java)、[Actions](../../../src/main/java/com/antaurora/apofirstlight/weapon/ServicePistolActions.java)。
+来源：[bbmodel](../../../src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../../src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json)、[runtime animation](../../../src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json)、[导出检查](../../../tools/export-p9-01.blockbench.js)、[Item](../../../src/main/java/com/antaurora/apofirstlight/weapon/P901Item.java)、[Actions](../../../src/main/java/com/antaurora/apofirstlight/weapon/P901Actions.java)。
 
 ## 3. TaCZ first-person render call chain：真正入口不是旧事件类
 
@@ -308,7 +310,7 @@ M_arm = M_locator × B_skin
 - **通用 RELOAD**：保持右 locator 相对 grip carrier 的 bind 不变，左 locator 由现有 Reload 动画驱动。只要 gun 局部 bind 不变，现有 weapon_root 下的兄弟层级就足够；**无需为了像 TaCZ 而重命名／重排整棵树**。
 - 若后续 gun 自己也要相对共同 root 转动，右 locator 应随握把 carrier，或由作者同步局部轨道。以 `inverse(M_grip) × M_right` 在要求握持的区间恒定为验收约束，而不是依赖组名。
 - 左手与 magazine / reload_magazine 在接取区间要同帧对齐。可先保留分开的轨道，不强制运行时 reparent；将来必要时用原创共同操作组减少重复关键帧，不能直接照搬 TaCZ hierarchy。
-- 完成／取消动作只恢复 Ready pose，不再更换右手 geometry。`ServicePistolReloadGrip` 应在替代路线通过验收后删除，不保留为另一套默认模式。
+- 完成／取消动作只恢复 Ready pose，不再更换右手 geometry。`P901ReloadGrip` 应在替代路线通过验收后删除，不保留为另一套默认模式。
 
 ### 10.6 Future empty reload / overlay
 
@@ -329,12 +331,12 @@ M_arm = M_locator × B_skin
 
 类的建议处置：
 
-- `ServicePistolReloadGrip`：**计划废弃/删除**。短掌段也不恢复；本轮没有删除。
-- `ServicePistolHandLayer`：重写为统一 locator → skin-arm adapter，去除 per-state geometry branch、武器专用朝向和重复姿态补偿。保留当前玩家/皮肤/context 范围判断与状态恢复经验。
-- `ServicePistolRenderMatrices`：保留并扩充测试；已有隔离不是问题来源。
-- `ServicePistolFirstPerson`：保留 Native 局部所有权；本轮不引入 SBM 的切枪管理器。
-- `ServicePistolRenderer` / `ServicePistolPresentation`：最小迁移先保留共同求值与当前枪取景，不以修手为由改枪。以后是否把 presentation 收敛进 authoring view 要独立决策。
-- `ServicePistolAnimationController` / `ServicePistolActions` / `ServicePistolItem`：最小 V1 保留动作与服务端逻辑。未来才讨论 clips/overlay/empty 状态。
+- `P901ReloadGrip`：**计划废弃/删除**。短掌段也不恢复；本轮没有删除。
+- `P901HandLayer`：重写为统一 locator → skin-arm adapter，去除 per-state geometry branch、武器专用朝向和重复姿态补偿。保留当前玩家/皮肤/context 范围判断与状态恢复经验。
+- `P901RenderMatrices`：保留并扩充测试；已有隔离不是问题来源。
+- `P901FirstPerson`：保留 Native 局部所有权；本轮不引入 SBM 的切枪管理器。
+- `P901Renderer` / `P901Presentation`：最小迁移先保留共同求值与当前枪取景，不以修手为由改枪。以后是否把 presentation 收敛进 authoring view 要独立决策。
+- `P901AnimationController` / `P901Actions` / `P901Item`：最小 V1 保留动作与服务端逻辑。未来才讨论 clips/overlay/empty 状态。
 - source references、导出验证和 DEV hand tests：下一轮改测 preview/runtime 等价与握持约束；历史“薄表面射线可见”不能成为新架构的通过标准。
 
 ## 12. Explicitly NOT copied / verification boundary

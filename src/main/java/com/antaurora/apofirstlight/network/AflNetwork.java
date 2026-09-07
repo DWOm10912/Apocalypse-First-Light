@@ -60,8 +60,8 @@ public final class AflNetwork {
                 ExplosionTinnitusS2CPacket::encode, ExplosionTinnitusS2CPacket::decode,
                 ExplosionTinnitusS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
-        channel.registerMessage(nextId++, ServicePistolC2SPacket.class,
-                ServicePistolC2SPacket::encode, ServicePistolC2SPacket::decode, ServicePistolC2SPacket::handle,
+        channel.registerMessage(nextId++, P901C2SPacket.class,
+                P901C2SPacket::encode, P901C2SPacket::decode, P901C2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, NativeShotS2CPacket.class,
                 NativeShotS2CPacket::encode, NativeShotS2CPacket::decode, NativeShotS2CPacket::handle,
@@ -129,24 +129,24 @@ public final class AflNetwork {
         }
     }
 
-    public static void requestServicePistol(boolean reload, int slot) {
-        if (channel != null) channel.sendToServer(new ServicePistolC2SPacket(reload, slot));
+    public static void requestP901(boolean reload, int slot) {
+        if (channel != null) channel.sendToServer(new P901C2SPacket(reload, slot));
     }
 
-    public record ServicePistolC2SPacket(boolean reload, int slot) {
-        public static void encode(ServicePistolC2SPacket packet, FriendlyByteBuf buffer) {
+    public record P901C2SPacket(boolean reload, int slot) {
+        public static void encode(P901C2SPacket packet, FriendlyByteBuf buffer) {
             buffer.writeBoolean(packet.reload);
             buffer.writeVarInt(packet.slot);
         }
-        public static ServicePistolC2SPacket decode(FriendlyByteBuf buffer) {
-            return new ServicePistolC2SPacket(buffer.readBoolean(), buffer.readVarInt());
+        public static P901C2SPacket decode(FriendlyByteBuf buffer) {
+            return new P901C2SPacket(buffer.readBoolean(), buffer.readVarInt());
         }
-        public static void handle(ServicePistolC2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
+        public static void handle(P901C2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER) {
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null) com.antaurora.apofirstlight.weapon.ServicePistolActions
+                    if (player != null) com.antaurora.apofirstlight.weapon.P901Actions
                             .request(player, packet.reload, packet.slot);
                 });
             }

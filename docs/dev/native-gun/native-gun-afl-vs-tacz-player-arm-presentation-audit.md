@@ -1,5 +1,7 @@
 # AFL vs TaCZ Player Arm Presentation 专项审计
 
+> 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
+
 日期：2026-09-07。只读审计，当前工作树 master / 7685f61；不是新视觉修复版本。
 
 ## 1. 结论、范围与证据边界
@@ -29,11 +31,11 @@
   native-gun-first-person-runtime-path-audit.md、native-gun-hand-locator-authoring-standard.md、
   native-afl-gun-framework-v0.md。历史 V0.4.x 描述不覆盖当前 V0.5 源码。
 - C = src/main/java/com/antaurora/apofirstlight/weapon/client/：
-  ServicePistolFirstPerson、ServicePistolRenderer、ServicePistolHandLayer、NativePlayerArmRenderer、
-  NativeHandBinding、ServicePistolPresentation、ServicePistolRenderMatrices。
-- src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel；
-  Runtime：src/main/resources/assets/apocalypse_firstlight/geo/service_pistol.geo.json、
-  animations/service_pistol.animation.json、models/item/service_pistol_in_hand.json。
+  P901FirstPerson、P901Renderer、P901HandLayer、NativePlayerArmRenderer、
+  NativeHandBinding、P901Presentation、P901RenderMatrices。
+- src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel；
+  Runtime：src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json、
+  animations/p9_01.animation.json、models/item/p9_01_in_hand.json。
 - 本地 TaCZ 1.1.8-hotfix 原始依赖JAR与 mapped JAR。坐标 curse.maven:timeless-and-classics-zero-1028108:8141310。
   原JAR SHA256：9ed8ada1283ed7a793a70cc1b51c4a340f367ce84707e1a7b8cf21ee3d288d77。
 - JAR 内置 Glock17 geo / animation / display 在内存中读取；
@@ -89,9 +91,9 @@ TaCZ固定版本提交 b43eb84c38e9768d8e73c8b14f0b845669704b38：
 
 ## 4. AFL arm pipeline / 当前实际链
 
-RenderHandEvent → ServicePistolFirstPerson → applyEquip →
-ItemRenderer / FP Display → ServicePistolRenderer / Gecko动画 →
-ServicePistolHandLayer的animated anchor pivot → canonicalPose完整矩阵副本 →
+RenderHandEvent → P901FirstPerson → applyEquip →
+ItemRenderer / FP Display → P901Renderer / Gecko动画 →
+P901HandLayer的animated anchor pivot → canonicalPose完整矩阵副本 →
 B_skin → 实际玩家PlayerModel完整arm与可选sleeve。
 
 - Presentation只剩 T(0,-.6×equip,0)，没有旧Java静态BASE或Reload侧开曲线。

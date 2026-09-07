@@ -123,10 +123,11 @@ public final class AflCreativeTabs {
 
     public static final RegistryObject<CreativeModeTab> WEAPONS_AND_AMMUNITION =
             CREATIVE_MODE_TABS.register("weapons_and_ammunition", () -> CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(AflItems.SERVICE_PISTOL.get()))
+                    .icon(() -> new ItemStack(AflItems.P9_01.get()))
                     .title(Component.translatable("itemGroup.apocalypse_firstlight.weapons_and_ammunition"))
                     .displayItems((parameters, output) -> {
-                        output.accept(AflItems.SERVICE_PISTOL.get());
+                        output.accept(AflItems.P9_01.get());
+                        output.accept(AflItems.BR51_01.get());
                         output.accept(AflItems.CROWBAR.get());
                         output.accept(AflItems.ROUND_9MM.get());
                     })

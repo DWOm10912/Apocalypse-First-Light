@@ -1,8 +1,8 @@
 package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.weapon.ServicePistolAnimationController;
-import com.antaurora.apofirstlight.weapon.ServicePistolItem;
+import com.antaurora.apofirstlight.weapon.P901AnimationController;
+import com.antaurora.apofirstlight.weapon.P901Item;
 import com.antaurora.apofirstlight.weapon.client.*;
 import com.google.gson.*;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -36,7 +36,7 @@ public final class NativeHandContractChecks {
         Path root=Path.of("").toAbsolutePath();
         if (root.getFileName().toString().equals("run")) root=root.getParent();
         var source=JsonParser.parseString(Files.readString(root.resolve(
-                "src/main/blockbench/service_pistol_v03_8_fire_slide_cleanup.bbmodel"))).getAsJsonObject();
+                "src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel"))).getAsJsonObject();
         previewDisplayScale=source.getAsJsonObject("display").getAsJsonObject("firstperson_righthand")
                 .getAsJsonArray("scale").get(0).getAsFloat();
         for (var e:source.getAsJsonArray("groups")) {
@@ -46,7 +46,7 @@ public final class NativeHandContractChecks {
         outline(source.getAsJsonArray("outliner"),null);
         for(var entry:source.getAsJsonArray("animations")) {
             var clip=entry.getAsJsonObject();
-            if(clip.get("name").getAsString().equals("animation.service_pistol.reload"))
+            if(clip.get("name").getAsString().equals("animation.p9_01.reload"))
                 reloadFpKeys=clip.getAsJsonObject("animators").getAsJsonObject(groups.get("fp_root").get("uuid").getAsString()).getAsJsonArray("keyframes");
         }
         for (var e:source.getAsJsonArray("elements")) {
@@ -62,9 +62,9 @@ public final class NativeHandContractChecks {
         } else elementParents.put(e.getAsString(),parent);
     }
 
-    public static void verify(Minecraft mc,ServicePistolItem item) throws java.io.IOException {
+    public static void verify(Minecraft mc,P901Item item) throws java.io.IOException {
         var test=new NativeHandContractChecks();
-        var model=new ServicePistolModel(); model.getBakedModel(model.getModelResource(item));
+        var model=new P901Model(); model.getBakedModel(model.getModelResource(item));
         var before=new HashMap<software.bernie.geckolib.core.animatable.model.CoreGeoBone,float[]>();
         for(var b:model.getAnimationProcessor().getRegisteredBones())
             before.put(b,new float[]{b.getRotX(),b.getRotY(),b.getRotZ(),b.getPosX(),b.getPosY(),b.getPosZ(),b.getScaleX(),b.getScaleY(),b.getScaleZ()});
@@ -79,11 +79,11 @@ public final class NativeHandContractChecks {
                 test.maxClassic,test.maxSlim,EPS,test.comparisons,test.frames,test.gripDrift);
     }
 
-    private void run(Minecraft mc,ServicePistolItem item) {
+    private void run(Minecraft mc,P901Item item) {
         runtimeDisplay=software.bernie.geckolib.loading.FileLoader.loadFile(
-                new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID,"models/item/service_pistol_in_hand.json"),
+                new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID,"models/item/p9_01_in_hand.json"),
                 mc.getResourceManager()).getAsJsonObject("display");
-        var model=new ServicePistolModel(); model.getBakedModel(model.getModelResource(item));
+        var model=new P901Model(); model.getBakedModel(model.getModelResource(item));
         var processor=model.getAnimationProcessor();
         var skins=new ModelPart[]{mc.getEntityModels().bakeLayer(ModelLayers.PLAYER),
                 mc.getEntityModels().bakeLayer(ModelLayers.PLAYER_SLIM)};
@@ -124,7 +124,7 @@ public final class NativeHandContractChecks {
                         NativePlayerArmRenderer.PRESENTATION_X,NativePlayerArmRenderer.PRESENTATION_Y,NativePlayerArmRenderer.PRESENTATION_Z)));
                 require(maxScaleError<EPS,"universal final axes across parent scales");
                 for(boolean slim:new boolean[]{false,true}) {
-                    var skinPose=ServicePistolRenderMatrices.detachedCopy(bound);
+                    var skinPose=P901RenderMatrices.detachedCopy(bound);
                     NativeHandBinding.apply(skinPose,side.equals("right"),slim);
                     var contact=skinPose.last().pose().transformPosition(new Vector3f(
                             NativeHandBinding.centreX(side.equals("right"),slim),10,0).div(16));
@@ -142,7 +142,7 @@ public final class NativeHandContractChecks {
             var base=new PoseStack(); applyRuntimeDisplay(base,right); compareBoth(model,skins,base);
             verifyReadyAimline(model,base,right);
         }
-        var manager=new AnimatableManager<ServicePistolItem>(item);
+        var manager=new AnimatableManager<P901Item>(item);
         double tick=0; int actions=0;
         Matrix4f expectedGrip=relativeGrip(model,new PoseStack());
         Matrix4f readyGun=boneMatrix(model,"gun",new PoseStack());
@@ -150,14 +150,14 @@ public final class NativeHandContractChecks {
         Matrix4f readyLeft=locator(model,"left_hand_anchor",new PoseStack()).last().pose();
         try {
             for (int cycle=0;cycle<8;cycle++) for (String action:new String[]{"fire","fire","reload","fire","reload"}) {
-                manager.tryTriggerAnimation(ServicePistolItem.CONTROLLER,action);
+                manager.tryTriggerAnimation(P901Item.CONTROLLER,action);
                 int steps=action.equals("reload")?320:90;
                 double[] marks={0,.04,.08,.12,.16,.20,.24,.4,.42,.60,.85,.93,1.30}; int next=0;
                 Vector3f previousLift=new Vector3f(),previousTurn=new Vector3f();
                 double previousSample=0;
                 for (int step=0;step<=steps;step++,tick+=.1) {
                     processor.tickAnimation(item,model,manager,tick,new AnimationState<>(item,0,0,0,false),true);
-                    var controller=(ServicePistolAnimationController)manager.getAnimationControllers().get(ServicePistolItem.CONTROLLER);
+                    var controller=(P901AnimationController)manager.getAnimationControllers().get(P901Item.CONTROLLER);
                     double seconds=controller.getReloadSeconds();
                     var base=new PoseStack();
                     applyRuntimeDisplay(base,true);
@@ -222,7 +222,7 @@ public final class NativeHandContractChecks {
         return new Vector3f(p.get("x").getAsFloat(),p.get("y").getAsFloat(),p.get("z").getAsFloat());
     }
 
-    private void verifyReadyAimline(ServicePistolModel model,PoseStack base,boolean right) {
+    private void verifyReadyAimline(P901Model model,PoseStack base,boolean right) {
         var muzzle=locator(model,"muzzle_anchor",base).last().pose().getTranslation(new Vector3f());
         var forward=boneMatrix(model,"barrel",base).transformDirection(new Vector3f(0,0,-1)).normalize();
         var front=locator(model,"front_sight",base).last().pose().getTranslation(new Vector3f());
@@ -253,7 +253,7 @@ public final class NativeHandContractChecks {
         pose.translate(0,.01,0);
     }
 
-    private void compareBoth(ServicePistolModel model,ModelPart[] skins,PoseStack base) {
+    private void compareBoth(P901Model model,ModelPart[] skins,PoseStack base) {
         for(int skin=0;skin<2;skin++) for(boolean right:new boolean[]{true,false}) {
             String side=right?"right":"left"; boolean slim=skin==1;
             var anchor=locator(model,side+"_hand_anchor",base);
@@ -289,7 +289,7 @@ public final class NativeHandContractChecks {
 
     // Independent bbmodel hierarchy evaluation. Animation deltas come from the
     // same evaluated frame, not a second clock; rest transforms come from disk.
-    private Matrix4f sourceMatrix(ServicePistolModel model,String name,PoseStack base) {
+    private Matrix4f sourceMatrix(P901Model model,String name,PoseStack base) {
         var result=new Matrix4f(base.last().pose()); var chain=new ArrayList<String>();
         for(String n=name;n!=null;n=parents.get(n)) chain.add(n);
         Collections.reverse(chain);
@@ -308,17 +308,17 @@ public final class NativeHandContractChecks {
         return result;
     }
 
-    private static PoseStack locator(ServicePistolModel model,String name,PoseStack base) {
-        var pose=ServicePistolRenderMatrices.detachedCopy(base); var chain=new ArrayList<GeoBone>();
+    private static PoseStack locator(P901Model model,String name,PoseStack base) {
+        var pose=P901RenderMatrices.detachedCopy(base); var chain=new ArrayList<GeoBone>();
         for(var b=model.getBone(name).orElseThrow();b!=null;b=b.getParent()) chain.add(b);
         Collections.reverse(chain); for(var b:chain) RenderUtils.prepMatrixForBone(pose,b);
         RenderUtils.translateToPivotPoint(pose,model.getBone(name).orElseThrow()); return pose;
     }
-    private static Matrix4f boneMatrix(ServicePistolModel model,String name,PoseStack base) {
+    private static Matrix4f boneMatrix(P901Model model,String name,PoseStack base) {
         var pose=locator(model,name,base); RenderUtils.translateAwayFromPivotPoint(pose,model.getBone(name).orElseThrow());
         return new Matrix4f(pose.last().pose());
     }
-    private static Matrix4f relativeGrip(ServicePistolModel model,PoseStack base) {
+    private static Matrix4f relativeGrip(P901Model model,PoseStack base) {
         // frame includes the grip and has no independent animation: a real gun reference, not the hand carrier.
         return boneMatrix(model,"frame",base).invert().mul(locator(model,"right_hand_anchor",base).last().pose());
     }

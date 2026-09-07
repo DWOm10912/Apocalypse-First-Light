@@ -2,8 +2,8 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflItems;
-import com.antaurora.apofirstlight.weapon.ServicePistolActions;
-import com.antaurora.apofirstlight.weapon.ServicePistolItem;
+import com.antaurora.apofirstlight.weapon.P901Actions;
+import com.antaurora.apofirstlight.weapon.P901Item;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
@@ -27,25 +27,25 @@ public final class NativeGunRuntimeSmokeCheck {
         if (checked || event.phase != TickEvent.Phase.END || mc.getOverlay() != null || mc.screen == null) return;
         checked = true;
         try {
-            check(AflItems.SERVICE_PISTOL.get() instanceof ServicePistolItem, "item registry");
-            var geo = GeckoLibCache.getBakedModels().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/service_pistol.geo.json"));
+            check(AflItems.P9_01.get() instanceof P901Item, "item registry");
+            var geo = GeckoLibCache.getBakedModels().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/p9_01.geo.json"));
             check(geo != null, "GeckoLib baked model");
             check(geo.getBone("right_arm_reference").isEmpty() && geo.getBone("left_arm_reference").isEmpty(), "reference exclusion");
             for (String anchor : new String[]{"right_hand_anchor", "left_hand_anchor", "muzzle_anchor", "ejection_anchor", "sight_anchor"})
                 check(geo.getBone(anchor).isPresent(), "anchor " + anchor);
-            var animations = GeckoLibCache.getBakedAnimations().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "animations/service_pistol.animation.json"));
+            var animations = GeckoLibCache.getBakedAnimations().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "animations/p9_01.animation.json"));
             check(animations != null, "GeckoLib baked animations");
-            NativeHandContractChecks.verify(mc, (ServicePistolItem) AflItems.SERVICE_PISTOL.get());
+            NativeHandContractChecks.verify(mc, (P901Item) AflItems.P9_01.get());
             check(EasingType.fromString("afl_hold") != EasingType.LINEAR, "registered hold easing");
             check(EasingType.fromString("afl_hold").buildTransformer(null).apply(0.99) == 0, "hold until endpoint");
             for (boolean reload : new boolean[]{false, true}) {
-                String name = ServicePistolActions.animationName(reload);
+                String name = P901Actions.animationName(reload);
                 FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
                 try {
-                    new StopTriggeredSingletonAnimPacket("afl-smoke", 123L, ServicePistolItem.CONTROLLER, name).encode(buffer);
+                    new StopTriggeredSingletonAnimPacket("afl-smoke", 123L, P901Item.CONTROLLER, name).encode(buffer);
                     check(buffer.readUtf().equals("afl-smoke"), "stop packet identity");
                     check(buffer.readVarLong() == 123L, "stop packet instance");
-                    check(buffer.readUtf().equals(ServicePistolItem.CONTROLLER), "stop packet controller");
+                    check(buffer.readUtf().equals(P901Item.CONTROLLER), "stop packet controller");
                     check(buffer.readUtf().equals(name) && !buffer.isReadable(), "non-null stop packet action");
                 } finally { buffer.release(); }
             }
