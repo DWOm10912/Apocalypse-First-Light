@@ -168,7 +168,17 @@ public final class InvestigateNoiseGoal extends Goal {
             }
             diagnosticPathAttemptCount++;
             Path path = zombie.getNavigation().createPath(BlockPos.containing(center), 0);
-            if (path == null || !path.canReach()) {
+            // A 64-block audible source can lie beyond a single navigation search.
+            // Keep the real source; accept only a nontrivial partial path that approaches it.
+            boolean advancingGunshotPath = path != null && path.getNodeCount() > 1 && path.getEndNode() != null
+                    && InfectedHearingState.isGunshot(zombie)
+                    && Vec3.atBottomCenterOf(path.getEndNode().asBlockPos()).distanceToSqr(center)
+                    < zombie.position().distanceToSqr(center) - 1.0;
+            if (!net.minecraftforge.fml.loading.FMLEnvironment.production && Boolean.getBoolean("afl.dev.nativeNoise")
+                    && InfectedHearingState.isGunshot(zombie))
+                ApocalypseFirstLight.LOGGER.info("[AFL NOISE PATH] zombie={} source={} canReach={} partialProgress={} nodes={}",
+                        zombie.getId(), center, path != null && path.canReach(), advancingGunshotPath, path == null ? 0 : path.getNodeCount());
+            if (path == null || (!path.canReach() && !advancingGunshotPath)) {
                 if (zombie.level() instanceof ServerLevel level) {
                     InfectedAiDiagnostics.failedPathRetry(level);
                 }

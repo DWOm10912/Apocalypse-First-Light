@@ -76,6 +76,10 @@ public final class InfectedHearingState {
         return entity.getPersistentData().getCompound(ROOT).getBoolean(VALID);
     }
 
+    public static boolean isGunshot(LivingEntity entity) {
+        return "GUNSHOT".equals(entity.getPersistentData().getCompound(ROOT).getString(TYPE));
+    }
+
     public static long heardGameTime(LivingEntity entity) {
         return entity.getPersistentData().getCompound(ROOT).getLong(GAME_TIME);
     }

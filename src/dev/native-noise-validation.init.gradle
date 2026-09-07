@@ -1,0 +1,11 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client { property 'afl.dev.nativeNoise', 'true' }
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file('build/native-headshot-gametest')
+            property 'afl.dev.nativeNoise', 'true'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+    }
+}

@@ -36,17 +36,25 @@ public final class InfectedHearingSystem {
         Vec3 position = event.position();
         double radiusSquared = radius * radius;
         AABB searchBox = AABB.ofSize(position, radius * 2.0, radius * 2.0, radius * 2.0);
-        for (LivingEntity infected : level.getEntitiesOfClass(LivingEntity.class, searchBox, InfectedEntityRules::isNoiseResponsive)) {
+        var candidates = level.getEntitiesOfClass(LivingEntity.class, searchBox, InfectedEntityRules::isNoiseResponsive);
+        boolean diagnostic = !net.minecraftforge.fml.loading.FMLEnvironment.production
+                && Boolean.getBoolean("afl.dev.nativeNoise") && event.type() == com.antaurora.apofirstlight.noise.NoiseType.GUNSHOT;
+        int accepted = 0;
+        if (diagnostic) ApocalypseFirstLight.LOGGER.info("[AFL NOISE] emit type=GUNSHOT radius={} pos={} candidates={}",radius,position,candidates.size());
+        for (LivingEntity infected : candidates) {
             double distanceSquared = infected.getEyePosition().distanceToSqr(position);
             if (distanceSquared > radiusSquared) {
                 continue;
             }
             var acoustic = AcousticOcclusionResolver.resolve(level, position, infected.getEyePosition(), radius);
             double effectiveRadius = acoustic.effectiveRadius();
+            if (diagnostic) ApocalypseFirstLight.LOGGER.info("[AFL NOISE] listener={} distance={} baseRadius={} transmission={} effectiveRadius={} heard={}",
+                    infected.getId(),Math.sqrt(distanceSquared),radius,radius==0?0:effectiveRadius/radius,effectiveRadius,distanceSquared<=effectiveRadius*effectiveRadius);
             if (distanceSquared > effectiveRadius * effectiveRadius) {
                 continue;
             }
             boolean wasSearching = InfectedHearingState.phase(infected) == InfectedHearingState.Phase.SEARCHING;
+            accepted++;
             Vec3 previousPosition = InfectedHearingState.lastHeardPosition(infected);
             InfectedHearingState.HearResult hearResult = InfectedHearingState.hear(
                     infected, position, event.gameTime(), event.type().name());
@@ -75,5 +83,6 @@ public final class InfectedHearingSystem {
                     infected.getId(), event.type(), position.x(), position.y(), position.z(), Math.sqrt(distanceSquared)
             );
         }
+        if (diagnostic) ApocalypseFirstLight.LOGGER.info("[AFL NOISE] accepted infected count={}",accepted);
     }
 }
