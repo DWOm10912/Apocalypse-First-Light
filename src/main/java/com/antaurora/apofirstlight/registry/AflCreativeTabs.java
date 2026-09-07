@@ -118,7 +118,16 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.PLASTIC_PELLETS.get());
                         output.accept(AflItems.PLASTIC_SHEET.get());
                         output.accept(AflItems.GEIGER_COUNTER.get());
+                    })
+                    .build());
+
+    public static final RegistryObject<CreativeModeTab> WEAPONS_AND_AMMUNITION =
+            CREATIVE_MODE_TABS.register("weapons_and_ammunition", () -> CreativeModeTab.builder()
+                    .icon(() -> new ItemStack(AflItems.SERVICE_PISTOL.get()))
+                    .title(Component.translatable("itemGroup.apocalypse_firstlight.weapons_and_ammunition"))
+                    .displayItems((parameters, output) -> {
                         output.accept(AflItems.SERVICE_PISTOL.get());
+                        output.accept(AflItems.CROWBAR.get());
                         output.accept(AflItems.ROUND_9MM.get());
                     })
                     .build());

@@ -1,5 +1,6 @@
 {
   "item.apocalypse_firstlight.service_pistol": "Service Pistol",
+  "item.apocalypse_firstlight.crowbar": "Crowbar",
   "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17-round magazine / Semi-auto",
   "death.attack.apocalypse_firstlight.native_bullet": "%1$s was shot by %2$s",
   "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s was shot by %2$s using %3$s",
@@ -193,6 +194,7 @@
 
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",
   "itemGroup.apocalypse_firstlight.items": "Apocalypse: First Light Items",
+  "itemGroup.apocalypse_firstlight.weapons_and_ammunition": "AFL Weapons & Ammunition",
 
   "gui.apocalypse_firstlight.energy_cell.mode.charge.title": "Charge Mode",
   "gui.apocalypse_firstlight.energy_cell.mode.charge.description": "Receives energy only",

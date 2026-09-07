@@ -16,6 +16,8 @@ public final class AflItems {
 
     public static final RegistryObject<Item> SERVICE_PISTOL = ITEMS.register("service_pistol",
             com.antaurora.apofirstlight.weapon.ServicePistolItem::new);
+    public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
+            com.antaurora.apofirstlight.item.CrowbarItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9mm_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
 

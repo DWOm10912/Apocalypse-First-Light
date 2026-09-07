@@ -1,5 +1,6 @@
 {
   "item.apocalypse_firstlight.service_pistol": "制式手枪",
+  "item.apocalypse_firstlight.crowbar": "撬棍",
   "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17发弹匣 / 半自动",
   "death.attack.apocalypse_firstlight.native_bullet": "%1$s 被 %2$s 射杀了",
   "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s 被 %2$s 用 %3$s 射杀了",
@@ -193,6 +194,7 @@
 
   "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",
   "itemGroup.apocalypse_firstlight.items": "黎明启示录 物品",
+  "itemGroup.apocalypse_firstlight.weapons_and_ammunition": "AFL 武器与弹药",
 
   "gui.apocalypse_firstlight.energy_cell.mode.charge.title": "充电模式",
   "gui.apocalypse_firstlight.energy_cell.mode.charge.description": "仅接收能量",
