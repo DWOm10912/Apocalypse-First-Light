@@ -21,9 +21,28 @@ import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Animation/audio prototype only. GeckoLibID identifies the renderer, not ammo/gameplay state. */
-public final class ServicePistolItem extends Item implements GeoItem {
+/** V0.6 stack-local magazine; GeckoLibID remains render identity only. */
+public final class ServicePistolItem extends Item implements GeoItem, NativeGunItem {
     public static final String CONTROLLER = "action";
+
+    @Override
+    public NativeGunDefinition definition() { return NativeGunDefinition.SERVICE_PISTOL; }
+
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        if (slotChanged || oldStack.getItem() != newStack.getItem()
+                || oldStack.getCount() != newStack.getCount()) return true;
+        var oldTag = NativeGunAmmo.tagWithoutAmmo(oldStack);
+        var newTag = NativeGunAmmo.tagWithoutAmmo(newStack);
+        // First accepted action assigns render identity. Subsequent identity changes still re-equip.
+        if (!oldTag.contains(GeoItem.ID_NBT_KEY)) newTag.remove(GeoItem.ID_NBT_KEY);
+        return !oldTag.equals(newTag);
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
+        if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition());
+    }
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
 
     public ServicePistolItem() {

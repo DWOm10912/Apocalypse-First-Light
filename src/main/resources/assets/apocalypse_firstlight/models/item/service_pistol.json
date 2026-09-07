@@ -12,7 +12,7 @@
       "parent": "minecraft:item/generated",
       "loader": "forge:item_layers",
       "textures": {
-        "layer0": "apocalypse_firstlight:item/service_pistol_icon"
+        "layer0": "apocalypse_firstlight:item/service_pistol_inventory"
       }
     }
   }

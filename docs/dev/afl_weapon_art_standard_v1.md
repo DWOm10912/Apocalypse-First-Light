@@ -1,6 +1,6 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
-## 9mm Round / Casing V1 — 独立资产，尚未注册物品
+## 9mm Round / Casing V1 — V0.6已注册Round，Casing仅资产
 
 2026-09-07：沿用已有储罐、铅箱源模型所在的 `src/main/blockbench/`，新增
 `9mm_round.bbmodel` 和 `9mm_casing.bbmodel`。不修改 Service Pistol。
@@ -12,16 +12,19 @@ Casing保留开放四壁和暗色腔底。底缘、抽壳槽和中央底火独�
 
 普通运行时资源为 `assets/apocalypse_firstlight/models/item/9mm_round.json`
 和 `9mm_casing.json`，不使用GeckoLib。每个模型的唯一几何通过七项
-Display适配GUI、左右第一/第三人称、Ground、Fixed；未注册item，
-因此这些资源不会自动出现在创造物品栏，也不代表已实现弹药或抛壳系统。
-未复用第三方资产；未修改Java、HUD、武器动作或音效。
+Display适配GUI、左右第一/第三人称、Ground、Fixed。V0.6已注册9mm_round并接入17发弹匣；
+Casing不注册，未实现抛壳。两份几何/色板不变。
+用户授权HUD使用textures/gui/gun/service_pistol_hud.png（925×574），无背景；
+背包图使用textures/item/service_pistol_inventory.png（767×524），原图完整复制，无重新绘制。
+第一人称枪体UV贴图、源模型、Geo、动画和Display均不改。功能/验收详见Native框架V0.6节。
 
 `node tools/export-9mm-assets.mjs` 重建上述生成资产；`--check` 只读检查一致性。
 源文件可独立编辑，但再次执行生成器会覆盖手工修改，编辑后应同步生成器或另行导出。
 结构/尺寸/源与导出一致性已检查；Blockbench实际打开及GUI/Hand/Ground
 实机视觉尚未验证，不能将已配置Display视为视觉通过。
-本轮 `processResources build --offline` 通过（30s），`git diff --check`
-及生成资产一致性、尺寸正值、UV范围、贴图引用检查通过；未启动客户端。
+资产V1历史验证：`processResources build --offline` 通过（30s），`git diff --check`
+及生成资产一致性、尺寸正值、UV范围、贴图引用检查通过；该资产任务未启动客户端。
+V0.6新增弹药/HUD的构建、测试与客户端证据以framework文档V0.6节为准。
 
 ## Reload第0帧转静态基线 — 当前版本 / 待视觉确认
 

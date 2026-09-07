@@ -25,6 +25,7 @@ public final class ServicePistolActions {
     public static final int MAG_OUT_TICK = 8;
     public static final int MAG_IN_TICK = 19;
     private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
+    private static final Map<ServerPlayer, Long> NEXT_FIRE = new WeakHashMap<>();
 
     private static final class Session {
         ItemStack stack;
@@ -35,6 +36,7 @@ public final class ServicePistolActions {
         boolean reload;
         boolean outPlayed;
         boolean inPlayed;
+        int slot;
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
     }
 
@@ -46,21 +48,30 @@ public final class ServicePistolActions {
         if (!player.isAlive() || player.isSpectator() || slot < 0 || slot > 8
                 || player.getInventory().selected != slot
                 || !(player.getMainHandItem().getItem() instanceof ServicePistolItem item)) return;
-        long now = player.serverLevel().getGameTime();
+        long now = player.server.getTickCount();
         Session previous = SESSIONS.get(player);
-        if (previous != null && now < previous.end) return;
+        if (previous != null) return;
+        NativeGunDefinition definition = item.definition();
+        ItemStack held = player.getMainHandItem();
+        if (reload) {
+            if (NativeGunAmmo.read(held, definition) >= definition.magazineCapacity()
+                    || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
+        } else {
+            if (now < NEXT_FIRE.getOrDefault(player, 0L) || !NativeGunAmmo.consumeOne(held, definition)) return;
+            NEXT_FIRE.put(player, now + definition.fireIntervalTicks());
+        }
         Session state = new Session();
         state.stack = player.getMainHandItem();
         state.item = item;
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = now;
-        state.end = now + (reload ? RELOAD_TICKS : FIRE_TICKS);
+        state.end = now + (reload ? definition.reloadDurationTicks() : definition.fireIntervalTicks());
+        state.slot = slot;
         state.reload = reload;
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
         // Deliver the per-stack render identity before its animation trigger.
-        player.getInventory().setChanged();
-        player.containerMenu.broadcastChanges();
+        syncInventory(player);
         item.triggerAnim(player, state.id, ServicePistolItem.CONTROLLER, animationName(reload));
         if (!reload) sound(player, AflSounds.SERVICE_PISTOL_FIRE.get());
     }
@@ -70,20 +81,23 @@ public final class ServicePistolActions {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) return;
         Session state = SESSIONS.get(player);
         if (state == null) return;
-        if (!player.isAlive() || player.isSpectator() || player.getMainHandItem() != state.stack
+        if (!player.isAlive() || player.isSpectator() || state.stack.isEmpty() || player.getMainHandItem() != state.stack
+                || player.getInventory().selected != state.slot
                 || player.level().dimension() != state.dimension) {
             state.item.stopTriggeredAnim(player, state.id,
                     ServicePistolItem.CONTROLLER, animationName(state.reload));
             SESSIONS.remove(player);
             return;
         }
-        long now = player.serverLevel().getGameTime();
+        long now = player.server.getTickCount();
         if (state.reload) {
             if (!state.outPlayed && now >= state.start + MAG_OUT_TICK) {
                 sound(player, AflSounds.SERVICE_PISTOL_MAGAZINE_OUT.get());
                 state.outPlayed = true;
             }
-            if (!state.inPlayed && now >= state.start + MAG_IN_TICK) {
+            if (!state.inPlayed && now >= state.start + state.item.definition().magInTick()) {
+                NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
+                syncInventory(player);
                 sound(player, AflSounds.SERVICE_PISTOL_MAGAZINE_IN.get());
                 state.inPlayed = true;
             }
@@ -96,9 +110,18 @@ public final class ServicePistolActions {
                 sound, SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
+    private static void syncInventory(ServerPlayer player) {
+        player.getInventory().setChanged();
+        player.inventoryMenu.broadcastChanges();
+        if (player.containerMenu != player.inventoryMenu) player.containerMenu.broadcastChanges();
+    }
+
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) SESSIONS.remove(player);
+        if (event.getEntity() instanceof ServerPlayer player) {
+            SESSIONS.remove(player);
+            NEXT_FIRE.remove(player);
+        }
     }
 
     @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)

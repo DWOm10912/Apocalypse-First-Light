@@ -1,6 +1,7 @@
 {
   "item.apocalypse_firstlight.service_pistol": "Service Pistol",
-  "tooltip.apocalypse_firstlight.service_pistol.prototype": "Native weapon system prototype",
+  "tooltip.apocalypse_firstlight.service_pistol.prototype": "9mm / 17-round magazine (no ballistics yet)",
+  "item.apocalypse_firstlight.9mm_round": "9mm Round",
   "key.apocalypse_firstlight.reload": "Reload native weapon",
   "key.categories.apocalypse_firstlight": "Apocalypse: First Light",
   "subtitles.apocalypse_firstlight.service_pistol.fire": "Service Pistol fires",

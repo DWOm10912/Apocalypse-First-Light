@@ -1,5 +1,53 @@
 # Native AFL Gun Framework — Reload Composition V2 Runtime
 
+## Native Gun V0.6 — 9mm / 弹匣 / 功能HUD（已实现，部分验证边界见下）
+
+`apocalypse_firstlight:9mm_round` 已注册为64堆叠普通Item，位于创造标签Service Pistol之后，
+中英文名9mm手枪弹/9mm Round，复用既有3D物品模型。Casing仍只保留资产，没有抛壳实现。
+`NativeGunDefinition`/`NativeGunItem`提供id、ammoType、capacity、hudIcon、26tick时长、19tick装填点、3tick开火间隔。
+Service Pistol容量17，无chamber/17+1；每把枪NBT `AflGunAmmo.ammoInMagazine` 范围0..17。
+无状态的新枪逻辑默认17，服务端首次物品tick/开火持久化；已有0绝不自动补满。
+服务端每次获准开火扣1，0发不播放正常动画/声音，无dry-fire。
+Reload满匣/零reserve拒绝，19tick重新统计背包并一次性扣弹补匣，26tick结束；8tick抽匣音不改。
+当前枪对象/槽位/维度变化、死亡、旁观会取消；已提交的装弹不退回、不再提交。
+背包所有原版槽位（含副手）按definition.ammoType计数；不读取其他容器或嵌套背包。
+所有模式包括Creative均真实扣弹，不实现无限弹特例。状态通过原版ItemStack/Inventory同步，HUD无独立缓存。
+
+用户明确取消背景框：HUD仅复用925×574剪影 `textures/gui/gun/service_pistol_hud.png` 和突出current/次级reserve数字。
+767×524渲染图另存 `textures/item/service_pistol_inventory.png`，仅供背包图；不覆盖128×128枪体UV贴图。
+HUD右下GUI坐标布局，当前主手实现NativeGunItem时显示，其他物品/隐藏HUD/旁观时不显示。
+实机首轮发现剪影过大，已从98×60收至36×22 GUI单位；坐标(width-70,height-99)，
+current字号1.25、reserve字号1，无背景，底部留空间避开默认盖革计/HUD。
+ServicePistolItem通过Forge shouldCauseReequipAnimation忽略仅弹量NBT更新/首次GeckoLibID初始化；
+换槽、不同枪身份及其它NBT变化仍触发装备动作，避免每次扣弹让整枪下沉再抬起。未改Fire动画。
+手枪源、Geo、Fire/Reload动画、Display、臂渲染规则和音效资源均冻结；GUI物品图按用户新授权替换。
+没有Hitscan/Damage/Recoil/MuzzleFlash/抛壳/ADS/消音器，也未调用Native Noise/Tinnitus入口。
+下一阶段V0.6.1：Successful Shot + Authoritative Hitscan + Damage + Native Gun Noise。
+
+DEV：`NativeGunAmmoGameTests`检查NBT、复制/容器/掉落实体序列化、部分装填、19tick单次提交及切槽取消。
+`-I src/dev/native-gun-ammo-validation.init.gradle`只启用HUD实机截图，玩家进入世界后稳定显示1秒即保存
+`run/screenshots/afl-v06-compact-hud-<current>-<reserve>-gui<scale>.png`；不自动操控输入或修改存档/背包。
+这些DEV文件不进入发布JAR。旧文档中的“无限弹/尚无ammo或HUD”已被本节取代，视觉参数仍沿用冻结版本。
+
+### V0.6 验证记录（2026-09-07）
+
+- clean compileJava、processResources、build与git diff --check通过；无TaCZ GameTest 48/48通过。
+  包含服务端5枪=12、同tick重复开火抑制、零弹/满匣/零reserve拒绝、部分装填、
+  19tick单次提交与切槽取消、NBT复制/容器/掉落实体保存恢复，以及ammo同步不触发reequip的回归断言。
+- 用户PNG与资源SHA256一致；发布JAR包含新弹药/HUD资源及生产类，不含dev测试/截图类。
+- 首轮客户端已进世界并正常保存退出；实际查看17/0、0/64截图，背包图正确，
+  但98×60剪影过大且用户报告开火跳动，因此首轮布局不作为通过基线。
+- 紧凑布局与reequip修正版已构建、启动并进世界；已目视检查
+  `run/screenshots/afl-v06-compact-hud-17-36-gui0.png`、`afl-v06-compact-hud-12-41-gui0.png`
+  及`afl-v06-compact-hud-hidden-gui0.png`：无背景剪影/数字正确，默认盖革面板无重叠，
+  非枪时隐藏。当前仅验证2560×1417、GUI Auto；其它GUI Scale/分辨率尚未实机覆盖。
+  用户对修正版明确反馈“现在不跳了”，扣弹引发的reequip跳动实机确认修复；回归断言通过。
+  不将48项测试替代视觉验收；切槽/掉落/箱子/退出重进的全部玩家操作用例尚未逐项实机完成。
+- 启动仍记录既存Ready muzzle ray calibration at reference plane DEV断言失败，
+  未修改冻结的姿势/动画或放宽该断言。本轮不宣称Native视觉烟测全部通过。
+
+
+
 ## 2026-09-07 TaCZ 解耦 — 当前生产边界
 
 ### 本轮验证结果

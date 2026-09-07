@@ -1,0 +1,8 @@
+// Opt-in HUD capture only; no input automation or inventory/world mutation.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            property 'afl.dev.captureGunHud', 'true'
+        }
+    }
+}
