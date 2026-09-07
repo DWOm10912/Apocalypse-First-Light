@@ -20,7 +20,12 @@ import java.util.function.Consumer;
 /** Configurable animated-asset integration, deliberately separate from ballistic gun definitions. */
 public class NativeAnimatedWeaponItem extends Item implements GeoItem {
     public record Profile(String id, String idle, List<String> clips, Set<String> loops,
-                          String rightAnchor, String leftAnchor, String muzzleAnchor, String ejectionAnchor) {
+                          String rightAnchor, String leftAnchor, String muzzleAnchor, String ejectionAnchor,
+                          float barrelExitOffset) {
+        public Profile(String id, String idle, List<String> clips, Set<String> loops,
+                       String rightAnchor, String leftAnchor, String muzzleAnchor, String ejectionAnchor) {
+            this(id, idle, clips, loops, rightAnchor, leftAnchor, muzzleAnchor, ejectionAnchor, 0);
+        }
         public Profile(String id, String idle, List<String> clips, Set<String> loops, String rightAnchor, String leftAnchor) {
             this(id, idle, clips, loops, rightAnchor, leftAnchor, null, null);
         }

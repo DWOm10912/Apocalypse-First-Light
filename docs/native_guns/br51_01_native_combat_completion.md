@@ -51,7 +51,7 @@ BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_a
 - dry-fire 复用 `apocalypse_firstlight:p9_01_dry_fire` 与6tick防刷；无伤害、正常枪声、shoot或抛壳。
 - 10个 BR51_01 event：`br51_01_fire`、`br51_01_reload_empty_1..4`、`br51_01_reload_tactical_1..3`、`br51_01_draw`、`br51_01_put_away`。
 - inspect的两个旧wav引用使用目录现有 tactical1/2；draw/put-away采用br51_01_draw/br51_01_draw_1；为替代映射，音频文件未重新编码。
-- 通用渲染器把源 `shell` / `muzzle_pos` 当帧矩阵映射到共享 FX 消费者的 ejection/muzzle 语义。
+- 通用渲染器把源 `shell` / `muzzle_pos` 当帧矩阵映射到共享 FX 消费者的 ejection/muzzle 语义。BR51 Profile 的 `barrelExitOffset=4.8125` 模型单位，沿枪械局部 -Z 从内部 `muzzle_pos` 到出口（与现有 `muzzle_flash` 重合）。枪焰在出口绘制；弹道内部行程只计入飞行时间、不绘制，出管后才连接服务器命中点，避免斜穿侧壁。P9默认偏移0不变。枪焰大小、动画、模型、ADS、伤害射线不变；此次视觉效果待客户端实测。
   每次成功射击沿用 `NativeGunFx` 的762x51mm_casing、重力、弹跳、音效与上限；失败/换弹不发送FX通知。
 
 ## 模型与手臂
@@ -95,6 +95,10 @@ V1 runtime现仅标准弹匣及空仓临时标准匣；扩容款、sight/laser�
 - 客户端日志有既有开发smoke的 `Ready muzzle ray calibration at reference plane` 失败，未改手枪构图或降低检查阈值；未发现BR51_01旧namespace或missing sound错误，但尚未触发全套实机声音，不能据此宣称听感通过。
 - 听感/抛壳/完整八状态与P9-01 Service Pistol实机回归仍为NOT TESTED；构建不等于图形验收。
 - FX骨骼名称已从渲染器字面量移入每枪Profile（值仍是muzzle_pos/shell）；上述单次播放修正构建时已一起编译。构建前确认没有运行中的Java客户端。
+- 枪口出口修正：`compileJava processResources build --offline --stacktrace` 通过（`br51-muzzle-fix-build.log`，19秒），`git diff --check` 通过；已用 `runClient --offline -PaflWithoutTacz` 启动图形窗口（`br51-muzzle-fix-client.log`）。尚未宣称 HIP/ADS 实机射击视觉通过。
 - 可复现：创造栏取得BR51_01与7.62×51mm；等待draw结束；左键点射、按住不连发；非空R、打空后R；无弹R与dry-fire；切出取消换弹；`/afl gun_inspect`；对照P9-01 Service Pistol同组检查。
 
 COMMIT = NO；PUSH = NO。
+# 当前平衡覆盖值
+
+BR51：衰减48格起、标称96格、最大128格、最低倍率0.60（边界身体伤害10.8）；噪声112格。成功射击按definition开关接入现有GunshotExposureTracker，遵循距离/累积阈值/冷却，非无条件耳鸣；P9关闭。当前无消音器配件，抑制接口保持不变。后坐纵向1.35–1.75°/上限6°，横向左0.07–0.18°、右0.09–0.24°/上限1.4°。以下历史验收中的旧平衡值不再作为当前数据；模型、换弹、射速、伤害18、散布不变。Native ADS统一疾跑退出且禁止进入，退出仍平滑，停止疾跑按住右键恢复。

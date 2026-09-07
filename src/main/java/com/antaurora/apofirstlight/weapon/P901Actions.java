@@ -52,6 +52,11 @@ public final class P901Actions {
 
     private P901Actions() {}
 
+    public static void clearForDataReload() {
+        SESSIONS.forEach((p,s)->s.item.stopTriggeredAnim(p,s.id,P901Item.CONTROLLER,s.clip));
+        SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
+    }
+
     public static String animationName(boolean reload) { return reload ? "reload" : "fire"; }
 
     /** Handling actions share the same server lock as fire/reload. */

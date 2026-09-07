@@ -26,7 +26,7 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
     public static final String CONTROLLER = "action";
 
     @Override
-    public NativeGunDefinition definition() { return NativeGunDefinition.P9_01; }
+    public NativeGunDefinition definition() { return NativeGunData.get(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","p9_01")); }
 
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {

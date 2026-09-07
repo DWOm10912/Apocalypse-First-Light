@@ -51,7 +51,12 @@ public final class NativeGunAmmo {
         return !stack.isEmpty() && definition.ammoType().equals(ForgeRegistries.ITEMS.getKey(stack.getItem()));
     }
 
+    public static boolean infiniteReserve(Inventory inventory) {
+        return inventory.player.isCreative();
+    }
+
     public static int reserve(Inventory inventory, NativeGunDefinition definition) {
+        if (infiniteReserve(inventory)) return Integer.MAX_VALUE;
         int result = 0;
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             ItemStack stack = inventory.getItem(i);
@@ -63,6 +68,11 @@ public final class NativeGunAmmo {
     /** Recompute at mag-in on the server thread; no ammo is reserved or removed at reload start. */
     public static int transfer(Inventory inventory, ItemStack gun, NativeGunDefinition definition) {
         int current = read(gun, definition), remaining = definition.magazineCapacity() - current;
+        if (infiniteReserve(inventory)) {
+            set(gun, definition, definition.magazineCapacity());
+            inventory.setChanged();
+            return remaining;
+        }
         int loaded = 0;
         for (int i = 0; i < inventory.getContainerSize() && remaining > 0; i++) {
             ItemStack stack = inventory.getItem(i);

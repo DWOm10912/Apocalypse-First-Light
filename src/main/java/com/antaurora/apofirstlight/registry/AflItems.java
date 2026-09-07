@@ -17,11 +17,11 @@ public final class AflItems {
     public static final RegistryObject<Item> P9_01 = ITEMS.register("p9_01",
             com.antaurora.apofirstlight.weapon.P901Item::new);
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
-            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(com.antaurora.apofirstlight.weapon.NativeGunDefinition.BR51_01,
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","br51_01"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01", "static_idle",
                             java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
                                     "inspect", "shoot", "put_away", "draw"),
-                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell")));
+                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell", 4.8125F)));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9x19mm_round",

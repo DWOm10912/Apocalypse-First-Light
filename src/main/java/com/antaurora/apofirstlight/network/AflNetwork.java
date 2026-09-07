@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "14";
+    private static final String PROTOCOL = "15";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -72,10 +72,22 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, NativeHitS2CPacket.class,
                 NativeHitS2CPacket::encode, NativeHitS2CPacket::decode, NativeHitS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, GunDataPacket.class, GunDataPacket::encode, GunDataPacket::decode,
+                GunDataPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static void sendNativeHit(ServerPlayer shooter, boolean head) {
         channel.send(PacketDistributor.PLAYER.with(()->shooter),new NativeHitS2CPacket(head));
+    }
+    public static void sendGunData(ServerPlayer player,String json) {
+        channel.send(PacketDistributor.PLAYER.with(()->player),new GunDataPacket(json));
+    }
+    public record GunDataPacket(String json) {
+        static void encode(GunDataPacket p,FriendlyByteBuf b){b.writeUtf(p.json,1048576);}
+        static GunDataPacket decode(FriendlyByteBuf b){return new GunDataPacket(b.readUtf(1048576));}
+        static void handle(GunDataPacket p,Supplier<NetworkEvent.Context> supplier) {
+            var c=supplier.get();c.enqueueWork(()->com.antaurora.apofirstlight.weapon.NativeGunData.receive(p.json));c.setPacketHandled(true);
+        }
     }
     public record NativeHitS2CPacket(boolean head) {
         static void encode(NativeHitS2CPacket p,FriendlyByteBuf b) { b.writeBoolean(p.head); }

@@ -29,9 +29,9 @@ public final class GunshotExposureTracker {
     }
 
     /**
-     * Internal acoustic-input seam for a future native successful shot; no external fire listener.
+     * Internal acoustic-input seam for native successful shots; no external fire listener.
      * Caller supplies acoustic radius and suppression policy; this method does not emit NoiseEvents.
-     * Returns the number of tinnitus impulses sent. No native weapon calls this yet.
+     * Returns the number of tinnitus impulses sent; BR51 uses this seam, P9 opts out.
      */
     public static int onGunshot(ServerLevel level, ServerPlayer shooter, Vec3 sourcePosition,
                                 double acousticRadius, boolean trueSuppressor) {

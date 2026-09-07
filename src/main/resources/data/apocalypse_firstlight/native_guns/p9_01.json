@@ -1,0 +1,51 @@
+{
+  "ammo": "apocalypse_firstlight:9x19mm_round",
+  "magazine_capacity": 17,
+  "fire": {
+    "mode": "semi",
+    "interval_ticks": 3
+  },
+  "damage": {
+    "base": 7,
+    "falloff_start": 24,
+    "effective_range": 48,
+    "max_range": 64,
+    "min_damage_multiplier": 0.65
+  },
+  "accuracy": {
+    "base_spread_degrees": 1.2,
+    "profile": "default"
+  },
+  "reload": {
+    "tactical_seconds": 1.3,
+    "empty_seconds": 1.65
+  },
+  "noise": {
+    "radius": 64,
+    "tinnitus": false
+  },
+  "ads": {
+    "time_seconds": 0.15,
+    "fov_multiplier": 0.95
+  },
+  "recoil": {
+    "verticalMin": 0.8,
+    "verticalMax": 1.1,
+    "horizontalMin": -0.12,
+    "horizontalMax": 0.18,
+    "maxVertical": 4.5,
+    "maxHorizontal": 1,
+    "recoveryDelay": 0.05,
+    "cameraRecoveryTime": 0.18,
+    "modelPitch": 5,
+    "modelBack": 0.04,
+    "modelYaw": 0.75,
+    "modelRoll": 0.75,
+    "modelRecoveryTime": 0.1,
+    "horizontalContinueChance": 0.7,
+    "horizontalRecoveryTime": 0.16,
+    "horizontalLeftMin": 0.04,
+    "horizontalRightMin": 0.06
+  },
+  "casing": "apocalypse_firstlight:9x19mm_casing"
+}

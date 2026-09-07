@@ -23,6 +23,37 @@ import java.util.UUID;
 public final class NativeGunAmmoGameTests {
     private static final NativeGunDefinition D = NativeGunDefinition.P9_01;
 
+    @GameTest(template = "network_empty")
+    public static void creativeReserveAndModeSwitch(GameTestHelper h) {
+        var player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "creative_ammo"));
+        var inventory = player.getInventory();
+        for (var item : new net.minecraft.world.item.Item[] { AflItems.P9_01.get(), AflItems.BR51_01.get() }) {
+            var definition = ((com.antaurora.apofirstlight.weapon.NativeGunItem) item).definition();
+            var gun = new ItemStack(item);
+            inventory.clearContent();
+            player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+            NativeGunAmmo.set(gun, definition, 0);
+            h.assertTrue(NativeGunAmmo.reserve(inventory, definition) == Integer.MAX_VALUE, "Creative empty inventory reserve");
+            h.assertTrue(!NativeGunAmmo.consumeOne(gun, definition), "Creative dry fire stays empty");
+            h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == definition.magazineCapacity(), "Creative refill capacity");
+            var rounds = new ItemStack(net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(definition.ammoType()), 3);
+            inventory.setItem(1, rounds);
+            h.assertTrue(NativeGunAmmo.consumeOne(gun, definition), "Creative shot consumes magazine");
+            h.assertTrue(NativeGunAmmo.read(gun, definition) == definition.magazineCapacity() - 1, "Finite magazine");
+            h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == 1 && rounds.getCount() == 3, "Creative keeps physical ammo");
+            for (var mode : new net.minecraft.world.level.GameType[] {net.minecraft.world.level.GameType.SURVIVAL, net.minecraft.world.level.GameType.ADVENTURE}) {
+                player.setGameMode(mode);
+                inventory.setItem(1, new ItemStack(rounds.getItem(), 3));
+                NativeGunAmmo.set(gun, definition, 0);
+                h.assertTrue(NativeGunAmmo.reserve(inventory, definition) == 3, "Finite mode reserve");
+                h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == 3 && NativeGunAmmo.read(gun, definition) == 3
+                        && NativeGunAmmo.reserve(inventory, definition) == 0, "Finite mode consumes only available rounds");
+                h.assertTrue(NativeGunAmmo.transfer(inventory, gun, definition) == 0, "No free survival/adventure refill");
+            }
+        }
+        h.succeed();
+    }
+
     @GameTest(template = "network_empty", timeoutTicks = 100)
     public static void authoritativeFireAndRejectedReload(GameTestHelper h) {
         var player = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "ammo_fire"));

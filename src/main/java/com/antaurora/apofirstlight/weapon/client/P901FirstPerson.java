@@ -35,6 +35,7 @@ public final class P901FirstPerson {
         pose.pushPose();
         try {
             NativeGunRecoil.applyViewmodel(pose);
+            NativeGunAds.apply(pose, right, event.getPartialTick());
             pose.translate(right ? COMPOSITION_X : -COMPOSITION_X, COMPOSITION_Y, 0);
             // Display owns static composition; only the upstream equip transition remains.
             P901Presentation.applyEquip(pose, event.getEquipProgress());

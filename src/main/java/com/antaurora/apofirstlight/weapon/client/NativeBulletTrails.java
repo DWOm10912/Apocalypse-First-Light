@@ -56,6 +56,11 @@ public final class NativeBulletTrails {
         return PENDING.stream().anyMatch(p -> matches(p, gun, firstPerson));
     }
     public static void anchor(long gun, boolean firstPerson, Vec3 origin, double now) {
+        anchor(gun, firstPerson, origin, now, 0);
+    }
+
+    /** Internal barrel travel is hidden; the visible segment starts at the exit, never through a side wall. */
+    public static void anchor(long gun, boolean firstPerson, Vec3 origin, double now, double barrelDistance) {
         if (!NativeTrailGeometry.finite(origin)) return;
         var iterator = PENDING.iterator();
         while (iterator.hasNext()) {
@@ -67,7 +72,8 @@ public final class NativeBulletTrails {
             // No eye fallback for missing anchors; also reject implausible/stale coordinates.
             if (!Double.isFinite(distance) || distance <= p.profile.hideDistance() || distance > 128) continue;
             if (ACTIVE.size() >= MAX_ACTIVE_TRAILS) ACTIVE.removeFirst();
-            ACTIVE.addLast(new Trail(origin, delta.scale(1 / distance), distance, p.profile, now));
+            ACTIVE.addLast(new Trail(origin, delta.scale(1 / distance), distance, p.profile,
+                    now + barrelDistance / p.profile.speed()));
         }
     }
     @SubscribeEvent

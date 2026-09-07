@@ -37,6 +37,12 @@
 
 ## 行为边界
 
+ammo、magazine_capacity和casing引用现由单枪 `data/apocalypse_firstlight/native_guns/*.json` 控制，/reload同步两端；重载取消未完成枪械操作。弹药资源本身和创造模式规则不变。
+
+创造模式：所有 Native 枪械通过公共 `NativeGunAmmo` 将备弹视为无限，HUD 只在备弹栏显示 `∞`。无需携带对应弹药，换弹结算填至正常容量且不扣背包弹药；当前弹匣仍逐发扣减，空仓、干击与原换弹时序不变。生存/冒险仍按实体弹药统计与扣除。换弹结算时重新检查当前游戏模式，切换模式不会保留无限备弹缓存。
+
+本规则验证：`creativeReserveAndModeSwitch` 覆盖两把枪的无弹药创造补弹、有限弹匣扣弹、空仓、实体弹药保留，以及切换生存/冒险后的有限补弹消耗；现有射击/换弹测试通过。共63项GameTest中62项通过，唯一失败仍为无关的 `nativenoiseflatdistances / Hearing boundary 20`（`creative-reserve-verification.log`）。独立 `compileJava processResources build --offline --stacktrace` 通过（`creative-reserve-build.log`）。本轮未进行图形客户端HUD验收。
+
 P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，背包HUD统计沿用同一definition口径查询。已装枪内弹数NBT不重置。换弹时间、扣弹次数、dry-fire、伤害、精度、枪械模型、动画、Display均不变。
 
 两把枪均已切换对应弹壳；Casing实例保存诞生时的模型，不会因切枪改变。沿用 .072 FX比例、局部抛出方向、重力、阻力、翻滚、碰撞、弹跳、音效、寿命和上限。枪焰不变。未来新枪默认9mm，若有新口径需显式增加资源选择，当前仅两种正式枪。

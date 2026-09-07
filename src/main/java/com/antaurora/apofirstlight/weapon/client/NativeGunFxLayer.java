@@ -24,7 +24,8 @@ public final class NativeGunFxLayer extends GeoRenderLayer<P901Item> {
         RenderUtils.translateToPivotPoint(anchor, bone);
         try {
             NativeGunFx.anchor(renderer.getInstanceId(item), renderer.isFirstPersonPass(), name,
-                    anchor, buffers, partial);
+                    anchor, buffers, partial, new net.minecraft.resources.ResourceLocation(
+                            item.definition().casing().getNamespace(),"item/"+item.definition().casing().getPath()));
         } finally { buffers.getBuffer(type); }
     }
 }

@@ -22,7 +22,8 @@ public final class NativeRecoilState {
             else u = flip == 1 ? 0 : (u - flip) / (1 - flip);
         }
         double limit = horizontalDirection < 0 ? Math.abs(p.horizontalMin()) : p.horizontalMax();
-        horizontal = clamp(horizontal + horizontalDirection * sample(limit / 3, limit, u), p.maxHorizontal());
+        double minimum = horizontalDirection < 0 ? p.horizontalLeftMin() : p.horizontalRightMin();
+        horizontal = clamp(horizontal + horizontalDirection * sample(minimum, limit, u), p.maxHorizontal());
         delay = p.recoveryDelay();
         pitch = Math.min(p.modelPitch() * 3, pitch + p.modelPitch());
         back = Math.min(p.modelBack() * 3, back + p.modelBack());

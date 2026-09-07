@@ -7,8 +7,7 @@ public interface NativeGunItem extends software.bernie.geckolib.animatable.GeoIt
     default String fireClip(boolean last) { return last ? "fire_last_round" : "fire"; }
     default String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload"; }
     default int reloadTicks(boolean empty) {
-        return animationAsset() == null ? (empty ? P901Actions.EMPTY_RELOAD_TICKS : definition().reloadDurationTicks())
-                : NativeGunAnimations.ticks(animationAsset(), reloadClip(empty));
+        return empty ? definition().emptyReloadTicks() : definition().reloadDurationTicks();
     }
     default net.minecraft.sounds.SoundEvent fireSound() {
         return com.antaurora.apofirstlight.registry.AflSounds.P9_01_FIRE.get();

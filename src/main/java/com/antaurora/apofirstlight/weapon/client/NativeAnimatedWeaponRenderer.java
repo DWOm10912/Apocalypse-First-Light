@@ -34,7 +34,9 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                         var matrix = P901RenderMatrices.detachedCopy(pose);
                         RenderUtils.translateToPivotPoint(matrix, bone);
                         try { NativeGunFx.anchor(getInstanceId(item), renderPerspective.firstPerson(), fx, matrix, buffers, partial,
-                                profile.id().equals("br51_01") ? NativeGunFx.RIFLE_CASING_MODEL : NativeGunFx.CASING_MODEL); }
+                                new ResourceLocation(((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition().casing().getNamespace(),
+                                        "item/"+((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition().casing().getPath()),
+                                profile.barrelExitOffset()); }
                         finally { buffers.getBuffer(type); }
                     }
                 }

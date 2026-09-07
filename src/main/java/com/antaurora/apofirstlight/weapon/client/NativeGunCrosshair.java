@@ -44,8 +44,10 @@ public final class NativeGunCrosshair {
         event.setCanceled(true);
         if(mc.options.hideGui||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
         var g=event.getGuiGraphics();int x=mc.getWindow().getGuiScaledWidth()/2,y=mc.getWindow().getGuiScaledHeight()/2;
-        g.fill(x-2,y-2,x+2,y+2,0x80303030);
-        g.fill(x-1,y-1,x+1,y+1,0xFFE8E8E2);
+        if (NativeGunAds.progress(event.getPartialTick()) < .999F) {
+            g.fill(x-2,y-2,x+2,y+2,0x80303030);
+            g.fill(x-1,y-1,x+1,y+1,0xFFE8E8E2);
+        }
         if(!sameGun(mc))return;
         double age=mc.level.getGameTime()+event.getPartialTick()-started,duration=head?6:5;
         if(age<0||age>=duration)return;

@@ -65,6 +65,11 @@ public final class NativeGunFx {
 
     public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
                               MultiBufferSource buffers, float partial, ResourceLocation casingModel) {
+        anchor(gun, firstPerson, name, anchor, buffers, partial, casingModel, 0);
+    }
+
+    public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
+                              MultiBufferSource buffers, float partial, ResourceLocation casingModel, float barrelExitOffset) {
         checkWorld();
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
@@ -76,8 +81,10 @@ public final class NativeGunFx {
                 matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
             matrix.mul(anchor.last().pose());
             var p = matrix.transformProject(new Vector3f());
+            var exit = matrix.transformProject(new Vector3f(0, 0, -barrelExitOffset / 16));
             NativeBulletTrails.anchor(gun, firstPerson,
-                    mc.gameRenderer.getMainCamera().getPosition().add(p.x, p.y, p.z), now);
+                    mc.gameRenderer.getMainCamera().getPosition().add(exit.x, exit.y, exit.z), now,
+                    p.distance(exit));
         }
         for (Shot shot : SHOTS) {
             if (shot.gun != gun || now - shot.received > 3) continue;
@@ -109,7 +116,11 @@ public final class NativeGunFx {
             if (name.equals("muzzle_anchor")) {
                 if (Double.isNaN(shot.flashStart)) shot.flashStart = now;
                 float age = (float)(now - shot.flashStart);
-                if (age >= 0 && age < FLASH_TICKS) drawFlash(anchor, buffers, age, shot);
+                if (age >= 0 && age < FLASH_TICKS) {
+                    var exit = P901RenderMatrices.detachedCopy(anchor);
+                    exit.translate(0, 0, -barrelExitOffset / 16);
+                    drawFlash(exit, buffers, age, shot);
+                }
             }
         }
     }

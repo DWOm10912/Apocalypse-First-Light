@@ -7,8 +7,22 @@ public record NativeRecoilProfile(double verticalMin, double verticalMax,
                                  double recoveryDelay, double cameraRecoveryTime,
                                  double modelPitch, double modelBack,
                                  double modelYaw, double modelRoll, double modelRecoveryTime,
-                                 double horizontalContinueChance, double horizontalRecoveryTime) {
+                                 double horizontalContinueChance, double horizontalRecoveryTime,
+                                 double horizontalLeftMin, double horizontalRightMin) {
+    public NativeRecoilProfile(double verticalMin, double verticalMax, double horizontalMin, double horizontalMax,
+            double maxVertical, double maxHorizontal, double recoveryDelay, double cameraRecoveryTime,
+            double modelPitch, double modelBack, double modelYaw, double modelRoll, double modelRecoveryTime,
+            double horizontalContinueChance, double horizontalRecoveryTime) {
+        this(verticalMin, verticalMax, horizontalMin, horizontalMax, maxVertical, maxHorizontal,
+                recoveryDelay, cameraRecoveryTime, modelPitch, modelBack, modelYaw, modelRoll,
+                modelRecoveryTime, horizontalContinueChance, horizontalRecoveryTime,
+                Math.abs(horizontalMin) / 3, horizontalMax / 3);
+    }
     public NativeRecoilProfile {
+        if (!Double.isFinite(horizontalLeftMin) || !Double.isFinite(horizontalRightMin)
+                || horizontalLeftMin < 0 || horizontalLeftMin > Math.abs(horizontalMin)
+                || horizontalRightMin < 0 || horizontalRightMin > horizontalMax)
+            throw new IllegalArgumentException("Invalid horizontal recoil minimum");
         double[] values = {verticalMin, verticalMax, horizontalMin, horizontalMax, maxVertical,
                 maxHorizontal, recoveryDelay, cameraRecoveryTime, modelPitch, modelBack,
                 modelYaw, modelRoll, modelRecoveryTime, horizontalContinueChance, horizontalRecoveryTime};

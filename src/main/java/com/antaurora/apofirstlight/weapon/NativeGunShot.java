@@ -22,7 +22,8 @@ public final class NativeGunShot {
     private NativeGunShot() {}
 
     public static double damageAt(NativeGunDefinition d, double distance) {
-        double t = Math.max(0, Math.min(1, (distance - d.falloffStart()) / (d.maxRange() - d.falloffStart())));
+        double t = distance <= d.falloffStart() ? 0 : d.maxRange() == d.falloffStart() ? 1
+                : Math.max(0, Math.min(1, (distance - d.falloffStart()) / (d.maxRange() - d.falloffStart())));
         return d.baseDamage() * (1 - t * (1 - d.minimumDamageMultiplier()));
     }
 
@@ -71,7 +72,9 @@ public final class NativeGunShot {
         }
         NoiseSystem.emit(new NoiseEvent(shooter, start, NoiseType.GUNSHOT, shooter.level().getGameTime(),
                 d.id(), d.noiseRadius()), shooter.serverLevel());
-        // Service pistol gunshot tinnitus is intentionally disabled. Explosion handling is independent.
+        if (d.gunshotTinnitus())
+            com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker.onGunshot(
+                    shooter.serverLevel(), shooter, start, d.noiseRadius(), false);
         return hit;
     }
 }

@@ -33,7 +33,8 @@ public final class NativeGunHud {
                 || !(mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun)) return;
         var definition = gun.definition();
         int current = NativeGunAmmo.read(mc.player.getMainHandItem(), definition);
-        int reserve = NativeGunAmmo.reserve(mc.player.getInventory(), definition);
+        String reserve = NativeGunAmmo.infiniteReserve(mc.player.getInventory())
+                ? "\u221e" : Integer.toString(NativeGunAmmo.reserve(mc.player.getInventory(), definition));
         boolean empty = current == 0;
         boolean flash = mc.level == flashLevel && mc.level.getGameTime() < flashUntil
                 && mc.player.getInventory().selected == flashSlot

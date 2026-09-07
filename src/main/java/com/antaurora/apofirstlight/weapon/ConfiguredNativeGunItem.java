@@ -14,15 +14,15 @@ import java.util.function.Consumer;
 
 /** Production gun: shared authoritative combat, configurable visual rig and source timelines. */
 public final class ConfiguredNativeGunItem extends Item implements NativeGunItem {
-    private final NativeGunDefinition definition;
+    private final net.minecraft.resources.ResourceLocation definitionId;
     public final NativeAnimatedWeaponItem.Profile profile;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
-    public ConfiguredNativeGunItem(NativeGunDefinition definition, NativeAnimatedWeaponItem.Profile profile) {
+    public ConfiguredNativeGunItem(net.minecraft.resources.ResourceLocation definitionId, NativeAnimatedWeaponItem.Profile profile) {
         super(new Properties().stacksTo(1));
-        this.definition = definition; this.profile = profile;
+        this.definitionId = definitionId; this.profile = profile;
         GeoItem.registerSyncedAnimatable(this);
     }
-    @Override public NativeGunDefinition definition() { return definition; }
+    @Override public NativeGunDefinition definition() { return NativeGunData.get(definitionId); }
     @Override public String animationAsset() { return profile.id(); }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
@@ -32,7 +32,7 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
     }
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
     @Override public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
-        if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition);
+        if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition());
     }
     @Override public boolean shouldCauseReequipAnimation(ItemStack a, ItemStack b, boolean changed) {
         if (changed || a.getItem() != b.getItem() || a.getCount() != b.getCount()) return true;
@@ -46,7 +46,7 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
                 s -> s.setAndContinue(RawAnimation.begin().thenLoop(profile.idle()))));
         var action = new AnimationController<>(this, "action", 0, s -> {
             var stack = s.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
-            return s.setAndContinue(RawAnimation.begin().thenLoop(stack != null && NativeGunAmmo.read(stack, definition) == 0
+            return s.setAndContinue(RawAnimation.begin().thenLoop(stack != null && NativeGunAmmo.read(stack, definition()) == 0
                     ? "static_bolt_caught" : profile.idle()));
         });
         for (String clip : profile.clips()) if (!profile.loops().contains(clip))
@@ -55,7 +55,7 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
         registrar.add(action);
     }
     @Override public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.literal(NativeGunAmmo.read(stack, definition) + " / " + definition.magazineCapacity()));
+        lines.add(Component.literal(NativeGunAmmo.read(stack, definition()) + " / " + definition().magazineCapacity()));
         lines.add(Component.translatable("tooltip.apocalypse_firstlight.br51_01.ammunition"));
     }
     @Override public boolean canAttackBlock(net.minecraft.world.level.block.state.BlockState s, Level l,

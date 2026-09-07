@@ -63,7 +63,10 @@ public final class P901Input {
             return;
         }
         if (!mc.options.keyAttack.isDown()) attackHeld = false;
-        if (reloadClick && !reloadHeld) AflNetwork.requestP901(true, mc.player.getInventory().selected);
+        if (reloadClick && !reloadHeld) {
+            NativeGunAds.reloadRequested();
+            AflNetwork.requestP901(true, mc.player.getInventory().selected);
+        }
         reloadHeld = RELOAD.isDown();
     }
 }
