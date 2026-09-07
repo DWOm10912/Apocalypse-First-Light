@@ -1,12 +1,14 @@
 # Native AFL Gun Framework — Reload Composition V2 Runtime
 
+> 当前弹药更新：P9-01 使用 `9x19mm_round`，BR51-01 使用 `762x51mm_round`；各自抛出同口径 `_casing` 新模型。四项均64堆叠，仅两种实弹进入武器与弹药标签；弹壳不展示在创造标签，FX不产生可拾取实体。下文版本历史中的9mm占位、旧路径和“Casing未注册”均已被替代。详见 `docs/native_guns/native_ammo_assets_v1.md`。
+
 > 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
 
 ## BR51_01 第二把战斗枪接入（2026-09-08，实机验收待完成）
 
 BR51_01 已从动画测试物品改为 `ConfiguredNativeGunItem implements NativeGunItem`。
 共用服务端战斗入口按每枪definition和动画资源配置处理；P9-01 Service Pistol原时长、音效、资源与姿势不变。
-BR51_01临时20发9mm、4tick半自动、18HP；普通/空仓换弹52/57tick结束补弹。
+BR51_01正式20发7.62×51mm、4tick半自动、18HP；普通/空仓换弹52/57tick结束补弹。
 实现范围、切出动画限制与真实验证状态见 [BR51_01战斗补完报告](../../native_guns/br51_01_native_combat_completion.md)。
 
 ## Native Gun V0.6.2.1 — 弹壳尺寸 / 横向修正（用户实机验收通过）

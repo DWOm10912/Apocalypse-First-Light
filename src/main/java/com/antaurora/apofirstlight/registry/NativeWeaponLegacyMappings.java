@@ -16,6 +16,7 @@ public final class NativeWeaponLegacyMappings {
             switch (mapping.getKey().getPath()) {
                 case "service_pistol" -> mapping.remap(AflItems.P9_01.get());
                 case "m14" -> mapping.remap(AflItems.BR51_01.get());
+                case "9mm_round" -> mapping.remap(AflItems.ROUND_9MM.get());
             }
         }
         for (var mapping : event.getMappings(ForgeRegistries.Keys.SOUND_EVENTS, ApocalypseFirstLight.MOD_ID)) {

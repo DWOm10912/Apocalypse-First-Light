@@ -20,15 +20,15 @@ public record NativeGunDefinition(ResourceLocation id, ResourceLocation ammoType
     }
 
     public static final NativeGunDefinition P9_01 = new NativeGunDefinition(
-            id("p9_01"), id("9mm_round"), 17,
+            id("p9_01"), id("9x19mm_round"), 17,
             id("textures/gui/gun/p9_01_hud.png"), 36, 22, 26, 19, 3,
             7, 1.5, 24, 48, 64, .65, 1.2, 64,
             new NativeRecoilProfile(.80, 1.10, -.12, .18, 4.5, 1.0,
                     .05, .18, 5, .04, .75, .75, .10, .70, .16), NativeTrailProfile.SUBTLE_PISTOL, NativeAccuracyProfile.DEFAULT);
 
-    // Temporary shared 9mm/FX/balance defaults; no new rifle ammunition system.
+    // Independent rifle cartridge; existing shared balance/FX motion defaults are unchanged.
     public static final NativeGunDefinition BR51_01 = new NativeGunDefinition(
-            id("br51_01"), P9_01.ammoType(), 20, id("textures/gui/gun/br51_01_hud.png"), 60, 12,
+            id("br51_01"), id("762x51mm_round"), 20, id("textures/gui/gun/br51_01_hud.png"), 60, 12,
             NativeGunAnimations.ticks("br51_01", "reload_tactical"), NativeGunAnimations.ticks("br51_01", "reload_tactical"), 4,
             18, P9_01.headshotMultiplier(), P9_01.falloffStart(),
             P9_01.effectiveRange(), P9_01.maxRange(), P9_01.minimumDamageMultiplier(),

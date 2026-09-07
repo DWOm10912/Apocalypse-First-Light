@@ -10,10 +10,10 @@
 `NativeAnimatedWeaponItem.Profile` 仅复用视觉配置数据；调试物品的动画命令不接受生产 BR51_01。
 
 临时参数：20 发；半自动（按下沿），间隔 4 tick；基础伤害 18 Minecraft HP。
-弹药实际 ID 为 `apocalypse_firstlight:9mm_round`；沿用 `AflGunAmmo/ammoInMagazine`，新物品默认满弹，已有空仓不会初始化补满。
+弹药实际 ID 为 `apocalypse_firstlight:762x51mm_round`；沿用 `AflGunAmmo/ammoInMagazine`，新物品默认满弹，已有空仓不会初始化补满。
 衰减、射程、Noise、recoil/trail暂为共享占位；BR51-01基础散布现为0.30°半角，采用通用姿态精度与BATTLE_RIFLE倍率，见native_stance_accuracy_v1.md。
 BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_and_icons.md。
-7.62×51mm弹药、对应弹壳和最终平衡均为后续，不是当前接入的阻塞点。
+7.62×51mm弹药和对应弹壳已接入，最终平衡仍为后续。资产与验证边界见 native_ammo_assets_v1.md。
 
 ## 状态与时间
 
@@ -40,7 +40,7 @@ BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_a
 
 `NativeGunAnimations` 从打包 JSON 读取时长与声音标记（服务端权威，不支持资源包热替换服务端节拍）。
 普通/空仓补弹都在完成时重新计算背包库存，最多补至20；重复请求、换枪、死亡、跨维度取消不能复制弹药。
-没有9mm不能开始换弹；创意模式同样按既有库存消耗语义，不额外制造弹药。
+没有7.62×51mm不能开始换弹；创意模式同样按既有库存消耗语义，不额外制造弹药。
 
 ## 声音与FX
 
@@ -52,7 +52,7 @@ BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_a
 - 10个 BR51_01 event：`br51_01_fire`、`br51_01_reload_empty_1..4`、`br51_01_reload_tactical_1..3`、`br51_01_draw`、`br51_01_put_away`。
 - inspect的两个旧wav引用使用目录现有 tactical1/2；draw/put-away采用br51_01_draw/br51_01_draw_1；为替代映射，音频文件未重新编码。
 - 通用渲染器把源 `shell` / `muzzle_pos` 当帧矩阵映射到共享 FX 消费者的 ejection/muzzle 语义。
-  每次成功射击沿用 `NativeGunFx` 的9mm casing、重力、弹跳、音效与上限；失败/换弹不发送FX通知。
+  每次成功射击沿用 `NativeGunFx` 的762x51mm_casing、重力、弹跳、音效与上限；失败/换弹不发送FX通知。
 
 ## 模型与手臂
 
@@ -95,6 +95,6 @@ V1 runtime现仅标准弹匣及空仓临时标准匣；扩容款、sight/laser�
 - 客户端日志有既有开发smoke的 `Ready muzzle ray calibration at reference plane` 失败，未改手枪构图或降低检查阈值；未发现BR51_01旧namespace或missing sound错误，但尚未触发全套实机声音，不能据此宣称听感通过。
 - 听感/抛壳/完整八状态与P9-01 Service Pistol实机回归仍为NOT TESTED；构建不等于图形验收。
 - FX骨骼名称已从渲染器字面量移入每枪Profile（值仍是muzzle_pos/shell）；上述单次播放修正构建时已一起编译。构建前确认没有运行中的Java客户端。
-- 可复现：创造栏取得BR51_01与9mm；等待draw结束；左键点射、按住不连发；非空R、打空后R；无弹R与dry-fire；切出取消换弹；`/afl gun_inspect`；对照P9-01 Service Pistol同组检查。
+- 可复现：创造栏取得BR51_01与7.62×51mm；等待draw结束；左键点射、按住不连发；非空R、打空后R；无弹R与dry-fire；切出取消换弹；`/afl gun_inspect`；对照P9-01 Service Pistol同组检查。
 
 COMMIT = NO；PUSH = NO。

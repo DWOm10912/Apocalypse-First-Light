@@ -33,7 +33,8 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                     if (fx != null) {
                         var matrix = P901RenderMatrices.detachedCopy(pose);
                         RenderUtils.translateToPivotPoint(matrix, bone);
-                        try { NativeGunFx.anchor(getInstanceId(item), renderPerspective.firstPerson(), fx, matrix, buffers, partial); }
+                        try { NativeGunFx.anchor(getInstanceId(item), renderPerspective.firstPerson(), fx, matrix, buffers, partial,
+                                profile.id().equals("br51_01") ? NativeGunFx.RIFLE_CASING_MODEL : NativeGunFx.CASING_MODEL); }
                         finally { buffers.getBuffer(type); }
                     }
                 }

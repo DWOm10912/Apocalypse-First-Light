@@ -56,7 +56,7 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
     }
     @Override public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
         lines.add(Component.literal(NativeGunAmmo.read(stack, definition) + " / " + definition.magazineCapacity()));
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.br51_01.placeholder"));
+        lines.add(Component.translatable("tooltip.apocalypse_firstlight.br51_01.ammunition"));
     }
     @Override public boolean canAttackBlock(net.minecraft.world.level.block.state.BlockState s, Level l,
             net.minecraft.core.BlockPos p, net.minecraft.world.entity.player.Player player) { return false; }

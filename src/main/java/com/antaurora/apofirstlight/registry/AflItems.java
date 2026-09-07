@@ -24,7 +24,13 @@ public final class AflItems {
                             java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell")));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
-    public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9mm_round",
+    public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9x19mm_round",
+            () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> ROUND_762MM = ITEMS.register("762x51mm_round",
+            () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> CASING_9MM = ITEMS.register("9x19mm_casing",
+            () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> CASING_762MM = ITEMS.register("762x51mm_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
 
     public static final RegistryObject<Item> INDUSTRIAL_WASTE_BUCKET = ITEMS.register("industrial_waste_bucket",

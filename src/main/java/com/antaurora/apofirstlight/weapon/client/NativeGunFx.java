@@ -32,7 +32,8 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeGunFx {
     public static final ResourceLocation FLASH_TEXTURE = id("textures/effects/p9_01_muzzle_flash.png");
-    public static final ResourceLocation CASING_MODEL = id("item/9mm_casing");
+    public static final ResourceLocation CASING_MODEL = id("item/9x19mm_casing");
+    public static final ResourceLocation RIFLE_CASING_MODEL = id("item/762x51mm_casing");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;
@@ -59,6 +60,11 @@ public final class NativeGunFx {
 
     public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
                               MultiBufferSource buffers, float partial) {
+        anchor(gun, firstPerson, name, anchor, buffers, partial, CASING_MODEL);
+    }
+
+    public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
+                              MultiBufferSource buffers, float partial, ResourceLocation casingModel) {
         checkWorld();
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
@@ -97,7 +103,7 @@ public final class NativeGunFx {
                         .add(up.scale(.12 + RANDOM.nextDouble() * .04))
                         .add(forward.scale((RANDOM.nextDouble() - .5) * .08));
                 if (CASINGS.size() >= MAX_CASINGS) CASINGS.removeFirst();
-                CASINGS.addLast(new Casing(origin, velocity));
+                CASINGS.addLast(new Casing(origin, velocity, casingModel));
                 shot.ejected = true;
             }
             if (name.equals("muzzle_anchor")) {
@@ -160,13 +166,13 @@ public final class NativeGunFx {
         }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || CASINGS.isEmpty()) return;
         var mc = Minecraft.getInstance();
-        var model = mc.getModelManager().getModel(CASING_MODEL);
         var buffers = mc.renderBuffers().bufferSource();
         var type = RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS);
         var out = buffers.getBuffer(type);
         Vec3 camera = event.getCamera().getPosition();
         var pose = event.getPoseStack();
         for (Casing c : CASINGS) {
+            var model = mc.getModelManager().getModel(c.model);
             Vec3 position = c.previous.lerp(c.position, event.getPartialTick());
             Vec3 rotation = c.oldRotation.lerp(c.rotation, event.getPartialTick());
             pose.pushPose();
@@ -198,9 +204,11 @@ public final class NativeGunFx {
     }
 
     private static final class Casing {
+        final ResourceLocation model;
         Vec3 position, previous, velocity, rotation, oldRotation, spin;
         int age, bounces; boolean sounded, resting;
-        Casing(Vec3 position, Vec3 velocity) {
+        Casing(Vec3 position, Vec3 velocity, ResourceLocation model) {
+            this.model = model;
             this.position = this.previous = position; this.velocity = velocity;
             rotation = oldRotation = new Vec3(RANDOM.nextDouble()*360,RANDOM.nextDouble()*360,RANDOM.nextDouble()*360);
             spin = new Vec3(angular(),angular(),angular());

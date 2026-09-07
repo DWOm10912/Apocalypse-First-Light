@@ -9,5 +9,8 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class NativeGunFxModels {
     private NativeGunFxModels() {}
-    @SubscribeEvent public static void register(ModelEvent.RegisterAdditional event) { event.register(NativeGunFx.CASING_MODEL); }
+    @SubscribeEvent public static void register(ModelEvent.RegisterAdditional event) {
+        event.register(NativeGunFx.CASING_MODEL);
+        event.register(NativeGunFx.RIFLE_CASING_MODEL);
+    }
 }

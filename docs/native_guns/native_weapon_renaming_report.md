@@ -1,5 +1,7 @@
 # Native 枪械正式型号迁移
 
+> 后续弹药更新已完成：P9-01 → `9x19mm_round`，BR51-01 → `762x51mm_round`；对应弹壳已独立注册/接入。旧 `9mm_round` 仅保留存档 missing-mapping 迁移。本文下列“9mm占位/不新增7.62”描述仅指当时改名轮次，并非当前状态；当前资源与验证见 `native_ammo_assets_v1.md`。
+
 ## 正式命名
 
 | 旧称/ID | 正式中文 | 正式英文 | 新ID |

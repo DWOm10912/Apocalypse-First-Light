@@ -1,5 +1,7 @@
 # AFL Weapon Art Standard V1 — V0.5.2 source aimline / entrance easing
 
+> 弹药资产当前版本已由 `tools/export-native-ammo.mjs` 替代：四项正式 9x19mm / 762x51mm round/casing 均有独立源模型、3D item 与贴图。下文旧9mm资产及导出器仅为历史记录，不再用于游戏主引用。见 `docs/native_guns/native_ammo_assets_v1.md`；新资产尚待游戏内目测，旧版本视觉通过不继承。
+
 > 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
 
 ## V0.6.2 — 用户枪焰贴图 / 原创弹壳视觉消费者
@@ -264,4 +266,3 @@ Runtime求值动画、固定绑定与通用presentation，保留皮肤、袖层�
 源/导出数据、真实Vanilla顶点和重复动画数值等价是必要条件，不是用户视觉通过。
 Ready双手、Fire、Reload、重复动作、F5、GUI以及Classic/Slim按序实机验收。
 不自动截图，不生成preview图，不未经用户请求启动客户端。验证记录见framework文档。
-
