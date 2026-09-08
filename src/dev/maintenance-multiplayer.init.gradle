@@ -1,0 +1,19 @@
+allprojects {
+    afterEvaluate {
+        def base = project.file('build/maintenance-multiplayer-live')
+        minecraft.runs.server {
+            workingDirectory new File(base, 'server')
+            property 'afl.maintenanceMultiplayerServer', 'true'
+            property 'afl.multiplayerControl', new File(base, 'control').absolutePath
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        minecraft.runs.client {
+            def role = project.findProperty('mpRole') ?: 'A'
+            workingDirectory new File(base, 'client'+role)
+            property 'afl.maintenanceMultiplayerClient', role
+            property 'afl.multiplayerControl', new File(base, 'control').absolutePath
+            args '--username', 'AFL_Test_'+role, '--quickPlayMultiplayer', '127.0.0.1:25576', '--width', '960', '--height', '640'
+        }
+    }
+}

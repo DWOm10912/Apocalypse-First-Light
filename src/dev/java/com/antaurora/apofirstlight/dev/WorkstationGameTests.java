@@ -29,6 +29,7 @@ public final class WorkstationGameTests {
     @GameTestGenerator
     public static java.util.Collection<TestFunction> stations() {
         var tests = new java.util.ArrayList<TestFunction>();
+        tests.add(new TestFunction("maintenance_multiplayer","afl_workbench_tests:maintenance_multiplayer","afl_workbench_tests:empty",200,0L,true,MaintenanceMultiplayerTests::run));
         tests.add(new TestFunction("workstations","afl_workbench_tests:maintenance_transactions","afl_workbench_tests:empty",100,0L,true,MaintenanceGameTests::transactions));
         java.util.Map<String,java.util.function.Consumer<GameTestHelper>> gunRegression=java.util.Map.of(
                 "p9_reload",NativeGunAmmoGameTests::reloadCommitAndCancellation,
