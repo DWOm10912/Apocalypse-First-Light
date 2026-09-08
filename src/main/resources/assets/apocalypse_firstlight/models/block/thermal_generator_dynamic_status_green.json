@@ -1,0 +1,93 @@
+{
+  "textures": {
+    "0": "apocalypse_firstlight:block/thermal_generator_3d",
+    "particle": "apocalypse_firstlight:block/thermal_generator_3d"
+  },
+  "render_type": "minecraft:solid",
+  "elements": [
+    {
+      "name": "lamp_lens",
+      "from": [
+        11.95,
+        12.22,
+        0
+      ],
+      "to": [
+        13,
+        13.08,
+        0.05
+      ],
+      "rotation": {
+        "angle": 0,
+        "axis": "y",
+        "origin": [
+          8,
+          0,
+          8
+        ]
+      },
+      "faces": {
+        "north": {
+          "uv": [
+            4.125,
+            2.125,
+            4.3875,
+            2.34
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "east": {
+          "uv": [
+            4.125,
+            2.125,
+            4.25,
+            2.34
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "south": {
+          "uv": [
+            4.125,
+            2.125,
+            4.3875,
+            2.34
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "west": {
+          "uv": [
+            4.125,
+            2.125,
+            4.25,
+            2.34
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "up": {
+          "uv": [
+            4.125,
+            2.125,
+            4.3875,
+            2.25
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "down": {
+          "uv": [
+            4.125,
+            2.125,
+            4.3875,
+            2.25
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        }
+      }
+    }
+  ]
+}

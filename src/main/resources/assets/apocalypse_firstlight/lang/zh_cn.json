@@ -154,6 +154,8 @@
   "jei.apocalypse_firstlight.category.compressing": "压缩",
   "jei.apocalypse_firstlight.category.alloying": "合金冶炼",
   "jei.apocalypse_firstlight.category.chemical_reacting": "化学反应",
+  "jei.apocalypse_firstlight.category.thermal_generation": "热力发电",
+  "gui.apocalypse_firstlight.thermal_generator.fuel_tank": "液体燃料",
   "jei.apocalypse_firstlight.category.industrial_smelting": "工业冶炼",
   "jei.apocalypse_firstlight.processing_time": "加工时间：%s 秒",
   "jei.apocalypse_firstlight.total_energy": "能耗：%s FE",

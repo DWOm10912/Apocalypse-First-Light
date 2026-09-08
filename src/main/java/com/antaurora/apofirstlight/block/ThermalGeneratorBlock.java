@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
-import com.antaurora.apofirstlight.energy.MachineStoredEnergy;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -45,6 +44,8 @@ import java.util.EnumMap;
 
 public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    public static Direction inputFluidFace(BlockState state) { return state.getValue(FACING).getClockWise(); }
+    public static Direction outputFluidFace(BlockState state) { return state.getValue(FACING).getCounterClockWise(); }
     private static final Map<Direction, VoxelShape> COLLISION_SHAPES = createShapes(true);
     private static final Map<Direction, VoxelShape> OUTLINE_SHAPES = createShapes(false);
 
@@ -144,13 +145,7 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
                     0.5F, pitch, false);
         }
 
-        if (random.nextDouble() < 0.1D) {
-            double particleX = centerX + (random.nextDouble() - 0.5D) * 0.16D;
-            double particleZ = centerZ + (random.nextDouble() - 0.5D) * 0.16D;
-            level.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE,
-                    particleX, position.getY() + 1.05D, particleZ,
-                    0.0D, 0.03D, 0.0D);
-        }
+          // Particle cadence is handled by the client BE ticker; animateTick retains sound only.
     }
 
     @Override
@@ -169,8 +164,7 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
                 instanceof ThermalGeneratorBlockEntity generator) {
             for (ItemStack drop : drops) {
                 if (drop.is(asItem())) {
-                    MachineStoredEnergy.write(drop, AflBlockEntities.THERMAL_GENERATOR.get(),
-                            generator.getStoredEnergy());
+                    generator.writeDropData(drop);
                 }
             }
         }
@@ -187,8 +181,13 @@ public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock impl
     @Nullable
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
                                                                   BlockEntityType<T> type) {
-        if (level.isClientSide() || type != AflBlockEntities.THERMAL_GENERATOR.get()) {
+        if (type != AflBlockEntities.THERMAL_GENERATOR.get()) {
             return null;
+        }
+        if (level.isClientSide()) {
+            return (tickerLevel,tickerPosition,tickerState,blockEntity) ->
+                    com.antaurora.apofirstlight.client.ThermalGeneratorParticles.tick(
+                            tickerLevel,tickerPosition,tickerState,(ThermalGeneratorBlockEntity)blockEntity);
         }
         return (tickerLevel, tickerPosition, tickerState, blockEntity) ->
                 ThermalGeneratorBlockEntity.serverTick(tickerLevel, tickerPosition, tickerState,

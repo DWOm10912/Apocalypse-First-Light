@@ -154,6 +154,8 @@
   "jei.apocalypse_firstlight.category.compressing": "Compressing",
   "jei.apocalypse_firstlight.category.alloying": "Alloying",
   "jei.apocalypse_firstlight.category.chemical_reacting": "Chemical Reacting",
+  "jei.apocalypse_firstlight.category.thermal_generation": "Thermal Generation",
+  "gui.apocalypse_firstlight.thermal_generator.fuel_tank": "Liquid Fuel",
   "jei.apocalypse_firstlight.category.industrial_smelting": "Industrial Smelting",
   "jei.apocalypse_firstlight.processing_time": "Processing Time: %s s",
   "jei.apocalypse_firstlight.total_energy": "Energy: %s FE",

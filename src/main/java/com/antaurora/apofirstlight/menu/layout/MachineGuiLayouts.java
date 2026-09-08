@@ -20,7 +20,7 @@ import java.util.Set;
 public final class MachineGuiLayouts {
     private static final String BASE_PATH = "assets/" + ApocalypseFirstLight.MOD_ID + "/machine_layout/";
     private static final MachineGuiLayout THERMAL_GENERATOR = load(
-            "thermal_generator", Set.of("fuel_slot", "fire_icon", "progress_arrow", "energy_bar", "energy_fill"), 0);
+            "thermal_generator", Set.of("fuel_slot", "fire_icon", "progress_arrow", "energy_bar", "energy_fill", "input_fluid_bar", "input_fluid_fill"), 0);
     private static final MachineGuiLayout ENERGY_CELL = load(
             "energy_cell", Set.of("storage_bar", "storage_fill"), 0);
     private static final MachineGuiLayout CRUSHER = load(

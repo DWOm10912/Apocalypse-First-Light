@@ -41,8 +41,9 @@ public final class FluidTankBlock extends BaseEntityBlock {
     public static final BooleanProperty BOTTOM_CONNECTED = BooleanProperty.create("bottom_connected");
 
     public FluidTankBlock(Properties properties) {
-        super(properties);
+        super(properties.lightLevel(state -> state.getValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT)));
         registerDefaultState(stateDefinition.any()
+                .setValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT, 0)
                 .setValue(HAS_TANK_ABOVE, false)
                 .setValue(HAS_TANK_BELOW, false)
                 .setValue(TOP_CONNECTED, false)
@@ -157,7 +158,8 @@ public final class FluidTankBlock extends BaseEntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(HAS_TANK_ABOVE, HAS_TANK_BELOW, TOP_CONNECTED, BOTTOM_CONNECTED);
+        builder.add(HAS_TANK_ABOVE, HAS_TANK_BELOW, TOP_CONNECTED, BOTTOM_CONNECTED,
+                com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT);
     }
 
     @Override

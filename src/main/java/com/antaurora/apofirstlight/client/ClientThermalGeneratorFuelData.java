@@ -25,7 +25,11 @@ public final class ClientThermalGeneratorFuelData {
 
     public static void replace(Map<ResourceLocation, Integer> updatedFuelEnergies) {
         fuelEnergies = Map.copyOf(updatedFuelEnergies);
+        if (net.minecraftforge.fml.ModList.get().isLoaded("jei"))
+            com.antaurora.apofirstlight.compat.jei.ThermalJeiRecipes.refresh();
     }
+
+    public static Map<ResourceLocation, Integer> snapshot() { return fuelEnergies; }
 
     public static boolean isThermalGeneratorFuel(ItemStack stack) {
         return !stack.isEmpty()

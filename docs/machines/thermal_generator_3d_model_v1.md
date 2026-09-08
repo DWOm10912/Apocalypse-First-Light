@@ -1,6 +1,6 @@
 # 热力发电机 3D 模型 V1
 
-状态：**V1 静态 3D 替换已接入原 `apocalypse_firstlight:thermal_generator`**。不新增第二个方块；沿用原 BlockEntity、配方、菜单、GUI、燃料、储能、FE、掉落和本地化。旧六面模型/贴图保留为历史资源，但不再被该方块的当前 blockstate/item 引用。
+状态：**原 `apocalypse_firstlight:thermal_generator` 已完成 3D 替换并接入 [Dynamic Renderer V1](thermal_generator_dynamic_renderer_v1.md)**。不新增第二个方块；沿用原 BlockEntity、配方、菜单、GUI、燃料、储能、FE、掉落和本地化。旧六面模型/贴图保留为历史资源，但不再被该方块的当前 blockstate/item 引用。
 
 | 项目 | 当前资产 |
 | --- | --- |
@@ -10,11 +10,11 @@
 | Geo 导出 | `src/main/resources/assets/apocalypse_firstlight/geo/thermal_generator_3d.geo.json`，1.12.0，无动画 |
 | 复杂度 | 源文件 362 cubes / 45 groups；正式静态导出 342 cubes / 39 bones，排除隐藏占位与参考体积 |
 | 尺寸 | 1×1×1 基准，主体位于 16×16×16 内；排气塔最高 Y17.2，仅高出 0.075 格 |
-| 世界渲染 | 原生 baked block model；不新增 BER、动画系统或注册项；lit 两态静态几何相同，旧声音和烟雾逻辑保留 |
+| 世界渲染 | 机壳 baked + Dynamic Renderer BER；无动画 JSON；声音保留，运行粒子见 Particles V1 |
 | 物品显示 | 原 `models/item/thermal_generator.json` 继承 `thermal_generator_3d_render`；GUI 缩放 0.624（原 0.78 的 80%），旋转及位移不变；手持/掉落沿用源模型显示变换 |
 | 碰撞 | 保留原有机身、底脚、顶盖、排气塔、接口的四向组合碰撞；玻璃/机舱为封闭实体，包含 Y17.2 顶盖，未改变已有碰撞盒数值 |
 | 选取轮廓 | 独立四向两盒轮廓：机身 `[0,0,0]..[16,15.55,16]` 加排气塔 `[2.6,15.55,10.4]..[6.4,17.2,14]`；不再描出脚座/顶盖/接口的细碎边线；简化区域可被鼠标选中，但不改变实际碰撞 |
-| 渲染分层 | Forge 内置 `forge:composite`：340 个机壳/内部零件 cube 用 `minecraft:solid`，仅两块玻璃用 `minecraft:translucent`；物品 pass 顺序为机壳后玻璃，避免整机进入透明排序阶段 |
+| 渲染分层 | 世界 `thermal_generator_3d_world` 使用 302 个不透明 cube；BER 渲染 35 个转子 cube、三个灯面与两块不写深度的透明玻璃，避免遮挡腔内粒子。物品仍为完整 340 个不透明 cube + 两块玻璃 |
 | 朝向与遮挡 | 放置仍朝向玩家；原四向旋转、镜像逻辑不变，形状同步旋转；关闭完整不透明方块遮挡，避免相邻面按整立方剔除 |
 | 挖掘 | 沿用 `requiresCorrectToolForDrops()`、`mineable/pickaxe` 与 `needs_diamond_tool`；未改硬度、掉落表或工具等级 |
 | 正面 | NORTH / −Z；上方三色灯，中左固体燃烧室，中右转子，左下液体观察窗，右下保留通风栅 |
@@ -28,9 +28,9 @@
 | 护罩开口 | X2.4～5.8、Y4.2～12.05；本次转子校正不移动护罩、横栏或外壳 |
 | 排气 | 顶部后侧，X2.6～6.4、Z10.4～14，最高 Y17.2；网格芯与盖板分层 |
 | FE 接口 | 背面中心 X8/Y8，面板 X5.5～10.5、Y5.5～10.5、Z15.75～16；原 `machine_back` 中央 10×10 像素直接复用 |
-| 左右流体接口 | 面向机器正面时左侧 +X、右侧 −X，中心分别 `[16,8,8]` / `[0,8,8]`；原左右流体贴图中央 14×14 像素无损复用，外围六像素宽渐变至灰钢；仅视觉接口预留 |
+| 左右流体接口 | 面向机器正面时左侧 +X、右侧 −X，中心分别 `[16,8,8]` / `[0,8,8]`；原左右流体贴图中央 14×14 像素无损复用，外围六像素宽渐变至灰钢；已接入左进右出，见 [Fluid IO V1](thermal_generator_fluid_io_v1.md) |
 | 工业风格 | 保留旧机器的低饱和灰钢、厚框、折线检修缝、通风槽、底盘；大面平滑，无随机噪点；底部复用旧 bottom 图 |
-| 概念对应 | 保留已认可的主体、转子、顶盖和主窗；新增指定的左下液体窗与左右接口；无发光或动态燃料效果 |
+| 概念对应 | 保留已认可的主体、转子、顶盖和主窗；新增指定的左下液体窗与左右接口；动态效果见 [Dynamic Renderer V1](thermal_generator_dynamic_renderer_v1.md) |
 
 动画预留：`generator_rotor`、`status_green`、`status_yellow`、`status_red`。旧 `flame_core` / `flame_mid` / `flame_outer` 仅保留在源文件；后续火焰定位使用 `solid_flame_fx_anchor`。护罩与转子分组独立；本轮不提供动画 JSON。
 
@@ -40,7 +40,7 @@
 
 从 Blockbench 分别导出 project / java_block / bedrock 后，运行 `node tools/sync-thermal-generator-3d.mjs`，检查源/Java/Geo 的几何、旋转、UV、层级、接口像素、玻璃透明度和转子共心及对称性，再抽取 PNG、规范化导出。
 
-已做 Blockbench 多角度检查及资源数值校验；静态替换已接入，不等于已完成游戏内透明排序、美术表现或 Jade/JEI 实机验收。无新方块，无挖掘规则变更。动态燃料、液体和转子动画仍未实现。
+已做 Blockbench 多角度检查及资源数值校验；静态替换已接入，不等于已完成游戏内透明排序、美术表现或 Jade/JEI 实机验收。无新方块，无挖掘规则变更。动态燃料、液体和转子已接入 Dynamic Renderer V1。
 
 显示体积、锚点、source-only 排除及流体接口像素均纳入导出校验。当前会话修改前已有两块侧底板延伸到 Y1.1，与底座/角柱形成 10 对内部相交；保留该既有几何，新增结构相交为 0，不宣称全模型零相交。详细记录见 [动态燃料视觉预留](thermal_generator_dynamic_fuel_visuals_v1.md)。
 
@@ -50,7 +50,7 @@
 - `gradlew.bat -I src/dev/thermal-generator-model-gametest.init.gradle runGameTestServer --offline`：**3/3 通过**，日志 `build/thermal-generator-static-gametest.log`。测试在独立 build 目录运行，不修改玩家存档。
 - 覆盖四向真实物品放置、lit 切换保留同一 BlockEntity、原菜单类型、状态 NBT 往返、选取/碰撞分别旋转、两盒选取与细分碰撞独立、顶部空区/排气塔射线；生存八类工具的机器掉落及燃料槽内容掉落；四种燃料精确能量、16 FE/t 输出及满储能暂停。
 - `node tools/sync-thermal-generator-3d.mjs` 验证八个 blockstate 变体、原 item parent、新图标缩放及源/runtime 资源同步。
-- 尚未进行图形客户端内放置、透明排序、手持/掉落视觉和 Jade/JEI 实机验收；没有把 headless 测试当作视觉通过。
+- 本模型报告没有进行图形客户端内放置、透明排序、手持/掉落视觉验收；后续 Fluid IO V1 已完成 JEI 页面及 Jade 条件 Tooltip 的隔离客户端检查，见 [Fluid IO V1](thermal_generator_fluid_io_v1.md)，不替代模型美术验收。
 
 本轮选取与透明层修正不改变 `.bbmodel` 几何或贴图。分层文件由 `tools/sync-thermal-generator-3d.mjs` 从实际导出的 cube 自动划分，重新导出后不会退回整机透明渲染。透明玻璃仍可能显示其后的轮廓，金属机壳应参与不透明深度遮挡；最终视觉以客户端为准。
 

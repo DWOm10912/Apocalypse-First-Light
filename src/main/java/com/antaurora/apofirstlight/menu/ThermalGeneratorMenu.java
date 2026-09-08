@@ -153,6 +153,15 @@ public final class ThermalGeneratorMenu extends AbstractContainerMenu {
         return readInt(0);
     }
 
+    public int getInputFluidAmount() { return data.get(8); }
+    public int getInputFluidCapacity() { return data.get(9); }
+    public net.minecraftforge.fluids.FluidStack getInputFluid() {
+        var fluid = ((ThermalGeneratorBlockEntity) container).getLiquidFuel();
+        if (fluid.isEmpty() || getInputFluidAmount() <= 0) return net.minecraftforge.fluids.FluidStack.EMPTY;
+        fluid.setAmount(getInputFluidAmount());
+        return fluid;
+    }
+
     public int getEnergyCapacity() {
         return readInt(2);
     }

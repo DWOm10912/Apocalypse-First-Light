@@ -23,6 +23,7 @@ import java.util.WeakHashMap;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class FluidPipeVisualManager {
     public static final int VISUAL_HOLD_TICKS = 20;
+    public static final int FLOW_HOLD_TICKS = 10;
     private static final Map<ServerLevel, Map<BlockPos, VisualState>> ACTIVE_BY_LEVEL = new WeakHashMap<>();
 
     private FluidPipeVisualManager() {
@@ -52,10 +53,22 @@ public final class FluidPipeVisualManager {
                     | directionBit(directionFrom(pipePosition, nextPosition));
             BlockPos key = pipePosition.immutable();
             VisualState oldState = active.get(key);
-            active.put(key, new VisualState(fluidId, directionMask, isFlowing, gameTime));
+            boolean sameRoute = oldState != null && oldState.fluidId().equals(fluidId)
+                    && oldState.directionMask() == directionMask;
+            long lastFlow = isFlowing ? gameTime
+                    : sameRoute ? oldState.lastFlowGameTime() : Long.MIN_VALUE;
+            // Blocked attempts refresh presence, never the actual-flow timestamp.
+            boolean visualFlow = isFlowing || (sameRoute && oldState.isFlowing()
+                    && gameTime - lastFlow < FLOW_HOLD_TICKS);
+            active.put(key, new VisualState(fluidId, directionMask, visualFlow, gameTime, lastFlow));
+            int emission = FluidLighting.emission(fluid, 5);
+            FluidLighting.update(level, key, emission);
+            if (emission > 0 && !level.getBlockTicks().hasScheduledTick(key, AflBlocks.FLUID_PIPE.get())) {
+                level.scheduleTick(key, AflBlocks.FLUID_PIPE.get(), VISUAL_HOLD_TICKS);
+            }
             if (oldState == null || !oldState.fluidId().equals(fluidId)
-                    || oldState.directionMask() != directionMask || oldState.isFlowing() != isFlowing) {
-                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, true, isFlowing));
+                    || oldState.directionMask() != directionMask || oldState.isFlowing() != visualFlow) {
+                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, true, visualFlow));
             }
         }
         if (!changed.isEmpty()) {
@@ -93,8 +106,16 @@ public final class FluidPipeVisualManager {
             boolean missingPipe = !level.hasChunkAt(entry.getKey())
                     || !level.getBlockState(entry.getKey()).is(AflBlocks.FLUID_PIPE.get());
             if (expired || missingPipe) {
+                FluidLighting.update(level, entry.getKey(), 0);
                 cleared.add(AflNetwork.FluidPipeVisualUpdate.clear(entry.getKey()));
                 return true;
+            }
+            VisualState state = entry.getValue();
+            if (state.isFlowing() && gameTime - state.lastFlowGameTime() >= FLOW_HOLD_TICKS) {
+                entry.setValue(new VisualState(state.fluidId(), state.directionMask(), false,
+                        state.lastTransferGameTime(), state.lastFlowGameTime()));
+                cleared.add(new AflNetwork.FluidPipeVisualUpdate(entry.getKey(), state.fluidId(),
+                        state.directionMask(), true, false));
             }
             return false;
         });
@@ -103,6 +124,16 @@ public final class FluidPipeVisualManager {
         }
         if (active.isEmpty()) {
             ACTIVE_BY_LEVEL.remove(level);
+        }
+    }
+
+    public static void refreshLight(ServerLevel level, BlockPos pos) {
+        Map<BlockPos, VisualState> active = ACTIVE_BY_LEVEL.get(level);
+        VisualState state = active == null ? null : active.get(pos);
+        if (state == null || level.getGameTime() - state.lastTransferGameTime() >= VISUAL_HOLD_TICKS) {
+            FluidLighting.update(level, pos, 0);
+        } else {
+            level.scheduleTick(pos, AflBlocks.FLUID_PIPE.get(), VISUAL_HOLD_TICKS);
         }
     }
 
@@ -125,6 +156,6 @@ public final class FluidPipeVisualManager {
     }
 
     private record VisualState(ResourceLocation fluidId, int directionMask, boolean isFlowing,
-                               long lastTransferGameTime) {
+                               long lastTransferGameTime, long lastFlowGameTime) {
     }
 }

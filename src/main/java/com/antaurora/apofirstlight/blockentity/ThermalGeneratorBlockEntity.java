@@ -4,6 +4,16 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.energy.ThermalFuelDefinitions;
+import com.antaurora.apofirstlight.fluid.SidedTankHandler;
+import com.antaurora.apofirstlight.fluid.FluidPortTransferBudget;
+import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.templates.FluidTank;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.network.Connection;
+import net.minecraft.world.item.BlockItem;
 import com.antaurora.apofirstlight.energy.PowerCableTransfer;
 import com.antaurora.apofirstlight.menu.ThermalGeneratorMenu;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -33,7 +43,30 @@ import org.jetbrains.annotations.Nullable;
 public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity {
     public static final int FUEL_SLOT = 0;
     public static final int CONTAINER_SIZE = 1;
-    public static final int DATA_COUNT = 8;
+    public static final int DATA_COUNT = 10;
+    public static final int TANK_CAPACITY_MB = ThermalFuelDefinitions.TANK_CAPACITY_MB;
+    public enum FuelSource { NONE, SOLID, LIQUID }
+    public enum VisualState { OFF, RUNNING, FULL, ERROR }
+    private VisualState visualState = VisualState.OFF;
+    private VisualState lastSyncedVisualState = VisualState.OFF;
+    private ItemStack lastSyncedFuel = ItemStack.EMPTY;
+    private long rotorTicks;
+    private long rotorSnapshotTime;
+    private FuelSource activeFuelSource = FuelSource.NONE;
+    private int liquidEnergyFraction;
+    private boolean loadingData, visualDirty;
+    private long lastVisualSync = Long.MIN_VALUE;
+    private FuelSource lastSyncedSource = FuelSource.NONE;
+    private boolean lastSyncedRunning;
+    private final FluidTank liquidTank = new FluidTank(TANK_CAPACITY_MB, ThermalFuelDefinitions::accepts) {
+        @Override protected void onContentsChanged() {
+            if (!loadingData) { setChanged(); visualDirty=true; }
+        }
+    };
+    private final IFluidHandler liquidInput = new SidedTankHandler(liquidTank,true,false,new FluidPortTransferBudget(),()->level);
+    private final IFluidHandler liquidOutput = new SidedTankHandler(liquidTank,false,true,new FluidPortTransferBudget(),()->level);
+    private LazyOptional<IFluidHandler> liquidInputCapability = LazyOptional.of(()->liquidInput);
+    private LazyOptional<IFluidHandler> liquidOutputCapability = LazyOptional.of(()->liquidOutput);
 
     private NonNullList<ItemStack> items = NonNullList.withSize(CONTAINER_SIZE, ItemStack.EMPTY);
     private int energyStored;
@@ -98,6 +131,8 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
                 case 5 -> highWord(fuelEnergyRemaining);
                 case 6 -> lowWord(fuelEnergyTotal);
                 case 7 -> highWord(fuelEnergyTotal);
+                case 8 -> getLiquidAmount();
+                case 9 -> getTankCapacity();
                 default -> 0;
             };
         }
@@ -133,11 +168,19 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
         }
 
         boolean changed = generator.applyCurrentBalance();
-        if (generator.fuelEnergyRemaining <= 0) {
+        if (generator.fuelEnergyRemaining <= 0 && generator.energyStored < MachineBalanceManager.thermalGenerator().capacityFe()) {
             changed |= generator.loadNextFuel(serverLevel);
         }
 
         MachineBalanceManager.ThermalGeneratorBalance balance = MachineBalanceManager.thermalGenerator();
+        // Refill only a liquid cycle, and only enough to use this tick's conversion budget.
+        // A newly available solid waits for the already consumed liquid remainder to finish.
+        if (generator.activeFuelSource == FuelSource.LIQUID && generator.fuelEnergyRemaining > 0
+                && generator.fuelEnergyRemaining < balance.generationFePerTick()
+                && balance.capacityFe()-generator.energyStored > generator.fuelEnergyRemaining
+                && !MachineBalanceManager.isThermalGeneratorFuel(generator.items.get(FUEL_SLOT))) {
+            changed |= generator.loadLiquidUnit();
+        }
         boolean convertedThisTick = false;
         if (generator.fuelEnergyRemaining > 0
                 && (!balance.pauseBurnWhenFull() || generator.energyStored < balance.capacityFe())) {
@@ -158,14 +201,24 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
                             balance.maxOutputFePerTick()));
         }
 
-        if (state.getValue(ThermalGeneratorBlock.LIT) != convertedThisTick) {
-            level.setBlock(position, state.setValue(ThermalGeneratorBlock.LIT, convertedThisTick),
+        boolean running = convertedThisTick && generator.energyStored < balance.capacityFe();
+        generator.visualState = generator.energyStored >= balance.capacityFe() ? VisualState.FULL
+                : running ? VisualState.RUNNING : VisualState.OFF;
+        if (running) generator.rotorTicks++;
+        generator.rotorSnapshotTime = level.getGameTime();
+        if (state.getValue(ThermalGeneratorBlock.LIT) != running) {
+            level.setBlock(position, state.setValue(ThermalGeneratorBlock.LIT, running),
                     net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
         }
 
         if (changed) {
             generator.setChanged();
+            generator.visualDirty=true;
         }
+        if (generator.fuelEnergyRemaining<=0) generator.activeFuelSource=FuelSource.NONE;
+        if (!generator.liquidTank.isEmpty()) FluidPipeTransfer.transferFrom(serverLevel,generator,
+                ThermalGeneratorBlock.outputFluidFace(generator.getBlockState()),generator::restoreLiquid);
+        generator.syncVisualState();
     }
 
     public int getStoredEnergy() {
@@ -204,12 +257,14 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
             boolean changed = fuelEnergyRemaining != 0 || fuelEnergyTotal != 0;
             fuelEnergyRemaining = 0;
             fuelEnergyTotal = 0;
-            return changed;
+            activeFuelSource=FuelSource.NONE;
+            return loadLiquidUnit() || changed;
         }
 
         fuelStack.shrink(1);
         fuelEnergyRemaining = fuel.energyFe();
         fuelEnergyTotal = fuel.energyFe();
+        activeFuelSource=FuelSource.SOLID;
         if (fuel.remainder() != null) {
             ItemStack remainder = new ItemStack(fuel.remainder());
             if (fuelStack.isEmpty()) {
@@ -226,6 +281,92 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
             }
         }
         return true;
+    }
+
+    private boolean loadLiquidUnit() {
+        int perBucket=ThermalFuelDefinitions.energyPer1000Mb(liquidTank.getFluid());
+        if (liquidTank.isEmpty() || perBucket<=0) return false;
+        liquidTank.drain(1,IFluidHandler.FluidAction.EXECUTE);
+        long available=(long)perBucket+liquidEnergyFraction;
+        fuelEnergyRemaining+=(int)(available/1000);
+        liquidEnergyFraction=(int)(available%1000);
+        fuelEnergyTotal=Math.max(fuelEnergyTotal,fuelEnergyRemaining);
+        activeFuelSource=FuelSource.LIQUID;
+        return true;
+    }
+
+    public FluidStack getLiquidFuel() { return liquidTank.getFluid().copy(); }
+    public int getLiquidAmount() { return liquidTank.getFluidAmount(); }
+    public int getTankCapacity() { return liquidTank.getCapacity(); }
+    public FuelSource getActiveFuelSource() { return fuelEnergyRemaining>0?activeFuelSource:FuelSource.NONE; }
+    public boolean isRunning() { return getBlockState().getValue(ThermalGeneratorBlock.LIT); }
+    public VisualState getVisualState() { return visualState; }
+    public double getRotorTime(float partialTick) {
+        return rotorTicks + (visualState == VisualState.RUNNING && level != null
+                ? Math.max(0, level.getGameTime() - rotorSnapshotTime) + partialTick : 0);
+    }
+    public int restoreLiquid(FluidStack fluid) { return liquidTank.fill(fluid,IFluidHandler.FluidAction.EXECUTE); }
+
+    public void writeDropData(ItemStack stack) {
+        if (energyStored == 0 && liquidTank.isEmpty() && liquidEnergyFraction == 0
+                && !(activeFuelSource == FuelSource.LIQUID && fuelEnergyRemaining > 0)) return;
+        CompoundTag tag=new CompoundTag();
+        tag.putInt("EnergyStored",energyStored);
+        tag.put("LiquidTank",liquidTank.writeToNBT(new CompoundTag()));
+        tag.putInt("LiquidEnergyFraction",liquidEnergyFraction);
+        // Preserve already-debited liquid energy without putting it back into the tank.
+        if (activeFuelSource==FuelSource.LIQUID) {
+            tag.putString("ActiveFuelSource",FuelSource.LIQUID.name());
+            tag.putInt("FuelEnergyRemaining",fuelEnergyRemaining);
+            tag.putInt("FuelEnergyTotal",fuelEnergyTotal);
+        }
+        BlockItem.setBlockEntityData(stack,AflBlockEntities.THERMAL_GENERATOR.get(),tag);
+    }
+
+    private void readLiquidState(CompoundTag tag) {
+        loadingData=true;
+        FluidStack stored=FluidStack.loadFluidStackFromNBT(tag.getCompound("LiquidTank"));
+        if (!ThermalFuelDefinitions.accepts(stored)) stored=FluidStack.EMPTY;
+        else stored.setAmount(Math.min(TANK_CAPACITY_MB,stored.getAmount()));
+        liquidTank.setFluid(stored);
+        loadingData=false;
+        liquidEnergyFraction=Math.max(0,Math.min(999,tag.getInt("LiquidEnergyFraction")));
+        try { activeFuelSource=FuelSource.valueOf(tag.getString("ActiveFuelSource")); }
+        catch (IllegalArgumentException ignored) { activeFuelSource=fuelEnergyRemaining>0?FuelSource.SOLID:FuelSource.NONE; }
+    }
+
+    private void syncVisualState() {
+        if (level==null || level.isClientSide()) return;
+        FuelSource source=getActiveFuelSource();boolean running=isRunning();long now=level.getGameTime();
+        boolean transition=source!=lastSyncedSource || running!=lastSyncedRunning
+                || visualState!=lastSyncedVisualState
+                || !ItemStack.matches(lastSyncedFuel, items.get(FUEL_SLOT));
+        if (transition || (visualDirty && (lastVisualSync==Long.MIN_VALUE || now-lastVisualSync>=10))) {
+            level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
+            lastSyncedSource=source;lastSyncedRunning=running;lastVisualSync=now;visualDirty=false;
+            lastSyncedVisualState=visualState;lastSyncedFuel=items.get(FUEL_SLOT).copy();
+        }
+    }
+
+    @Override public CompoundTag getUpdateTag() {
+        CompoundTag tag=new CompoundTag();tag.put("LiquidTank",liquidTank.writeToNBT(new CompoundTag()));
+        tag.putString("VisualState",visualState.name());tag.putLong("RotorTicks",rotorTicks);
+        tag.putLong("RotorSnapshotTime",level==null?rotorSnapshotTime:level.getGameTime());
+        tag.put("VisibleFuel",items.get(FUEL_SLOT).save(new CompoundTag()));
+        tag.putString("ActiveFuelSource",getActiveFuelSource().name());
+        tag.putInt("FuelEnergyRemaining",fuelEnergyRemaining);tag.putInt("FuelEnergyTotal",fuelEnergyTotal);
+        tag.putInt("LiquidEnergyFraction",liquidEnergyFraction);return tag;
+    }
+    @Override public void handleUpdateTag(CompoundTag tag) {
+        fuelEnergyRemaining=tag.getInt("FuelEnergyRemaining");fuelEnergyTotal=tag.getInt("FuelEnergyTotal");readLiquidState(tag);
+        try { visualState=VisualState.valueOf(tag.getString("VisualState")); }
+        catch(IllegalArgumentException ignored) { visualState=VisualState.OFF; }
+        rotorTicks=tag.getLong("RotorTicks");rotorSnapshotTime=tag.getLong("RotorSnapshotTime");
+        items.set(FUEL_SLOT,ItemStack.of(tag.getCompound("VisibleFuel")));
+    }
+    @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
+    @Override public void onDataPacket(Connection connection,ClientboundBlockEntityDataPacket packet) {
+        if(packet.getTag()!=null)handleUpdateTag(packet.getTag());
     }
 
     private void resetExtractionBudget() {
@@ -309,6 +450,9 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
                 MachineBalanceManager.thermalGenerator().capacityFe()));
         fuelEnergyRemaining = Math.max(0, tag.getInt("FuelEnergyRemaining"));
         fuelEnergyTotal = Math.max(fuelEnergyRemaining, tag.getInt("FuelEnergyTotal"));
+        readLiquidState(tag);
+        rotorTicks=Math.max(0,tag.getLong("RotorTicks"));
+        visualDirty=true;
         balanceRevision = -1;
     }
 
@@ -319,6 +463,10 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
         tag.putInt("EnergyStored", energyStored);
         tag.putInt("FuelEnergyRemaining", fuelEnergyRemaining);
         tag.putInt("FuelEnergyTotal", fuelEnergyTotal);
+        tag.put("LiquidTank",liquidTank.writeToNBT(new CompoundTag()));
+        tag.putString("ActiveFuelSource",getActiveFuelSource().name());
+        tag.putInt("LiquidEnergyFraction",liquidEnergyFraction);
+        tag.putLong("RotorTicks",rotorTicks);
     }
 
     @Override
@@ -328,6 +476,10 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
                 && PowerCableBlock.isUtilityPortFace(getBlockState(), side)) {
             return outputCapability.cast();
         }
+        if (capability==ForgeCapabilities.FLUID_HANDLER && side!=null) {
+            if(side==ThermalGeneratorBlock.inputFluidFace(getBlockState()))return liquidInputCapability.cast();
+            if(side==ThermalGeneratorBlock.outputFluidFace(getBlockState()))return liquidOutputCapability.cast();
+        }
         return super.getCapability(capability, side);
     }
 
@@ -335,12 +487,14 @@ public final class ThermalGeneratorBlockEntity extends BaseContainerBlockEntity 
     public void invalidateCaps() {
         super.invalidateCaps();
         outputCapability.invalidate();
+        liquidInputCapability.invalidate();liquidOutputCapability.invalidate();
     }
 
     @Override
     public void reviveCaps() {
         super.reviveCaps();
         outputCapability = LazyOptional.of(() -> outputStorage);
+        liquidInputCapability=LazyOptional.of(()->liquidInput);liquidOutputCapability=LazyOptional.of(()->liquidOutput);
     }
 
     private static int lowWord(int value) {

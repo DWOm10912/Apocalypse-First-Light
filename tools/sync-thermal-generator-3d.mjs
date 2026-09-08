@@ -15,7 +15,7 @@ for(const slot of ['gui','ground','fixed','firstperson_righthand','thirdperson_r
 vec(j.display.gui.scale,[.624,.624,.624]);
 const variants=read(base+'blockstates/thermal_generator.json').variants;
 for(const [facing,y]of Object.entries({north:0,east:90,south:180,west:270}))for(const lit of [false,true]){
- const v=variants[`facing=${facing},lit=${lit}`];assert.equal(v.model,`apocalypse_firstlight:block/${id}_render`);assert.equal(v.y??0,y);
+ const v=variants[`facing=${facing},lit=${lit}`];assert.equal(v.model,`apocalypse_firstlight:block/${id}_world`);assert.equal(v.y??0,y);
 }
 assert.equal(Object.keys(variants).length,8);
 assert.equal(read(base+'models/item/thermal_generator.json').parent,`apocalypse_firstlight:block/${id}_render`);
@@ -88,4 +88,5 @@ const render={loader:'forge:composite',textures:j.textures,display:j.display,
  children:{opaque:child(opaque,'minecraft:solid'),glass:child(glass,'minecraft:translucent')},item_render_order:['opaque','glass']};
 fs.writeFileSync(base+`models/block/${id}_render.json`,JSON.stringify(render,null,2)+'\n');
 g.format_version='1.12.0';delete geo.item_display_transforms;fs.writeFileSync(gp,JSON.stringify(g,null,2)+'\n');
+await import('./export-thermal-generator-dynamic.mjs');
 console.log(JSON.stringify({sourceCubes:s.elements.length,runtimeCubes:ordered.length,runtimeGroups:groups.size,sourceRuntimeSync:true,standardSocketPixels:true,standardFluidPortPixels:true,glassClear:true,newAxisAlignedOverlap:intersections,preservedLowerPanelIntersections,displayVolumesClear:true,anchors:Object.keys(anchorDefs),sourceOnlyPreviewExcluded:true,liveBlockReplaced:true,allFacingLitVariants:true,itemParentUpdated:true,guiScale:.624},null,2));

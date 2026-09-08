@@ -53,6 +53,10 @@ public final class FluidTankBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos position, BlockState state,
                                   FluidTankBlockEntity tank) {
+        if (level instanceof ServerLevel server) {
+            com.antaurora.apofirstlight.fluid.FluidLighting.update(server, position,
+                    com.antaurora.apofirstlight.fluid.FluidLighting.emission(tank.getMemberFluidSlice(), 9));
+        }
         if (level instanceof ServerLevel serverLevel && tank.isController()) {
             FluidPipeTransfer.transferFrom(serverLevel, tank);
         }

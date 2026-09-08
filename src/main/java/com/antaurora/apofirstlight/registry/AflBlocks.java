@@ -169,6 +169,7 @@ public final class AflBlocks {
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> THERMAL_GENERATOR = BLOCKS.register("thermal_generator",
             () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .lightLevel(state -> state.getValue(ThermalGeneratorBlock.LIT) ? 9 : 0)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ENERGY_CELL = BLOCKS.register("energy_cell",
             () -> new EnergyCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

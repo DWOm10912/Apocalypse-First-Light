@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
 import com.antaurora.apofirstlight.fluid.FluidPortTransferBudget;
+import com.antaurora.apofirstlight.fluid.SidedTankHandler;
 import com.antaurora.apofirstlight.menu.ChemicalReactorMenu;
 import com.antaurora.apofirstlight.recipe.ChemicalReactingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -79,9 +80,9 @@ public final class ChemicalReactorBlockEntity extends BaseContainerBlockEntity {
         }
     };
     private final IFluidHandler inputFluidHandler =
-            new SidedTankHandler(inputTank, true, false, automaticInputBudget);
+            new SidedTankHandler(inputTank, true, false, automaticInputBudget, () -> level);
     private final IFluidHandler wasteFluidHandler =
-            new SidedTankHandler(wasteTank, false, true, automaticWasteOutputBudget);
+            new SidedTankHandler(wasteTank, false, true, automaticWasteOutputBudget, () -> level);
 
     private final IEnergyStorage inputEnergyStorage = new IEnergyStorage() {
         @Override
@@ -561,90 +562,4 @@ public final class ChemicalReactorBlockEntity extends BaseContainerBlockEntity {
         return (value & 0xFFFF) | ((highWord & 0xFFFF) << 16);
     }
 
-    private final class SidedTankHandler implements IFluidHandler {
-        private final FluidTank tank;
-        private final boolean allowFill;
-        private final boolean allowDrain;
-        private final FluidPortTransferBudget budget;
-
-        private SidedTankHandler(FluidTank tank, boolean allowFill, boolean allowDrain,
-                                 FluidPortTransferBudget budget) {
-            this.tank = tank;
-            this.allowFill = allowFill;
-            this.allowDrain = allowDrain;
-            this.budget = budget;
-        }
-
-        @Override
-        public int getTanks() {
-            return 1;
-        }
-
-        @Override
-        public @NotNull FluidStack getFluidInTank(int tankIndex) {
-            return copyFluid(tank.getFluid());
-        }
-
-        @Override
-        public int getTankCapacity(int tankIndex) {
-            return tank.getCapacity();
-        }
-
-        @Override
-        public boolean isFluidValid(int tankIndex, @NotNull FluidStack stack) {
-            return allowFill && tank.isFluidValid(tankIndex, stack);
-        }
-
-        @Override
-        public int fill(FluidStack resource, FluidAction action) {
-            if (!allowFill || resource.isEmpty()) {
-                return 0;
-            }
-            int limitedAmount = budget.limit(level, resource.getAmount());
-            if (limitedAmount <= 0) {
-                return 0;
-            }
-            FluidStack limitedResource = resource.copy();
-            limitedResource.setAmount(limitedAmount);
-            int filled = tank.fill(limitedResource, action);
-            if (action == FluidAction.EXECUTE && filled > 0) {
-                budget.record(level, filled);
-            }
-            return filled;
-        }
-
-        @Override
-        public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
-            if (!allowDrain || resource.isEmpty()) {
-                return FluidStack.EMPTY;
-            }
-            int limitedAmount = budget.limit(level, resource.getAmount());
-            if (limitedAmount <= 0) {
-                return FluidStack.EMPTY;
-            }
-            FluidStack limitedResource = resource.copy();
-            limitedResource.setAmount(limitedAmount);
-            FluidStack drained = tank.drain(limitedResource, action);
-            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
-                budget.record(level, drained.getAmount());
-            }
-            return drained;
-        }
-
-        @Override
-        public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
-            if (!allowDrain) {
-                return FluidStack.EMPTY;
-            }
-            int limitedAmount = budget.limit(level, maxDrain);
-            if (limitedAmount <= 0) {
-                return FluidStack.EMPTY;
-            }
-            FluidStack drained = tank.drain(limitedAmount, action);
-            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
-                budget.record(level, drained.getAmount());
-            }
-            return drained;
-        }
-    }
 }

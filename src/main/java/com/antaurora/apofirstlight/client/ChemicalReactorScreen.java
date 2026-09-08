@@ -22,11 +22,6 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/gui/common/energy_fill_green_tile.png");
     private static final ResourceLocation FURNACE_TEXTURE =
             new ResourceLocation("minecraft", "textures/gui/container/furnace.png");
-    private static final ResourceLocation FLUID_BAR_TEXTURE =
-            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/gui/common/fluid_bar.png");
-    private static final int FLUID_BAR_TICK_U = 8;
-    private static final int FLUID_BAR_TICK_WIDTH = 3;
-    private static final int[] FLUID_BAR_TICK_ROWS = {8, 14, 20, 26, 32, 38, 44};
 
     public ChemicalReactorScreen(ChemicalReactorMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -46,14 +41,14 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
 
         MachineGuiLayout.Element inputBar = LAYOUT.element("input_fluid_bar");
         if (isHovering(inputBar.x(), inputBar.y(), inputBar.width(), inputBar.height(), mouseX, mouseY)) {
-            renderFluidTooltip(graphics, mouseX, mouseY,
+            MachineFluidBarRenderer.renderFluidTooltip(graphics, font, mouseX, mouseY,
                     "gui.apocalypse_firstlight.chemical_reactor.input_tank",
                     menu.getInputFluid(), menu.getInputFluidAmount(), menu.getInputFluidCapacity());
             return;
         }
         MachineGuiLayout.Element wasteBar = LAYOUT.element("waste_fluid_bar");
         if (isHovering(wasteBar.x(), wasteBar.y(), wasteBar.width(), wasteBar.height(), mouseX, mouseY)) {
-            renderFluidTooltip(graphics, mouseX, mouseY,
+            MachineFluidBarRenderer.renderFluidTooltip(graphics, font, mouseX, mouseY,
                     "gui.apocalypse_firstlight.chemical_reactor.waste_tank",
                     menu.getWasteFluid(), menu.getWasteFluidAmount(), menu.getWasteFluidCapacity());
             return;
@@ -85,9 +80,9 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
         MachineGuiRenderHelper.drawGridSlotFrames(graphics, left, top, LAYOUT.playerInventory());
         MachineGuiRenderHelper.drawGridSlotFrames(graphics, left, top, LAYOUT.hotbar());
 
-        drawFluidBar(graphics, left, top, "input_fluid_bar", "input_fluid_fill",
+        MachineFluidBarRenderer.drawFluidBar(graphics, LAYOUT, left, top, "input_fluid_bar", "input_fluid_fill",
                 menu.getInputFluid(), menu.getInputFluidAmount(), menu.getInputFluidCapacity());
-        drawFluidBar(graphics, left, top, "waste_fluid_bar", "waste_fluid_fill",
+        MachineFluidBarRenderer.drawFluidBar(graphics, LAYOUT, left, top, "waste_fluid_bar", "waste_fluid_fill",
                 menu.getWasteFluid(), menu.getWasteFluidAmount(), menu.getWasteFluidCapacity());
 
         MachineGuiLayout.Element energyBar = LAYOUT.element("energy_bar");
@@ -103,33 +98,4 @@ public final class ChemicalReactorScreen extends AbstractContainerScreen<Chemica
                 left, top, energyFill, menu.getStoredEnergy(), menu.getEnergyCapacity(), gameTime);
     }
 
-    private void drawFluidBar(GuiGraphics graphics, int left, int top,
-                              String barName, String fillName, FluidStack fluid,
-                              int amount, int capacity) {
-        MachineGuiLayout.Element bar = LAYOUT.element(barName);
-        MachineGuiLayout.Element fill = LAYOUT.element(fillName);
-        graphics.blit(FLUID_BAR_TEXTURE,
-                left + bar.x(), top + bar.y(),
-                0, 0, bar.width(), bar.height(), bar.width(), bar.height());
-        MachineGuiRenderHelper.drawFluidFill(graphics, left, top, fill, fluid, amount, capacity);
-        for (int tickRow : FLUID_BAR_TICK_ROWS) {
-            graphics.blit(FLUID_BAR_TEXTURE,
-                    left + bar.x() + FLUID_BAR_TICK_U, top + bar.y() + tickRow,
-                    FLUID_BAR_TICK_U, tickRow, FLUID_BAR_TICK_WIDTH, 1,
-                    bar.width(), bar.height());
-        }
-    }
-
-    private void renderFluidTooltip(GuiGraphics graphics, int mouseX, int mouseY,
-                                    String titleKey, FluidStack fluid, int amount, int capacity) {
-        Component fluidName = fluid.isEmpty()
-                ? Component.translatable("gui.apocalypse_firstlight.chemical_reactor.empty_fluid")
-                : fluid.getDisplayName();
-        graphics.renderComponentTooltip(font, List.of(
-                Component.translatable(titleKey),
-                Component.translatable("tooltip.apocalypse_firstlight.stored_fluid", fluidName),
-                Component.translatable("tooltip.apocalypse_firstlight.stored_fluid_amount",
-                        String.format(Locale.ROOT, "%,d", amount),
-                        String.format(Locale.ROOT, "%,d", capacity))), mouseX, mouseY);
-    }
 }

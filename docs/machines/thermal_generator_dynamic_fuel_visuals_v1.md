@@ -1,6 +1,6 @@
 # 热力发电机动态燃料视觉预留 V1
 
-状态：**静态 3D 外观已替换原热力发电机；动态部分仍仅完成锚点预留，未实现 runtime 动态燃料、液体、锚点粒子或流体 IO。** 原注册、BlockEntity、GUI、FE、发电数值、旧声音/烟雾逻辑和挖掘规则保持不变；仅方块外观、四向碰撞/选取形状及物品模型接入已更新。转子动画仍未实现。
+状态：**静态 3D 外观、动态燃料、液体视觉和转子已由 [Dynamic Renderer V1](thermal_generator_dynamic_renderer_v1.md) 接入；锚点粒子见 [Particles V1](thermal_generator_particles_v1.md)。** 真实 4000 mB 熔岩槽与左进右出已接入，见 [Fluid IO V1](thermal_generator_fluid_io_v1.md)。原注册、GUI、FE 输出、燃料定标、声音及挖掘规则保留；旧烟雾占位由客户端持续排烟替代。
 
 ## 结构
 
@@ -27,7 +27,7 @@
 
 ## 显示体积约束
 
-隐藏且 `export=false` 的源参考 cube 保留在各自 `*_source_only` 组，**不得导出为实体燃料或不透明填充物**。实际 renderer 尚未实现，下列是未来显示应遵守的模型边界，不代表逻辑容量。
+隐藏且 `export=false` 的源参考 cube 保留在各自 `*_source_only` 组，**不得导出为实体燃料或不透明填充物**。运行时 renderer 已沿用下列模型边界；显示体积不代表逻辑容量。
 
 | 参考体积 | 最小坐标 | 最大坐标 |
 | --- | --- | --- |
@@ -36,7 +36,7 @@
 
 固体参考体积底面与炉排顶面相接；距离主玻璃背面至少 0.83 单位。未来燃料随机位移/旋转后的完整包围盒必须仍在此体积内。火焰/火星应限制在燃烧室内部 X7.05～13.6、Y4.55～11.05、Z1.3～6.25，并留边距，不能穿过隔壁进入转子。
 
-液体底面 Y2.5，最大表面 Y3.32，可见高度 0.82 单位；未来按填充比例限制在该范围，空槽不画液体。体积距玻璃背面 0.35、后壁 0.25 单位，完全在液槽及观察口投影内，避免玻璃共面闪烁。当前只有空槽、空骨骼及参考体积，没有液体本体。
+液体底面 Y2.5，最大表面 Y3.32，可见高度 0.82 单位；未来按填充比例限制在该范围，空槽不画液体。体积距玻璃背面 0.35、后壁 0.25 单位，完全在液槽及观察口投影内，避免玻璃共面闪烁。动态液体已按真实 Tank 在该体积内绘制。
 
 ## 左右流体接口与材质
 
@@ -51,10 +51,10 @@
 - 源：`src/main/blockbench/thermal_generator_3d.bbmodel`（362 cubes / 45 groups，含隐藏参考）。
 - 图集：`src/main/resources/assets/apocalypse_firstlight/textures/block/thermal_generator_3d.png`，256×256。
 - 静态：`src/main/resources/assets/apocalypse_firstlight/models/block/thermal_generator_3d.json`，342 cubes。Java block JSON 不承载命名锚点。
-- 原方块 `blockstates/thermal_generator.json` 的八个朝向/运行状态及 `models/item/thermal_generator.json` 均使用 `models/block/thermal_generator_3d_render.json`：由上述静态导出生成的 `forge:composite` 模型，机壳使用 solid、两块玻璃使用 translucent；GUI display scale 为 0.624。空锚点不会自动产生液体、燃料或粒子。
+- 原方块八个朝向/运行状态使用 `models/block/thermal_generator_3d_world.json` 配合 BER；物品使用完整 `thermal_generator_3d_render.json`。机壳 solid、两块玻璃 translucent；GUI scale 0.624。粒子通过客户端 ticker 读取导出的锚点，非模型自身动画。
 - Geo：`src/main/resources/assets/apocalypse_firstlight/geo/thermal_generator_3d.geo.json`，342 cubes / 39 bones，包含八个可供未来 renderer 查找的空 anchor bones。
 - 局部编辑：`tools/add-thermal-fuel-windows.bb.js`；空项目构建：`tools/build-thermal-generator-3d.bb.js`；导出校验：`node tools/sync-thermal-generator-3d.mjs`。
 - 校验包含源/Java/Geo 几何、UV、pivot/parent、右下通风口、转子共心、标准接口像素、玻璃留空、两个参考体积无静态遮挡、source-only 内容不进入 runtime。
 - 新增结构没有轴对齐实体交叠；修改前已有侧底板 Y1.1 延伸与底座/角柱的 10 对内部相交，本轮保留，不以本任务扩大机壳修整范围。
-- Blockbench 已检查左右前方视角。构建结果不等于游戏内透明排序、液体液位、动态煤炭、粒子、流体管道或 FE 验收；这些 runtime 项本轮均未实现。
+- 原静态阶段仅检查 Blockbench 左右前方视角；后续动态显示验收见 Dynamic Renderer V1，锚点粒子验收见 Particles V1，不以静态阶段构建替代运行验证。
 - `gradlew.bat build --offline` 已通过（2026-09-08）；`:test NO-SOURCE`，不代表运行了游戏测试。构建日志：`build/thermal-generator-fuel-windows-build.log`。

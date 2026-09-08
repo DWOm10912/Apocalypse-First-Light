@@ -26,6 +26,8 @@
     "spacing": 18
   },
   "elements": {
+    "input_fluid_bar": { "x": 14, "y": 18, "width": 12, "height": 54 },
+    "input_fluid_fill": { "x": 16, "y": 21, "width": 8, "height": 48 },
     "fuel_slot": {
       "x": 44,
       "y": 34,

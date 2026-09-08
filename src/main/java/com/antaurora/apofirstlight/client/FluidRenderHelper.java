@@ -47,6 +47,9 @@ public final class FluidRenderHelper {
         }
 
         IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(fluid.getFluid());
+        if (com.antaurora.apofirstlight.fluid.FluidLighting.intrinsic(fluid) > 0) {
+            packedLight = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+        }
         ResourceLocation texture = flowingTexture
                 ? properties.getFlowingTexture(fluid)
                 : properties.getStillTexture(fluid);

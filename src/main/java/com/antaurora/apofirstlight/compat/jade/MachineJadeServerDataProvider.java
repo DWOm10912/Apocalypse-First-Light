@@ -52,10 +52,7 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
             return;
         }
         if (accessor.getBlockEntity() instanceof ThermalGeneratorBlockEntity generator) {
-            data.putString(MACHINE_TYPE, THERMAL_GENERATOR);
-            putEnergy(data, generator.getStoredEnergy(),
-                    MachineBalanceManager.thermalGenerator().capacityFe());
-            putStack(data, FUEL, generator.getItem(ThermalGeneratorBlockEntity.FUEL_SLOT));
+            appendThermalData(data, generator);
             return;
         }
 
@@ -193,6 +190,15 @@ public enum MachineJadeServerDataProvider implements IServerDataProvider<BlockAc
             outputs.add(output.copy().save(new CompoundTag()));
             data.put(OUTPUTS, outputs);
         }
+    }
+
+    public static void appendThermalData(CompoundTag data, ThermalGeneratorBlockEntity generator) {
+        data.putString(MACHINE_TYPE, THERMAL_GENERATOR);
+        putEnergy(data, generator.getStoredEnergy(), MachineBalanceManager.thermalGenerator().capacityFe());
+        putStack(data, FUEL, generator.getItem(ThermalGeneratorBlockEntity.FUEL_SLOT));
+        data.remove(INPUT_FLUID);
+        data.putInt(FLUID_CAPACITY, generator.getTankCapacity());
+        putFluid(data, INPUT_FLUID, generator.getLiquidFuel());
     }
 
     private static void putFluid(CompoundTag data, String key, FluidStack fluid) {

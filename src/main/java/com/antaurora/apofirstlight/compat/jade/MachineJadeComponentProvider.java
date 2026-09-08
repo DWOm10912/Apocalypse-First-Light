@@ -72,6 +72,9 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
     }
 
     private static void addThermalGenerator(ITooltip tooltip, CompoundTag data) {
+        tooltip.remove(Identifiers.UNIVERSAL_FLUID_STORAGE);
+        tooltip.remove(Identifiers.UNIVERSAL_FLUID_STORAGE_DETAILED);
+        addFluid(tooltip, data, MachineJadeServerDataProvider.INPUT_FLUID, null);
         if (data.contains(MachineJadeServerDataProvider.FUEL, Tag.TAG_COMPOUND)) {
             addLabeledItem(tooltip, "jade.apocalypse_firstlight.fuel",
                     ItemStack.of(data.getCompound(MachineJadeServerDataProvider.FUEL)));
@@ -122,7 +125,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
         if (fluid.isEmpty() || capacity <= 0) return;
         int amount = Math.min(capacity, fluid.getAmount());
         IElementHelper helper = tooltip.getElementHelper();
-        tooltip.add(List.of(helper.text(Component.translatable(label)), helper.spacer(4, 0),
+        tooltip.add(List.of(helper.text(label == null ? Component.empty() : Component.translatable(label)), helper.spacer(label == null ? 0 : 4, 0),
                 helper.text(fluid.getDisplayName()), helper.spacer(4, 0),
                 helper.text(Component.translatable("jade.apocalypse_firstlight.fluid_value",
                         formatNumber(amount), formatNumber(capacity)))));

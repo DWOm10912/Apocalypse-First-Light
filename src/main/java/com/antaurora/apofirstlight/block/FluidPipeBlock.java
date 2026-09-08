@@ -23,8 +23,9 @@ public final class FluidPipeBlock extends PipeBlock {
     private static final VoxelShape STRAIGHT_Z_SHAPE = Block.box(5, 5, 0, 11, 11, 16);
 
     public FluidPipeBlock(Properties properties) {
-        super(HALF_WIDTH, properties);
+        super(HALF_WIDTH, properties.lightLevel(state -> state.getValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT)));
         registerDefaultState(stateDefinition.any()
+                .setValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT, 0)
                 .setValue(NORTH, false)
                 .setValue(SOUTH, false)
                 .setValue(EAST, false)
@@ -64,7 +65,14 @@ public final class FluidPipeBlock extends PipeBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, SHOW_CORE);
+        builder.add(NORTH, SOUTH, EAST, WEST, UP, DOWN, SHOW_CORE,
+                com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT);
+    }
+
+    @Override
+    public void tick(BlockState state, net.minecraft.server.level.ServerLevel level, BlockPos pos,
+                     net.minecraft.util.RandomSource random) {
+        com.antaurora.apofirstlight.fluid.FluidPipeVisualManager.refreshLight(level, pos);
     }
 
     public static boolean isConnected(BlockState state, Direction direction) {
@@ -87,7 +95,7 @@ public final class FluidPipeBlock extends PipeBlock {
                     || firstRunAxis == directionToNeighbor.getAxis();
         }
         return canConnectToTank(neighborState, directionToNeighbor)
-                || canConnectToChemicalReactor(neighborState, directionToNeighbor);
+                || canConnectToSidedMachine(neighborState, directionToNeighbor);
     }
 
     public static BlockState withStructuralConnections(BlockGetter level, BlockPos position, BlockState state) {
@@ -130,7 +138,7 @@ public final class FluidPipeBlock extends PipeBlock {
             BlockState neighborState = level.getBlockState(neighborPosition);
             if (neighborState.is(AflBlocks.FLUID_PIPE.get())
                     || canConnectToTank(neighborState, direction)
-                    || canConnectToChemicalReactor(neighborState, direction)) {
+                    || canConnectToSidedMachine(neighborState, direction)) {
                 return true;
             }
         }
@@ -146,8 +154,13 @@ public final class FluidPipeBlock extends PipeBlock {
                 : !neighborState.getValue(FluidTankBlock.HAS_TANK_BELOW);
     }
 
-    private static boolean canConnectToChemicalReactor(BlockState neighborState,
-                                                       Direction directionToNeighbor) {
+    private static boolean canConnectToSidedMachine(BlockState neighborState,
+                                                         Direction directionToNeighbor) {
+        if (neighborState.is(AflBlocks.THERMAL_GENERATOR.get())) {
+            Direction face=directionToNeighbor.getOpposite();
+            return face==ThermalGeneratorBlock.inputFluidFace(neighborState)
+                    || face==ThermalGeneratorBlock.outputFluidFace(neighborState);
+        }
         if (!neighborState.is(AflBlocks.CHEMICAL_REACTOR.get())) {
             return false;
         }

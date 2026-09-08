@@ -31,6 +31,11 @@ import java.util.List;
 
 @JeiPlugin
 public final class AflJeiPlugin implements IModPlugin {
+    public static final RecipeType<com.antaurora.apofirstlight.energy.ThermalFuelDefinitions.DisplayFuel> THERMAL_GENERATION =
+            RecipeType.create(ApocalypseFirstLight.MOD_ID, "thermal_generation",
+                    com.antaurora.apofirstlight.energy.ThermalFuelDefinitions.DisplayFuel.class);
+    @Override public void onRuntimeAvailable(mezz.jei.api.runtime.IJeiRuntime runtime) { ThermalJeiRecipes.start(runtime); }
+    @Override public void onRuntimeUnavailable() { ThermalJeiRecipes.stop(); }
     public static final RecipeType<CrushingRecipe> CRUSHING =
             RecipeType.create(ApocalypseFirstLight.MOD_ID, "crushing", CrushingRecipe.class);
     public static final RecipeType<CompressingRecipe> COMPRESSING =
@@ -52,7 +57,7 @@ public final class AflJeiPlugin implements IModPlugin {
 
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
-        registration.addRecipeCategories(new CrusherRecipeCategory(
+        registration.addRecipeCategories(new ThermalGenerationCategory(registration.getJeiHelpers().getGuiHelper()), new CrusherRecipeCategory(
                 registration.getJeiHelpers().getGuiHelper()),
                 new CompressorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new AlloyFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
@@ -83,6 +88,7 @@ public final class AflJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        registration.addRecipeCatalyst(AflBlocks.THERMAL_GENERATOR.get(), THERMAL_GENERATION);
         registration.addRecipeCatalyst(AflBlocks.CRUSHER.get(), CRUSHING);
         registration.addRecipeCatalyst(AflBlocks.COMPRESSOR.get(), COMPRESSING);
         registration.addRecipeCatalyst(AflBlocks.ALLOY_FURNACE.get(), ALLOYING);

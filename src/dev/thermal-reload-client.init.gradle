@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/thermal-fluid-client')
+            property 'afl.thermalReloadProbe', project.hasProperty('thermalVerify') ? 'verify' : 'seed'
+            if (project.hasProperty('thermalVerify')) property 'afl.thermalFluidProbe', 'true'
+            args '--quickPlaySingleplayer', 'fluid_probe'
+        }
+    }
+}

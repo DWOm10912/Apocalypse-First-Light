@@ -36,6 +36,13 @@ public final class ThermalGeneratorScreen extends AbstractContainerScreen<Therma
         renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+        var fluidBar = LAYOUT.element("input_fluid_bar");
+        if (isHovering(fluidBar.x(), fluidBar.y(), fluidBar.width(), fluidBar.height(), mouseX, mouseY)) {
+            MachineFluidBarRenderer.renderFluidTooltip(graphics, font, mouseX, mouseY,
+                    "gui.apocalypse_firstlight.thermal_generator.fuel_tank",
+                    menu.getInputFluid(), menu.getInputFluidAmount(), menu.getInputFluidCapacity());
+            return;
+        }
 
         MachineGuiLayout.Element energyBar = LAYOUT.element("energy_bar");
         if (isHovering(energyBar.x(), energyBar.y(), energyBar.width(), energyBar.height(), mouseX, mouseY)) {
@@ -51,6 +58,9 @@ public final class ThermalGeneratorScreen extends AbstractContainerScreen<Therma
         int top = topPos;
 
         MachineGuiRenderHelper.drawVanillaStylePanel(graphics, left, top, imageWidth, imageHeight);
+        MachineFluidBarRenderer.drawFluidBar(graphics, LAYOUT, left, top,
+                "input_fluid_bar", "input_fluid_fill", menu.getInputFluid(),
+                menu.getInputFluidAmount(), menu.getInputFluidCapacity());
         MachineGuiLayout.Element fuelSlot = LAYOUT.element("fuel_slot");
         MachineGuiRenderHelper.drawSlotFrame(graphics, left + fuelSlot.x(), top + fuelSlot.y());
         MachineGuiRenderHelper.drawGridSlotFrames(graphics, left, top, LAYOUT.playerInventory());

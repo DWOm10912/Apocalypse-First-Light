@@ -45,9 +45,22 @@ public final class ThermalGeneratorModelGameTests {
     @GameTestGenerator
     public static Collection<TestFunction> tests() {
         return List.of(
+                test("dynamic_states_light", ThermalDynamicGameTest::states),
+                test("fluid_lighting", FluidLightingGameTest::lights),
+                test("thermal_particle_profile", ThermalParticlesGameTest::profile),
+                test("fluid_visual_hold", FluidVisualHoldGameTest::run),
                 test("placement_shapes_menu", ThermalGeneratorModelGameTests::placementShapes),
                 test("survival_drops", ThermalGeneratorModelGameTests::survivalDrops),
-                test("energy_fuels", ThermalGeneratorBalanceGameTests::exactFuelEnergyAndFullBufferPause));
+                test("energy_fuels", ThermalGeneratorBalanceGameTests::exactFuelEnergyAndFullBufferPause),
+                test("fluid_energy_priority", ThermalFluidGameTests::energyPriority),
+                test("fluid_persistence_jade_data", ThermalFluidGameTests::persistence),
+                test("fluid_ports", ThermalFluidGameTests::ports),
+                test("fluid_pipe_north", h -> ThermalFluidGameTests.pipes(h, Direction.NORTH)),
+                test("fluid_pipe_south", h -> ThermalFluidGameTests.pipes(h, Direction.SOUTH)),
+                test("fluid_pipe_east", h -> ThermalFluidGameTests.pipes(h, Direction.EAST)),
+                test("fluid_pipe_west", h -> ThermalFluidGameTests.pipes(h, Direction.WEST)),
+                test("reactor_horizontal", ReactorIntegrationGameTests::horizontalWaste),
+                test("reactor_jade_saved", ReactorIntegrationGameTests::jadeDataAndSavedItemTooltips));
     }
 
     private static TestFunction test(String name, java.util.function.Consumer<GameTestHelper> body) {
@@ -118,6 +131,7 @@ public final class ThermalGeneratorModelGameTests {
             level.setBlock(pos,AflBlocks.THERMAL_GENERATOR.get().defaultBlockState(),3);
             var generator=(ThermalGeneratorBlockEntity)level.getBlockEntity(pos);
             generator.setItem(ThermalGeneratorBlockEntity.FUEL_SLOT,new ItemStack(Items.COAL,3));
+            generator.restoreLiquid(new net.minecraftforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 777));
             var player=FakePlayerFactory.get(level,new GameProfile(UUID.randomUUID(),"thermal_mining"));
             player.setGameMode(GameType.SURVIVAL);player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(tool));
             h.assertTrue(player.gameMode.destroyBlock(pos),"survival destroy");
@@ -126,6 +140,18 @@ public final class ThermalGeneratorModelGameTests {
             int fuel=drops.stream().filter(e->e.getItem().is(Items.COAL)).mapToInt(e->e.getItem().getCount()).sum();
             h.assertTrue(machine==((tool==Items.DIAMOND_PICKAXE||tool==Items.NETHERITE_PICKAXE)?1:0),"tool tier "+tool);
             h.assertTrue(fuel==3,"fuel slot contents retained on removal");
+            if (machine == 1) {
+                var dropped = drops.stream().filter(e -> e.getItem().is(AflItems.THERMAL_GENERATOR.get())).findFirst().orElseThrow().getItem().copy();
+                player.setYRot(0);player.setPos(pos.getX()+3,pos.getY(),pos.getZ()+3);
+                player.setItemInHand(InteractionHand.MAIN_HAND, dropped);
+                level.setBlock(pos.below(),Blocks.STONE.defaultBlockState(),3);
+                var ctx=new BlockPlaceContext(player,InteractionHand.MAIN_HAND,dropped,
+                        new BlockHitResult(Vec3.atBottomCenterOf(pos),Direction.UP,pos.below(),false));
+                h.assertTrue(((BlockItem)dropped.getItem()).place(ctx).consumesAction(),"re-place saved tank");
+                var restored=(ThermalGeneratorBlockEntity)level.getBlockEntity(pos);
+                h.assertTrue(restored.getLiquidAmount()==777,"survival drop/place preserves lava");
+                level.setBlock(pos,Blocks.AIR.defaultBlockState(),3);
+            }
         }
         h.succeed();
     }

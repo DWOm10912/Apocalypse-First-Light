@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/02 - 内容设计/方块/机器.md",
-                "mode": "source",
+                "file": "docs/04 - 注意事项 重要内容.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "机器"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/02 - 内容设计/方块/机器.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,28 +189,35 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/test/level8967699035794371430.dat",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/saves/test/level17772838315880464829.dat",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-1131666047276889696.dat",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
-    "docs/04 - 注意事项 重要内容.md",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/vector45.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/type_81.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/uzi.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/ump45.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/timeless50_slot.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/springfield1873_slot.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/taurus943.png",
-    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/spr15hb_slot.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_multi16.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_west.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_south.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_east.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_off.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_full.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_lava.png",
+    "build/thermal-fluid-client/screenshots/thermal_particles_coal_block.png",
+    "docs/machines/thermal_generator_particles_v1.md",
+    "docs/machines/fluid_lighting_v1.md",
+    "docs/machines/thermal_generator_dynamic_renderer_v1.md",
+    "docs/01 - 设计/武器/近战武器/撬棍.md",
+    "docs/02 - 内容设计/创造模式标签页.md",
+    "docs/01 - 设计/方块/机器.md",
+    "docs/machines/thermal_generator_fluid_io_v1.md",
+    "docs/04 - 注意事项 重要内容.md",
     "docs/machines/thermal_generator_dynamic_fuel_visuals_v1.md",
     "docs/machines/thermal_generator_3d_model_v1.md",
     "docs/native_guns/workstation_name_migration_v1.md",
@@ -222,18 +229,11 @@
     "docs/native_guns/gun_workbench_block_v1.md",
     "docs/native_guns/gun_workbench_model_v1.md",
     "docs/native_guns/pistol_red_dot_v1.md",
-    "docs/01 - 系统设计/枪械/枪械.md",
-    "docs/01 - 系统设计/枪械/弹药.md",
+    "docs/01 - 设计/武器/枪械.md",
+    "docs/01 - 设计/武器/弹药.md",
     "docs/native_guns/p9_01_empty_reload_special_rebuild.md",
     "docs/native_guns/p9_01_animation_rebuild_v1.md",
     "docs/native_guns/p9_01_model_style_rework.md",
-    "docs/03 - 制作清单.md",
-    "docs/native_guns/native_gun_data_json_v1.md",
-    "docs/README.md",
-    "docs/02 - 内容设计/方块/机器.md",
-    "docs/02 - 内容设计/创造模式标签页.md",
-    "docs/native_guns/br51_01_first_person_hip_pose_fix.md",
-    "docs/native_guns/native_ads_v1.md",
-    "docs/native_guns/native_ammo_assets_v1.md"
+    "docs/03 - 制作清单.md"
   ]
 }
