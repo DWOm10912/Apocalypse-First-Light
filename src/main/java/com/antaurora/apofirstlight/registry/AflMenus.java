@@ -17,6 +17,8 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflMenus {
     public static final DeferredRegister<MenuType<?>> MENUS =
             DeferredRegister.create(ForgeRegistries.MENU_TYPES, ApocalypseFirstLight.MOD_ID);
+    public static final RegistryObject<MenuType<com.antaurora.apofirstlight.menu.GunMaintenanceMenu>> GUN_MAINTENANCE =
+            MENUS.register("gun_maintenance_bench",()->IForgeMenuType.create(com.antaurora.apofirstlight.menu.GunMaintenanceMenu::new));
 
     public static final RegistryObject<MenuType<ThermalGeneratorMenu>> THERMAL_GENERATOR =
             MENUS.register("thermal_generator", () -> IForgeMenuType.create(ThermalGeneratorMenu::new));

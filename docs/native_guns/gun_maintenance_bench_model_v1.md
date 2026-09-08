@@ -1,6 +1,6 @@
 # 枪械维护台 V1 模型
 
-状态：美术资产已获用户确认，现已接入 `apocalypse_firstlight:gun_maintenance_bench` 四格静态方块。方块行为与验证边界见 [入游戏说明](gun_maintenance_bench_block_v1.md)。本轮未改变已确认源几何或贴图。
+状态：美术资产已接入 `apocalypse_firstlight:gun_maintenance_bench` 四格静态方块。V2 按用户要求删除维护垫上的两个黑/白装饰块，其他几何和贴图保持不变。方块行为与验证边界见 [入游戏说明](gun_maintenance_bench_block_v1.md)。
 
 | 项目 | 当前内容 |
 | --- | --- |
@@ -12,7 +12,7 @@
 | 图集 | 256×256；共享材质分区、像素木纹、面差与克制磨损，无 PBR |
 | 视觉尺寸 | **正面宽 2 × 深 1 × 高 2 格**；用户明确改用参考图比例，不采用原文字的宽 1、深 2 |
 | 几何范围 | X：−8～24；Y：0～32；Z：0.05～16；16 模型单位为 1 格 |
-| 组织 | 22 个分组，**449 cubes**；交接区域分件裁切，保留原材质 UV，不堆额外装饰 |
+| 组织 | 22 个分组，**447 cubes**；交接区域分件裁切，保留原材质 UV；维护垫无黑/白装饰零件 |
 | 正面 / 原点 | 正面 NORTH（−Z），竖直 +Y；底部中心及组旋转枢轴 `[8,0,8]` |
 | 材质 | 黑灰钢架/侧板、深灰挂板、棕木台面、蓝台钳、青绿维护垫、暗黄三格零件盒、军绿储物箱、灰工具箱与红盖清洁瓶 |
 | 工具墙 | 钳子、螺丝刀、扳手、小锤、清洁刷；右侧小架放油壶与小罐 |
@@ -33,6 +33,6 @@
 
 采用 **2×1×2** 四格真实占位；放置几何先将源 X 整体偏移 +8 对齐格网，再按 X/Y 的 16 单位边界分片。`tools/export-gun-maintenance-bench-parts.mjs` 校验源与完整 Java 导出对应关系，保留裁切面的 UV，禁止为裁切面添加内部盖板。
 
-正式渲染为普通 baked block model，不使用 BER、BlockEntity 或 GeckoLib 动画层。四片位于 `src/main/resources/assets/apocalypse_firstlight/models/block/gun_maintenance_bench/{base,side,upper,upper_side}.json`，由同名 blockstate 的 `facing` / `part` 选择。碰撞按结构分格，不按每个小工具细分。
+工作台本体为普通 baked block model；主块 BlockEntity 与 BER 只负责持久枪械槽及桌面枪，不替换本体，也不播放 GeckoLib 动画。四片位于 `src/main/resources/assets/apocalypse_firstlight/models/block/gun_maintenance_bench/{base,side,upper,upper_side}.json`，由同名 blockstate 的 `facing` / `part` 选择。碰撞按结构分格，不按每个小工具细分。
 
-`models/item/gun_maintenance_bench.json` 继续引用完整 `models/block/gun_maintenance_bench.json`，保留源内 GUI / 手持 / ground Display；可选 Geo 不参与本方块渲染。重新导出完整 Java 模型后执行分片脚本同步运行时。已注册 Block / BlockItem 与四格联动逻辑，钻石级及以上的镐采集掉落；没有 UI、配件/修理、配方、电池或照明功能。
+`models/item/gun_maintenance_bench.json` 继续引用完整 `models/block/gun_maintenance_bench.json`，保留源内 GUI / 手持 / ground Display；可选 Geo 不参与本方块渲染。重新导出完整 Java 模型后执行分片脚本同步运行时。已注册 Block / BlockItem 与四格联动逻辑，钻石级及以上的镐采集掉落；[V2](gun_maintenance_bench_topdown_interaction_v2.md) 使用真实世界相机与桌面枪 BER，已移除 GUI 维护垫副本及其导出工具。`tools/remove-maintenance-mat-decorations.mjs` 记录两个装饰块的源/Java/Geo 同步移除。配件/修理、配方、电池和照明未实现。

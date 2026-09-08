@@ -75,7 +75,7 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<com.antaurora.apofirstlight.block.StaticWorkstationBlock> GUN_MAINTENANCE_BENCH = BLOCKS.register("gun_maintenance_bench",
-            () -> new com.antaurora.apofirstlight.block.StaticWorkstationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+            () -> new com.antaurora.apofirstlight.block.GunMaintenanceBenchBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<com.antaurora.apofirstlight.block.StaticWorkstationBlock> PRECISION_FABRICATION_STATION = BLOCKS.register("precision_fabrication_station",
             () -> new com.antaurora.apofirstlight.block.StaticWorkstationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

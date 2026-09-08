@@ -29,6 +29,16 @@ public final class WorkstationGameTests {
     @GameTestGenerator
     public static java.util.Collection<TestFunction> stations() {
         var tests = new java.util.ArrayList<TestFunction>();
+        tests.add(new TestFunction("workstations","afl_workbench_tests:maintenance_transactions","afl_workbench_tests:empty",100,0L,true,MaintenanceGameTests::transactions));
+        java.util.Map<String,java.util.function.Consumer<GameTestHelper>> gunRegression=java.util.Map.of(
+                "p9_reload",NativeGunAmmoGameTests::reloadCommitAndCancellation,
+                "p9_fire",NativeGunAmmoGameTests::authoritativeFireAndRejectedReload,
+                "creative_reserve",NativeGunAmmoGameTests::creativeReserveAndModeSwitch,
+                "br51_reload",BR5101CombatGameTests::reloadTimelinesAndNoDuplication,
+                "br51_fire",BR5101CombatGameTests::nativeFireAndDryFire,
+                "br51_cancel",BR5101CombatGameTests::cancelReloadAndSoundResources,
+                "ads",NativeAdsGameTests::adsTickAndPartialRecovery);
+        gunRegression.forEach((name,test)->tests.add(new TestFunction("maintenance_regression","afl_workbench_tests:"+name,"afl_workbench_tests:empty",180,0L,true,test)));
         for (var station : java.util.List.of(AflBlocks.GUN_MAINTENANCE_BENCH.get(), AflBlocks.PRECISION_FABRICATION_STATION.get())) {
             var suite = new WorkstationGameTests(station);
             String id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(station).getPath();
@@ -103,7 +113,7 @@ public final class WorkstationGameTests {
                 h.assertTrue(!shape.isEmpty() && bounds.minX>=0 && bounds.minY>=0 && bounds.minZ>=0
                         && bounds.maxX<=1 && bounds.maxY<=1 && bounds.maxZ<=1,"bounded collision");
                 h.assertTrue(shape.toAabbs().stream().mapToDouble(b->b.getXsize()*b.getYsize()*b.getZsize()).sum()<.9,"not full cube");
-                h.assertTrue(s.getLightEmission(h.getLevel(),p)==0 && !s.hasBlockEntity(),"no light or BE");
+                h.assertTrue(s.getLightEmission(h.getLevel(),p)==0 && s.hasBlockEntity()==(station==AflBlocks.GUN_MAINTENANCE_BENCH.get()),"station light and BE contract");
                 h.assertTrue(s.getPistonPushReaction()==net.minecraft.world.level.material.PushReaction.BLOCK,"no piston split");
                 var saved=net.minecraft.nbt.NbtUtils.writeBlockState(s);
                 h.assertTrue(net.minecraft.nbt.NbtUtils.readBlockState(h.getLevel().holderLookup(net.minecraft.core.registries.Registries.BLOCK),saved).equals(s),"state persistence");

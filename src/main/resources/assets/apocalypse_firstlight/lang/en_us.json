@@ -1,4 +1,8 @@
 {
+  "screen.apocalypse_firstlight.gun_maintenance": "Gun Maintenance",
+  "screen.apocalypse_firstlight.maintenance_select": "Select a gun from your hotbar",
+  "gui.apocalypse_firstlight.gun_maintenance.return_weapon": "Return weapon",
+  "gui.apocalypse_firstlight.gun_maintenance.take_weapon": "Take weapon",
   "block.apocalypse_firstlight.gun_maintenance_bench": "Gun Maintenance Bench",
   "block.apocalypse_firstlight.precision_fabrication_station": "Precision Fabrication Station",
   "item.apocalypse_firstlight.pistol_red_dot": "Pistol Micro Red Dot",

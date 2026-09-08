@@ -1,0 +1,11 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/thermal-fluid-client')
+            property 'afl.maintenanceProbe', project.hasProperty('maintenanceFacings') ? 'false' : 'true'
+            property 'afl.maintenanceFacings', project.hasProperty('maintenanceFacings') ? 'true' : 'false'
+            property 'afl.maintenanceVerify', project.hasProperty('maintenanceVerify') ? 'true' : 'false'
+            args '--quickPlaySingleplayer', 'fluid_probe'
+        }
+    }
+}

@@ -14,10 +14,11 @@
 | 硬度 / 抗爆 / 声音 | 3.0 / 6.0 / METAL |
 | 创造标签页 | AFL 方块，铅箱之后；武器与弹药页不重复添加 |
 | 碰撞 / 选框 | 同一组分格旋转结构盒：钢腿、桌面、后墙/侧板、下层架、灯罩和主要储物体；保留开口，不用四格实心盒 |
-| 渲染 | 四格普通静态 baked model；每片局限单格，源几何与材质不变；无 BER / BlockEntity |
+| 渲染 | 四格静态 baked model 保留；主格 BlockEntity 持久存枪，BER 在维护垫绘制该枪；源几何与材质不变 |
 | 工作灯 | 模型保留，光照等级 0，无 LIT / 动态发光 / 电源接口 |
-| 交互 | 各 part 解析至 root，`useAtRoot` 消费交互但不执行功能；不输出测试聊天或打开 UI |
-| 未实现 | GUI、Menu/Screen、库存、维修、配件、制造、配方、JEI/Jade、动画、电池槽、FE / Power Network |
+| 交互 | 任意 part 进入真实世界 67.5° 俯视维护模式；快捷栏放枪，原玩家点击来源槽虚影取回，其他玩家使用右侧拿取按钮；枪身无取回功能，退出不返还；见 [V2.1](gun_maintenance_bench_topdown_interaction_v2.md) |
+| 存枪拆除 | 任意部位拆除，台内真实枪额外掉落一次；工作台本体仍按原采集规则 |
+| 未实现 | 维修、配件 UI、制造、配方、JEI/Jade、动画、电池槽、FE / Power Network |
 
 ## 完整性与资源
 
@@ -32,14 +33,14 @@
 - 掉落表：`src/main/resources/data/apocalypse_firstlight/loot_tables/blocks/gun_maintenance_bench.json`。
 - 同步：`node tools/export-gun-maintenance-bench-parts.mjs`（含源资产、UV、几何体积完整性检查）。
 
-后续入口仍未实现：GUI 可在 root 扩展；电池槽仅为工作灯供电，无电池时工作台功能仍可用，不接工业电网。本轮无相关状态或假功能。
+俯视维护模式与持久枪械槽已在 root 实现。电池与工作灯供电仍为规划内容，当前无相关状态或假功能。
 
 ## 验证
 
 开发测试：`src/dev/java/com/antaurora/apofirstlight/dev/WorkstationGameTests.java`，通过 `src/dev/gun-maintenance-bench-gametest.init.gradle` 使用独立测试世界与测试命名空间，不访问玩家存档。
 
-本轮两台共用参数化 GameTest，**10/10 通过（每台 5 项）**。分别覆盖四向放置/组成格/root 解析、碰撞边界与开口、零发光/无 BE/禁止活塞、方块状态 NBT 往返；阻挡位置、缺支撑、水体拒绝；每台 32 种生存工具×部位组合；创造/命令/正常掉落清理、爆炸不重复掉落、延后孤块清理。NBT 往返及孤块测试不等同于真实跨区块卸载重载或旧存档迁移验收。
+当前 **18/18 GameTest 通过**：两台原有 10 项参数化测试、维护台真实枪械槽交易测试及 7 项枪械回归。覆盖四向放置/组成格/root 解析、碰撞边界与开口、零发光/禁止活塞、维护台 BE 与制造台无 BE、方块状态 NBT 往返；阻挡位置、缺支撑、水体拒绝；每台 32 种生存工具×部位组合；创造/命令/正常掉落清理、爆炸不重复掉落、延后孤块清理。交易测试覆盖完整 NBT、返回回退、两位 FakePlayer 交错请求和拆台单次掉枪。测试不等同于真实多人客户端或跨区块卸载重载验收。
 
-自动化日志：`build/workstation-tests.log`。`compileJava processResources build --offline --stacktrace -PaflWithoutTacz` 与源资产/分片校验通过。
+本轮日志：`build/maintenance-v2-tests-final.log`；使用 `src/dev/maintenance-gametest.init.gradle`，`build runGameTestServer --offline` 通过。
 
-模型和尺寸沿用先前用户验收版本；本轮改名后的图形显示、旧存档迁移与保存重进须单独确认，不沿用之前的实机结果冒充本轮通过。迁移边界见 [命名迁移](workstation_name_migration_v1.md)。
+尺寸沿用用户验收版本，护垫上的黑/白两个装饰块已移除；当前实机结果见 [V2](gun_maintenance_bench_topdown_interaction_v2.md)。旧存档命名迁移未在本轮重新验收，迁移边界见 [命名迁移](workstation_name_migration_v1.md)。
