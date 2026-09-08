@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/02 - 内容设计/方块/机器.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "机器"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/02 - 内容设计/方块/机器.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,33 +189,41 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/test/level2909964693947579506.dat",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/saves/test/level8967699035794371430.dat",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
+    "docs/04 - 注意事项 重要内容.md",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/vector45.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/type_81.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/uzi.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/ump45.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/timeless50_slot.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/springfield1873_slot.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/taurus943.png",
+    "build/thermal-generator-model-gametest/tacz/tacz_default_gun/assets/tacz/textures/gun/slot/spr15hb_slot.png",
+    "docs/machines/thermal_generator_dynamic_fuel_visuals_v1.md",
+    "docs/machines/thermal_generator_3d_model_v1.md",
+    "docs/native_guns/workstation_name_migration_v1.md",
+    "docs/native_guns/precision_fabrication_station_block_v1.md",
+    "docs/native_guns/precision_fabrication_station_model_v1.md",
+    "docs/native_guns/gun_maintenance_bench_model_v1.md",
+    "docs/native_guns/gun_maintenance_bench_block_v1.md",
+    "docs/native_guns/precision_assembly_station_model_v1.md",
     "docs/native_guns/gun_workbench_block_v1.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/gun_workbench.png",
     "docs/native_guns/gun_workbench_model_v1.md",
-    "build/gun-workbench-front.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/gun_workbench.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/pistol_red_dot.png",
     "docs/native_guns/pistol_red_dot_v1.md",
-    "build/pistol-red-dot-blockbench.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/pistol_red_dot.png",
     "docs/01 - 系统设计/枪械/枪械.md",
     "docs/01 - 系统设计/枪械/弹药.md",
-    "docs/04 - 注意事项 重要内容.md",
-    "build/p9-empty-snap-yaw-test2.png",
-    "build/p9-empty-snap-yaw-test.png",
-    "build/p9-empty-snap-depth.png",
-    "build/p9-user-snap-detail.jpg",
     "docs/native_guns/p9_01_empty_reload_special_rebuild.md",
     "docs/native_guns/p9_01_animation_rebuild_v1.md",
     "docs/native_guns/p9_01_model_style_rework.md",
@@ -226,14 +234,6 @@
     "docs/02 - 内容设计/创造模式标签页.md",
     "docs/native_guns/br51_01_first_person_hip_pose_fix.md",
     "docs/native_guns/native_ads_v1.md",
-    "docs/native_guns/native_ammo_assets_v1.md",
-    "docs/native_guns/native_stance_accuracy_v1.md",
-    "docs/native_guns/native_weapon_renaming_report.md",
-    "docs/native_guns/br51_01_visual_animation_fix_report.md",
-    "docs/native_guns/br51_01_v1_white_gun_asset_cleanup.md",
-    "docs/native_guns/br51_01_third_person_and_icons.md",
-    "docs/native_guns/br51_01_reference_arm_preview.md",
-    "docs/native_guns/br51_01_native_combat_completion.md",
-    "docs/native_guns/br51_01_cleanup_audit.md"
+    "docs/native_guns/native_ammo_assets_v1.md"
   ]
 }

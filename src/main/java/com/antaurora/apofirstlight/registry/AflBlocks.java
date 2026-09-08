@@ -74,9 +74,12 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
-    public static final RegistryObject<com.antaurora.apofirstlight.block.GunWorkbenchBlock> GUN_WORKBENCH = BLOCKS.register("gun_workbench",
-            () -> new com.antaurora.apofirstlight.block.GunWorkbenchBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+    public static final RegistryObject<com.antaurora.apofirstlight.block.StaticWorkstationBlock> GUN_MAINTENANCE_BENCH = BLOCKS.register("gun_maintenance_bench",
+            () -> new com.antaurora.apofirstlight.block.StaticWorkstationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<com.antaurora.apofirstlight.block.StaticWorkstationBlock> PRECISION_FABRICATION_STATION = BLOCKS.register("precision_fabrication_station",
+            () -> new com.antaurora.apofirstlight.block.StaticWorkstationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion(), true));
     public static final RegistryObject<Block> SPHALERITE_ORE = BLOCKS.register("sphalerite_ore",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_ORE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ZINC_BLOCK = BLOCKS.register("zinc_block",

@@ -1,7 +1,8 @@
 {
   "replace": false,
   "values": [
-    "apocalypse_firstlight:gun_workbench",
+    "apocalypse_firstlight:gun_maintenance_bench",
+    "apocalypse_firstlight:precision_fabrication_station",
     "apocalypse_firstlight:alloy_furnace",
     "apocalypse_firstlight:aluminum_block",
     "apocalypse_firstlight:bauxite_ore",

@@ -1,0 +1,68 @@
+{
+  "variants": {
+    "facing=north,part=base": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/base",
+      "y": 0
+    },
+    "facing=north,part=side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/side",
+      "y": 0
+    },
+    "facing=north,part=upper": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper",
+      "y": 0
+    },
+    "facing=north,part=upper_side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper_side",
+      "y": 0
+    },
+    "facing=east,part=base": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/base",
+      "y": 90
+    },
+    "facing=east,part=side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/side",
+      "y": 90
+    },
+    "facing=east,part=upper": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper",
+      "y": 90
+    },
+    "facing=east,part=upper_side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper_side",
+      "y": 90
+    },
+    "facing=south,part=base": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/base",
+      "y": 180
+    },
+    "facing=south,part=side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/side",
+      "y": 180
+    },
+    "facing=south,part=upper": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper",
+      "y": 180
+    },
+    "facing=south,part=upper_side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper_side",
+      "y": 180
+    },
+    "facing=west,part=base": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/base",
+      "y": 270
+    },
+    "facing=west,part=side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/side",
+      "y": 270
+    },
+    "facing=west,part=upper": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper",
+      "y": 270
+    },
+    "facing=west,part=upper_side": {
+      "model": "apocalypse_firstlight:block/gun_maintenance_bench/upper_side",
+      "y": 270
+    }
+  }
+}

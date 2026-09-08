@@ -1,5 +1,6 @@
 {
-  "block.apocalypse_firstlight.gun_workbench": "枪械工作台",
+  "block.apocalypse_firstlight.gun_maintenance_bench": "枪械维护台",
+  "block.apocalypse_firstlight.precision_fabrication_station": "精密制造台",
   "item.apocalypse_firstlight.pistol_red_dot": "手枪微型红点瞄具",
   "key.apocalypse_firstlight.sight_exchange": "安装/拆下瞄具",
   "tooltip.apocalypse_firstlight.sight.install": "主手持兼容手枪、副手持瞄具：按瞄具装拆键安装（默认 V）",

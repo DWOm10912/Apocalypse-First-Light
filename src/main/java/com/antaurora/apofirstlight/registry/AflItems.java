@@ -57,8 +57,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LEAD_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> LEAD_CHEST = ITEMS.register("lead_chest",
             () -> new LeadChestBlockItem(AflBlocks.LEAD_CHEST.get(), new Item.Properties()));
-    public static final RegistryObject<Item> GUN_WORKBENCH = ITEMS.register("gun_workbench",
-            () -> new com.antaurora.apofirstlight.item.GunWorkbenchBlockItem(AflBlocks.GUN_WORKBENCH.get(), new Item.Properties()));
+    public static final RegistryObject<Item> GUN_MAINTENANCE_BENCH = ITEMS.register("gun_maintenance_bench",
+            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.GUN_MAINTENANCE_BENCH.get(), new Item.Properties()));
+    public static final RegistryObject<Item> PRECISION_FABRICATION_STATION = ITEMS.register("precision_fabrication_station",
+            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.PRECISION_FABRICATION_STATION.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPHALERITE_ORE = ITEMS.register("sphalerite_ore",
             () -> new BlockItem(AflBlocks.SPHALERITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> ZINC_BLOCK = ITEMS.register("zinc_block",

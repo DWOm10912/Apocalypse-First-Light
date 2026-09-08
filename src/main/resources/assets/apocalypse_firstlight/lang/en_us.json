@@ -1,5 +1,6 @@
 {
-  "block.apocalypse_firstlight.gun_workbench": "Gun Workbench",
+  "block.apocalypse_firstlight.gun_maintenance_bench": "Gun Maintenance Bench",
+  "block.apocalypse_firstlight.precision_fabrication_station": "Precision Fabrication Station",
   "item.apocalypse_firstlight.pistol_red_dot": "Pistol Micro Red Dot",
   "key.apocalypse_firstlight.sight_exchange": "Install / Remove Sight",
   "tooltip.apocalypse_firstlight.sight.install": "Compatible pistol in main hand, sight in offhand: attachment key (default V) to install",
