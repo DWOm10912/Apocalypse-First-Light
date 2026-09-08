@@ -20,6 +20,10 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
     private int originHotbarSlot=-1;
     private UUID originPlayerUUID;
     private boolean originMetadataReady;
+    private long attachmentRevision;
+    public long attachmentRevision(){return attachmentRevision;}
+    /** Server transaction commit preserves the gun's return-origin metadata. */
+    public void commitAttachments(ItemStack gun){maintenanceGunSlot=gun;sync();}
     public boolean originMetadataReady(){return originMetadataReady;}
     public int originHotbarSlot(){return originHotbarSlot;}
     public UUID originPlayerUUID(){return originPlayerUUID;}
@@ -50,6 +54,7 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
         originHotbarSlot=-1;originPlayerUUID=null;inventory.setChanged();sync();return true;
     }
     private void sync() {
+        if(level!=null&&!level.isClientSide)attachmentRevision++;
         setChanged();if(level!=null && !level.isClientSide)level.sendBlockUpdated(worldPosition,getBlockState(),getBlockState(),2);
     }
     @Override public int getContainerSize(){return 1;}
@@ -83,10 +88,12 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
     @Override public AbstractContainerMenu createMenu(int id,Inventory inventory,Player player){return new GunMaintenanceMenu(id,inventory,this);}
     @Override protected void saveAdditional(CompoundTag tag){
         super.saveAdditional(tag);tag.put("MaintenanceGun",maintenanceGunSlot.save(new CompoundTag()));
+        tag.putLong("AttachmentRevision",attachmentRevision);
         tag.putInt("OriginHotbarSlot",originHotbarSlot);if(originPlayerUUID!=null)tag.putUUID("OriginPlayerUUID",originPlayerUUID);
     }
     @Override public void load(CompoundTag tag){
         super.load(tag);var stack=ItemStack.of(tag.getCompound("MaintenanceGun"));
+        attachmentRevision=tag.getLong("AttachmentRevision");
         maintenanceGunSlot=accepts(stack)?stack:ItemStack.EMPTY;
         originHotbarSlot=tag.contains("OriginHotbarSlot")?tag.getInt("OriginHotbarSlot"):-1;
         originPlayerUUID=tag.hasUUID("OriginPlayerUUID")?tag.getUUID("OriginPlayerUUID"):null;

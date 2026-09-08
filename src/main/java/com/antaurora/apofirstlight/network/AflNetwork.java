@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "17";
+    private static final String PROTOCOL = "19";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -76,6 +76,38 @@ public final class AflNetwork {
                 GunDataPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, SightExchangePacket.class,SightExchangePacket::encode,SightExchangePacket::decode,
                 SightExchangePacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, MaintenancePacket.class,MaintenancePacket::encode,MaintenancePacket::decode,
+                MaintenancePacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, MaintenanceResult.class,MaintenanceResult::encode,MaintenanceResult::decode,
+                MaintenanceResult::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void requestMaintenance(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
+        if(channel!=null)channel.sendToServer(new MaintenancePacket(request));
+    }
+    public record MaintenancePacket(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
+        static void encode(MaintenancePacket p,FriendlyByteBuf b){var r=p.request;
+            b.writeVarInt(r.containerId());b.writeBlockPos(r.bench());b.writeLong(r.revision());b.writeItem(r.expectedGun());
+            b.writeEnum(r.target());b.writeVarInt(r.sourceSlot());b.writeItem(r.expectedSource());}
+        static MaintenancePacket decode(FriendlyByteBuf b){return new MaintenancePacket(new com.antaurora.apofirstlight.weapon.MaintenanceActionRequest(
+                b.readVarInt(),b.readBlockPos(),b.readLong(),b.readItem(),b.readEnum(com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.class),b.readVarInt(),b.readItem()));}
+        static void handle(MaintenancePacket p,Supplier<NetworkEvent.Context> supplier){var c=supplier.get();c.enqueueWork(()->{
+            var player=c.getSender();if(player==null)return;
+            com.antaurora.apofirstlight.weapon.MaintenanceAttachmentOperation.begin(player,p.request);
+        });c.setPacketHandled(true);}
+    }
+    /** 0=cancel/rejected, 1=committed, 2=server-approved action started. */
+    public static void maintenanceResult(ServerPlayer player,int containerId,int phase){
+        channel.send(PacketDistributor.PLAYER.with(()->player),new MaintenanceResult(containerId,phase));
+    }
+    public record MaintenanceResult(int containerId,int phase){
+        static void encode(MaintenanceResult p,FriendlyByteBuf b){b.writeVarInt(p.containerId);b.writeByte(p.phase);}
+        static MaintenanceResult decode(FriendlyByteBuf b){return new MaintenanceResult(b.readVarInt(),b.readUnsignedByte());}
+        static void handle(MaintenanceResult p,Supplier<NetworkEvent.Context> supplier){var c=supplier.get();c.enqueueWork(()->
+            DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{
+                if(net.minecraft.client.Minecraft.getInstance().screen instanceof com.antaurora.apofirstlight.client.GunMaintenanceScreen s
+                        &&s.getMenu().containerId==p.containerId)s.attachmentResult(p.phase);
+            }));c.setPacketHandled(true);}
     }
 
     public static void requestSightExchange(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){

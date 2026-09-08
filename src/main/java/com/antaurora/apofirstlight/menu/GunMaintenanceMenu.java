@@ -36,6 +36,7 @@ public final class GunMaintenanceMenu extends AbstractContainerMenu {
         // Real synchronized slots, intentionally not exposed as a drag/drop inventory.
         for(int i=0;i<9;i++)addSlot(new Slot(inventory,i,-1000,-1000));
         addSlot(new Slot(bench,0,-1000,-1000));
+        for(int i=9;i<36;i++)addSlot(new Slot(inventory,i,-1000,-1000));
     }
     @Override public boolean stillValid(Player player){return bench!=null && bench.stillValid(player);}
     @Override public ItemStack quickMoveStack(Player player,int index){return ItemStack.EMPTY;}

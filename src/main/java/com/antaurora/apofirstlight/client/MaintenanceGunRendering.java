@@ -46,6 +46,28 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         var model=model(stack);if(model==null)return List.of();
         return BOUNDS.computeIfAbsent(model,m->{var result=new ArrayList<net.minecraft.world.phys.AABB>();var pose=new PoseStack();for(var b:bones(stack,m))collect(b,pose,result);return List.copyOf(result);});
     }
+    /** Traverses the same immutable bind pose as the actual desktop renderer. */
+    public static org.joml.Vector3f interactionPoint(ItemStack stack,com.antaurora.apofirstlight.weapon.NativeAttachment.Slot slot,PoseStack pose){
+        var m=model(stack);if(m==null||!(stack.getItem() instanceof NativeGunItem gun))return null;
+        String dedicated=slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT?"maintenance_sight_anchor":"maintenance_muzzle_anchor";
+        for(var b:bones(stack,m)){var point=anchorPoint(b,pose,dedicated,0,0,0);if(point!=null)return point;}
+        if(slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT){
+            var mount=gun.definition().sightMount();if(mount==null)return null;
+            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,mount.anchor(),mount.x()/16f,mount.y()/16f,mount.z()/16f);if(point!=null)return point;}
+        }else{
+            var mount=gun.definition().muzzleMount();if(mount==null)return null;
+            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,mount.anchor(),0,0,0);if(point!=null)return point;}
+        }
+        return null;
+    }
+    private static org.joml.Vector3f anchorPoint(GeoBone bone,PoseStack pose,String name,float x,float y,float z){
+        pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+        org.joml.Vector3f result=null;
+        if(bone.getName().equals(name)){
+            RenderUtils.translateToPivotPoint(pose,bone);result=pose.last().pose().transformPosition(new org.joml.Vector3f(x,y,z));
+        }else for(var child:bone.getChildBones()){result=anchorPoint(child,pose,name,x,y,z);if(result!=null)break;}
+        pose.popPose();return result;
+    }
     private static void collect(GeoBone bone,PoseStack pose,List<net.minecraft.world.phys.AABB> result){
         pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
         for(var cube:bone.getCubes()){

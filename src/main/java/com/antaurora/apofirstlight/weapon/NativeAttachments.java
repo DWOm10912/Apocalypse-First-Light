@@ -10,6 +10,13 @@ import static com.antaurora.apofirstlight.weapon.NativeAttachment.Slot;
 /** Stack-local slots, transacted only on the server through the existing V packet. */
 public final class NativeAttachments {
     private static final String ROOT="AflAttachments";
+    /** Serialization primitive; callers must provide server authority and compatibility validation. */
+    static void writeStored(ItemStack gun,Slot slot,ItemStack attachment){
+        var root=gun.getOrCreateTag().getCompound(ROOT);
+        if(attachment.isEmpty())root.remove(slot.name());
+        else root.put(slot.name(),attachment.save(new net.minecraft.nbt.CompoundTag()));
+        if(root.isEmpty())gun.getOrCreateTag().remove(ROOT);else gun.getOrCreateTag().put(ROOT,root);
+    }
     public static ItemStack stored(ItemStack gun,Slot slot){
         var tag=gun.getTag();
         return tag==null||!tag.contains(ROOT,Tag.TAG_COMPOUND)?ItemStack.EMPTY:
