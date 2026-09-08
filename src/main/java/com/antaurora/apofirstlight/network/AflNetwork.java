@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "16";
+    private static final String PROTOCOL = "17";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -78,15 +78,16 @@ public final class AflNetwork {
                 SightExchangePacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
     }
 
-    public static void requestSightExchange(int slot){if(channel!=null)channel.sendToServer(new SightExchangePacket(slot));}
-    public record SightExchangePacket(int slot){
-        static void encode(SightExchangePacket p,FriendlyByteBuf b){b.writeVarInt(p.slot);}
-        static SightExchangePacket decode(FriendlyByteBuf b){return new SightExchangePacket(b.readVarInt());}
+    public static void requestSightExchange(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){
+        if(channel!=null)channel.sendToServer(new SightExchangePacket(slot,gun.copy(),offhand.copy()));
+    }
+    public record SightExchangePacket(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){
+        static void encode(SightExchangePacket p,FriendlyByteBuf b){b.writeVarInt(p.slot);b.writeItem(p.gun);b.writeItem(p.offhand);}
+        static SightExchangePacket decode(FriendlyByteBuf b){return new SightExchangePacket(b.readVarInt(),b.readItem(),b.readItem());}
         static void handle(SightExchangePacket p,Supplier<NetworkEvent.Context> supplier){
             var c=supplier.get();c.enqueueWork(()->{
                 var player=c.getSender();
-                if(player!=null&&p.slot>=0&&p.slot<9&&player.getInventory().selected==p.slot
-                        &&player.containerMenu==player.inventoryMenu)
+                if(player!=null&&com.antaurora.apofirstlight.weapon.NativeAttachments.requestMatches(player,p.slot,p.gun,p.offhand))
                     com.antaurora.apofirstlight.weapon.NativeAttachments.exchange(player);
             });c.setPacketHandled(true);
         }

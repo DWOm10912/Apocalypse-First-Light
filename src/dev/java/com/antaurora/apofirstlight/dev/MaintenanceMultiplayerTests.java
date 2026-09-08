@@ -32,6 +32,7 @@ public final class MaintenanceMultiplayerTests {
         com.antaurora.apofirstlight.weapon.NativeGunAmmo.set(gun,definition,7);
         h.assertTrue(com.antaurora.apofirstlight.weapon.NativeGunAmmo.read(gun,definition)==7,"non default ammo fixture");
         var attachments=new net.minecraft.nbt.CompoundTag();attachments.put("SIGHT",new ItemStack(AflItems.PISTOL_RED_DOT.get()).save(new net.minecraft.nbt.CompoundTag()));gun.getOrCreateTag().put("AflAttachments",attachments);
+        gun.getOrCreateTag().getCompound("AflAttachments").put("MUZZLE",new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()).save(new net.minecraft.nbt.CompoundTag()));
         for(int i=0;i<50;i++){
             a.getInventory().clearContent();b.getInventory().clearContent();a.getInventory().setItem(4,gun.copy());
             h.assertTrue(am.clickMenuButton(a,4),"place "+i);

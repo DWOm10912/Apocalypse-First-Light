@@ -51,6 +51,7 @@ public final class AflSounds {
             .toList();
 
     public static final RegistryObject<SoundEvent> P9_01_FIRE = pistolSound("fire");
+    public static final RegistryObject<SoundEvent> P9_01_SUPPRESSED = pistolSound("suppressed");
     public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");
     public static final RegistryObject<SoundEvent> CASING_LANDING = SOUND_EVENTS.register("shell_casings_dropping",

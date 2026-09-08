@@ -70,11 +70,12 @@ public final class NativeGunShot {
             if (damaged && hit.entity() instanceof net.minecraft.world.entity.LivingEntity)
                 com.antaurora.apofirstlight.network.AflNetwork.sendNativeHit(shooter, hit.head());
         }
+        var noise=NativeGunNoise.resolve(shooter.getMainHandItem(),d);
         NoiseSystem.emit(new NoiseEvent(shooter, start, NoiseType.GUNSHOT, shooter.level().getGameTime(),
-                d.id(), d.noiseRadius()), shooter.serverLevel());
+                d.id(), noise.radius()), shooter.serverLevel());
         if (d.gunshotTinnitus())
             com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker.onGunshot(
-                    shooter.serverLevel(), shooter, start, d.noiseRadius(), false);
+                    shooter.serverLevel(), shooter, start, noise.radius(), noise.suppressed());
         return hit;
     }
 }

@@ -122,7 +122,7 @@ public final class P901Actions {
         syncInventory(player);
         item.triggerAnim(player, state.id, P901Item.CONTROLLER, state.clip);
         if (!reload) {
-            sound(player, item.fireSound());
+            sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
             var hit = NativeGunShot.execute(player, definition);
             com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point());
         }

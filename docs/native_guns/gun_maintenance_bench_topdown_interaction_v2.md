@@ -37,6 +37,8 @@
 
 ## 后续扩展（未实现）
 
+当前桌面共享枪械渲染已读取真实枪的 SIGHT + MUZZLE，可同时显示红点和独立消音器；不新增维护台视觉布尔值。附件仍在退出维护模式后通过主手枪、副手附件、V 安装，桌面附件热点和安装交互未实现。见 [消音器 V1](attachments/pistol_suppressor_01_v1.md)。
+
 `MaintenanceActionState` 仅运行 IDLE，其他状态为预留；`MaintenanceInteractionAnchor` 和 profile 的可选空 anchor 集合用于未来双手工作位置，与附件最终安装 `sight_anchor` 分开。未实现配件按钮、安装、修理、手臂动画、电池或照明。
 
 未来事务：服务器验证 → 动作状态 → 临时视觉附件/双手动作 → Animation Complete → 服务器再次验证 → Commit Attachment。动画完成前不得写正式枪附件；左手稳定枪，右手操作配件或工具。

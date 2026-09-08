@@ -6,8 +6,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 
 /** Independent, non-durable SIGHT accessory. */
-public final class NativeSightItem extends Item {
-    public enum Slot { SIGHT }
+public final class NativeSightItem extends Item implements NativeAttachment {
     public NativeSightItem(){super(new Properties().stacksTo(1));}
     public Slot slot(){return Slot.SIGHT;}
     @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){

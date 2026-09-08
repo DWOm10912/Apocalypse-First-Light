@@ -25,6 +25,8 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
             @Override public void renderForBone(PoseStack pose, T item, GeoBone bone,
                     RenderType type, MultiBufferSource buffers, VertexConsumer buffer, float partial, int light, int overlay) {
                 if (renderPerspective == null) return;
+                try{NativeSightRendering.render(currentItemStack,bone,pose,buffers,light,overlay);}
+                finally{buffers.getBuffer(type);}
                 if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem
                         && (renderPerspective.firstPerson() || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                             || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_LEFT_HAND)) {
@@ -33,10 +35,13 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                     if (fx != null) {
                         var matrix = P901RenderMatrices.detachedCopy(pose);
                         RenderUtils.translateToPivotPoint(matrix, bone);
+                        boolean attachedExit=fx.equals("muzzle_anchor")&&NativeMuzzleRendering.applyExit(currentItemStack,matrix);
+                        boolean suppressed=com.antaurora.apofirstlight.weapon.NativeGunNoise.resolve(currentItemStack,
+                                ((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition()).suppressed();
                         try { NativeGunFx.anchor(getInstanceId(item), renderPerspective.firstPerson(), fx, matrix, buffers, partial,
                                 new ResourceLocation(((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition().casing().getNamespace(),
                                         "item/"+((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition().casing().getPath()),
-                                profile.barrelExitOffset()); }
+                                attachedExit?0:profile.barrelExitOffset(),suppressed); }
                         finally { buffers.getBuffer(type); }
                     }
                 }

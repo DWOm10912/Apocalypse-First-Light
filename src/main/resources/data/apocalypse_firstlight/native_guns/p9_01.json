@@ -48,6 +48,11 @@
     "horizontalRightMin": 0.06
   },
   "casing": "apocalypse_firstlight:9x19mm_casing",
+  "suppressed_fire_sound": "apocalypse_firstlight:p9_01_suppressed",
+  "muzzle_slot": {
+    "anchor": "muzzle_anchor",
+    "accepts": ["apocalypse_firstlight:pistol_suppressor_01"]
+  },
   "sight_slot": {
     "anchor": "sight_anchor",
     "mount_offset": [0, -0.44, 10.55],

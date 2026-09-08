@@ -47,6 +47,12 @@ public final class NativeGunData {
         if(id==null||validate&&!ForgeRegistries.ITEMS.containsKey(id))throw new IllegalArgumentException(key+": unknown item "+id);
         return id;
     }
+    private static ResourceLocation suppressedSound(JsonObject o,boolean validate){
+        if(!o.has("suppressed_fire_sound"))return null;
+        var id=new ResourceLocation(o.get("suppressed_fire_sound").getAsString());
+        if(validate&&!ForgeRegistries.SOUND_EVENTS.containsKey(id))throw new IllegalArgumentException("Unknown suppressed sound "+id);
+        return id;
+    }
     public static NativeGunDefinition parse(ResourceLocation id,JsonObject o,boolean validate) {
         try {
             var f=o.getAsJsonObject("fire");var d=o.getAsJsonObject("damage");
@@ -74,7 +80,8 @@ public final class NativeGunData {
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
                     num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,NativeTrailProfile.SUBTLE_PISTOL,ap,
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
-                    (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate));
+                    (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
+                    NativeMuzzleMount.parse(o,validate),suppressedSound(o,validate));
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

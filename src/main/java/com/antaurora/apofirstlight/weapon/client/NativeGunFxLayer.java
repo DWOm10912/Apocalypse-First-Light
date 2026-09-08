@@ -22,10 +22,12 @@ public final class NativeGunFxLayer extends GeoRenderLayer<P901Item> {
         if (!name.equals("muzzle_anchor") && !name.equals("ejection_anchor")) return;
         var anchor = P901RenderMatrices.detachedCopy(pose);
         RenderUtils.translateToPivotPoint(anchor, bone);
+        boolean suppressed=com.antaurora.apofirstlight.weapon.NativeGunNoise.resolve(renderer.sightStack(),item.definition()).suppressed();
+        if(name.equals("muzzle_anchor"))NativeMuzzleRendering.applyExit(renderer.sightStack(),anchor);
         try {
             NativeGunFx.anchor(renderer.getInstanceId(item), renderer.isFirstPersonPass(), name,
                     anchor, buffers, partial, new net.minecraft.resources.ResourceLocation(
-                            item.definition().casing().getNamespace(),"item/"+item.definition().casing().getPath()));
+                            item.definition().casing().getNamespace(),"item/"+item.definition().casing().getPath()),0,suppressed);
         } finally { buffers.getBuffer(type); }
     }
 }

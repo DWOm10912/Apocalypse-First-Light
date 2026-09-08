@@ -134,6 +134,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.ROUND_9MM.get());
                         output.accept(AflItems.ROUND_762MM.get());
                         output.accept(AflItems.PISTOL_RED_DOT.get());
+                        output.accept(AflItems.PISTOL_SUPPRESSOR_01.get());
                     })
                     .build());
 

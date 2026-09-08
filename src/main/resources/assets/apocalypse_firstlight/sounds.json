@@ -17,6 +17,10 @@
       "apocalypse_firstlight:weapons/p9_01/slide_action"
     ]
   },
+  "p9_01_suppressed": {
+    "subtitle": "subtitles.apocalypse_firstlight.p9_01.suppressed",
+    "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_suppressed"]
+  },
   "p9_01_fire": {
     "subtitle": "subtitles.apocalypse_firstlight.p9_01.fire",
     "sounds": [

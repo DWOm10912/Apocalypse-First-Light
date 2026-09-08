@@ -22,6 +22,7 @@ public final class NativeSightRendering {
         e.register(new ResourceLocation("apocalypse_firstlight","item/pistol_red_dot_reticle"));
     }
     public static void render(ItemStack stack,GeoBone bone,PoseStack incoming,MultiBufferSource buffers,int light,int overlay){
+        NativeMuzzleRendering.render(stack,bone,incoming,buffers,light,overlay);
         if(stack==null||!(stack.getItem() instanceof NativeGunItem gun))return;
         var mount=gun.definition().sightMount();var sight=NativeAttachments.activeSight(stack);
         if(mount==null||sight.isEmpty()||!bone.getName().equals(mount.anchor()))return;

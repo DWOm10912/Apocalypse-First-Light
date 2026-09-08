@@ -22,7 +22,8 @@ public final class NativeSightInput {
         var mc=Minecraft.getInstance();boolean click=false;while(EXCHANGE.consumeClick())click=true;
         if(click&&!held&&mc.player!=null&&mc.screen==null&&mc.isWindowActive()&&mc.player.isAlive()
                 &&!mc.player.isSpectator()&&mc.player.getMainHandItem().getItem() instanceof NativeGunItem)
-            com.antaurora.apofirstlight.network.AflNetwork.requestSightExchange(mc.player.getInventory().selected);
+            com.antaurora.apofirstlight.network.AflNetwork.requestSightExchange(mc.player.getInventory().selected,
+                    mc.player.getMainHandItem(),mc.player.getOffhandItem());
         held=EXCHANGE.isDown();
     }
 }

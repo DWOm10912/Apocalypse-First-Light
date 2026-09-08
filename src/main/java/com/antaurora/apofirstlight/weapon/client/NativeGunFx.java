@@ -70,6 +70,10 @@ public final class NativeGunFx {
 
     public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
                               MultiBufferSource buffers, float partial, ResourceLocation casingModel, float barrelExitOffset) {
+        anchor(gun,firstPerson,name,anchor,buffers,partial,casingModel,barrelExitOffset,false);
+    }
+    public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
+                              MultiBufferSource buffers, float partial, ResourceLocation casingModel, float barrelExitOffset,boolean suppressed) {
         checkWorld();
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
@@ -114,6 +118,18 @@ public final class NativeGunFx {
                 shot.ejected = true;
             }
             if (name.equals("muzzle_anchor")) {
+                if(suppressed){
+                    if(Double.isNaN(shot.flashStart)){
+                        shot.flashStart=now;
+                        var matrix=new Matrix4f(WORLD_VIEW).invert();
+                        if(firstPerson)matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
+                        matrix.mul(anchor.last().pose());
+                        var p=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
+                        var origin=mc.gameRenderer.getMainCamera().getPosition().add(p.x,p.y,p.z);
+                        world.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE,origin.x,origin.y,origin.z,0,.008,0);
+                    }
+                    continue;
+                }
                 if (Double.isNaN(shot.flashStart)) shot.flashStart = now;
                 float age = (float)(now - shot.flashStart);
                 if (age >= 0 && age < FLASH_TICKS) {
