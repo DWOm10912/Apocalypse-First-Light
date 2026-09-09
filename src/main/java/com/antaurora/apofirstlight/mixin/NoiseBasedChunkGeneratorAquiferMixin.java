@@ -31,7 +31,6 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
         BiomeSource biomeSource = ((NoiseBasedChunkGenerator) (Object) this).getBiomeSource();
         Climate.Sampler sampler = randomState.sampler();
         long seed = ((RandomStateSeedAccess) (Object) randomState).apocalypse$getSeed();
-        StartupBiomeGenerationContext.register(biomeSource, seed);
         ScorchedAquiferContext.begin(biomeSource, sampler, seed);
         apocalypse$logContext("ECOLOGY_BEGIN_FILL", seed);
     }
@@ -50,11 +49,11 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
                                                          StructureManager structureManager, ChunkAccess chunk,
                                                          CallbackInfo callbackInfo) {
         BiomeSource biomeSource = ((NoiseBasedChunkGenerator) (Object) this).getBiomeSource();
-        StartupBiomeGenerationContext.register(biomeSource,
-                ((RandomStateSeedAccess) (Object) randomState).apocalypse$getSeed());
+        // Ecology is initialized by TerraBlender's ParameterList lifecycle, before this phase.
     }
 
     private static void apocalypse$logContext(String reason, long seed) {
+        if (!Boolean.getBoolean("afl.startupDiagnostics")) return;
         AtomicInteger count = APOCALYPSE_CONTEXT_LOG_COUNTS.computeIfAbsent(reason, ignored -> new AtomicInteger());
         if (count.getAndIncrement() >= 4) return;
         ApocalypseFirstLight.LOGGER.info(

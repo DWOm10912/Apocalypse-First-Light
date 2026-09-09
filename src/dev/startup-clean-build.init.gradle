@@ -1,0 +1,4 @@
+// Isolated clean output: do not delete unrelated test saves stored in the normal build/ tree.
+allprojects {
+    layout.buildDirectory.set(file('build/startup-clean-build'))
+}

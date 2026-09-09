@@ -32,6 +32,7 @@ public class ApocalypseFirstLight {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public ApocalypseFirstLight(FMLJavaModLoadingContext context) {
+        LOGGER.info("[AFL BUILD] version=1.0.0 fix=startup-parameterlist-context-v1");
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
         AflNetwork.register();

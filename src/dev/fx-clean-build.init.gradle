@@ -1,0 +1,4 @@
+// Keep existing regression saves/logs in build/ while running a real clean build.
+allprojects {
+    layout.buildDirectory.set(file('build/fx-clean-build'))
+}

@@ -39,7 +39,8 @@ public final class NativeGunFx {
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
     private static final List<Shot> SHOTS = new ArrayList<>();
-    private record Frozen(NativeShotVisualSnapshot.Snapshot snapshot,Shot shot){}
+    private record Frozen(NativeShotVisualSnapshot.Snapshot snapshot,Shot shot,NativeFlashLifetime lifetime){}
+    private static long renderFrame;
     private static final List<Frozen> FROZEN=new ArrayList<>();
     public static void frozen(NativeShotVisualSnapshot.Snapshot snapshot,int shooter,long gun){
         checkWorld();if(world==null)return;
@@ -47,7 +48,7 @@ public final class NativeGunFx {
             var p=snapshot.muzzle();world.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE,p.x,p.y,p.z,0,.008,0);return;
         }
         var shot=new Shot(shooter,gun,clock(Minecraft.getInstance().getFrameTime()));shot.flashStart=shot.received;
-        if(FROZEN.size()>=128)FROZEN.remove(0);FROZEN.add(new Frozen(snapshot,shot));
+        if(FROZEN.size()>=128)FROZEN.remove(0);FROZEN.add(new Frozen(snapshot,shot,new NativeFlashLifetime()));
     }
     private static final ArrayDeque<Casing> CASINGS = new ArrayDeque<>();
     private static ClientLevel world;
@@ -59,6 +60,22 @@ public final class NativeGunFx {
     private static void checkWorld() {
         var current = Minecraft.getInstance().level;
         if (current != world) { world = current; SHOTS.clear(); CASINGS.clear(); FROZEN.clear(); viewValid = false; }
+    }
+
+    private static boolean currentLocalFlash(Frozen flash) {
+        var mc = Minecraft.getInstance();
+        return mc.player != null && mc.screen == null && !mc.isPaused() && mc.player.isAlive()
+                && mc.options.getCameraType().isFirstPerson() && mc.player.getId() == flash.shot.shooter
+                && software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem()) == flash.shot.gun;
+    }
+
+    @SubscribeEvent
+    public static void flashFrame(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) return;
+        renderFrame++;
+        checkWorld();
+        long nanos = System.nanoTime();
+        FROZEN.removeIf(f -> !currentLocalFlash(f) || f.lifetime.expired(nanos));
     }
 
     public static void shot(int shooter, long gun) {
@@ -91,6 +108,21 @@ public final class NativeGunFx {
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
         double now = clock(partial);
+        // Only the first frame uses the frozen world muzzle. The timed remainder follows
+        // the actual final bone/attachment pose, including recoil, ADS and sway.
+        if (firstPerson && name.equals("muzzle_anchor") && !suppressed) {
+            long nanos = System.nanoTime();
+            for (var flash : FROZEN) {
+                if (flash.shot.gun != gun || !currentLocalFlash(flash)) continue;
+                float age = flash.lifetime.attachedAge(nanos, renderFrame);
+                if (age < 0) continue;
+                var exit = P901RenderMatrices.detachedCopy(anchor);
+                exit.translate(0, 0, -barrelExitOffset / 16);
+                drawFlash(exit, buffers, age, flash.shot);
+                if (Boolean.getBoolean("afl.shotSnapshotDebug"))
+                    ApocalypseFirstLight.LOGGER.info("[SHOT FLASH] attached id={} age={} frame={}", flash.snapshot.shotId(), age, renderFrame);
+            }
+        }
         if(firstPerson&&name.equals("muzzle_anchor")){
             var matrix=new Matrix4f(WORLD_VIEW).invert().mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix()).mul(anchor.last().pose());
             var exit=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
@@ -213,18 +245,22 @@ public final class NativeGunFx {
             viewValid = true;
         }
         if(event.getStage()==RenderLevelStageEvent.Stage.AFTER_PARTICLES){
-            double time=clock(event.getPartialTick());FROZEN.removeIf(f->time-f.shot.received>3);
+            double time=clock(event.getPartialTick());
+            long nanos = System.nanoTime();
+            FROZEN.removeIf(f->time-f.shot.received>3 || !currentLocalFlash(f) || f.lifetime.expired(nanos));
             var buffers=Minecraft.getInstance().renderBuffers().bufferSource();
-            for(var f:FROZEN){var pose=event.getPoseStack();var p=f.snapshot.muzzle().subtract(event.getCamera().getPosition());var d=f.snapshot.barrelDirection();
+            boolean drewSnapshot = false;
+            for(var f:FROZEN){
+                if (!f.lifetime.presentSnapshot(nanos, renderFrame)) continue;
+                drewSnapshot = true;
+                var pose=event.getPoseStack();var p=f.snapshot.muzzle().subtract(event.getCamera().getPosition());var d=f.snapshot.barrelDirection();
                 pose.pushPose();pose.translate(p.x,p.y,p.z);
                 pose.mulPose(new org.joml.Quaternionf().rotationTo(new Vector3f(0,0,-1),new Vector3f((float)d.x,(float)d.y,(float)d.z)));
                 drawFlash(pose,buffers,0,f.shot);pose.popPose();
                 if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT FLASH] presented id={} gun={} origin={}",f.snapshot.shotId(),f.shot.gun,f.snapshot.muzzle());
             }
-            if(!FROZEN.isEmpty())buffers.endBatch(FlashType.TYPE);
-            // One presented flash frame, before frame-END applies the new recoil. A frozen
-            // multi-frame core would look like a second muzzle once the gun rises away from it.
-            FROZEN.clear();
+            if(drewSnapshot)buffers.endBatch(FlashType.TYPE);
+            // Retain the shot's 50 ms clock, not a detached world-space flash core.
         }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || CASINGS.isEmpty()) return;
         var mc = Minecraft.getInstance();

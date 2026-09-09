@@ -28,7 +28,6 @@ import java.util.WeakHashMap;
 
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BunkerWorldEvents {
-    private static final Map<MinecraftServer, Integer> PENDING_PLACEMENT_TICKS = new WeakHashMap<>();
 
     private BunkerWorldEvents() {}
 
@@ -60,44 +59,13 @@ public final class BunkerWorldEvents {
                 128);
         probeLiveBiomeSource(overworld);
         auditStartupSurface(overworld);
-        PENDING_PLACEMENT_TICKS.put(event.getServer(), 0);
-    }
-
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
-        MinecraftServer server = event.getServer();
-        Integer pending = PENDING_PLACEMENT_TICKS.get(server);
-        if (pending == null) return;
-
-        int ticks = pending + 1;
-        if (ticks < 20) {
-            PENDING_PLACEMENT_TICKS.put(server, ticks);
-            return;
+        // ServerStarted is after spawn preparation and before the first normal login.
+        // Complete placement on the server thread, not twenty ticks after players arrive.
+        if (!BunkerPlacementManager.ensureGenerated(overworld)) {
+            ApocalypseFirstLight.LOGGER.error("[AFL Bunker] STARTUP_FAILED: primary and bounded fallback exhausted; initial login will not silently use surface spawn");
+        } else {
+            RadiationManager.ensureBunkerAnchor(overworld);
         }
-
-        ServerLevel overworld = server.overworld();
-        if (!BunkerPlacementManager.isStartupAreaReady(overworld)) {
-            PENDING_PLACEMENT_TICKS.put(server, ticks);
-            if (ticks % 20 == 0) {
-                ApocalypseFirstLight.LOGGER.info("[AFL Bunker] Waiting for reliable startup chunks before placement; ticks={} loadedChunks={}",
-                        ticks, overworld.getChunkSource().getLoadedChunksCount());
-            }
-            return;
-        }
-
-        BunkerPlacementManager.ensureGenerated(overworld);
-        BunkerSavedData data = overworld.getDataStorage().computeIfAbsent(BunkerSavedData::load,
-                BunkerSavedData::new, BunkerSavedData.ID);
-        if (!data.isGenerated()) {
-            PENDING_PLACEMENT_TICKS.remove(server);
-            return;
-        }
-        RadiationManager.ensureBunkerAnchor(overworld);
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            BunkerPlayerSpawnEvents.tryInitialSpawn(player);
-        }
-        PENDING_PLACEMENT_TICKS.remove(server);
     }
 
     private static void probeLiveBiomeSource(ServerLevel overworld) {
@@ -182,9 +150,13 @@ public final class BunkerWorldEvents {
         ResourceLocation biomeId = level.getBiome(surface).unwrapKey()
                 .map(key -> key.location()).orElse(new ResourceLocation("minecraft", "unknown"));
         if (startupCoreSample) {
-            boolean plains = "minecraft".equals(biomeId.getNamespace()) && "plains".equals(biomeId.getPath());
-            ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected=plains result={}",
-                    x, z, surfaceY, biomeId, plains ? "PASS" : "FAIL");
+            var zone = StartupPlainsEnclave.zoneAt(x, z, level.getSeed());
+            var expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
+                    ? com.antaurora.apofirstlight.registry.AflBiomes.IRRADIATED_WOODLAND.location()
+                    : net.minecraft.world.level.biome.Biomes.PLAINS.location();
+            boolean matches = expected.equals(biomeId);
+            if (matches) ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected={} result=PASS",x,z,surfaceY,biomeId,expected);
+            else ApocalypseFirstLight.LOGGER.error("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected={} result=FAIL",x,z,surfaceY,biomeId,expected);
         } else {
             ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE BOUNDARY AUDIT] pos=({}, {}) surfaceY={} biome={} insideCore={}",
                     x, z, surfaceY, biomeId, StartupPlainsEnclave.containsBlock(x, z));

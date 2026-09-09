@@ -39,7 +39,9 @@ public final class BunkerPlayerSpawnEvents {
         BunkerSavedData data = overworld.getDataStorage().computeIfAbsent(BunkerSavedData::load,
                 BunkerSavedData::new, BunkerSavedData.ID);
         if (!data.isGenerated()) {
-            LOGGER.warn("[AFL Bunker] Initial player spawn deferred for {}; bunker is not generated", player.getGameProfile().getName());
+            LOGGER.error("[AFL Bunker] Initial player spawn blocked for {}; bunker primary/fallback generation did not complete", player.getGameProfile().getName());
+            player.connection.disconnect(net.minecraft.network.chat.Component.literal(
+                    "AFL startup bunker generation failed. Check the server log; this world cannot start the bunker flow."));
             return;
         }
         Optional<StructureTemplate> templateOptional = player.server.getStructureManager().get(BUNKER_ID);

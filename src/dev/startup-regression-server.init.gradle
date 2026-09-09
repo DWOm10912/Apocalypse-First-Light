@@ -1,0 +1,11 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.server {
+            workingDirectory project.file('build/startup-regression/' + (project.findProperty('startupCase') ?: 'repro'))
+            property 'afl.startupRegressionProbe', 'true'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+            args 'nogui'
+        }
+    }
+}
