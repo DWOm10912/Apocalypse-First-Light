@@ -40,6 +40,14 @@ BR51 源模型中的隐藏参考红点仍保留且不导出；没有加入整枪
 - 兼容判断、revision、stale rejection 和安全返还均沿用 `MaintenanceAttachmentTransaction`。协议仍为 22，旧 V 报文继续为空操作。
 - 所有支持的枪械渲染环境读取同一个真实 ItemStack；无独立维护台 sight 状态。独立配件进入武器与弹药创造标签页，使用简洁中英文 Tooltip。
 
+### 背包独立 3D 展示修正
+
+`NativeSightItem.initializeClient` 必须无条件注册延迟创建的 `NativeMuzzleRendering.ItemRenderer`：Forge 从 `Item` 父类构造函数调用该方法，此时子类 `geoModel` 尚未赋值，不能据此提前返回。此前错误判断造成步枪红点有枪上模型、背包却为空白。
+
+步枪红点通过 `models/item/rifle_red_dot_01.json` 的 `builtin/entity` 使用独立 Geo 模型和现有 GUI 变换；P9 红点仍用原 baked 模型，不触发该自定义绘制。此修正不改源几何、枪上挂载、ADS 或维护台限定规则。
+
+修正后客户端验证：`build/rifle-sight-item-client.log` 中 `[RIFLE SIGHT ITEM] PASS` 确认渲染器类型；`build/thermal-fluid-client/screenshots/rifle_red_dot_inventory.png` 已人工复核，普通背包第一格显示完整独立 3D 瞄具，未越出槽位。重新编译记录：`build/rifle-sight-item-build.log`。本次未重跑全套枪械 GameTest。
+
 ## 验证边界
 
 源码审计确认原红点 28+1 cube、原发光点与隐藏状态；独立贴图与 BR51 原贴图 SHA256 一致。Blockbench MCP 本次未连接，未完成实时 Blockbench 检查。
@@ -52,6 +60,6 @@ BR51 源模型中的隐藏参考红点仍保留且不导出；没有加入整枪
 | 视觉 | `build/thermal-fluid-client/screenshots/rifle_red_dot_{context,candidates,bench,fp,ads,tp}.png`；复核维护台、第一人称、第三人称和真正 ADS 画面；镜窗开放、点位居中；用户随后反馈“看起来没问题了” |
 | ADS 测试有效性 | 最终 probe 显式断言 screen 为空、ADS progress > 0.99；早期右键误开维护台的截图不作为 ADS 通过证据 |
 | 多人 | 服务端 FakePlayer stale/conservation 测试通过；未进行两个真实客户端的同步视觉验收 |
-| 未单独验收 | 夜间画面、连续射击 recoil/sway、P9 图形 ADS 全流程、独立物品大图；候选图标被 tooltip 部分遮挡，不冒充完整图标验收 |
+| 未单独验收 | 夜间画面、连续射击 recoil/sway、P9 图形 ADS 全流程、独立物品大图；普通背包图标已在后续修正中验收，见上节 |
 
 V 快装保持禁用，旧报文仍为空操作；没有新增客户端快捷安装入口。真实弹道、BR51 数值和动画未修改。

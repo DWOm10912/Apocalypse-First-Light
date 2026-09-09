@@ -20,7 +20,9 @@ public final class NativeSightItem extends Item implements NativeAttachment {
                 .withStyle(net.minecraft.ChatFormatting.DARK_GRAY,net.minecraft.ChatFormatting.ITALIC));
     }
     @Override public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientItemExtensions> consumer){
-        if(!geoModel)return;
+        // Forge calls this from Item's constructor, before geoModel is assigned.
+        // Register unconditionally; only builtin/entity models use this renderer.
+        // P9's ordinary baked item model continues through the vanilla renderer.
         consumer.accept(new net.minecraftforge.client.extensions.common.IClientItemExtensions(){
             private net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer renderer;
             @Override public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer(){
