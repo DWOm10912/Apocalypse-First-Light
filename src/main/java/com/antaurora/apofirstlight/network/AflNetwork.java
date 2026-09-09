@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "19";
+    private static final String PROTOCOL = "21";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -150,40 +150,51 @@ public final class AflNetwork {
     }
 
     public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd) {
-        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId));
-        channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> player),
-                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd));
+        sendNativeShot(player,slot,gunId,shotEnd,0);
+    }
+    public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId,shotEnd,shotId));
+        channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player),
+                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd,shotId));
     }
 
     /** Notification only; ammo, hitscan and HUD remain on their existing paths. */
-    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd) {
+    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
         static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) {
             b.writeVarInt(p.shooterId); b.writeLong(p.gunId);
             b.writeDouble(p.shotEnd.x); b.writeDouble(p.shotEnd.y); b.writeDouble(p.shotEnd.z);
+            b.writeLong(p.shotId);
         }
         static NativeShotFxS2CPacket decode(FriendlyByteBuf b) {
             return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong(),
-                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()));
+                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),b.readLong());
         }
         static void handle(NativeShotFxS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> {
-                        com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
-                        com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd);
+                        if(!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(p.shooterId,p.gunId,p.shotId,p.shotEnd)){
+                            com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd);
+                        }
                     }));
             context.setPacketHandled(true);
         }
     }
 
-    public record NativeShotS2CPacket(int slot, long gunId) {
-        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId); }
-        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong()); }
+    public record NativeShotS2CPacket(int slot, long gunId,net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
+        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId);b.writeDouble(p.shotEnd.x);b.writeDouble(p.shotEnd.y);b.writeDouble(p.shotEnd.z);b.writeLong(p.shotId); }
+        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong(),new net.minecraft.world.phys.Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readLong()); }
         static void handle(NativeShotS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> {
                         com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId);
+                        var player=net.minecraft.client.Minecraft.getInstance().player;
+                        if(player!=null&&!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(player.getId(),p.gunId,p.shotId,p.shotEnd)){
+                            com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(player.getId(),p.gunId);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(player.getId(),p.gunId,p.shotEnd);
+                        }
                         com.antaurora.apofirstlight.weapon.client.NativeGunRecoil.confirmedShot(p.slot, p.gunId);
                     }));
             context.setPacketHandled(true);
@@ -191,16 +202,20 @@ public final class AflNetwork {
     }
 
     public static void requestP901(boolean reload, int slot) {
-        if (channel != null) channel.sendToServer(new P901C2SPacket(reload, slot));
+        requestP901(reload,slot,0);
+    }
+    public static void requestP901(boolean reload,int slot,long shotId){
+        if (channel != null) channel.sendToServer(new P901C2SPacket(reload, slot,shotId));
     }
 
-    public record P901C2SPacket(boolean reload, int slot) {
+    public record P901C2SPacket(boolean reload, int slot,long shotId) {
         public static void encode(P901C2SPacket packet, FriendlyByteBuf buffer) {
             buffer.writeBoolean(packet.reload);
             buffer.writeVarInt(packet.slot);
+            buffer.writeLong(packet.shotId);
         }
         public static P901C2SPacket decode(FriendlyByteBuf buffer) {
-            return new P901C2SPacket(buffer.readBoolean(), buffer.readVarInt());
+            return new P901C2SPacket(buffer.readBoolean(), buffer.readVarInt(),buffer.readLong());
         }
         public static void handle(P901C2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
@@ -208,7 +223,7 @@ public final class AflNetwork {
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
                     if (player != null) com.antaurora.apofirstlight.weapon.P901Actions
-                            .request(player, packet.reload, packet.slot);
+                            .request(player, packet.reload, packet.slot,packet.shotId);
                 });
             }
             context.setPacketHandled(true);

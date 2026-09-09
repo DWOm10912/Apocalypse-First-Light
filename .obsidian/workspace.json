@@ -187,19 +187,23 @@
       "bases:新建数据库": false
     }
   },
-  "active": "7991be752347a25e",
+  "active": "05077d6764c9de1b",
   "lastOpenFiles": [
-    "run/saves/test/level761315111121383824.dat",
-    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-16021043185315707722.dat",
-    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/saves/test/level12159613366972882029.dat",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-10649700717054935405.dat",
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/caves/-4/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
-    "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
+    "docs/native_guns/native_shot_visual_snapshot_v1.md",
+    "build/shot-diagnosis-br.png",
+    "build/shot-diagnosis-contact.png",
+    "docs/native_guns/first_person_weapon_sway_v1.md",
     "docs/native_guns/gun_maintenance_camera_layout_transition_polish_v1.md",
     "docs/native_guns/attachments/gun_maintenance_attachment_ui_sfx_polish_v1.md",
     "docs/native_guns/attachments/gun_maintenance_attachment_interaction_v1.md",
@@ -212,9 +216,7 @@
     "build/resources/main/assets/apocalypse_firstlight/textures/block/thermal_generator_front_running.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
     "docs/native_guns/audio/p9_01_original_audio_design_v2.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
     "docs/01 - 设计/武器/配件.md",
-    "build/thermal-fluid-client/screenshots/suppressor_standalone_inventory.png",
     "docs/native_guns/attachments/pistol_suppressor_01_v1.md",
     "docs/01 - 设计/武器/弹药.md",
     "docs/01 - 设计/武器/枪械.md",
@@ -232,8 +234,6 @@
     "docs/machines/thermal_generator_fluid_io_v1.md",
     "docs/machines/thermal_generator_dynamic_fuel_visuals_v1.md",
     "docs/machines/thermal_generator_3d_model_v1.md",
-    "docs/native_guns/workstation_name_migration_v1.md",
-    "docs/native_guns/precision_fabrication_station_block_v1.md",
-    "docs/native_guns/precision_fabrication_station_model_v1.md"
+    "docs/native_guns/workstation_name_migration_v1.md"
   ]
 }

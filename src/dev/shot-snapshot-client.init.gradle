@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/thermal-fluid-client')
+            property 'afl.shotSnapshotProbe', 'true'
+            property 'afl.shotSnapshotDebug', 'true'
+            args '--quickPlaySingleplayer', 'fluid_probe'
+        }
+    }
+}

@@ -28,6 +28,14 @@ public final class NativeBulletTrails {
     private record Pending(int shooter, long gun, Vec3 end, NativeTrailProfile profile, double received) {}
     private record Trail(Vec3 start, Vec3 direction, double distance, NativeTrailProfile profile, double born) {}
     private NativeBulletTrails() {}
+    public static void snapshot(Vec3 origin,Vec3 end,NativeTrailProfile profile){
+        checkWorld();if(world==null||profile.mode()!=NativeTrailProfile.Mode.SUBTLE)return;
+        Vec3 delta=end.subtract(origin);double distance=delta.length();
+        if(!Double.isFinite(distance)||distance<=Math.max(.20,profile.hideDistance())||distance>128)return;
+        Vec3 direction=delta.scale(1/distance);
+        if(ACTIVE.size()>=MAX_ACTIVE_TRAILS)ACTIVE.removeFirst();
+        ACTIVE.addLast(new Trail(origin.add(direction.scale(.20)),direction,distance-.20,profile,now()));
+    }
     private static double now() { return world.getGameTime() + Minecraft.getInstance().getFrameTime(); }
     private static void checkWorld() {
         var current = Minecraft.getInstance().level;

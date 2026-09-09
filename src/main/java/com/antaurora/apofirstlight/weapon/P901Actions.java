@@ -81,6 +81,9 @@ public final class P901Actions {
     }
 
     public static void request(ServerPlayer player, boolean reload, int slot) {
+        request(player,reload,slot,0);
+    }
+    public static void request(ServerPlayer player, boolean reload, int slot,long shotId) {
         if (!player.isAlive() || player.isSpectator() || slot < 0 || slot > 8
                 || player.getInventory().selected != slot
                 || !(player.getMainHandItem().getItem() instanceof NativeGunItem item)) return;
@@ -124,7 +127,7 @@ public final class P901Actions {
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
             var hit = NativeGunShot.execute(player, definition);
-            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point());
+            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId);
         }
     }
 

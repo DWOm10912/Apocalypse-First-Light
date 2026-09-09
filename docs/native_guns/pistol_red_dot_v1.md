@@ -54,3 +54,4 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 - 客户端 ADS 数值检查通过；用户实机反馈除独立配件手持/掉落过大外，其余安装、ADS、HIP、F5、换弹项目没有问题。独立配件已缩小至 0.8，调整后的手持/掉落视觉待资源重载复验，不把导出或构建当作视觉通过。
 
 未 commit、未 push。
+> Current channel protocol: **21**, upgraded for atomic local shot-result/visual confirmation and per-shot snapshot correlation. Any protocol 19 reference below describes the earlier maintenance-only revision and is superseded. Matching client/server versions required; attachment behavior unchanged.

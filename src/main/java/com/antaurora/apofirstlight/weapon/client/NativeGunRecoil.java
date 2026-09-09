@@ -24,6 +24,8 @@ public final class NativeGunRecoil {
     private static ClientLevel level;
     private static long gunId, lastNanos;
     private static int slot;
+    private record Deferred(LocalPlayer player,ClientLevel level,int slot,long gun){}
+    private static final java.util.ArrayDeque<Deferred> DEFERRED=new java.util.ArrayDeque<>();
 
     private NativeGunRecoil() {}
 
@@ -35,6 +37,20 @@ public final class NativeGunRecoil {
     }
 
     public static void confirmedShot(int selectedSlot, long confirmedGunId) {
+        var mc=Minecraft.getInstance();
+        if(mc.player!=null&&mc.level!=null&&mc.screen==null&&mc.options.getCameraType().isFirstPerson()){
+            if(DEFERRED.size()>=128)flushDeferred();
+            DEFERRED.addLast(new Deferred(mc.player,mc.level,selectedSlot,confirmedGunId));
+        }else applyConfirmedShot(selectedSlot,confirmedGunId);
+    }
+    private static void flushDeferred(){
+        var mc=Minecraft.getInstance();
+        while(!DEFERRED.isEmpty()){
+            var d=DEFERRED.removeFirst();
+            if(d.player==mc.player&&d.level==mc.level)applyConfirmedShot(d.slot,d.gun);
+        }
+    }
+    private static void applyConfirmedShot(int selectedSlot, long confirmedGunId) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null || mc.level == null || !player.isAlive() || player.isSpectator()
@@ -50,6 +66,7 @@ public final class NativeGunRecoil {
         STATE.kick(gun.definition().recoil(), random.nextDouble(), random.nextDouble(),
                 random.nextDouble(), random.nextDouble(), player.getXRot() + 90.0);
         applyAim(STATE.vertical() - v, STATE.horizontal() - h);
+        if(Boolean.getBoolean("afl.shotSnapshotDebug"))ApocalypseFirstLight.LOGGER.info("[SHOT RECOIL] applied gun={} frame-end-or-before-next-input",confirmedGunId);
     }
 
     private static void applyAim(double upward, double sideways) {
@@ -75,11 +92,14 @@ public final class NativeGunRecoil {
     @SubscribeEvent
     public static void frame(TickEvent.RenderTickEvent event) {
         if (event.phase == TickEvent.Phase.START) advance(Minecraft.getInstance());
+        else flushDeferred();
     }
 
     /** Queue Vanilla rotation BEFORE the custom shot on the same ordered connection.
      * The server still obtains eye position, look vector, spread and hit itself. */
     public static void syncAimBeforeShot() {
+        // Never let another request escape with pre-recoil aim, even between render passes.
+        flushDeferred();
         var mc = Minecraft.getInstance();
         if (mc.player != null && mc.player.connection != null)
             mc.player.connection.send(new ServerboundMovePlayerPacket.Rot(

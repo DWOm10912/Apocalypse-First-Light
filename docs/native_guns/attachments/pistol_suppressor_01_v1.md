@@ -35,3 +35,4 @@ P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；�
 - 测试过程说明：最初生成测试被structure namespace筛选导致0项，不计通过；修正后为24项。首个客户端因测试重编译重叠发生类加载失败，不计通过；随后串行运行成功。隔离客户端既有Native Gun Smoke相对源文件路径检查仍失败，与本附件测试分开记录。
 
 未提交、未推送。维护台模型、取回生产代码与P9源动画未改。
+> Current channel protocol: **21**, upgraded for atomic local shot-result/visual confirmation and per-shot snapshot correlation. Any protocol 19 reference below describes the earlier maintenance-only revision and is superseded. Matching client/server versions required; attachment behavior unchanged.

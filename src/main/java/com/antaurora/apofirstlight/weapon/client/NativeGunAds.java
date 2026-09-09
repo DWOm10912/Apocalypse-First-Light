@@ -35,6 +35,7 @@ public final class NativeGunAds {
                 && (gunId==0 || GeoItem.getId(mc.player.getMainHandItem())==gunId);
     }
     public static void reloadRequested() { reloadRequestTicks=3; }
+    static String swayBlockReason(){return blocked;}
     private static String action(NativeGunItem gun,long id) {
         var c=gun.getAnimatableInstanceCache().getManagerForId(id).getAnimationControllers().get("action");
         if(c==null || c.getTriggeredAnimation()==null || c.getAnimationState()==AnimationController.State.STOPPED

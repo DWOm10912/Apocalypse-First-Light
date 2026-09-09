@@ -44,7 +44,7 @@ public final class NativeTrailChecks {
         var decode = type.getDeclaredMethod("decode", net.minecraft.network.FriendlyByteBuf.class);
         encode.setAccessible(true); decode.setAccessible(true);
         var packet = new com.antaurora.apofirstlight.network.AflNetwork.NativeShotFxS2CPacket(
-                42, 999L, new Vec3(12345.125, -32.5, -900.75));
+                42, 999L, new Vec3(12345.125, -32.5, -900.75),123456L);
         var buffer = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
         try {
             encode.invoke(null, packet, buffer);

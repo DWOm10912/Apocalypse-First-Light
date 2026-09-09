@@ -48,6 +48,18 @@ public final class NativeGunHud {
             graphics.setColor(1, empty ? .15F : 1, empty ? .15F : 1, 1);
             graphics.blit(definition.hudIcon(), 0, 22 - definition.hudHeight(), definition.hudWidth(), definition.hudHeight(), 0, 0, 1, 1, 1, 1);
             graphics.setColor(1, 1, 1, 1);
+            // Name belongs to the combat HUD silhouette, not the hotbar return placeholder.
+            var name = mc.player.getMainHandItem().getHoverName();
+            int maxNameWidth = Math.min(140, width - 8);
+            if (mc.font.width(name) > maxNameWidth) {
+                name = net.minecraft.network.chat.Component.literal(mc.font.plainSubstrByWidth(
+                        name.getString(), maxNameWidth - mc.font.width("…")) + "…");
+            }
+            int nameWidth = mc.font.width(name);
+            int nameLeft = net.minecraft.util.Mth.clamp(x + definition.hudWidth() / 2 - nameWidth / 2,
+                    4, width - 4 - nameWidth);
+            int nameTop = Math.max(4, y + 22 - definition.hudHeight() - mc.font.lineHeight - 6);
+            graphics.drawString(mc.font, name, nameLeft - x, nameTop - y, 0xCCCCCC, true);
             graphics.pose().pushPose();
             graphics.pose().translate(2, 27, 0);
             graphics.pose().scale(1.25F, 1.25F, 1);

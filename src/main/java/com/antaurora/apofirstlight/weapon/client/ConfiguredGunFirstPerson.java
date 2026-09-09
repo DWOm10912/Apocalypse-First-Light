@@ -21,6 +21,7 @@ public final class ConfiguredGunFirstPerson {
         if (e.getHand() != InteractionHand.MAIN_HAND || p.isSpectator() || p.isScoping()) return;
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
         var pose = P901RenderMatrices.detachedCopy(e.getPoseStack());
+        NativeWeaponSway.apply(pose,e.getPartialTick());
         NativeGunRecoil.applyViewmodel(pose);
         NativeGunAds.apply(pose, right, e.getPartialTick());
         mc.getItemRenderer().renderStatic(p, p.getMainHandItem(), right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND

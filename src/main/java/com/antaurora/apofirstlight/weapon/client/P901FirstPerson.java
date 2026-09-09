@@ -40,6 +40,7 @@ public final class P901FirstPerson {
         var pose = P901RenderMatrices.detachedCopy(event.getPoseStack());
         pose.pushPose();
         try {
+            NativeWeaponSway.apply(pose,event.getPartialTick());
             NativeGunRecoil.applyViewmodel(pose);
             NativeGunAds.apply(pose, right, event.getPartialTick());
             pose.translate(right ? COMPOSITION_X : -COMPOSITION_X, COMPOSITION_Y, 0);

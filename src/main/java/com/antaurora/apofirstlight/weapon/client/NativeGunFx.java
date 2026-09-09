@@ -39,6 +39,16 @@ public final class NativeGunFx {
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
     private static final List<Shot> SHOTS = new ArrayList<>();
+    private record Frozen(NativeShotVisualSnapshot.Snapshot snapshot,Shot shot){}
+    private static final List<Frozen> FROZEN=new ArrayList<>();
+    public static void frozen(NativeShotVisualSnapshot.Snapshot snapshot,int shooter,long gun){
+        checkWorld();if(world==null)return;
+        if(snapshot.suppressed()){
+            var p=snapshot.muzzle();world.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE,p.x,p.y,p.z,0,.008,0);return;
+        }
+        var shot=new Shot(shooter,gun,clock(Minecraft.getInstance().getFrameTime()));shot.flashStart=shot.received;
+        if(FROZEN.size()>=128)FROZEN.remove(0);FROZEN.add(new Frozen(snapshot,shot));
+    }
     private static final ArrayDeque<Casing> CASINGS = new ArrayDeque<>();
     private static ClientLevel world;
     private static final Matrix4f WORLD_VIEW = new Matrix4f(), WORLD_PROJECTION = new Matrix4f();
@@ -48,14 +58,17 @@ public final class NativeGunFx {
     private static double clock(float partial) { return world.getGameTime() + partial; }
     private static void checkWorld() {
         var current = Minecraft.getInstance().level;
-        if (current != world) { world = current; SHOTS.clear(); CASINGS.clear(); viewValid = false; }
+        if (current != world) { world = current; SHOTS.clear(); CASINGS.clear(); FROZEN.clear(); viewValid = false; }
     }
 
     public static void shot(int shooter, long gun) {
+        shot(shooter,gun,false);
+    }
+    public static void shot(int shooter,long gun,boolean frozen){
         checkWorld();
         if (world == null || world.getEntity(shooter) == null) return;
         if (SHOTS.size() >= 128) SHOTS.remove(0);
-        SHOTS.add(new Shot(shooter, gun, clock(Minecraft.getInstance().getFrameTime())));
+        var shot=new Shot(shooter, gun, clock(Minecraft.getInstance().getFrameTime()));shot.frozen=frozen;SHOTS.add(shot);
     }
 
     public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
@@ -78,6 +91,13 @@ public final class NativeGunFx {
         if (world == null || !viewValid) return;
         var mc = Minecraft.getInstance();
         double now = clock(partial);
+        if(firstPerson&&name.equals("muzzle_anchor")){
+            var matrix=new Matrix4f(WORLD_VIEW).invert().mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix()).mul(anchor.last().pose());
+            var exit=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
+            var ahead=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16-.01f));
+            NativeShotVisualSnapshot.presented(gun,mc.gameRenderer.getMainCamera().getPosition().add(exit.x,exit.y,exit.z),
+                    new Vec3(ahead.x-exit.x,ahead.y-exit.y,ahead.z-exit.z).normalize(),suppressed);
+        }
         if (name.equals("muzzle_anchor") && NativeBulletTrails.needsAnchor(gun, firstPerson)) {
             // Same projection conversion as the established casing birth position.
             var matrix = new Matrix4f(WORLD_VIEW).invert();
@@ -118,6 +138,7 @@ public final class NativeGunFx {
                 shot.ejected = true;
             }
             if (name.equals("muzzle_anchor")) {
+                if(shot.frozen)continue;
                 if(suppressed){
                     if(Double.isNaN(shot.flashStart)){
                         shot.flashStart=now;
@@ -191,6 +212,20 @@ public final class NativeGunFx {
             WORLD_PROJECTION.set(event.getProjectionMatrix());
             viewValid = true;
         }
+        if(event.getStage()==RenderLevelStageEvent.Stage.AFTER_PARTICLES){
+            double time=clock(event.getPartialTick());FROZEN.removeIf(f->time-f.shot.received>3);
+            var buffers=Minecraft.getInstance().renderBuffers().bufferSource();
+            for(var f:FROZEN){var pose=event.getPoseStack();var p=f.snapshot.muzzle().subtract(event.getCamera().getPosition());var d=f.snapshot.barrelDirection();
+                pose.pushPose();pose.translate(p.x,p.y,p.z);
+                pose.mulPose(new org.joml.Quaternionf().rotationTo(new Vector3f(0,0,-1),new Vector3f((float)d.x,(float)d.y,(float)d.z)));
+                drawFlash(pose,buffers,0,f.shot);pose.popPose();
+                if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT FLASH] presented id={} gun={} origin={}",f.snapshot.shotId(),f.shot.gun,f.snapshot.muzzle());
+            }
+            if(!FROZEN.isEmpty())buffers.endBatch(FlashType.TYPE);
+            // One presented flash frame, before frame-END applies the new recoil. A frozen
+            // multi-frame core would look like a second muzzle once the gun rises away from it.
+            FROZEN.clear();
+        }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || CASINGS.isEmpty()) return;
         var mc = Minecraft.getInstance();
         var buffers = mc.renderBuffers().bufferSource();
@@ -223,6 +258,7 @@ public final class NativeGunFx {
     }
 
     private static final class Shot {
+        boolean frozen;
         final int shooter; final long gun; final double received;
         final float roll = (RANDOM.nextFloat() - .5F) * 24, scale = .9F + RANDOM.nextFloat() * .2F;
         final float alpha = .95F + RANDOM.nextFloat() * .05F;

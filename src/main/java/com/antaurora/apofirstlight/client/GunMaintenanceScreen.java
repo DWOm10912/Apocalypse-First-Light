@@ -53,6 +53,19 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
         var state=MaintenanceModeClientState.INSTANCE;state.hoveredGun=false;state.hoveredHotbarSlot=-1;
         if(!state.ready())return;
         int x0=hotbarX(),y=hotbarY();
+        var stored=menu.synchronizedBench().getItem(0);
+        if(!stored.isEmpty()){
+            Component name=stored.getHoverName();int maxWidth=Math.min(220,width-16);
+            if(font.width(name)>maxWidth)name=Component.literal(font.plainSubstrByWidth(name.getString(),maxWidth-font.width("…"))+"…");
+            var anchor=MaintenanceHotspots.projectWorld(MaintenanceCameraController.world(
+                    state.bench().getBlockPos(),state.facing(),new net.minecraft.world.phys.Vec3(1.0375,16.5/16,.84)),width,height);
+            if(anchor!=null){
+                int labelWidth=font.width(name);
+                int center=net.minecraft.util.Mth.clamp((int)Math.round(anchor.x()),8+labelWidth/2,width-8-(labelWidth+1)/2);
+                int top=net.minecraft.util.Mth.clamp((int)Math.round(anchor.y())-font.lineHeight/2,4,height-font.lineHeight-4);
+                g.drawCenteredString(font,name,center,top,0xffcccccc);
+            }
+        }
         if(attachments.selecting()){attachments.render(g,mouseX,mouseY);return;}
         for(int i=0;i<9;i++){
             int x=x0+i*20;var stack=menu.slots.get(i).getItem();boolean hover=mouseX>=x&&mouseX<x+20&&mouseY>=y&&mouseY<y+20;

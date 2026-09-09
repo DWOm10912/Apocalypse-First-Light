@@ -46,7 +46,8 @@ public final class P901Input {
         event.setSwingHand(false);
         if (!attackHeld) {
             NativeGunRecoil.syncAimBeforeShot();
-            AflNetwork.requestP901(false, mc.player.getInventory().selected);
+            long shotId=NativeShotVisualSnapshot.capture();
+            AflNetwork.requestP901(false, mc.player.getInventory().selected,shotId);
         }
         attackHeld = true;
     }

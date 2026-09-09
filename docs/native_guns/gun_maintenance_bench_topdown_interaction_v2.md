@@ -37,6 +37,14 @@
 
 ## 附件交互与后续扩展
 
+### Stored Gun Localized Name Label
+
+维护槽非空时，`GunMaintenanceScreen` 读取同步真实 ItemStack 的 `getHoverName()`，支持当前语言和自定义重命名；无名称映射表。灰白原生字体锚定维护垫上方木台面中央：NORTH 本地点 `(1.0375,1.03125,0.84)` 经四向旋转、共享维护相机投影转换为 GUI 坐标。名称不再跟随底部 origin placeholder，也不因附件页上移。清空立即隐藏。最长 220 GUI px 且限于屏幕边距，超长原字号省略；无大背景板。
+
+日常持枪名称另由 `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunHud.java` 显示在右侧白色枪械剪影上方，与剪影间隔 6 GUI px，水平居中并限制屏幕边距；剪影和弹药数字位置不变。读取主手真实 ItemStack 的 `getHoverName()`，最大 140 GUI px，超长省略。原版换物品时的短暂名称提示保持不变。该处剪影不是维护台底部的取回虚影。
+
+位置修正构建日志：`build/gun-name-placement-build.log`；本轮未启动图形客户端，木台面投影位置、不同 GUI 比例及语言的最终视觉效果待实机验收。
+
 摆放规则：默认“平行、居中、规整”，移除旧 10° 斜放。`MaintenanceGunRendering` 从同一静态 bind-pose bounds 缓存枪体纵向（模型 Z）边界中点，使基础枪体枪口/枪尾留边均衡；附件不参与重心重算，装卸附件不引起枪体跳位。保留各枪 scale、横向/高度中心和 offset 微调，`centerZ` 仅在模型/边界未就绪时回退使用。热点与绘制共用 transform，未另设屏幕补偿。该次调整不改相机、模型、VoxelShape 或事务；构建验证单独记录于 `build/maintenance-parallel-build.log`，未重新启动图形客户端验收。
 
 当前桌面共享枪械渲染读取真实枪的 SIGHT + MUZZLE，可同时显示红点和独立消音器。P9 支持热点→Context HUD→完整背包候选→服务器安装/更换/拆卸；V 快捷安装保持不变。见 [附件交互 V1](attachments/gun_maintenance_attachment_interaction_v1.md)。
