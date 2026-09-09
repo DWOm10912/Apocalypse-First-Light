@@ -11,7 +11,7 @@ public final class MaintenanceHotspots {
         var s=MaintenanceModeClientState.INSTANCE;
         if(!s.active()||s.bench().isEmpty())return null;
         var stack=s.bench().getItem(0);
-        if(!(stack.getItem() instanceof NativeGunItem gun)||!gun.definition().id().toString().equals("apocalypse_firstlight:p9_01"))return null;
+        if(!com.antaurora.apofirstlight.weapon.NativeAttachments.supportsSlot(stack,slot))return null;
         var p=new PoseStack();var pos=s.bench().getBlockPos();p.translate(pos.getX(),pos.getY(),pos.getZ());
         MaintenanceCameraController.benchTransform(p,s.facing());MaintenanceGunRendering.transform(stack,p);
         var world=MaintenanceGunRendering.interactionPoint(stack,slot,p);if(world==null)return null;

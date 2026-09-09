@@ -47,7 +47,7 @@
 
 摆放规则：默认“平行、居中、规整”，移除旧 10° 斜放。`MaintenanceGunRendering` 从同一静态 bind-pose bounds 缓存枪体纵向（模型 Z）边界中点，使基础枪体枪口/枪尾留边均衡；附件不参与重心重算，装卸附件不引起枪体跳位。保留各枪 scale、横向/高度中心和 offset 微调，`centerZ` 仅在模型/边界未就绪时回退使用。热点与绘制共用 transform，未另设屏幕补偿。该次调整不改相机、模型、VoxelShape 或事务；构建验证单独记录于 `build/maintenance-parallel-build.log`，未重新启动图形客户端验收。
 
-当前桌面共享枪械渲染读取真实枪的 SIGHT + MUZZLE + MAGAZINE，可同时显示红点、消音器与 P9 24发黄底扩容弹匣。P9 支持三类热点→Context HUD→背包候选→服务器安装/更换/拆卸；弹匣热点跟随 magazine 骨骼。V 快捷安装仍只处理 sight/muzzle。见 [附件交互 V1](attachments/gun_maintenance_attachment_interaction_v1.md)。
+当前桌面共享枪械渲染读取真实枪的 SIGHT + MUZZLE + MAGAZINE，可同时显示红点、消音器与 P9 24发黄底扩容弹匣。P9 支持三类热点→Context HUD→背包候选→服务器安装/更换/拆卸；弹匣热点跟随 magazine 骨骼。玩家装拆仅限维护台，V 快捷装拆已移除。见 [附件交互 V1](attachments/gun_maintenance_attachment_interaction_v1.md)。
 
 UI/SFX 打磨后，按钮具有底板/边框/悬停/按下反馈与原版点击声。服务器批准后播放统一附件操作音（2.480 秒），等待 51 tick 再验证提交；期间正式枪和附件库存不变。Esc 退出会取消，右键及重复提交在等待期间禁用。详见 [UI/SFX V1](attachments/gun_maintenance_attachment_ui_sfx_polish_v1.md)。
 

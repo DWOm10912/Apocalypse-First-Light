@@ -17,15 +17,15 @@ public final class NativeSightGameTests {
         sight.setHoverName(net.minecraft.network.chat.Component.literal("named optic"));
         NativeGunAmmo.set(gun,NativeGunDefinition.P9_01,5);
         p.setItemInHand(InteractionHand.MAIN_HAND,gun);p.setItemInHand(InteractionHand.OFF_HAND,sight);
-        h.assertTrue(NativeAttachments.exchange(p),"install");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p),"install");
         h.assertTrue(p.getOffhandItem().isEmpty()&&!NativeAttachments.activeSight(gun).isEmpty(),"consume exactly one");
         h.assertTrue(NativeGunAmmo.read(gun,NativeGunDefinition.P9_01)==5,"ammo preserved");
         var saved=ItemStack.of(gun.save(new net.minecraft.nbt.CompoundTag()));
         h.assertTrue(!NativeAttachments.activeSight(saved).isEmpty(),"serialized/drop stack persistence");
         p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
-        h.assertTrue(!NativeAttachments.exchange(p)&&p.getOffhandItem().getCount()==1,"occupied slot no loss");
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().getCount()==1,"occupied slot no loss");
         p.setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);
-        h.assertTrue(NativeAttachments.exchange(p),"detach");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p),"detach");
         h.assertTrue(NativeAttachments.storedSight(gun).isEmpty()&&p.getOffhandItem().getHoverName().getString().equals("named optic"),"return original sight");
         h.assertTrue(NativeGunAmmo.read(gun,NativeGunDefinition.P9_01)==5,"detach preserves ammo");
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),sight),"rifle incompatible");
@@ -36,9 +36,9 @@ public final class NativeSightGameTests {
         p.setGameMode(GameType.CREATIVE);p.setShiftKeyDown(true);
         var gun=new ItemStack(AflItems.P9_01.get());
         p.setItemInHand(InteractionHand.MAIN_HAND,gun);p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
-        h.assertTrue(NativeAttachments.exchange(p)&&p.getOffhandItem().getCount()==1,"creative keeps held sight");
-        h.assertTrue(!NativeAttachments.exchange(p),"cannot duplicate installed slot");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().getCount()==1,"creative keeps held sight");
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p),"cannot duplicate installed slot");
         p.setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);p.setGameMode(GameType.SPECTATOR);
-        h.assertTrue(!NativeAttachments.exchange(p),"spectator denied");h.succeed();
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p),"spectator denied");h.succeed();
     }
 }

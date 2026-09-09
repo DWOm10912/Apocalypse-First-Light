@@ -1,8 +1,16 @@
 # Gun Maintenance Attachment Interaction V1
 
-Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation, repair or other guns. V-key remains sight/muzzle only.
+Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. All player attachment changes require the maintenance bench; the V shortcut is removed.
 
 ## Spatial UI
+
+### Maintenance-only entry policy
+
+The V key mapping (`NativeSightInput`) and its translations are removed. The production `NativeAttachments` no longer exposes the hand-exchange implementation. Historical stack regression fixtures were moved to `src/dev/java/.../LegacyAttachmentFixture.java`, excluded from the release jar; their success is not evidence of a supported quick-install feature.
+
+The old `SightExchangePacket` discriminator remains reserved with a no-op handler, preserving later message IDs and protocol 22. `requestSightExchange` is inert for legacy development probes. Even a received old packet cannot install/remove an attachment. All player changes use the existing maintenance Begin → 51-tick delay → revalidation → commit path. Already stored attachments, compatibility, effects and bench transaction semantics are unchanged.
+
+Verification for this policy change: compilation/packaging completed; release jar contains neither `NativeSightInput` nor `LegacyAttachmentFixture`. Final server regression passed 28/28 (`build/maintenance-only-attachments-verified.log`), including maintenance transactions and delayed operations. Earlier runs exposed persistent test-world gun/workstation drops contaminating the multiplayer fixture counts; its setup now clears only prior fixture drops within the test footprint. Legacy exchange fixture assertions cover historical stack semantics, not a current player feature. No new graphical client or real two-client test was run for this policy change.
 
 `MaintenanceGunRendering.interactionPoint` traverses the same cached immutable bind-pose bones as desktop rendering. It prefers `maintenance_sight_anchor` / `maintenance_muzzle_anchor`; otherwise uses the gun-definition mount anchor (including sight mount offset). Independent anchors can be added without changing attachment mounting. No model edits this round.
 
@@ -14,13 +22,15 @@ Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE. The initial instant commit is s
 
 `AttachmentCandidatePage`: scan main inventory indices 0–35, filter NativeAttachment slot and `NativeAttachments.compatible`, skip empty, group only matching item+NBT, retain first source slot/copy and aggregate count. Nine per page, scroll paging supports more than nine. No inventory relocation, no ghost stacks, no drag/drop. GunMaintenanceMenu retains original nine hotbar slots and gun slot indices, appending hidden main-inventory slots for live synchronization.
 
-`MaintenanceActionRequest` carries containerId, root, revision, expected full gun, target and exact source stack/slot. `AflNetwork` protocol is now **19** (matching client/server required), direction-bound C2S Begin and S2C start/result. Server thread validates live menu, alive/non-spectator, world/root/distance/complete bench, P9, revision, full stack and source compatibility at Begin and before delayed mutation. BE persists `AttachmentRevision`; any synced mutation advances it, rejecting stale and duplicate transactions.
+`MaintenanceActionRequest` carries containerId, root, revision, expected full gun, target and exact source stack/slot. `AflNetwork` protocol is **22** (matching client/server required), direction-bound C2S Begin and S2C start/result. Server thread validates live menu, alive/non-spectator, world/root/distance/complete bench, native gun with supported target slot, revision, full stack and source compatibility at Begin and before delayed mutation. BE persists `AttachmentRevision`; any synced mutation advances it, rejecting stale and duplicate transactions.
 
 `MaintenanceAttachmentTransaction` consumes one real source item even in creative mode. Replace returns the old full ItemStack, merging matching stacks then using empty 0–35 slots, then player-near drop. A failed drop restores the inventory snapshot and leaves the gun unchanged. Gun commit preserves origin ownership and synchronizes BE plus inventories. Other slot/NBT are preserved. Failed requests show a small localized retry notice, refresh candidates, keep maintenance open and consume nothing.
 
 Client only sends intent; it never writes attachment NBT. Success closes selection/context, and existing BER reads the synchronized real gun. `MaintenanceActionState` tracks pending action; a future animation can be inserted before request dispatch, but must still pass server validation. No animation-completion workflow exists in V1.
 
-## Verification
+## Verification (historical integration results)
+
+The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations require the maintenance bench.
 
 - Compile passed. Server 24/24 GameTests passed in `build/maintenance-gametest/logs/latest.log`, including 20 alternating A/B first-winner installs, stale remove-vs-replace, exact consumption, same-type replacement conservation, both slots, origin/non-owner metadata, BE save/load and full-inventory single drop. Added cases are in `src/dev/java/com/antaurora/apofirstlight/dev/MaintenanceAttachmentTests.java`.
 - Existing suppressor and sight/server weapon regressions run in this suite. No noise/sound/muzzle-exit/ADS code or resources were changed. Graphical and audio behavior are separate from server assertions.

@@ -1,5 +1,22 @@
 # P9-01 24-Round Extended Magazine V1
 
+## 配件与属性速查
+
+统一目录和后续属性模板见 [配件总表](attachments/README.md)。
+
+| 项目 | 当前值 / 行为 |
+| --- | --- |
+| 名称 / ID | P9-01 扩容弹匣 / `apocalypse_firstlight:p9_01_extended_magazine` |
+| 槽位 / 当前兼容 | `MAGAZINE` / 仅 P9-01 |
+| 容量 | 覆盖为 24 发；标准 17 → 24，差值 +7 |
+| 安装弹药 | 保留原有余弹，不自动补满 |
+| 拆卸弹药 | 枪内最多保留 17 发；多余弹药与配件安全返还，背包满时掉落 |
+| 外观 | 独立扩容匣替换标准匣，保留黄色底板特征 |
+| 伤害 / 后坐力 / 射程 / 换弹速度 | 无额外修改 |
+| 安装入口 | 仅枪械维护台安装 / 拆卸 / 更换 |
+
+## 接入状态
+
 Status: implemented; user accepted mounted fit and requested ending the task. Verification limits remain below.
 
 ## Behavior
@@ -7,7 +24,7 @@ Status: implemented; user accepted mounted fit and requested ending the task. Ve
 - Item `apocalypse_firstlight:p9_01_extended_magazine`, P9-01 24发扩容弹匣. P9-only MAGAZINE compatibility; BR51 is unchanged.
 - Standard capacity 17, equipped capacity 24. Installing preserves existing rounds; reload/consumption/HUD use attachment-aware capacity.
 - Removal retains at most 17 rounds and returns excess ammunition plus the removed attachment to inventory, dropping overflow when full. Transaction snapshots reject stale/repeated operations and roll back inventory if a required drop fails.
-- Maintenance magazine hotspot supports installation/removal using existing timed operation and SFX. V-key remains sight/muzzle only.
+- Maintenance magazine hotspot supports installation/removal using existing timed operation and SFX. All player attachment changes require the maintenance bench; the V shortcut is removed.
 - Localized magazine tooltip includes 24 rounds; P9 static capacity specification follows its attachment. No new damage, recoil, range, audio or animations.
 - Current network protocol 22; matching client/server builds required. Earlier protocol-21 shot behavior remains intact.
 
@@ -33,7 +50,9 @@ Runtime files under `src/main/resources/assets/apocalypse_firstlight/`:
 
 Implementation: `NativeMagazineItem`, `NativeMagazineMount`, `NativeMagazineRendering`, attachment-aware `NativeGunAmmo`, `P901Renderer`, `MaintenanceGunRendering`, `MaintenanceAttachmentTransaction`.
 
-## Verification
+## Verification (historical integration results)
+
+The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations require the maintenance bench.
 
 Latest relief polish: live Blockbench independent and mounted extended-magazine previews inspected; all faces reference valid texture UUIDs. Offline rebuild passed in `build/p9-magazine-relief-build.log`, producing `build/libs/apocalypse_firstlight-1.0.0.jar`. This polish did not launch a graphical game client or rerun GameTests; the results below belong to the preceding V1 implementation, not the revised geometry.
 

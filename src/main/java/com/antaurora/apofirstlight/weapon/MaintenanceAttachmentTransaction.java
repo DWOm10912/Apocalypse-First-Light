@@ -11,7 +11,7 @@ public final class MaintenanceAttachmentTransaction {
                 ||menu.containerId!=r.containerId()||!menu.stillValid(player)
                 ||!menu.bench.getBlockPos().equals(r.bench())||menu.bench.attachmentRevision()!=r.revision())return false;
         var gun=menu.bench.getItem(0);
-        if(!(gun.getItem() instanceof NativeGunItem g)||!g.definition().id().toString().equals("apocalypse_firstlight:p9_01")
+        if(!(gun.getItem() instanceof NativeGunItem)||!NativeAttachments.supportsSlot(gun,r.target())
                 ||!ItemStack.matches(gun,r.expectedGun()))return false;
         var old=NativeAttachments.stored(gun,r.target());
         boolean remove=r.sourceSlot()==-1;

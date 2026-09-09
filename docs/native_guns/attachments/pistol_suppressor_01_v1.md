@@ -1,5 +1,22 @@
 # 手枪消音器可装备 V1
 
+## 配件与属性速查
+
+统一目录和后续属性模板见 [配件总表](README.md)。
+
+| 项目 | 当前值 / 行为 |
+| --- | --- |
+| 名称 / ID | 手枪消音器 / `apocalypse_firstlight:pistol_suppressor_01` |
+| 槽位 / 当前兼容 | `MUZZLE` / P9-01；不兼容 BR51 |
+| 噪声半径倍率 | `0.05`；P9 `64 → 3` 格 |
+| 消音声 | 枪械定义 `apocalypse_firstlight:p9_01_suppressed` |
+| 玩家音频距离 | 不乘降噪倍率 |
+| 视觉出口 | 配件 `muzzle_exit_anchor`；隐藏裸枪焰并生成弱烟 |
+| 伤害 / 射程 / 后坐力 / 射速 | 无额外修改 |
+| 安装入口 | 仅枪械维护台安装 / 拆卸 / 更换 |
+
+## 实现说明
+
 当前物品 Tooltip 仅显示“枪口装置｜手枪”和一句降噪/削弱枪口焰描述，不再包含 V 键、主副手或拆卸顺序教学；附件倍率与安装逻辑保持不变。统一规则见 [Tooltip Cleanup V1](../native_gun_attachment_tooltip_cleanup_v1.md)。
 
 ## 当前范围
@@ -7,8 +24,8 @@
 - 物品/附件 ID：apocalypse_firstlight:pistol_suppressor_01，手枪消音器 / Pistol Suppressor，堆叠1，创造「AFL 武器与弹药」标签页。无新配方。
 - 首批仅 P9：枪数据 muzzle_slot.anchor=muzzle_anchor，accepts=[apocalypse_firstlight:pistol_suppressor_01]。BR51不兼容。
 - NativeAttachment 的 MUZZLE 与原 SIGHT 共用 NativeAttachments 和 AflAttachments NBT。独立 NativeSuppressorItem 定义 noiseRadiusMultiplier=0.05、suppressesFireSound=true；倍率不写进 P9 类。
-- 主手枪、副手兼容附件、V 安装。生存消耗1，创造保留；已占槽拒绝，不替换。空副手拆回原附件（完整NBT），同时装两个时先SIGHT再MUZZLE。
-- 复用 SightExchangePacket；当前通道协议19（维护台延迟操作加入后升级）。客户端只发请求，服务端验证主副手完整快照、热键槽、主手NativeGun、兼容/槽、占用、存活/旁观及动作锁/容器状态；不同状态或重复过时请求拒绝。原红点消费/返还规则保持。
+- 玩家必须在枪械维护台安装、拆卸和更换；按候选来源消耗物品，返还保留完整 NBT，共用 51 tick 延迟提交。V 快捷装拆已移除。
+- 当前通道协议22；SightExchangePacket 保留报文编号但不再执行变更，旧请求不能绕过维护台。真实装拆统一使用 MaintenanceActionRequest 的服务端验证与延迟提交。
 
 ## 射击
 

@@ -19,6 +19,12 @@ import java.util.UUID;
 public final class MaintenanceMultiplayerTests {
     public static void run(GameTestHelper h){
         var level=h.getLevel();var root=h.absolutePos(new BlockPos(3,2,3));
+        // The reusable GameTest world can retain this fixture's final break-drop from a prior run.
+        // Reset prior fixture gun and workstation drops inside this isolated test's footprint.
+        for(var e:level.getEntitiesOfClass(ItemEntity.class,new AABB(root).inflate(5),e->
+                e.getItem().is(AflBlocks.GUN_MAINTENANCE_BENCH.get().asItem())
+                ||e.getItem().is(AflItems.P9_01.get())&&e.getItem().hasTag()
+                &&"preserve-exact-stack".equals(e.getItem().getTag().getString("MultiplayerMarker"))))e.discard();
         var bench=place(h,root);var another=place(h,root.offset(7,0,0));
         var a=FakePlayerFactory.get(level,new GameProfile(UUID.fromString("8ca95e40-5d79-4000-8000-000000000001"),"AFL_Test_A"));
         var b=FakePlayerFactory.get(level,new GameProfile(UUID.fromString("8ca95e40-5d79-4000-8000-000000000002"),"AFL_Test_B"));

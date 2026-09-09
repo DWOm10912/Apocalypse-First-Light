@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/thermal-fluid-client')
+            property 'afl.suppressorProbe', 'true'
+            property 'afl.rifleSuppressorProbe', 'true'
+            args '--quickPlaySingleplayer', 'fluid_probe'
+        }
+    }
+}

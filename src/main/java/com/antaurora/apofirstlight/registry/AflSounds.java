@@ -53,6 +53,8 @@ public final class AflSounds {
             .toList();
 
     public static final RegistryObject<SoundEvent> P9_01_FIRE = pistolSound("fire");
+    public static final RegistryObject<SoundEvent> BR51_01_SUPPRESSED = SOUND_EVENTS.register("br51_01_suppressed",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"br51_01_suppressed")));
     public static final RegistryObject<SoundEvent> P9_01_SUPPRESSED = pistolSound("suppressed");
     public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");

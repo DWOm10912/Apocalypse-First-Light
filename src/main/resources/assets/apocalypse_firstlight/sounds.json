@@ -95,6 +95,9 @@
       }
     ]
   },
+  "br51_01_suppressed": {
+    "sounds": [{"name": "apocalypse_firstlight:br51_01/suppressed", "stream": false}]
+  },
   "br51_01_fire": {
     "sounds": [
       {

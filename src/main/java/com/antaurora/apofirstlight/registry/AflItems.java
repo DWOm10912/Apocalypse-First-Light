@@ -30,6 +30,8 @@ public final class AflItems {
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
+    public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",
+            com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9x19mm_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> ROUND_762MM = ITEMS.register("762x51mm_round",

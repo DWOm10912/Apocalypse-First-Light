@@ -16,6 +16,30 @@ import net.minecraftforge.common.util.FakePlayerFactory;
 import java.util.UUID;
 
 public final class MaintenanceAttachmentTests {
+    public static void rifle(net.minecraft.gametest.framework.GameTestHelper h){
+        var root=h.absolutePos(new BlockPos(4,2,4));var level=h.getLevel();
+        for(var part:StaticWorkstationBlock.Part.values())level.setBlock(StaticWorkstationBlock.partPosition(root,Direction.NORTH,part),AflBlocks.GUN_MAINTENANCE_BENCH.get().stateFor(Direction.NORTH,part),3);
+        var bench=(GunMaintenanceBenchBlockEntity)level.getBlockEntity(root);
+        var a=FakePlayerFactory.get(level,new GameProfile(UUID.randomUUID(),"rifle_A"));
+        var b=FakePlayerFactory.get(level,new GameProfile(UUID.randomUUID(),"rifle_B"));
+        a.setPos(root.getCenter());b.setPos(root.getCenter());
+        var am=new GunMaintenanceMenu(61,a.getInventory(),bench);var bm=new GunMaintenanceMenu(62,b.getInventory(),bench);a.containerMenu=am;b.containerMenu=bm;
+        var slot=NativeAttachment.Slot.MUZZLE;var accessory=AflItems.RIFLE_SUPPRESSOR_01.get();
+        for(int trial=0;trial<20;trial++){
+            bench.clearContent();a.getInventory().clearContent();b.getInventory().clearContent();
+            a.getInventory().setItem(4,new ItemStack(AflItems.BR51_01.get()));h.assertTrue(am.clickMenuButton(a,4),"rifle bench fixture");
+            a.getInventory().setItem(23,new ItemStack(accessory));b.getInventory().setItem(23,new ItemStack(accessory));
+            var ar=request(a,bench,slot,23);var br=request(b,bench,slot,23);
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,ar),"rifle bench install");
+            h.assertTrue(!MaintenanceAttachmentTransaction.commit(b,br)&&count(b,accessory)==1,"rifle stale no consumption");
+            a.getInventory().setItem(24,new ItemStack(accessory));
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,slot,24))&&count(a,accessory)==1,"rifle replace conserves");
+            var saved=bench.saveWithoutMetadata();bench.load(saved);
+            h.assertTrue(NativeAttachments.active(bench.getItem(0),slot).is(accessory),"rifle bench save/load");
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,slot,-1))&&count(a,accessory)==2,"rifle remove conserves");
+        }
+        bench.clearContent();a.containerMenu=a.inventoryMenu;b.containerMenu=b.inventoryMenu;h.succeed();
+    }
     private static MaintenanceActionRequest request(ServerPlayer p,GunMaintenanceBenchBlockEntity b,NativeAttachment.Slot slot,int source){
         return new MaintenanceActionRequest(p.containerMenu.containerId,b.getBlockPos(),b.attachmentRevision(),b.getItem(0).copy(),slot,source,
                 source<0?ItemStack.EMPTY:p.getInventory().getItem(source).copy());

@@ -78357,6 +78357,13 @@
       "primary_selected": false
     },
     {
+      "name": "muzzle_anchor",
+      "uuid": "e02fbe33-188e-4aac-b487-1ac96fd244fb",
+      "origin": [0, 11.4375, -26.2],
+      "rotation": [0, 0, 0],
+      "export": true
+    },
+    {
       "name": "positioning2",
       "uuid": "eb0046c2-e7d2-f395-8607-af2e88598479",
       "export": true,
@@ -80915,6 +80922,10 @@
                   "uuid": "eb0046c2-e7d2-f395-8607-af2e88598479",
                   "isOpen": false,
                   "children": [
+                    {
+                      "uuid": "e02fbe33-188e-4aac-b487-1ac96fd244fb",
+                      "children": []
+                    },
                     {
                       "uuid": "d2d7ff7e-c308-6f0a-76d5-705984faee05",
                       "isOpen": false,

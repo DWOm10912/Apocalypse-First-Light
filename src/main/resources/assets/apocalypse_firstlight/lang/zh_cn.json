@@ -1,4 +1,7 @@
 {
+  "item.apocalypse_firstlight.rifle_suppressor_01": "步枪消音器",
+  "tooltip.apocalypse_firstlight.rifle_suppressor_01.type": "枪口装置 ｜ 步枪",
+  "tooltip.apocalypse_firstlight.rifle_suppressor_01.description": "一款通用步枪枪口装置，可大幅降低枪声传播范围并削弱枪口焰。",
   "item.apocalypse_firstlight.p9_01_extended_magazine":"P9-01 扩容弹匣",
   "tooltip.apocalypse_firstlight.p9_01_extended_magazine.type":"弹匣 ｜ 手枪 ｜ 24发",
   "tooltip.apocalypse_firstlight.p9_01_extended_magazine.description":"一款为P9-01设计的24发扩容弹匣，可提升持续交火能力。",
@@ -22,7 +25,6 @@
   "block.apocalypse_firstlight.gun_maintenance_bench": "枪械维护台",
   "block.apocalypse_firstlight.precision_fabrication_station": "精密制造台",
   "item.apocalypse_firstlight.pistol_red_dot": "手枪微型红点瞄具",
-  "key.apocalypse_firstlight.sight_exchange": "安装/拆下配件",
   "item.apocalypse_firstlight.pistol_suppressor_01": "手枪消音器",
   "subtitles.apocalypse_firstlight.p9_01.suppressed": "消音手枪开火",
   "tooltip.apocalypse_firstlight.pistol_suppressor_01.type": "枪口装置 ｜ 手枪",

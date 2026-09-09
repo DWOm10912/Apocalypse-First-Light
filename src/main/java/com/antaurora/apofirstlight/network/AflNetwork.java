@@ -110,18 +110,15 @@ public final class AflNetwork {
             }));c.setPacketHandled(true);}
     }
 
-    public static void requestSightExchange(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){
-        if(channel!=null)channel.sendToServer(new SightExchangePacket(slot,gun.copy(),offhand.copy()));
-    }
+    /** Retired quick-exchange API. Kept inert for old development probes; use maintenance operations. */
+    @Deprecated
+    public static void requestSightExchange(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){}
+    /** Reserved wire ID: old clients cannot bypass the maintenance bench, and later packet IDs stay stable. */
     public record SightExchangePacket(int slot,net.minecraft.world.item.ItemStack gun,net.minecraft.world.item.ItemStack offhand){
         static void encode(SightExchangePacket p,FriendlyByteBuf b){b.writeVarInt(p.slot);b.writeItem(p.gun);b.writeItem(p.offhand);}
         static SightExchangePacket decode(FriendlyByteBuf b){return new SightExchangePacket(b.readVarInt(),b.readItem(),b.readItem());}
         static void handle(SightExchangePacket p,Supplier<NetworkEvent.Context> supplier){
-            var c=supplier.get();c.enqueueWork(()->{
-                var player=c.getSender();
-                if(player!=null&&com.antaurora.apofirstlight.weapon.NativeAttachments.requestMatches(player,p.slot,p.gun,p.offhand))
-                    com.antaurora.apofirstlight.weapon.NativeAttachments.exchange(player);
-            });c.setPacketHandled(true);
+            supplier.get().setPacketHandled(true); // Deliberately reject every legacy quick-exchange request.
         }
     }
 

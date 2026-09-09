@@ -18,6 +18,8 @@ public final class NativeSuppressorTests {
         add(tests,"sight_creative",NativeSightGameTests::sightCreativeAndRestrictions);
         add(tests,"suppressor_transactions",NativeSuppressorTests::transactions);
         add(tests,"suppressor_creative",NativeSuppressorTests::creative);
+        add(tests,"rifle_suppressor",NativeSuppressorTests::rifle);
+        add(tests,"rifle_maintenance",MaintenanceAttachmentTests::rifle);
         add(tests,"dual_maintenance",MaintenanceMultiplayerTests::run);
         return tests;
     }
@@ -37,14 +39,14 @@ public final class NativeSuppressorTests {
         var bare=NativeGunNoise.resolve(gun,d);
         h.assertTrue(bare.radius()==64&&!bare.suppressed()&&bare.fireSound((NativeGunItem)gun.getItem())==AflSounds.P9_01_FIRE.get(),"normal sound and radius");
         p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
-        h.assertTrue(NativeAttachments.exchange(p),"red dot install");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p),"red dot install");
         var suppressor=new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get());suppressor.getOrCreateTag().putString("Marker","exact");
         p.setItemInHand(InteractionHand.OFF_HAND,suppressor);
         var requested=gun.copy();var off=suppressor.copy();int slot=p.getInventory().selected;
-        h.assertTrue(NativeAttachments.requestMatches(p,slot,requested,off),"valid target");
-        h.assertTrue(!NativeAttachments.requestMatches(p,9,requested,off),"invalid slot rejected");
-        h.assertTrue(NativeAttachments.exchange(p)&&p.getOffhandItem().isEmpty(),"survival consumed");
-        h.assertTrue(!NativeAttachments.requestMatches(p,slot,requested,off),"replay rejected");
+        h.assertTrue(LegacyAttachmentFixture.requestMatches(p,slot,requested,off),"valid target");
+        h.assertTrue(!LegacyAttachmentFixture.requestMatches(p,9,requested,off),"invalid slot rejected");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().isEmpty(),"survival consumed");
+        h.assertTrue(!LegacyAttachmentFixture.requestMatches(p,slot,requested,off),"replay rejected");
         h.assertTrue(!NativeAttachments.activeSight(gun).isEmpty()&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"both slots");
         var resolved=NativeGunNoise.resolve(gun,d);
         h.assertTrue(resolved.radius()==3&&resolved.suppressed()&&!d.gunshotTinnitus(),"suppressed radius and no tinnitus");
@@ -52,7 +54,7 @@ public final class NativeSuppressorTests {
         // Actual native raycast reaches the real NoiseSystem, not a test-side radius substitution.
         NativeGunShot.execute(p,d);
         p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));
-        h.assertTrue(!NativeAttachments.exchange(p)&&p.getOffhandItem().getCount()==1,"occupied rejected");
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().getCount()==1,"occupied rejected");
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),p.getOffhandItem()),"rifle incompatible");
         var saved=ItemStack.of(gun.save(new CompoundTag()));
         h.assertTrue(ItemStack.matches(gun,saved)&&NativeGunAmmo.read(saved,d)==7,"serialize all NBT and ammo");
@@ -70,22 +72,45 @@ public final class NativeSuppressorTests {
         var picked=p.getInventory().items.stream().filter(s->s.is(AflItems.P9_01.get())).findFirst().orElseThrow();
         h.assertTrue(ItemStack.matches(gun,picked),"pickup preserves both");
         p.setItemInHand(InteractionHand.MAIN_HAND,gun);
-        h.assertTrue(NativeAttachments.exchange(p)&&p.getOffhandItem().is(AflItems.PISTOL_RED_DOT.get()),"sight first");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().is(AflItems.PISTOL_RED_DOT.get()),"sight first");
         h.assertTrue(!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"muzzle untouched");
         p.setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);
-        h.assertTrue(NativeAttachments.exchange(p)&&p.getOffhandItem().getOrCreateTag().getString("Marker").equals("exact"),"muzzle returned with NBT");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().getOrCreateTag().getString("Marker").equals("exact"),"muzzle returned with NBT");
         h.assertTrue(NativeGunNoise.resolve(gun,d).radius()==64,"bare radius restored");
         com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SUPPRESSOR TEST] PASS transactions dual slots sound 64->3 chest drop pickup serialization");
+        h.succeed();
+    }
+    public static void rifle(GameTestHelper h){
+        var p=player(h,"rifle_suppressor");var gun=new ItemStack(AflItems.BR51_01.get());
+        var item=(NativeGunItem)gun.getItem();var d=item.definition();
+        p.setItemInHand(InteractionHand.MAIN_HAND,gun);
+        h.assertTrue(NativeGunNoise.resolve(gun,d).radius()==112,"rifle bare noise");
+        var normal=NativeGunNoise.resolve(gun,d).fireSound(item);
+        p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.RIFLE_SUPPRESSOR_01.get()));
+        var expected=gun.copy();var source=p.getOffhandItem().copy();
+        h.assertTrue(NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.MUZZLE),"data driven muzzle");
+        h.assertTrue(!NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.SIGHT),"no new rifle sight");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().isEmpty(),"rifle quick install consumes");
+        h.assertTrue(!LegacyAttachmentFixture.requestMatches(p,p.getInventory().selected,expected,source),"rifle replay rejected");
+        var result=NativeGunNoise.resolve(gun,d);
+        h.assertTrue(result.suppressed()&&result.radius()==6,"rifle 112 -> 6");
+        h.assertTrue(result.fireSound(item)==AflSounds.BR51_01_SUPPRESSED.get()&&normal!=result.fireSound(item),"gun defined sound");
+        NativeGunShot.execute(p,d);
+        var restored=ItemStack.of(gun.save(new CompoundTag()));
+        h.assertTrue(ItemStack.matches(gun,restored)&&NativeAttachments.active(restored,NativeAttachment.Slot.MUZZLE).is(AflItems.RIFLE_SUPPRESSOR_01.get()),"rifle persistence");
+        h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.P9_01.get()),source),"rifle accessory not P9 compatible");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().is(AflItems.RIFLE_SUPPRESSOR_01.get()),"rifle detach return");
+        h.assertTrue(NativeGunNoise.resolve(gun,d).fireSound(item)==normal,"bare sound restored");
         h.succeed();
     }
     public static void creative(GameTestHelper h){
         var p=player(h,"suppressor_creative");p.setGameMode(GameType.CREATIVE);
         p.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.P9_01.get()));
         p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));
-        h.assertTrue(NativeAttachments.exchange(p)&&p.getOffhandItem().getCount()==1,"creative retains");
-        h.assertTrue(!NativeAttachments.exchange(p),"creative occupied");
+        h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().getCount()==1,"creative retains");
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p),"creative occupied");
         p.setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);p.setGameMode(GameType.SPECTATOR);
-        h.assertTrue(!NativeAttachments.exchange(p),"spectator blocked");
+        h.assertTrue(!LegacyAttachmentFixture.exchange(p),"spectator blocked");
         h.succeed();
     }
 }

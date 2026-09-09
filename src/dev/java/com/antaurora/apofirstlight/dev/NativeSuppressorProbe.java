@@ -18,11 +18,12 @@ import net.minecraftforge.fml.common.Mod;
 /** Isolated graphical/network smoke; screenshots still require inspection. */
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class NativeSuppressorProbe {
+    private static boolean rifle(){return Boolean.getBoolean("afl.rifleSuppressorProbe");}
     private static int ticks,step=-1;private static boolean done;
     private static final BlockPos ROOT=new BlockPos(20,120,0);
     private static Minecraft mc(){return Minecraft.getInstance();}
     @SubscribeEvent public static void sound(net.minecraftforge.client.event.sound.PlaySoundEvent e){
-        if(Boolean.getBoolean("afl.suppressorProbe")&&e.getSound()!=null&&e.getSound().getLocation().getPath().startsWith("p9_01"))
+        if(Boolean.getBoolean("afl.suppressorProbe")&&e.getSound()!=null&&(e.getSound().getLocation().getPath().startsWith("p9_01")||e.getSound().getLocation().getPath().startsWith("br51_01")))
             com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SUPPRESSOR AUDIO] {}",e.getSound().getLocation());
     }
     private static net.minecraft.server.level.ServerPlayer player(){return mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());}
@@ -40,22 +41,22 @@ public final class NativeSuppressorProbe {
                 var bench=(com.antaurora.apofirstlight.blockentity.GunMaintenanceBenchBlockEntity)level.getBlockEntity(ROOT);bench.clearContent();
                 p.teleportTo(level,21,120,-1.5,java.util.Set.of(),0,10);
                 p.getInventory().clearContent();p.getInventory().selected=0;
-                var gun=new ItemStack(AflItems.P9_01.get());NativeGunAmmo.set(gun,((NativeGunItem)gun.getItem()).definition(),10);
+                var gun=new ItemStack(rifle()?AflItems.BR51_01.get():AflItems.P9_01.get());NativeGunAmmo.set(gun,((NativeGunItem)gun.getItem()).definition(),10);
                 p.setItemInHand(InteractionHand.MAIN_HAND,gun);p.inventoryMenu.broadcastChanges();
             });
             case 1 -> {mc().options.setCameraType(CameraType.FIRST_PERSON);shot("bare_fp");server(()->P901Actions.request(player(),false,0));}
-            case 2 -> server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));player().inventoryMenu.broadcastChanges();});
+            case 2 -> server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(rifle()?AflItems.RIFLE_SUPPRESSOR_01.get():AflItems.PISTOL_SUPPRESSOR_01.get()));player().inventoryMenu.broadcastChanges();});
             case 3 -> exchange();
             case 4 -> {
                 check(!NativeAttachments.active(mc().player.getMainHandItem(),NativeAttachment.Slot.MUZZLE).isEmpty(),"packet install/client sync");
                 var exit=new com.mojang.blaze3d.vertex.PoseStack();
                 check(com.antaurora.apofirstlight.weapon.client.NativeMuzzleRendering.applyExit(mc().player.getMainHandItem(),exit),"cached exit loaded");
                 var v=exit.last().pose().transformPosition(new org.joml.Vector3f());
-                check(Math.abs(v.z+9.1F/16)<.0001&&Math.abs(v.x)<.0001&&Math.abs(v.y)<.0001,"exit exact/coaxial");
+                check(Math.abs(v.z+(rifle()?11.55F:9.1F)/16)<.0001&&Math.abs(v.x)<.0001&&Math.abs(v.y)<.0001,"exit exact/coaxial");
                 server(()->{player().setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);player().inventoryMenu.broadcastChanges();});
             }
             case 5 -> {shot("suppressed_fp");server(()->P901Actions.request(player(),false,0));}
-            case 6 -> server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));player().inventoryMenu.broadcastChanges();});
+            case 6 -> {if(rifle()){step=8;}else server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));player().inventoryMenu.broadcastChanges();});}
             case 7 -> exchange();
             case 8 -> {
                 check(!NativeAttachments.activeSight(mc().player.getMainHandItem()).isEmpty(),"dual client sync");
@@ -75,11 +76,11 @@ public final class NativeSuppressorProbe {
             }
             case 13 -> {
                 var s=(GunMaintenanceScreen)mc().screen;var gun=s.getMenu().synchronizedBench().getItem(0);
-                check(!NativeAttachments.activeSight(gun).isEmpty()&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"bench both");
+                check((rifle()||!NativeAttachments.activeSight(gun).isEmpty())&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"bench attachments");
                 shot("dual_maintenance");mc().player.closeContainer();
             }
             case 14 -> {shot("dual_bench_world");server(()->{
-                player().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));player().inventoryMenu.broadcastChanges();
+                player().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(rifle()?AflItems.RIFLE_SUPPRESSOR_01.get():AflItems.PISTOL_SUPPRESSOR_01.get()));player().inventoryMenu.broadcastChanges();
             });}
             case 15 -> {shot("standalone_hand");mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));}
             case 16 -> {shot("standalone_inventory");finish("PASS network, dual slots, independent baked model, exact exit, maintenance data; screenshots captured");}
@@ -87,7 +88,7 @@ public final class NativeSuppressorProbe {
     }
     private static void exchange(){AflNetwork.requestSightExchange(mc().player.getInventory().selected,mc().player.getMainHandItem(),mc().player.getOffhandItem());}
     private static void server(Runnable action){mc().getSingleplayerServer().execute(()->{try{action.run();}catch(Exception ex){mc().execute(()->finish("FAIL "+ex));}});}
-    private static void shot(String name){Screenshot.grab(mc().gameDirectory,"suppressor_"+name+".png",mc().getMainRenderTarget(),m->{});}
+    private static void shot(String name){Screenshot.grab(mc().gameDirectory,(rifle()?"rifle_suppressor_":"suppressor_")+name+".png",mc().getMainRenderTarget(),m->{});}
     private static void check(boolean condition,String message){if(!condition)throw new IllegalStateException(message);}
     private static void finish(String message){done=true;com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SUPPRESSOR CLIENT] {}",message);mc().stop();}
 }

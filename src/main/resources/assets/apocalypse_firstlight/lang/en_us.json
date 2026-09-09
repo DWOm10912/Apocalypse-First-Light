@@ -1,4 +1,7 @@
 {
+  "item.apocalypse_firstlight.rifle_suppressor_01": "Rifle Suppressor",
+  "tooltip.apocalypse_firstlight.rifle_suppressor_01.type": "Muzzle Device | Rifle",
+  "tooltip.apocalypse_firstlight.rifle_suppressor_01.description": "A universal rifle muzzle device that greatly reduces gunshot noise propagation and muzzle flash.",
   "item.apocalypse_firstlight.p9_01_extended_magazine":"P9-01 Extended Magazine",
   "tooltip.apocalypse_firstlight.p9_01_extended_magazine.type":"Magazine | Pistol | 24 Rounds",
   "tooltip.apocalypse_firstlight.p9_01_extended_magazine.description":"A 24-round extended magazine designed for the P9-01, improving sustained fire capability.",
@@ -22,7 +25,6 @@
   "block.apocalypse_firstlight.gun_maintenance_bench": "Gun Maintenance Bench",
   "block.apocalypse_firstlight.precision_fabrication_station": "Precision Fabrication Station",
   "item.apocalypse_firstlight.pistol_red_dot": "Pistol Micro Red Dot Sight",
-  "key.apocalypse_firstlight.sight_exchange": "Install / Remove Attachment",
   "item.apocalypse_firstlight.pistol_suppressor_01": "Pistol Suppressor",
   "subtitles.apocalypse_firstlight.p9_01.suppressed": "Suppressed pistol fires",
   "tooltip.apocalypse_firstlight.pistol_suppressor_01.type": "Muzzle Device | Pistol",

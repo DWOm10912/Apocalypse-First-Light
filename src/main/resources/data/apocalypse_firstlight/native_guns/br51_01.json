@@ -1,5 +1,10 @@
 {
   "ammo": "apocalypse_firstlight:762x51mm_round",
+  "suppressed_fire_sound": "apocalypse_firstlight:br51_01_suppressed",
+  "muzzle_slot": {
+    "anchor": "muzzle_anchor",
+    "accepts": ["apocalypse_firstlight:rifle_suppressor_01"]
+  },
   "magazine_capacity": 20,
   "fire": {
     "mode": "semi",

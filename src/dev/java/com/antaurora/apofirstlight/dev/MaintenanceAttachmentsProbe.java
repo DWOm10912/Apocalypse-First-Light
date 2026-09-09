@@ -19,6 +19,7 @@ import net.minecraftforge.fml.common.Mod;
 /** Isolated existing development world only; drives the real Screen and real C2S transaction. */
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class MaintenanceAttachmentsProbe {
+    private static boolean rifle(){return Boolean.getBoolean("afl.rifleMaintenanceProbe");}
     private static final BlockPos ROOT=new BlockPos(20,120,0);
     private static int ticks,step=-1;private static boolean done;
     private static int operationSounds,soundTick=-1000;
@@ -46,19 +47,19 @@ public final class MaintenanceAttachmentsProbe {
                 for(int x=-2;x<=2;x++)for(int z=-2;z<=2;z++)l.setBlock(ROOT.offset(x,-1,z),Blocks.STONE.defaultBlockState(),3);
                 for(var part:StaticWorkstationBlock.Part.values())l.setBlock(StaticWorkstationBlock.partPosition(ROOT,Direction.NORTH,part),AflBlocks.GUN_MAINTENANCE_BENCH.get().stateFor(Direction.NORTH,part),3);
                 p.teleportTo(l,21,120,-1,java.util.Set.of(),0,20);p.getInventory().clearContent();
-                p.getInventory().setItem(4,new ItemStack(AflItems.P9_01.get()));p.getInventory().setItem(23,new ItemStack(AflItems.PISTOL_SUPPRESSOR_01.get()));p.getInventory().setItem(24,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
+                p.getInventory().setItem(4,new ItemStack(rifle()?AflItems.BR51_01.get():AflItems.P9_01.get()));p.getInventory().setItem(23,new ItemStack(rifle()?AflItems.RIFLE_SUPPRESSOR_01.get():AflItems.PISTOL_SUPPRESSOR_01.get()));p.getInventory().setItem(24,new ItemStack(AflItems.PISTOL_RED_DOT.get()));
                 var pos=ROOT.east().above();l.getBlockState(pos).use(l,p,InteractionHand.MAIN_HAND,new BlockHitResult(Vec3.atCenterOf(pos),Direction.NORTH,pos,false));
             });
             case 1 -> slot(4);
             case 2 -> hotspot(NativeAttachment.Slot.MUZZLE);
             case 3 -> {shot("muzzle_context");button(NativeAttachment.Slot.MUZZLE,false);}
-            case 4 -> {shot("muzzle_candidates");check(mc().player.getInventory().getItem(23).is(AflItems.PISTOL_SUPPRESSOR_01.get()),"candidate not moved");slot(0);}
-            case 5 -> {check(!NativeAttachments.active(screen().getMenu().synchronizedBench().getItem(0),NativeAttachment.Slot.MUZZLE).isEmpty(),"C2S suppressor install");check(mc().player.getInventory().getItem(23).isEmpty(),"source consumed");shot("installed_muzzle");hotspot(NativeAttachment.Slot.SIGHT);}
+            case 4 -> {shot("muzzle_candidates");check(mc().player.getInventory().getItem(23).is(rifle()?AflItems.RIFLE_SUPPRESSOR_01.get():AflItems.PISTOL_SUPPRESSOR_01.get()),"candidate not moved");slot(0);}
+            case 5 -> {check(!NativeAttachments.active(screen().getMenu().synchronizedBench().getItem(0),NativeAttachment.Slot.MUZZLE).isEmpty(),"C2S suppressor install");check(mc().player.getInventory().getItem(23).isEmpty(),"source consumed");shot("installed_muzzle");if(rifle()){hotspot(NativeAttachment.Slot.MUZZLE);step=8;}else hotspot(NativeAttachment.Slot.SIGHT);}
             case 6 -> button(NativeAttachment.Slot.SIGHT,false);
             case 7 -> slot(0);
             case 8 -> {check(!NativeAttachments.activeSight(screen().getMenu().synchronizedBench().getItem(0)).isEmpty(),"C2S sight install");shot("both");hotspot(NativeAttachment.Slot.SIGHT);}
-            case 9 -> button(NativeAttachment.Slot.SIGHT,true);
-            case 10 -> {var gun=screen().getMenu().synchronizedBench().getItem(0);check(NativeAttachments.activeSight(gun).isEmpty()&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"independent removal");hotspot(NativeAttachment.Slot.MUZZLE);}
+            case 9 -> button(rifle()?NativeAttachment.Slot.MUZZLE:NativeAttachment.Slot.SIGHT,true);
+            case 10 -> {var gun=screen().getMenu().synchronizedBench().getItem(0);if(rifle()){check(NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty()&&operationSounds==2,"rifle detach and two delayed SFX");finish("PASS rifle mouse hotspot/context/candidate install/remove, early-state guard, two shared SFX");}else{check(NativeAttachments.activeSight(gun).isEmpty()&&!NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE).isEmpty(),"independent removal");hotspot(NativeAttachment.Slot.MUZZLE);}}
             case 11 -> button(NativeAttachment.Slot.MUZZLE,false);
             case 12 -> {screen().keyPressed(256,0,0);check(mc().screen instanceof GunMaintenanceScreen,"Esc only cancels selection");slot(4);}
             case 13 -> {check(mc().player.getInventory().getItem(4).is(AflItems.P9_01.get())&&!NativeAttachments.active(mc().player.getInventory().getItem(4),NativeAttachment.Slot.MUZZLE).isEmpty(),"origin return persists attachment");check(operationSounds==3,"exactly one shared SFX for each approved operation");finish("PASS MouseHandler C2S install both/remove/cancel/origin; 3 shared SFX and early-state guard; screenshots captured");}

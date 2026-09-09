@@ -30,8 +30,12 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem
                         && (renderPerspective.firstPerson() || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                             || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_LEFT_HAND)) {
+                    var definition=((com.antaurora.apofirstlight.weapon.NativeGunItem)item).definition();
+                    boolean hasMuzzle=!com.antaurora.apofirstlight.weapon.NativeAttachments.active(currentItemStack,
+                            com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.MUZZLE).isEmpty();
+                    String muzzleAnchor=hasMuzzle&&definition.muzzleMount()!=null?definition.muzzleMount().anchor():profile.muzzleAnchor();
                     String fx = bone.getName().equals(profile.ejectionAnchor()) ? "ejection_anchor"
-                            : bone.getName().equals(profile.muzzleAnchor()) ? "muzzle_anchor" : null;
+                            : bone.getName().equals(muzzleAnchor) ? "muzzle_anchor" : null;
                     if (fx != null) {
                         var matrix = P901RenderMatrices.detachedCopy(pose);
                         RenderUtils.translateToPivotPoint(matrix, bone);
