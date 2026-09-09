@@ -10,8 +10,10 @@ public final class NativeSuppressorItem extends Item implements NativeAttachment
     @Override public boolean suppressesFireSound(){return true;}
     @Override public void appendHoverText(net.minecraft.world.item.ItemStack stack,net.minecraft.world.level.Level level,
             java.util.List<net.minecraft.network.chat.Component> lines,net.minecraft.world.item.TooltipFlag flag){
-        lines.add(net.minecraft.network.chat.Component.translatable("tooltip.apocalypse_firstlight.suppressor.install"));
-        lines.add(net.minecraft.network.chat.Component.translatable("tooltip.apocalypse_firstlight.suppressor.detach"));
+        lines.add(net.minecraft.network.chat.Component.translatable("tooltip.apocalypse_firstlight.pistol_suppressor_01.type")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        lines.add(net.minecraft.network.chat.Component.translatable("tooltip.apocalypse_firstlight.pistol_suppressor_01.description")
+                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY,net.minecraft.ChatFormatting.ITALIC));
     }
     @Override public void initializeClient(java.util.function.Consumer<IClientItemExtensions> consumer){
         consumer.accept(new IClientItemExtensions(){

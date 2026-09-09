@@ -10,7 +10,9 @@ public final class NativeSightItem extends Item implements NativeAttachment {
     public NativeSightItem(){super(new Properties().stacksTo(1));}
     public Slot slot(){return Slot.SIGHT;}
     @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.sight.install"));
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.sight.detach"));
+        lines.add(Component.translatable("tooltip.apocalypse_firstlight.pistol_micro_red_dot.type")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        lines.add(Component.translatable("tooltip.apocalypse_firstlight.pistol_micro_red_dot.description")
+                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY,net.minecraft.ChatFormatting.ITALIC));
     }
 }

@@ -73,7 +73,10 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.p9_01.prototype"));
+        lines.add(Component.translatable("tooltip.apocalypse_firstlight.p9_01.spec")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        lines.add(Component.translatable("tooltip.apocalypse_firstlight.p9_01.description")
+                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY, net.minecraft.ChatFormatting.ITALIC));
     }
 
     @Override

@@ -222,6 +222,7 @@ public final class P901Actions {
 
     @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
     public static void preventBreaking(BlockEvent.BreakEvent event) {
-        if (event.getPlayer().getMainHandItem().getItem() instanceof NativeGunItem) event.setCanceled(true);
+        if (event.getPlayer().getMainHandItem().getItem() instanceof NativeGunItem
+                && !BulletBlockInteraction.isBulletBreak(event)) event.setCanceled(true);
     }
 }

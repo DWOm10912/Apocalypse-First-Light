@@ -1,5 +1,7 @@
 # 手枪微型红点 V1
 
+当前物品 Tooltip 仅显示“瞄具｜手枪”和一句功能描述，不再包含 V 键或主副手装拆教学；实际安装逻辑与快捷键保持不变。统一规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)。
+
 正式物品：`apocalypse_firstlight:pistol_red_dot`，最大堆叠 1，进入「AFL 武器与弹药」标签页配件位置。当前只兼容 P9-01；没有步枪配件、耐久、品质、倍率选项、安装动画或复杂 UI。
 
 ## 使用

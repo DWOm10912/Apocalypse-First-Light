@@ -1,5 +1,7 @@
 # 手枪消音器可装备 V1
 
+当前物品 Tooltip 仅显示“枪口装置｜手枪”和一句降噪/削弱枪口焰描述，不再包含 V 键、主副手或拆卸顺序教学；附件倍率与安装逻辑保持不变。统一规则见 [Tooltip Cleanup V1](../native_gun_attachment_tooltip_cleanup_v1.md)。
+
 ## 当前范围
 
 - 物品/附件 ID：apocalypse_firstlight:pistol_suppressor_01，手枪消音器 / Pistol Suppressor，堆叠1，创造「AFL 武器与弹药」标签页。无新配方。

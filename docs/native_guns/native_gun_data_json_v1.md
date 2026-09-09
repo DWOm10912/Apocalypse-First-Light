@@ -1,5 +1,7 @@
 # Native Gun Data JSON V1
 
+物品 Tooltip 的正式显示规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)：普通 Tooltip 仅显示静态规格与一句描述，不显示实时弹匣余量；数据中的真实容量及持枪 HUD 行为不变。
+
 ## 文件与真值源
 
 - `src/main/resources/data/apocalypse_firstlight/native_guns/p9_01.json`：`apocalypse_firstlight:p9_01`

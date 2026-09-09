@@ -19,6 +19,8 @@ public final class NativeGunShot {
     public static final ResourceKey<DamageType> BULLET = ResourceKey.create(Registries.DAMAGE_TYPE,
             new ResourceLocation("apocalypse_firstlight", "native_bullet"));
     public record Hit(Entity entity, Vec3 point, boolean head) {}
+    public static final int MAX_PASS_THROUGH_BREAKABLE_BLOCKS = 16;
+    public static final double EPSILON = .01;
     private NativeGunShot() {}
 
     public static double damageAt(NativeGunDefinition d, double distance) {
@@ -39,12 +41,27 @@ public final class NativeGunShot {
     public static Hit trace(ServerPlayer shooter, Vec3 start, Vec3 direction, double range) {
         var level = shooter.serverLevel();
         Vec3 end = start.add(direction.normalize().scale(range));
-        var block = level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+        Vec3 forward = direction.normalize();
+        // Unloaded cells are stopping boundaries, never a request to generate/load terrain.
+        net.minecraft.world.level.BlockGetter loaded = new net.minecraft.world.level.BlockGetter() {
+            public net.minecraft.world.level.block.entity.BlockEntity getBlockEntity(net.minecraft.core.BlockPos p) { return null; }
+            public net.minecraft.world.level.block.state.BlockState getBlockState(net.minecraft.core.BlockPos p) {
+                return level.hasChunkAt(p) ? level.getBlockState(p) : net.minecraft.world.level.block.Blocks.BARRIER.defaultBlockState();
+            }
+            public net.minecraft.world.level.material.FluidState getFluidState(net.minecraft.core.BlockPos p) {
+                return net.minecraft.world.level.material.Fluids.EMPTY.defaultFluidState();
+            }
+            public int getHeight() { return level.getHeight(); }
+            public int getMinBuildHeight() { return level.getMinBuildHeight(); }
+        };
+        int broken = 0;
+        while (true) {
+        var block = loaded.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
         double closest = start.distanceToSqr(block.getLocation());
         Entity target = null;
         boolean head = false;
         Vec3 point = block.getLocation();
-        for (Entity entity : level.getEntities(shooter, new AABB(start, end).inflate(1),
+        for (Entity entity : level.getEntities(shooter, new AABB(start, block.getLocation()).inflate(1),
                 e -> !e.isSpectator() && e.isAlive() && e.isPickable() && !e.isPassengerOfSameVehicle(shooter))) {
             var bounds = entity.getBoundingBox();
             var intersection = NativeHeadshots.intersect(bounds, NativeHeadshots.enabled(entity), start, end);
@@ -55,7 +72,18 @@ public final class NativeGunShot {
                 head = intersection.get().head();
             }
         }
-        return new Hit(target, point, head);
+        if (target != null || block.getType() == net.minecraft.world.phys.HitResult.Type.MISS)
+            return new Hit(target, point, head);
+        var pos = block.getBlockPos();
+        if (!level.hasChunkAt(pos) || broken >= MAX_PASS_THROUGH_BREAKABLE_BLOCKS
+                || BulletBlockInteraction.resolve(level.getBlockState(pos)) != BulletBlockInteraction.BREAK_AND_PASS
+                || !BulletBlockInteraction.breakGlass(shooter, pos)) return new Hit(null, point, false);
+        broken++;
+        // Fixed endpoint preserves original range including the epsilon step.
+        double remaining = point.distanceTo(end);
+        if (remaining <= EPSILON) return new Hit(null, end, false);
+        start = point.add(forward.scale(EPSILON));
+        }
     }
 
     public static Hit execute(ServerPlayer shooter, NativeGunDefinition d) {

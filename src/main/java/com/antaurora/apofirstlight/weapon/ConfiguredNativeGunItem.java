@@ -55,8 +55,10 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
         registrar.add(action);
     }
     @Override public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.literal(NativeGunAmmo.read(stack, definition()) + " / " + definition().magazineCapacity()));
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.br51_01.ammunition"));
+        String key = "tooltip.apocalypse_firstlight." + definitionId.getPath();
+        lines.add(Component.translatable(key + ".spec").withStyle(net.minecraft.ChatFormatting.GRAY));
+        lines.add(Component.translatable(key + ".description")
+                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY, net.minecraft.ChatFormatting.ITALIC));
     }
     @Override public boolean canAttackBlock(net.minecraft.world.level.block.state.BlockState s, Level l,
             net.minecraft.core.BlockPos p, net.minecraft.world.entity.player.Player player) { return false; }

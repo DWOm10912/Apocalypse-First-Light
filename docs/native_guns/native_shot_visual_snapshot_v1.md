@@ -1,5 +1,7 @@
 # Native Shot Visual Snapshot V1
 
+Glass V1: the server now resolves tagged breakable glass continuously before returning the final endpoint; the existing shotId pairing and frozen muzzle remain unchanged. See [Native Bullet Glass Penetration V1](native_bullet_glass_penetration_v1.md). Broken glass is not a tracer stopping point.
+
 ## Boundary and audited order
 
 Client defines input time and the muzzle of the currently presented gun; server defines whether the shot exists and its hit endpoint. Only a long `shotId` is added to the request/result; no client position, aim, damage or endpoint is accepted. Network protocol **21**, matching client/server required. The local successful-shot packet now includes endpoint and shotId atomically with slot/gun identity; the separate FX packet goes to tracking observers only, avoiding local confirmation/FX delivery on different frames.
