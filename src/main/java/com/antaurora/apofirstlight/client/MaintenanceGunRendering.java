@@ -20,6 +20,16 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     private static final MaintenanceGunRendering DRAWER=new MaintenanceGunRendering();
     private static final Map<BakedGeoModel,List<GeoBone>> CACHE=new WeakHashMap<>();
     private static final Map<BakedGeoModel,List<net.minecraft.world.phys.AABB>> BOUNDS=new WeakHashMap<>();
+    private static final Map<BakedGeoModel,Double> LONGITUDINAL_CENTERS=new WeakHashMap<>();
+    private static double longitudinalCenter(ItemStack stack,double fallback){
+        var m=model(stack);if(m==null)return fallback;
+        return LONGITUDINAL_CENTERS.computeIfAbsent(m,key->{
+            var boxes=bounds(stack);if(boxes.isEmpty())return fallback;
+            double min=Double.POSITIVE_INFINITY,max=Double.NEGATIVE_INFINITY;
+            for(var b:boxes){min=Math.min(min,b.minZ);max=Math.max(max,b.maxZ);}
+            return (min+max)/2;
+        });
+    }
     private static BakedGeoModel model(ItemStack stack){
         if(!(stack.getItem() instanceof NativeGunItem gun))return null;
         var id=gun.definition().id();return GeckoLibCache.getBakedModels().get(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"));
@@ -40,7 +50,9 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     public static void transform(ItemStack stack,PoseStack pose){
         var p=MaintenanceViewProfile.of(stack);pose.translate(p.offsetX(),p.offsetY(),p.offsetZ());
         pose.mulPose(Axis.YP.rotationDegrees(p.rotationY()));pose.mulPose(Axis.XP.rotationDegrees(p.rotationX()));pose.mulPose(Axis.ZP.rotationDegrees(p.rotationZ()));
-        pose.scale(p.scale(),p.scale(),p.scale());pose.translate(-p.centerX(),-p.centerY(),-p.centerZ());
+        // Center the immutable base gun's muzzle-to-stock bounds; attachments must not make it jump.
+        // Per-gun offsetX remains available for deliberate workspace fine tuning.
+        pose.scale(p.scale(),p.scale(),p.scale());pose.translate(-p.centerX(),-p.centerY(),-longitudinalCenter(stack,p.centerZ()));
     }
     public static List<net.minecraft.world.phys.AABB> bounds(ItemStack stack){
         var model=model(stack);if(model==null)return List.of();

@@ -44,8 +44,8 @@ public final class MaintenanceClientProbe {
                     p.getInventory().setItem(1,gun);p.getInventory().setItem(2,new ItemStack(AflItems.BR51_01.get()));p.getInventory().selected=0;open();
                 });
                 case 1 -> {check(mc.screen instanceof GunMaintenanceScreen,"empty GUI opened");shot("empty");clickHotbar(1);}
-                case 2 -> {check(!clientBench().isEmpty()&&mc.player.getInventory().getItem(1).isEmpty(),"real P9 transfer");shot("p9");mc.player.closeContainer();}
-                case 3 -> {shot("world_p9");server(()->{player().getInventory().selected=2;open();});}
+                case 2 -> {check(!clientBench().isEmpty()&&mc.player.getInventory().getItem(1).isEmpty(),"real P9 transfer");shot("p9");mc.screen.onClose();check(com.antaurora.apofirstlight.client.MaintenanceModeClientState.INSTANCE.leaving(),"exit transition started");}
+                case 3 -> {check(mc.screen==null&&!com.antaurora.apofirstlight.client.MaintenanceModeClientState.INSTANCE.active(),"exit restored");shot("world_p9");server(()->{player().getInventory().selected=2;open();});}
                 case 4 -> {check(mc.screen instanceof GunMaintenanceScreen,"held BR opens GUI");clickCenter();}
                 case 5 -> {check(clientBench().isEmpty()&&mc.player.getInventory().getItem(1).is(AflItems.P9_01.get()),"origin return");clickHotbar(2);}
                 case 6 -> {check(clientBench().getItem(0).is(AflItems.BR51_01.get()),"BR transfer");shot("br51");mc.player.closeContainer();}
@@ -66,7 +66,7 @@ public final class MaintenanceClientProbe {
         var screen=(GunMaintenanceScreen)Minecraft.getInstance().screen;
         check(screen.placeholderSlot()>=0,"owner return placeholder");clickHotbar(screen.placeholderSlot());
     }
-    private static void shot(String name){var mc=Minecraft.getInstance();if(mc.screen instanceof GunMaintenanceScreen){var state=com.antaurora.apofirstlight.client.MaintenanceModeClientState.INSTANCE;check(state.active(),"active camera");check(mc.gameRenderer.getMainCamera().getPosition().distanceTo(state.cameraPosition())<.01,"actual camera position");check(Math.abs(mc.gameRenderer.getMainCamera().getXRot()-67.5)<.01,"actual camera pitch");}net.minecraft.client.Screenshot.grab(mc.gameDirectory,"maintenance_v2_"+name+".png",mc.getMainRenderTarget(),m->{});}
+    private static void shot(String name){var mc=Minecraft.getInstance();if(mc.screen instanceof GunMaintenanceScreen){var state=com.antaurora.apofirstlight.client.MaintenanceModeClientState.INSTANCE;check(state.ready(),"ready camera");check(mc.gameRenderer.getMainCamera().getPosition().distanceTo(state.cameraPosition())<.01,"actual camera position");check(Math.abs(mc.gameRenderer.getMainCamera().getXRot()-com.antaurora.apofirstlight.client.MaintenanceCameraController.PITCH)<.01,"actual camera pitch");}net.minecraft.client.Screenshot.grab(mc.gameDirectory,"maintenance_v2_"+name+".png",mc.getMainRenderTarget(),m->{});}
     private static void check(boolean ok,String text){if(!ok)throw new IllegalStateException(text);}
     private static void finish(String text){done=true;com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[MAINTENANCE CLIENT] {}",text);Minecraft.getInstance().stop();}
 }

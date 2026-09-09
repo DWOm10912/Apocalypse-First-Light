@@ -10,9 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.*;
 
 @Mixin(GameRenderer.class)
 public abstract class MaintenanceGameRendererMixin {
-    @Inject(method="getFov",at=@At("HEAD"),cancellable=true)
+    @Inject(method="getFov",at=@At("RETURN"),cancellable=true)
     private void afl$fixedFov(Camera camera,float partial,boolean useSetting,CallbackInfoReturnable<Double> cir){
-        if(MaintenanceModeClientState.INSTANCE.active())cir.setReturnValue(MaintenanceCameraController.FOV);
+        var state=MaintenanceModeClientState.INSTANCE;
+        if(state.active())cir.setReturnValue(net.minecraft.util.Mth.lerp(state.blend(),cir.getReturnValue(),MaintenanceCameraController.FOV));
     }
     @Inject(method={"bobHurt","bobView"},at=@At("HEAD"),cancellable=true)
     private void afl$noBob(PoseStack pose,float partial,CallbackInfo ci){if(MaintenanceModeClientState.INSTANCE.active())ci.cancel();}

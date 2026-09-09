@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public final class MaintenanceGameTests {
     public static void transactions(GameTestHelper h){
+        MaintenanceAttachmentTests.run(h);
         var root=h.absolutePos(new BlockPos(4,2,4));var level=h.getLevel();var block=AflBlocks.GUN_MAINTENANCE_BENCH.get();
         for(var part:StaticWorkstationBlock.Part.values())level.setBlock(StaticWorkstationBlock.partPosition(root,Direction.NORTH,part),block.stateFor(Direction.NORTH,part),3);
         level.setBlock(root.below(),Blocks.STONE.defaultBlockState(),3);level.setBlock(root.east().below(),Blocks.STONE.defaultBlockState(),3);

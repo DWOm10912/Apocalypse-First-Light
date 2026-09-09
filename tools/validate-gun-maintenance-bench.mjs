@@ -51,7 +51,8 @@ for (const cube of model.elements) {
 }
 const min = [0, 1, 2].map(i => Math.min(...source.elements.map(c => c.from[i])));
 const max = [0, 1, 2].map(i => Math.max(...source.elements.map(c => c.to[i])));
-assert.deepEqual(min, [-8, 0, 0.05]);
+// Removing the vise handle removes the former foremost 0.05 extent.
+assert.deepEqual(min, [-8, 0, 0.45]);
 assert.deepEqual(max, [24, 32, 16]);
 const axisAligned = source.elements.filter(c => !(c.rotation ?? []).some(v => Math.abs(v) > 1e-6));
 for (let i = 0; i < axisAligned.length; i++) for (let j = i + 1; j < axisAligned.length; j++) {

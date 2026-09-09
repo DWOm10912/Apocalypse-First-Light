@@ -11,10 +11,10 @@ import net.minecraft.world.phys.Vec3;
 public final class MaintenanceCameraController {
     public static final Vec3 MAT = new Vec3(1.0375,16.62/16,.45625);
     public static final Vec3 LOOK = MAT.add(0,.04,0);
-    public static final float PITCH=67.5f;
+    public static final float PITCH=73f;
     public static final double FOV=75;
     // Below the existing lamp hood: the real geometry must not occlude the lens.
-    public static final Vec3 CAMERA=LOOK.add(0,.82,-.82/Math.tan(Math.toRadians(PITCH)));
+    public static final Vec3 CAMERA=LOOK.add(0,.98,-.98/Math.tan(Math.toRadians(PITCH)));
     public static float rotation(Direction f){return switch(f){case EAST->-90;case SOUTH->180;case WEST->90;default->0;};}
     public static Vec3 world(BlockPos root,Direction f,Vec3 local){
         double a=Math.toRadians(rotation(f)),x=local.x-.5,z=local.z-.5;

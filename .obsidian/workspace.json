@@ -189,10 +189,10 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json~",
-    "run/saves/test/level8394917001800243289.dat",
-    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
+    "run/saves/test/level761315111121383824.dat",
+    "run/saves/test/playerdata/380df991-f603-344c-a090-369bad2a924a-16021043185315707722.dat",
     "run/xaero/world-map/TEST/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc.temp",
@@ -200,6 +200,7 @@
     "run/xaero/world-map/TEST/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/0_0.xwmc.temp",
     "run/xaero/world-map/TEST/null/cache_1/-1_0.xwmc",
+    "docs/native_guns/gun_maintenance_camera_layout_transition_polish_v1.md",
     "docs/native_guns/attachments/gun_maintenance_attachment_ui_sfx_polish_v1.md",
     "docs/native_guns/attachments/gun_maintenance_attachment_interaction_v1.md",
     "build/thermal-fluid-client/screenshots/maintenance_attachments_both.png",
@@ -233,7 +234,6 @@
     "docs/machines/thermal_generator_3d_model_v1.md",
     "docs/native_guns/workstation_name_migration_v1.md",
     "docs/native_guns/precision_fabrication_station_block_v1.md",
-    "docs/native_guns/precision_fabrication_station_model_v1.md",
-    "docs/native_guns/gun_maintenance_bench_model_v1.md"
+    "docs/native_guns/precision_fabrication_station_model_v1.md"
   ]
 }

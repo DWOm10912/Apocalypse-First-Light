@@ -6,7 +6,7 @@
 - 首批仅 P9：枪数据 muzzle_slot.anchor=muzzle_anchor，accepts=[apocalypse_firstlight:pistol_suppressor_01]。BR51不兼容。
 - NativeAttachment 的 MUZZLE 与原 SIGHT 共用 NativeAttachments 和 AflAttachments NBT。独立 NativeSuppressorItem 定义 noiseRadiusMultiplier=0.05、suppressesFireSound=true；倍率不写进 P9 类。
 - 主手枪、副手兼容附件、V 安装。生存消耗1，创造保留；已占槽拒绝，不替换。空副手拆回原附件（完整NBT），同时装两个时先SIGHT再MUZZLE。
-- 复用 SightExchangePacket，协议17。客户端只发请求，服务端验证主副手完整快照、热键槽、主手NativeGun、兼容/槽、占用、存活/旁观及动作锁/容器状态；不同状态或重复过时请求拒绝。原红点消费/返还规则保持。
+- 复用 SightExchangePacket；当前通道协议19（维护台延迟操作加入后升级）。客户端只发请求，服务端验证主副手完整快照、热键槽、主手NativeGun、兼容/槽、占用、存活/旁观及动作锁/容器状态；不同状态或重复过时请求拒绝。原红点消费/返还规则保持。
 
 ## 射击
 
@@ -22,7 +22,7 @@ P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；�
 
 从附件实际Geo遍历 muzzle_exit_anchor=(0,0,-9.1)，组合为视觉出口。裸枪闪光隐藏，出口生成一颗弱烟粒子；轨迹视觉起点使用新出口，弹壳路径不改。独立附件使用 builtin/entity item模型与静态Geo绘制，小型手持/掉落缩放0.7；GUI缩放1.4。已安装枪的GUI仍使用既有平面枪图标，不动态合成消音器图标。
 
-未实现：维护台3D附件热点/鼠标装拆、安装手臂/旋紧动画、其他枪附件兼容、额外数值修改。
+维护台 P9 的 3D 附件热点/鼠标装拆现见 [附件交互 V1](gun_maintenance_attachment_interaction_v1.md)。安装手臂/旋紧动画、其他枪附件兼容仍未实现；本轮无附件数值修改。
 
 ## 验证边界
 

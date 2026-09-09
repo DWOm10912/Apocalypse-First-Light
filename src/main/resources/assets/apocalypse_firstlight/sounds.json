@@ -1,4 +1,8 @@
 {
+  "attachment_operation": {
+    "subtitle": "subtitles.apocalypse_firstlight.attachment_operation",
+    "sounds": [{"name": "apocalypse_firstlight:attachment_sound", "preload": true}]
+  },
   "shell_casings_dropping": {
     "sounds": [
       {

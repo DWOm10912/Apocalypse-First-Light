@@ -18,7 +18,7 @@
 | 工作灯 | 模型保留，光照等级 0，无 LIT / 动态发光 / 电源接口 |
 | 交互 | 任意 part 进入真实世界 67.5° 俯视维护模式；快捷栏放枪，原玩家点击来源槽虚影取回，其他玩家使用右侧拿取按钮；枪身无取回功能，退出不返还；见 [V2.1](gun_maintenance_bench_topdown_interaction_v2.md) |
 | 存枪拆除 | 任意部位拆除，台内真实枪额外掉落一次；工作台本体仍按原采集规则 |
-| 未实现 | 维修、配件 UI、制造、配方、JEI/Jade、动画、电池槽、FE / Power Network |
+| 未实现 | 维修、制造、配方、JEI/Jade、动画、电池槽、FE / Power Network；P9 配件交互已见 [附件 V1](attachments/gun_maintenance_attachment_interaction_v1.md) |
 
 ## 完整性与资源
 
@@ -44,3 +44,6 @@
 本轮日志：`build/maintenance-v2-tests-final.log`；使用 `src/dev/maintenance-gametest.init.gradle`，`build runGameTestServer --offline` 通过。
 
 尺寸沿用用户验收版本，护垫上的黑/白两个装饰块已移除；当前实机结果见 [V2](gun_maintenance_bench_topdown_interaction_v2.md)。旧存档命名迁移未在本轮重新验收，迁移边界见 [命名迁移](workstation_name_migration_v1.md)。
+# 布局后续修正
+
+Camera/Layout Polish 删除虎钳与桌面零件盒后，`StaticWorkstationBlock.createShapes(false)` 同步移除虎钳残留 AABB，新增扩大维护垫薄层。碰撞/选取共用更新后的四格、四向形状；精密制造台不变。详见 `gun_maintenance_camera_layout_transition_polish_v1.md`。本段覆盖旧模型布局对应的形状描述。

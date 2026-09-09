@@ -17,12 +17,26 @@ public final class MaintenanceModeClientState {
     private BlockPos target;
     private ResourceKey<Level> dimension;
     private CameraType originalCamera;
+    private long transitionStart;
+    private boolean leaving;
+    private double exitWeight;
+    public static final double ENTER_SECONDS=.22, EXIT_SECONDS=.16;
+    public double blend(){
+        double t=Math.min(1,(System.nanoTime()-transitionStart)/1e9/(leaving?EXIT_SECONDS:ENTER_SECONDS));
+        double eased=t*t*(3-2*t);
+        return leaving?exitWeight*(1-eased):eased;
+    }
+    public boolean ready(){return active()&&!leaving&&blend()>=1;}
+    public boolean leaving(){return leaving;}
+    public boolean exitFinished(){return leaving&&blend()<=0;}
+    public void beginExit(){if(!leaving){exitWeight=blend();leaving=true;transitionStart=System.nanoTime();}}
     public int hoveredHotbarSlot=-1;
     public boolean hoveredGun;
     public MaintenanceActionState action=MaintenanceActionState.IDLE;
     public void enter(GunMaintenanceScreen screen,BlockPos pos){
         if(owner==screen)return;
         exit();var mc=Minecraft.getInstance();owner=screen;target=pos.immutable();dimension=mc.level.dimension();originalCamera=mc.options.getCameraType();
+        leaving=false;transitionStart=System.nanoTime();
     }
     public boolean active(){return owner!=null&&Minecraft.getInstance().screen==owner&&valid();}
     public GunMaintenanceBenchBlockEntity bench(){var mc=Minecraft.getInstance();return mc.level!=null&&target!=null&&mc.level.getBlockEntity(target) instanceof GunMaintenanceBenchBlockEntity b?b:null;}

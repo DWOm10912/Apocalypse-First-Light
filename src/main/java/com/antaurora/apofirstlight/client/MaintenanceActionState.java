@@ -1,4 +1,4 @@
 package com.antaurora.apofirstlight.client;
 
-/** Reserved only: V2 runs IDLE. Future animation completion must precede server attachment commit. */
+/** V1 records pending server actions only; no arm animation. Future animation can precede request submission. */
 public enum MaintenanceActionState { IDLE, INSTALLING_SIGHT, REMOVING_SIGHT, INSTALLING_MUZZLE, REMOVING_MUZZLE, REPAIRING }

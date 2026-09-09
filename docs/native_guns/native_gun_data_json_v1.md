@@ -38,7 +38,7 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 
 ## 重载与同步
 
-使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前附件请求协议版本为17，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，但仍能拆回副手。
+使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前附件请求协议版本为19，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，但仍能通过 V 键拆回副手或通过维护台拆回背包。
 
 后续射击、弹量读取、换弹、噪声/耳鸣、ADS时间/FOV、后坐与弹壳读取新数据。重载取消正在进行的枪械操作与旧射速冷却；现存弹量按新容量安全clamp，不补回被截断的弹药。动画资源/声音marker不随时长改写，因此大幅调整换弹时长需另外校准美术，不能把JSON时长误当成动画关键帧编辑。
 

@@ -16,7 +16,9 @@ public abstract class MaintenanceCameraMixin {
     @Inject(method="setup",at=@At("TAIL"))
     private void afl$maintenanceCamera(BlockGetter level,Entity entity,boolean detached,boolean mirrored,float partial,CallbackInfo ci){
         var state=MaintenanceModeClientState.INSTANCE;if(!state.active())return;
-        setRotation(MaintenanceCameraController.yaw(state.facing()),MaintenanceCameraController.PITCH);
-        setPosition(state.cameraPosition());
+        Camera camera=(Camera)(Object)this;float blend=(float)state.blend();
+        setPosition(camera.getPosition().lerp(state.cameraPosition(),blend));
+        setRotation(net.minecraft.util.Mth.rotLerp(blend,camera.getYRot(),MaintenanceCameraController.yaw(state.facing())),
+                net.minecraft.util.Mth.lerp(blend,camera.getXRot(),MaintenanceCameraController.PITCH));
     }
 }
