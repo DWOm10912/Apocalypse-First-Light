@@ -48,6 +48,15 @@
       "apocalypse_firstlight:explosion_tinnitus"
     ]
   },
+  "geiger_low": {
+    "sounds": [{"name": "apocalypse_firstlight:gieger_low", "stream": true}]
+  },
+  "geiger_medium": {
+    "sounds": [{"name": "apocalypse_firstlight:gieger_medium", "stream": true}]
+  },
+  "geiger_extreme": {
+    "sounds": [{"name": "apocalypse_firstlight:gieger_extreme", "stream": true}]
+  },
   "geiger_click": {
     "sounds": [
       "apocalypse_firstlight:geiger_click"

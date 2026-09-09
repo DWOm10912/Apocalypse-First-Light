@@ -16,6 +16,12 @@ public final class AflSounds {
                     () -> SoundEvent.createVariableRangeEvent(
                             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "explosion_tinnitus")));
 
+    public static final RegistryObject<SoundEvent> GEIGER_LOW = SOUND_EVENTS.register("geiger_low",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_low")));
+    public static final RegistryObject<SoundEvent> GEIGER_MEDIUM = SOUND_EVENTS.register("geiger_medium",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_medium")));
+    public static final RegistryObject<SoundEvent> GEIGER_EXTREME = SOUND_EVENTS.register("geiger_extreme",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_extreme")));
     public static final RegistryObject<SoundEvent> GEIGER_CLICK = SOUND_EVENTS.register("geiger_click",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_click")));
