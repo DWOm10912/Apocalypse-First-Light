@@ -18,7 +18,7 @@
 
 当前物品 Tooltip 仅显示“瞄具｜手枪”和一句功能描述。配件装拆仅通过枪械维护台，V 快捷键已移除。统一规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)。
 
-正式物品：`apocalypse_firstlight:pistol_red_dot`，最大堆叠 1，进入「AFL 武器与弹药」标签页配件位置。当前只兼容 P9-01；没有步枪配件、耐久、品质、倍率选项、安装动画或复杂 UI。
+正式物品：`apocalypse_firstlight:pistol_red_dot`，最大堆叠 1，进入「AFL 武器与弹药」标签页配件位置。本手枪红点当前只兼容 P9-01；步枪另有独立 `rifle_red_dot_01`。无配件耐久、品质或倍率选项；装拆复用维护台 UI，无安装手臂动画。
 
 ## 使用
 
@@ -40,7 +40,7 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 
 ## 挂载、保存与 ADS
 
-- `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 不声明该槽，不能安装。
+- `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 的 SIGHT 接入独立 `rifle_red_dot_01`，不接受本手枪红点。
 - P9 当前 `sight_anchor` 是前部瞄线定位点 `[-2.98,11.59,-3.36]`，复用它的动画变换，再加局部偏移 `[0,-0.44,10.55]`，底座中心即 `[-2.98,11.15,7.19]`。无需为了安装改变原机瞄定位。
 - 红点本地中心 `[0,1,0.94]`，枪体光学轴中心 `[-2.98,12.15,8.13]` 写入 `sight_slot.ads_center`。`NativeAdsProfile.forStack` 有兼容瞄具时用该点逆解，没有时原样返回机械瞄准 profile；FOV、进入时间、枪械后坐力和伤害不变。
 - 模型从真实 `sight_anchor` 遍历矩阵渲染，继承套筒后坐/后定、换弹、整枪 ADS、第三人称与地面显示变换，不使用屏幕固定 HUD 点。

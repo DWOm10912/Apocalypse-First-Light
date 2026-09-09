@@ -24,7 +24,7 @@
 
 - BR51 data: `src/main/resources/data/apocalypse_firstlight/native_guns/br51_01.json`. No damage/range/recoil/reload/fire-rate changes.
 - All player installs/removals/replacements use the maintenance bench. The V key mapping is removed and the legacy exchange packet is inert (wire ID retained). State lives in the real gun ItemStack; no rifle-specific NBT or packet.
-- MaintenanceHotspots and MaintenanceAttachmentTransaction now use NativeAttachments.supportsSlot instead of P9 identity. Context HUD, candidate inventory projection, install/remove/replace, return handling and revision checks are unchanged shared paths. BR51 does not gain sight or magazine compatibility.
+- MaintenanceHotspots and MaintenanceAttachmentTransaction now use NativeAttachments.supportsSlot instead of P9 identity. Context HUD, candidate inventory projection, install/remove/replace, return handling and revision checks are unchanged shared paths. BR51 also supports the independent [Rifle Red Dot](rifle_red_dot_01_v1.md) in SIGHT; no magazine compatibility.
 - Shared operation sound is 2.480 seconds. Server waits 51 ticks and revalidates before commit. UI uses the existing vanilla button click. No BR51-specific UI or sound-delay mechanism; network protocol remains 22.
 - Simplified localized item tooltip describes a rifle muzzle device, without debug/key instructions.
 

@@ -1,4 +1,7 @@
 {
+  "item.apocalypse_firstlight.rifle_red_dot_01": "Rifle Red Dot Sight",
+  "tooltip.apocalypse_firstlight.rifle_red_dot_01.type": "Sight | Rifle",
+  "tooltip.apocalypse_firstlight.rifle_red_dot_01.description": "A universal rifle red dot sight that provides a clear aiming point for faster target acquisition.",
   "item.apocalypse_firstlight.rifle_suppressor_01": "Rifle Suppressor",
   "tooltip.apocalypse_firstlight.rifle_suppressor_01.type": "Muzzle Device | Rifle",
   "tooltip.apocalypse_firstlight.rifle_suppressor_01.description": "A universal rifle muzzle device that greatly reduces gunshot noise propagation and muzzle flash.",

@@ -26,6 +26,8 @@ public final class AflItems {
             com.antaurora.apofirstlight.item.CrowbarItem::new);
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",
             com.antaurora.apofirstlight.weapon.NativeSightItem::new);
+    public static final RegistryObject<Item> RIFLE_RED_DOT_01 = ITEMS.register("rifle_red_dot_01",
+            () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> P9_01_EXTENDED_MAGAZINE = ITEMS.register("p9_01_extended_magazine",
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",

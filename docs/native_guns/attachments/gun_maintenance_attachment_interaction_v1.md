@@ -1,6 +1,6 @@
 # Gun Maintenance Attachment Interaction V1
 
-Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. All player attachment changes require the maintenance bench; the V shortcut is removed.
+Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 SIGHT with [Rifle Red Dot](rifle_red_dot_01_v1.md) and MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. All player attachment changes require the maintenance bench; the V shortcut is removed.
 
 ## Spatial UI
 

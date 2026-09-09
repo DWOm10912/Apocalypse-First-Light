@@ -34,9 +34,21 @@ public final class MaintenanceAttachmentTests {
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(b,br)&&count(b,accessory)==1,"rifle stale no consumption");
             a.getInventory().setItem(24,new ItemStack(accessory));
             h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,slot,24))&&count(a,accessory)==1,"rifle replace conserves");
+            var sight=AflItems.RIFLE_RED_DOT_01.get();
+            a.getInventory().setItem(25,new ItemStack(sight));b.getInventory().setItem(25,new ItemStack(sight));
+            var staleSight=request(b,bench,NativeAttachment.Slot.SIGHT,25);
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,25)),"rifle sight install");
+            h.assertTrue(!MaintenanceAttachmentTransaction.commit(b,staleSight)&&count(b,sight)==1,"rifle sight stale safe");
+            a.getInventory().setItem(26,new ItemStack(sight));
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,26))&&count(a,sight)==1,"rifle sight replace conserves");
+            h.assertTrue(NativeAttachments.activeSight(bench.getItem(0)).is(sight)&&NativeAttachments.active(bench.getItem(0),slot).is(accessory),"rifle simultaneous sight muzzle");
             var saved=bench.saveWithoutMetadata();bench.load(saved);
             h.assertTrue(NativeAttachments.active(bench.getItem(0),slot).is(accessory),"rifle bench save/load");
             h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,slot,-1))&&count(a,accessory)==2,"rifle remove conserves");
+            h.assertTrue(NativeAttachments.activeSight(bench.getItem(0)).is(sight),"muzzle removal keeps sight");
+            var restored=ItemStack.of(bench.getItem(0).save(new net.minecraft.nbt.CompoundTag()));
+            h.assertTrue(NativeAttachments.activeSight(restored).is(sight),"sight stack persistence");
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,-1))&&count(a,sight)==2,"rifle sight remove conserves");
         }
         bench.clearContent();a.containerMenu=a.inventoryMenu;b.containerMenu=b.inventoryMenu;h.succeed();
     }

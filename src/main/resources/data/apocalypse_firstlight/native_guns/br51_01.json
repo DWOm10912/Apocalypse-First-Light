@@ -1,4 +1,10 @@
 {
+  "sight_slot": {
+    "anchor": "sight_anchor",
+    "mount_offset": [0, 0, 0],
+    "ads_center": [0, 14.8125, 3.70313],
+    "accepts": ["apocalypse_firstlight:rifle_red_dot_01"]
+  },
   "ammo": "apocalypse_firstlight:762x51mm_round",
   "suppressed_fire_sound": "apocalypse_firstlight:br51_01_suppressed",
   "muzzle_slot": {

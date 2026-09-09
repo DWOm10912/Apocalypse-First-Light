@@ -15,6 +15,7 @@
         ]
       },
       "bones": [
+        { "name": "sight_anchor", "parent": "positioning2", "pivot": [0, 12.75, 5.54688] },
         {
           "name": "muzzle_anchor",
           "parent": "positioning2",

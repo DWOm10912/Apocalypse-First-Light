@@ -89,7 +89,8 @@ public final class NativeSuppressorTests {
         p.setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.RIFLE_SUPPRESSOR_01.get()));
         var expected=gun.copy();var source=p.getOffhandItem().copy();
         h.assertTrue(NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.MUZZLE),"data driven muzzle");
-        h.assertTrue(!NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.SIGHT),"no new rifle sight");
+        h.assertTrue(NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.SIGHT),"rifle sight data");
+        h.assertTrue(!NativeAttachments.supportsSlot(gun,NativeAttachment.Slot.MAGAZINE),"no rifle magazine compatibility");
         h.assertTrue(LegacyAttachmentFixture.exchange(p)&&p.getOffhandItem().isEmpty(),"rifle quick install consumes");
         h.assertTrue(!LegacyAttachmentFixture.requestMatches(p,p.getInventory().selected,expected,source),"rifle replay rejected");
         var result=NativeGunNoise.resolve(gun,d);

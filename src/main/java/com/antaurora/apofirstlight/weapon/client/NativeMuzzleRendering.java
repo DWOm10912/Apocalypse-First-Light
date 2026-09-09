@@ -37,6 +37,8 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
         for(var bone:model.topLevelBones())draw(bone,pose,buffers,type,light,overlay);
     }
     private static void draw(GeoBone bone,PoseStack pose,MultiBufferSource buffers,RenderType type,int light,int overlay){
+        // Opt-in emissive locator group shared by independent Geo sights; never brighten the housing.
+        if(bone.getName().equals("reticle"))light=LightTexture.FULL_BRIGHT;
         pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
         for(var cube:bone.getCubes()){
             pose.pushPose();DRAWER.renderCube(pose,cube,buffers.getBuffer(type),light,overlay,1,1,1,1);pose.popPose();

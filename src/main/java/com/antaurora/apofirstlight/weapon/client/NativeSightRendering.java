@@ -32,6 +32,10 @@ public final class NativeSightRendering {
         // Gecko has already converted source X into its traversal convention.
         // Runtime traversal is restored to model-render X by RenderUtils.
         pose.translate(mount.x()/16F,mount.y()/16F,mount.z()/16F);
+        if(sight.getItem() instanceof NativeSightItem item&&item.usesGeoModel()){
+            NativeMuzzleRendering.drawItem(sight,pose,buffers,light,overlay);
+            return;
+        }
         pose.translate(-.5,-.5,-.5); // Cubes are authored around (8,8,8) in item JSON.
         draw(pose,buffers,new ResourceLocation(id.getNamespace(),"item/"+id.getPath()+"_body"),light,overlay);
         draw(pose,buffers,new ResourceLocation(id.getNamespace(),"item/"+id.getPath()+"_reticle"),LightTexture.FULL_BRIGHT,overlay);

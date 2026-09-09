@@ -1,4 +1,7 @@
 {
+  "item.apocalypse_firstlight.rifle_red_dot_01": "步枪红点瞄具",
+  "tooltip.apocalypse_firstlight.rifle_red_dot_01.type": "瞄具 ｜ 步枪",
+  "tooltip.apocalypse_firstlight.rifle_red_dot_01.description": "一款通用步枪红点瞄具，提供清晰瞄准点，便于快速捕捉目标。",
   "item.apocalypse_firstlight.rifle_suppressor_01": "步枪消音器",
   "tooltip.apocalypse_firstlight.rifle_suppressor_01.type": "枪口装置 ｜ 步枪",
   "tooltip.apocalypse_firstlight.rifle_suppressor_01.description": "一款通用步枪枪口装置，可大幅降低枪声传播范围并削弱枪口焰。",
