@@ -25,7 +25,7 @@ Status: implemented; user accepted mounted fit and requested ending the task. Ve
 - Standard capacity 17, equipped capacity 24. Installing preserves existing rounds; reload/consumption/HUD use attachment-aware capacity.
 - Removal retains at most 17 rounds and returns excess ammunition plus the removed attachment to inventory, dropping overflow when full. Transaction snapshots reject stale/repeated operations and roll back inventory if a required drop fails.
 - Maintenance magazine hotspot supports installation/removal using existing timed operation and SFX. All player attachment changes require the maintenance bench; the V shortcut is removed.
-- Localized magazine tooltip includes 24 rounds; P9 static capacity specification follows its attachment. No new damage, recoil, range, audio or animations.
+- Unified equipment tooltip shows a non-italic description and Magazine 17 → 24 modifier; the gun's dynamic magazine stat follows its actual attachment. See [Equipment Tooltip V1](../ui/equipment_tooltip_v1.md). No new damage, recoil, range, audio or animations.
 - Current network protocol 22; matching client/server builds required. Earlier protocol-21 shot behavior remains intact.
 
 ## Model
@@ -65,4 +65,4 @@ Latest relief polish: live Blockbench independent and mounted extended-magazine 
 - Third-person ran but hands obscure the magazine in its front-facing screenshot. Third-person close-up fit, dropped-gun appearance, graphical install/remove refresh and real multiplayer remain unverified. Initial client rendering fixture used injected attachment NBT; legitimate transactions were tested server-side.
 - Client log also contains an unrelated pre-existing native-gun smoke failure from a source path relative to the isolated working directory. Magazine probe passed; not every unrelated startup probe passed.
 
-No drum, second capacity, new reload animation or BR51 extension added.
+The original P9 task added no drum, second P9 capacity or new reload animation. BR51 now separately supports [its 35R magazine](attachments/br51_extended_magazine_35_v1.md); it does not share compatibility with P9. NativeMagazineItem now holds per-accessory configuration; the P9 default remains 24 rounds and its original rendering bones/placement.

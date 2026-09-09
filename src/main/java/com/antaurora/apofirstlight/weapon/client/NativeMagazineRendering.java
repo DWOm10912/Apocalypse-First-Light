@@ -10,9 +10,10 @@ import software.bernie.geckolib.util.RenderUtils;
 /** Uses the original animated bone matrix; the independent accessory is authored around its pivot. */
 public final class NativeMagazineRendering {
     public static boolean replaces(ItemStack gun,GeoBone bone){
-        return gun!=null&&(bone.getName().equals("magazine")||bone.getName().equals("empty_old_magazine"))
-                &&!NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE).isEmpty();
+        return gun!=null&&NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE).getItem() instanceof NativeMagazineItem m
+                &&m.replacesBone(bone.getName());
     }
+    public static boolean replacesSubtree(ItemStack gun){return NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE).getItem() instanceof NativeMagazineItem m&&m.replacesSubtree();}
     public static void render(ItemStack gun,GeoBone bone,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
         if(!replaces(gun,bone))return;
         pose.pushPose();RenderUtils.translateToPivotPoint(pose,bone);
@@ -22,7 +23,8 @@ public final class NativeMagazineRendering {
     public static final class ItemRenderer extends BlockEntityWithoutLevelRenderer {
         public ItemRenderer(){super(net.minecraft.client.Minecraft.getInstance().getBlockEntityRenderDispatcher(),net.minecraft.client.Minecraft.getInstance().getEntityModels());}
         @Override public void renderByItem(ItemStack stack,ItemDisplayContext context,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
-            pose.pushPose();pose.translate(.5,.5+4.2/16,.5);
+            float lift=stack.getItem() instanceof NativeMagazineItem m?m.itemLift():0;
+            pose.pushPose();pose.translate(.5,.5+lift/16,.5);
             NativeMuzzleRendering.drawItem(stack,pose,buffers,light,overlay);pose.popPose();
         }
     }

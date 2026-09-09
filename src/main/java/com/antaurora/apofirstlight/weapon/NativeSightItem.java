@@ -14,10 +14,7 @@ public final class NativeSightItem extends Item implements NativeAttachment {
     public Slot slot(){return Slot.SIGHT;}
     @Override public void appendHoverText(ItemStack stack,Level level,List<Component> lines,TooltipFlag flag){
         String key=geoModel?"tooltip."+getDescriptionId().substring("item.".length()):"tooltip.apocalypse_firstlight.pistol_micro_red_dot";
-        lines.add(Component.translatable(key+".type")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
-        lines.add(Component.translatable(key+".description")
-                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY,net.minecraft.ChatFormatting.ITALIC));
+        com.antaurora.apofirstlight.tooltip.AflEquipmentTooltip.attachment(lines,stack,key+".description");
     }
     @Override public void initializeClient(java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientItemExtensions> consumer){
         // Forge calls this from Item's constructor, before geoModel is assigned.

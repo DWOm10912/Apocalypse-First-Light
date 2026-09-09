@@ -12,6 +12,11 @@
     "accepts": ["apocalypse_firstlight:rifle_suppressor_01"]
   },
   "magazine_capacity": 20,
+  "magazine_slot": {
+    "hotspot_anchor": "mag_standard",
+    "hotspot_y": -4,
+    "accepts": ["apocalypse_firstlight:br51_extended_magazine_35"]
+  },
   "fire": {
     "mode": "semi",
     "interval_ticks": 4

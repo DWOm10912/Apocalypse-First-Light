@@ -42,6 +42,31 @@ public final class MaintenanceAttachmentTests {
             a.getInventory().setItem(26,new ItemStack(sight));
             h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,NativeAttachment.Slot.SIGHT,26))&&count(a,sight)==1,"rifle sight replace conserves");
             h.assertTrue(NativeAttachments.activeSight(bench.getItem(0)).is(sight)&&NativeAttachments.active(bench.getItem(0),slot).is(accessory),"rifle simultaneous sight muzzle");
+            var magazine=AflItems.BR51_EXTENDED_MAGAZINE_35.get();var ms=NativeAttachment.Slot.MAGAZINE;
+            var definition=((NativeGunItem)bench.getItem(0).getItem()).definition();
+            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),definition)==20,"standard 20");
+            h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.P9_01.get()),new ItemStack(magazine))
+                    &&!NativeAttachments.compatible(bench.getItem(0),new ItemStack(AflItems.P9_01_EXTENDED_MAGAZINE.get())),"magazines not cross-compatible");
+            NativeGunAmmo.set(bench.getItem(0),definition,12);
+            a.getInventory().setItem(27,new ItemStack(magazine));b.getInventory().setItem(27,new ItemStack(magazine));
+            var staleMag=request(b,bench,ms,27);
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,ms,27)),"35R install");
+            h.assertTrue(!MaintenanceAttachmentTransaction.commit(b,staleMag)&&count(b,magazine)==1,"35R stale install preserves item");
+            h.assertTrue(NativeGunAmmo.capacity(bench.getItem(0),definition)==35&&NativeGunAmmo.read(bench.getItem(0),definition)==12,"12/20 to 12/35 no free ammo");
+            a.getInventory().setItem(28,new ItemStack(magazine));
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,ms,28))&&count(a,magazine)==1,"35R replacement returns old");
+            NativeGunAmmo.set(bench.getItem(0),definition,27);
+            var magSaved=bench.saveWithoutMetadata();bench.load(magSaved);
+            var magRestored=ItemStack.of(bench.getItem(0).save(new net.minecraft.nbt.CompoundTag()));
+            h.assertTrue(NativeGunAmmo.read(magRestored,definition)==27&&NativeGunAmmo.capacity(magRestored,definition)==35
+                    &&NativeAttachments.activeSight(magRestored).is(sight)&&NativeAttachments.active(magRestored,slot).is(accessory),"three slots and ammo persist");
+            int ammoBefore=count(a,AflItems.ROUND_762MM.get());
+            var staleRemoval=request(a,bench,ms,-1);
+            h.assertTrue(MaintenanceAttachmentTransaction.commit(a,staleRemoval),"35R remove");
+            h.assertTrue(!MaintenanceAttachmentTransaction.commit(a,staleRemoval),"no duplicate overflow return");
+            h.assertTrue(NativeGunAmmo.read(bench.getItem(0),definition)==20&&NativeGunAmmo.capacity(bench.getItem(0),definition)==20
+                    &&count(a,AflItems.ROUND_762MM.get())==ammoBefore+7&&count(a,magazine)==2,"27/35 to 20/20 plus 7 real reserve, two magazines conserved");
+            h.assertTrue(NativeAttachments.activeSight(bench.getItem(0)).is(sight)&&NativeAttachments.active(bench.getItem(0),slot).is(accessory),"magazine removal keeps sight and muzzle");
             var saved=bench.saveWithoutMetadata();bench.load(saved);
             h.assertTrue(NativeAttachments.active(bench.getItem(0),slot).is(accessory),"rifle bench save/load");
             h.assertTrue(MaintenanceAttachmentTransaction.commit(a,request(a,bench,slot,-1))&&count(a,accessory)==2,"rifle remove conserves");

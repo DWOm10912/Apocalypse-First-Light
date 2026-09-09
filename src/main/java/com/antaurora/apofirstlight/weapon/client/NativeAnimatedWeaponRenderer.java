@@ -13,6 +13,17 @@ import software.bernie.geckolib.util.RenderUtils;
 
 /** Uses the unchanged AFL arm renderer; weapon-specific offsets belong in model resources. */
 public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.item.Item & software.bernie.geckolib.animatable.GeoItem> extends GeoItemRenderer<T> {
+    @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
+            boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        if(NativeMagazineRendering.replaces(currentItemStack,bone)){
+            pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+            if(!bone.isHidden())NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);
+            if(!NativeMagazineRendering.replacesSubtree(currentItemStack)&&!bone.isHidingChildren())
+                for(var child:bone.getChildBones())renderRecursively(pose,item,child,type,buffers,buffers.getBuffer(type),reRender,partial,light,overlay,red,green,blue,alpha);
+            pose.popPose();buffers.getBuffer(type);return;
+        }
+        super.renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
+    }
     public NativeAnimatedWeaponRenderer(NativeAnimatedWeaponItem.Profile profile) {
         super(new GeoModel<>() {
             @Override public ResourceLocation getModelResource(T i) { return profile.resource("geo", ".geo.json"); }

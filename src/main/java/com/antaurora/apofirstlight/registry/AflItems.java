@@ -30,6 +30,9 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.weapon.NativeSightItem(true));
     public static final RegistryObject<Item> P9_01_EXTENDED_MAGAZINE = ITEMS.register("p9_01_extended_magazine",
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
+    public static final RegistryObject<Item> BR51_EXTENDED_MAGAZINE_35 = ITEMS.register("br51_extended_magazine_35",
+            () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",35,
+                    java.util.Set.of("mag_standard","empty_old_mag_standard"),true,3.8f));
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",

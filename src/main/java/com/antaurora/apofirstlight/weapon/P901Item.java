@@ -73,11 +73,7 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
 
     @Override
     public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
-        lines.add(Component.translatable(NativeGunAmmo.capacity(stack,definition())==24
-                ?"tooltip.apocalypse_firstlight.p9_01.spec_extended":"tooltip.apocalypse_firstlight.p9_01.spec")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
-        lines.add(Component.translatable("tooltip.apocalypse_firstlight.p9_01.description")
-                .withStyle(net.minecraft.ChatFormatting.DARK_GRAY, net.minecraft.ChatFormatting.ITALIC));
+        com.antaurora.apofirstlight.tooltip.AflEquipmentTooltip.gun(lines,stack,definition(),"tooltip.apocalypse_firstlight.p9_01.description");
     }
 
     @Override

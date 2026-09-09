@@ -138,6 +138,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.PISTOL_SUPPRESSOR_01.get());
                         output.accept(AflItems.RIFLE_SUPPRESSOR_01.get());
                         output.accept(AflItems.P9_01_EXTENDED_MAGAZINE.get());
+                        output.accept(AflItems.BR51_EXTENDED_MAGAZINE_35.get());
                     })
                     .build());
 

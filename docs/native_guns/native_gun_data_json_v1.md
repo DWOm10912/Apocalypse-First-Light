@@ -15,7 +15,7 @@
 | --- | --- |
 | ammo / casing | 已注册物品 ID；弹壳渲染使用对应 item model |
 | magazine_capacity | 正整数容量 |
-| magazine_slot（可选） | accepts 数组声明兼容弹匣 ID；P9 接受 apocalypse_firstlight:p9_01_extended_magazine，BR51 未声明。NativeGunAmmo.capacity 在有效扩容附件下返回 24，否则使用基础容量。安装不补发弹药。 |
+| magazine_slot（可选） | accepts 数组声明兼容弹匣 ID；P9 接受 apocalypse_firstlight:p9_01_extended_magazine，BR51 接受 apocalypse_firstlight:br51_extended_magazine_35。NativeGunAmmo.capacity 在有效扩容附件下返回对应 24 或 35，否则使用基础容量。安装不补发弹药。HUD 固定为单行当前装弹与备弹，不再有 show_capacity 开关。可选 hotspot_anchor / hotspot_y 默认 magazine / -6.2，BR51 为 mag_standard / -4。 |
 | fire.mode / interval_ticks | V1只支持 semi；正整数间隔 |
 | damage.base | 非负身体伤害 |
 | damage.falloff_start / effective_range / max_range | 格；标称射程仍不参与命中计算 |
