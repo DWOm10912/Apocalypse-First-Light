@@ -215,7 +215,7 @@
       ],
       "to": [
         -2.22,
-        7.71,
+        7.39,
         8.6
       ],
       "autouv": 0,
@@ -14969,7 +14969,7 @@
       ],
       "to": [
         -2.22,
-        7.71,
+        7.39,
         8.6
       ],
       "autouv": 0,
@@ -15984,6 +15984,2238 @@
       ],
       "inflate": 0,
       "visibility": true
+    },
+    {
+      "name": "magazine_relief_172",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.3600000000000003,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -2.22,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "e11d03f6-c7e4-4f00-95a7-7cb03edc3724",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_173",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.74,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -3.6,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "abddc420-8485-4449-9c42-a75318294fcf",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_174",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.6000000000000005,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -2.3600000000000003,
+        7.709999999999999,
+        6.41
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "45c75bb7-bc2a-4ca5-b8e2-9edf3f5439e9",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_175",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.6000000000000005,
+        7.389999999999999,
+        8.469999999999999
+      ],
+      "to": [
+        -2.3600000000000003,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "768bd4b7-7d16-4c06-b44c-f89d46858bf8",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_176",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.5500000000000003,
+        7.409999999999999,
+        6.46
+      ],
+      "to": [
+        -2.41,
+        7.509999999999999,
+        8.42
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "051630dc-7769-435b-ba4f-289d5c7d87a4",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_177",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8100000000000005,
+        2.05,
+        6.220000000000001
+      ],
+      "to": [
+        -2.1500000000000004,
+        2.21,
+        8.66
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            107,
+            49,
+            111,
+            50
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            59,
+            49,
+            65,
+            50
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            112,
+            49,
+            116,
+            50
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            59,
+            49,
+            65,
+            50
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            32,
+            35.5,
+            28,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            37,
+            35.5,
+            33,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "4bba98cd-32a4-484d-b01e-f8561509d79a",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_178",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.225,
+        2.3099999999999996,
+        6.57
+      ],
+      "to": [
+        -2.165,
+        3.26,
+        8.31
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "af70ad6f-4570-43b5-8014-04312a12b2ee",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_179",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.237,
+        2.38,
+        6.63
+      ],
+      "to": [
+        -2.153,
+        2.4699999999999998,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "ef64bc08-b95a-4ed2-963b-925e7c950a06",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_180",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.237,
+        2.9699999999999998,
+        6.63
+      ],
+      "to": [
+        -2.153,
+        3.0599999999999996,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "bc85cc6c-97e1-41ac-92d9-d579ed0f7d52",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_181",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.7950000000000004,
+        2.3099999999999996,
+        6.57
+      ],
+      "to": [
+        -3.7350000000000003,
+        3.26,
+        8.31
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "ed750e2d-7f49-4edf-99fa-e4a21310f08f",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_182",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8070000000000004,
+        2.38,
+        6.63
+      ],
+      "to": [
+        -3.7230000000000003,
+        2.4699999999999998,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "3abf0f98-fdc3-4bd3-bd31-d94f195553e4",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "magazine_relief_183",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8070000000000004,
+        2.9699999999999998,
+        6.63
+      ],
+      "to": [
+        -3.7230000000000003,
+        3.0599999999999996,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "7a9c7284-4ad4-41cb-9ee8-f916c4d87c9f",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_184",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.3600000000000003,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -2.22,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "3d466e45-6b6e-49a2-b52f-a3a7eef8f71f",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_185",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.74,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -3.6,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "4ffcb94d-6b33-43db-96dd-521e257d6ed0",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_186",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.6000000000000005,
+        7.389999999999999,
+        6.28
+      ],
+      "to": [
+        -2.3600000000000003,
+        7.709999999999999,
+        6.41
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "c02509af-6718-4503-9f42-f64eb71554b4",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_187",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.6000000000000005,
+        7.389999999999999,
+        8.469999999999999
+      ],
+      "to": [
+        -2.3600000000000003,
+        7.709999999999999,
+        8.6
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "7abae0b7-b759-4438-86d5-c13a65ebd479",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_188",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.5500000000000003,
+        7.409999999999999,
+        6.46
+      ],
+      "to": [
+        -2.41,
+        7.509999999999999,
+        8.42
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "c333c7cf-fc13-4267-99f0-418a0927d247",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_189",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8100000000000005,
+        2.05,
+        6.220000000000001
+      ],
+      "to": [
+        -2.1500000000000004,
+        2.21,
+        8.66
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            107,
+            49,
+            111,
+            50
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            59,
+            49,
+            65,
+            50
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            112,
+            49,
+            116,
+            50
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            59,
+            49,
+            65,
+            50
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            32,
+            35.5,
+            28,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            37,
+            35.5,
+            33,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "0641498a-008f-4497-a6f6-fdd45ecd2a5f",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_190",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.225,
+        2.3099999999999996,
+        6.57
+      ],
+      "to": [
+        -2.165,
+        3.26,
+        8.31
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "c7cda61c-0b1d-4335-8fb9-463dcdc236a0",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_191",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.237,
+        2.38,
+        6.63
+      ],
+      "to": [
+        -2.153,
+        2.4699999999999998,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "b246331e-7603-440b-8bec-ed2c2cb8e099",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_192",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -2.237,
+        2.9699999999999998,
+        6.63
+      ],
+      "to": [
+        -2.153,
+        3.0599999999999996,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "4ea25c8f-2510-47be-9019-a7151f35a95b",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_193",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.7950000000000004,
+        2.3099999999999996,
+        6.57
+      ],
+      "to": [
+        -3.7350000000000003,
+        3.26,
+        8.31
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            82.5,
+            0.5,
+            86,
+            12
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            87,
+            0.5,
+            90.5,
+            12
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            76.5,
+            0.5,
+            81.5,
+            12
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            70.5,
+            34.5,
+            67,
+            29.5
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            75,
+            34.5,
+            71.5,
+            29.5
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "12de6856-6d21-43d7-bcaa-1ce8d65fb934",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_194",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8070000000000004,
+        2.38,
+        6.63
+      ],
+      "to": [
+        -3.7230000000000003,
+        2.4699999999999998,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "2e473138-5355-43b7-b444-bc7cd43d3196",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "empty_old_magazine_relief_195",
+      "box_uv": false,
+      "render_order": "default",
+      "locked": false,
+      "export": true,
+      "scope": 0,
+      "allow_mirror_modeling": true,
+      "from": [
+        -3.8070000000000004,
+        2.9699999999999998,
+        6.63
+      ],
+      "to": [
+        -3.7230000000000003,
+        3.0599999999999996,
+        8.25
+      ],
+      "autouv": 0,
+      "color": 2,
+      "origin": [
+        -2.98,
+        7.95,
+        7.28
+      ],
+      "uv_offset": [
+        83,
+        87
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            102.5,
+            0.5,
+            103.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "east": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "south": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "west": {
+          "uv": [
+            104.5,
+            0.5,
+            105.5,
+            10.5
+          ],
+          "texture": 0
+        },
+        "up": {
+          "uv": [
+            100,
+            54,
+            99,
+            53
+          ],
+          "texture": 0
+        },
+        "down": {
+          "uv": [
+            102,
+            54,
+            101,
+            53
+          ],
+          "texture": 0
+        }
+      },
+      "type": "cube",
+      "uuid": "84f5ee90-26f0-47bb-b7a6-9110ca8f11dd",
+      "rotation": [
+        0,
+        0,
+        0
+      ]
     }
   ],
   "groups": [
@@ -16990,7 +19222,19 @@
                                 "c22ce556-6335-2bd5-c06d-2c497d47899d",
                                 "90ad2a32-268b-4114-f1bf-a471c6e8e0ab",
                                 "80e93c70-33ab-847a-d9eb-91893ffd7009",
-                                "3b3765ea-e434-fe7e-f5dd-8a8cebc63eca"
+                                "3b3765ea-e434-fe7e-f5dd-8a8cebc63eca",
+                                "e11d03f6-c7e4-4f00-95a7-7cb03edc3724",
+                                "abddc420-8485-4449-9c42-a75318294fcf",
+                                "45c75bb7-bc2a-4ca5-b8e2-9edf3f5439e9",
+                                "768bd4b7-7d16-4c06-b44c-f89d46858bf8",
+                                "051630dc-7769-435b-ba4f-289d5c7d87a4",
+                                "4bba98cd-32a4-484d-b01e-f8561509d79a",
+                                "af70ad6f-4570-43b5-8014-04312a12b2ee",
+                                "ef64bc08-b95a-4ed2-963b-925e7c950a06",
+                                "bc85cc6c-97e1-41ac-92d9-d579ed0f7d52",
+                                "ed750e2d-7f49-4edf-99fa-e4a21310f08f",
+                                "3abf0f98-fdc3-4bd3-bd31-d94f195553e4",
+                                "7a9c7284-4ad4-41cb-9ee8-f916c4d87c9f"
                               ]
                             },
                             {
@@ -17050,7 +19294,19 @@
                                 "36f1aace-4a3c-484b-8447-16a1ffdf2bb7",
                                 "1f89064e-c50b-4dcd-8a0a-e78dfe0b8874",
                                 "778db8b1-ee2a-46de-8adf-34685f2169f0",
-                                "1c6d44cb-651a-466b-8eac-a9e8b862a186"
+                                "1c6d44cb-651a-466b-8eac-a9e8b862a186",
+                                "3d466e45-6b6e-49a2-b52f-a3a7eef8f71f",
+                                "4ffcb94d-6b33-43db-96dd-521e257d6ed0",
+                                "c02509af-6718-4503-9f42-f64eb71554b4",
+                                "7abae0b7-b759-4438-86d5-c13a65ebd479",
+                                "c333c7cf-fc13-4267-99f0-418a0927d247",
+                                "0641498a-008f-4497-a6f6-fdd45ecd2a5f",
+                                "c7cda61c-0b1d-4335-8fb9-463dcdc236a0",
+                                "b246331e-7603-440b-8bec-ed2c2cb8e099",
+                                "4ea25c8f-2510-47be-9019-a7151f35a95b",
+                                "12de6856-6d21-43d7-bcaa-1ce8d65fb934",
+                                "2e473138-5355-43b7-b444-bc7cd43d3196",
+                                "84f5ee90-26f0-47bb-b7a6-9110ca8f11dd"
                               ]
                             }
                           ]

@@ -13,7 +13,7 @@ Status: implemented; user accepted mounted fit and requested ending the task. Ve
 
 ## Model
 
-Independent 11-cube model keeps the standard insertion width/depth and pivot. Body extends downward by 2 model units, approximately one-third longer overall, with a subdued yellow floorplate. The insertion end stays fixed.
+The polished independent model has 23 cubes. It keeps the standard insertion width/depth and pivot. Body extends downward by 2 model units, approximately one-third longer overall, with a subdued yellow floorplate. Four solid top lips surround a recessed inner surface within the original top envelope. A basal shoulder, shallow side panels and transverse ribs add restrained depth. The standard P9 magazine and its empty-reload duplicate receive the same detailing (23 cubes each), retaining their dark base and original length. No pivot, animation, attachment or capacity changes.
 
 `NativeMagazineRendering` replaces original cubes on `magazine` and `empty_old_magazine` using their existing animated matrices. The current P9 `reload_magazine` is an empty helper, so no duplicate geometry is drawn there. Tactical and empty reload animations are reused unchanged; maintenance renders the replacement at the original bind pose.
 
@@ -21,16 +21,21 @@ Editable sources:
 
 - `src/main/blockbench/p9_01_extended_magazine.bbmodel`
 - `src/main/blockbench/p9_01_extended_magazine_fit_preview.bbmodel` (mounted fit reference only)
+- `src/main/blockbench/p9_01.bbmodel` (standard and empty-reload magazine detailing)
+- `src/main/blockbench/polish_p9_magazines.cjs` records the one-time geometry generation from the 11-cube baseline; it intentionally rejects already-polished input.
 
 Runtime files under `src/main/resources/assets/apocalypse_firstlight/`:
 
 - `geo/p9_01_extended_magazine.geo.json`
 - `textures/item/p9_01_extended_magazine.png`
 - `models/item/p9_01_extended_magazine.json`
+- `geo/p9_01.geo.json` (only standard magazine and empty-reload duplicate geometry changed)
 
 Implementation: `NativeMagazineItem`, `NativeMagazineMount`, `NativeMagazineRendering`, attachment-aware `NativeGunAmmo`, `P901Renderer`, `MaintenanceGunRendering`, `MaintenanceAttachmentTransaction`.
 
 ## Verification
+
+Latest relief polish: live Blockbench independent and mounted extended-magazine previews inspected; all faces reference valid texture UUIDs. Offline rebuild passed in `build/p9-magazine-relief-build.log`, producing `build/libs/apocalypse_firstlight-1.0.0.jar`. This polish did not launch a graphical game client or rerun GameTests; the results below belong to the preceding V1 implementation, not the revised geometry.
 
 - Live Blockbench independent model and mounted P9 preview inspected: interface aligned, extension and yellow base visible.
 - Offline build passed: `build/extended-magazine-build.log`.
