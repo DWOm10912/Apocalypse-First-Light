@@ -16,12 +16,23 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 public final class RadiationAtmosphereClient {
     private static volatile double targetRadiation;
     private static float currentIntensity;
+    private static net.minecraft.client.multiplayer.ClientLevel syncedLevel;
+    private static long syncedTick;
 
     private RadiationAtmosphereClient() {
     }
 
     public static void setTargetRadiation(double radiation) {
         targetRadiation = Math.max(0.0, radiation);
+        syncedLevel = Minecraft.getInstance().level;
+        if (syncedLevel != null) syncedTick = syncedLevel.getGameTime();
+    }
+
+    /** Read-only access to the existing ambient-radiation packet, not instrument-only data. */
+    public static double screenRadiation() {
+        var level = Minecraft.getInstance().level;
+        return level == null || level != syncedLevel || level.getGameTime() - syncedTick > 40
+                ? 0.0 : targetRadiation;
     }
 
     @SubscribeEvent
