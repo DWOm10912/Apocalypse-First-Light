@@ -1,6 +1,6 @@
 # Gun Maintenance Attachment Interaction V1
 
-2026-09-09. Only `apocalypse_firstlight:p9_01`, `SIGHT` and `MUZZLE`. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): server-approved shared 2.480-second operation sound, 51-tick action window, then revalidation and commit. No arm/tool animation, repair, other guns or new attachments. Existing V-key exchange and weapon stats remain unchanged.
+Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation, repair or other guns. V-key remains sight/muzzle only.
 
 ## Spatial UI
 
@@ -31,4 +31,4 @@ Commands: `gradlew -I src/dev/maintenance-gametest.init.gradle runGameTestServer
 ## Final checkpoint
 
 The user subsequently confirmed “没问题了，可以终止测试”. Testing stopped at their request; no further client launch. The reported no-response issue is no longer an active user blocker, but its cause was not established and no specific input-path fix is claimed. Direct Screen and Forge Pre/Post probe runs passed; the final MouseHandler callback probe exited before a completion marker and is **NOT_TESTED**, not PASS. The outward-opening Context HUD was screenshot-checked after correcting its initial overlap with the gun. Compilation succeeded during client launches; a separate final distributable `build` was not run. Real two-client synchronization and physical-device/scale coverage remain unverified. The user's own client was left untouched.
-> Current channel protocol: **21**, upgraded for atomic local shot-result/visual confirmation and per-shot snapshot correlation. Any protocol 19 reference below describes the earlier maintenance-only revision and is superseded. Matching client/server versions required; attachment behavior unchanged.
+> Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](../p9_01_extended_magazine_v1.md).

@@ -93,7 +93,7 @@ public final class P901Actions {
         NativeGunDefinition definition = item.definition();
         ItemStack held = player.getMainHandItem();
         if (reload) {
-            if (NativeGunAmmo.read(held, definition) >= definition.magazineCapacity()
+            if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
                     || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
         } else {
             if (now < NEXT_FIRE.getOrDefault(player, 0L)) return;

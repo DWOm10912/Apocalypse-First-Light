@@ -10,6 +10,10 @@ public final class NativeGunAmmo {
     private static final String ROOT = "AflGunAmmo";
     private static final String COUNT = "ammoInMagazine";
     private NativeGunAmmo() {}
+    public static int capacity(ItemStack gun,NativeGunDefinition definition){
+        var attachment=NativeAttachments.active(gun,NativeAttachment.Slot.MAGAZINE);
+        return attachment.getItem() instanceof NativeMagazineItem m?m.capacity():definition.magazineCapacity();
+    }
 
     static CompoundTag tagWithoutAmmo(ItemStack stack) {
         CompoundTag copy = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
@@ -19,8 +23,8 @@ public final class NativeGunAmmo {
 
     public static int read(ItemStack gun, NativeGunDefinition definition) {
         CompoundTag tag = gun.getTag();
-        if (tag == null || !tag.contains(ROOT)) return definition.magazineCapacity();
-        return Math.max(0, Math.min(definition.magazineCapacity(), tag.getCompound(ROOT).getInt(COUNT)));
+        if (tag == null || !tag.contains(ROOT)) return capacity(gun,definition);
+        return Math.max(0, Math.min(capacity(gun,definition), tag.getCompound(ROOT).getInt(COUNT)));
     }
 
     public static void initialize(ItemStack gun, NativeGunDefinition definition) {
@@ -35,7 +39,7 @@ public final class NativeGunAmmo {
     public static void set(ItemStack gun, NativeGunDefinition definition, int count) {
         CompoundTag tag = gun.getOrCreateTag();
         CompoundTag ammo = tag.getCompound(ROOT);
-        ammo.putInt(COUNT, Math.max(0, Math.min(definition.magazineCapacity(), count)));
+        ammo.putInt(COUNT, Math.max(0, Math.min(capacity(gun,definition), count)));
         tag.put(ROOT, ammo);
     }
 
@@ -67,9 +71,9 @@ public final class NativeGunAmmo {
 
     /** Recompute at mag-in on the server thread; no ammo is reserved or removed at reload start. */
     public static int transfer(Inventory inventory, ItemStack gun, NativeGunDefinition definition) {
-        int current = read(gun, definition), remaining = definition.magazineCapacity() - current;
+        int current = read(gun, definition), remaining = capacity(gun,definition) - current;
         if (infiniteReserve(inventory)) {
-            set(gun, definition, definition.magazineCapacity());
+            set(gun, definition, capacity(gun,definition));
             inventory.setChanged();
             return remaining;
         }

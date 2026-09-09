@@ -64,6 +64,13 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
         }
         float[] equipPose = isFirstPersonPass() ? P901Presentation.apply(bone) : null;
         try {
+            if(NativeMagazineRendering.replaces(currentItemStack,bone)){
+                pose.pushPose();
+                software.bernie.geckolib.util.RenderUtils.prepMatrixForBone(pose,bone);
+                NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);
+                for(var child:bone.getChildBones())renderRecursively(pose,item,child,type,buffers,buffers.getBuffer(type),reRender,partialTick,light,overlay,red,green,blue,alpha);
+                pose.popPose();buffers.getBuffer(type);return;
+            }
             super.renderRecursively(pose, item, bone, type, buffers, buffer, reRender,
                     partialTick, light, overlay, red, green, blue, alpha);
         } finally {

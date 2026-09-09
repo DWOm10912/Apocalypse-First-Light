@@ -15,6 +15,7 @@
 | --- | --- |
 | ammo / casing | 已注册物品 ID；弹壳渲染使用对应 item model |
 | magazine_capacity | 正整数容量 |
+| magazine_slot（可选） | accepts 数组声明兼容弹匣 ID；P9 接受 apocalypse_firstlight:p9_01_extended_magazine，BR51 未声明。NativeGunAmmo.capacity 在有效扩容附件下返回 24，否则使用基础容量。安装不补发弹药。 |
 | fire.mode / interval_ticks | V1只支持 semi；正整数间隔 |
 | damage.base | 非负身体伤害 |
 | damage.falloff_start / effective_range / max_range | 格；标称射程仍不参与命中计算 |
@@ -61,4 +62,4 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 DEV测试创建临时datapack，调用与 /reload 相同的服务器资源重载入口，验证伤害18→10、噪声112→64、间隔3→5、非法容量-1拒绝后保留完整旧值，随后恢复18/112/3。图形客户端ADS/FOV、后坐手感及多人远端同步需另行实机验收，不以服务端测试替代。
 
 验证结果：`native-json-final-test.log` 一轮65/65通过；最终快照重复运行 `native-json-verified.log` 为64/65，唯一失败是既有 `nativenoiseflatdistances` 的感染者调查路径断言。JSON重载、非法字段回退、两枪弹药/换弹/射击和新增平衡断言均通过。测试临时覆盖均已撤销，正式JSON保持18/112/3。构建单独复验记录 `native-json-final-build.log`，主表 `--check` 通过；未提交/推送。
-> Current channel protocol: **21**, upgraded for atomic local shot-result/visual confirmation and per-shot snapshot correlation. Any protocol 19 reference below describes the earlier maintenance-only revision and is superseded. Matching client/server versions required; attachment behavior unchanged.
+> Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](p9_01_extended_magazine_v1.md).

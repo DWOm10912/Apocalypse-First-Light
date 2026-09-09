@@ -25,7 +25,7 @@ public final class MaintenanceAttachmentHud {
     private Minecraft mc(){return Minecraft.getInstance();}
     private ItemStack gun(){return screen.getMenu().synchronizedBench().getItem(0);}
     private Component text(String key){return Component.translatable("gui.apocalypse_firstlight.gun_maintenance."+key);}
-    private Component title(NativeAttachment.Slot slot){return text(slot==NativeAttachment.Slot.SIGHT?"sight":"muzzle");}
+    private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";});}
     private Component installed(NativeAttachment.Slot slot){var item=NativeAttachments.stored(gun(),slot);return item.isEmpty()?text("none"):item.getHoverName();}
     public boolean selecting(){return selection;}
     public static int contextX(double anchorX,int width){return Math.max(4,Math.min(width-144,(int)anchorX+(anchorX<width/2d?-164:24)));}
@@ -126,7 +126,9 @@ public final class MaintenanceAttachmentHud {
     }
     private void submit(int source,ItemStack stack){
         if(pending||locked==null)return;pending=true;
-        MaintenanceModeClientState.INSTANCE.action=locked==NativeAttachment.Slot.SIGHT
+        MaintenanceModeClientState.INSTANCE.action=locked==NativeAttachment.Slot.MAGAZINE
+                ?(source<0?MaintenanceActionState.REMOVING_MAGAZINE:MaintenanceActionState.INSTALLING_MAGAZINE)
+                :locked==NativeAttachment.Slot.SIGHT
                 ?(source<0?MaintenanceActionState.REMOVING_SIGHT:MaintenanceActionState.INSTALLING_SIGHT)
                 :(source<0?MaintenanceActionState.REMOVING_MUZZLE:MaintenanceActionState.INSTALLING_MUZZLE);
         var menu=screen.getMenu();

@@ -34,14 +34,24 @@ public final class MaintenanceAttachmentTransaction {
         boolean remove=r.sourceSlot()==-1;
         var source=remove?ItemStack.EMPTY:player.getInventory().getItem(r.sourceSlot());
         var updated=gun.copy();
+        var definition=((NativeGunItem)gun.getItem()).definition();
+        int loaded=NativeGunAmmo.read(gun,definition);
         var next=source.copy();next.setCount(remove?0:1);
         NativeAttachments.writeStored(updated,r.target(),next);
+        var returns=new java.util.ArrayList<ItemStack>();
+        if(!old.isEmpty())returns.add(old.copy());
+        if(r.target()==NativeAttachment.Slot.MAGAZINE){
+            int excess=Math.max(0,loaded-NativeGunAmmo.capacity(updated,definition));
+            NativeGunAmmo.set(updated,definition,loaded);
+            if(excess>0)returns.add(new ItemStack(java.util.Objects.requireNonNull(
+                    net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(definition.ammoType())),excess));
+        }
         // Ordinary inventory insertion works on copies first; failed drop can roll back completely.
         var inv=player.getInventory();var before=new java.util.ArrayList<ItemStack>();
         for(int i=0;i<36;i++)before.add(inv.getItem(i).copy());
         if(!remove)source.shrink(1); // Bench transactions conserve real items, including creative players.
-        if(!old.isEmpty()){
-            var returned=old.copy();
+        var dropped=new java.util.ArrayList<net.minecraft.world.entity.item.ItemEntity>();
+        for(var returned:returns){
             for(int i=0;i<36&&!returned.isEmpty();i++){
                 var slot=inv.getItem(i);
                 if(!slot.isEmpty()&&ItemStack.isSameItemSameTags(slot,returned)){
@@ -53,8 +63,13 @@ public final class MaintenanceAttachmentTransaction {
                 int amount=Math.min(returned.getCount(),returned.getMaxStackSize());
                 var part=returned.copy();part.setCount(amount);inv.setItem(i,part);returned.shrink(amount);
             }
-            if(!returned.isEmpty()&&player.drop(returned,false)==null){
-                for(int i=0;i<36;i++)inv.setItem(i,before.get(i));return false;
+            if(!returned.isEmpty()){
+                var drop=player.drop(returned,false);
+                if(drop==null){
+                    dropped.forEach(net.minecraft.world.entity.Entity::discard);
+                    for(int i=0;i<36;i++)inv.setItem(i,before.get(i));return false;
+                }
+                dropped.add(drop);
             }
         }
         menu.bench.commitAttachments(updated);inv.setChanged();menu.broadcastChanges();player.inventoryMenu.broadcastChanges();

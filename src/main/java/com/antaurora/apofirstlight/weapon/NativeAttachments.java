@@ -29,6 +29,7 @@ public final class NativeAttachments {
         return switch(a.slot()){
             case SIGHT -> d.sightMount()!=null&&d.sightMount().accepts().contains(id);
             case MUZZLE -> d.muzzleMount()!=null&&d.muzzleMount().accepts().contains(id);
+            case MAGAZINE -> a instanceof NativeMagazineItem m&&m.accepts(d)&&d.magazineMount()!=null&&d.magazineMount().accepts().contains(id);
         };
     }
     public static ItemStack active(ItemStack gun,Slot slot){
@@ -40,6 +41,7 @@ public final class NativeAttachments {
     public static boolean gesture(net.minecraft.world.entity.player.Player p){
         var gun=p.getMainHandItem();
         return gun.getItem() instanceof NativeGunItem
+                &&(!(p.getOffhandItem().getItem() instanceof NativeMagazineItem))
                 &&(compatible(gun,p.getOffhandItem())||p.getOffhandItem().isEmpty()&&!stored(gun,detachSlot(gun)).isEmpty());
     }
     public static boolean requestMatches(ServerPlayer p,int slot,ItemStack gun,ItemStack offhand){

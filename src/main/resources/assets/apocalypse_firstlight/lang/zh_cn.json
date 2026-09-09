@@ -1,4 +1,9 @@
 {
+  "item.apocalypse_firstlight.p9_01_extended_magazine":"P9-01 扩容弹匣",
+  "tooltip.apocalypse_firstlight.p9_01_extended_magazine.type":"弹匣 ｜ 手枪 ｜ 24发",
+  "tooltip.apocalypse_firstlight.p9_01_extended_magazine.description":"一款为P9-01设计的24发扩容弹匣，可提升持续交火能力。",
+  "gui.apocalypse_firstlight.gun_maintenance.magazine":"弹匣",
+  "tooltip.apocalypse_firstlight.p9_01.spec_extended":"9×19毫米 ｜ 半自动 ｜ 24发",
   "screen.apocalypse_firstlight.gun_maintenance": "枪械维护",
   "screen.apocalypse_firstlight.maintenance_select": "选择快捷栏中的枪械",
   "gui.apocalypse_firstlight.gun_maintenance.return_weapon": "取回枪械",

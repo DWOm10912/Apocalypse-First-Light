@@ -1,4 +1,9 @@
 {
+  "item.apocalypse_firstlight.p9_01_extended_magazine":"P9-01 Extended Magazine",
+  "tooltip.apocalypse_firstlight.p9_01_extended_magazine.type":"Magazine | Pistol | 24 Rounds",
+  "tooltip.apocalypse_firstlight.p9_01_extended_magazine.description":"A 24-round extended magazine designed for the P9-01, improving sustained fire capability.",
+  "gui.apocalypse_firstlight.gun_maintenance.magazine":"Magazine",
+  "tooltip.apocalypse_firstlight.p9_01.spec_extended":"9×19mm | Semi-Auto | 24 Rounds",
   "screen.apocalypse_firstlight.gun_maintenance": "Gun Maintenance",
   "screen.apocalypse_firstlight.maintenance_select": "Select a gun from your hotbar",
   "gui.apocalypse_firstlight.gun_maintenance.return_weapon": "Return weapon",

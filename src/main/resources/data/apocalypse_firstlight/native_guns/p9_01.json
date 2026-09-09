@@ -48,6 +48,7 @@
     "horizontalRightMin": 0.06
   },
   "casing": "apocalypse_firstlight:9x19mm_casing",
+  "magazine_slot": {"accepts": ["apocalypse_firstlight:p9_01_extended_magazine"]},
   "suppressed_fire_sound": "apocalypse_firstlight:p9_01_suppressed",
   "muzzle_slot": {
     "anchor": "muzzle_anchor",

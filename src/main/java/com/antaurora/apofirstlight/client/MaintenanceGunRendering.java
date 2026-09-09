@@ -61,6 +61,10 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     /** Traverses the same immutable bind pose as the actual desktop renderer. */
     public static org.joml.Vector3f interactionPoint(ItemStack stack,com.antaurora.apofirstlight.weapon.NativeAttachment.Slot slot,PoseStack pose){
         var m=model(stack);if(m==null||!(stack.getItem() instanceof NativeGunItem gun))return null;
+        if(slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.MAGAZINE){
+            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,"magazine",0,-6.2f/16f,0);if(point!=null)return point;}
+            return null;
+        }
         String dedicated=slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT?"maintenance_sight_anchor":"maintenance_muzzle_anchor";
         for(var b:bones(stack,m)){var point=anchorPoint(b,pose,dedicated,0,0,0);if(point!=null)return point;}
         if(slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT){
@@ -117,7 +121,9 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     }
     private static void draw(GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,RenderType type,int light) {
         p.pushPose();RenderUtils.prepMatrixForBone(p,b);
-        for(var cube:b.getCubes()) {
+        boolean magazine=com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replaces(stack,b);
+        if(magazine)com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
+        if(!magazine)for(var cube:b.getCubes()) {
             p.pushPose();DRAWER.renderCube(p,cube,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);p.popPose();
         }
