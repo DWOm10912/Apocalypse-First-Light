@@ -70,3 +70,10 @@ tmp/
 # Obsidian local settings
 docs/.obsidian/
 /.obsidian/core-plugins.json
+
+# Local authoring bridge credentials, references and tool dependencies
+afl_authoring_bridge/
+afl_authoring_captures/
+afl_reference_import/
+node_modules/
+__pycache__/

@@ -1,0 +1,15 @@
+{
+  "minecraft:short_grass": {
+    "target": "minecraft:grass",
+    "reason": "User approved 2026-09-09: retain the short grass vegetation role in target 1.20.1 registry.",
+    "approved": true,
+    "review_required": false
+  },
+  "minecraft:command_block": {
+    "target": "minecraft:smooth_stone",
+    "drop_properties": ["conditional", "facing"],
+    "reason": "User approved 2026-09-09: replace 42 reference command blocks with inert solid geometry; no commands or source NBT imported.",
+    "approved": true,
+    "review_required": false
+  }
+}

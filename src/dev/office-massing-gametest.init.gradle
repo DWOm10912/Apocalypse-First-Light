@@ -1,0 +1,10 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.gameTestServer {
+            workingDirectory project.file("build/office-massing-test-${System.currentTimeMillis()}")
+            property 'forge.enabledGameTestNamespaces', 'afl_office_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+    }
+}

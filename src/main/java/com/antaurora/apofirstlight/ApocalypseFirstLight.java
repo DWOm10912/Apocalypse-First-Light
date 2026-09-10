@@ -38,6 +38,9 @@ public class ApocalypseFirstLight {
         AflNetwork.register();
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.authoring.BuildingAuthoringConfig.SPEC, "apocalypse_firstlight-authoring.toml");
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.weapon.NativeHeadshots.SPEC, "apocalypse_firstlight-guns.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);

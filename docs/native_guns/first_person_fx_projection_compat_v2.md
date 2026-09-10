@@ -1,6 +1,6 @@
 # First-Person FX Projection Compatibility V2
 
-Status: implemented; mathematical/build verification recorded below. Shader OFF and ON visual acceptance is USER_VALIDATION_REQUIRED. No launcher deployment.
+Status: FIXED — USER IN-GAME ACCEPTANCE PASSED (2026-09-09). User confirmed: “标记为已修复，游戏内测试没问题”. Acceptance is user-reported, not an agent-run graphical test; individual test-matrix rows were not separately reported. No automatic launcher deployment was performed.
 
 ## Root cause and scope
 
@@ -34,17 +34,19 @@ Coverage: exact OFF no-op and unchanged resolver; compressed depth; unchanged in
 
 Build: PASS, `gradlew.bat clean build --offline`, Java 17, 54 seconds, 15 executed tasks. The initial two clean attempts failed while IDEA's concurrent Gradle import held generated files; after the user closed IDEA, clean and full build succeeded.
 
-Math: PASS, 9,078 cases; minimum corrected two-point direction length `0.004099943` (well above Vanilla's unchanged `0.0001` cutoff). The existing standalone `NativeFlashLifetimeTest` also passed at 30/60/120/300/600/1000 FPS plus boundary, stalled-frame and independent-shot cases. No GameTest/client rendering session was run. No runtime visual PASS claimed.
+Math: PASS, 9,078 cases; minimum corrected two-point direction length `0.004099943` (well above Vanilla's unchanged `0.0001` cutoff). The existing standalone `NativeFlashLifetimeTest` also passed at 30/60/120/300/600/1000 FPS plus boundary, stalled-frame and independent-shot cases. No agent-run GameTest/client rendering session was run. Subsequent user in-game acceptance passed on 2026-09-09.
 
 Artifact: `build/libs/apocalypse_firstlight-1.0.0.jar`; not automatically deployed. Static diff audit: no server/resource/attachment-renderer/third-person changes, no runtime mod/pack checks or compression constants; the synthetic compression values exist only in tests.
 
-## User acceptance
+## User acceptance — passed
+
+The user confirmed the V2 issue is fixed in-game on 2026-09-09. The following is the retained regression checklist, not a claim that each variant was independently logged or tested by the agent. Diagnostic JVM arguments may now be removed.
 
 Enable `-Dafl.gunFxDebug=true -Dafl.gunFxDebugLabel=OFF`, then repeat with label `ON`. See [debug reference](native_gun_fx_debug_v1.md). Compact PROJECTION_SANITIZE and SNAPSHOT_DIRECTION records accompany capture; full matrices require additional `-Dafl.gunFxDebugMatrices=true`.
 
-- Shader OFF: USER_VALIDATION_REQUIRED. Both guns: HIP, ADS, crouch ADS, repeated fire, suppressors; flash/tracer/casing must retain accepted baseline.
-- Oculus 1.8.0 + Complementary Reimagined r5.9: USER_VALIDATION_REQUIRED. Both guns: correct flash/tracer/casing origins; BR51 snapshot and FX queue restored; P9 no near-camera giant flash.
+- Shader OFF regression checklist: Both guns: HIP, ADS, crouch ADS, repeated fire, suppressors; flash/tracer/casing must retain accepted baseline.
+- Oculus 1.8.0 + Complementary Reimagined r5.9 regression checklist: Both guns: correct flash/tracer/casing origins; BR51 snapshot and FX queue restored; P9 no near-camera giant flash.
 - Accessories: bare/suppressor, optic, extended magazine (P9 24R / BR51 35R); correct suppressor exit and no unrelated muzzle shifts.
-- Third-person OFF/ON: USER_VALIDATION_REQUIRED, no regression.
+- Third-person OFF/ON regression checklist: no regression.
 
-If snapshots, FX queue and flash submissions return with reasonable coordinates but pixels remain absent, investigate RenderType/stage/depth as a separate task. V2 intentionally does not preemptively alter those systems.
+Only if a new regression is reported: if snapshots, FX queue and flash submissions return with reasonable coordinates but pixels remain absent, investigate RenderType/stage/depth as a separate task. V2 intentionally does not preemptively alter those systems.

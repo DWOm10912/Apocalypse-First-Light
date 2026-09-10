@@ -34,4 +34,4 @@ Matrices are last-sampled render data, not a fresh input-time renderer evaluatio
 
 Same location and view, unsuppressed P9 and BR51, HIP/ADS each 3–5 slow single shots. First run Shader OFF with OFF label; preserve `logs/latest.log` as `fx-off.log` before the next launch. Second run Oculus + Complementary ON with ON label; preserve as `fx-on.log`. Record a short video of each run. Keep FOV, resolution and FPS cap identical for this comparison.
 
-Historical diagnostic V1 build: PASS (`gradlew.bat build --offline`, 24 seconds). Its hash is obsolete for V2; see the V2 report for current build verification. User-supplied ON/OFF logs confirmed V1 diagnostic capture; V2 runtime acceptance is still pending. Submission is never proof of pixel visibility.
+Historical diagnostic V1 build: PASS (`gradlew.bat build --offline`, 24 seconds). Its hash is obsolete for V2; see the V2 report for current build verification. User-supplied ON/OFF logs confirmed V1 diagnostic capture; V2 is marked FIXED after user-confirmed in-game acceptance on 2026-09-09. Debug JVM arguments can be removed after acceptance. Submission is never proof of pixel visibility.

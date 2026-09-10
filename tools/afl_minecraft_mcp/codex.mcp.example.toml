@@ -1,0 +1,12 @@
+# Merge this table into Codex config; do not overwrite other configured servers.
+[mcp_servers.afl_minecraft]
+command = 'C:\Program Files\nodejs\node.exe'
+args = [
+  'D:\Minecraft Modding\Apocalypse First Light\tools\afl_minecraft_mcp\server.mjs',
+  '--game-dir', 'D:\Minecraft Modding\Apocalypse First Light\run',
+  '--python', 'C:\Users\willi\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe',
+  '--reference-source', 'E:\Download\Modern Office Building V.zip'
+]
+startup_timeout_sec = 15
+tool_timeout_sec = 150
+default_tools_approval_mode = 'writes'

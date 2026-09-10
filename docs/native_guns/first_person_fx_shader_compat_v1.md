@@ -2,11 +2,11 @@
 
 ## Status: failed visual acceptance; baseline restored
 
-Historical V1 rollback record below. Current implementation is [Projection Compatibility V2](first_person_fx_projection_compat_v2.md): retains the original conversion and sanitizes first-person depth only. V2 visual acceptance is pending; V1's withdrawn projection-free approach remains withdrawn.
+Historical V1 rollback record below. Current implementation is [Projection Compatibility V2](first_person_fx_projection_compat_v2.md): retains the original conversion and sanitizes first-person depth only. V2 is FIXED following user-confirmed in-game acceptance on 2026-09-09; V1's withdrawn projection-free approach remains withdrawn.
 
 For the next source-guided Shader OFF/ON investigation, use the opt-in [Native Gun FX Debug V1](native_gun_fx_debug_v1.md). This adds observation only, not another shader fix.
 
-The projection-free V1 experiment is withdrawn. User video `C:/Users/willi/Downloads/QQ20260909-154242-HD.mp4` reports missing muzzle flashes and severe leftward tracer displacement even with shaders OFF. The prior compile/numerical PASS did not establish runtime correctness. Shader compatibility is **UNRESOLVED**.
+The projection-free V1 experiment is withdrawn. User video `C:/Users/willi/Downloads/QQ20260909-154242-HD.mp4` reports missing muzzle flashes and severe leftward tracer displacement even with shaders OFF. The prior compile/numerical PASS did not establish runtime correctness. At that V1 checkpoint shader compatibility was **UNRESOLVED**; the current V2 issue is fixed per user acceptance above.
 
 ## Findings and failed approach
 
@@ -16,7 +16,7 @@ The attempted `cameraRotation * viewAnchor` replacement removed first-person pro
 
 ## Historical rollback checkpoint (before V2)
 
-Subsequent scoped change: [Timed muzzle flash](native_muzzle_flash_lifetime_v1.md) adds a 50 ms attached tail after the frozen first frame. The restored projection conversion is untouched; the exact-file baseline check below describes the rollback checkpoint, not the later timing change. Shader compatibility remains unresolved.
+Subsequent scoped change: [Timed muzzle flash](native_muzzle_flash_lifetime_v1.md) adds a 50 ms attached tail after the frozen first frame. The restored projection conversion is untouched; the exact-file baseline check below describes the rollback checkpoint, not the later timing change. Shader compatibility remained unresolved at that historical checkpoint; see the accepted V2 status above.
 
 - `NativeGunFx.java` restored exactly to its pre-experiment Git baseline, including first-person projection conversion for snapshot muzzle, tracer anchor, casing and smoke.
 - Experimental `NativeGunAnchorResolver.java` and `NativeGunAnchorResolverTest.java` removed; available in the prior task patches. No experimental shader resolver remains live.
