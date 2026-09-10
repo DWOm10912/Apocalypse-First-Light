@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,half=lower": {"model": "apocalypse_firstlight:block/water_dispenser", "y": 0},
+    "facing=east,half=lower": {"model": "apocalypse_firstlight:block/water_dispenser", "y": 90},
+    "facing=south,half=lower": {"model": "apocalypse_firstlight:block/water_dispenser", "y": 180},
+    "facing=west,half=lower": {"model": "apocalypse_firstlight:block/water_dispenser", "y": 270},
+    "facing=north,half=upper": {"model": "apocalypse_firstlight:block/water_dispenser_empty"},
+    "facing=east,half=upper": {"model": "apocalypse_firstlight:block/water_dispenser_empty"},
+    "facing=south,half=upper": {"model": "apocalypse_firstlight:block/water_dispenser_empty"},
+    "facing=west,half=upper": {"model": "apocalypse_firstlight:block/water_dispenser_empty"}
+  }
+}

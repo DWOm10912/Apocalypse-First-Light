@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "apocalypse_firstlight:retail_shelf_single"
+    "apocalypse_firstlight:retail_shelf_single",
+    "apocalypse_firstlight:water_dispenser"
   ]
 }
