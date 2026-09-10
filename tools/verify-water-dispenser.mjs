@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 
 const source=JSON.parse(await readFile('src/main/blockbench/water_dispenser.bbmodel','utf8'));
 const runtime=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/models/block/water_dispenser.json','utf8'));
+const render=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/models/block/water_dispenser_render.json','utf8'));
 const png=await readFile('src/main/resources/assets/apocalypse_firstlight/textures/block/water_dispenser.png');
 const blockstate=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/blockstates/water_dispenser.json','utf8'));
 const itemModel=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/models/item/water_dispenser.json','utf8'));
@@ -12,6 +13,7 @@ const pickaxe=JSON.parse(await readFile('src/main/resources/data/minecraft/tags/
 const iron=JSON.parse(await readFile('src/main/resources/data/minecraft/tags/blocks/needs_iron_tool.json','utf8'));
 const en=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/lang/en_us.json','utf8'));
 const zh=JSON.parse(await readFile('src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json','utf8'));
+const renderTypesJava=await readFile('src/main/java/com/antaurora/apofirstlight/client/AflBlockRenderTypes.java','utf8');
 
 assert.equal(source.elements.length,160);
 assert.equal(runtime.elements.length,160);
@@ -20,7 +22,17 @@ assert.equal(source.textures.length,1);
 assert.equal(source.resolution.width,128);
 assert.equal(source.resolution.height,128);
 assert.equal(runtime.render_type,'minecraft:translucent');
+assert.equal(runtime.ambientocclusion,false);
 assert.equal(runtime.textures['0'],'apocalypse_firstlight:block/water_dispenser');
+assert.equal(render.loader,'forge:composite');
+assert.equal(render.ambientocclusion,false);
+assert.deepEqual(render.item_render_order,['opaque','glass']);
+assert.equal(render.children.opaque.render_type,'minecraft:solid');
+assert.equal(render.children.glass.render_type,'minecraft:translucent');
+assert.equal(render.children.opaque.elements.length,129);
+assert.equal(render.children.glass.elements.length,31);
+assert.equal(render.children.opaque.elements.length+render.children.glass.elements.length,160);
+assert(!renderTypesJava.includes('setRenderLayer(AflBlocks.WATER_DISPENSER'));
 assert.deepEqual(png,Buffer.from(source.textures[0].source.split(',')[1],'base64'));
 
 const byName=new Map(runtime.elements.map(element=>[element.name,element]));
@@ -104,9 +116,17 @@ assert.equal(activeCoplanarOverlaps,0);
 assert.equal(Object.keys(blockstate.variants).length,8);
 for(const [key,value] of Object.entries(blockstate.variants)){
   assert.match(key,/^facing=(north|east|south|west),half=(lower|upper)$/);
-  assert.equal(value.model,key.endsWith('half=lower')?'apocalypse_firstlight:block/water_dispenser':'apocalypse_firstlight:block/water_dispenser_empty');
+  assert.equal(value.model,key.endsWith('half=lower')?'apocalypse_firstlight:block/water_dispenser_render':'apocalypse_firstlight:block/water_dispenser_empty');
 }
-assert.equal(itemModel.parent,'apocalypse_firstlight:block/water_dispenser');
+assert.equal(itemModel.parent,'apocalypse_firstlight:block/water_dispenser_render');
+for(const key of ['firstperson_righthand','firstperson_lefthand']){
+  assert.deepEqual(itemModel.display[key].scale,[0.3,0.3,0.3]);
+  assert.deepEqual(itemModel.display[key],source.display[key]);
+}
+for(const key of ['thirdperson_righthand','thirdperson_lefthand']){
+  assert.deepEqual(itemModel.display[key].scale,[0.25,0.25,0.25]);
+  assert.deepEqual(itemModel.display[key],source.display[key]);
+}
 assert.deepEqual(itemModel.display.gui.scale,[0.4,0.4,0.4]);
 assert.equal(loot.pools[0].conditions[0].properties.half,'lower');
 assert(pickaxe.values.includes('apocalypse_firstlight:water_dispenser'));

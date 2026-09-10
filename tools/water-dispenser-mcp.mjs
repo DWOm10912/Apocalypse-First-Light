@@ -16,7 +16,7 @@ if(action==='save-assets'){
  if(project.truncated||model.truncated)throw Error('TRUNCATED_EXPORT');
  const source=JSON.parse(project.content),runtime=JSON.parse(model.content);
  if(source.elements.length!==expected||runtime.elements.length!==expected||source.textures.length!==1)throw Error('EXPORT_COUNTS');
- runtime.render_type='minecraft:translucent';runtime.textures.particle='apocalypse_firstlight:block/water_dispenser';
+ runtime.ambientocclusion=false;runtime.render_type='minecraft:translucent';runtime.textures.particle='apocalypse_firstlight:block/water_dispenser';
  const texture=source.textures[0].source;if(!texture?.startsWith('data:image/png;base64,'))throw Error('MISSING_EMBEDDED_TEXTURE');
  const outputs=[['src/main/blockbench/water_dispenser.bbmodel',project.content],['src/main/resources/assets/apocalypse_firstlight/models/block/water_dispenser.json',JSON.stringify(runtime,null,2)+'\n'],['src/main/resources/assets/apocalypse_firstlight/textures/block/water_dispenser.png',Buffer.from(texture.split(',')[1],'base64')]];
  if(arg==='update-hollow'||arg==='update-nonoverlap'){
@@ -30,8 +30,9 @@ if(action==='save-assets'){
   }
   const backup=arg==='update-nonoverlap'?'build/asset_checks/water_dispenser/pre_nonoverlap':'build/asset_checks/water_dispenser/pre_hollow';await mkdir(backup,{recursive:true});for(const [p]of outputs)await writeFile(backup+'/'+p.split('/').at(-1),await readFile(p),{flag:'wx'});
  }else for(const [p]of outputs){try{await readFile(p);throw Error('OUTPUT_ALREADY_EXISTS: '+p);}catch(e){if(e.code!=='ENOENT')throw e;}}
- for(const [p,data]of outputs){await mkdir(p.slice(0,p.lastIndexOf('/')),{recursive:true});await writeFile(p,data,{flag:arg==='update-hollow'||arg==='update-nonoverlap'?'w':'wx'});console.log(p);}
- process.exit(0);
+  for(const [p,data]of outputs){await mkdir(p.slice(0,p.lastIndexOf('/')),{recursive:true});await writeFile(p,data,{flag:arg==='update-hollow'||arg==='update-nonoverlap'?'w':'wx'});console.log(p);}
+  await import('./export-water-dispenser-render.mjs');
+  process.exit(0);
 }
 else if(action==='eval'){result=await rpc('tools/call',{name:'risky_eval',arguments:{code:await readFile(arg,'utf8')}});}
 else if(action==='capture'){result=await rpc('tools/call',{name:'capture_screenshot',arguments:{}});}

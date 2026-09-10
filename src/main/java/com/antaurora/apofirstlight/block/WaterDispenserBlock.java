@@ -34,15 +34,34 @@ import java.util.Map;
 public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
 
-    private static final VoxelShape LOWER_NORTH = Block.box(1.7, 0.0, 1.4, 14.3, 16.0, 14.35);
+    private static final VoxelShape LOWER_NORTH = Shapes.or(
+            // Feet and plinth.
+            Block.box(1.7, 0.0, 2.1, 14.3, 1.0, 13.9),
+            // Main cabinet shell.
+            Block.box(2.0, 1.0, 2.15, 14.0, 16.0, 13.75),
+            // Front controls and drip-tray projection.
+            Block.box(2.85, 9.45, 1.4, 13.15, 16.0, 2.15)
+    ).optimize();
     private static final VoxelShape UPPER_NORTH = Shapes.or(
-            Block.box(1.7, 0.0, 1.4, 14.3, 5.45, 14.35),
+            // Cabinet crown rendered above the lower block boundary.
+            Block.box(1.95, 0.0, 1.7, 14.05, 4.55, 13.8),
+            // Bottle socket and neck.
+            Block.box(5.1, 4.4, 5.1, 10.9, 5.2, 10.9),
+            // Bottle base, lower shoulder, body, upper shoulder and cap.
             Block.box(3.7, 5.2, 3.7, 12.3, 6.5, 12.3),
-            Block.box(2.8, 6.5, 2.8, 13.2, 14.05, 13.2),
+            Block.box(2.8, 6.5, 2.8, 13.2, 7.7, 13.2),
+            Block.box(3.2, 7.7, 3.2, 12.8, 12.8, 12.8),
+            Block.box(2.8, 12.8, 2.8, 13.2, 14.05, 13.2),
             Block.box(3.6, 14.05, 3.6, 12.4, 15.55, 12.4)
     ).optimize();
-    private static final Map<Direction, VoxelShape> LOWER_SHAPES = horizontalRotations(LOWER_NORTH);
-    private static final Map<Direction, VoxelShape> UPPER_SHAPES = horizontalRotations(UPPER_NORTH);
+    // Follow the thermal generator fix exactly: collision remains model-derived, while
+    // targeting exposes only one closed outer envelope and therefore no internal seams.
+    private static final VoxelShape LOWER_OUTLINE_NORTH = Block.box(1.7, 0.0, 1.4, 14.3, 16.0, 14.35);
+    private static final VoxelShape UPPER_OUTLINE_NORTH = Block.box(1.95, 0.0, 1.7, 14.05, 15.55, 13.8);
+    private static final Map<Direction, VoxelShape> LOWER_COLLISION_SHAPES = horizontalRotations(LOWER_NORTH);
+    private static final Map<Direction, VoxelShape> UPPER_COLLISION_SHAPES = horizontalRotations(UPPER_NORTH);
+    private static final Map<Direction, VoxelShape> LOWER_OUTLINE_SHAPES = horizontalRotations(LOWER_OUTLINE_NORTH);
+    private static final Map<Direction, VoxelShape> UPPER_OUTLINE_SHAPES = horizontalRotations(UPPER_OUTLINE_NORTH);
 
     public WaterDispenserBlock(Properties properties) {
         super(properties);
@@ -127,13 +146,18 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return shapesFor(state).get(state.getValue(FACING));
+        return outlineShapesFor(state).get(state.getValue(FACING));
+    }
+
+    @Override
+    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos position) {
+        return outlineShapesFor(state).get(state.getValue(FACING));
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
                                         CollisionContext context) {
-        return shapesFor(state).get(state.getValue(FACING));
+        return collisionShapesFor(state).get(state.getValue(FACING));
     }
 
     @Override
@@ -156,8 +180,12 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
         builder.add(FACING, HALF);
     }
 
-    private static Map<Direction, VoxelShape> shapesFor(BlockState state) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_SHAPES : UPPER_SHAPES;
+    private static Map<Direction, VoxelShape> outlineShapesFor(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_OUTLINE_SHAPES : UPPER_OUTLINE_SHAPES;
+    }
+
+    private static Map<Direction, VoxelShape> collisionShapesFor(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_COLLISION_SHAPES : UPPER_COLLISION_SHAPES;
     }
 
     private static Map<Direction, VoxelShape> horizontalRotations(VoxelShape north) {

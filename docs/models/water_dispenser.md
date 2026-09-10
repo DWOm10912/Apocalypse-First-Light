@@ -12,9 +12,10 @@ Status: editable art, runtime assets and static block registration implemented o
 | Tool / tier | Pickaxe, iron tier or higher; `requiresCorrectToolForDrops()` |
 | Block properties | Strength 3.0, blast resistance 5.0, metal sound, non-occluding |
 | Drop | One item from the LOWER half; breaking UPPER removes LOWER and returns one item only with the correct tool |
-| Rendering | Static baked model; translucent render layer; no BlockEntity or renderer |
-| Collision | Rotated lower cabinet approximation plus four-box upper cabinet/bottle approximation |
+| Rendering | Forge composite baked model: 129 opaque elements on `solid`, 31 bottle elements on `translucent`; ambient occlusion disabled; no BlockEntity or renderer |
+| Selection / collision | Thermal-generator pattern: one model-fitted closed targeting envelope per half, with separate model-derived collision shapes (three lower and seven upper envelopes) |
 | Creative tab | AFL Blocks |
+| Handheld transforms | First person scale 0.30; third person scale 0.25; both hands synchronized from the Blockbench source by the composite export helper |
 
 ## Assets
 
@@ -44,5 +45,7 @@ Automated geometry audit results:
 | Fluid-safe box | min `(4.2, 21.55, 4.2)`, max `(11.8, 31.15, 11.8)` model units |
 
 This removes the asset-level Z-fighting cause. Minecraft translucent sorting with a future dynamic fluid layer still needs an in-game regression test. The pre-V1.2 assets are backed up under `build/asset_checks/water_dispenser/pre_nonoverlap/`.
+
+The block follows the thermal generator's two-part correction. Targeting and interaction use one closed, model-fitted outer envelope per block half, so hovering cannot expose internal cabinet, connector or bottle seams. Physical collision remains separate and follows the plinth, cabinet, front projection, bottle socket, body, shoulders and cap. Rendering also uses Forge's composite loader: opaque cabinet geometry writes to the solid layer before the bottle's translucent geometry, instead of forcing the entire appliance through `RenderType.translucent`. The runtime models set `ambientocclusion: false`, matching the industrial-locker treatment so the translucent top cap is not darkened by baked ambient occlusion.
 
 No GUI, BlockEntity, storage, drinking, hot/cold water, fluid capability, power, animation, interaction sound, recipe, world generation or Small City pool entry is implemented.
