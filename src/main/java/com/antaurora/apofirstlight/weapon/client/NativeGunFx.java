@@ -73,6 +73,7 @@ public final class NativeGunFx {
     public static void flashFrame(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         renderFrame++;
+        NativeGunFxDebug.frame(renderFrame);
         checkWorld();
         long nanos = System.nanoTime();
         FROZEN.removeIf(f -> !currentLocalFlash(f) || f.lifetime.expired(nanos));
@@ -82,10 +83,13 @@ public final class NativeGunFx {
         shot(shooter,gun,false);
     }
     public static void shot(int shooter,long gun,boolean frozen){
+        shot(shooter,gun,frozen,0);
+    }
+    public static void shot(int shooter,long gun,boolean frozen,long debugShotId){
         checkWorld();
         if (world == null || world.getEntity(shooter) == null) return;
         if (SHOTS.size() >= 128) SHOTS.remove(0);
-        var shot=new Shot(shooter, gun, clock(Minecraft.getInstance().getFrameTime()));shot.frozen=frozen;SHOTS.add(shot);
+        var shot=new Shot(shooter, gun, clock(Minecraft.getInstance().getFrameTime()));shot.frozen=frozen;shot.debugShotId=debugShotId;SHOTS.add(shot);
     }
 
     public static void anchor(long gun, boolean firstPerson, String name, PoseStack anchor,
@@ -119,22 +123,28 @@ public final class NativeGunFx {
                 var exit = P901RenderMatrices.detachedCopy(anchor);
                 exit.translate(0, 0, -barrelExitOffset / 16);
                 drawFlash(exit, buffers, age, flash.shot);
+                if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FLASH_ATTACHED_SUBMIT",flash.snapshot.shotId(),"age="+age+" gun="+gun+" buffer="+buffers.getClass().getName());
                 if (Boolean.getBoolean("afl.shotSnapshotDebug"))
                     ApocalypseFirstLight.LOGGER.info("[SHOT FLASH] attached id={} age={} frame={}", flash.snapshot.shotId(), age, renderFrame);
             }
         }
         if(firstPerson&&name.equals("muzzle_anchor")){
-            var matrix=new Matrix4f(WORLD_VIEW).invert().mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix()).mul(anchor.last().pose());
+            var matrix=new Matrix4f(WORLD_VIEW).invert().mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION)).mul(anchor.last().pose());
             var exit=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
             var ahead=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16-.01f));
-            NativeShotVisualSnapshot.presented(gun,mc.gameRenderer.getMainCamera().getPosition().add(exit.x,exit.y,exit.z),
-                    new Vec3(ahead.x-exit.x,ahead.y-exit.y,ahead.z-exit.z).normalize(),suppressed);
+            if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.sample(gun,anchor.last().pose(),RenderSystem.getProjectionMatrix(),WORLD_VIEW,WORLD_PROJECTION,
+                    mc.gameRenderer.getMainCamera().getPosition(),mc.gameRenderer.getMainCamera().getPosition().add(exit.x,exit.y,exit.z));
+            var rawDirection=new Vec3(ahead.x-exit.x,ahead.y-exit.y,ahead.z-exit.z);
+            var normalized=rawDirection.normalize();
+            boolean accepted=NativeShotVisualSnapshot.presented(gun,mc.gameRenderer.getMainCamera().getPosition().add(exit.x,exit.y,exit.z),
+                    normalized,suppressed);
+            if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.direction(rawDirection.length(),normalized,accepted);
         }
         if (name.equals("muzzle_anchor") && NativeBulletTrails.needsAnchor(gun, firstPerson)) {
             // Same projection conversion as the established casing birth position.
             var matrix = new Matrix4f(WORLD_VIEW).invert();
             if (firstPerson)
-                matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
+                matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION));
             matrix.mul(anchor.last().pose());
             var p = matrix.transformProject(new Vector3f());
             var exit = matrix.transformProject(new Vector3f(0, 0, -barrelExitOffset / 16));
@@ -153,12 +163,13 @@ public final class NativeGunFx {
                 if (firstPerson) {
                     // Hand and world FOV differ. Unproject the actual hand clip position into the
                     // world projection so the detached casing has no birth-frame screen jump.
-                    matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
+                    matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION));
                 }
                 matrix.mul(anchor.last().pose());
                 var p = matrix.transformProject(new Vector3f());
                 var camera = mc.gameRenderer.getMainCamera().getPosition();
                 Vec3 origin = camera.add(p.x, p.y, p.z);
+                if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("CASING_BIRTH",shot.debugShotId,"gun="+gun+" firstPerson="+firstPerson+" origin="+origin+" camera="+camera+" cameraDistance="+origin.distanceTo(camera));
                 // Live visual check: local -X ejects left; reverse only the lateral basis.
                 Vec3 right = direction(matrix, 1, 0, 0), up = direction(matrix, 0, 1, 0);
                 Vec3 forward = direction(matrix, 0, 0, -1);
@@ -175,7 +186,7 @@ public final class NativeGunFx {
                     if(Double.isNaN(shot.flashStart)){
                         shot.flashStart=now;
                         var matrix=new Matrix4f(WORLD_VIEW).invert();
-                        if(firstPerson)matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(RenderSystem.getProjectionMatrix());
+                        if(firstPerson)matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION));
                         matrix.mul(anchor.last().pose());
                         var p=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
                         var origin=mc.gameRenderer.getMainCamera().getPosition().add(p.x,p.y,p.z);
@@ -257,6 +268,7 @@ public final class NativeGunFx {
                 pose.pushPose();pose.translate(p.x,p.y,p.z);
                 pose.mulPose(new org.joml.Quaternionf().rotationTo(new Vector3f(0,0,-1),new Vector3f((float)d.x,(float)d.y,(float)d.z)));
                 drawFlash(pose,buffers,0,f.shot);pose.popPose();
+                if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FLASH_WORLD_SUBMIT",f.snapshot.shotId(),"origin="+f.snapshot.muzzle()+" camera="+event.getCamera().getPosition()+" stage="+event.getStage()+" buffer="+buffers.getClass().getName());
                 if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT FLASH] presented id={} gun={} origin={}",f.snapshot.shotId(),f.shot.gun,f.snapshot.muzzle());
             }
             if(drewSnapshot)buffers.endBatch(FlashType.TYPE);
@@ -294,6 +306,7 @@ public final class NativeGunFx {
     }
 
     private static final class Shot {
+        long debugShotId;
         boolean frozen;
         final int shooter; final long gun; final double received;
         final float roll = (RANDOM.nextFloat() - .5F) * 24, scale = .9F + RANDOM.nextFloat() * .2F;

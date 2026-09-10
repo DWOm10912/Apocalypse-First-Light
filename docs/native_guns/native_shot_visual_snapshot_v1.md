@@ -10,6 +10,8 @@ Old order: input → request → server ammo/animation trigger → authoritative
 
 ## Snapshot
 
+Current coordinate conversion update: [Projection Compatibility V2](first_person_fx_projection_compat_v2.md) restores hand projection depth from world depth for first-person only, retaining the existing conversion and all snapshot rules. Shader OFF/ON visual acceptance remains pending.
+
 `NativeShotVisualSnapshot` receives the actual first-person, attachment-resolved muzzle converted into world space by `NativeGunFx`. The original inverse-world-view / hand-to-world projection conversion has been restored after the projection-free resolver caused user-confirmed Shader OFF regressions (missing flash and left-offset tracer). Shader compatibility remains unresolved; see [First-Person FX Shader Compatibility V1](first_person_fx_shader_compat_v1.md). On input, it freezes that currently presented pose into an independent immutable record with shotId, gun identity, input/pose timestamps, origin, barrel direction and suppressor state, BEFORE sending the shot request and before that shot's confirmed recoil. Pose includes already rendered sway/ADS/animation/residual recoil. It does not evaluate a hypothetical unseen pose at input time.
 
 Presentation cache is guarded by world/player, stack equality, gun identity, at most one render-frame age and one game tick. It is only a source for input-time copying; later shots cannot overwrite pending records. Missing/stale poses skip local visuals, never fall back to an eye position or a future recoiled muzzle. This may suppress visuals immediately after an unseen equip/state change; server shooting remains unaffected.
@@ -23,6 +25,8 @@ On confirmation, tracer uses frozen origin → server endpoint, with visual star
 Local first-person positive IDs never fall back to the old delayed muzzle path if a snapshot is unavailable. Other players/third-person use the existing resolver. A local camera-context switch can discard a pending first-person snapshot and use the third-person path. Server hitscan, spread, damage, range, recoil values, sway values, models and animations are unchanged. No glass/other penetration.
 
 ## Debug and verification
+
+Bounded shader-diagnostic logging is available separately via `-Dafl.gunFxDebug=true`; see [Native Gun FX Debug V1](native_gun_fx_debug_v1.md). It records capture skips, confirmation, FX submission and projection samples without changing shot acceptance.
 
 `-Dafl.shotSnapshotDebug=true` logs capture shotId, input/pose time, muzzle and confirmed endpoint. No default debug drawing/resources. Optional isolated probe: `src/dev/shot-snapshot-client.init.gradle`, `ShotSnapshotProbe`.
 

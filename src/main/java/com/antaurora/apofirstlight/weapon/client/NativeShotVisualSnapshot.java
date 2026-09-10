@@ -28,20 +28,27 @@ public final class NativeShotVisualSnapshot {
     private static void check(){var mc=Minecraft.getInstance();if(world!=mc.level||player!=mc.player){world=mc.level;player=mc.player;presented=null;pending.clear();}
         if(mc.level!=null)pending.values().removeIf(s->now()-s.inputTime()>100);
     }
-    public static void presented(long gun,Vec3 origin,Vec3 direction,boolean suppressed){
+    public static boolean presented(long gun,Vec3 origin,Vec3 direction,boolean suppressed){
         check();var mc=Minecraft.getInstance();
-        if(mc.player==null||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
-        if(GeoItem.getId(mc.player.getMainHandItem())!=gun||!NativeTrailGeometry.finite(origin)||direction.lengthSqr()<.5)return;
+        if(mc.player==null||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return false;
+        if(GeoItem.getId(mc.player.getMainHandItem())!=gun||!NativeTrailGeometry.finite(origin)||direction.lengthSqr()<.5)return false;
         presented=new Presented(gun,now(),frame,origin,direction,suppressed,mc.player.getMainHandItem().copy());
+        return true;
     }
     public static long capture(){
         check();long id=++sequence;var mc=Minecraft.getInstance();
-        if(mc.player==null||mc.level==null||!mc.options.getCameraType().isFirstPerson())return id;
+        if(mc.player==null||mc.level==null||!mc.options.getCameraType().isFirstPerson()){
+            if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.capture(id,"SKIP_CONTEXT");return id;
+        }
         var p=presented;
         // Never substitute an eye position or wait for a recoiled pose when the gun was not presented.
-        if(p==null||frame-p.frame()>1||now()-p.time()>1||!ItemStack.isSameItemSameTags(p.stack(),mc.player.getMainHandItem()))return id;
+        if(p==null||frame-p.frame()>1||now()-p.time()>1||!ItemStack.isSameItemSameTags(p.stack(),mc.player.getMainHandItem())){
+            if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.capture(id,p==null?"SKIP_NO_POSE":"SKIP_POSE frameAge="+(frame-p.frame())+" tickAge="+(now()-p.time())+" stackMatch="+ItemStack.isSameItemSameTags(p.stack(),mc.player.getMainHandItem()));
+            return id;
+        }
         if(pending.size()>=128)pending.remove(pending.keySet().iterator().next());
         pending.put(id,new Snapshot(id,p.gun(),now(),p.time(),p.muzzle(),p.direction(),p.suppressed()));
+        if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.capture(id,"OK gun="+p.gun()+" suppressed="+p.suppressed());
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] capture id={} poseTime={} inputTime={} muzzle={}",id,p.time(),now(),p.muzzle());
         return id;
     }
@@ -49,15 +56,17 @@ public final class NativeShotVisualSnapshot {
         check();var mc=Minecraft.getInstance();
         if(mc.player==null||mc.player.getId()!=shooter||id<=0)return false;
         var s=pending.remove(id);
+        if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("CONFIRM",id,"snapshot="+(s!=null)+" gun="+gun+" heldGun="+GeoItem.getId(mc.player.getMainHandItem())+" endpoint="+end+" firstPerson="+mc.options.getCameraType().isFirstPerson());
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] pairing id={} snapshotGun={} resultGun={} heldGun={} firstPerson={}",id,s==null?null:s.gun(),gun,GeoItem.getId(mc.player.getMainHandItem()),mc.options.getCameraType().isFirstPerson());
         if(!mc.options.getCameraType().isFirstPerson())return false;
         // Local first-person positive IDs must never fall back to a later gun pose.
-        NativeGunFx.shot(shooter,gun,true);
+        NativeGunFx.shot(shooter,gun,true,id);
         if(s==null||!NativeTrailGeometry.finite(end)||(s.gun()!=0&&s.gun()!=gun)
                 ||!(mc.player.getMainHandItem().getItem() instanceof NativeGunItem item))return true;
         if(GeoItem.getId(mc.player.getMainHandItem())!=gun)return true;
         NativeBulletTrails.snapshot(s.muzzle(),end,item.definition().trail());
         NativeGunFx.frozen(s,shooter,gun);
+        if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FX_QUEUED",id,"muzzle="+s.muzzle()+" direction="+s.barrelDirection()+" suppressed="+s.suppressed());
         lastConfirmed=id;
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] confirm id={} muzzle={} endpoint={}",id,s.muzzle(),end);
         return true;

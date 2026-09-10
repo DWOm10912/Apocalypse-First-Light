@@ -2,6 +2,10 @@
 
 ## Status: failed visual acceptance; baseline restored
 
+Historical V1 rollback record below. Current implementation is [Projection Compatibility V2](first_person_fx_projection_compat_v2.md): retains the original conversion and sanitizes first-person depth only. V2 visual acceptance is pending; V1's withdrawn projection-free approach remains withdrawn.
+
+For the next source-guided Shader OFF/ON investigation, use the opt-in [Native Gun FX Debug V1](native_gun_fx_debug_v1.md). This adds observation only, not another shader fix.
+
 The projection-free V1 experiment is withdrawn. User video `C:/Users/willi/Downloads/QQ20260909-154242-HD.mp4` reports missing muzzle flashes and severe leftward tracer displacement even with shaders OFF. The prior compile/numerical PASS did not establish runtime correctness. Shader compatibility is **UNRESOLVED**.
 
 ## Findings and failed approach
@@ -10,7 +14,7 @@ The original `NativeGunFx` used inverse world view, inverse world projection, cu
 
 The attempted `cameraRotation * viewAnchor` replacement removed first-person projection conversion without establishing equivalence with the actual rendered hand/world chain. Its 108 synthetic comparisons tested only the proposed algebra, not real renderer inputs or screen alignment. The exact remaining renderer-space discrepancy has not been proven by runtime matrix capture.
 
-## Current live code
+## Historical rollback checkpoint (before V2)
 
 Subsequent scoped change: [Timed muzzle flash](native_muzzle_flash_lifetime_v1.md) adds a 50 ms attached tail after the frozen first frame. The restored projection conversion is untouched; the exact-file baseline check below describes the rollback checkpoint, not the later timing change. Shader compatibility remains unresolved.
 
