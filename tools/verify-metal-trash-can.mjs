@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const readJson = path => JSON.parse(fs.readFileSync(path, 'utf8'));
+const source = readJson('src/main/blockbench/city_trash_can.bbmodel');
+const model = readJson('src/main/resources/assets/apocalypse_firstlight/models/block/metal_trash_can.json');
+const blockstate = readJson('src/main/resources/assets/apocalypse_firstlight/blockstates/metal_trash_can.json');
+const item = readJson('src/main/resources/assets/apocalypse_firstlight/models/item/metal_trash_can.json');
+const loot = readJson('src/main/resources/data/apocalypse_firstlight/loot_tables/blocks/metal_trash_can.json');
+const pickaxe = readJson('src/main/resources/data/minecraft/tags/blocks/mineable/pickaxe.json');
+const iron = readJson('src/main/resources/data/minecraft/tags/blocks/needs_iron_tool.json');
+const diamond = readJson('src/main/resources/data/minecraft/tags/blocks/needs_diamond_tool.json');
+const en = readJson('src/main/resources/assets/apocalypse_firstlight/lang/en_us.json');
+const zh = readJson('src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json');
+const blockJava = fs.readFileSync('src/main/java/com/antaurora/apofirstlight/registry/AflBlocks.java', 'utf8');
+const itemJava = fs.readFileSync('src/main/java/com/antaurora/apofirstlight/registry/AflItems.java', 'utf8');
+const tabJava = fs.readFileSync('src/main/java/com/antaurora/apofirstlight/registry/AflCreativeTabs.java', 'utf8');
+const implementation = fs.readFileSync('src/main/java/com/antaurora/apofirstlight/block/MetalTrashCanBlock.java', 'utf8');
+
+assert.equal(source.elements.length, 204);
+assert.equal(model.elements.length, 204);
+assert.equal(model.ambientocclusion, false);
+assert.equal(model.textures['0'], 'apocalypse_firstlight:block/city_trash_can');
+assert.equal(model.textures.particle, 'apocalypse_firstlight:block/city_trash_can');
+assert.equal(Math.max(...model.elements.map(element => element.to[1])), 17.18);
+assert.deepEqual(Object.keys(blockstate.variants), ['']);
+assert.equal(item.parent, 'apocalypse_firstlight:block/metal_trash_can');
+assert.equal(loot.pools.length, 1);
+assert.equal(loot.pools[0].entries.length, 1);
+assert.equal(loot.pools[0].entries[0].name, 'apocalypse_firstlight:metal_trash_can');
+assert(pickaxe.values.includes('apocalypse_firstlight:metal_trash_can'));
+assert(iron.values.includes('apocalypse_firstlight:metal_trash_can'));
+assert(!diamond.values.includes('apocalypse_firstlight:metal_trash_can'));
+assert.equal(en['block.apocalypse_firstlight.metal_trash_can'], 'Metal Trash Can');
+assert.equal(zh['block.apocalypse_firstlight.metal_trash_can'], '铁质垃圾桶');
+assert.match(blockJava, /METAL_TRASH_CAN = BLOCKS\.register\("metal_trash_can"/);
+assert.match(blockJava, /METAL_TRASH_CAN[\s\S]*?requiresCorrectToolForDrops\(\)[\s\S]*?noOcclusion\(\)/);
+assert.match(itemJava, /METAL_TRASH_CAN = ITEMS\.register\("metal_trash_can"/);
+assert.match(tabJava, /output\.accept\(AflItems\.METAL_TRASH_CAN\.get\(\)\)/);
+assert.doesNotMatch(implementation, /BlockEntity|Menu|Inventory|OPEN|LID_OPEN|FACING/);
+assert.match(implementation, /COLLISION_SHAPE/);
+assert.match(implementation, /OUTLINE_SHAPE/);
+
+console.log('PASS: metal_trash_can static registration/resources/mining/model contract verified.');

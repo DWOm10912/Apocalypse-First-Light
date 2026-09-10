@@ -176,6 +176,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> WATER_DISPENSER = ITEMS.register("water_dispenser",
             () -> new BlockItem(AflBlocks.WATER_DISPENSER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> METAL_TRASH_CAN = ITEMS.register("metal_trash_can",
+            () -> new BlockItem(AflBlocks.METAL_TRASH_CAN.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",

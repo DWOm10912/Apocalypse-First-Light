@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
+import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
@@ -155,6 +156,12 @@ public final class AflBlocks {
                     .noOcclusion()));
     public static final RegistryObject<Block> WATER_DISPENSER = BLOCKS.register("water_dispenser",
             () -> new WaterDispenserBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> METAL_TRASH_CAN = BLOCKS.register("metal_trash_can",
+            () -> new MetalTrashCanBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()

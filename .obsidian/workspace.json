@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 设计/方块/机器.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "机器"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 设计/方块/机器.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,28 +189,30 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-6413214612964422470.dat",
+    "build/reobfJar/mappings.tsrg",
+    "docs/04 - 注意事项 重要内容.md",
+    "build/resources/main/assets/apocalypse_firstlight/models/block/metal_trash_can.json",
+    "build/resources/main/data/apocalypse_firstlight/loot_tables/blocks/metal_trash_can.json",
+    "run/saves/新的世界/level8506070782467327551.dat",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/city_trash_can.png",
+    "build/asset_checks/city_trash_can/pre_align_1789068775404/city_trash_can.png",
+    "build/asset_checks/water_dispenser/trash-can-aligned.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/city_trash_can.png",
+    "docs/models/city_trash_can.md",
+    "build/asset_checks/water_dispenser/trash-can-interior.png",
+    "build/asset_checks/water_dispenser/trash-can-sealed.png",
+    "build/asset_checks/water_dispenser/trash-can-polished.png",
+    "build/asset_checks/water_dispenser/trash-can-first.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/water_dispenser.png",
     "docs/models/water_dispenser.md",
-    "build/asset_checks/water_dispenser/pre_nonoverlap/water_dispenser.png",
-    "build/asset_checks/water_dispenser/sealed_top_check.png",
-    "build/asset_checks/water_dispenser/nonoverlap_left.png",
-    "build/asset_checks/water_dispenser/nonoverlap_front.png",
-    "build/asset_checks/water_dispenser/pre_hollow/water_dispenser.png",
-    "build/asset_checks/water_dispenser/hollow_final.png",
     "docs/worldgen/modern_glass_tower_02_authoring.md",
     "docs/worldgen/office_cedar_06_authoring.md",
     "docs/dev/reference_map_importer_v1.md",
@@ -232,8 +234,6 @@
     "tools/afl_minecraft_mcp/node_modules/cors/README.md",
     "tools/afl_minecraft_mcp/node_modules/content-type/HISTORY.md",
     "tools/afl_minecraft_mcp/node_modules/cookie/SECURITY.md",
-    "tools/afl_minecraft_mcp/node_modules/cookie/README.md",
-    "tools/afl_minecraft_mcp/node_modules/safer-buffer/Readme.md",
-    "tools/afl_minecraft_mcp/node_modules/safer-buffer/Porting-Buffer.md"
+    "tools/afl_minecraft_mcp/node_modules/cookie/README.md"
   ]
 }
