@@ -56,9 +56,18 @@ public final class AuthoringBridgeClient {
         boolean ready=enabled&&mc.player!=null&&mc.level!=null&&mc.getSingleplayerServer()!=null&&!mc.getSingleplayerServer().isPublished();
         if(active!=null&&(!ready||active.server!=mc.getSingleplayerServer()||!active.player.equals(mc.player.getUUID()))){active.stop();active=null;}
         if(active==null&&ready)try{active=new AuthoringBridgeClient(mc);}catch(Exception ex){enabled=false;nextConfig=System.currentTimeMillis()+10000;LOG.error("Cannot start authoring bridge: {}",ex.getMessage());}
-        if(active!=null)active.visual=object("screen_width",mc.getWindow().getWidth(),"screen_height",mc.getWindow().getHeight(),"camera_type",mc.options.getCameraType().name(),"shader_state","UNKNOWN_NOT_QUERIED","screen_open",mc.screen!=null);
+        if(active!=null)active.visual=object("screen_width",mc.getWindow().getWidth(),"screen_height",mc.getWindow().getHeight(),"camera_type",mc.options.getCameraType().name(),"camera_is_player",mc.getCameraEntity()==mc.player,"shader_state","UNKNOWN_NOT_QUERIED","screen_open",mc.screen!=null);
     }
     private void stop(){closed=true;http.stop(0);network.shutdownNow();try{Files.deleteIfExists(discovery);}catch(Exception e){LOG.warn("Could not remove stale bridge discovery");}}
+    @SubscribeEvent public static void rendered(TickEvent.RenderTickEvent e){
+        if(e.phase!=TickEvent.Phase.END||active==null)return;var mc=Minecraft.getInstance();
+        if(mc.player!=null&&mc.level!=null&&mc.screen==null&&mc.getSingleplayerServer()==active.server
+                &&mc.options.getCameraType().isFirstPerson()&&mc.getCameraEntity()==mc.player){
+            // Observe the camera which actually rendered, not just the packet-updated player pose.
+            var camera=mc.gameRenderer.getMainCamera();var at=camera.getPosition();
+            active.router.camera.frames.observe(new CameraFrameGate.Pose(at.x,at.y-mc.player.getEyeHeight(),at.z,camera.getYRot(),camera.getXRot()));
+        }
+    }
     private void request(HttpExchange x){
         try {
             if(!x.getRequestMethod().equals("POST")||!x.getRequestURI().getPath().equals("/call")||x.getRequestHeaders().containsKey("Origin"))throw new IllegalArgumentException("REQUEST_REJECTED");
@@ -79,6 +88,11 @@ public final class AuthoringBridgeClient {
                     }
                     else {
                         var p=server.getPlayerList().getPlayer(player);if(p==null)throw new IllegalArgumentException("PLAYER_NOT_READY");
+                        if(tool.equals("camera_move")||tool.equals("camera_restore")){
+                            if(server.isPublished())throw new IllegalArgumentException("CAMERA_PRIVATE_WORLD_REQUIRED");
+                            if(!string(visual,"camera_type","").equals("FIRST_PERSON")||!bool(visual,"camera_is_player"))throw new IllegalArgumentException("CAMERA_FIRST_PERSON_REQUIRED");
+                            if(bool(visual,"screen_open"))throw new IllegalArgumentException("CAMERA_CLOSE_SCREEN_FIRST");
+                        }
                         if(!tool.equals("minecraft_status")&&!p.serverLevel().dimension().location().toString().equals(string(req,"dimension","")))throw new IllegalArgumentException("DIMENSION_MISMATCH: refresh minecraft_status");
                         if(tool.equals("minecraft_status")){
                             result=object("bridge_connected",true,"world_loaded",true,"minecraft_version",net.minecraft.SharedConstants.getCurrentVersion().getName(),"forge_version",net.minecraftforge.versions.forge.ForgeVersion.getVersion(),"afl_version",net.minecraftforge.fml.ModList.get().getModContainerById("apocalypse_firstlight").orElseThrow().getModInfo().getVersion().toString(),"world",server.getWorldData().getLevelName(),"world_session",epoch,"dimension",p.serverLevel().dimension().location().toString(),"player_position",new double[]{p.getX(),p.getY(),p.getZ()},"game_mode",p.gameMode.getGameModeForPlayer().getName(),"worldedit_detected",BridgeRouter.hasWorldEdit(),"worldedit_version",net.minecraftforge.fml.ModList.get().getModContainerById("worldedit").map(m->m.getModInfo().getVersion().toString()).orElse("ABSENT"),"authoring_enabled",BuildingAuthoringConfig.ENABLED.get(),"visual",visual.deepCopy());
@@ -97,6 +111,7 @@ public final class AuthoringBridgeClient {
     }
     private JsonObject capture() throws Exception {
         var mc=Minecraft.getInstance();if(mc.getSingleplayerServer()!=server||mc.level==null||closed)throw new IllegalArgumentException("WORLD_SESSION_CHANGED");
+        if(!router.camera.frames.ready())throw new IllegalArgumentException("CAMERA_NOT_SETTLED: wait for camera_status.client_frame_ready before capture");
         var dir=FMLPaths.GAMEDIR.get().resolve("afl_authoring_captures").resolve(epoch);Files.createDirectories(dir);var file=dir.resolve(UUID.randomUUID()+".png");
         try(var image=Screenshot.takeScreenshot(mc.getMainRenderTarget())){image.writeToFile(file);return object("path",file.toAbsolutePath().toString(),"width",image.getWidth(),"height",image.getHeight(),"source","minecraft_framebuffer","world_session",epoch);}
     }

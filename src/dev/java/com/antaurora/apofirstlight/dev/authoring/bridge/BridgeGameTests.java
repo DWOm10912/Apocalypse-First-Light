@@ -13,8 +13,10 @@ import static com.antaurora.apofirstlight.dev.authoring.bridge.BridgeJson.*;
 @GameTestHolder("apocalypse_firstlight") @PrefixGameTestTemplate(false)
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid="apocalypse_firstlight")
 public final class BridgeGameTests {
-    @GameTestGenerator public static Collection<TestFunction> cases(){return List.of(new TestFunction("bridge","afl_bridge_tests:core","afl_bridge_tests:empty",400,0L,true,BridgeGameTests::run));}
-    @net.minecraftforge.eventbus.api.SubscribeEvent public static void load(net.minecraftforge.event.level.LevelEvent.Load e){if(e.getLevel() instanceof ServerLevel l)l.getStructureManager().getOrCreate(new net.minecraft.resources.ResourceLocation("afl_bridge_tests","empty")).fillFromWorld(l,new BlockPos(0,300,0),new Vec3i(1,1,1),false,Blocks.STRUCTURE_VOID);}
+    @GameTestGenerator public static Collection<TestFunction> cases(){return List.of(
+        new TestFunction("bridge","afl_bridge_tests:core","afl_bridge_tests:empty",400,0L,true,BridgeGameTests::run),
+        new TestFunction("bridge_lighting","afl_bridge_light_tests:industrial_light","afl_bridge_light_tests:empty",400,0L,true,BridgeGameTests::runIndustrialLights));}
+    @net.minecraftforge.eventbus.api.SubscribeEvent public static void load(net.minecraftforge.event.level.LevelEvent.Load e){if(e.getLevel() instanceof ServerLevel l)for(var namespace:List.of("afl_bridge_tests","afl_bridge_light_tests"))l.getStructureManager().getOrCreate(new net.minecraft.resources.ResourceLocation(namespace,"empty")).fillFromWorld(l,new BlockPos(0,300,0),new Vec3i(1,1,1),false,Blocks.STRUCTURE_VOID);}
     interface Checked{void run()throws Exception;}
     static void reject(GameTestHelper h,Checked r,String message){try{r.run();throw new AssertionError("Expected rejection: "+message);}catch(AssertionError e){throw e;}catch(Exception expected){h.assertTrue(true,message);}}
     private static void run(GameTestHelper h){try{
@@ -28,6 +30,16 @@ public final class BridgeGameTests {
         ReferenceBridgeTests.run(h,router,p);
         router.call("authoring_cancel",object(),p);reject(h,()->router.call("we_undo",object(),p),"history unavailable after cancel");
         com.mojang.logging.LogUtils.getLogger().info("[AFL BRIDGE TEST] PASS WorldEdit API edits, history, conflicts, scope, slices, registry; screenshot/HTTP client acceptance separate");h.succeed();
+    }catch(Exception e){throw new RuntimeException(e);}finally{BuildingAuthoringConfig.ENABLED.set(false);}}
+    private static void runIndustrialLights(GameTestHelper h){try{
+        var level=h.getLevel();var p=net.minecraftforge.common.util.FakePlayerFactory.get(level,new GameProfile(UUID.randomUUID(),"bridge_light_test"));
+        p.setGameMode(net.minecraft.world.level.GameType.CREATIVE);p.setPos(0,200,0);BuildingAuthoringConfig.ENABLED.set(true);
+        for(int x=32;x<=64;x+=16)for(int z=0;z<=32;z+=16)level.getChunkAt(new BlockPos(x,200,z));
+        h.assertTrue(BridgeRouter.hasWorldEdit(),"industrial light integration regression requires actual WorldEdit");
+        var router=new BridgeRouter();router.call("authoring_create",object("building_id","mcp_light_test","width",16,"height",16,"depth",16),p);
+        var s=BuildingAuthoringCommands.active(p.createCommandSourceStack());
+        WithWorldEdit.industrialLights(h,router,p,s.origin);
+        router.call("authoring_cancel",object(),p);h.succeed();
     }catch(Exception e){throw new RuntimeException(e);}finally{BuildingAuthoringConfig.ENABLED.set(false);}}
     private static final class WithWorldEdit {
       static void run(GameTestHelper h,BridgeRouter router,net.minecraft.server.level.ServerPlayer p,BuildingAuthoringSession s,BlockPos o)throws Exception {
@@ -65,6 +77,58 @@ public final class BridgeGameTests {
         h.assertTrue(router.call("get_vertical_slice",object("axis","X","coordinate",o.getX()),p).getAsJsonArray("rows").size()==16,"vertical");
         router.call("inspect_facade",object("side","SOUTH"),p);
         router.call("authoring_clear",object(),p);h.assertTrue(level.getBlockState(o).isAir(),"clear");router.call("we_undo",object(),p);h.assertTrue(level.getBlockState(o).is(Blocks.STONE),"clear undo");
+      }
+
+      private static void industrialLights(GameTestHelper h,BridgeRouter router,net.minecraft.server.level.ServerPlayer p,BlockPos o)throws Exception {
+        var level=h.getLevel();
+        var light=com.antaurora.apofirstlight.registry.AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get();
+        var facing=com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock.FACING;
+        var directions=List.of(Direction.DOWN,Direction.NORTH,Direction.SOUTH,Direction.EAST,Direction.WEST);
+        var positions=List.of(o.offset(3,10,3),o.offset(7,10,3),o.offset(11,10,3),o.offset(3,10,8),o.offset(7,10,8));
+        var ops=new com.google.gson.JsonArray();
+        for(int i=0;i<directions.size();i++){
+          var pos=positions.get(i);var support=pos.relative(directions.get(i).getOpposite());
+          ops.add(object("min",xyz(support),"max",xyz(support),"block","minecraft:stone"));
+          ops.add(object("min",xyz(pos),"max",xyz(pos),"block","apocalypse_firstlight:industrial_utility_light[facing="+directions.get(i).getName()+"]"));
+        }
+        var batch=object();batch.add("operations",ops);var dry=batch.deepCopy();dry.addProperty("dry_run",true);
+        router.call("we_batch_set",dry,p);
+        for(var pos:positions)h.assertTrue(level.getBlockState(pos).isAir(),"industrial light preview must not write");
+        router.call("we_batch_set",batch,p);
+        for(int i=0;i<directions.size();i++){
+          var pos=positions.get(i);var state=level.getBlockState(pos);
+          h.assertTrue(state.is(light)&&state.getValue(facing)==directions.get(i),"industrial light exact facing "+directions.get(i));
+          h.assertTrue(state.canSurvive(level,pos)&&state.getLightEmission(level,pos)>0,"supported luminous fixture "+directions.get(i));
+        }
+        var first=positions.get(0);
+        // Existing fixtures must also pass source-region validation, not only destination parsing.
+        router.call("we_copy",object("min",xyz(first),"max",xyz(first)),p);
+        router.call("we_replace",object("min",xyz(first),"max",xyz(first),"from","apocalypse_firstlight:industrial_utility_light[facing=down]","block","minecraft:air"),p);
+        h.assertTrue(level.getBlockState(first).isAir(),"replace existing industrial light");
+        router.call("we_undo",object(),p);h.assertTrue(level.getBlockState(first).is(light),"undo fixture replacement");
+        router.call("we_redo",object(),p);h.assertTrue(level.getBlockState(first).isAir(),"redo fixture replacement");
+        router.call("we_undo",object(),p);
+        router.call("we_undo",object(),p);
+        for(int i=0;i<directions.size();i++){
+          h.assertTrue(level.getBlockState(positions.get(i)).isAir(),"fixture batch undo");
+          h.assertTrue(level.getBlockState(positions.get(i).relative(directions.get(i).getOpposite())).isAir(),"support batch undo");
+        }
+        // The exact invisible light and the other safety classes must remain forbidden.
+        var probe=o.offset(12,10,12);
+        for(var blocked:List.of("minecraft:light","minecraft:command_block","minecraft:structure_block","minecraft:structure_void","minecraft:jigsaw","minecraft:barrier","minecraft:tnt","minecraft:fire","minecraft:nether_portal","minecraft:piston","minecraft:redstone_block","minecraft:sculk","minecraft:tripwire","minecraft:chest","minecraft:water","minecraft:sand","minecraft:oak_slab[waterlogged=true]")){
+          expectUnsafe(h,()->router.call("we_set",object("min",xyz(probe),"max",xyz(probe),"block",blocked,"dry_run",true),p),blocked);
+        }
+        level.setBlock(probe,Blocks.LIGHT.defaultBlockState(),2);
+        try{expectUnsafe(h,()->router.call("we_set",object("min",xyz(probe),"max",xyz(probe),"block","minecraft:stone","dry_run",true),p),"existing invisible light");}
+        finally{level.setBlock(probe,Blocks.AIR.defaultBlockState(),2);}
+        com.mojang.logging.LogUtils.getLogger().info("[AFL BRIDGE TEST] PASS industrial light: five facings, supported emission, dry run, source copy/replace, undo/redo; invisible light and 16 other unsafe states rejected");
+      }
+
+      private static void expectUnsafe(GameTestHelper h,Checked action,String label)throws Exception {
+        try{action.run();throw new AssertionError("Expected unsafe-block rejection: "+label);}
+        // WorldEdit's configured denylist can reject hazards (e.g. TNT) before AFL's state check.
+        catch(com.sk89q.worldedit.extension.input.DisallowedUsageException expected){h.assertTrue(true,"WorldEdit safety rejection: "+label);}
+        catch(IllegalArgumentException expected){h.assertTrue(expected.getMessage().contains("UNSAFE_OR_DYNAMIC_BLOCK"),"safety guard, not unrelated failure: "+label+" / "+expected.getMessage());}
       }
     }
 }

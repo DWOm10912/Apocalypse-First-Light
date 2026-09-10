@@ -4,7 +4,7 @@
 
 Development asset production only: reference → build in a reserved development plot → user reviews → iterate draft → explicit user approval → validate/export standard Minecraft Structure NBT plus JSON. **Export does not register a city spawn pool.**
 
-Implemented: gated authoring commands, bounded session reservation, finite particle guides, validation/export, explicit resume, and source import script. No runtime AI, city/road/lot/zoning generator, loot system, damage pass, new city building, or Rural migration. Existing Rural placement/generation is untouched.
+Implemented: gated authoring commands, bounded session reservation, finite particle guides, validation/export, explicit resume, and source import script. The separately authored [office_midrise_01 glass tower](office_midrise_01_authoring.md#current-formal-asset--2026-09-10) is now exported/imported and four-rotation tested as a source asset, **not registered in a city pool**. No runtime AI, city/road/lot/zoning generator, loot system, damage pass or Rural migration. Existing Rural placement/generation is untouched.
 
 Development integration: [Minecraft Authoring MCP Bridge](../dev/minecraft_authoring_mcp_v1.md) provides optional loopback inspection and WorldEdit edits locked to these reservations; [Reference Map Importer](../dev/reference_map_importer_v1.md) uses a separate user-selected reference area and may not overlap an active draft. Neither tool exports automatically. The common framework still has no WorldEdit dependency. MCP `authoring_clear` uses reversible WorldEdit history; manual `/afl_author clear` below remains the token-confirmed, non-undoable framework operation.
 
@@ -47,7 +47,7 @@ Rotation of SOUTH: NONE→SOUTH, CLOCKWISE_90→WEST, CLOCKWISE_180→NORTH, COU
 
 ## Commands
 
-Optional development-only asset scaffold: [office_midrise_01 PASS1](office_midrise_01_authoring.md) adds `/afl_author build office_midrise_01` in non-production runClient only. It requires the enabled framework and a matching empty active plot, builds only the review Draft, and never validates/exports/registers a pool. The builder is excluded from the release jar.
+Optional development-only asset scaffold: [legacy office_midrise_01 PASS1](office_midrise_01_authoring.md#legacy-six-floor-draft-checkpoint-preserved) adds `/afl_author build office_midrise_01` in non-production runClient only. It requires the enabled framework and a matching empty active plot, builds only the old six-floor review draft, and never validates/exports/registers a pool. The builder is excluded from the release jar. It does **not** reconstruct the separately authored glass tower now exported under the same formal ID; do not run its build/upgrade commands against that tower.
 
 All commands start with `/afl_author`:
 
@@ -80,21 +80,21 @@ Export `<gameDir>/afl_authoring_exports/<id>.nbt` and `<id>.json` on the server 
 {
   "id": "office_midrise_01",
   "structure": "apocalypse_firstlight:office_midrise_01",
-  "category": "MIDRISE_OFFICE",
-  "footprint": {"width": 28, "depth": 34},
-  "height": 48,
+  "category": "HIGHRISE_OFFICE",
+  "footprint": {"width": 35, "depth": 39},
+  "height": 86,
   "front": "SOUTH",
   "surface_offset_y": 1,
   "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
   "road_facing": true,
   "city_zones": ["CORE", "MIXED"],
-  "damage_compatible": true,
+  "damage_compatible": false,
   "loot_ready": false,
   "authoring_version": 1
 }
 ```
 
-This is a schema example, **not an exported/implemented office asset**. V1 always advertises all four rotations; actual architectural/front checks remain part of asset acceptance.
+This example matches the exported glass-tower asset `office_midrise_01` (2026-09-10), not its historical six-floor draft. Its four actual placement/rotation checks are recorded in the asset document. V1 always advertises all four rotations even before testing; other assets still require their own architectural/front and block-state checks. Metadata presence alone is not pool registration.
 
 Categories (enum): HIGHRISE_OFFICE, HIGHRISE_APARTMENT, MIDRISE_OFFICE, MIDRISE_APARTMENT, COMMERCIAL, RESIDENTIAL, INDUSTRIAL, WAREHOUSE, UTILITY, FILLER, SPECIAL_POI.
 
@@ -109,6 +109,8 @@ Checks: legal ID and complete typed metadata, bounded dimensions, SOUTH contract
 Container validation rejects serialized LootTable tags, serialized item stacks, and nonempty Forge item-handler slots. Empty vanilla chest/barrel BE data is retained. Arbitrary third-party private storage formats are not guaranteed detectable; do not author with unreviewed custom storage. No temporary dungeon/village/AFL loot. Prefer decorative cabinets/shelves over misleading containers. `loot_ready=false` is fixed.
 
 No generated debug block exists to leak into capture. Manually placed authoring placeholders must be removed; concrete/wool intended as architecture are allowed, so validation cannot infer artistic intent. Inspection still required for door/window traversal, stair widths, headroom, collision, floor continuity and roof completeness; no automatic aesthetic/structural proof.
+
+Validation also does not prove attachment survival after placement. The `office_midrise_01` first test exposed unsupported sink buttons that passed capture validation; corrected backing walls and a fresh export were verified in all four live rotations. Compare actual placed states after normal neighbor updates, not only serialized NBT or transform math.
 
 Exports are **INTACT BASE STRUCTURE**. No random damage/loot processing. Future FOOD/MEDICAL/TOOL/INDUSTRIAL/WEAPON/DOCUMENT/GENERAL loot markers and deterministic damage pass are documentation-only extension concepts, not live features. Hero damaged variants would be distinct explicitly authored IDs later.
 
@@ -139,7 +141,7 @@ No overwrite unless `--overwrite`; stages/backs up both files for exception roll
 ## Single-building prompt template
 
 ```text
-BUILDING ID: office_midrise_01
+BUILDING ID: office_example_01
 CATEGORY: MIDRISE_OFFICE
 ZONE: CORE / MIXED
 TARGET FOOTPRINT: 28 x 34
@@ -161,10 +163,10 @@ Export does not authorize Small City Building Pool Integration.
 
 ## Example workflow
 
-In a backed-up empty, loaded development area, enable config and enter Creative:
+Illustrative new asset only (not the exported tower or legacy builder): in a backed-up empty, loaded development area, enable config and enter Creative:
 
 ```text
-/afl_author create office_midrise_01 28 34 48 1
+/afl_author create office_example_01 28 34 48 1
 /afl_author configure MIDRISE_OFFICE "CORE,MIXED" true true
 /afl_author info
 /afl_author bounds
@@ -186,6 +188,8 @@ Production: `src/main/java/com/antaurora/apofirstlight/authoring/` (BuildingMeta
 
 Tests: `src/dev/java/com/antaurora/apofirstlight/dev/BuildingAuthoringGameTests.java`, `src/dev/authoring-gametest.init.gradle`, `scripts/tests/test_import_authored_building.py`. Dev test class is excluded from release jar by existing `dev/**` rule.
 
+Do not run Gradle compilation, clean, resource processing or deployment while a Minecraft client is loading this checkout's build outputs. The standalone Python importer tests use temporary directories and can run without touching those loaded outputs.
+
 ```text
 gradlew.bat -I src/dev/authoring-gametest.init.gradle runGameTestServer --offline -PaflWithoutTacz
 python scripts/tests/test_import_authored_building.py
@@ -194,6 +198,8 @@ gradlew.bat build --offline
 
 Test fixture `authoring_test_box`: 16×20×12, foundation, wall, SOUTH door, glass window, second floor, empty barrel. Only in isolated generated GameTest world/export directory; never a shipped building/pool asset.
 
-Verification: final headless workflow PASS, 1/1 required GameTest (`build/authoring-test-final.log`, 1m22s), covering commands, permission/default-off, token clear/outside sentinel, enum metadata, dirty audit, debug/loot/item/entity rejection, export/no-overwrite, manager reload, all rotations/front/surface, resume, and particle submission without NBT contamination. Initial test exposed comma parsing in zones; corrected to a quoted string and reran successfully. Import script 6/6 tests PASS and real exported NBT import to temporary project PASS. No graphical runClient test; particle appearance/player navigation remain NOT_TESTED. No agent claim of visual approval of a real building.
+Historical framework verification: final headless workflow PASS, 1/1 required GameTest (`build/authoring-test-final.log`, 1m22s), covering commands, permission/default-off, token clear/outside sentinel, enum metadata, dirty audit, debug/loot/item/entity rejection, export/no-overwrite, manager reload, all rotations/front/surface, resume, and particle submission without NBT contamination. Initial test exposed comma parsing in zones; corrected to a quoted string and reran successfully. Import script 6/6 tests PASS and real exported NBT import to temporary project PASS. That framework checkpoint did not include graphical runClient testing or visual approval of a real building.
 
-Release build: PASS, `gradlew.bat build --offline` (`build/authoring-build.log`), 12 seconds. Existing projection math regression also PASS (9,078 cases). Artifact `build/libs/apocalypse_firstlight-1.0.0.jar`. No deployment to the user's launcher and no source import of the test fixture.
+Later asset verification (2026-09-10): `office_midrise_01` source capture/validate/export/import, all four live placements with world-state readback and sampled screenshots PASS; importer unit tests rerun **6/6 PASS**. See the asset acceptance record for limits and cleanup. This does not retroactively verify particle-guide appearance, exhaustive player navigation or named-shader behavior.
+
+Historical framework release build: PASS, `gradlew.bat build --offline` (`build/authoring-build.log`), 12 seconds. Existing projection math regression also PASS (9,078 cases). Artifact `build/libs/apocalypse_firstlight-1.0.0.jar`. No deployment to the user's launcher and no source import of the test fixture. No new Gradle build/deployment was run for the 2026-09-10 tower export while the client was running; formal source resources are not a claim of a newly packaged jar.

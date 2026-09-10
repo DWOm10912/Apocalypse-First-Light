@@ -34,7 +34,9 @@ final class WorldEditAdapter {
     static CuboidRegion region(ServerPlayer p,BridgeBounds b){return new CuboidRegion(ForgeAdapter.adapt(p.serverLevel()),ForgeAdapter.adapt(b.min()),ForgeAdapter.adapt(b.max()));}
     private static void safeState(net.minecraft.world.level.block.state.BlockState s){
         String id=net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).toString();
-        if(s.hasBlockEntity()||!s.getFluidState().isEmpty()||s.getBlock() instanceof FallingBlock||id.matches(".*(command_block|structure_block|structure_void|jigsaw|barrier|light$|tnt|fire$|portal|piston|redstone|sculk|tripwire).*$"))throw new IllegalArgumentException("UNSAFE_OR_DYNAMIC_BLOCK: "+id);
+        // Reject the invisible Vanilla editor block, not ordinary fixtures ending in "light".
+        // The BE/fluid/physics and other hazardous-state checks still apply to every fixture.
+        if(s.hasBlockEntity()||!s.getFluidState().isEmpty()||s.getBlock() instanceof FallingBlock||s.is(Blocks.LIGHT)||id.matches(".*(command_block|structure_block|structure_void|jigsaw|barrier|tnt|fire$|portal|piston|redstone|sculk|tripwire).*$"))throw new IllegalArgumentException("UNSAFE_OR_DYNAMIC_BLOCK: "+id);
     }
     private static BaseBlock block(ServerPlayer p,String input) throws Exception {
         // V1: one exact blockstate, no NBT, clipboard patterns, scripts or arbitrary WE expressions.

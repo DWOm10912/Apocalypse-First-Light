@@ -1,0 +1,26 @@
+{
+  "id": "office_midrise_01",
+  "structure": "apocalypse_firstlight:office_midrise_01",
+  "category": "HIGHRISE_OFFICE",
+  "footprint": {
+    "width": 35,
+    "depth": 39
+  },
+  "height": 86,
+  "front": "SOUTH",
+  "surface_offset_y": 1,
+  "allowed_rotations": [
+    "NONE",
+    "CLOCKWISE_90",
+    "CLOCKWISE_180",
+    "COUNTERCLOCKWISE_90"
+  ],
+  "road_facing": true,
+  "city_zones": [
+    "CORE",
+    "MIXED"
+  ],
+  "damage_compatible": false,
+  "loot_ready": false,
+  "authoring_version": 1
+}

@@ -15,3 +15,7 @@ Configure `codex.mcp.example.toml` paths for this computer and merge only its MC
 `--reference-source <exact ZIP or world-folder>` can be repeated; only these explicit sources become numbered importer inputs. `--python <executable>` selects Python 3.10+ (offline importer is standard-library only). Reference mappings are reviewed file edits, not arbitrary paths supplied by MCP.
 
 Inspectors return bounded JSON; screenshots return absolute PNG paths readable with the agent's local image viewer. Offline scan/extract may take up to 120 seconds; the host tool timeout is 150 seconds. Game-thread calls are separately bounded and are never automatically retried.
+
+Restricted inspection: `camera_move` (absolute feet position + yaw/pitch, optional dry run), `camera_status`, `camera_restore`. Requires a private development world, active authoring plot, Creative first person and closed menus. Only loaded safe viewpoints near that plot are accepted. Movement enables flight and saves the first return point/flying flag. Wait for `client_frame_ready` before capture; restore before cancelling the plot. There is no arbitrary command or gamemode interface. See the full documentation for exact bounds, lifecycle and verification limits.
+
+Never compile/clean/process resources/redeploy this checkout while Minecraft is loading its classes or resources. Fully exit the client first.
