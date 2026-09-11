@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
-                "mode": "preview",
+                "file": "docs/03 - 制作清单.md",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "03 - 制作清单"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/03 - 制作清单.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -191,32 +191,34 @@
   "lastOpenFiles": [
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_0.xwmc.outdated",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-16746500274683702488.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_office_desk.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_office_chair.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/commercial_dumpster.png",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
+    "docs/04 - 注意事项 重要内容.md",
+    "docs/03 - 制作清单.md",
+    "docs/README.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/office_keyboard.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/office_mouse.png",
+    "docs/models/office_computer_station.md",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_world_rotation.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_rotation_fixed_front.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_rotation_fixed_02.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_rotation_fixed.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_front_top.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_flipped.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview_loaded.png",
+    "build/asset_checks/water_dispenser/office_desk_input_preview.png",
     "docs/models/modern_lcd_monitor.md",
-    "build/asset_checks/water_dispenser/monitor-desk-preview.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor.png",
-    "build/asset_checks/water_dispenser/monitor-fixed-back.png",
     "docs/models/modern_office_chair.md",
     "docs/models/modern_office_desk.md",
-    "docs/README.md",
     "docs/01 - 设计/方块/机器.md",
     "docs/models/commercial_dumpster.md",
-    "docs/04 - 注意事项 重要内容.md",
     "docs/models/city_trash_can.md",
     "docs/models/water_dispenser.md",
     "docs/worldgen/modern_glass_tower_02_authoring.md",
@@ -232,8 +234,6 @@
     "tools/afl_minecraft_mcp/node_modules/fresh/HISTORY.md",
     "tools/afl_minecraft_mcp/node_modules/eventsource/README.md",
     "tools/afl_minecraft_mcp/node_modules/iconv-lite/README.md",
-    "tools/afl_minecraft_mcp/node_modules/cross-spawn/README.md",
-    "tools/afl_minecraft_mcp/node_modules/fast-uri/README.md",
-    "tools/afl_minecraft_mcp/node_modules/body-parser/node_modules/content-type/README.md"
+    "tools/afl_minecraft_mcp/node_modules/cross-spawn/README.md"
   ]
 }

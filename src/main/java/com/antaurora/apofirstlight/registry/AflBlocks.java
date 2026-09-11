@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeChairBlock;
 import com.antaurora.apofirstlight.block.ModernLcdMonitorBlock;
+import com.antaurora.apofirstlight.block.OfficeDesktopDecorationBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
@@ -194,6 +195,21 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    public static final RegistryObject<Block> OFFICE_COMPUTER_STATION = BLOCKS.register("office_computer_station",
+            () -> new OfficeDesktopDecorationBlock(BlockBehaviour.Properties.of()
+                    .strength(0.7F, 1.5F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion(), OfficeDesktopDecorationBlock.computerStationShape()));
+    public static final RegistryObject<Block> OFFICE_KEYBOARD = BLOCKS.register("office_keyboard",
+            () -> new OfficeDesktopDecorationBlock(BlockBehaviour.Properties.of()
+                    .strength(0.3F, 0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion(), OfficeDesktopDecorationBlock.keyboardShape()));
+    public static final RegistryObject<Block> OFFICE_MOUSE = BLOCKS.register("office_mouse",
+            () -> new OfficeDesktopDecorationBlock(BlockBehaviour.Properties.of()
+                    .strength(0.3F, 0.8F)
+                    .sound(SoundType.METAL)
+                    .noOcclusion(), OfficeDesktopDecorationBlock.mouseShape()));
     public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.GLASS)
                     .strength(1.5F, 3.0F)

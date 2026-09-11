@@ -1,0 +1,925 @@
+{
+  "credit": "Apocalypse: First Light — office_mouse",
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "texture_size": [
+    32,
+    32
+  ],
+  "textures": {
+    "mouse": "apocalypse_firstlight:block/office_mouse",
+    "particle": "apocalypse_firstlight:block/office_mouse"
+  },
+  "elements": [
+    {
+      "name": "mouse_bottom_plate",
+      "from": [
+        7.15,
+        0,
+        6.55
+      ],
+      "to": [
+        8.85,
+        0.15,
+        9.65
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            8.5,
+            7.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_lower_shell_core",
+      "from": [
+        7.05,
+        0.15,
+        6.65
+      ],
+      "to": [
+        8.95,
+        0.55,
+        9.35
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_front_lower_nose",
+      "from": [
+        7.3,
+        0.15,
+        9.35
+      ],
+      "to": [
+        8.7,
+        0.45,
+        9.95
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_left_side_shell",
+      "from": [
+        8.95,
+        0.23,
+        6.85
+      ],
+      "to": [
+        9.05,
+        0.55,
+        9.15
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_right_side_shell",
+      "from": [
+        6.95,
+        0.23,
+        6.85
+      ],
+      "to": [
+        7.05,
+        0.55,
+        9.15
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_front_top_deck",
+      "from": [
+        7.15,
+        0.55,
+        8.18
+      ],
+      "to": [
+        8.85,
+        0.72,
+        9.7
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_rear_hump",
+      "from": [
+        7.08,
+        0.55,
+        6.9
+      ],
+      "to": [
+        8.92,
+        0.95,
+        8.18
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_rear_taper_cap",
+      "from": [
+        7.22,
+        0.55,
+        6.55
+      ],
+      "to": [
+        8.78,
+        0.8,
+        6.9
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            0.5,
+            0.5,
+            7.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_left_click_surface",
+      "from": [
+        8.22,
+        0.72,
+        8.3
+      ],
+      "to": [
+        8.82,
+        0.85,
+        9.7
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_left_click_front",
+      "from": [
+        8.22,
+        0.45,
+        9.7
+      ],
+      "to": [
+        8.72,
+        0.72,
+        9.95
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_right_click_surface",
+      "from": [
+        7.18,
+        0.72,
+        8.3
+      ],
+      "to": [
+        7.78,
+        0.85,
+        9.7
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_right_click_front",
+      "from": [
+        7.28,
+        0.45,
+        9.7
+      ],
+      "to": [
+        7.78,
+        0.72,
+        9.95
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            0.5,
+            15.5,
+            7.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    },
+    {
+      "name": "mouse_scroll_wheel_center",
+      "from": [
+        7.86,
+        0.72,
+        8.55
+      ],
+      "to": [
+        8.14,
+        1,
+        9.08
+      ],
+      "shade": true,
+      "faces": {
+        "south": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "west": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "north": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "east": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "up": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        },
+        "down": {
+          "uv": [
+            8.5,
+            8.5,
+            15.5,
+            15.5
+          ],
+          "texture": "#mouse"
+        }
+      }
+    }
+  ]
+}

@@ -19,12 +19,13 @@ const faceAxes = {
     down: [1, 0, 0, 1, 2, -1]
 };
 
-function readSource(id, expectedCubes) {
+function readSource(id, expectedCubes, expectedResolution = 128) {
     const source = JSON.parse(fs.readFileSync(path.join(sourceRoot, `${id}.bbmodel`), 'utf8'));
     assert.equal(source.meta?.model_format, 'java_block', `${id}: expected java_block source`);
     assert.equal(source.elements?.length, expectedCubes, `${id}: approved cube count changed`);
     assert.equal(source.textures?.length, 1, `${id}: expected one embedded texture`);
-    assert.deepEqual(source.resolution, { width: 128, height: 128 }, `${id}: expected 128x128 texture`);
+    assert.deepEqual(source.resolution, { width: expectedResolution, height: expectedResolution },
+        `${id}: expected ${expectedResolution}x${expectedResolution} texture`);
     const embedded = source.textures[0];
     for (const element of source.elements) {
         for (const [faceName, face] of Object.entries(element.faces ?? {})) {
@@ -33,6 +34,36 @@ function readSource(id, expectedCubes) {
         }
     }
     return source;
+}
+
+function transformedElement(source, sourceElement, {
+    namePrefix = '', texture = '#0', xOffset = 0, yOffset = 0, zOffset = 0,
+    mirrorX = false, rotateY180 = false
+} = {}) {
+    const element = runtimeElement(source, sourceElement, { yOffset });
+    if (mirrorX || rotateY180) {
+        assert(!element.rotation, `${source.name}: transformed element cannot retain vanilla rotation: ${element.name}`);
+    }
+
+    let [fromX, fromZ, toX, toZ] = [element.from[0], element.from[2], element.to[0], element.to[2]];
+    if (mirrorX || rotateY180) [fromX, toX] = [16 - toX, 16 - fromX];
+    if (rotateY180) [fromZ, toZ] = [16 - toZ, 16 - fromZ];
+    element.from[0] = clean(fromX + xOffset);
+    element.to[0] = clean(toX + xOffset);
+    element.from[2] = clean(fromZ + zOffset);
+    element.to[2] = clean(toZ + zOffset);
+
+    const remapDirection = direction => {
+        if (rotateY180) return ({ north: 'south', south: 'north', east: 'west', west: 'east' })[direction] ?? direction;
+        if (mirrorX) return ({ east: 'west', west: 'east' })[direction] ?? direction;
+        return direction;
+    };
+    element.faces = Object.fromEntries(Object.entries(element.faces).map(([direction, face]) => [
+        remapDirection(direction),
+        { ...face, texture }
+    ]));
+    element.name = `${namePrefix}${element.name}`;
+    return element;
 }
 
 function runtimeElement(source, element, { stripRotation = false, yOffset = 0 } = {}) {
@@ -165,6 +196,8 @@ function facingVariants(modelFor, extraProperties = [{}]) {
 const desk = readSource('modern_office_desk', 145);
 const chair = readSource('modern_office_chair', 202);
 const monitor = readSource('modern_lcd_monitor', 110);
+const keyboard = readSource('office_keyboard', 34, 64);
+const mouse = readSource('office_mouse', 13, 32);
 const deskParts = splitDesk(desk);
 
 const outputs = new Map();
@@ -262,6 +295,129 @@ outputs.set(path.join(assetRoot, 'models/item/modern_lcd_monitor.json'), {
     }
 });
 
+const stationElements = [
+    ...monitor.elements.filter(element => element.export !== false).map(element =>
+        transformedElement(monitor, element, {
+            namePrefix: 'monitor_', texture: '#monitor', zOffset: 3.2
+        })),
+    ...keyboard.elements.filter(element => element.export !== false).map(element =>
+        transformedElement(keyboard, element, {
+            namePrefix: 'keyboard_', texture: '#keyboard', xOffset: 1.2, zOffset: -1.9, mirrorX: true
+        })),
+    ...mouse.elements.filter(element => element.export !== false).map(element =>
+        transformedElement(mouse, element, {
+            namePrefix: 'mouse_', texture: '#mouse', xOffset: -6.7, zOffset: -2, rotateY180: true
+        }))
+];
+const loweredStationElements = stationElements.map(element => ({
+    ...structuredClone(element),
+    from: element.from.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0))),
+    to: element.to.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0))),
+    ...(element.rotation ? {
+        rotation: {
+            ...element.rotation,
+            origin: element.rotation.origin.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0)))
+        }
+    } : {})
+}));
+const stationTextures = {
+    monitor: 'apocalypse_firstlight:block/modern_lcd_monitor',
+    keyboard: 'apocalypse_firstlight:block/office_keyboard',
+    mouse: 'apocalypse_firstlight:block/office_mouse',
+    particle: 'apocalypse_firstlight:block/modern_lcd_monitor'
+};
+outputs.set(path.join(assetRoot, 'models/block/office_computer_station.json'),
+    blockModel('office_computer_station', stationElements, { textures: stationTextures }));
+outputs.set(path.join(assetRoot, 'models/block/office_computer_station_lowered.json'),
+    blockModel('office_computer_station', loweredStationElements, { textures: stationTextures }));
+outputs.set(path.join(assetRoot, 'blockstates/office_computer_station.json'), facingVariants(
+    properties => `apocalypse_firstlight:block/office_computer_station${properties.lowered === 'true' ? '_lowered' : ''}`,
+    [{ lowered: 'false' }, { lowered: 'true' }]
+));
+outputs.set(path.join(assetRoot, 'models/item/office_computer_station.json'), {
+    parent: 'apocalypse_firstlight:block/office_computer_station',
+    gui_light: 'side',
+    display: {
+        thirdperson_righthand: { rotation: [75, 45, 0], translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
+        thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
+        firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
+        firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
+        gui: { rotation: [25, 135, 0], translation: [0, 0, 0], scale: [0.72, 0.72, 0.72] },
+        ground: { translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
+        fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [0.7, 0.7, 0.7] }
+    }
+});
+
+const keyboardElements = keyboard.elements.filter(element => element.export !== false).map(element =>
+    transformedElement(keyboard, element, {
+        namePrefix: 'keyboard_', texture: '#keyboard', mirrorX: true
+    }));
+const loweredKeyboardElements = keyboardElements.map(element => ({
+    ...structuredClone(element),
+    from: element.from.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0))),
+    to: element.to.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0)))
+}));
+const keyboardTextures = {
+    keyboard: 'apocalypse_firstlight:block/office_keyboard',
+    particle: 'apocalypse_firstlight:block/office_keyboard'
+};
+outputs.set(path.join(assetRoot, 'models/block/office_keyboard.json'),
+    blockModel('office_keyboard', keyboardElements, { textures: keyboardTextures, texture_size: [64, 64] }));
+outputs.set(path.join(assetRoot, 'models/block/office_keyboard_lowered.json'),
+    blockModel('office_keyboard', loweredKeyboardElements, { textures: keyboardTextures, texture_size: [64, 64] }));
+outputs.set(path.join(assetRoot, 'blockstates/office_keyboard.json'), facingVariants(
+    properties => `apocalypse_firstlight:block/office_keyboard${properties.lowered === 'true' ? '_lowered' : ''}`,
+    [{ lowered: 'false' }, { lowered: 'true' }]
+));
+outputs.set(path.join(assetRoot, 'models/item/office_keyboard.json'), {
+    ...blockModel('office_keyboard', keyboardElements, { textures: keyboardTextures, texture_size: [64, 64] }),
+    gui_light: 'side',
+    display: {
+        thirdperson_righthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.8, 0.8, 0.8] },
+        thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.8, 0.8, 0.8] },
+        firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: [0.9, 0.9, 0.9] },
+        firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: [0.9, 0.9, 0.9] },
+        gui: { rotation: [30, 135, 0], translation: [0, 3.5, 0], scale: [0.95, 0.95, 0.95] },
+        ground: { translation: [0, 2, 0], scale: [0.8, 0.8, 0.8] },
+        fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [0.9, 0.9, 0.9] }
+    }
+});
+
+const mouseElements = mouse.elements.filter(element => element.export !== false).map(element =>
+    transformedElement(mouse, element, {
+        namePrefix: 'mouse_', texture: '#mouse', rotateY180: true
+    }));
+const loweredMouseElements = mouseElements.map(element => ({
+    ...structuredClone(element),
+    from: element.from.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0))),
+    to: element.to.map((value, axis) => clean(value + (axis === 1 ? -2.5 : 0)))
+}));
+const mouseTextures = {
+    mouse: 'apocalypse_firstlight:block/office_mouse',
+    particle: 'apocalypse_firstlight:block/office_mouse'
+};
+outputs.set(path.join(assetRoot, 'models/block/office_mouse.json'),
+    blockModel('office_mouse', mouseElements, { textures: mouseTextures, texture_size: [32, 32] }));
+outputs.set(path.join(assetRoot, 'models/block/office_mouse_lowered.json'),
+    blockModel('office_mouse', loweredMouseElements, { textures: mouseTextures, texture_size: [32, 32] }));
+outputs.set(path.join(assetRoot, 'blockstates/office_mouse.json'), facingVariants(
+    properties => `apocalypse_firstlight:block/office_mouse${properties.lowered === 'true' ? '_lowered' : ''}`,
+    [{ lowered: 'false' }, { lowered: 'true' }]
+));
+outputs.set(path.join(assetRoot, 'models/item/office_mouse.json'), {
+    ...blockModel('office_mouse', mouseElements, { textures: mouseTextures, texture_size: [32, 32] }),
+    gui_light: 'side',
+    display: {
+        thirdperson_righthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [1.4, 1.4, 1.4] },
+        thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [1.4, 1.4, 1.4] },
+        firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: [1.6, 1.6, 1.6] },
+        firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: [1.6, 1.6, 1.6] },
+        gui: { rotation: [25, 135, 0], translation: [0, 3.5, 0], scale: [1.8, 1.8, 1.8] },
+        ground: { translation: [0, 2, 0], scale: [1.3, 1.3, 1.3] },
+        fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [1.5, 1.5, 1.5] }
+    }
+});
+
 for (const [outputPath, value] of outputs) {
     const encoded = Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
     if (checkOnly) {
@@ -278,11 +434,33 @@ assert.equal(deskParts.left.length + deskParts.center.length + deskParts.right.l
 assert.equal(loweredMonitorElements.every((element, index) =>
     near(element.from[1], monitorElements[index].from[1] - 2.5)
     && near(element.to[1], monitorElements[index].to[1] - 2.5)), true);
+const keyboardMain = stationElements.find(element => element.name === 'keyboard_main_key_recess');
+const keyboardNumpad = stationElements.find(element => element.name === 'keyboard_numpad_recess');
+assert(keyboardNumpad.to[0] < keyboardMain.from[0], 'Station keyboard numpad must be on the NORTH user\'s right');
+const stationMouseFront = stationElements.find(element => element.name === 'mouse_front_top_deck');
+const stationMouseRear = stationElements.find(element => element.name === 'mouse_rear_hump');
+assert(stationMouseFront.from[2] > stationMouseRear.from[2], 'Station mouse nose must point toward the monitor');
+assert(Math.max(...stationElements.filter(element => element.name.startsWith('mouse_')).map(element => element.to[0])) <= 2.35,
+    'Station mouse must remain on the NORTH user\'s right');
+assert(Math.min(...stationElements.filter(element => element.name.startsWith('keyboard_')).map(element => element.from[0])) >= 2.9,
+    'Station keyboard must leave room for the embedded mouse');
+const mouseFront = mouseElements.find(element => element.name === 'mouse_front_top_deck');
+const mouseRear = mouseElements.find(element => element.name === 'mouse_rear_hump');
+assert(mouseFront.from[2] > mouseRear.from[2], 'Mouse nose must point away from the NORTH user and toward the monitor');
+assert(loweredStationElements.every((element, index) =>
+    near(element.from[1], stationElements[index].from[1] - 2.5)
+    && near(element.to[1], stationElements[index].to[1] - 2.5)), true);
+assert(loweredMouseElements.every((element, index) =>
+    near(element.from[1], mouseElements[index].from[1] - 2.5)
+    && near(element.to[1], mouseElements[index].to[1] - 2.5)), true);
 
 console.log(JSON.stringify({
     mode: checkOnly ? 'check' : 'write',
     desk: { sourceCubes: desk.elements.length, runtimeParts: Object.fromEntries(Object.entries(deskParts).map(([key, value]) => [key, value.length])) },
     chair: { sourceCubes: chair.elements.length, forgeRotationChildren: Object.fromEntries([...chairByAngle].map(([key, value]) => [key, value.length])) },
     monitor: { sourceCubes: monitor.elements.length, loweredVariantOffset: -2.5 },
+    officeComputerStation: { monitorCubes: monitor.elements.length, keyboardCubes: keyboard.elements.length, mouseCubes: mouse.elements.length, loweredVariantOffset: -2.5 },
+    officeKeyboard: { sourceCubes: keyboard.elements.length, loweredVariantOffset: -2.5 },
+    officeMouse: { sourceCubes: mouse.elements.length, centeredStandaloneModel: true, loweredVariantOffset: -2.5 },
     outputs: outputs.size
 }, null, 2));

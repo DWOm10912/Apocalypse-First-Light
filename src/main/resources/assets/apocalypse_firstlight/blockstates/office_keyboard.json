@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,lowered=false": {
+      "model": "apocalypse_firstlight:block/office_keyboard"
+    },
+    "facing=north,lowered=true": {
+      "model": "apocalypse_firstlight:block/office_keyboard_lowered"
+    },
+    "facing=east,lowered=false": {
+      "model": "apocalypse_firstlight:block/office_keyboard",
+      "y": 90
+    },
+    "facing=east,lowered=true": {
+      "model": "apocalypse_firstlight:block/office_keyboard_lowered",
+      "y": 90
+    },
+    "facing=south,lowered=false": {
+      "model": "apocalypse_firstlight:block/office_keyboard",
+      "y": 180
+    },
+    "facing=south,lowered=true": {
+      "model": "apocalypse_firstlight:block/office_keyboard_lowered",
+      "y": 180
+    },
+    "facing=west,lowered=false": {
+      "model": "apocalypse_firstlight:block/office_keyboard",
+      "y": 270
+    },
+    "facing=west,lowered=true": {
+      "model": "apocalypse_firstlight:block/office_keyboard_lowered",
+      "y": 270
+    }
+  }
+}

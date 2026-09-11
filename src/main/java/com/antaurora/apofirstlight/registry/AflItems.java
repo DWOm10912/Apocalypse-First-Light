@@ -192,6 +192,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.MODERN_OFFICE_CHAIR.get(), new Item.Properties()));
     public static final RegistryObject<Item> MODERN_LCD_MONITOR = ITEMS.register("modern_lcd_monitor",
             () -> new BlockItem(AflBlocks.MODERN_LCD_MONITOR.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OFFICE_COMPUTER_STATION = ITEMS.register("office_computer_station",
+            () -> new BlockItem(AflBlocks.OFFICE_COMPUTER_STATION.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OFFICE_KEYBOARD = ITEMS.register("office_keyboard",
+            () -> new BlockItem(AflBlocks.OFFICE_KEYBOARD.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OFFICE_MOUSE = ITEMS.register("office_mouse",
+            () -> new BlockItem(AflBlocks.OFFICE_MOUSE.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",

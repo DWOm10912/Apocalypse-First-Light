@@ -1,0 +1,2395 @@
+{
+  "credit": "Apocalypse: First Light — office_keyboard",
+  "parent": "minecraft:block/block",
+  "ambientocclusion": false,
+  "texture_size": [
+    64,
+    64
+  ],
+  "textures": {
+    "keyboard": "apocalypse_firstlight:block/office_keyboard",
+    "particle": "apocalypse_firstlight:block/office_keyboard"
+  },
+  "elements": [
+    {
+      "name": "keyboard_lower_shell",
+      "from": [
+        1.8,
+        -2.4,
+        6.35
+      ],
+      "to": [
+        14.2,
+        -1.95,
+        9.7
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_upper_deck",
+      "from": [
+        1.95,
+        -1.95,
+        6.45
+      ],
+      "to": [
+        14.05,
+        -1.78,
+        9.55
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            4.25,
+            0.25,
+            7.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_front_lip",
+      "from": [
+        2,
+        -2.5,
+        6.2
+      ],
+      "to": [
+        14,
+        -2.4,
+        6.45
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_rear_rail",
+      "from": [
+        1.95,
+        -1.78,
+        9.3
+      ],
+      "to": [
+        14.05,
+        -1.62,
+        9.6
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_left_endcap",
+      "from": [
+        14.2,
+        -2.35,
+        6.4
+      ],
+      "to": [
+        14.3,
+        -1.8,
+        9.55
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_right_endcap",
+      "from": [
+        1.7,
+        -2.35,
+        6.4
+      ],
+      "to": [
+        1.8,
+        -1.8,
+        9.55
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_underside_foot_left",
+      "from": [
+        12.4,
+        -2.5,
+        9.2
+      ],
+      "to": [
+        13.6,
+        -2.4,
+        9.55
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_underside_foot_right",
+      "from": [
+        2.4,
+        -2.5,
+        9.2
+      ],
+      "to": [
+        3.6,
+        -2.4,
+        9.55
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_navigation_divider",
+      "from": [
+        6.1,
+        -1.78,
+        6.75
+      ],
+      "to": [
+        6.18,
+        -1.64,
+        9.16
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_navigation_numpad_divider",
+      "from": [
+        4.52,
+        -1.78,
+        6.75
+      ],
+      "to": [
+        4.6,
+        -1.64,
+        9.16
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_key_recess",
+      "from": [
+        6.28,
+        -1.78,
+        6.62
+      ],
+      "to": [
+        13.75,
+        -1.7,
+        9.2
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_function_key_row",
+      "from": [
+        6.43,
+        -1.7,
+        8.82
+      ],
+      "to": [
+        13.6,
+        -1.6,
+        9.08
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            4,
+            10,
+            5
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_key_row_01",
+      "from": [
+        6.43,
+        -1.7,
+        8.36
+      ],
+      "to": [
+        13.6,
+        -1.58,
+        8.67
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            4,
+            10,
+            5
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_key_row_02",
+      "from": [
+        6.43,
+        -1.7,
+        7.91
+      ],
+      "to": [
+        13.55,
+        -1.58,
+        8.22
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            5,
+            10,
+            6
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_key_row_03",
+      "from": [
+        6.43,
+        -1.7,
+        7.46
+      ],
+      "to": [
+        13.45,
+        -1.58,
+        7.77
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            6,
+            10,
+            7
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_main_key_row_04",
+      "from": [
+        6.43,
+        -1.7,
+        7.01
+      ],
+      "to": [
+        13.3,
+        -1.58,
+        7.32
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            7,
+            10,
+            8
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_left_modifier_cluster",
+      "from": [
+        11.82,
+        -1.7,
+        6.65
+      ],
+      "to": [
+        13.6,
+        -1.59,
+        6.94
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            8,
+            12,
+            9
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_spacebar",
+      "from": [
+        7.68,
+        -1.7,
+        6.65
+      ],
+      "to": [
+        11.62,
+        -1.57,
+        6.94
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            0,
+            8,
+            10,
+            9
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_right_modifier_cluster",
+      "from": [
+        6.43,
+        -1.7,
+        6.65
+      ],
+      "to": [
+        7.48,
+        -1.59,
+        6.94
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            8,
+            12,
+            9
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_navigation_recess",
+      "from": [
+        4.7,
+        -1.78,
+        6.62
+      ],
+      "to": [
+        5.98,
+        -1.7,
+        9.2
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_navigation_top_row",
+      "from": [
+        4.83,
+        -1.7,
+        8.78
+      ],
+      "to": [
+        5.85,
+        -1.59,
+        9.08
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            4,
+            12,
+            5
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_navigation_middle_row",
+      "from": [
+        4.83,
+        -1.7,
+        8.31
+      ],
+      "to": [
+        5.85,
+        -1.59,
+        8.61
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            5,
+            12,
+            6
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_arrow_key_up",
+      "from": [
+        5.14,
+        -1.7,
+        7.43
+      ],
+      "to": [
+        5.53,
+        -1.59,
+        7.73
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            6,
+            12,
+            7
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_arrow_key_bottom_row",
+      "from": [
+        4.83,
+        -1.7,
+        7.01
+      ],
+      "to": [
+        5.85,
+        -1.59,
+        7.31
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            10,
+            6,
+            12,
+            7
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_recess",
+      "from": [
+        2.26,
+        -1.78,
+        6.62
+      ],
+      "to": [
+        4.42,
+        -1.7,
+        9.2
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            12.25,
+            0.25,
+            15.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_row_01",
+      "from": [
+        2.4,
+        -1.7,
+        8.78
+      ],
+      "to": [
+        4.3,
+        -1.58,
+        9.08
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            4,
+            16,
+            5
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_row_02",
+      "from": [
+        2.4,
+        -1.7,
+        8.34
+      ],
+      "to": [
+        4.3,
+        -1.58,
+        8.64
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            5,
+            16,
+            6
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_row_03",
+      "from": [
+        2.4,
+        -1.7,
+        7.9
+      ],
+      "to": [
+        4.3,
+        -1.58,
+        8.2
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            6,
+            16,
+            7
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_row_04",
+      "from": [
+        3.08,
+        -1.7,
+        7.46
+      ],
+      "to": [
+        4.3,
+        -1.58,
+        7.76
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            7,
+            16,
+            8
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_zero_cluster",
+      "from": [
+        3.08,
+        -1.7,
+        6.97
+      ],
+      "to": [
+        4.3,
+        -1.58,
+        7.27
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            8,
+            16,
+            9
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_numpad_enter",
+      "from": [
+        2.4,
+        -1.7,
+        6.97
+      ],
+      "to": [
+        2.92,
+        -1.57,
+        7.7
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            12,
+            8,
+            16,
+            9
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            0.25,
+            0.25,
+            3.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_status_indicator_01",
+      "from": [
+        2.95,
+        -1.62,
+        9.35
+      ],
+      "to": [
+        3.08,
+        -1.56,
+        9.48
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_status_indicator_02",
+      "from": [
+        2.7,
+        -1.62,
+        9.35
+      ],
+      "to": [
+        2.83,
+        -1.56,
+        9.48
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    },
+    {
+      "name": "keyboard_status_indicator_03",
+      "from": [
+        2.45,
+        -1.62,
+        9.35
+      ],
+      "to": [
+        2.58,
+        -1.56,
+        9.48
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "west": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "south": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "east": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "up": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        },
+        "down": {
+          "uv": [
+            8.25,
+            0.25,
+            11.75,
+            3.75
+          ],
+          "texture": "#keyboard"
+        }
+      }
+    }
+  ]
+}
