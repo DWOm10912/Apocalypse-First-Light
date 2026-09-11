@@ -31,7 +31,7 @@
 - `weapon/client/NativeGunFxLayer.java:22` 仅赋予 muzzle_anchor/ejection_anchor 语义。旧 muzzle_pos/shell 不会自动映射。
 - `weapon/P901Actions.java:71,95,117,123,127` 主动调用 AFL 干击、开火、退匣、插匣、拉套筒声音；`registry/AflSounds.java` 与 `src/main/resources/assets/apocalypse_firstlight/sounds.json` 没有 BR51_01/WEMQL 注册。
 - 在 main Java 未找到 setSoundKeyframeHandler / soundKeyframe 注册。因此不能宣称原 sound_effects 已由 Native 执行。不能仅凭 GeckoLib 能解析键帧就认定事件可到达。
-- `build.gradle:194–197` 仍有可由 -PaflWithoutTacz 省略的 **dev runtimeOnly** TaCZ 对比模组，不是 BR51_01 Native API 依赖。main Java 无 TaCZ import，未恢复集成。
+- `build.gradle` 保留可选的 **dev runtimeOnly** TaCZ 对比模组坐标，但默认开发环境不再加载；只有显式传入 `-PaflWithTacz` 且未传入 `-PaflWithoutTacz` 时才启用。它不是 BR51_01 Native API 依赖；main Java 无 TaCZ import，未恢复集成。
 
 路径链结论：外部 BR51_01 → **没有注册/适配入口** → 无 Native 渲染/动画/声音消费者。现有手枪资源与代码只用于取证，不在清理范围。
 
@@ -342,4 +342,3 @@ bbmodel内嵌PNG SHA-256：`fc59914ff3a337d0abdeb7f2f1febb20ef74b78f263fcd1e02a7
 - P9-01 Service Pistol及其全部代码、资源不在本次清理范围。
 
 验证边界：完成文件枚举、JSON解析、名称/路径和显式动态映射审计、哈希及动画结构比较；未进行音频试听、模型预览、运行时BR51_01验收。报告本身是唯一新增文件。
-

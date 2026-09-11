@@ -8,6 +8,10 @@ import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
 import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
+import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
+import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
+import com.antaurora.apofirstlight.block.ModernOfficeChairBlock;
+import com.antaurora.apofirstlight.block.ModernLcdMonitorBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
@@ -163,6 +167,30 @@ public final class AflBlocks {
     public static final RegistryObject<Block> METAL_TRASH_CAN = BLOCKS.register("metal_trash_can",
             () -> new MetalTrashCanBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER = BLOCKS.register("commercial_dumpster",
+            () -> new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> MODERN_OFFICE_DESK = BLOCKS.register("modern_office_desk",
+            () -> new ModernOfficeDeskBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> MODERN_OFFICE_CHAIR = BLOCKS.register("modern_office_chair",
+            () -> new ModernOfficeChairBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.5F, 4.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> MODERN_LCD_MONITOR = BLOCKS.register("modern_lcd_monitor",
+            () -> new ModernLcdMonitorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0F, 3.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

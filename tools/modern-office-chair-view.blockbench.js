@@ -1,0 +1,1 @@
+(() => {if(Project.name!=='modern_office_chair')throw Error('Wrong project');for(const p of Preview.all){if(!p.controls||!p.camera)continue;p.controls.target.set(8,9,8);p.camera.position.set(32,23,-34);p.camera.zoom=1;p.camera.updateProjectionMatrix();p.controls.update();}Canvas.updateAll();return 'Front inspection';})()

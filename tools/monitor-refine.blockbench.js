@@ -1,0 +1,5 @@
+(() => {if(Project.name!=='modern_lcd_monitor'||Cube.all.length!==84)throw Error('Wrong model');Undo.initEdit({elements:Cube.all,outliner:true});const tex=Texture.all[0];const add=(n,f,t,g,m=1)=>{const faces={};for(const d of ['north','south','east','west','up','down'])faces[d]={uv:[m*32+1,65,m*32+31,95],texture:tex.uuid};new Cube({name:n,from:f,to:t,faces,box_uv:false,autouv:0}).addTo(Group.all.find(x=>x.name===g)).init();};
+ for(const x of [.35,15.5])for(const y of [3.4,12.1]){add('rear_corner_step_'+x+'_'+y,[x,y,8.12],[x+.15,y+.35,8.18],'rear_detail');add('rear_corner_return_'+x+'_'+y,[x,y,8.18],[x+.15,y+.12,8.21],'rear_detail',0);}
+ for(const x of [7.05,8.8]){add('stand_bracket_side_'+x,[x,4.55,8.95],[x+.15,6.1,9.02],'stand_connector');add('stand_socket_side_'+x,[x,.9,8.22],[x+.15,1.15,9.05],'stand_mount',0);}
+ for(const x of [4.6,11.25])for(const z of [5.8,10.05])add('base_upper_corner_'+x+'_'+z,[x,.5,z],[x+.15,.59,z+.15],'base_upper',0);
+ Undo.finishEdit('Monitor housing returns and mount transitions');Canvas.updateAll();return Cube.all.length;})()

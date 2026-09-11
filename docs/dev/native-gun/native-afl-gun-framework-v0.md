@@ -1456,8 +1456,10 @@ The original source hashes below are historical, not hashes of the V0.4.7 locato
 ## Scope and implementation
 
 Minecraft 1.20.1 / Forge 47.4.22 / Java 17. Existing GeckoLib **4.7.4** and Maven
-configuration are retained, not upgraded. TaCZ remains installed with unchanged
-dependencies, compat, assets and behavior. Native pistol code has no TaCZ imports.
+configuration are retained, not upgraded. In this historical implementation pass,
+TaCZ remained installed with unchanged behavior. As of 2026-09-10 the default
+development runtime omits TaCZ; `-PaflWithTacz` temporarily restores the comparison
+runtime dependency. Native pistol code has no TaCZ imports.
 
 Item `apocalypse_firstlight:p9_01` / P9-01 Service Pistol / 制式手枪 is registered
 in `AflItems` and appended to the AFL **Items** creative tab. Its development

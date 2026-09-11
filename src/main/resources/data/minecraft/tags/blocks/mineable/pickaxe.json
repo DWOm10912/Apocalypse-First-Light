@@ -47,6 +47,10 @@
     "apocalypse_firstlight:tungsten_block",
     "apocalypse_firstlight:wolframite_ore",
     "apocalypse_firstlight:zinc_block",
-    "apocalypse_firstlight:metal_trash_can"
+    "apocalypse_firstlight:metal_trash_can",
+    "apocalypse_firstlight:commercial_dumpster",
+    "apocalypse_firstlight:modern_office_desk",
+    "apocalypse_firstlight:modern_office_chair",
+    "apocalypse_firstlight:modern_lcd_monitor"
   ]
 }

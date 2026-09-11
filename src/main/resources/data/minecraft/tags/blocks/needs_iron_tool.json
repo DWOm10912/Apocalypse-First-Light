@@ -3,6 +3,10 @@
   "values": [
     "apocalypse_firstlight:retail_shelf_single",
     "apocalypse_firstlight:water_dispenser",
-    "apocalypse_firstlight:metal_trash_can"
+    "apocalypse_firstlight:metal_trash_can",
+    "apocalypse_firstlight:commercial_dumpster",
+    "apocalypse_firstlight:modern_office_desk",
+    "apocalypse_firstlight:modern_office_chair",
+    "apocalypse_firstlight:modern_lcd_monitor"
   ]
 }

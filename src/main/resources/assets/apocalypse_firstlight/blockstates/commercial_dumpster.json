@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,part=master": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/master"
+    },
+    "facing=north,part=secondary": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/secondary"
+    },
+    "facing=east,part=master": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/master",
+      "y": 90
+    },
+    "facing=east,part=secondary": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/secondary",
+      "y": 90
+    },
+    "facing=south,part=master": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/master",
+      "y": 180
+    },
+    "facing=south,part=secondary": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/secondary",
+      "y": 180
+    },
+    "facing=west,part=master": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/master",
+      "y": 270
+    },
+    "facing=west,part=secondary": {
+      "model": "apocalypse_firstlight:block/commercial_dumpster/secondary",
+      "y": 270
+    }
+  }
+}

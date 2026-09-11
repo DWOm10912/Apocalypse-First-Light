@@ -1,0 +1,1 @@
+(() => {for(const p of Preview.all){if(!p.controls||!p.camera)continue;p.controls.target.set(8,10,0);p.camera.position.set(48,38,-55);p.camera.zoom=.8;p.camera.updateProjectionMatrix();p.controls.update();}Canvas.updateAll();return 'Three quarter inspection';})()

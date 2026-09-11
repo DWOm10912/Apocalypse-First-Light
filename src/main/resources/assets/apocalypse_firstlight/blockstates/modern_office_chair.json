@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/modern_office_chair"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/modern_office_chair",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/modern_office_chair",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/modern_office_chair",
+      "y": 270
+    }
+  }
+}

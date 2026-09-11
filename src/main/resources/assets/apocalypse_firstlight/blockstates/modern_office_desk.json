@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,part=left": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/left"
+    },
+    "facing=north,part=center": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/center"
+    },
+    "facing=north,part=right": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/right"
+    },
+    "facing=east,part=left": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/left",
+      "y": 90
+    },
+    "facing=east,part=center": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/center",
+      "y": 90
+    },
+    "facing=east,part=right": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/right",
+      "y": 90
+    },
+    "facing=south,part=left": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/left",
+      "y": 180
+    },
+    "facing=south,part=center": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/center",
+      "y": 180
+    },
+    "facing=south,part=right": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/right",
+      "y": 180
+    },
+    "facing=west,part=left": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/left",
+      "y": 270
+    },
+    "facing=west,part=center": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/center",
+      "y": 270
+    },
+    "facing=west,part=right": {
+      "model": "apocalypse_firstlight:block/modern_office_desk/right",
+      "y": 270
+    }
+  }
+}

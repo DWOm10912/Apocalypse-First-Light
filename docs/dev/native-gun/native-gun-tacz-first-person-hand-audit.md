@@ -21,7 +21,7 @@
 ### 本地权威证据
 
 - AFL live：`master`，HEAD `7685f61`。起始工作区已有 HandLayer、ReloadGrip、DEV 检查及四份文档的未提交修改；另有用户 `.obsidian/workspace.json` 改动。本文描述 **工作区**，不是仅描述 HEAD。
-- 当前依赖：`build.gradle:194` 的 `curse.maven:timeless-and-classics-zero-1028108:8141310`。
+- 本文审计时的依赖坐标为 `curse.maven:timeless-and-classics-zero-1028108:8141310`。截至 2026-09-10，该坐标仅作为 `-PaflWithTacz` 显式启用的可选 dev runtime 对比项保留，默认开发环境不加载 TaCZ。
 - 原始 TaCZ JAR：`D:/Minecraft Modding/Apocalypse First Light/.gradle-user/caches/modules-2/files-2.1/curse.maven/timeless-and-classics-zero-1028108/8141310/bddafeea4c9c1132ed720c30fbaedfe5ab25e846/timeless-and-classics-zero-1028108-8141310.jar`。
 - Manifest 实测 `Implementation-Version: 1.1.8-hotfix`；SHA-256：`9ED8ADA1283ED7A793A70CC1B51C4A340F367CE84707E1A7B8CF21EE3D288D77`。
 - 本地 **没有找到 1.1.8-hotfix source JAR**。两个 Gradle cache 中找到的是旧 `6632240-sources-6633203` / 1.1.6 source，未把它冒充 hotfix。
@@ -345,7 +345,7 @@ M_arm = M_locator × B_skin
 - 公开源码仅在线／内存阅读，本地 JAR 只读；没有把 TaCZ/SBM 类 vendoring、extends、反射接入或新增 native imports。
 - 本轮只新增本文并向 `native-afl-gun-framework-v0.md` 追加研究摘要。生产代码、DEV 代码、bbmodel、runtime JSON、音效和依赖均不修改；既存 dirty changes 不属于本轮新增。
 - 不启动或操作图形客户端，不编译运行不相关任务，不截图、不生成 preview。研究结论不是实现验证。
-- 目标是 Native 模块未来不依赖 TaCZ 也能工作；**当前整个 AFL 工程仍有历史 TaCZ 依赖和非 Native 集成**，本轮没有移除，也未执行移除 JAR 的启动验证。不能把“native 新增 imports=0”表述为整仓库已脱离 TaCZ。
+- 本文原始审计轮次没有移除 TaCZ。后续于 2026-09-10 将默认开发 runtime 改为不加载 TaCZ，仅保留 `-PaflWithTacz` 的显式对比入口；AFL main Java 仍无 TaCZ import。历史审计使用过的缓存 JAR 与 `run/tacz` 数据不是当前加载依赖，也未删除。
 - 收尾检查：`src/` 下 1,081 个文件的 SHA-256 与本轮起始快照全部一致，无新增或删除；`git diff --check` 通过。文档本地链接另行核对。不复用上一轮 build/客户端 PASS。
 
 ## 13. 研究状态

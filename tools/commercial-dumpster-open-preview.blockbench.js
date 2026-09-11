@@ -1,0 +1,1 @@
+(() => {for(const side of ['left','right']){const g=Group.all.find(g=>g.name===side+'_lid_assembly');g.rotation[0]=g.rotation[0]?0:(side==='left'?75:45);}Canvas.updateAll();return Group.all.filter(g=>g.name.endsWith('_lid_assembly')).map(g=>({name:g.name,pivot:g.origin,rotation:g.rotation}));})()

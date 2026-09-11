@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 设计/方块/机器.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "机器"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/01 - 设计/方块/机器.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,29 +189,35 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "build/reobfJar/mappings.tsrg",
-    "docs/04 - 注意事项 重要内容.md",
-    "build/resources/main/assets/apocalypse_firstlight/models/block/metal_trash_can.json",
-    "build/resources/main/data/apocalypse_firstlight/loot_tables/blocks/metal_trash_can.json",
-    "run/saves/新的世界/level8506070782467327551.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/city_trash_can.png",
-    "build/asset_checks/city_trash_can/pre_align_1789068775404/city_trash_can.png",
-    "build/asset_checks/water_dispenser/trash-can-aligned.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/city_trash_can.png",
-    "docs/models/city_trash_can.md",
-    "build/asset_checks/water_dispenser/trash-can-interior.png",
-    "build/asset_checks/water_dispenser/trash-can-sealed.png",
-    "build/asset_checks/water_dispenser/trash-can-polished.png",
-    "build/asset_checks/water_dispenser/trash-can-first.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_office_desk.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_office_chair.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/commercial_dumpster.png",
+    "docs/models/modern_lcd_monitor.md",
+    "build/asset_checks/water_dispenser/monitor-desk-preview.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor.png",
+    "build/asset_checks/water_dispenser/monitor-fixed-back.png",
+    "docs/models/modern_office_chair.md",
+    "docs/models/modern_office_desk.md",
+    "docs/README.md",
+    "docs/01 - 设计/方块/机器.md",
+    "docs/models/commercial_dumpster.md",
+    "docs/04 - 注意事项 重要内容.md",
+    "docs/models/city_trash_can.md",
     "docs/models/water_dispenser.md",
     "docs/worldgen/modern_glass_tower_02_authoring.md",
     "docs/worldgen/office_cedar_06_authoring.md",
@@ -228,12 +234,6 @@
     "tools/afl_minecraft_mcp/node_modules/iconv-lite/README.md",
     "tools/afl_minecraft_mcp/node_modules/cross-spawn/README.md",
     "tools/afl_minecraft_mcp/node_modules/fast-uri/README.md",
-    "tools/afl_minecraft_mcp/node_modules/body-parser/node_modules/content-type/README.md",
-    "tools/afl_minecraft_mcp/node_modules/negotiator/node_modules/content-type/README.md",
-    "tools/afl_minecraft_mcp/node_modules/type-is/node_modules/content-type/README.md",
-    "tools/afl_minecraft_mcp/node_modules/cors/README.md",
-    "tools/afl_minecraft_mcp/node_modules/content-type/HISTORY.md",
-    "tools/afl_minecraft_mcp/node_modules/cookie/SECURITY.md",
-    "tools/afl_minecraft_mcp/node_modules/cookie/README.md"
+    "tools/afl_minecraft_mcp/node_modules/body-parser/node_modules/content-type/README.md"
   ]
 }

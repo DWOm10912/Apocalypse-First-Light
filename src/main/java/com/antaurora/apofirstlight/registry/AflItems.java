@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.registry;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.item.FluidTankBlockItem;
 import com.antaurora.apofirstlight.item.LeadChestBlockItem;
+import com.antaurora.apofirstlight.item.CommercialDumpsterBlockItem;
+import com.antaurora.apofirstlight.item.ModernOfficeDeskBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.BucketItem;
@@ -178,6 +180,18 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.WATER_DISPENSER.get(), new Item.Properties()));
     public static final RegistryObject<Item> METAL_TRASH_CAN = ITEMS.register("metal_trash_can",
             () -> new BlockItem(AflBlocks.METAL_TRASH_CAN.get(), new Item.Properties()));
+    public static final RegistryObject<Item> COMMERCIAL_DUMPSTER = ITEMS.register("commercial_dumpster",
+            () -> new CommercialDumpsterBlockItem(
+                    (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER.get(),
+                    new Item.Properties()));
+    public static final RegistryObject<Item> MODERN_OFFICE_DESK = ITEMS.register("modern_office_desk",
+            () -> new ModernOfficeDeskBlockItem(
+                    (com.antaurora.apofirstlight.block.ModernOfficeDeskBlock) AflBlocks.MODERN_OFFICE_DESK.get(),
+                    new Item.Properties()));
+    public static final RegistryObject<Item> MODERN_OFFICE_CHAIR = ITEMS.register("modern_office_chair",
+            () -> new BlockItem(AflBlocks.MODERN_OFFICE_CHAIR.get(), new Item.Properties()));
+    public static final RegistryObject<Item> MODERN_LCD_MONITOR = ITEMS.register("modern_lcd_monitor",
+            () -> new BlockItem(AflBlocks.MODERN_LCD_MONITOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",

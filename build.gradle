@@ -191,8 +191,9 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // Comparison mod only; -PaflWithoutTacz omits it for dependency-free launch checks.
-    if (!project.hasProperty('aflWithoutTacz')) {
+    // Optional comparison mod only. It is temporarily absent from the default development runtime.
+    // Use -PaflWithTacz to opt in; -PaflWithoutTacz remains an explicit override for old scripts.
+    if (project.hasProperty('aflWithTacz') && !project.hasProperty('aflWithoutTacz')) {
         runtimeOnly fg.deobf("curse.maven:timeless-and-classics-zero-1028108:8141310")
     }
     implementation fg.deobf("software.bernie.geckolib:geckolib-forge-${minecraft_version}:${geckolib_version}")
