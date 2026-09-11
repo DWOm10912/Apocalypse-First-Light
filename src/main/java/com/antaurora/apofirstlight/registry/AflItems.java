@@ -204,6 +204,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LOW_FILING_CABINET.get(), new Item.Properties()));
     public static final RegistryObject<Item> TALL_FILING_CABINET = ITEMS.register("tall_filing_cabinet",
             () -> new BlockItem(AflBlocks.TALL_FILING_CABINET.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OFFICE_MULTIFUNCTION_PRINTER = ITEMS.register("office_multifunction_printer",
+            () -> new BlockItem(AflBlocks.OFFICE_MULTIFUNCTION_PRINTER.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",

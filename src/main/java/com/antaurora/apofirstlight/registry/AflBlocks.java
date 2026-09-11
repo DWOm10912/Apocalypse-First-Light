@@ -16,6 +16,7 @@ import com.antaurora.apofirstlight.block.OfficeDesktopDecorationBlock;
 import com.antaurora.apofirstlight.block.OfficeCubiclePartitionBlock;
 import com.antaurora.apofirstlight.block.LowFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.TallFilingCabinetBlock;
+import com.antaurora.apofirstlight.block.OfficeMultifunctionPrinterBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
@@ -227,6 +228,12 @@ public final class AflBlocks {
     public static final RegistryObject<Block> TALL_FILING_CABINET = BLOCKS.register("tall_filing_cabinet",
             () -> new TallFilingCabinetBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> OFFICE_MULTIFUNCTION_PRINTER = BLOCKS.register("office_multifunction_printer",
+            () -> new OfficeMultifunctionPrinterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5F, 6.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));

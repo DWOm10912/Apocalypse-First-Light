@@ -61,6 +61,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.OFFICE_CUBICLE_PARTITION.get());
                         output.accept(AflItems.LOW_FILING_CABINET.get());
                         output.accept(AflItems.TALL_FILING_CABINET.get());
+                        output.accept(AflItems.OFFICE_MULTIFUNCTION_PRINTER.get());
                         output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.FALLOUT_SOIL.get());
                         output.accept(AflItems.SCORCHED_SOIL.get());
