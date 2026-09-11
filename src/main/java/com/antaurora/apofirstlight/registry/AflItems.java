@@ -198,6 +198,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.OFFICE_KEYBOARD.get(), new Item.Properties()));
     public static final RegistryObject<Item> OFFICE_MOUSE = ITEMS.register("office_mouse",
             () -> new BlockItem(AflBlocks.OFFICE_MOUSE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> OFFICE_CUBICLE_PARTITION = ITEMS.register("office_cubicle_partition",
+            () -> new BlockItem(AflBlocks.OFFICE_CUBICLE_PARTITION.get(), new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",

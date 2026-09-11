@@ -1,0 +1,181 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/single"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/end_east"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/end_east",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/end_east",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/end_east",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/straight_ew"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/straight_ew",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "north": "true",
+            "east": "true"
+          },
+          {
+            "east": "true",
+            "south": "true"
+          },
+          {
+            "south": "true",
+            "west": "true"
+          },
+          {
+            "west": "true",
+            "north": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/junction"
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "east": "true",
+            "north": "true"
+          },
+          {
+            "east": "true",
+            "south": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/arm_east"
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "south": "true",
+            "east": "true"
+          },
+          {
+            "south": "true",
+            "west": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/arm_east",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "west": "true",
+            "north": "true"
+          },
+          {
+            "west": "true",
+            "south": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/arm_east",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "north": "true",
+            "east": "true"
+          },
+          {
+            "north": "true",
+            "west": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/office_cubicle_partition/arm_east",
+        "y": 270
+      }
+    }
+  ]
+}
