@@ -14,6 +14,8 @@ import com.antaurora.apofirstlight.block.ModernOfficeChairBlock;
 import com.antaurora.apofirstlight.block.ModernLcdMonitorBlock;
 import com.antaurora.apofirstlight.block.OfficeDesktopDecorationBlock;
 import com.antaurora.apofirstlight.block.OfficeCubiclePartitionBlock;
+import com.antaurora.apofirstlight.block.LowFilingCabinetBlock;
+import com.antaurora.apofirstlight.block.TallFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
@@ -215,6 +217,18 @@ public final class AflBlocks {
             () -> new OfficeCubiclePartitionBlock(BlockBehaviour.Properties.of()
                     .strength(0.8F, 1.5F)
                     .sound(SoundType.METAL)
+                    .noOcclusion()));
+    public static final RegistryObject<Block> LOW_FILING_CABINET = BLOCKS.register("low_filing_cabinet",
+            () -> new LowFilingCabinetBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.5F, 4.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> TALL_FILING_CABINET = BLOCKS.register("tall_filing_cabinet",
+            () -> new TallFilingCabinetBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.GLASS)

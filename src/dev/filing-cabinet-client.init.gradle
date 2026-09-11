@@ -1,0 +1,8 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/thermal-fluid-client')
+            args '--quickPlaySingleplayer', 'fluid_probe'
+        }
+    }
+}

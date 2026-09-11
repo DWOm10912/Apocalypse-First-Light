@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/low_filing_cabinet"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/low_filing_cabinet",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/low_filing_cabinet",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/low_filing_cabinet",
+      "y": 270
+    }
+  }
+}
