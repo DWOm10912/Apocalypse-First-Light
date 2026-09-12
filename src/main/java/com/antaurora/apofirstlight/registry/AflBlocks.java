@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.block.CashRegisterBlock;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
 import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
 import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
@@ -161,6 +162,12 @@ public final class AflBlocks {
             () -> new RetailShelfSingleBlock(BlockBehaviour.Properties.of()
                     .strength(1.5F, 4.0F)
                     .sound(SoundType.WOOD)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> CASH_REGISTER = BLOCKS.register("cash_register",
+            () -> new CashRegisterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.5F, 4.0F)
+                    .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> WATER_DISPENSER = BLOCKS.register("water_dispenser",

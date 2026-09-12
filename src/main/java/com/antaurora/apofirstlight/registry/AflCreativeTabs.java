@@ -49,6 +49,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.GUN_MAINTENANCE_BENCH.get());
                         output.accept(AflItems.PRECISION_FABRICATION_STATION.get());
                         output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
+                        output.accept(AflItems.CASH_REGISTER.get());
                         output.accept(AflItems.WATER_DISPENSER.get());
                         output.accept(AflItems.METAL_TRASH_CAN.get());
                         output.accept(AflItems.COMMERCIAL_DUMPSTER.get());
