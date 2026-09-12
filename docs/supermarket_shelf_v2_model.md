@@ -1,0 +1,32 @@
+# White Plastic Supermarket Shelf V2 — Live Integration
+
+Status: implemented as the existing `apocalypse_firstlight:retail_shelf_single` block/item/BlockEntity identity. The previous metal-looking runtime model and its unused `retail_shelf.png` atlas were replaced; no new registry ID or item was added. Headless GameTests pass. A development-client view showed the new white shelf and bound atlas without missing-texture errors, and the user approved its current appearance. Systematic hand aiming, old-building placement, and the new reduced breaking effect still need a client recheck.
+
+## Assets and geometry
+
+- Editable source: `src/main/blockbench/afl_supermarket_shelf_v2_review.bbmodel`; source atlas: `src/main/blockbench/textures/afl_supermarket_shelf_v2.png`.
+- Runtime: `src/main/resources/assets/apocalypse_firstlight/models/block/retail_shelf_single.json` and `src/main/resources/assets/apocalypse_firstlight/textures/block/retail_shelf_single.png`. `tools/export-retail-shelf.mjs --write` exports the source, and `--check` verifies that runtime model and atlas still match it. The item model keeps the runtime parent; the upper half uses a particle-only model with the same atlas.
+- The source has 171 cubes, 13 groups, a 128 × 128 low-noise plastic atlas, and five display decks. Bounds in centered Blockbench units: X -7.59–7.59, Y 0–32, Z -2.096–8. Runtime export offsets X/Z by +8. For `FACING=NORTH`, display/front is -Z and the back skin reaches the south block edge Z=16. Blockstate rotation, item display, interaction, and shapes use this single facing convention.
+- All five load decks are 8.75 units deep, Z -1.446–7.304 in the source. Deck top Y in units: 2.82, 8.57, 14.32, 20.07, 25.82. Their side supports, short front lips, price strips, plinth, continuous backing, and top cap remain from the approved source.
+- The atlas uses muted warm white, lighter trim, slightly darker backing/recesses, and darker underside/plinth, with no random grain or wear. It is still a white plastic retail fixture, not a metal rack.
+
+## Display and interaction
+
+- Two-block-high LOWER/UPPER structure; only LOWER owns the BlockEntity and the complete rendered model. `RetailShelfLayout` shares the geometry-derived coordinates between item renderer and sight projection.
+- Five rows × three columns × one depth = 15 slots. Slot indices remain row-major from bottom to top, with old indices 0–11 unchanged; 12–14 form the new top row. Column X for old slot order: 0.76, 0.50, 0.24 block units. Row item centers Y: 0.29625, 0.655625, 1.015, 1.374375, 1.73375. Shared display/projection Z: 0.6761875; item scale: 0.24. Hit tolerances: X 0.12, Y 0.155 block units.
+- Looking from the front and right-clicking the selected position inserts one held item if empty, or removes its item with an empty hand. Upper-half hits forward to LOWER. The sight ray may project a bounded distance beyond a hit on a front lip to the shared item plane; aiming anywhere on the block does not automatically choose a slot.
+- `Container` max stack size is 1; `canPlaceItem` rejects occupied slots and `setItem` copies/clamps to one. Existing overstacked NBT is loaded with one visible item plus a persistent `LegacyOverflow` reserve, recoverable one at a time or dropped when broken. This avoids silently discarding old items while enforcing new single-item display semantics.
+- LOWER and UPPER outlines/collision now follow the new back skin, side returns, base/top, and five shortened tiers. Both halves rotate for all four horizontal facings. Breaking either half clears both, drops the shelf once with a correct tool, and drops contents once, including legacy reserve.
+
+## Gameplay and old structures
+
+- Mining requirements remain `minecraft:mineable/pickaxe`, `minecraft:needs_iron_tool`, and `requiresCorrectToolForDrops()`; iron pickaxe or better yields the shelf. Hardness 1.5 and resistance 4 are unchanged. Sound changed from metal to the closest available Vanilla rigid-plastic approximation, `SoundType.WOOD`; Survival break/drop behavior is covered by the new GameTest.
+- Breaking debris uses `RetailShelfParticleExtensions`: each client-side destroy-effect invocation creates at most 16 `TerrainParticle`s within the affected half's shape bounds, using the shelf model's particle atlas. This replaces Vanilla's per-VoxelShape-box subdivision, which produced an excessive cloud for a detailed five-tier shape. It does not change hits, drops, or other blocks. The client must restart to load this code change; the reduced particle count still needs an in-world visual/performance recheck.
+- `Items` NBT and the registry/block-entity identities remain stable. A GameTest loads a real 12-entry legacy `Items` tag, verifies all slots 0–11 and empty slots 12–14, and checks overstack preservation across save/reload.
+- `convenience_store_01.nbt` and `gas_station_01.nbt` contain the existing block ID, and their palettes include all four horizontal directions for both LOWER and UPPER. The previous runtime model was also north-front and south-back, so no facing or ID migration is needed. Their individual placements, wall clearance, and in-world appearance have not yet been visually checked; do not mark that as completed worldgen verification.
+
+## Verification
+
+- `node tools/export-retail-shelf.mjs --check`, JSON parsing/resource copy, `compileJava`, `processResources`, and full Gradle build passed. The packaged jar contains the new atlas and `RetailShelfParticleExtensions` but not the old atlas or dev GameTest class.
+- `src/dev/java/com/antaurora/apofirstlight/dev/RetailShelfIntegrationGameTests.java` and its test-only SNBT cover placement, 15 coordinates and lip projections in four directions, real collision ray traces, both shapes, upper-half use, old NBT, max-one storage, and lower/upper Survival destruction and single drops. The latest full GameTest server run passed 68/68 required tests, including the independent shelf PASS line with real four-facing ray traces.
+- Still pending: a restarted graphical client check of the new capped breaking effect, actual crosshair hits of all 15 displayed items from normal player positions, large-item overlap, and placement in existing store/gas-station structures. Headless tests do not establish those visual results.

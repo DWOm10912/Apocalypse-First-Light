@@ -3,10 +3,10 @@
   "structure": "apocalypse_firstlight:office_midrise_01",
   "category": "HIGHRISE_OFFICE",
   "footprint": {
-    "width": 35,
-    "depth": 39
+    "width": 29,
+    "depth": 23
   },
-  "height": 86,
+  "height": 70,
   "front": "SOUTH",
   "surface_offset_y": 1,
   "allowed_rotations": [

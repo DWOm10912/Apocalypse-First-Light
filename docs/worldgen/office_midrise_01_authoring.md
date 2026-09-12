@@ -1,8 +1,24 @@
-# office_midrise_01 — exported glass tower and preserved legacy draft
+# office_midrise_01 — modern concrete office, formal source
 
-## Current formal asset — 2026-09-10
+## Current formal asset — 2026-09-12
 
-The user explicitly selected the current `modern_glass_tower_02` for export as **`office_midrise_01`**, while preserving the older six-floor draft. The formal resource is therefore the glass highrise described in [its construction history](modern_glass_tower_02_authoring.md), **not** the legacy development builder below. Export, source import and four actual in-world rotation tests are complete. **No Small City pool integration.**
+At the user's request, the current modern concrete office (including subsequent on-site adjustments after Facade Revision V2) was captured under `office_midrise_01` and **overwrote the former glass-tower source NBT and metadata**. This is a new building, not the old 86-block shell reset. Its live authoring plot is in `新的世界` / `minecraft:overworld`, inclusive bounds `(80,-33,-464)` → `(108,36,-442)`; captured NBT size is **29×70×23** (X×Y×Z), 46,690 cells, **15,747 non-air**, zero entities. The front is SOUTH, surface offset 1, category `HIGHRISE_OFFICE`, zones `CORE,MIXED`, road-facing true, damage-compatible false and loot-ready false. The authoring ID was changed from `office_concrete_01` to `office_midrise_01` before the explicit export; the world blocks were not moved or rebuilt for this rename.
+
+The current formal files are [Structure NBT](../../src/main/resources/data/apocalypse_firstlight/structures/office_midrise_01.nbt) and [building metadata](../../src/main/resources/data/apocalypse_firstlight/small_city/buildings/office_midrise_01.json). Their source pair matches `run/afl_authoring_exports/office_midrise_01.{nbt,json}`; the NBT SHA-256 is `9a1b8508412e849982fa1b6fc7d495702d2a949222607f75de329ab4490b592b`. The prior formal pair and superseded export pair were preserved under `build/authoring_checks/office_midrise_01/pre_concrete_v2_replacement_20260912/`; the old formal NBT SHA-256 was `f4f287b4354f3189c35548c738cb5317c0326325e6b9423af4c936040d623e29`.
+
+The fresh live snapshot and the exported NBT matched **all 46,690 cells with zero differences**; NBT size, block palette and 0-entity requirement were checked, then the standard importer accepted the pair with explicit overwrite. The live authoring validation passed. This is a **source-resource replacement only**: no Small City spawn pool, runtime-loaded resource, Java, placement logic or gameplay behavior was changed. The current metadata lists all four Vanilla rotations by authoring convention, but **the new concrete building has not been tested at those rotations**. The old tower's four-rotation results below are historical and do not validate this replacement. Full navigation, worldgen placement, Survival drops and visuals after a client resource reload remain unverified.
+
+See [the concrete building record](office_concrete_01_authoring.md) for floor plan, V2 facade and furnishing notes. This captured version contains **84 additional live cell differences** from the last saved V2 checkpoint, mainly lower-façade ribs and entrance adjustments; these current changes were included, not discarded.
+
+## Latest development direction — 2026-09-12
+
+The user superseded the old-envelope renovation with a completely new concrete office. See [office_concrete_01](office_concrete_01_authoring.md): nine usable floors, 70-block occupied height, live new plot `(80,-33,-464)` → `(108,36,-442)`, shell/core/first-pass furnishing built. **This paragraph records the earlier development checkpoint; the concrete building has now replaced the formal NBT, but has not entered a city pool.**
+
+The old authoring copy at `(-48,-33,-112)` → `(-14,52,-74)` was subsequently reset to an eleven-floor empty interior shell (18,490 non-air in its saved final readback), preserving its 86-block external envelope. That supersedes earlier statements that the live draft still has sixteen floors. Its floor slabs are Y=-33,-25,-18,-11,-4,3,10,17,24,31,38 with office top slab45; stairs and furnishings were removed and core openings reserved. This draft's visual closeout was interrupted by the new-building request. Its reservation is now cancelled **with blocks preserved**, not an active plot and not an exported update. The previous formal resource had the sixteen levels described below; it is backed up, not current. Do not resume the obsolete36-block reduction or treat the11-floor draft as the new concrete building.
+
+## Previous formal asset — 2026-09-10 (historical; superseded)
+
+The user previously selected `modern_glass_tower_02` for export as **`office_midrise_01`**, while preserving the older six-floor draft. At that time the formal resource was the glass highrise described in [its construction history](modern_glass_tower_02_authoring.md), **not** the legacy development builder below. Its export, source import and four actual in-world rotation tests were complete before it was superseded. **No Small City pool integration.** The following table, hashes and tests describe that previous NBT only.
 
 | Final contract | Value |
 | --- | --- |
@@ -21,12 +37,12 @@ The user explicitly selected the current `modern_glass_tower_02` for export as *
 
 The tightened bounds remove only empty margins of the original 37×90×41 plot. Historical construction recipes still use the old origin `(16,-33,-160)`; do not reinterpret those local coordinates against this export origin. The `midrise` filename is the user-selected ID, not the tower's architectural category.
 
-Formal files:
+Formal file locations at that checkpoint (these links now resolve to the concrete replacement; use the preserved backup for the historical bytes):
 
 - [Structure NBT](../../src/main/resources/data/apocalypse_firstlight/structures/office_midrise_01.nbt)
 - [Building metadata](../../src/main/resources/data/apocalypse_firstlight/small_city/buildings/office_midrise_01.json)
 
-Export pair: `run/afl_authoring_exports/office_midrise_01.{nbt,json}`. The NBT SHA-256 is `f4f287b4354f3189c35548c738cb5317c0326325e6b9423af4c936040d623e29`; export and formal source hashes match. Source readback matched all **117,390** NBT cells exactly and `validate` passed. The import script copied both files with explicit overwrite approval; metadata alone does not register any generation pool.
+Historical export pair is backed up under `build/authoring_checks/office_midrise_01/pre_concrete_v2_replacement_20260912/`; the live `run/afl_authoring_exports/office_midrise_01.{nbt,json}` pair is now the concrete replacement. The historical NBT SHA-256 is `f4f287b4354f3189c35548c738cb5317c0326325e6b9423af4c936040d623e29`; its export and formal source hashes matched at that time. Source readback matched all **117,390** NBT cells exactly and `validate` passed. The import script copied both files with explicit overwrite approval; metadata alone does not register any generation pool.
 
 ### Approved sink-button correction
 
@@ -63,6 +79,34 @@ Evidence: `build/authoring_checks/office_midrise_01/export_20260910/fixed/`, esp
 All four temporary world copies were cleared with actual zero-non-air readback. Both temporary `generated/afl_rotation_acceptance/structures/office_midrise_01_20260910*.nbt` staging files were removed after exact hash checks; their contents remain recoverable from the current export and pre-fix backup. Original camera position was restored, the test reservation cancelled, and construction stopped. Original tower and legacy draft were preserved; cancelled-session undo history is not persistent recovery.
 
 Verification limits: importer unit tests **6/6 PASS** and harness syntax check PASS in this finalization. No Gradle task, loaded `build/classes`/`build/resources` write, launcher deployment, offline region edit or pool integration. The resources are ready in **source**, not claimed packaged into a newly built jar. Actual placement/screenshots do not constitute exhaustive room navigation, nighttime lighting or named-shader testing. No new block definitions, mining tags or drop behavior changed.
+
+### Live authoring copy — 2026-09-12
+
+In the user's open development client, world `新的世界` / `minecraft:overworld`, the current formal `apocalypse_firstlight:office_midrise_01` template was placed into a **new, previously empty** authoring reservation at `(-48,-33,-112)` through `(-14,52,-74)` (35×86×39). Source and loaded `build/resources/main` NBT both had SHA-256 `f4f287b4354f3189c35548c738cb5317c0326325e6b9423af4c936040d623e29` before placement. The prior tower at `(17,-33,-159)` through `(51,52,-121)` was not overwritten; both appeared in the captured live view `run/afl_authoring_captures/81edb1c6-8fa8-4319-926c-e3fb0d08f3dc/4e2a96e1-55f6-478c-b26f-fd4eb2d5bf9d.png`.
+
+Live readback of the new reservation found **29,922 non-air blocks, 239 industrial utility lights, 15 polished-blackstone buttons, zero entities and zero block entities**. The active session was refreshed to `DRAFT` and configured to match the formal metadata: `HIGHRISE_OFFICE`, zones `CORE,MIXED`, `road_facing=true`, `damage_compatible=false`. The temporary inspection camera was restored to the player's original position, with no return point remaining. This is a world authoring copy for further edits, **not a new export or city-pool registration**. No source NBT, metadata JSON, Java, or runtime resource was changed by the placement. If the client/world session is closed, the in-memory reservation must be resumed at these exact bounds before further authoring; the world blocks themselves remain.
+
+### Vertical-layout study — 2026-09-12
+
+The [measured audit and historical proposal](office_vertical_layout_audit_v1.md) tested176 temporary floor-line markers and recommended lobby7 + typical6 with five usable floors and total height36. **That reduced-height proposal was superseded during the subsequent rebuild; the markers are now removed.** Current live copy and formal NBT are again86 high with16 original levels. The old5-block facade repeat versus a revised internal module remains a planning constraint, not permission to shorten the tower.
+
+### Structural rebuild superseded / original tower restored — 2026-09-12
+
+The initially authorized five-storey shell was applied only to the authoring copy in epoch `dc8e97dc-0438-4667-97e5-79dad371ba00`. It changed30,639 cells in21 WorldEdit batches, with exact readback matching the temporary10,055-block shell. A static route audit identified a lobby return-flight collision; physical traversal and four-facade acceptance had **not** passed. Before further corrections, the user changed direction: **keep the original overall height and tower silhouette; replan only internal floors**. The36-block design is cancelled, not a completed building or a pending export.
+
+Recovery checked that all117,390 cells still matched the applied plan, then undid exactly those21 batches. Full readback matched the pre-rebuild snapshot with zero mismatches. The176 obsolete audit-marker cells were subsequently verified against their expected colors and removed in one scoped batch. Another complete comparison against baseline minus those markers found **zero mismatches**: live copy is restored to **29,922 non-air blocks,86 occupied blocks high, original16 levels, original exterior/core/interior**. Nothing was restored by editing offline save files. The source tower elsewhere and formal resource NBT were not overwritten.
+
+Evidence: `build/authoring_checks/office_midrise_01/structural_v1_20260912/` contains `baseline.json`, `plan.json`, `ledger.json`, `route_audit.json`, `rollback_ledger.json` (`RESTORED_BASELINE_VERIFIED`), `restored.json` and `original_tower_restored.json`. Baseline includes the historical176 markers; the last snapshot does not. Cancelled recipe/recovery harness: `tools/afl_minecraft_mcp/office_structural_rebuild_v1.mjs`; static-only test: `office_structural_route_audit.mjs`. Do not replay the cancelled low-rise recipe. Marker cleanup has a current-session undo entry; the exact snapshot records remain the persistent recovery evidence.
+
+No formal furnishing, damage pass, final Promo NBT export, Worldgen NBT overwrite, city-pool change, Java build or runtime deployment. Formal NBT SHA-256 remains `f4f287b4354f3189c35548c738cb5317c0326325e6b9423af4c936040d623e29`. The user has since specified the revised internal target below. No revised internal structure has yet been applied.
+
+### Height-preserving8+7 / eleven-storey planning — 2026-09-12
+
+The latest explicit target is **lobby8, typical7,11 usable main storeys**, retaining the original86-block height, footprint and tower/stepped-roof silhouette. This supersedes both the cancelled36-block proposal and the earlier7+6 dimensions. Floor-block Ys: **-33,-25,-18,-11,-4,3,10,17,24,31,38**; office top/service baseY45. Existing exterior roofY48 and highest cellY52 remain. Calculation8+10×7+8=86; the roof/service allowanceY45..52 includes structural slabs and crown, not an additional office floor.
+
+The [updated vertical plan](office_vertical_layout_audit_v1.md#current-height-preserving-internal-plan--87--11-floors) records floor/clear-height tables, proposed7-block window bands and4+4/4+3 staircase/landing geometry. Fixed low roofs need explicit exceptions: lower entry foyer beneath podiumY=-27 opens into main8-high lobby; east wing terminates with a tall5F volume below roofY8, west with a tall8F volume below roofY28. These avoid short offices while preserving roof outlines. Main tower continues through11F. Void-edge guarding and roof-access transitions require subsequent design/testing.
+
+**Planning only:** current world still contains the restored original16-level tower. This pass refreshed live status and read eight selected horizontal slices without changing world blocks or resources. No new floor plates, facade bands, core, test markers, furnishings or NBT exports. New stair collision/player traversal and redesigned interior visual acceptance remain pending; this document is not permission to report them passed.
 
 ## Legacy six-floor draft checkpoint (preserved)
 

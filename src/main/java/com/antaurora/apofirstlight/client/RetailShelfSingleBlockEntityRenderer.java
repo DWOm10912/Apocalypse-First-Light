@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.block.RetailShelfLayout;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -12,11 +13,6 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public class RetailShelfSingleBlockEntityRenderer implements BlockEntityRenderer<RetailShelfSingleBlockEntity> {
-    private static final float ITEM_SCALE = 0.28F;
-    private static final double FRONT_DEPTH = 0.78125D;
-    private static final double[] COLUMN_X = {0.78D, 0.50D, 0.22D};
-    private static final double[] LAYER_Y = {0.55D, 0.925D, 1.30D, 1.675D};
-
     private final ItemRenderer itemRenderer;
 
     public RetailShelfSingleBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -43,12 +39,14 @@ public class RetailShelfSingleBlockEntityRenderer implements BlockEntityRenderer
                 continue;
             }
 
-            int layer = slot / 3;
-            int column = slot % 3;
+            int layer = slot / RetailShelfLayout.COLUMNS;
+            int column = slot % RetailShelfLayout.COLUMNS;
             poseStack.pushPose();
-            poseStack.translate(COLUMN_X[column], LAYER_Y[layer], FRONT_DEPTH);
+            poseStack.translate(RetailShelfLayout.columnX(column), RetailShelfLayout.rowY(layer),
+                    RetailShelfLayout.DISPLAY_Z);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-            poseStack.scale(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE);
+            poseStack.scale(RetailShelfLayout.ITEM_SCALE, RetailShelfLayout.ITEM_SCALE,
+                    RetailShelfLayout.ITEM_SCALE);
             itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, packedOverlay,
                     poseStack, buffer, shelf.getLevel(), slot);
             poseStack.popPose();

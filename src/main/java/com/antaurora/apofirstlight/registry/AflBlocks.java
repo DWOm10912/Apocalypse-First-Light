@@ -160,7 +160,7 @@ public final class AflBlocks {
     public static final RegistryObject<Block> RETAIL_SHELF_SINGLE = BLOCKS.register("retail_shelf_single",
             () -> new RetailShelfSingleBlock(BlockBehaviour.Properties.of()
                     .strength(1.5F, 4.0F)
-                    .sound(SoundType.METAL)
+                    .sound(SoundType.WOOD)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> WATER_DISPENSER = BLOCKS.register("water_dispenser",

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
+import com.antaurora.apofirstlight.client.RetailShelfParticleExtensions;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,38 +32,52 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
+import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
 
 public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
-    private static final double INTERACTION_DEPTH = 0.78125D;
-    private static final double[] INTERACTION_COLUMN_X = {0.78D, 0.50D, 0.22D};
-    private static final double[] INTERACTION_LAYER_Y = {0.55D, 0.925D, 1.30D, 1.675D};
-    private static final double MAX_COLUMN_DISTANCE = 0.16D;
-    private static final double MAX_LAYER_DISTANCE = 0.19D;
+    private static final VoxelShape NORTH_LOWER_SHAPE = createNorthShape(false);
+    private static final VoxelShape NORTH_UPPER_SHAPE = createNorthShape(true);
 
-    private static final VoxelShape NORTH_LOWER_SHAPE = Shapes.or(
-            Shapes.box(0, 2 / 16.0, 15 / 16.0, 1, 1, 1),
-            Shapes.box(0, 0, 7 / 16.0, 1, 2 / 16.0, 1),
-            Shapes.box(0, 6 / 16.0, 10 / 16.0, 1, 7 / 16.0, 15 / 16.0),
-            Shapes.box(0, 12 / 16.0, 10 / 16.0, 1, 13 / 16.0, 15 / 16.0),
-            Shapes.box(1 / 16.0, 4 / 16.0, 13 / 16.0, 2 / 16.0, 6 / 16.0, 15 / 16.0),
-            Shapes.box(14 / 16.0, 4 / 16.0, 13 / 16.0, 15 / 16.0, 6 / 16.0, 15 / 16.0)
-    );
-
-    private static final VoxelShape NORTH_UPPER_SHAPE = Shapes.or(
-            Shapes.box(0, 0, 15 / 16.0, 1, 1, 1),
-            Shapes.box(0, 2 / 16.0, 10 / 16.0, 1, 3 / 16.0, 15 / 16.0),
-            Shapes.box(0, 8 / 16.0, 10 / 16.0, 1, 9 / 16.0, 15 / 16.0),
-            Shapes.box(1 / 16.0, 0, 13 / 16.0, 2 / 16.0, 2 / 16.0, 15 / 16.0),
-            Shapes.box(14 / 16.0, 0, 13 / 16.0, 15 / 16.0, 2 / 16.0, 15 / 16.0)
-    );
+    private static VoxelShape createNorthShape(boolean upper) {
+        double offset = upper ? 16.0D : 0.0D;
+        double backStart = Math.max(1.75D, offset) - offset;
+        double backEnd = Math.min(30.88D, offset + 16.0D) - offset;
+        VoxelShape shape = Shapes.or(
+                box(1.25D, backStart, 15.424D, 14.75D, backEnd, 16.0D),
+                box(0.48D, backStart, 12.955D, 1.2D, backEnd, 16.0D),
+                box(14.8D, backStart, 12.955D, 15.52D, backEnd, 16.0D)
+        );
+        if (!upper) {
+            shape = Shapes.or(shape, box(0.65D, 0.65D, 5.904D, 15.35D, 2.3D, 16.0D));
+        } else {
+            shape = Shapes.or(shape,
+                    box(0.5D, 14.88D, 15.864D, 15.5D, 15.82D, 16.0D),
+                    box(0.55D, 15.38D, 12.456D, 15.45D, 16.0D, 15.972D));
+        }
+        for (int row = 0; row < RetailShelfLayout.ROWS; row++) {
+            double top = RetailShelfLayout.deckTopUnits(row);
+            if ((top < 16.0D) == upper) continue;
+            double y = top - offset;
+            shape = Shapes.or(shape,
+                    box(1.23D, y - 0.85D, 6.554D, 14.77D, y, 15.304D),
+                    box(1.15D, y - 0.29D, 6.094D, 14.85D, y + 0.55D, 6.554D));
+        }
+        return shape.optimize();
+    }
 
     public RetailShelfSingleBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(HALF, DoubleBlockHalf.LOWER));
+    }
+
+    @Override
+    public void initializeClient(Consumer<IClientBlockExtensions> consumer) {
+        consumer.accept(new RetailShelfParticleExtensions());
     }
 
     @Override
@@ -168,7 +183,7 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
             return InteractionResult.PASS;
         }
 
-        int slot = getClickedSlot(player, level.getBlockState(lower).getValue(FACING), lower, hit);
+        int slot = getClickedSlot(player.getEyePosition(), level.getBlockState(lower).getValue(FACING), lower, hit);
         if (slot < 0) {
             return InteractionResult.PASS;
         }
@@ -194,37 +209,42 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         return InteractionResult.PASS;
     }
 
-    private static int getClickedSlot(Player player, Direction facing, BlockPos lower, BlockHitResult hit) {
-        Vec3 eye = player.getEyePosition();
+    public static int getClickedSlot(Vec3 eye, Direction facing, BlockPos lower, BlockHitResult hit) {
         Vec3 eyeCanonical = toCanonical(facing, eye.x - lower.getX(), eye.y - lower.getY(), eye.z - lower.getZ());
         Vec3 hitLocation = hit.getLocation();
         Vec3 hitCanonical = toCanonical(facing, hitLocation.x - lower.getX(), hitLocation.y - lower.getY(),
                 hitLocation.z - lower.getZ());
 
-        if (eyeCanonical.z >= INTERACTION_DEPTH) {
+        if (eyeCanonical.z >= RetailShelfLayout.DISPLAY_Z
+                || hitCanonical.z < RetailShelfLayout.FRONT_Z - 0.02D
+                || hitCanonical.z > 1.02D
+                || RetailShelfLayout.DISPLAY_Z - hitCanonical.z
+                > RetailShelfLayout.MAX_PROJECTION_BEHIND_HIT) {
             return -1;
         }
 
         double dz = hitCanonical.z - eyeCanonical.z;
-        if (Math.abs(dz) < 1.0E-7D) {
+        if (dz <= 1.0E-7D) {
             return -1;
         }
 
-        double t = (INTERACTION_DEPTH - eyeCanonical.z) / dz;
-        if (t < 0.0D || t > 1.0D) {
+        // The visible front lip can be hit before the virtual item plane. The ray
+        // may continue only through the shelf's bounded, already-reached depth.
+        double t = (RetailShelfLayout.DISPLAY_Z - eyeCanonical.z) / dz;
+        if (t < 0.0D) {
             return -1;
         }
 
         double projectedX = eyeCanonical.x + t * (hitCanonical.x - eyeCanonical.x);
         double projectedY = eyeCanonical.y + t * (hitCanonical.y - eyeCanonical.y);
-        int column = findNearestIndex(projectedX, INTERACTION_COLUMN_X);
-        int layer = findNearestIndex(projectedY, INTERACTION_LAYER_Y);
+        int column = RetailShelfLayout.nearestColumn(projectedX);
+        int layer = RetailShelfLayout.nearestRow(projectedY);
 
-        if (Math.abs(projectedX - INTERACTION_COLUMN_X[column]) > MAX_COLUMN_DISTANCE
-                || Math.abs(projectedY - INTERACTION_LAYER_Y[layer]) > MAX_LAYER_DISTANCE) {
+        if (Math.abs(projectedX - RetailShelfLayout.columnX(column)) > RetailShelfLayout.X_HIT_TOLERANCE
+                || Math.abs(projectedY - RetailShelfLayout.rowY(layer)) > RetailShelfLayout.Y_HIT_TOLERANCE) {
             return -1;
         }
-        return layer * 3 + column;
+        return layer * RetailShelfLayout.COLUMNS + column;
     }
 
     private static Vec3 toCanonical(Direction facing, double localX, double localY, double localZ) {
@@ -235,19 +255,6 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
             case WEST -> new Vec3(1.0D - localZ, localY, localX);
             default -> new Vec3(localX, localY, localZ);
         };
-    }
-
-    private static int findNearestIndex(double value, double[] centers) {
-        int nearest = 0;
-        double nearestDistance = Math.abs(value - centers[0]);
-        for (int index = 1; index < centers.length; index++) {
-            double distance = Math.abs(value - centers[index]);
-            if (distance < nearestDistance) {
-                nearest = index;
-                nearestDistance = distance;
-            }
-        }
-        return nearest;
     }
 
     @Override

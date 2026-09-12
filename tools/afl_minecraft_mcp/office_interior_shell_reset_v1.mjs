@@ -1,0 +1,43 @@
+// Interior-only reset, fixed original envelope. No NBT/export/save-file edits.
+import {BridgeClient} from './bridge_client.mjs';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+const c=new BridgeClient('./run'),epoch='dc8e97dc-0438-4667-97e5-79dad371ba00';
+const origin=[-48,-33,-112],size=[35,86,39],dir=path.resolve('build/authoring_checks/office_midrise_01/interior_shell_reset_v1');
+const floors=[-33,-25,-18,-11,-4,3,10,17,24,31,38],top=45,air='minecraft:air';
+const idx=(x,y,z)=>((y+33)*39+z+112)*35+x+48;
+const canon=s=>s.replace(/^Block\{([^}]+)\}/,'$1').replace(/\[([^\]]+)\]/,(_,p)=>'['+p.split(',').sort().join(',')+']');
+async function save(n,v){await mkdir(dir,{recursive:true});await writeFile(path.join(dir,n+'.json'),JSON.stringify(v));}
+async function read(n){return JSON.parse(await readFile(path.join(dir,n+'.json'),'utf8'));}
+async function guard(){const s=await c.call('minecraft_status'),a=await c.call('authoring_info');if(s.world_session!==epoch||s.world!=='新的世界'||s.dimension!=='minecraft:overworld'||a.id!=='office_midrise_01'||JSON.stringify(a.min)!=='[-48,-33,-112]'||JSON.stringify(a.max)!=='[-14,52,-74]')throw Error('WORLD_PLOT_CHANGED');return{s,a};}
+async function snap(n){await guard();const cells=Array(117390),palette=[],m=new Map();for(let y=-33;y<=52;y++){const s=await c.call('get_horizontal_slice',{target:'AUTHORING_SESSION',coordinate:y,encoding:'palette'}),p=Object.fromEntries(Object.entries(s.palette).map(([k,v])=>[v,canon(k)]));for(let z=0;z<39;z++)for(let x=0;x<35;x++){const v=p[s.rows[z][x]];if(v===undefined)throw Error('SLICE');if(!m.has(v)){m.set(v,palette.length);palette.push(v);}cells[idx(x-48,y,z-112)]=m.get(v);}}const r={epoch,origin,size,cells,palette,count:await c.call('inspect_selection',{target:'AUTHORING_SESSION'})};await save(n,r);return r;}
+const rect=(x,z,a,b,A,B)=>x>=a&&x<=A&&z>=b&&z<=B;
+function interior(x,y,z){if(y< -32||y>47)return false;return rect(x,z,-38,-104,-24,-83)||(y<=27&&rect(x,z,-44,-102,-39,-85))||(y<=7&&rect(x,z,-23,-102,-18,-85))||(y<=-28&&rect(x,z,-45,-107,-17,-79));}
+const stairHole=(x,z)=>rect(x,z,-30,-103,-24,-95);
+function shaft(x,z){for(const [a,A] of [[-38,-35],[-33,-31]])if(rect(x,z,a,-103,A,-98))return{x0:a,x1:A,wall:x===a||x===A||z===-103||z===-98};return null;}
+function floorArea(x,z,y){return rect(x,z,-38,-104,-24,-83)||(y<=17&&rect(x,z,-44,-102,-39,-85))||(y<=-4&&rect(x,z,-23,-102,-18,-85));}
+function recipe(b){
+ const base=b.cells.map(i=>b.palette[i]),cells=[...base],allowed=new Set();
+ for(let y=-32;y<=47;y++)for(let z=-107;z<=-79;z++)for(let x=-45;x<=-17;x++)if(interior(x,y,z)){const i=idx(x,y,z);allowed.add(i);cells[i]=air;}
+ // Remove old stair treads in the existing rooftop access hole, not the roof slab.
+ for(let z=-103;z<=-95;z++)for(let x=-30;x<=-24;x++){const i=idx(x,48,z);if(base[i].startsWith('minecraft:stone_brick_stairs')){allowed.add(i);cells[i]=air;}}
+ const set=(x,y,z,b)=>{const i=idx(x,y,z);if(!allowed.has(i))throw Error('PROTECTED_ENVELOPE '+[x,y,z]);cells[i]=canon(b.includes(':')?b:'minecraft:'+b);};
+ // Reuse structural lift shaft perimeter, with old landing doors/lights removed.
+ for(let y=-32;y<=47;y++)for(let z=-103;z<=-98;z++)for(let x=-38;x<=-31;x++){const s=shaft(x,z);if(s?.wall)set(x,y,z,'gray_concrete');}
+ for(const f of [...floors.slice(1),top])for(let z=-104;z<=-83;z++)for(let x=-44;x<=-18;x++)if(floorArea(x,z,f)&&!stairHole(x,z)&&!shaft(x,z))set(x,f,z,'polished_andesite');
+ // New shaft openings only; no panels, controllers or elevator functionality.
+ for(const f of floors)for(const [a,A] of [[-37,-36],[-32,-32]])for(let y=f+1;y<=f+3;y++)for(let x=a;x<=A;x++)set(x,y,-98,'air');
+ // Simple structural upstands on the two omitted wing-floor interfaces.
+ for(const [x,f] of [[-23,3],[-39,24]])for(let z=-102;z<=-85;z++)for(let y=f;y<=f+2;y++)set(x,y,z,y===f?'polished_andesite':'light_gray_concrete');
+ const runs=[];let changed=0;for(let y=-33;y<=52;y++)for(let z=-112;z<=-74;z++)for(let x=-48;x<=-14;x++){const i=idx(x,y,z),block=cells[i];if(block===base[i])continue;if(!allowed.has(i))throw Error('OUTSIDE_MASK');let X=x;while(X< -14&&cells[idx(X+1,y,z)]===block&&cells[idx(X+1,y,z)]!==base[idx(X+1,y,z)])X++;changed+=X-x+1;runs.push({x,X,y,Y:y,z,Z:z,block});x=X;}
+ function merge(rs,axis){const upper=axis.toUpperCase(),m=new Map(),out=[];for(const r of rs.sort((a,b)=>a[axis]-b[axis])){const key=['x','X','y','Y','z','Z','block'].filter(k=>k!==axis&&k!==upper).map(k=>r[k]).join('|'),p=m.get(key);if(p&&p[upper]+1===r[axis])p[upper]=r[upper];else{const q={...r};out.push(q);m.set(key,q);}}return out;}
+ const operations=merge(merge(runs,'z'),'y').map(r=>({min:[r.x,r.y,r.z],max:[r.X,r.Y,r.Z],block:r.block}));
+ return{epoch,cells,operations,changed,allowed:[...allowed]};
+}
+async function plan(){try{await read('baseline');throw Error('BASELINE_EXISTS');}catch(e){if(e.code!=='ENOENT')throw e;}const b=await snap('baseline'),p=recipe(b);await save('plan',p);console.log(JSON.stringify({changed:p.changed,operations:p.operations.length,batches:Math.ceil(p.operations.length/120),baseline_non_air:b.count.non_air}));}
+async function apply(){await guard();try{await read('ledger');throw Error('ALREADY_ATTEMPTED');}catch(e){if(e.code!=='ENOENT')throw e;}const b=await read('baseline'),p=await read('plan'),v=await snap('preflight');if(v.cells.some((n,i)=>v.palette[n]!==b.palette[b.cells[i]]))throw Error('BASELINE_CONFLICT');const batches=[];for(let i=0;i<p.operations.length;i+=120)batches.push(p.operations.slice(i,i+120));const l={status:'PREFLIGHT',completed:[]};await save('ledger',l);for(const operations of batches)await c.call('we_batch_set',{operations,dry_run:true});for(let i=0;i<batches.length;i++){l.status='WRITING';l.pending=i;await save('ledger',l);l.completed.push(await c.call('we_batch_set',{operations:batches[i]}));delete l.pending;await save('ledger',l);console.log('BATCH',i+1,'/',batches.length);}const a=await snap('after');l.mismatches=a.cells.flatMap((n,i)=>a.palette[n]!==p.cells[i]?[i]:[]);l.status=l.mismatches.length?'MISMATCH':'APPLIED_VERIFIED';await save('ledger',l);console.log(JSON.stringify({status:l.status,non_air:a.count.non_air,mismatch:l.mismatches.length}));}
+async function audit(){const b=await read('baseline'),a=await read('after'),p=await read('plan'),allowed=new Set(p.allowed),at=(x,y,z)=>a.palette[a.cells[idx(x,y,z)]];let outside=0,residual=0,holes=0,shafts=0,floorErrors=0;for(let i=0;i<a.cells.length;i++){if(!allowed.has(i)&&atIndex(a,i)!==atIndex(b,i))outside++;}for(let y=-32;y<=47;y++)for(let z=-107;z<=-79;z++)for(let x=-45;x<=-17;x++)if(interior(x,y,z)){const v=at(x,y,z);if(/stairs|slab|light|door|spruce|leaves|bookshelf|cauldron|button/.test(v))residual++;if(stairHole(x,z)&&v!==air)holes++;const s=shaft(x,z);if(s&&!s.wall&&v!==air)shafts++;}const levels=[];for(let j=0;j<floors.length;j++){let f=floors[j],n=j===10?top:floors[j+1];let clear=true;for(let y=f+1;y<n;y++)if(at(-32,y,-87)!==air)clear=false;levels.push({floor:j+1,y:f,walking_y:f+1,next:n,rise:n-f,clear:n-f-1,sample_clear:clear});if(at(-32,f,-87)!=='minecraft:polished_andesite')floorErrors++;}
+ const r={kind:'EXACT_LIVE_READBACK_NOT_STAIR_TRAVERSAL',height:a.count.occupied_height,non_air:a.count.non_air,protected_cell_changes:outside,residual_interior_furniture_lights_stairs_slabs:residual,blocked_stair_hole_cells:holes,blocked_shaft_interior_cells:shafts,floor_sample_errors:floorErrors,levels,plan_mismatches:a.cells.filter((n,i)=>a.palette[n]!==p.cells[i]).length,retained_lights:a.count.palette.filter(v=>v.state.includes('industrial_utility_light'))};await save('audit',r);console.log(JSON.stringify(r));}
+function atIndex(a,i){return a.palette[a.cells[i]];}
+async function view(label,values){await guard();const a=values.map(Number);if(a.length){const pose={position:a.slice(0,3),yaw:a[3],pitch:a[4]};await c.call('camera_move',{...pose,dry_run:true});await c.call('camera_move',pose);}for(let i=0;i<20;i++){const s=await c.call('camera_status');if(s.client_frame_ready){const capture=await c.call('capture_current_view');await save('view_'+label,{s,capture});console.log(JSON.stringify(capture));return;}await new Promise(r=>setTimeout(r,250));}throw Error('FRAME');}
+try{const a=process.argv[2];if(a==='plan')await plan();else if(a==='apply')await apply();else if(a==='audit')await audit();else if(a==='view')await view(process.argv[3],process.argv.slice(4));else if(a==='restore'){await guard();await c.call('camera_restore',{dry_run:true});console.log(await c.call('camera_restore'));}else throw Error('ACTION');}catch(e){console.error(e.message);process.exitCode=1;}
