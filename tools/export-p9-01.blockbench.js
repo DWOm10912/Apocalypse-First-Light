@@ -3,8 +3,8 @@
  * paths; display belongs in models/item/p9_01_in_hand.json (not the
  * V0.4.1 GUI routing model). Then run verify-p9-01.ps1. */
 (() => {
-    if (Format.id !== 'geckolib_model' || !Project.save_path.endsWith('p9_01_v03_8_fire_slide_cleanup.bbmodel'))
-        throw new Error('Open the accepted V0.3.8 GeckoLib source first');
+    if (Format.id !== 'geckolib_model' || !Project.save_path.endsWith('p9_01.bbmodel'))
+        throw new Error('Open the formal p9_01.bbmodel source first');
     const source = JSON.parse(require('fs').readFileSync(Project.save_path, 'utf8'));
     const stripUI = value => JSON.stringify(value, (key, val) =>
         ['selected', 'primary_selected', 'isOpen', '_static'].includes(key) ? undefined : val);

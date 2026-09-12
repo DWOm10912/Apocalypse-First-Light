@@ -287,3 +287,26 @@ Vanilla Classic/Slim全臂/袖层顶点，包含手端、两侧全部角点、�
 NUMERIC PASS ≠ USER VISUAL PASS。握持自然、遮挡、前臂出屏和比例须由用户目视判断。
 当前用户对V0.5.1 Ready/Fire反馈暂无问题；这不代表本枪后续Reload构图或所有皮肤外观已全部验收。
 
+## P9 Camera Motion 空节点（2026-09-12，资产结构）
+
+正式源 `src/main/blockbench/p9_01.bbmodel` 与
+`src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json` 新增独立根级
+`camera` 空 group/bone，无 cube、子节点或 scale，初始 rotation `[0,0,0]`。
+源 pivot `[-6.51866,11.59,28.32887]`，Geo pivot `[6.51866,11.59,28.32887]`。
+X/Z 保留原右手静态 HIP 反算值；按用户要求将 Y 从 `15.99244` 下移到后照门顶部/
+`sight_anchor` 源高度 `11.59`，作为动画师参考 pivot，而非精确运行时眼点或 ADS 标定。
+`fp_root` 的 3° 为兄弟树的子变换，不应用于根级 camera。
+未复制 BR51 pivot，也未添加 positioning/view/idle_view/iron_view。
+
+枪械师直接 K `camera.rotation`，参考 BR51 工作流；本轮不生成关键帧。
+普通呼吸 sway 仍由 AFL 代码负责，动作 Camera Motion 留给动画师。
+Native Camera Consumer V1 仅对 BR51 试点启用（见 `docs/native_guns/native_camera_bone_consumer_v1.md`）；
+P9 尚未启用，因此该空节点及未来 P9 Camera 轨道当前不会改变玩家视角。
+已有源动画、正式 animation/equip、ADS、Java 与 gameplay 均未改动。
+
+`node tools/sync-p9-camera.mjs --write` 仅补齐/同步 Camera 结构；不带 `--write` 为检查。
+一次性 `--lower-to-sight --write` 可仅将源 camera 的 Y 对齐 sight_anchor，保留其 X/Z。
+两份旧导出入口 `tools/export-native-gun.mjs`、`tools/export-p9-01.blockbench.js`
+已指向正式 `p9_01.bbmodel`，而非旧 V0.3.8 源；空导出骨骼保留。
+不要为同步 Camera 调用整套动画导出覆盖枪械师的动画。
+本轮通过 JSON/结构检查、动画哈希检查与 `processResources`；未运行游戏视觉测试。

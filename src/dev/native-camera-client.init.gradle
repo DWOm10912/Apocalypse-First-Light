@@ -1,0 +1,7 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            property 'afl.nativeCameraDebug', 'true'
+        }
+    }
+}

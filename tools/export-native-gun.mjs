@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {previewFactors} from './native-arm-presentation.mjs';
 export const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const sourcePath=path.join(root,'src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel');
+export const sourcePath=path.join(root,'src/main/blockbench/p9_01.bbmodel');
 export const assets=path.join(root,'src/main/resources/assets/apocalypse_firstlight');
 export const read=p=>JSON.parse(fs.readFileSync(p,'utf8').replace(/^\uFEFF/,''));
 const clean=n=>Math.round(n*1e10)/1e10 || 0;

@@ -26,6 +26,11 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
     }
     public NativeAnimatedWeaponRenderer(NativeAnimatedWeaponItem.Profile profile) {
         super(new GeoModel<>() {
+            @Override public void handleAnimations(T item, long id,
+                    software.bernie.geckolib.core.animation.AnimationState<T> state) {
+                NativeCameraBoneConsumer.shareFrameTick(this, id, state);
+                super.handleAnimations(item, id, state);
+            }
             @Override public ResourceLocation getModelResource(T i) { return profile.resource("geo", ".geo.json"); }
             @Override public ResourceLocation getTextureResource(T i) { return profile.resource("textures/item", ".png"); }
             @Override public ResourceLocation getAnimationResource(T i) { return profile.resource("animations", ".animation.json"); }

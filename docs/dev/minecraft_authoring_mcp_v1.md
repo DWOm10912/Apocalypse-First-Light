@@ -72,6 +72,8 @@ Block writes always require AUTHORING_SESSION (except the explicitly separate re
 
 ### Industrial utility light safety correction (2026-09-10)
 
+Current visual asset: `apocalypse_firstlight:industrial_utility_light` now uses the 23-cube modern square ceiling panel from `src/main/blockbench/modern_square_ceiling_light.bbmodel` and its 128×128 texture. `tools/export-modern-square-ceiling-light.mjs` converts the ceiling-authored source into the existing floor-facing runtime model at `src/main/resources/assets/apocalypse_firstlight/models/block/industrial_utility_light.json`; it also installs the matching texture as `textures/block/industrial_utility_light.png`. The existing blockstate rotations, block/item registry IDs, placement, light emission, shapes, tool tiers, drops, and item display transforms remain unchanged. Its current names are 室内吸顶灯 / ceiling-mounted square LED panel light. This resource replacement has not yet been verified in a graphical client.
+
 `WorldEditAdapter.safeState` now rejects the exact Vanilla invisible editor block `minecraft:light` using `Blocks.LIGHT`, rather than rejecting every registry ID ending in `light`. The old suffix check incorrectly blocked the ordinary AFL fixture `apocalypse_firstlight:industrial_utility_light` both as a new material and inside an existing source/edit region. This is a development-bridge validation fix, not a change to lamp geometry, light strength, drops or mining tiers.
 
 - Exact fixture states such as `apocalypse_firstlight:industrial_utility_light[facing=down]` are allowed, subject to all other existing checks. Supported facing values are `down`, `north`, `south`, `east`, `west`; `up` is not a valid state.
