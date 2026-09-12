@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.registry;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
-import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ThermalGeneratorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.EnergyCellBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
@@ -11,6 +10,7 @@ import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.LeadChestBlockEntity;
+import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -31,14 +31,14 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<LeadChestBlockEntity>> LEAD_CHEST =
             BLOCK_ENTITIES.register("lead_chest", () ->
                     BlockEntityType.Builder.of(LeadChestBlockEntity::new, AflBlocks.LEAD_CHEST.get()).build(null));
-    public static final RegistryObject<BlockEntityType<RetailShelfSingleBlockEntity>> RETAIL_SHELF_SINGLE =
-            BLOCK_ENTITIES.register("retail_shelf_single", () ->
-                    BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,
-                            AflBlocks.RETAIL_SHELF_SINGLE.get()).build(null));
     public static final RegistryObject<BlockEntityType<CommercialGlassDoubleDoorBlockEntity>> COMMERCIAL_GLASS_DOUBLE_DOOR =
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<RetailShelfSingleBlockEntity>> RETAIL_SHELF_SINGLE =
+            BLOCK_ENTITIES.register("retail_shelf_single", () ->
+                    BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,
+                            AflBlocks.RETAIL_SHELF_SINGLE.get()).build(null));
     public static final RegistryObject<BlockEntityType<ThermalGeneratorBlockEntity>> THERMAL_GENERATOR =
             BLOCK_ENTITIES.register("thermal_generator", () ->
                     BlockEntityType.Builder.of(ThermalGeneratorBlockEntity::new,

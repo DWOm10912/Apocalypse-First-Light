@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.block;
 
-import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -38,16 +37,21 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
-    private static final VoxelShape SHAPE_NORTH = Block.box(0, 0, 0, 16, 16, 2);
-    private static final VoxelShape SHAPE_SOUTH = Block.box(0, 0, 14, 16, 16, 16);
-    private static final VoxelShape SHAPE_WEST = Block.box(0, 0, 0, 2, 16, 16);
-    private static final VoxelShape SHAPE_EAST = Block.box(14, 0, 0, 16, 16, 16);
+    private static final Map<Direction, VoxelShape> LOWER_LEFT_CLOSED = HorizontalShapeUtils.rotations(lower(false, false));
+    private static final Map<Direction, VoxelShape> LOWER_RIGHT_CLOSED = HorizontalShapeUtils.rotations(lower(true, false));
+    private static final Map<Direction, VoxelShape> LOWER_LEFT_OPEN = HorizontalShapeUtils.rotations(lower(false, true));
+    private static final Map<Direction, VoxelShape> LOWER_RIGHT_OPEN = HorizontalShapeUtils.rotations(lower(true, true));
+    private static final Map<Direction, VoxelShape> UPPER_LEFT_CLOSED = HorizontalShapeUtils.rotations(upper(false, false));
+    private static final Map<Direction, VoxelShape> UPPER_RIGHT_CLOSED = HorizontalShapeUtils.rotations(upper(true, false));
+    private static final Map<Direction, VoxelShape> UPPER_LEFT_OPEN = HorizontalShapeUtils.rotations(upper(false, true));
+    private static final Map<Direction, VoxelShape> UPPER_RIGHT_OPEN = HorizontalShapeUtils.rotations(upper(true, true));
     private static final Set<BlockPos> REMOVING = new HashSet<>();
     private static final Set<BlockPos> SUPPORT_REMOVING = new HashSet<>();
 
@@ -76,13 +80,17 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
     private boolean canPlaceStructure(BlockPlaceContext context, BlockPos anchor, Direction facing) {
         Level level = context.getLevel();
         BlockPos width = anchor.relative(widthDirection(facing));
-        BlockPos upper = anchor.above();
-        BlockPos upperWidth = width.above();
-        if (!level.getBlockState(anchor).canBeReplaced(context)
-                || !level.getBlockState(width).canBeReplaced(context)
-                || !level.getBlockState(upper).canBeReplaced(context)
-                || !level.getBlockState(upperWidth).canBeReplaced(context)) {
-            return false;
+        for (Part doorPart : Part.values()) {
+            BlockPos part = partPosition(anchor, facing, doorPart);
+            if (!level.hasChunkAt(part) || !level.getWorldBorder().isWithinBounds(part)
+                    || part.getY() >= level.getMaxBuildHeight()
+                    || !level.getBlockState(part).canBeReplaced(BlockPlaceContext.at(context, part, Direction.UP))
+                    || !level.getFluidState(part).isEmpty()
+                    || !level.isUnobstructed(defaultBlockState().setValue(FACING, facing).setValue(PART, doorPart), part,
+                    CollisionContext.empty())) return false;
+            Player player = context.getPlayer();
+            if (player != null && (!level.mayInteract(player, part)
+                    || !player.mayUseItemAt(part, Direction.UP, context.getItemInHand()))) return false;
         }
         return level.getBlockState(anchor.below()).isFaceSturdy(level, anchor.below(), Direction.UP)
                 && level.getBlockState(width.below()).isFaceSturdy(level, width.below(), Direction.UP);
@@ -95,9 +103,14 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
         boolean open = state.getValue(OPEN);
         BlockState base = defaultBlockState().setValue(FACING, facing).setValue(OPEN, open);
         Direction width = widthDirection(facing);
-        level.setBlock(position.relative(width), base.setValue(PART, Part.LOWER_RIGHT), Block.UPDATE_ALL);
-        level.setBlock(position.above(), base.setValue(PART, Part.UPPER_LEFT), Block.UPDATE_ALL);
-        level.setBlock(position.above().relative(width), base.setValue(PART, Part.UPPER_RIGHT), Block.UPDATE_ALL);
+        for (Part part : List.of(Part.LOWER_RIGHT, Part.UPPER_LEFT, Part.UPPER_RIGHT)) {
+            BlockPos peer = partPosition(position, facing, part);
+            if (!level.setBlock(peer, base.setValue(PART, part), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE)) {
+                removeParts(level, position, facing, null);
+                return;
+            }
+        }
+        for (BlockPos peer : partPositions(position, facing)) level.updateNeighborsAt(peer, this);
     }
 
     @Override
@@ -142,40 +155,38 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos anchor = anchorPosition(position, state);
-        boolean clickedOpen = state.getValue(OPEN);
         if (level.isClientSide()) {
-            ApocalypseFirstLight.LOGGER.debug(
-                    "[AFL GLASS DOOR DEBUG] use side=CLIENT clickedPart={} resolvedAnchor={} openOld={} openNew={} authoritativeToggle=SERVER",
-                    position, anchor, clickedOpen, !clickedOpen);
             return InteractionResult.SUCCESS;
         }
         BlockState anchorState = level.getBlockState(anchor);
-        if (!anchorState.is(this)) {
+        if (!anchorState.is(this) || anchorState.getValue(PART) != Part.LOWER_LEFT
+                || anchorState.getValue(FACING) != state.getValue(FACING)) {
             return InteractionResult.PASS;
         }
+        BlockEntity anchorEntity = level.getBlockEntity(anchor);
+        if (!(anchorEntity instanceof CommercialGlassDoubleDoorBlockEntity door)
+                || !door.canToggle(level.getGameTime())) return InteractionResult.CONSUME;
         boolean oldOpen = anchorState.getValue(OPEN);
         boolean open = !oldOpen;
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] use side=SERVER clickedPart={} resolvedAnchor={} openOld={} openNew={}",
-                position, anchor, oldOpen, open);
         Direction facing = anchorState.getValue(FACING);
+        Direction width = widthDirection(facing);
+        for (Part part : Part.values()) {
+            BlockState expected = level.getBlockState(partPosition(anchor, facing, part));
+            if (!expected.is(this) || expected.getValue(PART) != part
+                    || expected.getValue(FACING) != facing || expected.getValue(OPEN) != oldOpen)
+                return InteractionResult.CONSUME;
+        }
         for (BlockPos partPosition : partPositions(anchor, facing)) {
             BlockState partState = level.getBlockState(partPosition);
-            if (partState.is(this)) {
-                level.setBlock(partPosition, partState.setValue(OPEN, open), Block.UPDATE_ALL);
-            }
+            level.setBlock(partPosition, partState.setValue(OPEN, open), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
         }
-        BlockEntity anchorEntity = level.getBlockEntity(anchor);
-        if (anchorEntity instanceof CommercialGlassDoubleDoorBlockEntity door) {
-            door.triggerDoorAnimation(open);
-        } else {
-            ApocalypseFirstLight.LOGGER.debug(
-                    "[AFL GLASS DOOR DEBUG] triggerAnim side=SERVER missingMasterBE anchor={} actualBE={}",
-                    anchor, anchorEntity == null ? "null" : anchorEntity.getClass().getName());
-        }
-        level.playSound(null, anchor,
+        door.markToggled(level.getGameTime());
+        door.triggerDoorAnimation(open);
+        level.playSound(null, anchor.getX() + width.getStepX() * 0.5 + 0.5,
+                anchor.getY() + 1.0, anchor.getZ() + width.getStepZ() * 0.5 + 0.5,
                 open ? AflSounds.GLASS_DOOR_OPEN.get() : AflSounds.GLASS_DOOR_CLOSE.get(),
                 net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
+        for (BlockPos partPosition : partPositions(anchor, facing)) level.updateNeighborsAt(partPosition, this);
         return InteractionResult.CONSUME;
     }
 
@@ -249,28 +260,54 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return doorPlaneShape(state);
+        return partShape(state);
     }
 
     @Override
     public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos position) {
-        return doorPlaneShape(state);
+        return partShape(state);
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
                                         CollisionContext context) {
-        return state.getValue(OPEN) ? Shapes.empty() : doorPlaneShape(state);
+        return partShape(state);
     }
 
-    private static VoxelShape doorPlaneShape(BlockState state) {
-        return switch (state.getValue(FACING)) {
-            case NORTH -> SHAPE_NORTH;
-            case SOUTH -> SHAPE_SOUTH;
-            case WEST -> SHAPE_WEST;
-            case EAST -> SHAPE_EAST;
-            default -> SHAPE_NORTH;
+    private static VoxelShape partShape(BlockState state) {
+        boolean open = state.getValue(OPEN);
+        Map<Direction, VoxelShape> shapes = switch (state.getValue(PART)) {
+            case LOWER_LEFT -> open ? LOWER_LEFT_OPEN : LOWER_LEFT_CLOSED;
+            case LOWER_RIGHT -> open ? LOWER_RIGHT_OPEN : LOWER_RIGHT_CLOSED;
+            case UPPER_LEFT -> open ? UPPER_LEFT_OPEN : UPPER_LEFT_CLOSED;
+            case UPPER_RIGHT -> open ? UPPER_RIGHT_OPEN : UPPER_RIGHT_CLOSED;
         };
+        return shapes.get(state.getValue(FACING));
+    }
+
+    private static VoxelShape lower(boolean right, boolean open) {
+        double start = right ? 7.95 : 0.0, end = right ? 16.0 : 8.05;
+        VoxelShape fixed = Block.box(start, 0, 6, end, 16, 10);
+        VoxelShape leaf = open
+                ? Block.box(right ? 7.3 : 7.95, 0.26, 8, right ? 8.05 : 8.7, 16, 16)
+                : Block.box(right ? 0.05 : 8.05, 0.26, 7.2, right ? 7.95 : 15.95, 16, 8.8);
+        return Shapes.or(fixed, leaf).optimize();
+    }
+
+    private static VoxelShape upper(boolean right, boolean open) {
+        double start = right ? 7.95 : 0.0, end = right ? 16.0 : 8.05;
+        VoxelShape fixed = Shapes.or(Block.box(start, 0, 6, end, 16, 10),
+                Block.box(0, 14, 6, 16, 16, 10));
+        VoxelShape leaf = open
+                ? Block.box(right ? 7.3 : 7.95, 0, 8, right ? 8.05 : 8.7, 13.85, 16)
+                : Block.box(right ? 0.05 : 8.05, 0, 7.2, right ? 7.95 : 15.95, 13.85, 8.8);
+        return Shapes.or(fixed, leaf).optimize();
+    }
+
+    private static BlockPos partPosition(BlockPos anchor, Direction facing, Part part) {
+        BlockPos result = part == Part.LOWER_RIGHT || part == Part.UPPER_RIGHT
+                ? anchor.relative(widthDirection(facing)) : anchor;
+        return part.isUpper() ? result.above() : result;
     }
 
     @Override

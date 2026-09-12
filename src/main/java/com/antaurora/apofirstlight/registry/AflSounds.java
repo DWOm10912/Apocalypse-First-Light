@@ -27,12 +27,6 @@ public final class AflSounds {
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geiger_click")));
     public static final RegistryObject<SoundEvent> ATTACHMENT_OPERATION = SOUND_EVENTS.register("attachment_operation",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"attachment_operation")));
-    public static final RegistryObject<SoundEvent> GLASS_DOOR_OPEN = SOUND_EVENTS.register("glass_door_open",
-            () -> SoundEvent.createVariableRangeEvent(
-                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "glass_door_open")));
-    public static final RegistryObject<SoundEvent> GLASS_DOOR_CLOSE = SOUND_EVENTS.register("glass_door_close",
-            () -> SoundEvent.createVariableRangeEvent(
-                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "glass_door_close")));
     public static final RegistryObject<SoundEvent> CRUSHER_RUNNING = SOUND_EVENTS.register("crusher_running",
             () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "crusher_running")));
@@ -47,6 +41,10 @@ public final class AflSounds {
             SOUND_EVENTS.register("alloy_furnace_running",
                     () -> SoundEvent.createVariableRangeEvent(
                             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloy_furnace_running")));
+    public static final RegistryObject<SoundEvent> GLASS_DOOR_OPEN = SOUND_EVENTS.register("commercial_glass_double_door_open",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "commercial_glass_double_door_open")));
+    public static final RegistryObject<SoundEvent> GLASS_DOOR_CLOSE = SOUND_EVENTS.register("commercial_glass_double_door_close",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "commercial_glass_double_door_close")));
 
     private AflSounds() {
     }

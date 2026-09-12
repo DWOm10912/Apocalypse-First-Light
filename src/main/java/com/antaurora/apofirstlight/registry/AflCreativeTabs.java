@@ -52,6 +52,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.WATER_DISPENSER.get());
                         output.accept(AflItems.METAL_TRASH_CAN.get());
                         output.accept(AflItems.COMMERCIAL_DUMPSTER.get());
+                        output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.MODERN_OFFICE_DESK.get());
                         output.accept(AflItems.MODERN_OFFICE_CHAIR.get());
                         output.accept(AflItems.MODERN_LCD_MONITOR.get());
@@ -62,7 +63,6 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.LOW_FILING_CABINET.get());
                         output.accept(AflItems.TALL_FILING_CABINET.get());
                         output.accept(AflItems.OFFICE_MULTIFUNCTION_PRINTER.get());
-                        output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.FALLOUT_SOIL.get());
                         output.accept(AflItems.SCORCHED_SOIL.get());
                         output.accept(AflItems.FUSED_GROUND.get());

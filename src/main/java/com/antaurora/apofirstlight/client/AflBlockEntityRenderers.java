@@ -16,11 +16,10 @@ public final class AflBlockEntityRenderers {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(AflBlockEntities.RETAIL_SHELF_SINGLE.get(),
                 RetailShelfSingleBlockEntityRenderer::new);
-        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
-                CommercialGlassDoubleDoorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 EnergyCellBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(), LeadChestRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), CommercialGlassDoubleDoorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.FLUID_TANK.get(), FluidTankRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.THERMAL_GENERATOR.get(), ThermalGeneratorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.GUN_MAINTENANCE_BENCH.get(), GunMaintenanceBenchRenderer::new);

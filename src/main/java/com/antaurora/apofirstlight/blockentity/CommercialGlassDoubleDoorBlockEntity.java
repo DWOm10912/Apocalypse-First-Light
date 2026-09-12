@@ -1,59 +1,56 @@
 package com.antaurora.apofirstlight.blockentity;
 
-import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import software.bernie.geckolib.animatable.GeoBlockEntity;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.RawAnimation;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 public class CommercialGlassDoubleDoorBlockEntity extends BlockEntity implements GeoBlockEntity {
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private long lastToggleTick = -100;
 
     public CommercialGlassDoubleDoorBlockEntity(BlockPos position, BlockState state) {
         super(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), position, state);
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] blockEntity lifecycle=constructor side=UNKNOWN pos={} beIdentity={}",
-                position, System.identityHashCode(this));
     }
 
     @Override
-    public void onLoad() {
-        super.onLoad();
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] blockEntity lifecycle=onLoad side={} pos={} beIdentity={}",
-                debugSide(), getBlockPos(), System.identityHashCode(this));
+    public AABB getRenderBoundingBox() {
+        Direction width = getBlockState().getValue(CommercialGlassDoubleDoorBlock.FACING).getClockWise();
+        BlockPos otherHalf = worldPosition.relative(width);
+        // The only renderer is attached to the lower-left part, but its model spans both
+        // columns and both levels. Leave room in depth for either leaf to swing open.
+        return new AABB(
+                Math.min(worldPosition.getX(), otherHalf.getX()) - 1.0,
+                worldPosition.getY() - 0.125,
+                Math.min(worldPosition.getZ(), otherHalf.getZ()) - 1.0,
+                Math.max(worldPosition.getX(), otherHalf.getX()) + 2.0,
+                worldPosition.getY() + 2.125,
+                Math.max(worldPosition.getZ(), otherHalf.getZ()) + 2.0);
     }
 
-    @Override
-    public void setRemoved() {
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] blockEntity lifecycle=setRemoved side={} pos={} beIdentity={}",
-                debugSide(), getBlockPos(), System.identityHashCode(this));
-        super.setRemoved();
-    }
+    public boolean canToggle(long tick) { return tick - lastToggleTick >= 12; }
+    public void markToggled(long tick) { lastToggleTick = tick; }
 
     public void triggerDoorAnimation(boolean open) {
         String trigger = open ? "open" : "close";
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] triggerAnim side={} masterBE={} beIdentity={} controller=door_controller trigger={}",
-                debugSide(), getBlockPos(), System.identityHashCode(this), trigger);
         triggerAnim("door_controller", trigger);
     }
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        ApocalypseFirstLight.LOGGER.debug(
-                "[AFL GLASS DOOR DEBUG] registerControllers side={} pos={} beIdentity={} controller=door_controller triggers=open->door_open,close->door_close",
-                debugSide(), getBlockPos(), System.identityHashCode(this));
         AnimationController<CommercialGlassDoubleDoorBlockEntity> controller =
-                new AnimationController<>(this, "door_controller", state -> PlayState.STOP);
+                new AnimationController<>(this, "door_controller", state ->
+                        state.setAndContinue(RawAnimation.begin().thenLoop(getBlockState().getValue(
+                                CommercialGlassDoubleDoorBlock.OPEN) ? "door_open_pose" : "door_closed_pose")));
         controller.triggerableAnim("open", RawAnimation.begin().thenPlay("door_open"));
         controller.triggerableAnim("close", RawAnimation.begin().thenPlay("door_close"));
         controllers.add(controller);
@@ -69,7 +66,4 @@ public class CommercialGlassDoubleDoorBlockEntity extends BlockEntity implements
         return level == null ? 0.0D : level.getGameTime();
     }
 
-    private String debugSide() {
-        return level == null ? "UNKNOWN" : level.isClientSide() ? "CLIENT" : "SERVER";
-    }
 }

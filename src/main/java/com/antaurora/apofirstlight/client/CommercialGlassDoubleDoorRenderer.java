@@ -14,6 +14,6 @@ public class CommercialGlassDoubleDoorRenderer extends GeoBlockRenderer<Commerci
     @Override
     protected void rotateBlock(Direction facing, PoseStack poseStack) {
         super.rotateBlock(facing, poseStack);
-        poseStack.translate(0.0, 0.0, 3.0 / 16.0);
+        poseStack.translate(0.5, 0.0, 0.0);
     }
 }

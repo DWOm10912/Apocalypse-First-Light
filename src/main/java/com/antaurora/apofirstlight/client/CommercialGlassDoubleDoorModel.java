@@ -8,11 +8,11 @@ import software.bernie.geckolib.model.GeoModel;
 
 public class CommercialGlassDoubleDoorModel extends GeoModel<CommercialGlassDoubleDoorBlockEntity> {
     private static final ResourceLocation MODEL = new ResourceLocation(
-            ApocalypseFirstLight.MOD_ID, "geo/glass_door.geo.json");
+            ApocalypseFirstLight.MOD_ID, "geo/commercial_glass_double_door.geo.json");
     private static final ResourceLocation TEXTURE = new ResourceLocation(
-            ApocalypseFirstLight.MOD_ID, "textures/entity/glass_door.png");
+            ApocalypseFirstLight.MOD_ID, "textures/entity/commercial_glass_double_door.png");
     private static final ResourceLocation ANIMATIONS = new ResourceLocation(
-            ApocalypseFirstLight.MOD_ID, "animations/glass_door.animation.json");
+            ApocalypseFirstLight.MOD_ID, "animations/commercial_glass_double_door.animation.json");
 
     @Override
     public ResourceLocation getModelResource(CommercialGlassDoubleDoorBlockEntity door) {

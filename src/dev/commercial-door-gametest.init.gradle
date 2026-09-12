@@ -1,0 +1,18 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/commercial-door-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_commercial_door_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                if (!log.exists() || !log.getText('UTF-8').contains('[AFL COMMERCIAL DOOR TEST] PASS'))
+                    throw new GradleException('Commercial door GameTest did not pass')
+            }
+        }
+    }
+}

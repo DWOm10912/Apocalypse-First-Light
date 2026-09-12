@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.item.FluidTankBlockItem;
 import com.antaurora.apofirstlight.item.LeadChestBlockItem;
 import com.antaurora.apofirstlight.item.CommercialDumpsterBlockItem;
+import com.antaurora.apofirstlight.item.CommercialGlassDoubleDoorBlockItem;
 import com.antaurora.apofirstlight.item.ModernOfficeDeskBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -184,6 +185,8 @@ public final class AflItems {
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER.get(),
                     new Item.Properties()));
+    public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
+            () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> MODERN_OFFICE_DESK = ITEMS.register("modern_office_desk",
             () -> new ModernOfficeDeskBlockItem(
                     (com.antaurora.apofirstlight.block.ModernOfficeDeskBlock) AflBlocks.MODERN_OFFICE_DESK.get(),
@@ -206,8 +209,6 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.TALL_FILING_CABINET.get(), new Item.Properties()));
     public static final RegistryObject<Item> OFFICE_MULTIFUNCTION_PRINTER = ITEMS.register("office_multifunction_printer",
             () -> new BlockItem(AflBlocks.OFFICE_MULTIFUNCTION_PRINTER.get(), new Item.Properties()));
-    public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
-            () -> new BlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",
             () -> new BlockItem(AflBlocks.FALLOUT_SOIL.get(), new Item.Properties()));
     public static final RegistryObject<Item> SCORCHED_SOIL = ITEMS.register("scorched_soil",

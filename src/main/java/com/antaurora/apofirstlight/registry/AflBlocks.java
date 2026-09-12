@@ -9,6 +9,7 @@ import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
 import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
 import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
+import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeChairBlock;
 import com.antaurora.apofirstlight.block.ModernLcdMonitorBlock;
@@ -17,7 +18,6 @@ import com.antaurora.apofirstlight.block.OfficeCubiclePartitionBlock;
 import com.antaurora.apofirstlight.block.LowFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.TallFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.OfficeMultifunctionPrinterBlock;
-import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.ThermalGeneratorBlock;
 import com.antaurora.apofirstlight.block.EnergyCellBlock;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
@@ -181,6 +181,10 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
+            () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5F, 6.0F).sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> MODERN_OFFICE_DESK = BLOCKS.register("modern_office_desk",
             () -> new ModernOfficeDeskBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
@@ -235,12 +239,6 @@ public final class AflBlocks {
             () -> new OfficeMultifunctionPrinterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5F, 6.0F)
                     .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion()));
-    public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
-            () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.GLASS)
-                    .strength(1.5F, 3.0F)
-                    .sound(SoundType.GLASS)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> FALLOUT_SOIL = BLOCKS.register("fallout_soil",
