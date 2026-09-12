@@ -1,5 +1,7 @@
 # Gun Maintenance Attachment UI + SFX Polish V1
 
+> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+
 2026-09-09. Extends the accepted attachment interaction without changing hotspots, projection, HUD outward placement, compatibility, return-origin rules, gun rendering or atomic inventory exchange.
 
 ## UI

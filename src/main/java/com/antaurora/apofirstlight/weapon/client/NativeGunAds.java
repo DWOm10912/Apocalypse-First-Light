@@ -66,6 +66,7 @@ public final class NativeGunAds {
         if(mc.player.isUsingItem())blocked="item use";
         if(mc.screen!=null||!mc.isWindowActive())blocked="screen/focus";
         if(!mc.options.getCameraType().isFirstPerson())blocked="third person";
+        if(NativeGunInspect.blocksAds())blocked="inspect/release aim";
         float ticks=gun.definition().adsTicks();
         PROGRESS.tick(blocked.isEmpty()&&mc.options.keyUse.isDown(),ticks,ticks);
         if(Boolean.getBoolean("afl.nativeAdsDebug")&&mc.level.getGameTime()%20==0)

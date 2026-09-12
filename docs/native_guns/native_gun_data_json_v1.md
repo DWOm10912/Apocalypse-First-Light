@@ -1,5 +1,7 @@
 # Native Gun Data JSON V1
 
+> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+
 物品 Tooltip 的正式显示规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)：普通 Tooltip 仅显示静态规格与一句描述，不显示实时弹匣余量；数据中的真实容量及持枪 HUD 行为不变。
 
 ## 文件与真值源

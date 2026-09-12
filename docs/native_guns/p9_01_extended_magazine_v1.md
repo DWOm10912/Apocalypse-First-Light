@@ -1,5 +1,7 @@
 # P9-01 24-Round Extended Magazine V1
 
+> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+
 ## 配件与属性速查
 
 统一目录和后续属性模板见 [配件总表](attachments/README.md)。

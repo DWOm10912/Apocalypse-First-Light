@@ -1,5 +1,7 @@
 # Gun Maintenance Attachment Interaction V1
 
+> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+
 Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 SIGHT with [Rifle Red Dot](rifle_red_dot_01_v1.md) and MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md), plus MAGAZINE with [BR51 35R](br51_extended_magazine_35_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. All player attachment changes require the maintenance bench; the V shortcut is removed.
 
 ## Spatial UI

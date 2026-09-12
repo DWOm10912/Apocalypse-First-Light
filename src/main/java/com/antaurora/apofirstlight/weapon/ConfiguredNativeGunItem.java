@@ -24,6 +24,9 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
     }
     @Override public NativeGunDefinition definition() { return NativeGunData.get(definitionId); }
     @Override public String animationAsset() { return profile.id(); }
+    @Override public String inspectClip() {
+        return profile.clips().contains("inspect") && NativeGunAnimations.hasClip(profile.id(), "inspect") ? "inspect" : null;
+    }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
     @Override public net.minecraft.sounds.SoundEvent fireSound() {

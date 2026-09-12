@@ -22,6 +22,10 @@ public final class P901Input {
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
     private static boolean attackHeld;
+    private static final KeyMapping INSPECT = new KeyMapping("key.apocalypse_firstlight.inspect",
+            KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V,
+            "key.categories.apocalypse_firstlight");
+    private static boolean inspectHeld;
     private static boolean reloadHeld;
 
     private P901Input() {}
@@ -29,7 +33,7 @@ public final class P901Input {
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
-        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); }
+        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); }
     }
 
     private static boolean ready(Minecraft mc) {
@@ -45,6 +49,7 @@ public final class P901Input {
         event.setCanceled(true);
         event.setSwingHand(false);
         if (!attackHeld) {
+            NativeGunInspect.cancel();
             NativeGunRecoil.syncAimBeforeShot();
             long shotId=NativeShotVisualSnapshot.capture();
             AflNetwork.requestP901(false, mc.player.getInventory().selected,shotId);
@@ -58,16 +63,24 @@ public final class P901Input {
         Minecraft mc = Minecraft.getInstance();
         boolean reloadClick = false;
         while (RELOAD.consumeClick()) reloadClick = true;
+        boolean inspectClick = false;
+        while (INSPECT.consumeClick()) inspectClick = true;
         if (!ready(mc)) {
+            NativeGunInspect.tick(false);
+            inspectHeld = INSPECT.isDown();
             attackHeld = mc.options.keyAttack.isDown();
             reloadHeld = RELOAD.isDown();
             return;
         }
         if (!mc.options.keyAttack.isDown()) attackHeld = false;
         if (reloadClick && !reloadHeld) {
+            NativeGunInspect.cancel();
             NativeGunAds.reloadRequested();
             AflNetwork.requestP901(true, mc.player.getInventory().selected);
         }
         reloadHeld = RELOAD.isDown();
+        if (inspectClick && !inspectHeld && !reloadClick && !mc.options.keyAttack.isDown()) NativeGunInspect.pressed();
+        inspectHeld = INSPECT.isDown();
+        NativeGunInspect.tick(true);
     }
 }

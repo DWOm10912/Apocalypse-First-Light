@@ -25,6 +25,11 @@ public final class NativeGunAnimations {
     public static int ticks(String asset, String clip) {
         return (int)Math.ceil(clip(asset, clip).get("animation_length").getAsDouble() * 20);
     }
+    public static boolean hasClip(String asset, String name) {
+        if (asset == null) return false;
+        try { return clip(asset, name).has("animation_length"); }
+        catch (IllegalArgumentException | IllegalStateException missing) { return false; }
+    }
     public static List<Cue> cues(String asset, String clip) {
         List<Cue> cues = new ArrayList<>();
         var a = clip(asset, clip);

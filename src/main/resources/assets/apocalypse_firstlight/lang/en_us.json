@@ -67,6 +67,7 @@
   "item.apocalypse_firstlight.9x19mm_casing": "9×19mm Casing",
   "item.apocalypse_firstlight.762x51mm_casing": "7.62×51mm Casing",
   "key.apocalypse_firstlight.reload": "Reload native weapon",
+  "key.apocalypse_firstlight.inspect": "Inspect Weapon",
   "key.categories.apocalypse_firstlight": "Apocalypse: First Light",
   "subtitles.apocalypse_firstlight.p9_01.fire": "P9-01 Service Pistol fires",
   "subtitles.apocalypse_firstlight.p9_01.magazine_out": "Magazine removed",

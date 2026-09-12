@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "22";
+    private static final String PROTOCOL = "23";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -80,6 +80,8 @@ public final class AflNetwork {
                 MaintenancePacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, MaintenanceResult.class,MaintenanceResult::encode,MaintenanceResult::decode,
                 MaintenanceResult::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, NativeInspectPacket.class, NativeInspectPacket::encode, NativeInspectPacket::decode,
+                NativeInspectPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void requestMaintenance(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
@@ -200,6 +202,25 @@ public final class AflNetwork {
 
     public static void requestP901(boolean reload, int slot) {
         requestP901(reload,slot,0);
+    }
+    public static void requestInspect(int slot, long id, boolean cancel) {
+        if (channel != null) channel.sendToServer(new NativeInspectPacket(slot, id, cancel));
+    }
+    public record NativeInspectPacket(int slot, long id, boolean cancel) {
+        static void encode(NativeInspectPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.id); b.writeBoolean(p.cancel); }
+        static NativeInspectPacket decode(FriendlyByteBuf b) { return new NativeInspectPacket(b.readVarInt(), b.readLong(), b.readBoolean()); }
+        static void handle(NativeInspectPacket p, Supplier<NetworkEvent.Context> supplier) {
+            var context = supplier.get();
+            context.enqueueWork(() -> {
+                var player = context.getSender();
+                if (player == null) return;
+                if (p.cancel) com.antaurora.apofirstlight.weapon.P901Actions.cancelInspect(player, p.id);
+                else if (p.slot >= 0 && p.slot < 9 && player.getInventory().selected == p.slot
+                        && software.bernie.geckolib.animatable.GeoItem.getId(player.getMainHandItem()) == p.id)
+                    com.antaurora.apofirstlight.weapon.P901Actions.operation(player, "inspect");
+            });
+            context.setPacketHandled(true);
+        }
     }
     public static void requestP901(boolean reload,int slot,long shotId){
         if (channel != null) channel.sendToServer(new P901C2SPacket(reload, slot,shotId));
