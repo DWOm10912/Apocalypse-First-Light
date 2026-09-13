@@ -20,6 +20,7 @@ import com.antaurora.apofirstlight.block.OfficeDesktopDecorationBlock;
 import com.antaurora.apofirstlight.block.OfficeCubiclePartitionBlock;
 import com.antaurora.apofirstlight.block.RestroomPartitionBlock;
 import com.antaurora.apofirstlight.block.CommercialFlushometerToiletBlock;
+import com.antaurora.apofirstlight.block.CommercialWallMountedSinkBlock;
 import com.antaurora.apofirstlight.block.LowFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.TallFilingCabinetBlock;
 import com.antaurora.apofirstlight.block.OfficeMultifunctionPrinterBlock;
@@ -255,6 +256,9 @@ public final class AflBlocks {
                     .strength(1.5F, 3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> COMMERCIAL_FLUSHOMETER_TOILET = BLOCKS.register("commercial_flushometer_toilet",
             () -> new CommercialFlushometerToiletBlock(BlockBehaviour.Properties.of()
+                    .strength(2.5F, 4.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> COMMERCIAL_WALL_MOUNTED_SINK = BLOCKS.register("commercial_wall_mounted_sink",
+            () -> new CommercialWallMountedSinkBlock(BlockBehaviour.Properties.of()
                     .strength(2.5F, 4.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> LOW_FILING_CABINET = BLOCKS.register("low_filing_cabinet",
             () -> new LowFilingCabinetBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,half=lower": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink" },
+    "facing=east,half=lower": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink", "y": 90 },
+    "facing=south,half=lower": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink", "y": 180 },
+    "facing=west,half=lower": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink", "y": 270 },
+    "facing=north,half=upper": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink_upper" },
+    "facing=east,half=upper": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink_upper" },
+    "facing=south,half=upper": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink_upper" },
+    "facing=west,half=upper": { "model": "apocalypse_firstlight:block/commercial_wall_mounted_sink_upper" }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/commercial_wall_mounted_sink"
+  }
+}
