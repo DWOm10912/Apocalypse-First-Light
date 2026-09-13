@@ -194,6 +194,8 @@ public final class AflItems {
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",
             () -> new BeverageCoolerBlockItem((com.antaurora.apofirstlight.block.BeverageCoolerBlock)
                     AflBlocks.BEVERAGE_COOLER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> VENDING_MACHINE = ITEMS.register("vending_machine",
+            () -> new com.antaurora.apofirstlight.item.VendingMachineBlockItem(AflBlocks.VENDING_MACHINE.get(),new Item.Properties()));
     public static final RegistryObject<Item> CHEST_FREEZER = ITEMS.register("chest_freezer",
             () -> new ChestFreezerBlockItem((com.antaurora.apofirstlight.block.ChestFreezerBlock)
                     AflBlocks.CHEST_FREEZER.get(), new Item.Properties()));

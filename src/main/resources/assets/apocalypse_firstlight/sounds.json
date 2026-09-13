@@ -186,5 +186,6 @@
         "stream": false
       }
     ]
-  }
+  },
+  "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }

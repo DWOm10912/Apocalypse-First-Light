@@ -198,6 +198,9 @@ public final class AflBlocks {
             () -> new BeverageCoolerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)
                     .requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> VENDING_MACHINE = BLOCKS.register("vending_machine",
+            () -> new com.antaurora.apofirstlight.block.VendingMachineBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F,5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> CHEST_FREEZER = BLOCKS.register("chest_freezer",
             () -> new ChestFreezerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)

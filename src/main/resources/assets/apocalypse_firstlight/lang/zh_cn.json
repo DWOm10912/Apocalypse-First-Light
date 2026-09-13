@@ -289,5 +289,7 @@
   "gui.apocalypse_firstlight.chemical_reactor.empty_fluid": "空",
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
-  "message.apocalypse_firstlight.end_disabled": "末地无法进入"
+  "message.apocalypse_firstlight.end_disabled": "末地无法进入",
+  "block.apocalypse_firstlight.vending_machine": "自动售货机",
+  "hint.apocalypse_firstlight.break_glass": "破坏玻璃"
 }

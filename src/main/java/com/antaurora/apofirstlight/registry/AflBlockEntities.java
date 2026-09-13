@@ -41,6 +41,9 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("beverage_cooler", () ->
                     BlockEntityType.Builder.of(BeverageCoolerBlockEntity::new,
                             AflBlocks.BEVERAGE_COOLER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity>> VENDING_MACHINE =
+            BLOCK_ENTITIES.register("vending_machine",()->BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity::new,AflBlocks.VENDING_MACHINE.get()).build(null));
     public static final RegistryObject<BlockEntityType<ChestFreezerBlockEntity>> CHEST_FREEZER =
             BLOCK_ENTITIES.register("chest_freezer", () ->
                     BlockEntityType.Builder.of(ChestFreezerBlockEntity::new,

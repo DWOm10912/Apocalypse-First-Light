@@ -289,5 +289,7 @@
   "gui.apocalypse_firstlight.chemical_reactor.empty_fluid": "Empty",
 
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
-  "message.apocalypse_firstlight.end_disabled": "The End is inaccessible."
+  "message.apocalypse_firstlight.end_disabled": "The End is inaccessible.",
+  "block.apocalypse_firstlight.vending_machine": "Vending Machine",
+  "hint.apocalypse_firstlight.break_glass": "Break glass"
 }

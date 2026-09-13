@@ -48,6 +48,8 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> CHEST_FREEZER_SLIDE = SOUND_EVENTS.register("chest_freezer_slide",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chest_freezer_slide")));
 
+    public static final RegistryObject<SoundEvent> VENDING_MACHINE_BREAK = SOUND_EVENTS.register("vending_machine_break",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"vending_machine_break")));
     private AflSounds() {
     }
 

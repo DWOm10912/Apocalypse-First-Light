@@ -50,9 +50,7 @@ public final class MaintenanceAttachmentHud {
         if(locked==null&&hovered!=null&&fade>.03){
             var point=MaintenanceHotspots.project(hovered,screen.width,screen.height);
             if(point!=null){var label=NativeAttachments.stored(gun(),hovered).isEmpty()?Component.literal("+ ").append(title(hovered)):installed(hovered);
-                int x=Math.max(4,Math.min(screen.width-mc().font.width(label)-8,(int)point.x()+14));int y=Math.max(4,(int)point.y()-16);
-                g.fill(x-3,y-3,x+mc().font.width(label)+3,y+12,((int)(fade*190)<<24)|0x272b2e);
-                g.drawString(mc().font,label,x,y,((int)(fade*255)<<24)|0xdddddd,false);
+                AttachmentHintStyle.draw(g,label,(int)point.x(),(int)point.y(),screen.width,fade);
             }
         }
         if(locked!=null&&!selection){

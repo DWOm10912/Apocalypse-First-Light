@@ -57,6 +57,7 @@
     "apocalypse_firstlight:office_multifunction_printer",
     "apocalypse_firstlight:cash_register",
     "apocalypse_firstlight:beverage_cooler",
-    "apocalypse_firstlight:chest_freezer"
+    "apocalypse_firstlight:chest_freezer",
+    "apocalypse_firstlight:vending_machine"
   ]
 }

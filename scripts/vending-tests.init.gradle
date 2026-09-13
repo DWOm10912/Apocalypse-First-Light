@@ -1,0 +1,3 @@
+gradle.projectsEvaluated {
+    rootProject.minecraft.runs.gameTestServer.property 'forge.enabledGameTestNamespaces', 'afl_vending_tests'
+}

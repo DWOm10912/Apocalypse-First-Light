@@ -1,6 +1,7 @@
 {
   "sources": [
     { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/industrial_waste_still" },
-    { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/industrial_waste_flow" }
+    { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/industrial_waste_flow" },
+    { "type": "minecraft:single", "resource": "apocalypse_firstlight:entity/vending_machine" }
   ]
 }
