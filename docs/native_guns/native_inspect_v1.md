@@ -31,7 +31,7 @@ ADS 数学和 transform 不改，仅增加 inspect 输入阻断条件：沿用�
 
 ## 网络与资源边界
 
-Inspect 当时将共享 `AflNetwork` 协议从22升为23，冷柜门扇后来升为24；当前撬棍砸玻璃动作追加报文后为 **25**，两端须匹配。
+Inspect 当时将共享 `AflNetwork` 协议从22升为23，冷柜门扇后来升为24，撬棍砸玻璃升为25；厕所隔间门追加报文后当前为 **26**，两端须匹配。
 在末尾追加轻量 C2S `NativeInspectPacket(slot, id, cancel)`，保留旧包编号。
 服务端核对槽位/GeoItem ID/主手/存活/动作锁/能力；取消只作用于相同 ID 的 inspect。
 Inspect 本身不转移弹药、不改配件/耐久；仅使用已有表现动作 Session 和 GeoItem 同步身份。

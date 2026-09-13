@@ -215,6 +215,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.OFFICE_MOUSE.get(), new Item.Properties()));
     public static final RegistryObject<Item> OFFICE_CUBICLE_PARTITION = ITEMS.register("office_cubicle_partition",
             () -> new BlockItem(AflBlocks.OFFICE_CUBICLE_PARTITION.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RESTROOM_PARTITION = ITEMS.register("restroom_partition",
+            () -> new BlockItem(AflBlocks.RESTROOM_PARTITION.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RESTROOM_STALL_DOOR = ITEMS.register("restroom_stall_door",
+            () -> new com.antaurora.apofirstlight.item.RestroomStallDoorBlockItem(AflBlocks.RESTROOM_STALL_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> LOW_FILING_CABINET = ITEMS.register("low_filing_cabinet",
             () -> new BlockItem(AflBlocks.LOW_FILING_CABINET.get(), new Item.Properties()));
     public static final RegistryObject<Item> TALL_FILING_CABINET = ITEMS.register("tall_filing_cabinet",

@@ -1,20 +1,22 @@
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 
 const namespace = 'apocalypse_firstlight';
-const sourcePath = 'src/main/blockbench/office_cubicle_partition.bbmodel';
-const texturePath = 'src/main/resources/assets/apocalypse_firstlight/textures/block/office_cubicle_partition.png';
-const modelDirectory = 'src/main/resources/assets/apocalypse_firstlight/models/block/office_cubicle_partition';
-const blockstatePath = 'src/main/resources/assets/apocalypse_firstlight/blockstates/office_cubicle_partition.json';
-const itemPath = 'src/main/resources/assets/apocalypse_firstlight/models/item/office_cubicle_partition.json';
+const asset = process.argv[2] ?? 'office_cubicle_partition';
+if (!['office_cubicle_partition', 'restroom_partition'].includes(asset)) throw new Error(`Unsupported partition: ${asset}`);
+const sourcePath = `src/main/blockbench/${asset}.bbmodel`;
+const texturePath = `src/main/resources/assets/apocalypse_firstlight/textures/block/${asset}.png`;
+const modelDirectory = `src/main/resources/assets/apocalypse_firstlight/models/block/${asset}`;
+const blockstatePath = `src/main/resources/assets/apocalypse_firstlight/blockstates/${asset}.json`;
+const itemPath = `src/main/resources/assets/apocalypse_firstlight/models/item/${asset}.json`;
 
 const source = JSON.parse(await readFile(sourcePath, 'utf8'));
 await readFile(texturePath);
-if (source.elements.length !== 42) throw new Error('Expected the approved 42-cube office partition source');
+if (source.elements.length !== 42) throw new Error('Expected the approved 42-cube partition source');
 if (Math.max(...source.elements.map(element => element.to[1])) !== 32) {
-  throw new Error('Expected the approved two-block-tall office partition source');
+  throw new Error('Expected the approved two-block-tall partition source');
 }
 
-const texture = `${namespace}:block/office_cubicle_partition`;
+const texture = `${namespace}:block/${asset}`;
 const directions = ['north', 'east', 'south', 'west', 'up', 'down'];
 const materialUv = index => {
   const x = (index % 4) * 4;
@@ -29,7 +31,7 @@ const faces = material => Object.fromEntries(directions.map(direction => [direct
 const cube = (name, from, to, material) => ({name, from, to, shade: true, faces: faces(material)});
 
 const model = elements => ({
-  credit: 'Apocalypse: First Light — office_cubicle_partition',
+  credit: `Apocalypse: First Light — ${asset}`,
   parent: 'minecraft:block/block',
   ambientocclusion: false,
   texture_size: [128, 128],
@@ -51,8 +53,8 @@ const convertSourceElement = element => ({
 const addPanelSegment = (elements, name, start, end) => {
   elements.push(
     cube(`${name}_core`, [start, 3.2, 7.55], [end, 31, 8.45], 8),
-    cube(`${name}_fabric_front`, [start, 3.2, 7.4], [end, 31, 7.55], 4),
-    cube(`${name}_fabric_back`, [start, 3.2, 8.45], [end, 31, 8.6], 4),
+    cube(`${name}_${asset === 'restroom_partition' ? 'laminate' : 'fabric'}_front`, [start, 3.2, 7.4], [end, 31, 7.55], 4),
+    cube(`${name}_${asset === 'restroom_partition' ? 'laminate' : 'fabric'}_back`, [start, 3.2, 8.45], [end, 31, 8.6], 4),
     cube(`${name}_top_rail_core`, [start, 31, 7.25], [end, 31.8, 8.75], 0),
     cube(`${name}_top_rail_cap`, [start, 31.8, 7.1], [end, 32, 8.9], 1),
     cube(`${name}_top_front_highlight`, [start, 31, 7.1], [end, 31.8, 7.25], 3),
@@ -112,7 +114,7 @@ const exact = (north, south, east, west) => ({
   north: String(north), south: String(south), east: String(east), west: String(west)
 });
 const apply = (name, y) => ({
-  model: `${namespace}:block/office_cubicle_partition/${name}`,
+  model: `${namespace}:block/${asset}/${name}`,
   ...(y === undefined ? {} : {y})
 });
 
@@ -142,7 +144,7 @@ const blockstate = {
 };
 
 const item = {
-  parent: `${namespace}:block/office_cubicle_partition/single`,
+  parent: `${namespace}:block/${asset}/single`,
   gui_light: 'side',
   display: {
     thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 1.5, 0], scale: [0.25, 0.25, 0.25]},
@@ -179,3 +181,5 @@ console.log(JSON.stringify({
   multipartRules: blockstate.multipart.length,
   outputs: outputs.map(([path]) => path)
 }));
+// Restroom door attachments are a separate graph-independent resource layer.
+if (asset === 'restroom_partition') await import('./build-restroom-doorway-runtime.mjs');

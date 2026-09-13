@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "apocalypse_firstlight:restroom_stall_door",
     "apocalypse_firstlight:retail_shelf_single",
     "apocalypse_firstlight:water_dispenser",
     "apocalypse_firstlight:metal_trash_can",

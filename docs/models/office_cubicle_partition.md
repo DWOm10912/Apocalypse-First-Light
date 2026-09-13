@@ -8,6 +8,7 @@
 ## Runtime behavior
 
 The block stores four self-only horizontal connection properties: `north`, `south`, `east`, and `west`.
+Restroom Partition V1 extends this same implementation and reuses the cached shapes; office connections remain self-only and do not join restroom partitions. The office model and texture are unchanged.
 Static multipart models cover SINGLE, END, STRAIGHT, CORNER, T-junction, and CROSS layouts. Straight
 middle sections omit end posts; corner, T, and CROSS layouts share one central post and one foot.
 
@@ -27,3 +28,4 @@ Survival empty-hand destruction drops exactly one partition through its standard
 - Dedicated GameTest: PASS on 2026-09-10 (SINGLE/END/STRAIGHT/CORNER/T/CROSS, placement and break updates, all 16 shapes, hand drop, upper-space guard, 49-block batch)
 - Development-client resource reload/model bake: PASS on 2026-09-10 (no partition model, blockstate, or texture errors)
 - In-world visual acceptance: not performed because the desktop controller did not expose the native client window
+- 2026-09-13 regression: office runtime resource verifier and headless office partition GameTest PASS after adding Restroom Partition V1. The full GameTest suite still fails on unrelated TNT-event/noise-distance tests; this is not a full-suite PASS.

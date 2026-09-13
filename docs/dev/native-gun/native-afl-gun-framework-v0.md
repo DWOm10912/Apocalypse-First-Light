@@ -1556,7 +1556,7 @@ Implementation under `src/main/java/com/antaurora/apofirstlight/weapon/`:
   machine or ammo state. Server melee/block-break guards additionally reject
   ordinary attacks made while holding this prototype.
 
-`network/AflNetwork.java` protocol is **10** (was 9). One direction-restricted
+At this feature's introduction, `network/AflNetwork.java` protocol became **10** (was 9); the current shared version is **26** after stall-door integration. One direction-restricted
 C2S packet carries reload/fire choice plus selected slot. Server validates slot,
 main hand, life/spectator state and action lock. Existing S2C messages are unchanged.
 Stack render identity is synchronized before GeckoLib's trigger packet.

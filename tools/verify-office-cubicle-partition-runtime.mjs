@@ -2,25 +2,27 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 const resourceRoot = 'src/main/resources/assets/apocalypse_firstlight';
+const asset = process.argv[2] ?? 'office_cubicle_partition';
+if (!['office_cubicle_partition', 'restroom_partition'].includes(asset)) throw new Error(`Unsupported partition: ${asset}`);
 const readJson = async path => JSON.parse(await readFile(path, 'utf8'));
-const source = await readJson('src/main/blockbench/office_cubicle_partition.bbmodel');
-const blockstate = await readJson(`${resourceRoot}/blockstates/office_cubicle_partition.json`);
-const item = await readJson(`${resourceRoot}/models/item/office_cubicle_partition.json`);
+const source = await readJson(`src/main/blockbench/${asset}.bbmodel`);
+const blockstate = await readJson(`${resourceRoot}/blockstates/${asset}.json`);
+const item = await readJson(`${resourceRoot}/models/item/${asset}.json`);
 const modelNames = ['single', 'end_east', 'straight_ew', 'arm_east', 'junction'];
 const models = Object.fromEntries(await Promise.all(modelNames.map(async name => [name,
-  await readJson(`${resourceRoot}/models/block/office_cubicle_partition/${name}.json`)])));
+  await readJson(`${resourceRoot}/models/block/${asset}/${name}.json`)])));
 
 assert.equal(source.elements.length, 42);
 assert.equal(Math.max(...source.elements.map(element => element.to[1])), 32);
 assert.equal(models.single.elements.length, 42);
-assert.equal(blockstate.multipart.length, 12);
-assert.equal(item.parent, 'apocalypse_firstlight:block/office_cubicle_partition/single');
+assert.equal(blockstate.multipart.length, asset==='restroom_partition'?77:12);
+assert.equal(item.parent, `apocalypse_firstlight:block/${asset}/single`);
 assert.deepEqual(item.display.firstperson_righthand.scale, [0.3, 0.3, 0.3]);
 assert.deepEqual(item.display.thirdperson_righthand.scale, [0.25, 0.25, 0.25]);
 
 for (const [name, model] of Object.entries(models)) {
   assert.equal(model.ambientocclusion, false, `${name} ambient occlusion`);
-  assert.equal(model.textures['0'], 'apocalypse_firstlight:block/office_cubicle_partition');
+  assert.equal(model.textures['0'], `apocalypse_firstlight:block/${asset}`);
   for (const element of model.elements) {
     assert(element.from.every((value, axis) => Number.isFinite(value) && value < element.to[axis]),
       `${name}/${element.name} has invalid bounds`);
@@ -29,6 +31,7 @@ for (const [name, model] of Object.entries(models)) {
 
 const exactMatches = (when, state) => Object.entries(when).every(([property, value]) => {
   if (property === 'OR') return value.some(condition => exactMatches(condition, state));
+  if (property === 'AND') return value.every(condition => exactMatches(condition, state));
   return state[property] === value;
 });
 const appliedModels = state => blockstate.multipart
@@ -38,7 +41,7 @@ const appliedParts = state => blockstate.multipart
   .filter(part => !part.when || exactMatches(part.when, state))
   .map(part => ({name: part.apply.model.replace(/^.*\//, ''), rotation: part.apply.y ?? 0}));
 const state = (north, south, east, west) => ({
-  north: String(north), south: String(south), east: String(east), west: String(west)
+  north: String(north), south: String(south), east: String(east), west: String(west), door_support:'0'
 });
 
 assert.deepEqual(appliedModels(state(false, false, false, false)), ['single']);

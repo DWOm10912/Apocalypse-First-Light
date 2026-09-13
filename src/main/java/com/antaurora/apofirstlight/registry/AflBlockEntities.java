@@ -23,6 +23,9 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ApocalypseFirstLight.MOD_ID);
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.RestroomStallDoorBlockEntity>> RESTROOM_STALL_DOOR =
+            BLOCK_ENTITIES.register("restroom_stall_door", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.RestroomStallDoorBlockEntity::new, AflBlocks.RESTROOM_STALL_DOOR.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.GunMaintenanceBenchBlockEntity>> GUN_MAINTENANCE_BENCH =
             BLOCK_ENTITIES.register("gun_maintenance_bench",()->BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.GunMaintenanceBenchBlockEntity::new,AflBlocks.GUN_MAINTENANCE_BENCH.get()).build(null));

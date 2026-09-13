@@ -1,0 +1,1045 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "false",
+            "south": "false",
+            "east": "false",
+            "west": "false"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/single"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "false",
+            "south": "false",
+            "east": "true",
+            "west": "false"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/end_east"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "false",
+            "south": "true",
+            "east": "false",
+            "west": "false"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/end_east",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "false",
+            "south": "false",
+            "east": "false",
+            "west": "true"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/end_east",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "true",
+            "south": "false",
+            "east": "false",
+            "west": "false"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/end_east",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "false",
+            "south": "false",
+            "east": "true",
+            "west": "true"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/straight_ew"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "north": "true",
+            "south": "true",
+            "east": "false",
+            "west": "false"
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/straight_ew",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "OR": [
+              {
+                "north": "true",
+                "east": "true"
+              },
+              {
+                "east": "true",
+                "south": "true"
+              },
+              {
+                "south": "true",
+                "west": "true"
+              },
+              {
+                "west": "true",
+                "north": "true"
+              }
+            ]
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/junction"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "OR": [
+              {
+                "east": "true",
+                "north": "true"
+              },
+              {
+                "east": "true",
+                "south": "true"
+              }
+            ]
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/arm_east"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "OR": [
+              {
+                "south": "true",
+                "east": "true"
+              },
+              {
+                "south": "true",
+                "west": "true"
+              }
+            ]
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/arm_east",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "OR": [
+              {
+                "west": "true",
+                "north": "true"
+              },
+              {
+                "west": "true",
+                "south": "true"
+              }
+            ]
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/arm_east",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "OR": [
+              {
+                "north": "true",
+                "east": "true"
+              },
+              {
+                "north": "true",
+                "west": "true"
+              }
+            ]
+          },
+          {
+            "door_support": "0"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/arm_east",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_2"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "3"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_3"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_4"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "5"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_5"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "6"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_6"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "7"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_7"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_8"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "9"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_9"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "10"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_10"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "11"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_11"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "12"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_12"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "13"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_13"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "14"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_14"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "15"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_0_15"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "6"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_6"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "10"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_10"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "12"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_12"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "false",
+        "door_support": "14"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_1_14"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_4"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "5"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_5"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_8"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "9"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_9"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "12"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_12"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "13"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_2_13"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_3_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_3_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "false",
+        "west": "false",
+        "door_support": "12"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_3_12"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_2"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "3"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_3"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_8"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "9"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_9"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "10"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_10"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "11"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_4_11"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_5_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_5_8"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "true",
+        "west": "false",
+        "door_support": "10"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_5_10"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "true",
+        "west": "false",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_6_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "true",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_6_8"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "true",
+        "west": "false",
+        "door_support": "9"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_6_9"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "true",
+        "west": "false",
+        "door_support": "8"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_7_8"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_2"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "3"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_3"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_4"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "5"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_5"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "6"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_6"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "7"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_8_7"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_9_2"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_9_4"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "false",
+        "west": "true",
+        "door_support": "6"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_9_6"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "true",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_10_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "true",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_10_4"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "false",
+        "west": "true",
+        "door_support": "5"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_10_5"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "true",
+        "east": "false",
+        "west": "true",
+        "door_support": "4"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_11_4"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "true",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_12_1"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "true",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_12_2"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "false",
+        "east": "true",
+        "west": "true",
+        "door_support": "3"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_12_3"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "south": "false",
+        "east": "true",
+        "west": "true",
+        "door_support": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_13_2"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "south": "true",
+        "east": "true",
+        "west": "true",
+        "door_support": "1"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/restroom_partition/doorway_14_1"
+      }
+    }
+  ]
+}

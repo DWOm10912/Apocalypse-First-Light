@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * Lightweight four-way connecting office partition. Every position remains an
  * independent block; only its baked model and cached collision shape change.
  */
-public final class OfficeCubiclePartitionBlock extends Block {
+public class OfficeCubiclePartitionBlock extends Block {
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
     public static final BooleanProperty SOUTH = BlockStateProperties.SOUTH;
     public static final BooleanProperty EAST = BlockStateProperties.EAST;
@@ -144,7 +144,7 @@ public final class OfficeCubiclePartitionBlock extends Block {
             case SOUTH -> SOUTH;
             case EAST -> EAST;
             case WEST -> WEST;
-            default -> throw new IllegalArgumentException("Office partitions only connect horizontally: " + direction);
+            default -> throw new IllegalArgumentException("Partitions only connect horizontally: " + direction);
         };
     }
 

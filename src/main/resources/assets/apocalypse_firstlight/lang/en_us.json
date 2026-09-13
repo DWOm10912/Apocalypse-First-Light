@@ -1,4 +1,5 @@
 {
+  "block.apocalypse_firstlight.restroom_stall_door": "Restroom Stall Door",
   "tooltip.apocalypse_firstlight.stat.damage": "Damage",
   "tooltip.apocalypse_firstlight.stat.ammunition": "Ammunition",
   "tooltip.apocalypse_firstlight.stat.magazine": "Magazine",
@@ -134,6 +135,7 @@
   "block.apocalypse_firstlight.office_keyboard": "Office Keyboard",
   "block.apocalypse_firstlight.office_mouse": "Office Mouse",
   "block.apocalypse_firstlight.office_cubicle_partition": "Office Cubicle Partition",
+  "block.apocalypse_firstlight.restroom_partition": "Restroom Partition",
   "block.apocalypse_firstlight.low_filing_cabinet": "Low Filing Cabinet",
   "block.apocalypse_firstlight.tall_filing_cabinet": "Tall Filing Cabinet",
   "block.apocalypse_firstlight.office_multifunction_printer": "Office Multifunction Printer",

@@ -37,7 +37,7 @@
 
 服务端`CrowbarSmashAction`为玩家和机器BE预约一次动作，每tick检查：存活、非旁观/睡眠、连接、菜单、热栏、原工具对象、同维度、同BE；命中前还要求仍瞄准原玻璃且未破碎。目标被换成同坐标新机器也会取消。死亡/退出/条件丢失释放预约；结束不留下持久化“忙碌”标记。
 
-新增有方向限制的`CrowbarSmashPacket`（S2C START/IMPACT/CANCEL/END）和`Cancel`（C2S动作UUID）；C2S不能提交破碎，不能取消别人的动作。`AflNetwork`协议从24升为25，双方需同版。广播给跟踪玩家及本人，单次动作无逐帧/逐tick广播。
+新增有方向限制的`CrowbarSmashPacket`（S2C START/IMPACT/CANCEL/END）和`Cancel`（C2S动作UUID）；C2S不能提交破碎，不能取消别人的动作。本功能当时将`AflNetwork`协议从24升为25；厕所隔间门报文接入后当前为26，双方需同版。广播给跟踪玩家及本人，单次动作无逐帧/逐tick广播。
 
 START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_machine_break`。取消停止对应声音；已提交的破碎不回滚。恢复期间禁止该玩家提前拿放展示物。独立多人延迟环境仍待验证。
 

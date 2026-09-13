@@ -9,10 +9,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestGenerator;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.gametest.framework.GameTestServer;
 import net.minecraft.gametest.framework.TestFunction;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
@@ -36,36 +34,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
-@GameTestHolder("afl_office_partition_tests")
+@GameTestHolder(ApocalypseFirstLight.MOD_ID)
 @PrefixGameTestTemplate(false)
-@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class OfficeCubiclePartitionGameTests {
-    private static final String NAMESPACE = "afl_office_partition_tests";
-
-    @net.minecraftforge.eventbus.api.SubscribeEvent
-    public static void template(net.minecraftforge.event.server.ServerStartingEvent event) throws Exception {
-        if (!(event.getServer() instanceof GameTestServer)) return;
-        var level = event.getServer().overworld();
-        var tag = net.minecraft.nbt.TagParser.parseTag(
-                "{size:[16,8,16],entities:[],blocks:[],palette:[{Name:\"minecraft:air\"}]}");
-        var blocks = new net.minecraft.nbt.ListTag();
-        for (int x = 0; x < 16; x++) for (int y = 0; y < 8; y++) for (int z = 0; z < 16; z++) {
-            var block = new net.minecraft.nbt.CompoundTag();
-            var position = new net.minecraft.nbt.ListTag();
-            for (int coordinate : new int[]{x, y, z}) position.add(net.minecraft.nbt.IntTag.valueOf(coordinate));
-            block.put("pos", position);
-            block.putInt("state", 0);
-            blocks.add(block);
-        }
-        tag.put("blocks", blocks);
-        level.getStructureManager().getOrCreate(new ResourceLocation(NAMESPACE, "empty"))
-                .load(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK), tag);
-    }
+    private static final String NAMESPACE = ApocalypseFirstLight.MOD_ID;
+    private static final String TEMPLATE = "retail_shelf_empty";
 
     @GameTestGenerator
     public static Collection<TestFunction> tests() {
-        return List.of(new TestFunction("office_partition", NAMESPACE + ":connections_shapes_drops",
-                NAMESPACE + ":empty", 240, 0L, true, OfficeCubiclePartitionGameTests::run));
+        return List.of(new TestFunction("office_partition", NAMESPACE + ":office_partition_connections_shapes_drops",
+                NAMESPACE + ":" + TEMPLATE, 240, 0L, true, OfficeCubiclePartitionGameTests::run));
     }
 
     private static void run(GameTestHelper helper) {

@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "25";
+    private static final String PROTOCOL = "26";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -86,6 +86,9 @@ public final class AflNetwork {
                 BeverageCoolerDoorC2SPacket::encode, BeverageCoolerDoorC2SPacket::decode,
                 BeverageCoolerDoorC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, RestroomDoorC2SPacket.class, RestroomDoorC2SPacket::encode,
+                RestroomDoorC2SPacket::decode, RestroomDoorC2SPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, CrowbarSmashPacket.class,CrowbarSmashPacket::encode,CrowbarSmashPacket::decode,
                 CrowbarSmashPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, CrowbarSmashPacket.Cancel.class,CrowbarSmashPacket.Cancel::encode,CrowbarSmashPacket.Cancel::decode,
@@ -105,6 +108,9 @@ public final class AflNetwork {
 
     public static void requestBeverageCoolerDoor(BlockPos master, boolean left) {
         if (channel != null) channel.sendToServer(new BeverageCoolerDoorC2SPacket(master, left));
+    }
+    public static void requestRestroomDoor(BlockPos pos) {
+        if(channel!=null)channel.sendToServer(new RestroomDoorC2SPacket(pos));
     }
     public record MaintenancePacket(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
         static void encode(MaintenancePacket p,FriendlyByteBuf b){var r=p.request;
