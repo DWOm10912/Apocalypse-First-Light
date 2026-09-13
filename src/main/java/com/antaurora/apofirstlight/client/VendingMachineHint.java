@@ -22,7 +22,7 @@ public final class VendingMachineHint {
         float step=Math.min(.2f,(now-last)/1_000_000_000f)/AttachmentHintStyle.FADE_SECONDS;last=now;
         if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
         boolean show=false;
-        if(!mc.player.isSpectator() && (mc.player.getMainHandItem().is(AflItems.CROWBAR.get())||mc.player.getOffhandItem().is(AflItems.CROWBAR.get()))
+        if(!mc.player.isSpectator() && !CrowbarSmashClient.active() && mc.player.getMainHandItem().is(AflItems.CROWBAR.get())
                 && mc.hitResult instanceof BlockHitResult hit) {
             var s=mc.level.getBlockState(hit.getBlockPos());
             show=s.getBlock() instanceof VendingMachineBlock && !s.getValue(VendingMachineBlock.BROKEN)

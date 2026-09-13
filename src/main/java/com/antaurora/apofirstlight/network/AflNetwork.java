@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "24";
+    private static final String PROTOCOL = "25";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -86,6 +86,17 @@ public final class AflNetwork {
                 BeverageCoolerDoorC2SPacket::encode, BeverageCoolerDoorC2SPacket::decode,
                 BeverageCoolerDoorC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, CrowbarSmashPacket.class,CrowbarSmashPacket::encode,CrowbarSmashPacket::decode,
+                CrowbarSmashPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, CrowbarSmashPacket.Cancel.class,CrowbarSmashPacket.Cancel::encode,CrowbarSmashPacket.Cancel::decode,
+                CrowbarSmashPacket.Cancel::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+    }
+
+    public static void crowbarSmash(ServerPlayer player,java.util.UUID action,BlockPos target,int phase) {
+        if(channel!=null)channel.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(()->player),new CrowbarSmashPacket(player.getUUID(),action,target,phase));
+    }
+    public static void cancelCrowbarSmash(java.util.UUID action) {
+        if(channel!=null)channel.sendToServer(new CrowbarSmashPacket.Cancel(action));
     }
 
     public static void requestMaintenance(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){

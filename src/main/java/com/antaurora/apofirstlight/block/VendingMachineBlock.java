@@ -3,7 +3,7 @@ package com.antaurora.apofirstlight.block;
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
 import com.antaurora.apofirstlight.item.VendingMachineBlockItem;
 import com.antaurora.apofirstlight.registry.AflItems;
-import com.antaurora.apofirstlight.registry.AflSounds;
+import com.antaurora.apofirstlight.interaction.CrowbarSmashAction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -115,21 +115,11 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         ItemStack held = player.getItemInHand(hand);
         BlockPos base = lower(s,p);
         if (!s.getValue(BROKEN)) {
-            if (!held.is(AflItems.CROWBAR.get())) return InteractionResult.PASS;
-            if (!l.isClientSide) {
-                BlockState main = l.getBlockState(base);
-                if (!main.is(this) || main.getValue(BROKEN)) return InteractionResult.CONSUME;
-                l.setBlock(base,main.setValue(BROKEN,true),UPDATE_ALL);
-                BlockState upper = l.getBlockState(base.above());
-                if (upper.is(this)) l.setBlock(base.above(),upper.setValue(BROKEN,true),UPDATE_ALL);
-                l.playSound(null,base,AflSounds.VENDING_MACHINE_BREAK.get(),net.minecraft.sounds.SoundSource.BLOCKS,1f,1f);
-                player.swing(hand,true);
-                if (l instanceof net.minecraft.server.level.ServerLevel server)
-                    server.sendParticles(new net.minecraft.core.particles.BlockParticleOption(net.minecraft.core.particles.ParticleTypes.BLOCK,
-                            Blocks.GLASS.defaultBlockState()),hit.getLocation().x,hit.getLocation().y,hit.getLocation().z,12,.12,.18,.05,.04);
-            }
-            return InteractionResult.sidedSuccess(l.isClientSide);
+            if (hand!=InteractionHand.MAIN_HAND||!held.is(AflItems.CROWBAR.get())) return InteractionResult.PASS;
+            if (player instanceof net.minecraft.server.level.ServerPlayer server) CrowbarSmashAction.begin(server,base,hand);
+            return InteractionResult.CONSUME; // The dedicated viewmodel owns this action, not Vanilla swing.
         }
+        if(player instanceof net.minecraft.server.level.ServerPlayer server&&CrowbarSmashAction.active(server))return InteractionResult.CONSUME;
         int slot = slot(point);
         if (slot < 0 || !(l.getBlockEntity(base) instanceof VendingMachineBlockEntity be)) return InteractionResult.PASS;
         if (!l.isClientSide) {

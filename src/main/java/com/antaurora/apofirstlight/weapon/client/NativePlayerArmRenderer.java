@@ -59,12 +59,31 @@ public final class NativePlayerArmRenderer {
     /** The caller supplies a fully animated canonical locator, never gun geometry. */
     public static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
                               int light, int overlay) {
+        render(evaluatedLocator,right,buffers,light,overlay,1F);
+    }
+
+    /** Optional contact-centred cross-section for a tool rig; gun callers retain the default. */
+    public static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
+                              int light, int overlay, float crossSection) {
+        render(evaluatedLocator,right,buffers,light,overlay,crossSection,1F,crossSection);
+    }
+
+    /** Full Vanilla arm size around the same distal contact; independent of gun presentation. */
+    public static void renderFullSize(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
+                                      int light, int overlay) {
+        render(evaluatedLocator,right,buffers,light,overlay,
+                1F/PRESENTATION_X,1F/PRESENTATION_Y,1F/PRESENTATION_Z);
+    }
+
+    private static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
+                               int light, int overlay, float x, float y, float z) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         if (player == null || player.isInvisible() || !handFilter.test(right)) return;
         if (!(mc.getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         var pose = canonicalPose(evaluatedLocator);
         if (pose == null) return;
+        pose.scale(x,y,z);
         NativeHandBinding.apply(pose, right, player.getModelName().equals("slim"));
         var model = renderer.getModel();
         var skin = player.getSkinTextureLocation();

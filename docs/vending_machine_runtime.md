@@ -4,10 +4,11 @@
 
 - 唯一方块/物品 ID：`apocalypse_firstlight:vending_machine`；建筑方块 Creative Tab，中英文名称已注册。
 - 属性 `facing=north/east/south/west`、`half=lower/upper`、`broken=false/true`。新取得的机器默认玻璃完整；破损机器物品带 `AflBrokenGlass` 标记，重放时两半均维持破损状态。下半唯一 BlockEntity，上半跟随状态；空间不足不放置。
-- 手持现有 `apocalypse_firstlight:crowbar` 右键正面玻璃区域：立即破碎，两半同步，库存保留。侧面、背面、支付区、机顶不触发。
+- 主手持 `apocalypse_firstlight:crowbar` 右键正面完整玻璃：服务端预约该机器并启动独立第一人称 `smash_glass`；第12 tick（0.60秒）重新验证目标后才破碎，两半同步，库存保留。动作共33 tick（1.65秒）。侧面、背面、支付区、机顶不触发。
 - 提示为“破坏玻璃”，与 `MaintenanceAttachmentHud` 共用 `AttachmentHintStyle`：150ms 渐入/淡出、灰色无阴影文字、深灰底板、命中点右14/上16像素。世界交互以准星为锚点，已破碎时淡出。
-- 撬棍表现为原版简化挥动，同次成功交互播放音效和12个玻璃粒子；未实现定制关键帧下砸或延迟撞击。未增加撬棍耐久消耗规则。
-- 音效 `apocalypse_firstlight:vending_machine_break` 来自 `E:/Download/vending_machine_break.ogg`，未转换，SHA256 `370537e028a47efba68527622165775617b60626570f9626295f6dc9128389a1`。
+- 主手专用单手 ViewModel 使用 Native 玩家皮肤/袖子渲染，含蓄力、朝屏幕中心前砸、1 tick命中停顿、回位；命中时12个玻璃粒子与轻微镜头反馈。起手不再触发原版挥手。未增加撬棍耐久消耗规则。
+- 动作期间同一玩家/同一机器只能有一项预约；命中前每tick检查工具、热栏、距离、视线、目标BE身份及玩家状态。换物品、移开准星、离开距离、目标消失、退出或打开界面会取消；取消停止对应音效，不回滚已经提交的破碎。动作期间左键取消，重复右键被拦截。细节及验证见 [crowbar_first_person_smash_v1.md](crowbar_first_person_smash_v1.md)。
+- 音效 `apocalypse_firstlight:vending_machine_break` 来自用户最新 `E:/Download/vending_machine_break.ogg`，未转换，SHA256 `19c346082141e16317e1dfdf2a7b363fdaffee05de3d2d748f886d7c98c1ad9a`。实测1.027483秒，碎裂起音约0.04765秒。起手静音；S2C命中确认一起启动声音、命中姿势和破碎显示。等待确认时姿势停留在命中前，避免声音/视觉先于提交。旧音频及分段方案已弃用。
 - 完整玻璃禁止库存拿放。破碎后空手右键对应格拿取，手持物品右键空格放入1件；满格不替换。不实现 Container 或物品能力，漏斗不能绕过玻璃。
 - 默认库存为空，无默认随机商品。可通过破碎后手动填充或未来 worldgen/NBT 初始化；无 GUI、付费系统、多排深度、撬门、开门或 worldgen。
 
@@ -54,5 +55,5 @@ NORTH 局部方块坐标：X=(5.63/16,9.23/16,12.83/16)，中心 Y=(9.35+4.7×�
 - `gradlew.bat build runGameTestServer --offline -I scripts/vending-tests.init.gradle --console=plain` 已通过；专用 GameTest 1/1 通过。
 - 专用 GameTest 综合场景包括四朝向放置、下半BE、锁定库存、正面破碎、上下同步、12格拿取、旧 8 槽 NBT 迁移、破损机器掉落及重放、碰撞保留、生存六种工具掉落及单次库存掉落、创造拆除、上方阻挡放置、支撑移除。
 - 运行时使用项目本地 `GRADLE_USER_HOME=.gradle-user`。
-- 未完成图形客户端实测：需要检查透明玻璃排序、物品尺度与点取手感、提示淡入、简化挥动/音效体验及物品栏模型。服务端测试不能证明这些视觉效果。
-- 本次背板改色已检查两份源模型与运行时 body UV；仍需客户端重新加载资源（F3+T）或重启客户端，确认破洞对比效果。砸玻璃动画与音效时序未在本次任务中改动。
+- 图形客户端验证与独立砸击动作的最新结果见 `crowbar_first_person_smash_v1.md`；服务端测试本身不能证明视觉与音效体验。
+- 背板改色已检查两份源模型与运行时 body UV；独立砸击动画和延迟命中已由 Crowbar First-Person V1 替换原先的即时破碎流程。

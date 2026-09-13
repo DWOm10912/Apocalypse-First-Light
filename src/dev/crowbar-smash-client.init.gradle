@@ -1,0 +1,9 @@
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/crowbar-smash-client')
+            property 'afl.crowbarSmashProbe', 'true'
+            args '--quickPlaySingleplayer', 'crowbar_probe', '--width', '1280', '--height', '800'
+        }
+    }
+}

@@ -61,7 +61,19 @@ public final class VendingMachineGameTests {
             var hit=new BlockHitResult(point,f,p.above(),false);
             h.assertTrue(VendingMachineBlock.frontPoint(l.getBlockState(p.above()),p.above(),eye,new BlockHitResult(point,f.getOpposite(),p.above(),false))==null,"reject back face");
             b.use(l.getBlockState(p.above()),l,p.above(),player,InteractionHand.MAIN_HAND,hit);
+            h.assertTrue(!l.getBlockState(p).getValue(VendingMachineBlock.BROKEN),"no instant break");
+            h.assertTrue(com.antaurora.apofirstlight.interaction.CrowbarSmashAction.active(player),"action accepted "+f);
+            long begun=l.getGameTime();
+            h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.begin(player,p,InteractionHand.MAIN_HAND),"spam rejected");
+            ((net.minecraft.world.level.storage.ServerLevelData)l.getLevelData()).setGameTime(begun+com.antaurora.apofirstlight.interaction.CrowbarSmashTimeline.IMPACT-1);
+            com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
+            h.assertTrue(!l.getBlockState(p).getValue(VendingMachineBlock.BROKEN),"intact before sound impact");
+            ((net.minecraft.world.level.storage.ServerLevelData)l.getLevelData()).setGameTime(begun+com.antaurora.apofirstlight.interaction.CrowbarSmashTimeline.IMPACT);
+            com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
             h.assertTrue(l.getBlockState(p).getValue(VendingMachineBlock.BROKEN)&&l.getBlockState(p.above()).getValue(VendingMachineBlock.BROKEN),"both broken");
+            ((net.minecraft.world.level.storage.ServerLevelData)l.getLevelData()).setGameTime(begun+com.antaurora.apofirstlight.interaction.CrowbarSmashTimeline.DURATION);
+            com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
+            h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.active(player),"recovery releases reservation");
             h.assertTrue(l.getBlockEntity(p)==be,"state retains BE");
             for(int slot=0;slot<VendingMachineBlockEntity.SIZE;slot++) {
                 h.assertTrue(be.put(slot,new ItemStack(Items.APPLE,5)),"insert "+slot);
@@ -114,6 +126,31 @@ public final class VendingMachineGameTests {
             l.getEntitiesOfClass(ItemEntity.class,new AABB(p).inflate(3)).forEach(ItemEntity::discard);
         }
         var s=b.defaultBlockState();
+        // Interrupted operations never commit later; a second player cannot reserve the same BE.
+        player.setGameMode(GameType.SURVIVAL);player.setYRot(0);player.setXRot(0);
+        Vec3 eye=world(p,Direction.NORTH,new Vec3(.55,1.2,-2));player.setPos(eye.x,eye.y-player.getEyeHeight(),eye.z);
+        for(int reason=0;reason<4;reason++){
+            l.setBlock(p,s,2);l.setBlock(p.above(),s.setValue(VendingMachineBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),3);
+            player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.STICK));
+            h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.begin(player,p,InteractionHand.MAIN_HAND),"wrong tool rejected");
+            player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.CROWBAR.get()));
+            h.assertTrue(com.antaurora.apofirstlight.interaction.CrowbarSmashAction.begin(player,p,InteractionHand.MAIN_HAND),"cancel scenario begins");
+            if(reason==0)player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.STICK));
+            if(reason==1)player.setYRot(180);
+            if(reason==2)l.setBlock(p,Blocks.AIR.defaultBlockState(),3);
+            if(reason==3){
+                var other=FakePlayerFactory.get(l,new GameProfile(UUID.randomUUID(),"vending_contender"));
+                other.setYRot(0);other.setPos(player.getX(),player.getY(),player.getZ());
+                other.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.CROWBAR.get()));
+                h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.begin(other,p,InteractionHand.MAIN_HAND),"machine reservation excludes second player");
+                player.setPos(eye.x+20,player.getY(),eye.z);
+            }
+            com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
+            h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.active(player),"interruption releases action "+reason);
+            ((net.minecraft.world.level.storage.ServerLevelData)l.getLevelData()).setGameTime(l.getGameTime()+60);com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
+            h.assertTrue(l.getBlockState(p).isAir()||!l.getBlockState(p).getValue(VendingMachineBlock.BROKEN),"cancelled action never commits");
+            player.setYRot(0);player.setPos(eye.x,eye.y-player.getEyeHeight(),eye.z);
+        }
         l.setBlock(p,s,2);l.setBlock(p.above(),s.setValue(VendingMachineBlock.HALF,net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER),3);
         player.setGameMode(GameType.CREATIVE);player.gameMode.destroyBlock(p.above());
         h.assertTrue(l.getBlockState(p).isAir()&&l.getBlockState(p.above()).isAir(),"creative cleanup");
