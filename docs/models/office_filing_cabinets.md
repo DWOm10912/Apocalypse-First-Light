@@ -25,7 +25,7 @@ The runtime exporter validates the approved 61/105-cube sources, shared 128x128 
 
 ## Verification
 
-Inventory GUI framing uses rotation `[25,135,0]` for both cabinets. Low cabinet scale is `[0.6,0.6,0.6]`, translation `[0,1,0]`; tall cabinet scale is `[0.4,0.4,0.4]`, translation `[0,-3,0]`. These GUI settings are retained by the runtime exporter. The GUI framing adjustment still requires in-game visual acceptance.
+Inventory GUI framing uses rotation `[25,135,0]` for both cabinets. Low cabinet scale is `[0.6,0.6,0.6]`, translation `[0,0.25,0]`; tall cabinet scale is `[0.4,0.4,0.4]`, translation `[0,-3,0]`. These GUI settings are retained by the runtime exporter. The latest GUI centering adjustment still requires in-game visual acceptance; see [creative inventory framing](creative_inventory_framing.md).
 
 - Build: `gradlew.bat compileJava processResources build --no-daemon`
 - Isolated GameTest: `gradlew.bat -I src/dev/filing-cabinet-gametest.init.gradle runGameTestServer --offline -PaflWithoutTacz`

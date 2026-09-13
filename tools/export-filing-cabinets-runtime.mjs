@@ -83,12 +83,12 @@ const outputs=new Map([
  [path.join(assetRoot,'models/block/tall_filing_cabinet_lower.json'),blockModel(tallParts.lower)],
  [path.join(assetRoot,'models/block/tall_filing_cabinet_upper.json'),blockModel(tallParts.upper)],
  [path.join(assetRoot,'blockstates/tall_filing_cabinet.json'),{variants:Object.fromEntries([['north',0],['east',90],['south',180],['west',270]].flatMap(([facing,y])=>['lower','upper'].map(half=>[`facing=${facing},half=${half}`,{model:`apocalypse_firstlight:block/tall_filing_cabinet_${half}`,...(y?{y}:{})}])))}],
- [path.join(assetRoot,'models/item/tall_filing_cabinet.json'),{...blockModel(tallElements),gui_light:'side',display:{thirdperson_righthand:{rotation:[75,45,0],translation:[0,1,0],scale:[0.32,0.32,0.32]},thirdperson_lefthand:{rotation:[75,45,0],translation:[0,1,0],scale:[0.32,0.32,0.32]},firstperson_righthand:{rotation:[0,45,0],translation:[0,-2,0],scale:[0.36,0.36,0.36]},firstperson_lefthand:{rotation:[0,225,0],translation:[0,-2,0],scale:[0.36,0.36,0.36]},gui:{rotation:[25,135,0],translation:[0,-5,0],scale:[0.45,0.45,0.45]},ground:{translation:[0,0,0],scale:[0.34,0.34,0.34]},fixed:{rotation:[0,180,0],translation:[0,-5,0],scale:[0.43,0.43,0.43]}}}]
+ [path.join(assetRoot,'models/item/tall_filing_cabinet.json'),{...blockModel(tallElements),gui_light:'side',display:{thirdperson_righthand:{rotation:[75,45,0],translation:[0,1,0],scale:[0.32,0.32,0.32]},thirdperson_lefthand:{rotation:[75,45,0],translation:[0,1,0],scale:[0.32,0.32,0.32]},firstperson_righthand:{rotation:[0,45,0],translation:[0,-2,0],scale:[0.36,0.36,0.36]},firstperson_lefthand:{rotation:[0,225,0],translation:[0,-2,0],scale:[0.36,0.36,0.36]},gui:{rotation:[25,135,0],translation:[0,-5,0],scale:[0.45,0.45,0.45]},ground:{translation:[0,0,0],scale:[0.34,0.34,0.34]},fixed:{rotation:[0,180,0],translation:[0,-5,0],scale:[0.4,0.4,0.4]}}}]
 ]);
 
 // Inventory framing: slightly smaller cabinets, lifted within the item slot.
 outputs.get(path.join(assetRoot,'models/item/low_filing_cabinet.json')).display.gui =
- {rotation:[25,135,0],translation:[0,1,0],scale:[0.6,0.6,0.6]};
+ {rotation:[25,135,0],translation:[0,0.25,0],scale:[0.6,0.6,0.6]};
 outputs.get(path.join(assetRoot,'models/item/tall_filing_cabinet.json')).display.gui =
  {rotation:[25,135,0],translation:[0,-3,0],scale:[0.4,0.4,0.4]};
 

@@ -1,3 +1,14 @@
 {
-  "parent": "apocalypse_firstlight:block/retail_shelf_single"
+  "parent": "apocalypse_firstlight:block/retail_shelf_single",
+  "display": {
+    "thirdperson_righthand": { "translation": [0, 2, 0], "scale": [0.25, 0.25, 0.25] },
+    "thirdperson_lefthand": { "translation": [0, 2, 0], "scale": [0.25, 0.25, 0.25] },
+    "firstperson_righthand": { "scale": [0.25, 0.25, 0.25] },
+    "firstperson_lefthand": { "scale": [0.25, 0.25, 0.25] },
+    "ground": { "translation": [0, 2.75, 0], "scale": [0.5, 0.5, 0.5] },
+    "gui": { "rotation": [30, 128, 0], "translation": [-0.75, -2.9, 0], "scale": [0.35, 0.35, 0.35] },
+    "head": { "scale": [0.25, 0.25, 0.25] },
+    "fixed": { "translation": [0, -3, -3.25], "scale": [0.5, 0.5, 0.5] },
+    "on_shelf": { "rotation": [0, -180, 0], "scale": [0.5, 0.5, 0.5] }
+  }
 }

@@ -1,0 +1,27 @@
+{
+  "id": "convenience_store_01",
+  "structure": "apocalypse_firstlight:convenience_store_01",
+  "category": "COMMERCIAL",
+  "footprint": {
+    "width": 25,
+    "depth": 38
+  },
+  "height": 11,
+  "front": "SOUTH",
+  "surface_offset_y": 0,
+  "allowed_rotations": [
+    "NONE",
+    "CLOCKWISE_90",
+    "CLOCKWISE_180",
+    "COUNTERCLOCKWISE_90"
+  ],
+  "road_facing": true,
+  "city_zones": [
+    "MIXED",
+    "COMMERCIAL",
+    "EDGE"
+  ],
+  "damage_compatible": false,
+  "loot_ready": false,
+  "authoring_version": 1
+}

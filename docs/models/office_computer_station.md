@@ -10,7 +10,7 @@
 | 运行时形式 | 显示器、键盘和鼠标合并为一个静态方块模型 | 独立静态方块模型 | 独立静态方块模型 |
 | 方块状态 | `facing`、`lowered` | `facing`、`lowered` | `facing`、`lowered` |
 | VoxelShape | 鼠标、键盘、显示器底座、支架与屏幕五个近似盒 | 单个低矮盒 | 单个低矮盒 |
-| 物品栏 GUI | 组合模型保持现有展示 | `translation=[0,3.5,0]`，槽位居中 | `translation=[0,3.5,0]`，槽位居中 |
+| 物品栏 GUI | `translation=[0,1,0]` | `translation=[0,6.2,0]` | `translation=[0,12.4,0]` |
 | 采掘 | 无工具要求；空手掉落显示器、键盘、鼠标各一个 | 无工具要求；空手掉落自身 | 无工具要求；空手掉落自身 |
 | 功能 | 无 BlockEntity、GUI、电力、红石或动画 | 同左 | 同左 |
 
@@ -21,3 +21,5 @@
 三个新装饰方块放在高度 13.5 model units 的现代办公桌上时，检测下方桌子并设置 `lowered=true`，模型和 VoxelShape 同步下移 2.5 units。该状态仅校正桌面高度，不会自动生成、绑定或移除任何桌面物件。
 
 三个新装饰方块都没有加入 `mineable/*` 或 `needs_*_tool` 标签，也未启用 `requiresCorrectToolForDrops()`。正常拆除组合工位时不掉落组合方块自身，而是掉落 `modern_lcd_monitor`、`office_keyboard`、`office_mouse` 各一个。原有 `modern_lcd_monitor` 注册保留，避免破坏已有存档。
+
+最近一次物品栏居中校正仅调整 `display.gui.translation`，未改变方块摆放或第一/第三人称变换；其他相关办公模型的位置见 [creative inventory framing](creative_inventory_framing.md)。游戏内重新打开物品栏后的视觉验收仍待完成。

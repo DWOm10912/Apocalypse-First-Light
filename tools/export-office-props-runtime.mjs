@@ -224,7 +224,7 @@ outputs.set(path.join(assetRoot, 'models/item/modern_office_desk.json'), {
         thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.2, 0.2, 0.2] },
         firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: [0.25, 0.25, 0.25] },
         firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: [0.25, 0.25, 0.25] },
-        gui: { rotation: [30, 135, 0], translation: [0, -1.5, 0], scale: [0.28, 0.28, 0.28] },
+        gui: { rotation: [30, 135, 0], translation: [0, 0, 0], scale: [0.28, 0.28, 0.28] },
         ground: { translation: [0, 2, 0], scale: [0.22, 0.22, 0.22] },
         fixed: { rotation: [0, 180, 0], translation: [0, -2, 0], scale: [0.25, 0.25, 0.25] }
     }
@@ -289,7 +289,7 @@ outputs.set(path.join(assetRoot, 'models/item/modern_lcd_monitor.json'), {
         thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
         firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
         firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
-        gui: { rotation: [25, 135, 0], translation: [0, 0, 0], scale: [0.72, 0.72, 0.72] },
+        gui: { rotation: [25, 135, 0], translation: [0, 0.7, 0], scale: [0.72, 0.72, 0.72] },
         ground: { translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
         fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [0.7, 0.7, 0.7] }
     }
@@ -342,7 +342,7 @@ outputs.set(path.join(assetRoot, 'models/item/office_computer_station.json'), {
         thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
         firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
         firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2, 0], scale: [0.7, 0.7, 0.7] },
-        gui: { rotation: [25, 135, 0], translation: [0, 0, 0], scale: [0.72, 0.72, 0.72] },
+        gui: { rotation: [25, 135, 0], translation: [0, 1, 0], scale: [0.72, 0.72, 0.72] },
         ground: { translation: [0, 2, 0], scale: [0.65, 0.65, 0.65] },
         fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [0.7, 0.7, 0.7] }
     }
@@ -377,7 +377,7 @@ outputs.set(path.join(assetRoot, 'models/item/office_keyboard.json'), {
         thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.8, 0.8, 0.8] },
         firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: [0.9, 0.9, 0.9] },
         firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: [0.9, 0.9, 0.9] },
-        gui: { rotation: [30, 135, 0], translation: [0, 3.5, 0], scale: [0.95, 0.95, 0.95] },
+        gui: { rotation: [30, 135, 0], translation: [0, 6.2, 0], scale: [0.95, 0.95, 0.95] },
         ground: { translation: [0, 2, 0], scale: [0.8, 0.8, 0.8] },
         fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [0.9, 0.9, 0.9] }
     }
@@ -412,11 +412,15 @@ outputs.set(path.join(assetRoot, 'models/item/office_mouse.json'), {
         thirdperson_lefthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [1.4, 1.4, 1.4] },
         firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: [1.6, 1.6, 1.6] },
         firstperson_lefthand: { rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: [1.6, 1.6, 1.6] },
-        gui: { rotation: [25, 135, 0], translation: [0, 3.5, 0], scale: [1.8, 1.8, 1.8] },
+        gui: { rotation: [25, 135, 0], translation: [0, 12.4, 0], scale: [1.8, 1.8, 1.8] },
         ground: { translation: [0, 2, 0], scale: [1.3, 1.3, 1.3] },
         fixed: { rotation: [0, 180, 0], translation: [0, 0, 0], scale: [1.5, 1.5, 1.5] }
     }
 });
+
+// The standalone mouse item has hand-authored inventory geometry/display settings;
+// its block geometry is generated above, but the item must not be overwritten.
+outputs.delete(path.join(assetRoot, 'models/item/office_mouse.json'));
 
 for (const [outputPath, value] of outputs) {
     const encoded = Buffer.from(`${JSON.stringify(value, null, 2)}\n`);
