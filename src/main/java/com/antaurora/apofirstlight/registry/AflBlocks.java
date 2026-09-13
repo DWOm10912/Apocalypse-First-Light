@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
 import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
 import com.antaurora.apofirstlight.block.CommercialGlassDoubleDoorBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
+import com.antaurora.apofirstlight.block.ChestFreezerBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
 import com.antaurora.apofirstlight.block.ModernOfficeChairBlock;
 import com.antaurora.apofirstlight.block.ModernLcdMonitorBlock;
@@ -195,6 +196,10 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> BEVERAGE_COOLER = BLOCKS.register("beverage_cooler",
             () -> new BeverageCoolerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> CHEST_FREEZER = BLOCKS.register("chest_freezer",
+            () -> new ChestFreezerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)
                     .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> MODERN_OFFICE_DESK = BLOCKS.register("modern_office_desk",

@@ -12,6 +12,7 @@ import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
 import com.antaurora.apofirstlight.blockentity.LeadChestBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
+import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -40,6 +41,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("beverage_cooler", () ->
                     BlockEntityType.Builder.of(BeverageCoolerBlockEntity::new,
                             AflBlocks.BEVERAGE_COOLER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<ChestFreezerBlockEntity>> CHEST_FREEZER =
+            BLOCK_ENTITIES.register("chest_freezer", () ->
+                    BlockEntityType.Builder.of(ChestFreezerBlockEntity::new,
+                            AflBlocks.CHEST_FREEZER.get()).build(null));
     public static final RegistryObject<BlockEntityType<RetailShelfSingleBlockEntity>> RETAIL_SHELF_SINGLE =
             BLOCK_ENTITIES.register("retail_shelf_single", () ->
                     BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,

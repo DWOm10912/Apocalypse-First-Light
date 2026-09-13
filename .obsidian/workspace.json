@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 制作清单"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,30 +189,31 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界/level2990479246505698890.dat",
+    "run/saves/新的世界/level13245090831402285988.dat",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-6682310165143931520.dat",
     "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/-1_-2.xwmc.outdated",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-15461874534587888570.dat",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-1.xwmc.temp",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/entity/beverage_cooler.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/retail_shelf_single.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/entity/beverage_cooler.png",
-    "src/main/blockbench/previews/afl_beverage_cooler_right_open.png",
-    "src/main/blockbench/previews/afl_beverage_cooler_left_open.png",
-    "docs/beverage_cooler_model.md",
-    "src/main/blockbench/previews/afl_beverage_cooler_front.png",
-    "src/main/blockbench/previews/afl_beverage_cooler_angle.png",
-    "src/main/blockbench/previews/afl_beverage_cooler_open.png",
-    "src/main/blockbench/textures/afl_beverage_cooler.png",
-    "docs/04 - 注意事项 重要内容.md",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-2.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-2.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc",
     "docs/03 - 制作清单.md",
+    "src/main/resources/assets/apocalypse_firstlight/textures/entity/chest_freezer.png",
+    "src/main/blockbench/previews/afl_chest_freezer_anim_right_lid_close.png",
+    "src/main/blockbench/previews/afl_chest_freezer_anim_right_lid_open.png",
+    "src/main/blockbench/previews/afl_chest_freezer_anim_left_lid_close.png",
+    "src/main/blockbench/previews/afl_chest_freezer_anim_left_lid_open.png",
+    "src/main/blockbench/previews/afl_chest_freezer_anim_left_open.png",
+    "docs/chest_freezer_model.md",
+    "src/main/blockbench/previews/afl_chest_freezer_interior.png",
+    "src/main/blockbench/previews/afl_chest_freezer_right_open.png",
+    "src/main/blockbench/previews/afl_chest_freezer_left_open.png",
+    "src/main/blockbench/previews/afl_chest_freezer_top.png",
+    "docs/beverage_cooler_model.md",
+    "docs/04 - 注意事项 重要内容.md",
     "docs/cash_register_model.md",
     "docs/supermarket_shelf_v2_model.md",
     "docs/worldgen/office_concrete_01_authoring.md",
@@ -233,7 +234,6 @@
     "docs/models/water_dispenser.md",
     "docs/worldgen/modern_glass_tower_02_authoring.md",
     "docs/worldgen/office_cedar_06_authoring.md",
-    "docs/dev/reference_map_importer_v1.md",
-    "docs/dev/minecraft_authoring_mcp_v1.md"
+    "docs/dev/reference_map_importer_v1.md"
   ]
 }

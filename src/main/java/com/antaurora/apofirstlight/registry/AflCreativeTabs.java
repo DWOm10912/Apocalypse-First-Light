@@ -55,6 +55,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.COMMERCIAL_DUMPSTER.get());
                         output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
                         output.accept(AflItems.BEVERAGE_COOLER.get());
+                        output.accept(AflItems.CHEST_FREEZER.get());
                         output.accept(AflItems.MODERN_OFFICE_DESK.get());
                         output.accept(AflItems.MODERN_OFFICE_CHAIR.get());
                         output.accept(AflItems.MODERN_LCD_MONITOR.get());

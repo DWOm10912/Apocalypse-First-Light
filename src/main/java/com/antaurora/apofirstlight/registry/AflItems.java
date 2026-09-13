@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.item.LeadChestBlockItem;
 import com.antaurora.apofirstlight.item.CommercialDumpsterBlockItem;
 import com.antaurora.apofirstlight.item.CommercialGlassDoubleDoorBlockItem;
 import com.antaurora.apofirstlight.item.BeverageCoolerBlockItem;
+import com.antaurora.apofirstlight.item.ChestFreezerBlockItem;
 import com.antaurora.apofirstlight.item.ModernOfficeDeskBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -193,6 +194,9 @@ public final class AflItems {
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",
             () -> new BeverageCoolerBlockItem((com.antaurora.apofirstlight.block.BeverageCoolerBlock)
                     AflBlocks.BEVERAGE_COOLER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CHEST_FREEZER = ITEMS.register("chest_freezer",
+            () -> new ChestFreezerBlockItem((com.antaurora.apofirstlight.block.ChestFreezerBlock)
+                    AflBlocks.CHEST_FREEZER.get(), new Item.Properties()));
     public static final RegistryObject<Item> MODERN_OFFICE_DESK = ITEMS.register("modern_office_desk",
             () -> new ModernOfficeDeskBlockItem(
                     (com.antaurora.apofirstlight.block.ModernOfficeDeskBlock) AflBlocks.MODERN_OFFICE_DESK.get(),
