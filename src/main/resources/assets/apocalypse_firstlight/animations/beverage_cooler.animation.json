@@ -1,0 +1,349 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "right_door_open": {
+      "loop": false,
+      "animation_length": 0.4,
+      "bones": {
+        "right_door": {
+          "rotation": {
+            "0": {
+              "vector": [
+                0,
+                0,
+                0
+              ]
+            },
+            "0.05": {
+              "vector": [
+                0,
+                -4.08203,
+                0
+              ]
+            },
+            "0.1": {
+              "vector": [
+                0,
+                -14.84375,
+                0
+              ]
+            },
+            "0.15": {
+              "vector": [
+                0,
+                -30.05859,
+                0
+              ]
+            },
+            "0.2": {
+              "vector": [
+                0,
+                -47.5,
+                0
+              ]
+            },
+            "0.25": {
+              "vector": [
+                0,
+                -64.94141,
+                0
+              ]
+            },
+            "0.3": {
+              "vector": [
+                0,
+                -80.15625,
+                0
+              ]
+            },
+            "0.35": {
+              "vector": [
+                0,
+                -90.91797,
+                0
+              ]
+            },
+            "0.4": {
+              "vector": [
+                0,
+                -95,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    "right_door_close": {
+      "loop": false,
+      "animation_length": 0.4,
+      "bones": {
+        "right_door": {
+          "rotation": {
+            "0": {
+              "vector": [
+                0,
+                -95,
+                0
+              ]
+            },
+            "0.05": {
+              "vector": [
+                0,
+                -78.64404,
+                0
+              ]
+            },
+            "0.1": {
+              "vector": [
+                0,
+                -62.12109,
+                0
+              ]
+            },
+            "0.15": {
+              "vector": [
+                0,
+                -46.15479,
+                0
+              ]
+            },
+            "0.2": {
+              "vector": [
+                0,
+                -31.46875,
+                0
+              ]
+            },
+            "0.25": {
+              "vector": [
+                0,
+                -18.78662,
+                0
+              ]
+            },
+            "0.3": {
+              "vector": [
+                0,
+                -8.83203,
+                0
+              ]
+            },
+            "0.35": {
+              "vector": [
+                0,
+                -2.32861,
+                0
+              ]
+            },
+            "0.4": {
+              "vector": [
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    "left_door_open": {
+      "loop": false,
+      "animation_length": 0.4,
+      "bones": {
+        "left_door": {
+          "rotation": {
+            "0": {
+              "vector": [
+                0,
+                0,
+                0
+              ]
+            },
+            "0.05": {
+              "vector": [
+                0,
+                4.08203,
+                0
+              ]
+            },
+            "0.1": {
+              "vector": [
+                0,
+                14.84375,
+                0
+              ]
+            },
+            "0.15": {
+              "vector": [
+                0,
+                30.05859,
+                0
+              ]
+            },
+            "0.2": {
+              "vector": [
+                0,
+                47.5,
+                0
+              ]
+            },
+            "0.25": {
+              "vector": [
+                0,
+                64.94141,
+                0
+              ]
+            },
+            "0.3": {
+              "vector": [
+                0,
+                80.15625,
+                0
+              ]
+            },
+            "0.35": {
+              "vector": [
+                0,
+                90.91797,
+                0
+              ]
+            },
+            "0.4": {
+              "vector": [
+                0,
+                95,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    "left_door_close": {
+      "loop": false,
+      "animation_length": 0.4,
+      "bones": {
+        "left_door": {
+          "rotation": {
+            "0": {
+              "vector": [
+                0,
+                95,
+                0
+              ]
+            },
+            "0.05": {
+              "vector": [
+                0,
+                78.64404,
+                0
+              ]
+            },
+            "0.1": {
+              "vector": [
+                0,
+                62.12109,
+                0
+              ]
+            },
+            "0.15": {
+              "vector": [
+                0,
+                46.15479,
+                0
+              ]
+            },
+            "0.2": {
+              "vector": [
+                0,
+                31.46875,
+                0
+              ]
+            },
+            "0.25": {
+              "vector": [
+                0,
+                18.78662,
+                0
+              ]
+            },
+            "0.3": {
+              "vector": [
+                0,
+                8.83203,
+                0
+              ]
+            },
+            "0.35": {
+              "vector": [
+                0,
+                2.32861,
+                0
+              ]
+            },
+            "0.4": {
+              "vector": [
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    "left_door_closed_pose": {
+      "loop": true,
+      "animation_length": 0.05,
+      "bones": {
+        "left_door": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "left_door_open_pose": {
+      "loop": true,
+      "animation_length": 0.05,
+      "bones": {
+        "left_door": {
+          "rotation": [
+            0,
+            95,
+            0
+          ]
+        }
+      }
+    },
+    "right_door_closed_pose": {
+      "loop": true,
+      "animation_length": 0.05,
+      "bones": {
+        "right_door": {
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "right_door_open_pose": {
+      "loop": true,
+      "animation_length": 0.05,
+      "bones": {
+        "right_door": {
+          "rotation": [
+            0,
+            -95,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

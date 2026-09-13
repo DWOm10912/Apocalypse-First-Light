@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "23";
+    private static final String PROTOCOL = "24";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -82,10 +82,18 @@ public final class AflNetwork {
                 MaintenanceResult::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, NativeInspectPacket.class, NativeInspectPacket::encode, NativeInspectPacket::decode,
                 NativeInspectPacket::handle, java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, BeverageCoolerDoorC2SPacket.class,
+                BeverageCoolerDoorC2SPacket::encode, BeverageCoolerDoorC2SPacket::decode,
+                BeverageCoolerDoorC2SPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
     }
 
     public static void requestMaintenance(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
         if(channel!=null)channel.sendToServer(new MaintenancePacket(request));
+    }
+
+    public static void requestBeverageCoolerDoor(BlockPos master, boolean left) {
+        if (channel != null) channel.sendToServer(new BeverageCoolerDoorC2SPacket(master, left));
     }
     public record MaintenancePacket(com.antaurora.apofirstlight.weapon.MaintenanceActionRequest request){
         static void encode(MaintenancePacket p,FriendlyByteBuf b){var r=p.request;
