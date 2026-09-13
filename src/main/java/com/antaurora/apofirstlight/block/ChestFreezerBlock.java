@@ -1,9 +1,11 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
@@ -44,7 +46,7 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final EnumProperty<LidState> LID = EnumProperty.create("lid", LidState.class);
-    public static final int ANIMATION_TICKS = 7; // four source animations are 0.35 seconds
+    public static final int ANIMATION_TICKS = 14; // four source animations are 0.70 seconds
 
     private record Mutation(LevelAccessor level, BlockPos master) {}
     private record ShapeKey(Part part, Direction facing, LidState lid) {}
@@ -214,6 +216,10 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
         if (level.getBlockEntity(master) instanceof ChestFreezerBlockEntity freezer
                 && freezer.startTransition(target, level.getGameTime())) {
             level.scheduleTick(master, this, ANIMATION_TICKS);
+            Direction other = state.getValue(FACING).getCounterClockWise();
+            level.playSound(null, master.getX() + 0.5 + other.getStepX() * 0.5,
+                    master.getY() + 0.85, master.getZ() + 0.5 + other.getStepZ() * 0.5,
+                    AflSounds.CHEST_FREEZER_SLIDE.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
         }
         return InteractionResult.CONSUME;
     }

@@ -92,18 +92,20 @@ public final class ChestFreezerGameTests {
             click(block, level, player, master, facing, 8, 14.55);
             checkState(helper, master, right, facing, ChestFreezerBlock.LidState.CLOSED);
             click(block, level, player, master, facing, 8, 14.55); // spam cannot restart
-            freezer.completeDue(level.getGameTime() + 7);
+            freezer.completeDue(level.getGameTime() + ChestFreezerBlock.ANIMATION_TICKS - 1);
+            checkState(helper, master, right, facing, ChestFreezerBlock.LidState.CLOSED);
+            freezer.completeDue(level.getGameTime() + ChestFreezerBlock.ANIMATION_TICKS);
             checkState(helper, master, right, facing, ChestFreezerBlock.LidState.LEFT_OPEN);
             checkShape(helper, master, facing, ChestFreezerBlock.LidState.LEFT_OPEN);
             click(block, level, player, master, facing, 24, 15.05); // stacked lid closes left
-            freezer.completeDue(level.getGameTime() + 7);
+            freezer.completeDue(level.getGameTime() + ChestFreezerBlock.ANIMATION_TICKS);
             checkState(helper, master, right, facing, ChestFreezerBlock.LidState.CLOSED);
             click(block, level, player, master, facing, 24, 15.05);
-            freezer.completeDue(level.getGameTime() + 7);
+            freezer.completeDue(level.getGameTime() + ChestFreezerBlock.ANIMATION_TICKS);
             checkState(helper, master, right, facing, ChestFreezerBlock.LidState.RIGHT_OPEN);
             checkShape(helper, master, facing, ChestFreezerBlock.LidState.RIGHT_OPEN);
             click(block, level, player, master, facing, 8, 14.55); // stacked lid closes right
-            freezer.completeDue(level.getGameTime() + 7);
+            freezer.completeDue(level.getGameTime() + ChestFreezerBlock.ANIMATION_TICKS);
             checkState(helper, master, right, facing, ChestFreezerBlock.LidState.CLOSED);
 
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
@@ -160,9 +162,9 @@ public final class ChestFreezerGameTests {
         click(block, level, creative, master, Direction.NORTH, 8, 14.55);
         helper.assertTrue(level.getBlockState(master).getValue(ChestFreezerBlock.LID) == ChestFreezerBlock.LidState.CLOSED,
                 "state waits for animation");
-        helper.runAfterDelay(8, () -> {
+        helper.runAfterDelay(ChestFreezerBlock.ANIMATION_TICKS + 1, () -> {
             helper.assertTrue(level.getBlockState(master).getValue(ChestFreezerBlock.LID) == ChestFreezerBlock.LidState.LEFT_OPEN,
-                    "scheduled commit after seven ticks");
+                    "scheduled commit after fourteen ticks");
             checkShape(helper, master, Direction.NORTH, ChestFreezerBlock.LidState.LEFT_OPEN);
             ApocalypseFirstLight.LOGGER.info("[AFL CHEST FREEZER TEST] PASS four facings, states, open selection/collision, delayed commit, survival tool drops, break cleanup and single drop, creative, explosion, blocked placement");
             helper.succeed();

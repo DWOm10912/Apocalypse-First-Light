@@ -5,6 +5,10 @@
   "commercial_glass_double_door_close": {
     "sounds": [{"name": "apocalypse_firstlight:glass_door_close"}]
   },
+  "chest_freezer_slide": {
+    "subtitle": "subtitles.apocalypse_firstlight.chest_freezer_slide",
+    "sounds": [{"name": "apocalypse_firstlight:chest_freezer", "preload": true, "attenuation_distance": 12}]
+  },
   "attachment_operation": {
     "subtitle": "subtitles.apocalypse_firstlight.attachment_operation",
     "sounds": [{"name": "apocalypse_firstlight:attachment_sound", "preload": true}]

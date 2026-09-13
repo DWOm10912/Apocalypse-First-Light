@@ -45,6 +45,8 @@ public final class AflSounds {
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "commercial_glass_double_door_open")));
     public static final RegistryObject<SoundEvent> GLASS_DOOR_CLOSE = SOUND_EVENTS.register("commercial_glass_double_door_close",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "commercial_glass_double_door_close")));
+    public static final RegistryObject<SoundEvent> CHEST_FREEZER_SLIDE = SOUND_EVENTS.register("chest_freezer_slide",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chest_freezer_slide")));
 
     private AflSounds() {
     }
