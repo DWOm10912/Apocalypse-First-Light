@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "apocalypse_firstlight:block/commercial_flushometer_toilet" },
+    "facing=east": { "model": "apocalypse_firstlight:block/commercial_flushometer_toilet", "y": 90 },
+    "facing=south": { "model": "apocalypse_firstlight:block/commercial_flushometer_toilet", "y": 180 },
+    "facing=west": { "model": "apocalypse_firstlight:block/commercial_flushometer_toilet", "y": 270 }
+  }
+}

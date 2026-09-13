@@ -1,0 +1,10 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/commercial_flushometer_toilet.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/commercial_flushometer_toilet"
+  }
+}
