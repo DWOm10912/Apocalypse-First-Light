@@ -305,3 +305,11 @@ tasks.register('projectionMathTest', JavaExec) {
     mainClass = 'com.antaurora.apofirstlight.weapon.client.FirstPersonProjectionSanitizerTest'
 }
 tasks.named('check') { dependsOn tasks.named('projectionMathTest') }
+
+// WG-01 pure contract regression; no world bootstrap or new test dependencies.
+tasks.register('terrainContractTest', JavaExec) {
+    dependsOn tasks.named('testClasses')
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.antaurora.apofirstlight.worldgen.terrain.TerrainContractTest'
+}
+tasks.named('check') { dependsOn tasks.named('terrainContractTest') }

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 制作清单"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,32 +189,37 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.temp",
-    "run/afl_authoring_captures/43f02a71-bb4a-4009-9736-2a8a8c8b35f7/f23aea23-addc-48c5-947a-8095be0081ea.png",
-    "tools/afl_minecraft_mcp/signal_tower_01_plan.mjs",
-    "run/afl_authoring_captures/43f02a71-bb4a-4009-9736-2a8a8c8b35f7/ccf3bf2e-f8be-4e28-a556-8797e6316d29.png",
-    "run/afl_authoring_captures/43f02a71-bb4a-4009-9736-2a8a8c8b35f7",
-    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/1_0.xwmc.temp",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-7241207378226445624.dat",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_0.xwmc.temp",
-    "docs/worldgen/convenience_store_01_asset.md",
-    "run/afl_authoring_captures/b57a64dd-a140-4428-a35b-35c6391edec9/324e10c8-4b75-4538-99c6-300d07316cf5.png",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-4054927997458293413.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/2_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/2_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/0_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/1_0.xwmc.outdated",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/thermal_generator_front_running.png",
+    "run/afl_authoring_captures/623d05c6-a348-4f1d-bc49-8617ecb9d706/72eef745-90ac-40d2-acb8-0078cb70a7b1.png",
+    "docs/worldgen/worldgen_architecture_decisions_v1.md",
+    "docs/worldgen/unified_worldgen_architecture_v1.md",
+    "docs/worldgen/highway_generator_audit_v1.md",
+    "docs/worldgen/rural_generator_audit_v1.md",
+    "docs/03 - 制作清单.md",
+    "run/afl_authoring_captures/43f02a71-bb4a-4009-9736-2a8a8c8b35f7/f23aea23-addc-48c5-947a-8095be0081ea.png",
+    "run/afl_authoring_captures/43f02a71-bb4a-4009-9736-2a8a8c8b35f7/ccf3bf2e-f8be-4e28-a556-8797e6316d29.png",
+    "docs/worldgen/convenience_store_01_asset.md",
+    "run/afl_authoring_captures/b57a64dd-a140-4428-a35b-35c6391edec9/324e10c8-4b75-4538-99c6-300d07316cf5.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
     "docs/models/creative_inventory_framing.md",
     "docs/worldgen/startup_enclave_bunker_regression_fix_v1.md",
     "docs/04 - 注意事项 重要内容.md",
-    "docs/03 - 制作清单.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/commercial_wall_mounted_sink.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/commercial_wall_mounted_sink.png",
     "docs/models/commercial_wall_mounted_sink.md",
-    "docs/models/previews/commercial_wall_mounted_sink/back.png",
     "docs/models/commercial_flushometer_toilet.md",
     "docs/models/restroom_stall_door.md",
     "docs/models/restroom_partition.md",
@@ -229,10 +234,6 @@
     "docs/worldgen/office_vertical_layout_audit_v1.md",
     "docs/native_guns/native_inspect_v1.md",
     "docs/native_guns/native_camera_bone_consumer_v1.md",
-    "docs/models/office_multifunction_printer.md",
-    "docs/models/office_filing_cabinets.md",
-    "docs/models/office_cubicle_partition.md",
-    "docs/README.md",
-    "docs/models/office_computer_station.md"
+    "docs/models/office_multifunction_printer.md"
   ]
 }
