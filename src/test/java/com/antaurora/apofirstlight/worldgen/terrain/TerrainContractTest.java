@@ -194,7 +194,7 @@ public final class TerrainContractTest {
         rejects(NullPointerException.class, () -> TerrainSample.invalid(null), "null invalid source");
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         heights();
         unknownAndSources();
         invariants();
@@ -203,5 +203,6 @@ public final class TerrainContractTest {
         com.antaurora.apofirstlight.worldgen.core.CoreContractTest.main(args);
         com.antaurora.apofirstlight.worldgen.spatial.BoundsContractTest.main(args);
         com.antaurora.apofirstlight.worldgen.structure.StructureContractTest.main(args);
+        com.antaurora.apofirstlight.worldgen.spatial.ClaimContractTest.main(args);
     }
 }
