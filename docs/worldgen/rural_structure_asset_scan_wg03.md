@@ -1,6 +1,8 @@
 # Rural Structure Asset Scan — WG-03
 
-日期：2026-09-13。**只读机械扫描事实清单；无生成器迁移、无正式 metadata 写入、无游戏 QA。**
+日期：2026-09-13。**WG-03 时点的只读机械扫描事实清单**；此页表格保留当时“无生成器迁移、无正式 metadata、无游戏 QA”的快照。WG-07/07.1 随后发布八资产 metadata 与七个 socket；`_02` 来自用户人工视觉确认，四向游戏 QA 尚未执行，见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。
+
+当前 `RuralAssetScanTest` 会从已发布 metadata 报告八份的 front/anchor，同时独立标明 Legacy pool 身份；下表的 `_02` `UNDEFINED_PENDING_METADATA` 是 WG-03 原始时点的审查快照，不是当前测试输出。
 
 ## 范围与来源
 

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:2c671ea0eb3a92eab3b49a899fa0643196b09d2aebc3654b6ce9693772bd6ded",
+  "structure_nbt": "apocalypse_firstlight:rural_farmhouse_02",
+  "category": "apocalypse_firstlight:rural/farmhouse",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 0,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "main", "position": [9, 0, 16], "facing": "SOUTH", "type": "PEDESTRIAN"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:residential"]
+}

@@ -1,8 +1,8 @@
 # AFL Unified Worldgen Architecture V1
 
-WG-05.1 更新：claim 的 `generationVersion` 为 owner-local；跨系统候选先由 profile 层逐条校验冻结版本，再进入空间裁决，不要求各系统版本字符串相同。已实现的资格入口、UNKNOWN/重复 ID 边界及合成联合回归见 [WG-05.1 实现说明](cross_system_claim_version_arbitration_wg05_1.md)。[Phase 1 Gate 复审](worldgen_phase1_gate_rereview_v1_1.md) 为 `PASS_WITH_NON_BLOCKING_FINDINGS`。WG-06 已冻结 Rural legacy 计划并抽取有限共享核心，Natural 行为未变；见 [WG-06 说明](rural_legacy_regression_wg06.md)。生产生成器仍未启用跨系统协调。
+WG-05.1 更新：claim 的 `generationVersion` 为 owner-local；跨系统候选先由 profile 层逐条校验冻结版本，再进入空间裁决，不要求各系统版本字符串相同。已实现的资格入口、UNKNOWN/重复 ID 边界及合成联合回归见 [WG-05.1 实现说明](cross_system_claim_version_arbitration_wg05_1.md)。[Phase 1 Gate 复审](worldgen_phase1_gate_rereview_v1_1.md) 为 `PASS_WITH_NON_BLOCKING_FINDINGS`。WG-06 已冻结 Rural legacy 计划；WG-07/07.1 已发布八资产打包 metadata、保留旧六配方和 24 digest；两份 `_02` 来自用户人工视觉确认，四向游戏 QA 未执行，见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。生产生成器仍未启用跨系统协调。
 
-日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05.1 无接入基础实现及 WG-06 Rural legacy 基线/有限核心适配已完成；跨系统协调未启用**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；WG-06 仅做无图形 GameTest，客户端/in-world 验证未进行。
+日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05.1、WG-06 Rural legacy 基线及 WG-07/07.1 八资产 metadata/旧六 recipe 兼容迁移已完成；跨系统协调未启用**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；本轮仅做无图形机械/计划测试，客户端四向/in-world 验证未进行。
 
 事实来源：[Rural Audit V1](rural_generator_audit_v1.md)（下称 R）和 [Highway Audit V1](highway_generator_audit_v1.md)（下称 H）。本文正文“当前”仅指这两份静态审查的结论，不把代码存在当成实机验收。其他内容为目标设计；决策索引见 [ADR V1](worldgen_architecture_decisions_v1.md)。初始 Phase 0 交付仅新增两份设计文档，后续实现状态以上述 WG-05 说明为准。
 
@@ -287,7 +287,7 @@ Rural 专用保留：tier/irregular layout、farm planning、farmhouse/barn 要�
 
 ## 15. 迁移阶段与每阶段验收
 
-下表保留原始阶段计划；Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结模拟地形的 Rural legacy plan digest 并抽取有限核心，WG-07 及跨系统激活仍未开始。真实 fixed-seed/noise 与 chunk 顺序基线尚未建立，不能将 WG-06 fixture 当成这类验收。
+下表保留原始阶段计划；Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结模拟地形的 Rural legacy plan digest；WG-07/07.1 已完成八资产打包 metadata 与旧六 recipe 兼容迁移，四向游戏 QA 仍待办，跨系统激活尚未开始。真实 fixed-seed/noise 与 chunk 顺序基线尚未建立，不能将 WG-06 fixture 当成这类验收。
 
 | 阶段 | 工作及行为边界 | 完成门 |
 | --- | --- | --- |
@@ -327,7 +327,7 @@ RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或
 | WG-04 | 确定性claim候选/优先级/UNKNOWN原型与乱序测试 | HIGH | Astra | WG-02 | NO（无接入） |
 | WG-05 | 有限claim索引/世界版本冻结/崩溃核对设计落地及保护provider门 | HIGH | Astra | WG-03,WG-04 | NO（未启用） |
 | WG-06 | 建立legacy回归样本；Rural natural/dev兼容核心适配 | MEDIUM | Sol | WG-01..05 | dev统一；自然目标不变 |
-| WG-07 | Rural metadata/socket、配方legacy映射、shadow claim接入 | MEDIUM | Sol | WG-06 | NO自然分布变化；诊断增加 |
+| WG-07/07.1 | Rural metadata/socket、配方legacy映射；不接 shadow claim | MEDIUM/LOW | Sol | WG-06 | 八资产已发布、仅旧六入配方；NO自然分布变化；四向游戏 QA 未做 |
 | WG-08 | Highway terrain/bounds契约适配、shadow claims与PLANNED_HOOK | MEDIUM | Sol | WG-05,WG-07 | NO路线变化；诊断增加 |
 | WG-09 | 新世界协调profile激活与保护冲突/跨chunk回归 | HIGH | Astra | WG-07,WG-08；保护资料完整 | YES，站点准入变化；不改Highway公式 |
 | WG-10 | dev City街区/分区planner与本地路连接原型 | HIGH | Astra | WG-03,WG-09 | YES，仅dev profile |
@@ -335,4 +335,4 @@ RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或
 | WG-12 | 正式建筑分批metadata注册/池替换/四向QA | MEDIUM | Sol | WG-10,WG-11 | YES，新区域资产供应 |
 | WG-13 | Radio/Camp/工业site按现有契约接入 | MEDIUM | Sol | WG-09,WG-12 | YES，各独立placement |
 
-INITIAL_IMPLEMENTATION_TASK = WG-01。CURRENT_CHECKPOINT = WG-06。RECOMMENDED_NEXT_STEP = WG-07 Rural metadata/socket/recipe legacy mapping；其余 backlog 不自动启动。
+INITIAL_IMPLEMENTATION_TASK = WG-01。CURRENT_CHECKPOINT = WG-07.1（八资产 metadata 完成，四向游戏 QA 待办）。RECOMMENDED_NEXT_STEP = 独立 Rural V2 设计任务；资产四向实机 QA 与真实 noise 世界样本仍需单独验收，不自动启动 V2。

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "selection_mode": "LEGACY_NATURAL_V1",
+  "entries": [
+    {"asset": "apocalypse_firstlight:rural_farmhouse_01", "role": "FARMHOUSE", "legacy_declared_weight": 0, "legacy_declared_max_count": 1},
+    {"asset": "apocalypse_firstlight:rural_barn_large_01", "role": "AGRICULTURAL_LARGE", "legacy_declared_weight": 0, "legacy_declared_max_count": 1},
+    {"asset": "apocalypse_firstlight:rural_house_small_01", "role": "RESIDENTIAL", "legacy_declared_weight": 100, "legacy_declared_max_count": 3},
+    {"asset": "apocalypse_firstlight:rural_storage_small_01", "role": "AGRICULTURAL_UTILITY", "legacy_declared_weight": 60, "legacy_declared_max_count": 1},
+    {"asset": "apocalypse_firstlight:rural_grain_silo_01", "role": "AGRICULTURAL_UTILITY", "legacy_declared_weight": 50, "legacy_declared_max_count": 1},
+    {"asset": "apocalypse_firstlight:rural_water_tower_01", "role": "LANDMARK", "legacy_declared_weight": 25, "legacy_declared_max_count": 1}
+  ]
+}

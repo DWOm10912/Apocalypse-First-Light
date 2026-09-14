@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:809fe5ed2db1daa5f96cb035a70a024bc0da7f2bc9ede27e0e20a4c4ea94be0e",
+  "structure_nbt": "apocalypse_firstlight:rural_water_tower_01",
+  "category": "apocalypse_firstlight:rural/landmark",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 0,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:landmark"]
+}

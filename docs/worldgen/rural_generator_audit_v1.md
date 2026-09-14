@@ -1,6 +1,6 @@
 # Rural Generator Audit V1（2026-09-13，静态只读）
 
-后续状态：本页保留 WG-06 前的只读审查快照。WG-06 已冻结 24 个 Natural legacy 计划案例，并将 Natural/Dev 的 catalog 与各自 selection policy 提取到有限共享核心；地形、规模、道路、池与 Natural 输出未变。当前实现与测试边界见 [WG-06 说明](rural_legacy_regression_wg06.md)；本页原始审查证据不回写为新实机验收。
+后续状态：本页保留 WG-06 前的只读审查快照。WG-06 已冻结 24 个 Natural legacy 计划案例；WG-07/07.1 后八资产 metadata 与七个机械验证 socket 已发布，Legacy 配方仍只有旧六资产。两个 `_02` 的数据来自用户人工视觉 QA，四向游戏实测仍未执行。Natural 输出与旧 driveway 行为未变。当前边界见 [WG-06 说明](rural_legacy_regression_wg06.md) 和 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)；下文原始审查证据不回写为新实机验收。
 
 ## 1. Executive Summary
 

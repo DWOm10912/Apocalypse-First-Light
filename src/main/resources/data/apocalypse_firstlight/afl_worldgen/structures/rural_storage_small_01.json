@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:70a022742682f72a92da8c09cc09f22565028bfa1ff843f9b6cffe5866f7498d",
+  "structure_nbt": "apocalypse_firstlight:rural_storage_small_01",
+  "category": "apocalypse_firstlight:rural/agricultural_utility",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 0,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "south_entry", "position": [6, 1, 16], "facing": "SOUTH", "type": "SERVICE_ROAD"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:agricultural"]
+}

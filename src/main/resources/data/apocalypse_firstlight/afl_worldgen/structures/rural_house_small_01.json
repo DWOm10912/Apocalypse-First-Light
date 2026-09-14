@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:c0d021494381e402806097ea1747287f677186cefee27ca1d6275bfc62a1d590",
+  "structure_nbt": "apocalypse_firstlight:rural_house_small_01",
+  "category": "apocalypse_firstlight:rural/residential",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 1,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "front_step", "position": [7, 2, 10], "facing": "SOUTH", "type": "PEDESTRIAN"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:residential"]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:ffbe6aa670b861a635b22fc3c3f720989d04d355a1b94a9521a518cc660a9d0d",
+  "structure_nbt": "apocalypse_firstlight:rural_farmhouse_01",
+  "category": "apocalypse_firstlight:rural/farmhouse",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 0,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "front_porch", "position": [9, 2, 13], "facing": "SOUTH", "type": "PEDESTRIAN"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:residential"]
+}

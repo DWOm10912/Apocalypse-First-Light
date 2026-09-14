@@ -1,6 +1,6 @@
 # WG-06 Rural Legacy Regression + Natural/Dev Core Adapter V1
 
-日期：2026-09-13。状态：已实现基线与有限共享核心；**Natural Rural 输出未改变**。本页描述 WG-06 完成时的源码和测试，不代表客户端视觉、既有存档或所有 seed 的验收。Phase 1 Gate 为 `PASS_WITH_NON_BLOCKING_FINDINGS`；WG-07 尚未执行。
+日期：2026-09-13。状态：WG-06 已实现基线与有限共享核心；**Natural Rural 输出未改变**。本页描述 WG-06 完成时的源码和测试，不代表客户端视觉、既有存档或所有 seed 的验收。Phase 1 Gate 为 `PASS_WITH_NON_BLOCKING_FINDINGS`；随后 WG-07/07.1 发布八资产 metadata、保留旧六配方，原 24 digest 仍通过，详见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。下文“未接 metadata”仅指 WG-06 完成时点。
 
 ## 1. Goal
 

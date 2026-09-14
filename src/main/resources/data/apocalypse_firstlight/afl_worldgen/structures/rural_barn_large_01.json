@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:458aa1b10cc9796b44743a4ea25d492c7c4047ccf7c73ac2de911af2eff1e6bc",
+  "structure_nbt": "apocalypse_firstlight:rural_barn_large_01",
+  "category": "apocalypse_firstlight:rural/agricultural_large",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 0,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "west_stock_gate", "position": [0, 1, 16], "facing": "WEST", "type": "SERVICE_ROAD"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:agricultural"]
+}

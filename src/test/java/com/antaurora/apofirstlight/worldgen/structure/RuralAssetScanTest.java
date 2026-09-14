@@ -35,9 +35,12 @@ public final class RuralAssetScanTest {
                 }
                 var id=new ResourceLocation("apocalypse_firstlight",name.substring(0,name.length()-4));
                 var legacy=pool.stream().filter(d->d.id().equals(id)).findFirst();
-                String anchor=legacy.map(d->Integer.toString(d.groundAnchorOffsetY())).orElse("UNDEFINED_PENDING_METADATA");
-                String front=legacy.map(d->d.frontDirection().name()).orElse("UNDEFINED_PENDING_METADATA");
+                var metadata=RuralStructurePool.catalog().metadata(id);
+                String anchor=metadata==null?"UNDEFINED_PENDING_METADATA":Integer.toString(metadata.groundAnchorOffsetY());
+                String front=metadata==null?"UNDEFINED_PENDING_METADATA":metadata.front().name();
                 String status=legacy.isPresent()?"CURRENTLY_IN_LEGACY_RURAL_POOL":"NOT_IN_LEGACY_RURAL_POOL";
+                if(legacy.isPresent() && (metadata==null || legacy.get().groundAnchorOffsetY()!=metadata.groundAnchorOffsetY()
+                        || legacy.get().frontDirection()!=metadata.front())) throw new AssertionError("Legacy/metadata mismatch "+name);
                 if(legacy.isPresent()&&(legacy.get().groundAnchorOffsetY()<0||legacy.get().groundAnchorOffsetY()>b.height()
                         ||!legacy.get().frontDirection().getAxis().isHorizontal())) throw new AssertionError("Invalid legacy anchor/front "+name);
                 if(Set.of("rural_farmhouse_02.nbt","rural_house_small_02.nbt").contains(name)&&legacy.isPresent())

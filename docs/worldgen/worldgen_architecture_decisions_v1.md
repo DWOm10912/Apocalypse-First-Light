@@ -1,6 +1,6 @@
 # AFL Worldgen Architecture Decisions V1
 
-日期：2026-09-13。ADR 正文保留 **Phase 0 原始设计基线**；目前 Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结 Rural legacy 计划并抽取有限共享核心；跨系统协调仍未启用。事实来源：[Rural Audit](rural_generator_audit_v1.md)、[Highway Audit](highway_generator_audit_v1.md)；规范细节与阶段见 [Architecture V1](unified_worldgen_architecture_v1.md)，当前 WG-06 范围及测试边界见 [Rural Legacy Regression](rural_legacy_regression_wg06.md)。以下目标不能解读为已有生产 provider、SavedData 或旧世界迁移。
+日期：2026-09-13。ADR 正文保留 **Phase 0 原始设计基线**；目前 Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结 Rural legacy 计划，WG-07/07.1 已发布八资产打包 metadata、旧六配方仍不变；跨系统协调及四向游戏 QA 未启用/未执行。事实来源：[Rural Audit](rural_generator_audit_v1.md)、[Highway Audit](highway_generator_audit_v1.md)；规范细节与阶段见 [Architecture V1](unified_worldgen_architecture_v1.md)，当前迁移边界见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。以下目标不能解读为已有生产 provider、SavedData 或旧世界迁移。
 
 ## ADR-01 — 保留双生命周期
 

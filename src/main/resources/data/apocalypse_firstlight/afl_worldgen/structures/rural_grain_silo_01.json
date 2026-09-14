@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "sha256:2c3ddcbebdbf9742706e8e88a91cec195df51e26c2fd7a0aa2bf00252bd72aa5",
+  "structure_nbt": "apocalypse_firstlight:rural_grain_silo_01",
+  "category": "apocalypse_firstlight:rural/agricultural_utility",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 1,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "south_access", "position": [8, 2, 14], "facing": "SOUTH", "type": "SERVICE_ROAD"}],
+  "tags": ["apocalypse_firstlight:rural", "apocalypse_firstlight:agricultural"]
+}
