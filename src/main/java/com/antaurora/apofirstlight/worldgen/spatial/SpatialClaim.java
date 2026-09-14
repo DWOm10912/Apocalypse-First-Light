@@ -12,6 +12,8 @@ import net.minecraft.world.level.Level;
  * Missing Y means the full column; present Y must be nonempty. Bounds remain half-open.
  * Edges are inert references, never permission to overlap. Their ordered list is part of identity
  * content: providers must emit it deterministically. IDs are scoped to a caller-owned world snapshot.
+ * generationVersion is OWNER-LOCAL; coordination must match it against the active profile's version
+ * for this owner, never against an unrelated owner's generationVersion.
  */
 public record SpatialClaim(String id, ResourceLocation owner, ResourceKey<Level> dimension,
         String generationVersion, BoundsXZ boundsXZ, Optional<YRange> yRange, SpatialClaimType type,

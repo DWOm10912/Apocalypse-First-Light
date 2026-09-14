@@ -93,16 +93,14 @@ public final class RuralGenerator {
                     List.of(), rejectionTracker, "site steep-column ratio exceeds threshold");
         }
 
-        Map<RuralStructurePool.Definition, StructureTemplate> templates = new LinkedHashMap<>();
-        for (RuralStructurePool.Definition definition : RuralStructurePool.definitions()) {
-            Optional<StructureTemplate> template = level.getServer().getStructureManager().get(definition.id());
-            if (template.isEmpty()) {
-                LOGGER.debug("[Rural] required template missing id={}", definition.id());
-                return invalid(center, reservation, site, mainRoad, branchRoads, target, candidates,
-                        List.of(), rejectionTracker, "missing structure template " + definition.id());
-            }
-            templates.put(definition, template.get());
+        RuralPlanningCore.Catalog catalog = RuralPlanningCore.catalog(RuralPlanningCore.SelectionMode.LEGACY_DEV_V1,
+                level.getServer().getStructureManager()::get);
+        if (catalog.firstMissing() != null) {
+            LOGGER.debug("[Rural] required template missing id={}", catalog.firstMissing().id());
+            return invalid(center, reservation, site, mainRoad, branchRoads, target, candidates,
+                    List.of(), rejectionTracker, "missing structure template " + catalog.firstMissing().id());
         }
+        Map<RuralStructurePool.Definition, StructureTemplate> templates = catalog.templates();
         candidates = RuralLayoutPlanner.candidates(center, mainDirection, branchRoads.get(0).direction(),
                 templates.get(RuralStructurePool.BARN));
         LOGGER.debug("[Rural] candidate origin={} reservation={} siteScore={} waterRatio={} robustRelief={} steepRatio={} targetBuildings={} candidateLots={} barnTemplateSize={}",
@@ -133,10 +131,10 @@ public final class RuralGenerator {
         for (int index = 0; index < candidates.size() && accepted.size() < target; index++) {
             if (usedSlots.contains(index)) continue;
             RuralLayoutPlanner.Candidate candidate = candidates.get(index);
-            List<RuralStructurePool.Definition> available = availableFor(candidate.role(), counts);
+            List<RuralStructurePool.Definition> available = RuralPlanningCore.availableDev(candidate.role(), counts);
             boolean acceptedCandidate = false;
             while (!available.isEmpty()) {
-                RuralStructurePool.Definition selected = weightedPick(available, random);
+                RuralStructurePool.Definition selected = RuralPlanningCore.selectDev(available, random);
                 LotFit fit = fit(level, templates.get(selected), selected, candidate, reservation, allRoads, accepted);
                 if (fit.accepted()) {
                     accepted.add(fit.lot());
@@ -639,35 +637,6 @@ public final class RuralGenerator {
         return -1;
     }
 
-    private static List<RuralStructurePool.Definition> availableFor(RuralStructurePool.Role role,
-                                                                      Map<RuralStructurePool.Definition, Integer> counts) {
-        List<RuralStructurePool.Definition> result = new ArrayList<>();
-        List<RuralStructurePool.Definition> definitions = RuralStructurePool.definitions();
-        switch (role) {
-            case RESIDENTIAL -> addIfAvailable(result, definitions.get(2), counts);
-            case AGRICULTURAL_UTILITY -> {
-                addIfAvailable(result, definitions.get(3), counts);
-                addIfAvailable(result, definitions.get(4), counts);
-            }
-            case LANDMARK -> addIfAvailable(result, definitions.get(5), counts);
-            case FLEX -> {
-                addIfAvailable(result, definitions.get(2), counts);
-                addIfAvailable(result, definitions.get(3), counts);
-                addIfAvailable(result, definitions.get(4), counts);
-                addIfAvailable(result, definitions.get(5), counts);
-            }
-            default -> {
-            }
-        }
-        return result;
-    }
-
-    private static void addIfAvailable(List<RuralStructurePool.Definition> result,
-                                       RuralStructurePool.Definition definition,
-                                       Map<RuralStructurePool.Definition, Integer> counts) {
-        if (counts.getOrDefault(definition, 0) < definition.maxCount()) result.add(definition);
-    }
-
     private static RuralPlan.SiteScore inspectSite(ServerLevel level, BoundingBox reservation) {
         List<Integer> heights = new ArrayList<>();
         int water = 0;
@@ -1016,18 +985,6 @@ public final class RuralGenerator {
             case 3 -> Direction.NORTH;
             default -> Direction.EAST;
         };
-    }
-
-    private static RuralStructurePool.Definition weightedPick(List<RuralStructurePool.Definition> definitions,
-                                                               RandomSource random) {
-        int total = definitions.stream().mapToInt(RuralStructurePool.Definition::weight).sum();
-        if (total <= 0) return definitions.get(0);
-        int value = random.nextInt(total);
-        for (RuralStructurePool.Definition definition : definitions) {
-            value -= definition.weight();
-            if (value < 0) return definition;
-        }
-        return definitions.get(definitions.size() - 1);
     }
 
     private static int percentile(List<Integer> sorted, double fraction) {

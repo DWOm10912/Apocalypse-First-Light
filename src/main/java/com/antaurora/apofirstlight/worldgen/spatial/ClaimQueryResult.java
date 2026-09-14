@@ -9,6 +9,8 @@ import com.antaurora.apofirstlight.worldgen.core.GenerationFailure;
  * Defensive, stable priority-DESC/id-ASC publication. Duplicate content errors downgrade to UNKNOWN
  * and quarantine that ID. Any failure implies UNKNOWN; a caller cannot label a failure COMPLETE.
  * Partial claims are evidence only, not a complete candidate set for arbitration.
+ * COMPLETE describes query coverage, not profile compatibility. Different owner-local versions
+ * may coexist; the coordination layer must validate every owner/version against its active profile.
  */
 public record ClaimQueryResult(List<SpatialClaim> claims, ClaimQueryCompleteness completeness,
                                List<GenerationFailure> failures, int operationsUsed) {

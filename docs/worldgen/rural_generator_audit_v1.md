@@ -1,5 +1,7 @@
 # Rural Generator Audit V1（2026-09-13，静态只读）
 
+后续状态：本页保留 WG-06 前的只读审查快照。WG-06 已冻结 24 个 Natural legacy 计划案例，并将 Natural/Dev 的 catalog 与各自 selection policy 提取到有限共享核心；地形、规模、道路、池与 Natural 输出未变。当前实现与测试边界见 [WG-06 说明](rural_legacy_regression_wg06.md)；本页原始审查证据不回写为新实机验收。
+
 ## 1. Executive Summary
 
 当前 `apocalypse_firstlight:rural` 是 **Vanilla Structure/StructureSet 自然生成**，并保留独立的 **开发命令 `/afl rural`**。两条路径共用六栋 NBT、`RuralStructurePool`、`RuralLayoutPlanner`、部分地形及农田代码，但不是同一套选择/提交逻辑。自然路径使用 40/20 chunk random spread，按世界 seed 选择四档规模、计划道路和农田，再由一件覆盖预留区的 `StructurePiece` 按 chunk 回放。命令路径使用固定 128×128 预留区、加权抽取与预提交校验；不能把它的保护视作自然生成的保证。

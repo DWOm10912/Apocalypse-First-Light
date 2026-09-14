@@ -9,8 +9,8 @@ import com.antaurora.apofirstlight.worldgen.profile.WorldgenProfile;
  * stored source is confirmed. Queries therefore remain UNKNOWN (including an empty index).
  * Known PARTIAL/STALE/MISMATCH entries still return their protected envelope. Missing source data
  * does not release it. No conversion to WG-04 candidate acceptance is provided.
- * Mixed owner versions are legal if each matches the frozen profile; WG-04's single-version
- * ClaimQueryResult is deliberately not used to silently merge these different system profiles.
+ * Mixed owner versions are legal if each matches the frozen profile. The separate query result
+ * preserves mirror provenance; profile compatibility never upgrades mirror UNKNOWN to COMPLETE.
  */
 public record ClaimIndexSnapshot(long worldSeed, WorldgenProfile profile, long indexRevision,
                                  int capacity, List<VerifiedEntry> entries) {

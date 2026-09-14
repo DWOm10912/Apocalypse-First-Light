@@ -11,9 +11,11 @@ import com.antaurora.apofirstlight.worldgen.core.WorldgenIdentity;
 /**
  * Unregistered, immutable finite WG-04 prototype, NOT a live occupancy index or SavedData.
  * Construction copies/normalizes the entire supplied finite snapshot outside the QUERY budget:
- * identical IDs deduplicate, inconsistent IDs are quarantined, unsupported versions are excluded
+ * identical IDs deduplicate, inconsistent IDs are quarantined, unsupported owners/versions are excluded
  * with snapshot-wide UNKNOWN diagnostics (even outside the requested area/dimension).
- * The snapshot is bound to seed/version/resourceSnapshot; query.system may be any consumer,
+ * This is a SINGLE-OWNER fixture, not a cross-system coordinator. The snapshot is bound to
+ * scope.system and its owner-local version, seed/resourceSnapshot; query.system may be any consumer
+ * using this provider's version scope (not that consumer's own algorithm version),
  * and dimension filters claims. No worlds are read to prove that caller-supplied scope is correct.
  * Query visits normalized supported claims in priority-DESC/id-ASC order, charging ONE operation
  * for each visited claim, including area/dimension misses. It stops at maxOperations; result
@@ -33,8 +35,9 @@ public final class InMemoryClaimProvider implements ClaimQuery {
         var issues = new ArrayList<>(normalized.failures());
         var supported = new ArrayList<SpatialClaim>();
         for (var claim : normalized.claims()) {
-            if (scope.generationVersion().equals(claim.generationVersion())) supported.add(claim);
-            else issues.add(ClaimSets.mismatch("Unsupported snapshot claim version for ID: " + claim.id()));
+            if (scope.system().equals(claim.owner()) && scope.generationVersion().equals(claim.generationVersion()))
+                supported.add(claim);
+            else issues.add(ClaimSets.mismatch("Unsupported snapshot claim owner/version for ID: " + claim.id()));
         }
         this.claims = List.copyOf(supported);
         this.failures = ClaimSets.failures(issues);

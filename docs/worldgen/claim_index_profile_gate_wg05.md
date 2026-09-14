@@ -49,7 +49,8 @@ Java 源码根：`src/main/java/com/antaurora/apofirstlight/worldgen/`。
 
 **有限镜像的查询始终为 UNKNOWN，`isKnownEmpty()` 始终 false。** 即使所有索引条目已确认，仍不能证明未记录区域没有结构。
 PARTIAL、STALE、MISMATCH、UNVERIFIED 的已知占地仍返回；不能因资料不足释放保护。
-这不是 WG-04 `ClaimQueryResult`：不同 owner 可以使用 profile 中不同 system version，不能把它们伪装成同版本候选集来裁决。
+这不是 WG-04 `ClaimQueryResult`：独立结果类型保留镜像来源与 UNKNOWN 边界，不能被包装成权威 COMPLETE 候选集。
+WG-05.1 后，不同 owner 的不同 system version 可以正常共存；权威候选须先逐条通过 `ClaimProfileCompatibility.validateClaimsForProfile`，再由返回的 `ValidatedClaims.resolveCandidates()` 裁决。兼容公式是 `profile.systemVersions[claim.owner] == claim.generationVersion`，不是比较两个 claim 的版本字符串。细节及 B-01 联合回归见 [WG-05.1 实现说明](cross_system_claim_version_arbitration_wg05_1.md)。
 未来权威 provider 必须单独证明覆盖完整性；本轮没有将索引包装为“全世界 COMPLETE”查询。
 
 ## Profile freeze 与激活门
@@ -101,4 +102,4 @@ CompoundTag 本身已折叠的重复键无法追溯；entry/system 使用列表�
 构建日志中的 API/Gradle deprecation warnings 不等同运行验收。
 
 未运行客户端、GameTest、新世界生成、真实来源重启恢复或 TPS 测试；没有实际 SavedData 可供验证。
-下一步仅建议 Phase 1 review → WG-06 Rural Legacy Regression Baseline + Natural/Dev Core Adapter，未开始实施。
+下一步先重新执行聚焦 B-01 闭环的 Phase 1 Gate Review；Gate 通过前不开始 WG-06。WG-05.1 不替代 Gate 审查，也未实施 Rural baseline 或任何生产适配。

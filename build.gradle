@@ -125,6 +125,11 @@ minecraft {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
+            if (project.hasProperty('wg06Capture') || project.hasProperty('wg06Verify')) {
+                property 'forge.enabledGameTestNamespaces', 'wg06_rural_baseline'
+                property 'wg06.fixture', project.file('src/test/resources/worldgen/rural/legacy_regression_v1.tsv').absolutePath
+                if (project.hasProperty('wg06Capture')) property 'wg06.capture', 'true'
+            }
         }
 
         data {

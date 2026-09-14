@@ -1,6 +1,8 @@
 # AFL Unified Worldgen Architecture V1
 
-日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05 无接入基础实现已完成，未迁移/启用现有生成器**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；运行验证尚未进行。
+WG-05.1 更新：claim 的 `generationVersion` 为 owner-local；跨系统候选先由 profile 层逐条校验冻结版本，再进入空间裁决，不要求各系统版本字符串相同。已实现的资格入口、UNKNOWN/重复 ID 边界及合成联合回归见 [WG-05.1 实现说明](cross_system_claim_version_arbitration_wg05_1.md)。[Phase 1 Gate 复审](worldgen_phase1_gate_rereview_v1_1.md) 为 `PASS_WITH_NON_BLOCKING_FINDINGS`。WG-06 已冻结 Rural legacy 计划并抽取有限共享核心，Natural 行为未变；见 [WG-06 说明](rural_legacy_regression_wg06.md)。生产生成器仍未启用跨系统协调。
+
+日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05.1 无接入基础实现及 WG-06 Rural legacy 基线/有限核心适配已完成；跨系统协调未启用**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；WG-06 仅做无图形 GameTest，客户端/in-world 验证未进行。
 
 事实来源：[Rural Audit V1](rural_generator_audit_v1.md)（下称 R）和 [Highway Audit V1](highway_generator_audit_v1.md)（下称 H）。本文正文“当前”仅指这两份静态审查的结论，不把代码存在当成实机验收。其他内容为目标设计；决策索引见 [ADR V1](worldgen_architecture_decisions_v1.md)。初始 Phase 0 交付仅新增两份设计文档，后续实现状态以上述 WG-05 说明为准。
 
@@ -285,7 +287,7 @@ Rural 专用保留：tier/irregular layout、farm planning、farmhouse/barn 要�
 
 ## 15. 迁移阶段与每阶段验收
 
-下表保留原始阶段计划；Phase 1 WG-01～05 已完成无接入基础实现，其余迁移/启用阶段尚未开始。固定 seed baseline 必须在接入前建立，测试输出注明 profile/asset digest/坐标/旋转/chunk 顺序。
+下表保留原始阶段计划；Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结模拟地形的 Rural legacy plan digest 并抽取有限核心，WG-07 及跨系统激活仍未开始。真实 fixed-seed/noise 与 chunk 顺序基线尚未建立，不能将 WG-06 fixture 当成这类验收。
 
 | 阶段 | 工作及行为边界 | 完成门 |
 | --- | --- | --- |
@@ -311,9 +313,9 @@ Rural spacing/recipe/metadata 改变会影响未生成候选；保存过的 plan
 
 建议批准的 V1 取舍：保守确定性预留可能浪费少量候选；UNKNOWN 时拒绝新站点；世界级事务不做；Highway 高优先保护冲突阻止启用而非静默断路；正式建筑替换需重新 QA；legacy 选择语义先保留。若希望优先填满聚落空位、动态改道或旧世界无缝启用，必须另立机制任务，不能在后续迁移中隐式加入。
 
-初始 Phase 0 检查的是设计覆盖、来源对应与文档一致性，当时没有新增 Java 或编译接口。后续 Phase 1 已完成编译和纯契约测试；仍未生成 placeholder、验证物理道路连接或运行压力/存档迁移测试。
+初始 Phase 0 检查的是设计覆盖、来源对应与文档一致性，当时没有新增 Java 或编译接口。后续 Phase 1 已完成编译和纯契约测试；WG-06 已完成 Rural 固定计划摘要与无图形 GameTest、有限 catalog/selection core 抽取，但仍未生成 placeholder、验证物理道路连接或运行压力/存档迁移测试。
 
-## 18. Implementation Backlog（原始依赖顺序；WG-01～05 已完成无接入实现）
+## 18. Implementation Backlog（原始依赖顺序；WG-01～05.1 与 WG-06 已完成各自限定范围）
 
 RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或创建任务。新机制 Astra，已有模式迁移/重复资产接入 Sol。
 
@@ -333,4 +335,4 @@ RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或
 | WG-12 | 正式建筑分批metadata注册/池替换/四向QA | MEDIUM | Sol | WG-10,WG-11 | YES，新区域资产供应 |
 | WG-13 | Radio/Camp/工业site按现有契约接入 | MEDIUM | Sol | WG-09,WG-12 | YES，各独立placement |
 
-INITIAL_IMPLEMENTATION_TASK = WG-01。CURRENT_CHECKPOINT = WG-05。RECOMMENDED_NEXT_STEP = Phase 1 review → WG-06；其余 backlog 不自动启动。
+INITIAL_IMPLEMENTATION_TASK = WG-01。CURRENT_CHECKPOINT = WG-06。RECOMMENDED_NEXT_STEP = WG-07 Rural metadata/socket/recipe legacy mapping；其余 backlog 不自动启动。

@@ -267,8 +267,13 @@ public final class ClaimContractTest {
         var result = query(provider(List.of(original,v2.build())),2);
         require(result.isUnknown() && result.claims().equals(List.of(original)), "unsupported version excluded, matching partial retained");
         require(reason(result,GenerationFailureReason.VERSION_MISMATCH), "version diagnostic");
-        require(ClaimConflictResolver.resolveWinner(original,v2.build()).kind()==INVALID, "pair refuses different profiles");
-        require(complete(List.of(original,v2.build())).isUnknown(), "mixed-profile result cannot be COMPLETE");
+        // Query completeness and owner-local eligibility are separate since WG-05.1.
+        // Profile rejection now has dedicated cross-module regression coverage.
+        require(ClaimConflictResolver.resolveWinner(original,v2.build()).kind()==BLOCKING, "spatial primitive does not certify versions");
+        require(!complete(List.of(original,v2.build())).isUnknown(), "raw coverage is not profile eligibility");
+        var otherOwner = new Draft(); otherOwner.id="other-owner"; otherOwner.owner=new ResourceLocation("test:other");
+        var foreign = query(provider(List.of(original,otherOwner.build())),2);
+        require(foreign.isUnknown() && foreign.claims().equals(List.of(original)), "single-owner provider rejects foreign owner even at same version");
     }
 
     private static void queries() {

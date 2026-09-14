@@ -26,8 +26,7 @@ final class ClaimSets {
             failures.add(mismatch("Inconsistent content/version for claim ID: " + id));
         }
         var claims = byId.values().stream().sorted(ORDER).toList();
-        if (claims.stream().map(SpatialClaim::generationVersion).distinct().limit(2).count() > 1)
-            failures.add(mismatch("Mixed generation versions in one claim snapshot"));
+        // Versions belong to owners. Eligibility against an active profile is not normalization.
         return new Normalized(claims, List.copyOf(failures));
     }
 

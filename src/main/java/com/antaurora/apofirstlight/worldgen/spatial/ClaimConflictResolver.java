@@ -27,6 +27,11 @@ public final class ClaimConflictResolver {
                 && (long) b.minZ() < (long) a.maxZExclusive() + margin;
     }
 
+    /**
+     * Spatial primitive: callers must validate each owner-local version against the active profile
+     * before arbitration. This method does NOT certify profile eligibility; same-ID full-content
+     * collision checks remain defensive even for already validated inputs.
+     */
     public static ClaimConflict resolveWinner(SpatialClaim a, SpatialClaim b) {
         Objects.requireNonNull(a); Objects.requireNonNull(b);
         if (a.id().equals(b.id())) {
@@ -34,7 +39,6 @@ public final class ClaimConflictResolver {
             return invalid("Inconsistent content/version for claim ID: " + a.id());
         }
         if (!a.dimension().equals(b.dimension())) return outcome(NONE);
-        if (!a.generationVersion().equals(b.generationVersion())) return invalid("Cannot arbitrate different generation versions");
         if (!overlapsXZ(a.boundsXZ(), b.boundsXZ(), Math.max(a.exclusionMargin(), b.exclusionMargin()))
                 || (a.yRange().isPresent() && b.yRange().isPresent()
                 && !a.yRange().orElseThrow().intersects(b.yRange().orElseThrow()))) return outcome(NONE);
@@ -67,6 +71,8 @@ public final class ClaimConflictResolver {
     /**
      * Caller must supply a COMPLETE candidate envelope covering ALL potential competitors, not just
      * already accepted plans. Completeness is provider/area scoped; this method cannot certify coverage.
+     * Every claim must also have passed owner-scoped profile validation; a raw COMPLETE query alone
+     * is not an eligibility certificate. Use the profile layer's validated-set entry for coordination.
      * ADR-02: reject against EVERY higher-ranked hard candidate, even if that candidate loses elsewhere.
      * Thus A>B>C with overlaps A-B and B-C admits A only, not greedy A+C. Finite prototype O(n^2);
      * no lifecycle stage, refill, registration-order arbitration or durable acceptance is implied.

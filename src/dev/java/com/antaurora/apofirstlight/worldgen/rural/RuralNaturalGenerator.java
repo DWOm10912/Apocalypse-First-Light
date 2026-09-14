@@ -6,7 +6,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -17,7 +16,6 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -93,13 +91,8 @@ public final class RuralNaturalGenerator {
         }
 
         long templateStart = System.nanoTime();
-        Map<RuralStructurePool.Definition, StructureTemplate> templates = new LinkedHashMap<>();
-        for (RuralStructurePool.Definition definition : RuralStructurePool.definitions()) {
-            Optional<StructureTemplate> template = templateSource.apply(definition.id());
-            if (template.isPresent()) {
-                templates.put(definition, template.get());
-            }
-        }
+        Map<RuralStructurePool.Definition, StructureTemplate> templates = RuralPlanningCore
+                .catalog(RuralPlanningCore.SelectionMode.LEGACY_NATURAL_V1, templateSource).templates();
         long templateLookupNanos = System.nanoTime() - templateStart;
         StructureTemplate barnTemplate = templates.get(RuralStructurePool.BARN);
         if (barnTemplate == null) {
@@ -392,7 +385,8 @@ public final class RuralNaturalGenerator {
         }
         for (RuralLayoutPlanner.Candidate candidate : candidates) {
             if (used.contains(candidate)) continue;
-            RuralStructurePool.Definition selected = definitionFor(candidate.role(), seed, center, result.size());
+            RuralStructurePool.Definition selected = RuralPlanningCore.selectNatural(
+                    candidate.role(), seed, center, result.size());
             if (selected != null) result.add(spec(selected, candidate));
             if (result.size() >= limit) break;
         }
@@ -414,19 +408,6 @@ public final class RuralNaturalGenerator {
                 : candidate.rotationOverride();
         return new Spec(definition, candidate.anchor().getX(), candidate.anchor().getZ(), rotation,
                 candidate.roadFacing());
-    }
-
-    private static RuralStructurePool.Definition definitionFor(RuralStructurePool.Role role, long seed,
-                                                                 BlockPos center, int index) {
-        RuralStructurePool.Role selectedRole = role == RuralStructurePool.Role.FARMHOUSE
-                ? RuralStructurePool.Role.RESIDENTIAL : role;
-        if (selectedRole == RuralStructurePool.Role.AGRICULTURAL_LARGE) return null;
-        List<RuralStructurePool.Definition> matching = RuralStructurePool.definitions().stream()
-                .filter(definition -> definition.role() == selectedRole
-                        || selectedRole == RuralStructurePool.Role.FLEX && definition.weight() > 0)
-                .toList();
-        if (matching.isEmpty()) return null;
-        return matching.get((int) Math.floorMod(seed ^ center.asLong() ^ index, matching.size()));
     }
 
     private static List<RuralPlan.Road> branches(BlockPos center, Direction main, RuralScaleTier tier, long seed) {
