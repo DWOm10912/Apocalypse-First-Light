@@ -1,8 +1,8 @@
 # AFL Unified Worldgen Architecture V1
 
-日期：2026-09-13。状态：**设计建议，待架构评审；未实现、未迁移、未做本轮运行验证**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。
+日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05 无接入基础实现已完成，未迁移/启用现有生成器**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；运行验证尚未进行。
 
-事实来源：[Rural Audit V1](rural_generator_audit_v1.md)（下称 R）和 [Highway Audit V1](highway_generator_audit_v1.md)（下称 H）。本文“当前”仅指这两份静态审查的结论，不把代码存在当成实机验收。其他内容均为目标设计；决策索引见 [ADR V1](worldgen_architecture_decisions_v1.md)。本轮仅新增这两份设计文档。
+事实来源：[Rural Audit V1](rural_generator_audit_v1.md)（下称 R）和 [Highway Audit V1](highway_generator_audit_v1.md)（下称 H）。本文正文“当前”仅指这两份静态审查的结论，不把代码存在当成实机验收。其他内容为目标设计；决策索引见 [ADR V1](worldgen_architecture_decisions_v1.md)。初始 Phase 0 交付仅新增两份设计文档，后续实现状态以上述 WG-05 说明为准。
 
 ## 1. 决策与架构边界
 
@@ -223,7 +223,7 @@ dev 命令提供 NATURAL_PARITY（同 planner/validator/选择版本/terrain 来
 
 ## 13. Java-level 最小类型草案
 
-以下是设计伪签名，不是已创建类；优先 record/enum，只有 TerrainQuery、ClaimQuery 两个共享接口。现有具体 writer 通过适配器返回标准结果，不要求重写其类层次。
+以下是原始设计伪签名，不是当前 Java 接口的逐字副本；Phase 1 已落地的具体契约以源码及 WG-05 实现说明为准。优先 record/enum，只有 TerrainQuery、ClaimQuery 两个共享查询接口。现有具体 writer 的接入适配仍是后续任务，不要求重写其类层次。
 
 ```java
 record WorldgenIdentity(long seed, ResourceKey<Level> dimension,
@@ -285,7 +285,7 @@ Rural 专用保留：tier/irregular layout、farm planning、farmhouse/barn 要�
 
 ## 15. 迁移阶段与每阶段验收
 
-所有阶段为后续任务，尚未开始。固定 seed baseline 必须在接入前建立，测试输出注明 profile/asset digest/坐标/旋转/chunk 顺序。
+下表保留原始阶段计划；Phase 1 WG-01～05 已完成无接入基础实现，其余迁移/启用阶段尚未开始。固定 seed baseline 必须在接入前建立，测试输出注明 profile/asset digest/坐标/旋转/chunk 顺序。
 
 | 阶段 | 工作及行为边界 | 完成门 |
 | --- | --- | --- |
@@ -311,9 +311,9 @@ Rural spacing/recipe/metadata 改变会影响未生成候选；保存过的 plan
 
 建议批准的 V1 取舍：保守确定性预留可能浪费少量候选；UNKNOWN 时拒绝新站点；世界级事务不做；Highway 高优先保护冲突阻止启用而非静默断路；正式建筑替换需重新 QA；legacy 选择语义先保留。若希望优先填满聚落空位、动态改道或旧世界无缝启用，必须另立机制任务，不能在后续迁移中隐式加入。
 
-本轮检查的是设计覆盖、来源对应与文档一致性。未编译新接口（没有 Java 文件）、未生成 placeholder、未验证物理道路连接，也未运行压力/存档迁移测试。
+初始 Phase 0 检查的是设计覆盖、来源对应与文档一致性，当时没有新增 Java 或编译接口。后续 Phase 1 已完成编译和纯契约测试；仍未生成 placeholder、验证物理道路连接或运行压力/存档迁移测试。
 
-## 18. Implementation Backlog（按依赖执行，尚未启动）
+## 18. Implementation Backlog（原始依赖顺序；WG-01～05 已完成无接入实现）
 
 RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或创建任务。新机制 Astra，已有模式迁移/重复资产接入 Sol。
 
@@ -333,4 +333,4 @@ RISK 为实施风险；MODEL 是任务分工建议，不是本轮切换模型或
 | WG-12 | 正式建筑分批metadata注册/池替换/四向QA | MEDIUM | Sol | WG-10,WG-11 | YES，新区域资产供应 |
 | WG-13 | Radio/Camp/工业site按现有契约接入 | MEDIUM | Sol | WG-09,WG-12 | YES，各独立placement |
 
-FIRST_IMPLEMENTATION_TASK = WG-01。RECOMMENDED_NEXT_STEP = 架构评审后，仅实施首个共享 primitive；其余 backlog 不自动启动。
+INITIAL_IMPLEMENTATION_TASK = WG-01。CURRENT_CHECKPOINT = WG-05。RECOMMENDED_NEXT_STEP = Phase 1 review → WG-06；其余 backlog 不自动启动。

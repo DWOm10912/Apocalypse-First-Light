@@ -1,6 +1,6 @@
 # AFL Worldgen Architecture Decisions V1
 
-日期：2026-09-13。所有 ADR 状态：**PROPOSED / DESIGN ONLY，待评审，未实现**。事实来源：[Rural Audit](rural_generator_audit_v1.md)、[Highway Audit](highway_generator_audit_v1.md)；规范细节与阶段见 [Architecture V1](unified_worldgen_architecture_v1.md)。以下“决定”是推荐目标，不声称当前已有公共服务。
+日期：2026-09-13。ADR 正文保留 **Phase 0 原始设计基线**；目前 Phase 1 WG-01～05 已完成无接入基础实现，运行时迁移/协调仍未启用。事实来源：[Rural Audit](rural_generator_audit_v1.md)、[Highway Audit](highway_generator_audit_v1.md)；规范细节与阶段见 [Architecture V1](unified_worldgen_architecture_v1.md)，当前索引/版本/门控接口及限制见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。以下目标不能解读为已有生产 provider、SavedData 或旧世界迁移。
 
 ## ADR-01 — 保留双生命周期
 

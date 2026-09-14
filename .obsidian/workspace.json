@@ -189,17 +189,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "build/tmp/test/jar_extract_2324768181178721723_tmp",
-    "build/classes/java/test/com/antaurora/apofirstlight/worldgen/spatial/ClaimContractTest.class",
-    "build/classes/java/test/com/antaurora/apofirstlight/worldgen/spatial/ClaimContractTest$Draft.class",
-    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest$Input.class.uniqueId1",
-    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest.class.uniqueId0",
+    "build/tmp/test/jar_extract_11997016654828044742_tmp",
+    "build/classes/java/test/com/antaurora/apofirstlight/worldgen/terrain/TerrainContractTest.class",
+    "build/classes/java/test/com/antaurora/apofirstlight/worldgen/terrain/TerrainContractTest$Input.class",
+    "build/classes/java/test/com/antaurora/apofirstlight/worldgen/spatial/IndexProfileContractTest.class",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest$Input.class.uniqueId2",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest.class.uniqueId1",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/IndexProfileContractTest.class.uniqueId0",
+    "docs/worldgen/claim_index_profile_gate_wg05.md",
+    "build/test-results/test/binary/results.bin",
+    "build/test-results/test/binary/output.bin.idx",
+    "build/tmp/test/jar_extract_3464743399022349558_tmp",
     "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalWorldgen.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalStructure.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalPiece.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralTerrainProbeCache.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator.class",
-    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalGenerator$1.class",
     "docs/worldgen/rural_structure_asset_scan_wg03.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
@@ -233,7 +234,6 @@
     "docs/supermarket_shelf_v2_model.md",
     "docs/worldgen/office_concrete_01_authoring.md",
     "docs/worldgen/office_vertical_layout_audit_v1.md",
-    "docs/native_guns/native_inspect_v1.md",
-    "docs/native_guns/native_camera_bone_consumer_v1.md"
+    "docs/native_guns/native_inspect_v1.md"
   ]
 }

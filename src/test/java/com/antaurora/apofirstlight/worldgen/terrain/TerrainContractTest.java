@@ -204,5 +204,6 @@ public final class TerrainContractTest {
         com.antaurora.apofirstlight.worldgen.spatial.BoundsContractTest.main(args);
         com.antaurora.apofirstlight.worldgen.structure.StructureContractTest.main(args);
         com.antaurora.apofirstlight.worldgen.spatial.ClaimContractTest.main(args);
+        com.antaurora.apofirstlight.worldgen.spatial.IndexProfileContractTest.main(args);
     }
 }
