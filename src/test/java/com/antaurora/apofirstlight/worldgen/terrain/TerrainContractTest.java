@@ -202,5 +202,6 @@ public final class TerrainContractTest {
         System.out.println("PASS terrain contract checks=" + checks + "; no worldgen adapters or world bootstrap");
         com.antaurora.apofirstlight.worldgen.core.CoreContractTest.main(args);
         com.antaurora.apofirstlight.worldgen.spatial.BoundsContractTest.main(args);
+        com.antaurora.apofirstlight.worldgen.structure.StructureContractTest.main(args);
     }
 }

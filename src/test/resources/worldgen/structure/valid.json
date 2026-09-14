@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "asset_revision": "fixture-v1",
+  "structure_nbt": "test:rectangular",
+  "category": "test:residential",
+  "front": "SOUTH",
+  "ground_anchor_offset_y": 1,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [{"name": "main", "position": [1, 1, 4], "facing": "SOUTH", "type": "PEDESTRIAN"}],
+  "tags": ["test:fixture"]
+}

@@ -189,17 +189,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "src/main/resources/data/apocalypse_firstlight/structures/rural_farmhouse_02.nbt",
-    "src/main/resources/data/apocalypse_firstlight/structures/rural_farmhouse_02.nbt.tmp",
-    "src/main/resources/data/apocalypse_firstlight/structures/rural_house_small_02.nbt",
-    "src/main/resources/data/apocalypse_firstlight/structures/rural_house_small_02.nbt.tmp",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-4054927997458293413.dat",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/2_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-2/cache_1/2_-1.xwmc.outdated",
+    "build/test-results/test/binary/results.bin",
+    "build/test-results/test/binary/output.bin.idx",
+    "build/tmp/test/jar_extract_6434548446676134555_tmp",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest$Input.class.uniqueId5",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/TerrainContractTest.class.uniqueId4",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/StructureContractTest$TemplateFixture.class.uniqueId3",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/StructureContractTest$1.class.uniqueId2",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/StructureContractTest.class.uniqueId1",
+    "build/tmp/compileTestJava/compileTransaction/stash-dir/RuralAssetScanTest.class.uniqueId0",
+    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalWorldgen.class",
+    "build/classes/java/main/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalStructure.class",
+    "docs/worldgen/rural_structure_asset_scan_wg03.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
@@ -233,7 +234,6 @@
     "docs/worldgen/office_concrete_01_authoring.md",
     "docs/worldgen/office_vertical_layout_audit_v1.md",
     "docs/native_guns/native_inspect_v1.md",
-    "docs/native_guns/native_camera_bone_consumer_v1.md",
-    "docs/models/office_multifunction_printer.md"
+    "docs/native_guns/native_camera_bone_consumer_v1.md"
   ]
 }
