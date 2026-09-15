@@ -16,7 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 public final class P901FirstPerson {
     // Camera-relative translation of this item's complete rig, not player-arm scale.
     // Kept outside item Display; the authored handling carrier is gun-local.
-    public static final float COMPOSITION_X = .10F;
+    public static final float COMPOSITION_X = .07F;
     public static final float COMPOSITION_Y = .045F;
     private P901FirstPerson() {}
 
@@ -44,14 +44,13 @@ public final class P901FirstPerson {
             NativeGunRecoil.applyViewmodel(pose);
             NativeGunAds.apply(pose, right, event.getPartialTick());
             pose.translate(right ? COMPOSITION_X : -COMPOSITION_X, COMPOSITION_Y, 0);
-            // Display owns static composition; only the upstream equip transition remains.
-            P901Presentation.begin(event.getEquipProgress(), outgoing);
+            // Server-triggered artist draw/put_away clips own equip pose and camera.
             // Use the authoritative current stack, not ItemInHandRenderer's equip-
             // interpolated old stack which can still carry the pre-GeckoLibID NBT.
             mc.getItemRenderer().renderStatic(player, outgoing ? event.getItemStack() : player.getMainHandItem(),
                     right ? ItemDisplayContext.FIRST_PERSON_RIGHT_HAND : ItemDisplayContext.FIRST_PERSON_LEFT_HAND,
                     !right, pose, event.getMultiBufferSource(), player.level(), event.getPackedLight(),
                     OverlayTexture.NO_OVERLAY, player.getId());
-        } finally { P901Presentation.end(); pose.popPose(); }
+        } finally { pose.popPose(); }
     }
 }

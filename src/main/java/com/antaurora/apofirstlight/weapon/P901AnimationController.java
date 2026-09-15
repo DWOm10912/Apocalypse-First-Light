@@ -18,9 +18,9 @@ public final class P901AnimationController extends AnimationController<P901Item>
             if (stack == null) return software.bernie.geckolib.core.object.PlayState.STOP;
             return NativeGunAmmo.read(stack, item.definition()) == 0
                     ? state.setAndContinue(software.bernie.geckolib.core.animation.RawAnimation.begin()
-                        .thenLoop("animation.p9_01.empty_idle"))
+                        .thenPlayAndHold("empty_idle"))
                     : state.setAndContinue(software.bernie.geckolib.core.animation.RawAnimation.begin()
-                        .thenLoop("animation.p9_01.static_idle"));
+                        .thenLoop("static_idle"));
         });
     }
 
@@ -31,8 +31,8 @@ public final class P901AnimationController extends AnimationController<P901Item>
         super.process(model, state, bones, snapshots, seekTime, crashWhenCantFindBone);
         reloadSeconds = getTriggeredAnimation() != null && getAnimationState() != State.STOPPED
                 && getCurrentAnimation() != null
-                && (getCurrentAnimation().animation().name().equals("animation.p9_01.reload")
-                    || getCurrentAnimation().animation().name().equals("animation.p9_01.reload_empty"))
+                && (getCurrentAnimation().animation().name().equals("reload_tactical")
+                    || getCurrentAnimation().animation().name().equals("reload_empty"))
                 ? getAnimationSpeed() * Math.max(seekTime - tickOffset, 0) / 20D : -1;
     }
 
@@ -40,6 +40,6 @@ public final class P901AnimationController extends AnimationController<P901Item>
 
     public boolean isEmptyReloadPlaying() {
         return reloadSeconds >= 0 && getCurrentAnimation() != null
-                && getCurrentAnimation().animation().name().equals("animation.p9_01.reload_empty");
+                && getCurrentAnimation().animation().name().equals("reload_empty");
     }
 }

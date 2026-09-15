@@ -7,6 +7,9 @@ import software.bernie.geckolib.animatable.GeoItem;
 
 /** Input intent only. Playback, duration, lock and sync remain in P901Actions/GeckoLib. */
 public final class NativeGunInspect {
+    private static boolean isInspect(String action) {
+        return "inspect".equals(action) || "inspect_empty".equals(action);
+    }
     private static boolean pending, requireUseRelease;
     private static int awaitingTrigger, slot;
     private static long id;
@@ -41,7 +44,7 @@ public final class NativeGunInspect {
 
     static void cancel() {
         var mc = Minecraft.getInstance();
-        if ((pending || awaitingTrigger > 0 || "inspect".equals(action())) && mc.player != null) {
+        if ((pending || awaitingTrigger > 0 || isInspect(action())) && mc.player != null) {
             long cancelId = pending || awaitingTrigger > 0 ? id : GeoItem.getId(mc.player.getMainHandItem());
             if (canceledId != cancelId) {
                 AflNetwork.requestInspect(mc.player.getInventory().selected, cancelId, true);
@@ -72,7 +75,7 @@ public final class NativeGunInspect {
             if (!action.isEmpty()) awaitingTrigger = 0;
             else if (--awaitingTrigger == 0) AflNetwork.requestInspect(slot, id, true);
         }
-        if (!pending && awaitingTrigger == 0 && !"inspect".equals(action) && !mc.options.keyUse.isDown())
+        if (!pending && awaitingTrigger == 0 && !isInspect(action) && !mc.options.keyUse.isDown())
             requireUseRelease = false;
     }
 

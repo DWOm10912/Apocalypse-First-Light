@@ -12,7 +12,9 @@
 - `NativeGunItem.inspectClip()` 为可选能力；默认 null。
   ConfiguredNativeGunItem 要求 profile.clips 声明 inspect 且正式资源存在；否则 NO_OP。
   BR51 正式动画名为 `inspect`，来源 `animations/br51_01.animation.json`。
-  P9 目前不提供该能力；本轮未修改其源/geo/animation/equip，也未改 BR51 动画。
+  P9 在后续 P9 artist asset integration V1 中接入此能力：有弹为 `inspect`，空仓为
+  `inspect_empty`，由 `inspectClip(ItemStack)` 根据服务端主手弹量选择。见
+  [P9 正式资产接入](p9_01_artist_asset_integration_v1.md)。BR51 动画未改。
 - 复用 `P901Actions.operation`、Session 动作锁、Gecko trigger/stop 同步及动画资源长度。
   现有第三人称同步随框架复用，不另建网络动画系统。
 
@@ -44,11 +46,11 @@ Recoil、Sway、弹道、ADS 对齐算法均未改。
 ## 验证
 
 - `src/dev/java/com/antaurora/apofirstlight/dev/NativeInspectGameTests.java`：
-  不重启/自然结束/无数据消耗、开火与换弹优先级、取消身份校验、切物品、P9 NO_OP。
+  不重启/自然结束/无数据消耗、开火与换弹优先级、取消身份校验、切物品、P9 有弹与空仓分支。
 - `src/dev/inspect-gametest.init.gradle`：隔离 build 测试世界，不触碰玩家存档。
 - 最终 compileJava/processResources/full build 通过；隔离 GameTest 实际执行 3/3 通过。
-  覆盖正式长度结束/无消耗/防重复、同一次 Fire 输入打断并射击、Reload 优先级及完成补弹、
-  取消 ID 校验、切物品清锁、无检视能力 NO_OP。
+  上述历史 3/3 结果覆盖当时 BR51 路径；新增 P9 分支须以本轮重新运行的结果为准，
+  不能把旧 P9 NO_OP 验证算作当前行为。
   前几轮测试模板/命名空间配置失败或执行 0 项，不计为测试通过。
 - 人工：V、连按 V、ADS 持续按住时 V、检视中射击/R、换弹中 V、换枪/普通物品、
   第三人称、Controls 改键、结束回 HIP 与 camera 回零。需重启最终构建后的客户端验证。

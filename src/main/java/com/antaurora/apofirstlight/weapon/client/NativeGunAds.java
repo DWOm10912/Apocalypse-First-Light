@@ -41,7 +41,8 @@ public final class NativeGunAds {
         if(c==null || c.getTriggeredAnimation()==null || c.getAnimationState()==AnimationController.State.STOPPED
                 || c.getCurrentAnimation()==null) return "";
         String clip=c.getCurrentAnimation().animation().name();
-        return clip.contains("reload")||clip.equals("draw")||clip.equals("put_away")||clip.equals("inspect")?clip:"";
+        return clip.contains("reload")||clip.equals("draw")||clip.equals("put_away")||clip.equals("inspect")
+                ||clip.equals("inspect_empty")?clip:"";
     }
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e) {
         if(e.phase!=TickEvent.Phase.END)return;

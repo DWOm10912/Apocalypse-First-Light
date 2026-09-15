@@ -82,7 +82,15 @@ public final class NativeInspectGameTests {
         p.getInventory().selected = 2;tick(p);
         h.assertTrue(!P901Actions.busy(p), "swap to empty cancels");
         p.getInventory().setItem(2, new ItemStack(AflItems.P9_01.get()));
-        h.assertTrue(!P901Actions.operation(p, "inspect"), "P9 without inspect is noop");
+        NativeGunAmmo.set(p.getMainHandItem(), NativeGunDefinition.P9_01, 4);
+        var pistol = (NativeGunItem)p.getMainHandItem().getItem();
+        h.assertTrue("inspect".equals(pistol.inspectClip(p.getMainHandItem())), "loaded P9 inspect");
+        h.assertTrue(P901Actions.operation(p, "inspect"), "P9 inspect starts");
+        P901Actions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
+        NativeGunAmmo.set(p.getMainHandItem(), NativeGunDefinition.P9_01, 0);
+        h.assertTrue("inspect_empty".equals(pistol.inspectClip(p.getMainHandItem())), "empty P9 inspect");
+        h.assertTrue(P901Actions.operation(p, "inspect"), "empty P9 inspect starts");
+        P901Actions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
         h.assertTrue(!NativeGunAnimations.hasClip("br51_01", "missing_probe"), "missing clip safe");
         h.succeed();
     }

@@ -16,6 +16,7 @@ import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.RawAnimation;
+import software.bernie.geckolib.core.animation.Animation;
 import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.List;
@@ -27,6 +28,14 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
 
     @Override
     public NativeGunDefinition definition() { return NativeGunData.get(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","p9_01")); }
+
+    @Override public String animationAsset() { return "p9_01"; }
+    @Override public String inspectClip() { return "inspect"; }
+    @Override public String inspectClip(ItemStack stack) {
+        return NativeGunAmmo.read(stack, definition()) == 0 ? "inspect_empty" : "inspect";
+    }
+    @Override public String fireClip(boolean last) { return "shoot"; }
+    @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
 
     @Override
     public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
@@ -55,11 +64,11 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
 
     @Override
     public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new P901AnimationController(this)
-                .triggerableAnim("fire", RawAnimation.begin().thenPlay("animation.p9_01.fire"))
-                .triggerableAnim("reload", RawAnimation.begin().thenPlay("animation.p9_01.reload"))
-                .triggerableAnim("fire_last_round", RawAnimation.begin().thenPlay("animation.p9_01.fire_last_round"))
-                .triggerableAnim("reload_empty", RawAnimation.begin().thenPlay("animation.p9_01.reload_empty")));
+        var action = new P901AnimationController(this);
+        for (String clip : new String[]{"shoot", "reload_tactical", "reload_empty", "draw", "put_away",
+                "inspect", "inspect_empty"})
+            action.triggerableAnim(clip, RawAnimation.begin().then(clip, Animation.LoopType.PLAY_ONCE));
+        controllers.add(action);
     }
 
     @Override

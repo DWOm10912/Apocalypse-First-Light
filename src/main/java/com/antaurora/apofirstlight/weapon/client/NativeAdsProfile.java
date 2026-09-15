@@ -16,9 +16,11 @@ public record NativeAdsProfile(String anchor, float ax, float ay, float az, floa
     public static final NativeAdsProfile RIFLE = new NativeAdsProfile("octagon9/rear-aperture-axis",
             0,13.6875F,15.46875F,.16F,
             3.8F,-7.2F,-11.5F,0,4,0,.45F,0,0,0);
+    // Retarget the same optical axis to the artist rig's static-idle rear sight.
+    // Gameplay ADS duration/FOV and eye relief remain unchanged.
     public static final NativeAdsProfile PISTOL = new NativeAdsProfile("sight_anchor/rear-axis",
-            -2.98F,11.59F,9.04F,.34F,
-            1.00148F,-7.2445F,-11.68624F,.54547F,.19151F,-.27948F,.41F,.10F,.045F,3);
+            1.50F, 7.196F,2.97F,.47F,
+            3.24148F,-7.4945F,-14.19624F,.54547F,.19151F,-.27948F,.55F,.07F,.045F,3);
     public static NativeAdsProfile forGun(ResourceLocation id) {
         return switch(id.toString()) {
             case "apocalypse_firstlight:br51_01" -> RIFLE;

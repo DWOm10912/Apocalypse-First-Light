@@ -7,12 +7,13 @@
 
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeCameraBoneConsumer.java`
   使用 Forge `ViewportEvent.ComputeCameraAngles`，只修改该事件的 pitch/yaw/roll。
-- `NativeAnimatedWeaponRenderer.java` 的 GeoModel 在 `handleAnimations` 前共享本帧时间。
-- 仅 `ConfiguredNativeGunItem` 的 `profile.id() == br51_01` 启用；不改配置数据。
-- 白名单：`inspect`、`reload_tactical`、`reload_empty`、`draw`、`put_away`。
+- `NativeAnimatedWeaponRenderer.java` 与 `P901Model.java` 的 GeoModel 在 `handleAnimations` 前共享本帧时间。
+- `NativeGunItem` 中仅 BR51-01 与 P9-01 启用；不改枪械战斗配置。
+- 白名单：`inspect`、`inspect_empty`、`reload_tactical`、`reload_empty`、`draw`、`put_away`。
   `shoot`、idle 及其他动作不消费；NativeGunRecoil 和 Weapon Sway 保持原实现。
 - 只读取根级 `camera` 的 rotation，相对 initial snapshot；不读取 position/scale/pivot。
-  P9 源/geo/animation/equip 未因该功能修改，P9 未启用消费。
+  P9 随后在 artist asset integration V1 使用新模型的 `camera` 轨道；`shoot` 仍不消费，
+  防止与 Native recoil 双叠。见 [P9 正式资产接入](p9_01_artist_asset_integration_v1.md)。
 
 ## 同帧求值
 
@@ -35,7 +36,7 @@ RenderTick START 丢弃该帧引用；缓存不保存 Camera Offset，不跨帧�
 逐帧 Blockbench 对照证据，不将整体观感认可扩展为全部轴向测试通过。
 
 每次事件从引擎新建 Camera 姿态开始，不累积 offset。
-action STOPPED、无 trigger、不在白名单、缺 bone/model、非 BR51 均直接零消费。
+action STOPPED、无 trigger、不在白名单、缺 bone/model、非 P9/BR51 均直接零消费。
 无玩家/世界、死亡、旁观、睡眠、望远镜、界面/overlay、失焦、非第一人称、
 Camera entity 非本地玩家均不应用。换枪每帧重新读取主手，旧枪没有可继承的旋转缓存。
 不调用 player rotation setter，不改变玩家 look vector、服务端方向、弹道或 ADS。

@@ -31,6 +31,8 @@ public final class P901HandLayer extends GeoRenderLayer<P901Item> {
         var locator = P901RenderMatrices.detachedCopy(pose);
         RenderUtils.translateToPivotPoint(locator, bone);
         try {
+            // Use the same full player-arm presentation as BR51; the item Display
+            // moves the complete gun-and-hands rig, not either arm independently.
             NativePlayerArmRenderer.render(locator, right, buffers, light, overlay);
         } finally {
             buffers.getBuffer(gunType);

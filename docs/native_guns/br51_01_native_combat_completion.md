@@ -44,7 +44,7 @@ BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_a
 
 ## 声音与FX
 
-- 成功射击只由服务端播放 `apocalypse_firstlight:br51_01_fire` → `sounds/br51_01/fire.ogg`，源为 `br51_01_shoot.ogg`。
+- 成功射击只由服务端播放 `apocalypse_firstlight:br51_01_fire` → `sounds/weapons/br51_01/fire.ogg`，源为 `br51_01_shoot.ogg`。仅文件目录在 P9 artist asset integration V1 中迁移，SoundEvent ID 与行为不变。
 - 生产 controller 不注册 GeckoLib sound handler，shoot JSON 原marker保留但不消费，避免与真实枪声双播。
 - reload/inspect/draw 的 `sound_effects` 由真实动作会话按20Hz逐条播放，取消动作即取消未播放标记。
 - put_away 的首个标记（0.0333s）在切出通知时播放，误差不足1tick；不创建新hotbar过渡系统。

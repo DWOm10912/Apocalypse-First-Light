@@ -1,5 +1,8 @@
 # P9-01 Original Audio Design V2
 
+> 历史候选音频设计记录，不是当前运行时说明。正式 P9 artist 音效、换弹时长与
+> 动画映射见 [P9 artist asset integration V1](../p9_01_artist_asset_integration_v1.md)。
+
 2026-09-09. Candidate-only experiment, not production audio. Human audition pending.
 
 ## Scope and provenance

@@ -35,7 +35,23 @@ public final class NativeGunAnimations {
         var a = clip(asset, clip);
         if (a.has("sound_effects")) a.getAsJsonObject("sound_effects").entrySet().forEach(e ->
                 cues.add(new Cue((int)Math.ceil(Double.parseDouble(e.getKey()) * 20),
-                        new ResourceLocation(e.getValue().getAsJsonObject().get("effect").getAsString()))));
+                        soundId(asset, e.getValue().getAsJsonObject().get("effect").getAsString()))));
         return cues;
+    }
+
+    private static ResourceLocation soundId(String asset, String marker) {
+        if ("p9_01".equals(asset)) {
+            if (marker.startsWith("apocalypse_firstlight:p9_01_"))
+                return new ResourceLocation(marker);
+            String event = switch (marker) {
+                case "p9_01_mag_out" -> "p9_01_magazine_out";
+                case "p9_01_mag_in" -> "p9_01_magazine_in";
+                case "p9_01_inspect_empty" -> "p9_01_inspect";
+                case "p9_01_slide_action", "p9_01_fire" -> marker;
+                default -> throw new IllegalArgumentException("Unknown P9 sound marker " + marker);
+            };
+            return new ResourceLocation("apocalypse_firstlight", event);
+        }
+        return new ResourceLocation(marker);
     }
 }

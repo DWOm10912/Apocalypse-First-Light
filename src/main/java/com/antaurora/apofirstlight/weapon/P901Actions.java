@@ -20,10 +20,10 @@ import java.util.WeakHashMap;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class P901Actions {
     public static final int FIRE_TICKS = 3;
-    public static final int RELOAD_TICKS = 26;
-    public static final int EMPTY_RELOAD_TICKS = 33;
+    public static final int RELOAD_TICKS = 48;
+    public static final int EMPTY_RELOAD_TICKS = 63;
     public static final int SLIDE_RACK_TICK = 25;
-    // Authored withdrawal at 0.42s; seated at 0.93s. Quantize to nearest server tick.
+    // Legacy no-animation fallback only; P9/BR51 use their authored sound markers.
     public static final int MAG_OUT_TICK = 8;
     public static final int MAG_IN_TICK = 19;
     private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
@@ -57,7 +57,7 @@ public final class P901Actions {
         SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
     }
 
-    public static String animationName(boolean reload) { return reload ? "reload" : "fire"; }
+    public static String animationName(boolean reload) { return reload ? "reload_tactical" : "shoot"; }
 
     /** Read-only guard for atomic attachment changes, sharing the existing action lock. */
     public static boolean busy(ServerPlayer player) { return SESSIONS.containsKey(player); }
@@ -68,17 +68,18 @@ public final class P901Actions {
                 || (clip.equals("inspect") && player.containerMenu != player.inventoryMenu)
                 || !(player.getMainHandItem().getItem() instanceof NativeGunItem item)
                 || !(clip.equals("inspect") ? item.inspectClip() != null
-                    : clip.equals("draw") && item instanceof ConfiguredNativeGunItem)) return false;
+                    : clip.equals("draw") && item.animationAsset() != null)) return false;
         Session state = new Session();
         state.stack = player.getMainHandItem(); state.item = item;
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = player.server.getTickCount();
-        state.end = state.start + NativeGunAnimations.ticks(item.animationAsset(), clip);
-        state.clip = clip; state.operation = true; state.slot = player.getInventory().selected;
+        state.clip = clip.equals("inspect") ? item.inspectClip(state.stack) : clip;
+        state.end = state.start + NativeGunAnimations.ticks(item.animationAsset(), state.clip);
+        state.operation = true; state.slot = player.getInventory().selected;
         state.dimension = player.level().dimension();
-        state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), clip));
+        state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         SESSIONS.put(player, state); syncInventory(player);
-        item.triggerAnim(player, state.id, P901Item.CONTROLLER, clip);
+        item.triggerAnim(player, state.id, P901Item.CONTROLLER, state.clip);
         return true;
     }
 
@@ -87,7 +88,7 @@ public final class P901Actions {
     }
     public static void cancelInspect(ServerPlayer player, long expectedId) {
         Session state = SESSIONS.get(player);
-        if (state != null && state.operation && "inspect".equals(state.clip) && state.id == expectedId) {
+        if (state != null && state.operation && isInspect(state.clip) && state.id == expectedId) {
             state.item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
             SESSIONS.remove(player);
         }
@@ -99,7 +100,7 @@ public final class P901Actions {
         long now = player.server.getTickCount();
         Session previous = SESSIONS.get(player);
         if (previous != null) {
-            if (!previous.operation || !"inspect".equals(previous.clip)) return;
+            if (!previous.operation || !isInspect(previous.clip)) return;
             cancelInspect(player, previous.id); // Same click proceeds to normal combat validation.
         }
         NativeGunDefinition definition = item.definition();
@@ -154,7 +155,8 @@ public final class P901Actions {
                 SESSIONS.remove(player);
                 interrupted.item.stopTriggeredAnim(player, interrupted.id, P901Item.CONTROLLER, interrupted.clip);
             }
-            if (old != null && old.getItem() instanceof ConfiguredNativeGunItem outgoing) {
+            if (old != null && old.getItem() instanceof NativeGunItem outgoing
+                    && outgoing.animationAsset() != null) {
                 // Vanilla may stop rendering the old stack before the complete clip is visible.
                 long id = GeoItem.getOrAssignId(old, player.serverLevel());
                 outgoing.triggerAnim(player, id, P901Item.CONTROLLER, "put_away");
@@ -169,7 +171,7 @@ public final class P901Actions {
         if (!player.isAlive() || player.isSpectator() || state.stack.isEmpty() || player.getMainHandItem() != state.stack
                 || player.getInventory().selected != state.slot
                 || player.level().dimension() != state.dimension
-                || ("inspect".equals(state.clip) && player.containerMenu != player.inventoryMenu)) {
+                || (isInspect(state.clip) && player.containerMenu != player.inventoryMenu)) {
             state.item.stopTriggeredAnim(player, state.id,
                     P901Item.CONTROLLER, state.clip);
             SESSIONS.remove(player);
@@ -210,6 +212,10 @@ public final class P901Actions {
     private static void sound(ServerPlayer player, SoundEvent sound) {
         player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
                 sound, SoundSource.PLAYERS, 1.0F, 1.0F);
+    }
+
+    private static boolean isInspect(String clip) {
+        return "inspect".equals(clip) || "inspect_empty".equals(clip);
     }
 
     private static void syncInventory(ServerPlayer player) {

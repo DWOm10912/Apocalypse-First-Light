@@ -75,6 +75,16 @@ public final class NativePlayerArmRenderer {
                 1F/PRESENTATION_X,1F/PRESENTATION_Y,1F/PRESENTATION_Z);
     }
 
+    /** Match a source proxy's 4x12x4 model-unit dimensions after the item's
+     * uniform first-person display scale, without moving the grip contact. */
+    public static void renderAtModelScale(PoseStack evaluatedLocator, boolean right,
+                                          MultiBufferSource buffers, int light, int overlay,
+                                          float modelScale) {
+        if (!Float.isFinite(modelScale) || modelScale <= 0F) return;
+        render(evaluatedLocator,right,buffers,light,overlay,
+                modelScale/PRESENTATION_X, modelScale/PRESENTATION_Y, modelScale/PRESENTATION_Z);
+    }
+
     private static void render(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
                                int light, int overlay, float x, float y, float z) {
         var mc = Minecraft.getInstance();

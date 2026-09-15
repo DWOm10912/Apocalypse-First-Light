@@ -1,7 +1,7 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem;
+import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -17,8 +17,9 @@ import software.bernie.geckolib.constant.DataTickets;
 import software.bernie.geckolib.core.animation.AnimationController;
 import software.bernie.geckolib.core.animation.AnimationState;
 import software.bernie.geckolib.model.GeoModel;
+import software.bernie.geckolib.renderer.GeoItemRenderer;
 
-/** BR51 rotation-only pilot. No retained camera offset, player rotation writes or separate clock. */
+/** Native gun rotation-only camera consumer. No retained offset, player writes or separate clock. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeCameraBoneConsumer {
     private static final float DEGREES = 180f / (float)Math.PI;
@@ -42,7 +43,7 @@ public final class NativeCameraBoneConsumer {
 
     public static boolean supportedAction(String name) {
         return name != null && switch (name) {
-            case "inspect", "reload_tactical", "reload_empty", "draw", "put_away" -> true;
+            case "inspect", "inspect_empty", "reload_tactical", "reload_empty", "draw", "put_away" -> true;
             default -> false; // Includes shoot and both static baselines.
         };
     }
@@ -58,12 +59,12 @@ public final class NativeCameraBoneConsumer {
                 || !mc.isWindowActive() || !mc.options.getCameraType().isFirstPerson()
                 || event.getCamera().getEntity() != player) return;
         var stack = player.getMainHandItem();
-        if (!(stack.getItem() instanceof ConfiguredNativeGunItem gun)
-                || !gun.profile.id().equals("br51_01")) return;
+        if (!(stack.getItem() instanceof NativeGunItem gun)
+                || !("br51_01".equals(gun.animationAsset()) || "p9_01".equals(gun.animationAsset()))) return;
         long id = GeoItem.getId(stack);
         if (id == Long.MAX_VALUE) return;
-        if (!(IClientItemExtensions.of(stack).getCustomRenderer() instanceof NativeAnimatedWeaponRenderer<?> renderer)) return;
-        var model = (GeoModel<ConfiguredNativeGunItem>)(GeoModel<?>)renderer.getGeoModel();
+        if (!(IClientItemExtensions.of(stack).getCustomRenderer() instanceof GeoItemRenderer<?> renderer)) return;
+        var model = (GeoModel<NativeGunItem>)(GeoModel<?>)renderer.getGeoModel();
         var resource = model.getModelResource(gun);
         // Missing/loading/reloaded resources are ordinary no-data states, not per-frame exceptions.
         if (!GeckoLibCache.getBakedModels().containsKey(resource)

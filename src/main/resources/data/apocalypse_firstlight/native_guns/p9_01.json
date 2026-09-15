@@ -17,8 +17,8 @@
     "profile": "default"
   },
   "reload": {
-    "tactical_seconds": 1.3,
-    "empty_seconds": 1.65
+    "tactical_seconds": 2.38,
+    "empty_seconds": 3.12
   },
   "noise": {
     "radius": 64,
@@ -56,8 +56,8 @@
   },
   "sight_slot": {
     "anchor": "sight_anchor",
-    "mount_offset": [0, -0.44, 10.55],
-    "ads_center": [-2.98, 12.15, 8.13],
+    "mount_offset": [0, -0.44, 7.33],
+    "ads_center": [2.48, 7.756, 2.04],
     "accepts": ["apocalypse_firstlight:pistol_red_dot"]
   }
 }

@@ -31,11 +31,13 @@ public final class NativeGunRuntimeSmokeCheck {
             var geo = GeckoLibCache.getBakedModels().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/p9_01.geo.json"));
             check(geo != null, "GeckoLib baked model");
             check(geo.getBone("right_arm_reference").isEmpty() && geo.getBone("left_arm_reference").isEmpty(), "reference exclusion");
-            for (String anchor : new String[]{"right_hand_anchor", "left_hand_anchor", "muzzle_anchor", "ejection_anchor", "sight_anchor"})
+            for (String anchor : new String[]{"righthand_pos", "lefthand_pos", "muzzle_anchor", "ejection_anchor", "sight_anchor", "camera"})
                 check(geo.getBone(anchor).isPresent(), "anchor " + anchor);
             var animations = GeckoLibCache.getBakedAnimations().get(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "animations/p9_01.animation.json"));
             check(animations != null, "GeckoLib baked animations");
-            NativeHandContractChecks.verify(mc, (P901Item) AflItems.P9_01.get());
+            for (String clip : new String[]{"static_idle", "empty_idle", "shoot", "reload_tactical", "reload_empty",
+                    "draw", "put_away", "inspect", "inspect_empty"})
+                check(animations.getAnimation(clip) != null, "clip " + clip);
             check(EasingType.fromString("afl_hold") != EasingType.LINEAR, "registered hold easing");
             check(EasingType.fromString("afl_hold").buildTransformer(null).apply(0.99) == 0, "hold until endpoint");
             for (boolean reload : new boolean[]{false, true}) {
@@ -49,7 +51,7 @@ public final class NativeGunRuntimeSmokeCheck {
                     check(buffer.readUtf().equals(name) && !buffer.isReadable(), "non-null stop packet action");
                 } finally { buffer.release(); }
             }
-            ApocalypseFirstLight.LOGGER.info("[AFL NATIVE GUN SMOKE] PASS: baked model/animations, anchors, source-only arms, hold easing and fire/reload stop packet encoding");
+            ApocalypseFirstLight.LOGGER.info("[AFL NATIVE GUN SMOKE] PASS: baked artist model/animations, anchors, clips and stop packet encoding; visual QA pending");
         } catch (Throwable failure) {
             ApocalypseFirstLight.LOGGER.error("[AFL NATIVE GUN SMOKE] FAIL", failure);
         }

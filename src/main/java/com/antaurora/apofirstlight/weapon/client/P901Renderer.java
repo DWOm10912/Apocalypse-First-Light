@@ -12,7 +12,7 @@ import software.bernie.geckolib.renderer.GeoItemRenderer;
 /** Vanilla builtin/entity display transforms are supplied by the exported item JSON. */
 public final class P901Renderer extends GeoItemRenderer<P901Item> {
     public static final NativeGunRig RIG = new NativeGunRig(
-            "gun_model_root", "right_hand_anchor", "left_hand_anchor", "fp_root");
+            "gun", "right_hand_anchor", "left_hand_anchor", "root");
     public P901Renderer() {
         super(new P901Model());
         addRenderLayer(new P901HandLayer(this));
@@ -49,20 +49,11 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
                     .getAnimationControllers().get(P901Item.CONTROLLER);
             if (!(controller instanceof P901AnimationController pistol) || !pistol.isEmptyReloadPlaying()) return;
         }
-        // fp_root is an authoring context container, not a world-item animation.
-        // In non-FP contexts traverse its children without applying that container.
-        if (!isFirstPersonPass() && bone.getName().equals(RIG.firstPersonRoot())) {
-            for (var child : bone.getChildBones())
-                renderRecursively(pose, item, child, type, buffers, buffer, reRender,
-                        partialTick, light, overlay, red, green, blue, alpha);
-            return;
-        }
-        boolean worldCompatibility = !isFirstPersonPass() && bone.getName().equals("gun");
+        boolean worldCompatibility = !isFirstPersonPass() && bone.getName().equals("g19_and_mag");
         if (worldCompatibility) {
             pose.pushPose();
             preserveNonFirstPersonSize(pose);
         }
-        float[] equipPose = isFirstPersonPass() ? P901Presentation.apply(bone) : null;
         try {
             if(NativeMagazineRendering.replaces(currentItemStack,bone)){
                 pose.pushPose();
@@ -74,21 +65,16 @@ public final class P901Renderer extends GeoItemRenderer<P901Item> {
             super.renderRecursively(pose, item, bone, type, buffers, buffer, reRender,
                     partialTick, light, overlay, red, green, blue, alpha);
         } finally {
-            P901Presentation.restore(bone, equipPose);
             if (worldCompatibility) pose.popPose();
         }
     }
 
-    /** Existing world-item compatibility only: undo the historical .5 physical
-     * migration and the newly baked .8 around their respective source pivots.
-     * This branch never executes in first person and never touches player arms.
+    /** Keep the earlier world-item footprint for the artist's smaller gun mesh.
+     * The source's root pivot replaces the two obsolete prototype pivots.
      */
     public static void preserveNonFirstPersonSize(PoseStack pose) {
-        pose.translate(0, 8 / 16F, 6 / 16F);
-        pose.scale(2, 2, 2);
-        pose.translate(0, -8 / 16F, -6 / 16F);
-        pose.translate(.1 / 16F, 7.75 / 16F, 9.2 / 16F);
-        pose.scale(1.25F, 1.25F, 1.25F);
-        pose.translate(-.1 / 16F, -7.75 / 16F, -9.2 / 16F);
+        pose.translate(0, 4 / 16F, 2 / 16F);
+        pose.scale(2.5F, 2.5F, 2.5F);
+        pose.translate(0, -4 / 16F, -2 / 16F);
     }
 }

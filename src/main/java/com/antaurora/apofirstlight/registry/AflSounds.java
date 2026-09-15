@@ -66,6 +66,7 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> P9_01_SUPPRESSED = pistolSound("suppressed");
     public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");
+    public static final RegistryObject<SoundEvent> P9_01_INSPECT = pistolSound("inspect");
     public static final RegistryObject<SoundEvent> CASING_LANDING = SOUND_EVENTS.register("shell_casings_dropping",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "shell_casings_dropping")));
     public static final RegistryObject<SoundEvent> P9_01_MAGAZINE_OUT = pistolSound("magazine_out");
