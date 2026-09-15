@@ -46,6 +46,8 @@ public final class P901Actions {
         String clip;
         boolean outPlayed;
         boolean inPlayed;
+        boolean lastShot;
+        boolean lockHandoffPlayed;
         int slot;
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
     }
@@ -100,11 +102,16 @@ public final class P901Actions {
         long now = player.server.getTickCount();
         Session previous = SESSIONS.get(player);
         if (previous != null) {
-            if (!previous.operation || !isInspect(previous.clip)) return;
-            cancelInspect(player, previous.id); // Same click proceeds to normal combat validation.
+            if (NativeShotAnimationPolicy.completedShotCanBeReplaced(
+                    previous.reload, previous.operation, now, previous.end)) {
+                SESSIONS.remove(player);
+            } else if (previous.operation && isInspect(previous.clip)) {
+                cancelInspect(player, previous.id); // Same click proceeds to normal combat validation.
+            } else return;
         }
         NativeGunDefinition definition = item.definition();
         ItemStack held = player.getMainHandItem();
+        boolean lastShot = false;
         if (reload) {
             if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
                     || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
@@ -117,8 +124,13 @@ public final class P901Actions {
                 }
                 return;
             }
+            int ammoBefore = NativeGunAmmo.read(held, definition);
             if (!NativeGunAmmo.consumeOne(held, definition)) return;
+            int ammoAfter = NativeGunAmmo.read(held, definition);
             NEXT_FIRE.put(player, now + definition.fireIntervalTicks());
+            // This transition is authoritative because it is observed immediately around consumeOne.
+            // Store it on the accepted shot session; clients never infer the last round themselves.
+            lastShot = NativeShotAnimationPolicy.isLastShot(ammoBefore, ammoAfter);
         }
         Session state = new Session();
         state.stack = player.getMainHandItem();
@@ -129,13 +141,19 @@ public final class P901Actions {
         state.end = now + (reload ? item.reloadTicks(state.reloadStartedEmpty) : definition.fireIntervalTicks());
         state.slot = slot;
         state.reload = reload;
+        state.lastShot = lastShot;
         state.clip = reload ? item.reloadClip(state.reloadStartedEmpty)
-                : item.fireClip(NativeGunAmmo.read(held, definition) == 0);
+                : item.fireClip(state.lastShot);
         if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
         // Deliver the per-stack render identity before its animation trigger.
         syncInventory(player);
+        if (!reload) {
+            // GeckoLib 4.7.4 does not reset a running controller when the same trigger name
+            // arrives. Its standard stop + trigger pair makes every accepted shot start at 0s.
+            item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+        }
         item.triggerAnim(player, state.id, P901Item.CONTROLLER, state.clip);
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
@@ -178,6 +196,14 @@ public final class P901Actions {
             return;
         }
         long now = player.server.getTickCount();
+        if (state.lastShot && !state.lockHandoffPlayed
+                && now >= state.start + NativeShotAnimationPolicy.LAST_SHOT_HANDOFF_TICKS) {
+            // Both formal assets reach their rearward mechanical pose during the first tick.
+            // Stop the one-shot here so the ammo-driven empty baseline holds that pose instead
+            // of allowing the ordinary shoot clip to close the action again.
+            state.item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+            state.lockHandoffPlayed = true;
+        }
         state.cues.removeIf(c -> {
             if (now < state.start + c.tick()) return false;
             sound(player, java.util.Objects.requireNonNull(net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(c.sound()),

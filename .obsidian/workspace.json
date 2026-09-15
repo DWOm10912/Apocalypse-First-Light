@@ -189,17 +189,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界/level4947729445135955142.dat",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/saves/新的世界/level9890463925797883573.dat",
     "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
+    "docs/native_guns/native_shot_animation_retrigger_v1.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/edge_lane_white.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
@@ -233,7 +234,6 @@
     "docs/models/restroom_partition.md",
     "docs/crowbar_first_person_smash_v1.md",
     "docs/vending_machine_runtime.md",
-    "docs/vending_machine_model.md",
-    "docs/chest_freezer_model.md"
+    "docs/vending_machine_model.md"
   ]
 }

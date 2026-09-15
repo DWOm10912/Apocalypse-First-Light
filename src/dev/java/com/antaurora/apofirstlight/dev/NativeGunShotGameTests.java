@@ -22,6 +22,31 @@ import java.util.UUID;
 @PrefixGameTestTemplate(false)
 public final class NativeGunShotGameTests {
     private static final NativeGunDefinition D = NativeGunDefinition.P9_01;
+    @GameTest(template="network_empty", timeoutTicks=30)
+    public static void shotRetriggerCadenceAndLastRoundPolicy(GameTestHelper h) {
+        h.assertTrue(!NativeShotAnimationPolicy.isLastShot(2, 1)
+                && NativeShotAnimationPolicy.isLastShot(1, 0), "Only authoritative 1 -> 0 is last shot");
+        h.assertTrue(!NativeShotAnimationPolicy.completedShotCanBeReplaced(false, false, 2, 3)
+                && NativeShotAnimationPolicy.completedShotCanBeReplaced(false, false, 3, 3)
+                && !NativeShotAnimationPolicy.completedShotCanBeReplaced(true, false, 3, 3),
+                "Only an elapsed shot session is replaceable");
+        h.assertTrue(NativeShotAnimationPolicy.LAST_SHOT_HANDOFF_TICKS == 1,
+                "Last-shot lock handoff follows the first mechanical recoil tick");
+
+        var p = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "shot_retrigger"));
+        var gun = new ItemStack(AflItems.P9_01.get());
+        p.getInventory().selected = 0; p.getInventory().setItem(0, gun);
+        NativeGunAmmo.set(gun, D, 2);
+        P901Actions.request(p, false, 0);
+        h.assertTrue(NativeGunAmmo.read(gun, D) == 1, "First accepted shot consumes one round");
+        h.runAfterDelay(D.fireIntervalTicks(), () -> {
+            P901Actions.request(p, false, 0);
+            h.assertTrue(NativeGunAmmo.read(gun, D) == 0,
+                    "Next shot retriggers at the exact cadence and owns the 1 -> 0 transition");
+            h.succeed();
+        });
+    }
+
     @GameTest(template="network_empty", timeoutTicks=100)
     public static void serverShotOcclusionNoiseAndDry(GameTestHelper h) {
         var p = FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "native_shot"));
