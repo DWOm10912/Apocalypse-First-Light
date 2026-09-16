@@ -48,3 +48,11 @@ Reason if NO:
 - Natural terrain, road markings, wood, leaves, saplings, and ordinary decorative blocks follow material-appropriate Vanilla-style tool rules instead of inheriting the industrial Diamond-tier default.
 - Slab, stair, and door variants must synchronize mining tags and tier requirements with their parent material in the same task.
 - A block task is not complete until Survival mining and drop behavior has been checked.
+
+### AFL building tasks
+
+For AFL building, structure, WorldEdit, NBT, `minecraft-builder-skill`, city, factory, or signal-tower tasks, first read:
+
+`docs/authoring/afl_industrial_palette_v1.md`
+
+Use the current repository Registry IDs and BlockState definitions as the source of truth. Do not substitute vanilla blocks for documented AFL structure blocks unless the task explicitly requires it. If a custom block orientation is visually uncertain, build a small in-game test before large-scale construction.

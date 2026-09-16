@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 设计/武器/枪械.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "枪械"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/01 - 设计/武器/枪械.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,17 +189,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/2_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/2_-2.xwmc.outdated",
+    "docs/01 - 设计/方块/机器.md",
+    "docs/04 - 注意事项 重要内容.md",
+    "run/saves/新的世界/level3107667040519128081.dat",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-187465183685407964.dat",
     "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.outdated",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-5206838666228975340.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/2_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/2_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/2_-1.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/2_-2.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/2_-1.xwmc",
-    "run/xaero/world-map/新的世界/null/cache_1/2_-2.xwmc",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/steel_railing.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
@@ -214,7 +215,6 @@
     "src/main/blockbench/diagonal_brace/stacked_64.png",
     "docs/steel_structure_material.md",
     "docs/03 - 制作清单.md",
-    "docs/04 - 注意事项 重要内容.md",
     "docs/native_guns/native_shot_animation_retrigger_v1.md",
     "docs/native_guns/p9_01_artist_asset_integration_v1.md",
     "docs/worldgen/rural_metadata_recipe_migration_wg07.md",
