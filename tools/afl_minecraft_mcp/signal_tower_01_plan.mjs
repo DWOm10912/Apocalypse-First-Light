@@ -1,67 +1,144 @@
-// Live authoring plan only: no automatic connection, placement, export or worldgen registration.
-export const origin = [384, -33, -448];
-export const size = [9, 23, 9];
-const afl = name => `apocalypse_firstlight:${name}`;
-const steel = afl('steel_block');
-const plate = afl('steel_plate');
-const grate = `${afl('steel_grate')}[waterlogged=false]`;
-const slab = `${afl('steel_block_slab')}[type=top,waterlogged=false]`;
-const copper = 'minecraft:waxed_cut_copper';
-const stairs = facing => `${copper}_stairs[facing=${facing},half=bottom,shape=straight,waterlogged=false]`;
+// Signal Tower V2 — cleaned tower-body source of truth.
+// Local structure coordinates: X/Z 0..14, Y 0..63.
+// Live edits deliberately protect the existing foundation, platforms and top equipment.
+
+export const BASE_CENTER = [7, 7];
+export const TOTAL_HEIGHT = 64;
+export const BASE_WIDTH = 15;
+export const MID_WIDTH = 11;
+export const TOP_WIDTH = 5;
+export const SECTION_HEIGHT = 16;
+export const PLATFORM_LEVELS = [20, 36];
+export const PLATFORM_RADIUS = [5, 4];
+export const ANTENNA_LEVEL = 56;
+
+export const PALETTE = Object.freeze({
+  foundation: 'minecraft:stone_bricks',
+  foundation_cracked: 'minecraft:cracked_stone_bricks',
+  foundation_cap: 'minecraft:smooth_stone',
+  foundation_concrete: 'minecraft:gray_concrete',
+  main: 'minecraft:polished_andesite',
+  accent: 'minecraft:weathered_copper',
+  platform: 'minecraft:smooth_stone_slab[type=bottom]',
+  railing: 'minecraft:iron_bars',
+  ladder: 'minecraft:ladder[facing=south]',
+  antenna: 'minecraft:light_gray_concrete',
+  beacon: 'minecraft:red_concrete',
+});
+
+const sections = [
+  { y0: 3, y1: 19, lo: 2, hi: 12, levels: [3, 7, 11, 15, 19] },
+  { y0: 19, y1: 35, lo: 3, hi: 11, levels: [19, 23, 27, 31, 35] },
+  { y0: 35, y1: 51, lo: 4, hi: 10, levels: [35, 39, 43, 47, 51] },
+  { y0: 51, y1: 59, lo: 5, hi: 9, levels: [51, 55, 59] },
+];
+
 const ops = [];
-function box(a,b,block) {ops.push({min:a.map((v,i)=>v+origin[i]),max:b.map((v,i)=>v+origin[i]),block});}
-function cell(x,y,z,block) {box([x,y,z],[x,y,z],block);}
-function ring(y,lo,hi,block) {
-  box([lo,y,lo],[hi,y,lo],block); box([lo,y,hi],[hi,y,hi],block);
-  box([lo,y,lo+1],[lo,y,hi-1],block); box([hi,y,lo+1],[hi,y,hi-1],block);
+const box = (min, max, block) => ops.push({ min, max, block });
+const cell = (x, y, z, block) => box([x, y, z], [x, y, z], block);
+
+function line(from, to, block) {
+  const steps = Math.max(Math.abs(to[0] - from[0]), Math.abs(to[1] - from[1]), Math.abs(to[2] - from[2]));
+  for (let i = 0; i <= steps; i++) {
+    const t = steps === 0 ? 0 : i / steps;
+    cell(Math.round(from[0] + (to[0] - from[0]) * t), Math.round(from[1] + (to[1] - from[1]) * t), Math.round(from[2] + (to[2] - from[2]) * t), block);
+  }
 }
-// Four independent concrete footings and a walk-through base.
-for(const x of [1,7]) for(const z of [1,7]) {
-  box([x===1?0:6,0,z===1?0:6],[x===1?2:8,0,z===1?2:8],afl('reinforced_concrete'));
-  cell(x,1,z,'minecraft:polished_andesite');
-  box([x,2,z],[x,19,z],steel);
-}
-for(const y of [2,6,15]) ring(y,1,7,slab);
-export const foundation = ops.splice(0);
-// Four open truss bays on every face. Waxing keeps the warm brace colour stable.
-for(const [lo,hi] of [[2,6],[6,10],[10,15],[15,19]]) {
-  for(const side of [1,7]) for(const axis of ['x','z']) {
-    for(let t=1;t<=5;t++) {
-      const y1=Math.round(lo+(hi-lo)*t/6);
-      const y2=Math.round(hi-(hi-lo)*t/6);
-      const put=(y,block)=>axis==='x'?cell(1+t,y,side,block):cell(side,y,1+t,block);
-      put(y1,stairs(axis==='x'?'east':'south'));
-      put(y2,stairs(axis==='x'?'west':'north'));
-      if(y1===y2) put(y1,copper);
+
+function brace(lo, hi, a, b, side, axis, block) {
+  const span = hi - lo;
+  for (let i = 0; i <= span; i++) {
+    const y = Math.round(a + (b - a) * i / span);
+    const p = lo + i;
+    if (axis === 'z') {
+      cell(p, y, side, block);
+      cell(hi - i, y, side, block);
+    } else {
+      cell(side, y, p, block);
+      cell(side, y, hi - i, block);
     }
   }
 }
-// Steel joint collars sit on the columns, never close the open bays.
-for(const y of [2,6,10,15,19]) for(const x of [1,7]) for(const z of [1,7]) cell(x,y,z,plate);
-export const bracing = ops.splice(0);
-// Full walkable grating decks, with the continuous ladder shaft left open.
-for(const y of [10,19]) {
-  for(let z=0;z<=8;z++) for(let x=0;x<=8;x++) {
-    if(x===2 && z===2) continue;
-    cell(x,y,z,(x===0||x===8||z===0||z===8)?steel:grate);
-  }
-  for(let z=0;z<=8;z++) for(let x=0;x<=8;x++) {
-    if(x!==0&&x!==8&&z!==0&&z!==8) continue;
-    const n=z>0&&(x===0||x===8),s=z<8&&(x===0||x===8);
-    const w=x>0&&(z===0||z===8),e=x<8&&(z===0||z===8);
-    cell(x,y+1,z,`minecraft:iron_bars[north=${n},south=${s},west=${w},east=${e},waterlogged=false]`);
+
+function perimeter(level, lo, hi, block) {
+  box([lo, level, lo], [hi, level, lo], block);
+  box([lo, level, hi], [hi, level, hi], block);
+  box([lo, level, lo + 1], [lo, level, hi - 1], block);
+  box([hi, level, lo + 1], [hi, level, hi - 1], block);
+}
+
+function octagon(y, radius, block) {
+  for (let z = 7 - radius; z <= 7 + radius; z++) {
+    for (let x = 7 - radius; x <= 7 + radius; x++) {
+      if (Math.abs(x - 7) + Math.abs(z - 7) <= radius * 2 - 1) cell(x, y, z, block);
+    }
   }
 }
-export const decks = ops.splice(0);
-// Supported internal ladder: narrow metal spine on the north face, opening on both decks.
-box([2,1,1],[2,20,1],steel);
-box([2,0,2],[2,20,2],'minecraft:ladder[facing=south,waterlogged=false]');
-// The first rung has its own bearing at ground level.
-cell(2,0,1,afl('reinforced_concrete'));
-// Simple central aerial with four exposed fixing points.
-cell(4,20,4,plate);
-cell(4,21,4,'minecraft:lightning_rod[facing=up,powered=false,waterlogged=false]');
-cell(4,22,4,'minecraft:lightning_rod[facing=up,powered=false,waterlogged=false]');
-export const access = ops.splice(0);
-export const phases = {foundation,bracing,decks,access};
-export const operations = Object.values(phases).flat();
+
+// Protected context: foundation, platforms and top devices remain unchanged in-world.
+for (const [x, z] of [[0, 0], [12, 0], [0, 12], [12, 12]]) {
+  box([x, 0, z], [x + 2, 0, z + 2], PALETTE.foundation);
+  box([x, 1, z], [x + 2, 1, z + 2], PALETTE.foundation_concrete);
+  cell(x + 1, 2, z + 1, PALETTE.foundation_cap);
+}
+box([6, 0, 6], [8, 0, 8], PALETTE.foundation);
+box([6, 1, 6], [8, 1, 8], PALETTE.foundation_cracked);
+
+// Clean four-leg frame with 4-block horizontal rhythm and sparse 8-block X bracing.
+for (const section of sections) {
+  for (const [x, z] of [[section.lo, section.lo], [section.hi, section.lo], [section.lo, section.hi], [section.hi, section.hi]]) {
+    box([x, section.y0, z], [x, section.y1, z], PALETTE.main);
+  }
+  for (const level of section.levels) perimeter(level, section.lo, section.hi, PALETTE.main);
+  for (let i = 0; i + 2 < section.levels.length; i += 2) {
+    const a = section.levels[i];
+    const b = section.levels[i + 2];
+    for (const side of [section.lo, section.hi]) brace(section.lo, section.hi, a, b, side, 'z', PALETTE.main);
+    for (const side of [section.lo, section.hi]) brace(section.lo, section.hi, a, b, side, 'x', PALETTE.main);
+  }
+}
+
+for (const y of [3, 19, 35, 51, 59]) {
+  const inset = y < 19 ? 2 : y < 35 ? 3 : y < 51 ? 4 : 5;
+  for (const [x, z] of [[inset, inset], [14 - inset, inset], [inset, 14 - inset], [14 - inset, 14 - inset]]) cell(x, y, z, PALETTE.accent);
+}
+
+// Context copies: exact existing platform and antenna layouts for preview/source parity.
+for (let i = 0; i < PLATFORM_LEVELS.length; i++) {
+  const y = PLATFORM_LEVELS[i];
+  const radius = PLATFORM_RADIUS[i];
+  octagon(y, radius, PALETTE.platform);
+  for (let z = 7 - radius; z <= 7 + radius; z++) {
+    for (let x = 7 - radius; x <= 7 + radius; x++) {
+      if (Math.abs(x - 7) + Math.abs(z - 7) <= radius * 2 - 1 && (x !== 7 || (z !== 6 && z !== 7))) {
+        if (Math.abs(x - 7) === radius || Math.abs(z - 7) === radius || Math.abs(x - 7) + Math.abs(z - 7) === radius * 2 - 1) cell(x, y + 1, z, PALETTE.railing);
+      }
+    }
+  }
+}
+box([7, 2, 6], [7, 59, 6], PALETTE.main);
+for (let y = 2; y <= 58; y++) cell(7, y, 7, PALETTE.ladder);
+box([7, 59, 7], [7, 62, 7], PALETTE.main);
+cell(7, 63, 7, PALETTE.beacon);
+box([6, 55, 1], [8, 59, 1], PALETTE.antenna);
+box([6, 55, 13], [8, 59, 13], PALETTE.antenna);
+box([1, 55, 6], [1, 59, 8], PALETTE.antenna);
+box([13, 55, 6], [13, 59, 8], PALETTE.antenna);
+line([7, ANTENNA_LEVEL, 6], [7, ANTENNA_LEVEL, 1], PALETTE.railing);
+line([7, ANTENNA_LEVEL, 8], [7, ANTENNA_LEVEL, 13], PALETTE.railing);
+line([6, ANTENNA_LEVEL, 7], [1, ANTENNA_LEVEL, 7], PALETTE.railing);
+line([8, ANTENNA_LEVEL, 7], [13, ANTENNA_LEVEL, 7], PALETTE.railing);
+
+export const operations = ops;
+export default function build(api) {
+  const structure = api.createStructure([BASE_WIDTH, TOTAL_HEIGHT, BASE_WIDTH]);
+  for (const operation of operations) api.fill(structure, operation.min, operation.max, operation.block);
+  return {
+    structure,
+    metadata: {
+      name: 'signal_tower_body_rebuild_v1',
+      parameters: { BASE_CENTER, TOTAL_HEIGHT, BASE_WIDTH, MID_WIDTH, TOP_WIDTH, SECTION_HEIGHT, PLATFORM_LEVELS, PLATFORM_RADIUS, ANTENNA_LEVEL },
+      palette: PALETTE,
+    },
+  };
+}

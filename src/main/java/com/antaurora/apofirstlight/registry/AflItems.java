@@ -103,6 +103,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_GRATE = ITEMS.register("steel_grate",
             () -> new BlockItem(AflBlocks.STEEL_GRATE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_BEAM = ITEMS.register("steel_beam",
+            () -> new BlockItem(AflBlocks.STEEL_BEAM.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE = ITEMS.register("steel_plate",
             () -> new BlockItem(AflBlocks.STEEL_PLATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE_SLAB = ITEMS.register("steel_plate_slab",
