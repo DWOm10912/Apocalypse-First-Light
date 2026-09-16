@@ -1,0 +1,35 @@
+{
+  "texture": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/steel_beam/steel_beam.png",
+  "textureHash": "84f47c0b98f7dc57ba8c485ee970dc6e17a81fcdb571d1e170a1c566bdf748a8",
+  "resolution": 64,
+  "handPainted": true,
+  "directDownscale": false,
+  "geometry": [
+    {
+      "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/steel_beam/steel_beam.bbmodel",
+      "cubes": 34,
+      "geometryUnchanged": true
+    },
+    {
+      "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/diagonal_brace/diagonal_brace.bbmodel",
+      "cubes": 46,
+      "geometryUnchanged": true
+    },
+    {
+      "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/diagonal_brace/diagonal_brace_backslash.bbmodel",
+      "cubes": 46,
+      "geometryUnchanged": true
+    },
+    {
+      "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/diagonal_brace/diagonal_brace_structure_preview.bbmodel",
+      "cubes": 1000,
+      "geometryUnchanged": true
+    },
+    {
+      "file": "D:/Minecraft Modding/Apocalypse First Light/src/main/blockbench/diagonal_brace/diagonal_brace_stacked_preview.bbmodel",
+      "cubes": 1616,
+      "geometryUnchanged": true
+    }
+  ],
+  "inGame": "NOT_TESTED_BRIDGE_DISCONNECTED"
+}

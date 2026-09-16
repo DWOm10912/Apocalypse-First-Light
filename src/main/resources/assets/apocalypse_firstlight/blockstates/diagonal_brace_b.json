@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "horizontal_axis=x": {
+      "model": "apocalypse_firstlight:block/diagonal_brace_b_xy"
+    },
+    "horizontal_axis=z": {
+      "model": "apocalypse_firstlight:block/diagonal_brace_b_zy"
+    }
+  }
+}

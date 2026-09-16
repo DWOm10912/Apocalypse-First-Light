@@ -105,6 +105,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_GRATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BEAM = ITEMS.register("steel_beam",
             () -> new BlockItem(AflBlocks.STEEL_BEAM.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DIAGONAL_BRACE_A = ITEMS.register("diagonal_brace_a",
+            () -> new BlockItem(AflBlocks.DIAGONAL_BRACE_A.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DIAGONAL_BRACE_B = ITEMS.register("diagonal_brace_b",
+            () -> new BlockItem(AflBlocks.DIAGONAL_BRACE_B.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CROSS_BRACE = ITEMS.register("cross_brace",
+            () -> new BlockItem(AflBlocks.CROSS_BRACE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE = ITEMS.register("steel_plate",
             () -> new BlockItem(AflBlocks.STEEL_PLATE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_PLATE_SLAB = ITEMS.register("steel_plate_slab",
