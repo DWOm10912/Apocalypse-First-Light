@@ -14,7 +14,7 @@ block-model UV coordinates remain unchanged. Beam geometry remains 34 cubes.
 Each fixed single brace reuses all 34 beam elements and their original UVs,
 stretching only the longitudinal coordinates from 16 px to about 22.627 px;
 the fixed X model contains two complete copies (68 elements), separated by
-`+0.20/-0.20 px` along the plane normal to avoid center z-fighting.
+`+0.60/-0.60 px` along the plane normal to avoid center z-fighting.
 
 The registered beam uses the matching runtime texture at
 `src/main/resources/assets/apocalypse_firstlight/textures/block/steel_beam.png`.

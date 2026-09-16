@@ -1,10 +1,56 @@
 {
-  "variants": {
-    "horizontal_axis=x": {
-      "model": "apocalypse_firstlight:block/cross_brace_xy"
+  "multipart": [
+    {
+      "when": {
+        "horizontal_axis": "x"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_brace_xy"
+      }
     },
-    "horizontal_axis=z": {
-      "model": "apocalypse_firstlight:block/cross_brace_zy"
+    {
+      "when": {
+        "horizontal_axis": "z"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_brace_zy"
+      }
+    },
+    {
+      "when": {
+        "horizontal_axis": "x",
+        "joint_negative": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_negative_xy_joint"
+      }
+    },
+    {
+      "when": {
+        "horizontal_axis": "x",
+        "joint_positive": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_positive_xy_joint"
+      }
+    },
+    {
+      "when": {
+        "horizontal_axis": "z",
+        "joint_negative": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_negative_zy_joint"
+      }
+    },
+    {
+      "when": {
+        "horizontal_axis": "z",
+        "joint_positive": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cross_positive_zy_joint"
+      }
     }
-  }
+  ]
 }

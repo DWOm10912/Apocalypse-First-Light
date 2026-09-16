@@ -53,10 +53,10 @@ const offsetElements = (sourceModel, axis, amount) => model(sourceModel.elements
   const result = clone(element);
   result.from[axis] += amount;
   result.to[axis] += amount;
-  result.rotation.origin[axis] += amount;
+  if (result.rotation) result.rotation.origin[axis] += amount;
   return result;
 }));
-const crossLayerOffset = 0.2;
+const crossLayerOffset = 0.6;
 const models = {
   diagonal_brace_a_xy: aXY,
   diagonal_brace_a_zy: aZY,
@@ -74,14 +74,102 @@ const models = {
   )
 };
 
+const plateUv = [12, 0, 16, 8];
+const boltUv = [12, 12, 16, 16];
+const allFaces = uv => Object.fromEntries(
+  ['north', 'east', 'south', 'west', 'up', 'down'].map(direction => [direction, { uv: clone(uv), texture: '#0' }])
+);
+function endpointJointXY(side, height, angle) {
+  const endpointSourceY = height === 'low'
+    ? 8 - 8 * diagonalScale
+    : 8 + 8 * diagonalScale;
+  const outwardSign = height === 'low' ? -1 : 1;
+  const overlapAlongMember = 0.03 * diagonalScale;
+  const gapAlongMember = 6 * diagonalScale;
+  const innerY = endpointSourceY - outwardSign * overlapAlongMember;
+  const outerY = endpointSourceY + outwardSign * gapAlongMember;
+  const segment = {
+    name: `${side}_${height}_diagonal_connector`,
+    // Avoid every existing beam skin/web plane (notably 6.75 and 9.25), so
+    // the nested connector cannot produce coplanar faces at the hand-off.
+    from: [7.1, Math.min(innerY, outerY), 7.1],
+    to: [8.9, Math.max(innerY, outerY), 8.9],
+    rotation: { origin: [8, 8, 8], axis: 'z', angle, rescale: false },
+    faces: allFaces(plateUv)
+  };
+
+  // A neighboring vertical steel beam occupies 6..10 in its own cell, so its
+  // brace-facing surface is x=-6 on the negative side and x=22 on positive.
+  const beamFaceX = side === 'negative' ? -6 : 22;
+  const endpointY = height === 'low' ? -6 : 22;
+  const plateFromX = side === 'negative' ? beamFaceX - 0.15 : beamFaceX - 0.1;
+  const plateToX = side === 'negative' ? beamFaceX + 0.1 : beamFaceX + 0.15;
+  const elements = [segment, {
+    name: `${side}_${height}_beam_end_plate`,
+    from: [plateFromX, endpointY - 2, 5.5],
+    to: [plateToX, endpointY + 2, 10.5],
+    faces: allFaces(plateUv)
+  }];
+  const boltFace = side === 'negative'
+    ? [beamFaceX + 0.08, beamFaceX + 0.28]
+    : [beamFaceX - 0.28, beamFaceX - 0.08];
+  for (const yOffset of [-1.25, 0.9]) {
+    for (const zOffset of [-1.55, 1.2]) {
+      elements.push({
+        name: `${side}_${height}_bolt_${yOffset}_${zOffset}`,
+        from: [boltFace[0], endpointY + yOffset, 8 + zOffset],
+        to: [boltFace[1], endpointY + yOffset + 0.35, 8 + zOffset + 0.35],
+        faces: allFaces(boltUv)
+      });
+    }
+  }
+  return model(elements);
+}
+function mapModelXYtoZY(sourceModel) {
+  const directions = { north: 'east', east: 'south', south: 'west', west: 'north', up: 'up', down: 'down' };
+  return model(sourceModel.elements.map(source => ({
+    ...clone(source),
+    from: [16 - source.to[2], source.from[1], source.from[0]],
+    to: [16 - source.from[2], source.to[1], source.to[0]],
+    faces: Object.fromEntries(Object.entries(source.faces).map(([direction, face]) => [directions[direction], clone(face)]))
+  })));
+}
+const jointXY = {
+  a_negative: endpointJointXY('negative', 'low', -45),
+  a_positive: endpointJointXY('positive', 'high', -45),
+  b_negative: endpointJointXY('negative', 'high', 45),
+  b_positive: endpointJointXY('positive', 'low', 45)
+};
+jointXY.cross_negative = combine(
+  offsetElements(jointXY.a_negative, 2, crossLayerOffset),
+  offsetElements(jointXY.b_negative, 2, -crossLayerOffset)
+);
+jointXY.cross_positive = combine(
+  offsetElements(jointXY.a_positive, 2, crossLayerOffset),
+  offsetElements(jointXY.b_positive, 2, -crossLayerOffset)
+);
+const jointModels = {};
+for (const [name, value] of Object.entries(jointXY)) {
+  jointModels[`${name}_xy`] = value;
+  jointModels[`${name}_zy`] = mapModelXYtoZY(value);
+}
+
 for (const [name, value] of Object.entries(models)) {
   write(`${assetRoot}/models/block/${name}.json`, value);
 }
+for (const [name, value] of Object.entries(jointModels)) {
+  write(`${assetRoot}/models/block/${name}_joint.json`, value);
+}
 for (const id of ['diagonal_brace_a', 'diagonal_brace_b', 'cross_brace']) {
-  write(`${assetRoot}/blockstates/${id}.json`, { variants: {
-    'horizontal_axis=x': { model: `apocalypse_firstlight:block/${id}_xy` },
-    'horizontal_axis=z': { model: `apocalypse_firstlight:block/${id}_zy` }
-  }});
+  const jointPrefix = id === 'diagonal_brace_a' ? 'a' : id === 'diagonal_brace_b' ? 'b' : 'cross';
+  write(`${assetRoot}/blockstates/${id}.json`, { multipart: [
+    { when: { horizontal_axis: 'x' }, apply: { model: `apocalypse_firstlight:block/${id}_xy` } },
+    { when: { horizontal_axis: 'z' }, apply: { model: `apocalypse_firstlight:block/${id}_zy` } },
+    { when: { horizontal_axis: 'x', joint_negative: 'true' }, apply: { model: `apocalypse_firstlight:block/${jointPrefix}_negative_xy_joint` } },
+    { when: { horizontal_axis: 'x', joint_positive: 'true' }, apply: { model: `apocalypse_firstlight:block/${jointPrefix}_positive_xy_joint` } },
+    { when: { horizontal_axis: 'z', joint_negative: 'true' }, apply: { model: `apocalypse_firstlight:block/${jointPrefix}_negative_zy_joint` } },
+    { when: { horizontal_axis: 'z', joint_positive: 'true' }, apply: { model: `apocalypse_firstlight:block/${jointPrefix}_positive_zy_joint` } }
+  ]});
   write(`${assetRoot}/models/item/${id}.json`, { parent: `apocalypse_firstlight:block/${id}_xy` });
 }
 
@@ -106,6 +194,9 @@ function bbmodel(name, elements) {
 write(`${sourceRoot}/diagonal_brace_a_1x1.bbmodel`, bbmodel('diagonal_brace_a_1x1', aXY.elements));
 write(`${sourceRoot}/diagonal_brace_b_1x1.bbmodel`, bbmodel('diagonal_brace_b_1x1', bXY.elements));
 write(`${sourceRoot}/cross_brace_1x1.bbmodel`, bbmodel('cross_brace_1x1', models.cross_brace_xy.elements));
+for (const [name, value] of Object.entries(jointModels)) {
+  write(`${sourceRoot}/${name}_joint.bbmodel`, bbmodel(`${name}_joint`, value.elements));
+}
 
 function rotatedBounds(element) {
   const { origin, axis, angle } = element.rotation;
@@ -131,6 +222,11 @@ for (const [name, value] of Object.entries(models)) {
   assert.equal(value.elements.length, name.startsWith('cross_brace') ? 68 : 34);
   for (const element of value.elements) rotatedBounds(element);
 }
+for (const [name, value] of Object.entries(jointModels)) {
+  const expected = name.startsWith('cross_') ? 12 : 6;
+  assert.equal(value.elements.length, expected);
+  assert.equal(value.textures['0'], 'apocalypse_firstlight:block/steel_beam');
+}
 
 // Exact reuse audit: geometry structure and UVs are unchanged; only the beam's
 // longitudinal coordinate is stretched by sqrt(2), then the whole member rotates.
@@ -154,5 +250,6 @@ console.log(JSON.stringify({
   sourceLength: 16, stretchedLength: 16 * diagonalScale,
   beamElements: 34, aElements: 34, bElements: 34, xElements: 68,
   crossLayerOffset,
+  jointModels: Object.fromEntries(Object.entries(jointModels).map(([name, value]) => [name, value.elements.length])),
   texture: beam.textures['0']
 }, null, 2));
