@@ -52,6 +52,7 @@ import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.IronBarsBlock;
 import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
@@ -131,6 +132,9 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    public static final RegistryObject<Block> STEEL_RAILING = BLOCKS.register("steel_railing",
+            () -> new IronBarsBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BARS)
+                    .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_BEAM = BLOCKS.register("steel_beam",
             () -> new SteelBeamBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(7.0F, 12.0F)

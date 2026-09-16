@@ -1,0 +1,4 @@
+{
+  "parent": "minecraft:block/iron_bars_post_ends",
+  "textures": { "particle": "apocalypse_firstlight:block/steel_railing", "bars": "apocalypse_firstlight:block/steel_railing", "edge": "apocalypse_firstlight:block/steel_railing" }
+}

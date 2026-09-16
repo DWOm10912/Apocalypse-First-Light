@@ -21,6 +21,7 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflFluids.INDUSTRIAL_WASTE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflFluids.FLOWING_INDUSTRIAL_WASTE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_RAILING.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_DOOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.POPLAR_TRAPDOOR.get(), RenderType.cutout());

@@ -41,6 +41,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.STEEL_PLATE_SLAB.get());
                         output.accept(AflItems.STEEL_PLATE_STAIRS.get());
                         output.accept(AflItems.STEEL_GRATE.get());
+                        output.accept(AflItems.STEEL_RAILING.get());
                         output.accept(AflItems.STEEL_BEAM.get());
                         output.accept(AflItems.DIAGONAL_BRACE_A.get());
                         output.accept(AflItems.DIAGONAL_BRACE_B.get());
