@@ -103,6 +103,7 @@
 
   "item.apocalypse_firstlight.9x19mm_round.caliber": "9×19mm",
   "item.apocalypse_firstlight.762x51mm_round.caliber": "7.62×51mm",
+  "item.apocalypse_firstlight.12_7x55mm_round.caliber": "12.7×55mm",
   "item.apocalypse_firstlight.br51_extended_magazine_35": "BR51-01 35-Round Extended Magazine",
   "item.apocalypse_firstlight.rifle_red_dot_01": "Rifle Red Dot Sight",
   "item.apocalypse_firstlight.rifle_suppressor_01": "Rifle Suppressor",
@@ -116,6 +117,8 @@
   "item.apocalypse_firstlight.762x51mm_round": "7.62×51mm Rifle Round",
   "item.apocalypse_firstlight.9x19mm_casing": "9×19mm Casing",
   "item.apocalypse_firstlight.762x51mm_casing": "7.62×51mm Casing",
+  "item.apocalypse_firstlight.12_7x55mm_round": "12.7×55mm Heavy Round",
+  "item.apocalypse_firstlight.12_7x55mm_casing": "12.7×55mm Casing",
 
   "item.apocalypse_firstlight.steel_ingot": "Steel Ingot",
   "item.apocalypse_firstlight.industrial_waste_bucket": "Industrial Waste Bucket",

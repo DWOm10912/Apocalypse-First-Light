@@ -6,10 +6,12 @@
 | --- | --- | --- | --- |
 | 9x19mm_round | 9×19毫米手枪弹 | 9×19mm Pistol Round | P9-01 |
 | 762x51mm_round | 7.62×51毫米步枪弹 | 7.62×51mm Rifle Round | BR51-01 |
+| 12_7x55mm_round | 12.7×55毫米重型弹 | 12.7×55mm Heavy Round | 已注册，尚未绑定枪械 |
 | 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 抛壳及普通物品 |
 | 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 抛壳及普通物品 |
+| 12_7x55mm_casing | 12.7×55毫米弹壳 | 12.7×55mm Casing | 已注册，尚未绑定枪械 |
 
-四项均64堆叠，只有两种实弹进入 AFL 武器与弹药 标签，排序在枪械/撬棍之后。两种弹壳不加入创造标签，仅保留注册用于开发检查；不是面向玩家的获取内容。数字开头是合法 ResourceLocation 路径，无需前缀。弹壳不作为弹药，也没有回收配方；射击不会生成可拾取实体。
+六项均64堆叠，三种实弹进入 AFL 武器与弹药 标签，排序在枪械/撬棍之后。三种弹壳不加入创造标签，仅保留注册用于开发检查；不是面向玩家的获取内容。数字开头是合法 ResourceLocation 路径，无需前缀。弹壳不作为弹药，也没有回收配方；射击不会生成可拾取实体。
 
 ## 源资产与美术
 
@@ -19,11 +21,13 @@
 
 9mm当前正式美术资产已切换为 `src/main/blockbench/9x19mm_round.bbmodel` 与 `9x19mm_casing.bbmodel` 的纯 Cube vFinal 版本：整弹29 cubes，弹壳26 cubes，共用64×64黄铜/铜材质。模型用削角分块表达紧凑壳体、分层壳口、收束弹头、底缘与底火；没有使用 Mesh、图像生成或照片贴图。运行 item JSON 与贴图同步替换为对应 vFinal 内容；本次仅完成资源接入与构建，游戏内视觉验收仍需实机检查。
 
+12.7×55mm资源复用同一普通 Item 注册路径：`src/main/blockbench/ammo_127x55_cube_v1/12_7x55mm_round.bbmodel` 为35 cubes，`12_7x55mm_casing.bbmodel` 为29 cubes；运行模型与贴图位于 `assets/apocalypse_firstlight/models/item/` 和 `textures/item/`，使用64×64黄铜/钢色贴图。该口径只完成独立资源注册，不新增 Ammo 系统、属性或枪械绑定。
+
 普通Java三维item渲染，无Gecko动画/独立geo需求。GUI统一斜置，9mm比例1.2，7.62为1.05；第一人称0.45、第三人称0.25、Ground0.22。Ground横放；具体游戏内可读性待目测，不把离线渲染当成实机通过。
 
 ## 文件与旧新映射
 
-对上述四个ID，各有以下正式文件（共12项）：
+对上述六个ID，各有以下正式文件（共18项）：
 
 - `src/main/blockbench/<ID>.bbmodel`
 - `src/main/resources/assets/apocalypse_firstlight/models/item/<ID>.json`
@@ -43,7 +47,7 @@ ammo、magazine_capacity和casing引用现由单枪 `data/apocalypse_firstlight/
 
 本规则验证：`creativeReserveAndModeSwitch` 覆盖两把枪的无弹药创造补弹、有限弹匣扣弹、空仓、实体弹药保留，以及切换生存/冒险后的有限补弹消耗；现有射击/换弹测试通过。共63项GameTest中62项通过，唯一失败仍为无关的 `nativenoiseflatdistances / Hearing boundary 20`（`creative-reserve-verification.log`）。独立 `compileJava processResources build --offline --stacktrace` 通过（`creative-reserve-build.log`）。本轮未进行图形客户端HUD验收。
 
-P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，背包HUD统计沿用同一definition口径查询。已装枪内弹数NBT不重置。换弹时间、扣弹次数、dry-fire、伤害、精度、枪械模型、动画、Display均不变。
+P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，12_7x55mm_round尚未绑定枪械；背包HUD统计沿用同一definition口径查询。已装枪内弹数NBT不重置。换弹时间、扣弹次数、dry-fire、伤害、精度、枪械模型、动画、Display均不变。
 
 两把枪均已切换对应弹壳；Casing实例保存诞生时的模型，不会因切枪改变。沿用 .072 FX比例、局部抛出方向、重力、阻力、翻滚、碰撞、弹跳、音效、寿命和上限。枪焰不变。未来新枪默认9mm，若有新口径需显式增加资源选择，当前仅两种正式枪。
 
@@ -52,7 +56,7 @@ P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，背包HUD统计沿用同
 - `compileJava processResources build --offline --stacktrace` 通过（36秒；首次测试API调用错误已修正）。
 - GameTest：61项中60项通过，枪械/弹药测试通过，包括BR51拒收9mm、7.62普通/空仓结算、取消/不足补弹、射击/干击。整套未通过：`nativenoiseflatdistances` / `Hearing boundary 20`；不在本轮修改范围，未据此宣称全套通过。日志 `native-ammo-gametest.log`。
 - 离线几何/贴图预览已查看；游戏内GUI、手持、掉落、抛壳美术与声音尚未完成验收。
-- 当前无7.62弹药占位；未完成项是实机视觉验收和旧存档迁移验证，不是正式口径接入。
+- 12.7×55mm当前没有枪械绑定；未完成项是新口径的实机视觉验收和旧存档迁移验证，不是正式 Ammo 系统接入。
 
 测试命令（对应四种物品）：
 
@@ -61,6 +65,8 @@ P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，背包HUD统计沿用同
 /give @s apocalypse_firstlight:762x51mm_round 64
 /give @s apocalypse_firstlight:9x19mm_casing 1
 /give @s apocalypse_firstlight:762x51mm_casing 1
+/give @s apocalypse_firstlight:12_7x55mm_round 64
+/give @s apocalypse_firstlight:12_7x55mm_casing 1
 ```
 
 尚不能标记 VISUAL_VALIDATION_DONE=YES。未提交、未推送。
