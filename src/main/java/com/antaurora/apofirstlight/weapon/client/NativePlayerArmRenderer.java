@@ -68,6 +68,13 @@ public final class NativePlayerArmRenderer {
         render(evaluatedLocator,right,buffers,light,overlay,crossSection,1F,crossSection);
     }
 
+    /** Relative presentation scale around the distal grip contact. This lets a
+     * weapon reduce first-person arm obstruction without moving its hand anchors. */
+    public static void renderScaled(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
+                                    int light, int overlay, float x, float y, float z) {
+        render(evaluatedLocator,right,buffers,light,overlay,x,y,z);
+    }
+
     /** Full Vanilla arm size around the same distal contact; independent of gun presentation. */
     public static void renderFullSize(PoseStack evaluatedLocator, boolean right, MultiBufferSource buffers,
                                       int light, int overlay) {

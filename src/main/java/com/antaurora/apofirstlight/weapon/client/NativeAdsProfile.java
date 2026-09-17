@@ -19,7 +19,7 @@ public record NativeAdsProfile(String anchor, float ax, float ay, float az, floa
     // Retarget the same optical axis to the artist rig's static-idle rear sight.
     // Gameplay ADS duration/FOV and eye relief remain unchanged.
     public static final NativeAdsProfile PISTOL = new NativeAdsProfile("sight_anchor/rear-axis",
-            1.50F, 7.196F,2.97F,.47F,
+            1.50F, 5.80F,2.97F,.47F,
             3.24148F,-7.4945F,-14.19624F,.54547F,.19151F,-.27948F,.45F,.07F,.045F,3);
     public static NativeAdsProfile forGun(ResourceLocation id) {
         return switch(id.toString()) {

@@ -8,7 +8,7 @@
 
 - 本次核验的原始 Artist V2：`E:/Download/AFL/p9_01.bbmodel`（42 组、171 元素、9 条动画）；可编辑正式模型在 `src/main/blockbench/p9_01.bbmodel`。运行时使用 `geo/p9_01.geo.json`、`animations/p9_01.animation.json`、`textures/item/p9_01.png`。本次未更改贴图。
 - 运行时 Geo 保留作者原有 42 个骨骼，另在 `righthand_pos` / `lefthand_pos` 下各增加一个无 cube 的 AFL hand anchor，共 44 骨骼。作者占位臂在 Blockbench 源中隐藏且不导出，运行时 Geo 中无其 cube；`camera` 可见 cube 亦不导出。九条 clip 的 `*_hand_1` 都有 `[1,1.6,1]` Y 缩放，对应 anchor 各有恒定 `[1,0.625,1]` 逆补偿。
-- 已移除上一轮错误的 `gun → *_hand_motion → *_hand_anchor` 子链与九条额外重定向轨。新的 source-only Classic/Slim 参考臂挂在各自 anchor 下，保持 `export=false`；校准以作者 4×12×4 占位臂顶面中心（源模型右 `[-5.98125,20,0]`、左 `[6.01875,20,0]`）为接触点。Java 仍读取 `right_hand_anchor` / `left_hand_anchor`。P9 手臂层现直接调用与 BR51 相同的 `NativePlayerArmRenderer.render(...)`，完全恢复共享 X/Y/Z 尺寸 0.62/0.78/0.62；此前分别统一缩小截面或单独缩短前臂的方案均已弃用。P9 第一人称 Display 将枪和两只手所在整套 rig 相对镜头下移 2 模型单位、远离镜头 5 模型单位；保持原手部锚点和 Artist 动画不变。新的屏幕占比仍待实机验收。
+- 已移除上一轮错误的 `gun → *_hand_motion → *_hand_anchor` 子链与九条额外重定向轨。新的 source-only Classic/Slim 参考臂挂在各自 anchor 下，保持 `export=false`；校准以作者 4×12×4 占位臂顶面中心（源模型右 `[-5.98125,20,0]`、左 `[6.01875,20,0]`）为接触点。Java 仍读取 `right_hand_anchor` / `left_hand_anchor`。HIP 保持共享 X/Y/Z 尺寸 0.62/0.78/0.62；P9 ADS 为减少遮挡，围绕不变的握持端点平滑缩至横截面 90%、前臂长度 86%，不移动枪体或手部锚点。新的 ADS 手臂占比仍待实机验收。
 - `P901Renderer` 继续绑定标准 AFL 两个 hand anchor；world compatibility 分支仍作用于完整 `g19_and_mag` 枪组件。旧 `P901Presentation`/`p9_01.equip.json` 已由服务端触发的作者 `draw`、`put_away` 正式动画取代。
 - 由于骨架的 rear/front sight 坐标改变，仅重新标定 P9 视觉 HIP Display 与 Native ADS/瞄具挂点；ADS 时长 0.15 秒、FOV 倍率 0.95、eye relief 0.34、枪械战斗逻辑均未变。此几何标定为静态计算，仍须客户端检验准线与红点。
 

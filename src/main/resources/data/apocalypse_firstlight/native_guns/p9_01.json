@@ -57,7 +57,7 @@
   "sight_slot": {
     "anchor": "sight_anchor",
     "mount_offset": [0, -0.44, 7.33],
-    "ads_center": [2.48, 7.756, 2.04],
+    "ads_center": [1.50, 5.80, 2.04],
     "accepts": ["apocalypse_firstlight:pistol_red_dot"]
   }
 }

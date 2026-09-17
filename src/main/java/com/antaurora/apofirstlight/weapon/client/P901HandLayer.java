@@ -31,9 +31,13 @@ public final class P901HandLayer extends GeoRenderLayer<P901Item> {
         var locator = P901RenderMatrices.detachedCopy(pose);
         RenderUtils.translateToPivotPoint(locator, bone);
         try {
-            // Use the same full player-arm presentation as BR51; the item Display
-            // moves the complete gun-and-hands rig, not either arm independently.
-            NativePlayerArmRenderer.render(locator, right, buffers, light, overlay);
+            // Preserve the authored grip contact while gently retracting only the
+            // P9 arms during ADS. Gun geometry and the calibrated sight axis remain unchanged.
+            float ads = NativeGunAds.progress(partialTick);
+            float crossSection = net.minecraft.util.Mth.lerp(ads, 1F, .90F);
+            float forearmLength = net.minecraft.util.Mth.lerp(ads, 1F, .86F);
+            NativePlayerArmRenderer.renderScaled(locator, right, buffers, light, overlay,
+                    crossSection, forearmLength, crossSection);
         } finally {
             buffers.getBuffer(gunType);
         }

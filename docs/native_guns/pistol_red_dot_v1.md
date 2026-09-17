@@ -11,7 +11,7 @@
 | 名称 / ID | 手枪微型红点瞄具 / `apocalypse_firstlight:pistol_red_dot` |
 | 槽位 / 当前兼容 | `SIGHT` / P9-01 |
 | 主要效果 | ADS 改为红点光学轴对齐；红点全亮，外壳正常受光 |
-| ADS 中心 | P9 模型坐标 `[-2.98,12.15,8.13]` |
+| ADS 中心 | P9 当前视觉校准坐标 `[1.50,5.80,2.04]` |
 | FOV / ADS 时间 | 沿用 P9 `0.95` / `0.15 s`，无额外倍率或速度加成 |
 | 伤害 / 后坐力 / 散布 | 无额外修改 |
 | 安装入口 | 仅枪械维护台安装 / 拆卸 / 更换 |
@@ -43,8 +43,8 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 ## 挂载、保存与 ADS
 
 - `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 的 SIGHT 接入独立 `rifle_red_dot_01`，不接受本手枪红点。
-- P9 当前 `sight_anchor` 是前部瞄线定位点 `[-2.98,11.59,-3.36]`，复用它的动画变换，再加局部偏移 `[0,-0.44,10.55]`，底座中心即 `[-2.98,11.15,7.19]`。无需为了安装改变原机瞄定位。
-- 红点本地中心 `[0,1,0.94]`，枪体光学轴中心 `[-2.98,12.15,8.13]` 写入 `sight_slot.ads_center`。`NativeAdsProfile.forStack` 有兼容瞄具时用该点逆解，没有时原样返回机械瞄准 profile；FOV、进入时间、枪械后坐力和伤害不变。
+- P9 使用现有 `sight_anchor` 的动画变换并叠加 `sight_slot.mount_offset=[0,-0.44,7.33]` 渲染瞄具；挂载位置、模型和动画未因本次 ADS 重标而改变。
+- `NativeAdsProfile.forStack` 在安装兼容瞄具时使用 `sight_slot.ads_center` 替换机械瞄具坐标。旧值 `[2.48,7.756,2.04]` 与当前 Artist rig/HIP 标定不符，实机会把红点明显压向左下；现按用户截图重标为 `[1.50,5.80,2.04]`，保持当前 eye relief、FOV、进入时间、后坐力和伤害不变。最终像素级对齐仍需客户端复验。
 - 模型从真实 `sight_anchor` 遍历矩阵渲染，继承套筒后坐/后定、换弹、整枪 ADS、第三人称与地面显示变换，不使用屏幕固定 HUD 点。
 - 配件保存在枪 ItemStack 的 `AflAttachments.SIGHT` 完整配件 NBT。服务端原子装拆、正常背包同步负责客户端显示，丢弃/存档随枪保留；不以全局布尔值开关。
 - `NativeSightRendering` 是共享静态挂载渲染器，`P901SightLayer` 是首批 P9 接口适配。以后其他手枪需声明兼容 ID/局部安装点/ADS 点，并从其渲染器调用同一 anchor 消费者；不承诺只有 anchor 名称就自动完成所有渲染与 ADS 标定。
@@ -68,7 +68,7 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 - 构建：compileJava / processResources / build 离线通过；缩放修正版再次通过，`pistol-red-dot-scale-build.log`。源/导出一致性检查及 `git diff --check` 通过。
 - Blockbench：独立模型已载入，21 个 cube 全部绑定同一有效贴图 UUID，截图 `build/pistol-red-dot-blockbench.png`；未覆盖用户打开的 P9 工作页。
 - 两轮 GameTest 均为 67 项中 66 项通过；新增装拆测试无失败。整套未全绿：已有的 `nativenoiseflatdistances` 分别在 Hearing boundary 60、40 失败，日志 `pistol-red-dot-gametest.log` / `pistol-red-dot-gametest-final.log`；未扩大范围调整噪声，也未断言已排除其原因。
-- 客户端 ADS 数值检查通过；用户实机反馈除独立配件手持/掉落过大外，其余安装、ADS、HIP、F5、换弹项目没有问题。独立配件已缩小至 0.8，调整后的手持/掉落视觉待资源重载复验，不把导出或构建当作视觉通过。
+- 旧版客户端 ADS 数值检查不能代表当前 Artist rig 的红点对齐；用户实机截图确认旧 `ads_center` 明显向左下偏移。本轮重标后的红点中心以及独立配件手持/掉落视觉均待客户端复验，不把资源处理或构建当作视觉通过。
 
 未 commit、未 push。
 > Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](p9_01_extended_magazine_v1.md).
