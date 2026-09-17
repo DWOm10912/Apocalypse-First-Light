@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/03 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "03 - 制作清单"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/03 - 制作清单.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,17 +189,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
+    "run/saves/新的世界/level5880718587480283111.dat",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-5092739990079956452.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.temp",
+    "docs/04 - 注意事项 重要内容.md",
     "run/saves/新的世界/level618358561682552377.dat",
     "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-1104895176125637765.dat",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/thermal_generator_front_running.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/bauxite_ore.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
@@ -211,7 +212,6 @@
     "src/main/blockbench/ammo_9x19_cube_vFinal/casing_three_quarter.png",
     "src/main/blockbench/ammo_9x19_cube_vFinal/round_bottom.png",
     "docs/03 - 制作清单.md",
-    "docs/04 - 注意事项 重要内容.md",
     "docs/dev/rendering_test_environment.md",
     "docs/01 - 设计/世界与环境/原版改动.md",
     "docs/01 - 设计/世界与环境/群系.md",
