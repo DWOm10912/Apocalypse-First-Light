@@ -21,7 +21,7 @@
 | 成功开火含最后一发 | `shoot` | 显式 one-shot；完整继承 `static_idle` 握持姿态，只在同一基姿态上叠加作者已有后坐/滑套抖动；枪声由服务端附件状态决定 |
 | 战术换弹 | `reload_tactical` | 48 tick，弹药在结束时提交 |
 | 空仓换弹 | `reload_empty` | 操作锁保持 63 tick；为避免 3.12 秒动画结束与第 63 tick 弹药同步之间短暂回到 `empty_idle`，P9 在结束前 2 tick 同步装填状态，动画结束后直接进入 `static_idle` |
-| 切出 / 收起 | `draw` / `put_away` | 使用现有 Session/GeoItem 触发；收枪可能被 Vanilla 换槽可见时间截短 |
+| 切出 / 收起 | `draw` / `put_away` | 使用独立 `p9_01_draw` / `p9_01_put_away` 音效并在 0 秒触发；`draw` 延长为 0.59 秒，原 0–0.1667 秒动作关键帧不变，最终姿态保持至音效结束；`put_away` 保持原 1.30 秒时间轴，画面仍可能被 Vanilla 换槽可见时间截短 |
 | 有弹 / 空仓检视 | `inspect` / `inspect_empty` | V 键现有 Inspect V1，主手弹量选分支；两条均 7.33 秒 |
 
 P9 原 gameplay 换弹长度 `1.30 秒/26 tick`、`1.65 秒/33 tick` 调整为作者动画的 `2.38 秒/48 tick`、`3.12 秒/63 tick`。仅这两项 gameplay timing 改变；17 发容量、9×19mm、射速 3 tick、伤害、射程、散布、后坐、Noise、附件兼容和 ADS 时间/FOV 均未改变。战术换弹仍在动画完成处提交弹药；空仓换弹为消除动画结束后闪回后定姿态，在 63 tick 操作锁结束前 2 tick 同步弹药，期间操作锁仍阻止开火。声音仍在作者 marker 原时间点，不人为改关键帧。

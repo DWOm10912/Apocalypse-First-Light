@@ -35,6 +35,7 @@ for (const [clipName, clip] of Object.entries(animation))
 assert.equal(animation.reload_tactical.animation_length, 2.38);
 assert.equal(animation.reload_empty.animation_length, 3.12);
 assert.equal(animation.shoot.animation_length, 0.6);
+assert.equal(animation.draw.animation_length, 0.59);
 assert.equal(animation.empty_idle.loop, 'hold_on_last_frame');
 assert.equal(animation.empty_idle.animation_length, 0.04167);
 for (const channel of ['rotation', 'position'])
@@ -72,6 +73,8 @@ const expectedMarkers = {
     reload_empty: { '0.26': 'apocalypse_firstlight:p9_01_magazine_out',
         '0.76': 'apocalypse_firstlight:p9_01_magazine_in',
         '1.64': 'apocalypse_firstlight:p9_01_slide_action' },
+    draw: { '0.0': 'apocalypse_firstlight:p9_01_draw' },
+    put_away: { '0.0': 'apocalypse_firstlight:p9_01_put_away' },
     inspect: { '0.0': 'apocalypse_firstlight:p9_01_inspect' },
     inspect_empty: { '0.0': 'apocalypse_firstlight:p9_01_inspect' }
 };
@@ -97,8 +100,9 @@ for (const [id, entry] of Object.entries(sounds)) {
 }
 assert.equal(existsSync(new URL('sounds/br51_01/', base)), false, 'legacy BR51 folder remains');
 assert.deepEqual(readdirSync(new URL('sounds/weapons/p9_01/', base)).sort(), [
-    'p9_01_fire.ogg', 'p9_01_inspect.ogg', 'p9_01_magazine_in.ogg',
-    'p9_01_magazine_out.ogg', 'p9_01_slide_action.ogg', 'p9_01_suppressed.ogg'
+    'p9_01_draw.ogg', 'p9_01_fire.ogg', 'p9_01_inspect.ogg', 'p9_01_magazine_in.ogg',
+    'p9_01_magazine_out.ogg', 'p9_01_put_away.ogg', 'p9_01_slide_action.ogg',
+    'p9_01_suppressed.ogg'
 ].sort());
 const trackNames = new Set(Object.values(animation).flatMap(clip => Object.keys(clip.bones ?? {})));
 const orphans = [...trackNames].filter(name => !bones.has(name)).sort();

@@ -22091,11 +22091,16 @@
 						]
 					}
 				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "apocalypse_firstlight:p9_01_put_away"
+				}
 			}
 		},
 		"draw": {
 			"loop": "hold_on_last_frame",
-			"animation_length": 0.1667,
+			"animation_length": 0.59,
 			"bones": {
 				"empty_old_magazine": {
 					"rotation": {
@@ -22353,6 +22358,11 @@
 							1
 						]
 					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "apocalypse_firstlight:p9_01_draw"
 				}
 			}
 		},

@@ -56,6 +56,12 @@
   "p9_01_inspect": {
     "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_inspect"]
   },
+  "p9_01_draw": {
+    "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_draw"]
+  },
+  "p9_01_put_away": {
+    "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_put_away"]
+  },
   "explosion_tinnitus": {
     "sounds": [
       "apocalypse_firstlight:explosion_tinnitus"
