@@ -33,7 +33,7 @@ public abstract class ClimateParameterListMixin {
         }
         var biomes=registries.registryOrThrow(Registries.BIOME);
         apocalypse$ecology=new StartupEcologyState(seed,biomes.getHolderOrThrow(Biomes.PLAINS),
-                biomes.getHolderOrThrow(AflBiomes.IRRADIATED_WOODLAND));
+                biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS));
         ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ECOLOGY CONTEXT] binding=ParameterList seed={} identity={} region={} threadLocalRequired=false",
                 seed,Integer.toHexString(System.identityHashCode(this)),type);
     }

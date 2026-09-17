@@ -29,16 +29,7 @@ public final class AflOverworldRegion extends Region {
                           Consumer<Pair<Climate.ParameterPoint, ResourceKey<Biome>>> mapper) {
         addBiome(mapper,
                 Climate.Parameter.span(-1.0F, 1.0F),
-                Climate.Parameter.span(0.25F, 1.0F),
-                Climate.Parameter.span(-0.11F, 1.0F),
-                Climate.Parameter.span(-1.0F, 1.0F),
-                Climate.Parameter.span(-1.0F, 1.0F),
-                Climate.Parameter.point(0.0F),
-                0.0F,
-                AflBiomes.IRRADIATED_WOODLAND);
-        addBiome(mapper,
-                Climate.Parameter.span(-1.0F, 1.0F),
-                Climate.Parameter.span(-0.35F, 0.25F),
+                Climate.Parameter.span(-0.35F, 1.0F),
                 Climate.Parameter.span(-0.11F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),

@@ -98,9 +98,6 @@ public final class AflDevCommands {
                                 IntegerArgumentType.getInteger(context, "size")))));
         dev.then(Commands.literal("wildlife_spawn")
                 .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
-        dev.then(Commands.literal("particle")
-                .then(Commands.literal("dead_leaf_debris")
-                        .executes(AflDevCommands::forcedDeadLeafDebris)));
         dev.then(Commands.literal("env_particles")
                 .then(Commands.literal("status").executes(AflDevCommands::environmentalParticleStatus))
                 .then(Commands.literal("reset").executes(AflDevCommands::resetEnvironmentalParticleStatus)));
@@ -386,18 +383,18 @@ public final class AflDevCommands {
             int sampleX = direction[0] * 512;
             int sampleZ = direction[1] * 512;
             int plains = StartupPlainsEnclave.plainsBoundary(sampleX, sampleZ, seed);
-            int woodland = StartupPlainsEnclave.woodlandOuterBoundary(sampleX, sampleZ, seed);
+            int fallout = StartupPlainsEnclave.falloutOuterBoundary(sampleX, sampleZ, seed);
             StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(sampleX, sampleZ, seed);
-            final String line = String.format("[AFL STARTUP ECOLOGY] dir=%s plains=%d woodland=%d zone=%s",
-                    names[i], plains, woodland, zone);
+            final String line = String.format("[AFL STARTUP ECOLOGY] dir=%s plains=%d fallout=%d zone=%s",
+                    names[i], plains, fallout, zone);
             context.getSource().sendSuccess(() -> Component.literal(line), false);
         }
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL STARTUP ECOLOGY CONFIG] seed=%d core=%d plainsBase=%d plainsAmplitude=%d woodlandBase=%d woodlandAmplitude=%d minBuffer=%d maxBuffer=%d",
+                "[AFL STARTUP ECOLOGY CONFIG] seed=%d core=%d plainsBase=%d plainsAmplitude=%d falloutBase=%d falloutAmplitude=%d minBuffer=%d maxBuffer=%d",
                 seed, StartupPlainsEnclave.CORE_RADIUS_BLOCKS, StartupPlainsEnclave.PLAINS_BASE_RADIUS,
-                StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE, StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS,
-                StartupPlainsEnclave.WOODLAND_NOISE_AMPLITUDE, StartupPlainsEnclave.MIN_WOODLAND_BUFFER,
-                StartupPlainsEnclave.MAX_WOODLAND_BUFFER)), false);
+                StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE, StartupPlainsEnclave.FALLOUT_BASE_OUTER_RADIUS,
+                StartupPlainsEnclave.FALLOUT_NOISE_AMPLITUDE, StartupPlainsEnclave.MIN_FALLOUT_BUFFER,
+                StartupPlainsEnclave.MAX_FALLOUT_BUFFER)), false);
         return 1;
     }
 
@@ -420,16 +417,16 @@ public final class AflDevCommands {
         StartupSettlementProtection.ProtectionClass protection =
                 StartupSettlementProtection.protectionAt(pos.getX(), pos.getZ(), seed);
         StartupPlainsEnclave.ShapeSource shapeSource =
-                StartupPlainsEnclave.woodlandShapeSource(pos.getX(), pos.getZ(), seed);
+                StartupPlainsEnclave.falloutShapeSource(pos.getX(), pos.getZ(), seed);
         int lobeIndex = shapeSource == StartupPlainsEnclave.ShapeSource.PRIMARY_LOBE ? -1
                 : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_0 ? 0
                 : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_1 ? 1 : -2;
-        String expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
-                ? "apocalypse_firstlight:irradiated_woodland"
+        String expected = zone == StartupPlainsEnclave.Zone.FALLOUT_BUFFER
+                ? "apocalypse_firstlight:fallout_barrens"
                 : zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
         boolean match = "original".equals(expected) || expected.equals(surfaceBiome);
         context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s woodlandShapeSource=%s primaryLobeAngleDeg=%.1f primaryLobeExtraLength=%d primaryLobeHalfWidth=%d secondaryLobeCount=%d lobeForward=%.1f lobeSide=%.1f lobeBoundaryMargin=%.1f plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s woodlandBoundary=%d eligibleWoodlandWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
+                "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s falloutShapeSource=%s primaryLobeAngleDeg=%.1f primaryLobeExtraLength=%d primaryLobeHalfWidth=%d secondaryLobeCount=%d lobeForward=%.1f lobeSide=%.1f lobeBoundaryMargin=%.1f plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s falloutBoundary=%d eligibleFalloutWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
                 pos.getX(), pos.getY(), pos.getZ(), seed,
                 StartupSettlementProtection.distanceFromCenter(pos.getX(), pos.getZ()), zone,
                 shapeSource, StartupPlainsEnclave.primaryLobeAngleDegrees(seed),
@@ -440,8 +437,8 @@ public final class AflDevCommands {
                 lobeIndex == -2 ? 0.0D : StartupPlainsEnclave.lobeBoundaryMargin(pos.getX(), pos.getZ(), seed, lobeIndex),
                 StartupPlainsEnclave.plainsBoundary(pos.getX(), pos.getZ(), seed), settlementBoundary,
                 protection != StartupSettlementProtection.ProtectionClass.NONE, protection,
-                StartupPlainsEnclave.woodlandOuterBoundary(pos.getX(), pos.getZ(), seed),
-                StartupSettlementProtection.eligibleWoodlandWidth(pos.getX(), pos.getZ(), seed), expected, surfaceY,
+                StartupPlainsEnclave.falloutOuterBoundary(pos.getX(), pos.getZ(), seed),
+                StartupSettlementProtection.eligibleFalloutWidth(pos.getX(), pos.getZ(), seed), expected, surfaceY,
                 surfaceQuartY, surfaceBiome, playerBiome,
                 match, match ? "RESOLVED" : "MISMATCH_OR_UNRESOLVED")), false);
         return 1;
@@ -462,10 +459,10 @@ public final class AflDevCommands {
             int z = directions[directionIndex][1] * 600;
             int plains = StartupPlainsEnclave.plainsBoundary(x, z, seed);
             int protection = StartupSettlementProtection.settlementProtectionBoundary(x, z, seed);
-            int woodland = StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed);
+            int fallout = StartupPlainsEnclave.falloutOuterBoundary(x, z, seed);
             context.getSource().sendSuccess(() -> Component.literal(String.format(
-                    "[AFL STARTUP RADIAL] dir=%s sample=(%d,%d) plainsBoundary=%d settlementProtectionBoundary=%d woodlandBoundary=%d eligibleWoodlandWidth=%d",
-                    names[directionIndex], x, z, plains, protection, woodland, Math.max(0, woodland - protection))), false);
+                    "[AFL STARTUP RADIAL] dir=%s sample=(%d,%d) plainsBoundary=%d settlementProtectionBoundary=%d falloutBoundary=%d eligibleFalloutWidth=%d",
+                    names[directionIndex], x, z, plains, protection, fallout, Math.max(0, fallout - protection))), false);
         }
         return 1;
     }
@@ -487,9 +484,9 @@ public final class AflDevCommands {
                 RadiationManager.StartupRadiationDebug sample =
                         RadiationManager.startupRadiationDebug(level, x, z);
                 String line = String.format(
-                        "[AFL STARTUP RADIATION] dir=%s distance=%d startupZone=%s plainsBoundary=%d woodlandBoundary=%d biome=%s profile=%s raw=%.4f constrained=%.4f suppression=%.4f preStartup=%.4f cap=%s final=%.4f zone=%s",
+                        "[AFL STARTUP RADIATION] dir=%s distance=%d startupZone=%s plainsBoundary=%d falloutBoundary=%d biome=%s profile=%s raw=%.4f constrained=%.4f suppression=%.4f preStartup=%.4f cap=%s final=%.4f zone=%s",
                         names[directionIndex], distance, sample.startupZone(),
-                        sample.plainsBoundary(), sample.woodlandBoundary(), sample.biomeId(), sample.biomeProfile(),
+                        sample.plainsBoundary(), sample.falloutBoundary(), sample.biomeId(), sample.biomeProfile(),
                         sample.rawWorldField(), sample.biomeConstrainedField(), sample.safeAnchorSuppression(),
                         sample.preStartupEffectiveField(),
                         sample.startupCap() == null ? "OUTSIDE" : String.format("%.4f", sample.startupCap()),
@@ -500,8 +497,8 @@ public final class AflDevCommands {
         context.getSource().sendSuccess(() -> Component.literal(
                         "[AFL STARTUP RADIATION CONFIG] handoffWidth="
                         + RadiationManager.STARTUP_RADIATION_HANDOFF_WIDTH
-                        + " woodlandMin=" + RadiationManager.STARTUP_WOODLAND_MIN
-                        + " woodlandMax=" + RadiationManager.STARTUP_WOODLAND_MAX
+                        + " falloutMin=" + RadiationManager.STARTUP_FALLOUT_MIN
+                        + " falloutMax=" + RadiationManager.STARTUP_FALLOUT_MAX
                         + " semantics=MIN(original,startupCap) doseShieldingUnchanged=true"), false);
         return 1;
     }
@@ -529,7 +526,7 @@ public final class AflDevCommands {
         int localRoads = Math.max(0, plan.roadPlans().size() - 1);
         long residentialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.RESIDENTIAL).count();
         long commercialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.COMMERCIAL).count();
-        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:irradiated_woodland archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s %s",
+        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:fallout_barrens archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s %s",
                 plan.anchor().toShortString(), orientation, plan.bounds(), terrain.sampleCount(), terrain.minY(), terrain.p10(), terrain.median(), terrain.p90(), terrain.maxY(), terrain.effectiveRelief(), terrain.outlierCount(), terrain.outlierRatio(),
                 1, localRoads, localRoads, residentialLots, commercialLots, result.logsCleared() + result.leavesCleared(), result.logsCleared(),
                 result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT", result.detail() == null ? "" : result.detail());
@@ -634,13 +631,6 @@ public final class AflDevCommands {
                 + " | Startup Ecological Safe: " + (startupZone == StartupPlainsEnclave.Zone.CORE_PLAINS || startupZone == StartupPlainsEnclave.Zone.FRINGE_PLAINS)
                 + " | AFL Decision: " + (decision.deny() ? "DENY" : "PASS") + " | Reason: " + decision.reason()
                 + " | Target Categories: " + WildlifeSpawnPolicy.targetCategories()), false);
-        return 1;
-    }
-
-    private static int forcedDeadLeafDebris(CommandContext<CommandSourceStack> context) {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
-                EnvironmentalParticleController.debugSpawnForced());
-        context.getSource().sendSuccess(() -> Component.literal("Forced dead_leaf_debris particle test queued."), false);
         return 1;
     }
 

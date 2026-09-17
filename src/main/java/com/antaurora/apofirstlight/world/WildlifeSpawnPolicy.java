@@ -32,7 +32,7 @@ public final class WildlifeSpawnPolicy {
         StartupPlainsEnclave.Zone startup = StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), level.getSeed());
         if (startup == StartupPlainsEnclave.Zone.CORE_PLAINS || startup == StartupPlainsEnclave.Zone.FRINGE_PLAINS)
             return Decision.pass("STARTUP_SAFE");
-        if (startup == StartupPlainsEnclave.Zone.WOODLAND_BUFFER) return Decision.deny("STARTUP_WOODLAND");
+        if (startup == StartupPlainsEnclave.Zone.FALLOUT_BUFFER) return Decision.deny("STARTUP_FALLOUT");
         return RadiationManager.isNaturalZone(level, pos, RadiationZone.SAFE)
                 ? Decision.pass("NATURAL_SAFE") : Decision.deny("NATURAL_IRRADIATED");
     }

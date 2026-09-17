@@ -24,8 +24,8 @@ public final class StartupRegressionProbe {
         for(var p:points){
             level.getChunk(p[0]>>4,p[1]>>4);
             int y=level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,p[0],p[1])-1;
-            var expected=StartupPlainsEnclave.zoneAt(p[0],p[1],level.getSeed())==StartupPlainsEnclave.Zone.WOODLAND_BUFFER
-                    ? AflBiomes.IRRADIATED_WOODLAND : Biomes.PLAINS;
+            var expected=StartupPlainsEnclave.zoneAt(p[0],p[1],level.getSeed())==StartupPlainsEnclave.Zone.FALLOUT_BUFFER
+                    ? AflBiomes.FALLOUT_BARRENS : Biomes.PLAINS;
             var actual=level.getBiome(new BlockPos(p[0],y,p[1]));
             boolean ok=actual.is(expected);passed &=ok;
             ApocalypseFirstLight.LOGGER.info("[AFL STARTUP SELFTEST] seed={} pos=({}, {}) expected={} actual={} result={}",level.getSeed(),p[0],p[1],expected.location(),actual.unwrapKey(),ok?"PASS":"FAIL");

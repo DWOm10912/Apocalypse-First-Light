@@ -21,8 +21,8 @@ public final class RadiationManager {
     private static final double FULL_SAFE_RADIUS = 40.0;
     private static final double FALLOFF_RADIUS = 96.0;
     public static final int STARTUP_RADIATION_HANDOFF_WIDTH = 48;
-    public static final double STARTUP_WOODLAND_MIN = 0.10D;
-    public static final double STARTUP_WOODLAND_MAX = 0.42D;
+    public static final double STARTUP_FALLOUT_MIN = 0.10D;
+    public static final double STARTUP_FALLOUT_MAX = 0.42D;
     public static final BlockPos BUNKER_RADIATION_SAFE_LOCAL = new BlockPos(16, 1, 9);
     private static final ResourceLocation BUNKER_ID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "bunker");
     private static final java.util.Map<ServerLevel, RadiationField> FIELDS =
@@ -115,7 +115,7 @@ public final class RadiationManager {
         StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(x, z, level.getSeed());
         return new StartupRadiationDebug(x, z, Math.sqrt((double) x * x + (double) z * z), zone,
                 StartupPlainsEnclave.plainsBoundary(x, z, level.getSeed()),
-                StartupPlainsEnclave.woodlandOuterBoundary(x, z, level.getSeed()), environmental.rawWorldField(),
+                StartupPlainsEnclave.falloutOuterBoundary(x, z, level.getSeed()), environmental.rawWorldField(),
                 environmental.biomeResolution().biomeId(), environmental.biomeResolution().profile(),
                 environmental.biomeConstrainedField(), environmental.safeAnchorDistance(),
                 environmental.safeAnchorSuppression(), environmental.preStartupEffectiveField(),
@@ -209,7 +209,7 @@ public final class RadiationManager {
     private static double startupRadiationCap(long seed, int x, int z, double originalField) {
         double distance = Math.sqrt((double) x * x + (double) z * z);
         int plainsBoundary = StartupPlainsEnclave.plainsBoundary(x, z, seed);
-        int woodlandBoundary = StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed);
+        int falloutBoundary = StartupPlainsEnclave.falloutOuterBoundary(x, z, seed);
         if (distance <= StartupPlainsEnclave.CORE_RADIUS_BLOCKS) {
             return SAFE_THRESHOLD - 0.001D;
         }
@@ -218,15 +218,15 @@ public final class RadiationManager {
                     / Math.max(1.0D, plainsBoundary - StartupPlainsEnclave.CORE_RADIUS_BLOCKS)));
             return lerp(0.0D, SAFE_THRESHOLD - 0.001D, t);
         }
-        if (distance <= woodlandBoundary) {
+        if (distance <= falloutBoundary) {
             double t = smoothstep(clamp01((distance - plainsBoundary)
-                    / Math.max(1.0D, woodlandBoundary - plainsBoundary)));
-            return lerp(STARTUP_WOODLAND_MIN, STARTUP_WOODLAND_MAX, t);
+                    / Math.max(1.0D, falloutBoundary - plainsBoundary)));
+            return lerp(STARTUP_FALLOUT_MIN, STARTUP_FALLOUT_MAX, t);
         }
-        double handoff = woodlandBoundary + STARTUP_RADIATION_HANDOFF_WIDTH;
+        double handoff = falloutBoundary + STARTUP_RADIATION_HANDOFF_WIDTH;
         if (distance <= handoff) {
-            double t = smoothstep((distance - woodlandBoundary) / STARTUP_RADIATION_HANDOFF_WIDTH);
-            return lerp(STARTUP_WOODLAND_MAX, originalField, t);
+            double t = smoothstep((distance - falloutBoundary) / STARTUP_RADIATION_HANDOFF_WIDTH);
+            return lerp(STARTUP_FALLOUT_MAX, originalField, t);
         }
         return Double.NaN;
     }
@@ -269,7 +269,7 @@ public final class RadiationManager {
     }
 
     public record StartupRadiationDebug(int x, int z, double distanceFromStartupCenter, StartupPlainsEnclave.Zone startupZone,
-                                        int plainsBoundary, int woodlandBoundary, double rawWorldField,
+                                        int plainsBoundary, int falloutBoundary, double rawWorldField,
                                         ResourceLocation biomeId, BiomeRadiationProfile biomeProfile,
                                         double biomeConstrainedField, double safeAnchorDistance,
                                         double safeAnchorSuppression, double preStartupEffectiveField,

@@ -44,8 +44,6 @@ public final class BiomeRadiationResolver {
                 ? BiomeRadiationProfile.EXTREME
                 : biome.is(AflBiomes.FALLOUT_BARRENS)
                 ? BiomeRadiationProfile.HEAVY_FALLOUT
-                : biome.is(AflBiomes.IRRADIATED_WOODLAND)
-                ? BiomeRadiationProfile.IRRADIATED
                 : biome.is(net.minecraft.world.level.biome.Biomes.PLAINS)
                 ? BiomeRadiationProfile.SAFE
                 : BiomeRadiationProfile.UNKNOWN;

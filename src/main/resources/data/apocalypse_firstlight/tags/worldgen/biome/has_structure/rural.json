@@ -2,7 +2,6 @@
   "replace": false,
   "values": [
     "minecraft:plains",
-    "apocalypse_firstlight:irradiated_woodland",
     "apocalypse_firstlight:fallout_barrens"
   ]
 }

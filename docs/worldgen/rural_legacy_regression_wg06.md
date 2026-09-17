@@ -56,7 +56,7 @@ Natural 仍不按 weight 加权（FLEX 的 `weight > 0` 过滤除外），也不
 
 人工检查尚未执行。先关闭任何占用同一构建输出的开发客户端，在项目根目录运行 `gradlew.bat runClient --offline`；这是开发客户端，不是发布 jar。新建**可丢弃**的创造模式测试世界，seed 固定为数值 `62091306`，启用作弊，避免用旧世界判断新生成区域。
 
-Natural：进入允许 Rural 的生物群系（当前 tag：plains、irradiated_woodland、fallout_barrens），在游戏输入 `/locate structure apocalypse_firstlight:rural`；若找到，点击返回的坐标或用 `/tp @s <x> <y> <z>` 到附近，等待区块加载，从上方和四侧查看。若单次 locate 无结果，换同 seed 的远处未生成区域/新世界；不要把一次候选失败当成全局失败。
+Natural：进入允许 Rural 的生物群系（当前 tag：plains、fallout_barrens），在游戏输入 `/locate structure apocalypse_firstlight:rural`；若找到，点击返回的坐标或用 `/tp @s <x> <y> <z>` 到附近，等待区块加载，从上方和四侧查看。若单次 locate 无结果，换同 seed 的远处未生成区域/新世界；不要把一次候选失败当成全局失败。
 
 Dev：站在不与 Natural 站点重叠的空旷测试区，先输入 `/afl rural plan` 读取站点/lot/田地诊断；需要实际提交时，在**可丢弃的新测试世界**输入 `/afl rural generate`，或明确坐标 `/afl rural generate <x> <y> <z>`。这是开发命令路径，不是 Natural parity，也不会自动回滚部分写入。本轮未添加 `NATURAL_PARITY` 子命令。
 

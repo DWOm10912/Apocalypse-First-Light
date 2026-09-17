@@ -4,7 +4,7 @@
 
 TerraBlender 的 `MixinMultiNoiseBiomeSource` 在 cancellable HEAD 中调用 `ParameterList.findValuePositional` 并提前返回。AFL 原本在另一个 MultiNoise HEAD 设置 `BiomeTraceContext`，再在 ParameterList 读取并清理；该入口可能被提前返回绕过，导致 `CONTEXT_MISSING`，不是 ecology shape 缺少参数。旧 BiomeSource→seed 弱表不能解决被绕过的 ThreadLocal 入口。
 
-`ClimateParameterListMixin` 现于 TerraBlender `initializeForTerraBlender(registryAccess, regionType, seed)` RETURN 将 `StartupEcologyState(seed, plainsHolder, woodlandHolder)` 发布到该 ParameterList 实例的 volatile 字段，仅 OVERWORLD。回调中的 seed 在复现新世界中与 ServerLevel 世界 seed 相同。worker 只读该不可变状态，调用既有 `StartupPlainsEnclave.zoneAt`；不依赖 ThreadLocal、每 query 注册表遍历、全局当前 seed 或 synchronized map。相同实例若再次绑定不同 seed 明确抛错，避免静默污染。
+`ClimateParameterListMixin` 现于 TerraBlender `initializeForTerraBlender(registryAccess, regionType, seed)` RETURN 将 `StartupEcologyState(seed, plainsHolder, falloutHolder)` 发布到该 ParameterList 实例的 volatile 字段，仅 OVERWORLD。回调中的 seed 在复现新世界中与 ServerLevel 世界 seed 相同。worker 只读该不可变状态，调用既有 `StartupPlainsEnclave.zoneAt`；不依赖 ThreadLocal、每 query 注册表遍历、全局当前 seed 或 synchronized map。相同实例若再次绑定不同 seed 明确抛错，避免静默污染。
 
 状态由 ParameterList 生命周期管理，无全局引用，随世界 registry/generator 被回收。Nether 不绑定。原有外部 biome 与地下洞穴策略保留；surface band 的洞穴 biome 修正规则未改。生态尺寸与形状参数未改。
 

@@ -91,7 +91,7 @@ public final class SettlementPrototype {
         StartupSettlementProtection.ProtectionClass anchorProtection =
                 StartupSettlementProtection.protectionAt(anchor.getX(), anchor.getZ(), seed);
         boolean anchorProtected = anchorProtection != StartupSettlementProtection.ProtectionClass.NONE;
-        boolean anchorEligible = anchorZone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER && !anchorProtected;
+        boolean anchorEligible = anchorZone == StartupPlainsEnclave.Zone.FALLOUT_BUFFER && !anchorProtected;
         String anchorDetail = anchorEligibilityDetail(anchor, seed, anchorZone, anchorProtection, anchorEligible);
         ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT ECOLOGY] {}", anchorDetail);
         if (!anchorEligible) {
@@ -105,13 +105,13 @@ public final class SettlementPrototype {
     private static String anchorEligibilityDetail(BlockPos anchor, long seed, StartupPlainsEnclave.Zone zone,
                                                    StartupSettlementProtection.ProtectionClass protection,
                                                    boolean eligible) {
-        return String.format("anchor=%s anchorZone=%s anchorProtected=%s anchorEligible=%s protectionClass=%s woodlandShapeSource=%s distance=%s plainsBoundary=%d settlementProtectionBoundary=%d woodlandBoundary=%d",
+        return String.format("anchor=%s anchorZone=%s anchorProtected=%s anchorEligible=%s protectionClass=%s falloutShapeSource=%s distance=%s plainsBoundary=%d settlementProtectionBoundary=%d falloutBoundary=%d",
                 anchor.toShortString(), zone, protection != StartupSettlementProtection.ProtectionClass.NONE, eligible,
-                protection, StartupPlainsEnclave.woodlandShapeSource(anchor.getX(), anchor.getZ(), seed),
+                protection, StartupPlainsEnclave.falloutShapeSource(anchor.getX(), anchor.getZ(), seed),
                 format(StartupSettlementProtection.distanceFromCenter(anchor.getX(), anchor.getZ())),
                 StartupPlainsEnclave.plainsBoundary(anchor.getX(), anchor.getZ(), seed),
                 StartupSettlementProtection.settlementProtectionBoundary(anchor.getX(), anchor.getZ(), seed),
-                StartupPlainsEnclave.woodlandOuterBoundary(anchor.getX(), anchor.getZ(), seed));
+                StartupPlainsEnclave.falloutOuterBoundary(anchor.getX(), anchor.getZ(), seed));
     }
 
     private static Plan createPlan(ServerLevel level, BlockPos anchor) {
@@ -274,7 +274,7 @@ public final class SettlementPrototype {
                             StartupSettlementProtection.distanceFromCenter(point[0], point[1]),
                             StartupPlainsEnclave.plainsBoundary(point[0], point[1], seed),
                             StartupSettlementProtection.settlementProtectionBoundary(point[0], point[1], seed),
-                            StartupPlainsEnclave.woodlandOuterBoundary(point[0], point[1], seed));
+                            StartupPlainsEnclave.falloutOuterBoundary(point[0], point[1], seed));
                 }
             }
         }
@@ -289,8 +289,8 @@ public final class SettlementPrototype {
                 fit.geometryCount(), fit.sampleCount(), fit.protectedHits(), fit.fit(), fit.roadArea(), fit.lotArea(), fit.occupiedArea(), fit.boundingArea());
         if (!fit.fit() && fit.firstProtectedHit() != null) {
             FitHit hit = fit.firstProtectedHit();
-            ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT FOOTPRINT REJECTED] phase={} reason=STARTUP_PROTECTED_ZONE_INTERSECTION firstHitX={} firstHitZ={} zone={} protectionClass={} distance={} plainsBoundary={} settlementProtectionBoundary={} woodlandBoundary={}",
-                    phase, hit.x(), hit.z(), hit.zone(), hit.protection(), format(hit.distance()), hit.plainsBoundary(), hit.settlementProtectionBoundary(), hit.woodlandBoundary());
+            ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT FOOTPRINT REJECTED] phase={} reason=STARTUP_PROTECTED_ZONE_INTERSECTION firstHitX={} firstHitZ={} zone={} protectionClass={} distance={} plainsBoundary={} settlementProtectionBoundary={} falloutBoundary={}",
+                    phase, hit.x(), hit.z(), hit.zone(), hit.protection(), format(hit.distance()), hit.plainsBoundary(), hit.settlementProtectionBoundary(), hit.falloutBoundary());
         }
     }
 
@@ -303,8 +303,8 @@ public final class SettlementPrototype {
         String first = "";
         if (fit.firstProtectedHit() != null) {
             FitHit hit = fit.firstProtectedHit();
-            first = String.format(" firstHitX=%d firstHitZ=%d zone=%s protectionClass=%s distance=%s plainsBoundary=%d settlementProtectionBoundary=%d woodlandBoundary=%d",
-                    hit.x(), hit.z(), hit.zone(), hit.protection(), format(hit.distance()), hit.plainsBoundary(), hit.settlementProtectionBoundary(), hit.woodlandBoundary());
+            first = String.format(" firstHitX=%d firstHitZ=%d zone=%s protectionClass=%s distance=%s plainsBoundary=%d settlementProtectionBoundary=%d falloutBoundary=%d",
+                    hit.x(), hit.z(), hit.zone(), hit.protection(), format(hit.distance()), hit.plainsBoundary(), hit.settlementProtectionBoundary(), hit.falloutBoundary());
         }
         return String.format("phase=%s %s %s%s", phase, footprintDetail(footprint, fit),
                 timingDetail(precheckMs, roadPlanningMs, finalValidationMs, totalMs), first);
@@ -1063,7 +1063,7 @@ public final class SettlementPrototype {
     }
 
     private static CandidateValidation validateCandidate(ServerLevel level, BlockPos anchor, Footprint footprint, long seed) {
-        int total = 0, valid = 0, invalid = 0, woodland = 0, outside = 0, fallout = 0, scorched = 0, other = 0;
+        int total = 0, valid = 0, invalid = 0, outside = 0, fallout = 0, scorched = 0, other = 0;
         Set<String> biomeCategories = new HashSet<>();
         for (int[] point : footprint.samplePoints()) {
             total++;
@@ -1074,10 +1074,7 @@ public final class SettlementPrototype {
             }
             valid++;
             var biome = level.getBiome(sample.ground());
-            if (biome.is(AflBiomes.IRRADIATED_WOODLAND)) {
-                woodland++;
-                biomeCategories.add("WOODLAND");
-            } else if (biome.is(AflBiomes.FALLOUT_BARRENS)) {
+            if (biome.is(AflBiomes.FALLOUT_BARRENS)) {
                 fallout++;
                 biomeCategories.add("FALLOUT");
             } else if (biome.is(AflBiomes.SCORCHED_LANDS)) {
@@ -1102,7 +1099,7 @@ public final class SettlementPrototype {
                 surfaceValid = false;
             }
         }
-        return new CandidateValidation(surfaceValid, reason, total, valid, invalid, woodland, outside, fallout, scorched,
+        return new CandidateValidation(surfaceValid, reason, total, valid, invalid, outside, fallout, scorched,
                 other, biomeCategories.size() > 1);
     }
 
@@ -1110,9 +1107,9 @@ public final class SettlementPrototype {
         StartupPlainsEnclave.Zone anchorZone = StartupPlainsEnclave.zoneAt(anchor.getX(), anchor.getZ(), seed);
         StartupSettlementProtection.ProtectionClass protection =
                 StartupSettlementProtection.protectionAt(anchor.getX(), anchor.getZ(), seed);
-        ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT ECOLOGY] anchor={} anchorZone={} anchorProtected={} anchorEligible=true protectedHits={} woodlandSamples={} outsideBiomeSamples={} falloutSamples={} scorchedSamples={} otherBiomeSamples={} crossBiome={} fit={} candidateSamples={} candidateValidSamples={} candidateInvalidSamples={} candidateReason={}",
+        ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT ECOLOGY] anchor={} anchorZone={} anchorProtected={} anchorEligible=true protectedHits={} outsideBiomeSamples={} falloutSamples={} scorchedSamples={} otherBiomeSamples={} crossBiome={} fit={} candidateSamples={} candidateValidSamples={} candidateInvalidSamples={} candidateReason={}",
                 anchor.toShortString(), anchorZone, protection != StartupSettlementProtection.ProtectionClass.NONE,
-                fit.protectedHits(), validation.woodlandSamples(), validation.outsideBiomeSamples(),
+                fit.protectedHits(), validation.outsideBiomeSamples(),
                 validation.falloutSamples(), validation.scorchedSamples(), validation.otherBiomeSamples(),
                 validation.crossBiome(), fit.fit(), validation.totalSamples(), validation.validSamples(),
                 validation.invalidSamples(), validation.reason());
@@ -1208,11 +1205,11 @@ public final class SettlementPrototype {
     private record EdgeClosureResult(int edgeColumnsChecked, int cavityColumnsFound, int cavityColumnsClosed,
                                      int deepCavityColumnsSkipped, int edgeFillBlocks, int maxEdgeClosureDepth) {}
     private record CandidateValidation(boolean valid, String reason, int totalSamples, int validSamples, int invalidSamples,
-                                       int woodlandSamples, int outsideBiomeSamples, int falloutSamples,
+                                       int outsideBiomeSamples, int falloutSamples,
                                        int scorchedSamples, int otherBiomeSamples, boolean crossBiome) {
         String detail() {
-            return String.format("candidateSamples=%d candidateValidSamples=%d candidateInvalidSamples=%d woodlandSamples=%d outsideBiomeSamples=%d falloutSamples=%d scorchedSamples=%d otherBiomeSamples=%d crossBiome=%s candidateReason=%s",
-                    totalSamples, validSamples, invalidSamples, woodlandSamples, outsideBiomeSamples,
+            return String.format("candidateSamples=%d candidateValidSamples=%d candidateInvalidSamples=%d outsideBiomeSamples=%d falloutSamples=%d scorchedSamples=%d otherBiomeSamples=%d crossBiome=%s candidateReason=%s",
+                    totalSamples, validSamples, invalidSamples, outsideBiomeSamples,
                     falloutSamples, scorchedSamples, otherBiomeSamples, crossBiome, reason);
         }
     }
@@ -1293,7 +1290,7 @@ public final class SettlementPrototype {
         long boundingArea() { return (long) width() * depth(); }
     }
     private record FitHit(int x, int z, StartupPlainsEnclave.Zone zone, StartupSettlementProtection.ProtectionClass protection,
-                          double distance, int plainsBoundary, int settlementProtectionBoundary, int woodlandBoundary) {}
+                          double distance, int plainsBoundary, int settlementProtectionBoundary, int falloutBoundary) {}
     public record Segment(int x1, int z1, int x2, int z2, int width, RoadClass kind, boolean northSouth, int offset) {
         Segment(int x1, int z1, int x2, int z2, int width, RoadClass kind) { this(x1, z1, x2, z2, width, kind, x1 == x2, 0); }
         Segment withMargin(int margin) { return new Segment(x1, z1, x2, z2, width + margin * 2, kind, northSouth, offset); }

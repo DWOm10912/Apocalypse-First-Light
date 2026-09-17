@@ -2,12 +2,12 @@ package com.antaurora.apofirstlight.world.biome;
 
 /** Settlement-only protection split; this does not alter Startup ecology zones. */
 public final class StartupSettlementProtection {
-    public static final int STARTUP_SETTLEMENT_WOODLAND_PROTECTION_DEPTH = 96;
+    public static final int STARTUP_SETTLEMENT_FALLOUT_PROTECTION_DEPTH = 96;
 
     public enum ProtectionClass {
         PLAINS_CORE,
         PLAINS_FRINGE,
-        INNER_WOODLAND_PROTECTION,
+        INNER_FALLOUT_PROTECTION,
         NONE
     }
 
@@ -18,9 +18,9 @@ public final class StartupSettlementProtection {
         StartupPlainsEnclave.Zone zone = StartupPlainsEnclave.zoneAt(x, z, seed);
         if (zone == StartupPlainsEnclave.Zone.CORE_PLAINS) return ProtectionClass.PLAINS_CORE;
         if (zone == StartupPlainsEnclave.Zone.FRINGE_PLAINS) return ProtectionClass.PLAINS_FRINGE;
-        if (zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
+        if (zone == StartupPlainsEnclave.Zone.FALLOUT_BUFFER
                 && distanceFromCenter(x, z) <= settlementProtectionBoundary(x, z, seed)) {
-            return ProtectionClass.INNER_WOODLAND_PROTECTION;
+            return ProtectionClass.INNER_FALLOUT_PROTECTION;
         }
         return ProtectionClass.NONE;
     }
@@ -30,13 +30,13 @@ public final class StartupSettlementProtection {
     }
 
     public static int settlementProtectionBoundary(int x, int z, long seed) {
-        return Math.min(StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed),
+        return Math.min(StartupPlainsEnclave.falloutOuterBoundary(x, z, seed),
                 StartupPlainsEnclave.plainsBoundary(x, z, seed)
-                        + STARTUP_SETTLEMENT_WOODLAND_PROTECTION_DEPTH);
+                        + STARTUP_SETTLEMENT_FALLOUT_PROTECTION_DEPTH);
     }
 
-    public static int eligibleWoodlandWidth(int x, int z, long seed) {
-        return Math.max(0, StartupPlainsEnclave.woodlandOuterBoundary(x, z, seed)
+    public static int eligibleFalloutWidth(int x, int z, long seed) {
+        return Math.max(0, StartupPlainsEnclave.falloutOuterBoundary(x, z, seed)
                 - settlementProtectionBoundary(x, z, seed));
     }
 

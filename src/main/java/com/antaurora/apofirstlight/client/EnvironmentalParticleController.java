@@ -147,9 +147,7 @@ public final class EnvironmentalParticleController {
         double velocityZ = Math.sin(driftAngle) * speed;
         var particle = profile == EnvironmentalParticleProfile.FALLOUT_DUST
                 ? AflParticles.FALLOUT_DUST.get()
-                : profile == EnvironmentalParticleProfile.WHITE_ASH
-                ? ParticleTypes.WHITE_ASH
-                : AflParticles.DEAD_LEAF_DEBRIS.get();
+                : ParticleTypes.WHITE_ASH;
         if (distance > NORMAL_PARTICLE_RADIUS) {
             level.addAlwaysVisibleParticle(particle, false,
                     particleX, particleY, particleZ, velocityX, velocityY, velocityZ);
@@ -174,21 +172,6 @@ public final class EnvironmentalParticleController {
             return 32.0D + random.nextDouble() * (Math.min(64, maxRadius) - 32.0D);
         }
         return 64.0D + random.nextDouble() * (maxRadius - 64.0D);
-    }
-
-    public static void debugSpawnForced() {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || minecraft.player == null) return;
-        var origin = minecraft.player.getEyePosition().add(minecraft.player.getLookAngle().scale(2.5D));
-        RandomSource random = minecraft.level.random;
-        for (int i = 0; i < 10; i++) {
-            minecraft.level.addParticle(AflParticles.DEAD_LEAF_DEBRIS.get(),
-                    origin.x + (random.nextDouble() - 0.5D) * 0.8D,
-                    origin.y + (random.nextDouble() - 0.5D) * 0.8D,
-                    origin.z + (random.nextDouble() - 0.5D) * 0.8D,
-                    (random.nextDouble() - 0.5D) * 0.01D, -0.003D,
-                    (random.nextDouble() - 0.5D) * 0.01D);
-        }
     }
 
     public static String debugStatus() {

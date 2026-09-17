@@ -34,18 +34,18 @@ public final class BunkerWorldEvents {
     @SubscribeEvent
     public static void onServerStarted(ServerStartedEvent event) {
         ServerLevel overworld = event.getServer().overworld();
-        ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE] center=({}, {}) coreRadius={} plainsBaseRadius={} plainsNoiseAmplitude={} plainsNoiseScale={} woodlandBaseOuterRadius={} woodlandNoiseAmplitude={} woodlandNoiseScale={} minWoodlandBuffer={} maxWoodlandBuffer={} settlementProtectionDepth={} coordinateSpace=BLOCK",
+        ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE] center=({}, {}) coreRadius={} plainsBaseRadius={} plainsNoiseAmplitude={} plainsNoiseScale={} falloutBaseOuterRadius={} falloutNoiseAmplitude={} falloutNoiseScale={} minFalloutBuffer={} maxFalloutBuffer={} settlementProtectionDepth={} coordinateSpace=BLOCK",
                 StartupPlainsEnclave.CENTER_X, StartupPlainsEnclave.CENTER_Z,
                 StartupPlainsEnclave.CORE_RADIUS_BLOCKS, StartupPlainsEnclave.PLAINS_BASE_RADIUS,
                 StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE, 128,
-                StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS, StartupPlainsEnclave.WOODLAND_NOISE_AMPLITUDE,
-                StartupPlainsEnclave.WOODLAND_NOISE_SCALE, StartupPlainsEnclave.MIN_WOODLAND_BUFFER,
-                StartupPlainsEnclave.MAX_WOODLAND_BUFFER,
-                StartupSettlementProtection.STARTUP_SETTLEMENT_WOODLAND_PROTECTION_DEPTH);
+                StartupPlainsEnclave.FALLOUT_BASE_OUTER_RADIUS, StartupPlainsEnclave.FALLOUT_NOISE_AMPLITUDE,
+                StartupPlainsEnclave.FALLOUT_NOISE_SCALE, StartupPlainsEnclave.MIN_FALLOUT_BUFFER,
+                StartupPlainsEnclave.MAX_FALLOUT_BUFFER,
+                StartupSettlementProtection.STARTUP_SETTLEMENT_FALLOUT_PROTECTION_DEPTH);
         long seed = overworld.getSeed();
         ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ECOLOGY SHAPE] seed={} center=({}, {}) baseRingOuter={} primaryAngleDeg={} primaryExtraLength={} primaryHalfWidth={} secondaryCount={} secondary0AngleDeg={} secondary0ExtraLength={} secondary0HalfWidth={} secondary1AngleDeg={} secondary1ExtraLength={} secondary1HalfWidth={} lobeStartOverlap={} shapeSource=BASE_PRIMARY_SECONDARY_ORIGINAL_OUTSIDE",
                 seed, StartupPlainsEnclave.CENTER_X, StartupPlainsEnclave.CENTER_Z,
-                StartupPlainsEnclave.WOODLAND_BASE_OUTER_RADIUS,
+                StartupPlainsEnclave.FALLOUT_BASE_OUTER_RADIUS,
                 StartupPlainsEnclave.primaryLobeAngleDegrees(seed),
                 StartupPlainsEnclave.primaryLobeExtraLength(seed),
                 StartupPlainsEnclave.primaryLobeHalfWidth(seed),
@@ -151,8 +151,8 @@ public final class BunkerWorldEvents {
                 .map(key -> key.location()).orElse(new ResourceLocation("minecraft", "unknown"));
         if (startupCoreSample) {
             var zone = StartupPlainsEnclave.zoneAt(x, z, level.getSeed());
-            var expected = zone == StartupPlainsEnclave.Zone.WOODLAND_BUFFER
-                    ? com.antaurora.apofirstlight.registry.AflBiomes.IRRADIATED_WOODLAND.location()
+            var expected = zone == StartupPlainsEnclave.Zone.FALLOUT_BUFFER
+                    ? com.antaurora.apofirstlight.registry.AflBiomes.FALLOUT_BARRENS.location()
                     : net.minecraft.world.level.biome.Biomes.PLAINS.location();
             boolean matches = expected.equals(biomeId);
             if (matches) ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ENCLAVE AUDIT] pos=({}, {}) surfaceY={} biome={} expected={} result=PASS",x,z,surfaceY,biomeId,expected);

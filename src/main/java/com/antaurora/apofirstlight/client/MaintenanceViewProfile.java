@@ -12,7 +12,9 @@ public record MaintenanceViewProfile(float scale,double offsetX,double offsetY,d
     // Exact quarter turn keeps the barrel parallel to the mat's long edge.
     private static final MaintenanceViewProfile DEFAULT=new MaintenanceViewProfile(.29f,0,.045,0,0,-90,-90,0,.52,0,224);
     private static final Map<String,MaintenanceViewProfile> PROFILES=Map.of(
-            "apocalypse_firstlight:p9_01",new MaintenanceViewProfile(.55f,0,.045,0,0,-90,-90,-.186,.416,.161,145),
+            // Artist V2 runtime Geo is centered near X=-0.024/Y=0.160 in Gecko model units.
+            // Keep its established side-on maintenance orientation and dynamic longitudinal centering.
+            "apocalypse_firstlight:p9_01",new MaintenanceViewProfile(.55f,0,.045,0,0,-90,-90,-.024,.160,.161,145),
             "apocalypse_firstlight:br51_01",DEFAULT);
     public static MaintenanceViewProfile of(ItemStack stack){return stack.getItem() instanceof NativeGunItem gun
             ?PROFILES.getOrDefault(gun.definition().id().toString(),DEFAULT):DEFAULT;}

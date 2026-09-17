@@ -2,6 +2,8 @@
 
 状态：正式资源与代码已接入；手臂现按 BR51 TaCZ→AFL adapter 模式挂到作者 `*_pos` 下，`compileJava` 与 P9 静态结构检查通过。**本次变更尚未实机验收**，不将手臂显示、握持姿态或声音记为客户端 PASS。下文较早的测试仅属于当时的资产接入版本。
 
+维护台回归修正：Artist V2 runtime Geo 的 identifier 已规范为 `geometry.p9_01`；P9 专用维护台中心按新版几何范围从旧资产坐标 `(-0.186, 0.416)` 重新标定为 `(-0.024, 0.160)`。维护台缩放 `0.55`、平移 `(0, 0.045, 0)`、旋转 `(0, -90, -90)` 与动态纵向居中保持不变；BR51 和其他枪械 profile 未改。代码与资源验证不等于客户端画面验收。
+
 ## 资产与渲染
 
 - 本次核验的原始 Artist V2：`E:/Download/AFL/p9_01.bbmodel`（42 组、171 元素、9 条动画）；可编辑正式模型在 `src/main/blockbench/p9_01.bbmodel`。运行时使用 `geo/p9_01.geo.json`、`animations/p9_01.animation.json`、`textures/item/p9_01.png`。本次未更改贴图。

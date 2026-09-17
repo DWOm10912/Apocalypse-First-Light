@@ -80,7 +80,7 @@ public final class RadiationCommands {
                 sample.safeAnchorSource())), false);
         source.sendSuccess(() -> Component.literal(String.format(
                 "[AFL RADIATION HERE] Startup Zone: %s | Startup Distance: %.1f | Plains Boundary: %d | Woodland Boundary: %d | Biome Constrained: %.4f | Safe Anchor Distance: %.1f | Safe Anchor Suppression: %.4f | Pre-Startup: %.4f | Startup Cap: %s | Post-Startup: %.4f | Radiation Zone: %s | Ambient Before Shielding: %.2f RU/h | Shielding Transmission: %.3f | Shielded Ambient: %.2f RU/h | Local: %.2f RU/h | Final: %.2f RU/h",
-                startup.startupZone(), startup.distanceFromStartupCenter(), startup.plainsBoundary(), startup.woodlandBoundary(),
+                startup.startupZone(), startup.distanceFromStartupCenter(), startup.plainsBoundary(), startup.falloutBoundary(),
                 startup.biomeConstrainedField(), startup.safeAnchorDistance(), startup.safeAnchorSuppression(),
                 startup.preStartupEffectiveField(), startup.startupCap() == null ? "none" : String.format("%.4f", startup.startupCap()),
                 startup.finalEffectiveField(), sample.zone(), sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),

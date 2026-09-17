@@ -18,13 +18,13 @@ public final class StartupPlainsEnclave {
     public static final int CORE_RADIUS_BLOCKS = 160;
     public static final int PLAINS_BASE_RADIUS = 208;
     public static final int PLAINS_NOISE_AMPLITUDE = 32;
-    public static final int WOODLAND_BASE_OUTER_RADIUS = 480;
-    public static final int WOODLAND_NOISE_AMPLITUDE = 56;
-    public static final int WOODLAND_NOISE_SCALE = 256;
-    public static final int MIN_WOODLAND_BUFFER = 208;
-    public static final int MAX_WOODLAND_BUFFER = 336;
-    private static final double WOODLAND_LOBE_START_RADIUS = WOODLAND_BASE_OUTER_RADIUS - 128.0D;
-    private static final double WOODLAND_LOBE_NOISE_AMPLITUDE = 24.0D;
+    public static final int FALLOUT_BASE_OUTER_RADIUS = 480;
+    public static final int FALLOUT_NOISE_AMPLITUDE = 56;
+    public static final int FALLOUT_NOISE_SCALE = 256;
+    public static final int MIN_FALLOUT_BUFFER = 208;
+    public static final int MAX_FALLOUT_BUFFER = 336;
+    private static final double FALLOUT_LOBE_START_RADIUS = FALLOUT_BASE_OUTER_RADIUS - 128.0D;
+    private static final double FALLOUT_LOBE_NOISE_AMPLITUDE = 24.0D;
     public static final int SURFACE_BAND_MIN_BLOCK_Y = 48;
     public static final int SURFACE_BAND_MAX_BLOCK_Y = 112;
     public static final int SURFACE_BAND_MIN_QUART_Y = 12;
@@ -33,13 +33,13 @@ public final class StartupPlainsEnclave {
     public enum Zone {
         CORE_PLAINS,
         FRINGE_PLAINS,
-        WOODLAND_BUFFER,
+        FALLOUT_BUFFER,
         OUTSIDE
     }
 
     /**
-     * Diagnostic source for the Woodland portion of the startup ecology shape.
-     * BASE is the guaranteed radial Woodland ring; the lobe values are only
+     * Diagnostic source for the fallout portion of the startup ecology shape.
+     * BASE is the guaranteed radial fallout ring; the lobe values are only
      * returned outside that ring.
      */
     public enum ShapeSource {
@@ -77,16 +77,16 @@ public final class StartupPlainsEnclave {
         if (distance <= plainsBoundary(x, z, seed)) {
             return Zone.FRINGE_PLAINS;
         }
-        return woodlandShapeSource(x, z, seed) == ShapeSource.NONE
-                ? Zone.OUTSIDE : Zone.WOODLAND_BUFFER;
+        return falloutShapeSource(x, z, seed) == ShapeSource.NONE
+                ? Zone.OUTSIDE : Zone.FALLOUT_BUFFER;
     }
 
-    public static ShapeSource woodlandShapeSource(int x, int z, long seed) {
+    public static ShapeSource falloutShapeSource(int x, int z, long seed) {
         double distance = distance(x, z);
         if (distance <= plainsBoundary(x, z, seed)) {
             return ShapeSource.NONE;
         }
-        if (distance <= woodlandOuterBoundary(x, z, seed)) {
+        if (distance <= falloutOuterBoundary(x, z, seed)) {
             return ShapeSource.BASE;
         }
         if (matchesLobe(x, z, seed, -1)) {
@@ -151,12 +151,12 @@ public final class StartupPlainsEnclave {
                         * PLAINS_NOISE_AMPLITUDE));
     }
 
-    public static int woodlandOuterBoundary(int x, int z, long seed) {
+    public static int falloutOuterBoundary(int x, int z, long seed) {
         int plains = plainsBoundary(x, z, seed);
-        double noisy = WOODLAND_BASE_OUTER_RADIUS
-                + smoothNoise(x, z, seed ^ 0x9E3779B97F4A7C15L, WOODLAND_NOISE_SCALE) * WOODLAND_NOISE_AMPLITUDE;
-        return (int) Math.round(Math.min(plains + MAX_WOODLAND_BUFFER,
-                Math.max(plains + MIN_WOODLAND_BUFFER, noisy)));
+        double noisy = FALLOUT_BASE_OUTER_RADIUS
+                + smoothNoise(x, z, seed ^ 0x9E3779B97F4A7C15L, FALLOUT_NOISE_SCALE) * FALLOUT_NOISE_AMPLITUDE;
+        return (int) Math.round(Math.min(plains + MAX_FALLOUT_BUFFER,
+                Math.max(plains + MIN_FALLOUT_BUFFER, noisy)));
     }
 
     public static ResourceKey<Biome> resolveBiome(int x, int z, long seed, Holder<Biome> original) {
@@ -164,7 +164,7 @@ public final class StartupPlainsEnclave {
         if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(originalKey)) return originalKey;
         return switch (zoneAt(x, z, seed)) {
             case CORE_PLAINS, FRINGE_PLAINS -> Biomes.PLAINS;
-            case WOODLAND_BUFFER -> AflBiomes.IRRADIATED_WOODLAND;
+            case FALLOUT_BUFFER -> AflBiomes.FALLOUT_BARRENS;
             case OUTSIDE -> AflVanillaBiomePolicy.isAllowedSurfaceBiome(originalKey)
                     ? originalKey
                     : normalizeVanillaSurface(originalKey);
@@ -191,18 +191,18 @@ public final class StartupPlainsEnclave {
         double angle = lobeAngle(seed, index);
         double forward = forwardProjection(x, z, angle);
         double side = sideProjection(x, z, angle);
-        double end = WOODLAND_BASE_OUTER_RADIUS + lobeExtraLength(seed, index);
-        if (forward < WOODLAND_LOBE_START_RADIUS) {
-            return forward - WOODLAND_LOBE_START_RADIUS;
+        double end = FALLOUT_BASE_OUTER_RADIUS + lobeExtraLength(seed, index);
+        if (forward < FALLOUT_LOBE_START_RADIUS) {
+            return forward - FALLOUT_LOBE_START_RADIUS;
         }
         if (forward > end) {
             return end - forward;
         }
-        double progress = (forward - WOODLAND_LOBE_START_RADIUS)
-                / (end - WOODLAND_LOBE_START_RADIUS);
+        double progress = (forward - FALLOUT_LOBE_START_RADIUS)
+                / (end - FALLOUT_LOBE_START_RADIUS);
         double widthProfile = 0.78D + 0.18D * Math.sin(progress * Math.PI) + 0.04D * progress;
         double edgeNoise = smoothNoise(x, z, seed ^ lobeNoiseSalt(index), 384.0D)
-                * WOODLAND_LOBE_NOISE_AMPLITUDE;
+                * FALLOUT_LOBE_NOISE_AMPLITUDE;
         double allowedHalfWidth = lobeHalfWidth(seed, index) * widthProfile + edgeNoise;
         return allowedHalfWidth - Math.abs(side);
     }

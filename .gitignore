@@ -29,6 +29,7 @@ build/
 # Minecraft / Forge runtime
 # ==============================
 run/
+run-pure-forge/
 logs/
 crash-reports/
 

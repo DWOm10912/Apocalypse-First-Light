@@ -45,7 +45,7 @@ DEV /afl rural generate -> RuralGenerator.plan(ServerLevel)
   -> road + driveways -> earthwork -> full NBT placement -> farms
 ```
 
-`DIMENSION_GATE` = 自然 Structure 类没有显式 Overworld 判断；有效生物群系标签仅含 `minecraft:plains`、`apocalypse_firstlight:irradiated_woodland`、`apocalypse_firstlight:fallout_barrens`，通常使它实际上只在含这些 biome 的维度通过。开发命令代码未见维度硬门。`BIOME_GATE` = Vanilla 的 Structure `validBiome` 对 stub 的**一个** biome 执行检查，不是整个 56–128 格预留区 biome 扫描。`SPAWN_DISTANCE_RULE` = Rural 没有独立出生距离或 `StartupSettlementProtection` 判定。Plains/Woodlands 缓冲通过改写 biome **间接**影响候选合法性；`SettlementPrototype` 的专用保护不传递给 Rural。
+`DIMENSION_GATE` = 自然 Structure 类没有显式 Overworld 判断；有效生物群系标签仅含 `minecraft:plains`、`apocalypse_firstlight:fallout_barrens`，通常使它实际上只在含这些 biome 的维度通过。开发命令代码未见维度硬门。`BIOME_GATE` = Vanilla 的 Structure `validBiome` 对 stub 的**一个** biome 执行检查，不是整个 56–128 格预留区 biome 扫描。`SPAWN_DISTANCE_RULE` = Rural 没有独立出生距离或 `StartupSettlementProtection` 判定。Plains/Fallout 缓冲通过改写 biome **间接**影响候选合法性；`SettlementPrototype` 的专用保护不传递给 Rural。
 
 `PLACEMENT_GRID` = random spread region；`SPACING` = 40 chunks（名义 640 blocks）；`SEPARATION` = 20 chunks（名义 320 blocks）；`ATTEMPT_FREQUENCY` = 每个结构候选 region 最多一个候选 chunk，候选必须通过规划和 biome，不是每 chunk 概率掷骰。`BASE_PROBABILITY` = 无额外生成概率字段；StructureSet 唯一结构权重 1。`DETERMINISTIC_BY_SEED` = YES，salt/seed/中心坐标确定候选、档位、道路和分配；重启同配置稳定。配置/NBT/算法变更会改变尚未生成区的结果。四档权重 40/30/22/8 是**档位选择**，不是 StructureSet 生成概率。
 
@@ -92,7 +92,7 @@ NBT 尺寸由本轮只读解码正式文件得出，顺序为 X×Y×Z；数值�
 
 `TERRAIN_FLATTENING` = 不平整整个预留区。自然回放会按 chunk 在 lot 足迹内做≤3 格 dirt 填/可切块挖，外侧 2 格混合环，并清理 lot/农田植被；模板支撑掩码来自 NBT 首层实心块，必要时向下补≤6 格 cobblestone。`CUT_FILL` = 局部存在；命令路径较保守，以填土和清植被为主。`WATER_REJECTION` = 站点比例阈值、lot 与 farm 样本拒水；`LIQUID_REJECTION` = ServerLevel 采样检查任何非空 fluid，但 generation-time `NoiseColumn` 分支仅把水/冰列为 water-like，没有专用工业废液/所有 mod 液体分类。`CLIFF_REJECTION` = 高差阈值与失效样本的间接限制，无悬崖/洞穴几何专用分类。
 
-近地表水抑制仅在 Scorched Lands aquifer mixin，Rural 本身不调用；scorched 不在 Rural biome tag。Plains/woodland 缓冲通过 biome 间接影响准入，Rural 不读取 `StartupSettlementProtection`。`fallout_barrens` 明确在准入标签，可生成于焦土邻近或辐射区（取决于单点 biome/地形）；没有距离污染、工业废液或辐射的专用限制。自然道路只按 chunk 裁剪并查询当前表面高度，未对道路的每格水/坡度做规划时同等严格的检查。农田会程序化放置灌溉水，这与“近地表水抑制”不是同一机制，若末世美术要求干田，应单独决策。
+近地表水抑制仅在 Scorched Lands aquifer mixin，Rural 本身不调用；scorched 不在 Rural biome tag。Plains/Fallout 缓冲通过 biome 间接影响准入，Rural 不读取 `StartupSettlementProtection`。`fallout_barrens` 明确在准入标签，可生成于焦土邻近或辐射区（取决于单点 biome/地形）；没有距离污染、工业废液或辐射的专用限制。自然道路只按 chunk 裁剪并查询当前表面高度，未对道路的每格水/坡度做规划时同等严格的检查。农田会程序化放置灌溉水，这与“近地表水抑制”不是同一机制，若末世美术要求干田，应单独决策。
 
 ## 9. Retry / Failure
 
