@@ -22,6 +22,7 @@ public final class P901Actions {
     public static final int FIRE_TICKS = 3;
     public static final int RELOAD_TICKS = 48;
     public static final int EMPTY_RELOAD_TICKS = 63;
+    private static final int P9_EMPTY_RELOAD_SYNC_LEAD_TICKS = 2;
     public static final int SLIDE_RACK_TICK = 25;
     // Legacy no-animation fallback only; P9/BR51 use their authored sound markers.
     public static final int MAG_OUT_TICK = 8;
@@ -211,7 +212,14 @@ public final class P901Actions {
             return true;
         });
         if (state.reload && state.item.animationAsset() != null) {
-            if (!state.inPlayed && now >= state.end) {
+            // P9's authored empty reload is 3.12 s (62.4 ticks), while its action lock is 63 ticks.
+            // Sync the loaded magazine just before the trigger ends so the controller transitions
+            // directly to static_idle instead of showing empty_idle's locked-back slide for a frame.
+            // The session still remains locked until state.end, so this does not shorten the reload.
+            long ammoCommitTick = state.end;
+            if (state.reloadStartedEmpty && state.item instanceof P901Item)
+                ammoCommitTick -= P9_EMPTY_RELOAD_SYNC_LEAD_TICKS;
+            if (!state.inPlayed && now >= ammoCommitTick) {
                 NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
                 syncInventory(player);
                 state.inPlayed = true;

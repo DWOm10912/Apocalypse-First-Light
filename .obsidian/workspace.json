@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 制作清单"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -99,7 +99,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "docs/03 - 制作清单.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -189,20 +189,21 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "docs/04 - 注意事项 重要内容.md",
-    "run/saves/新的世界/level15215785867826557679.dat",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
+    "run/saves/新的世界/level5263911235492323299.dat",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.temp",
-    "run/saves/新的世界/poi/r.-2.0.mca",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
+    "docs/03 - 制作清单.md",
+    "docs/04 - 注意事项 重要内容.md",
     "docs/dev/rendering_test_environment.md",
     "run/saves/新的世界/icon.png",
-    "docs/03 - 制作清单.md",
     "Pasted image 20260916185232.png",
     "docs/01 - 设计/世界与环境/原版改动.md",
     "docs/01 - 设计/世界与环境/群系.md",
