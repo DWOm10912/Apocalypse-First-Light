@@ -38,7 +38,8 @@
       "hip_rotation": [0.54547, 0.19151, -0.27948],
       "scale": 0.45,
       "composition": [0.07, 0.045],
-      "root_pitch": 3
+      "root_pitch": 0,
+      "ads_rotation": [0, 0, 0]
     }
   },
   "presentation": {"hud": {"width": 36, "height": 22}, "mag_in_tick": 19, "trail": "subtle_pistol"},

@@ -91,10 +91,12 @@ public final class NativeGunData {
         var p=ads.getAsJsonObject("profile");
         var aim=floats(p,"aim",3);var hip=floats(p,"hip_translation",3);
         var rotation=floats(p,"hip_rotation",3);var composition=floats(p,"composition",2);
+        var adsRotation=p.has("ads_rotation")?floats(p,"ads_rotation",3)
+                :new float[]{base.adsPitch(),base.adsYaw(),base.adsRoll()};
         return new NativeAdsCalibration(p.get("anchor").getAsString(),aim[0],aim[1],aim[2],
                 (float)num(p,"eye_relief",0,Float.MAX_VALUE),hip[0],hip[1],hip[2],rotation[0],rotation[1],rotation[2],
                 (float)num(p,"scale",Float.MIN_NORMAL,Float.MAX_VALUE),composition[0],composition[1],
-                (float)num(p,"root_pitch",-360,360));
+                (float)num(p,"root_pitch",-360,360),adsRotation[0],adsRotation[1],adsRotation[2]);
     }
     public static NativeGunDefinition parse(ResourceLocation id,JsonObject o,boolean validate) {
         try {

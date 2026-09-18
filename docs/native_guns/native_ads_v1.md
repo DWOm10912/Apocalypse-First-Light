@@ -20,7 +20,7 @@ Sprint禁止进入ADS，已ADS时疾跑按原退出时长平滑退出；停止�
 
 本轮已为BR51新增机瞄底座和前准星柱。BR51以实际后照门 `octagon9` 的中心X=0、Y=13.6875为瞄轴，沿用Z=15.46875作为眼距参考。旧 `iron_view` 的Y=14.8是辅助镜头定位，不是实际孔中心，首轮实机明显偏低，已停止使用该高度。前后瞄具是否完全共线尚待新版实机确认。当前 Artist P9 的 `rear_sight` pivot 为 `[0.0037,5.96718,2.94939]`、`front_sight` 为 `[0.0037,5.96718,-6.22661]`（Gecko模型单位）；当前 ADS 仍通过 P9 专属 profile 解算整枪视图，不改变瞄具/手臂骨骼。`iron_view` 不参与该解算。核对当前Gecko加载器：pivot X反号，rotation X/Y反号。
 
-配置来源现为每枪 `native_guns` JSON 的 `ads.profile`，由客户端 `NativeAdsProfile` 仅负责矩阵解算；类型默认值位于 `NativeAdsCalibration`，不再按武器 ID 分支。P9/BR51 当前接受数值已原样写入各自 JSON。所有坐标均是模型单位/16，物理相机位置不动。
+配置来源现为每枪 `native_guns` JSON 的 `ads.profile`，由客户端 `NativeAdsProfile` 仅负责矩阵解算；类型默认值位于 `NativeAdsCalibration`，不再按武器 ID 分支。`ads_rotation=[pitch,yaw,roll]` 是可选、默认全零的每枪视觉轴校准，围绕当前机械瞄具或附件 `aim` 点旋转。P9/BR51 当前接受数值已原样写入各自 JSON。所有坐标均是模型单位/16，物理相机位置不动。
 
 | 参数 | BR51-01 | P9-01 |
 | --- | --- | --- |
@@ -32,13 +32,15 @@ Sprint禁止进入ADS，已ADS时疾跑按原退出时长平滑退出；停止�
 | 进入/退出 | 4/4 tick（0.20/0.20s） | 3/3 tick（0.15/0.15s） |
 | FOV multiplier | 0.89 | 0.95 |
 
-矩阵求解：`ADS = T(0,0,-eyeRelief) × S × T(-anchor/16)`；`C = ADS × inverse(HIP)`。HIP包括现有Display、P9 composition、Geo/Vanilla净0.01Y偏移及P9 fp_root静态3°旋转。应用 `lerp(identity,C,progress)` 到原HIP载体外层。配置中保留当前HIP数值用于求逆，未写回原资源；以后更改HIP时需同步此配置。
+矩阵求解：`ADS = T(0,0,-eyeRelief) × S × R(ads_rotation) × T(-anchor/16)`；`C = ADS × inverse(HIP)`。`T(-anchor)` 先作用于顶点，因此旋转围绕选中的机械瞄具或附件视点进行，不把整枪绕世界原点甩动。HIP包括现有Display、P9 composition和Geo/Vanilla净0.01Y偏移。应用 `lerp(identity,C,progress)` 到原HIP载体外层。配置中保留当前HIP数值用于求逆，未写回原资源；以后更改HIP时需同步此配置。
 
-BR51 HIP T=[3.8,-7.2,-11.5]/16 R=[0,4,0] S=.45；P9 HIP T=[3.24148,-7.4945,-14.19624]/16 R=[.54547,.19151,-.27948] S=.45，另有composition=[.07,.045,0]、静态 root pitch 补偿 3°。P9 左手 Display 仍有独立变换；左主手镜像补偿尚未精校，列为已知限制。
+BR51 HIP T=[3.8,-7.2,-11.5]/16 R=[0,4,0] S=.45；P9 HIP T=[3.24148,-7.4945,-14.19624]/16 R=[.54547,.19151,-.27948] S=.45，另有composition=[.07,.045,0]。P9 左手 Display 仍有独立变换；左主手镜像补偿尚未精校，列为已知限制。
 
 定位矩阵仍由本类维护；ADS时间/FOV已迁移到单枪native_guns JSON，经 /reload 同步客户端。BR51三点共线、后照门距离、P9手臂遮挡仍以实机为准，不得仅凭矩阵称为对齐通过。
 
-P9 机械瞄具经实机截图校准到 X=1.50、Y=5.80，右手 HIP scale 与实际 Display 统一为 .45；用户已确认该版瞄线对准屏幕中心。为减少 ADS 时双臂占屏，P9 手臂层按同一 ADS progress 围绕握持端点插值到横截面 90%、前臂长度 86%；枪体、瞄轴、手部锚点、动画和弹道均不改变。手臂缩放后的最终画面仍待客户端复验。
+P9 Sight-Axis Calibration V2 重新以当前 runtime geo 和 `static_idle` 为准：后照门顶部中心 `[0.0037,6.29278,2.94939]` 到前准星顶部中心 `[0.0037,6.29278,-6.22661]` 的 authored sight vector 为 `[0,0,-9.176]`，前后瞄具又位于同一 `slide` 子树，因此基础轴已经沿模型 `-Z`，无需人为 pitch/yaw/roll。旧 profile 的 `root_pitch=3` 已没有对应的当前运行时 X 轴骨骼旋转，却仍被 HIP 求逆，因而会在完全 ADS 留下约3°视觉俯仰误差；V2 将其归零，并显式写入 `ads_rotation=[0,0,0]`。`aim=[1.50,5.80,2.97]` 与0.45 scale保持不变，避免把轴线修复和构图平移混调。16/32/64格双向像素验收仍需人工 runClient。
+
+为减少 ADS 时双臂占屏，P9 手臂层按同一 ADS progress 围绕握持端点插值到横截面 90%、前臂长度 86%；枪体几何、手部锚点、动画和弹道均未改变。
 
 ## FOV、准星、后坐与弹道
 

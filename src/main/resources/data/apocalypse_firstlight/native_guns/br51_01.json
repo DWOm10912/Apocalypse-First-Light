@@ -54,7 +54,8 @@
       "hip_rotation": [0, 4, 0],
       "scale": 0.45,
       "composition": [0, 0],
-      "root_pitch": 0
+      "root_pitch": 0,
+      "ads_rotation": [0, 0, 0]
     }
   },
   "presentation": {"hud": {"width": 60, "height": 12}, "mag_in_tick": 52, "trail": "subtle_rifle"},

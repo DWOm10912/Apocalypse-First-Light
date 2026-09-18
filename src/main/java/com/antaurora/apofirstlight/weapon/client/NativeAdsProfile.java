@@ -9,11 +9,13 @@ import org.joml.Vector3f;
  * No sight coordinate is used by hitscan. */
 public record NativeAdsProfile(String anchor, float ax, float ay, float az, float eyeRelief,
         float hx, float hy, float hz, float rx, float ry, float rz, float scale,
-        float compositionX, float compositionY, float rootPitch) {
+        float compositionX, float compositionY, float rootPitch,
+        float adsPitch, float adsYaw, float adsRoll) {
     public static NativeAdsProfile from(com.antaurora.apofirstlight.weapon.NativeAdsCalibration value) {
         return new NativeAdsProfile(value.anchor(),value.ax(),value.ay(),value.az(),value.eyeRelief(),
                 value.hx(),value.hy(),value.hz(),value.rx(),value.ry(),value.rz(),value.scale(),
-                value.compositionX(),value.compositionY(),value.rootPitch());
+                value.compositionX(),value.compositionY(),value.rootPitch(),
+                value.adsPitch(),value.adsYaw(),value.adsRoll());
     }
     public static NativeAdsProfile forStack(net.minecraft.world.item.ItemStack stack) {
         if(!(stack.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeGunItem gun))return null;
@@ -21,7 +23,8 @@ public record NativeAdsProfile(String anchor, float ax, float ay, float az, floa
         var mount=gun.definition().sightMount();
         if(mount==null||com.antaurora.apofirstlight.weapon.NativeAttachments.activeSight(stack).isEmpty())return base;
         return new NativeAdsProfile(mount.anchor()+"/reticle_dot",mount.aimX(),mount.aimY(),mount.aimZ(),base.eyeRelief,
-                base.hx,base.hy,base.hz,base.rx,base.ry,base.rz,base.scale,base.compositionX,base.compositionY,base.rootPitch);
+                base.hx,base.hy,base.hz,base.rx,base.ry,base.rz,base.scale,base.compositionX,base.compositionY,base.rootPitch,
+                base.adsPitch,base.adsYaw,base.adsRoll);
     }
     private static float rad(float d) { return (float)Math.toRadians(d); }
     public Matrix4f hip() {
@@ -32,7 +35,12 @@ public record NativeAdsProfile(String anchor, float ax, float ay, float az, floa
         return m;
     }
     public Matrix4f ads() {
-        return new Matrix4f().translation(0,0,-eyeRelief).scale(scale).translate(-ax/16,-ay/16,-az/16);
+        // Rotate in sight-local space around the selected iron/optic aim point.
+        // T(-aim) is applied first to vertices, so the reference point remains
+        // centered while per-gun pitch/yaw/roll aligns the authored sight axis.
+        return new Matrix4f().translation(0,0,-eyeRelief).scale(scale)
+                .rotate(new Quaternionf().rotationXYZ(rad(adsPitch),rad(adsYaw),rad(adsRoll)))
+                .translate(-ax/16,-ay/16,-az/16);
     }
     public Matrix4f correction(boolean right) {
         Matrix4f correction=ads().mul(hip().invert());

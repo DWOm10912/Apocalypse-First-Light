@@ -17,9 +17,14 @@ public class NativeGunJsonTests {
         var pistol=NativeGunData.parse(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","renamed_pistol_fixture"),read("p9_01"),false);
         var rifle=NativeGunData.parse(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","renamed_rifle_fixture"),read("br51_01"),false);
         h.assertTrue(pistol.weaponClass()==WeaponClass.PISTOL && pistol.hudWidth()==36 && pistol.hudHeight()==22
-                && pistol.magInTick()==19 && pistol.adsCalibration().ay()==5.80F,"Pistol presentation is data driven and frozen");
+                && pistol.magInTick()==19 && pistol.adsCalibration().ay()==5.80F
+                && pistol.adsCalibration().rootPitch()==0F && pistol.adsCalibration().adsPitch()==0F
+                && pistol.adsCalibration().adsYaw()==0F && pistol.adsCalibration().adsRoll()==0F,
+                "Pistol presentation and sight-axis calibration are data driven and frozen");
         h.assertTrue(rifle.weaponClass()==WeaponClass.RIFLE && rifle.hudWidth()==60 && rifle.hudHeight()==12
-                && rifle.magInTick()==52 && rifle.adsCalibration().ay()==13.6875F,"Rifle presentation is data driven and frozen");
+                && rifle.magInTick()==52 && rifle.adsCalibration().ay()==13.6875F
+                && rifle.adsCalibration().adsPitch()==0F && rifle.adsCalibration().adsYaw()==0F
+                && rifle.adsCalibration().adsRoll()==0F,"Rifle presentation and ADS behavior are frozen");
         h.assertTrue(pistol.trail().equals(NativeTrailProfile.SUBTLE_PISTOL)
                 && rifle.trail().equals(NativeTrailProfile.SUBTLE_RIFLE),"Per-gun trail presets resolve");
         var invalid=read("p9_01");invalid.addProperty("weapon_class","not_a_weapon_class");
