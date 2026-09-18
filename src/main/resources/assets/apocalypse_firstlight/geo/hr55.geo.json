@@ -10039,7 +10039,7 @@
 				{
 					"name": "muzzle_anchor",
 					"parent": "muzzle_flash",
-					"pivot": [0, 7.32835, -21.93348]
+					"pivot": [0, 7.32835, -16.13348]
 				},
 				{
 					"name": "grip_pos",
@@ -10064,7 +10064,7 @@
 				{
 					"name": "sight_anchor",
 					"parent": "scope_pos",
-					"pivot": [0, 9.28035, -1.10661]
+					"pivot": [0, 11.18035, -2.10661]
 				},
 				{
 					"name": "mag_and_lefthand",
