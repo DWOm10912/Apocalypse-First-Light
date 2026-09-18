@@ -27,6 +27,13 @@ public final class AflItems {
                             java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
                                     "inspect", "shoot", "put_away", "draw"),
                             java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell", 4.8125F)));
+    public static final RegistryObject<Item> HR55 = ITEMS.register("hr55", () ->
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "hr55"),
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("hr55", "static_idle",
+                            java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
+                                    "inspect", "inspect_empty", "shoot", "put_away", "draw"),
+                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor",
+                            "muzzle_pos", "shell", 3.55125F)));
     public static final RegistryObject<Item> CROWBAR = ITEMS.register("crowbar",
             com.antaurora.apofirstlight.item.CrowbarItem::new);
     public static final RegistryObject<Item> PISTOL_RED_DOT = ITEMS.register("pistol_red_dot",

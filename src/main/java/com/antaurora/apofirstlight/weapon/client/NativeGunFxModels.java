@@ -12,5 +12,6 @@ public final class NativeGunFxModels {
     @SubscribeEvent public static void register(ModelEvent.RegisterAdditional event) {
         event.register(NativeGunFx.CASING_MODEL);
         event.register(NativeGunFx.RIFLE_CASING_MODEL);
+        event.register(NativeGunFx.HEAVY_RIFLE_CASING_MODEL);
     }
 }

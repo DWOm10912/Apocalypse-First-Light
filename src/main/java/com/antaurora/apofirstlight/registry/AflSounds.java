@@ -63,6 +63,11 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> P9_01_FIRE = pistolSound("fire");
     public static final RegistryObject<SoundEvent> BR51_01_SUPPRESSED = SOUND_EVENTS.register("br51_01_suppressed",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"br51_01_suppressed")));
+    public static final java.util.List<RegistryObject<SoundEvent>> HR55 = java.util.stream.Stream.of(
+            "fire", "fire_suppressed", "reload_tactical", "reload_empty", "inspect", "draw", "put_away")
+            .map(action -> SOUND_EVENTS.register("hr55_" + action, () -> SoundEvent.createVariableRangeEvent(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "hr55_" + action))))
+            .toList();
     public static final RegistryObject<SoundEvent> P9_01_SUPPRESSED = pistolSound("suppressed");
     public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");

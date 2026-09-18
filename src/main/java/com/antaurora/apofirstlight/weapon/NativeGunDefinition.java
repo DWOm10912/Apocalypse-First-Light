@@ -4,7 +4,7 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Small immutable gameplay/HUD metadata, independent of the visual rig. */
 public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, ResourceLocation ammoType, int magazineCapacity,
-                                  ResourceLocation hudIcon, int hudWidth, int hudHeight, int reloadDurationTicks, int magInTick,
+                                  ResourceLocation hudIcon, int hudWidth, int hudHeight, int reloadDurationTicks, int magInTick, int emptyMagInTick,
                                   int fireIntervalTicks, double baseDamage,
                                   double falloffStart, double effectiveRange, double maxRange,
                                   double minimumDamageMultiplier, double spreadDegrees, double noiseRadius,
@@ -23,7 +23,7 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
         java.util.Objects.requireNonNull(adsCalibration, "adsCalibration");
         if (!Double.isFinite(spreadDegrees) || spreadDegrees < 0 || spreadDegrees > 45)
             throw new IllegalArgumentException("Invalid spread half-angle");
-        if (magazineCapacity <= 0 || magInTick < 0 || fireIntervalTicks <= 0)
+        if (magazineCapacity <= 0 || magInTick < 0 || emptyMagInTick < 0 || fireIntervalTicks <= 0)
             throw new IllegalArgumentException("Invalid native gun timing/capacity");
     }
     public double headshotMultiplier() { return NativeHeadshots.MULTIPLIER.get(); }

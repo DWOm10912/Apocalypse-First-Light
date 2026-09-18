@@ -34,6 +34,7 @@ public final class NativeGunFx {
     public static final ResourceLocation FLASH_TEXTURE = id("textures/effects/p9_01_muzzle_flash.png");
     public static final ResourceLocation CASING_MODEL = id("item/9x19mm_casing");
     public static final ResourceLocation RIFLE_CASING_MODEL = id("item/762x51mm_casing");
+    public static final ResourceLocation HEAVY_RIFLE_CASING_MODEL = id("item/12_7x55mm_casing");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;

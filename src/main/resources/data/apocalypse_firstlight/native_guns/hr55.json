@@ -1,0 +1,131 @@
+{
+  "weapon_class": "rifle",
+
+  "sight_slot": {
+    "anchor": "sight_anchor",
+    "mount_offset": [0, 0, 0],
+    "ads_center": [0, 11.52334, 14.5],
+    "accepts": [
+      "apocalypse_firstlight:rifle_red_dot_01"
+    ]
+  },
+
+  "ammo": "apocalypse_firstlight:12_7x55mm_round",
+
+  "fire_sound": "apocalypse_firstlight:hr55_fire",
+  "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
+  "suppressed_fire_sound": "apocalypse_firstlight:hr55_fire_suppressed",
+
+  "magazine_capacity": 20,
+
+  "fire": {
+    "mode": "semi",
+    "interval_ticks": 5
+  },
+
+  "damage": {
+    "base": 26,
+    "falloff_start": 32,
+    "effective_range": 64,
+    "max_range": 96,
+    "min_damage_multiplier": 0.55
+  },
+
+  "accuracy": {
+    "base_spread_degrees": 0.45,
+    "profile": "battle_rifle"
+  },
+
+  "reload": {
+    "tactical_seconds": 3.88,
+    "empty_seconds": 4.29
+  },
+
+  "noise": {
+    "radius": 128,
+    "tinnitus": true
+  },
+
+  "ads": {
+    "time_seconds": 0.20,
+    "fov_multiplier": 0.92,
+
+    "profile": {
+      "anchor": "sight/rear-aperture-axis",
+
+      "aim": [
+        0,
+        11.52334,
+        14.5
+      ],
+
+      "eye_relief": 0.22,
+
+      "hip_translation": [
+        3.25,
+        -7.0,
+        -12.25
+      ],
+
+      "hip_rotation": [
+        0,
+        0,
+        0
+      ],
+
+      "scale": 0.45,
+
+      "composition": [
+        0,
+        0
+      ],
+
+      "root_pitch": 0,
+
+      "ads_rotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+
+  "presentation": {
+    "hud": {
+      "width": 59,
+      "height": 23
+    },
+
+    "mag_in_tick": 48,
+    "empty_mag_in_tick": 59,
+
+    "trail": "subtle_rifle"
+  },
+
+  "recoil": {
+    "verticalMin": 1.35,
+    "verticalMax": 1.75,
+
+    "horizontalMin": -0.24,
+    "horizontalMax": 0.24,
+
+    "maxVertical": 6,
+    "maxHorizontal": 1.4,
+
+    "recoveryDelay": 0.05,
+    "cameraRecoveryTime": 0.18,
+
+    "modelPitch": 5,
+    "modelBack": 0.04,
+    "modelYaw": 0.75,
+    "modelRoll": 0.75,
+    "modelRecoveryTime": 0.1,
+
+    "horizontalContinueChance": 0.7,
+    "horizontalRecoveryTime": 0.16,
+    "horizontalLeftMin": 0.07,
+    "horizontalRightMin": 0.09
+  },
+
+  "casing": "apocalypse_firstlight:12_7x55mm_casing"
+}

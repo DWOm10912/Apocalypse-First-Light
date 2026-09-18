@@ -216,7 +216,8 @@ public final class NativeGunActions {
             // Sync the loaded magazine just before the trigger ends so the controller transitions
             // directly to static_idle instead of showing empty_idle's locked-back slide for a frame.
             // The session still remains locked until state.end, so this does not shorten the reload.
-            long ammoCommitTick = state.end;
+            long ammoCommitTick = state.start + (state.reloadStartedEmpty
+                    ? state.item.definition().emptyMagInTick() : state.item.definition().magInTick());
             if (state.reloadStartedEmpty && state.item instanceof P901Item)
                 ammoCommitTick -= P9_EMPTY_RELOAD_SYNC_LEAD_TICKS;
             if (!state.inPlayed && now >= ammoCommitTick) {

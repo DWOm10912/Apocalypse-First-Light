@@ -70,20 +70,22 @@ public final class NativeGunData {
         }
         return values;
     }
-    private static NativeGunPresentation presentation(JsonObject o,WeaponClass weaponClass,int tactical) {
-        var base=NativeGunPresentation.defaults(weaponClass,tactical);
+    private static NativeGunPresentation presentation(JsonObject o,WeaponClass weaponClass,int tactical,int empty) {
+        var base=NativeGunPresentation.defaults(weaponClass,tactical,empty);
         if(!o.has("presentation"))return base;
         var p=o.getAsJsonObject("presentation");
-        int width=base.hudWidth(),height=base.hudHeight(),magIn=base.magInTick();
+        int width=base.hudWidth(),height=base.hudHeight(),magIn=base.magInTick(),emptyMagIn=base.emptyMagInTick();
         var trail=base.trail();
         if(p.has("hud")){
             var hud=p.getAsJsonObject("hud");
             width=integer(hud,"width");height=integer(hud,"height");
         }
         if(p.has("mag_in_tick"))magIn=integer(p,"mag_in_tick");
+        if(p.has("empty_mag_in_tick"))emptyMagIn=integer(p,"empty_mag_in_tick");
         if(p.has("trail"))trail=NativeTrailProfile.preset(p.get("trail").getAsString());
         if(magIn>tactical)throw new IllegalArgumentException("presentation.mag_in_tick: exceeds tactical reload");
-        return new NativeGunPresentation(width,height,magIn,trail);
+        if(emptyMagIn>empty)throw new IllegalArgumentException("presentation.empty_mag_in_tick: exceeds empty reload");
+        return new NativeGunPresentation(width,height,magIn,emptyMagIn,trail);
     }
     private static NativeAdsCalibration adsCalibration(JsonObject ads,WeaponClass weaponClass) {
         var base=NativeAdsCalibration.defaults(weaponClass);
@@ -120,10 +122,10 @@ public final class NativeGunData {
             if(!noise.getAsJsonPrimitive("tinnitus").isBoolean())throw new IllegalArgumentException("noise.tinnitus: expected boolean");
             if(!o.has("weapon_class"))throw new IllegalArgumentException("weapon_class: required");
             var weaponClass=WeaponClass.parse(o.get("weapon_class").getAsString());
-            var presentation=presentation(o,weaponClass,tactical);
+            var presentation=presentation(o,weaponClass,tactical,empty);
             return new NativeGunDefinition(id,weaponClass,item(o,"ammo",validate),integer(o,"magazine_capacity"),
                     new ResourceLocation(id.getNamespace(),"textures/gui/gun/"+id.getPath()+"_hud.png"),presentation.hudWidth(),presentation.hudHeight(),
-                    tactical,presentation.magInTick(),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
+                    tactical,presentation.magInTick(),presentation.emptyMagInTick(),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
                     num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,presentation.trail(),ap,
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),

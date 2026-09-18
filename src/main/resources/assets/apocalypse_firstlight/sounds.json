@@ -200,5 +200,28 @@
       }
     ]
   },
+  "hr55_fire": {
+    "subtitle": "subtitles.apocalypse_firstlight.hr55.fire",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/fire", "stream": false}]
+  },
+  "hr55_fire_suppressed": {
+    "subtitle": "subtitles.apocalypse_firstlight.hr55.suppressed",
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/fire_suppressed", "stream": false}]
+  },
+  "hr55_reload_tactical": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/reload_tactical", "stream": false}]
+  },
+  "hr55_reload_empty": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/reload_empty", "stream": false}]
+  },
+  "hr55_inspect": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/inspect", "stream": false}]
+  },
+  "hr55_draw": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/draw", "stream": false}]
+  },
+  "hr55_put_away": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/put_away", "stream": false}]
+  },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }
