@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 /** Production gun: shared authoritative combat, configurable visual rig and source timelines. */
-public final class ConfiguredNativeGunItem extends Item implements NativeGunItem {
+public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     private final net.minecraft.resources.ResourceLocation definitionId;
     public final NativeAnimatedWeaponItem.Profile profile;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);

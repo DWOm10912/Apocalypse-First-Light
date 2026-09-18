@@ -315,6 +315,7 @@
 
   "message.apocalypse_firstlight.nether_disabled": "下界无法进入",
   "message.apocalypse_firstlight.end_disabled": "末地无法进入",
+  "message.apocalypse_firstlight.cat.maintenance_refused": "这只猫貌似不想被你放上去",
 
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
   "item.apocalypse_firstlight.cat": "C.A.T",

@@ -238,5 +238,11 @@
   "cat_put_away": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/cat/put_away", "stream": false}]
   },
+  "cat_idle_1": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/idle_1", "stream": false, "attenuation_distance": 8}]
+  },
+  "cat_idle_2": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/idle_2", "stream": false, "attenuation_distance": 8}]
+  },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }

@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.blockentity.GunMaintenanceBenchBlockEntity;
 import com.antaurora.apofirstlight.menu.GunMaintenanceMenu;
+import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -13,6 +14,7 @@ import net.minecraft.world.entity.player.Inventory;
 public final class GunMaintenanceScreen extends Screen implements MenuAccess<GunMaintenanceMenu> {
     private final GunMaintenanceMenu menu;
     private int ticks;
+    private int catRefusalTicks;
     private final MaintenanceAttachmentHud attachments=new MaintenanceAttachmentHud(this);
     public void attachmentResult(int phase){attachments.result(phase);}
     public GunMaintenanceScreen(GunMaintenanceMenu menu,Inventory inventory,Component title){super(title);this.menu=menu;}
@@ -22,6 +24,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     @Override public void tick(){
         var state=MaintenanceModeClientState.INSTANCE;
         if(state.exitFinished()){closeNow();return;}
+        if(catRefusalTicks>0)catRefusalTicks--;
         if(!state.leaving())attachments.tick();
         // Chunk/BE packets may follow the opening packet. No fake world preview while waiting.
         if(++ticks>10 && (!MaintenanceModeClientState.INSTANCE.valid()||minecraft.player==null||minecraft.player.containerMenu!=menu))closeNow();
@@ -87,6 +90,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
         }
         var tooltip=returnTooltip(mouseX,mouseY);
         if(tooltip!=null)g.renderTooltip(font,tooltip,mouseX,mouseY);
+        else if(catRefusalTicks>0)g.drawCenteredString(font,Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused"),width/2,y-14,0xffffdddd);
         else if(menu.bench.isEmpty())g.drawCenteredString(font,Component.translatable("screen.apocalypse_firstlight.maintenance_select"),width/2,y-14,0xffcccccc);
         attachments.render(g,mouseX,mouseY);
     }
@@ -97,7 +101,11 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
         if(y>=hotbarY()&&y<hotbarY()+20&&x>=hotbarX()&&x<hotbarX()+180){
             int slot=(int)(x-hotbarX())/20;
             if(slot==placeholderSlot()){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.RETURN_GUN);}
-            else if(menu.bench.isEmpty()&&GunMaintenanceBenchBlockEntity.accepts(menu.slots.get(slot).getItem())){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,slot);}
+            else if(menu.bench.isEmpty()&&GunMaintenanceBenchBlockEntity.accepts(menu.slots.get(slot).getItem())){
+                clickSound();
+                if(menu.slots.get(slot).getItem().is(AflItems.CAT.get()))catRefusalTicks=60;
+                else minecraft.gameMode.handleInventoryButtonClick(menu.containerId,slot);
+            }
         }else if(takeButtonVisible()&&inside(x,y,takeButtonX(),hotbarY())){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.TAKE_GUN);}
         // World-space clicks intentionally do nothing in V2.1; reserved for attachment/repair targets.
         return true;

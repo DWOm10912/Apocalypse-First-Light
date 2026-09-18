@@ -37,6 +37,10 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
         if(level==null || level.isClientSide || !stillValid(player) || slot<0 || slot>8 || !isEmpty())return false;
         var stack=player.getInventory().getItem(slot);
         if(!accepts(stack))return false;
+        if(stack.is(com.antaurora.apofirstlight.registry.AflItems.CAT.get())){
+            player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused"),true);
+            return false;
+        }
         maintenanceGunSlot=player.getInventory().removeItemNoUpdate(slot);
         originHotbarSlot=slot;originPlayerUUID=player.getUUID();originMetadataReady=true;
         player.getInventory().setChanged();sync();return true;

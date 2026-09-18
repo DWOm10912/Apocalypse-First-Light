@@ -73,6 +73,8 @@ public final class AflSounds {
             .map(action -> SOUND_EVENTS.register("cat_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "cat_" + action))))
             .toList();
+    public static final RegistryObject<SoundEvent> CAT_IDLE_1 = catIdleSound("idle_1");
+    public static final RegistryObject<SoundEvent> CAT_IDLE_2 = catIdleSound("idle_2");
     public static final RegistryObject<SoundEvent> P9_01_SUPPRESSED = pistolSound("suppressed");
     public static final RegistryObject<SoundEvent> P9_01_DRY_FIRE = pistolSound("dry_fire");
     public static final RegistryObject<SoundEvent> P9_01_SLIDE_ACTION = pistolSound("slide_action");
@@ -92,6 +94,12 @@ public final class AflSounds {
         String name = "native_gun_" + action;
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(
                 new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
+    }
+
+    private static RegistryObject<SoundEvent> catIdleSound(String action) {
+        String name = "cat_" + action;
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createFixedRangeEvent(
+                new ResourceLocation(ApocalypseFirstLight.MOD_ID, name), 8.0F));
     }
 
     private static RegistryObject<SoundEvent> pistolSound(String action) {
