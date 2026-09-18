@@ -15,6 +15,10 @@ public final class AflEquipmentTooltip {
     public static String number(double value){return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();}
     public static String percentChange(double multiplier){double value=(multiplier-1)*100;return (value>0?"+":"")+number(value)+"%";}
     private static Component value(String key,Object... args){return Component.translatable("tooltip.apocalypse_firstlight.value."+key,args);}
+    private static Component weaponType(NativeGunDefinition definition){
+        return Component.translatable("tooltip.apocalypse_firstlight.value.weapon_class."
+                +definition.weaponClass().name().toLowerCase(Locale.ROOT));
+    }
     public static void addDescription(List<Component> lines,String key){
         lines.add(Component.translatable(key).withStyle(net.minecraft.ChatFormatting.GRAY).withStyle(s->s.withItalic(false)));
     }
@@ -31,7 +35,7 @@ public final class AflEquipmentTooltip {
         var ammo=ForgeRegistries.ITEMS.getValue(d.ammoType());
         String caliberKey=ammo.getDescriptionId()+".caliber";
         Component caliber=net.minecraft.locale.Language.getInstance().has(caliberKey)?Component.translatable(caliberKey):ammo.getDescription();
-        return List.of(new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
+        return List.of(new Stat(WEAPON_TYPE,weaponType(d)),new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
                 new Stat(AMMUNITION,caliber),new Stat(MAGAZINE,value("rounds",NativeGunAmmo.capacity(stack,d))),
                 new Stat(FIRE_MODE,value(d.fireMode())),new Stat(RANGE,value("blocks",number(d.effectiveRange()))),
                 new Stat(NOISE,value("ai_noise",number(NativeGunNoise.resolve(stack,d).radius()))));

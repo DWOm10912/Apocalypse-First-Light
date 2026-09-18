@@ -27,7 +27,7 @@
 
 弹匣从 `NativeMagazineItem.compatibleGun()` 查询 live `NativeGunData` 默认容量，从附件 `capacity()` 获取装备容量，得到 17→24 或 20→35。当前弹匣定义是一枪专用；未来多枪兼容须扩展正式兼容数据和行生成，不按枪名猜容量。属性生成返回 Stat 列表，一个附件可追加多个不同类别，formatter 不限制为单行。
 
-本地化：`tooltip.apocalypse_firstlight.stat.*`、`value.*`、现有每物品 description，以及弹药物品 `.caliber`。旧 spec/type/调试教程不再被 Item 调用；旧文案键不代表现行布局。灰色介绍显式 `withItalic(false)`，属性及横线同样非斜体；不修改用户自定义名称、原版高级提示或第三方 Mod 自行追加的信息。
+本地化：`tooltip.apocalypse_firstlight.stat.*`、`value.*`、现有每物品 description，以及弹药物品 `.caliber`。枪械统计第一行为 `Weapon Type / 武器类型`，从 `NativeGunDefinition.weaponClass()` 读取，并使用七个 `weapon_class.*` 本地化值；其后仍按伤害、弹药、弹匣、射击模式、射程、噪声排列。旧 spec/type/调试教程不再被 Item 调用；旧文案键不代表现行布局。灰色介绍显式 `withItalic(false)`，属性及横线同样非斜体；不修改用户自定义名称、原版高级提示或第三方 Mod 自行追加的信息。
 
 HUD 仍为单行“当前装弹 | 备弹”；容量仅在 Tooltip 属性区展示。没有改伤害、容量、噪声倍率、射程、射速、后坐力、ADS、兼容、换弹、维护台、弹药消耗或声音。新增 fireMode 和 compatibleGun 仅用于读取已存在的数据，不新增射击模式。装拆仍仅限维护台，无快捷安装说明。
 
