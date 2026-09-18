@@ -1,0 +1,445 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.cat",
+        "texture_width": 64,
+        "texture_height": 64,
+        "visible_bounds_width": 4,
+        "visible_bounds_height": 2.5,
+        "visible_bounds_offset": [
+          0,
+          0.75,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            5.25,
+            3
+          ]
+        },
+        {
+          "name": "mag_and_lefthand",
+          "parent": "root",
+          "pivot": [
+            0,
+            3.45,
+            0
+          ]
+        },
+        {
+          "name": "lefthand",
+          "parent": "mag_and_lefthand",
+          "pivot": [
+            -6.11559,
+            19.00194,
+            0
+          ]
+        },
+        {
+          "name": "lefthand_pos",
+          "parent": "lefthand",
+          "pivot": [
+            -0.11559,
+            8.00194,
+            0
+          ]
+        },
+        {
+          "name": "gun_and_righthand",
+          "parent": "root",
+          "pivot": [
+            0,
+            6,
+            0
+          ]
+        },
+        {
+          "name": "gun",
+          "parent": "gun_and_righthand",
+          "pivot": [
+            0,
+            9,
+            -9
+          ]
+        },
+        {
+          "name": "head",
+          "parent": "gun",
+          "pivot": [
+            0,
+            9,
+            -9
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2.5,
+                7,
+                -12
+              ],
+              "size": [
+                5,
+                4,
+                5
+              ],
+              "uv": [
+                20,
+                0
+              ]
+            },
+            {
+              "origin": [
+                -1.5,
+                7.02,
+                -13
+              ],
+              "size": [
+                3,
+                2,
+                2
+              ],
+              "uv": [
+                0,
+                22
+              ]
+            }
+          ]
+        },
+        {
+          "name": "head3",
+          "parent": "head",
+          "pivot": [
+            -1.5,
+            11.5,
+            -8
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                11,
+                -9
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": [
+                0,
+                26
+              ]
+            }
+          ]
+        },
+        {
+          "name": "head2",
+          "parent": "head",
+          "pivot": [
+            1.5,
+            11.5,
+            -8
+          ],
+          "cubes": [
+            {
+              "origin": [
+                1,
+                11,
+                -9
+              ],
+              "size": [
+                1,
+                1,
+                2
+              ],
+              "uv": [
+                28,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "body",
+          "parent": "gun",
+          "pivot": [
+            0,
+            7,
+            1
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2,
+                -1,
+                -2
+              ],
+              "size": [
+                4,
+                16,
+                6
+              ],
+              "uv": [
+                0,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "name": "front",
+          "parent": "gun",
+          "pivot": [
+            1.1,
+            9.9,
+            -5
+          ]
+        },
+        {
+          "name": "front_left_leg",
+          "parent": "front",
+          "pivot": [
+            1.1,
+            9.9,
+            -5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                0.1,
+                -0.1,
+                -5
+              ],
+              "size": [
+                2,
+                10,
+                2
+              ],
+              "uv": [
+                20,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "front_right_leg",
+          "parent": "front",
+          "pivot": [
+            -1.1,
+            9.9,
+            -5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2.1,
+                -0.1,
+                -5
+              ],
+              "size": [
+                2,
+                10,
+                2
+              ],
+              "uv": [
+                20,
+                9
+              ]
+            }
+          ]
+        },
+        {
+          "name": "back",
+          "parent": "gun",
+          "pivot": [
+            1.1,
+            6,
+            5
+          ]
+        },
+        {
+          "name": "back_left_leg",
+          "parent": "back",
+          "pivot": [
+            1.1,
+            6,
+            5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                0.1,
+                0,
+                6
+              ],
+              "size": [
+                2,
+                6,
+                2
+              ],
+              "uv": [
+                20,
+                21
+              ]
+            }
+          ]
+        },
+        {
+          "name": "back_right_leg",
+          "parent": "back",
+          "pivot": [
+            -1.1,
+            6,
+            5
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -2.1,
+                0,
+                6
+              ],
+              "size": [
+                2,
+                6,
+                2
+              ],
+              "uv": [
+                20,
+                21
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tail",
+          "parent": "gun",
+          "pivot": [
+            0,
+            8.5,
+            8
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -0.5,
+                0.5,
+                8
+              ],
+              "size": [
+                1,
+                8,
+                1
+              ],
+              "uv": [
+                10,
+                22
+              ]
+            }
+          ]
+        },
+        {
+          "name": "tail2",
+          "parent": "gun",
+          "pivot": [
+            0,
+            8.5,
+            16
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "cubes": [
+            {
+              "origin": [
+                -0.5,
+                0.5,
+                16
+              ],
+              "size": [
+                1,
+                8,
+                1
+              ],
+              "uv": [
+                14,
+                22
+              ]
+            }
+          ]
+        },
+        {
+          "name": "righthand",
+          "parent": "gun_and_righthand",
+          "pivot": [
+            6,
+            19,
+            0
+          ]
+        },
+        {
+          "name": "righthand_pos",
+          "parent": "righthand",
+          "pivot": [
+            0,
+            8,
+            0
+          ]
+        },
+        {
+          "name": "camera",
+          "pivot": [
+            3.5,
+            14.375,
+            13.9875
+          ]
+        },
+        {
+          "name": "muzzle_anchor",
+          "pivot": [
+            0,
+            8,
+            -13
+          ]
+        },
+        {
+          "name": "right_hand_anchor",
+          "parent": "righthand",
+          "pivot": [
+            6,
+            20,
+            0
+          ]
+        },
+        {
+          "name": "left_hand_anchor",
+          "parent": "lefthand",
+          "pivot": [
+            -6.11559,
+            20.00194,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -19,6 +19,9 @@ public record MaintenanceViewProfile(float scale,double offsetX,double offsetY,d
             DEFAULT,
 
             "apocalypse_firstlight:hr55",
+            DEFAULT,
+
+            "apocalypse_firstlight:cat",
             DEFAULT
     );
     public static MaintenanceViewProfile of(ItemStack stack){return stack.getItem() instanceof NativeGunItem gun

@@ -157,6 +157,7 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.P9_01.get());
                         output.accept(AflItems.BR51_01.get());
                         output.accept(AflItems.HR55.get());
+                        output.accept(AflItems.CAT.get());
                         output.accept(AflItems.CROWBAR.get());
                         output.accept(AflItems.ROUND_9MM.get());
                         output.accept(AflItems.ROUND_762MM.get());

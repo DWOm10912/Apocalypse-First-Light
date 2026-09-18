@@ -223,5 +223,20 @@
   "hr55_put_away": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/hr55/put_away", "stream": false}]
   },
+  "cat_fire": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/fire", "stream": false}]
+  },
+  "cat_reload": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/reload", "stream": false}]
+  },
+  "cat_inspect": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/inspect", "stream": false}]
+  },
+  "cat_draw": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/draw", "stream": false}]
+  },
+  "cat_put_away": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/cat/put_away", "stream": false}]
+  },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }
