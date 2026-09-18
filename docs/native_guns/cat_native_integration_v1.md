@@ -12,4 +12,6 @@ The source-only `lefthand_pos` and `righthand_pos` proxy cubes and the hidden `c
 
 C.A.T refuses insertion into the Gun Maintenance Table. The maintenance screen displays the localized message `message.apocalypse_firstlight.cat.maintenance_refused` above its hotbar without sending an insertion request, while the server independently rejects any bypassed request before removing the stack. The gun and all attachments remain untouched. Other native guns retain the existing maintenance behavior.
 
+C.A.T selects the generic `argb_gradient` trail preset in its native-gun JSON. A successful shot renders one spatially subdivided ribbon whose HSV hue advances continuously from tail to head while vertex alpha rises from transparent tail to bright head; raster interpolation keeps each subdivision continuous. The existing per-shot `shotId` offsets the starting hue by 1/12 turn per shot. This is client presentation only: the authoritative endpoint, hitscan, damage, range, spread, recoil, noise, ammo, and fire mode are unchanged. Other trail presets retain their existing single-color renderer path.
+
 Verification for this integration is limited to `compileJava` and `processResources`; no graphical client validation is claimed.

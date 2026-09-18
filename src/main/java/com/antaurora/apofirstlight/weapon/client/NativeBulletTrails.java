@@ -17,24 +17,26 @@ import net.minecraftforge.fml.common.Mod;
 import software.bernie.geckolib.animatable.GeoItem;
 
 import java.util.ArrayDeque;
+import java.awt.Color;
 
 /** One server result, one rendered muzzle, one short-lived local ribbon. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeBulletTrails {
     public static final int MAX_ACTIVE_TRAILS = 128;
+    private static final int GRADIENT_SEGMENTS = 16;
     private static final ArrayDeque<Pending> PENDING = new ArrayDeque<>();
     private static final ArrayDeque<Trail> ACTIVE = new ArrayDeque<>();
     private static ClientLevel world;
-    private record Pending(int shooter, long gun, Vec3 end, NativeTrailProfile profile, double received) {}
-    private record Trail(Vec3 start, Vec3 direction, double distance, NativeTrailProfile profile, double born) {}
+    private record Pending(int shooter, long gun, Vec3 end, NativeTrailProfile profile, long shotId, double received) {}
+    private record Trail(Vec3 start, Vec3 direction, double distance, NativeTrailProfile profile, long shotId, double born) {}
     private NativeBulletTrails() {}
-    public static void snapshot(Vec3 origin,Vec3 end,NativeTrailProfile profile){
-        checkWorld();if(world==null||profile.mode()!=NativeTrailProfile.Mode.SUBTLE)return;
+    public static void snapshot(Vec3 origin,Vec3 end,NativeTrailProfile profile,long shotId){
+        checkWorld();if(world==null||!enabled(profile))return;
         Vec3 delta=end.subtract(origin);double distance=delta.length();
         if(!Double.isFinite(distance)||distance<=Math.max(.20,profile.hideDistance())||distance>128)return;
         Vec3 direction=delta.scale(1/distance);
         if(ACTIVE.size()>=MAX_ACTIVE_TRAILS)ACTIVE.removeFirst();
-        ACTIVE.addLast(new Trail(origin.add(direction.scale(.20)),direction,distance-.20,profile,now()));
+        ACTIVE.addLast(new Trail(origin.add(direction.scale(.20)),direction,distance-.20,profile,shotId,now()));
     }
     private static double now() { return world.getGameTime() + Minecraft.getInstance().getFrameTime(); }
     private static void checkWorld() {
@@ -42,16 +44,16 @@ public final class NativeBulletTrails {
         if (current != world) { world = current; PENDING.clear(); ACTIVE.clear(); }
         if (world != null) PENDING.removeIf(p -> now() - p.received > 3);
     }
-    public static void shot(int shooter, long gun, Vec3 end) {
+    public static void shot(int shooter, long gun, Vec3 end, long shotId) {
         checkWorld();
         if (world == null || !NativeTrailGeometry.finite(end)
                 || !(world.getEntity(shooter) instanceof LivingEntity entity)
                 || !(entity.getMainHandItem().getItem() instanceof NativeGunItem item)
                 || GeoItem.getId(entity.getMainHandItem()) != gun) return;
         var profile = item.definition().trail();
-        if (profile.mode() != NativeTrailProfile.Mode.SUBTLE) return;
+        if (!enabled(profile)) return;
         if (PENDING.size() >= MAX_ACTIVE_TRAILS) PENDING.removeFirst();
-        PENDING.addLast(new Pending(shooter, gun, end, profile, now()));
+        PENDING.addLast(new Pending(shooter, gun, end, profile, shotId, now()));
     }
     private static boolean matches(Pending p, long gun, boolean firstPerson) {
         var mc = Minecraft.getInstance();
@@ -80,7 +82,7 @@ public final class NativeBulletTrails {
             // No eye fallback for missing anchors; also reject implausible/stale coordinates.
             if (!Double.isFinite(distance) || distance <= p.profile.hideDistance() || distance > 128) continue;
             if (ACTIVE.size() >= MAX_ACTIVE_TRAILS) ACTIVE.removeFirst();
-            ACTIVE.addLast(new Trail(origin, delta.scale(1 / distance), distance, p.profile,
+            ACTIVE.addLast(new Trail(origin, delta.scale(1 / distance), distance, p.profile, p.shotId,
                     now + barrelDistance / p.profile.speed()));
         }
     }
@@ -102,10 +104,17 @@ public final class NativeBulletTrails {
             Vec3 head = t.start.add(t.direction.scale(segment.head()));
             Vec3 tail = t.start.add(t.direction.scale(segment.tail()));
             Vec3 side = NativeTrailGeometry.side(t.direction, camera.subtract(head.add(tail).scale(.5)));
-            ribbon(out, pose, head.subtract(camera), tail.subtract(camera), side,
-                    t.profile.outerWidth(), t.profile.outerColor(), t.profile.outerAlpha() * segment.alpha());
-            ribbon(out, pose, head.subtract(camera), tail.subtract(camera), side,
-                    t.profile.coreWidth(), t.profile.coreColor(), t.profile.coreAlpha() * segment.alpha());
+            if(t.profile.mode()==NativeTrailProfile.Mode.ARGB_GRADIENT){
+                gradientRibbon(out,pose,head.subtract(camera),tail.subtract(camera),side,
+                        t.profile.outerWidth(),t.profile.outerAlpha()*segment.alpha(),t.shotId);
+                gradientRibbon(out,pose,head.subtract(camera),tail.subtract(camera),side,
+                        t.profile.coreWidth(),t.profile.coreAlpha()*segment.alpha(),t.shotId);
+            }else{
+                ribbon(out, pose, head.subtract(camera), tail.subtract(camera), side,
+                        t.profile.outerWidth(), t.profile.outerColor(), t.profile.outerAlpha() * segment.alpha());
+                ribbon(out, pose, head.subtract(camera), tail.subtract(camera), side,
+                        t.profile.coreWidth(), t.profile.coreColor(), t.profile.coreAlpha() * segment.alpha());
+            }
         }
         buffers.endBatch(TrailType.TYPE);
     }
@@ -116,6 +125,24 @@ public final class NativeBulletTrails {
         vertex(out, pose, head.subtract(offset), color, alpha);
         vertex(out, pose, head.add(offset), color, alpha);
         vertex(out, pose, tail.add(offset), color, alpha);
+    }
+    private static void gradientRibbon(VertexConsumer out,PoseStack pose,Vec3 head,Vec3 tail,Vec3 side,
+                                       double width,double alpha,long shotId){
+        Vec3 offset=side.scale(width/2);float phase=(float)Math.floorMod(shotId,12)/12.0F;
+        for(int i=0;i<GRADIENT_SEGMENTS;i++){
+            double a=(double)i/GRADIENT_SEGMENTS,b=(double)(i+1)/GRADIENT_SEGMENTS;
+            Vec3 p0=tail.lerp(head,a),p1=tail.lerp(head,b);
+            int c0=Color.HSBtoRGB((phase+(float)(a*5.0/6.0))%1.0F,1.0F,1.0F);
+            int c1=Color.HSBtoRGB((phase+(float)(b*5.0/6.0))%1.0F,1.0F,1.0F);
+            vertex(out,pose,p0.subtract(offset),c0,alpha*a);
+            vertex(out,pose,p1.subtract(offset),c1,alpha*b);
+            vertex(out,pose,p1.add(offset),c1,alpha*b);
+            vertex(out,pose,p0.add(offset),c0,alpha*a);
+        }
+    }
+    private static boolean enabled(NativeTrailProfile profile){
+        return profile.mode()==NativeTrailProfile.Mode.SUBTLE
+                ||profile.mode()==NativeTrailProfile.Mode.ARGB_GRADIENT;
     }
     private static void vertex(VertexConsumer out, PoseStack pose, Vec3 p, int color, double alpha) {
         out.vertex(pose.last().pose(), (float)p.x, (float)p.y, (float)p.z)

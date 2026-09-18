@@ -46,7 +46,7 @@
     "hud": {"width": 60, "height": 20},
     "mag_in_tick": 55,
     "empty_mag_in_tick": 55,
-    "trail": "subtle_rifle"
+    "trail": "argb_gradient"
   },
   "recoil": {
     "verticalMin": 0.28,

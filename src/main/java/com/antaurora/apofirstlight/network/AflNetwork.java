@@ -199,7 +199,7 @@ public final class AflNetwork {
                     () -> () -> {
                         if(!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(p.shooterId,p.gunId,p.shotId,p.shotEnd)){
                             com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
-                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd,p.shotId);
                         }
                     }));
             context.setPacketHandled(true);
@@ -217,7 +217,7 @@ public final class AflNetwork {
                         var player=net.minecraft.client.Minecraft.getInstance().player;
                         if(player!=null&&!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(player.getId(),p.gunId,p.shotId,p.shotEnd)){
                             com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(player.getId(),p.gunId);
-                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(player.getId(),p.gunId,p.shotEnd);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(player.getId(),p.gunId,p.shotEnd,p.shotId);
                         }
                         com.antaurora.apofirstlight.weapon.client.NativeGunRecoil.confirmedShot(p.slot, p.gunId);
                     }));

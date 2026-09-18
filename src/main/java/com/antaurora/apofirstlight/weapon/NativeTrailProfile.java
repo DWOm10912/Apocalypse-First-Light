@@ -4,15 +4,18 @@ package com.antaurora.apofirstlight.weapon;
 public record NativeTrailProfile(Mode mode, double speed, double length, double coreWidth,
                                  double outerWidth, int coreColor, int outerColor,
                                  double coreAlpha, double outerAlpha, double hideDistance) {
-    public enum Mode { NONE, SUBTLE, TRACER }
+    public enum Mode { NONE, SUBTLE, ARGB_GRADIENT, TRACER }
     public static final NativeTrailProfile SUBTLE_PISTOL = new NativeTrailProfile(
             Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
     public static final NativeTrailProfile SUBTLE_RIFLE = new NativeTrailProfile(
             Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
+    public static final NativeTrailProfile ARGB_GRADIENT = new NativeTrailProfile(
+            Mode.ARGB_GRADIENT, 18, 3, .020, .048, 0xFFFFFF, 0xFFFFFF, .90, .18, .40);
     public static NativeTrailProfile preset(String name) {
         return switch (name) {
             case "subtle_pistol" -> SUBTLE_PISTOL;
             case "subtle_rifle" -> SUBTLE_RIFLE;
+            case "argb_gradient" -> ARGB_GRADIENT;
             default -> throw new IllegalArgumentException("presentation.trail: unknown preset " + name);
         };
     }

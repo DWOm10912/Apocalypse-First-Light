@@ -64,7 +64,7 @@ public final class NativeShotVisualSnapshot {
         if(s==null||!NativeTrailGeometry.finite(end)||(s.gun()!=0&&s.gun()!=gun)
                 ||!(mc.player.getMainHandItem().getItem() instanceof NativeGunItem item))return true;
         if(GeoItem.getId(mc.player.getMainHandItem())!=gun)return true;
-        NativeBulletTrails.snapshot(s.muzzle(),end,item.definition().trail());
+        NativeBulletTrails.snapshot(s.muzzle(),end,item.definition().trail(),id);
         NativeGunFx.frozen(s,shooter,gun);
         if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FX_QUEUED",id,"muzzle="+s.muzzle()+" direction="+s.barrelDirection()+" suppressed="+s.suppressed());
         lastConfirmed=id;
