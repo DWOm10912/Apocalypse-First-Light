@@ -29,10 +29,6 @@ public final class ConfiguredNativeGunItem extends Item implements NativeGunItem
     }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
-    @Override public net.minecraft.sounds.SoundEvent fireSound() {
-        return Objects.requireNonNull(net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(
-                new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", profile.id() + "_fire")));
-    }
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
     @Override public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition());

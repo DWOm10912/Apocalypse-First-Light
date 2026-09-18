@@ -10,6 +10,8 @@
 - `src/main/resources/data/apocalypse_firstlight/native_guns/br51_01.json`：`apocalypse_firstlight:br51_01`
 - datapack 使用同样的 `data/<namespace>/native_guns/<id>.json` 路径覆盖；一枪一份完整定义，不做字段合并。
 - Item 仍由 AflItems 注册，运行中的 Item 按 ID 查询 NativeGunData；NativeGunDefinition 的 DEV 默认常量也从打包 JSON 读取，不是运行时缓存入口。
+- 每份定义现在必须声明 `weapon_class`，公共框架不再根据 `p9_01` / `br51_01` 等 Registry ID 猜测类型。HUD、装匣节点、trail 与 ADS 使用类型默认值加单枪 JSON 覆盖；P9/BR51 的既有数值已显式冻结在各自 JSON。
+- `fire_sound` 与 `dry_fire_sound` 为必填声音 ID；普通开火不再由物品类拼接名称或回退到 P9 声音。
 
 ## Schema
 

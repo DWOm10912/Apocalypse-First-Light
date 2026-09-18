@@ -51,6 +51,6 @@ bone 状态、动作、原始弧度、映射角度、scale 和 applied 状态。
 开发客户端已启动并进入测试世界；实际日志确认 draw、reload_tactical、reload_empty
 取得非零 camera rotation 并应用到 Camera 事件。此证据不代表轴向/观感已经验收。
 早期 Camera V1 用户反馈：当时检视交互尚未实装，其他效果没问题。随后 Inspect V1 已增加检视按键/交互；
-已有 `P901Actions.operation` 的 inspect 处理和资产轨道不等于正式检视交互已交付。
+已有 `NativeGunActions.operation` 的 inspect 处理和资产轨道不等于正式检视交互已交付。
 待逐项确认：异常中断/换枪回零、第三人称切换、非 BR51/非枪、死亡/重生、
 界面返回、ADS 前后、结束后射击。不将源码检查、构建通过或笼统观感认可记作整个矩阵 PASS。

@@ -22,7 +22,7 @@ final class LegacyAttachmentFixture {
                 &&ItemStack.matches(p.getMainHandItem(),gun)&&ItemStack.matches(p.getOffhandItem(),offhand);
     }
     public static boolean exchange(ServerPlayer p){
-        if(!p.isAlive()||p.isSpectator()||P901Actions.busy(p)||p.containerMenu!=p.inventoryMenu||!gesture(p))return false;
+        if(!p.isAlive()||p.isSpectator()||NativeGunActions.busy(p)||p.containerMenu!=p.inventoryMenu||!gesture(p))return false;
         var gun=p.getMainHandItem();var off=p.getOffhandItem();
         Slot slot=off.isEmpty()?detachSlot(gun):((NativeAttachment)off.getItem()).slot();
         var old=stored(gun,slot);

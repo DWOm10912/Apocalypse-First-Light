@@ -5,7 +5,7 @@ import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import net.minecraft.client.Minecraft;
 import software.bernie.geckolib.animatable.GeoItem;
 
-/** Input intent only. Playback, duration, lock and sync remain in P901Actions/GeckoLib. */
+/** Input intent only. Playback, duration, lock and sync remain in NativeGunActions/GeckoLib. */
 public final class NativeGunInspect {
     private static boolean isInspect(String action) {
         return "inspect".equals(action) || "inspect_empty".equals(action);

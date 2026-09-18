@@ -2,7 +2,7 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflItems;
-import com.antaurora.apofirstlight.weapon.P901Actions;
+import com.antaurora.apofirstlight.weapon.NativeGunActions;
 import com.antaurora.apofirstlight.weapon.P901Item;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.Minecraft;
@@ -41,7 +41,7 @@ public final class NativeGunRuntimeSmokeCheck {
             check(EasingType.fromString("afl_hold") != EasingType.LINEAR, "registered hold easing");
             check(EasingType.fromString("afl_hold").buildTransformer(null).apply(0.99) == 0, "hold until endpoint");
             for (boolean reload : new boolean[]{false, true}) {
-                String name = P901Actions.animationName(reload);
+                String name = NativeGunActions.animationName(reload);
                 FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
                 try {
                     new StopTriggeredSingletonAnimPacket("afl-smoke", 123L, P901Item.CONTROLLER, name).encode(buffer);

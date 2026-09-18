@@ -1,6 +1,6 @@
 # Native Gun 每发动画重触发与最后一发挂机 V1
 
-P9-01 与 BR51-01 的成功射击仍由服务端 `P901Actions.request` 统一验证。只有 `NativeGunAmmo.consumeOne` 成功后才产生动画、弹道和射击通知；客户端不自行猜测弹药或最后一发。
+P9-01 与 BR51-01 的成功射击仍由服务端 `NativeGunActions.request` 统一验证。只有 `NativeGunAmmo.consumeOne` 成功后才产生动画、弹道和射击通知；客户端不自行猜测弹药或最后一发。
 
 GeckoLib 4.7.4 的同名 trigger 在控制器仍播放时不会自行回到 0 秒。共享射击路径因此在每次成功射击时，使用 GeckoLib 原生 `stopTriggeredAnim` 后立即 `triggerAnim`，强制当前 `shoot` 从机械后座起点重新开始。已结束且达到武器 `fireIntervalTicks` 的旧射击 session 可以被新射击替换；reload、inspect、draw 等动作锁不受影响。
 

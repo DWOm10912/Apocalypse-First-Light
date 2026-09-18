@@ -59,8 +59,7 @@ public final class NativeCameraBoneConsumer {
                 || !mc.isWindowActive() || !mc.options.getCameraType().isFirstPerson()
                 || event.getCamera().getEntity() != player) return;
         var stack = player.getMainHandItem();
-        if (!(stack.getItem() instanceof NativeGunItem gun)
-                || !("br51_01".equals(gun.animationAsset()) || "p9_01".equals(gun.animationAsset()))) return;
+        if (!(stack.getItem() instanceof NativeGunItem gun) || gun.animationAsset() == null) return;
         long id = GeoItem.getId(stack);
         if (id == Long.MAX_VALUE) return;
         if (!(IClientItemExtensions.of(stack).getCustomRenderer() instanceof GeoItemRenderer<?> renderer)) return;

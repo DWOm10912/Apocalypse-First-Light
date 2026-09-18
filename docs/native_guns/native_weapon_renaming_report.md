@@ -28,7 +28,7 @@ BR51-01当前美术原型参考M14。正式设定7.62×51mm，当前实现仍复
 - 本地化：item.apocalypse_firstlight.p9_01 / br51_01，tooltip/subtitle同步。
 - 源：src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel、br51_01.bbmodel。
 - P901* Java类替代ServicePistol*；注册/definition常量为P9_01、BR51_01；BR5101CombatGameTests同步。
-- 通用NativeGun*类保留；P901Actions等历史公共入口仅改名，不重写业务。
+- 通用NativeGun*类保留；NativeGunActions等历史公共入口仅改名，不重写业务。
 - tools专属导出/校准/白版/图标脚本和docs专属文件同步命名及链接。
 
 外部原始目录E:/Download/合集/M14不修改；migrate-br51_01.mjs显式读取历史文件名，加载时转换模型命名。

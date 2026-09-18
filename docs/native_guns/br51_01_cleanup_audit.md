@@ -24,12 +24,12 @@
 
 - `src/main/java/com/antaurora/apofirstlight/registry/AflItems.java:17` 只注册 P9-01 Service Pistol 原生枪械（以及撬棍、弹药等），没有 BR51_01。
 - `src/main/java/com/antaurora/apofirstlight/weapon/NativeGunDefinition.java:19` 仅 P9_01 静态定义，无 BR51_01、xmag 或可扫描外部枪包的注册表。
-- `weapon/P901Actions.java:54–95`（包目录 `src/main/java/com/antaurora/apofirstlight/`）入口要求 instanceof P901Item；状态由 ammo/reload 决定，触发 fire、fire_last_round、reload、reload_empty。没有 inspect/draw/holster/xmag 请求。
+- `weapon/NativeGunActions.java:54–95`（包目录 `src/main/java/com/antaurora/apofirstlight/`）入口要求 instanceof P901Item；状态由 ammo/reload 决定，触发 fire、fire_last_round、reload、reload_empty。没有 inspect/draw/holster/xmag 请求。
 - `weapon/P901Item.java:57–62` 显式映射到 animation.p9_01.*。同目录 `P901AnimationController.java:20–21` 在空仓静止时循环 empty_idle；Ready 是静态姿势，并非加载 static_idle 名称。
 - `weapon/client/P901Model.java:10–19` 明确加载 `apocalypse_firstlight:geo/p9_01.geo.json`、`textures/item/p9_01.png`、`animations/p9_01.animation.json`。无由物品ID推导任意 BR51_01 文件名的加载路线。
 - `weapon/client/P901Renderer.java:14–19` rig 为 gun_model_root/right_hand_anchor/left_hand_anchor/fp_root，`P901HandLayer.java:30–33` 读取左右 locator 世界矩阵。NativeGunRig 是显式字符串记录，不是旧枪包自动适配器。
 - `weapon/client/NativeGunFxLayer.java:22` 仅赋予 muzzle_anchor/ejection_anchor 语义。旧 muzzle_pos/shell 不会自动映射。
-- `weapon/P901Actions.java:71,95,117,123,127` 主动调用 AFL 干击、开火、退匣、插匣、拉套筒声音；`registry/AflSounds.java` 与 `src/main/resources/assets/apocalypse_firstlight/sounds.json` 没有 BR51_01/WEMQL 注册。
+- `weapon/NativeGunActions.java:71,95,117,123,127` 主动调用 AFL 干击、开火、退匣、插匣、拉套筒声音；`registry/AflSounds.java` 与 `src/main/resources/assets/apocalypse_firstlight/sounds.json` 没有 BR51_01/WEMQL 注册。
 - 在 main Java 未找到 setSoundKeyframeHandler / soundKeyframe 注册。因此不能宣称原 sound_effects 已由 Native 执行。不能仅凭 GeckoLib 能解析键帧就认定事件可到达。
 - `build.gradle` 保留可选的 **dev runtimeOnly** TaCZ 对比模组坐标，但默认开发环境不再加载；只有显式传入 `-PaflWithTacz` 且未传入 `-PaflWithoutTacz` 时才启用。它不是 BR51_01 Native API 依赖；main Java 无 TaCZ import，未恢复集成。
 

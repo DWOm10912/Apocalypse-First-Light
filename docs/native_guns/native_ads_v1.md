@@ -6,7 +6,7 @@
 
 P9-01 / BR51-01 共用 `weapon/client/NativeGunAds.java`，按住 Vanilla `keyUse`（默认右键）请求 ADS，松开退出。不是 toggle，不新增网络消息、射击代码、散布奖励、配件或 TaCZ 依赖。
 
-当前 `P901Input` 只拦截左键攻击，R为换弹；物品未覆写右键use。ADS不取消任何右键事件，门、按钮、实体与方块原交互仍可执行；菜单打开、持续使用物品时阻止ADS。瞬时交互（例如开门）不被ADS吞掉，也没有另写交互白名单。实际交互回归仍待完成。
+当前 `NativeGunInput` 只拦截左键攻击，R为换弹；物品未覆写右键use。ADS不取消任何右键事件，门、按钮、实体与方块原交互仍可执行；菜单打开、持续使用物品时阻止ADS。瞬时交互（例如开门）不被ADS吞掉，也没有另写交互白名单。实际交互回归仍待完成。
 
 ## 进度与生命周期
 
@@ -20,7 +20,7 @@ Sprint禁止进入ADS，已ADS时疾跑按原退出时长平滑退出；停止�
 
 本轮已为BR51新增机瞄底座和前准星柱。BR51以实际后照门 `octagon9` 的中心X=0、Y=13.6875为瞄轴，沿用Z=15.46875作为眼距参考。旧 `iron_view` 的Y=14.8是辅助镜头定位，不是实际孔中心，首轮实机明显偏低，已停止使用该高度。前后瞄具是否完全共线尚待新版实机确认。当前 Artist P9 的 `rear_sight` pivot 为 `[0.0037,5.96718,2.94939]`、`front_sight` 为 `[0.0037,5.96718,-6.22661]`（Gecko模型单位）；当前 ADS 仍通过 P9 专属 profile 解算整枪视图，不改变瞄具/手臂骨骼。`iron_view` 不参与该解算。核对当前Gecko加载器：pivot X反号，rotation X/Y反号。
 
-集中配置：`weapon/client/NativeAdsProfile.java`。所有坐标均是模型单位/16，物理相机位置不动。
+配置来源现为每枪 `native_guns` JSON 的 `ads.profile`，由客户端 `NativeAdsProfile` 仅负责矩阵解算；类型默认值位于 `NativeAdsCalibration`，不再按武器 ID 分支。P9/BR51 当前接受数值已原样写入各自 JSON。所有坐标均是模型单位/16，物理相机位置不动。
 
 | 参数 | BR51-01 | P9-01 |
 | --- | --- | --- |

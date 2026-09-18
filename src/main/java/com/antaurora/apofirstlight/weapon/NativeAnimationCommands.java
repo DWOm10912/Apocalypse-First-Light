@@ -58,7 +58,7 @@ public final class NativeAnimationCommands {
                             return 1;
                         }))));
         e.getDispatcher().register(Commands.literal("afl").then(Commands.literal("gun_inspect")
-                .executes(c -> P901Actions.operation(c.getSource().getPlayerOrException(), "inspect") ? 1 : 0)));
+                .executes(c -> NativeGunActions.operation(c.getSource().getPlayerOrException(), "inspect") ? 1 : 0)));
     }
     @SubscribeEvent public static void tick(TickEvent.ServerTickEvent e) {
         if(e.phase!=TickEvent.Phase.END)return;

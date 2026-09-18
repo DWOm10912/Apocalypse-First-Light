@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 
 /** V0.6 stack-local magazine; GeckoLibID remains render identity only. */
 public final class P901Item extends Item implements GeoItem, NativeGunItem {
-    public static final String CONTROLLER = "action";
+    public static final String CONTROLLER = NativeGunItem.ACTION_CONTROLLER;
 
     @Override
     public NativeGunDefinition definition() { return NativeGunData.get(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","p9_01")); }

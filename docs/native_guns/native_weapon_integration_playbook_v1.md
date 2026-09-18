@@ -6,7 +6,7 @@
 
 ## 1. Scope and Definitions
 
-**AFL Native Gun** 是实现 `weapon/NativeGunItem.java`、由 `P901Actions` 执行服务端权威射击/换弹动作、由 `NativeGunData` 提供枪械定义，并使用 AFL 自有 GeckoLib 渲染、ADS、后坐、Noise、耳鸣、附件和维护台链路的物品。它不是 TaCZ 枪，也不是普通 `Item` 加一张模型。
+**AFL Native Gun** 是实现 `weapon/NativeGunItem.java`、由 `NativeGunActions` 执行服务端权威射击/换弹动作、由 `NativeGunData` 提供枪械定义，并使用 AFL 自有 GeckoLib 渲染、ADS、后坐、Noise、耳鸣、附件和维护台链路的物品。它不是 TaCZ 枪，也不是普通 `Item` 加一张模型。
 
 “新增已存在类型武器”指：射击模式、供弹语义、动作状态和附件槽位均已由当前公共链支持，只新增一套 ID、资产、声音、数据和每枪视觉校准。例如下一把**弹匣供弹的半自动步枪**可复用 BR51-01 路线。
 
@@ -27,7 +27,7 @@
 |---|---|---|
 | 类型 | 半自动制式手枪 | 半自动战斗步枪 |
 | 注册/生产 Item | YES；专用 `P901Item` | YES；通用 `ConfiguredNativeGunItem` |
-| 服务端开火 | YES；`P901Input → AflNetwork → P901Actions → NativeGunShot` | YES；同一公共链 |
+| 服务端开火 | YES；`NativeGunInput → AflNetwork → NativeGunActions → NativeGunShot` | YES；同一公共链 |
 | Ammo/Magazine | 9×19mm，17 发；可装 24 发扩容匣 | 7.62×51mm，20 发；可装 35 发扩容匣 |
 | Tactical / Empty reload | YES / YES；P9 空仓提交有 2 tick 专用提前量 | YES / YES；按动画长度锁定 |
 | ADS | YES；专用 pistol profile；机械/红点 | YES；rifle profile；机械/红点 |
@@ -60,7 +60,7 @@ OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
   → data/<namespace>/native_guns/<weapon>.json
   → NativeGunData → NativeGunDefinition
   → NativeAnimatedWeaponRenderer / first-person event
-  → P901Input → AflNetwork → P901Actions
+  → NativeGunInput → AflNetwork → NativeGunActions
   → NativeGunAmmo → NativeGunShot
   → NativeStanceAccuracy / NativeGunRecoil / NativeGunAds
   → AflSounds + NativeGunAnimations cues
@@ -75,8 +75,8 @@ OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
 
 - 注册：`src/main/java/com/antaurora/apofirstlight/registry/AflItems.java`
 - 通用生产 Item：`weapon/ConfiguredNativeGunItem.java`；接口：`weapon/NativeGunItem.java`
-- 战斗/动作锁：`weapon/P901Actions.java`（类名是历史名，实际服务所有 `NativeGunItem`）
-- 输入：`weapon/client/P901Input.java`；V 当前是 Inspect，不是配件安装。
+- 战斗/动作锁：`weapon/NativeGunActions.java`（类名是历史名，实际服务所有 `NativeGunItem`）
+- 输入：`weapon/client/NativeGunInput.java`；V 当前是 Inspect，不是配件安装。
 - 数据：`src/main/resources/data/apocalypse_firstlight/native_guns/<id>.json`；loader：`weapon/NativeGunData.java`
 - 弹药：`weapon/NativeGunAmmo.java`；命中：`weapon/NativeGunShot.java`
 - 渲染：`weapon/client/NativeAnimatedWeaponRenderer.java`；P9 特例为 `P901Renderer.java`
@@ -140,12 +140,12 @@ OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
 | `inspect_empty` | P9-SPECIFIC | P9 按弹量选择；通用配置枪不会自动选择 |
 | bolt/pump/action | NOT IMPLEMENTED | 不能只加动画名冒充机制 |
 
-声音 marker 位于 animation JSON 的 `sound_effects`。`P901Actions` 只在 reload/operation 会话消费 cue；开火声由服务端成功射击路径单独播放，`shoot` marker 不会被消费，避免双播。
+声音 marker 位于 animation JSON 的 `sound_effects`。`NativeGunActions` 只在 reload/operation 会话消费 cue；开火声由服务端成功射击路径单独播放，`shoot` marker 不会被消费，避免双播。
 
 ### 4.5 Combat checklist
 
-- [ ] 左键输入由 `P901Input.attack` 拦截并以 `attackHeld` 做按下沿 gate；按住不会自动连发。
-- [ ] `P901Actions` 在服务端校验主手、槽位、动作锁、射速与弹量，成功后先扣弹再执行 hitscan。
+- [ ] 左键输入由 `NativeGunInput.attack` 拦截并以 `attackHeld` 做按下沿 gate；按住不会自动连发。
+- [ ] `NativeGunActions` 在服务端校验主手、槽位、动作锁、射速与弹量，成功后先扣弹再执行 hitscan。
 - [ ] `fire.interval_ticks` 最低间隔；理论 RPM=`1200 / interval_ticks`。P9 为 400 RPM，BR51 为 300 RPM。
 - [ ] 当前只有 `semi`，不是类别 enum；`NativeGunData.parse` 会拒绝其他 mode。
 - [ ] hitscan 从服务端眼位与 look vector 出发，使用 `NativeStanceAccuracy` 后的散布，射程为 `max_range`。
@@ -158,7 +158,7 @@ OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
 
 **TEMPLATE：`apocalypse_firstlight:br51_01`。**
 
-可以直接复用：`ConfiguredNativeGunItem`、`P901Input/P901Actions` 半自动 gate、NBT 弹量、库存备弹、两种换弹、hitscan/falloff/headshot、成功射击回包、recoil、Noise、耳鸣接口、三种附件槽、维护台交易、Tooltip 与通用 renderer。
+可以直接复用：`ConfiguredNativeGunItem`、`NativeGunInput/NativeGunActions` 半自动 gate、NBT 弹量、库存备弹、两种换弹、hitscan/falloff/headshot、成功射击回包、recoil、Noise、耳鸣接口、三种附件槽、维护台交易、Tooltip 与通用 renderer。
 
 必须新增：Registry Item；完整 native gun JSON；源/runtime 资产；枪声事件与 OGG；中英名称/描述；GUI/HUD 图；Creative Tab；必要的 ammo/casing/attachment 物品；`NativeAdsProfile.forGun` 条目；`MaintenanceViewProfile.PROFILES` 条目；`AflItems` 中新的 `ConfiguredNativeGunItem.Profile`。
 
@@ -279,7 +279,7 @@ Sprint 禁止进入 ADS，已 ADS 时平滑退出，停止 sprint 且仍按住 u
 ### 12.1 Weapon Foley / SFX
 
 - 注册：`registry/AflSounds.java`；映射：`assets/apocalypse_firstlight/sounds.json`；文件：`sounds/weapons/<weapon>/`。
-- 成功开火由 `P901Actions` 服务端播放 `item.fireSound()` 或 suppressed event。通用配置枪默认查找 `<profile.id>_fire`。
+- 成功开火由 `NativeGunActions` 服务端播放 `item.fireSound()` 或 suppressed event。通用配置枪默认查找 `<profile.id>_fire`。
 - dry-fire 是当前公共 P9 事件；无每枪配置。
 - reload/draw/put-away/inspect 的声音由 `NativeGunAnimations.cues` 从正式 animation JSON marker 转为服务端 tick cue。
 - P9 marker 有兼容映射；其他资产 marker 必须是合法完整 ResourceLocation。
@@ -336,8 +336,8 @@ Sprint 禁止进入 ADS，已 ADS 时平滑退出，停止 sprint 且仍按住 u
 | C02 PARTIAL | P9 左主手 ADS 比例/位置异常 | 左手 Display scale=.55，而 ADS profile scale=.45 | 对比 `_in_hand.json` 左右手 | P9 item model/Profile；不能影响 BR51 |
 | C03 PARTIAL | 新枪有模型但 ADS 完全不工作 | `NativeAdsProfile.forGun` 仅列 P9/BR51，未知 ID 返回 null | 搜 `forGun` | `NativeAdsProfile.java` |
 | C04 PARTIAL | 新步枪 HUD 尺寸、mag-in tick 或 trail 像手枪 | `NativeGunData` 以 ID==`br51_01` 硬编码 rifle presentation，trail 对所有枪固定 `SUBTLE_PISTOL` | 审查 parse 结果 | `NativeGunData.java`/schema 未来泛化 |
-| C05 PARTIAL | 新枪 dry-fire 听起来像 P9；无动画枪默认开火声也是 P9 | 公共 fallback 硬编码 P9 sound | 空仓与 `NativeGunItem.fireSound` | `P901Actions` / `NativeGunItem` |
-| C06 STALE | 旧文档写 protocol 22/23 或“V 快装配件” | 后续网络协议已到 26，V 已改 Inspect，旧 packet inert | 以 `AflNetwork` 与 `P901Input` 为准 | 旧专项文档，不作为新流程 |
+| C05 PARTIAL | 新枪 dry-fire 听起来像 P9；无动画枪默认开火声也是 P9 | 公共 fallback 硬编码 P9 sound | 空仓与 `NativeGunItem.fireSound` | `NativeGunActions` / `NativeGunItem` |
+| C06 STALE | 旧文档写 protocol 22/23 或“V 快装配件” | 后续网络协议已到 26，V 已改 Inspect，旧 packet inert | 以 `AflNetwork` 与 `NativeGunInput` 为准 | 旧专项文档，不作为新流程 |
 | C07 STALE | 旧 BR51 文档写“无消音器配件”或 Creative 也消耗备弹 | 当前 JSON 已有 rifle suppressor；`NativeGunAmmo` Creative reserve 无限 | JSON/当前 Java | 旧 `br51_01_native_combat_completion.md` 段落 |
 | C08 PARTIAL | 维护台显示比例错误或热点错位 | 未添加 profile 时静默回退 DEFAULT；骨架变更会令旧 center/anchor 失效 | 维护台四向/GUI scale/三槽 | `MaintenanceViewProfile`、runtime geo、mount JSON |
 | C09 PARTIAL | 动画存在但循环/声音/状态不符 | asset loop、controller 强制 once、服务端 cue 消费是三套规则；shoot marker不消费 | 检查 controller + runtime animation + `sounds.json` | Profile、animation JSON、`NativeGunAnimations` |
@@ -447,7 +447,7 @@ Sprint 禁止进入 ADS，已 ADS 时平滑退出，停止 sprint 且仍按住 u
 
 ### Step 6 — Fire / Semi-Auto `[VERIFY]`
 
-不新增第二套射击代码。验证 `P901Input` 按下沿、`P901Actions` cooldown/扣弹、`NativeGunShot` 命中。确认 `fire.mode=semi`，按住不连发，interval 对应目标 RPM。
+不新增第二套射击代码。验证 `NativeGunInput` 按下沿、`NativeGunActions` cooldown/扣弹、`NativeGunShot` 命中。确认 `fire.mode=semi`，按住不连发，interval 对应目标 RPM。
 
 ### Step 7 — Reload `[CALIBRATE + VERIFY]`
 

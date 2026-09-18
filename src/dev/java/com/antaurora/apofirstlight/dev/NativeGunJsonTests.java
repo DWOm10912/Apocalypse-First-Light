@@ -12,6 +12,26 @@ import java.util.concurrent.CompletableFuture;
 @GameTestHolder("apocalypse_firstlight")
 @PrefixGameTestTemplate(false)
 public class NativeGunJsonTests {
+    @GameTest(template="network_empty",batch="native_framework_generalization")
+    public static void classDrivenPresentation(GameTestHelper h) throws Exception {
+        var pistol=NativeGunData.parse(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","renamed_pistol_fixture"),read("p9_01"),false);
+        var rifle=NativeGunData.parse(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","renamed_rifle_fixture"),read("br51_01"),false);
+        h.assertTrue(pistol.weaponClass()==WeaponClass.PISTOL && pistol.hudWidth()==36 && pistol.hudHeight()==22
+                && pistol.magInTick()==19 && pistol.adsCalibration().ay()==5.80F,"Pistol presentation is data driven and frozen");
+        h.assertTrue(rifle.weaponClass()==WeaponClass.RIFLE && rifle.hudWidth()==60 && rifle.hudHeight()==12
+                && rifle.magInTick()==52 && rifle.adsCalibration().ay()==13.6875F,"Rifle presentation is data driven and frozen");
+        h.assertTrue(pistol.trail().equals(NativeTrailProfile.SUBTLE_PISTOL)
+                && rifle.trail().equals(NativeTrailProfile.SUBTLE_RIFLE),"Per-gun trail presets resolve");
+        var invalid=read("p9_01");invalid.addProperty("weapon_class","not_a_weapon_class");
+        try {
+            NativeGunData.parse(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","invalid_class_fixture"),invalid,false);
+            h.fail("Invalid weapon_class was accepted");
+        } catch (IllegalArgumentException expected) {
+            h.assertTrue(expected.getMessage().contains("weapon_class: unknown value"),"Invalid class has a clear error");
+        }
+        h.succeed();
+    }
+
     @GameTest(template="network_empty",batch="zz_native_json_reload",timeoutTicks=1200)
     public static void actualDatapackReload(GameTestHelper h) throws Exception {
         var server=h.getLevel().getServer();

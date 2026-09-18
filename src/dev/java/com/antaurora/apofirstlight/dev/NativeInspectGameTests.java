@@ -38,16 +38,16 @@ public final class NativeInspectGameTests {
         p.getInventory().setItem(1, new ItemStack(AflItems.ROUND_762MM.get(), 32));
         return p;
     }
-    private static void tick(ServerPlayer p) { P901Actions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, p)); }
+    private static void tick(ServerPlayer p) { NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END, p)); }
 
     public static void endNoMutationNoReplay(GameTestHelper h) {
         var p = player(h); var before = p.getMainHandItem().copy();
-        h.assertTrue(P901Actions.operation(p, "inspect"), "starts existing inspect");
-        h.assertTrue(!P901Actions.operation(p, "inspect"), "repeat does not restart");
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "starts existing inspect");
+        h.assertTrue(!NativeGunActions.operation(p, "inspect"), "repeat does not restart");
         int duration = NativeGunAnimations.ticks("br51_01", "inspect");
         h.runAfterDelay(duration, () -> {
             tick(p);
-            h.assertTrue(!P901Actions.busy(p), "formal animation duration clears lock");
+            h.assertTrue(!NativeGunActions.busy(p), "formal animation duration clears lock");
             h.assertTrue(ItemStack.matches(before, p.getMainHandItem()), "inspect changes no weapon data");
             h.assertTrue(p.getInventory().getItem(1).getCount() == 32, "no reserve consumption");
             h.succeed();
@@ -55,42 +55,42 @@ public final class NativeInspectGameTests {
     }
     public static void fireAndReloadPriority(GameTestHelper h) {
         var p = player(h);
-        h.assertTrue(P901Actions.operation(p, "inspect"), "inspect begins");
-        P901Actions.request(p, false, 0);
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "inspect begins");
+        NativeGunActions.request(p, false, 0);
         h.assertTrue(NativeGunAmmo.read(p.getMainHandItem(), NativeGunDefinition.BR51_01) == 9, "same fire click fires");
-        h.assertTrue(!P901Actions.operation(p, "inspect"), "fire blocks inspect");
+        h.assertTrue(!NativeGunActions.operation(p, "inspect"), "fire blocks inspect");
         h.runAfterDelay(5, () -> {
             tick(p);
-            h.assertTrue(P901Actions.operation(p, "inspect"), "inspect after fire");
-            P901Actions.request(p, true, 0);
-            h.assertTrue(!P901Actions.operation(p, "inspect"), "reload blocks inspect");
+            h.assertTrue(NativeGunActions.operation(p, "inspect"), "inspect after fire");
+            NativeGunActions.request(p, true, 0);
+            h.assertTrue(!NativeGunActions.operation(p, "inspect"), "reload blocks inspect");
         });
         h.runAfterDelay(58, () -> {
             tick(p);
             h.assertTrue(NativeGunAmmo.read(p.getMainHandItem(), NativeGunDefinition.BR51_01) == 20, "normal reload after interrupt");
-            h.assertTrue(!P901Actions.busy(p), "reload lock clears");h.succeed();
+            h.assertTrue(!NativeGunActions.busy(p), "reload lock clears");h.succeed();
         });
     }
     public static void cancelIdentitySwapAndUnsupported(GameTestHelper h) {
         var p = player(h);long id = GeoItem.getId(p.getMainHandItem());
-        h.assertTrue(P901Actions.operation(p, "inspect"), "start");
-        P901Actions.cancelInspect(p, id + 1);
-        h.assertTrue(P901Actions.busy(p), "wrong stack id cannot cancel");
-        P901Actions.cancelInspect(p, id);
-        h.assertTrue(!P901Actions.busy(p), "cancel releases lock");
-        h.assertTrue(P901Actions.operation(p, "inspect"), "restart after cancel");
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "start");
+        NativeGunActions.cancelInspect(p, id + 1);
+        h.assertTrue(NativeGunActions.busy(p), "wrong stack id cannot cancel");
+        NativeGunActions.cancelInspect(p, id);
+        h.assertTrue(!NativeGunActions.busy(p), "cancel releases lock");
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "restart after cancel");
         p.getInventory().selected = 2;tick(p);
-        h.assertTrue(!P901Actions.busy(p), "swap to empty cancels");
+        h.assertTrue(!NativeGunActions.busy(p), "swap to empty cancels");
         p.getInventory().setItem(2, new ItemStack(AflItems.P9_01.get()));
         NativeGunAmmo.set(p.getMainHandItem(), NativeGunDefinition.P9_01, 4);
         var pistol = (NativeGunItem)p.getMainHandItem().getItem();
         h.assertTrue("inspect".equals(pistol.inspectClip(p.getMainHandItem())), "loaded P9 inspect");
-        h.assertTrue(P901Actions.operation(p, "inspect"), "P9 inspect starts");
-        P901Actions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "P9 inspect starts");
+        NativeGunActions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
         NativeGunAmmo.set(p.getMainHandItem(), NativeGunDefinition.P9_01, 0);
         h.assertTrue("inspect_empty".equals(pistol.inspectClip(p.getMainHandItem())), "empty P9 inspect");
-        h.assertTrue(P901Actions.operation(p, "inspect"), "empty P9 inspect starts");
-        P901Actions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
+        h.assertTrue(NativeGunActions.operation(p, "inspect"), "empty P9 inspect starts");
+        NativeGunActions.cancelInspect(p, GeoItem.getId(p.getMainHandItem()));
         h.assertTrue(!NativeGunAnimations.hasClip("br51_01", "missing_probe"), "missing clip safe");
         h.succeed();
     }

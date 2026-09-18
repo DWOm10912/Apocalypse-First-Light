@@ -5,7 +5,7 @@
 ## 当前实现与边界
 
 `apocalypse_firstlight:br51_01` 改为 `ConfiguredNativeGunItem implements NativeGunItem`，不继承动画测试物品。
-复用原 `P901Actions` 的服务端验证、动作锁、扣弹、`NativeGunShot` hitscan/伤害/Noise 和
+复用原 `NativeGunActions` 的服务端验证、动作锁、扣弹、`NativeGunShot` hitscan/伤害/Noise 和
 `AflNetwork.sendNativeShot` 成功射击通知。保留历史类名以兼容现有包与测试，不复制第二套射击系统。
 `NativeAnimatedWeaponItem.Profile` 仅复用视觉配置数据；调试物品的动画命令不接受生产 BR51_01。
 
@@ -78,9 +78,9 @@ V1 runtime现仅标准弹匣及空仓临时标准匣；扩容款、sight/laser�
 - compileJava/processResources/build离线通过（42秒），git diff --check通过；本次未启动图形客户端，视觉验收待完成。
 
 - 注册：`src/main/java/com/antaurora/apofirstlight/registry/AflItems.java`
-- 公共战斗：`weapon/NativeGunItem.java`、`NativeGunDefinition.java`、`P901Actions.java`
+- 公共战斗：`weapon/NativeGunItem.java`、`NativeGunDefinition.java`、`NativeGunActions.java`
 - 新生产物品：`weapon/ConfiguredNativeGunItem.java`；源时间线：`weapon/NativeGunAnimations.java`
-- 输入/渲染：`weapon/client/P901Input.java`、`ConfiguredGunFirstPerson.java`、`NativeAnimatedWeaponRenderer.java`
+- 输入/渲染：`weapon/client/NativeGunInput.java`、`ConfiguredGunFirstPerson.java`、`NativeAnimatedWeaponRenderer.java`
 - inspect入口：`weapon/NativeAnimationCommands.java`；中英tooltip：`assets/apocalypse_firstlight/lang/{en_us,zh_cn}.json`
 - 测试：`src/dev/java/com/antaurora/apofirstlight/dev/BR5101CombatGameTests.java`、`src/dev/br51_01-combat-gametest.init.gradle`
 

@@ -79,7 +79,7 @@ runClient已启动；新FX第一/第三人称截图与多人观察者验收尚�
 属于冻结构图的既有校准检查，本轮没有改姿态或放宽断言；不记为全部旧烟测通过。
 
 - 保留live开火间隔3 ticks（150ms），不是任务建议的4 ticks；半自动点击边沿、服务端弹量/冷却/换弹校验。
-- Successful Shot唯一入口位于P901Actions的成功扣1发分支：同步stack、normal/last-round动画与枪声、
+- Successful Shot唯一入口位于NativeGunActions的成功扣1发分支：同步stack、normal/last-round动画与枪声、
   NativeGunShot服务器hitscan/damage、AFL Noise、给射手的S2C HUD flash。0发只播放限流dry-fire，6 ticks。
 - NativeGunDefinition实际参数：capacity17，damage7，headshotMultiplier3（预留，未启用头部判定），
   falloffStart24、effectiveRange48（描述性元数据）、maxRange64、minMultiplier.65、base spread1.2°半角、noise64。
@@ -1544,12 +1544,12 @@ Implementation under `src/main/java/com/antaurora/apofirstlight/weapon/`:
 - `client/P901Model.java`, `client/P901Renderer.java`: GeoModel/
   GeoItemRenderer with the animated hand layer and V0.4.2 first-person-only
   presentation parent. Exported display JSON is not rewritten.
-- `client/P901Input.java`: client-only `InteractionKeyMappingTriggered`
+- `client/NativeGunInput.java`: client-only `InteractionKeyMappingTriggered`
   cancels vanilla attack/swing for this item, sends once per press using an
   attack latch. R is a remappable IN_GAME KeyMapping, category AFL; consuming
   clicks plus held latch avoids OS key-repeat reload requests. GUI, focus,
   spectator and dead-player guards are applied.
-- `P901Actions.java`: server-side ephemeral player session, 3 tick fire
+- `NativeGunActions.java`: server-side ephemeral player session, 3 tick fire
   minimum and 26 tick reload lock. R during an active action is ignored, including
   the short fire lock; fire during reload is ignored. Held stack change, dimension
   change, death or logout clears/cancels active interaction. No persistent state

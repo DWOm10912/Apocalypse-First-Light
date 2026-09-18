@@ -44,7 +44,7 @@ public final class NativeSuppressorProbe {
                 var gun=new ItemStack(rifle()?AflItems.BR51_01.get():AflItems.P9_01.get());NativeGunAmmo.set(gun,((NativeGunItem)gun.getItem()).definition(),10);
                 p.setItemInHand(InteractionHand.MAIN_HAND,gun);p.inventoryMenu.broadcastChanges();
             });
-            case 1 -> {mc().options.setCameraType(CameraType.FIRST_PERSON);shot("bare_fp");server(()->P901Actions.request(player(),false,0));}
+            case 1 -> {mc().options.setCameraType(CameraType.FIRST_PERSON);shot("bare_fp");server(()->NativeGunActions.request(player(),false,0));}
             case 2 -> server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(rifle()?AflItems.RIFLE_SUPPRESSOR_01.get():AflItems.PISTOL_SUPPRESSOR_01.get()));player().inventoryMenu.broadcastChanges();});
             case 3 -> exchange();
             case 4 -> {
@@ -55,7 +55,7 @@ public final class NativeSuppressorProbe {
                 check(Math.abs(v.z+(rifle()?11.55F:9.1F)/16)<.0001&&Math.abs(v.x)<.0001&&Math.abs(v.y)<.0001,"exit exact/coaxial");
                 server(()->{player().setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);player().inventoryMenu.broadcastChanges();});
             }
-            case 5 -> {shot("suppressed_fp");server(()->P901Actions.request(player(),false,0));}
+            case 5 -> {shot("suppressed_fp");server(()->NativeGunActions.request(player(),false,0));}
             case 6 -> {if(rifle()){step=8;}else server(()->{player().setItemInHand(InteractionHand.OFF_HAND,new ItemStack(AflItems.PISTOL_RED_DOT.get()));player().inventoryMenu.broadcastChanges();});}
             case 7 -> exchange();
             case 8 -> {

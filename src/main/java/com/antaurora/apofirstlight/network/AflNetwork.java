@@ -239,10 +239,10 @@ public final class AflNetwork {
             context.enqueueWork(() -> {
                 var player = context.getSender();
                 if (player == null) return;
-                if (p.cancel) com.antaurora.apofirstlight.weapon.P901Actions.cancelInspect(player, p.id);
+                if (p.cancel) com.antaurora.apofirstlight.weapon.NativeGunActions.cancelInspect(player, p.id);
                 else if (p.slot >= 0 && p.slot < 9 && player.getInventory().selected == p.slot
                         && software.bernie.geckolib.animatable.GeoItem.getId(player.getMainHandItem()) == p.id)
-                    com.antaurora.apofirstlight.weapon.P901Actions.operation(player, "inspect");
+                    com.antaurora.apofirstlight.weapon.NativeGunActions.operation(player, "inspect");
             });
             context.setPacketHandled(true);
         }
@@ -265,7 +265,7 @@ public final class AflNetwork {
             if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER) {
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null) com.antaurora.apofirstlight.weapon.P901Actions
+                    if (player != null) com.antaurora.apofirstlight.weapon.NativeGunActions
                             .request(player, packet.reload, packet.slot,packet.shotId);
                 });
             }

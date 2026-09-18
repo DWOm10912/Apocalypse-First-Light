@@ -7,6 +7,15 @@ public record NativeTrailProfile(Mode mode, double speed, double length, double 
     public enum Mode { NONE, SUBTLE, TRACER }
     public static final NativeTrailProfile SUBTLE_PISTOL = new NativeTrailProfile(
             Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
+    public static final NativeTrailProfile SUBTLE_RIFLE = new NativeTrailProfile(
+            Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
+    public static NativeTrailProfile preset(String name) {
+        return switch (name) {
+            case "subtle_pistol" -> SUBTLE_PISTOL;
+            case "subtle_rifle" -> SUBTLE_RIFLE;
+            default -> throw new IllegalArgumentException("presentation.trail: unknown preset " + name);
+        };
+    }
     public NativeTrailProfile {
         java.util.Objects.requireNonNull(mode);
         for (double v : new double[]{speed, length, coreWidth, outerWidth, coreAlpha, outerAlpha, hideDistance})

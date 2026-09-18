@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
-public final class P901Actions {
+public final class NativeGunActions {
     public static final int FIRE_TICKS = 3;
     public static final int RELOAD_TICKS = 48;
     public static final int EMPTY_RELOAD_TICKS = 63;
@@ -53,10 +53,10 @@ public final class P901Actions {
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
     }
 
-    private P901Actions() {}
+    private NativeGunActions() {}
 
     public static void clearForDataReload() {
-        SESSIONS.forEach((p,s)->s.item.stopTriggeredAnim(p,s.id,P901Item.CONTROLLER,s.clip));
+        SESSIONS.forEach((p,s)->s.item.stopTriggeredAnim(p,s.id,NativeGunItem.ACTION_CONTROLLER,s.clip));
         SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
     }
 
@@ -82,7 +82,7 @@ public final class P901Actions {
         state.dimension = player.level().dimension();
         state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         SESSIONS.put(player, state); syncInventory(player);
-        item.triggerAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+        item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         return true;
     }
 
@@ -92,7 +92,7 @@ public final class P901Actions {
     public static void cancelInspect(ServerPlayer player, long expectedId) {
         Session state = SESSIONS.get(player);
         if (state != null && state.operation && isInspect(state.clip) && state.id == expectedId) {
-            state.item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+            state.item.stopTriggeredAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
             SESSIONS.remove(player);
         }
     }
@@ -121,7 +121,7 @@ public final class P901Actions {
             if (NativeGunAmmo.read(held, definition) == 0) {
                 if (now >= NEXT_DRY_FIRE.getOrDefault(player, 0L)) {
                     NEXT_DRY_FIRE.put(player, now + DRY_FIRE_COOLDOWN);
-                    sound(player, AflSounds.P9_01_DRY_FIRE.get());
+                    sound(player, item.dryFireSound());
                 }
                 return;
             }
@@ -153,9 +153,9 @@ public final class P901Actions {
         if (!reload) {
             // GeckoLib 4.7.4 does not reset a running controller when the same trigger name
             // arrives. Its standard stop + trigger pair makes every accepted shot start at 0s.
-            item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+            item.stopTriggeredAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         }
-        item.triggerAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+        item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
             var hit = NativeGunShot.execute(player, definition);
@@ -172,13 +172,13 @@ public final class P901Actions {
             Session interrupted = SESSIONS.get(player);
             if (interrupted != null && interrupted.stack != held) {
                 SESSIONS.remove(player);
-                interrupted.item.stopTriggeredAnim(player, interrupted.id, P901Item.CONTROLLER, interrupted.clip);
+                interrupted.item.stopTriggeredAnim(player, interrupted.id, NativeGunItem.ACTION_CONTROLLER, interrupted.clip);
             }
             if (old != null && old.getItem() instanceof NativeGunItem outgoing
                     && outgoing.animationAsset() != null) {
                 // Vanilla may stop rendering the old stack before the complete clip is visible.
                 long id = GeoItem.getOrAssignId(old, player.serverLevel());
-                outgoing.triggerAnim(player, id, P901Item.CONTROLLER, "put_away");
+                outgoing.triggerAnim(player, id, NativeGunItem.ACTION_CONTROLLER, "put_away");
                 for (var cue : NativeGunAnimations.cues(outgoing.animationAsset(), "put_away"))
                     if (cue.tick() <= 1) sound(player, java.util.Objects.requireNonNull(
                             net.minecraftforge.registries.ForgeRegistries.SOUND_EVENTS.getValue(cue.sound())));
@@ -192,7 +192,7 @@ public final class P901Actions {
                 || player.level().dimension() != state.dimension
                 || (isInspect(state.clip) && player.containerMenu != player.inventoryMenu)) {
             state.item.stopTriggeredAnim(player, state.id,
-                    P901Item.CONTROLLER, state.clip);
+                    NativeGunItem.ACTION_CONTROLLER, state.clip);
             SESSIONS.remove(player);
             return;
         }
@@ -202,7 +202,7 @@ public final class P901Actions {
             // Both formal assets reach their rearward mechanical pose during the first tick.
             // Stop the one-shot here so the ammo-driven empty baseline holds that pose instead
             // of allowing the ordinary shoot clip to close the action again.
-            state.item.stopTriggeredAnim(player, state.id, P901Item.CONTROLLER, state.clip);
+            state.item.stopTriggeredAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
             state.lockHandoffPlayed = true;
         }
         state.cues.removeIf(c -> {
@@ -226,17 +226,17 @@ public final class P901Actions {
             }
         } else if (state.reload) {
             if (!state.outPlayed && now >= state.start + MAG_OUT_TICK) {
-                sound(player, AflSounds.P9_01_MAGAZINE_OUT.get());
+                sound(player, AflSounds.NATIVE_GUN_MAGAZINE_OUT.get());
                 state.outPlayed = true;
             }
             if (!state.inPlayed && now >= state.start + state.item.definition().magInTick()) {
                 NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
                 syncInventory(player);
-                sound(player, AflSounds.P9_01_MAGAZINE_IN.get());
+                sound(player, AflSounds.NATIVE_GUN_MAGAZINE_IN.get());
                 state.inPlayed = true;
             }
             if (state.reloadStartedEmpty && !state.rackPlayed && now >= state.start + SLIDE_RACK_TICK) {
-                sound(player, AflSounds.P9_01_SLIDE_ACTION.get());
+                sound(player, AflSounds.NATIVE_GUN_ACTION.get());
                 state.rackPlayed = true;
             }
         }

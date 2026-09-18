@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
-import com.antaurora.apofirstlight.weapon.P901Item;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -17,7 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
-public final class P901Input {
+public final class NativeGunInput {
     private static final KeyMapping RELOAD = new KeyMapping("key.apocalypse_firstlight.reload",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
@@ -28,7 +27,7 @@ public final class P901Input {
     private static boolean inspectHeld;
     private static boolean reloadHeld;
 
-    private P901Input() {}
+    private NativeGunInput() {}
 
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class Registration {

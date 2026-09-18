@@ -26,6 +26,10 @@
       "apocalypse_firstlight:dry_fire"
     ]
   },
+  "native_gun_dry_fire": {"sounds":["apocalypse_firstlight:dry_fire"]},
+  "native_gun_magazine_out": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_out"]},
+  "native_gun_magazine_in": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_in"]},
+  "native_gun_action": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_slide_action"]},
   "p9_01_slide_action": {
     "sounds": [
       "apocalypse_firstlight:weapons/p9_01/p9_01_slide_action"

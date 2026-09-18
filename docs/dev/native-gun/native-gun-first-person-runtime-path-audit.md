@@ -128,9 +128,9 @@ Geo 为 19 bones / 77 gun cubes。reference groups/cubes 的 export=false，故�
 ### 输入、动作与第三人称旁路
 
 - AflItems 注册 P901Item；Item 构造创建 Gecko 缓存、注册 synced animatable 和 `afl_hold` easing。
-- P901Input.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.P901C2SPacket 发给服务端。
-- AflNetwork.handle 在 server work queue 调 P901Actions.request；校验选中槽位、活体、主手类型与 busy session；给实际 stack 分配 GeckoLibID、同步物品，再 triggerAnim。
-- P901Actions 持有 WeakHashMap<ServerPlayer, Session>；Fire 锁 3 tick，Reload 锁 26 tick；声音 tick 8/19。切槽、死亡、维度变更停止具名动画。它不拥有 camera、hand scale 或 arm matrix。
+- NativeGunInput.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.P901C2SPacket 发给服务端。
+- AflNetwork.handle 在 server work queue 调 NativeGunActions.request；校验选中槽位、活体、主手类型与 busy session；给实际 stack 分配 GeckoLibID、同步物品，再 triggerAnim。
+- NativeGunActions 持有 WeakHashMap<ServerPlayer, Session>；Fire 锁 3 tick，Reload 锁 26 tick；声音 tick 8/19。切槽、死亡、维度变更停止具名动画。它不拥有 camera、hand scale 或 arm matrix。
 - Item.registerControllers 注册单个 action controller，fire/reload 都是 thenPlay；动画长度分别 0.14s / 1.30s。controller 只是给 presentation 提供原动画时钟，没有第二个视觉 reload 计时器。
 - 第三人称由 Item extension.getArmPose 返回 P901PlayerPose.PISTOL = **原版 CROSSBOW_HOLD**，再由 Vanilla PlayerRenderer/PlayerModel/HumanoidModel 应用；不是自定义 ArmPose enum，不经过 FP HandLayer。
 - 非 FP 枪绘制仍走 P901Renderer，但 gun_model_root=1、gun 局部补偿 ×2。第三人称姿势、GUI 路由、声音本轮全未改。
@@ -322,10 +322,10 @@ D/NativeHandContractChecks:246–288 比较的是“源hierarchy计算后**额�
 | NativePlayerArmRenderer | HandLayer → currentPlayerRenderer/ModelPart、Binding | ACTIVE；唯一真实skin arm/sleeve绘制；DEV可改filter | REWRITE契约/测试隔离；保留完整arm路线 |
 | P901Model | Renderer → GeoModel三个ResourceLocation | ACTIVE；纯asset lookup，无视觉叠加 | KEEP，可并入Rig resource metadata |
 | P901PlayerPose | Item extension引用PISTOL → Vanilla CROSSBOW_HOLD | ACTIVE第三人称；deprecated apply仅dead DEV方法引用 | KEEP字段/类；apply后续删，不删整个类 |
-| P901Input（含Registration） | Forge输入/按键注册/tick → AflNetwork | ACTIVE，输入边沿状态，不改矩阵 | KEEP，本次不重构 |
+| NativeGunInput（含Registration） | Forge输入/按键注册/tick → AflNetwork | ACTIVE，输入边沿状态，不改矩阵 | KEEP，本次不重构 |
 | P901Item（含匿名extension） | 注册/物品实例 → Renderer、PlayerPose、AnimationController、Gecko缓存 | ACTIVE，renderer/client extension及动画入口 | KEEP |
 | P901AnimationController | Item注册/Gecko process → super.process；Renderer读取reloadSeconds | ACTIVE，共享action时钟 | KEEP |
-| P901Actions（含Session） | packet/server events → synced trigger/stop、sounds | ACTIVE，服务端动作锁/音效；非手臂renderer | KEEP，不借本审计扩玩法 |
+| NativeGunActions（含Session） | packet/server events → synced trigger/stop、sounds | ACTIVE，服务端动作锁/音效；非手臂renderer | KEEP，不借本审计扩玩法 |
 | AflNetwork.P901C2SPacket | Input请求→channel注册→Actions.request | ACTIVE基础设施；不是FP视觉类 | KEEP |
 | AflItems.P9_01 | DeferredRegister→P901Item构造 | ACTIVE注册基础设施 | KEEP |
 | AflSounds相关注册 | Actions声音引用 | ACTIVE音频基础设施；不拥有手视觉 | KEEP |

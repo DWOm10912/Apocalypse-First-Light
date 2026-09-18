@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.weapon.client;
 
-import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -11,28 +10,16 @@ import org.joml.Vector3f;
 public record NativeAdsProfile(String anchor, float ax, float ay, float az, float eyeRelief,
         float hx, float hy, float hz, float rx, float ry, float rz, float scale,
         float compositionX, float compositionY, float rootPitch) {
-    // Raised rear aperture and front post share Y=13.6875; legacy iron_view Y=14.8
-    // is a camera placement helper, not the mechanical sight axis.
-    public static final NativeAdsProfile RIFLE = new NativeAdsProfile("octagon9/rear-aperture-axis",
-            0,13.6875F,15.46875F,.16F,
-            3.8F,-7.2F,-11.5F,0,4,0,.45F,0,0,0);
-    // Retarget the same optical axis to the artist rig's static-idle rear sight.
-    // Gameplay ADS duration/FOV and eye relief remain unchanged.
-    public static final NativeAdsProfile PISTOL = new NativeAdsProfile("sight_anchor/rear-axis",
-            1.50F, 5.80F,2.97F,.47F,
-            3.24148F,-7.4945F,-14.19624F,.54547F,.19151F,-.27948F,.45F,.07F,.045F,3);
-    public static NativeAdsProfile forGun(ResourceLocation id) {
-        return switch(id.toString()) {
-            case "apocalypse_firstlight:br51_01" -> RIFLE;
-            case "apocalypse_firstlight:p9_01" -> PISTOL;
-            default -> null;
-        };
+    public static NativeAdsProfile from(com.antaurora.apofirstlight.weapon.NativeAdsCalibration value) {
+        return new NativeAdsProfile(value.anchor(),value.ax(),value.ay(),value.az(),value.eyeRelief(),
+                value.hx(),value.hy(),value.hz(),value.rx(),value.ry(),value.rz(),value.scale(),
+                value.compositionX(),value.compositionY(),value.rootPitch());
     }
     public static NativeAdsProfile forStack(net.minecraft.world.item.ItemStack stack) {
         if(!(stack.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeGunItem gun))return null;
-        var base=forGun(gun.definition().id());
+        var base=from(gun.definition().adsCalibration());
         var mount=gun.definition().sightMount();
-        if(base==null||mount==null||com.antaurora.apofirstlight.weapon.NativeAttachments.activeSight(stack).isEmpty())return base;
+        if(mount==null||com.antaurora.apofirstlight.weapon.NativeAttachments.activeSight(stack).isEmpty())return base;
         return new NativeAdsProfile(mount.anchor()+"/reticle_dot",mount.aimX(),mount.aimY(),mount.aimZ(),base.eyeRelief,
                 base.hx,base.hy,base.hz,base.rx,base.ry,base.rz,base.scale,base.compositionX,base.compositionY,base.rootPitch);
     }

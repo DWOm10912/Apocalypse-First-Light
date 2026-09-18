@@ -111,7 +111,7 @@ Forge RenderHandEvent
 - `reload_magazine` 是存在于源与 runtime 的独立 bone，不能误报缺失，也不能因 TaCZ 有 additional_magazine 就复制其处理方式。
 - 单个 GeckoLib `action` controller 接受服务器 fire/reload 触发；当前通用 Reload 为 26 tick／约 1.30 秒，无 tactical/empty 分支，无真实弹药。不是 TaCZ 式多轨叠加状态机。
 
-来源：[bbmodel](../../../src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../../src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json)、[runtime animation](../../../src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json)、[导出检查](../../../tools/export-p9-01.blockbench.js)、[Item](../../../src/main/java/com/antaurora/apofirstlight/weapon/P901Item.java)、[Actions](../../../src/main/java/com/antaurora/apofirstlight/weapon/P901Actions.java)。
+来源：[bbmodel](../../../src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel)、[runtime geo](../../../src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json)、[runtime animation](../../../src/main/resources/assets/apocalypse_firstlight/animations/p9_01.animation.json)、[导出检查](../../../tools/export-p9-01.blockbench.js)、[Item](../../../src/main/java/com/antaurora/apofirstlight/weapon/P901Item.java)、[Actions](../../../src/main/java/com/antaurora/apofirstlight/weapon/NativeGunActions.java)。
 
 ## 3. TaCZ first-person render call chain：真正入口不是旧事件类
 
@@ -336,7 +336,7 @@ M_arm = M_locator × B_skin
 - `P901RenderMatrices`：保留并扩充测试；已有隔离不是问题来源。
 - `P901FirstPerson`：保留 Native 局部所有权；本轮不引入 SBM 的切枪管理器。
 - `P901Renderer` / `P901Presentation`：最小迁移先保留共同求值与当前枪取景，不以修手为由改枪。以后是否把 presentation 收敛进 authoring view 要独立决策。
-- `P901AnimationController` / `P901Actions` / `P901Item`：最小 V1 保留动作与服务端逻辑。未来才讨论 clips/overlay/empty 状态。
+- `P901AnimationController` / `NativeGunActions` / `P901Item`：最小 V1 保留动作与服务端逻辑。未来才讨论 clips/overlay/empty 状态。
 - source references、导出验证和 DEV hand tests：下一轮改测 preview/runtime 等价与握持约束；历史“薄表面射线可见”不能成为新架构的通过标准。
 
 ## 12. Explicitly NOT copied / verification boundary

@@ -3,19 +3,24 @@ package com.antaurora.apofirstlight.weapon;
 import net.minecraft.resources.ResourceLocation;
 
 /** Small immutable gameplay/HUD metadata, independent of the visual rig. */
-public record NativeGunDefinition(ResourceLocation id, ResourceLocation ammoType, int magazineCapacity,
+public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, ResourceLocation ammoType, int magazineCapacity,
                                   ResourceLocation hudIcon, int hudWidth, int hudHeight, int reloadDurationTicks, int magInTick,
                                   int fireIntervalTicks, double baseDamage,
                                   double falloffStart, double effectiveRange, double maxRange,
                                   double minimumDamageMultiplier, double spreadDegrees, double noiseRadius,
                                   NativeRecoilProfile recoil, NativeTrailProfile trail, NativeAccuracyProfile accuracy,
                                   boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing,
-                                  NativeSightMount sightMount, NativeMuzzleMount muzzleMount, ResourceLocation suppressedFireSound, NativeMagazineMount magazineMount,
+                                  NativeSightMount sightMount, NativeMuzzleMount muzzleMount, ResourceLocation fireSound, ResourceLocation dryFireSound,
+                                  ResourceLocation suppressedFireSound, NativeMagazineMount magazineMount, NativeAdsCalibration adsCalibration,
                                   String fireMode) {
     public NativeGunDefinition {
         java.util.Objects.requireNonNull(recoil, "recoil");
         java.util.Objects.requireNonNull(trail, "trail");
         java.util.Objects.requireNonNull(accuracy, "accuracy");
+        java.util.Objects.requireNonNull(weaponClass, "weaponClass");
+        java.util.Objects.requireNonNull(fireSound, "fireSound");
+        java.util.Objects.requireNonNull(dryFireSound, "dryFireSound");
+        java.util.Objects.requireNonNull(adsCalibration, "adsCalibration");
         if (!Double.isFinite(spreadDegrees) || spreadDegrees < 0 || spreadDegrees > 45)
             throw new IllegalArgumentException("Invalid spread half-angle");
         if (magazineCapacity <= 0 || magInTick < 0 || fireIntervalTicks <= 0)

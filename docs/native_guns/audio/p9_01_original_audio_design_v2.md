@@ -51,7 +51,7 @@ Runtime animation is `animation.p9_01.reload` (1.3 s), not a literal `reload_tac
 
 Tactical has no slide cues. Pull is a sustained modulated friction envelope; snap is a short dense contact cluster, not the same sound played twice. Release/out are quieter than seat/snap; prototype peak levels are -24/-27/-24/-18/-24/-18 dBFS respectively, not equal loudness.
 
-`weapon/P901Actions.java` currently plays out at tick 8, in at tick 19 and a combined empty rack at tick 25. These candidate split cues have NOT been wired into that system. Composite timing matches inspected motion numerically, but in-game audiovisual sync remains untested. Fire selection must precede final reload production.
+`weapon/NativeGunActions.java` currently plays out at tick 8, in at tick 19 and a combined empty rack at tick 25. These candidate split cues have NOT been wired into that system. Composite timing matches inspected motion numerically, but in-game audiovisual sync remains untested. Fire selection must precede final reload production.
 
 ## Human checkpoint
 

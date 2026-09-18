@@ -37,10 +37,10 @@ public final class NativeGunShotGameTests {
         var gun = new ItemStack(AflItems.P9_01.get());
         p.getInventory().selected = 0; p.getInventory().setItem(0, gun);
         NativeGunAmmo.set(gun, D, 2);
-        P901Actions.request(p, false, 0);
+        NativeGunActions.request(p, false, 0);
         h.assertTrue(NativeGunAmmo.read(gun, D) == 1, "First accepted shot consumes one round");
         h.runAfterDelay(D.fireIntervalTicks(), () -> {
-            P901Actions.request(p, false, 0);
+            NativeGunActions.request(p, false, 0);
             h.assertTrue(NativeGunAmmo.read(gun, D) == 0,
                     "Next shot retriggers at the exact cadence and owns the 1 -> 0 transition");
             h.succeed();
@@ -62,18 +62,18 @@ public final class NativeGunShotGameTests {
         h.setBlock(new BlockPos(3,3,6),Blocks.STONE);
         h.assertTrue(NativeGunShot.trace(p,p.getEyePosition(),new Vec3(0,0,1),64).entity()==null,"Wall blocks entity");
         h.setBlock(new BlockPos(3,3,6),Blocks.AIR);
-        P901Actions.request(p,false,0);
+        NativeGunActions.request(p,false,0);
         h.assertTrue(NativeGunAmmo.read(gun,D)==16,"Exactly one ammo debited");
         h.assertTrue(Math.abs(near.getHealth()-93)<.001 && far.getHealth()==100,"Body damage7, no penetration");
         h.assertTrue(InfectedHearingState.lastHeardPosition(listener)!=null,"Native shot reaches hearing");
-        for(int i=0;i<20;i++)P901Actions.request(p,false,0);
+        for(int i=0;i<20;i++)NativeGunActions.request(p,false,0);
         h.assertTrue(near.getHealth()==93,"Spam cannot duplicate damage");
         h.runAfterDelay(4,()->{
-            P901Actions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END,p));
+            NativeGunActions.tick(new TickEvent.PlayerTickEvent(TickEvent.Phase.END,p));
             NativeGunAmmo.set(gun,D,0);
             // Other parallel GameTests can emit noise between ticks. Compare within this server task.
             long heard=InfectedHearingState.heardGameTime(listener);
-            for(int i=0;i<20;i++)P901Actions.request(p,false,0);
+            for(int i=0;i<20;i++)NativeGunActions.request(p,false,0);
             h.assertTrue(near.getHealth()==93 && NativeGunAmmo.read(gun,D)==0,"Dry fire no damage/ammo");
             h.assertTrue(InfectedHearingState.heardGameTime(listener)==heard,"Dry fire no noise refresh");
             h.succeed();

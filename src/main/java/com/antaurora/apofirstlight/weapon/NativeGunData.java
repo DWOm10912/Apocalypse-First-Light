@@ -53,6 +53,49 @@ public final class NativeGunData {
         if(validate&&!ForgeRegistries.SOUND_EVENTS.containsKey(id))throw new IllegalArgumentException("Unknown suppressed sound "+id);
         return id;
     }
+    private static ResourceLocation sound(JsonObject o,String key,boolean validate) {
+        if(!o.has(key)||!o.get(key).isJsonPrimitive())throw new IllegalArgumentException(key+": required sound ID");
+        var id=ResourceLocation.tryParse(o.get(key).getAsString());
+        if(id==null||validate&&!ForgeRegistries.SOUND_EVENTS.containsKey(id))throw new IllegalArgumentException(key+": unknown sound "+id);
+        return id;
+    }
+    private static float[] floats(JsonObject o,String key,int count) {
+        if(!o.has(key)||!o.get(key).isJsonArray()||o.getAsJsonArray(key).size()!=count)
+            throw new IllegalArgumentException(key+": expected "+count+" numbers");
+        float[] values=new float[count];
+        for(int i=0;i<count;i++){
+            double value=o.getAsJsonArray(key).get(i).getAsDouble();
+            if(!Double.isFinite(value))throw new IllegalArgumentException(key+": non-finite number");
+            values[i]=(float)value;
+        }
+        return values;
+    }
+    private static NativeGunPresentation presentation(JsonObject o,WeaponClass weaponClass,int tactical) {
+        var base=NativeGunPresentation.defaults(weaponClass,tactical);
+        if(!o.has("presentation"))return base;
+        var p=o.getAsJsonObject("presentation");
+        int width=base.hudWidth(),height=base.hudHeight(),magIn=base.magInTick();
+        var trail=base.trail();
+        if(p.has("hud")){
+            var hud=p.getAsJsonObject("hud");
+            width=integer(hud,"width");height=integer(hud,"height");
+        }
+        if(p.has("mag_in_tick"))magIn=integer(p,"mag_in_tick");
+        if(p.has("trail"))trail=NativeTrailProfile.preset(p.get("trail").getAsString());
+        if(magIn>tactical)throw new IllegalArgumentException("presentation.mag_in_tick: exceeds tactical reload");
+        return new NativeGunPresentation(width,height,magIn,trail);
+    }
+    private static NativeAdsCalibration adsCalibration(JsonObject ads,WeaponClass weaponClass) {
+        var base=NativeAdsCalibration.defaults(weaponClass);
+        if(!ads.has("profile"))return base;
+        var p=ads.getAsJsonObject("profile");
+        var aim=floats(p,"aim",3);var hip=floats(p,"hip_translation",3);
+        var rotation=floats(p,"hip_rotation",3);var composition=floats(p,"composition",2);
+        return new NativeAdsCalibration(p.get("anchor").getAsString(),aim[0],aim[1],aim[2],
+                (float)num(p,"eye_relief",0,Float.MAX_VALUE),hip[0],hip[1],hip[2],rotation[0],rotation[1],rotation[2],
+                (float)num(p,"scale",Float.MIN_NORMAL,Float.MAX_VALUE),composition[0],composition[1],
+                (float)num(p,"root_pitch",-360,360));
+    }
     public static NativeGunDefinition parse(ResourceLocation id,JsonObject o,boolean validate) {
         try {
             var f=o.getAsJsonObject("fire");var d=o.getAsJsonObject("damage");
@@ -73,15 +116,18 @@ public final class NativeGunData {
                 default->throw new IllegalArgumentException("accuracy.profile: unknown preset");
             };
             if(!noise.getAsJsonPrimitive("tinnitus").isBoolean())throw new IllegalArgumentException("noise.tinnitus: expected boolean");
-            boolean rifle=id.getPath().equals("br51_01"); // Presentation metadata, not balance.
-            return new NativeGunDefinition(id,item(o,"ammo",validate),integer(o,"magazine_capacity"),
-                    new ResourceLocation(id.getNamespace(),"textures/gui/gun/"+id.getPath()+"_hud.png"),rifle?60:36,rifle?12:22,
-                    tactical,rifle?tactical:Math.min(19,tactical),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
+            if(!o.has("weapon_class"))throw new IllegalArgumentException("weapon_class: required");
+            var weaponClass=WeaponClass.parse(o.get("weapon_class").getAsString());
+            var presentation=presentation(o,weaponClass,tactical);
+            return new NativeGunDefinition(id,weaponClass,item(o,"ammo",validate),integer(o,"magazine_capacity"),
+                    new ResourceLocation(id.getNamespace(),"textures/gui/gun/"+id.getPath()+"_hud.png"),presentation.hudWidth(),presentation.hudHeight(),
+                    tactical,presentation.magInTick(),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
-                    num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,NativeTrailProfile.SUBTLE_PISTOL,ap,
+                    num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,presentation.trail(),ap,
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
-                    NativeMuzzleMount.parse(o,validate),suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),f.get("mode").getAsString());
+                    NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
+                    suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),f.get("mode").getAsString());
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {
@@ -98,7 +144,7 @@ public final class NativeGunData {
                     }
                 });
                 server=Map.copyOf(next);wire=Map.copyOf(raw);
-                P901Actions.clearForDataReload();
+                NativeGunActions.clearForDataReload();
             }
         });
     }

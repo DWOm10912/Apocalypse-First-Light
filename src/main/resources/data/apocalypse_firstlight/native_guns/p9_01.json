@@ -1,5 +1,8 @@
 {
+  "weapon_class": "pistol",
   "ammo": "apocalypse_firstlight:9x19mm_round",
+  "fire_sound": "apocalypse_firstlight:p9_01_fire",
+  "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
   "magazine_capacity": 17,
   "fire": {
     "mode": "semi",
@@ -26,8 +29,19 @@
   },
   "ads": {
     "time_seconds": 0.15,
-    "fov_multiplier": 0.95
+    "fov_multiplier": 0.95,
+    "profile": {
+      "anchor": "sight_anchor/rear-axis",
+      "aim": [1.50, 5.80, 2.97],
+      "eye_relief": 0.47,
+      "hip_translation": [3.24148, -7.4945, -14.19624],
+      "hip_rotation": [0.54547, 0.19151, -0.27948],
+      "scale": 0.45,
+      "composition": [0.07, 0.045],
+      "root_pitch": 3
+    }
   },
+  "presentation": {"hud": {"width": 36, "height": 22}, "mag_in_tick": 19, "trail": "subtle_pistol"},
   "recoil": {
     "verticalMin": 0.8,
     "verticalMax": 1.1,

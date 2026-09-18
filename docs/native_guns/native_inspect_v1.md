@@ -4,7 +4,7 @@
 
 ## 输入与动作
 
-- `weapon/client/P901Input.java` 注册标准 Forge IN_GAME KeyMapping：
+- `weapon/client/NativeGunInput.java` 注册标准 Forge IN_GAME KeyMapping：
   `key.apocalypse_firstlight.inspect`，默认 V，沿用 `key.categories.apocalypse_firstlight`。
   Controls 可改键；中文“检视武器”，英文“Inspect Weapon”。Screen、死亡、旁观、失焦、
   非 Native Gun 不处理；消费按键点击并用按住边沿保护，重复 V 不重启。
@@ -15,7 +15,7 @@
   P9 在后续 P9 artist asset integration V1 中接入此能力：有弹为 `inspect`，空仓为
   `inspect_empty`，由 `inspectClip(ItemStack)` 根据服务端主手弹量选择。见
   [P9 正式资产接入](p9_01_artist_asset_integration_v1.md)。BR51 动画未改。
-- 复用 `P901Actions.operation`、Session 动作锁、Gecko trigger/stop 同步及动画资源长度。
+- 复用 `NativeGunActions.operation`、Session 动作锁、Gecko trigger/stop 同步及动画资源长度。
   现有第三人称同步随框架复用，不另建网络动画系统。
 
 ## 优先级与 ADS
