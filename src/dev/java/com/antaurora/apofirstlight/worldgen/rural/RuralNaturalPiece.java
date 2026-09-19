@@ -166,6 +166,14 @@ public final class RuralNaturalPiece extends StructurePiece {
                 CompoundTag access = new CompoundTag();
                 writePos(access, "Connection", lot.access().connection());
                 writePos(access, "Frontage", lot.access().frontage());
+                if (lot.access().sourceRoad() != null) {
+                    CompoundTag source = new CompoundTag();
+                    writeSegment(source, lot.access().sourceRoad());
+                    access.put("SourceRoadV2", source);
+                    writeBox(access, "UsableBoundsV2", lot.access().usableBounds());
+                    writePos(access, "EntryV2", lot.access().entry());
+                    access.putString("EntryFacingV2", lot.access().entryFacing().getName());
+                }
                 ListTag segments = new ListTag();
                 for (var segment : lot.access().access()) {
                     CompoundTag s = new CompoundTag(); writeSegment(s, segment); segments.add(s);
@@ -248,6 +256,12 @@ public final class RuralNaturalPiece extends StructurePiece {
         List<RuralRoadSegment> segments = new java.util.ArrayList<>();
         ListTag list = a.getList("Segments", 10);
         for (int i = 0; i < list.size(); i++) segments.add(java.util.Objects.requireNonNull(readSegment(list.getCompound(i))));
+        if (a.contains("SourceRoadV2")) {
+            return new RuralLotAnchor(readPos(a, "Connection"), readPos(a, "Frontage"),
+                    direction(lot.getString("RoadFacing")), readBox(a, "UsableBoundsV2"), segments,
+                    java.util.Objects.requireNonNull(readSegment(a.getCompound("SourceRoadV2"))),
+                    readPos(a, "EntryV2"), direction(a.getString("EntryFacingV2")));
+        }
         return new RuralLotAnchor(readPos(a, "Connection"), readPos(a, "Frontage"),
                 direction(lot.getString("RoadFacing")), readBox(lot, "Bounds"), segments);
     }

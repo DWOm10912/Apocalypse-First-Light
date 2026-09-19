@@ -39,23 +39,8 @@ public record RuralRoadNetwork(List<Node> nodes, List<RuralRoadSegment> segments
             nodes.add(new Node(p, kind));
         }
         List<RuralLotAnchor> anchors = new ArrayList<>();
-        // Small uncommitted road-side candidate envelopes; real NBT lots still use the legacy adapter.
-        for (var s : edges) {
-            int length = s.start().distManhattan(s.end());
-            for (int d = 6; d < length - 3; d += 12) for (int sign : new int[]{-1, 1}) {
-                Direction outward = sign > 0 ? s.direction().getClockWise() : s.direction().getCounterClockWise();
-                BlockPos connection = s.start().relative(s.direction(), d);
-                BlockPos front = connection.relative(outward, s.type().radius() + 5);
-                BlockPos back = front.relative(outward, 12);
-                BoundingBox area = new BoundingBox(Math.min(front.getX(), back.getX()) - 4, 0,
-                        Math.min(front.getZ(), back.getZ()) - 4, Math.max(front.getX(), back.getX()) + 4, 0,
-                        Math.max(front.getZ(), back.getZ()) + 4);
-                if (RuralAccessPlanner.inside(area, reservation)
-                        && roads.stream().noneMatch(r -> RuralAccessPlanner.intersects(area, r.bounds())))
-                    anchors.add(new RuralLotAnchor(connection, front, outward.getOpposite(), area,
-                            List.of(new RuralRoadSegment(front, connection, RuralRoadType.FARM_TRACK))));
-            }
-        }
+        // Candidate frontage search is performed by RuralFrontagePlanner, with real template sizes.
+        // This derived graph publishes only the actual accepted anchors, including saved V1 access.
         List<BoundingBox> occupied = new ArrayList<>();
         for (var lot : lots) if (lot.access() != null) {
             anchors.add(lot.access()); occupied.addAll(lot.access().accessBounds());

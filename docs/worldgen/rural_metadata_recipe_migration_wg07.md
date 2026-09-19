@@ -1,6 +1,6 @@
 # WG-07 Rural Metadata / Socket / Legacy Recipe Migration V1
 
-后续现行行为：见 [Rural Road Framework V1 Core](rural_road_framework_v1.md)。本页的道路不变与 WG-06 摘要一致性是 WG-07 历史验收结论；新道路已使用 MAIN/SIDE/FARM_TRACK、graph 和规划期 access 占位。入口仍暂用 front midpoint，七个 metadata socket 尚未用于实际道路接入；配方仍为旧六资产。
+后续现行行为：见 [Rural Road Framework V1 Core](rural_road_framework_v1.md) 与 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。自然六资产已按frontage放置并优先消费合法metadata socket（缺失时midpoint fallback）；配方未扩容，两个_02不参与。开发命令仍为旧midpoint路径。本页WG-06摘要一致性与SOCKET_USED_BY_LEGACY_DRIVEWAY=NO是历史迁移验收结论，不代表V2自然路径；未补做本轮实机socket通行验收。
 
 日期：2026-09-13。WG-07.1 收尾状态：**八资产 metadata 已完成，Legacy 六资产配方不变**。两份 `_02` 的 front/anchor/socket 来自用户人工视觉 QA 确认，本轮完成机械验证；八资产四向游戏内摆放 QA 仍未执行。WG-07.1 不是 Rural V2。
 

@@ -2,20 +2,21 @@
 
 自然候选更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。完整 reservation 在地形/建筑规划前避让 Highway ±32 格硬包络及 12 格安全间距，冲突即拒绝。道路几何、tier/spacing/biome、建筑农田不变；旧 Piece/已生成区域不回溯。仅编译通过，实机待验。
 
-状态：代码已接入自然生成与 `/afl rural` 开发命令；仅完成 `compileJava`，实机生成、接受率、存档往返和视觉验收待用户测试。不是 Rural Building Framework，也不是 Rural V2 完整迁移。
+状态：道路已接入自然生成与 `/afl rural` 开发命令。自然建筑已迁移到 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)，开发命令仍为旧建筑布局。V2仅完成compileJava，实机生成、接受率、存档往返和视觉验收待用户测试；农田仍为Legacy。
 
 ## 规划与回放
 
-保留 `RuralNaturalStructure -> RuralNaturalGenerator -> RuralNaturalPiece -> RuralGenerator.generateNaturalChunk`。新计划先由 `RuralRoadPlanner` 确定完整道路，再沿用 legacy building candidates/角色选择，接纳建筑时同步预留连接路，最后规划避让连接路的农田。四档 reservation 仍为 56/72/96/128 方块；StructureSet spacing=40 chunks、separation=20 chunks、salt、40/30/22/8 tier 权重、biome tag、地形准入阈值和怪物生成均未改。新道路及 access 占地会改变候选建筑的可用性，因此不能把“调度频率配置未改”解释为成功聚落接受率一定不变。
+保留 `RuralNaturalStructure -> RuralNaturalGenerator -> RuralNaturalPiece -> RuralGenerator.generateNaturalChunk`。先由 RuralRoadPlanner 确定完整道路，自然路径经 RoadNetwork/FrontagePlanner 生成模板尺寸lot，沿用原角色选择，再联合接纳建筑/access，最后规划避让它们的农田。四档 reservation仍为56/72/96/128方块，spacing=40 chunks、separation=20 chunks、salt、biome和地形门槛不变；档位权重现为25/30/30/15、Cluster/Full目标为6–8/9–12，详见 [Scale / Tier Tuning V1](rural_scale_tier_tuning_v1.md)。实际接受率需实机验收。
 
 源码位于 `src/dev/java/com/antaurora/apofirstlight/worldgen/rural/`：
 
 - `RuralRoadType`：MAIN/SIDE/FARM_TRACK 的有效宽度、路肩、过渡和材质选择。
 - `RuralRoadSegment`：XZ 轴向起终点、类型、方向、含端帽的完整占地。
-- `RuralRoadNetwork`：从计划的道路生成图；在分支接点拆分主路，保存 START/END/TURN/THROUGH/T_JUNCTION 节点、路段、候选 frontage 和已接纳 access bounds。候选 anchor 不自动占用世界；已接纳建筑的 access 才进入 occupiedAccess。
-- `RuralLotAnchor`：connection、frontage、朝路方向、候选/实际 lot bounds、连接路 segments 与完整 access bounds。
+- `RuralRoadNetwork`：从保存道路重建图，分支处拆分主路，发布节点、segments和实际接纳的anchors/occupiedAccess；不再生成统一尺寸示意lot。
+- `RuralLotAnchor`：connection、frontage、朝路方向、usableBounds/depth、sourceRoad、entry/entryFacing和access；旧构造兼容V1。
+- `RuralFrontagePlanner`：沿实际segments搜索两侧frontage，按真实旋转NBT框算origin，优先metadata socket，缺失/非法则front midpoint。
 - `RuralRoadPlanner`：有界、非网格的四档布局，种子仅在 plan 阶段参与选择。
-- `RuralAccessPlanner`：建筑和连接路一起检查；当前入口仍为正面包围盒中点，未消费 metadata socket。下一轮可在入口解析处用旋转后的 socket 替换 midpoint，再迁移正式 lot/frontage 选择。
+- `RuralAccessPlanner`：V2建筑+access联合占位，直线/单直角路径接所属道路；旧重载保留开发命令的midpoint逻辑。
 - `RuralRoadPainter`：根据 profile 合并每格材质；有效道路带优先于路肩/过渡，同层 MAIN 优先于 SIDE/FARM_TRACK；每个 XZ 柱只写一次。
 
 适配修改：`RuralPlan`、`RuralNaturalGenerator`、`RuralGenerator`、`RuralNaturalPiece`、`RuralFarmPlanner`、`RuralTerrainAdapter`。NBT 模板、rotation、ground anchor、六资产池、Natural/Dev 各自角色选择规则保持原实现，两个 `_02` 未加入配方。
@@ -34,13 +35,15 @@ Isolated 使用 18 格中心线 FARM_TRACK；Farmstead 使用 32 格中心线 SI
 
 ## Access 占地与兼容
 
-兼容建筑候选仍使用旧 offset，完整 lot-anchor 驱动放置留待下一轮。每个候选在地形检查前尝试向现有道路中心线连接；从正面中点外移 2 格起步，再沿朝向外延，通过轴向折线接入道路。通道宽 3 格，所有矩形在 reservation 内，避开自身与其他建筑；其他建筑保留 2 格地形混合缓冲。新的建筑不能占用已预留 access，新 access 不能穿过已有建筑或另一条 access；只有已有道路占地内部允许共享接入。农田含围栏包络也检查 access，并留 1 格间距。建筑自身的地形 blend ring 跳过预留通道。
+自然建筑已使用V2 frontage placement，完整范围见V2文档。通道宽3格、建筑间空隙至少4格；建筑/access联合检查，均在reservation内，拒绝穿建筑/其他access/非所属道路，只允许终点合法接触所属道路。农田含围栏包络继续检查access并留1格间距，建筑blend ring仍跳过预留通道。开发命令保留原offset与旧connect规则。
 
-这是一份计划内部的占位规则，不是跨 Rural/Highway/其他 POI 的 Spatial Claim。尚未把所有建筑迁移到道路候选 frontage，也未新增 zoning。新 anchor 数据目前由 network 提供，实际 legacy 建筑接纳产生的 anchor/access 参与 occupancy 和 painter，非只声明未使用的数据结构。
+这是计划内部占位；外部Highway整体reservation冲突在它之前执行。六资产自然路径全部使用frontage/anchor，未新增zoning或City框架。
 
 ## 确定性与保存
 
 `RuralPlan.Road` 对新计划携带 segment；旧四参数构造保持 legacy 语义。Piece 保存 `RoadTypeV1`、`StartV1`、`EndV1`，每个 lot 保存 `RoadAccessV1` 的 connection/frontage/segments。恢复时从保存几何重建 graph，不在 chunk 到来时随机扩路。新道路计划缺失 lot access 会拒绝恢复；缺 V1 字段的旧计划继续原有逻辑。标记为 `ROAD_NETWORK_V1` 的新计划与旧 `MAIN_T_BRANCH` 记录区分。
+
+Building V2额外保存SourceRoadV2、UsableBoundsV2、EntryV2、EntryFacingV2，旧V1 anchor继续读取；逐chunk不重新挑选位置。
 
 Painter 以完整计划生成当前 chunk 的截片，材质由坐标/seed 决定，并按固定优先级合并交会格。维持地表高度查询；不对道路进行大规模挖填、坡度求解、桥梁或隧道工程。跨系统地形覆盖、道路实际通行和逐 chunk 生成顺序的游戏表现仍待实机验证，编译不证明这些运行结果。
 

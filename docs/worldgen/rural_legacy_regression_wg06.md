@@ -1,5 +1,7 @@
 # WG-06 Rural Legacy Regression + Natural/Dev Core Adapter V1
 
+后续现行档位见 [Scale / Tier Tuning V1](rural_scale_tier_tuning_v1.md)。本页旧tier权重、目标数及24条digest是WG-06历史快照，不代表当前自然生成分布；旧fixture未为本轮改写或重跑。
+
 日期：2026-09-13。状态：WG-06 已实现基线与有限共享核心；**Natural Rural 输出未改变**。本页描述 WG-06 完成时的源码和测试，不代表客户端视觉、既有存档或所有 seed 的验收。Phase 1 Gate 为 `PASS_WITH_NON_BLOCKING_FINDINGS`；随后 WG-07/07.1 发布八资产 metadata、保留旧六配方，原 24 digest 仍通过，详见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。下文“未接 metadata”仅指 WG-06 完成时点。
 
 ## 1. Goal

@@ -1,5 +1,9 @@
 # Rural Generator Audit V1（2026-09-13，静态只读）
 
+现行档位更新：见 [Scale / Tier Tuning V1](rural_scale_tier_tuning_v1.md)。本历史审计中的40/30/22/8权重、Cluster 4–6和Full 6–8目标、Full必须达到随机目标及旧9次锚点预算，均不代表当前自然路径；现为25/30/30/15、目标6–8/9–12、Full有效最低8、Cluster/Full每规格18次。StructureSet频率未改，实机接受率待验。
+
+建筑现行更新：自然六资产已迁移 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。下文固定中心offset、midpoint-only、自然无frontage驱动的结论为历史快照；自然入口优先合法socket，联合检查building/access并保存V2 anchor。开发命令仍沿用旧规划，农田仍Legacy，tier/spacing/biome未改。V2只编译通过，实机待验。
+
 现行冲突更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。本文下方无 Highway 避让、RURAL_HIGHWAY_INTEGRATION=NONE 等描述均为历史审计快照，已由规划期整体 reservation 避让替代；其他 POI 集成仍未实现。新实现仅编译通过，未补实机验证。
 
 现行道路更新：已接入 [Rural Road Framework V1 Core](rural_road_framework_v1.md)。下文固定碎石路、无 graph、事后 driveway 等结论为历史审计快照；新计划已有类型化路网、路肩/过渡、保存的 access 与计划内占位。六资产 legacy 选择仍在使用；本次仅编译，未补做实机验证。

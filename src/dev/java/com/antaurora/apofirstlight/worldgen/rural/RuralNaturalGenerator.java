@@ -61,6 +61,7 @@ public final class RuralNaturalGenerator {
         RuralScaleTier tier = RuralScaleTier.choose(seed, center);
         PlanningBudget planningBudget = new PlanningBudget();
         int maxLotEvaluationRequests = maxLotEvaluationRequests(tier);
+        int maxRequestsPerSpec = maxRequestsPerSpec(tier);
         int farmTarget = tier.targetFarms(seed, center);
         BoundingBox reservation = reservationFor(seed, center);
         long siteStart = System.nanoTime();
@@ -104,25 +105,24 @@ public final class RuralNaturalGenerator {
                     "TEMPLATE", "missing structure template " + RuralStructurePool.BARN.id(), rejections,
                     List.of(), 0, farmTarget, List.of(), 0, probeCache, planningBudget, false);
         }
-        Direction branchDirection = branches.isEmpty() ? mainDirection : branches.get(0).direction();
-        List<RuralLayoutPlanner.Candidate> candidates = RuralLayoutPlanner.candidates(center, mainDirection,
-                branchDirection, barnTemplate);
-        List<Spec> specs = assignments(tier, seed, center, candidates);
-        boolean barnAttempted = specs.stream().anyMatch(spec -> spec.definition() == RuralStructurePool.BARN);
+        RuralRoadNetwork roadNetwork = RuralRoadNetwork.from(networkRoads, List.of(), reservation);
+        List<RuralFrontagePlanner.Frontage> frontages = RuralFrontagePlanner.frontages(roadNetwork, seed, center);
+        List<RuralStructurePool.Definition> specs = assignments(tier, seed, center);
+        boolean barnAttempted = specs.contains(RuralStructurePool.BARN);
         long lotStart = System.nanoTime();
         List<RuralPlan.Lot> accepted = new ArrayList<>();
         List<RuralPlan.Road> roads = new ArrayList<>(1 + branches.size());
         roads.add(mainRoad);
         roads.addAll(branches);
-        for (Spec spec : specs) {
-            StructureTemplate template = templates.get(spec.definition());
+        for (RuralStructurePool.Definition spec : specs) {
+            StructureTemplate template = templates.get(spec);
             if (template == null) {
                 return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
-                        "TEMPLATE", "missing structure template " + spec.definition().id(), rejections,
+                        "TEMPLATE", "missing structure template " + spec.id(), rejections,
                         accepted, specs.size(), farmTarget, List.of(), 0, probeCache, planningBudget, barnAttempted);
             }
-            RuralPlan.Lot lot = findLot(terrain, template, spec.definition(), spec, reservation, roads,
-                    accepted, planningBudget, maxLotEvaluationRequests);
+            RuralPlan.Lot lot = findLot(terrain, template, spec, frontages, reservation, roads,
+                    accepted, planningBudget, maxLotEvaluationRequests, maxRequestsPerSpec);
             if (lot != null) accepted.add(lot);
             if (accepted.size() >= target) break;
         }
@@ -132,11 +132,6 @@ public final class RuralNaturalGenerator {
             return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
                     "LOT", "suitable or adaptable lots below tier minimum: " + accepted.size(), rejections,
                     accepted, specs.size(), farmTarget, List.of(), 0, probeCache, planningBudget, barnAttempted);
-        }
-        if (accepted.size() < target && tier == RuralScaleTier.FULL_RURAL) {
-            return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
-                    "LOT", "full rural could not reach target building count", rejections, accepted, specs.size(),
-                    farmTarget, List.of(), 0, probeCache, planningBudget, barnAttempted);
         }
         if (!hasResidential(accepted)) {
             return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
@@ -274,30 +269,26 @@ public final class RuralNaturalGenerator {
     }
 
     private static RuralPlan.Lot findLot(RuralTerrainSource terrain, StructureTemplate template,
-                                         RuralStructurePool.Definition definition, Spec spec,
+                                         RuralStructurePool.Definition definition,
+                                         List<RuralFrontagePlanner.Frontage> frontages,
                                          BoundingBox reservation, List<RuralPlan.Road> roads,
                                          List<RuralPlan.Lot> accepted, PlanningBudget budget,
-                                         int maxLotEvaluationRequests) {
-        int[][] offsets = {{0, 0}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}, {8, 0}, {-8, 0}, {0, 8}, {0, -8}};
-        for (int attempt = 0; attempt < offsets.length; attempt++) {
+                                         int maxLotEvaluationRequests, int maxRequestsPerSpec) {
+        int requestsForSpec = 0;
+        for (var placement : RuralFrontagePlanner.placements(frontages, template, definition, reservation)) {
+            if (requestsForSpec >= maxRequestsPerSpec) return null;
             if (budget.lotEvaluationRequests >= maxLotEvaluationRequests) {
                 budget.lotEvaluationBudgetExceeded = true;
                 return null;
             }
+            requestsForSpec++;
             budget.lotEvaluationRequests++;
-            Rotation rotation = spec.rotation();
-            int offsetIndex = attempt;
-            int candidateX = spec.x() + offsets[offsetIndex][0];
-            int candidateZ = spec.z() + offsets[offsetIndex][1];
+            Rotation rotation = placement.rotation();
+            int candidateX = placement.origin().getX();
+            int candidateZ = placement.origin().getZ();
             StructurePlaceSettings settings = new StructurePlaceSettings().setMirror(Mirror.NONE).setRotation(rotation);
-            if (!RuralLayoutPlanner.facesRoad(definition, rotation, spec.roadFacing())) {
-                continue;
-            }
-            BoundingBox atGround = template.getBoundingBox(settings, new BlockPos(candidateX, 0, candidateZ));
-            if (!inside(atGround, reservation)) continue;
-            if (roads.stream().anyMatch(road -> intersects2d(atGround, road.bounds(), RuralGenerator.LOT_MARGIN))) continue;
-            if (accepted.stream().anyMatch(lot -> intersects2d(atGround, lot.bounds(), RuralGenerator.LOT_MARGIN))) continue;
-            RuralLotAnchor access = RuralAccessPlanner.connect(atGround, spec.roadFacing(), reservation, roads, accepted);
+            BoundingBox atGround = placement.bounds();
+            RuralLotAnchor access = RuralAccessPlanner.connect(placement.anchor(), reservation, roads, accepted);
             if (access == null) continue;
             budget.lotEvaluationsExecuted++;
             List<Integer> surfaceYs = sampleLot(terrain, atGround);
@@ -323,9 +314,9 @@ public final class RuralNaturalGenerator {
                     definition.role(), definition.id(), desiredY, minSurface, maxSurface, maxSurface - minSurface,
                     classification, predictedCut, predictedFill, maxCutDepth, maxFillDepth,
                     origin, rotation);
-            return new RuralPlan.Lot(definition, origin, rotation, finalBox, desiredY, spec.roadFacing(),
+            return new RuralPlan.Lot(definition, origin, rotation, finalBox, desiredY, access.facing(),
                     classification, minSurface, maxSurface, predictedCut, predictedFill,
-                    maxCutDepth, maxFillDepth).withAccess(access);
+                    maxCutDepth, maxFillDepth).withAccess(access.atOriginY(origin.getY()));
         }
         return null;
     }
@@ -376,44 +367,37 @@ public final class RuralNaturalGenerator {
         return lots.stream().mapToInt(RuralPlan.Lot::maxFillDepth).max().orElse(0);
     }
 
-    private static List<Spec> assignments(RuralScaleTier tier, long seed, BlockPos center,
-                                          List<RuralLayoutPlanner.Candidate> candidates) {
-        List<Spec> result = new ArrayList<>();
-        int limit = Math.min(candidates.size(), Math.max(tier.maxBuildings() * 3, tier.minBuildings()));
-        Set<RuralLayoutPlanner.Candidate> used = new HashSet<>();
+    private static List<RuralStructurePool.Definition> assignments(RuralScaleTier tier, long seed, BlockPos center) {
+        List<RuralStructurePool.Definition> result = new ArrayList<>();
+        // Preserve the former role-slot order/count and selection policy, without using its coordinates.
+        List<RuralStructurePool.Role> roles = new ArrayList<>();
+        addRoles(roles, RuralStructurePool.Role.FARMHOUSE, 4);
+        addRoles(roles, RuralStructurePool.Role.AGRICULTURAL_LARGE, 2);
+        addRoles(roles, RuralStructurePool.Role.AGRICULTURAL_UTILITY, 4);
+        addRoles(roles, RuralStructurePool.Role.RESIDENTIAL, 8);
+        addRoles(roles, RuralStructurePool.Role.FLEX, 4);
+        addRoles(roles, RuralStructurePool.Role.LANDMARK, 2);
+        int limit = Math.min(roles.size(), Math.max(tier.maxBuildings() * 3, tier.minBuildings()));
         if (tier != RuralScaleTier.ISOLATED_HOMESTEAD) {
-            addRequired(result, used, candidates, RuralStructurePool.Role.FARMHOUSE, RuralStructurePool.FARMHOUSE);
+            result.add(RuralStructurePool.FARMHOUSE);
+            roles.remove(RuralStructurePool.Role.FARMHOUSE);
         }
         if (tier == RuralScaleTier.FARMSTEAD || tier == RuralScaleTier.RURAL_CLUSTER
                 || tier == RuralScaleTier.FULL_RURAL) {
-            addRequired(result, used, candidates, RuralStructurePool.Role.AGRICULTURAL_LARGE,
-                    RuralStructurePool.BARN);
+            result.add(RuralStructurePool.BARN);
+            roles.remove(RuralStructurePool.Role.AGRICULTURAL_LARGE);
         }
-        for (RuralLayoutPlanner.Candidate candidate : candidates) {
-            if (used.contains(candidate)) continue;
+        for (RuralStructurePool.Role role : roles) {
             RuralStructurePool.Definition selected = RuralPlanningCore.selectNatural(
-                    candidate.role(), seed, center, result.size());
-            if (selected != null) result.add(spec(selected, candidate));
+                    role, seed, center, result.size());
+            if (selected != null) result.add(selected);
             if (result.size() >= limit) break;
         }
         return result;
     }
 
-    private static void addRequired(List<Spec> result, Set<RuralLayoutPlanner.Candidate> used,
-                                    List<RuralLayoutPlanner.Candidate> candidates,
-                                    RuralStructurePool.Role role, RuralStructurePool.Definition definition) {
-        candidates.stream().filter(candidate -> candidate.role() == role).findFirst().ifPresent(candidate -> {
-            result.add(spec(definition, candidate));
-            used.add(candidate);
-        });
-    }
-
-    private static Spec spec(RuralStructurePool.Definition definition, RuralLayoutPlanner.Candidate candidate) {
-        Rotation rotation = candidate.rotationOverride() == null
-                ? RuralLayoutPlanner.rotationFor(definition.frontDirection(), candidate.roadFacing())
-                : candidate.rotationOverride();
-        return new Spec(definition, candidate.anchor().getX(), candidate.anchor().getZ(), rotation,
-                candidate.roadFacing());
+    private static void addRoles(List<RuralStructurePool.Role> roles, RuralStructurePool.Role role, int count) {
+        for (int i = 0; i < count; i++) roles.add(role);
     }
 
     private static List<RuralPlan.Road> branches(BlockPos center, Direction main, RuralScaleTier tier, long seed) {
@@ -454,9 +438,19 @@ public final class RuralNaturalGenerator {
     }
 
     private static int maxLotEvaluationRequests(RuralScaleTier tier) {
-        int availableRequests = tier.maxBuildings() * 3 * 9;
-        int targetWithThreeFailedSpecs = (tier.maxBuildings() + 3) * 9;
-        return Math.min(availableRequests, targetWithThreeFailedSpecs);
+        return switch (tier) {
+            case ISOLATED_HOMESTEAD -> 27;
+            case FARMSTEAD -> 63;
+            case RURAL_CLUSTER, FULL_RURAL -> (tier.maxBuildings() + 3) * maxRequestsPerSpec(tier);
+        };
+    }
+
+    private static int maxRequestsPerSpec(RuralScaleTier tier) {
+        return switch (tier) {
+            case ISOLATED_HOMESTEAD -> 9;
+            case FARMSTEAD -> 9;
+            case RURAL_CLUSTER, FULL_RURAL -> 18;
+        };
     }
 
     private static Direction siteDirection(long seed, BlockPos center) {
@@ -494,28 +488,6 @@ public final class RuralNaturalGenerator {
         EnumMap<RuralPlan.RejectionReason, Integer> result = new EnumMap<>(RuralPlan.RejectionReason.class);
         for (RuralPlan.RejectionReason reason : RuralPlan.RejectionReason.values()) result.put(reason, 0);
         return result;
-    }
-
-    private static final class Spec {
-        private final RuralStructurePool.Definition definition;
-        private final int x;
-        private final int z;
-        private final Rotation rotation;
-        private final Direction roadFacing;
-
-        private Spec(RuralStructurePool.Definition definition, int x, int z, Rotation rotation, Direction roadFacing) {
-            this.definition = definition;
-            this.x = x;
-            this.z = z;
-            this.rotation = rotation;
-            this.roadFacing = roadFacing;
-        }
-
-        private RuralStructurePool.Definition definition() { return definition; }
-        private int x() { return x; }
-        private int z() { return z; }
-        private Rotation rotation() { return rotation; }
-        private Direction roadFacing() { return roadFacing; }
     }
 
     private static final class PlanningBudget {
