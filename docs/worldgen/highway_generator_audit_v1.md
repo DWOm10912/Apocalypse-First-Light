@@ -1,5 +1,7 @@
 # Highway Generator Audit V1（2026-09-13，静态审查）
 
+现行冲突更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。本文下方 SHARED_SPATIAL_CLAIMS/Highway–Rural INTEGRATION=NONE、无排除区等结论为历史快照：现已由 seed 预测 provider 发布 ±32 格施工 claim，Rural 整体 reservation 带 12 格间距主动拒绝冲突。Highway writer 不查询 Rural、路线不变、无新出口或互通。其他 POI 避让仍未接入；仅编译通过。
+
 范围：现行自然生成、同仓库开发命令及相关资源；只读。本文的“已实现”指代码存在且位于所述调用链，不等于已在本轮游戏内验收。本轮未修改 Java、NBT、worldgen JSON、既有文档或世界。
 
 ## 1. Executive Summary

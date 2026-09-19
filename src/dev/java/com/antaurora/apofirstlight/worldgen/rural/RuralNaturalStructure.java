@@ -25,6 +25,14 @@ public final class RuralNaturalStructure extends Structure {
     protected Optional<GenerationStub> findGenerationPoint(GenerationContext context) {
         ChunkPos chunk = context.chunkPos();
         BlockPos center = new BlockPos(chunk.getMiddleBlockX(), 0, chunk.getMiddleBlockZ());
+        BoundingBox reservation = RuralNaturalGenerator.reservationFor(context.seed(), center);
+        var blocker = RuralHighwayConflict.blocker(context.seed(), reservation);
+        if (blocker.isPresent()) {
+            ApocalypseFirstLight.LOGGER.debug(
+                    "[AFL RURAL NATURAL][FIND_GENERATION_POINT] REJECT candidateChunk={} reason=HIGHWAY_SPATIAL_CONFLICT reservation={} highwayClaim={}",
+                    chunk, reservation, blocker.orElseThrow().id());
+            return Optional.empty();
+        }
         RuralPlan plan = RuralNaturalGenerator.plan(context, center);
         if (!plan.valid()) {
             ApocalypseFirstLight.LOGGER.debug(

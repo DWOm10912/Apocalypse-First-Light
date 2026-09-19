@@ -1,5 +1,7 @@
 # WG-05 — Limited Claim Index / Profile Freeze / Activation Gate V1
 
+后续接入说明：[Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md) 已复用纯 claim/bounds/priority/pair resolver 实现固定规划期避让。本文的 LimitedClaimIndex、profile freeze、activation gate 仍未接入正式 generator；下方“现有 generator 均不接入”属于 WG-05 当时范围，不再代表纯 spatial 类型的全部使用现状。
+
 日期：2026-09-13。状态：**Phase 1 纯基础实现，未注册、未启用、未接入任何现有 generator**。
 前置 WG-01～04 已有无接入契约及纯测试；本轮不启动 WG-06。
 

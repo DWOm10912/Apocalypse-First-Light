@@ -1,5 +1,7 @@
 # Rural Road Framework V1 Core
 
+自然候选更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。完整 reservation 在地形/建筑规划前避让 Highway ±32 格硬包络及 12 格安全间距，冲突即拒绝。道路几何、tier/spacing/biome、建筑农田不变；旧 Piece/已生成区域不回溯。仅编译通过，实机待验。
+
 状态：代码已接入自然生成与 `/afl rural` 开发命令；仅完成 `compileJava`，实机生成、接受率、存档往返和视觉验收待用户测试。不是 Rural Building Framework，也不是 Rural V2 完整迁移。
 
 ## 规划与回放

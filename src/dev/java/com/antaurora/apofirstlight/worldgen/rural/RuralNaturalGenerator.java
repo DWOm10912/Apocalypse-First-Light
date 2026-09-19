@@ -37,6 +37,10 @@ public final class RuralNaturalGenerator {
     private RuralNaturalGenerator() {
     }
 
+    static BoundingBox reservationFor(long seed, BlockPos center) {
+        return reservation(center, reservationSize(RuralScaleTier.choose(seed, center)));
+    }
+
     public static RuralPlan plan(WorldGenRegion level, BlockPos center) {
         return plan(RuralTerrainSampler.source(level), level.getServer().getStructureManager()::get,
                 level.getSeed(), center);
@@ -58,8 +62,7 @@ public final class RuralNaturalGenerator {
         PlanningBudget planningBudget = new PlanningBudget();
         int maxLotEvaluationRequests = maxLotEvaluationRequests(tier);
         int farmTarget = tier.targetFarms(seed, center);
-        int reservationSize = reservationSize(tier);
-        BoundingBox reservation = reservation(center, reservationSize);
+        BoundingBox reservation = reservationFor(seed, center);
         long siteStart = System.nanoTime();
         RuralPlan.SiteScore site = inspectSite(terrain, center);
         long siteInspectNanos = System.nanoTime() - siteStart;
