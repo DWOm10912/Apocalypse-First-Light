@@ -3,10 +3,11 @@
   "ammo": "apocalypse_firstlight:762x51mm_round",
   "fire_sound": "apocalypse_firstlight:cat_fire",
   "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
-  "magazine_capacity": 20,
+  "magazine_capacity": 30,
   "fire": {
-    "mode": "semi",
-    "interval_ticks": 5
+    "modes": ["semi", "auto"],
+    "default_mode": "semi",
+    "interval_ticks": 2
   },
   "damage": {
     "base": 13,
@@ -49,11 +50,11 @@
     "trail": "argb_gradient"
   },
   "recoil": {
-    "verticalMin": 0.28,
-    "verticalMax": 0.42,
-    "horizontalMin": -0.06,
-    "horizontalMax": 0.06,
-    "maxVertical": 2.0,
+    "verticalMin": 0.15,
+    "verticalMax": 0.25,
+    "horizontalMin": -0.05,
+    "horizontalMax": 0.05,
+    "maxVertical": 1.5,
     "maxHorizontal": 0.35,
     "recoveryDelay": 0.03,
     "cameraRecoveryTime": 0.12,
@@ -64,8 +65,8 @@
     "modelRecoveryTime": 0.08,
     "horizontalContinueChance": 0.5,
     "horizontalRecoveryTime": 0.12,
-    "horizontalLeftMin": 0.02,
-    "horizontalRightMin": 0.02
+    "horizontalLeftMin": 0.03,
+    "horizontalRightMin": 0.03
   },
   "casing": "apocalypse_firstlight:762x51mm_casing"
 }

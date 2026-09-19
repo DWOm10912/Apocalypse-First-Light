@@ -1,10 +1,11 @@
 # Native Gun Framework Generalization V1
 
-Current status: implemented for the existing P9-01 and BR51-01 definitions. HR55-01 validation was explicitly deferred by the user and is not registered.
+Current status: P9-01, BR51-01, HR55 and C.A.T use the public framework. P9/BR51/HR55 retain legacy SEMI-only data; C.A.T supports SEMI/AUTO, default SEMI. Historical verification below describes the original generalization task.
 
 ## Public framework
 
 - Common input and authoritative action classes are `NativeGunInput` and `NativeGunActions`; the former `P901Input` / `P901Actions` public names no longer exist.
+- FireMode V1 adds `NativeFireMode`, `NativeFireProfile`, `NativeFireModes` and `NativeFireControl`: data-driven SEMI/BURST/AUTO independent of WeaponClass, per-stack mode NBT, and per-player server trigger scheduling through the existing firing pipeline. See the [Playbook](native_weapon_integration_playbook_v1.md), section 19. No weapon-ID fire-mode rules are used.
 - `WeaponClass` is required in every `data/apocalypse_firstlight/native_guns/*.json` definition. Supported values are `pistol`, `rifle`, `precision_rifle`, `machine_gun`, `smg`, `shotgun`, and `special`.
 - Weapon IDs are not used to infer class, HUD size, magazine insertion timing, trail preset, ADS calibration, or normal/dry-fire sounds.
 - Class defaults are supplied by `NativeGunPresentation` and `NativeAdsCalibration`. A definition may override HUD dimensions, `mag_in_tick`, trail preset, and ADS profile in JSON.

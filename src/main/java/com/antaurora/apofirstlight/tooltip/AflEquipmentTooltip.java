@@ -37,7 +37,7 @@ public final class AflEquipmentTooltip {
         Component caliber=net.minecraft.locale.Language.getInstance().has(caliberKey)?Component.translatable(caliberKey):ammo.getDescription();
         return List.of(new Stat(WEAPON_TYPE,weaponType(d)),new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
                 new Stat(AMMUNITION,caliber),new Stat(MAGAZINE,value("rounds",NativeGunAmmo.capacity(stack,d))),
-                new Stat(FIRE_MODE,value(d.fireMode())),new Stat(RANGE,value("blocks",number(d.effectiveRange()))),
+                new Stat(FIRE_MODE,Component.translatable("fire_mode.apocalypse_firstlight."+com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack,d).key())),new Stat(RANGE,value("blocks",number(d.effectiveRange()))),
                 new Stat(NOISE,value("ai_noise",number(NativeGunNoise.resolve(stack,d).radius()))));
     }
     public static List<Stat> attachmentModifiers(ItemStack stack){

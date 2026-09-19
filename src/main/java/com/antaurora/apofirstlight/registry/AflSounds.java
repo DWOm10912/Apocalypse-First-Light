@@ -89,6 +89,7 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> NATIVE_GUN_MAGAZINE_OUT = nativeGunSound("magazine_out");
     public static final RegistryObject<SoundEvent> NATIVE_GUN_MAGAZINE_IN = nativeGunSound("magazine_in");
     public static final RegistryObject<SoundEvent> NATIVE_GUN_ACTION = nativeGunSound("action");
+    public static final RegistryObject<SoundEvent> NATIVE_GUN_FIRE_MODE_SWITCH = nativeGunSound("fire_mode_switch");
 
     private static RegistryObject<SoundEvent> nativeGunSound(String action) {
         String name = "native_gun_" + action;

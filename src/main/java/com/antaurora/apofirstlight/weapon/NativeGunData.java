@@ -104,7 +104,7 @@ public final class NativeGunData {
         try {
             var f=o.getAsJsonObject("fire");var d=o.getAsJsonObject("damage");
             var a=o.getAsJsonObject("accuracy");var reload=o.getAsJsonObject("reload");var noise=o.getAsJsonObject("noise");var ads=o.getAsJsonObject("ads");
-            if(!"semi".equals(f.get("mode").getAsString()))throw new IllegalArgumentException("fire.mode: only semi supported");
+            var fire=NativeFireProfile.parse(f);
             double start=num(d,"falloff_start",0,Double.MAX_VALUE);
             double range=num(d,"max_range",start,Double.MAX_VALUE);
             int tactical=(int)Math.ceil(num(reload,"tactical_seconds",0,100000)*20);
@@ -131,7 +131,7 @@ public final class NativeGunData {
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
                     NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
-                    suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),f.get("mode").getAsString());
+                    suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire);
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

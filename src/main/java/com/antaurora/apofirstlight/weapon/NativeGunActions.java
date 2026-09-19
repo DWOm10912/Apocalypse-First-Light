@@ -56,6 +56,7 @@ public final class NativeGunActions {
     private NativeGunActions() {}
 
     public static void clearForDataReload() {
+        NativeFireControl.clear();
         SESSIONS.forEach((p,s)->s.item.stopTriggeredAnim(p,s.id,NativeGunItem.ACTION_CONTROLLER,s.clip));
         SESSIONS.clear(); NEXT_FIRE.clear(); NEXT_DRY_FIRE.clear();
     }
@@ -73,6 +74,7 @@ public final class NativeGunActions {
                 || !(clip.equals("inspect") ? item.inspectClip() != null
                     : clip.equals("draw") && item.animationAsset() != null)) return false;
         Session state = new Session();
+        NativeFireControl.cancel(player);
         state.stack = player.getMainHandItem(); state.item = item;
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = player.server.getTickCount();
@@ -97,6 +99,7 @@ public final class NativeGunActions {
         }
     }
     public static void request(ServerPlayer player, boolean reload, int slot,long shotId) {
+        if(reload)NativeFireControl.cancel(player);
         if (!player.isAlive() || player.isSpectator() || slot < 0 || slot > 8
                 || player.getInventory().selected != slot
                 || !(player.getMainHandItem().getItem() instanceof NativeGunItem item)) return;
@@ -166,9 +169,11 @@ public final class NativeGunActions {
     @SubscribeEvent
     public static void tick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) return;
+        try {
         ItemStack held = player.getMainHandItem();
         ItemStack old = EQUIPPED.put(player, held);
         if (old != held) {
+            NativeFireControl.cancel(player);
             Session interrupted = SESSIONS.get(player);
             if (interrupted != null && interrupted.stack != held) {
                 SESSIONS.remove(player);
@@ -194,6 +199,7 @@ public final class NativeGunActions {
             state.item.stopTriggeredAnim(player, state.id,
                     NativeGunItem.ACTION_CONTROLLER, state.clip);
             SESSIONS.remove(player);
+            NativeFireControl.cancel(player);
             return;
         }
         long now = player.server.getTickCount();
@@ -242,6 +248,7 @@ public final class NativeGunActions {
             }
         }
         if (now >= state.end) SESSIONS.remove(player);
+        } finally { NativeFireControl.tick(player); }
     }
 
     private static void sound(ServerPlayer player, SoundEvent sound) {
@@ -262,6 +269,7 @@ public final class NativeGunActions {
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            NativeFireControl.logout(player);
             SESSIONS.remove(player);
             NEXT_FIRE.remove(player);
             NEXT_DRY_FIRE.remove(player);

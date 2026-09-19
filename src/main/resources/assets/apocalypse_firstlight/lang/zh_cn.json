@@ -1,4 +1,12 @@
 {
+  "key.apocalypse_firstlight.fire_mode": "切换开火模式",
+  "message.apocalypse_firstlight.fire_mode": "开火模式：%s",
+  "fire_mode.apocalypse_firstlight.semi": "半自动",
+  "fire_mode.apocalypse_firstlight.burst": "三连发",
+  "fire_mode.apocalypse_firstlight.auto": "全自动",
+  "hud.apocalypse_firstlight.fire_mode.semi": "半自动",
+  "hud.apocalypse_firstlight.fire_mode.burst": "三连发",
+  "hud.apocalypse_firstlight.fire_mode.auto": "全自动",
   "mod.apocalypse_firstlight.name": "黎明启示录",
 
   "itemGroup.apocalypse_firstlight.blocks": "黎明启示录 方块",

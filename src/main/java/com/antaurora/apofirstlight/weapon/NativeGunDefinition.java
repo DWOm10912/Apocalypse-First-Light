@@ -12,8 +12,9 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
                                   boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing,
                                   NativeSightMount sightMount, NativeMuzzleMount muzzleMount, ResourceLocation fireSound, ResourceLocation dryFireSound,
                                   ResourceLocation suppressedFireSound, NativeMagazineMount magazineMount, NativeAdsCalibration adsCalibration,
-                                  String fireMode) {
+                                  NativeFireProfile fire) {
     public NativeGunDefinition {
+        java.util.Objects.requireNonNull(fire, "fire");
         java.util.Objects.requireNonNull(recoil, "recoil");
         java.util.Objects.requireNonNull(trail, "trail");
         java.util.Objects.requireNonNull(accuracy, "accuracy");
@@ -27,6 +28,7 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
             throw new IllegalArgumentException("Invalid native gun timing/capacity");
     }
     public double headshotMultiplier() { return NativeHeadshots.MULTIPLIER.get(); }
+    public String fireMode() { return fire.defaultMode().key(); }
 
     // Packaged JSON defaults retained for compatibility with DEV tests; items resolve live by ID.
     public static final NativeGunDefinition P9_01 = NativeGunData.packaged(new ResourceLocation("apocalypse_firstlight", "p9_01"));

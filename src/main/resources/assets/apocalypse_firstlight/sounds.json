@@ -30,6 +30,7 @@
   "native_gun_magazine_out": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_out"]},
   "native_gun_magazine_in": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_in"]},
   "native_gun_action": {"sounds":["apocalypse_firstlight:weapons/p9_01/p9_01_slide_action"]},
+  "native_gun_fire_mode_switch": {"sounds":[{"name":"apocalypse_firstlight:weapon_fire_mode_switch","preload":true}]},
   "p9_01_slide_action": {
     "sounds": [
       "apocalypse_firstlight:weapons/p9_01/p9_01_slide_action"

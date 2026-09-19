@@ -1,4 +1,12 @@
 {
+  "key.apocalypse_firstlight.fire_mode": "Switch Fire Mode",
+  "message.apocalypse_firstlight.fire_mode": "Fire Mode: %s",
+  "fire_mode.apocalypse_firstlight.semi": "Semi",
+  "fire_mode.apocalypse_firstlight.burst": "Burst",
+  "fire_mode.apocalypse_firstlight.auto": "Auto",
+  "hud.apocalypse_firstlight.fire_mode.semi": "SEMI",
+  "hud.apocalypse_firstlight.fire_mode.burst": "BURST",
+  "hud.apocalypse_firstlight.fire_mode.auto": "AUTO",
   "mod.apocalypse_firstlight.name": "Apocalypse: First Light",
 
   "itemGroup.apocalypse_firstlight.blocks": "Apocalypse: First Light Blocks",

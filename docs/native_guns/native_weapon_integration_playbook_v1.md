@@ -10,7 +10,7 @@ AFL Native Gun 是实现 weapon/NativeGunItem.java、由 NativeGunActions 执行
 
 “新增已存在类型武器”指：射击模式、供弹语义、动作状态和附件槽位均已由当前公共链支持，只新增一套 ID、资产、声音、数据和每枪视觉校准。例如下一把弹匣供弹的半自动步枪可复用 BR51-01 路线。
 
-以下情况已经是新机制，不能机械复制本流程：全自动/点射（loader 当前只接受 semi）、栓动/泵动/逐发装填、独立膛内弹、霰弹多弹丸、充能/过热、双持、镜内 PIP、耐久/卡壳。它们必须先设计并扩展公共状态机、数据 schema 与测试。
+SEMI / BURST / AUTO 已有公共火控实现。以下仍是新机制：栓动/泵动/逐发装填、独立膛内弹、霰弹多弹丸、充能/过热、双持、镜内 PIP、耐久/卡壳。
 
 状态术语：
 
@@ -38,11 +38,11 @@ SHOTGUN：霰弹枪
 
 SPECIAL：特殊武器
 
-WeaponClass 只表达“这是什么武器类别”，不等同于射击模式、枪机/动作类型或装填方式。SEMI/AUTO/BURST、栓动/泵动、弹匣供弹/逐发装填等属于独立机制维度；当前已实现的射击模式仍只有 semi。
+WeaponClass 与 NativeFireMode 完全独立。当前支持 SEMI / BURST / AUTO；枪机/装填方式仍是独立机制维度。
 
 2. Known-Good Weapon Implementation Matrix
 
-当前正式 Native Gun 只有两把；没有成熟 SMG、突击步枪、栓动步枪或霰弹枪模板。
+当前正式 Native Gun 包括 P9、BR51、HR55、C.A.T。下表保留 P9/BR51 模板对比；HR55 为 SEMI-only，C.A.T 为 SEMI/AUTO。
 
 项目
 
@@ -150,7 +150,7 @@ PRIMARY_KNOWN_GOOD_TEMPLATE = apocalypse_firstlight:br51_01
 SEMI_AUTO_RIFLE_CLOSEST_TEMPLATE = apocalypse_firstlight:br51_01
 OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
 
-当前 HR55-01 尚未注册/接入，因此不属于 Known-Good matrix；后续接入时应声明 weapon_class = RIFLE，并作为“第三把标准半自动步枪”验证泛化框架。不得为了 HR55 在公共 Java 中新增 weapon-ID 特判。
+HR55 已以 apocalypse_firstlight:hr55 注册，weapon_class=RIFLE，保持 SEMI-only。C.A.T 通过 CatNativeGunItem 继承 ConfiguredNativeGunItem，专用类只负责 idle 猫叫；火控走公共实现。
 
 选择 BR51-01 为主模板的原因不是“步枪看起来接近”，而是它已使用 ConfiguredNativeGunItem、通用 NativeAnimatedWeaponRenderer、完整数据 JSON、两种换弹、附件三槽、维护台、Noise/耳鸣与正式声音 cue。P9-01 同样完整，但含 P901Item、P901Renderer、P901FirstPerson、专用空仓提交和手臂构图等特例，不应作为默认复制源。
 
@@ -328,13 +328,13 @@ NOT IMPLEMENTED
 
 4.5 Combat checklist
 
-左键输入由 NativeGunInput.attack 拦截并以 attackHeld 做按下沿 gate；按住不会自动连发。
+NativeGunInput 发送按下/松开沿，NativeFireControl 服务端管理每位玩家的触发状态。SEMI 按下只一发；BURST 松开仍完成 burst_count 发；AUTO 按住按 interval_ticks 连发，松开取消。
 
 NativeGunActions 在服务端校验主手、槽位、动作锁、射速与弹量，成功后先扣弹再执行 hitscan。
 
 fire.interval_ticks 最低间隔；理论 RPM=1200 / interval_ticks。P9 为 400 RPM，BR51 为 300 RPM。
 
-当前只有 semi，不是类别 enum；NativeGunData.parse 会拒绝其他 mode。
+NativeFireProfile 解析有序 modes、default_mode、burst_count（默认 3，合法整数 2..32）。旧 mode:semi 兼容为单模式。非法模式、重复/空列表、非法默认值和 burst_count 拒绝加载。
 
 hitscan 从服务端眼位与 look vector 出发，使用 NativeStanceAccuracy 后的散布，射程为 max_range。
 
@@ -446,9 +446,9 @@ JSON；必须是已注册 Item
 
 fire mode / interval
 
-DATA-DRIVEN + HARDCODED LIMIT
+DATA-DRIVEN
 
-JSON，但当前 mode 仍只允许 semi
+JSON 支持 semi / burst / auto，与 WeaponClass 无关
 
 damage/falloff/max/min multiplier
 
@@ -551,7 +551,7 @@ Creative 的 reserve 为无限，reload 直接填满且不需要库存子弹。
 
 空仓左键只播放当前通用 Native Gun dry-fire / 数据化 fallback，6 tick 防刷；不触发 shoot、伤害、Noise 或抛壳。不得把未知枪回退到 P9 专属语义。
 
-HUD 当前显示“当前装弹 | 备弹”；普通 Tooltip 仅显示容量。
+HUD 当前显示“当前装弹 | 备弹 当前模式”；Tooltip 显示容量与当前模式。
 
 弹匣附件通过 NativeMagazineItem.capacity() 改变有效容量；更换小容量弹匣时，维护台事务把超额弹药退回玩家库存/掉落，失败则回滚。
 
@@ -798,9 +798,9 @@ Profile / animation JSON / NativeGunAnimations
 
 C10 UNKNOWN
 
-想直接复制栓动、泵动、全自动、霰弹或特殊武器
+想直接复制栓动、泵动、霰弹或其他特殊动作武器
 
-7 个 WeaponClass 已建立，但这些机制尚未实现；Class 不等于 Action/Reload/FireMode
+7 个 WeaponClass 与 SEMI/BURST/AUTO 已建立；栓动、泵动及多弹丸等机制尚未实现
 
 Known-Good matrix + parser
 
@@ -958,7 +958,7 @@ Step 4 — Gun Data / WeaponClass [NEW + CALIBRATE]
 
 ammo / casing / capacity
 
-fire.mode=semi
+fire.modes=["semi"]、fire.default_mode="semi"（可按需声明 burst / auto）
 
 interval
 
@@ -988,7 +988,7 @@ Step 5 — Ammo / Magazine [COPY or NEW]
 
 Step 6 — Fire / Semi-Auto [VERIFY]
 
-不新增第二套射击代码。验证 NativeGunInput 按下沿、NativeGunActions cooldown/扣弹、NativeGunShot 命中。确认 fire.mode=semi，按住不连发，interval 对应目标 RPM。
+不新增第二套射击代码。验证 NativeGunInput 触发沿、NativeFireControl 调度、NativeGunActions cooldown/扣弹、NativeGunShot 命中。半自动模板声明 modes=["semi"]；其他枪按实际 supported/default modes 配置。interval 对应目标 RPM。
 
 Step 7 — Reload [CALIBRATE + VERIFY]
 
@@ -1050,7 +1050,7 @@ Step 16 — Acceptance Tests [VERIFY]
 
 按第 17 节逐项执行并分别记录构建、服务端、客户端、视觉、听感、多人边界。只有实现链与必要人工 QA 均有证据时，才将新枪加入 Known-Good matrix。
 
-对于下一把计划接入的 HR55：
+已接入 HR55 的当前基线：
 
 WeaponClass = RIFLE
 FireMode = SEMI
@@ -1059,3 +1059,30 @@ Ammo = 12.7×55mm
 HR55 是新框架的第三枪验证样本；其正式接入不得产生任何新的公共 weapon-ID 特判。
 
 本文的当前事实优先级：当前 Java/JSON/runtime resource > 本 Playbook 当前版本 > 当前专项文档 > 历史迁移报告 > 外部原资产说明。发现冲突时先记录 STALE/PARTIAL/UNKNOWN，不得在文档审查任务中顺手修改实现。
+
+19. FireMode V1 公共契约
+
+```json
+"fire": {
+  "modes": ["semi", "burst", "auto"],
+  "default_mode": "semi",
+  "interval_ticks": 2,
+  "burst_count": 3
+}
+```
+
+当前模式保存于具体 stack 的 AflGunFireMode 字符串 NBT；未写入时使用 default_mode。服务器库存初始化会清理不再支持的已保存值；客户端 getter 同步回退，且不写 NBT。模式变化不会触发重新装备动画。
+
+B = 切换开火模式，V = Inspect。客户端仅请求循环，服务器校验主手、slot、Gecko identity、玩家状态、菜单、动作锁/trigger 状态与 4 tick 切换冷却。单模式 cycle 在写 NBT/提示/音效之前返回 false，客户端也不发送该键请求。
+
+协议 27 的 NativeTriggerPacket 发送按下/松开/切换意图；不接受客户端指定模式。SEMI 每次按下沿一发；BURST 后续由服务器按 interval 调度，释放不取消；AUTO 释放即停止。空仓、换 stack/slot、reload 请求、死亡、旁观、跨维度、断线、data reload、动作取消都终止后续发射。所有子弹复用 NativeGunActions → NativeGunShot。服务器调度子弹使用按玩家的负 shotId，现有成功射击视觉包和 anchor 路径负责 FX。
+
+HUD 弹药行取消固定列宽：装弹数使用 1.25 倍字号，按 font.width 的实际缩放宽度后留 3 GUI px 放置 `|`。分隔符、备弹/∞ 使用 1.10 倍字号；开火模式保留原先较小的 0.78 倍字号，按去除尾部行距的文字基线（font.lineHeight - 1）补偿缩放差，与备弹共用基线，不通过放大模式文字实现对齐。分隔符后间距为 3 个局部像素（缩放后 3.3 GUI px），备弹与模式间距为 5 个局部像素（5.5 GUI px）。整行分别计入备弹与模式的实际缩放宽度，空间不足向左展开，极窄屏幕缩放弹药行。SEMI #9FC7D9、BURST #D6A15F、AUTO #D97878。HUD/Tooltip 读取当前 stack 模式。服务器实际切换成功才发送本地化 Action Bar。此次 HUD 排版调整仅进行 compileJava/processResources 和布局公式检查，未启动客户端，最终中英文/∞ 字形观感仍需游戏内验收。
+
+选择器音效已接入用户提供的 weapon_fire_mode_switch.ogg，原样保存于 src/main/resources/assets/apocalypse_firstlight/sounds/weapon_fire_mode_switch.ogg。AflSounds 注册通用事件 apocalypse_firstlight:native_gun_fire_mode_switch，sounds.json 映射真实资源并 preload。仅服务端确认实际模式变化后，通过 PLAYERS 声道播放一次（volume=0.5、pitch=1）；单模式枪、非法请求及被动作锁拒绝的切换均不播放。
+
+P9/BR51/HR55 保留旧 mode:semi JSON；C.A.T 使用 [semi,auto]，默认 semi。客户端视觉/听感/多人实机验收不由 compile 或服务器测试替代。
+
+2026-09-18 验证：`compileJava processResources` 通过；`NativeFireModeGameTests` 两个定向聚合测试 2/2 通过。覆盖 legacy/新 schema、非法配置、循环与 stack 序列化、失效模式回退、SEMI 按下沿、BURST 松键续射及 1/2 发余弹、AUTO 两 tick 节奏/松键停止、空仓后不自动恢复、换槽/换 stack/实际启动换弹/死亡/旁观/logout 清理，以及 P9/BR51/HR55 实际扣弹与单模式服务器拒绝切换。多个 FakePlayer 独立运行以检查状态隔离。
+
+离线定向命令：`gradlew.bat --offline -I src/dev/fire-mode-gametest.init.gradle compileJava processResources runGameTestServer -x downloadAssets -PaflWithoutShaders -PaflWithoutWorldEdit`，使用项目 `.gradle-user` 缓存。无图形服务器不需要客户端资产下载；未运行 runClient、clean、commit 或 push。跨维度 guard 已代码检查；真实跨维度、保存世界/重新登录、多端延迟下的输入/HUD/音效/视觉表现未做实机验收。后续选择器 OGG 接入仅做编译、资源映射及文件一致性检查，不代表客户端听感已验收。

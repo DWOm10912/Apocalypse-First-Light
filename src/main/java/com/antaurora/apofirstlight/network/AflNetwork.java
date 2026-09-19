@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "26";
+    private static final String PROTOCOL = "27";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -63,6 +63,8 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, P901C2SPacket.class,
                 P901C2SPacket::encode, P901C2SPacket::decode, P901C2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, NativeTriggerPacket.class,NativeTriggerPacket::encode,NativeTriggerPacket::decode,
+                NativeTriggerPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, NativeShotS2CPacket.class,
                 NativeShotS2CPacket::encode, NativeShotS2CPacket::decode, NativeShotS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
@@ -265,7 +267,7 @@ public final class AflNetwork {
             if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER) {
                 context.enqueueWork(() -> {
                     ServerPlayer player = context.getSender();
-                    if (player != null) com.antaurora.apofirstlight.weapon.NativeGunActions
+                    if (player != null && packet.reload) com.antaurora.apofirstlight.weapon.NativeGunActions
                             .request(player, packet.reload, packet.slot,packet.shotId);
                 });
             }
@@ -274,6 +276,25 @@ public final class AflNetwork {
     }
 
     private AflNetwork() {
+    }
+
+    public static void nativeTrigger(int action,int slot,long shotId,long gunId) {
+        if(channel!=null)channel.sendToServer(new NativeTriggerPacket(action,slot,shotId,gunId));
+    }
+    public record NativeTriggerPacket(int action,int slot,long shotId,long gunId) {
+        static void encode(NativeTriggerPacket p,FriendlyByteBuf b){b.writeByte(p.action);b.writeVarInt(p.slot);b.writeLong(p.shotId);b.writeLong(p.gunId);}
+        static NativeTriggerPacket decode(FriendlyByteBuf b){return new NativeTriggerPacket(b.readUnsignedByte(),b.readVarInt(),b.readLong(),b.readLong());}
+        static void handle(NativeTriggerPacket p,Supplier<NetworkEvent.Context> supplier){
+            var c=supplier.get();
+            c.enqueueWork(()->{var player=c.getSender();if(player==null)return;
+                switch(p.action){
+                    case 0 -> com.antaurora.apofirstlight.weapon.NativeFireControl.release(player);
+                    case 1 -> {if(p.shotId>0)com.antaurora.apofirstlight.weapon.NativeFireControl.press(player,p.slot,p.shotId,p.gunId);}
+                    case 2 -> com.antaurora.apofirstlight.weapon.NativeFireControl.switchMode(player,p.slot,p.gunId);
+                    default -> { }
+                }
+            });c.setPacketHandled(true);
+        }
     }
 
     public static void sendExplosionTinnitus(ServerPlayer player, float severity) {

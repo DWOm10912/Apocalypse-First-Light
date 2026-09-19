@@ -18,6 +18,7 @@ public final class NativeGunAmmo {
     static CompoundTag tagWithoutAmmo(ItemStack stack) {
         CompoundTag copy = stack.hasTag() ? stack.getTag().copy() : new CompoundTag();
         copy.remove(ROOT);
+        copy.remove(NativeFireModes.TAG);
         return copy;
     }
 
@@ -28,6 +29,7 @@ public final class NativeGunAmmo {
     }
 
     public static void initialize(ItemStack gun, NativeGunDefinition definition) {
+        NativeFireModes.sanitize(gun,definition);
         // Preserve zero and existing states; sanitize corrupt/out-of-range data rather than refill it.
         int count = read(gun, definition);
         CompoundTag tag = gun.getTag();

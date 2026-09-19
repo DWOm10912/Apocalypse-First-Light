@@ -21,6 +21,12 @@ public final class NativeGunInput {
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
     private static boolean attackHeld;
+    private static boolean triggerSent;
+    private static int triggerSlot;
+    private static long triggerGun;
+    private static final KeyMapping FIRE_MODE = new KeyMapping("key.apocalypse_firstlight.fire_mode",
+            KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B,
+            "key.categories.apocalypse_firstlight");
     private static final KeyMapping INSPECT = new KeyMapping("key.apocalypse_firstlight.inspect",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_V,
             "key.categories.apocalypse_firstlight");
@@ -32,7 +38,7 @@ public final class NativeGunInput {
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
-        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); }
+        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); event.register(FIRE_MODE); }
     }
 
     private static boolean ready(Minecraft mc) {
@@ -51,7 +57,10 @@ public final class NativeGunInput {
             NativeGunInspect.cancel();
             NativeGunRecoil.syncAimBeforeShot();
             long shotId=NativeShotVisualSnapshot.capture();
-            AflNetwork.requestP901(false, mc.player.getInventory().selected,shotId);
+            triggerSlot=mc.player.getInventory().selected;
+            triggerGun=software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem());
+            AflNetwork.nativeTrigger(1,triggerSlot,shotId,triggerGun);
+            triggerSent=true;
         }
         attackHeld = true;
     }
@@ -60,6 +69,11 @@ public final class NativeGunInput {
     public static void tick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
+        if(triggerSent && (!ready(mc)||!mc.options.keyAttack.isDown()
+                ||mc.player.getInventory().selected!=triggerSlot
+                ||software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem())!=triggerGun))stopTrigger();
+        boolean modeClick=false;
+        while(FIRE_MODE.consumeClick())modeClick=true;
         boolean reloadClick = false;
         while (RELOAD.consumeClick()) reloadClick = true;
         boolean inspectClick = false;
@@ -73,13 +87,21 @@ public final class NativeGunInput {
         }
         if (!mc.options.keyAttack.isDown()) attackHeld = false;
         if (reloadClick && !reloadHeld) {
+            stopTrigger();
             NativeGunInspect.cancel();
             NativeGunAds.reloadRequested();
             AflNetwork.requestP901(true, mc.player.getInventory().selected);
         }
         reloadHeld = RELOAD.isDown();
+        if(modeClick&&!attackHeld&&!reloadClick
+                &&((com.antaurora.apofirstlight.weapon.NativeGunItem)mc.player.getMainHandItem().getItem()).definition().fire().modes().size()>1)
+            AflNetwork.nativeTrigger(2,mc.player.getInventory().selected,0,
+                    software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem()));
         if (inspectClick && !inspectHeld && !reloadClick && !mc.options.keyAttack.isDown()) NativeGunInspect.pressed();
         inspectHeld = INSPECT.isDown();
         NativeGunInspect.tick(true);
+    }
+    private static void stopTrigger(){
+        if(triggerSent){AflNetwork.nativeTrigger(0,triggerSlot,0,triggerGun);triggerSent=false;}
     }
 }
