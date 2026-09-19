@@ -4,7 +4,7 @@
 
 ## 权威路径
 
-RuralNaturalStructure.findGenerationPoint 先执行既有 Highway reservation 冲突检查；通过后 RuralNaturalGenerator 继续原有 site gate 和八资产加载，调用 RuralRoadNetwork.from → RuralFrontagePlanner.frontages → placements → RuralAccessPlanner.connect → 原有 lot terrain evaluation → 接纳 → 原有 RuralFarmPlanner.planBounded。
+RuralNaturalStructure.findGenerationPoint 先执行既有 Highway reservation 冲突检查；通过后 RuralNaturalGenerator 继续原有 site gate 和八资产加载，调用 RuralRoadNetwork.from → RuralFrontagePlanner.frontages → placements → RuralAccessPlanner.connect → 原有 lot terrain evaluation → 接纳 → RuralFarmlandPlanner.plan（农业地块 V1）。
 
 自然路径不再调用 RuralLayoutPlanner.candidates，也不再以中心 ±10/±30、侧向18/30 或其4/8格偏移重试作为位置来源。RuralLayoutPlanner 的 rotationFor/boundsAt 继续复用。角色需求、原角色槽顺序和数量、selectNatural、最少建筑数和必要角色拒绝条件保留；选择资产后再按真实尺寸评估其 frontage lot。未启用新的权重或 maxCount 语义。
 
@@ -29,7 +29,7 @@ access 是现有地表 FARM_TRACK painter 的水平XZ路径，保存真实 socke
 
 建筑与通道接纳前联合检查：完整 reservation、道路完整包络、其他建筑及既有 access。建筑不能压道路；通道不能穿自己/其他建筑，不能与已接纳通道重叠，也不能穿其他 road。仅允许在所属道路终点连接邻域接触路面边缘/路肩，不允许沿主路长距离重叠或横穿至另一侧。
 
-农田仍最后规划，沿用 existing fencedEnvelope 对道路、建筑、access及已有农田的检查；新建筑阶段还没有已接纳农田，因此无需把旧农田算法反向重写。农田外观、作物、围栏、田埂、变体完全保留 Legacy，Farmland V2 未实现。terrain preparation、道路 painter 和真实 lot 地形门槛未改。
+农田仍最后规划，新自然计划已使用 [Farmland V2 / Agricultural Lot V1](rural_farmland_v2.md)：优先 FARM_TRACK、其次 SIDE frontage，完整田埂/维护环/作物区和入口 access 共同检查 reservation、道路、建筑及已有 access/农田占地。新建筑阶段还没有已接纳农田，不修改建筑 V2 的布局/占地算法。农业地块用独立 planner/painter 生成废弃、存续和过度生长三种状态；旧 Piece 和开发命令继续 Legacy 农田。建筑 terrain preparation、道路 painter 和真实 building lot 地形门槛未改。
 
 ## 自然八资产与四档
 

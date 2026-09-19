@@ -32,12 +32,22 @@ public final class RuralFarmPlot {
     private final Map<Long, Integer> surfaceYs;
     private final boolean valid;
     private final String rejectionReason;
+    private final RuralAgriculturalLot agriculturalLot;
 
     public RuralFarmPlot(int index, String ownerId, ShapeType shape, BoundingBox bounds, int baseY,
                          CropType crop, IrrigationType irrigationType, List<Cell> cells,
                          List<Fence> fences, List<Gate> gates, List<BlockPos> irrigationCells,
                          List<BlockPos> pathCells, Map<Long, Integer> surfaceYs,
                          boolean valid, String rejectionReason) {
+        this(index, ownerId, shape, bounds, baseY, crop, irrigationType, cells, fences, gates,
+                irrigationCells, pathCells, surfaceYs, valid, rejectionReason, null);
+    }
+
+    public RuralFarmPlot(int index, String ownerId, ShapeType shape, BoundingBox bounds, int baseY,
+                         CropType crop, IrrigationType irrigationType, List<Cell> cells,
+                         List<Fence> fences, List<Gate> gates, List<BlockPos> irrigationCells,
+                         List<BlockPos> pathCells, Map<Long, Integer> surfaceYs,
+                         boolean valid, String rejectionReason, RuralAgriculturalLot agriculturalLot) {
         this.index = index;
         this.ownerId = ownerId;
         this.shape = shape;
@@ -60,9 +70,11 @@ public final class RuralFarmPlot {
         this.surfaceYs = Map.copyOf(surfaceYs);
         this.valid = valid;
         this.rejectionReason = rejectionReason;
+        this.agriculturalLot = agriculturalLot;
     }
 
     public int index() { return index; }
+    public RuralAgriculturalLot agriculturalLot() { return agriculturalLot; }
     public String ownerId() { return ownerId; }
     public ShapeType shape() { return shape; }
     public BoundingBox bounds() { return bounds; }

@@ -164,8 +164,8 @@ public final class RuralNaturalGenerator {
         }
 
         long farmStart = System.nanoTime();
-        RuralFarmPlanner.Result farm = RuralFarmPlanner.planBounded(terrain, seed, center, reservation, roads,
-                accepted, farmTarget, farmTarget);
+        RuralFarmPlanner.Result farm = RuralFarmlandPlanner.plan(terrain, seed, center, reservation, roads,
+                accepted, tier, farmTarget);
         long farmPlanningNanos = System.nanoTime() - farmStart;
         if (farm.count() < tier.minFarms()) {
             return reject(center, reservation, site, mainRoad, branches, target, tier, seed,

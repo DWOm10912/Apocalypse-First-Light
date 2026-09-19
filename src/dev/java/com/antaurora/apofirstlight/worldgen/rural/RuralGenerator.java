@@ -283,6 +283,19 @@ public final class RuralGenerator {
             }
         }
         for (RuralFarmPlot plot : plan.farmPlots()) {
+            if (plot.agriculturalLot() != null) {
+                var result = RuralFarmlandPainter.paint(level, plot, chunkBox);
+                stats.blocksAttempted += result.attempted();
+                stats.blocksWritten += result.written();
+                stats.farmBlocks += result.written() - result.preparation().changed();
+                stats.cropBlocks += result.cropBlocks();
+                stats.irrigationBlocks += result.irrigationBlocks();
+                stats.addPreparation(result.preparation());
+                if (result.skippedColumns() > 0) LOGGER.debug(
+                        "[AFL RURAL NATURAL][FARM_V2_TERRAIN_SKIP] plot={} chunk={} columns={}",
+                        plot.index(), chunkBox, result.skippedColumns());
+                continue;
+            }
             RuralTerrainAdapter.PreparationResult preparation = RuralTerrainAdapter.prepare(level, plot, chunkBox);
             stats.addPreparation(preparation);
             placeNaturalFarmPlot(level, plot, plan.deterministicSeed(), chunkBox, stats);

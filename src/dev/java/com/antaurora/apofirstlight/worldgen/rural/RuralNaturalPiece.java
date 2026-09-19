@@ -302,6 +302,7 @@ public final class RuralNaturalPiece extends StructurePiece {
         for (Map.Entry<Long, Integer> entry : plot.surfaceYs().entrySet())
             surfaces.putInt(Long.toString(entry.getKey()), entry.getValue());
         value.put("SurfaceYs", surfaces);
+        if (plot.agriculturalLot() != null) value.put("AgriculturalLotV1", plot.agriculturalLot().save());
         farms.add(value);
     }
 
@@ -332,7 +333,9 @@ public final class RuralNaturalPiece extends StructurePiece {
                 RuralFarmPlot.ShapeType.valueOf(value.getString("Shape")), readBox(value, "Bounds"),
                 value.getInt("BaseY"), RuralFarmPlot.CropType.valueOf(value.getString("Crop")),
                 RuralFarmPlot.IrrigationType.valueOf(value.getString("IrrigationType")), cells, fences, gates,
-                readPositions(value, "Irrigation"), readPositions(value, "Path"), surfaces, true, "OK");
+                readPositions(value, "Irrigation"), readPositions(value, "Path"), surfaces, true, "OK",
+                value.contains("AgriculturalLotV1", 10)
+                        ? RuralAgriculturalLot.load(value.getCompound("AgriculturalLotV1")) : null);
     }
 
     private static void writePositions(CompoundTag tag, String key, List<BlockPos> positions) {

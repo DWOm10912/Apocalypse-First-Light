@@ -2,7 +2,7 @@
 
 自然候选更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。完整 reservation 在地形/建筑规划前避让 Highway ±32 格硬包络及 12 格安全间距，冲突即拒绝。道路几何、tier/spacing/biome、建筑农田不变；旧 Piece/已生成区域不回溯。仅编译通过，实机待验。
 
-状态：道路已接入自然生成与 `/afl rural` 开发命令。自然建筑已迁移到 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)，开发命令仍为旧建筑布局。V2仅完成compileJava，实机生成、接受率、存档往返和视觉验收待用户测试；农田仍为Legacy。
+状态：道路已接入自然生成与 `/afl rural` 开发命令。自然建筑已迁移到 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)，新自然农田已接入 [Farmland V2 / Agricultural Lot V1](rural_farmland_v2.md)，优先消费 FARM_TRACK、其次 SIDE frontage；开发命令和旧 Piece 农田仍为 Legacy。Farmland V2 仅完成 compileJava，实机生成、接受率、存档往返和视觉验收待用户测试。
 
 ## 规划与回放
 
@@ -35,7 +35,7 @@ Isolated 使用 18 格中心线 FARM_TRACK；Farmstead 使用 32 格中心线 SI
 
 ## Access 占地与兼容
 
-自然建筑已使用V2 frontage placement，完整范围见V2文档。通道宽3格、建筑间空隙至少4格；建筑/access联合检查，均在reservation内，拒绝穿建筑/其他access/非所属道路，只允许终点合法接触所属道路。农田含围栏包络继续检查access并留1格间距，建筑blend ring仍跳过预留通道。开发命令保留原offset与旧connect规则。
+自然建筑已使用V2 frontage placement，完整范围见V2文档。通道宽3格、建筑间空隙至少4格；建筑/access联合检查，均在reservation内，拒绝穿建筑/其他access/非所属道路，只允许终点合法接触所属道路。新农业地块在建筑接纳后规划，完整过渡环/田埂包络及三格宽 gate access 共用既有 XZ 占地检查函数，避开建筑和 access，仅接触所属道路外沿；旧农田保留原包络规则。建筑 blend ring 仍跳过预留通道。开发命令保留原 offset 与旧 connect 规则。
 
 这是计划内部占位；外部Highway整体reservation冲突在它之前执行。六资产自然路径全部使用frontage/anchor，未新增zoning或City框架。
 
