@@ -6,13 +6,12 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.model.GeoModel;
-import software.bernie.geckolib.renderer.GeoItemRenderer;
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.util.RenderUtils;
 
 /** Uses the unchanged AFL arm renderer; weapon-specific offsets belong in model resources. */
-public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.item.Item & software.bernie.geckolib.animatable.GeoItem> extends GeoItemRenderer<T> {
+public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.item.Item & software.bernie.geckolib.animatable.GeoItem> extends NativeGunContextRenderer<T> {
     @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
         if(NativeMagazineRendering.replaces(currentItemStack,bone)){
@@ -36,7 +35,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
             @Override public ResourceLocation getAnimationResource(T i) { return profile.resource("animations", ".animation.json"); }
             // Source shoot already has two orphan channels; never invent substitute geometry.
             @Override public boolean crashIfBoneMissing() { return false; }
-        });
+        }, profile.idle());
         addRenderLayer(new GeoRenderLayer<>(this) {
             @Override public void renderForBone(PoseStack pose, T item, GeoBone bone,
                     RenderType type, MultiBufferSource buffers, VertexConsumer buffer, float partial, int light, int overlay) {

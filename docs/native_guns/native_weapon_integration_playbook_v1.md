@@ -1000,6 +1000,17 @@ Profile 列出全部 clip，仅 idle/empty baseline 在 loops 集合。检查 tr
 
 当前通用配置枪的控制器顺序为 `baseline` → `empty_state`（仅当 Profile 同时列出空仓 loop/clip）→ `action`。`baseline` 维持完整 `static_idle` 姿态；`empty_state` 从当前渲染 stack 只读弹量，0 发循环 `static_bolt_caught`，有弹停止；`action` 仅运行触发的一次性动作，否则停止。后处理的动作通道覆盖空仓通道，因此 draw 不写 bolt 时空仓 bolt 仍保持，而 shoot/reload_empty 写 bolt 时动作优先。BR51/HR55 的 `static_bolt_caught` 可只是局部 bolt 通道，不能替换完整 `static_idle`。具体首帧视觉和联机同步仍需客户端实测。
 
+First-Person-Only Animation V1（所有新 Native Gun 默认遵循）：
+
+- `weapon/client/NativeGunContextRenderer.java` 按 `ItemDisplayContext` 分流；通用 `NativeAnimatedWeaponRenderer` 与既有 `P901Renderer` 均接入。第一人称继续使用完整动画/controller、空仓状态、手臂、临时弹匣与 ADS。
+- 第三人称左右手（本地 F5 与远端玩家一致）使用 `NativeThirdPersonPose` 的独立骨骼副本：从 authored initial transforms 应用现有 loaded idle clip 的 time-zero baked 通道值，固定为完整正常持枪姿态；不运行 draw / put_away / reload / inspect / gun-body shoot / empty-state overlay。不修改共享动画骨骼与 controller，不新增逐枪第三人称资源。
+- 新模型的 loaded idle 起始采样必须定义有效的完整正常姿态；不要依赖随时间变化的表达式来定义该静态姿态。缺少 loaded idle clip 会明确报错，不会静默回退 raw bind pose。模型或动画资源重载导致 baked identity 变化后，静态副本重新生成。
+- 第一人称专用几何优先放在 `fp_only_*` 子树。通用过滤同时识别现有 `empty_old_*`、`reload_mag*`、`new_mag*`、`ref_*`，以及 `additional_magazine`、`lefthand`、`righthand`、`left_hand_anchor`、`right_hand_anchor`、`camera`、`view`、`ref`、`refit`、`positioning`。过滤整个子树，因此真实枪体、正式弹匣或配件/FX 锚点不能放在这些节点下。
+- `positioning2`、包含真实枪体/弹匣的组合节点与正式配件锚点保留。第三人称仍使用当前真实 stack 的 sight / muzzle / magazine replacement 和现有开火 FX 层，保留 sound / muzzle flash / tracer 等反馈；不是关闭配件显示。
+- GUI / GROUND / FIXED / HEAD 等非第三人称手持上下文保持原路径；不新增 weapon-ID 特判，不调整 combat / ammo / damage / FireMode / ADS / HUD。
+
+本次仅运行一次 `compileJava`，结果通过；无资源文件或加载 schema 修改，未运行 `processResources`。未启动客户端、GameTest 或自动化视觉测试。用户实机验收重点：F5/远端换弹和检查不出现临时弹匣或参考手臂、正式配件和开火反馈仍在、切回第一人称后完整动作与空仓 baseline 正常。
+
 Step 9 — Sound [NEW + VERIFY]
 
 在 AflSounds 注册 <weapon>_fire、suppressed 与各 cue；sounds.json 指向 sounds/weapons/<weapon>/*.ogg；animation marker 使用正式 ID。开火 marker 不作为服务器枪声第二来源。dry-fire / fallback 使用当前通用或数据驱动语义，不新增 P9 fallback 特判。

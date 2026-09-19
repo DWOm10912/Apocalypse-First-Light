@@ -7,14 +7,13 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.renderer.GeoItemRenderer;
 
 /** Vanilla builtin/entity display transforms are supplied by the exported item JSON. */
-public final class P901Renderer extends GeoItemRenderer<P901Item> {
+public final class P901Renderer extends NativeGunContextRenderer<P901Item> {
     public static final NativeGunRig RIG = new NativeGunRig(
             "gun", "right_hand_anchor", "left_hand_anchor", "root");
     public P901Renderer() {
-        super(new P901Model());
+        super(new P901Model(), "static_idle");
         addRenderLayer(new P901HandLayer(this));
         addRenderLayer(new NativeGunFxLayer(this));
         addRenderLayer(new P901SightLayer(this));

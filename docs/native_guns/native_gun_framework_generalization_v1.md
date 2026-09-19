@@ -13,6 +13,18 @@ Current status: P9-01, BR51-01, HR55 and C.A.T use the public framework. P9/BR51
 - Camera-bone consumption accepts any animated `NativeGunItem`; it no longer whitelists P9/BR51 IDs.
 - Configured Native Guns register three GeckoLib controllers in order: `baseline` always supplies `static_idle` for the full ready pose; optional `empty_state` supplies `static_bolt_caught` when the current render stack has zero magazine rounds; `action` plays one-shot draw/shoot/reload/inspect clips and otherwise stops. The action layer runs last, so its authored channels override empty-state channels during a shot or empty reload. Empty state continues supplying channels omitted by draw. This is a shared visual rule without weapon-ID checks. P9 retains its separate action controller; an additional P9 `empty_draw_slide` controller runs after it only during a zero-round draw to hold the authored empty slide pose. See `p9_01_artist_asset_integration_v1.md`.
 
+## First-Person-Only Animation V1
+
+`weapon/client/NativeGunContextRenderer.java` is the common render-context policy used by both `NativeAnimatedWeaponRenderer` and `P901Renderer`. The controller description above applies to the animated path; third-person hand rendering bypasses controller evaluation.
+
+- First-person hands retain the existing animated path, including empty baseline, actions, arms, temporary magazines, ADS and attachments.
+- `THIRD_PERSON_RIGHT_HAND` and `THIRD_PERSON_LEFT_HAND` use `NativeThirdPersonPose`: a private bone hierarchy copied from the authored initial transforms, with the existing loaded idle clip's time-zero baked channel values applied. This is a complete loaded baseline, not an unposed raw bind model. It stays fixed during draw, put-away, reload, inspect, shooting and empty-state changes. Original animation bones/controllers are not mutated. The private pose is rebuilt when the baked model or animation identity changes on resource reload.
+- FP-only subtrees are omitted by common names: `fp_only_*`, `empty_old_*`, `reload_mag*`, `new_mag*`, `ref_*`; and `additional_magazine`, `lefthand`, `righthand`, `left_hand_anchor`, `right_hand_anchor`, `camera`, `view`, `ref`, `refit`, `positioning`. Real magazine/gun grouping roots and `positioning2` attachment/FX anchors remain.
+- Geometry and textures remain the existing resources. Recursive rendering still uses the real current stack and existing sight, muzzle, magazine replacement and shooting-FX layers. Gun-body shoot animation is suppressed in third person; sound, muzzle flash, tracer and shot feedback are not replaced or disabled.
+- Local F5 and remote held guns follow the same hand-context policy, with no weapon-ID or local/remote-player special case. GUI, GROUND, FIXED, HEAD and other contexts retain their previous paths. New Native Guns must use this common policy.
+
+Verification for this change: one offline `compileJava` invocation passed. No resource files or loading schema changed, so `processResources` was not run. No client, GameTest or multiplayer/visual test was run; F5, remote attachments/FX and returning to first person require user testing. Combat, ammunition, damage, FireMode, ADS and HUD behavior were not changed.
+
 ## Frozen existing behavior
 
 P9-01 and BR51-01 explicitly carry their accepted presentation values in JSON. Gameplay balance, semi-auto behavior, ammunition, capacities, reload durations, recoil, spread, ranges, noise, attachment compatibility, models, textures, animation resources, and maintenance behavior were not changed. P9's empty-reload two-tick visual synchronization remains an intentional P9-only implementation detail.
