@@ -114,10 +114,12 @@ public final class AflDevCommands {
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) {
             afl.addChild(dev.build());
+            afl.addChild(MacroGeographyExportCommand.build().build());
             afl.addChild(rural.build());
             afl.addChild(HighwayDebugCommand.build().build());
         } else {
-            event.getDispatcher().register(Commands.literal("afl").then(dev).then(rural)
+            event.getDispatcher().register(Commands.literal("afl").then(dev)
+                    .then(MacroGeographyExportCommand.build()).then(rural)
                     .then(HighwayDebugCommand.build()));
         }
     }

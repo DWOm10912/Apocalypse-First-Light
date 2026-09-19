@@ -80,6 +80,14 @@ future City/Port/Foreign Land只保留ID扩展接口，均未实现；外国没�
 
 ## 用户手动验收
 
+### Dev-only 宏观地图导出
+
+开发环境命令：`/afl macro export`，可选 `/afl macro export <radius> [step]`。默认以原点为中心采样 ±12,000 blocks，步长 32 blocks（751×751 个解析样本）；radius 限 9,000–16,000，step 限 16–128，最多 1,000,000 样本。需要 Overworld 正常 AFL noise settings 和命令权限等级 2。命令位于发布 JAR 排除的 `src/dev/java/.../dev` 包。
+
+写入游戏工作目录 `afl_debug/macro/macro_geography_<seed>.png` 和同名 `.txt`（通常是 `run/afl_debug/macro/`）。PNG 图例分别标 MAINLAND、STRATEGIC/MILITARY/INDUSTRIAL/MINOR_ISLAND、干岸、INLAND_SEA、BAY、STRAIT、COASTAL_WATER、OPEN_OCEAN；标出 SPAWN、主岛核心圈、启动保留圈、附属岛中心与角色。符合 300–600 格约束的桥候选画黄虚线；当前规划的附属岛水隙仅 144–208 格，所以一般不会画候选，且**不会为画桥改规划**。
+
+TXT 记录 seed、采样分辨率、MAIN_NATION/主岛与附属岛 landmassId/role/采样 bounds 和面积、spawn 至最近 OPEN_OCEAN/INLAND_SEA 的采样距离、waterbodyId 与水体分类/覆盖、foreign/non-main-nation land 采样检查、外圈外洋占比、spawn 安全标记、桥候选清单。各项 bounds、距离、面积均是采样估计，不能当作精确海岸测量。桥只为审计标记，不接入 worldgen。实现只调用 `MacroGeography.forSeed(seed).sample(x,z)` 与现有只读规划记录，不读取或生成 chunk、Xaero/DH 地图，也不修改 Terrain V2 参数。
+
 开发环境命令：`/afl dev macro_geography` 查询当前坐标；`/afl dev macro_geography <x> <z>` 查询任意坐标（只读、不加载chunk）。显示sample、基础轴长、附属岛中心与海峡两岸坐标。此命令位于dev包，发布JAR排除；生成日志仍有 `[AFL MACRO GEO]` 摘要。
 
 建议在新建正常世界检查：地堡正常首登；0,0与reserve为干陆；沿岛岸观察beach/ocean与实际水面一致；远处如20000,20000为持续大洋；附属岛岸线缓坡与两岸ID正确；水下有海床及地下洞穴/矿物。旧Highway可能跨海不在此阶段修复。上述均为待用户执行的检查，不是已通过结果。
