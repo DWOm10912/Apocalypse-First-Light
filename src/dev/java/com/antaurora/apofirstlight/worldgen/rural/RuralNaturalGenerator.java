@@ -64,8 +64,9 @@ public final class RuralNaturalGenerator {
         RuralPlan.SiteScore site = inspectSite(terrain, center);
         long siteInspectNanos = System.nanoTime() - siteStart;
         Direction mainDirection = siteDirection(seed, center);
-        RuralPlan.Road mainRoad = road(center, mainDirection, tier.roadLength(), tier.roadWidth(), false);
-        List<RuralPlan.Road> branches = branches(center, mainDirection, tier, seed);
+        List<RuralPlan.Road> networkRoads = RuralRoadPlanner.plan(center, mainDirection, tier, seed);
+        RuralPlan.Road mainRoad = networkRoads.get(0);
+        List<RuralPlan.Road> branches = networkRoads.subList(1, networkRoads.size());
         int target = tier.targetBuildings(seed, center);
         Map<RuralPlan.RejectionReason, Integer> rejections = emptyRejections();
 
@@ -293,6 +294,8 @@ public final class RuralNaturalGenerator {
             if (!inside(atGround, reservation)) continue;
             if (roads.stream().anyMatch(road -> intersects2d(atGround, road.bounds(), RuralGenerator.LOT_MARGIN))) continue;
             if (accepted.stream().anyMatch(lot -> intersects2d(atGround, lot.bounds(), RuralGenerator.LOT_MARGIN))) continue;
+            RuralLotAnchor access = RuralAccessPlanner.connect(atGround, spec.roadFacing(), reservation, roads, accepted);
+            if (access == null) continue;
             budget.lotEvaluationsExecuted++;
             List<Integer> surfaceYs = sampleLot(terrain, atGround);
             if (surfaceYs == null || surfaceYs.isEmpty()) continue;
@@ -319,7 +322,7 @@ public final class RuralNaturalGenerator {
                     origin, rotation);
             return new RuralPlan.Lot(definition, origin, rotation, finalBox, desiredY, spec.roadFacing(),
                     classification, minSurface, maxSurface, predictedCut, predictedFill,
-                    maxCutDepth, maxFillDepth);
+                    maxCutDepth, maxFillDepth).withAccess(access);
         }
         return null;
     }

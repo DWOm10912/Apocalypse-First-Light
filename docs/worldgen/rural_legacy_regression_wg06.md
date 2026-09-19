@@ -60,7 +60,9 @@ Natural：进入允许 Rural 的生物群系（当前 tag：plains、fallout_bar
 
 Dev：站在不与 Natural 站点重叠的空旷测试区，先输入 `/afl rural plan` 读取站点/lot/田地诊断；需要实际提交时，在**可丢弃的新测试世界**输入 `/afl rural generate`，或明确坐标 `/afl rural generate <x> <y> <z>`。这是开发命令路径，不是 Natural parity，也不会自动回滚部分写入。本轮未添加 `NATURAL_PARITY` 子命令。
 
-人工只需确认能生成且不崩溃，道路/建筑/农田未明显消失，朝向正常，旧 dev 命令仍可用。WG-06 之后 Rural 应与以前基本一样；明显变大、变多或建筑池变更都应视为回归。人工结果待用户验证，不能用上述自动测试替代。
+人工只需确认能生成且不崩溃，道路/建筑/农田未明显消失，朝向正常，旧 dev 命令仍可用。以上是 WG-06 当时的兼容验收，人工结果待用户验证，不能用上述自动测试替代。
+
+后续 [Rural Road Framework V1 Core](rural_road_framework_v1.md) 已有意改变新计划的道路几何、材质和 access 占位。本文 24 条摘要及旧 fixture 保留为历史基线，不代表新道路验收，也不再要求新道路输出与旧摘要一致；本轮道路任务未运行或更新 GameTest/fixture。reservation、调度 spacing、tier 权重与建筑池仍保持原值，实际接受率和新布局需另行实机验收。
 
 ## 11. WG-07 Readiness
 

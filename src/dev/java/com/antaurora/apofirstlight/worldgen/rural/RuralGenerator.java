@@ -69,8 +69,9 @@ public final class RuralGenerator {
         BoundingBox reservation = reservation(center);
         RuralPlan.SiteScore site = inspectSite(level, reservation);
         Direction mainDirection = siteDirection(level.getSeed(), center);
-        RuralPlan.Road mainRoad = road(center, mainDirection, false);
-        List<RuralPlan.Road> branchRoads = branchRoads(center, mainDirection, level.getSeed());
+        List<RuralPlan.Road> networkRoads = RuralRoadPlanner.plan(center, mainDirection, RuralScaleTier.FULL_RURAL, level.getSeed());
+        RuralPlan.Road mainRoad = networkRoads.get(0);
+        List<RuralPlan.Road> branchRoads = networkRoads.subList(1, networkRoads.size());
         int target = targetBuildingCount(level.getSeed(), center);
         List<RuralLayoutPlanner.Candidate> candidates = List.of();
         RejectionTracker rejectionTracker = new RejectionTracker();
@@ -291,6 +292,13 @@ public final class RuralGenerator {
 
     private static void placeNaturalRoad(WorldGenLevel level, RuralPlan plan, BoundingBox chunkBox,
                                          NaturalPlacementStats stats) {
+        if (plan.road().segment() != null) {
+            var result = RuralRoadPainter.paint(level, plan, chunkBox);
+            stats.blocksAttempted += result.attempted();
+            stats.blocksWritten += result.written();
+            stats.roadBlocks += result.written();
+            return;
+        }
         for (RuralPlan.Road road : plan.roads()) {
             BoundingBox bounds = road.bounds();
             for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
@@ -311,6 +319,7 @@ public final class RuralGenerator {
 
     private static void placeDriveways(WorldGenLevel level, RuralPlan plan, BoundingBox chunkBox,
                                        NaturalPlacementStats stats) {
+        if (plan.road().segment() != null) return; // New plans replay their saved reserved access in the painter.
         for (RuralPlan.Lot lot : plan.lots()) {
             BlockPos start = frontMidpoint(lot.bounds(), lot.roadFacing()).relative(lot.roadFacing());
             BlockPos target = nearestRoadCell(start, plan.roads());
@@ -717,6 +726,8 @@ public final class RuralGenerator {
             }
         }
 
+        RuralLotAnchor access = RuralAccessPlanner.connect(atGround, candidate.roadFacing(), reservation, roads, accepted);
+        if (access == null) return LotFit.rejected(RuralPlan.RejectionReason.OTHER, "access_overlap_or_outside_reservation");
         int minSurface = Integer.MAX_VALUE;
         int maxSurface = Integer.MIN_VALUE;
         int validSamples = 0;
@@ -755,10 +766,16 @@ public final class RuralGenerator {
                 desiredGroundY - definition.groundAnchorOffsetY(), candidate.anchor().getZ());
         BoundingBox finalBox = template.getBoundingBox(settings, origin);
         return LotFit.accepted(new RuralPlan.Lot(definition, origin, rotation, finalBox, desiredGroundY,
-                candidate.roadFacing()));
+                candidate.roadFacing()).withAccess(access));
     }
 
     private static RoadPlacementResult placeRoad(ServerLevel level, RuralPlan plan, CommitTracker tracker) {
+        if (plan.road().segment() != null) {
+            tracker.phase = "ROAD_NETWORK";
+            var result = RuralRoadPainter.paint(level, plan, null);
+            tracker.completedSteps.add("ROAD_NETWORK");
+            return new RoadPlacementResult(result.main(), result.other(), result.attempted());
+        }
         Set<Long> mainPositions = new HashSet<>();
         Set<Long> branchPositions = new HashSet<>();
         for (RuralPlan.Road road : plan.roads()) {

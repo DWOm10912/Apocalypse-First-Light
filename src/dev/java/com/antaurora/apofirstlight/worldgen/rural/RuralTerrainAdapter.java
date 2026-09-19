@@ -155,6 +155,11 @@ public final class RuralTerrainAdapter {
                 if (distance < 1 || distance > radius
                         || x < chunkBox.minX() || x > chunkBox.maxX()
                         || z < chunkBox.minZ() || z > chunkBox.maxZ()) continue;
+                boolean reservedAccess = false;
+                if (lot.access() != null) for (BoundingBox access : lot.access().accessBounds()) {
+                    if (RuralAccessPlanner.contains(access, x, z)) { reservedAccess = true; break; }
+                }
+                if (reservedAccess) continue;
                 RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, x, z);
                 if (!sample.valid() || sample.water()) continue;
                 int difference = sample.surfaceY() - lot.baseY();

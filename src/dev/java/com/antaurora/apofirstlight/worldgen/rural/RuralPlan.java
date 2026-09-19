@@ -31,6 +31,7 @@ public final class RuralPlan {
     private final RuralScaleTier scaleTier;
     private final long deterministicSeed;
     private final String roadLayout;
+    private final RuralRoadNetwork roadNetwork;
 
     private RuralPlan(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
                       List<Road> branchRoads, List<Lot> lots, int targetBuildings, int candidateLots,
@@ -61,7 +62,8 @@ public final class RuralPlan {
         this.farmPlotRejections = List.copyOf(farmPlotRejections);
         this.scaleTier = scaleTier;
         this.deterministicSeed = deterministicSeed;
-        this.roadLayout = roadLayout;
+        this.roadLayout = road.segment() == null ? roadLayout : "ROAD_NETWORK_V1";
+        this.roadNetwork = RuralRoadNetwork.from(roads(), this.lots, reservation);
     }
 
     public static RuralPlan valid(BlockPos center, BoundingBox reservation, SiteScore site, Road road,
@@ -123,6 +125,7 @@ public final class RuralPlan {
     public BoundingBox reservation() { return reservation; }
     public SiteScore site() { return site; }
     public Road road() { return road; }
+    public RuralRoadNetwork roadNetwork() { return roadNetwork; }
     public List<Road> branchRoads() { return branchRoads; }
     public List<Road> roads() {
         java.util.ArrayList<Road> result = new java.util.ArrayList<>(1 + branchRoads.size());
@@ -202,13 +205,29 @@ public final class RuralPlan {
                             double steepRatio, double score) {
     }
 
-    public record Road(Direction direction, BoundingBox bounds, int width, boolean branch) {
+    public record Road(Direction direction, BoundingBox bounds, int width, boolean branch, RuralRoadSegment segment) {
+        /** Saved pre-framework plans retain their old gravel rectangle. */
+        public Road(Direction direction, BoundingBox bounds, int width, boolean branch) {
+            this(direction, bounds, width, branch, null);
+        }
     }
 
     public record Lot(RuralStructurePool.Definition structure, BlockPos origin, Rotation rotation,
                       BoundingBox bounds, int baseY, Direction roadFacing,
                       LotClassification classification, int minSurfaceY, int maxSurfaceY,
-                      int predictedCutBlocks, int predictedFillBlocks, int maxCutDepth, int maxFillDepth) {
+                      int predictedCutBlocks, int predictedFillBlocks, int maxCutDepth, int maxFillDepth,
+                      RuralLotAnchor access) {
+        public Lot(RuralStructurePool.Definition structure, BlockPos origin, Rotation rotation,
+                   BoundingBox bounds, int baseY, Direction roadFacing, LotClassification classification,
+                   int minSurfaceY, int maxSurfaceY, int predictedCutBlocks, int predictedFillBlocks,
+                   int maxCutDepth, int maxFillDepth) {
+            this(structure, origin, rotation, bounds, baseY, roadFacing, classification, minSurfaceY,
+                    maxSurfaceY, predictedCutBlocks, predictedFillBlocks, maxCutDepth, maxFillDepth, null);
+        }
+        public Lot withAccess(RuralLotAnchor anchor) {
+            return new Lot(structure, origin, rotation, bounds, baseY, roadFacing, classification,
+                    minSurfaceY, maxSurfaceY, predictedCutBlocks, predictedFillBlocks, maxCutDepth, maxFillDepth, anchor);
+        }
         public Lot(RuralStructurePool.Definition structure, BlockPos origin, Rotation rotation,
                    BoundingBox bounds, int baseY, Direction roadFacing) {
             this(structure, origin, rotation, bounds, baseY, roadFacing,

@@ -142,6 +142,7 @@ public final class RuralNaturalPiece extends StructurePiece {
             value.putInt("Width", road.width());
             value.putBoolean("Branch", road.branch());
             writeBox(value, "Bounds", road.bounds());
+            if (road.segment() != null) writeSegment(value, road.segment());
             roads.add(value);
         }
         tag.put("Roads", roads);
@@ -161,6 +162,17 @@ public final class RuralNaturalPiece extends StructurePiece {
             value.putInt("PredictedFill", lot.predictedFillBlocks());
             value.putInt("MaxCut", lot.maxCutDepth());
             value.putInt("MaxFill", lot.maxFillDepth());
+            if (lot.access() != null) {
+                CompoundTag access = new CompoundTag();
+                writePos(access, "Connection", lot.access().connection());
+                writePos(access, "Frontage", lot.access().frontage());
+                ListTag segments = new ListTag();
+                for (var segment : lot.access().access()) {
+                    CompoundTag s = new CompoundTag(); writeSegment(s, segment); segments.add(s);
+                }
+                access.put("Segments", segments);
+                value.put("RoadAccessV1", access);
+            }
             lots.add(value);
         }
         tag.put("Lots", lots);
@@ -186,7 +198,7 @@ public final class RuralNaturalPiece extends StructurePiece {
         for (int i = 0; i < roadsTag.size(); i++) {
             CompoundTag value = roadsTag.getCompound(i);
             roads.add(new RuralPlan.Road(direction(value.getString("Direction")), readBox(value, "Bounds"),
-                    value.getInt("Width"), value.getBoolean("Branch")));
+                    value.getInt("Width"), value.getBoolean("Branch"), readSegment(value)));
         }
         ListTag lotsTag = tag.getList("Lots", 10);
         List<RuralPlan.Lot> lots = new java.util.ArrayList<>();
@@ -204,9 +216,11 @@ public final class RuralNaturalPiece extends StructurePiece {
                     value.contains("MinSurfaceY") ? value.getInt("MinSurfaceY") : value.getInt("BaseY"),
                     value.contains("MaxSurfaceY") ? value.getInt("MaxSurfaceY") : value.getInt("BaseY"),
                     value.getInt("PredictedCut"), value.getInt("PredictedFill"),
-                    value.getInt("MaxCut"), value.getInt("MaxFill")));
+                    value.getInt("MaxCut"), value.getInt("MaxFill"), readAccess(value)));
         }
         ListTag farmsTag = tag.getList("FarmPlots", 10);
+        if (roads.get(0).segment() != null && lots.stream().anyMatch(lot -> lot.access() == null))
+            throw new IllegalArgumentException("Road framework plan is missing reserved lot access");
         List<RuralFarmPlot> farms = new java.util.ArrayList<>();
         for (int i = 0; i < farmsTag.size(); i++) farms.add(readFarm(farmsTag.getCompound(i)));
         List<RuralPlan.Road> branches = roads.subList(1, roads.size());
@@ -215,6 +229,27 @@ public final class RuralNaturalPiece extends StructurePiece {
                 tag.getBoolean("FallbackUsed"), new java.util.EnumMap<>(RuralPlan.RejectionReason.class),
                 List.of(), tag.getInt("FarmPlotTarget"), farms, List.of(), tier,
                 tag.getLong("PlanSeed"), tag.getString("RoadLayout"));
+    }
+
+    private static void writeSegment(CompoundTag tag, RuralRoadSegment segment) {
+        tag.putString("RoadTypeV1", segment.type().name());
+        writePos(tag, "StartV1", segment.start()); writePos(tag, "EndV1", segment.end());
+    }
+
+    private static RuralRoadSegment readSegment(CompoundTag tag) {
+        if (!tag.contains("RoadTypeV1")) return null;
+        return new RuralRoadSegment(readPos(tag, "StartV1"), readPos(tag, "EndV1"),
+                RuralRoadType.valueOf(tag.getString("RoadTypeV1")));
+    }
+
+    private static RuralLotAnchor readAccess(CompoundTag lot) {
+        if (!lot.contains("RoadAccessV1")) return null;
+        CompoundTag a = lot.getCompound("RoadAccessV1");
+        List<RuralRoadSegment> segments = new java.util.ArrayList<>();
+        ListTag list = a.getList("Segments", 10);
+        for (int i = 0; i < list.size(); i++) segments.add(java.util.Objects.requireNonNull(readSegment(list.getCompound(i))));
+        return new RuralLotAnchor(readPos(a, "Connection"), readPos(a, "Frontage"),
+                direction(lot.getString("RoadFacing")), readBox(lot, "Bounds"), segments);
     }
 
     private static void writeFarm(ListTag farms, RuralFarmPlot plot) {

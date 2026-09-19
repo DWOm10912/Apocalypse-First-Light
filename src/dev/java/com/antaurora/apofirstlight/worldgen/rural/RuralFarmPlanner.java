@@ -240,6 +240,8 @@ public final class RuralFarmPlanner {
         }
         for (RuralPlan.Lot lot : lots) {
             if (intersects2d(fencedEnvelope, lot.bounds(), STRUCTURE_MARGIN)) return Validation.rejected("structure_overlap");
+            if (lot.access() != null) for (BoundingBox access : lot.access().accessBounds())
+                if (intersects2d(fencedEnvelope, access, 1)) return Validation.rejected("access_overlap");
         }
         for (long key : occupiedPlotCells) {
             BlockPos occupied = BlockPos.of(key);
