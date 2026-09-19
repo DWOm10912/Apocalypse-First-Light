@@ -191,19 +191,20 @@
   "active": "7991be752347a25e",
   "lastOpenFiles": [
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
-    "run/saves/新的世界/level18106904921457186591.dat",
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-15903830737614775932.dat",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.temp",
+    "docs/native_guns/native_gun_hud_layout_v1.md",
     "docs/worldgen/startup_enclave_bunker_regression_fix_v1.md",
     "docs/04 - 注意事项 重要内容.md",
     "docs/01 - 设计/武器/枪械.md",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/spodumene_ore.png",
@@ -234,7 +235,6 @@
     "docs/handoff/KNOWN_DECISIONS_AND_DO_NOT_REPEAT.md",
     "docs/handoff/ACCOUNT_HANDOFF.md",
     "docs/handoff/START_HERE.md",
-    "docs/01 - 设计/方块/机器.md",
-    "docs/steel_railing.md"
+    "docs/01 - 设计/方块/机器.md"
   ]
 }

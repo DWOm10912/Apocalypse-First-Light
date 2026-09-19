@@ -1,0 +1,29 @@
+{
+  "anchor": "bottom_right",
+  "global": {
+    "offset_x": 0, "offset_y": 0, "scale": 1,
+    "width": 84, "height": 38, "right_margin": 10, "bottom_margin": 61
+  },
+  "silhouette": {
+    "offset_x": 18, "offset_y": 19, "scale": 0.65, "alpha": 1,
+    "color": "#FFFFFF", "empty_color": "#FF2626"
+  },
+  "divider": {
+    "offset_x": 39, "offset_y": 3, "width": 1, "height": 30,
+    "color": "#FFFFFF", "alpha": 0.9
+  },
+  "weapon_name": {
+    "offset_x": 64, "offset_y": 4, "scale": 0.85, "max_width": 38, "color": "#FFFFFF"
+  },
+  "ammo": {
+    "offset_x": 64, "offset_y": 13,
+    "current_scale": 1.15, "reserve_scale": 1, "separator_scale": 0.9,
+    "max_width": 38, "gap": 2,
+    "current_color": "#FFFFFF", "reserve_color": "#D0D0D0", "separator_color": "#B8B8B8",
+    "empty_color": "#FF3333", "flash_color": "#FF3333"
+  },
+  "fire_mode": {
+    "offset_x": 64, "offset_y": 28, "scale": 0.65, "max_width": 38,
+    "semi_color": "#9FC7D9", "burst_color": "#D6A15F", "auto_color": "#D97878"
+  }
+}
