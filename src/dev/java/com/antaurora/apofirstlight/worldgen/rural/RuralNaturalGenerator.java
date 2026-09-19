@@ -115,14 +115,18 @@ public final class RuralNaturalGenerator {
         roads.add(mainRoad);
         roads.addAll(branches);
         for (RuralStructurePool.Definition spec : specs) {
-            StructureTemplate template = templates.get(spec);
-            if (template == null) {
-                return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
-                        "TEMPLATE", "missing structure template " + spec.id(), rejections,
-                        accepted, specs.size(), farmTarget, List.of(), 0, probeCache, planningBudget, barnAttempted);
+            RuralPlan.Lot lot = null;
+            for (RuralStructurePool.Definition variant : RuralPlanningCore.naturalAlternatives(spec)) {
+                StructureTemplate template = templates.get(variant);
+                if (template == null) {
+                    return reject(center, reservation, site, mainRoad, branches, target, tier, seed,
+                            "TEMPLATE", "missing structure template " + variant.id(), rejections,
+                            accepted, specs.size(), farmTarget, List.of(), 0, probeCache, planningBudget, barnAttempted);
+                }
+                lot = findLot(terrain, template, variant, frontages, reservation, roads,
+                        accepted, planningBudget, maxLotEvaluationRequests, maxRequestsPerSpec);
+                if (lot != null) break;
             }
-            RuralPlan.Lot lot = findLot(terrain, template, spec, frontages, reservation, roads,
-                    accepted, planningBudget, maxLotEvaluationRequests, maxRequestsPerSpec);
             if (lot != null) accepted.add(lot);
             if (accepted.size() >= target) break;
         }
@@ -379,7 +383,7 @@ public final class RuralNaturalGenerator {
         addRoles(roles, RuralStructurePool.Role.LANDMARK, 2);
         int limit = Math.min(roles.size(), Math.max(tier.maxBuildings() * 3, tier.minBuildings()));
         if (tier != RuralScaleTier.ISOLATED_HOMESTEAD) {
-            result.add(RuralStructurePool.FARMHOUSE);
+            result.add(RuralPlanningCore.selectRequiredFarmhouse(seed, center));
             roles.remove(RuralStructurePool.Role.FARMHOUSE);
         }
         if (tier == RuralScaleTier.FARMSTEAD || tier == RuralScaleTier.RURAL_CLUSTER

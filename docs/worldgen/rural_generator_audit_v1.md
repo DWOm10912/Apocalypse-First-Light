@@ -2,11 +2,11 @@
 
 现行档位更新：见 [Scale / Tier Tuning V1](rural_scale_tier_tuning_v1.md)。本历史审计中的40/30/22/8权重、Cluster 4–6和Full 6–8目标、Full必须达到随机目标及旧9次锚点预算，均不代表当前自然路径；现为25/30/30/15、目标6–8/9–12、Full有效最低8、Cluster/Full每规格18次。StructureSet频率未改，实机接受率待验。
 
-建筑现行更新：自然六资产已迁移 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。下文固定中心offset、midpoint-only、自然无frontage驱动的结论为历史快照；自然入口优先合法socket，联合检查building/access并保存V2 anchor。开发命令仍沿用旧规划，农田仍Legacy，tier/spacing/biome未改。V2只编译通过，实机待验。
+建筑现行更新：自然八资产（原六资产加 `rural_farmhouse_02`、`rural_house_small_02`）已接入 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。下文六资产、固定中心 offset、midpoint-only、自然无 frontage 驱动的结论为历史快照；自然入口优先合法 socket，联合检查 building/access 并保存 V2 anchor。开发命令仍沿用旧六资产规划，农田仍 Legacy，tier/spacing/biome 未改。新变体接入仅编译通过，实机待验。
 
 现行冲突更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。本文下方无 Highway 避让、RURAL_HIGHWAY_INTEGRATION=NONE 等描述均为历史审计快照，已由规划期整体 reservation 避让替代；其他 POI 集成仍未实现。新实现仅编译通过，未补实机验证。
 
-现行道路更新：已接入 [Rural Road Framework V1 Core](rural_road_framework_v1.md)。下文固定碎石路、无 graph、事后 driveway 等结论为历史审计快照；新计划已有类型化路网、路肩/过渡、保存的 access 与计划内占位。六资产 legacy 选择仍在使用；本次仅编译，未补做实机验证。
+现行道路更新：已接入 [Rural Road Framework V1 Core](rural_road_framework_v1.md)。下文固定碎石路、无 graph、事后 driveway 等结论为历史审计快照；新计划已有类型化路网、路肩/过渡、保存的 access 与计划内占位。六资产 Legacy 配方仍用于开发命令，自然生成另有八资产池；新变体接入仅编译，未补做实机验证。
 
 后续状态：本页保留 WG-06 前的只读审查快照。WG-06 已冻结 24 个 Natural legacy 计划案例；WG-07/07.1 后八资产 metadata 与七个机械验证 socket 已发布，Legacy 配方仍只有旧六资产。两个 `_02` 的数据来自用户人工视觉 QA，四向游戏实测仍未执行。Natural 输出与旧 driveway 行为未变。当前边界见 [WG-06 说明](rural_legacy_regression_wg06.md) 和 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)；下文原始审查证据不回写为新实机验收。
 

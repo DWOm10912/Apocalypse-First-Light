@@ -18,6 +18,9 @@ public final class RuralStructurePool {
         return CATALOG.legacyDefinitions();
     }
 
+    /** Eight natural assets; definitions() retains the six-entry development-command recipe. */
+    public static List<Definition> naturalDefinitions() { return CATALOG.naturalDefinitions(); }
+
     public static Definition definition(ResourceLocation id) {
         return CATALOG.legacyDefinition(id);
     }

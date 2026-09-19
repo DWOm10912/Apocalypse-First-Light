@@ -1,12 +1,12 @@
 # WG-07 Rural Metadata / Socket / Legacy Recipe Migration V1
 
-后续现行行为：见 [Rural Road Framework V1 Core](rural_road_framework_v1.md) 与 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。自然六资产已按frontage放置并优先消费合法metadata socket（缺失时midpoint fallback）；配方未扩容，两个_02不参与。开发命令仍为旧midpoint路径。本页WG-06摘要一致性与SOCKET_USED_BY_LEGACY_DRIVEWAY=NO是历史迁移验收结论，不代表V2自然路径；未补做本轮实机socket通行验收。
+后续现行行为：见 [Rural Road Framework V1 Core](rural_road_framework_v1.md) 与 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。自然八资产（原六资产加 `rural_farmhouse_02`、`rural_house_small_02`）按 frontage 放置并优先消费合法 metadata socket（缺失时 midpoint fallback）。Legacy 配方仍只有六资产，开发命令仍走旧六资产/midpoint 路径。本页以下 WG-07/07.1 的迁移状态、构建结果和验收结论均为历史记录，不代表当前自然池边界；两栋 `_02` 的自然生成实机与四向入口通行尚未验收。
 
 日期：2026-09-13。WG-07.1 收尾状态：**八资产 metadata 已完成，Legacy 六资产配方不变**。两份 `_02` 的 front/anchor/socket 来自用户人工视觉 QA 确认，本轮完成机械验证；八资产四向游戏内摆放 QA 仍未执行。WG-07.1 不是 Rural V2。
 
 ## 1. Migration Scope
 
-八资产的 NBT 引用、类别、SOUTH front、ground anchor、四向旋转与入口 socket 进入 `data/apocalypse_firstlight/afl_worldgen/structures/*.json`；只有旧六资产的有序池成员、role 和旧声明 weight/maxCount 进入 `data/apocalypse_firstlight/afl_worldgen/rural/legacy_natural_v1.json`。`RuralStructureCatalog` 在类加载时一次性读取八份打包 metadata，仅将配方中的旧六份映射成 `RuralStructurePool.Definition`，保留 Natural/Dev/序列化 Piece 的原定义对象身份。它**不是** datapack reload listener，也不支持热重载或数据包覆盖；正式 reload/snapshot 边界留待另一次任务。
+八资产的 NBT 引用、类别、SOUTH front、ground anchor、四向旋转与入口 socket 进入 `data/apocalypse_firstlight/afl_worldgen/structures/*.json`；只有旧六资产的有序池成员、role 和旧声明 weight/maxCount 进入 `data/apocalypse_firstlight/afl_worldgen/rural/legacy_natural_v1.json`。`RuralStructureCatalog` 在类加载时一次性读取八份打包 metadata，将配方旧六份与两份 `_02` 同角色变体映射为自然池 `Definition`；开发命令仍只读取旧六份。序列化 Piece 可解析八份定义。它**不是** datapack reload listener，也不支持热重载或数据包覆盖；正式 reload/snapshot 边界留待另一次任务。
 
 Natural 仍由 `RuralPlanningCore.SelectionMode.LEGACY_NATURAL_V1` 按旧顺序筛选角色并取模，FLEX 保留 `weight > 0` 资格过滤，但不执行加权抽取和 maxCount。Dev `LEGACY_DEV_V1` 仍执行旧加权/maxCount。legacy driveway 仍使用 front midpoint，不消费新 socket。未迁移 tier、场地大小、road、terrain、farm、retry 和 candidate offset 参数；未启用 Spatial Claim 或 Highway 协调。
 
@@ -44,7 +44,7 @@ WG-03 validator 已检查 7 个正式 socket：NBT 内、边界、朝外、入�
 
 ## 4. Legacy Recipe Membership
 
-有序配方只有：`rural_farmhouse_01`, `rural_barn_large_01`, `rural_house_small_01`, `rural_storage_small_01`, `rural_grain_silo_01`, `rural_water_tower_01`。声明的 `weight/maxCount` 分别是 `0/1`, `0/1`, `100/3`, `60/1`, `50/1`, `25/1`；只是旧数据迁移，不改变 Natural 选择语义。两个 `_02` 虽有正式 metadata，但不在配方，也不自然生成。配方不包含 spacing、terrain、tier；WG-03 StructureDefinition 不放权重/数量。
+有序配方只有：`rural_farmhouse_01`, `rural_barn_large_01`, `rural_house_small_01`, `rural_storage_small_01`, `rural_grain_silo_01`, `rural_water_tower_01`。声明的 `weight/maxCount` 分别是 `0/1`, `0/1`, `100/3`, `60/1`, `50/1`, `25/1`。两个 `_02` 不在配方，但现已通过独立自然池注册参与自然生成；未引入自然路径的加权抽取或 maxCount 执行。配方不包含 spacing、terrain、tier；WG-03 StructureDefinition 不放权重/数量。
 
 ## 5. `_02` Variant Status
 
@@ -70,11 +70,11 @@ WG-07.1 接受用户此前截图所做的两栋 `_02` 正面、贴地与主入�
 
 完全退出占用本项目构建输出的客户端，在根目录运行 `gradlew.bat runClient --offline`，新建可丢弃的创造模式世界，seed `62091307`，允许作弊。
 
-**Test A — Natural：**执行 `/locate structure apocalypse_firstlight:rural`，传送到结果附近，换未生成区域连续检查 3～5 个站点。检查建筑数量/尺度、道路、农田、front 与 WG-06 前无明显变化；`_02` 不应自然出现。单次 locate 失败不是全局失败。
+**Test A — Natural（WG-07 历史建议，现需更新预期）：**执行 `/locate structure apocalypse_firstlight:rural`，传送到结果附近，换未生成区域连续检查 3～5 个站点。检查建筑数量/尺度、道路、农田与 front；两栋 `_02` 现在可以自然出现，应额外检查其四向朝向和入口。单次 locate 失败不是全局失败。
 
 **Test B — 六旧资产四向：**在空旷可丢弃的作者测试区，使用结构方块或 `/place template apocalypse_firstlight:<asset> ~ ~ ~ <rotation>` 逐个摆放六份 NBT；rotation 依游戏命令提示选择四向。每次至少留 40 格间距。查看正面、门、BE/多方块、贴地层，确认 socket 边界到入口是否可通。`/place template` 默认处理不代替 Rural anchor；筒仓/小房需将模板原点下移 1 格对照 Rural 贴地。勿在正式世界覆写建筑。
 
-**Test C — 新变体：**单独以相同方式摆放 `rural_farmhouse_02`、`rural_house_small_02` 并四向查看正门、步行入口、地基和门/BE。核对已确认值：两栋 front=SOUTH、anchor=0；分别为 `(9,0,16)` 和 `(8,1,10)` 的 SOUTH/PEDESTRIAN socket。**两栋虽有 metadata，本轮仍不自然生成。**
+**Test C — 新变体：**单独以相同方式摆放 `rural_farmhouse_02`、`rural_house_small_02` 并四向查看正门、步行入口、地基和门/BE。核对已确认值：两栋 front=SOUTH、anchor=0；分别为 `(9,0,16)` 和 `(8,1,10)` 的 SOUTH/PEDESTRIAN socket。两栋现已进入自然池，但单独摆放不能代替自然生成验收。
 
 ## 10. Rural V2 Readiness
 

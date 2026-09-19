@@ -22,7 +22,9 @@ public final class RuralPlanningCore {
                                   Function<ResourceLocation, Optional<StructureTemplate>> source) {
         Map<RuralStructurePool.Definition, StructureTemplate> templates = new LinkedHashMap<>();
         RuralStructurePool.Definition firstMissing = null;
-        for (RuralStructurePool.Definition definition : RuralStructurePool.definitions()) {
+        List<RuralStructurePool.Definition> available = mode == SelectionMode.LEGACY_NATURAL_V1
+                ? RuralStructurePool.naturalDefinitions() : RuralStructurePool.definitions();
+        for (RuralStructurePool.Definition definition : available) {
             Optional<StructureTemplate> template = source.apply(definition.id());
             if (template.isPresent()) {
                 templates.put(definition, template.get());
@@ -42,12 +44,49 @@ public final class RuralPlanningCore {
         RuralStructurePool.Role selectedRole = role == RuralStructurePool.Role.FARMHOUSE
                 ? RuralStructurePool.Role.RESIDENTIAL : role;
         if (selectedRole == RuralStructurePool.Role.AGRICULTURAL_LARGE) return null;
-        List<RuralStructurePool.Definition> matching = RuralStructurePool.definitions().stream()
+        List<RuralStructurePool.Definition> matching = RuralStructurePool.naturalDefinitions().stream()
                 .filter(definition -> definition.role() == selectedRole
                         || selectedRole == RuralStructurePool.Role.FLEX && definition.weight() > 0)
                 .toList();
         if (matching.isEmpty()) return null;
-        return matching.get((int) Math.floorMod(seed ^ center.asLong() ^ index, matching.size()));
+        return selectVariant(matching, seed, center, selectedRole, index);
+    }
+
+    /** Required farmhouse remains one role slot; its two appearances are chosen evenly. */
+    public static RuralStructurePool.Definition selectRequiredFarmhouse(long seed, BlockPos center) {
+        List<RuralStructurePool.Definition> matching = RuralStructurePool.naturalDefinitions().stream()
+                .filter(definition -> definition.role() == RuralStructurePool.Role.FARMHOUSE).toList();
+        return selectVariant(matching, seed, center, RuralStructurePool.Role.FARMHOUSE, 0);
+    }
+
+    private static RuralStructurePool.Definition selectVariant(List<RuralStructurePool.Definition> candidates,
+                                                               long seed, BlockPos center,
+                                                               RuralStructurePool.Role role, int slotIndex) {
+        long key = mix64(seed ^ 0x9E3779B97F4A7C15L);
+        key = mix64(key ^ ((long) center.getX() * 0xBF58476D1CE4E5B9L));
+        key = mix64(key ^ ((long) center.getZ() * 0x94D049BB133111EBL));
+        key = mix64(key ^ ((long) role.ordinal() * 0xD6E8FEB86659FD93L));
+        key = mix64(key ^ ((long) slotIndex * 0xA0761D6478BD642FL));
+        return candidates.get(Math.floorMod(key, candidates.size()));
+    }
+
+    /** SplitMix64 finalizer; mixes high X/Z bits into the low bit used by two-variant roles. */
+    private static long mix64(long value) {
+        value = (value ^ (value >>> 30)) * 0xBF58476D1CE4E5B9L;
+        value = (value ^ (value >>> 27)) * 0x94D049BB133111EBL;
+        return value ^ (value >>> 31);
+    }
+
+    /** Only the two newly variant-bearing roles retry the other appearance for the same slot. */
+    public static List<RuralStructurePool.Definition> naturalAlternatives(RuralStructurePool.Definition first) {
+        if (first.role() != RuralStructurePool.Role.FARMHOUSE
+                && first.role() != RuralStructurePool.Role.RESIDENTIAL) return List.of(first);
+        List<RuralStructurePool.Definition> alternatives = new ArrayList<>();
+        alternatives.add(first);
+        RuralStructurePool.naturalDefinitions().stream()
+                .filter(definition -> definition.role() == first.role() && !definition.equals(first))
+                .forEach(alternatives::add);
+        return List.copyOf(alternatives);
     }
 
     /** Command-only maxCount filtering, kept separate from Natural V1. */

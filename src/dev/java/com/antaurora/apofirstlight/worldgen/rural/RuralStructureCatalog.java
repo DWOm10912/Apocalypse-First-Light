@@ -16,22 +16,25 @@ import net.minecraft.world.level.block.Rotation;
 /** Once-per-classloader bundled resource adapter; never parses metadata in candidate/chunk loops. */
 public final class RuralStructureCatalog {
     private static final String ROOT = "/data/apocalypse_firstlight/afl_worldgen/";
-    /** Published metadata-only assets; deliberately absent from the frozen six-entry recipe. */
-    private static final List<ResourceLocation> METADATA_ONLY = List.of(
+    /** Existing variants join natural selection without changing the frozen six-entry dev recipe. */
+    private static final List<ResourceLocation> NATURAL_VARIANTS = List.of(
             new ResourceLocation("apocalypse_firstlight", "rural_farmhouse_02"),
             new ResourceLocation("apocalypse_firstlight", "rural_house_small_02"));
     private final RuralRecipe recipe;
     private final List<RuralStructurePool.Definition> legacy;
+    private final List<RuralStructurePool.Definition> natural;
     private final Map<ResourceLocation, RuralStructurePool.Definition> byNbt;
     private final Map<ResourceLocation, StructureDefinition> metadata;
 
     private RuralStructureCatalog(RuralRecipe recipe, List<RuralStructurePool.Definition> legacy,
+                                  List<RuralStructurePool.Definition> natural,
                                   Map<ResourceLocation, StructureDefinition> metadata) {
         this.recipe = recipe;
         this.legacy = List.copyOf(legacy);
+        this.natural = List.copyOf(natural);
         this.metadata = Map.copyOf(metadata);
         var map = new LinkedHashMap<ResourceLocation, RuralStructurePool.Definition>();
-        for (var definition : legacy) map.put(definition.id(), definition);
+        for (var definition : natural) map.put(definition.id(), definition);
         this.byNbt = Map.copyOf(map);
     }
 
@@ -52,11 +55,22 @@ public final class RuralStructureCatalog {
                     entry.declaredMaxCount(), asset.front(), entry.role(), asset.groundAnchorOffsetY()));
             metadata.put(id, asset);
         }
-        for (ResourceLocation id : METADATA_ONLY) {
-            if (metadata.putIfAbsent(id, loadMetadata(id)) != null)
-                throw new IllegalStateException("Metadata-only Rural asset entered legacy recipe: " + id);
+        var natural = new ArrayList<>(legacy);
+        for (ResourceLocation id : NATURAL_VARIANTS) {
+            StructureDefinition asset = loadMetadata(id);
+            if (metadata.putIfAbsent(id, asset) != null)
+                throw new IllegalStateException("Natural Rural variant is already in legacy recipe: " + id);
+            RuralStructurePool.Role role = switch (asset.category().getPath()) {
+                case "rural/farmhouse" -> RuralStructurePool.Role.FARMHOUSE;
+                case "rural/residential" -> RuralStructurePool.Role.RESIDENTIAL;
+                default -> throw new IllegalStateException("Unsupported Rural variant category: " + id);
+            };
+            RuralStructurePool.Definition counterpart = legacy.stream()
+                    .filter(definition -> definition.role() == role).findFirst().orElseThrow();
+            natural.add(new RuralStructurePool.Definition(asset.structureNbt(), counterpart.weight(),
+                    counterpart.maxCount(), asset.front(), role, asset.groundAnchorOffsetY()));
         }
-        return new RuralStructureCatalog(recipe, legacy, metadata);
+        return new RuralStructureCatalog(recipe, legacy, natural, metadata);
     }
 
     private static StructureDefinition loadMetadata(ResourceLocation id) {
@@ -80,6 +94,7 @@ public final class RuralStructureCatalog {
 
     public RuralRecipe recipe() { return recipe; }
     public List<RuralStructurePool.Definition> legacyDefinitions() { return legacy; }
+    public List<RuralStructurePool.Definition> naturalDefinitions() { return natural; }
     public RuralStructurePool.Definition legacyDefinition(ResourceLocation id) { return byNbt.get(id); }
     public StructureDefinition metadata(ResourceLocation id) { return metadata.get(id); }
 }

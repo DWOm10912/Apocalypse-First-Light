@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RuralFoundationSupport {
-    private static final Set<ResourceLocation> MANAGED_TEMPLATE_IDS = RuralStructurePool.definitions().stream()
+    private static final Set<ResourceLocation> MANAGED_TEMPLATE_IDS = RuralStructurePool.naturalDefinitions().stream()
             .map(RuralStructurePool.Definition::id)
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
     private static final ConcurrentMap<ResourceLocation, TemplateSupportMetadata> TEMPLATE_METADATA =
