@@ -1,5 +1,7 @@
 # Startup Enclave + Bunker Regression Fix V1
 
+后续现行变更：Terrain V2 Phase 1已增加[Macro Geography V1](terrain_v2_macro_geography_v1.md)。ParameterList状态现在还持有按seed的宏观计划与ocean/deep_ocean/beach holder；宏观海域/海岸gate先于Startup覆盖，地下cave biome按距实际macro零面12格判断。SurfaceSystem共用该海岸决定，Scorched水抑制跳过宏观水域。出生reserve384格、core3800格保持干陆；地堡搜索与首登流程未改。以下startup回归及部署hash是**历史版本**证据，不代表Terrain V2已通过实机验收。
+
 ## 根因与实现
 
 TerraBlender 的 `MixinMultiNoiseBiomeSource` 在 cancellable HEAD 中调用 `ParameterList.findValuePositional` 并提前返回。AFL 原本在另一个 MultiNoise HEAD 设置 `BiomeTraceContext`，再在 ParameterList 读取并清理；该入口可能被提前返回绕过，导致 `CONTEXT_MISSING`，不是 ecology shape 缺少参数。旧 BiomeSource→seed 弱表不能解决被绕过的 ThreadLocal 入口。

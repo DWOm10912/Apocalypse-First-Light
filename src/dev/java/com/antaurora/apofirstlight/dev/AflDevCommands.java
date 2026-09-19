@@ -59,6 +59,7 @@ public final class AflDevCommands {
                 .requires(source -> source.hasPermission(2));
         dev.then(schem);
         dev.then(mask);
+        dev.then(MacroGeographyCommand.build());
         dev.then(Commands.literal("bunker")
                 .then(Commands.literal("status")
                         .executes(AflDevCommands::bunkerStatus)));

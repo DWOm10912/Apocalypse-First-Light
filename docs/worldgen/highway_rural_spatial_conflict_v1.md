@@ -1,5 +1,7 @@
 # Highway ↔ Rural Spatial Conflict V1
 
+Terrain V2 Phase 1补充：[Macro Geography V1](terrain_v2_macro_geography_v1.md)在自然Rural入口、Highway claim检查前增加完整reservation的MAINLAND/海岸128格缓冲gate（16格有界探针）。既有planner、建筑、农业与claim算法保持原状。Highway本轮仍是无限走廊，可能在新海洋中施工；route与claim的海洋截断/海桥共同改造留待Highway V2，不宣称已完成跨洋限制。
+
 状态：已接入自然 Rural Structure 候选入口；compileJava 离线编译通过。未运行客户端、GameTest、多 seed 回归或性能测试，实机验收由用户完成。
 
 ## 接入与优先级

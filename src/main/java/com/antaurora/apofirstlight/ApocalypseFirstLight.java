@@ -13,6 +13,7 @@ import com.antaurora.apofirstlight.registry.AflRecipes;
 import com.antaurora.apofirstlight.registry.AflParticles;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.registry.AflFeatures;
+import com.antaurora.apofirstlight.registry.AflDensityFunctions;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.antaurora.apofirstlight.world.biome.AflOverworldRegion;
 import com.antaurora.apofirstlight.worldgen.rural.RuralNaturalWorldgen;
@@ -56,6 +57,7 @@ public class ApocalypseFirstLight {
         AflParticles.PARTICLE_TYPES.register(modEventBus);
         AflSounds.SOUND_EVENTS.register(modEventBus);
         AflFeatures.FEATURES.register(modEventBus);
+        AflDensityFunctions.TYPES.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
         RuralNaturalWorldgen.STRUCTURE_TYPES.register(modEventBus);
         RuralNaturalWorldgen.STRUCTURE_PIECES.register(modEventBus);

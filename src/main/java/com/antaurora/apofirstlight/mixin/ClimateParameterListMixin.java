@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.mixin;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.worldgen.StartupEcologyState;
+import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
@@ -33,7 +34,14 @@ public abstract class ClimateParameterListMixin {
         }
         var biomes=registries.registryOrThrow(Registries.BIOME);
         apocalypse$ecology=new StartupEcologyState(seed,biomes.getHolderOrThrow(Biomes.PLAINS),
-                biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS));
+                biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS), biomes.getHolderOrThrow(Biomes.OCEAN),
+                biomes.getHolderOrThrow(Biomes.DEEP_OCEAN), biomes.getHolderOrThrow(Biomes.BEACH),
+                MacroGeography.forSeed(seed));
+        var geography = apocalypse$ecology.geography();
+        ApocalypseFirstLight.LOGGER.info("[AFL MACRO GEO] version={} seed={} mainlandAxes={}x{} startupReserve={} mainlandCore={} inlandSeaCount={} bayCount={} strategicIslandCount={} foreignLand=false",
+                MacroGeography.VERSION, seed, geography.majorAxis(), geography.minorAxis(),
+                MacroGeography.STARTUP_MAINLAND_RESERVE, MacroGeography.MAINLAND_CORE_RADIUS,
+                geography.inlandSeaCount(), geography.bayCount(), geography.islands().size());
         ApocalypseFirstLight.LOGGER.info("[AFL STARTUP ECOLOGY CONTEXT] binding=ParameterList seed={} identity={} region={} threadLocalRequired=false",
                 seed,Integer.toHexString(System.identityHashCode(this)),type);
     }

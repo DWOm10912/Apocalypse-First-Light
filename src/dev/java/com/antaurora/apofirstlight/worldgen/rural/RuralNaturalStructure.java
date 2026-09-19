@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.worldgen.rural;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
+import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -26,6 +28,9 @@ public final class RuralNaturalStructure extends Structure {
         ChunkPos chunk = context.chunkPos();
         BlockPos center = new BlockPos(chunk.getMiddleBlockX(), 0, chunk.getMiddleBlockZ());
         BoundingBox reservation = RuralNaturalGenerator.reservationFor(context.seed(), center);
+        if (((RandomStateSeedAccess) (Object) context.randomState()).apocalypse$hasMacroGeography()
+                && !MacroGeography.forSeed(context.seed()).allowsRural(reservation.minX(), reservation.minZ(),
+                reservation.maxX(), reservation.maxZ())) return Optional.empty();
         var blocker = RuralHighwayConflict.blocker(context.seed(), reservation);
         if (blocker.isPresent()) {
             ApocalypseFirstLight.LOGGER.debug(

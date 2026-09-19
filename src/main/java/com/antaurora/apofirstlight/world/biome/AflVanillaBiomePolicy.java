@@ -15,9 +15,10 @@ public final class AflVanillaBiomePolicy {
 
     private AflVanillaBiomePolicy() {}
 
-    /** The only Vanilla surface biome retained by AFL's Overworld policy. */
+    /** Marine candidates are subsequently constrained by the shared MacroGeography field. */
     public static boolean isAllowedSurfaceBiome(ResourceKey<Biome> key) {
-        return Biomes.PLAINS.equals(key);
+        return Biomes.PLAINS.equals(key)
+                || com.antaurora.apofirstlight.worldgen.geography.MacroBiomePolicy.isMarine(key);
     }
 
     /** Cave selection is kept separate from the surface policy. */
@@ -27,8 +28,8 @@ public final class AflVanillaBiomePolicy {
 
     /**
      * Runtime guard for the Overworld MultiNoise source.  Non-Vanilla AFL
-     * biomes remain available, Plains remains available, and Vanilla cave
-     * biomes remain available.  Every other Vanilla key is a disallowed
+     * biomes remain available, Plains and the three macro marine candidates remain
+     * available, and Vanilla cave biomes remain available. Every other Vanilla key is a disallowed
      * surface candidate, without maintaining a brittle hand-written list of
      * every surface biome.
      */

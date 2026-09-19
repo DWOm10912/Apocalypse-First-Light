@@ -4,6 +4,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.Biome;
+import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
+import com.antaurora.apofirstlight.worldgen.geography.MacroBiomePolicy;
 
 /** Thread-local context used only while vanilla SurfaceSystem evaluates surface rules. */
 public final class StartupSurfaceBiomeContext {
@@ -13,7 +15,7 @@ public final class StartupSurfaceBiomeContext {
     }
 
     public static void begin(long seed, Registry<Biome> registry) {
-        CURRENT.set(new Context(seed, registry));
+        CURRENT.set(new Context(seed, registry, MacroGeography.forSeed(seed)));
     }
 
     public static void end() {
@@ -23,13 +25,15 @@ public final class StartupSurfaceBiomeContext {
     public static Holder<Biome> resolve(int x, int z, Holder<Biome> original) {
         Context context = CURRENT.get();
         if (context == null) return original;
-        ResourceKey<Biome> target = StartupPlainsEnclave.resolveBiome(x, z, context.seed(), original);
+        ResourceKey<Biome> target = MacroBiomePolicy.override(context.geography().sample(x, z),
+                original.unwrapKey().orElse(null));
+        if (target == null) target = StartupPlainsEnclave.resolveBiome(x, z, context.seed(), original);
         if (target == null) return original;
         return context.registry().getHolder(target)
                 .map(holder -> (Holder<Biome>) holder)
                 .orElse(original);
     }
 
-    private record Context(long seed, Registry<Biome> registry) {
+    private record Context(long seed, Registry<Biome> registry, MacroGeography geography) {
     }
 }

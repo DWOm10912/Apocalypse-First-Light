@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:mul",
+  "argument1": 0.125,
+  "argument2": {
+    "type": "minecraft:add",
+    "argument1": "apocalypse_firstlight:terrain/macro_height",
+    "argument2": {
+      "type": "minecraft:y_clamped_gradient",
+      "from_y": -64,
+      "to_y": 320,
+      "from_value": 64,
+      "to_value": -320
+    }
+  }
+}
