@@ -8,6 +8,7 @@ import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import software.bernie.geckolib.animatable.GeoItem;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.*;
+import software.bernie.geckolib.core.object.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import java.util.*;
 import java.util.function.Consumer;
@@ -40,14 +41,18 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
         return !x.equals(y);
     }
     @Override public void registerControllers(AnimatableManager.ControllerRegistrar registrar) {
-        // Shoot omits hand channels, so the original ready pose remains the underlying layer.
+        // The loaded idle supplies channels omitted by both empty state and one-shot actions.
         registrar.add(new AnimationController<>(this, "baseline", 0,
                 s -> s.setAndContinue(RawAnimation.begin().thenLoop(profile.idle()))));
-        var action = new AnimationController<>(this, "action", 0, s -> {
-            var stack = s.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
-            return s.setAndContinue(RawAnimation.begin().thenLoop(stack != null && NativeGunAmmo.read(stack, definition()) == 0
-                    ? "static_bolt_caught" : profile.idle()));
-        });
+        // This controller is processed after baseline and before action. An action that animates
+        // the same bone (notably shoot/reload_empty's bolt) therefore owns that bone for its clip.
+        if (profile.loops().contains("static_bolt_caught") && profile.clips().contains("static_bolt_caught"))
+            registrar.add(new AnimationController<>(this, "empty_state", 0, s -> {
+                var stack = s.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
+                return stack != null && NativeGunAmmo.read(stack, definition()) == 0
+                        ? s.setAndContinue(RawAnimation.begin().thenLoop("static_bolt_caught")) : PlayState.STOP;
+            }));
+        var action = new AnimationController<>(this, "action", 0, s -> PlayState.STOP);
         for (String clip : profile.clips()) if (!profile.loops().contains(clip))
             // thenPlay uses the resource's loop default, not an explicit one-shot.
             action.triggerableAnim(clip, RawAnimation.begin().then(clip, Animation.LoopType.PLAY_ONCE));

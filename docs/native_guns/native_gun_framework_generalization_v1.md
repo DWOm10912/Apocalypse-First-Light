@@ -11,6 +11,7 @@ Current status: P9-01, BR51-01, HR55 and C.A.T use the public framework. P9/BR51
 - Class defaults are supplied by `NativeGunPresentation` and `NativeAdsCalibration`. A definition may override HUD dimensions, `mag_in_tick`, trail preset, and ADS profile in JSON.
 - `fire_sound` and `dry_fire_sound` are required definition fields. Generic no-animation reload fallbacks use `native_gun_*` sound events backed by the established P9 audio files, preserving current audible behavior without making P9 the public fallback API.
 - Camera-bone consumption accepts any animated `NativeGunItem`; it no longer whitelists P9/BR51 IDs.
+- Configured Native Guns register three GeckoLib controllers in order: `baseline` always supplies `static_idle` for the full ready pose; optional `empty_state` supplies `static_bolt_caught` when the current render stack has zero magazine rounds; `action` plays one-shot draw/shoot/reload/inspect clips and otherwise stops. The action layer runs last, so its authored channels override empty-state channels during a shot or empty reload. Empty state continues supplying channels omitted by draw. This is a shared visual rule without weapon-ID checks. P9 retains its separate action controller; an additional P9 `empty_draw_slide` controller runs after it only during a zero-round draw to hold the authored empty slide pose. See `p9_01_artist_asset_integration_v1.md`.
 
 ## Frozen existing behavior
 

@@ -69,6 +69,8 @@ public final class P901Item extends Item implements GeoItem, NativeGunItem {
                 "inspect", "inspect_empty"})
             action.triggerableAnim(clip, RawAnimation.begin().then(clip, Animation.LoopType.PLAY_ONCE));
         controllers.add(action);
+        // After draw's full-body clip, restore just the empty slide channel when the held stack is empty.
+        controllers.add(new P901EmptyDrawController(this, action));
     }
 
     @Override

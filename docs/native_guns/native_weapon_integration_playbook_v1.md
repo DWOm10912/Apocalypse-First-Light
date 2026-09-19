@@ -378,7 +378,7 @@ Pistol
 
 TEMPLATE：p9_01。
 
-REQUIRED DIFFERENCES：专用 P9 ADS/hand composition、P901Item/P901Renderer/P901FirstPerson、empty_idle、有弹/空仓 inspect 分支、P9 空仓换弹提前 2 tick 提交。
+REQUIRED DIFFERENCES：专用 P9 ADS/hand composition、P901Item/P901Renderer/P901FirstPerson、empty_idle、有弹/空仓 inspect 分支、P9 空仓换弹提前 2 tick 提交。P9 draw 动画会写 loaded slide；0 发 draw 时由后置的 `empty_draw_slide` 控制器仅恢复 `empty_idle` 的 slide 通道，不覆盖 shoot/reload/inspect。
 
 OPTIONAL DIFFERENCES：手枪红点、手枪消音器、扩容匣。
 
@@ -997,6 +997,8 @@ Step 7 — Reload [CALIBRATE + VERIFY]
 Step 8 — Animation [NEW + VERIFY]
 
 Profile 列出全部 clip，仅 idle/empty baseline 在 loops 集合。检查 triggerable PLAY_ONCE、最后一发转空仓 baseline、draw lock、inspect 能力与 camera rotation。bolt/action 只有真实新机制存在时才能加入。
+
+当前通用配置枪的控制器顺序为 `baseline` → `empty_state`（仅当 Profile 同时列出空仓 loop/clip）→ `action`。`baseline` 维持完整 `static_idle` 姿态；`empty_state` 从当前渲染 stack 只读弹量，0 发循环 `static_bolt_caught`，有弹停止；`action` 仅运行触发的一次性动作，否则停止。后处理的动作通道覆盖空仓通道，因此 draw 不写 bolt 时空仓 bolt 仍保持，而 shoot/reload_empty 写 bolt 时动作优先。BR51/HR55 的 `static_bolt_caught` 可只是局部 bolt 通道，不能替换完整 `static_idle`。具体首帧视觉和联机同步仍需客户端实测。
 
 Step 9 — Sound [NEW + VERIFY]
 

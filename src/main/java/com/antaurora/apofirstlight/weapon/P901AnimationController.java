@@ -42,4 +42,10 @@ public final class P901AnimationController extends AnimationController<P901Item>
         return reloadSeconds >= 0 && getCurrentAnimation() != null
                 && getCurrentAnimation().animation().name().equals("reload_empty");
     }
+
+    public boolean isDrawPlaying() {
+        return getAnimationState() != State.STOPPED && getTriggeredAnimation() != null
+                && !getTriggeredAnimation().getAnimationStages().isEmpty()
+                && "draw".equals(getTriggeredAnimation().getAnimationStages().get(0).animationName());
+    }
 }
