@@ -6,7 +6,7 @@ public record MacroGeographySample(SurfaceClass surfaceClass, NationId nationId,
                                    WaterClass waterClass, double coastDistance, double surfaceHeight) {
     public enum SurfaceClass { LAND, COAST, INLAND_WATER, OPEN_OCEAN }
     public enum NationId { NONE, MAIN_NATION }
-    public enum LandmassRole { NONE, MAINLAND, STRATEGIC_ISLAND, MILITARY_ISLAND, INDUSTRIAL_ISLAND, MINOR_ISLAND }
+    public enum LandmassRole { NONE, MAINLAND, SATELLITE_ISLAND, MINOR_ISLAND }
     public enum WaterClass { NONE, INLAND_SEA, BAY, STRAIT, COASTAL_WATER, OPEN_OCEAN }
 
     public boolean isLand() { return landmassId >= 0; }

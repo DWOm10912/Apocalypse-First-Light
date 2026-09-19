@@ -67,6 +67,11 @@ public final class MacroGeographyExportCommand {
         }
         try {
             MacroGeography geography = MacroGeography.forSeed(level.getSeed());
+            if (radius < geography.outerOceanRadius() + step * 2) {
+                source.sendFailure(Component.literal("Radius must be at least "
+                        + (geography.outerOceanRadius() + step * 2) + " to include this island group and ocean margin."));
+                return 0;
+            }
             Path directory = FMLPaths.GAMEDIR.get().resolve("afl_debug").resolve("macro");
             Files.createDirectories(directory);
             Path png = directory.resolve("macro_geography_" + level.getSeed() + ".png");
@@ -90,6 +95,7 @@ public final class MacroGeographyExportCommand {
         EnumMap<WaterClass, Long> waterCounts = new EnumMap<>(WaterClass.class);
         boolean foreign = false, nonMainNation = false;
         long outerSamples = 0, outerOpenOcean = 0;
+        int outerRadius = geography.outerOceanRadius();
         double nearestOcean = Double.POSITIVE_INFINITY, nearestInlandSea = Double.POSITIVE_INFINITY;
         for (int row = 0; row < side; row++) {
             int z = -radius + row * step;
@@ -109,7 +115,7 @@ public final class MacroGeographyExportCommand {
                     if (value.waterClass() == WaterClass.OPEN_OCEAN) nearestOcean = Math.min(nearestOcean, distance);
                     if (value.waterClass() == WaterClass.INLAND_SEA) nearestInlandSea = Math.min(nearestInlandSea, distance);
                 }
-                if (Math.hypot(x, z) >= 10000) {
+                if (Math.hypot(x, z) >= outerRadius) {
                     outerSamples++;
                     if (value.waterClass() == WaterClass.OPEN_OCEAN) outerOpenOcean++;
                 }
@@ -125,9 +131,7 @@ public final class MacroGeographyExportCommand {
             if (sample.surfaceClass() == SurfaceClass.COAST) return new Color(226, 206, 145);
             return switch (sample.landmassRole()) {
                 case MAINLAND -> new Color(91, 139, 81);
-                case STRATEGIC_ISLAND -> new Color(210, 177, 88);
-                case MILITARY_ISLAND -> new Color(182, 92, 84);
-                case INDUSTRIAL_ISLAND -> new Color(153, 130, 173);
+                case SATELLITE_ISLAND -> new Color(210, 177, 88);
                 case MINOR_ISLAND -> new Color(186, 169, 119);
                 case NONE -> Color.MAGENTA;
             };
@@ -175,11 +179,11 @@ public final class MacroGeographyExportCommand {
             }
             graphics.setStroke(new BasicStroke());
             int y = 18;
-            String[] legend = {"MAINLAND", "STRATEGIC_ISLAND", "MILITARY_ISLAND", "INDUSTRIAL_ISLAND",
+            String[] legend = {"MAINLAND", "SATELLITE_ISLAND",
                     "MINOR_ISLAND", "COAST", "INLAND_SEA", "BAY", "STRAIT", "COASTAL_WATER", "OPEN_OCEAN",
                     "dashed yellow: 300-600 bridge candidate"};
-            Color[] colors = {new Color(91, 139, 81), new Color(210, 177, 88), new Color(182, 92, 84),
-                    new Color(153, 130, 173), new Color(186, 169, 119), new Color(226, 206, 145),
+            Color[] colors = {new Color(91, 139, 81), new Color(210, 177, 88),
+                    new Color(186, 169, 119), new Color(226, 206, 145),
                     new Color(72, 180, 199), new Color(66, 144, 200), new Color(128, 183, 229),
                     new Color(55, 111, 180), new Color(28, 57, 112), new Color(255, 242, 124)};
             graphics.setColor(new Color(0, 0, 0, 220));
@@ -203,23 +207,39 @@ public final class MacroGeographyExportCommand {
     }
 
     private static boolean bridgeEligible(MacroGeography geography, MacroGeography.CrossingCandidate crossing) {
-        if (crossing.waterSpan() < MIN_BRIDGE_GAP || crossing.waterSpan() > MAX_BRIDGE_GAP) return false;
+        double gap = sampledCrossingGap(geography, crossing);
+        return gap >= MIN_BRIDGE_GAP && gap <= MAX_BRIDGE_GAP;
+    }
+
+    /** Verify a continuous MAINLAND -> water -> SATELLITE crossing with <=2-block probes. */
+    private static double sampledCrossingGap(MacroGeography geography, MacroGeography.CrossingCandidate crossing) {
         MacroGeographySample a = geography.sample((int) crossing.fromX(), (int) crossing.fromZ());
         MacroGeographySample b = geography.sample((int) crossing.toX(), (int) crossing.toZ());
         if (a.nationId() != NationId.MAIN_NATION || b.nationId() != NationId.MAIN_NATION
-                || a.landmassRole() != LandmassRole.MAINLAND || b.landmassRole() == LandmassRole.MAINLAND
-                || b.landmassRole() == LandmassRole.NONE || a.landmassId() != crossing.fromLandmassId()
-                || b.landmassId() != crossing.toLandmassId()) return false;
-        for (int i = 1; i < 16; i++) {
-            double t = i / 16.0;
+                || a.landmassRole() != LandmassRole.MAINLAND || b.landmassRole() != LandmassRole.SATELLITE_ISLAND
+                || a.landmassId() != crossing.fromLandmassId()
+                || b.landmassId() != crossing.toLandmassId()) return Double.NaN;
+        double length = Math.hypot(crossing.toX() - crossing.fromX(), crossing.toZ() - crossing.fromZ());
+        int probes = (int) Math.ceil(length / 2), waterProbes = 0, phase = 0;
+        for (int i = 0; i <= probes; i++) {
+            double t = i / (double) probes;
             MacroGeographySample middle = geography.sample(
                     (int) Math.round(crossing.fromX() * (1 - t) + crossing.toX() * t),
                     (int) Math.round(crossing.fromZ() * (1 - t) + crossing.toZ() * t));
-            if (middle.isWater() && middle.waterClass() == WaterClass.OPEN_OCEAN) return false;
-            if (middle.isLand() && middle.landmassId() != a.landmassId()
-                    && middle.landmassId() != b.landmassId()) return false;
+            if (middle.isWater()) {
+                if (phase == 2 || middle.waterClass() == WaterClass.OPEN_OCEAN) return Double.NaN;
+                phase = 1;
+                waterProbes++;
+            } else if (middle.nationId() != NationId.MAIN_NATION) {
+                return Double.NaN;
+            } else if (middle.landmassId() == a.landmassId()) {
+                if (phase != 0) return Double.NaN;
+            } else if (middle.landmassId() == b.landmassId()) {
+                if (phase == 0) return Double.NaN;
+                phase = 2;
+            } else return Double.NaN;
         }
-        return true;
+        return phase == 2 && waterProbes > 0 ? waterProbes * length / probes : Double.NaN;
     }
 
     private static String report(MacroGeography geography, Survey survey, int radius, int step) {
@@ -243,10 +263,13 @@ public final class MacroGeographyExportCommand {
                 .append("\nspawn to nearest INLAND_SEA = ").append(estimate(survey.nearestInlandSea, step))
                 .append("\n");
         int bridgeCount = 0;
+        long satelliteCount = geography.islands().stream().filter(island -> island.role() == LandmassRole.SATELLITE_ISLAND).count();
+        long minorCount = geography.islands().stream().filter(island -> island.role() == LandmassRole.MINOR_ISLAND).count();
         out.append("\nSATELLITE ISLANDS\nplannedCount = ").append(geography.islands().size()).append("\n");
         for (var island : geography.islands()) {
             out.append("\nIsland #").append(island.id()).append("\nlandmassId = ").append(island.id())
-                    .append("\nrole = ").append(island.role()).append("\nnationId = MAIN_NATION")
+                    .append("\nlandmassRole = ").append(island.role()).append("\nnationId = ")
+                    .append(geography.sample((int) Math.round(island.x()), (int) Math.round(island.z())).nationId())
                     .append("\ncenter = ").append(Math.round(island.x())).append(", ").append(Math.round(island.z()))
                     .append("\n");
             appendExtent(out, survey.land.get(island.id()));
@@ -255,9 +278,12 @@ public final class MacroGeographyExportCommand {
             if (crossing != null) {
                 boolean eligible = bridgeEligible(geography, crossing);
                 if (eligible) bridgeCount++;
-                out.append("nearest mainland water gap = ~").append(Math.round(crossing.waterSpan()))
-                        .append(" blocks (planned radial gap, not surveyed nearest shoreline)\n")
-                        .append("seaBridgeCandidate300to600 = ").append(eligible ? "YES" : "NO").append("\n");
+                out.append("nearestMainlandWaterGap = ~").append(Math.round(crossing.waterSpan()))
+                        .append(" blocks (supporting shores, numeric planning estimate)\n")
+                        .append("sampledCrossingWaterGap = ").append(estimate(sampledCrossingGap(geography, crossing), 2))
+                        .append("\nbridgeCandidate300to600 = ").append(eligible ? "YES" : "NO").append("\n");
+            } else {
+                out.append("nearestMainlandWaterGap = not available\nbridgeCandidate300to600 = NO\n");
             }
         }
         out.append("\nWATERBODIES (sampled estimates; OPEN_OCEAN id 0 omitted)\n");
@@ -289,15 +315,20 @@ public final class MacroGeographyExportCommand {
                     .append(", planned gap ~").append(Math.round(crossing.waterSpan())).append("\n");
         out.append("\nAUDIT SUMMARY\nforeignLandDetected = ").append(survey.foreign)
                 .append(" (sampled check)\nnonMainNationLandDetected = ").append(survey.nonMainNation)
-                .append(" (sampled check)\nouterRingRadius = 10000 blocks\nouterRingOpenOceanSamples = ")
+                .append(" (sampled check)\nouterRingRadius = ").append(geography.outerOceanRadius())
+                .append(" blocks\nouterRingOpenOceanSamples = ")
                 .append(survey.outerOpenOcean).append(" / ").append(survey.outerSamples)
-                .append(" (sampled check; radius 10000..").append(radius).append(")\n")
+                .append(" (sampled check; radius ").append(geography.outerOceanRadius()).append("..").append(radius).append(")\n")
                 .append("spawnIsSafeMainland = ").append(spawn.isLand()
                         && spawn.nationId() == NationId.MAIN_NATION
                         && spawn.landmassRole() == LandmassRole.MAINLAND
                         && spawn.surfaceClass() == SurfaceClass.LAND).append("\n")
-                .append("satelliteIslandCount = ").append(geography.islands().size())
-                .append("\nbridgeCandidateCount300to600 = ").append(bridgeCount).append("\n");
+                .append("satelliteIslandCount = ").append(satelliteCount)
+                .append("\nminorIslandCount = ").append(minorCount)
+                .append("\nbridgeCandidateCount300to600 = ").append(bridgeCount)
+                .append("\nrequiredSatelliteIslandRuleSatisfied = ").append(satelliteCount >= 1 && satelliteCount <= 3)
+                .append("\nrequiredBridgeCandidateRuleSatisfied = ").append(bridgeCount >= 1)
+                .append("\nmajorCoastalFeature = STRAIT_COMPLEX (same-nation satellite group)\n");
         return out.toString();
     }
 

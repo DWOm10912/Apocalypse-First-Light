@@ -7,9 +7,9 @@ import java.util.Map;
 
 import static com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.*;
 
-/** Immutable, chunk-independent V1 island grammar. No generated-world or runtime-random inputs. */
+/** Immutable, chunk-independent V1.1 geography. Content assignment belongs to later planners. */
 public final class MacroGeography {
-    public static final int VERSION = 1;
+    public static final int VERSION = 2; // V1.1 planning revision; mainland parameters retain their original salts.
     public static final int SEA_LEVEL = 63;
     public static final int STARTUP_MAINLAND_RESERVE = 384;
     public static final int MAINLAND_CORE_RADIUS = 3800;
@@ -55,22 +55,12 @@ public final class MacroGeography {
                 && enclosedSeaFits(sea) ? sea : null;
         List<Island> islandPlan = new ArrayList<>();
         List<CrossingCandidate> crossingPlan = new ArrayList<>();
-        int count = (int) (unit(50) * 4);
-        LandmassRole[] roles = {LandmassRole.MILITARY_ISLAND, LandmassRole.INDUSTRIAL_ISLAND,
-                LandmassRole.STRATEGIC_ISLAND};
+        int count = 1 + (int) (unit(50) * 3);
         for (int i = 0; i < count; i++) {
             double angle = rotation + .6 + i * Math.PI * 2 / 3 + (unit(60 + i) - .5) * .25;
-            double shore = coastRadius(angle);
-            double radius = 380 + unit(70 + i) * 220;
-            double gap = 144 + unit(80 + i) * 64;
-            double cx = Math.cos(angle), cz = Math.sin(angle);
-            Island island = new Island(i + 1, roles[i], cx * (shore + gap + radius),
-                    cz * (shore + gap + radius), radius, gap);
-            islandPlan.add(island);
-            // Endpoints are inside each bank; full water span remains 144..208 blocks.
-            crossingPlan.add(new CrossingCandidate(100 + i, 0, i + 1,
-                    cx * (shore - 24), cz * (shore - 24), cx * (shore + gap + 24),
-                    cz * (shore + gap + 24), gap));
+            IslandPlacement placement = planIsland(i, angle);
+            islandPlan.add(placement.island());
+            crossingPlan.add(placement.crossing());
         }
         islands = List.copyOf(islandPlan);
         crossings = List.copyOf(crossingPlan);
@@ -83,6 +73,73 @@ public final class MacroGeography {
     public int bayCount() { return bays.size(); }
     public List<Island> islands() { return islands; }
     public List<CrossingCandidate> crossingCandidates() { return crossings; }
+
+    /** Beyond this radius all finite mainland/island shelves are OPEN_OCEAN. */
+    public int outerOceanRadius() {
+        double bound = majorRadius * 1.058 + 260;
+        for (Island island : islands) {
+            bound = Math.max(bound, Math.hypot(island.x(), island.z()) + island.majorRadius() * 1.10);
+        }
+        return (int) Math.ceil(bound + 320);
+    }
+
+    private IslandPlacement planIsland(int index, double slotAngle) {
+        double major = 550 + unit(70 + index) * 200;
+        double minor = 400 + unit(90 + index) * 100;
+        double gap = 400 + unit(80 + index) * 100;
+        double outlinePhase = unit(100 + index) * Math.PI * 2;
+        // Each stable slot owns a narrow angular sector; no random retries or load-order inputs.
+        for (int attempt = 0; attempt < 33; attempt++) {
+            double angle = slotAngle + (attempt % 2 == 0 ? -1 : 1) * ((attempt + 1) / 2) * .02;
+            double nx = Math.cos(angle), nz = Math.sin(angle);
+            Shore shore = supportingShore(angle);
+            Island island = new Island(index + 1, LandmassRole.SATELLITE_ISLAND,
+                    shore.x() + nx * (gap + major), shore.z() + nz * (gap + major),
+                    major, minor, angle, outlinePhase, gap);
+            for (int inset = 96; inset <= 192; inset += 32) {
+                double ax = shore.x() - nx * inset, az = shore.z() - nz * inset;
+                double bx = shore.x() + nx * (gap + inset), bz = shore.z() + nz * (gap + inset);
+                if (bankFits(ax, az, nx, nz, null) && bankFits(bx, bz, nx, nz, island)) {
+                    return new IslandPlacement(island, new CrossingCandidate(100 + index, 0, index + 1,
+                            ax, az, bx, bz, gap));
+                }
+            }
+        }
+        // Never silently publish a zero-island or unvalidated bridge topology.
+        throw new IllegalStateException("No supported satellite bank for seed " + seed + ", slot " + index);
+    }
+
+    private boolean bankFits(double x, double z, double nx, double nz, Island island) {
+        // 64 x 128 blocks of bank footprint, sampled every 16 blocks; slope remains an engineering check.
+        for (int forward = -32; forward <= 32; forward += 16) {
+            for (int side = -64; side <= 64; side += 16) {
+                double px = x + nx * forward - nz * side, pz = z + nz * forward + nx * side;
+                double distance = island == null ? coastRadius(Math.atan2(pz, px)) - Math.hypot(px, pz)
+                        : island.distance(px, pz);
+                if (island == null && inlandSea != null) distance = Math.min(distance, inlandSea.distance(px, pz));
+                if (distance < 8) return false;
+            }
+        }
+        return true;
+    }
+
+    /** Maximum projection of the existing outer coastline onto an outward normal. */
+    private Shore supportingShore(double normal) {
+        double step = Math.PI * 2 / 2048, bestAngle = normal, best = -Double.MAX_VALUE;
+        for (int i = 0; i < 2048; i++) {
+            double angle = i * step;
+            double projection = coastRadius(angle) * Math.cos(angle - normal);
+            if (projection > best) { best = projection; bestAngle = angle; }
+        }
+        double lo = bestAngle - step, hi = bestAngle + step;
+        for (int i = 0; i < 40; i++) {
+            double a = lo + (hi - lo) / 3, b = hi - (hi - lo) / 3;
+            if (coastRadius(a) * Math.cos(a - normal) < coastRadius(b) * Math.cos(b - normal)) lo = a;
+            else hi = b;
+        }
+        double angle = (lo + hi) / 2, radius = coastRadius(angle);
+        return new Shore(Math.cos(angle) * radius, Math.sin(angle) * radius);
+    }
 
     private boolean enclosedSeaFits(InlandSea sea) {
         // Analytic planning only: keep a land ring even when a nearby bay bends sharply inland.
@@ -114,9 +171,8 @@ public final class MacroGeography {
             }
         }
         for (Island island : islands) {
-            // The mainland exclusion prevents an island's lateral edge accidentally joining it.
-            double islandDistance = Math.min(island.radius() - Math.hypot(x - island.x(), z - island.z()),
-                    -mainDistance - island.gap());
+            // Supporting-plane placement separates the full connected outline without clipping it.
+            double islandDistance = island.distance(x, z);
             if (islandDistance > distance) {
                 distance = islandDistance;
                 landmass = island.id();
@@ -240,7 +296,24 @@ public final class MacroGeography {
             return (Math.hypot(forward / radialRadius, side / lateralRadius) - 1) * radialRadius;
         }
     }
-    public record Island(int id, LandmassRole role, double x, double z, double radius, double gap) {}
+    private record Shore(double x, double z) {}
+    private record IslandPlacement(Island island, CrossingCandidate crossing) {}
+
+    public record Island(int id, LandmassRole role, double x, double z, double majorRadius,
+                         double minorRadius, double angle, double outlinePhase, double gap) {
+        double distance(double px, double pz) {
+            double dx = px - x, dz = pz - z;
+            double a = Math.atan2(dz, dx) - angle;
+            double cosine = Math.cos(a), sine = Math.sin(a);
+            double ellipse = 1 / Math.sqrt(cosine * cosine / (majorRadius * majorRadius)
+                    + sine * sine / (minorRadius * minorRadius));
+            // Positive star-shaped contour: never fragments. At +/- major axis both value and
+            // derivative of the modulation vanish, preserving a broad supporting shore for bridges.
+            double modulation = 1 + sine * sine * (.06 * Math.sin(3 * a + outlinePhase)
+                    + .04 * Math.cos(5 * a - outlinePhase));
+            return ellipse * modulation - Math.hypot(dx, dz);
+        }
+    }
     /** A topology candidate, not permission to build; engineering/approach validation belongs to Highway V2. */
     public record CrossingCandidate(int waterbodyId, int fromLandmassId, int toLandmassId,
                                     double fromX, double fromZ, double toX, double toZ, double waterSpan) {
