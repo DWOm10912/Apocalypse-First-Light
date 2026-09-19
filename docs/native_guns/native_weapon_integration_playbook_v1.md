@@ -1075,7 +1075,7 @@ HR55 是新框架的第三枪验证样本；其正式接入不得产生任何新
 
 B = 切换开火模式，V = Inspect。客户端仅请求循环，服务器校验主手、slot、Gecko identity、玩家状态、菜单、动作锁/trigger 状态与 4 tick 切换冷却。单模式 cycle 在写 NBT/提示/音效之前返回 false，客户端也不发送该键请求。
 
-协议 27 的 NativeTriggerPacket 发送按下/松开/切换意图；不接受客户端指定模式。SEMI 每次按下沿一发；BURST 后续由服务器按 interval 调度，释放不取消；AUTO 释放即停止。空仓、换 stack/slot、reload 请求、死亡、旁观、跨维度、断线、data reload、动作取消都终止后续发射。所有子弹复用 NativeGunActions → NativeGunShot。服务器调度子弹使用按玩家的负 shotId，现有成功射击视觉包和 anchor 路径负责 FX。
+协议 28 的 NativeTriggerPacket 发送按下/松开/切换意图；不接受客户端指定模式。SEMI 每次按下沿一发；BURST 后续由服务器按 interval 调度，释放不取消；AUTO 释放即停止。空仓、换 stack/slot、reload 请求、死亡、旁观、跨维度、断线、data reload、动作取消都终止后续发射。所有子弹复用 NativeGunActions → NativeGunShot。服务器调度子弹使用按玩家的负 shotId，现有成功射击视觉包和 anchor 路径负责 FX。 命中粒子 V1 在既有射击视觉包尾部增加可选 hit-effect preset；此前 FireMode 引入版本为27。
 
 HUD 现为左侧等比缩小剪影、白色竖分割线、右侧居中的三行（本地化名称 / 当前装弹 | 备弹或∞ / 开火模式）。模式保留较小的 0.78 倍字号，不再与备弹共用一行。弹药按 font.width 实际宽度紧凑排列，装弹/备弹/分隔符默认字号为 1.15/1/0.9，间距 2 GUI 单位，共用基线；过宽整行缩小，不向左扩张。模式颜色仍为 SEMI #9FC7D9、BURST #D6A15F、AUTO #D97878。布局从客户端资源 assets/apocalypse_firstlight/gui/layout/native_gun_hud.json 读取，支持资源包覆盖和 F3+T，字段、边界和验证范围见 [HUD 布局 V1](native_gun_hud_layout_v1.md)。HUD/Tooltip 读取当前 stack 模式。服务器实际切换成功才发送本地化 Action Bar。此排版尚待用户游戏内目视验收。
 

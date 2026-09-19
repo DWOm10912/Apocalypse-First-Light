@@ -47,7 +47,8 @@
     "hud": {"width": 60, "height": 20},
     "mag_in_tick": 55,
     "empty_mag_in_tick": 55,
-    "trail": "argb_gradient"
+    "trail": "argb_gradient",
+    "hit_effect": "dizzy_stars"
   },
   "recoil": {
     "verticalMin": 0.15,

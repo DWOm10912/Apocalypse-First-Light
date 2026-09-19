@@ -16,4 +16,10 @@ public final class AflParticles {
 
     private AflParticles() {
     }
+    public static final RegistryObject<SimpleParticleType> HIT_YELLOW_STAR =
+            PARTICLE_TYPES.register("hit_yellow_star", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> HIT_BLUE_STAR =
+            PARTICLE_TYPES.register("hit_blue_star", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> HIT_DIZZY =
+            PARTICLE_TYPES.register("hit_dizzy", () -> new SimpleParticleType(false));
 }

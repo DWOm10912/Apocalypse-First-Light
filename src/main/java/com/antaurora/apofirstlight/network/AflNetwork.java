@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "27";
+    private static final String PROTOCOL = "28";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -179,26 +179,32 @@ public final class AflNetwork {
         sendNativeShot(player,slot,gunId,shotEnd,0);
     }
     public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
-        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId,shotEnd,shotId));
+        sendNativeShot(player,slot,gunId,shotEnd,shotId,"");
+    }
+    public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId,shotEnd,shotId,hitEffect));
         channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player),
-                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd,shotId));
+                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd,shotId,hitEffect));
     }
 
     /** Notification only; ammo, hitscan and HUD remain on their existing paths. */
-    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
+    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
+        public NativeShotFxS2CPacket(int shooterId,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(shooterId,gunId,end,shotId,"");}
         static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) {
             b.writeVarInt(p.shooterId); b.writeLong(p.gunId);
             b.writeDouble(p.shotEnd.x); b.writeDouble(p.shotEnd.y); b.writeDouble(p.shotEnd.z);
             b.writeLong(p.shotId);
+            b.writeUtf(p.hitEffect,64);
         }
         static NativeShotFxS2CPacket decode(FriendlyByteBuf b) {
             return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong(),
-                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),b.readLong());
+                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),b.readLong(),b.readUtf(64));
         }
         static void handle(NativeShotFxS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> {
+                        com.antaurora.apofirstlight.weapon.client.NativeHitEffects.play(p.hitEffect,p.shotEnd);
                         if(!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(p.shooterId,p.gunId,p.shotId,p.shotEnd)){
                             com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
                             com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd,p.shotId);
@@ -208,13 +214,15 @@ public final class AflNetwork {
         }
     }
 
-    public record NativeShotS2CPacket(int slot, long gunId,net.minecraft.world.phys.Vec3 shotEnd,long shotId) {
-        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId);b.writeDouble(p.shotEnd.x);b.writeDouble(p.shotEnd.y);b.writeDouble(p.shotEnd.z);b.writeLong(p.shotId); }
-        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong(),new net.minecraft.world.phys.Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readLong()); }
+    public record NativeShotS2CPacket(int slot, long gunId,net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
+        public NativeShotS2CPacket(int slot,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(slot,gunId,end,shotId,"");}
+        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId);b.writeDouble(p.shotEnd.x);b.writeDouble(p.shotEnd.y);b.writeDouble(p.shotEnd.z);b.writeLong(p.shotId);b.writeUtf(p.hitEffect,64); }
+        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong(),new net.minecraft.world.phys.Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readLong(),b.readUtf(64)); }
         static void handle(NativeShotS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> {
+                        com.antaurora.apofirstlight.weapon.client.NativeHitEffects.play(p.hitEffect,p.shotEnd);
                         com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId);
                         var player=net.minecraft.client.Minecraft.getInstance().player;
                         if(player!=null&&!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(player.getId(),p.gunId,p.shotId,p.shotEnd)){

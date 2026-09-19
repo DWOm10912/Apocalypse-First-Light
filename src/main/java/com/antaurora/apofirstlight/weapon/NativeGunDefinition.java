@@ -12,8 +12,9 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
                                   boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing,
                                   NativeSightMount sightMount, NativeMuzzleMount muzzleMount, ResourceLocation fireSound, ResourceLocation dryFireSound,
                                   ResourceLocation suppressedFireSound, NativeMagazineMount magazineMount, NativeAdsCalibration adsCalibration,
-                                  NativeFireProfile fire) {
+                                  NativeFireProfile fire, NativeHitEffect hitEffect) {
     public NativeGunDefinition {
+        java.util.Objects.requireNonNull(hitEffect, "hitEffect");
         java.util.Objects.requireNonNull(fire, "fire");
         java.util.Objects.requireNonNull(recoil, "recoil");
         java.util.Objects.requireNonNull(trail, "trail");

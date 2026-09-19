@@ -1,6 +1,6 @@
 # Native Gun Data JSON V1
 
-> 协议更新（FireMode V1）：当前共享通道为 **27**，新增扳机按下/松开和模式循环请求，客户端/服务端须匹配。配件仍仅通过维护台安装，V 用于检视，B 切换开火模式。详见 [Playbook 第 19 节](native_weapon_integration_playbook_v1.md)。
+> 协议更新（FireMode V1）：当前共享通道为 **28**，新增扳机按下/松开和模式循环请求，客户端/服务端须匹配。配件仍仅通过维护台安装，V 用于检视，B 切换开火模式。详见 [Playbook 第 19 节](native_weapon_integration_playbook_v1.md)。
 
 物品 Tooltip 的正式显示规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)：普通 Tooltip 仅显示静态规格与一句描述，不显示实时弹匣余量；数据中的真实容量及持枪 HUD 行为不变。
 
@@ -45,7 +45,7 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 
 ## 重载与同步
 
-使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前共享协议版本为 27，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，V 快捷装拆已移除；维护台仍需满足服务端槽位校验，不保证删除整个槽位定义后能直接拆回配件。
+使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前共享协议版本为 28，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，V 快捷装拆已移除；维护台仍需满足服务端槽位校验，不保证删除整个槽位定义后能直接拆回配件。
 
 当前模式由服务端写入每把枪 ItemStack 的 `AflGunFireMode` 字符串，缺省读取 default_mode。重载后失效模式立即按新默认值读取，并在服务端 stack 初始化时规范化保存。重载清除旧 AUTO/BURST 调度。SEMI 只接受按下沿；BURST 松开仍完成剩余发数；AUTO 松开停止。每发都通过 NativeGunActions / NativeGunShot 原有链路。单模式枪切换不写 NBT、不提示、不播放声音。
 
@@ -68,4 +68,4 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 DEV测试创建临时datapack，调用与 /reload 相同的服务器资源重载入口，验证伤害18→10、噪声112→64、间隔3→5、非法容量-1拒绝后保留完整旧值，随后恢复18/112/3。图形客户端ADS/FOV、后坐手感及多人远端同步需另行实机验收，不以服务端测试替代。
 
 验证结果：`native-json-final-test.log` 一轮65/65通过；最终快照重复运行 `native-json-verified.log` 为64/65，唯一失败是既有 `nativenoiseflatdistances` 的感染者调查路径断言。JSON重载、非法字段回退、两枪弹药/换弹/射击和新增平衡断言均通过。测试临时覆盖均已撤销，正式JSON保持18/112/3。构建单独复验记录 `native-json-final-build.log`，主表 `--check` 通过；未提交/推送。
-> Historical verification above predates FireMode V1. Current channel protocol is **27**; see Playbook section 19 for current schema and verification boundaries.
+> Historical verification above predates FireMode V1. Current channel protocol is **28**; see Playbook section 19 for current schema and verification boundaries.

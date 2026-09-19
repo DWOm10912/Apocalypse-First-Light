@@ -162,7 +162,8 @@ public final class NativeGunActions {
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
             var hit = NativeGunShot.execute(player, definition);
-            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId);
+            com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId,
+                    definition.hitEffect().onHit(hit.entity()!=null));
         }
     }
 
