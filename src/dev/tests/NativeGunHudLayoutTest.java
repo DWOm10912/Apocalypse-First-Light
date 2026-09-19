@@ -16,7 +16,8 @@ public final class NativeGunHudLayoutTest {
         var warnings=new ArrayList<String>();
         var d=NativeGunHudConfig.defaults();
         var resource=Path.of("src/main/resources/assets/apocalypse_firstlight/gui/layout/native_gun_hud.json");
-        check(d.equals(NativeGunHudConfig.parse(Files.readString(resource),warnings::add)),"packaged defaults match fallback");
+        NativeGunHudConfig.parse(Files.readString(resource),warnings::add);
+        check(warnings.isEmpty(),"artist-tuned packaged layout is valid (need not equal fallback)");
         check(d.equals(NativeGunHudConfig.parse("{}",warnings::add)),"missing fields");
         var custom=NativeGunHudConfig.parse("""
                 {"anchor":null,"global":{"scale":-1,"offset_x":7},

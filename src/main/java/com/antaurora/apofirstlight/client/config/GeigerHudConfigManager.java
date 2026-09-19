@@ -20,6 +20,7 @@ public final class GeigerHudConfigManager {
     public static GeigerHudConfig get() {
         return current;
     }
+    public static void apply(GeigerHudConfig layout) { current = layout; }
 
     public static void load(ResourceManager resourceManager) {
         current = read(resourceManager);
@@ -40,7 +41,7 @@ public final class GeigerHudConfigManager {
     }
 
     private static GeigerHudConfig read(ResourceManager resourceManager) {
-        try (var reader = resourceManager.getResourceOrThrow(LAYOUT).openAsReader()) {
+        try (var reader = com.antaurora.apofirstlight.client.hudlayout.HudLayoutDevResources.open(resourceManager,LAYOUT)) {
             return sanitize(JsonParser.parseReader(reader).getAsJsonObject());
         } catch (Exception exception) {
             ApocalypseFirstLight.LOGGER.warn("[AFL] Could not load Geiger HUD layout {}; using defaults.", LAYOUT, exception);
@@ -48,7 +49,7 @@ public final class GeigerHudConfigManager {
         }
     }
 
-    private static GeigerHudConfig sanitize(JsonObject object) {
+    public static GeigerHudConfig sanitize(JsonObject object) {
         GeigerHudConfig defaults = GeigerHudConfig.defaults();
         JsonObject symbol = object(object, "symbol");
         JsonObject text = object(object, "text");

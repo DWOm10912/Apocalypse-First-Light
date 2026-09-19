@@ -32,6 +32,13 @@ public final class GeigerHudOverlay {
         GeigerHudConfig config = GeigerHudConfigManager.get();
         if (!config.enabled()) return;
 
+        preview(graphics,screenWidth,screenHeight,config);
+    }
+
+    /** Read-only preview of the actual HUD, independent of held-item visibility. */
+    public static void preview(GuiGraphics graphics,int screenWidth,int screenHeight,GeigerHudConfig config) {
+        Minecraft minecraft=Minecraft.getInstance();
+
         int x = Math.round(screenWidth - WIDTH * config.hudScale() - MARGIN - config.offsetX());
         int y = Math.round(screenHeight - HEIGHT * config.hudScale() - MARGIN - config.offsetY());
         var pose = graphics.pose();
@@ -46,6 +53,13 @@ public final class GeigerHudOverlay {
         pose.popPose();
         pose.popPose();
 
+        var lines=lines();
+        drawText(graphics, minecraft.font, lines[0], x, y, config, config.rows().radiation(), 0);
+        drawText(graphics, minecraft.font, lines[1], x, y, config, config.rows().dose(), 1);
+        drawText(graphics, minecraft.font, lines[2], x, y, config, config.rows().zone(), 2);
+    }
+
+    public static String[] lines() {
         ClientGeigerData.Snapshot data = ClientGeigerData.snapshot();
         double measuredRate = data.measuredRate();
         String rateValue = measuredRate >= ClientGeigerData.GEIGER_MAX_RATE
@@ -57,9 +71,7 @@ public final class GeigerHudOverlay {
                 Component.translatable("hud.apocalypse_firstlight.geiger.dose").getString(), data.cumulativeDose());
         String zone = Component.translatable("hud.apocalypse_firstlight.geiger.zone").getString() + ": "
                 + Component.translatable(zoneKey(data.zone())).getString();
-        drawText(graphics, minecraft.font, rate, x, y, config, config.rows().radiation(), 0);
-        drawText(graphics, minecraft.font, dose, x, y, config, config.rows().dose(), 1);
-        drawText(graphics, minecraft.font, zone, x, y, config, config.rows().zone(), 2);
+        return new String[]{rate,dose,zone};
     }
 
     private static void drawText(GuiGraphics graphics, Font font, String text, float hudX, float hudY,

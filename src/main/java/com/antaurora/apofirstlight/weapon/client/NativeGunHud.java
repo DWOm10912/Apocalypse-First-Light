@@ -46,10 +46,48 @@ public final class NativeGunHud {
         boolean flash = mc.level == flashLevel && mc.level.getGameTime() < flashUntil
                 && mc.player.getInventory().selected == flashSlot
                 && software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem()) == flashGun;
-        var layout=NativeGunHudConfigManager.get();
+        renderLayout(graphics,width,height,NativeGunHudConfigManager.get(),mc.player.getMainHandItem(),
+                Integer.toString(current),reserve,empty,flash);
+    };
+
+    /** Same renderer for editor previews; never equips or mutates the sample stack. */
+    public static net.minecraft.world.item.ItemStack editorStack() {
+        var player=Minecraft.getInstance().player;
+        return player!=null && player.getMainHandItem().getItem() instanceof NativeGunItem
+                ?player.getMainHandItem():com.antaurora.apofirstlight.registry.AflItems.P9_01.get().getDefaultInstance();
+    }
+
+    public static java.util.Map<String,NativeGunHudLayout.Box> preview(GuiGraphics graphics,int width,int height,
+                                                                       NativeGunHudConfig layout) {
+        var stack=editorStack();var definition=((NativeGunItem)stack.getItem()).definition();
+        int current=NativeGunAmmo.read(stack,definition);
+        var player=Minecraft.getInstance().player;
+        String reserve=player==null?"0":NativeGunAmmo.infiniteReserve(player.getInventory())?"∞"
+                :Integer.toString(NativeGunAmmo.reserve(player.getInventory(),definition));
+        return renderLayout(graphics,width,height,layout,stack,Integer.toString(current),reserve,current==0,false);
+    }
+
+    /** Null graphics measures the exact fitted text/icon geometry without issuing draw calls. */
+    private static java.util.Map<String,NativeGunHudLayout.Box> renderLayout(GuiGraphics graphics,int width,int height,
+                NativeGunHudConfig layout,net.minecraft.world.item.ItemStack stack,String current,String reserve,
+                boolean empty,boolean flash) {
+        var mc=Minecraft.getInstance();var definition=((NativeGunItem)stack.getItem()).definition();
         var frame=NativeGunHudLayout.frame(layout.global(),width,height);
-        var mode=com.antaurora.apofirstlight.weapon.NativeFireModes.current(mc.player.getMainHandItem(),definition);
+        var mode=com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack,definition);
         var modeText=Component.translatable("hud.apocalypse_firstlight.fire_mode."+mode.key());
+        var icon=NativeGunHudLayout.silhouette(layout,definition.hudWidth(),definition.hudHeight());
+        var divider=NativeGunHudLayout.divider(layout);
+        var name=layout.weaponName();var fm=layout.fireMode();
+        String modeColor=switch(mode){case SEMI->fm.semiColor();case BURST->fm.burstColor();case AUTO->fm.autoColor();};
+        if(graphics==null) {
+            var boxes=new java.util.LinkedHashMap<String,NativeGunHudLayout.Box>();
+            boxes.put("silhouette",icon);boxes.put("divider",divider);
+            boxes.put("weapon_name",textRow(null,mc.font,stack.getHoverName(),layout,
+                    name.offsetX(),name.offsetY(),name.scale(),name.maxWidth(),name.color()));
+            boxes.put("ammo",ammoRow(null,mc.font,current,reserve,layout,empty,flash));
+            boxes.put("fire_mode",textRow(null,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.maxWidth(),modeColor));
+            return boxes;
+        }
         graphics.enableScissor((int)Math.floor(frame.x()),(int)Math.floor(frame.y()),
                 (int)Math.ceil(frame.x()+frame.width()),(int)Math.ceil(frame.y()+frame.height()));
         graphics.pose().pushPose();
@@ -57,7 +95,6 @@ public final class NativeGunHud {
             graphics.pose().translate(frame.x(),frame.y(),0);
             graphics.pose().scale(frame.scale(),frame.scale(),1);
             com.mojang.blaze3d.systems.RenderSystem.enableBlend();
-            var icon=NativeGunHudLayout.silhouette(layout,definition.hudWidth(),definition.hudHeight());
             int tint=NativeGunHudConfig.argb(empty?layout.silhouette().emptyColor():layout.silhouette().color(),1);
             graphics.setColor(((tint>>16)&255)/255F,((tint>>8)&255)/255F,(tint&255)/255F,layout.silhouette().alpha());
             graphics.pose().pushPose();
@@ -66,27 +103,24 @@ public final class NativeGunHud {
             graphics.blit(definition.hudIcon(),0,0,1,1,0,0,1,1,1,1);
             graphics.pose().popPose();
             graphics.setColor(1,1,1,1);
-            var divider=NativeGunHudLayout.divider(layout);
             graphics.pose().pushPose();
             graphics.pose().translate(divider.x(),divider.y(),0);
             graphics.pose().scale(divider.width(),divider.height(),1);
             graphics.fill(0,0,1,1,NativeGunHudConfig.argb(layout.divider().color(),layout.divider().alpha()));
             graphics.pose().popPose();
-            var name=layout.weaponName();
-            textRow(graphics,mc.font,mc.player.getMainHandItem().getHoverName(),layout,
+            textRow(graphics,mc.font,stack.getHoverName(),layout,
                     name.offsetX(),name.offsetY(),name.scale(),name.maxWidth(),name.color());
-            ammoRow(graphics,mc.font,Integer.toString(current),reserve,layout,empty,flash);
-            var fm=layout.fireMode();
-            String modeColor=switch(mode){case SEMI->fm.semiColor();case BURST->fm.burstColor();case AUTO->fm.autoColor();};
+            ammoRow(graphics,mc.font,current,reserve,layout,empty,flash);
             textRow(graphics,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.maxWidth(),modeColor);
         } finally {
             graphics.setColor(1, 1, 1, 1);
             graphics.pose().popPose();
             graphics.disableScissor();
         }
-    };
+        return java.util.Map.of();
+    }
 
-    private static void textRow(GuiGraphics g,Font font,Component text,NativeGunHudConfig c,
+    private static NativeGunHudLayout.Box textRow(GuiGraphics g,Font font,Component text,NativeGunHudConfig c,
                                 float center,float y,float scale,float maxWidth,String color) {
         var row=NativeGunHudLayout.row(c,center,maxWidth);
         scale=Math.min(scale,(c.global().height()-2)/font.lineHeight);
@@ -98,10 +132,12 @@ public final class NativeGunHud {
                     font.plainSubstrByWidth(text.getString(),budget-font.width("…"))+"…");
         }
         y=NativeGunHudLayout.clamp(y,1,c.global().height()-font.lineHeight*scale-1);
-        draw(g,font,text,row.center()-font.width(text)*scale/2,y,scale,NativeGunHudConfig.argb(color,1));
+        float x=row.center()-font.width(text)*scale/2;
+        if(g!=null) draw(g,font,text,x,y,scale,NativeGunHudConfig.argb(color,1));
+        return new NativeGunHudLayout.Box(x,y,(font.width(text)+1)*scale,font.lineHeight*scale);
     }
 
-    private static void ammoRow(GuiGraphics g,Font font,String current,String reserve,NativeGunHudConfig c,
+    private static NativeGunHudLayout.Box ammoRow(GuiGraphics g,Font font,String current,String reserve,NativeGunHudConfig c,
                                 boolean empty,boolean flash) {
         var a=c.ammo();var row=NativeGunHudLayout.row(c,a.offsetX(),a.maxWidth());
         float currentWidth=font.width(current)*a.currentScale();
@@ -111,6 +147,8 @@ public final class NativeGunHud {
         float fit=Math.min(1,row.width()/Math.max(1,width));
         fit=Math.min(fit,(c.global().height()-2)/(font.lineHeight*largest));
         float y=NativeGunHudLayout.clamp(a.offsetY(),1,c.global().height()-font.lineHeight*largest*fit-1);
+        var bounds=new NativeGunHudLayout.Box(row.center()-width*fit/2,y,(width+largest)*fit,font.lineHeight*largest*fit);
+        if(g==null) return bounds;
         g.pose().pushPose();
         try {
             g.pose().translate(row.center()-width*fit/2,y,0);g.pose().scale(fit,fit,1);
@@ -122,6 +160,7 @@ public final class NativeGunHud {
             draw(g,font,Component.literal(reserve),currentWidth+separatorWidth+2*a.gap(),baseline-(font.lineHeight-1)*a.reserveScale(),
                     a.reserveScale(),NativeGunHudConfig.argb(a.reserveColor(),1));
         } finally {g.pose().popPose();}
+        return bounds;
     }
 
     private static void draw(GuiGraphics g,Font font,Component text,float x,float y,float scale,int color) {

@@ -14,8 +14,9 @@ public final class NativeGunHudConfigManager {
     private static volatile NativeGunHudConfig current = NativeGunHudConfig.defaults();
     private NativeGunHudConfigManager() {}
     public static NativeGunHudConfig get() { return current; }
+    public static void apply(NativeGunHudConfig layout) { current = layout; }
     private static NativeGunHudConfig read(ResourceManager manager) {
-        try (var reader = manager.getResourceOrThrow(LAYOUT).openAsReader()) {
+        try (var reader = com.antaurora.apofirstlight.client.hudlayout.HudLayoutDevResources.open(manager,LAYOUT)) {
             return NativeGunHudConfig.parse(JsonParser.parseReader(reader).toString(),
                     message -> ApocalypseFirstLight.LOGGER.warn("[AFL Native Gun HUD] {}", message));
         } catch (Exception exception) {
