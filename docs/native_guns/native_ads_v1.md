@@ -46,7 +46,7 @@ P9 Sight-Axis Calibration V2 重新以当前 runtime geo 和 `static_idle` 为�
 
 Forge `ViewportEvent.ComputeFov` 在当前FOV上乘 `1+(multiplier-1)*progress`，不写options，也不固定70→50；世界与手部投影都应用，保持中心轴。原Sprint/potion modifier仍由原系统计算。身份失效返回progress=0，不残留缓存FOV。
 
-Native准星仅在progress>=.999时隐藏中心点，退出立即恢复；命中反馈仍显示。没有重做HUD。
+Native准星在progress>=.999时隐藏基础动态十字，退出立即恢复；命中反馈仍显示。基础点已替换为四段动态准星，见 `native_dynamic_crosshair_v1.md`；ADS 解算与枪械信息 HUD 布局不变。
 
 渲染顺序为 `recoil × ADS补偿 × 原HIP/动画`；后坐不被锚点求逆抵消，恢复时回ADS而不是HIP。枪焰、抛壳跟随现有真实渲染锚点。`NativeGunShot` 未修改，仍由服务端eye position/look vector加原散布计算hitscan；ADS没有参与真实弹道、伤害、扣弹或服务器状态。
 

@@ -30,6 +30,7 @@ public final class NativeGunCrosshair {
     }
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e) {
         var mc=Minecraft.getInstance();
+        if(e.phase==TickEvent.Phase.END)NativeDynamicCrosshair.tick();
         if(e.phase==TickEvent.Phase.END && (!holding(mc)||!sameGun(mc))) {
             hitLevel=null;
         }
@@ -45,8 +46,7 @@ public final class NativeGunCrosshair {
         if(mc.options.hideGui||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
         var g=event.getGuiGraphics();int x=mc.getWindow().getGuiScaledWidth()/2,y=mc.getWindow().getGuiScaledHeight()/2;
         if (NativeGunAds.progress(event.getPartialTick()) < .999F) {
-            g.fill(x-2,y-2,x+2,y+2,0x80303030);
-            g.fill(x-1,y-1,x+1,y+1,0xFFE8E8E2);
+            NativeDynamicCrosshair.render(g,x,y,event.getPartialTick());
         }
         if(!sameGun(mc))return;
         double age=mc.level.getGameTime()+event.getPartialTick()-started,duration=head?6:5;

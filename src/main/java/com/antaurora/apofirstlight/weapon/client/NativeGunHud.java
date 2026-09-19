@@ -27,6 +27,7 @@ public final class NativeGunHud {
     private static int flashSlot;
     private static net.minecraft.client.multiplayer.ClientLevel flashLevel;
     public static void shot(int slot, long gunId) {
+        NativeDynamicCrosshair.shot(slot, gunId);
         var mc = Minecraft.getInstance();
         if (mc.level == null) return;
         flashLevel = mc.level;

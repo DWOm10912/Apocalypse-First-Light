@@ -1,0 +1,27 @@
+{
+  "line_length": 4,
+  "thickness": 0.8,
+
+  "base_gap": 3,
+  "max_gap": 18,
+
+  "spread_scale": 2.2,
+
+  "movement_gap": 1.5,
+  "sprint_gap": 3,
+  "airborne_gap": 3,
+  "ladder_gap": 5,
+  "water_gap": 5,
+
+  "shot_impulse": 2.5,
+  "max_bloom": 8,
+
+  "recovery_speed": 9,
+  "response_speed": 14,
+
+  "color": "#E8E8E2",
+  "alpha": 0.9,
+
+  "outline": true,
+  "sprint_alpha": 0.45
+}
