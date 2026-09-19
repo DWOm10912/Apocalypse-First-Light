@@ -84,9 +84,9 @@ public final class NativeGunHud {
             var boxes=new java.util.LinkedHashMap<String,NativeGunHudLayout.Box>();
             boxes.put("silhouette",icon);boxes.put("divider",divider);
             boxes.put("weapon_name",textRow(null,mc.font,stack.getHoverName(),layout,
-                    name.offsetX(),name.offsetY(),name.scale(),name.maxWidth(),name.color()));
+                    name.offsetX(),name.offsetY(),name.scale(),name.width(),name.height(),name.color()));
             boxes.put("ammo",ammoRow(null,mc.font,current,reserve,layout,empty,flash));
-            boxes.put("fire_mode",textRow(null,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.maxWidth(),modeColor));
+            boxes.put("fire_mode",textRow(null,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.width(),fm.height(),modeColor));
             return boxes;
         }
         graphics.enableScissor((int)Math.floor(frame.x()),(int)Math.floor(frame.y()),
@@ -110,9 +110,9 @@ public final class NativeGunHud {
             graphics.fill(0,0,1,1,NativeGunHudConfig.argb(layout.divider().color(),layout.divider().alpha()));
             graphics.pose().popPose();
             textRow(graphics,mc.font,stack.getHoverName(),layout,
-                    name.offsetX(),name.offsetY(),name.scale(),name.maxWidth(),name.color());
+                    name.offsetX(),name.offsetY(),name.scale(),name.width(),name.height(),name.color());
             ammoRow(graphics,mc.font,current,reserve,layout,empty,flash);
-            textRow(graphics,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.maxWidth(),modeColor);
+            textRow(graphics,mc.font,modeText,layout,fm.offsetX(),fm.offsetY(),fm.scale(),fm.width(),fm.height(),modeColor);
         } finally {
             graphics.setColor(1, 1, 1, 1);
             graphics.pose().popPose();
@@ -122,17 +122,15 @@ public final class NativeGunHud {
     }
 
     private static NativeGunHudLayout.Box textRow(GuiGraphics g,Font font,Component text,NativeGunHudConfig c,
-                                float center,float y,float scale,float maxWidth,String color) {
-        var row=NativeGunHudLayout.row(c,center,maxWidth);
-        scale=Math.min(scale,(c.global().height()-2)/font.lineHeight);
-        // Preserve the preferred size for short names; shrink, then elide very long localized names.
-        scale=Math.max(Math.min(.55F,scale),Math.min(scale,row.width()/Math.max(1,font.width(text))));
+                                float left,float y,float scale,float width,float height,String color) {
+        var row=NativeGunHudLayout.row(left,width);
+        // Both box dimensions are limits. Neither a short string nor a wide box may upscale text.
+        scale=NativeGunHudLayout.textScale(scale,row.width(),height,font.width(text),font.lineHeight);
         if(font.width(text)*scale>row.width()) {
             int budget=(int)Math.floor(row.width()/scale);
             text=budget<font.width("…")?Component.empty():Component.literal(
                     font.plainSubstrByWidth(text.getString(),budget-font.width("…"))+"…");
         }
-        y=NativeGunHudLayout.clamp(y,1,c.global().height()-font.lineHeight*scale-1);
         float x=row.center()-font.width(text)*scale/2;
         if(g!=null) draw(g,font,text,x,y,scale,NativeGunHudConfig.argb(color,1));
         return new NativeGunHudLayout.Box(x,y,(font.width(text)+1)*scale,font.lineHeight*scale);
@@ -140,14 +138,14 @@ public final class NativeGunHud {
 
     private static NativeGunHudLayout.Box ammoRow(GuiGraphics g,Font font,String current,String reserve,NativeGunHudConfig c,
                                 boolean empty,boolean flash) {
-        var a=c.ammo();var row=NativeGunHudLayout.row(c,a.offsetX(),a.maxWidth());
+        var a=c.ammo();var row=NativeGunHudLayout.row(a.offsetX(),a.width());
         float currentWidth=font.width(current)*a.currentScale();
         float separatorWidth=font.width("|")*a.separatorScale();
         float width=currentWidth+separatorWidth+font.width(reserve)*a.reserveScale()+2*a.gap();
         float largest=Math.max(a.currentScale(),Math.max(a.reserveScale(),a.separatorScale()));
         float fit=Math.min(1,row.width()/Math.max(1,width));
-        fit=Math.min(fit,(c.global().height()-2)/(font.lineHeight*largest));
-        float y=NativeGunHudLayout.clamp(a.offsetY(),1,c.global().height()-font.lineHeight*largest*fit-1);
+        fit=Math.min(fit,a.height()/(font.lineHeight*largest));
+        float y=a.offsetY();
         var bounds=new NativeGunHudLayout.Box(row.center()-width*fit/2,y,(width+largest)*fit,font.lineHeight*largest*fit);
         if(g==null) return bounds;
         g.pose().pushPose();

@@ -15,6 +15,7 @@ public final class HudLayoutEditorScreen extends Screen {
     private boolean confirming;
     private Component status=Component.empty();
     private HudEditableElement dragging;
+    private HudLayoutSession.Handle dragHandle=HudLayoutSession.Handle.MOVE;
     private double dragX,dragY;
 
     public HudLayoutEditorScreen(ClientHudLayout adapter,HudLayoutSourceStore store,HudLayoutRegistry registry) throws IOException {
@@ -68,6 +69,8 @@ public final class HudLayoutEditorScreen extends Screen {
         }
         for(var element:session.elements(width,height))
             box(g,element.bounds(),0,element.id().equals(session.selected())?0xFFFFFFFF:0xBB40CCEE);
+        var selected=session.selectedElement(width,height);
+        if(selected!=null && selected.resizable()) handles(g,selected.bounds());
         g.fill(0,0,width,90,0xAA101820);
         g.drawString(font,text("current",adapter.id()),6,6,0xFFFFFFFF,true);
         g.drawString(font,text("selected",session.selected()==null?"—":session.selected()),152,51,0xFF88EEFF,true);
@@ -89,16 +92,34 @@ public final class HudLayoutEditorScreen extends Screen {
         g.fill(x,y,r,y+1,edge);g.fill(x,bottom-1,r,bottom,edge);
         g.fill(x,y,x+1,bottom,edge);g.fill(r-1,y,r,bottom,edge);
     }
+    private static void handles(GuiGraphics g,HudBounds b){
+        float x=b.x(),y=b.y(),r=x+b.width(),bottom=y+b.height();
+        mark(g,x,y);mark(g,(x+r)/2,y);mark(g,r,y);
+        mark(g,x,(y+bottom)/2);mark(g,r,(y+bottom)/2);
+        mark(g,x,bottom);mark(g,(x+r)/2,bottom);mark(g,r,bottom);
+    }
+    private static void mark(GuiGraphics g,float x,float y){
+        int px=Math.round(x),py=Math.round(y);g.fill(px-2,py-2,px+3,py+3,0xFF101820);
+        g.fill(px-1,py-1,px+2,py+2,0xFFFFFFFF);
+    }
     @Override public boolean mouseClicked(double x,double y,int button){
         if(super.mouseClicked(x,y,button))return true;
         if(confirming || button!=0)return true;
-        if(session.select(x,y,width,height)){
-            dragging=session.selectedElement(width,height);dragX=x;dragY=y;
+        var prior=session.selectedElement(width,height);
+        var priorHandle=session.handleAt(prior,x,y);
+        if(prior!=null && priorHandle.resize()) {dragging=prior;dragHandle=priorHandle;}
+        else if(session.select(x,y,width,height)){
+            dragging=session.selectedElement(width,height);dragHandle=session.handleAt(dragging,x,y);
         }else dragging=null;
+        dragX=x;dragY=y;
         return true;
     }
     @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){
-        if(!confirming && button==0 && dragging!=null){session.dragFrom(dragging,x-dragX,y-dragY);return true;}
+        if(!confirming && button==0 && dragging!=null){
+            if(dragHandle.resize())session.resizeFrom(dragging,dragHandle,x-dragX,y-dragY);
+            else session.dragFrom(dragging,x-dragX,y-dragY);
+            return true;
+        }
         return super.mouseDragged(x,y,button,dx,dy);
     }
     @Override public boolean mouseReleased(double x,double y,int button){dragging=null;return super.mouseReleased(x,y,button);}

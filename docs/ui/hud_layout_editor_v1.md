@@ -2,7 +2,7 @@
 
 ## 状态与范围
 
-已实现纯客户端通用编辑器。JSON 源文件是唯一持久化真值源，不创建 config 副本、不修改 JAR、没有服务端权限/同步包。当前两个正式 HUD Layout 已完整接入，现有源 JSON 的布局数值未改动。
+已实现纯客户端通用编辑器。JSON 源文件是唯一持久化真值源，不创建 config 副本、不修改 JAR、没有服务端权限/同步包。当前两个正式 HUD Layout 已接入。本轮仅将 Native Gun 源 JSON 从旧中心点坐标换算到 v2 左上角坐标，保留作者调整后的预期位置；Geiger JSON 未改。
 
 | layout_id | 源 JSON（位于 src/main/resources/assets/apocalypse_firstlight/gui/layout/） | 可编辑元素 |
 | --- | --- | --- |
@@ -26,16 +26,17 @@
 
 edit 打开透明 Screen；未持枪时 Native Gun 使用只读 P9 物品样本预览，不给玩家物品、不写 stack。持有 Native Gun 时使用实际物品名称/剪影/弹药/模式。盖革预览可不持有仪器，读取现有 ClientGeigerData，不改变读数或音频。编辑器之外的显隐条件不变。
 
-- 青色框为当前 HUD 元素；白框为当前选中元素。点击元素左键拖动，点击容器空白处选中整体。
+- 青色框为当前 HUD 元素；白框为当前选中元素。点击元素内部左键拖动，点击容器空白处选中整体。Native Gun 所选框有可见的边/角控制点：拖左/右边改 width，拖上/下边改 height，拖角同时改宽高；拖中间仍为移动。狭窄元素可用“选择下一个元素”选中。
 - “选择下一个元素”用于选取窄分割线、父级 text/global 等被子元素覆盖的框。
 - 滚轮每格修改主缩放字段 0.05，Shift+滚轮 0.01。Native Gun ammo 同比例修改已有 current_scale/reserve_scale/separator_scale；没有伪造额外 scale 字段。divider 和盖革各 rows 没有缩放字段，滚轮无操作。
 - 所有坐标使用 GUI 缩放坐标。子元素位移除以整体 scale；盖革 global 的偏移方向与其原 schema 相反，因此拖动时适配负号。盖革整数偏移按整次手势累积后取整，不丢失每次小幅移动。
-- Native Gun 保留现有左右分栏/屏幕边界约束，元素拖动不解除原渲染器的裁剪和适配。
+- Native Gun 的 global、silhouette、divider、weapon_name、ammo、fire_mode 都可独立改宽高；盖革旧 schema 没有宽高字段，保持原有移动/滚轮能力，不写假尺寸。global 基于 bottom_right anchor：拖左/上边固定右/下边；拖右/下边固定左/上边，按实际缩放调整 offset，避免跳位。所有 Native Gun 子元素都以自身框左上角 offset 定位；拖左/上边时补偿 offset 以固定对边。
+- Native Gun 子元素不再有“只能在 divider 右侧”的隐式栏位限制。编辑框显示布局区域，实际图片/文字在框内 contain/居中；框与绘制使用相同 HUD 本地坐标。整体 HUD scissor 仍保留，元素若移出 global 框外可能被裁剪；框内移动不会因左右栏位裁剪消失。
 - 红框/低透明度填充仅显示其他已注册 HUD 的占用区域及 ID，不拦截碰撞，也不允许选择或修改其他 HUD。即使其他仪器当前未手持，也显示其布局占位。
 
 ## 保存、取消、重置、重载
 
-保存只写选中 descriptor 的源 JSON，保留未知字段，然后直接 apply 对应 loader 快照并退出；不触发整个客户端资源重载。
+保存只写选中 descriptor 的源 JSON，保留未知字段，然后直接 apply 对应 loader 快照并退出；不触发整个客户端资源重载。打开旧版无 `schema_version` 的 Native Gun 布局时，会先在内存草稿里一次性换算坐标；仅保存时写回 v2，读入本身不改盘。
 取消放弃 draft 并退出，不写盘。预览从未覆盖正常 loader 快照，所以取消无需回写临时配置。
 ESC 有未保存修改时显示“保存并退出 / 放弃并退出 / 返回编辑”；再次 ESC 返回编辑。
 重置合并当前 loader 的内置默认字段，仅预览，不移除未知字段，直到保存才写盘。注意内置 fallback 不等于作者后来微调过的源 JSON；重置不是恢复进入编辑器前的数值，后者使用取消或重新加载。
@@ -65,14 +66,14 @@ ESC 有未保存修改时显示“保存并退出 / 放弃并退出 / 返回编�
 - ClientHudLayout / HudLayouts / NativeGunHudLayoutAdapter / GeigerHudLayoutAdapter：客户端注册与原 schema 适配。
 - HudLayoutEditorScreen / HudLayoutCommands：透明界面、命令、仅编辑期间抑制当前 HUD 的重复绘制。
 
-NativeGunHud 增加共用 preview/measurement 入口；名字/弹药/模式 bounds 复用实际 font.width、缩小/省略/基线计算，剪影与分割线采用原布局函数，转为当前 frame.scale 的屏幕坐标、裁剪到 frame 后联合。global 选框使用完整容器。
+NativeGunHud 共用 preview/measurement 入口；Native Gun 编辑框对应各元素可编辑的 width/height 布局区域，预览绘制仍使用实际 font.width、缩小/省略/基线计算和 frame 裁剪。剪影在其布局框内等比 contain，不再依赖 divider；文字框宽高只限制字体，不非等比拉伸或被 divider 右侧重新定位。global 选框使用完整容器。
 GeigerHudOverlay 提取只读 preview/lines 入口，原读数和绘制公式不变。bounds 联合实际128×48缩放面板、符号、实时本地化三行文字。其文字字号原本独立于 hudScale，adapter 保持该行为，不擅自统一 schema。
 
 新 HUD 只需实现 ClientHudLayout 并注册到 HudLayouts，即可获得同一编辑会话/界面。通用 Screen/Session/Commands 没有 native_gun 或 geiger_counter 的 ID 特判。
 
 ## 验证与人工测试
 
-compileJava / processResources 编译通过。HudLayoutEditorTest 独立40项、NativeGunHudLayoutTest 50项检查通过。前者使用合成 descriptor 验证注册、会话隔离、按比例坐标、保存/取消/reset/reload、未知字段保留、其他 JSON 字节不变、生产环境/路径拒绝、外部冲突、非法 JSON、本地化键；后者验证 Native Gun 纯几何和配置解析。它们不验证 Minecraft Screen 输入分发、视觉及资源重载生命周期。
+compileJava / processResources 与独立 Java/Gson 定向检查覆盖布局字段解析、非法值回退、拖动/拖边/拖角、滚轮、保存/取消/reload、其他 JSON 不变、生产环境/路径拒绝、外部冲突及本地化键。它们不验证 Minecraft Screen 输入分发、视觉及资源重载生命周期。
 
 人工：开发客户端运行 edit，拖动/滚轮/Shift、父子选取、ESC三个选项；保存后看 Git diff 只出现当前源JSON；切到另一布局检查红框不可编辑；手动改源JSON后 reload；测试 GUI Scale 2/3/4、中英文、不同枪和∞；发布版检查拒绝提示。特别检查红框覆盖、文本对齐和拖动手感。
 

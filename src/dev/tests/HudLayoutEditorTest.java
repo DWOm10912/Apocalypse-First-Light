@@ -15,12 +15,14 @@ public final class HudLayoutEditorTest {
         Sample(String id){this.id=id;}
         public String id(){return id;}
         public String fileName(){return id+".json";}
-        public JsonObject defaults(){return json("{\"x\":0,\"y\":0,\"scale\":1,\"nested\":{\"known\":2}}");}
+        public JsonObject defaults(){return json("{\"x\":0,\"y\":0,\"scale\":1,\"width\":40,\"height\":30,\"nested\":{\"known\":2}}");}
         public void apply(JsonObject value){applied=value.deepCopy();}
         public List<HudEditableElement> elements(JsonObject j,int w,int h){
             float x=j.get("x").getAsFloat(),y=j.get("y").getAsFloat(),scale=j.get("scale").getAsFloat();
-            return List.of(new HudEditableElement("global",new HudBounds(w-100+x,h-100+y,40*scale,30*scale),
-                    "x","y",x,y,1/scale,false,500,List.of(new HudEditableElement.Scale("scale",scale,.25F,2))));
+            float boxWidth=j.get("width").getAsFloat(),boxHeight=j.get("height").getAsFloat();
+            return List.of(new HudEditableElement("global",new HudBounds(w-100+x,h-100+y,boxWidth*scale,boxHeight*scale),
+                    "x","y",x,y,1/scale,false,500,List.of(new HudEditableElement.Scale("scale",scale,.25F,2)),
+                    new HudEditableElement.Resize("width","height",boxWidth,boxHeight,8,160,8,100,false,false,false)));
         }
         public HudBounds occupied(JsonObject j,int w,int h){return elements(j,w,h).get(0).bounds();}
     }
@@ -65,6 +67,46 @@ public final class HudLayoutEditorTest {
         check(near(session.preview().get("scale").getAsFloat(),.25F),"lower scale clamp");
         session.cancel();check(!session.dirty() && session.preview().equals(original),"cancel restores draft");
         check(store.read(a).json().equals(original),"cancel no writes");
+        session.select(225,85,320,180);
+        var start=session.selectedElement(320,180);
+        var right=session.handleAt(start,260,95);
+        check(right.right() && !right.left() && !right.top(),"right edge hit");
+        session.resizeFrom(start,right,12,0);
+        check(near(session.preview().get("width").getAsFloat(),52),"horizontal resize");
+        session.cancel();session.select(225,85,320,180);start=session.selectedElement(320,180);
+        var left=session.handleAt(start,220,95);
+        session.resizeFrom(start,left,8,0);
+        check(near(session.preview().get("width").getAsFloat(),32)
+                && near(session.preview().get("x").getAsFloat(),8),"left resize fixes opposite edge");
+        session.cancel();session.select(225,85,320,180);start=session.selectedElement(320,180);
+        var bottom=session.handleAt(start,230,110);
+        session.resizeFrom(start,bottom,0,9);
+        check(near(session.preview().get("height").getAsFloat(),39),"vertical resize");
+        session.cancel();session.select(225,85,320,180);start=session.selectedElement(320,180);
+        var corner=session.handleAt(start,260,110);
+        session.resizeFrom(start,corner,10,8);
+        check(near(session.preview().get("width").getAsFloat(),50)
+                && near(session.preview().get("height").getAsFloat(),38),"corner resize");
+        session.cancel();session.select(225,85,320,180);
+        var anchored=new HudEditableElement("global",new HudBounds(220,80,40,30),"x","y",0,0,1,false,500,List.of(),
+                new HudEditableElement.Resize("width","height",40,30,8,160,8,100,false,false,true));
+        session.resizeFrom(anchored,new HudLayoutSession.Handle(false,true,false,true),10,6);
+        check(near(session.preview().get("width").getAsFloat(),50)
+                && near(session.preview().get("height").getAsFloat(),36)
+                && near(session.preview().get("x").getAsFloat(),10)
+                && near(session.preview().get("y").getAsFloat(),6),"bottom-right anchor fixes top-left on right/bottom resize");
+        session.cancel();session.select(225,85,320,180);start=session.selectedElement(320,180);
+        corner=session.handleAt(start,260,110);session.resizeFrom(start,corner,10,8);
+        session.save();session.reload();
+        check(near(session.preview().get("width").getAsFloat(),50)
+                && near(session.preview().get("height").getAsFloat(),38),"resize save/reload round trip");
+        var beforeMove=session.elements(320,180).get(0).bounds();
+        session.select(beforeMove.x()+8,beforeMove.y()+8,320,180);
+        session.drag(13,7,320,180);session.save();session.reload();
+        var afterMove=session.elements(320,180).get(0).bounds();
+        check(near(afterMove.x(),beforeMove.x()+13) && near(afterMove.y(),beforeMove.y()+7)
+                && near(afterMove.width(),beforeMove.width()),"resize then move save/reload preserves screen bounds");
+        session.reset();session.save();
         session.select(225,85,320,180);session.drag(15,8,320,180);session.save();
         check(!session.dirty() && a.applied.get("x").getAsInt()==15,"save applies selected snapshot");
         check(store.read(a).json().get("x").getAsInt()==15,"saved source");

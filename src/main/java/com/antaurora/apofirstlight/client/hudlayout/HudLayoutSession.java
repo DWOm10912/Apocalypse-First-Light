@@ -7,6 +7,10 @@ import java.util.List;
 
 /** One screen owns one draft and selection. Preview never mutates live loader snapshots. */
 public final class HudLayoutSession {
+    public record Handle(boolean left, boolean right, boolean top, boolean bottom) {
+        public static final Handle MOVE = new Handle(false,false,false,false);
+        public boolean resize() { return left || right || top || bottom; }
+    }
     private final HudLayoutDescriptor layout;
     private final HudLayoutSourceStore store;
     private JsonObject draft, baseline;
@@ -42,6 +46,42 @@ public final class HudLayoutSession {
         setNumber(draft,e.xPath(),coordinate(e.x() + (float)dx*e.unitsPerPixel(),e));
         setNumber(draft,e.yPath(),coordinate(e.y() + (float)dy*e.unitsPerPixel(),e));
     }
+    /** A selected edge may be grabbed a few pixels outside its box. Other layouts are never queried here. */
+    public Handle handleAt(HudEditableElement e,double x,double y) {
+        if(e==null || !e.resizable()) return Handle.MOVE;
+        var b=e.bounds();
+        if(x<b.x()-5 || x>b.x()+b.width()+5 || y<b.y()-5 || y>b.y()+b.height()+5) return Handle.MOVE;
+        double sx=Math.min(5,b.width()/3),sy=Math.min(5,b.height()/3);
+        boolean left=Math.abs(x-b.x())<=sx,right=Math.abs(x-b.x()-b.width())<=sx;
+        boolean top=Math.abs(y-b.y())<=sy,bottom=Math.abs(y-b.y()-b.height())<=sy;
+        return new Handle(left,right,top,bottom);
+    }
+    /** Whole-gesture resize keeps the opposite edge fixed, including bottom-right anchored global frames. */
+    public void resizeFrom(HudEditableElement e,Handle handle,double dx,double dy) {
+        if(e==null || e.resize()==null || !e.id().equals(selected) || !handle.resize()) return;
+        var r=e.resize();
+        float pixelsPerUnit=e.bounds().width()/r.width();
+        if(pixelsPerUnit<=0) return;
+        float dw=(float)(dx/pixelsPerUnit)*(handle.right()?1:handle.left()?-1:0);
+        float dh=(float)(dy/pixelsPerUnit)*(handle.bottom()?1:handle.top()?-1:0);
+        float newWidth=Math.max(r.minWidth(),Math.min(r.maxWidth(),r.width()+dw));
+        float newHeight=Math.max(r.minHeight(),Math.min(r.maxHeight(),r.height()+dh));
+        dw=newWidth-r.width();dh=newHeight-r.height();
+        setNumber(draft,r.widthPath(),newWidth);
+        setNumber(draft,r.heightPath(),newHeight);
+        float x=e.x(),y=e.y();
+        if(r.bottomRightAnchor()) {
+            if(handle.right()) x+=dw*pixelsPerUnit;
+            if(handle.bottom()) y+=dh*pixelsPerUnit;
+        } else {
+            if(r.centeredX()) x+=(handle.right()?dw:handle.left()?-dw:0)/2;
+            else if(handle.left()) x-=dw;
+            if(r.centeredY()) y+=(handle.bottom()?dh:handle.top()?-dh:0)/2;
+            else if(handle.top()) y-=dh;
+        }
+        setNumber(draft,e.xPath(),coordinate(x,e));
+        setNumber(draft,e.yPath(),coordinate(y,e));
+    }
     public void cycleSelection(int width,int height) {
         var all=elements(width,height);if(all.isEmpty())return;
         int index=-1;
@@ -64,7 +104,7 @@ public final class HudLayoutSession {
     public void cancel() { draft=baseline.deepCopy(); selected=null; }
     public void reload() throws IOException {
         var loaded=store.read(layout); // Do not lose the draft on a failed read.
-        draft=loaded.json().deepCopy(); baseline=loaded.json().deepCopy(); sourceBytes=loaded.bytes(); selected=null;
+        draft=layout.normalize(loaded.json()); baseline=draft.deepCopy(); sourceBytes=loaded.bytes(); selected=null;
     }
     public void save() throws IOException {
         sourceBytes=store.save(layout,draft,sourceBytes);
