@@ -27,6 +27,16 @@ The runtime geometry is `geometry.hr55`. It retains the authored `right_hand_anc
 `muzzle_pos` uses a 3.55125-unit barrel-exit offset derived from the source's actual
 muzzle-anchor separation.
 
+The nine HR55 clips (`shoot`, `static_idle`, `reload_tactical`, `reload_empty`,
+`inspect`, `inspect_empty`, `draw`, `put_away`, and `static_bolt_caught`) now give
+`right_hand_anchor` one constant Position keyframe at time 0: `[0, -7, 0]`.
+The prior Position baseline was the implicit `[0, 0, 0]`; this lowers the
+right-hand locator without changing its pivot, reference-arm geometry, or the
+existing parent animation keys. `reload_empty` still animates `righthand_pos`,
+so the local offset is not a guaranteed rigid screen-space translation.
+The editable `.bbmodel` and runtime `hr55.animation.json` carry the same offset.
+First-person visual acceptance remains pending an in-game check.
+
 Iron-sight ADS centers the authored front sight-ring window at `[0, 11.52334, -4.5]`.
 This is the center of the visible circular window, rather than the rear U-notch, so the
 ADS composition matches the BR51-style sight picture. The sight mount uses the same aim

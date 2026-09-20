@@ -1,10 +1,10 @@
-# 装备 Tooltip / Native Gun Tooltip V2.2
+# 装备 Tooltip / Native Gun Tooltip V2.3 — Final
 
 ## 当前布局
 
-所有调用 `AflEquipmentTooltip.gun` 的 Native Gun 共用：原版名称 → 灰色非斜体短介绍 → 图形弹药行 → 枪械伤害 → 开火方式 → 声音半径。介绍和弹药行之间、弹药行和属性之间由少量纵向留白区分；枪械不再插入横向分割线。保留现有介绍和 Vanilla ItemStack hover name / rarity，不重复追加名称。
+所有调用 `AflEquipmentTooltip.gun` 的 Native Gun 共用冻结顺序：原版枪械名称 → 原始本地化 Subtitle → 真实 16×16 弹药 ItemStack 与弹药类型 → 枪械伤害 → 开火方式 → 有效射程 → 声音半径。介绍和弹药行之间、弹药行和属性之间由少量纵向留白区分；枪械不插入横向分割线。保留 Vanilla ItemStack hover name / rarity，不重复追加名称。
 
-普通枪械 Tooltip 不显示武器类型、文字“弹药类型”属性行、弹匣容量或射程，也不增加 ADS、后坐力、散布、衰减、爆头倍率等内部参数。直接显示影响感染者感知的真实 Noise Radius；底层数据、HUD、维护台、兼容和战斗逻辑未改。
+普通枪械 Tooltip 只显示上述四个文字属性；不显示武器类型、文字“弹药类型”属性行、弹匣容量、最大射程、伤害衰减起点、最低伤害倍率、ADS、后坐力、散布或爆头倍率。更详细数据留给枪械维护台，不再继续给普通悬停增加字段。声音半径显示影响感染者感知的真实 Noise Radius；底层数据、HUD、维护台、兼容和战斗逻辑未改。
 
 枪械 Subtitle 恢复为原始本地化 Component，不再进行 240px 预拆行；需要时由原版 Tooltip 根据屏幕边界自然换行。Tooltip 总宽度由名称、完整介绍、弹药组件和最长属性行自然决定，尊重第三方既有限制及原版屏幕边界，不截断正文。Native Attachment 仅保留原版名称和灰色介绍，不再添加属性行或横向分割线；原有 300px 上限仍保留。不覆盖其他物品、原版高级提示和第三方追加信息。
 
@@ -21,13 +21,13 @@
 | DAMAGE | `#D97878` | Gun Definition baseDamage |
 | AMMUNITION | `#D6B46A` | 正式 ammoType 对应弹药的 caliber 本地化；无 caliber 键回退弹药物品名称 |
 | FIRE_MODE | `#D79A68` | NativeFireModes.current(stack, definition)，只读当前/默认合法模式，标签“开火方式” |
-| RANGE | `#82B98A` | 保留类别色，枪械悬停不再显示 |
+| RANGE | `#8FB58A` | 标签“有效射程”，读取 `NativeGunDefinition.effectiveRange()`；数值浅灰白 |
 | RECOIL | `#C49567` | 仅保留类别，不编造单值评分 |
-| SOUND_RADIUS | `#B0B0B0` | 枪：附件修正后的真实声音半径，`声音半径：N格` |
+| SOUND_RADIUS | `#A395B8` | 标签“声音半径”，附件修正后的真实声音半径，`声音半径：N格`；数值浅灰白 |
 
 ## 数据与边界
 
-声音半径读取 `NativeGunNoise.resolve(stack, definition).radius()`，与 Noise System 使用的枪械定义和枪口附件修正路径一致，按 `number(...)` 格式化后显示 `声音半径：N格`。正式 JSON 当前基础半径：C.A.T 6格、P9-01 64格、BR51-01 112格、HR55 128格。安装消音器后显示其有效半径。没有 weapon-ID 特判或真实半径修改；原声响等级分档 helper 已删除。
+有效射程读取 live `NativeGunDefinition.effectiveRange()`，该字段由各枪 `src/main/resources/data/apocalypse_firstlight/native_guns/*.json` 的 `damage.effective_range` 解析得到；仅格式化为 `有效射程：N格`，不从 `max_range` 或 `falloff_start` 推算，不维护 Tooltip 专用数值。声音半径读取 `NativeGunNoise.resolve(stack, definition).radius()`，与 Noise System 使用的枪械定义和枪口附件修正路径一致，按 `number(...)` 格式化后显示 `声音半径：N格`。正式 JSON 当前基础半径：C.A.T 6格、P9-01 64格、BR51-01 112格、HR55 128格。安装消音器后显示其有效半径。没有 weapon-ID 特判或真实数值修改；原声响等级分档 helper 已删除。
 
 ### 图形弹药行
 
@@ -48,8 +48,8 @@
 
 本地化：枪械仍使用所需的 `tooltip.apocalypse_firstlight.stat.*`、`value.noise_radius`、`gun_ammo_row`、`unknown_ammunition` 与弹药物品 `.caliber`；配件保留各自的 description，已移除仅供配件额外属性使用的 `stat.magazine`、`stat.noise`、`stat.ads`、`value.red_dot` 中英文键。旧 spec/type/技术属性文案键保留不代表现行枪械布局。介绍和枪械属性均非斜体；不修改自定义名称、原版高级提示或第三方追加信息。
 
-普通枪械 Tooltip 负责快速选枪；更完整技术参数归枪械维护台职责，Native Gun HUD 负责当前战斗状态。本轮未新增维护台参数面板，也未改变 HUD 显示内容。没有改伤害、容量、噪声倍率、射程、射速、后坐力、ADS、兼容、换弹、维护台、弹药消耗或声音。装拆仍仅限维护台。
+普通枪械 Tooltip V2.3 正式冻结为名称、Subtitle、弹药 Item + 弹药类型、枪械伤害、开火方式、有效射程、声音半径。固定低饱和颜色规范：Damage `#D97878`、Ammo `#D6B46A`、Fire Mode `#D79A68`、Effective Range `#8FB58A`、Sound Radius `#A395B8`；颜色统一由 `AflTooltipStatType` 定义，数值/内容沿用 `AflEquipmentTooltip.VALUE_COLOR` `#E0E0E0`。不按射程或半径大小切换颜色。更完整技术参数归枪械维护台职责，Native Gun HUD 负责当前战斗状态。本轮未新增维护台参数面板，也未改变 HUD 显示内容。没有改伤害、容量、噪声倍率、实际射程、射速、后坐力、ADS、兼容、换弹、维护台、弹药消耗或声音。装拆仍仅限维护台。
 
 ## 验证
 
-本次附件 Tooltip 精简只移除额外属性行、分隔线及其专用翻译键；名称、灰色介绍与枪械 Tooltip 保持不变。离线 `compileJava`、`processResources` 与中英文 JSON 解析通过；未运行客户端、GameTest、截图或展示渲染。Dedicated Server 安全边界采用 common 数据与 Dist.CLIENT 注册隔离，未实际启动服务器；编译不代替实机视觉验收。
+V2.3 仅新增有效射程显示并更新两项标签颜色；其余布局、弹药组件、Subtitle 和附件 Tooltip 保持不变。`compileJava` / `processResources` 结果见本轮执行报告；未运行客户端、GameTest、截图或展示渲染。Dedicated Server 安全边界采用 common 数据与 Dist.CLIENT 注册隔离，未实际启动服务器；编译不代替实机视觉验收。

@@ -174,7 +174,7 @@
   "tooltip.apocalypse_firstlight.stat.damage": "枪械伤害",
   "tooltip.apocalypse_firstlight.stat.ammunition": "弹药类型",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "开火方式",
-  "tooltip.apocalypse_firstlight.stat.range": "射程",
+  "tooltip.apocalypse_firstlight.stat.range": "有效射程",
   "tooltip.apocalypse_firstlight.stat.separator": "：",
   "tooltip.apocalypse_firstlight.stat.sound_radius": "声音半径",
   "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",
@@ -188,7 +188,7 @@
   "tooltip.apocalypse_firstlight.value.weapon_class.special": "特殊武器",
   "tooltip.apocalypse_firstlight.value.semi": "半自动",
   "tooltip.apocalypse_firstlight.value.rounds": "%s发",
-  "tooltip.apocalypse_firstlight.value.blocks": "%s 格",
+  "tooltip.apocalypse_firstlight.value.blocks": "%s格",
   "tooltip.apocalypse_firstlight.value.ai_noise": "%s 格",
   "tooltip.apocalypse_firstlight.value.noise_radius": "%s格",
 

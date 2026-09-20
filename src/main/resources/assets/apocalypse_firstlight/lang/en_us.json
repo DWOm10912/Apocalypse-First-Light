@@ -174,7 +174,7 @@
   "tooltip.apocalypse_firstlight.stat.damage": "Damage",
   "tooltip.apocalypse_firstlight.stat.ammunition": "Ammunition",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "Fire Mode",
-  "tooltip.apocalypse_firstlight.stat.range": "Range",
+  "tooltip.apocalypse_firstlight.stat.range": "Effective Range",
   "tooltip.apocalypse_firstlight.stat.separator": ": ",
   "tooltip.apocalypse_firstlight.stat.sound_radius": "Sound Radius",
   "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",

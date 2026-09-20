@@ -517,6 +517,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -670,6 +673,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -6645,6 +6651,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -12809,6 +12818,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -20736,6 +20748,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -28712,6 +28727,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -29078,6 +29096,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -29346,6 +29367,9 @@
 					}
 				},
 				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					},
 					"scale": {
 						"vector": [
 							1,
@@ -29382,6 +29406,11 @@
 		"static_bolt_caught": {
 			"loop": "hold_on_last_frame",
 			"bones": {
+				"right_hand_anchor": {
+					"position": {
+						"vector": [0, -7, 0]
+					}
+				},
 				"bolt": {
 					"position": {
 						"vector": [

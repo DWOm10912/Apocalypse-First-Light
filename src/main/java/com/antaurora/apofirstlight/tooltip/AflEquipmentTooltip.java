@@ -25,6 +25,7 @@ public final class AflEquipmentTooltip {
     public static List<Stat> gunStats(ItemStack stack,NativeGunDefinition d){
         return List.of(new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
                 new Stat(FIRE_MODE,Component.translatable("fire_mode.apocalypse_firstlight."+NativeFireModes.current(stack,d).key())),
+                new Stat(RANGE,value("blocks",number(d.effectiveRange()))),
                 new Stat(SOUND_RADIUS,value("noise_radius",number(NativeGunNoise.resolve(stack,d).radius()))));
     }
     public static void addGunStats(List<Component> lines,ItemStack stack,NativeGunDefinition definition){for(var stat:gunStats(stack,definition))addStat(lines,stat);}

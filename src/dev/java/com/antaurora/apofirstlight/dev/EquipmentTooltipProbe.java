@@ -31,7 +31,7 @@ public final class EquipmentTooltipProbe {
             attach(items[0],NativeAttachment.Slot.MUZZLE,AflItems.PISTOL_SUPPRESSOR_01.get());attach(items[1],NativeAttachment.Slot.MUZZLE,AflItems.RIFLE_SUPPRESSOR_01.get());}
     }
     private static void validate(boolean extended){
-        int[] colors={0xAAB8C2,0xD97878,0xD6B46A,0xD79A68,0x82B98A,0xC49567,0xB0B0B0};
+        int[] colors={0xAAB8C2,0xD97878,0xD6B46A,0xD79A68,0x8FB58A,0xC49567,0xA395B8};
         for(var type:AflTooltipStatType.values())check(type.color()==colors[type.ordinal()],"semantic color "+type);
         for(int i=0;i<items.length;i++){
             var stack=items[i];var before=stack.copy();var lines=new ArrayList<Component>();stack.getItem().appendHoverText(stack,mc().level,lines,TooltipFlag.NORMAL);
@@ -39,9 +39,11 @@ public final class EquipmentTooltipProbe {
             for(var line:lines)check(!line.getString().contains("tooltip.apocalypse_firstlight.")&&!line.getString().contains("Press V"),"localized non-debug content");
             check(ItemStack.matches(stack,before),"read-only tooltip");
             if(i<2){var d=((NativeGunItem)stack.getItem()).definition();var stats=AflEquipmentTooltip.gunStats(stack,d);
-                check(stats.size()==3&&lines.size()==5,"gun tooltip rows");
+                check(stats.size()==4&&lines.size()==6,"gun tooltip rows");
                 check(stats.get(0).value().getString().equals(AflEquipmentTooltip.number(d.baseDamage())),"definition damage");
-                check(stats.get(2).value().getString().startsWith(""+(i==0?(extended?3:64):(extended?6:112))),"resolved noise");
+                check(stats.get(2).type()==AflTooltipStatType.RANGE
+                        && stats.get(2).value().getString().startsWith(AflEquipmentTooltip.number(d.effectiveRange())),"effective range");
+                check(stats.get(3).value().getString().startsWith(""+(i==0?(extended?3:64):(extended?6:112))),"resolved noise");
             }else check(lines.size()==1,"attachment description only");
         }
     }
