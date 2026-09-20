@@ -54,8 +54,9 @@ public final class HighwayNetworkCommand {
                         + " profileAnchorSpacing=" + HighwayTerrainSampler.PROFILE_ANCHOR_SPACING), false);
         for (HighwayRouteGraph.Edge edge : graph.edges()) {
             context.getSource().sendSuccess(() -> Component.literal(
-                    edge.id() + " role=" + edge.role() + " start=" + edge.startNode()
-                            + " end=" + edge.endNode()), false);
+                    "[" + edge.routeType() + "] route=" + edge.routeId() + " edge=" + edge.id()
+                            + " purpose=" + edge.purpose() + " parent=" + edge.parentAttachment()
+                            + " start=" + edge.startNode() + " end=" + edge.endNode()), false);
         }
         context.getSource().sendSuccess(() -> Component.literal(
                 "chunksProcessed=" + stats.highwayFeatureInvocations()

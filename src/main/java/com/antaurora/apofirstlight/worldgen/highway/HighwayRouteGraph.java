@@ -7,10 +7,14 @@ import com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.Objects;
 
 import static com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.*;
 
-/** Immutable Phase 1 route truth. The bounded cache only memoizes build(seed). */
+/** Immutable route authority. Phase 2A adds opt-in branches; build(seed) remains Phase 1. */
 public final class HighwayRouteGraph {
     public static final int VERSION = 1;
     public static final int FOOTPRINT_HALF_WIDTH = 20;
@@ -23,12 +27,15 @@ public final class HighwayRouteGraph {
     private final Node intersection;
     private final List<Node> nodes;
     private final List<Edge> edges;
+    private final List<Route> routes;
 
     private HighwayRouteGraph(long seed, Node intersection, List<Node> nodes, List<Edge> edges) {
         this.seed = seed;
         this.intersection = intersection;
         this.nodes = List.copyOf(nodes);
         this.edges = List.copyOf(edges);
+        this.routes = this.edges.stream().map(edge -> new Route(edge.routeId(), edge.routeType(),
+                edge.purpose(), List.of(edge), edge.parentAttachment())).toList();
     }
 
     public static synchronized HighwayRouteGraph forSeed(long seed) {
@@ -127,7 +134,79 @@ public final class HighwayRouteGraph {
     }
 
     public Edge edge(Orientation orientation) {
-        return edges.stream().filter(edge -> edge.orientation() == orientation).findFirst().orElseThrow();
+        return edges.stream().filter(edge -> edge.routeType() == RouteType.NATIONAL_TRUNK
+                && edge.orientation() == orientation).findFirst().orElseThrow();
+    }
+
+    public List<Route> routes() { return routes; }
+    public List<Route> getNationalTrunks() { return routesOfType(RouteType.NATIONAL_TRUNK); }
+    public List<Route> getStrategicBranches() { return routesOfType(RouteType.STRATEGIC_BRANCH); }
+    private List<Route> routesOfType(RouteType type) {
+        return routes.stream().filter(route -> route.routeType() == type).toList();
+    }
+    public Optional<Route> getRouteById(String id) {
+        return routes.stream().filter(route -> route.routeId().equals(id)).findFirst();
+    }
+    public Optional<Edge> getEdgeById(String id) {
+        return edges.stream().filter(edge -> edge.id().equals(id)).findFirst();
+    }
+
+    /** Integer block projection onto finite national trunks. Stable edge ID breaks distance ties. */
+    public AttachmentCandidate findParentCandidate(int x, int z) {
+        return getNationalTrunks().stream().flatMap(route -> route.edges().stream())
+                .map(edge -> {
+                    int station = (int) edge.clampStation(edge.globalStation(x, z));
+                    Node point = point("projection", edge.orientation(), edge.fixedCoordinate(), station);
+                    return new AttachmentCandidate(edge.routeId(), edge.id(), station,
+                            point.x(), point.z(), edge.distanceTo(x, z));
+                }).min(Comparator.comparingDouble(AttachmentCandidate::distance)
+                        .thenComparing(AttachmentCandidate::parentEdgeId)).orElseThrow();
+    }
+
+    /**
+     * Build-time copy operation, never mutates the seed cache. Caller supplies a stable semantic key,
+     * not an insertion index. V1 supports one perpendicular axis-aligned edge, not diagonal routing.
+     * Junction is an exact interior attachment (integer station), not a proximity match or ramp.
+     */
+    public HighwayRouteGraph withStrategicBranch(String key, String parentRouteId, String parentEdgeId,
+                                                 int station, int targetX, int targetZ, String purpose) {
+        if (key == null || !key.matches("[a-z0-9][a-z0-9_-]*"))
+            throw new IllegalArgumentException("Branch requires a stable lowercase semantic key");
+        if (purpose == null || purpose.isBlank()) throw new IllegalArgumentException("Missing purpose");
+        String routeId = "strategic_branch/" + key;
+        if (getRouteById(routeId).isPresent()) throw new IllegalArgumentException("Duplicate route " + routeId);
+        Edge parent = getEdgeById(parentEdgeId).orElseThrow(() -> new IllegalArgumentException("Unknown parent edge"));
+        if (!parent.routeId().equals(parentRouteId)) throw new IllegalArgumentException("Parent route mismatch");
+        if (station < parent.startStation() || station > parent.endStation())
+            throw new IllegalArgumentException("Attachment outside parent edge");
+        Node projected = point(parent.id() + "/junction/" + station,
+                parent.orientation(), parent.fixedCoordinate(), station);
+        Node junction = new Node(projected.id(), NodeKind.BRANCH_JUNCTION, projected.x(), projected.z());
+        if (station == parent.startStation()) junction = parent.startNode();
+        else if (station == parent.endStation()) junction = parent.endNode();
+        else if (projected.x() == intersection.x() && projected.z() == intersection.z()) junction = intersection;
+        if (Math.abs((long) targetX) > 29_999_000 || Math.abs((long) targetZ) > 29_999_000)
+            throw new IllegalArgumentException("Target outside supported world coordinates");
+        Orientation orientation = parent.orientation() == Orientation.EAST_WEST
+                ? Orientation.NORTH_SOUTH : Orientation.EAST_WEST;
+        int fixed = orientation == Orientation.NORTH_SOUTH ? junction.x() : junction.z();
+        int start = orientation == Orientation.NORTH_SOUTH ? junction.z() : junction.x();
+        int end = orientation == Orientation.NORTH_SOUTH ? targetZ : targetX;
+        if ((orientation == Orientation.NORTH_SOUTH ? targetX : targetZ) != fixed || start == end)
+            throw new IllegalArgumentException("V1 branch must be nonzero and perpendicular axis-aligned");
+        Node target = new Node(routeId + "/end", NodeKind.TERMINUS, targetX, targetZ);
+        ParentAttachment attachment = new ParentAttachment(parentRouteId, parentEdgeId, station, junction.id());
+        Edge branch = new Edge(routeId, routeId + "/main", RouteRole.STRATEGIC_BRANCH,
+                start < end ? junction : target, start < end ? target : junction, orientation, fixed,
+                Math.min(start, end), Math.max(start, end), junction.id(), purpose, Optional.of(attachment));
+        List<Edge> extendedEdges = new ArrayList<>(edges);
+        extendedEdges.add(branch);
+        extendedEdges.sort(Comparator.comparing(Edge::id));
+        Map<String, Node> extendedNodes = new java.util.TreeMap<>();
+        for (Node node : nodes) extendedNodes.put(node.id(), node);
+        extendedNodes.put(junction.id(), junction);
+        extendedNodes.put(target.id(), target);
+        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(extendedNodes.values()), extendedEdges);
     }
 
     public long seed() { return seed; }
@@ -143,18 +222,41 @@ public final class HighwayRouteGraph {
         return value ^ (value >>> 31);
     }
 
-    public enum RouteRole { NATIONAL_TRUNK_A, NATIONAL_TRUNK_B }
+    public enum RouteType { NATIONAL_TRUNK, STRATEGIC_BRANCH, CONNECTOR }
+    public enum RouteRole { NATIONAL_TRUNK_A, NATIONAL_TRUNK_B, STRATEGIC_BRANCH }
     public enum Orientation { EAST_WEST, NORTH_SOUTH }
-    public enum NodeKind { TERMINUS, INTERSECTION }
+    public enum NodeKind { TERMINUS, INTERSECTION, BRANCH_JUNCTION }
     public record Node(String id, NodeKind kind, int x, int z) {}
+    public record ParentAttachment(String parentRouteId, String parentEdgeId, int parentStation,
+                                   String junctionNodeId) {}
+    public record AttachmentCandidate(String parentRouteId, String parentEdgeId, int parentStation,
+                                      int x, int z, double distance) {}
+    /** Phase 2A routes each have one finite edge; purpose never selects a renderer. */
+    public record Route(String routeId, RouteType routeType, String purpose, List<Edge> edges,
+                        Optional<ParentAttachment> parentAttachment) {
+        public Route { edges = List.copyOf(edges); }
+    }
 
     /** A finite route edge; junctionNodeId identifies the interior grade-separated crossing.
      * It does not imply a navigable turn or ramp. Stations are inclusive world-axis coordinates. */
     public record Edge(String routeId, String id, RouteRole role, Node startNode, Node endNode,
                        Orientation orientation, int fixedCoordinate, int startStation, int endStation,
-                       String junctionNodeId) {
+                       String junctionNodeId, String purpose, Optional<ParentAttachment> parentAttachment) {
+        public Edge(String routeId, String id, RouteRole role, Node startNode, Node endNode,
+                    Orientation orientation, int fixedCoordinate, int startStation, int endStation,
+                    String junctionNodeId) {
+            this(routeId, id, role, startNode, endNode, orientation, fixedCoordinate,
+                    startStation, endStation, junctionNodeId, "national", Optional.empty());
+        }
         public Edge {
             if (startStation >= endStation) throw new IllegalArgumentException("Empty highway edge");
+            Objects.requireNonNull(parentAttachment);
+            if ((role == RouteRole.STRATEGIC_BRANCH) != parentAttachment.isPresent())
+                throw new IllegalArgumentException("Only branches require parent attachment");
+        }
+
+        public RouteType routeType() {
+            return role == RouteRole.STRATEGIC_BRANCH ? RouteType.STRATEGIC_BRANCH : RouteType.NATIONAL_TRUNK;
         }
 
         public long globalStation(int worldX, int worldZ) {

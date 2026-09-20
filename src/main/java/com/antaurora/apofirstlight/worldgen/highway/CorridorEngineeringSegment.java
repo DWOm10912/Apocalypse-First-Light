@@ -53,7 +53,8 @@ public record CorridorEngineeringSegment(
 
         List<InterstateInterchangeNode> nodes = new ArrayList<>();
         long crossingStation = corridor.globalStation(graph.intersection().x(), graph.intersection().z());
-        if (crossingStation >= paddedStart - InterstateInterchangeNode.APPROACH_LENGTH
+        if (corridor.routeType() == HighwayRouteGraph.RouteType.NATIONAL_TRUNK
+                && crossingStation >= paddedStart - InterstateInterchangeNode.APPROACH_LENGTH
                 && crossingStation <= paddedEnd + InterstateInterchangeNode.APPROACH_LENGTH) {
             nodes.add(cachedNode(cache, graph, terrain));
         }

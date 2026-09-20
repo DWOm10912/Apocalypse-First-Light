@@ -1,6 +1,6 @@
 # Highway V2 — Route Graph Phase 1
 
-状态：有限路由已接入；静态核对与 compileJava 通过，未进行游戏内、跨区块、多 seed 或性能验收。资源未修改，未运行 processResources。
+状态：Phase 1有限路由已接入。后续 [Phase 2A — Strategic Branch Framework](highway_v2_strategic_branch_phase2a.md) 已增加可选支线数据/API，默认 `build/forSeed` 仍只有原两条主干，无实际支线。下文Phase 1验证记录为历史记录，不代表Phase 2A实机验收。
 
 ## 当前路线真相
 
@@ -8,7 +8,7 @@
 
 - `build(seed)` 只读取 MacroGeography，返回不可变列表与 record；不读 chunk、block、fluid 或 biome，不依赖生成顺序。
 - `forSeed(seed)` 仅提供最多 16 个 seed 的有界 memoization；清空/淘汰后可重建同样结果，cache 不是规划真相。
-- 恰好两条 route、两个有限 edge：`NATIONAL_TRUNK_A` 为 `EAST_WEST`，`NATIONAL_TRUNK_B` 为 `NORTH_SOUTH`。
+- 默认恰好两条 route、两个有限 edge：role `NATIONAL_TRUNK_A` 为 `EAST_WEST`，`NATIONAL_TRUNK_B` 为 `NORTH_SOUTH`；二者 routeType 均为 `NATIONAL_TRUNK`。
 - 每条 edge 包含 routeId、id、role、startNode/endNode、orientation、fixedCoordinate、闭区间 startStation/endStation、junctionNodeId；`bounds(halfWidth)` 返回有限半开 XZ 包络，`query(bounds, halfWidth)` 返回相交 edge。
 - 四个 TERMINUS 和一个共享 INTERSECTION，共五个 node。交点通过 edge 的内部 junctionNodeId 表达；未拆成导航边，也不代表有匝道或转向连通。
 - ID 为 `national_trunk_a/main`、`national_trunk_b/main`，交点 ID 为 `national_intersection`；它们在 seed/world scope 内稳定。
@@ -45,11 +45,11 @@ Rural 本身、通用 BoundsXZ/SpatialClaim/ClaimConflictResolver 未修改。�
 
 ## 现有调试入口
 
-未新增命令。`/afl highway_network info` 显示 graph 版本、2 edges、交点与端点；`nearest` 使用有限线段距离，`node` 查询唯一共享交点；`perf` 保持原统计。未添加图像导出或 debug renderer。
+未新增命令。`/afl highway_network info` 显示 graph 版本、所有 edges、交点与端点，Phase 2A增加 routeType/routeId/edgeId/purpose/parent attachment；默认仍显示2条主干。`nearest` 使用有限主干线段距离，`node` 查询唯一国家主干共享交点；`perf` 保持原统计。未添加图像导出或 debug renderer。
 
 ## 未实现 / 验证边界
 
-SATELLITE_ISLAND branch、CrossingCandidate 消费、Sea Bridge、Gentle Turn、斜线/Bezier 正式生成、车辆导航、港口均未实现。Terrain V2 density、Macro Geography topology、Rural、Worldgen Hygiene、Vanilla structures 和 surface lava suppression 均未修改。
+通用STRATEGIC_BRANCH框架已由Phase 2A实现，但SATELLITE_ISLAND实际路由、CrossingCandidate 消费、Sea Bridge、Gentle Turn、斜线/Bezier 正式生成、车辆导航、港口均未实现。Terrain V2 density、Macro Geography topology、Rural、Worldgen Hygiene、Vanilla structures 和 surface lava suppression 未在Highway阶段修改。
 
 首次 seed 查询需扫描有限主干的完整横断面；有界 cache 仅减少重复工作。本轮不跑 benchmark，不声明首查询耗时或世界性能已验收。确定性、两条有限轴向主干、共享交点、spawn 避让、端点约束与共享 claim 来源已静态核对；真实世界海岸外观、施工接缝和生成顺序下的最终方块内容仍待用户验收。
 

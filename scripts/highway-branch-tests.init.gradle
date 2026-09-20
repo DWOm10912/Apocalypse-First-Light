@@ -1,0 +1,17 @@
+// Opt-in pure Java contract runner. Deliberately does not depend on processResources/testClasses.
+gradle.projectsEvaluated {
+    def p = rootProject
+    def output = p.layout.buildDirectory.dir('highway-branch-tests')
+    def compilation = p.tasks.register('compileHighwayBranchContracts', JavaCompile) {
+        dependsOn p.tasks.named('compileJava')
+        source = p.fileTree('src/test/java/com/antaurora/apofirstlight/worldgen/highway') { include '*.java' }
+        classpath = p.files(p.sourceSets.main.output.classesDirs, p.configurations.compileClasspath)
+        destinationDirectory = output
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('highwayBranchContractTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayStrategicBranchTest'
+    }
+}
