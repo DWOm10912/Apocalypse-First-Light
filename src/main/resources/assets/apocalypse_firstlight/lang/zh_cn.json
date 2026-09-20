@@ -173,10 +173,8 @@
   "tooltip.apocalypse_firstlight.stat.weapon_type": "武器类型",
   "tooltip.apocalypse_firstlight.stat.damage": "枪械伤害",
   "tooltip.apocalypse_firstlight.stat.ammunition": "弹药类型",
-  "tooltip.apocalypse_firstlight.stat.magazine": "弹匣容量",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "开火方式",
   "tooltip.apocalypse_firstlight.stat.range": "射程",
-  "tooltip.apocalypse_firstlight.stat.noise": "噪声",
   "tooltip.apocalypse_firstlight.stat.separator": "：",
   "tooltip.apocalypse_firstlight.stat.sound_radius": "声音半径",
   "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",
@@ -193,7 +191,6 @@
   "tooltip.apocalypse_firstlight.value.blocks": "%s 格",
   "tooltip.apocalypse_firstlight.value.ai_noise": "%s 格",
   "tooltip.apocalypse_firstlight.value.noise_radius": "%s格",
-  "tooltip.apocalypse_firstlight.value.red_dot": "红点瞄具",
 
   "tooltip.apocalypse_firstlight.br51_extended_magazine_35.description": "一款为BR-51设计的35发扩容弹匣，可显著提升持续交火能力",
   "tooltip.apocalypse_firstlight.rifle_red_dot_01.description": "一款通用步枪红点瞄具，提供清晰瞄准点，便于快速捕捉目标",

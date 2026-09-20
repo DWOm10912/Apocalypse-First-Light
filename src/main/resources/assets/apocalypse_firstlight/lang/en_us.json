@@ -173,10 +173,8 @@
   "tooltip.apocalypse_firstlight.stat.weapon_type": "Weapon Type",
   "tooltip.apocalypse_firstlight.stat.damage": "Damage",
   "tooltip.apocalypse_firstlight.stat.ammunition": "Ammunition",
-  "tooltip.apocalypse_firstlight.stat.magazine": "Magazine",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "Fire Mode",
   "tooltip.apocalypse_firstlight.stat.range": "Range",
-  "tooltip.apocalypse_firstlight.stat.noise": "Noise",
   "tooltip.apocalypse_firstlight.stat.separator": ": ",
   "tooltip.apocalypse_firstlight.stat.sound_radius": "Sound Radius",
   "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",
@@ -193,7 +191,6 @@
   "tooltip.apocalypse_firstlight.value.blocks": "%s blocks",
   "tooltip.apocalypse_firstlight.value.ai_noise": "%s blocks",
   "tooltip.apocalypse_firstlight.value.noise_radius": "%s blocks",
-  "tooltip.apocalypse_firstlight.value.red_dot": "Red Dot",
 
   "tooltip.apocalypse_firstlight.br51_extended_magazine_35.description": "A 35-round extended magazine designed for the BR-51, significantly increasing sustained fire capability.",
   "tooltip.apocalypse_firstlight.rifle_red_dot_01.description": "A universal rifle red dot sight that provides a clear aiming point for faster target acquisition.",

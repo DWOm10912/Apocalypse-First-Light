@@ -14,7 +14,7 @@
 | 动画 | 复用现有 `reload_tactical` / `reload_empty`；不改动画文件，不接入 xmag、mag1 或 mag3 |
 | 维护台 | 仅维护台装拆、更换；共用 Context HUD / 候选页 / 原版点击声 / 2.480 s 操作声 / 服务端 51 tick 后重验提交 |
 | 热点 | BR51 magazine_slot 指定 `hotspot_anchor=mag_standard`、`hotspot_y=-4`；P9 保持原 magazine / -6.2 |
-| HUD | 所有枪统一单行 `当前装弹 \| 备弹`；容量仅在枪械 Tooltip 规格行显示，BR51 标准 20 / 扩容 35 |
+| HUD / Tooltip | 所有枪统一单行 `当前装弹 \| 备弹`；枪械 Tooltip 不显示容量，附件 Tooltip 仅保留介绍；BR51 实际容量为标准 20 / 扩容 35 |
 
 ## 资产审计
 
@@ -39,4 +39,4 @@
 
 打包记录：`build/br51-mag35-build.log`。不改 BR51 原 source / runtime 基础 geo / 动画文件；新独立贴图与原图逐字节相同。无新方块，不涉及挖掘工具/掉落等级变更。
 
-历史 HUD 修正：当时恢复全枪统一单行“当前装弹 | 备弹”，移除 show_capacity 配置与分行分支，并将 BR51 枪械 Tooltip 规格改为本地化容量参数（20/35）。此为旧版记录；现行 [Tooltip V2](../../ui/equipment_tooltip_v1.md) 已不显示枪械容量，附件修改项与实际容量/换弹事务保持不变。历史构建记录 `build/br51-hud-single-line-build.log` 不代表 V2 实机验收。
+历史 HUD 修正：当时恢复全枪统一单行“当前装弹 | 备弹”，移除 show_capacity 配置与分行分支，并将 BR51 枪械 Tooltip 规格改为本地化容量参数（20/35）。此为旧版记录；现行 [Tooltip V2](../../ui/equipment_tooltip_v1.md) 已不显示枪械容量，附件也只保留介绍、不再显示容量修改项；实际容量与换弹事务保持不变。历史构建记录 `build/br51-hud-single-line-build.log` 不代表 V2 实机验收。

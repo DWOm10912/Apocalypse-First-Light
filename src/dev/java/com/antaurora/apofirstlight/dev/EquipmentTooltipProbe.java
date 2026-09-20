@@ -31,24 +31,18 @@ public final class EquipmentTooltipProbe {
             attach(items[0],NativeAttachment.Slot.MUZZLE,AflItems.PISTOL_SUPPRESSOR_01.get());attach(items[1],NativeAttachment.Slot.MUZZLE,AflItems.RIFLE_SUPPRESSOR_01.get());}
     }
     private static void validate(boolean extended){
-        int[] colors={0xD97878,0xD6B46A,0x79AFC9,0xD79A68,0x82B98A,0xC49567,0x9B8FC3,0x79AAA7};
+        int[] colors={0xAAB8C2,0xD97878,0xD6B46A,0xD79A68,0x82B98A,0xC49567,0xB0B0B0};
         for(var type:AflTooltipStatType.values())check(type.color()==colors[type.ordinal()],"semantic color "+type);
-        check(AflEquipmentTooltip.percentChange(.05).equals("-95%")&&AflEquipmentTooltip.percentChange(.2).equals("-80%"),"real multiplier conversion");
         for(int i=0;i<items.length;i++){
             var stack=items[i];var before=stack.copy();var lines=new ArrayList<Component>();stack.getItem().appendHoverText(stack,mc().level,lines,TooltipFlag.NORMAL);
             check(lines.get(0).getStyle().getColor().getValue()==0xAAAAAA&&!lines.get(0).getStyle().isItalic(),"description style");
-            check(lines.get(1).getStyle().getColor().getValue()==0x555555&&lines.get(lines.size()-1).getString().equals(lines.get(1).getString()),"separator");
             for(var line:lines)check(!line.getString().contains("tooltip.apocalypse_firstlight.")&&!line.getString().contains("Press V"),"localized non-debug content");
             check(ItemStack.matches(stack,before),"read-only tooltip");
             if(i<2){var d=((NativeGunItem)stack.getItem()).definition();var stats=AflEquipmentTooltip.gunStats(stack,d);
+                check(stats.size()==3&&lines.size()==5,"gun tooltip rows");
                 check(stats.get(0).value().getString().equals(AflEquipmentTooltip.number(d.baseDamage())),"definition damage");
-                check(stats.get(2).value().getString().contains(""+(i==0?(extended?24:17):(extended?35:20))),"resolved capacity");
-                check(stats.get(5).value().getString().startsWith(""+(i==0?(extended?3:64):(extended?6:112))),"resolved noise");
-                check(stats.get(4).value().getString().startsWith(AflEquipmentTooltip.number(d.effectiveRange())),"effective range");
-            }else{var stats=AflEquipmentTooltip.attachmentModifiers(stack);check(stats.size()==1,"current modifier count");
-                if(i<4)check(stats.get(0).value().getString().equals("-95%"),"suppressor");
-                if(i==4||i==5)check(stats.get(0).value().getString().equals(i==4?"17 → 24":"20 → 35"),"magazine delta");
-                if(i>5)check(stats.get(0).type()==AflTooltipStatType.ADS,"sight category");}
+                check(stats.get(2).value().getString().startsWith(""+(i==0?(extended?3:64):(extended?6:112))),"resolved noise");
+            }else check(lines.size()==1,"attachment description only");
         }
     }
     private static void language(String language){loading=true;mc().getLanguageManager().setSelected(language);mc().reloadResourcePacks().whenComplete((v,e)->mc().execute(()->{loading=false;if(e!=null)finish("FAIL resource reload "+e);}));}
@@ -63,7 +57,7 @@ public final class EquipmentTooltipProbe {
             case 3 -> {shot("zh_equipped");language("en_us");}
             case 4 -> {fixture(false);validate(false);mc().setScreen(new Preview());}
             case 5 -> {shot("en_standard");fixture(true);validate(true);}
-            case 6 -> {shot("en_equipped");finish("PASS zh/en styles, colors, resolved stats, modifiers and read-only fixtures; screenshots require review");}
+            case 6 -> {shot("en_equipped");finish("PASS zh/en gun stats, attachment descriptions and read-only fixtures; screenshots require review");}
         }}catch(Exception ex){finish("FAIL "+ex);}
     }
     private static void shot(String name){Screenshot.grab(mc().gameDirectory,"equipment_tooltip_"+name+".png",mc().getMainRenderTarget(),c->{});}

@@ -12,13 +12,9 @@ public final class AflEquipmentTooltip {
     public static final int VALUE_COLOR=0xE0E0E0;
     public record Stat(AflTooltipStatType type,Component value){}
     public static String number(double value){return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();}
-    public static String percentChange(double multiplier){double value=(multiplier-1)*100;return (value>0?"+":"")+number(value)+"%";}
     private static Component value(String key,Object... args){return Component.translatable("tooltip.apocalypse_firstlight.value."+key,args);}
     public static void addDescription(List<Component> lines,String key){
         lines.add(Component.translatable(key).withStyle(net.minecraft.ChatFormatting.GRAY).withStyle(s->s.withItalic(false)));
-    }
-    public static void addSeparator(List<Component> lines){
-        lines.add(Component.literal("────────────────────").withStyle(net.minecraft.ChatFormatting.DARK_GRAY).withStyle(s->s.withItalic(false)));
     }
     public static void addStat(List<Component> lines,Stat stat){
         var label=Component.translatable(stat.type().key()).withStyle(Style.EMPTY.withColor(stat.type().color()).withItalic(false));
@@ -31,19 +27,7 @@ public final class AflEquipmentTooltip {
                 new Stat(FIRE_MODE,Component.translatable("fire_mode.apocalypse_firstlight."+NativeFireModes.current(stack,d).key())),
                 new Stat(SOUND_RADIUS,value("noise_radius",number(NativeGunNoise.resolve(stack,d).radius()))));
     }
-    public static List<Stat> attachmentModifiers(ItemStack stack){
-        var result=new ArrayList<Stat>();
-        if(!(stack.getItem() instanceof NativeAttachment a))return result;
-        if(a.noiseRadiusMultiplier()!=1)result.add(new Stat(NOISE,Component.literal(percentChange(a.noiseRadiusMultiplier()))));
-        if(a instanceof NativeMagazineItem m){
-            var gun=NativeGunData.get(m.compatibleGun());
-            result.add(new Stat(MAGAZINE,Component.literal(gun.magazineCapacity()+" → "+m.capacity())));
-        }
-        if(a instanceof NativeSightItem)result.add(new Stat(ADS,value("red_dot")));
-        return List.copyOf(result);
-    }
     public static void addGunStats(List<Component> lines,ItemStack stack,NativeGunDefinition definition){for(var stat:gunStats(stack,definition))addStat(lines,stat);}
-    public static void addAttachmentModifiers(List<Component> lines,ItemStack stack){for(var stat:attachmentModifiers(stack))addStat(lines,stat);}
     public static void gun(List<Component> lines,ItemStack stack,NativeGunDefinition definition,String description){
         addDescription(lines,description);
         // A readable text fallback for callers that do not use Forge's component gathering hook.
@@ -52,7 +36,7 @@ public final class AflEquipmentTooltip {
         addGunStats(lines,stack,definition);
     }
     public static void attachment(List<Component> lines,ItemStack stack,String description){
-        addDescription(lines,description);addSeparator(lines);addAttachmentModifiers(lines,stack);addSeparator(lines);
+        addDescription(lines,description);
     }
     private AflEquipmentTooltip(){}
 }
