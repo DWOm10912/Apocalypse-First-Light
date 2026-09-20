@@ -36,7 +36,7 @@ public record LandTerrainBias(DensityFunction continents, DensityFunction erosio
         double inland = sample.nationId() == MacroGeographySample.NationId.MAIN_NATION
                 ? smooth((sample.coastDistance() - MacroGeography.COAST_WIDTH) / INLAND_RAMP_WIDTH) : 0;
         double rolling = descending(e, -.10, -.45) * outsideStartup
-                * (mainland ? lerp(.65, 1, outer) : .50);
+                * (mainland ? lerp(.30, 1, outer) : .50);
         double highland = descending(e, -.40, -.60) * outer;
         double mountain = descending(e, -.70, -.82) * outer * smooth((c - .35) / .30);
         if (continentalness) {
