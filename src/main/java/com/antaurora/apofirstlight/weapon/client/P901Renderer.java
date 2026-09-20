@@ -46,7 +46,7 @@ public final class P901Renderer extends NativeGunContextRenderer<P901Item> {
             if (!isFirstPersonPass() || animatable == null || currentItemStack == null) return;
             var controller = animatable.getAnimatableInstanceCache().<P901Item>getManagerForId(getInstanceId(animatable))
                     .getAnimationControllers().get(P901Item.CONTROLLER);
-            if (!(controller instanceof P901AnimationController pistol) || !pistol.isEmptyReloadPlaying()) return;
+            if (!(controller instanceof P901AnimationController pistol) || pistol.getReloadSeconds() < 0) return;
         }
         boolean worldCompatibility = !isFirstPersonPass() && bone.getName().equals("g19_and_mag");
         if (worldCompatibility) {

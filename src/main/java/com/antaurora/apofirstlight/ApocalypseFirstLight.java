@@ -37,7 +37,7 @@ public class ApocalypseFirstLight {
         IEventBus modEventBus = context.getModEventBus();
         modEventBus.addListener(this::commonSetup);
         AflNetwork.register();
-        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+        net.minecraftforge.fml.ModLoadingContext9 .get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.authoring.BuildingAuthoringConfig.SPEC, "apocalypse_firstlight-authoring.toml");
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
