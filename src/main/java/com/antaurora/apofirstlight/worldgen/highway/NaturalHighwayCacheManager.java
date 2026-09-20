@@ -122,7 +122,7 @@ public final class NaturalHighwayCacheManager {
 
         private void validateNeighborIfReady(SegmentKey key, int offset,
                                              CorridorEngineeringSegment current) {
-            SegmentKey neighborKey = new SegmentKey(key.orientation, key.corridorIndex,
+            SegmentKey neighborKey = new SegmentKey(key.routeId, key.edgeId,
                     key.segmentIndex + offset, key.engineeringVersion);
             CorridorEngineeringSegment neighbor = segments.peekCompleted(neighborKey);
             if (neighbor == null) return;
@@ -133,9 +133,9 @@ public final class NaturalHighwayCacheManager {
 
     record HeightKey(int x, int z, HeightKind kind) {}
     record ColumnKey(int x, int z) {}
-    record AnchorKey(PrimaryHighwayNetwork.Orientation orientation, int corridorIndex, long station) {}
-    record NodeKey(int northSouthIndex, int eastWestIndex) {}
-    record SegmentKey(PrimaryHighwayNetwork.Orientation orientation, int corridorIndex,
+    record AnchorKey(String routeId, String edgeId, long station) {}
+    record NodeKey(String intersectionId, int graphVersion) {}
+    record SegmentKey(String routeId, String edgeId,
                       long segmentIndex, int engineeringVersion) {}
     enum HeightKind { SURFACE, OCEAN_FLOOR }
 

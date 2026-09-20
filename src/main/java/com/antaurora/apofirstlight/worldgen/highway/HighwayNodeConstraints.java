@@ -6,10 +6,10 @@ import java.util.List;
 public final class HighwayNodeConstraints {
     public static final HighwayNodeConstraints NONE = new HighwayNodeConstraints(null, List.of());
 
-    private final PrimaryHighwayNetwork.Orientation orientation;
+    private final HighwayRouteGraph.Orientation orientation;
     private final List<InterstateInterchangeNode> nodes;
 
-    public HighwayNodeConstraints(PrimaryHighwayNetwork.Orientation orientation,
+    public HighwayNodeConstraints(HighwayRouteGraph.Orientation orientation,
                                   List<InterstateInterchangeNode> nodes) {
         this.orientation = orientation;
         this.nodes = List.copyOf(nodes);

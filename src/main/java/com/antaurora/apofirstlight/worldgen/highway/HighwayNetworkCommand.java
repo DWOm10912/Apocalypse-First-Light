@@ -35,25 +35,28 @@ public final class HighwayNetworkCommand {
     private static int nearest(CommandContext<CommandSourceStack> context) {
         ServerLevel level = context.getSource().getLevel();
         Vec3 pos = context.getSource().getPosition();
-        PrimaryHighwayNetwork network = new PrimaryHighwayNetwork(level.getSeed());
-        PrimaryHighwayNetwork.Corridor ns = network.nearest(
-                PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH, (int) Math.floor(pos.x));
-        PrimaryHighwayNetwork.Corridor ew = network.nearest(
-                PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST, (int) Math.floor(pos.z));
+        HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
+        HighwayRouteGraph.Edge ns = graph.edge(HighwayRouteGraph.Orientation.NORTH_SOUTH);
+        HighwayRouteGraph.Edge ew = graph.edge(HighwayRouteGraph.Orientation.EAST_WEST);
         context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "[AFL HIGHWAY NETWORK] nearestNS=%s x=%d distance=%.1f nearestEW=%s z=%d distance=%.1f",
-                ns.id(), ns.fixedCoordinate(), Math.abs(pos.x - ns.fixedCoordinate()),
-                ew.id(), ew.fixedCoordinate(), Math.abs(pos.z - ew.fixedCoordinate()))), false);
+                ns.id(), ns.fixedCoordinate(), ns.distanceTo(pos.x, pos.z),
+                ew.id(), ew.fixedCoordinate(), ew.distanceTo(pos.x, pos.z))), false);
         return 1;
     }
 
     private static int info(CommandContext<CommandSourceStack> context) {
         NaturalHighwayRuntimeStats.Snapshot stats = NaturalHighwayRuntimeStats.snapshot();
+        HighwayRouteGraph graph = HighwayRouteGraph.forSeed(context.getSource().getLevel().getSeed());
         context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL HIGHWAY NETWORK] baseSpacing=" + PrimaryHighwayNetwork.BASE_SPACING
-                        + " jitter=±" + PrimaryHighwayNetwork.POSITION_JITTER
-                        + " guaranteedMinimumSpacing=" + PrimaryHighwayNetwork.MINIMUM_SPACING
+                "[AFL HIGHWAY NETWORK] graphVersion=" + HighwayRouteGraph.VERSION
+                        + " edges=" + graph.edges().size() + " intersection=" + graph.intersection()
                         + " profileAnchorSpacing=" + HighwayTerrainSampler.PROFILE_ANCHOR_SPACING), false);
+        for (HighwayRouteGraph.Edge edge : graph.edges()) {
+            context.getSource().sendSuccess(() -> Component.literal(
+                    edge.id() + " role=" + edge.role() + " start=" + edge.startNode()
+                            + " end=" + edge.endNode()), false);
+        }
         context.getSource().sendSuccess(() -> Component.literal(
                 "chunksProcessed=" + stats.highwayFeatureInvocations()
                         + " chunksWithCorridor=" + stats.highwayAcceptedChunks()
@@ -173,14 +176,10 @@ public final class HighwayNetworkCommand {
     private static int node(CommandContext<CommandSourceStack> context) {
         ServerLevel level = context.getSource().getLevel();
         Vec3 pos = context.getSource().getPosition();
-        PrimaryHighwayNetwork network = new PrimaryHighwayNetwork(level.getSeed());
-        PrimaryHighwayNetwork.Corridor ns = network.nearest(
-                PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH, (int) Math.floor(pos.x));
-        PrimaryHighwayNetwork.Corridor ew = network.nearest(
-                PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST, (int) Math.floor(pos.z));
+        HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
         HighwayTerrainSampler terrain = new HighwayTerrainSampler(level,
                 level.getChunkSource().getGenerator(), level.getChunkSource().randomState());
-        InterstateInterchangeNode node = network.node(ns, ew, terrain);
+        InterstateInterchangeNode node = InterstateInterchangeNode.fromGraph(graph, terrain);
         double distance = Math.hypot(pos.x - node.x(), pos.z - node.z());
         context.getSource().sendSuccess(() -> Component.literal(String.format(java.util.Locale.ROOT,
                 "[AFL HIGHWAY NODE] nodeId=%s x=%d z=%d distance=%.1f ns=%s ew=%s upper=%s lower=%s baseNsRoadY=%d baseEwRoadY=%d upperCrossingRoadY=%d lowerCrossingRoadY=%d approachLength=%d verticalClearance=%d reservedBounds=%s",

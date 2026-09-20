@@ -34,7 +34,7 @@ public final class HighwayTerrainSampler {
         this.cache = cache;
     }
 
-    public int globalRoadY(PrimaryHighwayNetwork.Corridor corridor, double globalStation) {
+    public int globalRoadY(HighwayRouteGraph.Edge corridor, double globalStation) {
         long lowerStation = Math.floorDiv((long) Math.floor(globalStation), PROFILE_ANCHOR_SPACING)
                 * (long) PROFILE_ANCHOR_SPACING;
         long upperStation = lowerStation + PROFILE_ANCHOR_SPACING;
@@ -48,7 +48,7 @@ public final class HighwayTerrainSampler {
      * Tier 1 uses cached surface/ocean-floor heights. A vertical column is read
      * only where those heightmaps indicate that the surface may actually be fluid.
      */
-    public CrossSection crossSection(PrimaryHighwayNetwork.Corridor corridor, double globalStation) {
+    public CrossSection crossSection(HighwayRouteGraph.Edge corridor, double globalStation) {
         long started = System.nanoTime();
         NaturalHighwayRuntimeStats.terrainSampleCall();
         HeightCrossSection cheap = heightCrossSection(corridor, globalStation, true);
@@ -74,9 +74,9 @@ public final class HighwayTerrainSampler {
                 cheap.leftSideWater, cheap.rightSideWater);
     }
 
-    private int roadAnchor(PrimaryHighwayNetwork.Corridor corridor, long station) {
+    private int roadAnchor(HighwayRouteGraph.Edge corridor, long station) {
         NaturalHighwayCacheManager.AnchorKey key = new NaturalHighwayCacheManager.AnchorKey(
-                corridor.orientation(), corridor.index(), station);
+                corridor.routeId(), corridor.id(), station);
         return cache.anchor(key, () -> {
             long started = System.nanoTime();
             long weighted = 0;
@@ -95,7 +95,7 @@ public final class HighwayTerrainSampler {
         });
     }
 
-    private HeightCrossSection heightCrossSection(PrimaryHighwayNetwork.Corridor corridor,
+    private HeightCrossSection heightCrossSection(HighwayRouteGraph.Edge corridor,
                                                   double globalStation, boolean includeWaterHint) {
         int[] heights = new int[HighwayPlan.MAIN_WIDTH];
         int station = (int) Math.round(globalStation);
@@ -169,13 +169,13 @@ public final class HighwayTerrainSampler {
         });
     }
 
-    private static int worldX(PrimaryHighwayNetwork.Corridor corridor, int station, int lateral) {
-        return corridor.orientation() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH
+    private static int worldX(HighwayRouteGraph.Edge corridor, int station, int lateral) {
+        return corridor.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH
                 ? corridor.fixedCoordinate() + lateral : station;
     }
 
-    private static int worldZ(PrimaryHighwayNetwork.Corridor corridor, int station, int lateral) {
-        return corridor.orientation() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH
+    private static int worldZ(HighwayRouteGraph.Edge corridor, int station, int lateral) {
+        return corridor.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH
                 ? station : corridor.fixedCoordinate() + lateral;
     }
 

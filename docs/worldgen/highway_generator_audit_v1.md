@@ -1,5 +1,7 @@
 # Highway Generator Audit V1（2026-09-13，静态审查）
 
+历史快照提示（Highway V2 Phase 1）：下文无限走廊、2200±300、旧盐与 corridor-index cache identity 均已过时，不代表现行实现。现行 Source of Truth 为 [HighwayRouteGraph](highway_v2_route_graph_phase1.md)：两条有限轴向主干、共享非原点交点、spawn 避让、海岸终止，renderer/claim 共用 edge。`PrimaryHighwayNetwork` 与 `HighwayGenerationContext` 已删除。下文保留用于追溯原审计；当前行为以 Phase 1 文档及源码为准，未声称实机验收。
+
 现行冲突更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。本文下方 SHARED_SPATIAL_CLAIMS/Highway–Rural INTEGRATION=NONE、无排除区等结论为历史快照：现已由 seed 预测 provider 发布 ±32 格施工 claim，Rural 整体 reservation 带 12 格间距主动拒绝冲突。Highway writer 不查询 Rural、路线不变、无新出口或互通。其他 POI 避让仍未接入；仅编译通过。
 
 范围：现行自然生成、同仓库开发命令及相关资源；只读。本文的“已实现”指代码存在且位于所述调用链，不等于已在本轮游戏内验收。本轮未修改 Java、NBT、worldgen JSON、既有文档或世界。

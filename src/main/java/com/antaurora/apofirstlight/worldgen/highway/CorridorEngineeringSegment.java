@@ -8,7 +8,7 @@ import java.util.List;
 
 /** Immutable CORE + HALO engineering result aligned to global corridor station. */
 public record CorridorEngineeringSegment(
-        PrimaryHighwayNetwork.Corridor corridor,
+        HighwayRouteGraph.Edge corridor,
         long segmentIndex,
         long coreStartStation,
         long coreEndStation,
@@ -19,32 +19,31 @@ public record CorridorEngineeringSegment(
         HighwayCorridor engineeredCorridor) {
 
     public static final int ENGINEERING_SEGMENT_LENGTH = 256;
-    public static final int ENGINEERING_HALO = HighwayGenerationContext.ENGINEERING_PADDING;
-    public static final int ENGINEERING_VERSION = 1;
+    public static final int ENGINEERING_HALO = 192;
+    public static final int ENGINEERING_VERSION = 2;
 
     public static long segmentIndex(long globalStation) {
         return Math.floorDiv(globalStation, ENGINEERING_SEGMENT_LENGTH);
     }
 
     public static CorridorEngineeringSegment build(WorldGenLevel level,
-                                                     PrimaryHighwayNetwork network,
-                                                     PrimaryHighwayNetwork.Corridor corridor,
+                                                     HighwayRouteGraph graph,
+                                                     HighwayRouteGraph.Edge corridor,
                                                      long segmentIndex,
                                                      HighwayTerrainSampler terrain,
                                                      NaturalHighwayCacheManager.WorldCache cache) {
         long buildStart = System.nanoTime();
         long contextStart = buildStart;
-        long coreStart = segmentIndex * ENGINEERING_SEGMENT_LENGTH;
-        long coreEnd = coreStart + ENGINEERING_SEGMENT_LENGTH - 1L;
-        long paddedStart = coreStart - ENGINEERING_HALO;
-        long paddedEnd = coreEnd + ENGINEERING_HALO;
-        if (paddedStart < Integer.MIN_VALUE || paddedEnd > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("Highway engineering segment lies outside Minecraft coordinates");
-        }
+        long segmentStart = segmentIndex * ENGINEERING_SEGMENT_LENGTH;
+        long coreStart = Math.max(corridor.startStation(), segmentStart);
+        long coreEnd = Math.min(corridor.endStation(), segmentStart + ENGINEERING_SEGMENT_LENGTH - 1L);
+        if (coreStart > coreEnd) throw new IllegalArgumentException("Engineering segment outside finite route");
+        long paddedStart = Math.max(corridor.startStation(), segmentStart - ENGINEERING_HALO);
+        long paddedEnd = Math.min(corridor.endStation(), segmentStart + ENGINEERING_SEGMENT_LENGTH - 1L + ENGINEERING_HALO);
 
         HighwayPlan.Point start;
         HighwayPlan.Point end;
-        if (corridor.orientation() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH) {
+        if (corridor.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH) {
             start = new HighwayPlan.Point(corridor.fixedCoordinate(), (int) paddedStart);
             end = new HighwayPlan.Point(corridor.fixedCoordinate(), (int) paddedEnd);
         } else {
@@ -53,18 +52,10 @@ public record CorridorEngineeringSegment(
         }
 
         List<InterstateInterchangeNode> nodes = new ArrayList<>();
-        if (corridor.orientation() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH) {
-            for (PrimaryHighwayNetwork.Corridor ew : network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST,
-                    (int) paddedStart, (int) paddedEnd, InterstateInterchangeNode.APPROACH_LENGTH)) {
-                nodes.add(cachedNode(cache, network, corridor, ew, terrain));
-            }
-        } else {
-            for (PrimaryHighwayNetwork.Corridor ns : network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH,
-                    (int) paddedStart, (int) paddedEnd, InterstateInterchangeNode.APPROACH_LENGTH)) {
-                nodes.add(cachedNode(cache, network, ns, corridor, terrain));
-            }
+        long crossingStation = corridor.globalStation(graph.intersection().x(), graph.intersection().z());
+        if (crossingStation >= paddedStart - InterstateInterchangeNode.APPROACH_LENGTH
+                && crossingStation <= paddedEnd + InterstateInterchangeNode.APPROACH_LENGTH) {
+            nodes.add(cachedNode(cache, graph, terrain));
         }
         nodes.sort(Comparator.comparing(InterstateInterchangeNode::id));
         HighwayPlan plan = HighwayPlan.linear(start, end, HighwayPlan.MAIN_WIDTH, paddedStart);
@@ -72,7 +63,8 @@ public record CorridorEngineeringSegment(
         NaturalHighwayRuntimeStats.contextBuild(System.nanoTime() - contextStart);
 
         HighwayProfile profile = HighwayProfile.sampleNatural(plan, corridor, terrain, constraints);
-        HighwayCorridor engineered = HighwayCorridor.buildNatural(level, plan, profile);
+        HighwayCorridor engineered = HighwayCorridor.buildNatural(level, plan, profile,
+                corridor.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH));
         CorridorEngineeringSegment result = new CorridorEngineeringSegment(corridor, segmentIndex,
                 coreStart, coreEnd, plan, List.copyOf(nodes), constraints, profile, engineered);
         NaturalHighwayRuntimeStats.engineeringSegmentBuild(System.nanoTime() - buildStart);
@@ -80,15 +72,14 @@ public record CorridorEngineeringSegment(
     }
 
     private static InterstateInterchangeNode cachedNode(NaturalHighwayCacheManager.WorldCache cache,
-                                                         PrimaryHighwayNetwork network,
-                                                         PrimaryHighwayNetwork.Corridor ns,
-                                                         PrimaryHighwayNetwork.Corridor ew,
+                                                         HighwayRouteGraph graph,
                                                          HighwayTerrainSampler terrain) {
-        NaturalHighwayCacheManager.NodeKey key = new NaturalHighwayCacheManager.NodeKey(ns.index(), ew.index());
+        NaturalHighwayCacheManager.NodeKey key = new NaturalHighwayCacheManager.NodeKey(
+                graph.intersection().id(), HighwayRouteGraph.VERSION);
         return cache.node(key, () -> {
             NaturalHighwayRuntimeStats.nodePlanCall();
             long started = System.nanoTime();
-            InterstateInterchangeNode node = network.node(ns, ew, terrain);
+            InterstateInterchangeNode node = InterstateInterchangeNode.fromGraph(graph, terrain);
             NaturalHighwayRuntimeStats.interchangePlanning(System.nanoTime() - started);
             return node;
         });

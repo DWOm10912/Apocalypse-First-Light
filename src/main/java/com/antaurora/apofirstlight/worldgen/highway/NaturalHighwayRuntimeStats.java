@@ -275,7 +275,7 @@ public final class NaturalHighwayRuntimeStats {
     }
     public static void node(InterstateInterchangeNode node) {
         NODES.increment();
-        if (node.upper() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH) UPPER_NS.increment();
+        if (node.upper() == HighwayRouteGraph.Orientation.NORTH_SOUTH) UPPER_NS.increment();
         else UPPER_EW.increment();
     }
     public static void profileMismatch() { PROFILE_MISMATCH.increment(); }

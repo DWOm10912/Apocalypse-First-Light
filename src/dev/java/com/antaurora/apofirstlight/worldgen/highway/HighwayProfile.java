@@ -136,7 +136,7 @@ public final class HighwayProfile {
 
     /** Builds a random-access global profile from pre-decoration terrain rather than chunk-local state. */
     public static HighwayProfile sampleNatural(HighwayPlan plan,
-                                               PrimaryHighwayNetwork.Corridor corridor,
+                                               HighwayRouteGraph.Edge corridor,
                                                HighwayTerrainSampler terrain,
                                                HighwayNodeConstraints nodeConstraints) {
         NaturalHighwayRuntimeStats.profileBuildCall();

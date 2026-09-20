@@ -158,7 +158,7 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 
 只在 `RuralNaturalStructure.findGenerationPoint` 的入口，对既有完整reservation做16格间距的有界解析探针；要求MAINLAND并且coastDistance至少128格。没有修改Rural planner、道路、building/lot、农业地块、模板或阈值。已有Piece与开发命令不回溯执行此新gate；第三方将Rural移植到别的noise settings不启用这个macro gate。
 
-Highway与HighwaySpatialClaimProvider **本轮未改**，仍是无限走廊/整列预留。因此当前新世界可能仍有旧Highway穿海；这是Phase 2待办，不是Sea Bridge已接入。
+历史边界：Terrain V2 本轮未改 Highway。后续 [Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 已替换旧无限走廊/整列预留：renderer 与 claim 共用两条有限主干，在宏观海岸前终止，不再批准 OPEN_OCEAN 路线。Sea Bridge/附属岛支线仍未实现；此次仅 Highway 路由更新，Macro Geography topology 未改。
 
 后续Highway V2必须共同修改route及claim来源：主国LAND正常通行；同一MAIN_NATION内 MAINLAND↔SATELLITE_ISLAND 的300–600格水道可作为本版海桥候选；OPEN_OCEAN必须终止/绕行，不自动跨洋，不自动连接外国。coastDistance用于approach初筛；crossingCandidates只提供拓扑，需要后续验证实际水面跨度、岸上空间、纵坡、海床和桥墩。当前没有Highway海桥参数，也未实现Sea Bridge、Bridge Damage、City或Port。
 

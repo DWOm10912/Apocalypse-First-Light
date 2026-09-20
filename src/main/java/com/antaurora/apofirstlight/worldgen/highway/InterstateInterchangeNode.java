@@ -1,11 +1,11 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
-import static com.antaurora.apofirstlight.worldgen.highway.PrimaryHighwayNetwork.Orientation;
+import static com.antaurora.apofirstlight.worldgen.highway.HighwayRouteGraph.Orientation;
 
 /** Deterministic grade-separated crossing; ramps and route connectivity are intentionally absent. */
 public record InterstateInterchangeNode(
-        PrimaryHighwayNetwork.Corridor northSouth,
-        PrimaryHighwayNetwork.Corridor eastWest,
+        HighwayRouteGraph.Edge northSouth,
+        HighwayRouteGraph.Edge eastWest,
         int x,
         int z,
         Orientation upper,
@@ -24,21 +24,42 @@ public record InterstateInterchangeNode(
     public static final int CROSSING_CORE_HALF_LENGTH = HighwayCorridor.BRIDGE_WIDTH / 2 + 6;
     public static final int INTERCHANGE_RESERVE_RADIUS = APPROACH_LENGTH;
 
+    /** Existing grade-separated crossing policy, now fed by the two finite graph edges. */
+    public static InterstateInterchangeNode fromGraph(HighwayRouteGraph graph, HighwayTerrainSampler terrain) {
+        HighwayRouteGraph.Edge ns = graph.edge(Orientation.NORTH_SOUTH);
+        HighwayRouteGraph.Edge ew = graph.edge(Orientation.EAST_WEST);
+        int x = graph.intersection().x();
+        int z = graph.intersection().z();
+        int baseNs = terrain.globalRoadY(ns, z);
+        int baseEw = terrain.globalRoadY(ew, x);
+        int nsRaise = Math.max(0, baseEw + REQUIRED_SURFACE_SEPARATION - baseNs);
+        int ewRaise = Math.max(0, baseNs + REQUIRED_SURFACE_SEPARATION - baseEw);
+        Orientation upper;
+        if (nsRaise < ewRaise) upper = Orientation.NORTH_SOUTH;
+        else if (ewRaise < nsRaise) upper = Orientation.EAST_WEST;
+        else upper = (HighwayRouteGraph.mix(graph.seed() ^ graph.intersection().id().hashCode()) & 1L) == 0L
+                ? Orientation.NORTH_SOUTH : Orientation.EAST_WEST;
+        int lowerRoadY = upper == Orientation.NORTH_SOUTH ? baseEw : baseNs;
+        int upperBaseY = upper == Orientation.NORTH_SOUTH ? baseNs : baseEw;
+        return new InterstateInterchangeNode(ns, ew, x, z, upper, baseNs, baseEw,
+                lowerRoadY, Math.max(upperBaseY, lowerRoadY + REQUIRED_SURFACE_SEPARATION));
+    }
+
     public String id() {
-        return "I_" + northSouth.id() + "_" + eastWest.id();
+        return northSouth.junctionNodeId();
     }
 
     public Orientation lower() {
-        return upper == Orientation.PRIMARY_NORTH_SOUTH
-                ? Orientation.PRIMARY_EAST_WEST : Orientation.PRIMARY_NORTH_SOUTH;
+        return upper == Orientation.NORTH_SOUTH
+                ? Orientation.EAST_WEST : Orientation.NORTH_SOUTH;
     }
 
     public int station(Orientation orientation) {
-        return orientation == Orientation.PRIMARY_NORTH_SOUTH ? z : x;
+        return orientation == Orientation.NORTH_SOUTH ? z : x;
     }
 
     public int baseRoadY(Orientation orientation) {
-        return orientation == Orientation.PRIMARY_NORTH_SOUTH
+        return orientation == Orientation.NORTH_SOUTH
                 ? baseNorthSouthRoadY : baseEastWestRoadY;
     }
 

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
 import net.minecraft.core.BlockPos;
+import com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.WorldGenLevel;
@@ -140,8 +141,18 @@ public final class HighwayCorridor {
         return build(level, plan, profile, true);
     }
 
+    public static HighwayCorridor buildNatural(WorldGenLevel level, HighwayPlan plan,
+                                               HighwayProfile profile, BoundsXZ routeBounds) {
+        return build(level, plan, profile, true, routeBounds);
+    }
+
     private static HighwayCorridor build(WorldGenLevel level, HighwayPlan plan, HighwayProfile profile,
                                          boolean useSampledTerrain) {
+        return build(level, plan, profile, useSampledTerrain, null);
+    }
+
+    private static HighwayCorridor build(WorldGenLevel level, HighwayPlan plan, HighwayProfile profile,
+                                         boolean useSampledTerrain, BoundsXZ routeBounds) {
         HighwayPlan.Tangent tangent = plan.tangent(0.0);
         double rightX = -tangent.z();
         double rightZ = tangent.x();
@@ -217,6 +228,7 @@ public final class HighwayCorridor {
             for (int dx = -ROW_MARGIN; dx <= ROW_MARGIN; dx++) {
                 for (int dz = -ROW_MARGIN; dz <= ROW_MARGIN; dz++) {
                     Key key = new Key(cell.x() + dx, cell.z() + dz);
+                    if (routeBounds != null && !routeBounds.contains(key.x(), key.z())) continue;
                     row.merge(key, new Column(key.x(), key.z(), cell.roadY()),
                             (a, b) -> a.roadY() >= b.roadY() ? a : b);
                 }

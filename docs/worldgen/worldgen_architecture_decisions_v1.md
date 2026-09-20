@@ -4,7 +4,7 @@
 
 ## ADR-01 — 保留双生命周期
 
-背景：Rural 用 StructureStart/Piece 有限计划；Highway 用 Feature 随机访问无限走廊。
+历史背景：Rural 用 StructureStart/Piece 有限计划；Highway 当时用 Feature 随机访问无限走廊。现已由 [Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 改为随机访问两条有限 RouteGraph 主干，Feature 生命周期保持。
 
 决定：Site/Structure 与 Infrastructure 分层，公共服务在其下。Highway 不迁成 Structure，Rural 不使用 Highway route planner。
 

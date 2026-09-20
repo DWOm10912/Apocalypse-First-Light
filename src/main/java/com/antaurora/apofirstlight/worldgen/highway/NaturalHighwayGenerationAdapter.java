@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -30,27 +31,21 @@ public final class NaturalHighwayGenerationAdapter {
         try {
             ChunkPos target = region.getCenter();
 
-            // TIER 0: no RandomState, sampler, padded plan, profile, resolver, or large allocation.
+            // TIER 0: immutable macro graph query; first seed access reconstructs its finite routes.
+            // No RandomState, terrain sampler, padded plan, profile or engineering resolver yet.
             long plannerStarted = System.nanoTime();
-            PrimaryHighwayNetwork network = new PrimaryHighwayNetwork(level.getSeed());
-            List<PrimaryHighwayNetwork.Corridor> ns = network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH,
-                    target.getMinBlockX(), target.getMaxBlockX(), PrimaryHighwayNetwork.FOOTPRINT_HALF_WIDTH);
-            List<PrimaryHighwayNetwork.Corridor> ew = network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST,
-                    target.getMinBlockZ(), target.getMaxBlockZ(), PrimaryHighwayNetwork.FOOTPRINT_HALF_WIDTH);
+            HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
+            BoundsXZ area = new BoundsXZ(target.getMinBlockX(), target.getMinBlockZ(),
+                    target.getMaxBlockX() + 1, target.getMaxBlockZ() + 1);
+            List<HighwayRouteGraph.Edge> routes = graph.query(area, HighwayRouteGraph.FOOTPRINT_HALF_WIDTH);
             // A neighbour's vegetation feature may legally write one chunk into this target.
             // Query that narrow halo before doing any profile/engineering work.
-            int hygieneRadius = PrimaryHighwayNetwork.FOOTPRINT_HALF_WIDTH + HYGIENE_NEIGHBOR_WRITE_RADIUS;
-            List<PrimaryHighwayNetwork.Corridor> hygieneNs = network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH,
-                    target.getMinBlockX(), target.getMaxBlockX(), hygieneRadius);
-            List<PrimaryHighwayNetwork.Corridor> hygieneEw = network.nearby(
-                    PrimaryHighwayNetwork.Orientation.PRIMARY_EAST_WEST,
-                    target.getMinBlockZ(), target.getMaxBlockZ(), hygieneRadius);
+            List<HighwayRouteGraph.Edge> hygieneRoutes = graph.query(
+                    area.expand(HYGIENE_NEIGHBOR_WRITE_RADIUS), HighwayRouteGraph.FOOTPRINT_HALF_WIDTH);
             NaturalHighwayRuntimeStats.plannerQuery(System.nanoTime() - plannerStarted,
-                    hygieneNs.size(), hygieneEw.size());
-            if (hygieneNs.isEmpty() && hygieneEw.isEmpty()) {
+                    (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH).count(),
+                    (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.EAST_WEST).count());
+            if (hygieneRoutes.isEmpty()) {
                 NaturalHighwayRuntimeStats.hygieneFastReject();
                 NaturalHighwayRuntimeStats.finishRejected(feature);
                 return false;
@@ -61,15 +56,11 @@ public final class NaturalHighwayGenerationAdapter {
                     region.getLevel(), generator, randomState);
             HighwayTerrainSampler terrain = new HighwayTerrainSampler(level, generator, randomState, cache);
             Map<String, CorridorEngineeringSegment> segmentById = new LinkedHashMap<>();
-            for (PrimaryHighwayNetwork.Corridor corridor : hygieneNs) {
-                segmentById.put(corridor.id(), segmentForChunk(target, network, corridor, terrain, cache, level));
+            for (HighwayRouteGraph.Edge edge : hygieneRoutes) {
+                segmentById.put(edge.id(), segmentForChunk(target, graph, edge, terrain, cache, level));
             }
-            for (PrimaryHighwayNetwork.Corridor corridor : hygieneEw) {
-                segmentById.put(corridor.id(), segmentForChunk(target, network, corridor, terrain, cache, level));
-            }
-            List<CorridorEngineeringSegment> segments = new ArrayList<>(ns.size() + ew.size());
-            for (PrimaryHighwayNetwork.Corridor corridor : ns) segments.add(segmentById.get(corridor.id()));
-            for (PrimaryHighwayNetwork.Corridor corridor : ew) segments.add(segmentById.get(corridor.id()));
+            List<CorridorEngineeringSegment> segments = new ArrayList<>(routes.size());
+            for (HighwayRouteGraph.Edge edge : routes) segments.add(segmentById.get(edge.id()));
             // At a shared crossing, the lower carriageway is authoritative before the overpass.
             segments.sort(Comparator.comparingInt(segment -> segment.upperAtNode() ? 1 : 0));
 
@@ -98,7 +89,8 @@ public final class NaturalHighwayGenerationAdapter {
                 }
                 long renderStarted = System.nanoTime();
                 HighwayRenderStats renderStats = HighwayRenderer.renderNatural(level, segment.profile(),
-                        segment.engineeredCorridor(), constructionSnapshot, writer);
+                        segment.engineeredCorridor(), constructionSnapshot,
+                        new FiniteRouteHighwayWriter(writer, segment.corridor()));
                 NaturalHighwayRuntimeStats.render(System.nanoTime() - renderStarted);
                 NaturalHighwayRuntimeStats.clearance(renderStats);
             }
@@ -119,16 +111,15 @@ public final class NaturalHighwayGenerationAdapter {
     }
 
     private static CorridorEngineeringSegment segmentForChunk(
-            ChunkPos target, PrimaryHighwayNetwork network,
-            PrimaryHighwayNetwork.Corridor corridor, HighwayTerrainSampler terrain,
+            ChunkPos target, HighwayRouteGraph graph,
+            HighwayRouteGraph.Edge corridor, HighwayTerrainSampler terrain,
             NaturalHighwayCacheManager.WorldCache cache, WorldGenLevel level) {
-        long station = corridor.orientation() == PrimaryHighwayNetwork.Orientation.PRIMARY_NORTH_SOUTH
-                ? target.getMinBlockZ() : target.getMinBlockX();
+        long station = corridor.clampStation(corridor.globalStation(target.getMinBlockX(), target.getMinBlockZ()));
         long segmentIndex = CorridorEngineeringSegment.segmentIndex(station);
         NaturalHighwayCacheManager.SegmentKey key = new NaturalHighwayCacheManager.SegmentKey(
-                corridor.orientation(), corridor.index(), segmentIndex,
+                corridor.routeId(), corridor.id(), segmentIndex,
                 CorridorEngineeringSegment.ENGINEERING_VERSION);
-        return cache.segment(key, () -> CorridorEngineeringSegment.build(level, network, corridor,
+        return cache.segment(key, () -> CorridorEngineeringSegment.build(level, graph, corridor,
                 segmentIndex, terrain, cache));
     }
 }
