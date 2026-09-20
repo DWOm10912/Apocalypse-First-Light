@@ -1,5 +1,7 @@
 # Highway V2 Phase 2A — Strategic Branch Framework
 
+现行补充：[Phase 2B-1](highway_v2_diagonal_geometry_v1.md) 增加geometry重载与POLYLINE surface消费，默认仍两条主干。下文仅轴向限制对应Phase 2A旧targetX/targetZ重载；两个重载的parent仍要求轴向。新几何桥隧明确defer。末尾资源/执行状态为Phase 2A历史记录，新阶段见链接。parent/junction语义未变，Satellite Routing未实现。
+
 状态：通用支线框架已接入，compileJava与30项纯Java契约检查通过，默认自然世界仍仅有原两条National Trunk。没有实际Strategic Branch，也没有Satellite Routing、Sea Bridge或City Connector。此结果不代表实机连接处或工程效果验收。
 
 ## 单一图真相与兼容性

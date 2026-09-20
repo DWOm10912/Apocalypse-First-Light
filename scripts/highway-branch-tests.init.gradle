@@ -14,4 +14,10 @@ gradle.projectsEvaluated {
         classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
         mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayStrategicBranchTest'
     }
+    p.tasks.register('highwayGeometryContractTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayGeometryIntegrationTest'
+        maxHeapSize = '512m'
+    }
 }

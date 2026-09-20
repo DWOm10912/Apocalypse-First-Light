@@ -1,0 +1,7 @@
+{
+  "parent": "apocalypse_firstlight:block/highway_ribbon_riser",
+  "textures": {
+    "paint": "apocalypse_firstlight:block/edge_lane_white",
+    "particle": "apocalypse_firstlight:block/edge_lane_white"
+  }
+}

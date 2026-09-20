@@ -130,7 +130,8 @@ public final class HighwayRouteGraph {
 
     public List<Edge> query(BoundsXZ area, int halfWidth) {
         if (area.isEmpty()) return List.of();
-        return edges.stream().filter(edge -> edge.bounds(halfWidth).intersects(area)).toList();
+        return edges.stream().filter(edge -> edge.geometry() == null
+                ? edge.bounds(halfWidth).intersects(area) : edge.geometry().intersects(area, halfWidth)).toList();
     }
 
     public Edge edge(Orientation orientation) {
@@ -176,6 +177,7 @@ public final class HighwayRouteGraph {
         String routeId = "strategic_branch/" + key;
         if (getRouteById(routeId).isPresent()) throw new IllegalArgumentException("Duplicate route " + routeId);
         Edge parent = getEdgeById(parentEdgeId).orElseThrow(() -> new IllegalArgumentException("Unknown parent edge"));
+        if (parent.geometry() != null) throw new IllegalArgumentException("V1 attachment requires axial parent");
         if (!parent.routeId().equals(parentRouteId)) throw new IllegalArgumentException("Parent route mismatch");
         if (station < parent.startStation() || station > parent.endStation())
             throw new IllegalArgumentException("Attachment outside parent edge");
@@ -210,6 +212,36 @@ public final class HighwayRouteGraph {
     }
 
     public long seed() { return seed; }
+    /** Geometry-only opt-in; never called by the default seed builder. Parent semantics unchanged. */
+    public HighwayRouteGraph withStrategicBranch(String key, String parentRouteId, String parentEdgeId,
+                                                 int station, HighwayGeometry geometry, String purpose) {
+        Objects.requireNonNull(geometry);
+        if (key == null || !key.matches("[a-z0-9][a-z0-9_-]*") || purpose == null || purpose.isBlank())
+            throw new IllegalArgumentException("Stable key and purpose required");
+        String routeId = "strategic_branch/" + key;
+        if (getRouteById(routeId).isPresent()) throw new IllegalArgumentException("Duplicate route");
+        Edge parent = getEdgeById(parentEdgeId).orElseThrow(() -> new IllegalArgumentException("Unknown parent"));
+        if (!parent.routeId().equals(parentRouteId) || parent.geometry() != null)
+            throw new IllegalArgumentException("V1 attachment requires an existing axial parent");
+        if (station < parent.startStation() || station > parent.endStation()) throw new IllegalArgumentException("Outside parent");
+        Node projected = point(parent.id() + "/junction/" + station, parent.orientation(), parent.fixedCoordinate(), station);
+        Node junction = new Node(projected.id(), NodeKind.BRANCH_JUNCTION, projected.x(), projected.z());
+        if (station == parent.startStation()) junction = parent.startNode();
+        else if (station == parent.endStation()) junction = parent.endNode();
+        else if (junction.x() == intersection.x() && junction.z() == intersection.z()) junction = intersection;
+        HighwayGeometry.Point first = geometry.point(0), last = geometry.point(geometry.length());
+        if (first.x() != junction.x() || first.z() != junction.z()) throw new IllegalArgumentException("Geometry must start at exact junction");
+        Node target = new Node(routeId + "/end", NodeKind.TERMINUS, (int) Math.round(last.x()), (int) Math.round(last.z()));
+        Edge branch = new Edge(routeId, routeId + "/main", RouteRole.STRATEGIC_BRANCH, junction, target,
+                Orientation.POLYLINE, 0, 0, (int) Math.ceil(geometry.length()), junction.id(), purpose,
+                Optional.of(new ParentAttachment(parentRouteId, parentEdgeId, station, junction.id())), geometry);
+        List<Edge> extended = new ArrayList<>(edges);
+        extended.add(branch); extended.sort(Comparator.comparing(Edge::id));
+        Map<String, Node> nodeMap = new java.util.TreeMap<>();
+        nodes.forEach(node -> nodeMap.put(node.id(), node));
+        nodeMap.put(junction.id(), junction); nodeMap.put(target.id(), target);
+        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(nodeMap.values()), extended);
+    }
     public Node intersection() { return intersection; }
     public List<Node> nodes() { return nodes; }
     public List<Edge> edges() { return edges; }
@@ -224,7 +256,7 @@ public final class HighwayRouteGraph {
 
     public enum RouteType { NATIONAL_TRUNK, STRATEGIC_BRANCH, CONNECTOR }
     public enum RouteRole { NATIONAL_TRUNK_A, NATIONAL_TRUNK_B, STRATEGIC_BRANCH }
-    public enum Orientation { EAST_WEST, NORTH_SOUTH }
+    public enum Orientation { EAST_WEST, NORTH_SOUTH, POLYLINE }
     public enum NodeKind { TERMINUS, INTERSECTION, BRANCH_JUNCTION }
     public record Node(String id, NodeKind kind, int x, int z) {}
     public record ParentAttachment(String parentRouteId, String parentEdgeId, int parentStation,
@@ -241,7 +273,14 @@ public final class HighwayRouteGraph {
      * It does not imply a navigable turn or ramp. Stations are inclusive world-axis coordinates. */
     public record Edge(String routeId, String id, RouteRole role, Node startNode, Node endNode,
                        Orientation orientation, int fixedCoordinate, int startStation, int endStation,
-                       String junctionNodeId, String purpose, Optional<ParentAttachment> parentAttachment) {
+                       String junctionNodeId, String purpose, Optional<ParentAttachment> parentAttachment,
+                       HighwayGeometry geometry) {
+        public Edge(String routeId, String id, RouteRole role, Node startNode, Node endNode,
+                    Orientation orientation, int fixedCoordinate, int startStation, int endStation,
+                    String junctionNodeId, String purpose, Optional<ParentAttachment> parentAttachment) {
+            this(routeId, id, role, startNode, endNode, orientation, fixedCoordinate, startStation, endStation,
+                    junctionNodeId, purpose, parentAttachment, null);
+        }
         public Edge(String routeId, String id, RouteRole role, Node startNode, Node endNode,
                     Orientation orientation, int fixedCoordinate, int startStation, int endStation,
                     String junctionNodeId) {
@@ -250,6 +289,7 @@ public final class HighwayRouteGraph {
         }
         public Edge {
             if (startStation >= endStation) throw new IllegalArgumentException("Empty highway edge");
+            if ((orientation == Orientation.POLYLINE) != (geometry != null)) throw new IllegalArgumentException("Missing polyline geometry");
             Objects.requireNonNull(parentAttachment);
             if ((role == RouteRole.STRATEGIC_BRANCH) != parentAttachment.isPresent())
                 throw new IllegalArgumentException("Only branches require parent attachment");
@@ -260,6 +300,7 @@ public final class HighwayRouteGraph {
         }
 
         public long globalStation(int worldX, int worldZ) {
+            if (geometry != null) return (long) Math.floor(geometry.nearestStation(worldX, worldZ));
             return orientation == Orientation.NORTH_SOUTH ? worldZ : worldX;
         }
 
@@ -268,6 +309,7 @@ public final class HighwayRouteGraph {
         }
 
         public BoundsXZ bounds(int halfWidth) {
+            if (geometry != null) return geometry.bounds(halfWidth);
             if (halfWidth < 0) throw new IllegalArgumentException("Negative highway envelope");
             return orientation == Orientation.NORTH_SOUTH
                     ? new BoundsXZ(fixedCoordinate - halfWidth, startStation, fixedCoordinate + halfWidth + 1, endStation + 1)
@@ -275,6 +317,10 @@ public final class HighwayRouteGraph {
         }
 
         public double distanceTo(double x, double z) {
+            if (geometry != null) {
+                HighwayGeometry.Point p = geometry.point(geometry.nearestStation(x, z));
+                return Math.hypot(x - p.x(), z - p.z());
+            }
             double station = orientation == Orientation.NORTH_SOUTH ? z : x;
             double lateral = (orientation == Orientation.NORTH_SOUTH ? x : z) - fixedCoordinate;
             return Math.hypot(lateral, station - Math.max(startStation, Math.min(endStation, station)));

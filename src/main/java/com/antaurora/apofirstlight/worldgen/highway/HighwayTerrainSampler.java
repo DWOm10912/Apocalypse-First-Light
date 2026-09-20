@@ -170,11 +170,19 @@ public final class HighwayTerrainSampler {
     }
 
     private static int worldX(HighwayRouteGraph.Edge corridor, int station, int lateral) {
+        if (corridor.geometry() != null) {
+            var p = corridor.geometry().point(station); var t = corridor.geometry().tangent(station);
+            return (int) Math.round(p.x() - t.z() * lateral);
+        }
         return corridor.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH
                 ? corridor.fixedCoordinate() + lateral : station;
     }
 
     private static int worldZ(HighwayRouteGraph.Edge corridor, int station, int lateral) {
+        if (corridor.geometry() != null) {
+            var p = corridor.geometry().point(station); var t = corridor.geometry().tangent(station);
+            return (int) Math.round(p.z() + t.x() * lateral);
+        }
         return corridor.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH
                 ? station : corridor.fixedCoordinate() + lateral;
     }

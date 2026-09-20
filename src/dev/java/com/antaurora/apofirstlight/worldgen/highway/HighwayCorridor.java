@@ -16,6 +16,7 @@ import java.util.Set;
 
 /** The authoritative road footprint consumed by clearance and construction. */
 public final class HighwayCorridor {
+    private static final int[][] RIBBON_NEIGHBORS = {{0,-1},{1,0},{0,1},{-1,0}};
     public static final int ROW_MARGIN = 3;
     public static final int BRIDGE_WIDTH = HighwayPlan.MAIN_WIDTH + 2;
     public static final int VERTICAL_CLEARANCE = 6;
@@ -153,6 +154,7 @@ public final class HighwayCorridor {
 
     private static HighwayCorridor build(WorldGenLevel level, HighwayPlan plan, HighwayProfile profile,
                                          boolean useSampledTerrain, BoundsXZ routeBounds) {
+        if (plan.geometry() != null) return buildRibbon(plan, profile);
         HighwayPlan.Tangent tangent = plan.tangent(0.0);
         double rightX = -tangent.z();
         double rightZ = tangent.x();
@@ -283,6 +285,60 @@ public final class HighwayCorridor {
     public static boolean isLaneDividerPainted(double distance) {
         long station = (long) Math.floor(distance);
         return Math.floorMod(station, (long) LANE_DIVIDER_DASH_CYCLE) < LANE_DIVIDER_DASH_ON;
+    }
+
+    /** Shared ribbon drives pavement, bands, grading, furniture and paint; never rotates an axial footprint. */
+    private static HighwayCorridor buildRibbon(HighwayPlan plan, HighwayProfile profile) {
+        HighwayGeometry geometry = plan.geometry();
+        HighwayTunnelSpanResolver.Resolution emptyTunnel = HighwayTunnelSpanResolver.empty();
+        boolean supported = profile.bridgeSpans().isEmpty()
+                && profile.samples().stream().noneMatch(s -> s.mode() == HighwayTerrainMode.VIADUCT || s.mode() == HighwayTerrainMode.TUNNEL)
+                && (!HighwayTunnelSpanResolver.mightContainTunnel(profile.samples(), profile::tunnelAllowed)
+                    || HighwayTunnelSpanResolver.resolve(profile.samples(), profile::tunnelAllowed).spans().isEmpty());
+        List<Cell> cells = new ArrayList<>();
+        List<CenterCell> center = new ArrayList<>();
+        Map<Key, Column> row = new LinkedHashMap<>();
+        Set<SurfaceKey> surface = new LinkedHashSet<>(), furniture = new LinkedHashSet<>(), outer = new LinkedHashSet<>();
+        Set<SurfaceKey> medianRisers = new LinkedHashSet<>(), edgeRisers = new LinkedHashSet<>();
+        List<RoadMarking> markings = new ArrayList<>();
+        if (supported) {
+            BoundsXZ window = geometry.bounds(plan.stationOffset(), plan.globalStation(plan.length()),
+                    HighwayGeometry.ROAD_HALF_WIDTH + ROW_MARGIN);
+            for (HighwayGeometry.Cell pixel : geometry.raster(window, HighwayGeometry.ROAD_HALF_WIDTH + ROW_MARGIN)) {
+                double local = pixel.sample().station() - plan.stationOffset();
+                if (local < 0 || local > plan.length()) continue;
+                HighwayProfile.Sample sample = profile.sampleAt(local);
+                int x = pixel.x(), z = pixel.z(), y = sample.roadY();
+                row.put(new Key(x, z), new Column(x, z, y));
+                if (Math.abs(pixel.sample().lateral()) > HighwayGeometry.ROAD_HALF_WIDTH) continue;
+                int lateral = geometry.inDetailBand(x, z, 0) ? 0 : pixel.sample().band();
+                cells.add(new Cell(x, z, local, lateral, role(plan.width(), lateral), y, sample.terrainY(), sample.mode(), false));
+                surface.add(new SurfaceKey(x, y, z));
+                if (lateral == 0) { furniture.add(new SurfaceKey(x, y + 1, z)); center.add(new CenterCell(x, z, local)); }
+                if (geometry.outerEdge(x, z)) outer.add(new SurfaceKey(x, y, z));
+                HighwayGeometry.Detail paint = geometry.marking(x, z);
+                int rises = 0;
+                int[][] neighbors = RIBBON_NEIGHBORS;
+                for (int i=0; i<neighbors.length; i++) {
+                    int nx=x+neighbors[i][0], nz=z+neighbors[i][1];
+                    HighwayGeometry.Sample neighbor = geometry.query(nx,nz,HighwayGeometry.ROAD_HALF_WIDTH);
+                    if (neighbor == null) continue;
+                    int neighborY = profile.sampleAt(neighbor.station()-plan.stationOffset()).roadY();
+                    if (neighborY <= y) continue;
+                    if (paint != null && (paint.connections() & (1<<i)) != 0 && neighborY == y+1) rises |= 1<<i;
+                    if (lateral == 0 && geometry.inDetailBand(nx,nz,0)) medianRisers.add(new SurfaceKey(x,y+1,z));
+                    if (geometry.outerEdge(x,z) && geometry.outerEdge(nx,nz)) edgeRisers.add(new SurfaceKey(x,y+1,z));
+                }
+                if (paint != null) markings.add(new RoadMarking(x, y + 1, z, markingType(paint.band()), Direction.NORTH, paint.connections(), rises));
+            }
+        }
+        // Unsupported diagonal structural modes emit NO cells, NO clearance and NO misplaced piers/bores.
+        HighwayTunnelGeometry.Geometry tunnel = HighwayTunnelGeometry.build(plan, profile, List.of(), emptyTunnel);
+        furniture.addAll(medianRisers); furniture.addAll(edgeRisers);
+        return new HighwayCorridor(plan, cells, cells, new ArrayList<>(row.values()), center, emptyTunnel, tunnel,
+                surface, furniture, outer, edgeRisers, medianRisers, markings, List.of(), Set.of(),
+                buildCoreRoadColumns(cells), buildCutColumns(cells, row), List.of(), 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
     public static int laneDividerPhase(double distance) {
@@ -665,6 +721,7 @@ public final class HighwayCorridor {
     }
 
     public HighwayPlan plan() { return plan; }
+    public boolean geometryDeferred() { return plan.geometry() != null && cells.isEmpty(); }
     public List<Cell> cells() { return cells; }
     public List<Cell> bridgeCells() { return bridgeCells; }
     public List<Column> rowEnvelope() { return rowEnvelope; }
@@ -766,7 +823,11 @@ public final class HighwayCorridor {
     public record Cell(int x, int z, double distance, int lateral, Role role, int roadY, int terrainY,
                        HighwayTerrainMode mode, boolean structuralBridge) {}
     public record Column(int x, int z, int roadY) {}
-    public record RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing) {}
+    public record RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing, int connections, int rises) {
+        public RoadMarking(int x, int y, int z, RoadMarkingType type, Direction facing) {
+            this(x, y, z, type, facing, 0, 0);
+        }
+    }
     public record RoadMarkingStepConnector(int x, int y, int z, RoadMarkingType type,
                                            Direction facing, boolean leftSide) {}
     public record CoreRoadColumn(int x, int z, int roadY, HighwayTerrainMode mode,

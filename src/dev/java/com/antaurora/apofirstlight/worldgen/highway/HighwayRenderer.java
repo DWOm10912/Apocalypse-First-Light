@@ -258,6 +258,7 @@ public final class HighwayRenderer {
     private static void runPlacementPasses(WorldGenLevel level, HighwayBlockWriter writer,
                                            HighwayRenderStats stats, HighwayCorridor corridor,
                                            HighwayProfile profile) {
+        if (corridor.plan().geometry() != null && corridor.cells().isEmpty()) return;
         placeRoadStructure(level, writer, stats, corridor);
         placeOuterEdge(level, writer, stats, corridor);
         placeParapetsAndMedian(level, writer, stats, corridor);
@@ -265,7 +266,7 @@ public final class HighwayRenderer {
         placeRoadMarkings(level, writer, stats, corridor);
         placeRoadMarkingStepConnectors(level, writer, stats, corridor);
         placeTunnel(level, writer, stats, corridor);
-        placePiers(level, writer, stats, corridor, profile);
+        if (corridor.plan().geometry() == null) placePiers(level, writer, stats, corridor, profile);
     }
 
     private static void clearCoreRoadVerticalEnvelope(WorldGenLevel level, HighwayBlockWriter edit,
@@ -517,7 +518,9 @@ public final class HighwayRenderer {
             case YELLOW_EDGE -> AflBlocks.EDGE_LANE_YELLOW.get().defaultBlockState();
             case WHITE_LANE_DIVIDER -> AflBlocks.WHITE_LANE_DIVIDER.get().defaultBlockState();
         };
-        return state.setValue(RoadMarkingBlock.FACING, marking.facing());
+        return state.setValue(RoadMarkingBlock.FACING, marking.facing())
+                .setValue(RoadMarkingBlock.CONNECTIONS, marking.connections())
+                .setValue(RoadMarkingBlock.RISES, marking.rises());
     }
 
     private static void placeRoadMarkingStepConnectors(WorldGenLevel level, HighwayBlockWriter edit,

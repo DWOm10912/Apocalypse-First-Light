@@ -1,5 +1,7 @@
 # Highway V2 — Route Graph Phase 1
 
+现行补充：[Phase 2B-1](highway_v2_diagonal_geometry_v1.md) 提供可选POLYLINE surface几何，不修改默认两条主干、交点、端点或ID。自然graph没有实际对角支线，斜向Tunnel/Viaduct未启用；纯几何测试不代表自然路线/实机验收。
+
 状态：Phase 1有限路由已接入。后续 [Phase 2A — Strategic Branch Framework](highway_v2_strategic_branch_phase2a.md) 已增加可选支线数据/API，默认 `build/forSeed` 仍只有原两条主干，无实际支线。下文Phase 1验证记录为历史记录，不代表Phase 2A实机验收。
 
 ## 当前路线真相

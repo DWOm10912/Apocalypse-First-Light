@@ -60,12 +60,17 @@ public record CorridorEngineeringSegment(
         }
         nodes.sort(Comparator.comparing(InterstateInterchangeNode::id));
         HighwayPlan plan = HighwayPlan.linear(start, end, HighwayPlan.MAIN_WIDTH, paddedStart);
+        if (corridor.geometry() != null) plan = HighwayPlan.ribbon(corridor.geometry(), paddedStart,
+                Math.min(paddedEnd, corridor.geometry().length()));
         HighwayNodeConstraints constraints = new HighwayNodeConstraints(corridor.orientation(), nodes);
         NaturalHighwayRuntimeStats.contextBuild(System.nanoTime() - contextStart);
 
         HighwayProfile profile = HighwayProfile.sampleNatural(plan, corridor, terrain, constraints);
         HighwayCorridor engineered = HighwayCorridor.buildNatural(level, plan, profile,
                 corridor.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH));
+        if (engineered.geometryDeferred()) com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.debug(
+                "[AFL HIGHWAY] geometry deferred: edge={} segment={} diagonal structural mode unsupported",
+                corridor.id(), segmentIndex);
         CorridorEngineeringSegment result = new CorridorEngineeringSegment(corridor, segmentIndex,
                 coreStart, coreEnd, plan, List.copyOf(nodes), constraints, profile, engineered);
         NaturalHighwayRuntimeStats.engineeringSegmentBuild(System.nanoTime() - buildStart);

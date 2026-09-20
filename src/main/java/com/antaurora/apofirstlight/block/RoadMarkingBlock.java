@@ -10,11 +10,16 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
+    /** 0 keeps all existing cardinal models. 1..15 are NESW arms; 16 is an isolated ribbon dot. */
+    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 16);
+    public static final IntegerProperty RISES = IntegerProperty.create("rises", 0, 15);
+    private static final VoxelShape[] RIBBON_SHAPES = ribbonShapes();
     public enum MarkingType {
         EDGE,
         DIVIDER
@@ -35,7 +40,7 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
     public RoadMarkingBlock(Properties properties, MarkingType markingType) {
         super(properties);
         this.markingType = markingType;
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(CONNECTIONS, 0).setValue(RISES, 0));
     }
 
     @Override
@@ -45,22 +50,35 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
 
     @Override
     public BlockState rotate(BlockState state, Rotation rotation) {
-        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)))
+                .setValue(CONNECTIONS, transformMask(state.getValue(CONNECTIONS), rotation::rotate))
+                .setValue(RISES, transformMask(state.getValue(RISES), rotation::rotate));
     }
 
     @Override
     public BlockState mirror(BlockState state, Mirror mirror) {
-        return state.rotate(mirror.getRotation(state.getValue(FACING)));
+        return state.setValue(FACING, mirror.mirror(state.getValue(FACING)))
+                .setValue(CONNECTIONS, transformMask(state.getValue(CONNECTIONS), mirror::mirror))
+                .setValue(RISES, transformMask(state.getValue(RISES), mirror::mirror));
     }
 
     @Override
     protected void createBlockStateDefinition(
             StateDefinition.Builder<net.minecraft.world.level.block.Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, CONNECTIONS, RISES);
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        if (state.getValue(CONNECTIONS) != 0) {
+            VoxelShape shape = RIBBON_SHAPES[state.getValue(CONNECTIONS)];
+            int rises = state.getValue(RISES);
+            if ((rises & 1) != 0) shape = Shapes.or(shape, Block.box(7,0,0,9,16,.05));
+            if ((rises & 2) != 0) shape = Shapes.or(shape, Block.box(15.95,0,7,16,16,9));
+            if ((rises & 4) != 0) shape = Shapes.or(shape, Block.box(7,0,15.95,9,16,16));
+            if ((rises & 8) != 0) shape = Shapes.or(shape, Block.box(0,0,7,.05,16,9));
+            return shape;
+        }
         if (markingType == MarkingType.DIVIDER) {
             return switch (state.getValue(FACING)) {
                 case EAST, WEST -> DIVIDER_TURNED_SHAPE;
@@ -94,5 +112,28 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
                 rotated[0], Block.box((1.0 - maxZ) * 16.0, minY * 16.0, minX * 16.0,
                         (1.0 - minZ) * 16.0, maxY * 16.0, maxX * 16.0)));
         return rotated[0];
+    }
+
+    private static int transformMask(int mask, java.util.function.UnaryOperator<Direction> transform) {
+        if (mask == 0 || mask == 16) return mask;
+        Direction[] directions = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+        int result = 0;
+        for (int i = 0; i < 4; i++) if ((mask & (1 << i)) != 0) {
+            Direction rotated = transform.apply(directions[i]);
+            for (int j = 0; j < 4; j++) if (directions[j] == rotated) result |= 1 << j;
+        }
+        return result;
+    }
+    private static VoxelShape[] ribbonShapes() {
+        VoxelShape[] shapes = new VoxelShape[17];
+        for (int mask = 1; mask <= 16; mask++) {
+            VoxelShape shape = Block.box(7, 0, 7, 9, .75, 9);
+            if ((mask & 1) != 0) shape = Shapes.or(shape, Block.box(7, 0, 0, 9, .75, 7));
+            if ((mask & 2) != 0) shape = Shapes.or(shape, Block.box(9, 0, 7, 16, .75, 9));
+            if ((mask & 4) != 0) shape = Shapes.or(shape, Block.box(7, 0, 9, 9, .75, 16));
+            if ((mask & 8) != 0) shape = Shapes.or(shape, Block.box(0, 0, 7, 7, .75, 9));
+            shapes[mask] = shape;
+        }
+        return shapes;
     }
 }

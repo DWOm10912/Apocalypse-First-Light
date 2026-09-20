@@ -15,14 +15,20 @@ public final class HighwayPlan {
     private final int width;
     private final Curve curve;
     private final double stationOffset;
+    private final HighwayGeometry geometry;
 
     private HighwayPlan(List<Point> controlPoints, double length, int width, Curve curve,
                         double stationOffset) {
+        this(controlPoints, length, width, curve, stationOffset, null);
+    }
+    private HighwayPlan(List<Point> controlPoints, double length, int width, Curve curve,
+                        double stationOffset, HighwayGeometry geometry) {
         this.controlPoints = List.copyOf(controlPoints);
         this.length = length;
         this.width = width;
         this.curve = curve;
         this.stationOffset = stationOffset;
+        this.geometry = geometry;
     }
 
     public static HighwayPlan main(BlockPos start, double headingX, double headingZ, int length, long seed) {
@@ -40,6 +46,14 @@ public final class HighwayPlan {
         return linear(start, end, width, 0.0);
     }
 
+    public static HighwayPlan ribbon(HighwayGeometry geometry, double from, double to) {
+        if (from < 0 || to > geometry.length() || from >= to) throw new IllegalArgumentException("Invalid ribbon slice");
+        HighwayGeometry.Point a = geometry.point(from), b = geometry.point(to);
+        return new HighwayPlan(List.of(new Point(a.x(), a.z()), new Point(b.x(), b.z())),
+                to - from, MAIN_WIDTH, Curve.LINEAR, from, geometry);
+    }
+    public HighwayGeometry geometry() { return geometry; }
+
     public static HighwayPlan linear(Point start, Point end, int width, double stationOffset) {
         return new HighwayPlan(List.of(start, end), distance(start, end), width, Curve.LINEAR,
                 stationOffset);
@@ -51,6 +65,10 @@ public final class HighwayPlan {
     }
 
     public Point sample(double distance) {
+        if (geometry != null) {
+            HighwayGeometry.Point p = geometry.point(stationOffset + Math.max(0, Math.min(length, distance)));
+            return new Point(p.x(), p.z());
+        }
         double t = length <= 0.0 ? 0.0 : Math.max(0.0, Math.min(1.0, distance / length));
         return switch (curve) {
             case LINEAR -> lerp(controlPoints.get(0), controlPoints.get(1), t);
@@ -60,6 +78,10 @@ public final class HighwayPlan {
     }
 
     public Tangent tangent(double distance) {
+        if (geometry != null) {
+            HighwayGeometry.Point t = geometry.tangent(stationOffset + distance);
+            return new Tangent(t.x(), t.z());
+        }
         double delta = Math.min(2.0, Math.max(0.25, length / 1000.0));
         Point before = sample(Math.max(0.0, distance - delta));
         Point after = sample(Math.min(length, distance + delta));

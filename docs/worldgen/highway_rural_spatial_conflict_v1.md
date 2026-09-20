@@ -1,5 +1,7 @@
 # Highway ↔ Rural Spatial Conflict V1
 
+Phase 2B-1补充：可选POLYLINE edge的query使用有限patch包络，claim仍是edge.bounds(32)保守整体AABB，可能覆盖转弯内侧空地；实际施工只消费ribbon，不清除整个claim。默认两条主干及Rural冲突算法/优先级/安全距不变。详见[Diagonal Geometry V1](highway_v2_diagonal_geometry_v1.md)。
+
 现行更新：[Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 已将 Highway 与其 claim 同步改为两条有限主干，在第一处宏观海岸前终止，不跨 OPEN_OCEAN；Sea Bridge 未实现。[Phase 2A](highway_v2_strategic_branch_phase2a.md) 增加通用支线API及接收不可变graph的同源claim查询，STRATEGIC_BRANCH复用同一edge.bounds(32)、有限Y与ID规则；默认graph没有支线，原主干claim不变。[Macro Geography V1](terrain_v2_macro_geography_v1.md) 的 Rural MAINLAND/海岸128格缓冲 gate（16格有界探针）保持。Rural planner、建筑、农业与冲突裁决算法未改。
 
 状态：已接入自然 Rural Structure 候选入口；compileJava 离线编译通过。未运行客户端、GameTest、多 seed 回归或性能测试，实机验收由用户完成。
