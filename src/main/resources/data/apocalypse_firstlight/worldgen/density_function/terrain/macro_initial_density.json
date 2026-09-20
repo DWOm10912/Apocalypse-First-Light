@@ -1,0 +1,7 @@
+{
+  "type": "apocalypse_firstlight:macro_terrain",
+  "land": "apocalypse_firstlight:terrain/land_initial_density",
+  "terrain": "apocalypse_firstlight:terrain/ocean_sloped_cheese",
+  "underground": 0,
+  "initial": true
+}

@@ -2,6 +2,10 @@ package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.geography.MacroHeightDensity;
+import com.antaurora.apofirstlight.worldgen.geography.LandTerrainRelief;
+import com.antaurora.apofirstlight.worldgen.geography.LandTerrainBias;
+import com.antaurora.apofirstlight.worldgen.geography.MacroTerrainDensity;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseRouter;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
@@ -20,15 +24,28 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     private long apocalypse$seed;
     @Unique private boolean apocalypse$macroGeography;
 
-    /** Only the explicitly registered macro node is changed; Nether/End routers have no such node. */
+    /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;noiseRouter()Lnet/minecraft/world/level/levelgen/NoiseRouter;"))
     private NoiseRouter apocalypse$bindMacroSeed(NoiseGeneratorSettings owner, NoiseGeneratorSettings settings,
                                                  HolderGetter<NormalNoise.NoiseParameters> noises, long seed) {
+        java.util.Map<LandTerrainRelief, DensityFunction> resolved = new java.util.HashMap<>();
         return owner.noiseRouter().mapAll(function -> {
             if (function instanceof MacroHeightDensity height) {
                 apocalypse$macroGeography = true;
                 return height.withSeed(seed);
+            }
+            if (function instanceof LandTerrainRelief relief) {
+                apocalypse$macroGeography = true;
+                return resolved.computeIfAbsent(relief, recipe -> recipe.resolve(seed));
+            }
+            if (function instanceof LandTerrainBias bias) {
+                apocalypse$macroGeography = true;
+                return bias.withSeed(seed);
+            }
+            if (function instanceof MacroTerrainDensity macro) {
+                apocalypse$macroGeography = true;
+                return macro.withSeed(seed);
             }
             return function;
         });

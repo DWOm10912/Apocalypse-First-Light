@@ -10,5 +10,6 @@
     "noise": "minecraft:jagged",
     "xz_scale": 1500,
     "y_scale": 0
-  }
+  },
+  "initial": true
 }

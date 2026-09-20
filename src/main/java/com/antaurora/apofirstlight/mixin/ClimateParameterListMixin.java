@@ -10,6 +10,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.RandomState;
 import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -33,10 +35,18 @@ public abstract class ClimateParameterListMixin {
             return;
         }
         var biomes=registries.registryOrThrow(Registries.BIOME);
+        // TerraBlender supplies registries/seed, not the world's RandomState here. Bind the SAME
+        // resource graph once per ParameterList with vanilla's wiring, not per biome query.
+        // This creates no level/chunks and avoids a separate approximate surface-height model.
+        var terrainDepth = RandomState.create(
+                registries.registryOrThrow(Registries.NOISE_SETTINGS)
+                        .getHolderOrThrow(NoiseGeneratorSettings.OVERWORLD).value(),
+                registries.registryOrThrow(Registries.NOISE).asLookup(), seed)
+                .router().initialDensityWithoutJaggedness();
         apocalypse$ecology=new StartupEcologyState(seed,biomes.getHolderOrThrow(Biomes.PLAINS),
                 biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS), biomes.getHolderOrThrow(Biomes.OCEAN),
                 biomes.getHolderOrThrow(Biomes.DEEP_OCEAN), biomes.getHolderOrThrow(Biomes.BEACH),
-                MacroGeography.forSeed(seed));
+                MacroGeography.forSeed(seed), terrainDepth);
         var geography = apocalypse$ecology.geography();
         ApocalypseFirstLight.LOGGER.info("[AFL MACRO GEO] version={} seed={} mainlandAxes={}x{} startupReserve={} mainlandCore={} inlandSeaCount={} bayCount={} strategicIslandCount={} foreignLand=false",
                 MacroGeography.VERSION, seed, geography.majorAxis(), geography.minorAxis(),

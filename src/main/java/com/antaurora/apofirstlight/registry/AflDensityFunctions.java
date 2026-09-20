@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.registry;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.geography.MacroHeightDensity;
 import com.antaurora.apofirstlight.worldgen.geography.MacroTerrainDensity;
+import com.antaurora.apofirstlight.worldgen.geography.LandTerrainRelief;
+import com.antaurora.apofirstlight.worldgen.geography.LandTerrainBias;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -16,5 +18,9 @@ public final class AflDensityFunctions {
             TYPES.register("macro_height", () -> MacroHeightDensity.CODEC.codec());
     public static final RegistryObject<Codec<? extends DensityFunction>> MACRO_TERRAIN =
             TYPES.register("macro_terrain", () -> MacroTerrainDensity.CODEC.codec());
+    public static final RegistryObject<Codec<? extends DensityFunction>> LAND_RELIEF =
+            TYPES.register("land_relief", () -> LandTerrainRelief.CODEC.codec());
+    public static final RegistryObject<Codec<? extends DensityFunction>> LAND_BIAS =
+            TYPES.register("land_bias", () -> LandTerrainBias.CODEC.codec());
     private AflDensityFunctions() {}
 }
