@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:plains",
+    "minecraft:beach",
+    "minecraft:ocean",
+    "minecraft:deep_ocean",
+    "apocalypse_firstlight:fallout_barrens",
+    "apocalypse_firstlight:scorched_lands"
+  ]
+}

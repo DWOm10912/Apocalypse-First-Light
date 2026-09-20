@@ -1,6 +1,6 @@
 # Terrain V2 Phase 1 / Macro Geography V1.1
 
-状态：V1.1 宏观拓扑曾由用户完成 3 个随机 seed 的导出验收，`MacroGeography.VERSION = 2` 保持不变。Terrain Relief Tuning V1 与 Vanilla Relief Reintegration 均已被用户实机判定不合格；Parity Audit 将旧实现归为 **C：自定义 density graph 部分复用 Vanilla signals**。当前实现为 **Vanilla Density Mainline Restoration**：LAND 恢复原版密度主链，仅在样条输入层偏置参数。本轮只允许 compileJava/processResources（结果见交付报告），未启动客户端、未生成 chunk、未统计地貌比例；视觉效果与地堡落地仍待用户验收。已有 chunk 不重写，新旧 chunk 的高度接缝不在本轮范围。
+状态：V1.1 宏观拓扑曾由用户完成 3 个随机 seed 的导出验收，`MacroGeography.VERSION = 2` 保持不变。Terrain Relief Tuning V1 与 Vanilla Relief Reintegration 均已被用户实机判定不合格；Parity Audit 将旧实现归为 **C：自定义 density graph 部分复用 Vanilla signals**。当前 **Vanilla Density Mainline Restoration** 的 LAND 密度主链已获用户实机视觉验收，本次 Worldgen Hygiene Fix 不改该主链；地貌面积比例与地堡落地未在本次验证。已有 chunk 不重写，新旧 chunk 的高度接缝不在本次范围。
 
 ## 世界与确定性契约
 
@@ -131,7 +131,7 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 
 地堡32–160主搜索、256备用搜索及埋设检查未改；启动区保护来自平原参数偏置，不保证未经实机验证的地堡落地结果。宏观拓扑类未修改，mainland/island shape/count/size、IDs、384/3800平面范围及300–600桥候选保持；2D导出工具不改，未重新运行导出。`/afl dev macro_geography` 的surfaceHeight仍是旧参考值，不可作为LAND高度验收。
 
-本轮没有处理 Rural、Highway/claims、Vanilla structures/Shipwreck、surface lava lake，也没有实现Sea Bridge、City或Port。
+密度主链恢复时未处理结构与地表熔岩湖；后续 Worldgen Hygiene Fix 已独立补齐指定 Vanilla 结构的禁用 tag，并仅移除当前地表 biome 的自然 surface lava lake。Rural、Highway/claims、Sea Bridge、City、Port 不属于此修复。
 
 ## Biome、出生生态与保水
 
@@ -145,6 +145,14 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 - `NoiseChunkScorchedAquiferMixin` 显式跳过宏观水域与48格干岸带，再执行原Scorched近地表12格水抑制。不依赖generated block scan。
 
 所有主岛/水体surface查询与密度使用同一seed计划；高度查询仍通过生成器原API，适用于Rural/Highway的noise-time采样。
+
+### Worldgen Hygiene Fix：结构权限与地表熔岩湖
+
+真实 `minecraft:ocean`、`minecraft:deep_ocean`、`minecraft:beach` biome 继续由宏观地理规则返回；biome 语义与 Vanilla structure 许可独立。`src/main/resources/data/minecraft/tags/worldgen/biome/has_structure/` 现在以 `replace: true, values: []` 显式清空 `shipwreck`、`shipwreck_beached`、`ocean_ruin_cold`、`ocean_ruin_warm`、`buried_treasure` 五个原版 tag。之前已有的 Ocean Monument 等空 tag 与 stronghold 的 structure set 禁用保持不变；AFL Rural 使用自己的 `apocalypse_firstlight:has_structure/rural`，不受这些 Vanilla tag 影响。
+
+`src/main/resources/data/apocalypse_firstlight/tags/worldgen/biome/surface_lava_suppression.json` 精确列出当前可返回、需要禁止自然地表熔岩湖的 `minecraft:plains`、`minecraft:beach`、`minecraft:ocean`、`minecraft:deep_ocean`、`apocalypse_firstlight:fallout_barrens`、`apocalypse_firstlight:scorched_lands`。`src/main/resources/data/apocalypse_firstlight/forge/biome_modifier/remove_surface_lava_lakes.json` 使用 `forge:remove_features`，仅从 `lakes` 步骤移除 `minecraft:lake_lava_surface`。原先只作用 Scorched Lands、且仅移除同一特征的 `scorched_lands_remove_surface_liquids.json` 已由统一规则替代。`minecraft:lake_lava_underground`、`minecraft:spring_lava`、共用的 `minecraft:lake_lava` configured feature、lava aquifer、其他湖泊与海水仍保留。此规则只覆盖列出的当前 AFL 地表 biome，不声称涵盖未来第三方新增 biome。
+
+本次只有 worldgen 资源与本文档变更；Terrain V2 density、Macro Geography、Highway、Rural 均未修改。资源处理结果见交付报告；未做新世界/多 seed 实机回归，因此不宣称已目测消除旧区块的沉船或熔岩湖。
 
 ## Rural / Highway边界
 

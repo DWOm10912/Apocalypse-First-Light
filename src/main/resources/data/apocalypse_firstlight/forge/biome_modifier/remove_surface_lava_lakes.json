@@ -1,6 +1,6 @@
 {
   "type": "forge:remove_features",
-  "biomes": "apocalypse_firstlight:scorched_lands",
+  "biomes": "#apocalypse_firstlight:surface_lava_suppression",
   "features": [
     "minecraft:lake_lava_surface"
   ],
