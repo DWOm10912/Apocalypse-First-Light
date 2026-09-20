@@ -314,7 +314,9 @@ public final class AflNetwork {
         if (channel == null) {
             throw new IllegalStateException("AFL network channel was not registered during mod initialization");
         }
-        channel.sendTo(new ExplosionTinnitusS2CPacket(severity, player.getId(),
+        float effectiveSeverity = com.antaurora.apofirstlight.equipment.HearingProtectionManager
+                .effectiveTinnitusSeverity(player, severity);
+        channel.sendTo(new ExplosionTinnitusS2CPacket(effectiveSeverity, player.getId(),
                         player.level().dimension().location()), player.connection.connection,
                 net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }

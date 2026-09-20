@@ -171,6 +171,14 @@ public final class AflCreativeTabs {
                     })
                     .build());
 
+    public static final RegistryObject<CreativeModeTab> EQUIPMENT = CREATIVE_MODE_TABS.register("equipment", () ->
+            CreativeModeTab.builder()
+                    .withTabsBefore(WEAPONS_AND_AMMUNITION.getId())
+                    .icon(() -> new ItemStack(AflItems.SIMPLE_HEARING_PROTECTION.get()))
+                    .title(Component.translatable("itemGroup.apocalypse_firstlight.equipment"))
+                    .displayItems((parameters, output) -> output.accept(AflItems.SIMPLE_HEARING_PROTECTION.get()))
+                    .build());
+
     private AflCreativeTabs() {
     }
 }

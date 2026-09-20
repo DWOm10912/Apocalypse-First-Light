@@ -23,6 +23,8 @@
 
 ## 数据与边界
 
+简易隔音耳罩 V1 采用三行简洁提示：复用 `AflEquipmentTooltip.addDescription` 的灰色非斜体介绍，再显示灰色“降低外界声音 / 减轻耳鸣”。Tooltip 不公开精确倍率；没有新增全局属性颜色，也没有改动武器/配件的固定配色。物品与防护行为见 [简易隔音耳罩 V1](../equipment/simple_hearing_protection_v1.md)。
+
 消音器按 `(multiplier - 1) × 100` 显示带符号百分比：0.05 → -95%，0.20 → -80%。这是 gameplay noise 范围，不是音量或音频衰减。枪械显示最终范围：P9 64→3，BR51 112→6。
 
 弹匣从 `NativeMagazineItem.compatibleGun()` 查询 live `NativeGunData` 默认容量，从附件 `capacity()` 获取装备容量，得到 17→24 或 20→35。当前弹匣定义是一枪专用；未来多枪兼容须扩展正式兼容数据和行生成，不按枪名猜容量。属性生成返回 Stat 列表，一个附件可追加多个不同类别，formatter 不限制为单行。

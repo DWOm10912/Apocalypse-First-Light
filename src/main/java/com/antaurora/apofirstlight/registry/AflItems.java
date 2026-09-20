@@ -19,6 +19,9 @@ import net.minecraftforge.registries.RegistryObject;
 public final class AflItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, ApocalypseFirstLight.MOD_ID);
 
+    public static final RegistryObject<Item> SIMPLE_HEARING_PROTECTION = ITEMS.register("simple_hearing_protection",
+            com.antaurora.apofirstlight.item.SimpleHearingProtectionItem::new);
+
     public static final RegistryObject<Item> P9_01 = ITEMS.register("p9_01",
             com.antaurora.apofirstlight.weapon.P901Item::new);
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
