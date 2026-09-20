@@ -2,7 +2,7 @@
 
 > 协议更新（FireMode V1）：当前共享通道为 **28**，新增扳机按下/松开和模式循环请求，客户端/服务端须匹配。配件仍仅通过维护台安装，V 用于检视，B 切换开火模式。详见 [Playbook 第 19 节](native_weapon_integration_playbook_v1.md)。
 
-物品 Tooltip 的正式显示规则见 [Tooltip Cleanup V1](native_gun_attachment_tooltip_cleanup_v1.md)：普通 Tooltip 仅显示静态规格与一句描述，不显示实时弹匣余量；数据中的真实容量及持枪 HUD 行为不变。
+物品 Tooltip 的正式显示规则见 [Tooltip V2.2](../ui/equipment_tooltip_v1.md)：普通枪械悬停显示短介绍、图形弹药、基础伤害、当前开火方式与真实声音半径，不显示容量、射程或实时弹匣余量；底层 JSON 数据和持枪 HUD 行为不变。
 
 ## 文件与真值源
 

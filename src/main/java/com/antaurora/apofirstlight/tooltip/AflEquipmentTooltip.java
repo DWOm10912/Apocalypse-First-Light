@@ -4,7 +4,6 @@ import com.antaurora.apofirstlight.weapon.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
 import static com.antaurora.apofirstlight.tooltip.AflTooltipStatType.*;
 
@@ -15,10 +14,6 @@ public final class AflEquipmentTooltip {
     public static String number(double value){return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();}
     public static String percentChange(double multiplier){double value=(multiplier-1)*100;return (value>0?"+":"")+number(value)+"%";}
     private static Component value(String key,Object... args){return Component.translatable("tooltip.apocalypse_firstlight.value."+key,args);}
-    private static Component weaponType(NativeGunDefinition definition){
-        return Component.translatable("tooltip.apocalypse_firstlight.value.weapon_class."
-                +definition.weaponClass().name().toLowerCase(Locale.ROOT));
-    }
     public static void addDescription(List<Component> lines,String key){
         lines.add(Component.translatable(key).withStyle(net.minecraft.ChatFormatting.GRAY).withStyle(s->s.withItalic(false)));
     }
@@ -32,13 +27,9 @@ public final class AflEquipmentTooltip {
         lines.add(label);
     }
     public static List<Stat> gunStats(ItemStack stack,NativeGunDefinition d){
-        var ammo=ForgeRegistries.ITEMS.getValue(d.ammoType());
-        String caliberKey=ammo.getDescriptionId()+".caliber";
-        Component caliber=net.minecraft.locale.Language.getInstance().has(caliberKey)?Component.translatable(caliberKey):ammo.getDescription();
-        return List.of(new Stat(WEAPON_TYPE,weaponType(d)),new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
-                new Stat(AMMUNITION,caliber),new Stat(MAGAZINE,value("rounds",NativeGunAmmo.capacity(stack,d))),
-                new Stat(FIRE_MODE,Component.translatable("fire_mode.apocalypse_firstlight."+com.antaurora.apofirstlight.weapon.NativeFireModes.current(stack,d).key())),new Stat(RANGE,value("blocks",number(d.effectiveRange()))),
-                new Stat(NOISE,value("ai_noise",number(NativeGunNoise.resolve(stack,d).radius()))));
+        return List.of(new Stat(DAMAGE,Component.literal(number(d.baseDamage()))),
+                new Stat(FIRE_MODE,Component.translatable("fire_mode.apocalypse_firstlight."+NativeFireModes.current(stack,d).key())),
+                new Stat(SOUND_RADIUS,value("noise_radius",number(NativeGunNoise.resolve(stack,d).radius()))));
     }
     public static List<Stat> attachmentModifiers(ItemStack stack){
         var result=new ArrayList<Stat>();
@@ -54,7 +45,11 @@ public final class AflEquipmentTooltip {
     public static void addGunStats(List<Component> lines,ItemStack stack,NativeGunDefinition definition){for(var stat:gunStats(stack,definition))addStat(lines,stat);}
     public static void addAttachmentModifiers(List<Component> lines,ItemStack stack){for(var stat:attachmentModifiers(stack))addStat(lines,stat);}
     public static void gun(List<Component> lines,ItemStack stack,NativeGunDefinition definition,String description){
-        addDescription(lines,description);addSeparator(lines);addGunStats(lines,stack,definition);addSeparator(lines);
+        addDescription(lines,description);
+        // A readable text fallback for callers that do not use Forge's component gathering hook.
+        lines.add(Component.translatable(GunAmmoTooltipComponent.ROW_KEY,
+                GunAmmoTooltipComponent.resolve(definition).ammoName()));
+        addGunStats(lines,stack,definition);
     }
     public static void attachment(List<Component> lines,ItemStack stack,String description){
         addDescription(lines,description);addSeparator(lines);addAttachmentModifiers(lines,stack);addSeparator(lines);

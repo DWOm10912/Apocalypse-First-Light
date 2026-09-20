@@ -8,7 +8,7 @@
 - `item/SimpleHearingProtectionItem.java` 是 `Item implements Equipable, HearingProtection`，不是 `ArmorItem`。
 - 原版 `EquipmentSlot.HEAD`，堆叠 1，无耐久、护甲、韧性、击退抗性。与头盔互斥，不使用 Curios。
 - 右键调用 1.20.1 `Equipable.swapWithEquipmentSlot`，遵循原版交换与绑定诅咒规则；可从头部装备栏取下。装备音为 `minecraft:item.armor.equip_leather`。
-- Tooltip 使用现有灰色、非斜体介绍风格，显示短介绍及“降低外界声音 / 减轻耳鸣”两行功能；不公开精确百分比，不更改武器属性颜色。
+- Tooltip 仅显示灰色、非斜体介绍；中英文介绍均写明缓解耳鸣和降低外界声音，不再重复追加功能行。不公开精确百分比，不更改武器属性颜色。
 
 ## 已验收资产与运行时模型
 
@@ -72,7 +72,7 @@ I = `minecraft:iron_ingot`，L = `minecraft:leather`，W = `minecraft:wool` item
 
 独立创造页 Registry `apocalypse_firstlight:equipment`，中文精确为 **黎明启示录 装备**，英文 `Apocalypse: First Light Equipment`。图标和当前唯一条目均为耳罩。通过 Forge `withTabsBefore(WEAPONS_AND_AMMUNITION.getId())` 让武器页位于装备页之前；不移动、重排武器页条目。
 
-`en_us.json` / `zh_cn.json` 包含 item、itemGroup 和三条 `tooltip.apocalypse_firstlight.simple_hearing_protection.*` 键；本轮仅调整三条 Tooltip 文本。
+`en_us.json` / `zh_cn.json` 包含 item、itemGroup 和一条 `tooltip.apocalypse_firstlight.simple_hearing_protection.description` 键；不再保留重复的 `world_sound` / `hearing_impact` 功能行键。
 
 ## 验证边界
 

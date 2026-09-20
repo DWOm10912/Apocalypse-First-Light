@@ -27,7 +27,7 @@ Status: implemented; user accepted mounted fit and requested ending the task. Ve
 - Standard capacity 17, equipped capacity 24. Installing preserves existing rounds; reload/consumption/HUD use attachment-aware capacity.
 - Removal retains at most 17 rounds and returns excess ammunition plus the removed attachment to inventory, dropping overflow when full. Transaction snapshots reject stale/repeated operations and roll back inventory if a required drop fails.
 - Maintenance magazine hotspot supports installation/removal using existing timed operation and SFX. All player attachment changes require the maintenance bench; the V shortcut is removed.
-- Unified equipment tooltip shows a non-italic description and Magazine 17 → 24 modifier; the gun's dynamic magazine stat follows its actual attachment. See [Equipment Tooltip V1](../ui/equipment_tooltip_v1.md). No new damage, recoil, range, audio or animations.
+- The attachment tooltip retains its non-italic description and Magazine 17 → 24 modifier. The gun's ordinary Tooltip V2 no longer displays capacity; actual attachment capacity and reload behavior remain unchanged. See [Equipment Tooltip / Gun V2](../ui/equipment_tooltip_v1.md).
 - Current network protocol 22; matching client/server builds required. Earlier protocol-21 shot behavior remains intact.
 
 ## Model

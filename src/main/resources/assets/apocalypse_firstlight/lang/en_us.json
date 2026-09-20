@@ -168,9 +168,7 @@
   "item.apocalypse_firstlight.plastic_sheet": "Plastic Sheet",
   "item.apocalypse_firstlight.geiger_counter": "Geiger Counter",
   "item.apocalypse_firstlight.simple_hearing_protection": "Simple Hearing Protection",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "Improvised hearing protection made from simple materials.",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.world_sound": "Reduces outside sound",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.hearing_impact": "Reduces tinnitus",
+  "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "Temporary earmuffs made of simple materials can significantly relieve tinnitus and reduce external sounds.",
 
   "tooltip.apocalypse_firstlight.stat.weapon_type": "Weapon Type",
   "tooltip.apocalypse_firstlight.stat.damage": "Damage",
@@ -180,6 +178,9 @@
   "tooltip.apocalypse_firstlight.stat.range": "Range",
   "tooltip.apocalypse_firstlight.stat.noise": "Noise",
   "tooltip.apocalypse_firstlight.stat.separator": ": ",
+  "tooltip.apocalypse_firstlight.stat.sound_radius": "Sound Radius",
+  "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",
+  "tooltip.apocalypse_firstlight.unknown_ammunition": "Unknown ammunition",
   "tooltip.apocalypse_firstlight.value.weapon_class.pistol": "Pistol",
   "tooltip.apocalypse_firstlight.value.weapon_class.rifle": "Rifle",
   "tooltip.apocalypse_firstlight.value.weapon_class.precision_rifle": "Precision Rifle",
@@ -191,6 +192,7 @@
   "tooltip.apocalypse_firstlight.value.rounds": "%s Rounds",
   "tooltip.apocalypse_firstlight.value.blocks": "%s blocks",
   "tooltip.apocalypse_firstlight.value.ai_noise": "%s blocks",
+  "tooltip.apocalypse_firstlight.value.noise_radius": "%s blocks",
   "tooltip.apocalypse_firstlight.value.red_dot": "Red Dot",
 
   "tooltip.apocalypse_firstlight.br51_extended_magazine_35.description": "A 35-round extended magazine designed for the BR-51, significantly increasing sustained fire capability.",
@@ -353,5 +355,5 @@
 
   "hint.apocalypse_firstlight.break_glass": "Break glass",
   "item.apocalypse_firstlight.cat": "C.A.T",
-  "tooltip.apocalypse_firstlight.cat.description": "An unusually quiet special rifle with extremely low recoil."
+  "tooltip.apocalypse_firstlight.cat.description": "Please do not ask how it works...."
 }

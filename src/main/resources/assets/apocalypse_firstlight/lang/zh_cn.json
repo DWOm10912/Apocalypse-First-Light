@@ -168,18 +168,19 @@
   "item.apocalypse_firstlight.plastic_sheet": "塑料板",
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
   "item.apocalypse_firstlight.simple_hearing_protection": "简易隔音耳罩",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "用简易材料制成的临时耳罩，能够显著缓解耳鸣，并降低外界声音。",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.world_sound": "降低外界声音",
-  "tooltip.apocalypse_firstlight.simple_hearing_protection.hearing_impact": "减轻耳鸣",
+  "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "用简易材料制成的临时耳罩，能够显著缓解耳鸣，并降低外界声音",
 
   "tooltip.apocalypse_firstlight.stat.weapon_type": "武器类型",
   "tooltip.apocalypse_firstlight.stat.damage": "枪械伤害",
   "tooltip.apocalypse_firstlight.stat.ammunition": "弹药类型",
   "tooltip.apocalypse_firstlight.stat.magazine": "弹匣容量",
-  "tooltip.apocalypse_firstlight.stat.fire_mode": "射击模式",
+  "tooltip.apocalypse_firstlight.stat.fire_mode": "开火方式",
   "tooltip.apocalypse_firstlight.stat.range": "射程",
   "tooltip.apocalypse_firstlight.stat.noise": "噪声",
   "tooltip.apocalypse_firstlight.stat.separator": "：",
+  "tooltip.apocalypse_firstlight.stat.sound_radius": "声音半径",
+  "tooltip.apocalypse_firstlight.gun_ammo_row": "%s",
+  "tooltip.apocalypse_firstlight.unknown_ammunition": "未知弹药",
   "tooltip.apocalypse_firstlight.value.weapon_class.pistol": "手枪",
   "tooltip.apocalypse_firstlight.value.weapon_class.rifle": "步枪",
   "tooltip.apocalypse_firstlight.value.weapon_class.precision_rifle": "精确步枪",
@@ -191,6 +192,7 @@
   "tooltip.apocalypse_firstlight.value.rounds": "%s发",
   "tooltip.apocalypse_firstlight.value.blocks": "%s 格",
   "tooltip.apocalypse_firstlight.value.ai_noise": "%s 格",
+  "tooltip.apocalypse_firstlight.value.noise_radius": "%s格",
   "tooltip.apocalypse_firstlight.value.red_dot": "红点瞄具",
 
   "tooltip.apocalypse_firstlight.br51_extended_magazine_35.description": "一款为BR-51设计的35发扩容弹匣，可显著提升持续交火能力",
@@ -353,5 +355,5 @@
 
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
   "item.apocalypse_firstlight.cat": "C.A.T",
-  "tooltip.apocalypse_firstlight.cat.description": "一把异常安静、后坐力极低的特殊步枪"
+  "tooltip.apocalypse_firstlight.cat.description": "请不要询问它的工作原理..."
 }

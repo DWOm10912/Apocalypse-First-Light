@@ -226,7 +226,7 @@ assets/apocalypse_firstlight/lang/{zh_cn,en_us}.json 添加 item.<modid>.<weapon
 
 新口径添加 item.<modid>.<ammo>.caliber；否则 Tooltip 回退到弹药物品名。
 
-AflEquipmentTooltip.gunStats 当前固定显示：基础伤害、弹药口径、有效容量、射击模式、effective_range、附件修正后的 AI Noise 半径。若 Tooltip 显示“武器类型”，必须直接读取 live WeaponClass，不得按 weapon ID 推断。
+AflEquipmentTooltip.gunStats 当前仅显示基础伤害、当前开火方式、附件修正后的真实声音半径；弹药由 GunAmmoTooltipComponent / ClientGunAmmoTooltipComponent 渲染真实 ammo ItemStack GUI 模型与 caliber 名称。完整顺序为原版名称、原始短介绍、无槽位背景的弹药组件、三条属性，以少量纵向留白分层，不画横向分割线；Subtitle 不再预拆行，由原版按屏幕边界自然换行。见 [Tooltip V2.2](../ui/equipment_tooltip_v1.md)。不显示武器类型、容量或射程。
 
 Tooltip 不显示实时装弹数，也不显示 recoil；颜色由 AflTooltipStatType 固定。
 
@@ -338,7 +338,7 @@ NativeFireProfile 解析有序 modes、default_mode、burst_count（默认 3，�
 
 hitscan 从服务端眼位与 look vector 出发，使用 NativeStanceAccuracy 后的散布，射程为 max_range。
 
-effective_range 目前只用于 Tooltip；真实伤害衰减从 falloff_start 线性到 max_range 的 min_damage_multiplier。
+effective_range 保留在底层数据，普通 Tooltip V2 不再显示；真实伤害衰减从 falloff_start 线性到 max_range 的 min_damage_multiplier。
 
 爆头仅对全局配置 allow-list 精确实体 ID 生效；倍率来自 NativeHeadshots Forge config，默认 1.5，不在单枪 JSON。
 
@@ -551,7 +551,7 @@ Creative 的 reserve 为无限，reload 直接填满且不需要库存子弹。
 
 空仓左键只播放当前通用 Native Gun dry-fire / 数据化 fallback，6 tick 防刷；不触发 shoot、伤害、Noise 或抛壳。不得把未知枪回退到 P9 专属语义。
 
-HUD 当前显示“当前装弹 | 备弹 当前模式”；Tooltip 显示容量与当前模式。
+HUD 显示当前装弹、备弹与当前模式；Tooltip V2 显示当前开火方式，不再显示容量。
 
 弹匣附件通过 NativeMagazineItem.capacity() 改变有效容量；更换小容量弹匣时，维护台事务把超额弹药退回玩家库存/掉落，失败则回滚。
 
@@ -832,7 +832,7 @@ Registry 正常；Creative Tab 正常
 
 zh_cn / en_us 名称、描述、口径正常
 
-Tooltip 的 damage/ammo/capacity/mode/range/noise 与 live data 一致
+Tooltip 的 damage/ammo/mode/声音半径与 live data 一致；容量和射程不在普通 Tooltip 中显示
 
 Rendering
 
@@ -860,7 +860,7 @@ fire mode 正确；半自动按住不自动连发
 
 shot interval/RPM；damage/headshot；spread/stance recovery
 
-falloff start/max/min multiplier；effective range Tooltip 语义
+falloff start/max/min multiplier；effective range 保留数据但不在普通 Tooltip 中显示
 
 recoil camera/model 与恢复；sprint 可开火但不能 ADS 的当前规则
 

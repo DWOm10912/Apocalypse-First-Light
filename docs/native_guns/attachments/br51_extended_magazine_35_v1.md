@@ -39,4 +39,4 @@
 
 打包记录：`build/br51-mag35-build.log`。不改 BR51 原 source / runtime 基础 geo / 动画文件；新独立贴图与原图逐字节相同。无新方块，不涉及挖掘工具/掉落等级变更。
 
-HUD 后续修正：恢复全枪统一单行“当前装弹 | 备弹”，移除 show_capacity 配置与分行分支；BR51 枪械 Tooltip 规格改为本地化容量参数（20/35）。未修改 NativeGunAmmo、换弹或溢出事务。修正构建记录 `build/br51-hud-single-line-build.log`；此前截图的两行 HUD 已过时，本次未重新启动图形客户端验收。
+历史 HUD 修正：当时恢复全枪统一单行“当前装弹 | 备弹”，移除 show_capacity 配置与分行分支，并将 BR51 枪械 Tooltip 规格改为本地化容量参数（20/35）。此为旧版记录；现行 [Tooltip V2](../../ui/equipment_tooltip_v1.md) 已不显示枪械容量，附件修改项与实际容量/换弹事务保持不变。历史构建记录 `build/br51-hud-single-line-build.log` 不代表 V2 实机验收。
