@@ -18,13 +18,17 @@ public final class ExplosionTinnitusSound extends AbstractTickableSoundInstance 
         relative = true;
         attenuation = SoundInstance.Attenuation.NONE;
         pitch = 1.0F;
-        volume = envelope.volume();
+        volume = currentVolume();
     }
 
     @Override
     public void tick() {
-        volume = envelope.volume();
+        volume = currentVolume();
         if (!envelope.active()) stopNow();
+    }
+
+    private float currentVolume() {
+        return envelope.volume() * HearingProtectionAudio.tinnitusVolumeMultiplier();
     }
 
     public void stopNow() {

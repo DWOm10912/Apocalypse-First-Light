@@ -18,6 +18,10 @@ public final class HearingProtectionAudio {
         return HearingProtectionManager.getWorldSoundMultiplier(Minecraft.getInstance().player);
     }
 
+    public static float tinnitusVolumeMultiplier() {
+        return HearingProtectionManager.getImpulseProtectionMultiplier(Minecraft.getInstance().player);
+    }
+
     public static boolean isWorldSound(SoundInstance sound) {
         SoundSource source = sound.getSource();
         if (source == SoundSource.MUSIC || source == SoundSource.RECORDS

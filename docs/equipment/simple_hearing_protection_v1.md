@@ -1,6 +1,6 @@
 # 简易隔音耳罩 V1 / Simple Hearing Protection
 
-状态：已接入代码与资源；用户已验收 HEAD 装备/渲染及世界声音衰减。本轮 Tooltip 与耳鸣强度调整尚未实机验证；不运行客户端、GameTest 或截图。
+状态：已接入代码与资源；用户已验收 HEAD 装备/渲染及世界声音衰减。耳鸣 severity 衰减和本轮新增的播放音量减半尚未实机听感验收；不运行客户端、GameTest 或截图。
 
 ## 物品与装备
 
@@ -43,7 +43,7 @@ Forge `PlaySoundEvent` 只能替换播放实例，不能统一覆盖最终音量
 - `tickNonPaused` 检测 HEAD 防护倍率变化时，重新计算现有 world channels 的音量，使非 ticking/streaming 长声音也在戴上/摘下后恢复。不会基于已减半 gain 再乘；不修改 Options/sliders。
 - BLOCKS、HOSTILE、NEUTRAL、PLAYERS、WEATHER、AMBIENT、走 Minecraft SoundEngine 的空间 VOICE，以及空间 MASTER 声音均适用。
 - MUSIC、RECORDS、`minecraft:ui.*`、relative + attenuation NONE 的 UI/local feedback 不适用。**AMBIENT 是 relative/NONE 的例外**：原版 `forLocalAmbience` 同样使用它，属于世界环境听觉。
-- `ExplosionTinnitusSound` 及 `apocalypse_firstlight:explosion_tinnitus` 显式排除，避免内部耳鸣再次减半。
+- `ExplosionTinnitusSound` 及 `apocalypse_firstlight:explosion_tinnitus` 显式排除世界声音过滤；耳鸣音效在自身播放实例内单独应用 HEAD 耳鸣防护音量倍率。
 - 非空间 VOICE 或第三方绕过 Minecraft SoundEngine 的语音不承诺覆盖；不拦截第三方独立音频引擎。
 
 只改变当前客户端听者的最终音量。不修改 SoundEvent、服务端广播、其他玩家音量、AI hearing、Noise System 或枪声传播半径。
@@ -54,7 +54,7 @@ Forge `PlaySoundEvent` 只能替换播放实例，不能统一覆盖最终音量
 
 - `GunshotExposureTracker.accumulateListeners`：每发 exposure 保持原值进入 `GunshotExposureAccumulator.recordShot`，积累/阈值行为不受耳罩改变；原来不参与枪声耳鸣的枪仍不参与。输出 raw severity 后才在共用发送入口乘 0.50。
 - `ExplosionTinnitusEvents.onDetonate`：既有 `n²` raw severity 保持原值用于触发判定，再由共用发送入口乘 0.50；没有新增爆炸检测或伤害机制。
-- 客户端 episode/envelope 从 packet 中的 effective severity 派生耳鸣音量、时长和已有视觉反馈，不再次乘倍率。由于初始音量常数项、持续时间公式及客户端阈值仍存在，最终音量/时长不等同于恒定减半；防护针对的是 severity 标量。
+- 客户端 episode/envelope 从 packet 中的 effective severity 派生耳鸣基础音量、时长和已有视觉反馈；`ExplosionTinnitusSound` 在初次播放及每次 tick 将基础音量另乘当前 HEAD 的 `impulseProtectionMultiplier`（简易耳罩 0.50）。因此戴耳罩时实际耳鸣播放音量是原有受保护音量的 50%；与不戴耳罩相比，因 severity 本身也减半，降低幅度通常超过 50%。持续时间、触发阈值及视觉反馈仍按 effective severity 计算；世界声音过滤不再对耳鸣重复作用。中途戴上或摘下耳罩时，播放音量随客户端 HEAD 状态更新。
 - `ExplosionTinnitusOverlay` 属于耳鸣状态包驱动的听觉冲击视觉反馈（枪声也使用该包），不是独立的物理震荡系统，因此跟随 effective severity。既有视觉强度为 `sqrt(0.50 × n²)`；未改变爆炸物理伤害或击退。
 - 未来 HEAD 防护物品可使用更低的 `impulseProtectionMultiplier`（如军用电子耳罩的设计目标 0.05–0.10），本轮未实现该物品；已移除旧 exposure 侧倍率，避免重复削弱。
 
@@ -76,7 +76,7 @@ I = `minecraft:iron_ingot`，L = `minecraft:leather`，W = `minecraft:wool` item
 
 ## 验证边界
 
-上一轮 `compileJava`、`processResources` 均通过；本轮 Tooltip/耳鸣改动的编译与资源处理结果见本轮执行报告。
+本轮新增耳鸣播放音量倍率后，`compileJava --offline` 通过；未运行 `processResources`（未改资源）。
 
 静态核对通过：126 个元素及全部 UV/display 与源 JSON 数据相等；PNG SHA-256 为 `A8F923B47CC56E4564F106A7B7FBA27E521DFB20887F1AB568D8D95F872C9247`，与验收 PNG 一致；源 bbmodel SHA-256 为 `8FFD908704E4BF78FCC3C072A82ABDE6D2036301C31FC89FAFA99A7EB8893626`，本轮未改。en_us/zh_cn JSON 可解析，diff whitespace 检查通过。common Item/manager 无 client 引用，模型注册及 Mixin 均仅客户端。
-本轮不执行 runClient、clean、GameTest、截图、展示渲染、commit/push；新的耳鸣强度/Tooltip 效果仍需用户实机验收。
+本轮不执行 runClient、clean、GameTest、截图、展示渲染、commit/push；新增耳鸣播放音量倍率仍需用户实机听感验收。
