@@ -24,16 +24,20 @@ public record LandTerrainRelief(DensityFunction continents, DensityFunction eros
                     Codec.BOOL.optionalFieldOf("initial", false).forGetter(LandTerrainRelief::initial)
             ).apply(instance, LandTerrainRelief::new)));
 
-    /** Mirrors NoiseRouterData.registerTerrainNoises/overworld, with only C/E inputs replaced. */
+    /** Mirrors vanilla terrain operators with plains-heavy C/E and a separate inland offset. */
     public DensityFunction resolve(long seed) {
         var geography = MacroGeography.forSeed(seed);
         var c = coordinate(new LandTerrainBias(continents, erosion, true, geography));
         var e = coordinate(new LandTerrainBias(continents, erosion, false, geography));
         var r = coordinate(ridges);
         var folded = coordinate(foldedRidges);
-        DensityFunction offset = splineWithBlending(DensityFunctions.add(
+        DensityFunction terrainOffset = DensityFunctions.add(
                 DensityFunctions.constant((double) -0.50375F),
-                DensityFunctions.spline(TerrainProvider.overworldOffset(c, e, folded, false))),
+                DensityFunctions.spline(TerrainProvider.overworldOffset(c, e, folded, false)));
+        // Shift depth's zero crossing without changing factor, jaggedness, or relief gates.
+        // Both initial and final terrain use this same offset, including vanilla blending/cache.
+        DensityFunction offset = splineWithBlending(DensityFunctions.add(
+                terrainOffset, new InlandElevationBias(geography)),
                 DensityFunctions.blendOffset());
         DensityFunction factor = splineWithBlending(DensityFunctions.spline(
                 TerrainProvider.overworldFactor(c, e, r, folded, false)), DensityFunctions.constant(10));

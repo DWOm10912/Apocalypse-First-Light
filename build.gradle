@@ -224,11 +224,6 @@ dependencies {
         runtimeOnly fg.deobf(
                 "curse.maven:oculus-581495:${oculus_file_id}"
         )
-
-        // Development-client LOD inspection only; never bundled or declared as an AFL prerequisite.
-        runtimeOnly fg.deobf(
-                "curse.maven:distant-horizons-508933:${distant_horizons_file_id}"
-        )
     }
 
     // Optional comparison mod only.

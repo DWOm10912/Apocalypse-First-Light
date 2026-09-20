@@ -1,6 +1,6 @@
 # Terrain V2 Phase 1 / Macro Geography V1.1
 
-状态：V1.1 宏观拓扑曾由用户完成 3 个随机 seed 的导出验收，`MacroGeography.VERSION = 2` 保持不变。Terrain Relief Tuning V1 与 Vanilla Relief Reintegration 均已被用户实机判定不合格；Parity Audit 将旧实现归为 **C：自定义 density graph 部分复用 Vanilla signals**。当前 **Vanilla Density Mainline Restoration** 的 LAND 密度主链已获用户实机视觉验收，本次 Worldgen Hygiene Fix 不改该主链；地貌面积比例与地堡落地未在本次验证。已有 chunk 不重写，新旧 chunk 的高度接缝不在本次范围。
+状态：V1.1 宏观拓扑曾由用户完成 3 个随机 seed 的导出验收，`MacroGeography.VERSION = 2` 保持不变。Terrain Relief Tuning V1 与 Vanilla Relief Reintegration 均已被用户实机判定不合格；Parity Audit 将旧实现归为 **C：自定义 density graph 部分复用 Vanilla signals**。**Vanilla Density Mainline Restoration** 的 LAND 密度主链已获用户实机视觉验收。当前 **Continuous Inland Elevation Bias** 在保留该主链及 operator 顺序的基础上，将平均高程偏置与 plains-heavy C/E 分布分开；旧 Inland Elevation Rebalance 的低 erosion 抬升方案已退出。新偏置的实际水面比例、地貌观感、地堡落地及 Highway 适应性待用户新世界验收。已有 chunk 不重写，新旧 chunk 的高度接缝不在本次范围。
 
 ## 世界与确定性契约
 
@@ -39,7 +39,7 @@ V1.1 只有一个 `MAIN_NATION`：一个连通 MAINLAND，加 1–3 个同国 SA
 
 继续使用 `NoiseBasedChunkGenerator`，海平面 **Y=63**，高度范围仍为 -64 到319。
 
-注册四个 DensityFunction codec：`apocalypse_firstlight:macro_height`、`land_relief`、`land_bias`、`macro_terrain`。`RandomStateSeedMixin` 在 vanilla noise wiring **之前**绑定宏观节点，并把 `land_relief` recipe 展开为普通 Vanilla DensityFunctions 图；随后 RandomState 遍历完整图绑定每个 noise，包括 TerrainProvider spline 坐标中的输入。相同 recipe 在一次 router 绑定中复用展开结果。没有全局“当前世界 seed”；Nether/End 没有这些节点，不受影响。
+注册五个 DensityFunction codec：`apocalypse_firstlight:macro_height`、`land_relief`、`land_bias`、`inland_elevation_bias`、`macro_terrain`。`RandomStateSeedMixin` 在 vanilla noise wiring **之前**绑定宏观节点，并把 `land_relief` recipe 展开为 Vanilla DensityFunctions 图与已绑定 seed 的内陆偏置节点；随后 RandomState 遍历完整图绑定每个 noise，包括 TerrainProvider spline 坐标中的输入。相同 recipe 在一次 router 绑定中复用展开结果。没有全局“当前世界 seed”；Nether/End 没有这些节点，不受影响。
 
 ### Parity Audit 与废弃实现
 
@@ -56,8 +56,8 @@ V1.1 只有一个 `MAIN_NATION`：一个连通 MAINLAND，加 1–3 个同国 SA
 原版 ridges / ridges_folded ───────────────┐
                                         ↓
 TerrainProvider offset / factor / jaggedness splines
+→ offset 分支：-0.50375F + offsetSpline + InlandElevationBias
 → 原版 splineWithBlending（blendAlpha + flatCache/cache2d）
-→ offset = -0.50375F + offsetSpline
 → depth = yClampedGradient(-64,320,1.5,-1.5) + offset
 → jagged = jaggedness * halfNegative(jaggedNoise)
 → gradient = 4 * quarterNegative((depth + jagged) * factor)
@@ -74,7 +74,7 @@ TerrainProvider offset / factor / jaggedness splines
 
 `LandTerrainRelief` 不再 compute 自定义密度，而是一次性组装原版图的 recipe；未在 RandomState 展开时会明确报错。使用真正的 TerrainProvider 样条与原版 folded-ridges DF，不自行按单点 float 重写样条。不单独插值 base_3d_noise，不压缩最终地形振幅。
 
-`initial_density_without_jaggedness` 另走原版预估链：`slide(clamp(4*quarterNegative(depth*cache2d(factor)) - 0.703125, -64,64))`。它不含 base noise、jagged 或 cave，不再拿 final slope冒充 initial density。
+`initial_density_without_jaggedness` 另走原版预估链：`slide(clamp(4*quarterNegative(depth*cache2d(factor)) - 0.703125, -64,64))`。它与 final LAND slope 共用带内陆偏置的 offset/depth，不含 base noise、jagged 或 cave，不再拿 final slope冒充 initial density。router 原始气候 depth 字段仍不改。
 
 保留的 `min/max/clamp` 含义：
 
@@ -89,18 +89,38 @@ TerrainProvider offset / factor / jaggedness splines
 
 | 区间 | 参数映射/开启条件 |
 | --- | --- |
-| Plains默认 | `e' = 0.65 + 0.04*e`，`c' = 0.12 + 0.04*c` |
+| Plains默认 | `w = smooth((coastDistance - 48) / 384)`（仅 MAIN_NATION，其余为0）；`c' = 0.12 + 0.04*c + 0.16*w`；`e' = lerp(0.65 + 0.04*e, 0.63 + 0.02*e, w)` |
 | Rolling | 原e从-0.10至-0.45平滑开启，e'趋向0.15 |
 | Highland | 仅外主岛，原e从-0.40至-0.60开启，e'趋向-0.35、c'趋向0.35 |
 | Mountain | 仅外主岛，原e从-0.70至-0.82且原c从0.35至0.65双门控，e'趋向-0.80、c'趋向0.65 |
 
-这些是嵌套平滑门控，不是互斥格网或随机抽签。ridges及folded-ridges保持原版输入；jaggedness由偏置参数下的原版样条决定，不再对其结果追加AFL振幅门控。c'保持内陆参数范围（约0.08–0.65），避免 vanilla ocean continentalness 在主岛内部生成宏观海洋；这不是保证每个谷底都高于海平面的硬支撑，也不禁止自然局部低谷/水洼。
+这些是嵌套平滑门控，不是互斥格网或随机抽签。Rolling/Highland/Mountain 的门控仍读取原始 c/e，阈值、权重、目标值不变；独立 elevation bias 不参与这些门控或三套样条。ridges及folded-ridges保持原版输入；jaggedness由偏置参数下的原版样条决定，不再对其结果追加AFL振幅门控。c'总体范围仍约0.08–0.65；完整内陆 plains 基底为0.24–0.32，e基底为0.61–0.65，仍为正 erosion。这里限制的是参数空间，不是地表Y或最终密度；不保证每个谷底高于海平面，也不禁止自然局部低谷/水洼。
 
 - ≤384启动区：rolling/highland/mountain门控为0，保留原版3D小起伏，无固定Y保护。
 - 384–768：平滑进入核心区弱rolling；核心3800以内rolling权重0.65，高地/山地门控0。
 - 主岛3800–4824：平滑恢复外主岛权重，仍以平原偏置为基底。
 - 附属岛rolling权重0.50，高地/山地门控0；不绑定岛屿用途。
 - 目标：自然平原65–75%、rolling20–30%、高地3–8%、真正山地1–3%或更低。**没有执行面积统计或实机验证，不声称已经达到目标**；未恢复vanilla原始参数分布，未以最终密度缩放或限高实现平原。
+
+#### Inland Elevation Rebalance（历史方案，已被替代）
+
+`Inland Surface Water Audit` 对 seed `-1010026562491965701` 的既有中心区完整区块抽取32,768列：固体地表低于Y63为43.66%，顶层WATER为26.08%，其中99.31%的水面处于Y62。这是旧存档的局部样本，不能外推为全国比例或新参数结果；但与 LAND 平均高程偏低、海平面流体填充低地的代码路径一致。Macro LAND 分类本身并不保证实际地面露出水面。
+
+该轮只修改了 `src/main/java/com/antaurora/apofirstlight/worldgen/geography/LandTerrainBias.java`，先给予continentalness最多+0.16的偏置。原版1.20.1 `TerrainProvider.overworldOffset / buildErosionOffsetSpline` 在e约0.65的分支对这项C调整反应很弱：当时201点样条探针中，(c,e)=(0.12,0.65)→(0.28,0.65) 的平均offset增量仅0.001427；改为(0.28,0.565)时为0.043632。这些只是历史样条响应，不是实际surface Y或水面比例预测。旧 `0.565 + 0.01*e` 方案经用户反馈增加了丘陵/高地观感，现已由 `0.63 + 0.02*e` 基线与独立 elevation bias 替代。C/E 同时控制 offset/factor/jaggedness，单靠它们无法独立调整 plains frequency 和 average elevation。
+
+#### Continuous Inland Elevation Bias
+
+职责分离：`LandTerrainBias` 继续负责 plains/rolling/highland/mountain 的参数分布；新增 `src/main/java/com/antaurora/apofirstlight/worldgen/geography/InlandElevationBias.java` 只按冻结 `MacroGeography` 的 MAIN_NATION 与 coastDistance 计算平均高程偏置。`LandTerrainRelief.resolve` 将它加在 `-0.50375F + TerrainProvider.overworldOffset(...)` 后、原版 `splineWithBlending` 前，因此保留 blendAlpha、blendOffset、flatCache/cache2d，旧 blending 区域中该偏置随 blendAlpha 缩放。initial 与 final recipe 均走这处接入；factor、jaggedness、base_3d_noise、cave composition、slide/blend_density/interpolated/×0.64/squeeze/min(noodle) 顺序不改。`AflDensityFunctions` 注册 `apocalypse_firstlight:inland_elevation_bias`，`RandomStateSeedMixin` 同步其直接节点的 seed 绑定；正常 recipe 在展开时已传入同 seed 的 geography。没有新增 density JSON 或噪声资源。
+
+数学依据来自当前 Forge `1.20.1-47.4.22_mapped_official_1.20.1` sources：`NoiseRouterData.registerTerrainNoises` 的 depth 为 `yClampedGradient(-64,320,1.5,-1.5) + offset`，`DensityFunctions.YClampedGradient.compute` 使用 clampedMap；范围内 Y 导数为 `-3/384 = -1/128`。选择 **FULL_OFFSET_BIAS = 0.046875**，所以完整内陆 `ΔY = 128 × 0.046875 = 6` 格。对固定 X/Z、非顶部/底部 clamp 区域，`depth_new(Y) = depth_old(Y - 6*w)`；固定 factor/jaggedness 且将 base noise 视为常数时，gradient/sloped_cheese 零面具有同样的平移量。这不改变两处 full-bias 地点的样条相对高差。真实 base_3d_noise 和洞穴仍在原世界 Y 采样，未整体移动整个三维噪声场，因此最终地表只能预期约4–8格量级，不能保证每一列精确+6或地表相对高差逐块不变。
+
+`bias = 0.046875 * smooth(clamp((coastDistance - 48)/384, 0, 1))`，仅 MAIN_NATION 生效；水域、整个48格干COAST带为0，48–432格间连续增加，≥432格取完整偏置。cubic smoothstep两端一阶导数为0，最高距离方向等效附加坡度为 `6*1.5/384 = 0.0234375` 格/格。它只使用现有低频 coastDistance，没有随机noise、周期波纹、已生成方块/流体/区块顺序输入；不引入 coast cliff 的硬切换。coastDistance 是冻结地理场的距离估计，不是精确岸线测量；连续公式并不代表已完成实机海岸验收。
+
+附件规定的 C/E 基线保持为 `.16 / .63 / .02`。实现前实际源码中 erosion 常量误写为 `63`，超出该类声明的 `.70` 上界；本轮将这个缺失小数点纠正为 `.63`，没有采用降低正确 erosion 基线来抬地。Startup≤384、Core≤3800、Outer 的原始 rolling/highland/mountain gates 均未修改；elevation 不额外读取这些半径，不在其边界产生高度台阶。Startup/Core 获得内陆偏置而不增加 relief 门控；Outer 仍使用原分布。SATELLITE_ISLAND 同样按 coastDistance 获得0–6格等效抬升，较窄岛内可能仅获得部分偏置；保留rolling权重0.50及高地/山地门控0，没有改变岛形/大小/数量。
+
+没有fixed-Y floor、最低支撑、`(height-Y)` LAND主链、MacroHeightDensity陆地接管、target height或自定义heightfield。只钳制 ramp 权重，不钳制surface Y。sea level仍Y63，aquifers保持开启，default fluid仍 `minecraft:water`。Macro Geography代码、MAIN_NATION/mainland/island形状及数量、IDs、Bay/Strait/Inland Sea/Open Ocean、CrossingCandidate与300–600格桥隙均未改；同seed Macro Export输入算法保持，未重新运行导出。Highway、Rural、Bunker未改。**Scorched Lands Surface Water = 0 尚未实现**，焦土水只能随整体抬升自然减少一部分。
+
+验证：直接调用当前 mapped `TerrainProvider.overworldOffset`，6组固定C/E/folded-ridges参数的固定噪声零面均精确+6格，相对高差保持；3种factor、3种固定base noise、Y=-30..230共14,094次gradient平移比较通过。coast ramp有界、单调及48/240/432格对应0/3/6格等效抬升检查通过。这些是纯数学探针，不是完整三维噪声或实际水面统计。`compileJava --offline` 使用现有用户Gradle缓存构建成功（沙箱初次访问缓存锁被拒，授权执行后成功）；只有现有弃用/unchecked警告。无resource变更，未运行processResources。未生成新区块、未做多seed或新世界统计、未运行客户端；实际水面减少、自然平原Y68–75、无平台/断层及地堡落地均待用户新世界验收，不是硬阈值或已通过结论。
 
 #### Macro/ocean 职责与资源路径
 

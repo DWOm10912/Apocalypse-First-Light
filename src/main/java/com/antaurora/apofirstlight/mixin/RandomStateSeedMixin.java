@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.geography.MacroHeightDensity;
 import com.antaurora.apofirstlight.worldgen.geography.LandTerrainRelief;
 import com.antaurora.apofirstlight.worldgen.geography.LandTerrainBias;
+import com.antaurora.apofirstlight.worldgen.geography.InlandElevationBias;
 import com.antaurora.apofirstlight.worldgen.geography.MacroTerrainDensity;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseRouter;
@@ -40,6 +41,10 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
                 return resolved.computeIfAbsent(relief, recipe -> recipe.resolve(seed));
             }
             if (function instanceof LandTerrainBias bias) {
+                apocalypse$macroGeography = true;
+                return bias.withSeed(seed);
+            }
+            if (function instanceof InlandElevationBias bias) {
                 apocalypse$macroGeography = true;
                 return bias.withSeed(seed);
             }

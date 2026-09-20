@@ -8,6 +8,11 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 /** Terrain-only C/E remapping before vanilla splines. No Y, target height, or density postprocessing. */
 public record LandTerrainBias(DensityFunction continents, DensityFunction erosion,
                               boolean continentalness, MacroGeography geography) implements DensityFunction {
+    private static final double INLAND_RAMP_WIDTH = 384;
+    private static final double INLAND_CONTINENTALNESS_BIAS = .16;
+    private static final double INLAND_PLAINS_EROSION = .63;
+    private static final double INLAND_EROSION_VARIATION = .02;
+
     public static final KeyDispatchDataCodec<LandTerrainBias> CODEC = KeyDispatchDataCodec.of(
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("continents").forGetter(LandTerrainBias::continents),
@@ -28,15 +33,22 @@ public record LandTerrainBias(DensityFunction continents, DensityFunction erosio
         double outer = mainland ? smooth((radius - MacroGeography.MAINLAND_CORE_RADIUS) / 1024) : 0;
         double c = clamp(continents.compute(context), -1, 1);
         double e = clamp(erosion.compute(context), -1, 1);
+        double inland = sample.nationId() == MacroGeographySample.NationId.MAIN_NATION
+                ? smooth((sample.coastDistance() - MacroGeography.COAST_WIDTH) / INLAND_RAMP_WIDTH) : 0;
         double rolling = descending(e, -.10, -.45) * outsideStartup
                 * (mainland ? lerp(.65, 1, outer) : .50);
         double highland = descending(e, -.40, -.60) * outer;
         double mountain = descending(e, -.70, -.82) * outer * smooth((c - .35) / .30);
         if (continentalness) {
             // Inland parameter space, not minimum surface density. No vanilla ocean C values.
-            return lerp(lerp(.12 + .04 * c, .35, highland), .65, mountain);
+            double plains = .12 + .04 * c + INLAND_CONTINENTALNESS_BIAS * inland;
+            return lerp(lerp(plains, .35, highland), .65, mountain);
         }
-        return lerp(lerp(lerp(.65 + .04 * e, .15, rolling), -.35, highland), -.80, mountain);
+        // Keep the accepted plains-heavy relief band. Average elevation is handled separately
+        // by InlandElevationBias; terrain frequency gates still use the ORIGINAL c/e signals.
+        double plains = lerp(.65 + .04 * e,
+                INLAND_PLAINS_EROSION + INLAND_EROSION_VARIATION * e, inland);
+        return lerp(lerp(lerp(plains, .15, rolling), -.35, highland), -.80, mountain);
     }
     @Override public void fillArray(double[] values, ContextProvider context) { context.fillAllDirectly(values, this); }
     @Override public DensityFunction mapAll(Visitor visitor) {
