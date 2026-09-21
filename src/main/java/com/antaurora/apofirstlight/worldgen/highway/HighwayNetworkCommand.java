@@ -111,8 +111,12 @@ public final class HighwayNetworkCommand {
             context.getSource().sendSuccess(() -> Component.literal("[SATELLITE CONNECTION] id="+crossing.id()
                     +" island="+crossing.islandId()+" source="+crossing.source()+" route="+crossing.routeId()
                     +" parent="+crossing.parent()+" mainland="+crossing.mainland()+" satellite="+crossing.satellite()
-                    +" bridgeAxis="+crossing.dx()+","+crossing.dz()+" bankSpan="+crossing.span()
+                    +" bridgeAxis="+crossing.dx()+","+crossing.dz()+" actualBankSpan="+crossing.span()
+                    +" mainlandDisplacement="+crossing.mainlandDisplacement()+" satelliteDisplacement="+crossing.satelliteDisplacement()
+                    +" combinedDisplacement="+crossing.combinedDisplacement()+" bridgeApproachEngineeringStatus=UNKNOWN"
                     +" mainlandLength="+crossing.mainlandGeometry().length()+" islandLength="+crossing.islandGeometry().length()
+                    +" selectedParentTrunk="+crossing.parent().parentRouteId()+" turnCount="+crossing.turnCount()
+                    +" mainlandRouteLength="+crossing.mainlandRouteLength()+" extraDistance="+crossing.extraDistance()+" networkCost="+crossing.networkCost()
                     +" seaBridge=RESERVATION_ONLY diagonalViaduct=SUPPORTED diagonalTunnel=UNSUPPORTED_SAFE_SKIP"),false);
         }
         for(var turn:graph.turns())send(context,"[TURN] "+turn);

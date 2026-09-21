@@ -156,7 +156,18 @@ public final class HighwayNetworkExport {
             out.append("satelliteIslandId = ").append(c.islandId()).append("\nstatus = CONNECTED\nconnectionId = ")
                     .append(c.id()).append("\nrouteId = ").append(c.routeId())
                     .append("\nselectedCrossing = ").append(c.source().waterbodyId())
+                    .append("\nsourceCandidate = ").append(c.source())
+                    .append("\nmainlandDisplacement = ").append(c.mainlandDisplacement())
+                    .append("\nsatelliteDisplacement = ").append(c.satelliteDisplacement())
+                    .append("\ncombinedDisplacement = ").append(c.combinedDisplacement())
+                    .append("\nactualBankSpan = ").append(c.span()).append("\nbridgeAxis = ").append(c.dx()).append(", ").append(c.dz())
+                    .append("\nbridgeApproachEngineeringStatus = UNKNOWN")
                     .append("\nparentTrunk = ").append(c.parent().parentRouteId())
+                    .append("\nselectedParentTrunk = ").append(c.parent().parentRouteId())
+                    .append("\nmainlandRouteLength = ").append(c.mainlandRouteLength())
+                    .append("\nturnCount = ").append(c.turnCount())
+                    .append("\nextraDistance = ").append(c.extraDistance())
+                    .append("\nnetworkCost = ").append(c.networkCost())
                     .append("\nbranchJunction = ").append(c.parent().junctionNodeId()).append(" @ station ")
                     .append(c.parent().parentStation())
                     .append("\nmainlandBridgeheadXZ = ").append(c.mainland().x()).append(", ").append(c.mainland().z())
@@ -174,7 +185,7 @@ public final class HighwayNetworkExport {
             String diagnostic = graph.routingDiagnostics().stream().filter(d -> d.startsWith("satellite=" + island.id() + ":"))
                     .findFirst().orElse("No per-island routing diagnostic available");
             String reason = qualified.isEmpty() ? "NO_QUALIFIED_CROSSING"
-                    : diagnostic.startsWith("satellite=") ? "NO_VALID_ROUTE_WITHIN_V1_LIMITS" : "ROUTING_STATUS_UNKNOWN";
+                    : diagnostic.contains("firstFailureReason=") ? diagnostic.split("firstFailureReason=",2)[1].split(" ",2)[0] : "ROUTING_STATUS_UNKNOWN";
             out.append("satelliteIslandId = ").append(island.id()).append("\nstatus = UNCONNECTED")
                     .append("\nfailureReason = ").append(reason).append("\nrouterDiagnostic = ")
                     .append(diagnostic).append("\n\n");

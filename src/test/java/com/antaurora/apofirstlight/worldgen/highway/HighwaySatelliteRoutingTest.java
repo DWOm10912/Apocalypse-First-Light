@@ -27,8 +27,8 @@ public final class HighwaySatelliteRoutingTest {
                 int dx=c.satellite().x()-c.mainland().x(),dz=c.satellite().z()-c.mainland().z();
                 check((dx==0)!=(dz==0),"cardinal bridge axis");
                 check(c.span()>=300&&c.span()<=SatelliteHighwayRouting.MAX_ACTUAL_BANK_SPAN,"actual bank span bounded");
-                check(Math.hypot(c.mainland().x()-c.source().fromX(),c.mainland().z()-c.source().fromZ())<=96,"bounded mainland adjustment");
-                check(Math.hypot(c.satellite().x()-c.source().toX(),c.satellite().z()-c.source().toZ())<=96,"bounded island adjustment");
+                check(c.mainlandDisplacement()<=SatelliteHighwayRouting.BRIDGEHEAD_SEARCH_RADIUS,"bounded mainland adjustment");
+                check(c.satelliteDisplacement()<=SatelliteHighwayRouting.BRIDGEHEAD_SEARCH_RADIUS,"bounded island adjustment");
                 double n=Math.hypot(c.dx(),c.dz());
                 var g=c.mainlandGeometry();var endpoint=g.point(g.length());var approach=g.point(g.length()-64);
                 check(Math.abs(endpoint.x()-approach.x()-64*c.dx()/n)<1e-6

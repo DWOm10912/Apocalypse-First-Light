@@ -44,4 +44,16 @@ gradle.projectsEvaluated {
         mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayOrthogonalRoutingTest'
         maxHeapSize = '512m'
     }
+    p.tasks.register('highwayShorelineSearchTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayShorelineSearchTest'
+        maxHeapSize = '512m'
+    }
+    p.tasks.register('highwayRouteCostTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayRouteCostTest'
+        maxHeapSize = '512m'
+    }
 }

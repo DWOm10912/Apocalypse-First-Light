@@ -8,11 +8,13 @@ PNG保留原Macro陆海颜色、岛屿标签、黄色虚线300–600格原始桥
 
 TXT保留原Macro审计全文，追加 `HIGHWAY NETWORK EXPORT V2`：summary、ROUTES、EDGES、NODES、SEA CROSSING RESERVATIONS、CONNECTED SATELLITES、UNCONNECTED SATELLITES。按routeId、edgeId、nodeId、crossingId稳定排序。
 
+[Route Cost Fix](highway_v2_route_cost_fix.md)为info和CONNECTED TXT新增`selectedParentTrunk`、`mainlandRouteLength`、`turnCount`、`extraDistance`与`networkCost`，原parentTrunk/mainlandBranchLength仍保留兼容。extraDistance=大陆路径长−junction到大陆桥头Manhattan距离，networkCost=大陆路径长+64×大陆TURN数。原islandHighwayLength、actualBankSpan、combinedDisplacement复用；PNG不加新图层。数值是规划成本，不是Terrain工程评估。
+
 - Route：ID、type、purpose、edge IDs、完整ParentAttachment。
 - Edge：ID、route、起终节点ID与XZ、AXIAL/POLYLINE、真实segment kinds、bounds(32)、station范围、长度、所有control points、ParentAttachment。
 - Node：ID、实际NodeKind、XZ、所连edge；有适用的岛ID、connection ID、parent route/station。国家交点和支线junction的共享关系保留。
 - Sea reservation：稳定crossing ID、岛ID、所属route、两岸bridgehead ID/XZ、实际桥头跨度、当前四方向轴、原Macro waterbody ID与完整CrossingCandidate。仅为PLANNED metadata，没有sea edge或施工claim。
-- Connected summary：岛ID、状态、选中candidate、父主干/junction、两岸桥头、两岸道路长度、海峡跨度和共享route/connection ID。
-- Unconnected summary：枚举Macro全部SATELLITE_ISLAND减去图内已连接岛，逐岛输出`status = UNCONNECTED`、`failureReason`及原`routerDiagnostic`。如果该岛无from=0、to=id、waterSpan∈[300,600]候选，可确定为`NO_QUALIFIED_CROSSING`；若路由器仅提供当前综合失败文本，使用`NO_VALID_ROUTE_WITHIN_V1_LIMITS`，不臆造`NO_VALID_JUNCTION`等未记录的具体阶段；缺失诊断时使用`ROUTING_STATUS_UNKNOWN`。这两个后者是导出层的保守状态，不代表修改了路由器。
+- Connected summary：岛ID、状态、完整sourceCandidate、父主干/junction、选中两岸桥头、两岸道路长度、actualBankSpan、bridgeAxis和共享route/connection ID。Shoreline Search V1新增mainlandDisplacement、satelliteDisplacement、combinedDisplacement及bridgeApproachEngineeringStatus=UNKNOWN；info同步输出相同信息。未输出/claim未选中的搜索备选。
+- Unconnected summary：枚举Macro全部SATELLITE_ISLAND减去图内已连接岛，逐岛输出`status = UNCONNECTED`、`failureReason`及原`routerDiagnostic`。无qualified candidate为`NO_QUALIFIED_CROSSING`；否则直接采用路由器`firstFailureReason`（主要阻断阶段），不再覆盖为笼统失败。诊断含shorePointsMainland、shorePointsSatellite、axialPairs、viablePairs、islandApproaches、junctions、landRoutes、rejected及sourceCandidates；缺失诊断仍为`ROUTING_STATUS_UNKNOWN`。具体定义见[Shoreline Search V1](highway_v2_shoreline_bridgehead_search_v1.md)。
 
 命令返回可复制的PNG/TXT路径；TXT提供junction、TURN、桥头、route endpoint的精确XZ供TP。导出测试在内存中验证seed 0/2/42的稳定序列、graph数量、父引用、控制点、桥头坐标、ID唯一性与无branch场景；新增正交契约验证TURN及预留区导出。不保存测试截图、不生成新世界。当前完整验证与Satellite Routing/claims变更见正交路由文档；Macro topology、Terrain不变，未接City/Port/Military，未生成Sea Bridge。实机导出效果待用户使用命令验收。

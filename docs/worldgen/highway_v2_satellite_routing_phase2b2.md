@@ -2,6 +2,10 @@
 
 当前规则见 [Orthogonal Routing V1](highway_v2_orthogonal_routing_v1.md)。现行替代规则：live长距离支线已改轴向multi-edge + TURN/junction reservation。本文八方向选桥、两岸各单POLYLINE edge、评分及旧seed连接结果均为历史记录。
 
+最新桥头选择见 [Orthogonal Shoreline Bridgehead Search V1](highway_v2_shoreline_bridgehead_search_v1.md)：CrossingCandidate为局部搜索/水体/陆块权威，512格有界岸线搜索、共享dry LAND/COAST判定、轴向桥跨≤800、64对ranked alternatives、位移优先及逐阶段失败诊断。本文下述96格调整、LAND-only、旧评分与验证数量不再代表现行行为。Bridge Approach Tunnel尚未修复。
+
+上述位移优先仅继续用于岸线备选池。最终完整方案已由[Route Cost Fix](highway_v2_route_cost_fix.md)改为大陆长度+64×TURN数的网络成本优先，跨A/B主干比较；代表连接率保持10/10，详细新旧路线质量见该文档。
+
 状态（2026-09-20）：build/forSeed已在原两条National Trunk之外发布可用卫星岛的Strategic Branch。每个connection有大陆、岛侧两个有限道路edge及一个仅metadata的海峡reservation。没有海上可施工edge、海桥renderer或海桥claim。无世界逻辑验证不代表实机道路、junction高程/边缘交汇、桥头或chunk视觉验收。
 
 ## Live geography authority
