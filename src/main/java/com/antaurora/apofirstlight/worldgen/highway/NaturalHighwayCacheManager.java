@@ -82,6 +82,12 @@ public final class NaturalHighwayCacheManager {
                 new BoundedSingleFlightCache<>(MAX_NODE_PLANS);
         private final BoundedSingleFlightCache<SegmentKey, CorridorEngineeringSegment> segments =
                 new BoundedSingleFlightCache<>(MAX_ENGINEERING_SEGMENTS);
+        private final BoundedSingleFlightCache<String,HighwayRampEngineering> ramps =
+                new BoundedSingleFlightCache<>(MAX_NODE_PLANS);
+
+        HighwayRampEngineering ramp(String id,Supplier<HighwayRampEngineering> builder) {
+            return ramps.get(id,builder).value;
+        }
 
         int height(HeightKey key, IntSupplier builder) {
             Lookup<Integer> lookup = heights.get(key, builder::getAsInt);

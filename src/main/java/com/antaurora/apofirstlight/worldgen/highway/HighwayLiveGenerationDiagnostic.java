@@ -19,7 +19,7 @@ final class HighwayLiveGenerationDiagnostic {
 
     enum DropPoint {
         FEATURE_NOT_ELIGIBLE, CHUNK_NOT_LOADED, NO_GRAPH_EDGE, SEGMENT_SELECTION,
-        ENGINEERING, BUILD_RIBBON, RENDERER, MIXED, NONE, PLANNED_RESERVATION
+        ENGINEERING, BUILD_RIBBON, RENDERER, MIXED, NONE, PLANNED_RESERVATION, GRADE_INFEASIBLE
     }
 
     record EdgeReport(HighwayRouteGraph.Edge edge, long coordinateStation, long selectionStation,
@@ -42,9 +42,6 @@ final class HighwayLiveGenerationDiagnostic {
                     List.of(), DropPoint.FEATURE_NOT_ELIGIBLE, "Highway feature requires Overworld");
         }
         HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
-        String reservation=reservationAt(graph,x,z);
-        if(reservation!=null) return new Result(level.getSeed(),x,z,chunk,bounds,dimension,"not sampled",false,
-                List.of(),DropPoint.PLANNED_RESERVATION,reservation);
         // Do not load or generate a chunk merely to answer the biome question.
         if (level.getChunkSource().getChunkNow(chunk.x, chunk.z) == null) {
             return new Result(level.getSeed(), x, z, chunk, bounds, dimension, "unloaded", false,
@@ -63,6 +60,26 @@ final class HighwayLiveGenerationDiagnostic {
                     "Biome sample at sea level is outside primary_highway_generation tag");
         }
 
+        var modules=HighwayRampModules.forGraph(graph).query(bounds);
+        for(var module:modules) {
+            if(!module.zone().bounds().contains(x,z) && module.seams().stream().noneMatch(s->s.bounds().contains(x,z)))continue;
+            var rampCache=new NaturalHighwayCacheManager.WorldCache();
+            var rampTerrain=new HighwayTerrainSampler(level,level.getChunkSource().getGenerator(),level.getChunkSource().randomState(),rampCache);
+            try {
+                var ramp=HighwayRampEngineering.build(level,graph,module,rampTerrain,rampCache);
+                int cells=ramp.ready()?ramp.corridor().cells().size():0;
+                long owned=ramp.ready()?ramp.corridor().cells().stream().filter(c->bounds.contains(c.x(),c.z())).count():0;
+                DropPoint drop=!ramp.ready()?(ramp.status().equals("GRADE_INFEASIBLE")?DropPoint.GRADE_INFEASIBLE:DropPoint.BUILD_RIBBON)
+                        :owned==0?DropPoint.RENDERER:DropPoint.NONE;
+                return new Result(level.getSeed(),x,z,chunk,bounds,dimension,biome,true,List.of(),drop,
+                        "moduleId="+module.id()+" moduleType="+module.type()+" moduleFound=true moduleCells="+cells
+                        +" ownedCells="+owned+" gradeStart="+ramp.grade().startY()+" gradeEnd="+ramp.grade().endY()
+                        +" status="+ramp.status()+" wouldRender="+(drop==DropPoint.NONE)+" DRY REPLAY; no blocks written");
+            } catch(RuntimeException failure) {
+                return new Result(level.getSeed(),x,z,chunk,bounds,dimension,biome,true,List.of(),DropPoint.ENGINEERING,
+                        "moduleId="+module.id()+" moduleFound=true wouldRender=false "+failure.getMessage());
+            }
+        }
         List<HighwayRouteGraph.Edge> edges = NaturalHighwayGenerationAdapter.queryForChunk(graph, chunk);
         if (edges.isEmpty()) {
             return new Result(level.getSeed(), x, z, chunk, bounds, dimension, biome, true,

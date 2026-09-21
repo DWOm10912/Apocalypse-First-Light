@@ -1,6 +1,6 @@
 # Highway Network Export V2
 
-当前默认路由采用 [Orthogonal Strategic Branch Routing V1](highway_v2_orthogonal_routing_v1.md)。轴向道路按实际裁切后的 station endpoints 绘制，不连到预留区中心；TURN / junction 以洋红方框标记预留区。新增 TURN 节点标签及 `TURN NODES AND INFRASTRUCTURE RESERVED ZONES` 文本节，列出 incoming/outgoing edge、方向、bounds、reservedType 与 PLANNED / NO ROAD MODULE YET 状态。保留 POLYLINE 控制点导出能力，但默认卫星支线不再发布 POLYLINE。
+当前默认路由采用 [Orthogonal Strategic Branch Routing V1](highway_v2_orthogonal_routing_v1.md)。轴向道路按实际裁切后的 station endpoints 绘制，不连到预留区中心；TURN / junction 以洋红方框标记核心预留区。`TURN NODES AND INFRASTRUCTURE RESERVED ZONES`文本节现列出[Branch Junction / Turn Ramp V1](highway_v2_branch_junction_turn_ramp_v1.md)的moduleId、moduleType、nodeId、incoming/outgoingDirection、核心bounds、seamBounds与geometryStatus=TURN_RAMP_V1/JUNCTION_RAMP_V1；gradeStatus=RUNTIME_CHECK_REQUIRED，不将几何导出冒充实际坡度或落块成功。保留POLYLINE控制点导出能力，但默认卫星支线不再发布长距离POLYLINE。
 
 状态：开发环境的既有 `/afl macro export [radius] [step]` 同时导出 Macro Geography 与当前 `HighwayRouteGraph`。输出仍为 `afl_debug/macro/macro_geography_<seed>.png` 和同名 `.txt`；不新增格式、世界生成入口或路由算法。实现见 `src/dev/java/com/antaurora/apofirstlight/dev/MacroGeographyExportCommand.java` 与 `HighwayNetworkExport.java`，发布JAR不包含该dev命令。读取同seed的缓存Macro计划和immutable Highway图，绘制地图时不按像素重建图。
 

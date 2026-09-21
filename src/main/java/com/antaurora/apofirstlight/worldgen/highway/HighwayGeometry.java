@@ -44,8 +44,26 @@ public final class HighwayGeometry {
     private final List<Patch> patches;
     private final Map<Long, List<Patch>> tiles;
     private final double length;
+    private final double maximumHalfWidth;
 
     public HighwayGeometry(List<Point> controlPoints) {
+        this(controlPoints, TRANSITION_LENGTH);
+    }
+
+    /** Short local connector only; long-route constructor and its 32-block policy remain unchanged. */
+    static HighwayGeometry localRamp(List<Point> controlPoints) {
+        if (controlPoints.size() != 4) throw new IllegalArgumentException("Ramp requires axial/45/axial");
+        double minX = controlPoints.stream().mapToDouble(Point::x).min().orElseThrow();
+        double maxX = controlPoints.stream().mapToDouble(Point::x).max().orElseThrow();
+        double minZ = controlPoints.stream().mapToDouble(Point::z).min().orElseThrow();
+        double maxZ = controlPoints.stream().mapToDouble(Point::z).max().orElseThrow();
+        if (maxX - minX > 40 || maxZ - minZ > 40)
+            throw new IllegalArgumentException("Ramp exceeds local endpoint extent");
+        return new HighwayGeometry(controlPoints, 16);
+    }
+
+    private HighwayGeometry(List<Point> controlPoints, int transitionLength) {
+        maximumHalfWidth = transitionLength == TRANSITION_LENGTH ? MAX_ENVELOPE : ROAD_HALF_WIDTH + 3;
         points = List.copyOf(controlPoints);
         if (points.size() < 2 || points.size() > 256) throw new IllegalArgumentException("2..256 control points required");
         for (Point p : points) {
@@ -58,8 +76,8 @@ public final class HighwayGeometry {
         for (int i = 0; i + 1 < points.size(); i++) {
             Point a = points.get(i), b = points.get(i + 1);
             double dx = b.x - a.x, dz = b.z - a.z, distance = Math.hypot(dx, dz);
-            if (distance < TRANSITION_LENGTH || (dx != 0 && dz != 0 && Math.abs(dx) != Math.abs(dz)))
-                throw new IllegalArgumentException("Leg must be >=32 blocks and axial or exactly 45 degrees");
+            if (distance < transitionLength || (dx != 0 && dz != 0 && Math.abs(dx) != Math.abs(dz)))
+                throw new IllegalArgumentException("Leg must be >=" + transitionLength + " blocks and axial or exactly 45 degrees");
             Point direction = new Point(dx / distance, dz / distance);
             if (!built.isEmpty()) {
                 double dot = built.get(built.size() - 1).direction.dot(direction);
@@ -77,8 +95,8 @@ public final class HighwayGeometry {
             Point normal = leg.direction.normal();
             Point from = i == 0 ? normal : miter(legs.get(i - 1).direction.normal(), normal);
             Point to = i + 1 == legs.size() ? normal : miter(normal, legs.get(i + 1).direction.normal());
-            double head = i == 0 ? 0 : TRANSITION_LENGTH / 2.0;
-            double tail = i + 1 == legs.size() ? 0 : TRANSITION_LENGTH / 2.0;
+            double head = i == 0 ? 0 : transitionLength / 2.0;
+            double tail = i + 1 == legs.size() ? 0 : transitionLength / 2.0;
             Kind straight = axial(leg.direction) ? Kind.AXIAL_STRAIGHT : Kind.DIAGONAL_45;
             if (head > 0) addPatches(ribbons, leg, 0, head, from, normal,
                     axial(leg.direction) ? Kind.DIAGONAL_TO_AXIAL_TRANSITION : Kind.AXIAL_TO_DIAGONAL_TRANSITION);
@@ -138,7 +156,7 @@ public final class HighwayGeometry {
     }
     /** Only local pre-indexed ribbon patches are visited, never all route segments per block. */
     public Sample query(int x, int z, double halfWidth) {
-        if (halfWidth < 0 || halfWidth > MAX_ENVELOPE) throw new IllegalArgumentException("Envelope 0..32 required");
+        if (halfWidth < 0 || halfWidth > maximumHalfWidth) throw new IllegalArgumentException("Envelope 0.." + maximumHalfWidth + " required");
         Sample best = null;
         for (Patch patch : tiles.getOrDefault(key(Math.floorDiv(x, TILE), Math.floorDiv(z, TILE)), List.of())) {
             Sample candidate = patch.project(x, z);
@@ -176,6 +194,7 @@ public final class HighwayGeometry {
         return result;
     }
     public boolean intersects(BoundsXZ area, double expansion) {
+        if (expansion < 0 || expansion > maximumHalfWidth) throw new IllegalArgumentException("Unsupported ribbon expansion");
         for (long tile : nearbyTiles(area)) for (Patch patch : tiles.get(tile))
             if (patchBounds(patch, expansion).intersects(area)) return true;
         return false;
@@ -184,7 +203,7 @@ public final class HighwayGeometry {
         return bounds(0, length, expansion);
     }
     public BoundsXZ bounds(double fromStation, double toStation, double expansion) {
-        if (expansion < 0 || expansion > MAX_ENVELOPE) throw new IllegalArgumentException("Envelope 0..32 required");
+        if (expansion < 0 || expansion > maximumHalfWidth) throw new IllegalArgumentException("Envelope 0.." + maximumHalfWidth + " required");
         int minX = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
         for (Patch patch : patches) {
             if (patch.station + patch.length < fromStation || patch.station > toStation) continue;

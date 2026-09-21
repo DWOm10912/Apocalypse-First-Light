@@ -20,7 +20,7 @@ public record CorridorEngineeringSegment(
 
     public static final int ENGINEERING_SEGMENT_LENGTH = 256;
     public static final int ENGINEERING_HALO = 192;
-    public static final int ENGINEERING_VERSION = 3;
+    public static final int ENGINEERING_VERSION = 4;
 
     public static long segmentIndex(long globalStation) {
         return Math.floorDiv(globalStation, ENGINEERING_SEGMENT_LENGTH);
@@ -65,19 +65,8 @@ public record CorridorEngineeringSegment(
         HighwayNodeConstraints constraints = new HighwayNodeConstraints(corridor.orientation(), nodes);
         NaturalHighwayRuntimeStats.contextBuild(System.nanoTime() - contextStart);
 
-        HighwayBranchGrade attachmentGrade = null;
-        if (corridor.geometry() != null && corridor.startNode().kind() == HighwayRouteGraph.NodeKind.BRANCH_JUNCTION
-                && paddedStart <= HighwayBranchGrade.BLEND_END && corridor.parentAttachment().isPresent()) {
-            var attachment = corridor.parentAttachment().orElseThrow();
-            var parent = graph.getEdgeById(attachment.parentEdgeId()).orElseThrow();
-            // Reuse the same CORE + HALO engineering window selected by the attachment chunk.
-            int x = Math.floorDiv(corridor.startNode().x(), 16) * 16;
-            int z = Math.floorDiv(corridor.startNode().z(), 16) * 16;
-            long parentIndex = segmentIndex(parent.clampStation(parent.globalStation(x, z)));
-            var key = new NaturalHighwayCacheManager.SegmentKey(parent.routeId(), parent.id(), parentIndex, ENGINEERING_VERSION);
-            var parentSegment = cache.segment(key, () -> build(level, graph, parent, parentIndex, terrain, cache));
-            attachmentGrade = new HighwayBranchGrade(parent, parentSegment.profile());
-        }
+        HighwayBranchGrade attachmentGrade = sharedGrade(level, graph, corridor, coreStart, coreEnd,
+                paddedStart, paddedEnd, terrain, cache);
         HighwayProfile profile = HighwayProfile.sampleNatural(plan, corridor, terrain, constraints, attachmentGrade);
         HighwayCorridor engineered = HighwayCorridor.buildNatural(level, plan, profile,
                 corridor.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH));
@@ -88,6 +77,52 @@ public record CorridorEngineeringSegment(
                 coreStart, coreEnd, plan, List.copyOf(nodes), constraints, profile, engineered);
         NaturalHighwayRuntimeStats.engineeringSegmentBuild(System.nanoTime() - buildStart);
         return result;
+    }
+
+    private static HighwayBranchGrade sharedGrade(WorldGenLevel level, HighwayRouteGraph graph,
+                                                    HighwayRouteGraph.Edge corridor,
+                                                    long coreStart, long coreEnd,
+                                                    long paddedStart, long paddedEnd,
+                                                    HighwayTerrainSampler terrain,
+                                                    NaturalHighwayCacheManager.WorldCache cache) {
+        if (corridor.routeType() != HighwayRouteGraph.RouteType.STRATEGIC_BRANCH) return null;
+        List<HighwayRouteGraph.Node> candidates = new ArrayList<>(2);
+        if (corridor.startNode().kind() == HighwayRouteGraph.NodeKind.BRANCH_JUNCTION
+                || corridor.startNode().kind() == HighwayRouteGraph.NodeKind.TURN)
+            candidates.add(corridor.startNode());
+        if (corridor.endNode().kind() == HighwayRouteGraph.NodeKind.TURN)
+            candidates.add(corridor.endNode());
+        double center = (coreStart + coreEnd) * .5;
+        HighwayRouteGraph.Node node = candidates.stream()
+                .filter(n -> near(n, corridor, paddedStart, paddedEnd))
+                .min(Comparator.<HighwayRouteGraph.Node>comparingDouble(
+                                n -> Math.abs(corridor.globalStation(n.x(), n.z()) - center))
+                        .thenComparing(HighwayRouteGraph.Node::id)).orElse(null);
+        if (node == null) return null;
+        if (node.kind() == HighwayRouteGraph.NodeKind.BRANCH_JUNCTION) {
+            var attachment = corridor.parentAttachment().orElseThrow();
+            var parent = graph.getEdgeById(attachment.parentEdgeId()).orElseThrow();
+            long parentIndex = segmentIndex(attachment.parentStation());
+            var key = new NaturalHighwayCacheManager.SegmentKey(parent.routeId(), parent.id(), parentIndex, ENGINEERING_VERSION);
+            var parentSegment = cache.segment(key, () -> build(level, graph, parent, parentIndex, terrain, cache));
+            return HighwayBranchGrade.junction(corridor, parent, parentSegment.profile());
+        }
+        List<HighwayRouteGraph.Edge> incident = graph.edges().stream()
+                .filter(e -> e.routeType() == HighwayRouteGraph.RouteType.STRATEGIC_BRANCH
+                        && (e.startNode().equals(node) || e.endNode().equals(node)))
+                .sorted(Comparator.comparing(HighwayRouteGraph.Edge::id)).toList();
+        if (incident.size() != 2) throw new IllegalStateException("TURN requires two incident branch edges: " + node.id());
+        int sum = 0;
+        for (var edge : incident) sum += terrain.globalRoadY(edge, edge.globalStation(node.x(), node.z()));
+        int turnNodeGrade = (int) Math.round(sum / (double) incident.size());
+        return HighwayBranchGrade.turn(corridor, node, turnNodeGrade);
+    }
+
+    private static boolean near(HighwayRouteGraph.Node node, HighwayRouteGraph.Edge corridor,
+                                long paddedStart, long paddedEnd) {
+        double station = corridor.globalStation(node.x(), node.z());
+        return station >= paddedStart - HighwayBranchGrade.BLEND_END
+                && station <= paddedEnd + HighwayBranchGrade.BLEND_END;
     }
 
     private static InterstateInterchangeNode cachedNode(NaturalHighwayCacheManager.WorldCache cache,

@@ -43,7 +43,7 @@ seed hash 派生 X/Z 的符号及各 640～1023 的绝对偏移，交点距原�
 
 ## Claim 与 Rural
 
-`HighwaySpatialClaimProvider` 与自然生成直接取得同一 graph 的 Edge 对象，不复制路线算法。claim 的 XZ 为 `edge.bounds(32)`，纵向不外扩，端点外无 Highway claim；Y 显式为当前冻结 AFL Overworld 的 `[-64, 320)`（对应 `data/minecraft/worldgen/noise_settings/overworld.json`），不再为空/无限柱。未来若改变维度高度，必须同步该契约。
+`HighwaySpatialClaimProvider` 与自然生成直接取得同一 graph 的 Edge 对象，不复制路线算法。edge claim的XZ仍为`edge.bounds(32)`且纵向不外扩。后续[Branch Junction / Turn Ramp V1](highway_v2_branch_junction_turn_ramp_v1.md)在不改图的前提下，增加了TURN/junction核心到截断端口间至多7格长、65格宽的独立seam claim；因此不能再笼统称所有端点外都无Highway claim。Y显式为当前冻结AFL Overworld的`[-64,320)`（对应`data/minecraft/worldgen/noise_settings/overworld.json`），未来若改变维度高度须同步契约。
 
 owner 保持 `apocalypse_firstlight:primary_highway`，版本改为 `highway_spatial_v2_graph_1`，ID 包含 seed + routeId + edgeId。HARD INFRASTRUCTURE 优先级 70、Highway exclusionMargin=0 保持；Rural 自有 12 格安全距仍只裁决一次。claim 是有限批准路线的保守施工包络，不是每个实际写入块的精确占用；biome gate/施工失败可能使部分批准路线未落地。
 

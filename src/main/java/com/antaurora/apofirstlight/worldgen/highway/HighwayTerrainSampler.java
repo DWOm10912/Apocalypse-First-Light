@@ -44,6 +44,11 @@ public final class HighwayTerrainSampler {
         return (int) Math.round(lower + (upper - lower) * fraction);
     }
 
+    /** Immutable pre-decoration height for finite local engineering (never a placed-road heightmap). */
+    public int surfaceY(int x, int z) {
+        return baseHeight(x,z,NaturalHighwayCacheManager.HeightKind.SURFACE);
+    }
+
     /** Same bounded solid-support search as Viaduct V1, from immutable pre-decoration terrain. */
     public PierFoundation pierFoundation(int x, int z, int deckBottom) {
         NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);

@@ -29,16 +29,16 @@ NodeKind.TURN与BRANCH_JUNCTION分离；Turn保存node（ID/XZ）、incomingEdge
 - TURN_RESERVED_LENGTH=64（RESERVED_LENGTH），中心±32，整数方形65×65列；依据23格道路及32格施工半包络，供未来模块使用，不声称完整互通已能装入。
 - incoming/outgoing在中心32格外停止，再向外对齐8格工程网格，端点距中心33..40格，施工列不进入预留方形。
 - minimum turn-to-turn spacing=128，防止两侧预留区吃光中间腿。
-- junction同样发布JUNCTION_RAMP_ZONE，父主干不挖断，支线在区外开始；尚无可驾驶Ramp连接。
+- junction同样发布JUNCTION_RAMP_ZONE，父主干不挖断，支线在区外开始；现由[Branch Junction / Turn Ramp V1](highway_v2_branch_junction_turn_ramp_v1.md)消费预留区，实际坡度与实机可通车效果待验收。
 - 末腿至少112格，覆盖≤40格转向裁切和≤7格桥头端点网格裁切，实际轴向直引道至少64格。
-- claim覆盖finite edges及TURN/junction预留区，保持HARD INFRASTRUCTURE、Y[-64,320)、原优先级/owner。旧live diagonal corridor不再claim，sea reservation仍无施工claim。
-- 既有FiniteRouteHighwayWriter边界限制全部落块/清理；没有新90°renderer或两条23格道路硬叠。
+- claim覆盖finite edges及TURN/junction预留区，并按明确授权补齐端口与核心间0..7格长、65格宽的独立轴向seam claim；核心和RouteGraph不变。保持HARD INFRASTRUCTURE、Y[-64,320)、原优先级/owner。旧live diagonal corridor不再claim，sea reservation仍无施工claim。
+- 轴向edge仍使用FiniteRouteHighwayWriter；局部Ramp另按核心/接缝/既有edge claim与ChunkOwned裁切，不修改edge范围，不将两条23格道路直接十字重叠。
 
 ## Debug / export / diagnose
 
 info显示AXIAL、可施工station范围、TURN两侧edge/方向、TURN_RESERVED_ZONE/JUNCTION_RAMP_ZONE。
 export橙线取裁切后的axis endpoints，TURN标签/洋红方框独立显示；planned crossing仍青色虚线。TXT增加TURN/预留区段，保留CONNECTED/UNCONNECTED SATELLITES。
-diagnose在预留区返回PLANNED_RESERVATION及`PLANNED TURN / NO ROAD MODULE YET`或`PLANNED JUNCTION RAMP / NO ROAD MODULE YET`。只读图查询可在未加载chunk报告，不加载世界、不误报NO_GRAPH_EDGE；区外axis沿用原已加载chunk terrain/profile dry replay。
+info/export现显示TURN_RAMP_V1或JUNCTION_RAMP_V1及moduleId/type、方向、核心/seam bounds，实际grade标UNKNOWN/RUNTIME_CHECK_REQUIRED。diagnose在已加载且feature eligible的模块chunk做只读工程回放，显示gradeStart/End、moduleCells/ownedCells、wouldRender与显式GRADE_INFEASIBLE；未加载chunk返回CHUNK_NOT_LOADED且不强制加载。冻结图内旧PLANNED文本不再代表模块消费者的当前实现状态。
 
 ## 代表seed与验证
 
@@ -60,4 +60,4 @@ gradlew.bat --gradle-user-home .gradle-user --offline -I scripts/highway-branch-
 依赖compileJava，不依赖processResources；资源未改。无世界测试不代表视觉、真实Axis Tunnel洞腔/地基或新区块落块验收。
 
 历史Phase 2B-2.1校验：compileJava及六个契约任务通过（Orthogonal126、Satellite96、Viaduct181656、Geometry32 cases/500227及integration、Phase2A30、Export54）。最新Shoreline Search校验见其文档；不将旧计数当作本轮结果。
-Ramp/物理Turn Module、Sea Bridge、Fluid Safety未实现。已知grading可能暴露lava/water仅记录，未处理。未接City/Port/Military、未改Terrain/Macro；未runClient、clean、GameTest、新世界、批量chunk、benchmark、截图、commit/push，未改.obsidian/workspace.json。
+Ramp/物理Turn Module已接自然生成，静态测试与实机验收边界见Ramp V1文档；Sea Bridge、Fluid Safety仍未实现。已知grading可能暴露lava/water仅记录，未处理。未接City/Port/Military、未改Terrain/Macro；未runClient、clean、GameTest、新世界、批量chunk、benchmark、截图、commit/push，未改.obsidian/workspace.json。

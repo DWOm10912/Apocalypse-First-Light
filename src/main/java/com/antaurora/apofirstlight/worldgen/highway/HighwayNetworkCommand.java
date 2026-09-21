@@ -120,7 +120,7 @@ public final class HighwayNetworkCommand {
                     +" seaBridge=RESERVATION_ONLY diagonalViaduct=SUPPORTED diagonalTunnel=UNSUPPORTED_SAFE_SKIP"),false);
         }
         for(var turn:graph.turns())send(context,"[TURN] "+turn);
-        for(var zone:graph.reservedZones())send(context,"["+zone.kind()+"] "+zone);
+        for(var zone:graph.reservedZones())send(context,"["+zone.kind()+"] "+HighwayRampGeometry.build(graph,zone).description());
         for (String diagnostic : graph.routingDiagnostics()) context.getSource().sendSuccess(
                 () -> Component.literal("[SATELLITE ROUTING DEFERRED] "+diagnostic),false);
         context.getSource().sendSuccess(() -> Component.literal(

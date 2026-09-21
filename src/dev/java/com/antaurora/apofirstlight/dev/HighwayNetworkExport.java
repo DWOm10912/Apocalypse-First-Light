@@ -140,7 +140,8 @@ public final class HighwayNetworkExport {
         }
         out.append("TURN NODES AND INFRASTRUCTURE RESERVED ZONES\n");
         for(var turn:graph.turns())out.append("turn = ").append(turn).append("\n");
-        for(var zone:graph.reservedZones())out.append("reservedZone = ").append(zone).append("\nreservedType = ").append(zone.kind()).append("\n");
+        for(var zone:graph.reservedZones())out.append("reservedZone = ").append(zone.bounds()).append("\nreservedType = ").append(zone.kind())
+                .append("\n").append(com.antaurora.apofirstlight.worldgen.highway.HighwayRampGeometry.build(graph,zone).description()).append("\n");
         out.append("SEA CROSSING RESERVATIONS (PLANNED ONLY)\n");
         for (SatelliteHighwayRouting.Connection c : sortedCrossings(graph))
             out.append("crossingId = ").append(c.id()).append("\nsatelliteIslandId = ").append(c.islandId())

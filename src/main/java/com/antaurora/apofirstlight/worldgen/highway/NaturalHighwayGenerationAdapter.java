@@ -37,6 +37,7 @@ public final class NaturalHighwayGenerationAdapter {
             HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
             BoundsXZ area = chunkBounds(target);
             List<HighwayRouteGraph.Edge> routes = queryForChunk(graph, target);
+            List<HighwayRampGeometry.Module> rampModules = HighwayRampModules.forGraph(graph).query(area);
             // A neighbour's vegetation feature may legally write one chunk into this target.
             // Query that narrow halo before doing any profile/engineering work.
             List<HighwayRouteGraph.Edge> hygieneRoutes = graph.query(
@@ -44,7 +45,7 @@ public final class NaturalHighwayGenerationAdapter {
             NaturalHighwayRuntimeStats.plannerQuery(System.nanoTime() - plannerStarted,
                     (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH).count(),
                     (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.EAST_WEST).count());
-            if (hygieneRoutes.isEmpty()) {
+            if (hygieneRoutes.isEmpty() && rampModules.isEmpty()) {
                 NaturalHighwayRuntimeStats.hygieneFastReject();
                 NaturalHighwayRuntimeStats.finishRejected(feature);
                 return false;
@@ -98,6 +99,17 @@ public final class NaturalHighwayGenerationAdapter {
             HighwayFinalHygienePass.Result hygiene = HighwayFinalHygienePass.run(level, target,
                     segmentById.values().stream().map(CorridorEngineeringSegment::engineeredCorridor).toList());
             NaturalHighwayRuntimeStats.hygiene(hygiene);
+            // Derived local modules are consumed even in chunks containing no clipped route edge.
+            // Render after axial hygiene so it cannot erase a ramp's furniture in the overlap.
+            for(var module:rampModules) {
+                var ramp=cache.ramp(module.id(),()->HighwayRampEngineering.build(level,graph,module,terrain,cache));
+                if(!ramp.ready()) {
+                    ApocalypseFirstLight.LOGGER.warn("[AFL HIGHWAY RAMP] id={} status={} startY={} endY={}",
+                            module.id(),ramp.status(),ramp.grade().startY(),ramp.grade().endY());
+                    continue;
+                }
+                HighwayRampRenderer.render(level,ramp,writer);
+            }
             NaturalHighwayRuntimeStats.placement(writer.asphaltSurfaceBlocks(), writer.clearedBlocks(),
                     writer.duplicateAttempts(), writer.illegalWrites());
             NaturalHighwayRuntimeStats.blockWrite(writer.blockWriteNanos());

@@ -46,7 +46,16 @@ public final class HighwaySpatialClaimProvider {
                     ClaimPriorityPolicy.defaultPriorityFor(SpatialClaimType.INFRASTRUCTURE,
                             SpatialClaimStrength.HARD), 0, List.of()));
         }
-        for(var zone:graph.reservedZones()) if(zone.bounds().intersects(area)) {
+        for(var zone:graph.reservedZones()) {
+            // Seams lie outside the core: a seam-only query must not be rejected by core intersection.
+            for (var seam : HighwayReservedSeams.forZone(graph, zone)) if (seam.bounds().intersects(area)) {
+                claims.add(new SpatialClaim(DeterministicClaimId.create(OWNER, dimension, VERSION,
+                        graph.seed() + ":" + zone.routeId() + ":" + seam.id()), OWNER, dimension, VERSION,
+                        seam.bounds(), Optional.of(OVERWORLD_HEIGHT), SpatialClaimType.INFRASTRUCTURE,
+                        SpatialClaimStrength.HARD, ClaimPriorityPolicy.defaultPriorityFor(
+                        SpatialClaimType.INFRASTRUCTURE, SpatialClaimStrength.HARD), 0, List.of()));
+            }
+            if (!zone.bounds().intersects(area)) continue;
             claims.add(new SpatialClaim(DeterministicClaimId.create(OWNER,dimension,VERSION,
                     graph.seed()+":"+zone.routeId()+":"+zone.id()),OWNER,dimension,VERSION,zone.bounds(),
                     Optional.of(OVERWORLD_HEIGHT),SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD,

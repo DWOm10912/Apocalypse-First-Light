@@ -9,6 +9,12 @@ gradle.projectsEvaluated {
         destinationDirectory = output
         options.encoding = 'UTF-8'
     }
+    p.tasks.register('highwayRampTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayRampTest'
+        maxHeapSize = '512m'
+    }
     p.tasks.register('highwayBranchContractTest', JavaExec) {
         dependsOn compilation
         classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
