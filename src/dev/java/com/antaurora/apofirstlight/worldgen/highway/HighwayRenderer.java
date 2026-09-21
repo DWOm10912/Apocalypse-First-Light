@@ -603,7 +603,7 @@ public final class HighwayRenderer {
 
             int deckBottom = roadCell.roadY() - 3;
             var plannedFoundation = profile.foundationAt((long) globalStation);
-            Foundation foundation = corridor.plan().geometry() == null
+            Foundation foundation = corridor.plan().geometry() == null && !profile.seaBridge()
                     ? findFoundation(level, center.x(), center.z(), deckBottom)
                     : plannedFoundation == null ? new Foundation(false, deckBottom, false)
                     : new Foundation(plannedFoundation.found(), plannedFoundation.y(), plannedFoundation.crossedWater());
@@ -636,7 +636,7 @@ public final class HighwayRenderer {
             stats.minPierHeight = Math.min(stats.minPierHeight, height);
             stats.maxPierHeight = Math.max(stats.maxPierHeight, height);
             stats.pierHeightTotal += height;
-            if (!isStableTerrain(level, new BlockPos(center.x(), foundation.y() - 1, center.z()))) {
+            if (!profile.seaBridge() && !isStableTerrain(level, new BlockPos(center.x(), foundation.y() - 1, center.z()))) {
                 stats.floatingPierCount++;
             }
         }

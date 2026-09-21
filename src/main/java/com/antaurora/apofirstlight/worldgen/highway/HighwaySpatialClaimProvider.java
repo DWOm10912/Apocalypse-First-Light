@@ -61,6 +61,12 @@ public final class HighwaySpatialClaimProvider {
                     Optional.of(OVERWORLD_HEIGHT),SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD,
                     ClaimPriorityPolicy.defaultPriorityFor(SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD),0,List.of()));
         }
+        for(var bridge:SeaBridgeGeometry.query(graph,area)) {
+            claims.add(new SpatialClaim(DeterministicClaimId.create(OWNER,dimension,"sea_bridge_v1",
+                    graph.seed()+":"+bridge.crossing().id()),OWNER,dimension,"sea_bridge_v1",bridge.bounds(),
+                    Optional.of(OVERWORLD_HEIGHT),SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD,
+                    ClaimPriorityPolicy.defaultPriorityFor(SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD),0,List.of()));
+        }
         return List.copyOf(claims);
     }
 

@@ -84,6 +84,12 @@ public final class NaturalHighwayCacheManager {
                 new BoundedSingleFlightCache<>(MAX_ENGINEERING_SEGMENTS);
         private final BoundedSingleFlightCache<String,HighwayRampEngineering> ramps =
                 new BoundedSingleFlightCache<>(MAX_NODE_PLANS);
+        private final BoundedSingleFlightCache<String,SeaBridgeEngineering> seaBridges =
+                new BoundedSingleFlightCache<>(MAX_ENGINEERING_SEGMENTS);
+
+        SeaBridgeEngineering seaBridge(String id,Supplier<SeaBridgeEngineering> builder) {
+            return seaBridges.get(id,builder).value;
+        }
 
         HighwayRampEngineering ramp(String id,Supplier<HighwayRampEngineering> builder) {
             return ramps.get(id,builder).value;

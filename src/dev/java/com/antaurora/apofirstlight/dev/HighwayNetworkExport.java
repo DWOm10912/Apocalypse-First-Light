@@ -72,7 +72,7 @@ public final class HighwayNetworkExport {
             g.setColor(new Color(0, 0, 0, 220)); g.fillRect(x, 4, 242, 124);
             g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
             String[] legend = {"HIGHWAY NETWORK V2", "National Trunk", "Strategic Branch",
-                    "Highway Node / Bridgehead", "Planned Sea Crossing (no deck)", "Red X: unconnected satellite", "Square: TURN / ramp reserved"};
+                    "Highway Node / Bridgehead", "SEA_BRIDGE_V1 (plan)", "Red X: unconnected satellite", "Square: TURN / ramp reserved"};
             Color[] colors = {Color.WHITE, TRUNK, BRANCH, NODE, RESERVED, new Color(255, 72, 72), NODE};
             for (int i = 0; i < legend.length; i++) {
                 g.setColor(colors[i]); g.fillRect(x + 8, 12 + i * 16, 12, 3);
@@ -93,7 +93,7 @@ public final class HighwayNetworkExport {
                 .append("Connected Satellites = ").append(graph.seaCrossings().size()).append("\n")
                 .append("Unconnected Satellites = ").append(satelliteCount - graph.seaCrossings().size()).append("\n")
                 .append("Legend: trunk=white; branch=orange; node=magenta; planned sea crossing=cyan dashed; unconnected=red X\n")
-                .append("Sea crossing lines are reservations only; no physical bridge is claimed.\n");
+                .append("Sea crossings use SEA_BRIDGE_V1. Offline lines show geometry only; live grade/foundations and placed blocks are not verified.\n");
         out.append("\nROUTES\n");
         for (HighwayRouteGraph.Route route : graph.routes().stream().sorted(Comparator.comparing(HighwayRouteGraph.Route::routeId)).toList()) {
             out.append("routeId = ").append(route.routeId()).append("\nrouteType = ").append(route.routeType())
@@ -142,7 +142,7 @@ public final class HighwayNetworkExport {
         for(var turn:graph.turns())out.append("turn = ").append(turn).append("\n");
         for(var zone:graph.reservedZones())out.append("reservedZone = ").append(zone.bounds()).append("\nreservedType = ").append(zone.kind())
                 .append("\n").append(com.antaurora.apofirstlight.worldgen.highway.HighwayRampGeometry.build(graph,zone).description()).append("\n");
-        out.append("SEA CROSSING RESERVATIONS (PLANNED ONLY)\n");
+        out.append("SEA CROSSINGS — SEA_BRIDGE_V1 (offline planning; not placed-block evidence)\n");
         for (SatelliteHighwayRouting.Connection c : sortedCrossings(graph))
             out.append("crossingId = ").append(c.id()).append("\nsatelliteIslandId = ").append(c.islandId())
                     .append("\nowningRouteId = ").append(c.routeId()).append("\nmainlandBridgehead = ")
@@ -151,6 +151,11 @@ public final class HighwayNetworkExport {
                     .append(c.satellite().x()).append(", ").append(c.satellite().z())
                     .append("\nactualBankSpan = ").append(c.span()).append("\nbridgeAxis = ").append(c.dx()).append(", ").append(c.dz())
                     .append("\nsourceWaterbodyId = ").append(c.source().waterbodyId())
+                    .append("\nbridgeType = SEA_BRIDGE_V1\ngenerationStatus = ENGINEERING_NOT_SAMPLED")
+                    .append("\ndeckY / grade endpoints = UNKNOWN (requires live road endpoint engineering)")
+                    .append("\npierCount = UNKNOWN (requires foundation search)\nplannedPierCount = ")
+                    .append(com.antaurora.apofirstlight.worldgen.highway.SeaBridgeGeometry.of(c).pierStations().size())
+                    .append("\nmainlandAbutment = PLANNED\nsatelliteAbutment = PLANNED")
                     .append("\nsourceCandidate = ").append(c.source()).append("\n\n");
         out.append("CONNECTED SATELLITES\n");
         for (SatelliteHighwayRouting.Connection c : sortedCrossings(graph))

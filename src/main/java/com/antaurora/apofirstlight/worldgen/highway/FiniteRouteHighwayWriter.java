@@ -10,8 +10,12 @@ final class FiniteRouteHighwayWriter implements HighwayBlockWriter {
     private final BoundsXZ bounds;
 
     FiniteRouteHighwayWriter(HighwayBlockWriter delegate, HighwayRouteGraph.Edge edge) {
+        this(delegate, edge.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH));
+    }
+
+    FiniteRouteHighwayWriter(HighwayBlockWriter delegate, BoundsXZ bounds) {
         this.delegate = delegate;
-        this.bounds = edge.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH);
+        this.bounds = bounds;
     }
 
     @Override

@@ -32,6 +32,7 @@ public final class HighwayProfile {
     private final HighwayBranchGrade branchGrade;
     private final java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations;
     private final HighwayRampGrade rampGrade;
+    private final boolean seaBridge;
 
     private HighwayProfile(HighwayPlan plan, HighwayBridgeSpanResolver.Resolution resolution,
                            int maxCrossSlopeObserved, double maxWaterCoverageObserved,
@@ -56,6 +57,16 @@ public final class HighwayProfile {
                            HighwayBranchGrade branchGrade,
                            java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations,
                            HighwayRampGrade rampGrade) {
+        this(plan,resolution,maxCrossSlopeObserved,maxWaterCoverageObserved,extremeCrossSectionEncountered,
+                nodeConstraints,branchGrade,foundations,rampGrade,false);
+    }
+
+    private HighwayProfile(HighwayPlan plan, HighwayBridgeSpanResolver.Resolution resolution,
+                           int maxCrossSlopeObserved, double maxWaterCoverageObserved,
+                           boolean extremeCrossSectionEncountered, HighwayNodeConstraints nodeConstraints,
+                           HighwayBranchGrade branchGrade,
+                           java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations,
+                           HighwayRampGrade rampGrade, boolean seaBridge) {
         this.plan = plan;
         this.samples = List.copyOf(resolution.samples());
         this.bridgeSpans = List.copyOf(resolution.spans());
@@ -71,7 +82,26 @@ public final class HighwayProfile {
         this.branchGrade = branchGrade;
         this.foundations = java.util.Map.copyOf(foundations);
         this.rampGrade = rampGrade;
+        this.seaBridge = seaBridge;
     }
+
+    /** Two engineering anchors give exact rounded linear grade, independent of chunk sampling. */
+    public static HighwayProfile seaBridge(HighwayPlan plan,int startY,int endY,
+            java.util.Map<Long,HighwayTerrainSampler.PierFoundation> foundations) {
+        List<Sample> samples=new ArrayList<>();
+        for(int i=0;i<2;i++) {
+            double s=i==0?0:plan.length();var p=plan.sample(s);var t=plan.tangent(s);
+            int y=i==0?startY:endY;
+            samples.add(new Sample(s,p.x(),p.z(),t.x(),t.z(),y-8,y,
+                    HighwayTerrainMode.VIADUCT,HighwayTerrainMode.VIADUCT,true,
+                    y-8,y-8,y-8,y-8,23,0,0,1,0,8,y-8,y-8,true,true));
+        }
+        var resolution=new HighwayBridgeSpanResolver.Resolution(samples,
+                List.of(new HighwayBridgeSpanResolver.Span(0,plan.length())),2,plan.length(),2,0,0);
+        return new HighwayProfile(plan,resolution,0,1,false,HighwayNodeConstraints.NONE,null,foundations,null,true);
+    }
+
+    public boolean seaBridge() { return seaBridge; }
 
     /** Short no-tunnel local engineering; uses the same road palette, profile and viaduct consumer. */
     public static HighwayProfile ramp(HighwayRampGrade grade, HighwayTerrainSampler terrain, boolean endpointViaduct) {
@@ -285,10 +315,11 @@ public final class HighwayProfile {
     public double maxWaterCoverageObserved() { return maxWaterCoverageObserved; }
     public boolean extremeCrossSectionEncountered() { return extremeCrossSectionEncountered; }
     public boolean tunnelAllowed(double localDistance) {
-        if (rampGrade != null) return false;
+        if (rampGrade != null || seaBridge) return false;
         return nodeConstraints.tunnelAllowed(plan.globalStation(localDistance));
     }
     public boolean pierAllowed(double localDistance) {
+        if(seaBridge)return foundations.containsKey((long)plan.globalStation(localDistance));
         return nodeConstraints.pierAllowed(plan.globalStation(localDistance));
     }
 

@@ -1,5 +1,7 @@
 # Highway V2 Phase 2B-2 — Satellite Island Routing
 
+Sea Bridge V1 后续更新：下文 reservation 不产生海桥/claim 的描述是旧阶段边界。现有 Connection 由 [Sea Bridge V1](highway_v2_sea_bridge_v1.md) 消费，生成轴向桥面、桥台与桥墩并提供窄条形 claim。info 当前输出 `seaBridge=SEA_BRIDGE_V1 generationStatus=ENGINEERING_NOT_SAMPLED`（替代 RESERVATION_ONLY），diagnose 增加海桥 dry replay；未改变本文件对应的 routing/bridgehead 算法。
+
 当前规则见 [Orthogonal Routing V1](highway_v2_orthogonal_routing_v1.md)。现行替代规则：live长距离支线已改轴向multi-edge + TURN/junction reservation。本文八方向选桥、两岸各单POLYLINE edge、评分及旧seed连接结果均为历史记录。
 
 最新桥头选择见 [Orthogonal Shoreline Bridgehead Search V1](highway_v2_shoreline_bridgehead_search_v1.md)：CrossingCandidate为局部搜索/水体/陆块权威，512格有界岸线搜索、共享dry LAND/COAST判定、轴向桥跨≤800、64对ranked alternatives、位移优先及逐阶段失败诊断。本文下述96格调整、LAND-only、旧评分与验证数量不再代表现行行为。Bridge Approach Tunnel尚未修复。

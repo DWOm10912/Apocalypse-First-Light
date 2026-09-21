@@ -117,7 +117,7 @@ public final class HighwayNetworkCommand {
                     +" mainlandLength="+crossing.mainlandGeometry().length()+" islandLength="+crossing.islandGeometry().length()
                     +" selectedParentTrunk="+crossing.parent().parentRouteId()+" turnCount="+crossing.turnCount()
                     +" mainlandRouteLength="+crossing.mainlandRouteLength()+" extraDistance="+crossing.extraDistance()+" networkCost="+crossing.networkCost()
-                    +" seaBridge=RESERVATION_ONLY diagonalViaduct=SUPPORTED diagonalTunnel=UNSUPPORTED_SAFE_SKIP"),false);
+                    +" seaBridge=SEA_BRIDGE_V1 generationStatus=ENGINEERING_NOT_SAMPLED diagonalViaduct=SUPPORTED diagonalTunnel=UNSUPPORTED_SAFE_SKIP"),false);
         }
         for(var turn:graph.turns())send(context,"[TURN] "+turn);
         for(var zone:graph.reservedZones())send(context,"["+zone.kind()+"] "+HighwayRampGeometry.build(graph,zone).description());

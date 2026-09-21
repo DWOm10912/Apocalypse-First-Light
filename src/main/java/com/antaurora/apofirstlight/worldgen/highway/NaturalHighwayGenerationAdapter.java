@@ -38,6 +38,7 @@ public final class NaturalHighwayGenerationAdapter {
             BoundsXZ area = chunkBounds(target);
             List<HighwayRouteGraph.Edge> routes = queryForChunk(graph, target);
             List<HighwayRampGeometry.Module> rampModules = HighwayRampModules.forGraph(graph).query(area);
+            var seaBridges = SeaBridgeGeometry.query(graph,area);
             // A neighbour's vegetation feature may legally write one chunk into this target.
             // Query that narrow halo before doing any profile/engineering work.
             List<HighwayRouteGraph.Edge> hygieneRoutes = graph.query(
@@ -45,7 +46,7 @@ public final class NaturalHighwayGenerationAdapter {
             NaturalHighwayRuntimeStats.plannerQuery(System.nanoTime() - plannerStarted,
                     (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.NORTH_SOUTH).count(),
                     (int) hygieneRoutes.stream().filter(edge -> edge.orientation() == HighwayRouteGraph.Orientation.EAST_WEST).count());
-            if (hygieneRoutes.isEmpty() && rampModules.isEmpty()) {
+            if (hygieneRoutes.isEmpty() && rampModules.isEmpty() && seaBridges.isEmpty()) {
                 NaturalHighwayRuntimeStats.hygieneFastReject();
                 NaturalHighwayRuntimeStats.finishRejected(feature);
                 return false;
@@ -109,6 +110,14 @@ public final class NaturalHighwayGenerationAdapter {
                     continue;
                 }
                 HighwayRampRenderer.render(level,ramp,writer);
+            }
+            for(var geometry:seaBridges) {
+                var bridge=cache.seaBridge(geometry.crossing().id(),
+                        ()->SeaBridgeEngineering.build(level,graph,geometry,terrain,cache));
+                if(!bridge.status().equals("READY"))ApocalypseFirstLight.LOGGER.warn(
+                        "[AFL SEA_BRIDGE_V1] crossingId={} status={} foundationFailures={}",
+                        geometry.crossing().id(),bridge.status(),bridge.foundationFailures());
+                bridge.render(level,writer);
             }
             NaturalHighwayRuntimeStats.placement(writer.asphaltSurfaceBlocks(), writer.clearedBlocks(),
                     writer.duplicateAttempts(), writer.illegalWrites());
