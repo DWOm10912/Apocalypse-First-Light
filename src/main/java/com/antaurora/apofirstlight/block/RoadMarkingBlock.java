@@ -17,7 +17,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
     /** 0 keeps all existing cardinal models. 1..15 are NESW arms; 16 is an isolated ribbon dot. */
-    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 16);
+    // 17..31: NESW boundary strips (16 + mask), matching the legacy edge model's 2px inset.
+    // 33..47: NE/SE/SW/NW corner joins for concave boundary vertices; 32 reserved.
+    public static final IntegerProperty CONNECTIONS = IntegerProperty.create("connections", 0, 47);
     public static final IntegerProperty RISES = IntegerProperty.create("rises", 0, 15);
     private static final VoxelShape[] RIBBON_SHAPES = ribbonShapes();
     public enum MarkingType {
@@ -116,16 +118,27 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
 
     private static int transformMask(int mask, java.util.function.UnaryOperator<Direction> transform) {
         if (mask == 0 || mask == 16) return mask;
+        if (mask >= 32) {
+            Direction[] sides = {Direction.NORTH,Direction.EAST,Direction.SOUTH,Direction.WEST};
+            int result=32;
+            for(int i=0;i<4;i++)if(((mask-32)&(1<<i))!=0) {
+                var a=transform.apply(sides[i]);var b=transform.apply(sides[(i+1)%4]);
+                for(int j=0;j<4;j++)if((sides[j]==a&&sides[(j+1)%4]==b)||(sides[j]==b&&sides[(j+1)%4]==a))result|=1<<j;
+            }
+            return result;
+        }
+        int boundary = mask > 16 ? 16 : 0;
+        mask -= boundary;
         Direction[] directions = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
         int result = 0;
         for (int i = 0; i < 4; i++) if ((mask & (1 << i)) != 0) {
             Direction rotated = transform.apply(directions[i]);
             for (int j = 0; j < 4; j++) if (directions[j] == rotated) result |= 1 << j;
         }
-        return result;
+        return result + boundary;
     }
     private static VoxelShape[] ribbonShapes() {
-        VoxelShape[] shapes = new VoxelShape[17];
+        VoxelShape[] shapes = new VoxelShape[48];
         for (int mask = 1; mask <= 16; mask++) {
             VoxelShape shape = Block.box(7, 0, 7, 9, .75, 9);
             if ((mask & 1) != 0) shape = Shapes.or(shape, Block.box(7, 0, 0, 9, .75, 7));
@@ -133,6 +146,22 @@ public final class RoadMarkingBlock extends HorizontalDirectionalBlock {
             if ((mask & 4) != 0) shape = Shapes.or(shape, Block.box(7, 0, 9, 9, .75, 16));
             if ((mask & 8) != 0) shape = Shapes.or(shape, Block.box(0, 0, 7, 7, .75, 9));
             shapes[mask] = shape;
+        }
+        for (int mask = 1; mask < 16; mask++) {
+            VoxelShape shape = Shapes.empty();
+            if ((mask & 1) != 0) shape = Shapes.or(shape, Block.box(0,0,0,16,.75,2));
+            if ((mask & 2) != 0) shape = Shapes.or(shape, Block.box(14,0,0,16,.75,16));
+            if ((mask & 4) != 0) shape = Shapes.or(shape, Block.box(0,0,14,16,.75,16));
+            if ((mask & 8) != 0) shape = Shapes.or(shape, Block.box(0,0,0,2,.75,16));
+            shapes[16 + mask] = shape;
+        }
+        for(int mask=0;mask<16;mask++) {
+            VoxelShape shape=Shapes.empty();
+            if((mask&1)!=0)shape=Shapes.or(shape,Block.box(14,0,0,16,.75,2));
+            if((mask&2)!=0)shape=Shapes.or(shape,Block.box(14,0,14,16,.75,16));
+            if((mask&4)!=0)shape=Shapes.or(shape,Block.box(0,0,14,2,.75,16));
+            if((mask&8)!=0)shape=Shapes.or(shape,Block.box(0,0,0,2,.75,2));
+            shapes[32+mask]=shape;
         }
         return shapes;
     }

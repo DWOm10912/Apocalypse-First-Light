@@ -252,6 +252,39 @@ public final class HighwayGeometry {
         }
         return null;
     }
+    /** Ramp-only paint raster: diagonal connector ties follow route station, never world-X bias. */
+    Detail rampMarking(int x, int z) {
+        Sample sample = query(x, z, ROAD_HALF_WIDTH);
+        if (sample == null) return null;
+        for (int band : PAINT_BANDS) {
+            if (!rampPainted(x, z, band)) continue;
+            int mask = 0;
+            if (rampPainted(x, z - 1, band)) mask |= 1;
+            if (rampPainted(x + 1, z, band)) mask |= 2;
+            if (rampPainted(x, z + 1, band)) mask |= 4;
+            if (rampPainted(x - 1, z, band)) mask |= 8;
+            return new Detail(band, mask == 0 ? 16 : mask);
+        }
+        return null;
+    }
+    private boolean rampPainted(int x, int z, int band) {
+        Sample sample = query(x, z, ROAD_HALF_WIDTH);
+        return sample != null && (Math.abs(band) != 6 || dash(sample.station))
+                && inRampMarkingBand(x, z, band);
+    }
+    private boolean inRampMarkingBand(int x, int z, int band) {
+        if (rawBand(x, z) == band) return true;
+        Sample here = query(x, z, ROAD_HALF_WIDTH);
+        if (here == null || Math.abs(here.lateral - band) > 1.5) return false;
+        for (int dx : SIGNS) for (int dz : SIGNS) {
+            if (rawBand(x + dx, z) != band || rawBand(x, z + dz) != band) continue;
+            Sample diagonal = query(x + dx, z + dz, ROAD_HALF_WIDTH);
+            double a = Math.abs(here.lateral - band);
+            double b = diagonal == null ? Double.POSITIVE_INFINITY : Math.abs(diagonal.lateral - band);
+            if (a < b - EPS || (Math.abs(a - b) <= EPS && here.station < diagonal.station - EPS)) return true;
+        }
+        return false;
+    }
     private boolean painted(int x, int z, int band) {
         Sample sample = query(x, z, ROAD_HALF_WIDTH);
         return sample != null && (Math.abs(band) != 6 || dash(sample.station)) && inDetailBand(x, z, band);

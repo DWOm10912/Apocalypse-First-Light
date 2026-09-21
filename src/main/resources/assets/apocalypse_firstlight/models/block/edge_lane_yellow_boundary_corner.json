@@ -1,0 +1,40 @@
+{
+  "textures": {
+    "paint": "apocalypse_firstlight:block/edge_lane_yellow",
+    "particle": "apocalypse_firstlight:block/edge_lane_yellow"
+  },
+  "elements": [
+    {
+      "from": [
+        14,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        0.05,
+        2
+      ],
+      "faces": {
+        "up": {
+          "texture": "#paint",
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ]
+        },
+        "down": {
+          "texture": "#paint",
+          "uv": [
+            0,
+            0,
+            2,
+            2
+          ]
+        }
+      }
+    }
+  ]
+}
