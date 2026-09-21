@@ -20,4 +20,28 @@ gradle.projectsEvaluated {
         mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayGeometryIntegrationTest'
         maxHeapSize = '512m'
     }
+    p.tasks.register('highwaySatelliteRoutingTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwaySatelliteRoutingTest'
+        maxHeapSize = '512m'
+    }
+    p.tasks.register('highwayNetworkExportTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayNetworkExportTest'
+        maxHeapSize = '512m'
+    }
+    p.tasks.register('highwayViaductTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayViaductTest'
+        maxHeapSize = '512m'
+    }
+    p.tasks.register('highwayOrthogonalRoutingTest', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.worldgen.highway.HighwayOrthogonalRoutingTest'
+        maxHeapSize = '512m'
+    }
 }

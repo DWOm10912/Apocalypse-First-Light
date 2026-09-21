@@ -2,8 +2,8 @@
   "anchor": "bottom_right",
   "schema_version": 2,
   "global": {
-    "offset_x": 1.5011708,
-    "offset_y": -8.697249,
+    "offset_x": 2.6687486,
+    "offset_y": -7.3592114,
     "scale": 1.1999998,
     "width": 114.99642,
     "height": 39.951305,
@@ -21,16 +21,16 @@
     "empty_color": "#FF2626"
   },
   "divider": {
-    "offset_x": 62.411285,
-    "offset_y": 10.714323,
-    "width": 0.91699225,
-    "height": 27.073042,
+    "offset_x": 62.68928,
+    "offset_y": 13.083766,
+    "width": 0.5,
+    "height": 22.334156,
     "color": "#FFFFFF",
     "alpha": 0.9
   },
   "weapon_name": {
-    "offset_x": 5.8667855,
-    "offset_y": 2.7480137,
+    "offset_x": 5.588791,
+    "offset_y": 3.5842876,
     "width": 102.7728,
     "height": 5.860621,
     "scale": 1.3999999,

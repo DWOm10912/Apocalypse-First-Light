@@ -266,7 +266,7 @@ public final class HighwayRenderer {
         placeRoadMarkings(level, writer, stats, corridor);
         placeRoadMarkingStepConnectors(level, writer, stats, corridor);
         placeTunnel(level, writer, stats, corridor);
-        if (corridor.plan().geometry() == null) placePiers(level, writer, stats, corridor, profile);
+        placePiers(level, writer, stats, corridor, profile);
     }
 
     private static void clearCoreRoadVerticalEnvelope(WorldGenLevel level, HighwayBlockWriter edit,
@@ -584,8 +584,16 @@ public final class HighwayRenderer {
              globalStation <= globalEnd; globalStation += PIER_SPACING) {
             double station = corridor.plan().localDistance(globalStation);
             if (!profile.pierAllowed(station)) continue;
-            HighwayCorridor.CenterCell center = nearestCenterline(corridor, station);
+            HighwayCorridor.CenterCell center = corridor.plan().geometry() == null ? nearestCenterline(corridor, station) : null;
             HighwayCorridor.Cell roadCell = center == null ? null : centerCell(corridor, center);
+            if (corridor.plan().geometry() != null) {
+                var pose = HighwayPierGeometry.at(corridor.plan(), globalStation);
+                tangent = pose.tangent();
+                center = new HighwayCorridor.CenterCell(pose.x(), pose.z(), station);
+                var sample = profile.sampleAt(station);
+                roadCell = new HighwayCorridor.Cell(pose.x(), pose.z(), station, 0, HighwayCorridor.Role.MEDIAN,
+                        profile.roadYAt(station, pose.x(), pose.z()), sample.terrainY(), sample.mode(), true);
+            }
             HighwayBridgeSpanResolver.Span span = profile.spanAt(station);
             if (center == null || roadCell == null || roadCell.mode() != HighwayTerrainMode.VIADUCT || span == null) continue;
             if (!edit.mayAffectHorizontal(center.x(), center.z(), PIER_CAP_HALF_WIDTH + 2)) continue;
@@ -594,7 +602,11 @@ public final class HighwayRenderer {
             stats.pierStationsPlanned++;
 
             int deckBottom = roadCell.roadY() - 3;
-            Foundation foundation = findFoundation(level, center.x(), center.z(), deckBottom);
+            var plannedFoundation = profile.foundationAt((long) globalStation);
+            Foundation foundation = corridor.plan().geometry() == null
+                    ? findFoundation(level, center.x(), center.z(), deckBottom)
+                    : plannedFoundation == null ? new Foundation(false, deckBottom, false)
+                    : new Foundation(plannedFoundation.found(), plannedFoundation.y(), plannedFoundation.crossedWater());
             if (!foundation.found()) {
                 stats.piersSkipped++;
                 stats.pierFoundationFailures++;
@@ -662,6 +674,14 @@ public final class HighwayRenderer {
                                        int yMin, int yMax) {
         double rightX = -tangent.z();
         double rightZ = tangent.x();
+        if (Math.abs(tangent.x()) > 1.0e-8 && Math.abs(tangent.z()) > 1.0e-8) {
+            for (var column : HighwayPierGeometry.rectangle(centerX, centerZ, tangent,
+                    lateralMin, lateralMax, longitudinalMin, longitudinalMax)) {
+                for (int y = yMin; y <= yMax; y++)
+                    placeConcrete(level, edit, stats, new BlockPos(column.x(), y, column.z()));
+            }
+            return;
+        }
         for (int longitudinal = longitudinalMin; longitudinal <= longitudinalMax; longitudinal++) {
             for (int lateral = lateralMin; lateral <= lateralMax; lateral++) {
                 int x = (int) Math.round(centerX + tangent.x() * longitudinal + rightX * lateral);

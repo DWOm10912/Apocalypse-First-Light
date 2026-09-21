@@ -46,6 +46,12 @@ public final class HighwaySpatialClaimProvider {
                     ClaimPriorityPolicy.defaultPriorityFor(SpatialClaimType.INFRASTRUCTURE,
                             SpatialClaimStrength.HARD), 0, List.of()));
         }
+        for(var zone:graph.reservedZones()) if(zone.bounds().intersects(area)) {
+            claims.add(new SpatialClaim(DeterministicClaimId.create(OWNER,dimension,VERSION,
+                    graph.seed()+":"+zone.routeId()+":"+zone.id()),OWNER,dimension,VERSION,zone.bounds(),
+                    Optional.of(OVERWORLD_HEIGHT),SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD,
+                    ClaimPriorityPolicy.defaultPriorityFor(SpatialClaimType.INFRASTRUCTURE,SpatialClaimStrength.HARD),0,List.of()));
+        }
         return List.copyOf(claims);
     }
 

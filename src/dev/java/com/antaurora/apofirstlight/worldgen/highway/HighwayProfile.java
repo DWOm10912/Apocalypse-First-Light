@@ -29,11 +29,22 @@ public final class HighwayProfile {
     private final double maxWaterCoverageObserved;
     private final boolean extremeCrossSectionEncountered;
     private final HighwayNodeConstraints nodeConstraints;
+    private final HighwayBranchGrade branchGrade;
+    private final java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations;
 
     private HighwayProfile(HighwayPlan plan, HighwayBridgeSpanResolver.Resolution resolution,
                            int maxCrossSlopeObserved, double maxWaterCoverageObserved,
                            boolean extremeCrossSectionEncountered,
                            HighwayNodeConstraints nodeConstraints) {
+        this(plan, resolution, maxCrossSlopeObserved, maxWaterCoverageObserved,
+                extremeCrossSectionEncountered, nodeConstraints, null, java.util.Map.of());
+    }
+
+    private HighwayProfile(HighwayPlan plan, HighwayBridgeSpanResolver.Resolution resolution,
+                           int maxCrossSlopeObserved, double maxWaterCoverageObserved,
+                           boolean extremeCrossSectionEncountered, HighwayNodeConstraints nodeConstraints,
+                           HighwayBranchGrade branchGrade,
+                           java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations) {
         this.plan = plan;
         this.samples = List.copyOf(resolution.samples());
         this.bridgeSpans = List.copyOf(resolution.spans());
@@ -46,6 +57,8 @@ public final class HighwayProfile {
         this.maxWaterCoverageObserved = maxWaterCoverageObserved;
         this.extremeCrossSectionEncountered = extremeCrossSectionEncountered;
         this.nodeConstraints = nodeConstraints;
+        this.branchGrade = branchGrade;
+        this.foundations = java.util.Map.copyOf(foundations);
     }
 
     public static HighwayProfile sample(ServerLevel level, HighwayPlan plan) {
@@ -139,6 +152,12 @@ public final class HighwayProfile {
                                                HighwayRouteGraph.Edge corridor,
                                                HighwayTerrainSampler terrain,
                                                HighwayNodeConstraints nodeConstraints) {
+        return sampleNatural(plan, corridor, terrain, nodeConstraints, null);
+    }
+
+    public static HighwayProfile sampleNatural(HighwayPlan plan, HighwayRouteGraph.Edge corridor,
+                                               HighwayTerrainSampler terrain, HighwayNodeConstraints nodeConstraints,
+                                               HighwayBranchGrade branchGrade) {
         NaturalHighwayRuntimeStats.profileBuildCall();
         long profileStarted = System.nanoTime();
         int count = Math.max(2, (int) Math.ceil(plan.length() / SAMPLE_SPACING) + 1);
@@ -152,6 +171,8 @@ public final class HighwayProfile {
                     : Math.min(plan.length(), (double) i * SAMPLE_SPACING);
             double globalStation = plan.globalStation(distance);
             int roadY = terrain.globalRoadY(corridor, globalStation);
+            HighwayPlan.Point gradePoint = plan.sample(distance);
+            if (branchGrade != null) roadY = branchGrade.adjust(globalStation, gradePoint.x(), gradePoint.z(), roadY);
             roadY = nodeConstraints.adjustRoadY(globalStation, roadY);
             HighwayTerrainSampler.CrossSection cross = terrain.crossSection(corridor, globalStation);
             int crossSlope = cross.maxY() - cross.minY();
@@ -161,6 +182,8 @@ public final class HighwayProfile {
             HighwayTerrainMode rawMode = mode(roadY - cross.medianY(), waterCoverage,
                     crossSlope, cutDepthMax, fillDepthMax);
             rawMode = nodeConstraints.overrideMode(globalStation, rawMode);
+            if (branchGrade != null && branchGrade.parentViaduct(globalStation, gradePoint.x(), gradePoint.z()))
+                rawMode = HighwayTerrainMode.VIADUCT;
             bridgeCandidate |= rawMode == HighwayTerrainMode.VIADUCT;
             HighwayPlan.Point point = plan.sample(distance);
             HighwayPlan.Tangent tangent = plan.tangent(distance);
@@ -178,7 +201,20 @@ public final class HighwayProfile {
                 ? HighwayBridgeSpanResolver.resolve(rawSamples)
                 : HighwayBridgeSpanResolver.noCandidates(rawSamples);
         HighwayProfile result = new HighwayProfile(plan, resolution, maxCrossSlope, maxWaterCoverage,
-                extremeCrossSection, nodeConstraints);
+                extremeCrossSection, nodeConstraints, branchGrade, java.util.Map.of());
+        if (plan.geometry() != null) {
+            java.util.Map<Long, HighwayTerrainSampler.PierFoundation> foundations = new java.util.HashMap<>();
+            for (long station = (long) Math.ceil(plan.stationOffset() / HighwayPierGeometry.SPACING) * HighwayPierGeometry.SPACING;
+                 station <= plan.globalStation(plan.length()); station += HighwayPierGeometry.SPACING) {
+                double local = plan.localDistance(station);
+                if (result.sampleAt(local).mode() != HighwayTerrainMode.VIADUCT || result.spanAt(local) == null) continue;
+                HighwayPlan.Point p = plan.sample(local);
+                int x = (int) Math.round(p.x()), z = (int) Math.round(p.z());
+                foundations.put(station, terrain.pierFoundation(x, z, result.roadYAt(local, x, z) - 3));
+            }
+            result = new HighwayProfile(plan, resolution, maxCrossSlope, maxWaterCoverage,
+                    extremeCrossSection, nodeConstraints, branchGrade, foundations);
+        }
         NaturalHighwayRuntimeStats.profileBuild(System.nanoTime() - profileStarted);
         return result;
     }
@@ -215,6 +251,19 @@ public final class HighwayProfile {
     }
     public boolean pierAllowed(double localDistance) {
         return nodeConstraints.pierAllowed(plan.globalStation(localDistance));
+    }
+
+    public HighwayTerrainSampler.PierFoundation foundationAt(long station) { return foundations.get(station); }
+
+    /** Preserve the parent plane across the entire junction footprint, not just its center pixel. */
+    public int roadYAt(double local, int x, int z) {
+        int y = sampleAt(local).roadY();
+        if (branchGrade == null) return y;
+        double station = plan.globalStation(local);
+        if (station <= HighwayBranchGrade.HOLD_LENGTH) return branchGrade.parentY(x, z);
+        HighwayPlan.Point p = plan.sample(local);
+        return y + (int) Math.round(branchGrade.weight(station)
+                * (branchGrade.parentY(x, z) - branchGrade.parentY(p.x(), p.z())));
     }
 
     public Sample sampleAt(double distance) {

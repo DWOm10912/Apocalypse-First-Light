@@ -22,7 +22,7 @@ public final class HighwayStrategicBranchTest {
         } catch (ReflectiveOperationException failure) { throw new AssertionError(failure); }
     }
     public static void main(String[] args) {
-        HighwayRouteGraph base = HighwayRouteGraph.build(42);
+        HighwayRouteGraph base = HighwayRouteGraph.buildTrunks(42);
         check(base.getNationalTrunks().size() == 2 && base.getStrategicBranches().isEmpty(), "two trunks only");
         check(base.intersection().equals(new Node("national_intersection", NodeKind.INTERSECTION, 926, -859)), "Phase 1 intersection fixture");
         Edge a = base.getEdgeById("national_trunk_a/main").orElseThrow();
@@ -33,7 +33,7 @@ public final class HighwayStrategicBranchTest {
                 && b.endStation() == 6416 && b.fixedCoordinate() == 926, "Phase 1 trunk B fixture");
         check(a.bounds(32).equals(new BoundsXZ(-6664, -891, 7169, -826)), "Phase 1 A claim bounds");
         check(b.bounds(32).equals(new BoundsXZ(894, -6944, 959, 6417)), "Phase 1 B claim bounds");
-        check(base.edges().equals(HighwayRouteGraph.build(42).edges()), "reconstruction determinism");
+        check(base.edges().equals(HighwayRouteGraph.buildTrunks(42).edges()), "reconstruction determinism");
         HighwayRouteGraph extended = branch(base, "example", 1000, -1359);
         Edge branch = extended.getEdgeById("strategic_branch/example/main").orElseThrow();
         var attachment = branch.parentAttachment().orElseThrow();
@@ -56,7 +56,7 @@ public final class HighwayStrategicBranchTest {
         check(HighwaySpatialClaimProvider.query(extended, OVERWORLD, all).containsAll(
                 HighwaySpatialClaimProvider.query(base, OVERWORLD, all)), "trunk claim identities unchanged");
         check(extended.getNationalTrunks().equals(base.getNationalTrunks()), "unchanged parent routes");
-        check(base.edges().size() == 2 && HighwayRouteGraph.forSeed(42).edges().size() == 2, "cache not mutated");
+        check(base.edges().size() == 2 && HighwayRouteGraph.forSeed(42).getNationalTrunks().equals(base.getNationalTrunks()), "trunk cache not mutated");
         var first = branch(branch(base, "one", 1000, -1359), "two", 1200, -359);
         var second = branch(branch(base, "two", 1200, -359), "one", 1000, -1359);
         check(first.routes().equals(second.routes()) && first.nodes().equals(second.nodes()), "insertion order independent");

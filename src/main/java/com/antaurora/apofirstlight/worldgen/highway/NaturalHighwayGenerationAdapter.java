@@ -35,9 +35,8 @@ public final class NaturalHighwayGenerationAdapter {
             // No RandomState, terrain sampler, padded plan, profile or engineering resolver yet.
             long plannerStarted = System.nanoTime();
             HighwayRouteGraph graph = HighwayRouteGraph.forSeed(level.getSeed());
-            BoundsXZ area = new BoundsXZ(target.getMinBlockX(), target.getMinBlockZ(),
-                    target.getMaxBlockX() + 1, target.getMaxBlockZ() + 1);
-            List<HighwayRouteGraph.Edge> routes = graph.query(area, HighwayRouteGraph.FOOTPRINT_HALF_WIDTH);
+            BoundsXZ area = chunkBounds(target);
+            List<HighwayRouteGraph.Edge> routes = queryForChunk(graph, target);
             // A neighbour's vegetation feature may legally write one chunk into this target.
             // Query that narrow halo before doing any profile/engineering work.
             List<HighwayRouteGraph.Edge> hygieneRoutes = graph.query(
@@ -110,7 +109,16 @@ public final class NaturalHighwayGenerationAdapter {
         }
     }
 
-    private static CorridorEngineeringSegment segmentForChunk(
+    static BoundsXZ chunkBounds(ChunkPos target) {
+        return new BoundsXZ(target.getMinBlockX(), target.getMinBlockZ(),
+                target.getMaxBlockX() + 1, target.getMaxBlockZ() + 1);
+    }
+
+    static List<HighwayRouteGraph.Edge> queryForChunk(HighwayRouteGraph graph, ChunkPos target) {
+        return graph.query(chunkBounds(target), HighwayRouteGraph.FOOTPRINT_HALF_WIDTH);
+    }
+
+    static CorridorEngineeringSegment segmentForChunk(
             ChunkPos target, HighwayRouteGraph graph,
             HighwayRouteGraph.Edge corridor, HighwayTerrainSampler terrain,
             NaturalHighwayCacheManager.WorldCache cache, WorldGenLevel level) {

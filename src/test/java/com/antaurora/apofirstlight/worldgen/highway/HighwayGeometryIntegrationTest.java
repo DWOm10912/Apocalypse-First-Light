@@ -10,6 +10,12 @@ public final class HighwayGeometryIntegrationTest {
                 new HighwayGeometry.Point(1064,-859), new HighwayGeometry.Point(1128,-923),
                 new HighwayGeometry.Point(1192,-923)));
         var base = HighwayRouteGraph.build(42);
+        require(base.query(new com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ(
+                base.intersection().x(), base.intersection().z(),
+                base.intersection().x() + 1, base.intersection().z() + 1),
+                HighwayRouteGraph.FOOTPRINT_HALF_WIDTH).stream()
+                .filter(e -> e.routeType() == HighwayRouteGraph.RouteType.NATIONAL_TRUNK).count() == 2,
+                "national trunk lookup");
         var graph = base.withStrategicBranch("geometry", "national_trunk_a", "national_trunk_a/main",
                 1000, geometry, "synthetic");
         var edge = graph.getEdgeById("strategic_branch/geometry/main").orElseThrow();
@@ -21,13 +27,31 @@ public final class HighwayGeometryIntegrationTest {
         require(corridor.cells().size() == geometry.raster(geometry.bounds(11.5),11.5).size(), "consumer footprint");
         require(!corridor.roadMarkings().isEmpty() && corridor.roadMarkings().stream().anyMatch(m -> m.rises()!=0), "sloped marking risers");
         require(corridor.rowEnvelope().stream().allMatch(c -> geometry.query(c.x(),c.z(),14.5)!=null), "grading only expanded ribbon");
-        for (var mode : List.of(HighwayTerrainMode.VIADUCT, HighwayTerrainMode.TUNNEL)) {
+        var viaduct = HighwayCorridor.buildNatural(null,plan,profile(plan,HighwayTerrainMode.VIADUCT,0));
+        require(!viaduct.geometryDeferred() && viaduct.cells().stream().allMatch(HighwayCorridor.Cell::structuralBridge),
+                "viaduct ribbon supported");
+        for (var mode : List.of(HighwayTerrainMode.TUNNEL)) {
             var deferred = HighwayCorridor.buildNatural(null,plan,profile(plan,mode,0));
             require(deferred.geometryDeferred() && deferred.cells().isEmpty() && deferred.rowEnvelope().isEmpty()
                     && deferred.coreRoadColumns().isEmpty() && deferred.cutColumns().isEmpty()
                     && deferred.tunnelBorePositions().isEmpty(), "unsupported structural mode emits nothing");
         }
-        System.out.println("HighwayGeometryIntegrationTest PASS: graph, corridor, grading, sloped markings, structural no-write contracts; no world");
+        require(HighwayLiveGenerationDiagnostic.classify(true, true, false,
+                corridor.cells().size(), 1, 1) == HighwayLiveGenerationDiagnostic.DropPoint.NONE,
+                "surface branch preflight");
+        require(HighwayLiveGenerationDiagnostic.classify(true, true, true,
+                0, 0, 1) == HighwayLiveGenerationDiagnostic.DropPoint.BUILD_RIBBON,
+                "unsupported ribbon first drop");
+        require(HighwayLiveGenerationDiagnostic.classify(true, false, false,
+                0, 0, 0) == HighwayLiveGenerationDiagnostic.DropPoint.NO_GRAPH_EDGE,
+                "no-edge first drop");
+        require(HighwayLiveGenerationDiagnostic.classify(false, true, false,
+                1, 1, 1) == HighwayLiveGenerationDiagnostic.DropPoint.FEATURE_NOT_ELIGIBLE,
+                "feature-ineligible first drop");
+        require(HighwayLiveGenerationDiagnostic.classify(true, true, false,
+                100, 0, 1) == HighwayLiveGenerationDiagnostic.DropPoint.SEGMENT_SELECTION,
+                "selected segment has no owned ribbon cells");
+        System.out.println("HighwayGeometryIntegrationTest PASS: graph, corridor, grading, sloped markings, viaduct supported / tunnel no-write; no world");
     }
     private static HighwayProfile profile(HighwayPlan plan, HighwayTerrainMode mode, int rise) throws Exception {
         var samples = List.of(sample(plan,0,80,mode), sample(plan,plan.length(),80+rise,mode));

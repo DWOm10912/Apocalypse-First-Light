@@ -44,6 +44,23 @@ public final class HighwayTerrainSampler {
         return (int) Math.round(lower + (upper - lower) * fraction);
     }
 
+    /** Same bounded solid-support search as Viaduct V1, from immutable pre-decoration terrain. */
+    public PierFoundation pierFoundation(int x, int z, int deckBottom) {
+        NoiseColumn column = generator.getBaseColumn(x, z, level, randomState);
+        boolean water = false;
+        int bottom = Math.max(level.getMinBuildHeight(), deckBottom - 128);
+        for (int y = deckBottom - 1; y >= bottom; y--) {
+            BlockState state = column.getBlock(y);
+            if (!state.getFluidState().isEmpty()) { water = true; continue; }
+            if (!state.isAir() && !state.is(net.minecraft.tags.BlockTags.LEAVES) && !state.canBeReplaced()
+                    && !state.getCollisionShape(net.minecraft.world.level.EmptyBlockGetter.INSTANCE,
+                        new net.minecraft.core.BlockPos(x, y, z)).isEmpty()) return new PierFoundation(true, y, water);
+        }
+        return new PierFoundation(false, bottom, water);
+    }
+
+    public record PierFoundation(boolean found, int y, boolean crossedWater) {}
+
     /**
      * Tier 1 uses cached surface/ocean-floor heights. A vertical column is read
      * only where those heightmaps indicate that the surface may actually be fluid.

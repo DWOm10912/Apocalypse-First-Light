@@ -20,7 +20,7 @@ public record CorridorEngineeringSegment(
 
     public static final int ENGINEERING_SEGMENT_LENGTH = 256;
     public static final int ENGINEERING_HALO = 192;
-    public static final int ENGINEERING_VERSION = 2;
+    public static final int ENGINEERING_VERSION = 3;
 
     public static long segmentIndex(long globalStation) {
         return Math.floorDiv(globalStation, ENGINEERING_SEGMENT_LENGTH);
@@ -65,11 +65,24 @@ public record CorridorEngineeringSegment(
         HighwayNodeConstraints constraints = new HighwayNodeConstraints(corridor.orientation(), nodes);
         NaturalHighwayRuntimeStats.contextBuild(System.nanoTime() - contextStart);
 
-        HighwayProfile profile = HighwayProfile.sampleNatural(plan, corridor, terrain, constraints);
+        HighwayBranchGrade attachmentGrade = null;
+        if (corridor.geometry() != null && corridor.startNode().kind() == HighwayRouteGraph.NodeKind.BRANCH_JUNCTION
+                && paddedStart <= HighwayBranchGrade.BLEND_END && corridor.parentAttachment().isPresent()) {
+            var attachment = corridor.parentAttachment().orElseThrow();
+            var parent = graph.getEdgeById(attachment.parentEdgeId()).orElseThrow();
+            // Reuse the same CORE + HALO engineering window selected by the attachment chunk.
+            int x = Math.floorDiv(corridor.startNode().x(), 16) * 16;
+            int z = Math.floorDiv(corridor.startNode().z(), 16) * 16;
+            long parentIndex = segmentIndex(parent.clampStation(parent.globalStation(x, z)));
+            var key = new NaturalHighwayCacheManager.SegmentKey(parent.routeId(), parent.id(), parentIndex, ENGINEERING_VERSION);
+            var parentSegment = cache.segment(key, () -> build(level, graph, parent, parentIndex, terrain, cache));
+            attachmentGrade = new HighwayBranchGrade(parent, parentSegment.profile());
+        }
+        HighwayProfile profile = HighwayProfile.sampleNatural(plan, corridor, terrain, constraints, attachmentGrade);
         HighwayCorridor engineered = HighwayCorridor.buildNatural(level, plan, profile,
                 corridor.bounds(HighwayRouteGraph.CONSTRUCTION_HALF_WIDTH));
         if (engineered.geometryDeferred()) com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.debug(
-                "[AFL HIGHWAY] geometry deferred: edge={} segment={} diagonal structural mode unsupported",
+                "[AFL HIGHWAY] geometry deferred: edge={} segment={} diagonal tunnel unsupported",
                 corridor.id(), segmentIndex);
         CorridorEngineeringSegment result = new CorridorEngineeringSegment(corridor, segmentIndex,
                 coreStart, coreEnd, plan, List.copyOf(nodes), constraints, profile, engineered);

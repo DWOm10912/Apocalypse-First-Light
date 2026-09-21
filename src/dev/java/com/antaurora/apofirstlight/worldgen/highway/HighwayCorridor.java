@@ -291,11 +291,11 @@ public final class HighwayCorridor {
     private static HighwayCorridor buildRibbon(HighwayPlan plan, HighwayProfile profile) {
         HighwayGeometry geometry = plan.geometry();
         HighwayTunnelSpanResolver.Resolution emptyTunnel = HighwayTunnelSpanResolver.empty();
-        boolean supported = profile.bridgeSpans().isEmpty()
-                && profile.samples().stream().noneMatch(s -> s.mode() == HighwayTerrainMode.VIADUCT || s.mode() == HighwayTerrainMode.TUNNEL)
+        boolean supported = profile.samples().stream().noneMatch(s -> s.mode() == HighwayTerrainMode.TUNNEL)
                 && (!HighwayTunnelSpanResolver.mightContainTunnel(profile.samples(), profile::tunnelAllowed)
                     || HighwayTunnelSpanResolver.resolve(profile.samples(), profile::tunnelAllowed).spans().isEmpty());
         List<Cell> cells = new ArrayList<>();
+        List<Cell> bridgeCells = new ArrayList<>();
         List<CenterCell> center = new ArrayList<>();
         Map<Key, Column> row = new LinkedHashMap<>();
         Set<SurfaceKey> surface = new LinkedHashSet<>(), furniture = new LinkedHashSet<>(), outer = new LinkedHashSet<>();
@@ -306,13 +306,21 @@ public final class HighwayCorridor {
                     HighwayGeometry.ROAD_HALF_WIDTH + ROW_MARGIN);
             for (HighwayGeometry.Cell pixel : geometry.raster(window, HighwayGeometry.ROAD_HALF_WIDTH + ROW_MARGIN)) {
                 double local = pixel.sample().station() - plan.stationOffset();
-                if (local < 0 || local > plan.length()) continue;
+                if (local < -1.0e-8 || local > plan.length() + 1.0e-8) continue;
+                local = Math.max(0, Math.min(plan.length(), local));
                 HighwayProfile.Sample sample = profile.sampleAt(local);
-                int x = pixel.x(), z = pixel.z(), y = sample.roadY();
+                int x = pixel.x(), z = pixel.z(), y = profile.roadYAt(local, pixel.x(), pixel.z());
                 row.put(new Key(x, z), new Column(x, z, y));
-                if (Math.abs(pixel.sample().lateral()) > HighwayGeometry.ROAD_HALF_WIDTH) continue;
+                boolean structural = sample.mode() == HighwayTerrainMode.VIADUCT || profile.spanAt(local) != null;
+                if (structural && Math.abs(pixel.sample().lateral()) > HighwayGeometry.ROAD_HALF_WIDTH + 1.0e-8
+                        && Math.abs(pixel.sample().lateral()) <= HighwayGeometry.ROAD_HALF_WIDTH + 1 + 1.0e-8) {
+                    bridgeCells.add(new Cell(x, z, local, pixel.sample().band(), Role.BRIDGE_EDGE,
+                            y, sample.terrainY(), sample.mode(), true));
+                    furniture.add(new SurfaceKey(x, y + 1, z));
+                }
+                if (Math.abs(pixel.sample().lateral()) > HighwayGeometry.ROAD_HALF_WIDTH + 1.0e-8) continue;
                 int lateral = geometry.inDetailBand(x, z, 0) ? 0 : pixel.sample().band();
-                cells.add(new Cell(x, z, local, lateral, role(plan.width(), lateral), y, sample.terrainY(), sample.mode(), false));
+                cells.add(new Cell(x, z, local, lateral, role(plan.width(), lateral), y, sample.terrainY(), sample.mode(), structural));
                 surface.add(new SurfaceKey(x, y, z));
                 if (lateral == 0) { furniture.add(new SurfaceKey(x, y + 1, z)); center.add(new CenterCell(x, z, local)); }
                 if (geometry.outerEdge(x, z)) outer.add(new SurfaceKey(x, y, z));
@@ -323,7 +331,7 @@ public final class HighwayCorridor {
                     int nx=x+neighbors[i][0], nz=z+neighbors[i][1];
                     HighwayGeometry.Sample neighbor = geometry.query(nx,nz,HighwayGeometry.ROAD_HALF_WIDTH);
                     if (neighbor == null) continue;
-                    int neighborY = profile.sampleAt(neighbor.station()-plan.stationOffset()).roadY();
+                    int neighborY = profile.roadYAt(neighbor.station()-plan.stationOffset(), nx, nz);
                     if (neighborY <= y) continue;
                     if (paint != null && (paint.connections() & (1<<i)) != 0 && neighborY == y+1) rises |= 1<<i;
                     if (lateral == 0 && geometry.inDetailBand(nx,nz,0)) medianRisers.add(new SurfaceKey(x,y+1,z));
@@ -332,12 +340,22 @@ public final class HighwayCorridor {
                 if (paint != null) markings.add(new RoadMarking(x, y + 1, z, markingType(paint.band()), Direction.NORTH, paint.connections(), rises));
             }
         }
-        // Unsupported diagonal structural modes emit NO cells, NO clearance and NO misplaced piers/bores.
+        // Only unsupported tunnels suppress the window. Viaduct uses the same road ribbon.
         HighwayTunnelGeometry.Geometry tunnel = HighwayTunnelGeometry.build(plan, profile, List.of(), emptyTunnel);
         furniture.addAll(medianRisers); furniture.addAll(edgeRisers);
-        return new HighwayCorridor(plan, cells, cells, new ArrayList<>(row.values()), center, emptyTunnel, tunnel,
+        bridgeCells.addAll(cells);
+        Set<Key> bridgeColumns = new LinkedHashSet<>();
+        for (Column column : row.values()) {
+            HighwayGeometry.Sample at = geometry.query(column.x(), column.z(), HighwayGeometry.ROAD_HALF_WIDTH + ROW_MARGIN);
+            if (at != null && profile.sampleAt(at.station() - plan.stationOffset()).mode() == HighwayTerrainMode.VIADUCT)
+                bridgeColumns.add(new Key(column.x(), column.z()));
+        }
+        List<CutColumn> cuts = buildCutColumns(cells, row).stream()
+                .filter(c -> !bridgeColumns.contains(new Key(c.x(), c.z()))).toList();
+        return new HighwayCorridor(plan, cells, bridgeCells, new ArrayList<>(row.values()), center, emptyTunnel, tunnel,
                 surface, furniture, outer, edgeRisers, medianRisers, markings, List.of(), Set.of(),
-                buildCoreRoadColumns(cells), buildCutColumns(cells, row), List.of(), 0, 0, 0, 0,
+                buildCoreRoadColumns(cells), cuts, profile.bridgeSpans().stream()
+                    .map(s -> new StructuralSpan(s.startStation(), s.endStation())).toList(), 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 

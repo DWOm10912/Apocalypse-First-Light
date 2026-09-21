@@ -1,0 +1,18 @@
+# Highway Network Export V2
+
+当前默认路由采用 [Orthogonal Strategic Branch Routing V1](highway_v2_orthogonal_routing_v1.md)。轴向道路按实际裁切后的 station endpoints 绘制，不连到预留区中心；TURN / junction 以洋红方框标记预留区。新增 TURN 节点标签及 `TURN NODES AND INFRASTRUCTURE RESERVED ZONES` 文本节，列出 incoming/outgoing edge、方向、bounds、reservedType 与 PLANNED / NO ROAD MODULE YET 状态。保留 POLYLINE 控制点导出能力，但默认卫星支线不再发布 POLYLINE。
+
+状态：开发环境的既有 `/afl macro export [radius] [step]` 同时导出 Macro Geography 与当前 `HighwayRouteGraph`。输出仍为 `afl_debug/macro/macro_geography_<seed>.png` 和同名 `.txt`；不新增格式、世界生成入口或路由算法。实现见 `src/dev/java/com/antaurora/apofirstlight/dev/MacroGeographyExportCommand.java` 与 `HighwayNetworkExport.java`，发布JAR不包含该dev命令。读取同seed的缓存Macro计划和immutable Highway图，绘制地图时不按像素重建图。
+
+PNG保留原Macro陆海颜色、岛屿标签、黄色虚线300–600格原始桥候选；再叠加白色National Trunk、橙色Strategic Branch、洋红色显式节点和预留方框、青色虚线planned sea crossing、未连接岛中心红X。右上角图例区分道路、节点与仅预留的海桥。POLYLINE沿真实control points逐腿绘制；轴向edge使用裁切后的施工端点。转向处保留规划缺口，不以branch起终点直线替代真实中心线。节点短标签为INT/JCT/TURN/MBH/SBH/END。PNG是计划图，不表示已经铺出的方块或物理海桥。
+
+TXT保留原Macro审计全文，追加 `HIGHWAY NETWORK EXPORT V2`：summary、ROUTES、EDGES、NODES、SEA CROSSING RESERVATIONS、CONNECTED SATELLITES、UNCONNECTED SATELLITES。按routeId、edgeId、nodeId、crossingId稳定排序。
+
+- Route：ID、type、purpose、edge IDs、完整ParentAttachment。
+- Edge：ID、route、起终节点ID与XZ、AXIAL/POLYLINE、真实segment kinds、bounds(32)、station范围、长度、所有control points、ParentAttachment。
+- Node：ID、实际NodeKind、XZ、所连edge；有适用的岛ID、connection ID、parent route/station。国家交点和支线junction的共享关系保留。
+- Sea reservation：稳定crossing ID、岛ID、所属route、两岸bridgehead ID/XZ、实际桥头跨度、当前四方向轴、原Macro waterbody ID与完整CrossingCandidate。仅为PLANNED metadata，没有sea edge或施工claim。
+- Connected summary：岛ID、状态、选中candidate、父主干/junction、两岸桥头、两岸道路长度、海峡跨度和共享route/connection ID。
+- Unconnected summary：枚举Macro全部SATELLITE_ISLAND减去图内已连接岛，逐岛输出`status = UNCONNECTED`、`failureReason`及原`routerDiagnostic`。如果该岛无from=0、to=id、waterSpan∈[300,600]候选，可确定为`NO_QUALIFIED_CROSSING`；若路由器仅提供当前综合失败文本，使用`NO_VALID_ROUTE_WITHIN_V1_LIMITS`，不臆造`NO_VALID_JUNCTION`等未记录的具体阶段；缺失诊断时使用`ROUTING_STATUS_UNKNOWN`。这两个后者是导出层的保守状态，不代表修改了路由器。
+
+命令返回可复制的PNG/TXT路径；TXT提供junction、TURN、桥头、route endpoint的精确XZ供TP。导出测试在内存中验证seed 0/2/42的稳定序列、graph数量、父引用、控制点、桥头坐标、ID唯一性与无branch场景；新增正交契约验证TURN及预留区导出。不保存测试截图、不生成新世界。当前完整验证与Satellite Routing/claims变更见正交路由文档；Macro topology、Terrain不变，未接City/Port/Military，未生成Sea Bridge。实机导出效果待用户使用命令验收。

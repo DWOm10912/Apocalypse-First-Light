@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.highway;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.CommandNode;
@@ -26,7 +27,14 @@ public final class HighwayNetworkCommand {
                 .then(Commands.literal("nearest").executes(HighwayNetworkCommand::nearest))
                 .then(Commands.literal("info").executes(HighwayNetworkCommand::info))
                 .then(Commands.literal("perf").executes(HighwayNetworkCommand::perf))
-                .then(Commands.literal("node").executes(HighwayNetworkCommand::node));
+                .then(Commands.literal("node").executes(HighwayNetworkCommand::node))
+                .then(Commands.literal("diagnose")
+                        .executes(context -> diagnose(context, null, null))
+                        .then(Commands.argument("x", IntegerArgumentType.integer())
+                                .then(Commands.argument("z", IntegerArgumentType.integer())
+                                        .executes(context -> diagnose(context,
+                                                IntegerArgumentType.getInteger(context, "x"),
+                                                IntegerArgumentType.getInteger(context, "z"))))));
         CommandNode<CommandSourceStack> afl = event.getDispatcher().getRoot().getChild("afl");
         if (afl != null) afl.addChild(command.build());
         else event.getDispatcher().register(Commands.literal("afl").then(command));
@@ -45,6 +53,45 @@ public final class HighwayNetworkCommand {
         return 1;
     }
 
+    private static int diagnose(CommandContext<CommandSourceStack> context, Integer targetX, Integer targetZ) {
+        int x = targetX == null ? (int) Math.floor(context.getSource().getPosition().x) : targetX;
+        int z = targetZ == null ? (int) Math.floor(context.getSource().getPosition().z) : targetZ;
+        var report = HighwayLiveGenerationDiagnostic.diagnose(context.getSource().getLevel(), x, z);
+        send(context, "[AFL Highway Diagnose] DIAGNOSTIC MODE = DRY REPLAY; not historical worldgen");
+        send(context, "seed=" + report.seed() + " target=" + x + "," + z
+                + " chunk=" + report.chunk().x + "," + report.chunk().z
+                + " queryBounds=" + report.bounds());
+        send(context, "dimension=" + report.dimension() + " biome=" + report.biome()
+                + " featureEligible=" + (report.firstDrop() == HighwayLiveGenerationDiagnostic.DropPoint.CHUNK_NOT_LOADED
+                        ? "unknown" : report.featureEligible())
+                + " queriedEdges=" + report.edges().size());
+        for (var edge : report.edges()) {
+            var route = edge.edge();
+            send(context, "[Edge] route=" + route.routeId() + " type=" + route.routeType()
+                    + " edge=" + route.id() + " geometry=" + route.orientation()
+                    + " bounds=" + route.bounds(HighwayRouteGraph.FOOTPRINT_HALF_WIDTH));
+            send(context, "station coordinate=" + edge.coordinateStation() + " selectedFromChunkMin="
+                    + edge.selectionStation() + " edgeRange=" + route.startStation() + ".." + route.endStation()
+                    + " core=" + edge.coreStart() + ".." + edge.coreEnd()
+                    + " halo=" + Math.round(edge.haloStart()) + ".." + Math.round(edge.haloEnd()));
+            send(context, "profile SURFACE=" + edge.surfaceSamples() + " VIADUCT=" + edge.viaductSamples()
+                    + " TUNNEL=" + edge.tunnelSamples() + " OTHER=" + edge.otherSamples()
+                    + " firstUnsupported=" + edge.firstUnsupported());
+            send(context, "corridor geometryDeferred=" + edge.geometryDeferred()
+                    + " safeSkipTriggered=" + edge.safeSkipTriggered() + " (derived from profile + cells)"
+                    + " cells=" + edge.corridorCells() + " ownedCells=" + edge.ownedCells()
+                    + " targetRibbonCells=" + edge.targetFootprintCells()
+                    + " wouldRender=" + (edge.firstDrop() == HighwayLiveGenerationDiagnostic.DropPoint.NONE));
+            send(context, "FIRST DROP POINT = " + edge.firstDrop() + " | " + edge.detail());
+        }
+        send(context, "OVERALL FIRST DROP POINT = " + report.firstDrop() + " | " + report.detail());
+        return report.firstDrop() == HighwayLiveGenerationDiagnostic.DropPoint.NONE ? 1 : 0;
+    }
+
+    private static void send(CommandContext<CommandSourceStack> context, String message) {
+        context.getSource().sendSuccess(() -> Component.literal(message), false);
+    }
+
     private static int info(CommandContext<CommandSourceStack> context) {
         NaturalHighwayRuntimeStats.Snapshot stats = NaturalHighwayRuntimeStats.snapshot();
         HighwayRouteGraph graph = HighwayRouteGraph.forSeed(context.getSource().getLevel().getSeed());
@@ -55,9 +102,23 @@ public final class HighwayNetworkCommand {
         for (HighwayRouteGraph.Edge edge : graph.edges()) {
             context.getSource().sendSuccess(() -> Component.literal(
                     "[" + edge.routeType() + "] route=" + edge.routeId() + " edge=" + edge.id()
+                            + " geometry=" + (edge.geometry()==null?"AXIAL":"POLYLINE")
+                            + " builtStationRange="+edge.startStation()+".."+edge.endStation()
                             + " purpose=" + edge.purpose() + " parent=" + edge.parentAttachment()
                             + " start=" + edge.startNode() + " end=" + edge.endNode()), false);
         }
+        for (var crossing : graph.seaCrossings()) {
+            context.getSource().sendSuccess(() -> Component.literal("[SATELLITE CONNECTION] id="+crossing.id()
+                    +" island="+crossing.islandId()+" source="+crossing.source()+" route="+crossing.routeId()
+                    +" parent="+crossing.parent()+" mainland="+crossing.mainland()+" satellite="+crossing.satellite()
+                    +" bridgeAxis="+crossing.dx()+","+crossing.dz()+" bankSpan="+crossing.span()
+                    +" mainlandLength="+crossing.mainlandGeometry().length()+" islandLength="+crossing.islandGeometry().length()
+                    +" seaBridge=RESERVATION_ONLY diagonalViaduct=SUPPORTED diagonalTunnel=UNSUPPORTED_SAFE_SKIP"),false);
+        }
+        for(var turn:graph.turns())send(context,"[TURN] "+turn);
+        for(var zone:graph.reservedZones())send(context,"["+zone.kind()+"] "+zone);
+        for (String diagnostic : graph.routingDiagnostics()) context.getSource().sendSuccess(
+                () -> Component.literal("[SATELLITE ROUTING DEFERRED] "+diagnostic),false);
         context.getSource().sendSuccess(() -> Component.literal(
                 "chunksProcessed=" + stats.highwayFeatureInvocations()
                         + " chunksWithCorridor=" + stats.highwayAcceptedChunks()

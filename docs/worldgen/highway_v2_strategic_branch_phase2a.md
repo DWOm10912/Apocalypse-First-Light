@@ -1,5 +1,9 @@
 # Highway V2 Phase 2A — Strategic Branch Framework
 
+当前正式路由见 [Orthogonal Strategic Branch Routing V1](highway_v2_orthogonal_routing_v1.md)：默认卫星支线发布多个 N/E/S/W edge，显式 TURN，以及硬基础设施 TURN_RESERVED_ZONE / JUNCTION_RAMP_ZONE claims。预留区不铺转角或匝道模块；原两条 National Trunk 不变。下文旧阶段的默认图数量、无实际支线和几何 defer 状态仅为历史记录。
+
+现行覆盖说明：[Phase 2B-2 Satellite Routing](highway_v2_satellite_routing_phase2b2.md) 已成为第一个真实consumer；默认图发布合法卫星支线和两岸edge，route现在按routeId分组，允许多edge。下文“无实际支线/未接Satellite/每route一edge”为旧阶段历史状态。ParentAttachment语义、原两主干不变，Sea Bridge仍仅预留metadata。
+
 现行补充：[Phase 2B-1](highway_v2_diagonal_geometry_v1.md) 增加geometry重载与POLYLINE surface消费，默认仍两条主干。下文仅轴向限制对应Phase 2A旧targetX/targetZ重载；两个重载的parent仍要求轴向。新几何桥隧明确defer。末尾资源/执行状态为Phase 2A历史记录，新阶段见链接。parent/junction语义未变，Satellite Routing未实现。
 
 状态：通用支线框架已接入，compileJava与30项纯Java契约检查通过，默认自然世界仍仅有原两条National Trunk。没有实际Strategic Branch，也没有Satellite Routing、Sea Bridge或City Connector。此结果不代表实机连接处或工程效果验收。

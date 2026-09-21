@@ -204,6 +204,8 @@ future City/Port/Foreign Land只保留ID扩展接口，均未实现；外国没�
 
 ### Dev-only 宏观地图导出
 
+现行扩展：[Highway Network Export V2](highway_network_export_v2.md) 在原PNG/TXT内叠加真实Highway图、节点、planned sea reservation，并列出已连接与未连接卫星岛及可证实的失败原因。下文“无岛屿用途判断/桥只为审计标记/不接入worldgen”为原Macro候选图层的历史描述；蓝绿色planned crossing表示Highway路由预留，仍未生成物理海桥。原Macro地理采样及候选验证规则未变。
+
 开发环境命令：`/afl macro export`，可选 `/afl macro export <radius> [step]`。默认以原点为中心采样 ±12,000 blocks，步长 32 blocks（751×751 个解析样本）；radius 限 9,000–16,000，step 限 16–128，最多 1,000,000 样本。需要 Overworld 正常 AFL noise settings 和命令权限等级 2。命令位于发布 JAR 排除的 `src/dev/java/.../dev` 包。
 
 写入游戏工作目录 `afl_debug/macro/macro_geography_<seed>.png` 和同名 `.txt`（通常是 `run/afl_debug/macro/`）。PNG 图例分别标 MAINLAND、SATELLITE_ISLAND、MINOR_ISLAND、干岸、INLAND_SEA、BAY、STRAIT、COASTAL_WATER、OPEN_OCEAN；标出 SPAWN、主岛核心圈、启动保留圈、附属岛中心与地理角色。通过2格查询探针验证的300–600格桥候选画黄虚线，无岛屿用途判断。

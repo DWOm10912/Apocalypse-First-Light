@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
+import com.antaurora.apofirstlight.worldgen.highway.HighwayRouteGraph;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.LandmassRole;
@@ -67,6 +68,7 @@ public final class MacroGeographyExportCommand {
         }
         try {
             MacroGeography geography = MacroGeography.forSeed(level.getSeed());
+            HighwayRouteGraph highway = HighwayRouteGraph.forSeed(level.getSeed());
             if (radius < geography.outerOceanRadius() + step * 2) {
                 source.sendFailure(Component.literal("Radius must be at least "
                         + (geography.outerOceanRadius() + step * 2) + " to include this island group and ocean margin."));
@@ -77,8 +79,10 @@ public final class MacroGeographyExportCommand {
             Path png = directory.resolve("macro_geography_" + level.getSeed() + ".png");
             Path txt = directory.resolve("macro_geography_" + level.getSeed() + ".txt");
             Survey survey = sample(geography, radius, step, side);
+            HighwayNetworkExport.overlay(survey.image, highway, geography, radius, step);
             if (!ImageIO.write(survey.image, "png", png.toFile())) throw new IOException("PNG writer unavailable");
-            Files.writeString(txt, report(geography, survey, radius, step), StandardCharsets.UTF_8);
+            Files.writeString(txt, report(geography, survey, radius, step)
+                    + HighwayNetworkExport.report(highway, geography), StandardCharsets.UTF_8);
             source.sendSuccess(() -> Component.literal("Macro map exported: " + png.toAbsolutePath()
                     + " and " + txt.toAbsolutePath()), false);
             return 1;

@@ -14,7 +14,7 @@ import java.util.Objects;
 
 import static com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.*;
 
-/** Immutable route authority. Phase 2A adds opt-in branches; build(seed) remains Phase 1. */
+/** Immutable route authority: unchanged Phase 1 trunks plus build-time satellite connections. */
 public final class HighwayRouteGraph {
     public static final int VERSION = 1;
     public static final int FOOTPRINT_HALF_WIDTH = 20;
@@ -28,14 +28,24 @@ public final class HighwayRouteGraph {
     private final List<Node> nodes;
     private final List<Edge> edges;
     private final List<Route> routes;
+    private final List<SatelliteHighwayRouting.Connection> seaCrossings;
+    private final List<String> routingDiagnostics;
 
     private HighwayRouteGraph(long seed, Node intersection, List<Node> nodes, List<Edge> edges) {
+        this(seed,intersection,nodes,edges,List.of(),List.of());
+    }
+    private HighwayRouteGraph(long seed, Node intersection, List<Node> nodes, List<Edge> edges,
+                              List<SatelliteHighwayRouting.Connection> crossings,List<String> diagnostics) {
         this.seed = seed;
         this.intersection = intersection;
         this.nodes = List.copyOf(nodes);
         this.edges = List.copyOf(edges);
-        this.routes = this.edges.stream().map(edge -> new Route(edge.routeId(), edge.routeType(),
-                edge.purpose(), List.of(edge), edge.parentAttachment())).toList();
+        this.seaCrossings=List.copyOf(crossings);
+        this.routingDiagnostics=List.copyOf(diagnostics);
+        Map<String,List<Edge>> grouped=new java.util.TreeMap<>();
+        this.edges.forEach(e->grouped.computeIfAbsent(e.routeId(),ignored->new ArrayList<>()).add(e));
+        this.routes=grouped.values().stream().map(es->new Route(es.get(0).routeId(),es.get(0).routeType(),
+                es.get(0).purpose(),es,es.get(0).parentAttachment())).toList();
     }
 
     public static synchronized HighwayRouteGraph forSeed(long seed) {
@@ -50,6 +60,70 @@ public final class HighwayRouteGraph {
 
     /** Pure reconstruction: no chunks, blocks, biome queries or mutable planner state. */
     public static HighwayRouteGraph build(long seed) {
+        HighwayRouteGraph base=buildTrunks(seed);
+        MacroGeography macro=MacroGeography.forSeed(seed);
+        var result=SatelliteHighwayRouting.plan(base,macro,macro.islands(),macro.crossingCandidates());
+        return publish(base,result);
+    }
+    static HighwayRouteGraph publish(HighwayRouteGraph base,SatelliteHighwayRouting.Result result) {
+        List<Edge> edges=new ArrayList<>(base.edges); Map<String,Node> nodes=new java.util.TreeMap<>();
+        base.nodes.forEach(n->nodes.put(n.id(),n));
+        for(var connection:result.connections()) {
+            var first=connection.mainlandGeometry().point(0);
+            Node junction=new Node(connection.parent().junctionNodeId(),NodeKind.BRANCH_JUNCTION,(int)first.x(),(int)first.z());
+            var last=connection.islandGeometry().point(connection.islandGeometry().length());
+            Node endpoint=new Node(connection.routeId()+"/island_end",NodeKind.TERMINUS,(int)Math.round(last.x()),(int)Math.round(last.z()));
+            for(Node n:List.of(junction,connection.mainland(),connection.satellite(),endpoint)) nodes.put(n.id(),n);
+            addConnectionEdges(edges,nodes,connection,"mainland",junction,connection.mainland(),connection.mainlandGeometry());
+            addConnectionEdges(edges,nodes,connection,"island",connection.satellite(),endpoint,connection.islandGeometry());
+        }
+        edges.sort(Comparator.comparing(Edge::id));
+        return new HighwayRouteGraph(base.seed,base.intersection,new ArrayList<>(nodes.values()),edges,result.connections(),result.diagnostics());
+    }
+    private static void addConnectionEdges(List<Edge> edges,Map<String,Node> nodes,SatelliteHighwayRouting.Connection c,
+                                            String side,Node from,Node to,OrthogonalHighwayPath path) {
+        List<Node> chain=new ArrayList<>();chain.add(from);
+        for(int i=1;i<path.points().size()-1;i++) {
+            var p=path.points().get(i);
+            var turn=new Node(c.routeId()+"/"+side+"/turn/"+(i-1),NodeKind.TURN,(int)p.x(),(int)p.z());
+            nodes.put(turn.id(),turn);chain.add(turn);
+        }
+        chain.add(to);
+        var bounds=path.edgeBounds(side.equals("mainland"),0);
+        for(int i=0;i<bounds.size();i++) {
+            var b=bounds.get(i);boolean ns=chain.get(i).x()==chain.get(i+1).x();
+            edges.add(new Edge(c.routeId(),c.routeId()+"/"+side+"_"+i,RouteRole.STRATEGIC_BRANCH,chain.get(i),chain.get(i+1),
+                    ns?Orientation.NORTH_SOUTH:Orientation.EAST_WEST,ns?b.minX():b.minZ(),
+                    ns?b.minZ():b.minX(),(ns?b.maxZExclusive():b.maxXExclusive())-1,
+                    c.parent().junctionNodeId(),"orthogonal_satellite_connection",Optional.of(c.parent())));
+        }
+    }
+
+    public record ReservedZone(String id,String routeId,Node node,BoundsXZ bounds,String status) {
+        public String kind() { return node.kind()==NodeKind.TURN?"TURN_RESERVED_ZONE":"JUNCTION_RAMP_ZONE"; }
+    }
+    public record Turn(Node node,String incomingEdge,String outgoingEdge,String incomingDirection,String outgoingDirection) {}
+    public List<ReservedZone> reservedZones() {
+        return nodes.stream().filter(n->n.kind()==NodeKind.TURN || (n.kind()==NodeKind.BRANCH_JUNCTION
+                && seaCrossings.stream().anyMatch(c->c.parent().junctionNodeId().equals(n.id()))))
+                .map(n->new ReservedZone(n.id()+"/reserved",edges.stream().filter(e->e.routeType()==RouteType.STRATEGIC_BRANCH
+                        && (e.startNode().equals(n)||e.endNode().equals(n))).map(Edge::routeId).findFirst().orElseThrow(),n,
+                        OrthogonalHighwayPath.zone(new HighwayGeometry.Point(n.x(),n.z())),n.kind()==NodeKind.TURN
+                        ?"PLANNED TURN / NO ROAD MODULE YET":"PLANNED JUNCTION RAMP / NO ROAD MODULE YET")).toList();
+    }
+    public List<Turn> turns() {
+        return nodes.stream().filter(n->n.kind()==NodeKind.TURN).map(n->{
+            Edge in=edges.stream().filter(e->e.endNode().equals(n)).findFirst().orElseThrow();
+            Edge out=edges.stream().filter(e->e.startNode().equals(n)).findFirst().orElseThrow();
+            return new Turn(n,in.id(),out.id(),direction(in),direction(out));
+        }).toList();
+    }
+    private static String direction(Edge edge) {
+        int dx=edge.endNode().x()-edge.startNode().x(),dz=edge.endNode().z()-edge.startNode().z();
+        return dx>0?"E":dx<0?"W":dz>0?"S":"N";
+    }
+    /** Original Phase 1 reconstruction, also used by isolated historical contract fixtures. */
+    public static HighwayRouteGraph buildTrunks(long seed) {
         MacroGeography geography = MacroGeography.forSeed(seed);
         long hash = mix(seed ^ 0x41464c5f48573231L);
         int x = (640 + (int) Math.floorMod(hash, 384L)) * ((hash & 1L) == 0 ? 1 : -1);
@@ -140,6 +214,8 @@ public final class HighwayRouteGraph {
     }
 
     public List<Route> routes() { return routes; }
+    public List<SatelliteHighwayRouting.Connection> seaCrossings() { return seaCrossings; }
+    public List<String> routingDiagnostics() { return routingDiagnostics; }
     public List<Route> getNationalTrunks() { return routesOfType(RouteType.NATIONAL_TRUNK); }
     public List<Route> getStrategicBranches() { return routesOfType(RouteType.STRATEGIC_BRANCH); }
     private List<Route> routesOfType(RouteType type) {
@@ -208,11 +284,11 @@ public final class HighwayRouteGraph {
         for (Node node : nodes) extendedNodes.put(node.id(), node);
         extendedNodes.put(junction.id(), junction);
         extendedNodes.put(target.id(), target);
-        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(extendedNodes.values()), extendedEdges);
+        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(extendedNodes.values()), extendedEdges,seaCrossings,routingDiagnostics);
     }
 
     public long seed() { return seed; }
-    /** Geometry-only opt-in; never called by the default seed builder. Parent semantics unchanged. */
+    /** Explicit geometry copy API; satellite seed construction groups two edges per route separately. */
     public HighwayRouteGraph withStrategicBranch(String key, String parentRouteId, String parentEdgeId,
                                                  int station, HighwayGeometry geometry, String purpose) {
         Objects.requireNonNull(geometry);
@@ -240,7 +316,7 @@ public final class HighwayRouteGraph {
         Map<String, Node> nodeMap = new java.util.TreeMap<>();
         nodes.forEach(node -> nodeMap.put(node.id(), node));
         nodeMap.put(junction.id(), junction); nodeMap.put(target.id(), target);
-        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(nodeMap.values()), extended);
+        return new HighwayRouteGraph(seed, intersection, new ArrayList<>(nodeMap.values()), extended,seaCrossings,routingDiagnostics);
     }
     public Node intersection() { return intersection; }
     public List<Node> nodes() { return nodes; }
@@ -257,13 +333,13 @@ public final class HighwayRouteGraph {
     public enum RouteType { NATIONAL_TRUNK, STRATEGIC_BRANCH, CONNECTOR }
     public enum RouteRole { NATIONAL_TRUNK_A, NATIONAL_TRUNK_B, STRATEGIC_BRANCH }
     public enum Orientation { EAST_WEST, NORTH_SOUTH, POLYLINE }
-    public enum NodeKind { TERMINUS, INTERSECTION, BRANCH_JUNCTION }
+    public enum NodeKind { TERMINUS, INTERSECTION, BRANCH_JUNCTION, MAINLAND_BRIDGEHEAD, SATELLITE_BRIDGEHEAD, TURN }
     public record Node(String id, NodeKind kind, int x, int z) {}
     public record ParentAttachment(String parentRouteId, String parentEdgeId, int parentStation,
                                    String junctionNodeId) {}
     public record AttachmentCandidate(String parentRouteId, String parentEdgeId, int parentStation,
                                       int x, int z, double distance) {}
-    /** Phase 2A routes each have one finite edge; purpose never selects a renderer. */
+    /** A strategic connection can own mainland and island edges; no sea surface edge. */
     public record Route(String routeId, RouteType routeType, String purpose, List<Edge> edges,
                         Optional<ParentAttachment> parentAttachment) {
         public Route { edges = List.copyOf(edges); }

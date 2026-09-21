@@ -1,5 +1,9 @@
 # Highway V2 — Route Graph Phase 1
 
+当前规则见 [Orthogonal Routing V1](highway_v2_orthogonal_routing_v1.md)。当前卫星支线拆为多个轴向edge并发布TURN/junction reservation；原两主干冻结。下方“两岸两个edge/POLYLINE”及Phase1默认仅两edge均为历史阶段描述。
+
+现行覆盖说明：[Phase 2B-2 Satellite Routing](highway_v2_satellite_routing_phase2b2.md) 已在build/forSeed发布卫星连接，仍只有2条NATIONAL_TRUNK；新增STRATEGIC_BRANCH每route包含大陆/岛侧两个edge，海峡仅metadata。下文“默认仅两edge/无支线”为历史阶段状态，原trunk端点/交点/ID/终止算法保持。
+
 现行补充：[Phase 2B-1](highway_v2_diagonal_geometry_v1.md) 提供可选POLYLINE surface几何，不修改默认两条主干、交点、端点或ID。自然graph没有实际对角支线，斜向Tunnel/Viaduct未启用；纯几何测试不代表自然路线/实机验收。
 
 状态：Phase 1有限路由已接入。后续 [Phase 2A — Strategic Branch Framework](highway_v2_strategic_branch_phase2a.md) 已增加可选支线数据/API，默认 `build/forSeed` 仍只有原两条主干，无实际支线。下文Phase 1验证记录为历史记录，不代表Phase 2A实机验收。
