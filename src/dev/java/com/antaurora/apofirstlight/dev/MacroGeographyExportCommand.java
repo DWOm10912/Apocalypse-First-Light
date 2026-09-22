@@ -275,6 +275,14 @@ public final class MacroGeographyExportCommand {
                     .append("\nlandmassRole = ").append(island.role()).append("\nnationId = ")
                     .append(geography.sample((int) Math.round(island.x()), (int) Math.round(island.z())).nationId())
                     .append("\ncenter = ").append(Math.round(island.x())).append(", ").append(Math.round(island.z()))
+                    .append("\nmajor = ").append(island.majorRadius()).append("\nminor = ").append(island.minorRadius())
+                    .append("\ngap = ").append(island.gap()).append("\nsectorAngle = ").append(island.angle())
+                    .append("\n");
+            var policy = geography.satellitePolicy(island.id());
+            out.append("satelliteId = ").append(policy.satelliteId()).append("\nslot = ").append(policy.id())
+                    .append("\nfacilityRole = ").append(policy.facilityRole())
+                    .append("\nbridgePolicy = ").append(policy.bridgePolicy())
+                    .append("\nfacilityEligibilityStatus = NOT_EVALUATED")
                     .append("\n");
             appendExtent(out, survey.land.get(island.id()));
             var crossing = geography.crossingCandidates().stream()
@@ -330,8 +338,8 @@ public final class MacroGeographyExportCommand {
                 .append("satelliteIslandCount = ").append(satelliteCount)
                 .append("\nminorIslandCount = ").append(minorCount)
                 .append("\nbridgeCandidateCount300to600 = ").append(bridgeCount)
-                .append("\nrequiredSatelliteIslandRuleSatisfied = ").append(satelliteCount >= 1 && satelliteCount <= 3)
-                .append("\nrequiredBridgeCandidateRuleSatisfied = ").append(bridgeCount >= 1)
+                .append("\nrequiredSatelliteIslandRuleSatisfied = ").append(satelliteCount == 3)
+                .append("\nrequiredBridgeCandidateRuleSatisfied = ").append(bridgeCount == 3)
                 .append("\nmajorCoastalFeature = STRAIT_COMPLEX (same-nation satellite group)\n");
         return out.toString();
     }

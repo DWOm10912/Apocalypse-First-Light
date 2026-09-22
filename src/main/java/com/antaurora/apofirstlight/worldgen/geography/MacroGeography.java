@@ -7,9 +7,9 @@ import java.util.Map;
 
 import static com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.*;
 
-/** Immutable, chunk-independent V1.1 geography. Content assignment belongs to later planners. */
+/** Immutable, chunk-independent geography with three stable satellite slots. */
 public final class MacroGeography {
-    public static final int VERSION = 2; // V1.1 planning revision; mainland parameters retain their original salts.
+    public static final int VERSION = 3; // Fixed three-island revision; terrain planning remains V1.1.
     public static final int SEA_LEVEL = 63;
     public static final int STARTUP_MAINLAND_RESERVE = 384;
     public static final int MAINLAND_CORE_RADIUS = 3800;
@@ -21,6 +21,7 @@ public final class MacroGeography {
     private final List<Bay> bays;
     private final List<Island> islands;
     private final List<CrossingCandidate> crossings;
+    private final List<SatelliteIslandPolicy.Slot> slots;
     private final InlandSea inlandSea;
 
     public static synchronized MacroGeography forSeed(long seed) {
@@ -55,8 +56,8 @@ public final class MacroGeography {
                 && enclosedSeaFits(sea) ? sea : null;
         List<Island> islandPlan = new ArrayList<>();
         List<CrossingCandidate> crossingPlan = new ArrayList<>();
-        int count = 1 + (int) (unit(50) * 3);
-        for (int i = 0; i < count; i++) {
+        slots = SatelliteIslandPolicy.slots(seed);
+        for (int i = 0; i < SatelliteIslandPolicy.COUNT; i++) {
             double angle = rotation + .6 + i * Math.PI * 2 / 3 + (unit(60 + i) - .5) * .25;
             IslandPlacement placement = planIsland(i, angle);
             islandPlan.add(placement.island());
@@ -73,7 +74,10 @@ public final class MacroGeography {
     public int bayCount() { return bays.size(); }
     public List<Island> islands() { return islands; }
     public List<CrossingCandidate> crossingCandidates() { return crossings; }
-
+    public SatelliteIslandPolicy.Slot satellitePolicy(int id) {
+        if (id < 1 || id > slots.size()) throw new IllegalArgumentException("Unknown satellite " + id);
+        return slots.get(id - 1);
+    }
     /** Beyond this radius all finite mainland/island shelves are OPEN_OCEAN. */
     public int outerOceanRadius() {
         double bound = majorRadius * 1.058 + 260;
@@ -88,7 +92,7 @@ public final class MacroGeography {
         double minor = 400 + unit(90 + index) * 100;
         double gap = 400 + unit(80 + index) * 100;
         double outlinePhase = unit(100 + index) * Math.PI * 2;
-        // Each stable slot owns a narrow angular sector; no random retries or load-order inputs.
+        // Original V1.1 placement: deterministic bank-fit corrections around each stable slot.
         for (int attempt = 0; attempt < 33; attempt++) {
             double angle = slotAngle + (attempt % 2 == 0 ? -1 : 1) * ((attempt + 1) / 2) * .02;
             double nx = Math.cos(angle), nz = Math.sin(angle);
@@ -105,7 +109,6 @@ public final class MacroGeography {
                 }
             }
         }
-        // Never silently publish a zero-island or unvalidated bridge topology.
         throw new IllegalStateException("No supported satellite bank for seed " + seed + ", slot " + index);
     }
 

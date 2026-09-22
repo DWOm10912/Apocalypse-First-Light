@@ -1,10 +1,10 @@
 # Terrain V2 Phase 1 / Macro Geography V1.1
 
-状态：V1.1 宏观拓扑曾由用户完成 3 个随机 seed 的导出验收，`MacroGeography.VERSION = 2` 保持不变。Terrain Relief Tuning V1 与 Vanilla Relief Reintegration 均已被用户实机判定不合格；Parity Audit 将旧实现归为 **C：自定义 density graph 部分复用 Vanilla signals**。**Vanilla Density Mainline Restoration** 的 LAND 密度主链已获用户实机视觉验收。当前 **Continuous Inland Elevation Bias** 在保留该主链及 operator 顺序的基础上，将平均高程偏置与 plains-heavy C/E 分布分开；旧 Inland Elevation Rebalance 的低 erosion 抬升方案已退出。新偏置的实际水面比例、地貌观感、地堡落地及 Highway 适应性待用户新世界验收。已有 chunk 不重写，新旧 chunk 的高度接缝不在本次范围。
+状态：2026-09-22 起 `MacroGeography.VERSION = 3`，只把附属岛数量固定为3并增加稳定设施/桥梁政策metadata，详见 [Fixed Three Satellite Metadata V3](satellite_facility_islands_v3.md)。曾加入的天然Campus最终地形资格和初始化期候选重规划导致游戏崩溃，现已完整撤回；岛屿尺寸、位置、bank-fit、轮廓、缓存和terrain pipeline恢复V1.1行为。V1.1/version 2 的随机数量验收不覆盖固定三岛。Terrain密度公式未改，已有chunk不重写。
 
 ## 世界与确定性契约
 
-V1.1 只有一个 `MAIN_NATION`：一个连通 MAINLAND，加 1–3 个同国 SATELLITE_ISLAND。没有 FOREIGN_LAND、外国国家、第二大陆或远方占位岛；岛群与有限近岸水域之外持续为 OPEN_OCEAN，没有世界边界墙/传送。此承诺是基础 terrain/biome 的地理规则；现有 Highway 仍可能在海上施工，不能把基础海洋规则解释为所有 decoration/结构已禁止入海。
+当前只有一个 `MAIN_NATION`：一个连通 MAINLAND，加固定 3 个同国 SATELLITE_ISLAND。没有 FOREIGN_LAND、外国国家、第二大陆或远方占位岛；岛群与有限近岸水域之外持续为 OPEN_OCEAN，没有世界边界墙/传送。此承诺是基础 terrain/biome 的地理规则；Highway 仍可在海上施工，不能把基础海洋规则解释为所有 decoration/结构已禁止入海。
 
 宏观拓扑唯一查询源：`src/main/java/com/antaurora/apofirstlight/worldgen/geography/MacroGeography.java`。
 `MacroGeography.forSeed(worldSeed).sample(blockX, blockZ)` 返回 `MacroGeographySample`：
@@ -13,13 +13,13 @@ V1.1 只有一个 `MAIN_NATION`：一个连通 MAINLAND，加 1–3 个同国 SA
 - `nationId`: MAIN_NATION / NONE。陆地（包括干燥海岸）属于 MAIN_NATION；水域为 NONE。两岸归属由各自 landmass 判断。
 - `regionId`: 主国陆地 1，水域 0；预留以后扩展，不生成第二国家。
 - `landmassId`: 主岛 0；附属岛按确定性规划顺序 1–3；水域 -1。
-- `landmassRole`: MAINLAND / SATELLITE_ISLAND / MINOR_ISLAND；NONE 用于水域。旧用途型枚举已移除，未发现其他生产代码依赖；不存在内容用途字段，军事基地、监狱、机场等由未来 content planner 分配。MINOR_ISLAND 仍预留，本轮数量为 0。
+- `landmassRole`: MAINLAND / SATELLITE_ISLAND / MINOR_ISLAND；NONE 用于水域。地理角色不混入设施用途；V3 通过 `satellitePolicy(id)` 的独立 metadata 分配 VIRUS_LAB / MILITARY_BASE / LARGE_PRISON，一岛一个，不生成建筑。MINOR_ISLAND 仍预留，数量为 0。
 - `waterbodyId`: 内海 1、Bay 10–12、附属岛海峡 100–102、外海及其陆架 0；干陆地 -1。
 - `waterClass`: NONE / INLAND_SEA / BAY / STRAIT / COASTAL_WATER / OPEN_OCEAN。
 - `coastDistance`: 正为陆地、负为水；这是径向/椭圆组合场的格单位距离估计，**不是精确最近岸线的欧氏距离**。不可直接作为已验证的工程跨距。
 - `surfaceHeight`: 冻结的旧版高度参考，目前仅水域仍用于真实海床。陆地实际零面由原版样条与三维噪声组合决定；原始 sample 高度不是最终陆地高度，`macro_height` 仅供海床与 COAST 分支使用。需通过生成器原有高度 API 查询，实际方块/heightmap 存在取整和插值误差。
 
-规划只依赖 seed、坐标、V1 常量，使用固定盐值与整数 hash；无 Math.random、世界运行时 RNG、已生成 chunk 扫描或探索顺序输入。按 seed 最多缓存 16 份不可变参数，持有中的生成器继续引用自己的计划；不缓存无界坐标表。地形 DF、生态状态和生成上下文持有计划，不在每个 block 上查全局缓存。
+规划继续只依赖seed、坐标与原V1常量，使用固定salt与整数hash；无运行时RNG、chunk顺序或已生成地形输入。按seed最多缓存16份不可变计划。新增角色shuffle使用独立稳定salt，完全不参与地形。不存在generator height采样、Campus搜索、初始化Mixin、可变snapshot或ThreadLocal候选预览。
 
 ## 主岛与水体 grammar
 
@@ -29,9 +29,9 @@ V1.1 只有一个 `MAIN_NATION`：一个连通 MAINLAND，加 1–3 个同国 SA
 - `STARTUP_MAINLAND_RESERVE = 384`：拓扑保证完整干陆地；不设目标Y或最低支撑面，使用原版平原样条空间及完整三维密度。禁用丘陵/高山参数，384–768格平滑开启核心区的弱丘陵。地堡32–160主搜索、256备用搜索、入口与埋设检查未改；新起伏下地堡落地仍待实机检查。
 - `MAINLAND_CORE_RADIUS = 3800`：无海洋、Bay 或内海切入。
 - 内海 **0–1**：最多约840×1240格，在主轴肩部，距外岸约1050格；仅当离核心还有256格余量，且64个解析边界探针均保留至少256格陆地环时启用。失败则不生成内海，不改变核心。
-- 附属岛 **1–3**：数量为 `1 + floor(unit(50) * 3)`，ID 按规划槽位为 1..N，角色全部 SATELLITE_ISLAND，归 MAIN_NATION。长向半轴550–750格，短向半轴400–500格；轮廓为旋转椭圆径向场乘以 `1 + sin²(a) * (0.06*sin(3a+phase) + 0.04*cos(5a-phase))`。长向全长1100–1500格，短向保守下限720格，内含至少半径360格的连续陆地区域；每个方向边界唯一且正值，不切碎、不裁岛，不生成第二大陆。
-- `supportingShore` 在现有主岛外岸求指定方向最大投影（2048探针及40次局部细化）。岛屿放在外侧支撑线之外，面向主岛的轮廓端点不受扰动，水隙400–500格，位于要求的300–600格区间内。原先径向144–208格/圆岛规则已废弃。规划在独立角域内最多33个确定性方向尝试，岸内96–192格检查64×128格桥头范围（16格探针，至少8格内部余量）；若无法满足契约则明确报错，绝不悄悄退回零岛或无效候选。
-- 每座附属岛暴露一个 `crossingCandidates()` 项，包含两岸内部坐标、两端landmass ID、waterbody ID和支撑岸线水面跨度估计。相对支撑线与岛体角域保证分离；导出还以不大于2格步长验证 MAINLAND→连续水体→同国 SATELLITE_ISLAND，不接受无关陆块或OPEN_OCEAN。海峡语义限定在候选轴线两侧96格的有限走廊。没有正式桥梁；纵坡、桥墩与真实方块登陆条件留待工程层验收。
+- 附属岛固定 **3**：稳定slot ID为1/2/3，不按位置、面积或设施排序。除固定count外保持V1.1参数：长半轴550–750格、短半轴400–500格；轮廓仍为旋转椭圆径向场乘以 `1 + sin²(a) * (0.06*sin(3a+phase) + 0.04*cos(5a-phase))`。长向全长1100–1500格、短向保守下限720格、至少半径360的连续内接区域。当前不声称天然Campus资格。
+- `supportingShore` 保持2048探针及40次细化；初始slot角仍为mainland rotation +0.6 + index×120° +原±0.125rad jitter，bank fitting仍最多33次±0.02rad递增修正。水隙400–500格，岸内96–192格检查64×128格bank。没有新增1024 spacing、固定±20°sector、8候选池、尺寸放大或地形高度筛选。
+- 三岛非地形metadata均为`BRIDGE_REQUIRED`，每岛继续暴露一个`crossingCandidates()`项。正式routing恢复原solver语义：逐岛尝试，失败写diagnostic，不让地理规划或世界初始化因Campus/bridge前置资格而崩溃。Sea Bridge V1.1系统未改；桥梁破坏留待后续Sea Bridge Damage State。
 - Major Coastal Feature 采用同国附属岛与 MAINLAND 形成的 STRAIT_COMPLEX；沿用 seed 驱动的原有海湾及可选内海，不新增强制内海，不改主岛轮廓、轴长、出生位置或核心区。原主岛的海湾/半岛公式保持不变。
 - 附属岛同样采用缓坡海岸，预留乘船登陆；本轮没有测试实际船只登陆、也没有破坏状态系统。
 
@@ -202,7 +202,7 @@ future City/Port/Foreign Land只保留ID扩展接口，均未实现；外国没�
 
 写入游戏工作目录 `afl_debug/macro/macro_geography_<seed>.png` 和同名 `.txt`（通常是 `run/afl_debug/macro/`）。PNG 图例分别标 MAINLAND、SATELLITE_ISLAND、MINOR_ISLAND、干岸、INLAND_SEA、BAY、STRAIT、COASTAL_WATER、OPEN_OCEAN；标出 SPAWN、主岛核心圈、启动保留圈、附属岛中心与地理角色。通过2格查询探针验证的300–600格桥候选画黄虚线，无岛屿用途判断。
 
-TXT 对每岛列 `landmassId/landmassRole/nationId`、采样 bounds/width/height/area、`nearestMainlandWaterGap`（支撑岸线几何估计）、`sampledCrossingWaterGap`（不大于2格探针估计）、`bridgeCandidate300to600`。Summary 记录 `satelliteIslandCount`、`minorIslandCount`、`bridgeCandidateCount300to600`、`requiredSatelliteIslandRuleSatisfied` 和 `requiredBridgeCandidateRuleSatisfied`，后两项分别检查1–3座附属岛及至少1个合格桥候选。外洋审计半径通过 `outerOceanRadius()` 根据岛群包络加320格余量推导，不再固定10000格；拒绝不足以覆盖岛群和外围的导出半径，默认12000格仍覆盖现有参数上限。
+TXT 对每岛列 `landmassId/landmassRole/nationId`、采样bounds/width/height/area、major/minor/gap/angle、稳定slot、facilityRole、bridgePolicy、`facilityEligibilityStatus = NOT_EVALUATED`、`nearestMainlandWaterGap`、`sampledCrossingWaterGap`和`bridgeCandidate300to600`。不再输出Campus bounds/Y、资格尝试、spacing或地形拒绝原因。Summary要求恰好3岛；桥候选仍是审计标记，不等同工程成功。
 
 TXT 记录 seed、采样分辨率、MAIN_NATION/主岛与附属岛 landmassId/role/采样 bounds 和面积、spawn 至最近 OPEN_OCEAN/INLAND_SEA 的采样距离、waterbodyId 与水体分类/覆盖、foreign/non-main-nation land 采样检查、外圈外洋占比、spawn 安全标记、桥候选清单。各项 bounds、距离、面积均是采样估计，不能当作精确海岸测量。桥只为审计标记，不接入 worldgen。实现只调用 `MacroGeography.forSeed(seed).sample(x,z)` 与现有只读规划记录，不读取或生成 chunk、Xaero/DH 地图，也不修改 Terrain V2 参数。
 

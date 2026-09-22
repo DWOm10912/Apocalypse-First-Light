@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.worldgen.highway;
 
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample;
+import com.antaurora.apofirstlight.worldgen.geography.SatelliteIslandPolicy;
 import java.util.*;
 import static com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample.*;
 import static com.antaurora.apofirstlight.worldgen.highway.HighwayRouteGraph.*;
@@ -77,6 +78,7 @@ public final class SatelliteHighwayRouting {
                               List<MacroGeography.Island> islands,List<MacroGeography.CrossingCandidate> candidates) {
         List<Connection> chosen=new ArrayList<>(); List<String> errors=new ArrayList<>();
         for(var island:islands.stream().filter(i->i.role()==LandmassRole.SATELLITE_ISLAND)
+                .filter(i -> macro.satellitePolicy(i.id()).bridgePolicy() == SatelliteIslandPolicy.BridgePolicy.BRIDGE_REQUIRED)
                 .sorted(Comparator.comparingInt(MacroGeography.Island::id)).toList()) {
             Choice best=null; SearchStats stats=new SearchStats();
             for(var candidate:candidates.stream().filter(c->c.fromLandmassId()==0 && c.toLandmassId()==island.id()

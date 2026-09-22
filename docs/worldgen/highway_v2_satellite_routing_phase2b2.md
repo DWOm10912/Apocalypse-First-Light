@@ -1,5 +1,7 @@
 # Highway V2 Phase 2B-2 — Satellite Island Routing
 
+2026-09-22 政策更新：[Fixed Three Satellite Metadata V3](satellite_facility_islands_v3.md) 固定三个slot，三个metadata均为`BRIDGE_REQUIRED`。曾加入的generator初始化Campus/bridge-compatible筛选及required fail-closed异常因游戏崩溃已撤回；routing恢复原入口和失败diagnostic语义。下列旧seed数量/坐标/通过计数仍是version 2历史记录，固定三岛未运行seed测试。
+
 Sea Bridge V1 后续更新：下文 reservation 不产生海桥/claim 的描述是旧阶段边界。现有 Connection 由 [Sea Bridge V1](highway_v2_sea_bridge_v1.md) 消费，生成轴向桥面、桥台与桥墩并提供窄条形 claim。info 当前输出 `seaBridge=SEA_BRIDGE_V1 generationStatus=ENGINEERING_NOT_SAMPLED`（替代 RESERVATION_ONLY），diagnose 增加海桥 dry replay；未改变本文件对应的 routing/bridgehead 算法。
 
 当前规则见 [Orthogonal Routing V1](highway_v2_orthogonal_routing_v1.md)。现行替代规则：live长距离支线已改轴向multi-edge + TURN/junction reservation。本文八方向选桥、两岸各单POLYLINE edge、评分及旧seed连接结果均为历史记录。
@@ -12,7 +14,7 @@ Sea Bridge V1 后续更新：下文 reservation 不产生海桥/claim 的描述�
 
 ## Live geography authority
 
-`MacroGeography.islands()`返回Island(id,role,x,z,majorRadius,minorRadius,angle,outlinePhase,gap)。当前1–3个SATELLITE_ISLAND，稳定id由Macro分配（1..3），没有“不需要道路”的标记。只按role筛选、id升序处理，不重新定义地理。
+`MacroGeography.islands()`返回原布局的Island record，当前固定3个SATELLITE_ISLAND。`satellitePolicy(id)`仅返回稳定设施角色和bridge policy；没有Campus或地形资格。三个slot当前都是BRIDGE_REQUIRED，入口按policy过滤并按ID升序处理；因三者政策相同，效果与原本遍历全部satellite一致。
 
 `CrossingCandidate(waterbodyId,fromLandmassId,toLandmassId,fromX,fromZ,toX,toZ,waterSpan)`：坐标是double世界格，当前from=0大陆、to=岛id，每岛一个candidate；waterbodyId为100+稳定slot。waterSpan当前400–500格，是海面gap，不是桥头间距离。原端点通常各向陆地内退96格；bankFits验证原方向的64×128格bank，不能据此认为端点已八方向对齐或有足够高速引道。Macro export的300–600格qualified判断只针对waterSpan，并非高速接入成功保证。
 
