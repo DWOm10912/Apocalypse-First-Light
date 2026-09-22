@@ -61,19 +61,13 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     /** Traverses the same immutable bind pose as the actual desktop renderer. */
     public static org.joml.Vector3f interactionPoint(ItemStack stack,com.antaurora.apofirstlight.weapon.NativeAttachment.Slot slot,PoseStack pose){
         var m=model(stack);if(m==null||!(stack.getItem() instanceof NativeGunItem gun))return null;
-        if(slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.MAGAZINE){
-            var mount=gun.definition().magazineMount();if(mount==null)return null;
-            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,mount.hotspotAnchor(),0,mount.hotspotY()/16f,0);if(point!=null)return point;}
-            return null;
+        var definition=com.antaurora.apofirstlight.weapon.AttachmentHotspotDefinition.forSlot(stack,slot);
+        if(definition==null)return null;
+        if(definition.preferred()!=null)for(var b:bones(stack,m)){
+            var point=anchorPoint(b,pose,definition.preferred(),0,0,0);if(point!=null)return point;
         }
-        String dedicated=slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT?"maintenance_sight_anchor":"maintenance_muzzle_anchor";
-        for(var b:bones(stack,m)){var point=anchorPoint(b,pose,dedicated,0,0,0);if(point!=null)return point;}
-        if(slot==com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.SIGHT){
-            var mount=gun.definition().sightMount();if(mount==null)return null;
-            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,mount.anchor(),mount.x()/16f,mount.y()/16f,mount.z()/16f);if(point!=null)return point;}
-        }else{
-            var mount=gun.definition().muzzleMount();if(mount==null)return null;
-            for(var b:bones(stack,m)){var point=anchorPoint(b,pose,mount.anchor(),0,0,0);if(point!=null)return point;}
+        for(var b:bones(stack,m)){
+            var point=anchorPoint(b,pose,definition.fallback(),definition.x(),definition.y(),definition.z());if(point!=null)return point;
         }
         return null;
     }

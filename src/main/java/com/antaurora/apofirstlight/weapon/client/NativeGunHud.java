@@ -37,7 +37,7 @@ public final class NativeGunHud {
     }
     public static final IGuiOverlay OVERLAY = (gui, graphics, partialTick, width, height) -> {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui || mc.player.isSpectator()
+        if (FieldAttachmentViewState.isActive() || mc.player == null || mc.options.hideGui || mc.player.isSpectator()
                 || !(mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun)) return;
         var definition = gun.definition();
         int current = NativeGunAmmo.read(mc.player.getMainHandItem(), definition);

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.gui.overlay.ForgeGui;
@@ -14,6 +15,21 @@ public final class AflHudEvents {
     @SubscribeEvent
     public static void onOverlayPre(RenderGuiOverlayEvent.Pre event) {
         if (event.getOverlay().id().equals(VanillaGuiOverlay.EXPERIENCE_BAR.id())) event.setCanceled(true);
+        if (!FieldAttachmentViewState.isActive()) return;
+
+        var overlayId = event.getOverlay().id();
+        if (overlayId.equals(VanillaGuiOverlay.CROSSHAIR.id())
+                || overlayId.equals(VanillaGuiOverlay.HOTBAR.id())
+                || overlayId.equals(VanillaGuiOverlay.ITEM_NAME.id())
+                || overlayId.equals(VanillaGuiOverlay.PLAYER_HEALTH.id())
+                || overlayId.equals(VanillaGuiOverlay.ARMOR_LEVEL.id())
+                || overlayId.equals(VanillaGuiOverlay.FOOD_LEVEL.id())
+                || overlayId.equals(VanillaGuiOverlay.AIR_LEVEL.id())
+                || overlayId.equals(VanillaGuiOverlay.MOUNT_HEALTH.id())
+                || overlayId.equals(VanillaGuiOverlay.JUMP_BAR.id())
+                || overlayId.equals(VanillaGuiOverlay.POTION_ICONS.id())) {
+            event.setCanceled(true);
+        }
     }
 
     @SubscribeEvent

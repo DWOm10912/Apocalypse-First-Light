@@ -1,6 +1,6 @@
 # Native Gun Data JSON V1
 
-> 协议更新（FireMode V1）：当前共享通道为 **28**，新增扳机按下/松开和模式循环请求，客户端/服务端须匹配。配件仍仅通过维护台安装，V 用于检视，B 切换开火模式。详见 [Playbook 第 19 节](native_weapon_integration_playbook_v1.md)。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 物品 Tooltip 的正式显示规则见 [Tooltip V2.2](../ui/equipment_tooltip_v1.md)：普通枪械悬停显示短介绍、图形弹药、基础伤害、当前开火方式与真实声音半径，不显示容量、射程或实时弹匣余量；底层 JSON 数据和持枪 HUD 行为不变。
 

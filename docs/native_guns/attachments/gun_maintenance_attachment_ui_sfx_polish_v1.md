@@ -1,6 +1,6 @@
 # Gun Maintenance Attachment UI + SFX Polish V1
 
-> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 2026-09-09. Extends the accepted attachment interaction without changing hotspots, projection, HUD outward placement, compatibility, return-origin rules, gun rendering or atomic inventory exchange.
 
@@ -34,4 +34,4 @@ ffprobe confirms format/duration; source, runtime and final JAR hashes prove the
 The isolated graphical client passed actual MouseHandler input through installation of both attachments, removal, cancellation and origin return (`build/maintenance-polish-client.log`). It observed exactly three shared operation sound events and checked unchanged gun state during the early action window. Context and candidate screenshots under `build/thermal-fluid-client/screenshots/maintenance_attachments_*.png` were inspected. The isolated client exited successfully; the user's ordinary world was not used.
 
 `build/libs/apocalypse_firstlight-1.0.0.jar` contains the sound registration, unchanged audio and operation class; development test classes are excluded. Tests are not a substitute for human loudness/comfort acceptance. True two-client multiplayer latency/audio synchronization was not tested; the server-side FakePlayer race does not establish that verification.
-> Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](../p9_01_extended_magazine_v1.md).
+> Historical protocol: **22** added P9 MAGAZINE support. Current protocol is **29**; matching client/server required. Field Attachment View runtime acceptance is pending.

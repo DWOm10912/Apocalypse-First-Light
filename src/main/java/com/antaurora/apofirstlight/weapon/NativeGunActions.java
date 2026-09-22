@@ -68,6 +68,7 @@ public final class NativeGunActions {
 
     /** Handling actions share the same server lock as fire/reload. */
     public static boolean operation(ServerPlayer player, String clip) {
+        if(FieldAttachmentOperation.pending(player))return false;
         if (!player.isAlive() || player.isSpectator() || SESSIONS.containsKey(player)
                 || (clip.equals("inspect") && player.containerMenu != player.inventoryMenu)
                 || !(player.getMainHandItem().getItem() instanceof NativeGunItem item)
@@ -99,6 +100,7 @@ public final class NativeGunActions {
         }
     }
     public static void request(ServerPlayer player, boolean reload, int slot,long shotId) {
+        if(FieldAttachmentOperation.pending(player))return;
         if(reload)NativeFireControl.cancel(player);
         if (!player.isAlive() || player.isSpectator() || slot < 0 || slot > 8
                 || player.getInventory().selected != slot

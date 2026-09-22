@@ -16,7 +16,10 @@ public abstract class MaintenanceGameRendererMixin {
         if(state.active())cir.setReturnValue(net.minecraft.util.Mth.lerp(state.blend(),cir.getReturnValue(),MaintenanceCameraController.FOV));
     }
     @Inject(method={"bobHurt","bobView"},at=@At("HEAD"),cancellable=true)
-    private void afl$noBob(PoseStack pose,float partial,CallbackInfo ci){if(MaintenanceModeClientState.INSTANCE.active())ci.cancel();}
+    private void afl$noBob(PoseStack pose,float partial,CallbackInfo ci){
+        if(MaintenanceModeClientState.INSTANCE.active()
+                ||com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState.isActive())ci.cancel();
+    }
     @Inject(method="renderItemInHand",at=@At("HEAD"),cancellable=true)
     private void afl$noHands(PoseStack pose,Camera camera,float partial,CallbackInfo ci){if(MaintenanceModeClientState.INSTANCE.active())ci.cancel();}
 }

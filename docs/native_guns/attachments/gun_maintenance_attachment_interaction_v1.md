@@ -1,12 +1,16 @@
 # Gun Maintenance Attachment Interaction V1
 
-> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
-Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 SIGHT with [Rifle Red Dot](rifle_red_dot_01_v1.md) and MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md), plus MAGAZINE with [BR51 35R](br51_extended_magazine_35_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. All player attachment changes require the maintenance bench; the V shortcut is removed.
+Current scope: P9-01 SIGHT, MUZZLE and MAGAZINE, plus BR51-01 SIGHT with [Rifle Red Dot](rifle_red_dot_01_v1.md) and MUZZLE with [Rifle Suppressor](rifle_suppressor_01_v1.md), plus MAGAZINE with [BR51 35R](br51_extended_magazine_35_v1.md). Supported hotspots and server transactions read non-empty slot compatibility from each gun definition, not a P9-only gate. The initial instant commit is superseded by [UI/SFX polish](gun_maintenance_attachment_ui_sfx_polish_v1.md): shared 2.480-second sound, 51-tick action window, then server revalidation and commit. The [24R magazine](../p9_01_extended_magazine_v1.md) adds capacity switching and transactional excess-ammo return. No new arm/tool animation or repair. Player attachment changes use the maintenance bench or Z Field Attachment View; the V shortcut remains removed.
+
+## Shared implementation after Field Attachment View V1
+
+`MaintenanceAttachmentTransaction` retains the menu/BlockPos/revision/distance checks and delegates inventory exchange to `AttachmentInteractionCore`. `AttachmentModificationPolicy` denies C.A.T. in both entry points. `MaintenanceAttachmentHud` now accepts `AttachmentHudHost`; its original constructor supplies the unchanged bench adapter. `AttachmentHotspotDefinition` shares slot/anchor/offset definitions; maintenance retains its world-camera projection. The bench renderer, return-origin metadata and 51-tick operation remain intact. No repair feature was added. This refactor has no new runtime regression claim; user verification is pending.
 
 ## Spatial UI
 
-### Maintenance-only entry policy
+### Historical maintenance-only policy (superseded by Field Attachment View V1)
 
 The V key mapping (`NativeSightInput`) and its translations are removed. The production `NativeAttachments` no longer exposes the hand-exchange implementation. Historical stack regression fixtures were moved to `src/dev/java/.../LegacyAttachmentFixture.java`, excluded from the release jar; their success is not evidence of a supported quick-install feature.
 
@@ -24,7 +28,7 @@ Verification for this policy change: compilation/packaging completed; release ja
 
 `AttachmentCandidatePage`: scan main inventory indices 0–35, filter NativeAttachment slot and `NativeAttachments.compatible`, skip empty, group only matching item+NBT, retain first source slot/copy and aggregate count. Nine per page, scroll paging supports more than nine. No inventory relocation, no ghost stacks, no drag/drop. GunMaintenanceMenu retains original nine hotbar slots and gun slot indices, appending hidden main-inventory slots for live synchronization.
 
-`MaintenanceActionRequest` carries containerId, root, revision, expected full gun, target and exact source stack/slot. This feature introduced `AflNetwork` protocol **22**; the current shared protocol is **26** after stall-door integration (matching client/server required), with direction-bound C2S Begin and S2C start/result unchanged. Server thread validates live menu, alive/non-spectator, world/root/distance/complete bench, native gun with supported target slot, revision, full stack and source compatibility at Begin and before delayed mutation. BE persists `AttachmentRevision`; any synced mutation advances it, rejecting stale and duplicate transactions.
+`MaintenanceActionRequest` carries containerId, root, revision, expected full gun, target and exact source stack/slot. This feature introduced `AflNetwork` protocol **22**; the current shared protocol is **29** after Field Attachment View integration (matching client/server required), with direction-bound C2S Begin and S2C start/result unchanged. Server thread validates live menu, alive/non-spectator, world/root/distance/complete bench, native gun with supported target slot, revision, full stack and source compatibility at Begin and before delayed mutation. BE persists `AttachmentRevision`; any synced mutation advances it, rejecting stale and duplicate transactions.
 
 `MaintenanceAttachmentTransaction` consumes one real source item even in creative mode. Replace returns the old full ItemStack, merging matching stacks then using empty 0–35 slots, then player-near drop. A failed drop restores the inventory snapshot and leaves the gun unchanged. Gun commit preserves origin ownership and synchronizes BE plus inventories. Other slot/NBT are preserved. Failed requests show a small localized retry notice, refresh candidates, keep maintenance open and consume nothing.
 
@@ -32,7 +36,7 @@ Client only sends intent; it never writes attachment NBT. Success closes selecti
 
 ## Verification (historical integration results)
 
-The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations require the maintenance bench.
+The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations use the maintenance bench or Z Field Attachment View; these historical tests do not verify the new Field entry.
 
 - Compile passed. Server 24/24 GameTests passed in `build/maintenance-gametest/logs/latest.log`, including 20 alternating A/B first-winner installs, stale remove-vs-replace, exact consumption, same-type replacement conservation, both slots, origin/non-owner metadata, BE save/load and full-inventory single drop. Added cases are in `src/dev/java/com/antaurora/apofirstlight/dev/MaintenanceAttachmentTests.java`.
 - Existing suppressor and sight/server weapon regressions run in this suite. No noise/sound/muzzle-exit/ADS code or resources were changed. Graphical and audio behavior are separate from server assertions.
@@ -43,4 +47,4 @@ Commands: `gradlew -I src/dev/maintenance-gametest.init.gradle runGameTestServer
 ## Final checkpoint
 
 The user subsequently confirmed “没问题了，可以终止测试”. Testing stopped at their request; no further client launch. The reported no-response issue is no longer an active user blocker, but its cause was not established and no specific input-path fix is claimed. Direct Screen and Forge Pre/Post probe runs passed; the final MouseHandler callback probe exited before a completion marker and is **NOT_TESTED**, not PASS. The outward-opening Context HUD was screenshot-checked after correcting its initial overlap with the gun. Compilation succeeded during client launches; a separate final distributable `build` was not run. Real two-client synchronization and physical-device/scale coverage remain unverified. The user's own client was left untouched.
-> Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](../p9_01_extended_magazine_v1.md).
+> Historical protocol: **22** added P9 MAGAZINE support. Current protocol is **29**; matching client/server required. Field Attachment View runtime acceptance is pending.

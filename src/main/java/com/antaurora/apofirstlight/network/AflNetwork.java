@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "28";
+    private static final String PROTOCOL = "29";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -95,6 +95,57 @@ public final class AflNetwork {
                 CrowbarSmashPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         channel.registerMessage(nextId++, CrowbarSmashPacket.Cancel.class,CrowbarSmashPacket.Cancel::encode,CrowbarSmashPacket.Cancel::decode,
                 CrowbarSmashPacket.Cancel::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++,FieldAttachmentPacket.class,FieldAttachmentPacket::encode,FieldAttachmentPacket::decode,
+                FieldAttachmentPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++,FieldAttachmentCancel.class,FieldAttachmentCancel::encode,FieldAttachmentCancel::decode,
+                FieldAttachmentCancel::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++,FieldAttachmentResult.class,FieldAttachmentResult::encode,FieldAttachmentResult::decode,
+                FieldAttachmentResult::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    public static void requestFieldAttachment(com.antaurora.apofirstlight.weapon.FieldAttachmentActionRequest request){
+        if(channel!=null)channel.sendToServer(new FieldAttachmentPacket(request));
+    }
+    public static void cancelFieldAttachment(long token){
+        if(channel!=null)channel.sendToServer(new FieldAttachmentCancel(token));
+    }
+    public static void fieldAttachmentResult(ServerPlayer player,long token,int phase){
+        if(channel!=null&&!player.hasDisconnected())channel.send(PacketDistributor.PLAYER.with(()->player),new FieldAttachmentResult(token,phase));
+    }
+    public record FieldAttachmentPacket(com.antaurora.apofirstlight.weapon.FieldAttachmentActionRequest request){
+        static void encode(FieldAttachmentPacket p,FriendlyByteBuf b){
+            var r=p.request;b.writeLong(r.token());b.writeVarInt(r.selectedSlot());b.writeLong(r.gunId());
+            b.writeItem(r.expectedGun());b.writeEnum(r.target());b.writeVarInt(r.sourceSlot());b.writeItem(r.expectedSource());
+        }
+        static FieldAttachmentPacket decode(FriendlyByteBuf b){
+            return new FieldAttachmentPacket(new com.antaurora.apofirstlight.weapon.FieldAttachmentActionRequest(
+                    b.readLong(),b.readVarInt(),b.readLong(),b.readItem(),
+                    b.readEnum(com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.class),b.readVarInt(),b.readItem()));
+        }
+        static void handle(FieldAttachmentPacket p,Supplier<NetworkEvent.Context> supplier){
+            var c=supplier.get();c.enqueueWork(()->{var player=c.getSender();
+                if(player!=null)com.antaurora.apofirstlight.weapon.FieldAttachmentOperation.begin(player,p.request);
+            });c.setPacketHandled(true);
+        }
+    }
+    public record FieldAttachmentCancel(long token){
+        static void encode(FieldAttachmentCancel p,FriendlyByteBuf b){b.writeLong(p.token);}
+        static FieldAttachmentCancel decode(FriendlyByteBuf b){return new FieldAttachmentCancel(b.readLong());}
+        static void handle(FieldAttachmentCancel p,Supplier<NetworkEvent.Context> supplier){
+            var c=supplier.get();c.enqueueWork(()->{var player=c.getSender();
+                if(player!=null)com.antaurora.apofirstlight.weapon.FieldAttachmentOperation.cancel(player,p.token);
+            });c.setPacketHandled(true);
+        }
+    }
+    public record FieldAttachmentResult(long token,int phase){
+        static void encode(FieldAttachmentResult p,FriendlyByteBuf b){b.writeLong(p.token);b.writeByte(p.phase);}
+        static FieldAttachmentResult decode(FriendlyByteBuf b){return new FieldAttachmentResult(b.readLong(),b.readUnsignedByte());}
+        static void handle(FieldAttachmentResult p,Supplier<NetworkEvent.Context> supplier){
+            var c=supplier.get();c.enqueueWork(()->DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,()->()->{
+                if(net.minecraft.client.Minecraft.getInstance().screen instanceof com.antaurora.apofirstlight.client.FieldAttachmentScreen screen)
+                    screen.result(p.token,p.phase);
+            }));c.setPacketHandled(true);
+        }
     }
 
     public static void crowbarSmash(ServerPlayer player,java.util.UUID action,BlockPos target,int phase) {

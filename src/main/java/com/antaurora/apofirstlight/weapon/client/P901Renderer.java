@@ -40,6 +40,7 @@ public final class P901Renderer extends NativeGunContextRenderer<P901Item> {
     public void renderRecursively(PoseStack pose, P901Item item, GeoBone bone, RenderType type,
                                   MultiBufferSource buffers, VertexConsumer buffer, boolean reRender,
                                   float partialTick, int light, int overlay, float red, float green, float blue, float alpha) {
+        if(isFirstPersonPass()&&!reRender)FieldAttachmentHotspots.capture(currentItemStack,bone,pose);
         // Visual-only spare instance: never leak into idle, canceled reloads,
         // GUI/ground/third person. The authored scale keys own its visible interval.
         if (bone.getName().equals("empty_old_magazine")) {

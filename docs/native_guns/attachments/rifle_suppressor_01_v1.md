@@ -1,6 +1,6 @@
 # BR51 Generic Rifle Suppressor Integration V1
 
-> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 ## 配件与属性速查
 
@@ -41,7 +41,7 @@
 
 ## Verification (historical integration results)
 
-The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations require the maintenance bench.
+The V quick-exchange path in the results below has since been retired. These old probes do not validate current player installation; current player operations use the maintenance bench or Z Field Attachment View; these historical tests do not verify the new Field entry.
 
 - Final full offline rebuild passed (all 11 tasks re-executed, 30 seconds), `build/rifle-suppressor-release.log`; compiled main class restored and `build/libs/apocalypse_firstlight-1.0.0.jar` regenerated.
 - Server GameTests: 28/28 required tests passed (`build/rifle-suppressor-tests-final.log`). Includes BR51 quick-exchange, noise/sound selection, stack persistence, 20 stale maintenance install races with replacement/removal conservation, existing shared 51-tick operation tests and P9 sight/suppressor/24R regressions.

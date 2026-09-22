@@ -40,9 +40,12 @@ public final class P901FirstPerson {
         var pose = P901RenderMatrices.detachedCopy(event.getPoseStack());
         pose.pushPose();
         try {
-            NativeWeaponSway.apply(pose,event.getPartialTick());
-            NativeGunRecoil.applyViewmodel(pose);
-            NativeGunAds.apply(pose, right, event.getPartialTick());
+            if(!FieldAttachmentViewState.isActive()){
+                NativeWeaponSway.apply(pose,event.getPartialTick());
+                NativeGunRecoil.applyViewmodel(pose);
+                NativeGunAds.apply(pose, right, event.getPartialTick());
+            }
+            FieldAttachmentTransform.apply(pose,right,event.getPartialTick());
             pose.translate(right ? COMPOSITION_X : -COMPOSITION_X, COMPOSITION_Y, 0);
             // Server-triggered artist draw/put_away clips own equip pose and camera.
             // Use the authoritative current stack, not ItemInHandRenderer's equip-

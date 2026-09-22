@@ -28,6 +28,7 @@ public final class NativeFireControl {
     private NativeFireControl() {}
     public static void clear() { STATES.clear(); SEQUENCES.clear(); SWITCH_AFTER.clear(); }
     public static void cancel(ServerPlayer p) { STATES.remove(p); }
+    public static boolean active(ServerPlayer p) { return STATES.containsKey(p); }
     public static void logout(ServerPlayer p) { cancel(p);SEQUENCES.remove(p);SWITCH_AFTER.remove(p); }
     public static void release(ServerPlayer p) {
         var s=STATES.get(p);
@@ -36,7 +37,7 @@ public final class NativeFireControl {
         if(s.mode!=NativeFireMode.BURST || s.remaining==0)cancel(p);
     }
     private static boolean valid(ServerPlayer p) {
-        return p.isAlive()&&!p.isSpectator()&&!p.hasDisconnected()&&p.containerMenu==p.inventoryMenu
+        return p.isAlive()&&!p.isSpectator()&&!p.hasDisconnected()&&!FieldAttachmentOperation.pending(p)&&p.containerMenu==p.inventoryMenu
                 &&p.getMainHandItem().getItem() instanceof NativeGunItem;
     }
     public static void press(ServerPlayer p,int slot,long shotId,long gunId) {

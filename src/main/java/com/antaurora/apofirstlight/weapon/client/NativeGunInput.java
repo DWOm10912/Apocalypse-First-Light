@@ -17,6 +17,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeGunInput {
+    public static final KeyMapping FIELD_ATTACHMENT = new KeyMapping("key.apocalypse_firstlight.field_attachment",
+            KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Z,
+            "key.categories.apocalypse_firstlight");
+    public static boolean firing(){return triggerSent||attackHeld;}
     private static final KeyMapping RELOAD = new KeyMapping("key.apocalypse_firstlight.reload",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
             "key.categories.apocalypse_firstlight");
@@ -38,7 +42,7 @@ public final class NativeGunInput {
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
-        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); event.register(FIRE_MODE); }
+        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); event.register(FIRE_MODE); event.register(FIELD_ATTACHMENT); }
     }
 
     private static boolean ready(Minecraft mc) {
@@ -50,6 +54,9 @@ public final class NativeGunInput {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void attack(InputEvent.InteractionKeyMappingTriggered event) {
         Minecraft mc = Minecraft.getInstance();
+        if(FieldAttachmentViewState.isActive()){
+            event.setCanceled(true);event.setSwingHand(false);return;
+        }
         if (!event.isAttack() || !ready(mc)) return;
         event.setCanceled(true);
         event.setSwingHand(false);
@@ -72,6 +79,9 @@ public final class NativeGunInput {
         if(triggerSent && (!ready(mc)||!mc.options.keyAttack.isDown()
                 ||mc.player.getInventory().selected!=triggerSlot
                 ||software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem())!=triggerGun))stopTrigger();
+        boolean fieldClick=false;
+        while(FIELD_ATTACHMENT.consumeClick())fieldClick=true;
+        if(fieldClick&&ready(mc))FieldAttachmentViewState.open();
         boolean modeClick=false;
         while(FIRE_MODE.consumeClick())modeClick=true;
         boolean reloadClick = false;

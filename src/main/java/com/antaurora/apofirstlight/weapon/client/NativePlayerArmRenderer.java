@@ -96,7 +96,7 @@ public final class NativePlayerArmRenderer {
                                int light, int overlay, float x, float y, float z) {
         var mc = Minecraft.getInstance();
         var player = mc.player;
-        if (player == null || player.isInvisible() || !handFilter.test(right)) return;
+        if (player == null || player.isInvisible() || !handFilter.test(right) || FieldAttachmentViewState.isActive()) return;
         if (!(mc.getEntityRenderDispatcher().getRenderer(player) instanceof PlayerRenderer renderer)) return;
         var pose = canonicalPose(evaluatedLocator);
         if (pose == null) return;

@@ -1,6 +1,6 @@
 # 原生枪械配件总表
 
-> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 本页记录当前正式实现，并作为新增配件与属性的统一索引。模型制作记录不等于已装备接入；验证结果见各配件详情文档。本次整理仅修改文档，不新增游戏属性或数值效果。
 
@@ -46,15 +46,15 @@
 
 | 项目 | 当前规则 |
 | --- | --- |
-| 唯一装拆入口 | 枪械维护台；V 快捷安装和拆卸已移除，旧快捷网络请求不再执行 |
+| 装拆入口 | 枪械维护台 + Z Field Attachment View；V 快捷安装和拆卸保持移除，旧快捷网络请求不执行 |
 | 维护台 | 三种槽位共用热点、上下文 HUD、候选页与服务端事务；只显示该枪支持的槽 |
 | 维护台音效与提交 | 原版轻点击；共用 2.480 秒操作声；服务端等待 51 tick 后重新验证并提交 |
 | 物品状态 | 配件保存在真实枪械 ItemStack 的 `AflAttachments` 中；无独立维护台视觉副本 |
-| 服务端权威 | 校验兼容、源物品、枪械快照与维护台 revision；拒绝过期事务 |
+| 服务端权威 | 共用兼容/源物品/库存事务；维护台校验 revision，Field 校验 token、主手槽、GeoItem ID、全栈快照及原栈对象；提交前重验 |
 | 最大堆叠 | 当前六种配件均为 1 |
 | 协议 | 当前 22；两端必须匹配 |
 
-完整规则见 [维护台配件交互](gun_maintenance_attachment_interaction_v1.md) 与 [UI/SFX](gun_maintenance_attachment_ui_sfx_polish_v1.md)。旧快捷报文编号保留为空操作，协议仍为 22；不再提供绕过维护台的玩家入口。
+完整规则见 [维护台配件交互](gun_maintenance_attachment_interaction_v1.md) 与 [UI/SFX](gun_maintenance_attachment_ui_sfx_polish_v1.md)。旧快捷报文编号保留为空操作；当前协议为 29。Z 入口复用相同服务端核心，见 [Field Attachment View V1](../field_attachment_view_v1.md)。
 
 ## 后续属性扩展模板
 

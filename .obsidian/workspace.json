@@ -190,17 +190,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-15139334921799757350.dat",
+    "run/saves/新的世界/level2126605149848576778.dat",
+    "run/saves/新的世界/playerdata/380df991-f603-344c-a090-369bad2a924a-16664301010589835371.dat",
     "run/xaero/world-map/新的世界/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/4/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/4/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界/null/caves/-1/cache_1",
-    "run/xaero/world-map/新的世界/null/caves/-3/cache_1",
+    "run/xaero/world-map/新的世界/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界/null/cache_1/0_-2.xwmc.outdated",
+    "docs/native_guns/field_attachment_view_v1.md",
     "run/saves/新的世界/icon.png",
     "docs/worldgen/satellite_facility_islands_v3.md",
     "docs/ui/hud_layout_editor_v1.md",
@@ -234,7 +235,6 @@
     "docs/worldgen/highway_v2_diagonal_geometry_v1.md",
     "docs/worldgen/highway_v2_strategic_branch_phase2a.md",
     "docs/01 - 设计/武器/弹药.md",
-    "docs/01 - 设计/武器/枪械.md",
-    "docs/01 - 设计/武器/配件.md"
+    "docs/01 - 设计/武器/枪械.md"
   ]
 }

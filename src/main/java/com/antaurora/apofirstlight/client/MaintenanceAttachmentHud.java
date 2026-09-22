@@ -9,7 +9,8 @@ import net.minecraft.world.item.ItemStack;
 
 /** Small overlay state machine; no container slots or local attachment mutations. */
 public final class MaintenanceAttachmentHud {
-    private final GunMaintenanceScreen screen;
+    private final net.minecraft.client.gui.screens.Screen screen;
+    private final AttachmentHudHost host;
     private final AttachmentCandidatePage page=new AttachmentCandidatePage();
     private NativeAttachment.Slot locked,hovered;
     private ItemStack expected=ItemStack.EMPTY;
@@ -21,9 +22,23 @@ public final class MaintenanceAttachmentHud {
     private long pressedUntil;
     private Runnable afterPress;
     private net.minecraft.client.resources.sounds.SimpleSoundInstance operationSound;
-    public MaintenanceAttachmentHud(GunMaintenanceScreen screen){this.screen=screen;}
+    public MaintenanceAttachmentHud(GunMaintenanceScreen screen){this(screen,new AttachmentHudHost(){
+        public ItemStack gun(){return screen.getMenu().synchronizedBench().getItem(0);}
+        public long revision(){return screen.getMenu().synchronizedBench().attachmentRevision();}
+        public MaintenanceHotspots.Point project(NativeAttachment.Slot slot){return MaintenanceHotspots.project(slot,screen.width,screen.height);}
+        public void submit(ItemStack expected,long revision,NativeAttachment.Slot slot,int source,ItemStack stack){
+            var menu=screen.getMenu();
+            AflNetwork.requestMaintenance(new MaintenanceActionRequest(menu.containerId,menu.bench.getBlockPos(),revision,expected,slot,source,stack));
+        }
+        public void action(MaintenanceActionState action){MaintenanceModeClientState.INSTANCE.action=action;}
+    });}
+    public MaintenanceAttachmentHud(net.minecraft.client.gui.screens.Screen screen,AttachmentHudHost host){this.screen=screen;this.host=host;}
+    public NativeAttachment.Slot selectedSlot(){return locked;}
+    public boolean pending(){return pending;}
+    private int hotbarX(){return (screen.width-182)/2+1;}
+    private int hotbarY(){return screen.height-28;}
     private Minecraft mc(){return Minecraft.getInstance();}
-    private ItemStack gun(){return screen.getMenu().synchronizedBench().getItem(0);}
+    private ItemStack gun(){return host.gun();}
     private Component text(String key){return Component.translatable("gui.apocalypse_firstlight.gun_maintenance."+key);}
     private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";});}
     private Component installed(NativeAttachment.Slot slot){var item=NativeAttachments.stored(gun(),slot);return item.isEmpty()?text("none"):item.getHoverName();}
@@ -37,7 +52,7 @@ public final class MaintenanceAttachmentHud {
     private NativeAttachment.Slot hit(double x,double y){
         NativeAttachment.Slot best=null;double distance=Double.MAX_VALUE;
         for(var slot:NativeAttachment.Slot.values()){
-            var p=MaintenanceHotspots.project(slot,screen.width,screen.height);
+            var p=host.project(slot);
             if(p!=null&&p.hit(x,y)){double d=Math.hypot(x-p.x(),y-p.y());if(d<distance){distance=d;best=slot;}}
         }return best;
     }
@@ -48,13 +63,13 @@ public final class MaintenanceAttachmentHud {
         fade=Math.max(0,Math.min(1,fade+(current!=null?step:-step)));
         pageFade=Math.max(0,Math.min(1,pageFade+(selection?step:-step)));
         if(locked==null&&hovered!=null&&fade>.03){
-            var point=MaintenanceHotspots.project(hovered,screen.width,screen.height);
+            var point=host.project(hovered);
             if(point!=null){var label=NativeAttachments.stored(gun(),hovered).isEmpty()?Component.literal("+ ").append(title(hovered)):installed(hovered);
                 AttachmentHintStyle.draw(g,label,(int)point.x(),(int)point.y(),screen.width,fade);
             }
         }
         if(locked!=null&&!selection){
-            var point=MaintenanceHotspots.project(locked,screen.width,screen.height);
+            var point=host.project(locked);
             if(point!=null){hx=contextX(point.x(),screen.width);hy=Math.max(4,Math.min(screen.height-106,(int)point.y()-24));
                 g.fill(hx,hy,hx+140,hy+65,0xdd65686b);g.fill(hx+1,hy+1,hx+139,hy+64,0xeb272b2e);
                 g.drawString(mc().font,title(locked),hx+7,hy+6,0xffdddddd,false);
@@ -64,9 +79,9 @@ public final class MaintenanceAttachmentHud {
             }
         }
         if(selection){
-            int y=screen.hotbarY();
+            int y=hotbarY();
             for(int i=0;i<9;i++){
-                int x=screen.hotbarX()+i*20;var entry=page.at(i);
+                int x=hotbarX()+i*20;var entry=page.at(i);
                 buttonPlate(g,2+i,x,y,20,20,entry!=null&&inside(mx,my,x,y,20,20),entry!=null&&!pending);
                 if(entry!=null){g.renderItem(entry.source(),x+2,y+2);g.renderItemDecorations(mc().font,entry.source(),x+2,y+2,String.valueOf(entry.totalCount()));
                     if(inside(mx,my,x,y,20,20))g.renderTooltip(mc().font,entry.source().getHoverName(),mx,my);
@@ -74,10 +89,10 @@ public final class MaintenanceAttachmentHud {
             }
             g.drawCenteredString(mc().font,page.candidates.isEmpty()?text("no_compatible_attachment"):title(locked),screen.width/2,y-14,0xffcccccc);
             if(page.candidates.size()>9)g.drawCenteredString(mc().font,Component.translatable("gui.apocalypse_firstlight.gun_maintenance.page",page.page+1,(page.candidates.size()+8)/9),screen.width/2,y-27,0xffcccccc);
-            if(pageFade<1){g.pose().pushPose();g.pose().translate(0,0,400);g.fill(screen.hotbarX(),y,screen.hotbarX()+180,y+20,((int)((1-pageFade)*200)<<24)|0x202426);g.pose().popPose();}
+            if(pageFade<1){g.pose().pushPose();g.pose().translate(0,0,400);g.fill(hotbarX(),y,hotbarX()+180,y+20,((int)((1-pageFade)*200)<<24)|0x202426);g.pose().popPose();}
         }
-        if(System.currentTimeMillis()<noticeUntil)g.drawCenteredString(mc().font,text("state_changed"),screen.width/2,screen.hotbarY()-40,0xffcccccc);
-        if(pending)g.drawCenteredString(mc().font,text("processing"),screen.width/2,screen.hotbarY()-40,0xffdddddd);
+        if(System.currentTimeMillis()<noticeUntil)g.drawCenteredString(mc().font,text("state_changed"),screen.width/2,hotbarY()-40,0xffcccccc);
+        if(pending)g.drawCenteredString(mc().font,text("processing"),screen.width/2,hotbarY()-40,0xffdddddd);
     }
     private void buttonPlate(GuiGraphics g,int id,int x,int y,int w,int h,boolean hover,boolean enabled){
         boolean down=pressed==id&&System.nanoTime()<pressedUntil;
@@ -108,8 +123,8 @@ public final class MaintenanceAttachmentHud {
         if(button==1)return back();
         if(button!=0)return false;
         if(selection){
-            if(inside(x,y,screen.hotbarX(),screen.hotbarY(),180,20)){
-                int cell=(int)(x-screen.hotbarX())/20;var e=page.at(cell);if(e!=null)press(2+cell,()->submit(e.sourceSlot(),e.source()));
+            if(inside(x,y,hotbarX(),hotbarY(),180,20)){
+                int cell=(int)(x-hotbarX())/20;var e=page.at(cell);if(e!=null)press(2+cell,()->submit(e.sourceSlot(),e.source()));
             }
             return true;
         }
@@ -119,18 +134,17 @@ public final class MaintenanceAttachmentHud {
             return true;
         }
         var target=hit(x,y);
-        if(target!=null){locked=target;expected=gun().copy();revision=screen.getMenu().synchronizedBench().attachmentRevision();return true;}
+        if(target!=null){locked=target;expected=gun().copy();revision=host.revision();return true;}
         return false;
     }
     private void submit(int source,ItemStack stack){
         if(pending||locked==null)return;pending=true;
-        MaintenanceModeClientState.INSTANCE.action=locked==NativeAttachment.Slot.MAGAZINE
+        host.action(locked==NativeAttachment.Slot.MAGAZINE
                 ?(source<0?MaintenanceActionState.REMOVING_MAGAZINE:MaintenanceActionState.INSTALLING_MAGAZINE)
                 :locked==NativeAttachment.Slot.SIGHT
                 ?(source<0?MaintenanceActionState.REMOVING_SIGHT:MaintenanceActionState.INSTALLING_SIGHT)
-                :(source<0?MaintenanceActionState.REMOVING_MUZZLE:MaintenanceActionState.INSTALLING_MUZZLE);
-        var menu=screen.getMenu();
-        AflNetwork.requestMaintenance(new MaintenanceActionRequest(menu.containerId,menu.bench.getBlockPos(),revision,expected.copy(),locked,source,stack.copy()));
+                :(source<0?MaintenanceActionState.REMOVING_MUZZLE:MaintenanceActionState.INSTALLING_MUZZLE));
+        host.submit(expected.copy(),revision,locked,source,stack.copy());
     }
     public void result(int phase){
         if(phase==2){
@@ -142,9 +156,9 @@ public final class MaintenanceAttachmentHud {
         if(operationSound!=null&&!success)mc().getSoundManager().stop(operationSound);
         operationSound=null;
         pending=false;
-        MaintenanceModeClientState.INSTANCE.action=MaintenanceActionState.IDLE;
+        host.action(MaintenanceActionState.IDLE);
         if(success){selection=false;locked=null;}else{
-            noticeUntil=System.currentTimeMillis()+1800;expected=gun().copy();revision=screen.getMenu().synchronizedBench().attachmentRevision();tick();
+            noticeUntil=System.currentTimeMillis()+1800;expected=gun().copy();revision=host.revision();tick();
         }
     }
     public void removed(){afterPress=null;if(operationSound!=null)mc().getSoundManager().stop(operationSound);operationSound=null;pending=false;}

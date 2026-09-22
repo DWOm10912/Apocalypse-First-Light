@@ -35,6 +35,7 @@ public final class NativeGunAds {
                 && (gunId==0 || GeoItem.getId(mc.player.getMainHandItem())==gunId);
     }
     public static void reloadRequested() { reloadRequestTicks=3; }
+    public static void leaveForField() { PROGRESS.reset(); }
     static String swayBlockReason(){return blocked;}
     private static String action(NativeGunItem gun,long id) {
         var c=gun.getAnimatableInstanceCache().getManagerForId(id).getAnimationControllers().get("action");
@@ -75,6 +76,7 @@ public final class NativeGunAds {
                     gun.definition().id(),PROGRESS.sample(1),blocked,profile.hip(),profile.ads(),profile.translation(),gun.definition().adsFov());
     }
     public static float progress(float partial) {
+        if(FieldAttachmentViewState.isActive())return 0;
         var mc=Minecraft.getInstance();
         return same(mc)&&profile!=null&&mc.options.getCameraType().isFirstPerson()?PROGRESS.sample(partial):0;
     }

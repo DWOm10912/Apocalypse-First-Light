@@ -1,6 +1,6 @@
 # 手枪消音器可装备 V1
 
-> 协议更新（Inspect V1）：当前共享通道为 **23**，新增轻量检视请求，客户端/服务端须匹配。下文关于协议 22 的描述属于历史版本；配件仍仅通过维护台安装，V 现用于检视。见 docs/native_guns/native_inspect_v1.md。
+> 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 ## 配件与属性速查
 
@@ -56,4 +56,4 @@ P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；�
 - 测试过程说明：最初生成测试被structure namespace筛选导致0项，不计通过；修正后为24项。首个客户端因测试重编译重叠发生类加载失败，不计通过；随后串行运行成功。隔离客户端既有Native Gun Smoke相对源文件路径检查仍失败，与本附件测试分开记录。
 
 未提交、未推送。维护台模型、取回生产代码与P9源动画未改。
-> Current channel protocol: **22**, adding P9 MAGAZINE support while retaining atomic shot confirmation. Earlier protocol references below are historical. Matching client/server required. See [24R magazine](../p9_01_extended_magazine_v1.md).
+> Historical protocol: **22** added P9 MAGAZINE support. Current protocol is **29**; matching client/server required. Field Attachment View runtime acceptance is pending.

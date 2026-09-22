@@ -14,6 +14,8 @@ import software.bernie.geckolib.util.RenderUtils;
 public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.item.Item & software.bernie.geckolib.animatable.GeoItem> extends NativeGunContextRenderer<T> {
     @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        if(renderPerspective!=null&&renderPerspective.firstPerson()&&!reRender)
+            FieldAttachmentHotspots.capture(currentItemStack,bone,pose);
         if(NativeMagazineRendering.replaces(currentItemStack,bone)){
             pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
             if(!bone.isHidden())NativeMagazineRendering.render(currentItemStack,bone,pose,buffers,light,overlay);

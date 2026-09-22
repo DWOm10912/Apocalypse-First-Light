@@ -103,7 +103,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
             if(slot==placeholderSlot()){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.RETURN_GUN);}
             else if(menu.bench.isEmpty()&&GunMaintenanceBenchBlockEntity.accepts(menu.slots.get(slot).getItem())){
                 clickSound();
-                if(menu.slots.get(slot).getItem().is(AflItems.CAT.get()))catRefusalTicks=60;
+                if(!com.antaurora.apofirstlight.weapon.AttachmentModificationPolicy.allowed(menu.slots.get(slot).getItem()))catRefusalTicks=60;
                 else minecraft.gameMode.handleInventoryButtonClick(menu.containerId,slot);
             }
         }else if(takeButtonVisible()&&inside(x,y,takeButtonX(),hotbarY())){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.TAKE_GUN);}

@@ -1,4 +1,5 @@
 {
+  "key.apocalypse_firstlight.field_attachment": "Field Attachment View",
   "key.apocalypse_firstlight.fire_mode": "Switch Fire Mode",
   "message.apocalypse_firstlight.fire_mode": "Fire Mode: %s",
   "fire_mode.apocalypse_firstlight.semi": "Semi",
@@ -346,7 +347,7 @@
 
   "message.apocalypse_firstlight.nether_disabled": "The Nether is inaccessible.",
   "message.apocalypse_firstlight.end_disabled": "The End is inaccessible.",
-  "message.apocalypse_firstlight.cat.maintenance_refused": "This cat doesn't seem to want to be put up there.",
+  "message.apocalypse_firstlight.cat.maintenance_refused": "This cat doesn't seem to like you doing that.",
 
   "hint.apocalypse_firstlight.break_glass": "Break glass",
   "item.apocalypse_firstlight.cat": "C.A.T",
