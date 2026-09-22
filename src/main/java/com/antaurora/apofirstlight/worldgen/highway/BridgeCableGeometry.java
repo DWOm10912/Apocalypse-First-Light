@@ -47,8 +47,10 @@ public record BridgeCableGeometry(List<Cable> cables,List<String> rejected) {
                     for(int n=0;n<distance;n++) {
                         int y=bottom+n/chosen, phase=n%chosen;
                         var pos=LandmarkMainSpan.position(bridge.plan(),deckStation-face*n,side*13,y);
-                        var center=Vec3.atLowerCornerOf(pos).add(.5,0,.5);
                         var step=new Vec3(uphill.getStepX(),0,uphill.getStepZ());
+                        // Rigid sub-block inset matches baked model and shape; never replans the cable.
+                        var center=Vec3.atLowerCornerOf(pos).add(.5,-SteelCableBlock.SLOPED_DROP,.5)
+                                .add(step.scale(SteelCableBlock.SLOPED_INSET));
                         var entry=center.subtract(step.scale(.5)).add(0,phase/(double)chosen,0);
                         var exit=center.add(step.scale(.5)).add(0,(phase+1)/(double)chosen,0);
                         if(last!=null && last.distanceToSqr(entry)>1e-16)reason="ENDPOINT_DISCONTINUITY";

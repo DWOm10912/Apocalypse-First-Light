@@ -8,7 +8,7 @@
 
 旧 `steel_beam`、`diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` 方块及其专用 Blockbench 源、模型变体、joint 变换、碰撞形状和生成工具已从 live repo 删除。这些 Registry ID 不再兼容旧开发世界，也不应继续用于结构、命令、NBT 或文档示例。
 
-`steel_beam` 与 `steel_brace` 使用 `axis=x/y/z`，按点击面轴向放置。V1.1B 的 `steel_cable` 使用 `facing` 与 `segment`；玩家仍只放竖直，桥梁生成使用相位斜索。三者没有自动连接或 BlockEntity。可编辑源位于 `src/main/blockbench/`，钢缆斜段源为 `steel_cable_sloped/*.json`（Blockbench Java Block/Item 导入格式）。详见 [V1.1B](../worldgen/highway_v2_sea_bridge_v1_1b.md)。
+`steel_beam` 与 `steel_brace` 使用 `axis=x/y/z`，按点击面轴向放置。`steel_cable` 使用 V1.1B 的 `facing` 与 `segment`；玩家仍只放竖直，桥梁生成使用相位斜索。三者没有自动连接或 BlockEntity。V1.1C 斜段可编辑源为 `src/main/blockbench/steel_cable_sloped/*.bbmodel`（Free mesh），运行时为原 model JSON 引用 `models/block/steel_cable_sloped/*.obj`，通过 Forge 原生静态 OBJ loader 烘焙。详见 [V1.1C](../worldgen/highway_v2_sea_bridge_v1_1c.md)。
 
 ## 使用规则
 
@@ -44,9 +44,9 @@
 - 不要用原版 `iron_bars` 冒充新钢梁、钢斜撑或钢缆体系。
 - 第三方预览器可能无法显示 AFL 自定义模型；预览只用于几何检查，游戏内实机仍是最终视觉验收。
 - 当前没有对三种新钢结构件执行游戏内放置、碰撞或视觉验收；静态资源与构建通过不等同于实机验收。
-- Beam / Brace 的方向能力仅限正交三轴；真正的斜向结构仍由未来 bridge-specific geometry 单独负责。
+- Beam / Brace 的方向能力仅限正交三轴；斜向钢缆已由 BridgeCableGeometry 与 steel_cable 的有限坡度/相位实现。
 - Beam / Brace 的 X/Y/Z 轴变体不使用 `uvlock`；钢材纹理会随模型轴向一起旋转，不能恢复为世界方向锁定。
 
 ## 后续状态
 
-V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；旧无属性状态按默认竖直加载。上述钢缆细柱 shape 仅指 vertical；斜段 shape 是每格 16 个细 AABB 的并集，随坡度、相位和方向变化。采掘仍沿用 Diamond-tier 镐与普通自身掉落，生存采掘和本轮视觉由用户实机验证。
+V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；旧无属性状态按默认竖直加载。上述钢缆细柱 shape 仅指 vertical。V1.1C 可见斜段为连续四侧面直索，碰撞仍用每格 16 个细 AABB 近似；两者相对 V1.1B 均向 facing 平移 0.5 格、下移 0.25 格，以进入桥面混凝土及塔侧钢架。斜段局部几何允许沿 facing 超出所属块 0.5 格，横向仍在 ±14 内。贴图复用原 steel_cable.png。采掘仍沿用 Diamond-tier 镐与普通自身掉落；用户确认 V1.1B 大尺度生成成立，V1.1C 近景/碰撞仍待用户验收。

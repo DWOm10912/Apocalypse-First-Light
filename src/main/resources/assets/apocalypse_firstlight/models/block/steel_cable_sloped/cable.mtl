@@ -1,0 +1,7 @@
+newmtl cable
+Ka 0 0 0
+Kd 1 1 1
+d 1
+forge_TintIndex -1
+map_Kd apocalypse_firstlight:block/steel_cable
+

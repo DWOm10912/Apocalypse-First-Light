@@ -1,0 +1,193 @@
+{
+  "meta": {
+    "format_version": "4.10",
+    "model_format": "free",
+    "box_uv": false
+  },
+  "name": "steel_cable_r3_0",
+  "resolution": {
+    "width": 64,
+    "height": 64
+  },
+  "elements": [
+    {
+      "name": "continuous_cable",
+      "type": "mesh",
+      "uuid": "24cabe00-0000-4000-8000-000000000030",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "vertices": {
+        "v0": [
+          8,
+          -5,
+          7
+        ],
+        "v1": [
+          8,
+          -5,
+          9
+        ],
+        "v2": [
+          8,
+          -3,
+          9
+        ],
+        "v3": [
+          8,
+          -3,
+          7
+        ],
+        "v4": [
+          24,
+          0.33333333333333304,
+          7
+        ],
+        "v5": [
+          24,
+          0.33333333333333304,
+          9
+        ],
+        "v6": [
+          24,
+          2.333333333333333,
+          9
+        ],
+        "v7": [
+          24,
+          2.333333333333333,
+          7
+        ]
+      },
+      "faces": {
+        "f0": {
+          "vertices": [
+            "v0",
+            "v4",
+            "v5",
+            "v1"
+          ],
+          "uv": {
+            "v0": [
+              2.5,
+              32.49
+            ],
+            "v4": [
+              2.5,
+              32.49666666666667
+            ],
+            "v5": [
+              10.5,
+              32.49666666666667
+            ],
+            "v1": [
+              10.5,
+              32.49
+            ]
+          },
+          "texture": 0
+        },
+        "f1": {
+          "vertices": [
+            "v1",
+            "v5",
+            "v6",
+            "v2"
+          ],
+          "uv": {
+            "v1": [
+              2.5,
+              32.49
+            ],
+            "v5": [
+              2.5,
+              32.49666666666667
+            ],
+            "v6": [
+              10.5,
+              32.49666666666667
+            ],
+            "v2": [
+              10.5,
+              32.49
+            ]
+          },
+          "texture": 0
+        },
+        "f2": {
+          "vertices": [
+            "v2",
+            "v6",
+            "v7",
+            "v3"
+          ],
+          "uv": {
+            "v2": [
+              2.5,
+              32.49
+            ],
+            "v6": [
+              2.5,
+              32.49666666666667
+            ],
+            "v7": [
+              10.5,
+              32.49666666666667
+            ],
+            "v3": [
+              10.5,
+              32.49
+            ]
+          },
+          "texture": 0
+        },
+        "f3": {
+          "vertices": [
+            "v3",
+            "v7",
+            "v4",
+            "v0"
+          ],
+          "uv": {
+            "v3": [
+              2.5,
+              32.49
+            ],
+            "v7": [
+              2.5,
+              32.49666666666667
+            ],
+            "v4": [
+              10.5,
+              32.49666666666667
+            ],
+            "v0": [
+              10.5,
+              32.49
+            ]
+          },
+          "texture": 0
+        }
+      }
+    }
+  ],
+  "outliner": [
+    "24cabe00-0000-4000-8000-000000000030"
+  ],
+  "textures": [
+    {
+      "path": "D:/Minecraft Modding/Apocalypse First Light/src/main/resources/assets/apocalypse_firstlight/textures/block/steel_cable.png",
+      "relative_path": "../../resources/assets/apocalypse_firstlight/textures/block/steel_cable.png",
+      "name": "steel_cable.png",
+      "id": "0",
+      "uuid": "24cabe00-0000-4000-8000-000000000099",
+      "width": 64,
+      "height": 64,
+      "uv_width": 64,
+      "uv_height": 64
+    }
+  ],
+  "notes": "Export OBJ in block units (divide Blockbench units by 16). Runtime uses explicit UV V orientation flip_v=false. Open caps are intentional at voxel seams; anchor ends are embedded."
+}

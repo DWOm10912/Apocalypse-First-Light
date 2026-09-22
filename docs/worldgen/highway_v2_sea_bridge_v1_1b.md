@@ -1,5 +1,7 @@
 # Sea Bridge V1.1B — Steel Cable 与 Semi-Fan
 
+现行近景更新见 [V1.1C](highway_v2_sea_bridge_v1_1c.md)：斜段已改用 Forge 原生静态 OBJ 烘焙模型，UV 取原贴图的纵向色带；可见中心线及 shape 向塔侧平移 0.5 格、下移 0.25 格。本文第 2 节的 16 微盒可见模型、第 4 节悬空端点和第 8/9 节旧 JSON 源路径均为 V1.1B 历史实现，已由 V1.1C 替代；坡度/相位、索数量、落块路径与生成链保持适用。
+
 ## 1. Steel Cable State Design
 
 同一个 Registry ID/Item：apocalypse_firstlight:steel_cable。

@@ -24,19 +24,23 @@ public final class SteelCableBlock extends Block {
     }
     public static final DirectionProperty FACING=BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Segment> SEGMENT=EnumProperty.create("segment",Segment.class);
+    // V1.1C rigid model inset: same slope/phase/owned block, endpoint inside existing structure.
+    public static final double SLOPED_INSET = 0.5;
+    public static final double SLOPED_DROP = 0.25;
     private static final VoxelShape[][] SHAPES=new VoxelShape[7][4];
     static {
         for(var s:Segment.values())for(var d:Direction.Plane.HORIZONTAL) {
             VoxelShape shape=Shapes.empty();
             if(s==Segment.VERTICAL)shape=Block.box(7,0,7,9,16,9);
             else for(int i=0;i<16;i++) {
-                double lo=(s.phase+i/16.0)*16/s.run-1;
-                double hi=(s.phase+(i+1)/16.0)*16/s.run+1;
+                double lo=(s.phase+i/16.0)*16/s.run-1-SLOPED_DROP*16;
+                double hi=(s.phase+(i+1)/16.0)*16/s.run+1-SLOPED_DROP*16;
+                double q=i+SLOPED_INSET*16;
                 shape=Shapes.or(shape,switch(d) {
-                    case EAST -> Block.box(i,lo,7,i+1,hi,9);
-                    case WEST -> Block.box(15-i,lo,7,16-i,hi,9);
-                    case SOUTH -> Block.box(7,lo,i,9,hi,i+1);
-                    default -> Block.box(7,lo,15-i,9,hi,16-i);
+                    case EAST -> Block.box(q,lo,7,q+1,hi,9);
+                    case WEST -> Block.box(15-q,lo,7,16-q,hi,9);
+                    case SOUTH -> Block.box(7,lo,q,9,hi,q+1);
+                    default -> Block.box(7,lo,15-q,9,hi,16-q);
                 });
             }
             SHAPES[s.ordinal()][d.get2DDataValue()]=shape.optimize();
