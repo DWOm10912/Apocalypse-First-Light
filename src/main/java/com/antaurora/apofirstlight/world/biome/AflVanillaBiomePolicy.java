@@ -9,8 +9,7 @@ import java.util.Set;
 public final class AflVanillaBiomePolicy {
     private static final Set<ResourceKey<Biome>> VANILLA_UNDERGROUND_BIOMES = Set.of(
             Biomes.DRIPSTONE_CAVES,
-            Biomes.LUSH_CAVES,
-            Biomes.DEEP_DARK
+            Biomes.LUSH_CAVES
     );
 
     private AflVanillaBiomePolicy() {}

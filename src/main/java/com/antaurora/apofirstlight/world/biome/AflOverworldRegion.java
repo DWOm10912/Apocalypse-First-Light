@@ -13,11 +13,7 @@ import terrablender.api.RegionType;
 import java.util.function.Consumer;
 
 public final class AflOverworldRegion extends Region {
-    /**
-     * With TerraBlender's vanilla overworld weight left at its default 10,
-     * this produces roughly 95% AFL-owned macro-regions and leaves roughly
-     * 5% of the world for rare vanilla Plains pockets.
-     */
+    /** Candidate fallback only; MainNationBiomeRegionPlan owns final MAIN_NATION land selection. */
     public static final int REGION_WEIGHT = 190;
 
     public AflOverworldRegion(ResourceLocation name, int weight) {
@@ -44,6 +40,6 @@ public final class AflOverworldRegion extends Region {
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 0.0F,
-                AflBiomes.SCORCHED_LANDS);
+                AflBiomes.FALLOUT_BARRENS);
     }
 }

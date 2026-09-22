@@ -17,6 +17,6 @@ public abstract class BiomeManagerStartupSurfaceMixin {
     private void apocalypse$resolveStartupSurfaceBiome(BlockPos pos,
                                                         CallbackInfoReturnable<Holder<Biome>> callbackInfo) {
         callbackInfo.setReturnValue(StartupSurfaceBiomeContext.resolve(
-                pos.getX(), pos.getZ(), callbackInfo.getReturnValue()));
+                pos.getX(), pos.getY(), pos.getZ(), callbackInfo.getReturnValue()));
     }
 }

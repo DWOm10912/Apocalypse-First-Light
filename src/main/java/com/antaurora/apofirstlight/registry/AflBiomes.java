@@ -9,8 +9,6 @@ import net.minecraft.world.level.biome.Biome;
 public final class AflBiomes {
     public static final ResourceKey<Biome> FALLOUT_BARRENS = ResourceKey.create(Registries.BIOME,
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fallout_barrens"));
-    public static final ResourceKey<Biome> SCORCHED_LANDS = ResourceKey.create(Registries.BIOME,
-            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "scorched_lands"));
 
     private AflBiomes() {
     }

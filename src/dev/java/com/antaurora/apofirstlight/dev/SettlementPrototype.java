@@ -1063,7 +1063,7 @@ public final class SettlementPrototype {
     }
 
     private static CandidateValidation validateCandidate(ServerLevel level, BlockPos anchor, Footprint footprint, long seed) {
-        int total = 0, valid = 0, invalid = 0, outside = 0, fallout = 0, scorched = 0, other = 0;
+        int total = 0, valid = 0, invalid = 0, outside = 0, fallout = 0, other = 0;
         Set<String> biomeCategories = new HashSet<>();
         for (int[] point : footprint.samplePoints()) {
             total++;
@@ -1077,9 +1077,6 @@ public final class SettlementPrototype {
             if (biome.is(AflBiomes.FALLOUT_BARRENS)) {
                 fallout++;
                 biomeCategories.add("FALLOUT");
-            } else if (biome.is(AflBiomes.SCORCHED_LANDS)) {
-                scorched++;
-                biomeCategories.add("SCORCHED");
             } else {
                 other++;
                 biomeCategories.add("OTHER");
@@ -1099,7 +1096,7 @@ public final class SettlementPrototype {
                 surfaceValid = false;
             }
         }
-        return new CandidateValidation(surfaceValid, reason, total, valid, invalid, outside, fallout, scorched,
+        return new CandidateValidation(surfaceValid, reason, total, valid, invalid, outside, fallout,
                 other, biomeCategories.size() > 1);
     }
 
@@ -1107,10 +1104,10 @@ public final class SettlementPrototype {
         StartupPlainsEnclave.Zone anchorZone = StartupPlainsEnclave.zoneAt(anchor.getX(), anchor.getZ(), seed);
         StartupSettlementProtection.ProtectionClass protection =
                 StartupSettlementProtection.protectionAt(anchor.getX(), anchor.getZ(), seed);
-        ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT ECOLOGY] anchor={} anchorZone={} anchorProtected={} anchorEligible=true protectedHits={} outsideBiomeSamples={} falloutSamples={} scorchedSamples={} otherBiomeSamples={} crossBiome={} fit={} candidateSamples={} candidateValidSamples={} candidateInvalidSamples={} candidateReason={}",
+        ApocalypseFirstLight.LOGGER.info("[AFL SETTLEMENT ECOLOGY] anchor={} anchorZone={} anchorProtected={} anchorEligible=true protectedHits={} outsideBiomeSamples={} falloutSamples={} otherBiomeSamples={} crossBiome={} fit={} candidateSamples={} candidateValidSamples={} candidateInvalidSamples={} candidateReason={}",
                 anchor.toShortString(), anchorZone, protection != StartupSettlementProtection.ProtectionClass.NONE,
                 fit.protectedHits(), validation.outsideBiomeSamples(),
-                validation.falloutSamples(), validation.scorchedSamples(), validation.otherBiomeSamples(),
+                validation.falloutSamples(), validation.otherBiomeSamples(),
                 validation.crossBiome(), fit.fit(), validation.totalSamples(), validation.validSamples(),
                 validation.invalidSamples(), validation.reason());
     }
@@ -1206,11 +1203,11 @@ public final class SettlementPrototype {
                                      int deepCavityColumnsSkipped, int edgeFillBlocks, int maxEdgeClosureDepth) {}
     private record CandidateValidation(boolean valid, String reason, int totalSamples, int validSamples, int invalidSamples,
                                        int outsideBiomeSamples, int falloutSamples,
-                                       int scorchedSamples, int otherBiomeSamples, boolean crossBiome) {
+                                       int otherBiomeSamples, boolean crossBiome) {
         String detail() {
-            return String.format("candidateSamples=%d candidateValidSamples=%d candidateInvalidSamples=%d outsideBiomeSamples=%d falloutSamples=%d scorchedSamples=%d otherBiomeSamples=%d crossBiome=%s candidateReason=%s",
+            return String.format("candidateSamples=%d candidateValidSamples=%d candidateInvalidSamples=%d outsideBiomeSamples=%d falloutSamples=%d otherBiomeSamples=%d crossBiome=%s candidateReason=%s",
                     totalSamples, validSamples, invalidSamples, outsideBiomeSamples,
-                    falloutSamples, scorchedSamples, otherBiomeSamples, crossBiome, reason);
+                    falloutSamples, otherBiomeSamples, crossBiome, reason);
         }
     }
     public record Result(boolean success, String reason, Plan plan, int logsCleared, int leavesCleared, int otherVegetationCleared, String detail) {

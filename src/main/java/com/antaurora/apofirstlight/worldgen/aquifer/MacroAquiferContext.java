@@ -5,10 +5,10 @@ import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 
 /** Generation-thread context used only while NoiseBasedChunkGenerator fills a chunk. */
-public final class ScorchedAquiferContext {
+public final class MacroAquiferContext {
     private static final ThreadLocal<Context> CURRENT = new ThreadLocal<>();
 
-    private ScorchedAquiferContext() {
+    private MacroAquiferContext() {
     }
 
     public static void begin(BiomeSource biomeSource, Climate.Sampler sampler, long seed) {

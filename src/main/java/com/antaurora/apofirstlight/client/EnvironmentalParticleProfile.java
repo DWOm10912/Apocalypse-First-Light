@@ -12,7 +12,6 @@ public enum EnvironmentalParticleProfile {
 
     public static EnvironmentalParticleProfile at(ClientLevel level, BlockPos position) {
         if (level.getBiome(position).is(AflBiomes.FALLOUT_BARRENS)) return FALLOUT_DUST;
-        if (level.getBiome(position).is(AflBiomes.SCORCHED_LANDS)) return WHITE_ASH;
         return NONE;
     }
 }

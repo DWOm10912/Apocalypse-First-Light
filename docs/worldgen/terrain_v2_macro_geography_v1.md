@@ -118,7 +118,7 @@ TerrainProvider offset / factor / jaggedness splines
 
 附件规定的 C/E 基线保持为 `.16 / .63 / .02`。实现前实际源码中 erosion 常量误写为 `63`，超出该类声明的 `.70` 上界；本轮将这个缺失小数点纠正为 `.63`，没有采用降低正确 erosion 基线来抬地。Startup≤384、Core≤3800、Outer 的原始 rolling/highland/mountain gates 均未修改；elevation 不额外读取这些半径，不在其边界产生高度台阶。Startup/Core 获得内陆偏置而不增加 relief 门控；Outer 仍使用原分布。SATELLITE_ISLAND 同样按 coastDistance 获得0–6格等效抬升，较窄岛内可能仅获得部分偏置；保留rolling权重0.50及高地/山地门控0，没有改变岛形/大小/数量。
 
-没有fixed-Y floor、最低支撑、`(height-Y)` LAND主链、MacroHeightDensity陆地接管、target height或自定义heightfield。只钳制 ramp 权重，不钳制surface Y。sea level仍Y63，aquifers保持开启，default fluid仍 `minecraft:water`。Macro Geography代码、MAIN_NATION/mainland/island形状及数量、IDs、Bay/Strait/Inland Sea/Open Ocean、CrossingCandidate与300–600格桥隙均未改；同seed Macro Export输入算法保持，未重新运行导出。Highway、Rural、Bunker未改。抬升本身不保证焦土无水；后续独立水策略见下文 Scorched Lands Surface Water Suppression V1，待新世界验收。
+没有fixed-Y floor、最低支撑、`(height-Y)` LAND主链、MacroHeightDensity陆地接管、target height或自定义heightfield。只钳制 ramp 权重，不钳制surface Y。sea level仍Y63，aquifers保持开启，default fluid仍 `minecraft:water`。Macro Geography代码、MAIN_NATION/mainland/island形状及数量、IDs、Bay/Strait/Inland Sea/Open Ocean、CrossingCandidate与300–600格桥隙均未改；同seed Macro Export输入算法保持，未重新运行导出。Highway、Rural、Bunker未改。抬升本身不保证陆地无水；后续曾有Scorched专属抑水，现已随Biome Region Planner V1移除，当前仅保留共享Macro保水，见下文。
 
 验证：直接调用当前 mapped `TerrainProvider.overworldOffset`，6组固定C/E/folded-ridges参数的固定噪声零面均精确+6格，相对高差保持；3种factor、3种固定base noise、Y=-30..230共14,094次gradient平移比较通过。coast ramp有界、单调及48/240/432格对应0/3/6格等效抬升检查通过。这些是纯数学探针，不是完整三维噪声或实际水面统计。`compileJava --offline` 使用现有用户Gradle缓存构建成功（沙箱初次访问缓存锁被拒，授权执行后成功）；只有现有弃用/unchecked警告。无resource变更，未运行processResources。未生成新区块、未做多seed或新世界统计、未运行客户端；实际水面减少、自然平原Y68–75、无平台/断层及地堡落地均待用户新世界验收，不是硬阈值或已通过结论。
 
@@ -153,42 +153,34 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 
 密度主链恢复时未处理结构与地表熔岩湖；后续 Worldgen Hygiene Fix 已独立补齐指定 Vanilla 结构的禁用 tag，并仅移除当前地表 biome 的自然 surface lava lake。Rural、Highway/claims、Sea Bridge、City、Port 不属于此修复。
 
-## Biome、出生生态与保水
+## Biome、出生生态与保水 — MAIN_NATION Biome Region Planner V1
 
-`MacroBiomePolicy` 共用于 TerraBlender ParameterList 的 `StartupEcologyState` 和 `StartupSurfaceBiomeContext`：
+当前实现见[群系策略](../01%20-%20设计/世界与环境/群系.md)。本次仅修改biome分配与Scorched相关行为，Terrain relief/elevation与Macro topology不改。
 
-- 宏观水域→ocean；零面低于32→deep_ocean；干陆岸带48格→beach。
-- 主国内陆→原AFL地表规则；气候候选偶然选到marine时归回Plains。
-- ocean/deep_ocean/beach加入vanilla候选白名单，但实际位置由macro gate决定。
-- 地下洞穴biome依据同资源initial密度在上方12格的preliminary判据保留（水域仍用海床深度>12）；接近表面时服从既有地理/陆地规则。
-- macro水域判定先于startup生态覆盖。384格reserve及完整core保证Plains/SAFE不会落在实际海洋。辐射系统未重构；海洋当前仍走UNKNOWN biome的自然场语义，**不是自动无辐射海洋**。
-- `NoiseChunkScorchedAquiferMixin` 排除真实宏观水域；干岸带不再无条件跳过，而是与LAND一样仅在实际地表biome为Scorched Lands时应用下述水策略。不依赖generated block scan。
-
-所有主岛/水体surface查询与密度使用同一seed计划；高度查询仍通过生成器原API，适用于Rural/Highway的noise-time采样。
+- MAINLAND：1个Startup Plains（核心160，边界208±32），0～3个Additional，其余LAND为Fallout。Satellite LAND全部Fallout。
+- Additional目标数量0/1/2/3概率40%/40%/15%/5%，每slot最多128候选，失败跳过。基础半径96～224、低频角度扰动24～48、最大包络间隔128；仅MAINLAND LAND，保守包围方形检查距岸≥112，不覆盖Beach。
+- MainNationBiomeRegionPlan是seed-only immutable缓存；StartupEcologyState与StartupSurfaceBiomeContext调用同一biomeAt，统一quart坐标与地下判据。原始TerraBlender/Vanilla LAND候选不再保留随机Plains。
+- Macro水域→Ocean，宏观海床高度<32→Deep Ocean；干COAST→Beach，始终先于LAND planner。48格岸带、384出生reserve、3800主陆核心不变。
+- Deep Dark从候选过滤，最终resolver回退Fallout，关闭自然Deep Dark/sculk来源；Ancient City仍禁用。Lush/Dripstone保留原地下判据：水域海床深度>12，陆地上方12格initial density>0.390625。
+- Scorched biome/key/JSON/surface rule删除。两个方块scorched_soil/fused_ground完整保留，未来用于灾害外围与爆心/弹坑，Damage系统未实现。
+- Scorched→EXTREME和Scorched→WHITE_ASH的biome绑定删除；Fallout/Plains当前辐射规则保持，海洋/Beach仍为UNKNOWN而非自动SAFE；WHITE_ASH能力保留。
+- Rural原允许Plains/Fallout，原Scorched土地转Fallout而扩大资格是允许变化。
 
 ### Worldgen Hygiene Fix：结构权限与地表熔岩湖
 
-真实 `minecraft:ocean`、`minecraft:deep_ocean`、`minecraft:beach` biome 继续由宏观地理规则返回；biome 语义与 Vanilla structure 许可独立。`src/main/resources/data/minecraft/tags/worldgen/biome/has_structure/` 现在以 `replace: true, values: []` 显式清空 `shipwreck`、`shipwreck_beached`、`ocean_ruin_cold`、`ocean_ruin_warm`、`buried_treasure` 五个原版 tag。之前已有的 Ocean Monument 等空 tag 与 stronghold 的 structure set 禁用保持不变；AFL Rural 使用自己的 `apocalypse_firstlight:has_structure/rural`，不受这些 Vanilla tag 影响。
+data/minecraft/tags/worldgen/biome/has_structure中shipwreck、shipwreck_beached、ocean_ruin_cold、ocean_ruin_warm、buried_treasure继续由空tag禁用；既有Ocean Monument、Ancient City及stronghold禁用保持。AFL Rural自有tag不变。
 
-`src/main/resources/data/apocalypse_firstlight/tags/worldgen/biome/surface_lava_suppression.json` 精确列出当前可返回、需要禁止自然地表熔岩湖的 `minecraft:plains`、`minecraft:beach`、`minecraft:ocean`、`minecraft:deep_ocean`、`apocalypse_firstlight:fallout_barrens`、`apocalypse_firstlight:scorched_lands`。`src/main/resources/data/apocalypse_firstlight/forge/biome_modifier/remove_surface_lava_lakes.json` 使用 `forge:remove_features`，仅从 `lakes` 步骤移除 `minecraft:lake_lava_surface`。原先只作用 Scorched Lands、且仅移除同一特征的 `scorched_lands_remove_surface_liquids.json` 已由统一规则替代。`minecraft:lake_lava_underground`、`minecraft:spring_lava`、共用的 `minecraft:lake_lava` configured feature、lava aquifer、其他湖泊与海水仍保留。此规则只覆盖列出的当前 AFL 地表 biome，不声称涵盖未来第三方新增 biome。
+data/apocalypse_firstlight/tags/worldgen/biome/surface_lava_suppression.json现在列Plains、Beach、Ocean、Deep Ocean、Fallout，删除Scorched项。forge/biome_modifier/remove_surface_lava_lakes.json仍仅移除lakes步骤的minecraft:lake_lava_surface；地下熔岩湖、spring_lava、lava aquifer及其他规则保持。
 
-本次只有 worldgen 资源与本文档变更；Terrain V2 density、Macro Geography、Highway、Rural 均未修改。资源处理结果见交付报告；未做新世界/多 seed 实机回归，因此不宣称已目测消除旧区块的沉船或熔岩湖。
+### Macro water保留；Scorched Surface Water Suppression已移除
 
-## Scorched Lands Surface Water Suppression V1
+旧Scorched专属12格近地表抑水已废止，删除biome检查、相关列缓存和SurfaceWaterSuppressingAquifer，不扩展为Fallout抑水。
 
-代码已接入，**未进行新世界实机验收**。目标为 `Scorched natural surface / near-surface water = 0`；这里 near-surface 明确定义为 `y >= preliminarySurfaceLevel(x,z) - 12`，不是任意深度、任意侧向连通洞穴的3D暴露判定。
+src/main/java/com/antaurora/apofirstlight/mixin/NoiseChunkMacroWaterMixin.java保留原共享逻辑：绑定Macro seed，256槽完整XZ键缓存；getInterpolatedState RETURN在isWater且surfaceHeight≤y<63时补WATER。Ocean/Coastal Water/Bay/Strait/Inland Sea、海床填充条件、default fluid和aquifer开关不变。诊断上下文泛化为worldgen/aquifer/MacroAquiferContext.java。旧Scorched采样器与开发命令删除。
 
-- 复用 `src/main/java/com/antaurora/apofirstlight/mixin/NoiseChunkScorchedAquiferMixin.java`：构造器RETURN将原Aquifer包装为 `worldgen/aquifer/SurfaceWaterSuppressingAquifer.java`；`NoiseChunk.forChunk` RETURN绑定当前ChunkAccess。只在带AFL Macro Geography density标记的当前Overworld配置启用，不作用Vanilla Nether/End。若未来自定义维度复制整套AFL router，需另行增加维度权限；当前没有对此类未来配置作隔离保证。
-- 精确地域条件：`nationId == MAIN_NATION`、`isLand()`、`waterClass == NONE`、`surfaceClass == LAND || COAST`。OPEN_OCEAN、COASTAL_WATER、BAY、STRAIT、INLAND_SEA全部排除；不改海岸线或海床fill。干岸若实际为Beach则不处理。
-- 使用已生成的chunk biome，在 `max(preliminarySurfaceLevel, SEA_LEVEL)` 高度确认 `apocalypse_firstlight:scorched_lands`；不是每block重新调用BiomeSource气候搜索。每NoiseChunk有256槽带完整XZ键的列缓存，保存地理、preliminary surface与biome判定。无新增ThreadLocal或全局可变chunk状态。
-- 深度沿用原live mixin的12格，不新增/扩大深度。preliminary surface来自Vanilla `NoiseChunk.preliminarySurfaceLevel`（4格XZ量化、当前8格Y步进、initial density > 0.390625），是估计面而非精确最终高度图。轻量边界probe覆盖H=48/56/64/80：H-13保留、H-12开始抑制，移除旧 `y <= H` 上界后H=48/56的Y62积水不再漏过。该probe不是实际地形采样或“最小深度”实机证明；异常无surface估计时保持原状态。
-- 仅当原Aquifer返回WATER且满足上述条件时改为其“solid”语义null。NOISE阶段MaterialRuleList继续走默认地层（当前stone及原矿脉规则），随后现有SURFACE规则应用fused_ground/scorched_soil等；不使用WATER→AIR，不手工重写地表材质。
-- 同一个包装Aquifer也被后续carver读取：命中时null令Vanilla WorldCarver保留已有方块，防止它重新写入同一近地表水。没有修改carver路径/概率、canyon、noodle、spaghetti、cheese；只过滤其水状态。不把carver阶段的null直接写为空气。
-- 低于H-12的deep cave water、deep aquifer与underground water pockets原样委托；全部lava、AIR和其他原状态保持。玩家/桶/命令及结构主动放水不经过此包装，不受影响。当前Scorched biome没有spring_water；不声称拦截未来新增的独立feature或来自范围外的流体传播。
-- 原宏观水域 `getInterpolatedState` RETURN补水保持；无ChunkAccess的generator-only高度/列查询不猜测Scorched biome，继续原地形查询。这意味着它们不反映此最终水回填，不能将其当成此策略的最终高度验收。
-- `MAIN_NATION Surface Cave Seal` 仍为 **DEFERRED**，未做洞口封闭。LandTerrainBias `.16/.63/.02`、rolling `.30`、InlandElevationBias `.046875`、所有relief/elevation及Macro拓扑均未修改；sea level=63、default fluid=WATER、aquifer开关不改。Highway/Rural/City未改。
+Surface Cave Seal仍DEFERRED；不改洞口、carver、canyon、noodle、spaghetti、LandTerrainBias或InlandElevationBias。**Biome planner change requires new world**，不迁移旧存档。
 
-验证限于Java编译及上述边界逻辑probe；地表材质、海岸、地下水与浅水洞视觉效果仍等待用户新世界验收。没有runClient、clean、GameTest、新世界/批量chunk生成、benchmark或截图。
+compileJava、processResources通过；单seed -4332662446239654818的401项小检查通过，实际Additional中心1471,6107，radius179/amplitude30。静态确认无live旧biome引用且两个方块保留。未启动客户端、生成世界/chunk、GameTest、大规模测试或截图；等待用户新世界/Xaero验收。
 
 ## Rural / Highway边界
 

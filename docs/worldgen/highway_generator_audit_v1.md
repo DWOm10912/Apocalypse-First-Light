@@ -30,7 +30,7 @@
 
 ## 3. Entry / Lifecycle
 
-`ENTRY_POINT` = `AflFeatures.PRIMARY_HIGHWAY` Feature → configured/placed Feature（placement 空列表）→ Forge `add_features` biome modifier，step=`top_layer_modification`，biome tag 为 `#minecraft:is_overworld` 加 fallout barrens/scorched lands。`PrimaryHighwayFeature.place` 调 `NaturalHighwayGenerationAdapter.generate`。适用 biome 的装饰区块运行一次 Feature 回调，**不是** StructureSet 的区域候选；Feature 是否在某区块出现还受 biome modifier 与正常 Minecraft 生成生命周期控制。
+`ENTRY_POINT` = `AflFeatures.PRIMARY_HIGHWAY` Feature → configured/placed Feature（placement 空列表）→ Forge `add_features` biome modifier，step=`top_layer_modification`，biome tag 为 `#minecraft:is_overworld` 加 fallout barrens（Biome Region Planner V1已移除Scorched tag项；Highway代码未改）。`PrimaryHighwayFeature.place` 调 `NaturalHighwayGenerationAdapter.generate`。适用 biome 的装饰区块运行一次 Feature 回调，**不是** StructureSet 的区域候选；Feature 是否在某区块出现还受 biome modifier 与正常 Minecraft 生成生命周期控制。
 
 ```text
 Biome modifier / top_layer_modification

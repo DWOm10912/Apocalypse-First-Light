@@ -2,7 +2,7 @@ package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.StartupBiomeGenerationContext;
-import com.antaurora.apofirstlight.worldgen.aquifer.ScorchedAquiferContext;
+import com.antaurora.apofirstlight.worldgen.aquifer.MacroAquiferContext;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.BiomeSource;
@@ -31,7 +31,7 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
         BiomeSource biomeSource = ((NoiseBasedChunkGenerator) (Object) this).getBiomeSource();
         Climate.Sampler sampler = randomState.sampler();
         long seed = ((RandomStateSeedAccess) (Object) randomState).apocalypse$getSeed();
-        ScorchedAquiferContext.begin(biomeSource, sampler, seed);
+        MacroAquiferContext.begin(biomeSource, sampler, seed);
         apocalypse$logContext("ECOLOGY_BEGIN_FILL", seed);
     }
 
@@ -39,7 +39,7 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
     private void apocalypse$endAquiferContext(Blender blender, StructureManager structureManager,
                                                 RandomState randomState, ChunkAccess chunk, int cellNoiseMinY,
                                                 int cellCountY, CallbackInfoReturnable<ChunkAccess> cir) {
-        ScorchedAquiferContext.end();
+        MacroAquiferContext.end();
         apocalypse$logContext("ECOLOGY_END_FILL", 0L);
     }
 
@@ -57,11 +57,11 @@ public abstract class NoiseBasedChunkGeneratorAquiferMixin {
         AtomicInteger count = APOCALYPSE_CONTEXT_LOG_COUNTS.computeIfAbsent(reason, ignored -> new AtomicInteger());
         if (count.getAndIncrement() >= 4) return;
         ApocalypseFirstLight.LOGGER.info(
-                "[AFL STARTUP DIAG] reason={} thread={} seed={} scorchedAquiferContext={} contextIdentity={}",
+                "[AFL STARTUP DIAG] reason={} thread={} seed={} macroAquiferContext={} contextIdentity={}",
                 reason, Thread.currentThread().getName(), seed,
                 "ECOLOGY_END_BIOMES".equals(reason) || "ECOLOGY_END_FILL".equals(reason) ? "NO" : "YES",
                 "ECOLOGY_END_BIOMES".equals(reason) || "ECOLOGY_END_FILL".equals(reason)
-                        ? "<cleared>" : Integer.toHexString(System.identityHashCode(ScorchedAquiferContext.current())));
+                        ? "<cleared>" : Integer.toHexString(System.identityHashCode(MacroAquiferContext.current())));
     }
 
 }

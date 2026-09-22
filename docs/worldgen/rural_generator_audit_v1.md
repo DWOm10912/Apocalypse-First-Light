@@ -23,7 +23,7 @@
 - 注册/入口：`src/main/java/com/antaurora/apofirstlight/ApocalypseFirstLight.java`；`src/dev/java/com/antaurora/apofirstlight/worldgen/rural/RuralNaturalWorldgen.java`、`RuralNaturalStructure.java`、`RuralNaturalPiece.java`；`src/dev/java/com/antaurora/apofirstlight/dev/AflDevCommands.java`。
 - 计划/池：同一 `src/dev/java/com/antaurora/apofirstlight/worldgen/rural/` 下的 `RuralNaturalGenerator.java`、`RuralGenerator.java`、`RuralLayoutPlanner.java`、`RuralStructurePool.java`、`RuralScaleTier.java`、`RuralPlan.java`。
 - 地形/农田：同目录下的 `RuralTerrainSource.java`、`RuralTerrainSampler.java`、`RuralTerrainProbeCache.java`、`RuralTerrainAdapter.java`、`RuralFoundationSupport.java`、`RuralFarmPlanner.java`、`RuralFarmPlot.java`、`FarmPlotCommitJournal.java`。
-- 邻接但**不是 Rural 链路**：`src/dev/java/com/antaurora/apofirstlight/dev/SettlementPrototype.java`、`SettlementSurfaceSampler.java`；`src/main/java/com/antaurora/apofirstlight/world/biome/StartupSettlementProtection.java`、`StartupPlainsEnclave.java`；近地表水相关 `src/main/java/com/antaurora/apofirstlight/mixin/NoiseChunkScorchedAquiferMixin.java`。Highway 仅作交叉引用检查，未审其内部算法。
+- 邻接但**不是 Rural 链路**：`src/dev/java/com/antaurora/apofirstlight/dev/SettlementPrototype.java`、`SettlementSurfaceSampler.java`；`src/main/java/com/antaurora/apofirstlight/world/biome/StartupSettlementProtection.java`、`StartupPlainsEnclave.java`；Macro保水相关 `src/main/java/com/antaurora/apofirstlight/mixin/NoiseChunkMacroWaterMixin.java`。Highway 仅作交叉引用检查，未审其内部算法。
 
 `RURAL_RESOURCE_FILES`：
 
@@ -100,7 +100,7 @@ NBT 尺寸由本轮只读解码正式文件得出，顺序为 X×Y×Z；数值�
 
 `TERRAIN_FLATTENING` = 不平整整个预留区。自然回放会按 chunk 在 lot 足迹内做≤3 格 dirt 填/可切块挖，外侧 2 格混合环，并清理 lot/农田植被；模板支撑掩码来自 NBT 首层实心块，必要时向下补≤6 格 cobblestone。`CUT_FILL` = 局部存在；命令路径较保守，以填土和清植被为主。`WATER_REJECTION` = 站点比例阈值、lot 与 farm 样本拒水；`LIQUID_REJECTION` = ServerLevel 采样检查任何非空 fluid，但 generation-time `NoiseColumn` 分支仅把水/冰列为 water-like，没有专用工业废液/所有 mod 液体分类。`CLIFF_REJECTION` = 高差阈值与失效样本的间接限制，无悬崖/洞穴几何专用分类。
 
-近地表水抑制仅在 Scorched Lands aquifer mixin，Rural 本身不调用；scorched 不在 Rural biome tag。Plains/Fallout 缓冲通过 biome 间接影响准入，Rural 不读取 `StartupSettlementProtection`。`fallout_barrens` 明确在准入标签，可生成于焦土邻近或辐射区（取决于单点 biome/地形）；没有距离污染、工业废液或辐射的专用限制。自然道路只按 chunk 裁剪并查询当前表面高度，未对道路的每格水/坡度做规划时同等严格的检查。农田会程序化放置灌溉水，这与“近地表水抑制”不是同一机制，若末世美术要求干田，应单独决策。
+Biome Region Planner V1已删除Scorched biome及专属近地表抑水；共享Macro保水见 `NoiseChunkMacroWaterMixin`。Rural本身不调用抑水，仍允许Plains/Fallout；原Scorched土地转Fallout后扩大资格是允许设计变化，未补偿旧密度。Rural不读取 `StartupSettlementProtection`，没有距离污染、工业废液或辐射专用限制。自然道路仍按chunk裁剪并查询当前表面高度；农田灌溉水仍由结构主动放置。未修改Rural planner/几何。
 
 ## 9. Retry / Failure
 

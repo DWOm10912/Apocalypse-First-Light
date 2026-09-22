@@ -1,6 +1,6 @@
 # Startup Enclave + Bunker Regression Fix V1
 
-后续现行变更：Terrain V2 Phase 1已增加[Macro Geography V1](terrain_v2_macro_geography_v1.md)。ParameterList状态现在还持有按seed的宏观计划与ocean/deep_ocean/beach holder；宏观海域/海岸gate先于Startup覆盖，地下cave biome按距实际macro零面12格判断。SurfaceSystem共用该海岸决定，Scorched水抑制跳过宏观水域。出生reserve384格、core3800格保持干陆；地堡搜索与首登流程未改。以下startup回归及部署hash是**历史版本**证据，不代表Terrain V2已通过实机验收。
+后续现行变更：[Macro Geography V1](terrain_v2_macro_geography_v1.md)及MAIN_NATION Biome Region Planner V1已接入。ParameterList与SurfaceSystem共用按seed缓存的区域plan和biomeAt；水域/Beach优先于LAND规划。Lush/Dripstone沿用水域海床深度>12、陆地上方12格preliminary density>0.390625的地下判据；Deep Dark禁用。Scorched biome与专属抑水已删除，共享Macro保水保留。出生reserve384格、core3800格及地堡搜索/首登流程未改。群系变更要求新世界；以下startup回归及部署hash是**历史版本**证据，不代表当前群系已通过实机验收。
 
 ## 根因与实现
 
@@ -10,7 +10,7 @@ TerraBlender 的 `MixinMultiNoiseBiomeSource` 在 cancellable HEAD 中调用 `Pa
 
 状态由 ParameterList 生命周期管理，无全局引用，随世界 registry/generator 被回收。Nether 不绑定。原有外部 biome 与地下洞穴策略保留；surface band 的洞穴 biome 修正规则未改。生态尺寸与形状参数未改。
 
-MultiNoise 保留候选表过滤，移除用于正确性的 trace set/read/clear 及 per-query INFO。aquifer doFill 的诊断需 `-Dafl.startupDiagnostics=true` 才输出。ScorchedAquiferContext 与 StartupSurfaceBiomeContext 仍是同步 doFill/buildSurface 调用内部作用域，未观察到跨异步 continuation 读取；本轮未改水体规则，未宣称完成全部水体实机回归。
+MultiNoise 保留候选表过滤，移除用于正确性的 trace set/read/clear 及 per-query INFO。aquifer doFill 的诊断需 `-Dafl.startupDiagnostics=true` 才输出。MacroAquiferContext（Biome Region Planner V1中由原Scorched上下文更名） 与 StartupSurfaceBiomeContext 仍是同步 doFill/buildSurface 调用内部作用域，未观察到跨异步 continuation 读取；原回归修复未改水体规则；后续Biome Region Planner V1已删除Scorched专属抑水并保留Macro海水，未宣称完成全部水体实机回归。
 
 ## 地堡与出生
 

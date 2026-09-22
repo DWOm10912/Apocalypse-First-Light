@@ -87,16 +87,6 @@ public final class AflDevCommands {
         dev.then(Commands.literal("settlement_terrain_check")
                 .executes(AflDevCommands::settlementTerrainCheck)
                 .then(Commands.literal("here").executes(AflDevCommands::settlementTerrainCheck)));
-        dev.then(Commands.literal("scorched_surface_sample")
-                .executes(context -> scorchedSurfaceSample(context, 128))
-                .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
-                        .executes(context -> scorchedSurfaceSample(context,
-                                IntegerArgumentType.getInteger(context, "size")))));
-        dev.then(Commands.literal("scorched_liquid_sample")
-                .executes(context -> scorchedLiquidSample(context, 128))
-                .then(Commands.argument("size", IntegerArgumentType.integer(16, 256))
-                        .executes(context -> scorchedLiquidSample(context,
-                                IntegerArgumentType.getInteger(context, "size")))));
         dev.then(Commands.literal("wildlife_spawn")
                 .then(Commands.literal("status").executes(AflDevCommands::wildlifeSpawnStatus)));
         dev.then(Commands.literal("env_particles")
@@ -553,63 +543,6 @@ public final class AflDevCommands {
         context.getSource().sendSuccess(() -> Component.literal(line), false);
         ApocalypseFirstLight.LOGGER.info(line);
         return pass ? 1 : 0;
-    }
-
-    private static int scorchedSurfaceSample(CommandContext<CommandSourceStack> context, int size) {
-        if (context.getSource().getEntity() == null) {
-            context.getSource().sendFailure(Component.literal("Run this command as a player."));
-            return 0;
-        }
-        ServerLevel level = context.getSource().getLevel();
-        BlockPos center = BlockPos.containing(context.getSource().getPosition());
-        ScorchedSurfaceSampler.Result result = ScorchedSurfaceSampler.sample(level, center, size);
-        context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL SCORCHED SURFACE SAMPLE] size=%d total=%d loaded=%d scorched=%d otherBiome=%d skipped=%d coverage=%.3f representative=%s",
-                result.size(), result.totalColumns(), result.loadedColumns(), result.scorchedColumns(),
-                result.otherBiomeColumns(), result.skippedColumns(), result.coverage(), result.representativeness())), false);
-        context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL SCORCHED SURFACE BLOCKS] scorchedSoil=%d fusedGround=%d other=%d scorchedSoilRatio=%.4f fusedRatio=%.4f otherRatio=%.4f",
-                result.scorchedSoilColumns(), result.fusedGroundColumns(), result.otherSurfaceColumns(),
-                result.scorchedSoilRatio(), result.fusedGroundRatio(), result.otherRatio())), false);
-        for (int depth = 0; depth <= 12; depth++) {
-            final int d = depth;
-            context.getSource().sendSuccess(() -> Component.literal(String.format(
-                    "[AFL SCORCHED DEPTH PROFILE] depth=%d fused=%d fusedRatio=%.4f scorchedSoil=%d other=%d",
-                    d, result.fusedByDepth()[d], ratio(result.fusedByDepth()[d], result.scorchedColumns()),
-                    result.scorchedSoilByDepth()[d], result.otherByDepth()[d])), false);
-        }
-        context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL SCORCHED SURFACE NOISE] directSurfaceNoiseSample=NOT_AVAILABLE_SAFELY threshold=0.0 FINAL_THRESHOLD=NOT_YET_DETERMINED thresholdHitRatio=UNKNOWN"), false);
-        context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL SCORCHED CANARY MODE] mode=V1_8_COVERAGE_CALIBRATION threshold=0.0"), false);
-        context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL SCORCHED SURFACE DIAG] consistency=UNKNOWN recommendedThreshold=DEFERRED_MANUAL_NOISE_SAMPLE"), false);
-        return 1;
-    }
-
-    private static double ratio(int value, int total) {
-        return total == 0 ? 0.0D : (double) value / total;
-    }
-
-    private static int scorchedLiquidSample(CommandContext<CommandSourceStack> context, int size) {
-        if (context.getSource().getEntity() == null) {
-            context.getSource().sendFailure(Component.literal("Run this command as a player."));
-            return 0;
-        }
-        ServerLevel level = context.getSource().getLevel();
-        BlockPos center = BlockPos.containing(context.getSource().getPosition());
-        ScorchedLiquidSampler.Result result = ScorchedLiquidSampler.sample(level, center, size);
-        context.getSource().sendSuccess(() -> Component.literal(String.format(
-                "[AFL SCORCHED LIQUID SAMPLE] size=%d total=%d loaded=%d scorched=%d directSkyWater=%d nearSurfaceAccessibleWater=%d surfaceAccessibleWater=%d directSkyLava=%d nearSurfaceAccessibleLava=%d surfaceAccessibleLava=%d deepUndergroundLiquid=%d surfaceAccessibleWaterRatio=%.4f representative=%s",
-                result.size(), result.total(), result.loaded(), result.scorched(), result.directSkyWater(),
-                result.nearSurfaceAccessibleWater(), result.surfaceAccessibleWater(), result.directSkyLava(),
-                result.nearSurfaceAccessibleLava(), result.surfaceAccessibleLava(), result.deepUndergroundLiquid(),
-                result.surfaceAccessibleWaterRatio(), result.scorched() >= Math.max(64, result.total() / 20))), false);
-        context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL SCORCHED LIQUID DEPTH] window=surfaceY-12..surfaceY classification=DIRECT_SKY_UNION_NEAR_SURFACE_BFS bfsRadius=8 bfsMaxVisited=256 verticalRange=surfaceY-12..surfaceY+3"), false);
-        context.getSource().sendSuccess(() -> Component.literal(
-                "[AFL SCORCHED LIQUID DIAG] sourceCandidate=UNKNOWN featureFix=lake_water_unproven biomeScoped=true runtimeSetBlock=false"), false);
-        return 1;
     }
 
     private static int wildlifeSpawnStatus(CommandContext<CommandSourceStack> context) {

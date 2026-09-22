@@ -26,7 +26,8 @@ public abstract class SurfaceSystemStartupBiomeMixin {
                                                         NoiseChunk noiseChunk, SurfaceRules.RuleSource ruleSource,
                                                         CallbackInfo callbackInfo) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) randomState;
-        if (access.apocalypse$hasMacroGeography()) StartupSurfaceBiomeContext.begin(access.apocalypse$getSeed(), registry);
+        if (access.apocalypse$hasMacroGeography()) StartupSurfaceBiomeContext.begin(access.apocalypse$getSeed(), registry,
+                randomState.router().initialDensityWithoutJaggedness());
     }
 
     @Inject(method = "buildSurface", at = @At("RETURN"))

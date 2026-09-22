@@ -1,0 +1,18 @@
+// One seed, bounded policy checks only. No client, world, chunks, or full test suite.
+gradle.projectsEvaluated {
+    def p = rootProject
+    def output = p.layout.buildDirectory.dir('biome-region-tests')
+    def compilation = p.tasks.register('compileBiomeRegionCheck', JavaCompile) {
+        dependsOn p.tasks.named('compileJava')
+        source = p.files('src/test/java/com/antaurora/apofirstlight/world/biome/MainNationBiomeRegionPlanTest.java')
+        classpath = p.files(p.sourceSets.main.output.classesDirs, p.configurations.compileClasspath)
+        destinationDirectory = output
+        options.encoding = 'UTF-8'
+    }
+    p.tasks.register('biomeRegionCheck', JavaExec) {
+        dependsOn compilation
+        classpath = p.files(output, p.sourceSets.main.output.classesDirs, p.configurations.runtimeClasspath)
+        mainClass = 'com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlanTest'
+        maxHeapSize = '256m'
+    }
+}

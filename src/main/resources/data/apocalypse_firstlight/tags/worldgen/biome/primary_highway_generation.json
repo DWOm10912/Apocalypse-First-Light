@@ -2,7 +2,6 @@
   "replace": false,
   "values": [
     "#minecraft:is_overworld",
-    "apocalypse_firstlight:fallout_barrens",
-    "apocalypse_firstlight:scorched_lands"
+    "apocalypse_firstlight:fallout_barrens"
   ]
 }
