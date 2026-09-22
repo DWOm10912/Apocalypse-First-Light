@@ -8,7 +8,7 @@
 
 旧 `steel_beam`、`diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` 方块及其专用 Blockbench 源、模型变体、joint 变换、碰撞形状和生成工具已从 live repo 删除。这些 Registry ID 不再兼容旧开发世界，也不应继续用于结构、命令、NBT 或文档示例。
 
-新一代 `steel_cable`、`steel_beam`、`steel_brace` 已按简洁、低噪声 Minecraft 工业钢材风格完成独立注册。`steel_beam` 与 `steel_brace` 使用 Vanilla `axis=x/y/z` 状态，并按点击面的轴向放置；`steel_cable` 仍是默认竖直、无方向状态的纯装饰方块。三者没有自动连接、结构生成、BlockEntity 或特殊交互。可编辑源保存在 `src/main/blockbench/`，运行时模型与贴图保存在对应 `assets/apocalypse_firstlight/` 路径。
+新一代 `steel_cable`、`steel_beam`、`steel_brace` 已按简洁、低噪声 Minecraft 工业钢材风格完成独立注册。`steel_beam` 与 `steel_brace` 使用 Vanilla `axis=x/y/z` 状态，并按点击面的轴向放置；`steel_cable` 仍是默认竖直、无方向状态的纯装饰方块。三者没有自动连接、BlockEntity 或特殊交互。Sea Bridge V1.1A 已使用 beam/brace 作为 H 型塔的正交结构细节，未生成斜钢缆。可编辑源保存在 `src/main/blockbench/`，运行时模型与贴图保存在对应 `assets/apocalypse_firstlight/` 路径。
 
 ## 使用规则
 
@@ -49,4 +49,4 @@
 
 ## 后续状态
 
-旧斜撑变体体系已删除；新的三个独立 Registry ID 已实现。后续如需横放、轴向、自动连接或结构生成，必须另立任务设计，不能从当前无状态装饰方块推断这些能力。
+旧斜撑变体体系已删除；三个独立 Registry ID 已实现。beam/brace 已支持正交轴向并用于 [Sea Bridge V1.1A](../worldgen/highway_v2_sea_bridge_v1_1a.md) 塔结构；steel_cable 仍无方向状态。后续斜钢缆或自动连接需另立任务，不能从现有钢桁架内部斜杆推断整块具有 slope 能力。

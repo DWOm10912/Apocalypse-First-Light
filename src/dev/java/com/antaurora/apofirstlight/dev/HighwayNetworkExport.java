@@ -156,6 +156,9 @@ public final class HighwayNetworkExport {
                     .append("\npierCount = UNKNOWN (requires foundation search)\nplannedPierCount = ")
                     .append(com.antaurora.apofirstlight.worldgen.highway.SeaBridgeGeometry.of(c).pierStations().size())
                     .append("\nmainlandAbutment = PLANNED\nsatelliteAbutment = PLANNED")
+                    .append("\n").append(com.antaurora.apofirstlight.worldgen.highway.LandmarkMainSpan.of(
+                            com.antaurora.apofirstlight.worldgen.highway.SeaBridgeGeometry.of(c)).offlineDescription(
+                            com.antaurora.apofirstlight.worldgen.highway.SeaBridgeGeometry.of(c)))
                     .append("\nsourceCandidate = ").append(c.source()).append("\n\n");
         out.append("CONNECTED SATELLITES\n");
         for (SatelliteHighwayRouting.Connection c : sortedCrossings(graph))

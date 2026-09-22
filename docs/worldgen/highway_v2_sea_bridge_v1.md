@@ -2,6 +2,8 @@
 
 Status: implemented natural-generation consumer; compile and bounded headless checks completed below. New-world visual/driving acceptance remains with the user. No historical chunks are upgraded.
 
+Current extension: [V1.1A H-pylon landmark](highway_v2_sea_bridge_v1_1a.md) is integrated into `SeaBridgeEngineering.plan/render`. Eligible bridges receive two 64-block H pylons and a 256-block open main span after all 132 footing columns pass. Ordinary piers intersecting the main span / tower foundations are suppressed only when enabled; otherwise the V1 behavior below is retained. No sloping cables or old-chunk retrofits are implemented.
+
 ## Scope and integration
 
 `SeaBridgeGeometry` consumes the existing immutable `SatelliteHighwayRouting.Connection`: crossing ID, route, two bridgeheads, four-direction axis and actualBankSpan. It does not add a RouteGraph edge or change routing, nodes, mainland/island shapes, biome rules, bridgehead search or route cost.
@@ -48,4 +50,4 @@ Only `compileJava` and `seaBridgeV1Test` via `scripts/highway-branch-tests.init.
 
 No live endpoint grade/seabed or in-game driving/visual verification is claimed. Resources unchanged; processResources not run. No multi-seed matrix, full regression, GameTest, runClient, screenshots, benchmark, batch chunk generation, clean, commit or push.
 
-Landmark Arch, hangers/suspension and complex main spans are deferred to V1.1. Fluid Safety (water/lava sealing) is not handled. Ramp polish, City and Vehicle are out of scope. Stop here for user new-world acceptance.
+H-pylon main spans are implemented by V1.1A. The verification above records the original V1 stage, not V1.1A acceptance; see the linked report for current checks. Sloping cables, Landmark Arch and suspension/hangers are not implemented. Fluid Safety (water/lava sealing) is not handled. Ramp polish, City and Vehicle remain out of scope.

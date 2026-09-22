@@ -96,7 +96,8 @@ public final class SeaBridgeV1Test {
         var entries=(Map<net.minecraftforge.registries.RegistryObject<?>,java.util.function.Supplier<?>>)field.get(deferred);
         var value=net.minecraftforge.registries.RegistryObject.class.getDeclaredField("value");value.setAccessible(true);
         for(String name:List.of("reinforced_concrete","reinforced_concrete_slab","asphalt","edge_lane_white","edge_lane_yellow",
-                "white_lane_divider","edge_lane_white_step_connector","edge_lane_yellow_step_connector","white_lane_divider_step_connector")) {
+                "white_lane_divider","edge_lane_white_step_connector","edge_lane_yellow_step_connector","white_lane_divider_step_connector",
+                "steel_block","steel_beam","steel_brace")) {
             var entry=entries.entrySet().stream().filter(v->v.getKey().getId().getPath().equals(name)).findFirst().orElseThrow();
             value.set(entry.getKey(),entry.getValue().get());
         }

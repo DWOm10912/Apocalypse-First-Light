@@ -68,11 +68,13 @@ final class HighwayLiveGenerationDiagnostic {
                 var bridge=SeaBridgeEngineering.build(level,graph,geometry,terrain,cache);
                 long cells=bridge.ready()?bridge.corridor().cells().size():0;
                 long owned=bridge.ready()?bridge.corridor().cells().stream().filter(c->bounds.contains(c.x(),c.z())).count():0;
+                long ownedLandmark=bridge.landmark().placements().stream()
+                        .filter(p->bounds.contains(p.pos().getX(),p.pos().getZ())).count();
                 long localPiers=geometry.pierStations().stream().filter(s->{
                     var p=geometry.plan().sample(geometry.plan().localDistance(s));
                     return bounds.expand(11).contains((int)Math.round(p.x()),(int)Math.round(p.z()));
                 }).count();
-                DropPoint drop=!bridge.ready()?DropPoint.GRADE_INFEASIBLE:owned==0?DropPoint.RENDERER:DropPoint.NONE;
+                DropPoint drop=!bridge.ready()?DropPoint.GRADE_INFEASIBLE:owned+ownedLandmark==0?DropPoint.RENDERER:DropPoint.NONE;
                 return new Result(level.getSeed(),x,z,chunk,bounds,dimension,biome,true,List.of(),drop,
                         "SEA_BRIDGE_V1 crossingId="+geometry.crossing().id()+" generationStatus="+bridge.status()
                         +" deckCells="+cells+" ownedCells="+owned+" pierCount="+bridge.pierCount()
@@ -80,6 +82,7 @@ final class HighwayLiveGenerationDiagnostic {
                         +" mainlandAbutment="+bridge.abutmentStatus(true)+" satelliteAbutment="+bridge.abutmentStatus(false)
                         +" gradeStart="+(bridge.ready()?bridge.profile().sampleAt(0).roadY():"UNKNOWN")
                         +" gradeEnd="+(bridge.ready()?bridge.profile().sampleAt(geometry.plan().length()).roadY():"UNKNOWN")
+                        +" ownedLandmarkCells="+ownedLandmark+" "+bridge.landmarkDescription()
                         +" wouldRender="+(drop==DropPoint.NONE)+" DRY REPLAY; no blocks written; not historical generation");
             } catch(RuntimeException failure) {
                 return new Result(level.getSeed(),x,z,chunk,bounds,dimension,biome,true,List.of(),DropPoint.ENGINEERING,

@@ -10,7 +10,7 @@ import java.util.List;
 /** Small adapter into the existing axis viaduct; contains no world/chunk references. */
 public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile profile,
         HighwayCorridor corridor, List<Support> abutments, int pierCount, int foundationFailures,
-        String status) {
+        String status, BridgePylonGeometry landmark) {
     public record Support(int x,int z,int bottom,int top,boolean mainland,boolean found) {}
     public boolean ready() { return corridor!=null && !corridor.cells().isEmpty(); }
 
@@ -22,7 +22,8 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
         int a=geometry.mainlandFirst()?mainlandY:islandY,b=geometry.mainlandFirst()?islandY:mainlandY;
         // Match the established maximum highway engineering slope (one block per eight).
         if(Math.abs(b-a)>geometry.plan().length()/8.0)
-            return new SeaBridgeEngineering(geometry,null,null,List.of(),0,0,"GRADE_INFEASIBLE");
+            return new SeaBridgeEngineering(geometry,null,null,List.of(),0,0,"GRADE_INFEASIBLE",
+                    BridgePylonGeometry.disabled(LandmarkMainSpan.of(geometry),"GRADE_INFEASIBLE","NOT_SAMPLED"));
         return plan(level,geometry,a,b,terrain::pierFoundation);
     }
 
@@ -34,9 +35,12 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
                                      FoundationSampler sampler) {
         var plan=geometry.plan();
         var anchors=HighwayProfile.seaBridge(plan,startY,endY,java.util.Map.of());
+        var landmark=BridgePylonGeometry.plan(geometry,anchors,sampler,
+                level==null?-64:level.getMinBuildHeight(),level==null?320:level.getMaxBuildHeight());
         var foundations=new HashMap<Long,HighwayTerrainSampler.PierFoundation>();
         int failures=0,piers=0;
         for(long station:geometry.pierStations()) {
+            if(landmark.enabled() && landmark.span().suppresses(plan,station))continue;
             double local=plan.localDistance(station);var p=plan.sample(local);
             var f=sampler.sample((int)Math.round(p.x()),(int)Math.round(p.z()),anchors.sampleAt(local).roadY()-3);
             foundations.put(station,f);
@@ -57,7 +61,7 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
         var profile=HighwayProfile.seaBridge(plan,startY,endY,foundations);
         var corridor=HighwayCorridor.buildNatural(level,plan,profile,geometry.bounds());
         return new SeaBridgeEngineering(geometry,profile,corridor,List.copyOf(supports),piers,failures,
-                failures==0?"READY":"PARTIAL_FOUNDATION_FAILED");
+                failures==0?"READY":"PARTIAL_FOUNDATION_FAILED",landmark);
     }
 
     private static int endpointY(WorldGenLevel level,HighwayRouteGraph graph,HighwayRouteGraph.Node node,
@@ -79,12 +83,32 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
         if(!ready())return;
         var writer=new FiniteRouteHighwayWriter(chunkWriter,geometry.bounds());
         // Includes the existing core road headroom clearance at the tunnel/bridge interface.
-        HighwayRenderer.renderNatural(level,profile,corridor,writer);
+        HighwayRenderer.renderNatural(level,profile,corridor,deckWriter(writer));
         for(var support:abutments) {
             if(!support.found())continue;
             if(!writer.mayAffectHorizontal(support.x(),support.z(),0))continue;
             for(int y=support.bottom();y<=support.top();y++)
                 writer.set(new BlockPos(support.x(),y,support.z()),HighwayPalette.REINFORCED_CONCRETE);
         }
+        landmark.render(writer);
+    }
+
+    HighwayBlockWriter deckWriter(HighwayBlockWriter writer) {
+        return landmark.enabled()?PylonZoneGeometry.deckWriter(writer,geometry.plan(),profile,landmark.span()):writer;
+    }
+
+    public List<Long> suppressedPierStations() {
+        return geometry.pierStations().stream().filter(s->landmark.enabled()
+                && landmark.span().suppresses(geometry.plan(),s)).toList();
+    }
+
+    public List<Long> retainedPierStations() {
+        return geometry.pierStations().stream().filter(s->!landmark.enabled()
+                || !landmark.span().suppresses(geometry.plan(),s)).toList();
+    }
+
+    public String landmarkDescription() {
+        return landmark.description(geometry.plan())+" suppressedPierStations="+suppressedPierStations()
+                +" retainedPierStations="+retainedPierStations();
     }
 }
