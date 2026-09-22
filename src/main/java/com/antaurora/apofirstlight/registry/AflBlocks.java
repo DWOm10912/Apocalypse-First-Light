@@ -1,9 +1,6 @@
 package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
-import com.antaurora.apofirstlight.block.SteelBeamBlock;
-import com.antaurora.apofirstlight.block.FixedDiagonalBraceBlock;
-import com.antaurora.apofirstlight.block.FixedDiagonalBraceShapes;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
@@ -135,30 +132,6 @@ public final class AflBlocks {
     public static final RegistryObject<Block> STEEL_RAILING = BLOCKS.register("steel_railing",
             () -> new IronBarsBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BARS)
                     .requiresCorrectToolForDrops()));
-    public static final RegistryObject<Block> STEEL_BEAM = BLOCKS.register("steel_beam",
-            () -> new SteelBeamBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(7.0F, 12.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion()));
-    public static final RegistryObject<Block> DIAGONAL_BRACE_A = BLOCKS.register("diagonal_brace_a",
-            () -> new FixedDiagonalBraceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(6.0F, 10.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion(), FixedDiagonalBraceShapes.A_X, FixedDiagonalBraceShapes.A_Z));
-    public static final RegistryObject<Block> DIAGONAL_BRACE_B = BLOCKS.register("diagonal_brace_b",
-            () -> new FixedDiagonalBraceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(6.0F, 10.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion(), FixedDiagonalBraceShapes.B_X, FixedDiagonalBraceShapes.B_Z));
-    public static final RegistryObject<Block> CROSS_BRACE = BLOCKS.register("cross_brace",
-            () -> new FixedDiagonalBraceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(6.0F, 10.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion(), FixedDiagonalBraceShapes.X_X, FixedDiagonalBraceShapes.X_Z));
     public static final RegistryObject<Block> STEEL_PLATE = BLOCKS.register("steel_plate",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(6.0F, 10.0F)
