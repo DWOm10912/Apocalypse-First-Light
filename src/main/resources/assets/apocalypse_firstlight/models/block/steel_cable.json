@@ -1,0 +1,25 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "0": "apocalypse_firstlight:block/steel_cable",
+    "particle": "apocalypse_firstlight:block/steel_cable"
+  },
+  "elements": [
+    {
+      "from": [7, 0, 7],
+      "to": [9, 16, 9],
+      "faces": {
+        "north": { "uv": [0, 0, 4, 16], "texture": "#0" },
+        "east": { "uv": [0, 0, 4, 16], "texture": "#0" },
+        "south": { "uv": [0, 0, 4, 16], "texture": "#0" },
+        "west": { "uv": [0, 0, 4, 16], "texture": "#0" },
+        "up": { "uv": [0, 0, 4, 4], "texture": "#0" },
+        "down": { "uv": [0, 0, 4, 4], "texture": "#0" }
+      }
+    }
+  ],
+  "display": {
+    "ground": { "rotation": [0, 0, 90], "translation": [0, -1, 0] },
+    "gui": { "rotation": [125, 45, 60] }
+  }
+}

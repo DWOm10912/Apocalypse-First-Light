@@ -21,6 +21,9 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.REINFORCED_CONCRETE_SLAB.get());
                         output.accept(AflItems.REINFORCED_CONCRETE_STAIRS.get());
                         output.accept(AflItems.STEEL_BLOCK.get());
+                        output.accept(AflItems.STEEL_CABLE.get());
+                        output.accept(AflItems.STEEL_BEAM.get());
+                        output.accept(AflItems.STEEL_BRACE.get());
                         output.accept(AflItems.ALUMINUM_BLOCK.get());
                         output.accept(AflItems.LEAD_BLOCK.get());
                         output.accept(AflItems.ZINC_BLOCK.get());

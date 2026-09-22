@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
+import com.antaurora.apofirstlight.block.SteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
 import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
@@ -78,6 +79,24 @@ public final class AflBlocks {
                     .strength(7.0F, 12.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> STEEL_CABLE = BLOCKS.register("steel_cable",
+            () -> new SteelStructureBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(7.0F, 12.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), SteelStructureBlock.CABLE_SHAPE));
+    public static final RegistryObject<Block> STEEL_BEAM = BLOCKS.register("steel_beam",
+            () -> new SteelStructureBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(7.0F, 12.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), SteelStructureBlock.STRUCTURAL_SHAPE));
+    public static final RegistryObject<Block> STEEL_BRACE = BLOCKS.register("steel_brace",
+            () -> new SteelStructureBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(7.0F, 12.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), SteelStructureBlock.STRUCTURAL_SHAPE));
     public static final RegistryObject<Block> ALUMINUM_BLOCK = BLOCKS.register("aluminum_block",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> BAUXITE_ORE = BLOCKS.register("bauxite_ore",

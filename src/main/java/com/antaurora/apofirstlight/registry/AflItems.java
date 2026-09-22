@@ -84,6 +84,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK = ITEMS.register("steel_block",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_CABLE = ITEMS.register("steel_cable",
+            () -> new BlockItem(AflBlocks.STEEL_CABLE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_BEAM = ITEMS.register("steel_beam",
+            () -> new BlockItem(AflBlocks.STEEL_BEAM.get(), new Item.Properties()));
+    public static final RegistryObject<Item> STEEL_BRACE = ITEMS.register("steel_brace",
+            () -> new BlockItem(AflBlocks.STEEL_BRACE.get(), new Item.Properties()));
     public static final RegistryObject<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
             () -> new BlockItem(AflBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> BAUXITE_ORE = ITEMS.register("bauxite_ore",
