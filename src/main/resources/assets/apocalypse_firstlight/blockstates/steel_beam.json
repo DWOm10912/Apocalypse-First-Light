@@ -1,5 +1,7 @@
 {
   "variants": {
-    "": { "model": "apocalypse_firstlight:block/steel_beam" }
+    "axis=y": { "model": "apocalypse_firstlight:block/steel_beam" },
+    "axis=z": { "model": "apocalypse_firstlight:block/steel_beam", "x": 90 },
+    "axis=x": { "model": "apocalypse_firstlight:block/steel_beam", "x": 90, "y": 90 }
   }
 }

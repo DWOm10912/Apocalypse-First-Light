@@ -8,13 +8,13 @@
 
 旧 `steel_beam`、`diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` 方块及其专用 Blockbench 源、模型变体、joint 变换、碰撞形状和生成工具已从 live repo 删除。这些 Registry ID 不再兼容旧开发世界，也不应继续用于结构、命令、NBT 或文档示例。
 
-新一代 `steel_cable`、`steel_beam`、`steel_brace` 已按简洁、低噪声 Minecraft 工业钢材风格完成独立注册。三者均为默认竖直、无方向状态的纯装饰结构方块；没有自动连接、结构生成、BlockEntity 或特殊交互。可编辑源保存在 `src/main/blockbench/`，运行时模型与贴图保存在对应 `assets/apocalypse_firstlight/` 路径。
+新一代 `steel_cable`、`steel_beam`、`steel_brace` 已按简洁、低噪声 Minecraft 工业钢材风格完成独立注册。`steel_beam` 与 `steel_brace` 使用 Vanilla `axis=x/y/z` 状态，并按点击面的轴向放置；`steel_cable` 仍是默认竖直、无方向状态的纯装饰方块。三者没有自动连接、结构生成、BlockEntity 或特殊交互。可编辑源保存在 `src/main/blockbench/`，运行时模型与贴图保存在对应 `assets/apocalypse_firstlight/` 路径。
 
 ## 使用规则
 
 1. AFL 建筑、结构、WorldEdit、NBT、城市、工厂或信号塔任务开始前先读取本文件。
 2. 只能使用当前仓库实际存在的 Registry ID；不得引用已移除的 `diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` ID。
-3. `steel_cable`、`steel_beam`、`steel_brace` 当前只支持默认竖直摆放；不要假定存在轴向、自动连接或模板变换状态。
+3. `steel_beam` 与 `steel_brace` 仅支持正交 X/Y/Z 三轴；`steel_cable` 仍只支持默认竖直摆放。不要假定存在任意角度、自动连接或模板变换状态。
 4. 对朝向或连接敏感的方块必须写出完整 namespace 和明确 BlockState。
 5. `steel_railing` 的连接状态依赖邻居更新；导入 NBT 或 WorldEdit 后要在游戏内确认连接结果。
 
@@ -24,8 +24,8 @@
 | --- | --- | --- | --- | --- |
 | `apocalypse_firstlight:steel_block` | 钢块 | 实体钢结构 | 无 | 厚重节点、柱脚、设备基座 |
 | `apocalypse_firstlight:steel_cable` | 钢缆 | 细钢结构件 | 无 | 桥索、拉索与细支撑；默认竖直 |
-| `apocalypse_firstlight:steel_beam` | 钢横梁 | 四向内凹钢梁 | 无 | 桥塔、主梁与结构立柱；默认竖直 |
-| `apocalypse_firstlight:steel_brace` | 钢斜撑 | 镂空斜撑框架 | 无 | 桥梁与塔架加固；默认竖直 |
+| `apocalypse_firstlight:steel_beam` | 钢横梁 | 四向内凹钢梁 | `axis=x/y/z` | 桥塔、主梁与结构立柱 |
+| `apocalypse_firstlight:steel_brace` | 钢斜撑 | 镂空斜撑框架 | `axis=x/y/z` | 桥梁与塔架加固 |
 | `apocalypse_firstlight:steel_block_slab` | 钢块台阶 | 实体钢结构变体 | `type`, `waterlogged` | 半高结构面 |
 | `apocalypse_firstlight:steel_block_stairs` | 钢块楼梯 | 实体钢结构变体 | 原版楼梯状态 | 楼梯与结构收边 |
 | `apocalypse_firstlight:steel_plate` | 钢制板材 | 实体铺设面 | 无 | 平台、设备底板、封板 |
@@ -35,7 +35,7 @@
 | `apocalypse_firstlight:steel_railing` | 钢栏杆 | 连接型细部件 | `north/east/south/west`, `waterlogged` | 平台和楼梯护栏 |
 | `apocalypse_firstlight:steel_door` | 工业门 | 门 | 原版门状态 | 工业出入口 |
 
-三种新钢结构件均使用 `7.0F / 12.0F` 硬度/爆炸抗性、`requiresCorrectToolForDrops()`、`minecraft:mineable/pickaxe` 与 `minecraft:needs_diamond_tool`，并掉落自身。`steel_cable` 的碰撞外包围为 `[7,0,7]..[9,16,9]`；`steel_beam` 与 `steel_brace` 为 `[6.5,0,6.5]..[9.5,16,9.5]`。三者均使用非满方块遮挡处理。
+三种新钢结构件均使用 `7.0F / 12.0F` 硬度/爆炸抗性、`requiresCorrectToolForDrops()`、`minecraft:mineable/pickaxe` 与 `minecraft:needs_diamond_tool`，并掉落自身。`steel_cable` 的碰撞外包围为 `[7,0,7]..[9,16,9]`；`steel_beam` 与 `steel_brace` 的 Y/X/Z 轴碰撞范围分别为 `[6.5,0,6.5]..[9.5,16,9.5]`、`[0,6.5,6.5]..[16,9.5,9.5]`、`[6.5,6.5,0]..[9.5,9.5,16]`。三者均使用非满方块遮挡处理。
 
 ## 关键注意事项
 
@@ -44,6 +44,8 @@
 - 不要用原版 `iron_bars` 冒充新钢梁、钢斜撑或钢缆体系。
 - 第三方预览器可能无法显示 AFL 自定义模型；预览只用于几何检查，游戏内实机仍是最终视觉验收。
 - 当前没有对三种新钢结构件执行游戏内放置、碰撞或视觉验收；静态资源与构建通过不等同于实机验收。
+- Beam / Brace 的方向能力仅限正交三轴；真正的斜向结构仍由未来 bridge-specific geometry 单独负责。
+- Beam / Brace 的 X/Y/Z 轴变体不使用 `uvlock`；钢材纹理会随模型轴向一起旋转，不能恢复为世界方向锁定。
 
 ## 后续状态
 
