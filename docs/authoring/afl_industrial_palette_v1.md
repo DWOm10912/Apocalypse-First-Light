@@ -8,13 +8,13 @@
 
 旧 `steel_beam`、`diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` 方块及其专用 Blockbench 源、模型变体、joint 变换、碰撞形状和生成工具已从 live repo 删除。这些 Registry ID 不再兼容旧开发世界，也不应继续用于结构、命令、NBT 或文档示例。
 
-新一代 `steel_cable`、`steel_beam`、`steel_brace` 已按简洁、低噪声 Minecraft 工业钢材风格完成独立注册。`steel_beam` 与 `steel_brace` 使用 Vanilla `axis=x/y/z` 状态，并按点击面的轴向放置；`steel_cable` 仍是默认竖直、无方向状态的纯装饰方块。三者没有自动连接、BlockEntity 或特殊交互。Sea Bridge V1.1A 已使用 beam/brace 作为 H 型塔的正交结构细节，未生成斜钢缆。可编辑源保存在 `src/main/blockbench/`，运行时模型与贴图保存在对应 `assets/apocalypse_firstlight/` 路径。
+`steel_beam` 与 `steel_brace` 使用 `axis=x/y/z`，按点击面轴向放置。V1.1B 的 `steel_cable` 使用 `facing` 与 `segment`；玩家仍只放竖直，桥梁生成使用相位斜索。三者没有自动连接或 BlockEntity。可编辑源位于 `src/main/blockbench/`，钢缆斜段源为 `steel_cable_sloped/*.json`（Blockbench Java Block/Item 导入格式）。详见 [V1.1B](../worldgen/highway_v2_sea_bridge_v1_1b.md)。
 
 ## 使用规则
 
 1. AFL 建筑、结构、WorldEdit、NBT、城市、工厂或信号塔任务开始前先读取本文件。
 2. 只能使用当前仓库实际存在的 Registry ID；不得引用已移除的 `diagonal_brace_a`、`diagonal_brace_b`、`cross_brace` ID。
-3. `steel_beam` 与 `steel_brace` 仅支持正交 X/Y/Z 三轴；`steel_cable` 仍只支持默认竖直摆放。不要假定存在任意角度、自动连接或模板变换状态。
+3. `steel_beam` 与 `steel_brace` 仅支持正交三轴；`steel_cable` 手动默认竖直，斜段必须遵循 V1.1B 的有限坡度/相位契约，不支持任意角度或自动连接。
 4. 对朝向或连接敏感的方块必须写出完整 namespace 和明确 BlockState。
 5. `steel_railing` 的连接状态依赖邻居更新；导入 NBT 或 WorldEdit 后要在游戏内确认连接结果。
 
@@ -23,7 +23,7 @@
 | Registry ID | 中文名 | 分类 | 关键状态 | 主要用途 |
 | --- | --- | --- | --- | --- |
 | `apocalypse_firstlight:steel_block` | 钢块 | 实体钢结构 | 无 | 厚重节点、柱脚、设备基座 |
-| `apocalypse_firstlight:steel_cable` | 钢缆 | 细钢结构件 | 无 | 桥索、拉索与细支撑；默认竖直 |
+| `apocalypse_firstlight:steel_cable` | 钢缆 | 细钢结构件 | `facing=north/south/east/west`, `segment=vertical/r1/r2_0/r2_1/r3_0/r3_1/r3_2` | 桥索、拉索与细支撑；玩家默认竖直 |
 | `apocalypse_firstlight:steel_beam` | 钢横梁 | 四向内凹钢梁 | `axis=x/y/z` | 桥塔、主梁与结构立柱 |
 | `apocalypse_firstlight:steel_brace` | 钢斜撑 | 镂空斜撑框架 | `axis=x/y/z` | 桥梁与塔架加固 |
 | `apocalypse_firstlight:steel_block_slab` | 钢块台阶 | 实体钢结构变体 | `type`, `waterlogged` | 半高结构面 |
@@ -49,4 +49,4 @@
 
 ## 后续状态
 
-旧斜撑变体体系已删除；三个独立 Registry ID 已实现。beam/brace 已支持正交轴向并用于 [Sea Bridge V1.1A](../worldgen/highway_v2_sea_bridge_v1_1a.md) 塔结构；steel_cable 仍无方向状态。后续斜钢缆或自动连接需另立任务，不能从现有钢桁架内部斜杆推断整块具有 slope 能力。
+V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；旧无属性状态按默认竖直加载。上述钢缆细柱 shape 仅指 vertical；斜段 shape 是每格 16 个细 AABB 的并集，随坡度、相位和方向变化。采掘仍沿用 Diamond-tier 镐与普通自身掉落，生存采掘和本轮视觉由用户实机验证。

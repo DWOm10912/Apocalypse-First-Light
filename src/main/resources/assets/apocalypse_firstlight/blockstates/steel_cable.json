@@ -1,5 +1,112 @@
 {
   "variants": {
-    "": { "model": "apocalypse_firstlight:block/steel_cable" }
+  "facing=east,segment=vertical": {
+    "model": "apocalypse_firstlight:block/steel_cable"
+  },
+  "facing=east,segment=r1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r1",
+    "y": 0
+  },
+  "facing=east,segment=r2_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_0",
+    "y": 0
+  },
+  "facing=east,segment=r2_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_1",
+    "y": 0
+  },
+  "facing=east,segment=r3_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_0",
+    "y": 0
+  },
+  "facing=east,segment=r3_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_1",
+    "y": 0
+  },
+  "facing=east,segment=r3_2": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_2",
+    "y": 0
+  },
+  "facing=south,segment=vertical": {
+    "model": "apocalypse_firstlight:block/steel_cable"
+  },
+  "facing=south,segment=r1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r1",
+    "y": 90
+  },
+  "facing=south,segment=r2_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_0",
+    "y": 90
+  },
+  "facing=south,segment=r2_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_1",
+    "y": 90
+  },
+  "facing=south,segment=r3_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_0",
+    "y": 90
+  },
+  "facing=south,segment=r3_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_1",
+    "y": 90
+  },
+  "facing=south,segment=r3_2": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_2",
+    "y": 90
+  },
+  "facing=west,segment=vertical": {
+    "model": "apocalypse_firstlight:block/steel_cable"
+  },
+  "facing=west,segment=r1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r1",
+    "y": 180
+  },
+  "facing=west,segment=r2_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_0",
+    "y": 180
+  },
+  "facing=west,segment=r2_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_1",
+    "y": 180
+  },
+  "facing=west,segment=r3_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_0",
+    "y": 180
+  },
+  "facing=west,segment=r3_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_1",
+    "y": 180
+  },
+  "facing=west,segment=r3_2": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_2",
+    "y": 180
+  },
+  "facing=north,segment=vertical": {
+    "model": "apocalypse_firstlight:block/steel_cable"
+  },
+  "facing=north,segment=r1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r1",
+    "y": 270
+  },
+  "facing=north,segment=r2_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_0",
+    "y": 270
+  },
+  "facing=north,segment=r2_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r2_1",
+    "y": 270
+  },
+  "facing=north,segment=r3_0": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_0",
+    "y": 270
+  },
+  "facing=north,segment=r3_1": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_1",
+    "y": 270
+  },
+  "facing=north,segment=r3_2": {
+    "model": "apocalypse_firstlight:block/steel_cable_r3_2",
+    "y": 270
+  }
   }
 }

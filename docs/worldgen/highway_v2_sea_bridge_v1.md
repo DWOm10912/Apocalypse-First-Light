@@ -2,7 +2,7 @@
 
 Status: implemented natural-generation consumer; compile and bounded headless checks completed below. New-world visual/driving acceptance remains with the user. No historical chunks are upgraded.
 
-Current extension: [V1.1A H-pylon landmark](highway_v2_sea_bridge_v1_1a.md) is integrated into `SeaBridgeEngineering.plan/render`. Eligible bridges receive two 64-block H pylons and a 256-block open main span after all 132 footing columns pass. Ordinary piers intersecting the main span / tower foundations are suppressed only when enabled; otherwise the V1 behavior below is retained. No sloping cables or old-chunk retrofits are implemented.
+Current extension: [V1.1A H-pylon landmark](highway_v2_sea_bridge_v1_1a.md) is integrated into `SeaBridgeEngineering.plan/render`. Eligible bridges receive two 64-block H pylons and a 256-block open main span after all 132 footing columns pass. Ordinary piers intersecting the main span / tower foundations are suppressed only when enabled; otherwise the V1 behavior below is retained. [V1.1B](highway_v2_sea_bridge_v1_1b.md) adds endpoint-constrained Semi-Fan steel cables. No old-chunk retrofits are implemented; V1.1B visual acceptance remains pending.
 
 ## Scope and integration
 

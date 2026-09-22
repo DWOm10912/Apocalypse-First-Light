@@ -10,7 +10,7 @@ import java.util.List;
 /** Small adapter into the existing axis viaduct; contains no world/chunk references. */
 public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile profile,
         HighwayCorridor corridor, List<Support> abutments, int pierCount, int foundationFailures,
-        String status, BridgePylonGeometry landmark) {
+        String status, BridgePylonGeometry landmark, BridgeCableGeometry cables) {
     public record Support(int x,int z,int bottom,int top,boolean mainland,boolean found) {}
     public boolean ready() { return corridor!=null && !corridor.cells().isEmpty(); }
 
@@ -23,7 +23,7 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
         // Match the established maximum highway engineering slope (one block per eight).
         if(Math.abs(b-a)>geometry.plan().length()/8.0)
             return new SeaBridgeEngineering(geometry,null,null,List.of(),0,0,"GRADE_INFEASIBLE",
-                    BridgePylonGeometry.disabled(LandmarkMainSpan.of(geometry),"GRADE_INFEASIBLE","NOT_SAMPLED"));
+                    BridgePylonGeometry.disabled(LandmarkMainSpan.of(geometry),"GRADE_INFEASIBLE","NOT_SAMPLED"),BridgeCableGeometry.empty());
         return plan(level,geometry,a,b,terrain::pierFoundation);
     }
 
@@ -61,7 +61,7 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
         var profile=HighwayProfile.seaBridge(plan,startY,endY,foundations);
         var corridor=HighwayCorridor.buildNatural(level,plan,profile,geometry.bounds());
         return new SeaBridgeEngineering(geometry,profile,corridor,List.copyOf(supports),piers,failures,
-                failures==0?"READY":"PARTIAL_FOUNDATION_FAILED",landmark);
+                failures==0?"READY":"PARTIAL_FOUNDATION_FAILED",landmark,BridgeCableGeometry.plan(geometry,profile,landmark));
     }
 
     private static int endpointY(WorldGenLevel level,HighwayRouteGraph graph,HighwayRouteGraph.Node node,
@@ -91,6 +91,7 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
                 writer.set(new BlockPos(support.x(),y,support.z()),HighwayPalette.REINFORCED_CONCRETE);
         }
         landmark.render(writer);
+        cables.render(writer);
     }
 
     HighwayBlockWriter deckWriter(HighwayBlockWriter writer) {
@@ -109,6 +110,6 @@ public record SeaBridgeEngineering(SeaBridgeGeometry geometry, HighwayProfile pr
 
     public String landmarkDescription() {
         return landmark.description(geometry.plan())+" suppressedPierStations="+suppressedPierStations()
-                +" retainedPierStations="+retainedPierStations();
+                +" retainedPierStations="+retainedPierStations()+cables.description();
     }
 }

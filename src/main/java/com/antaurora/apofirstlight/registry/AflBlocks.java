@@ -81,11 +81,11 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STEEL_CABLE = BLOCKS.register("steel_cable",
-            () -> new SteelStructureBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+            () -> new com.antaurora.apofirstlight.block.SteelCableBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(7.0F, 12.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
-                    .noOcclusion(), SteelStructureBlock.CABLE_SHAPE));
+                    .noOcclusion()));
     public static final RegistryObject<Block> STEEL_BEAM = BLOCKS.register("steel_beam",
             () -> new AxisSteelStructureBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(7.0F, 12.0F)
