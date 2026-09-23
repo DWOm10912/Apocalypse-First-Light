@@ -4,7 +4,7 @@
 
 > P9 空仓动作又已更新为 [独立特殊换弹](../../native_guns/p9_01_empty_reload_special_rebuild.md)：右手侧转、短促左扫，在左向速度峰值附近释放旧匣，旧匣继承运动继续向左下飞离；左手另取新匣。此前右甩版因遮挡和力度不足被替代。临时旧匣只在第一人称空仓换弹显示，玩法时长及声音时点不变；最新观感待实机确认。
 
-> 当前弹药更新：P9-01 使用 `9x19mm_round`，BR51-01 使用 `762x51mm_round`；各自抛出同口径 `_casing` 新模型。四项均64堆叠，仅两种实弹进入武器与弹药标签；弹壳不展示在创造标签，FX不产生可拾取实体。下文版本历史中的9mm占位、旧路径和“Casing未注册”均已被替代。详见 `docs/native_guns/native_ammo_assets_v1.md`。
+> 当前弹药更新：P9-01 使用 `9x19mm_round`，BR51-01 使用 `762x51mm_round`，HR55 使用 `12_7x55mm_round`；`12_gauge_round` / `12_gauge_casing` 已作为普通物品注册，但尚未绑定 Silverwood 12 或其 Runtime。八项弹药/弹壳均64堆叠，仅四种实弹进入武器与弹药标签；弹壳不展示在创造标签，现有 FX 不产生可拾取实体。下文版本历史中的9mm占位、旧路径和“Casing未注册”均已被替代。详见 `docs/native_guns/native_ammo_assets_v1.md`。
 
 > 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
 

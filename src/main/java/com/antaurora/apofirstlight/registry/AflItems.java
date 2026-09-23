@@ -65,11 +65,15 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> ROUND_127MM = ITEMS.register("12_7x55mm_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> ROUND_12_GAUGE = ITEMS.register("12_gauge_round",
+            () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_9MM = ITEMS.register("9x19mm_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_762MM = ITEMS.register("762x51mm_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_127MM = ITEMS.register("12_7x55mm_casing",
+            () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> CASING_12_GAUGE = ITEMS.register("12_gauge_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
 
     public static final RegistryObject<Item> INDUSTRIAL_WASTE_BUCKET = ITEMS.register("industrial_waste_bucket",
