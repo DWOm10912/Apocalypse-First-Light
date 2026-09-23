@@ -125,15 +125,22 @@ public final class NativeGunData {
             if(!o.has("weapon_class"))throw new IllegalArgumentException("weapon_class: required");
             var weaponClass=WeaponClass.parse(o.get("weapon_class").getAsString());
             var presentation=presentation(o,weaponClass,tactical,empty);
+            var actionType=o.has("action_type") ? NativeActionType.parse(o.get("action_type").getAsString())
+                    : NativeActionType.MAGAZINE;
+            int pellets=f.has("pellets_per_shot") ? integer(f,"pellets_per_shot") : 1;
+            double spread=num(a,"base_spread_degrees",0,45);
+            double adsSpread=a.has("ads_spread_degrees") ? num(a,"ads_spread_degrees",0,45) : spread;
+            Double headshot=d.has("headshot_multiplier") ? num(d,"headshot_multiplier",1,100) : null;
             return new NativeGunDefinition(id,weaponClass,item(o,"ammo",validate),integer(o,"magazine_capacity"),
                     new ResourceLocation(id.getNamespace(),"textures/gui/gun/"+id.getPath()+"_hud.png"),presentation.hudWidth(),presentation.hudHeight(),
                     tactical,presentation.magInTick(),presentation.emptyMagInTick(),integer(f,"interval_ticks"),num(d,"base",0,Double.MAX_VALUE),
                     start,num(d,"effective_range",start,Double.MAX_VALUE),range,num(d,"min_damage_multiplier",0,1),
-                    num(a,"base_spread_degrees",0,45),num(noise,"radius",0,Double.MAX_VALUE),rp,presentation.trail(),ap,
+                    spread,num(noise,"radius",0,Double.MAX_VALUE),rp,presentation.trail(),ap,
                     noise.get("tinnitus").getAsBoolean(),empty,(float)(num(ads,"time_seconds",0,100000)*20),
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
                     NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
-                    suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire,presentation.hitEffect());
+                    suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire,presentation.hitEffect(),
+                    actionType,pellets,adsSpread,headshot);
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

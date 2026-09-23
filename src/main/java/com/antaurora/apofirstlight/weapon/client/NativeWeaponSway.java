@@ -37,6 +37,10 @@ public final class NativeWeaponSway {
     public static void apply(PoseStack pose,float partial){
         var mc=Minecraft.getInstance();
         if(mc.level==null||mc.player==null||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
+        // Keep the Silverwood's authored rib/bead on the ballistic view axis at fully settled ADS.
+        if (mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun
+                && gun.definition().actionType() == com.antaurora.apofirstlight.weapon.NativeActionType.BREAK_ACTION
+                && NativeGunAds.progress(partial) >= .95F) return;
         var p=WeaponSwayProfile.DEFAULT;
         double amount=Mth.lerp(partial,previous,amplitude);
         double seconds=(mc.level.getGameTime()+partial)/20d;

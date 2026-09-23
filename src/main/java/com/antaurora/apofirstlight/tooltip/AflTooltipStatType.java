@@ -3,7 +3,7 @@ package com.antaurora.apofirstlight.tooltip;
 /** Fixed V1 semantic colors; display metadata only. */
 public enum AflTooltipStatType {
     WEAPON_TYPE("weapon_type",0xAAB8C2), DAMAGE("damage",0xD97878), AMMUNITION("ammunition",0xD6B46A),
-    FIRE_MODE("fire_mode",0xD79A68),
+    FIRE_MODE("fire_mode",0xD79A68), CAPACITY("capacity",0xD6B46A),
     RANGE("range",0x8FB58A), RECOIL("recoil",0xC49567),
     SOUND_RADIUS("sound_radius",0xA395B8);
     private final String key;private final int color;

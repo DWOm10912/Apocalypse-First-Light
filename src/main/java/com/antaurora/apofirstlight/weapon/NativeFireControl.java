@@ -41,6 +41,9 @@ public final class NativeFireControl {
                 &&p.getMainHandItem().getItem() instanceof NativeGunItem;
     }
     public static void press(ServerPlayer p,int slot,long shotId,long gunId) {
+        press(p,slot,shotId,gunId,false);
+    }
+    public static void press(ServerPlayer p,int slot,long shotId,long gunId,boolean aiming) {
         if(!valid(p)||slot!=p.getInventory().selected||slot<0||slot>8
                 ||software.bernie.geckolib.animatable.GeoItem.getId(p.getMainHandItem())!=gunId)return;
         if(STATES.containsKey(p))return;
@@ -48,7 +51,7 @@ public final class NativeFireControl {
         var s=new State(p,NativeFireModes.current(p.getMainHandItem(),d));
         STATES.put(p,s); // Retain the edge even if this click is blocked by draw/cooldown.
         int before=NativeGunAmmo.read(s.stack,d);
-        NativeGunActions.request(p,false,slot,shotId);
+        NativeGunActions.request(p,false,slot,shotId,aiming);
         if(NativeGunAmmo.read(s.stack,d)>=before)return;
         s.remaining=s.mode==NativeFireMode.BURST?d.fire().burstCount()-1:s.mode==NativeFireMode.AUTO?1:0;
         s.due=p.server.getTickCount()+d.fireIntervalTicks();

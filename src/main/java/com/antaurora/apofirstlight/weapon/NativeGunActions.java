@@ -100,6 +100,9 @@ public final class NativeGunActions {
         }
     }
     public static void request(ServerPlayer player, boolean reload, int slot,long shotId) {
+        request(player, reload, slot, shotId, false);
+    }
+    public static void request(ServerPlayer player, boolean reload, int slot,long shotId, boolean aiming) {
         if(FieldAttachmentOperation.pending(player))return;
         if(reload)NativeFireControl.cancel(player);
         if (!player.isAlive() || player.isSpectator() || slot < 0 || slot > 8
@@ -163,7 +166,8 @@ public final class NativeGunActions {
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
-            var hit = NativeGunShot.execute(player, definition);
+            var hit = NativeGunShot.execute(player, definition,
+                    aiming && !player.isSprinting() && !player.isUsingItem());
             com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId,
                     definition.hitEffect().onHit(hit.entity()!=null));
         }
@@ -206,7 +210,8 @@ public final class NativeGunActions {
             return;
         }
         long now = player.server.getTickCount();
-        if (state.lastShot && !state.lockHandoffPlayed
+        if (state.lastShot && state.item.definition().actionType() != NativeActionType.BREAK_ACTION
+                && !state.lockHandoffPlayed
                 && now >= state.start + NativeShotAnimationPolicy.LAST_SHOT_HANDOFF_TICKS) {
             // Both formal assets reach their rearward mechanical pose during the first tick.
             // Stop the one-shot here so the ammo-driven empty baseline holds that pose instead

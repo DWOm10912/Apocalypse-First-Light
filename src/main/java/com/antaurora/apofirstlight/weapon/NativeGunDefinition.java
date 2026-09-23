@@ -12,7 +12,8 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
                                   boolean gunshotTinnitus, int emptyReloadTicks, float adsTicks, float adsFov, ResourceLocation casing,
                                   NativeSightMount sightMount, NativeMuzzleMount muzzleMount, ResourceLocation fireSound, ResourceLocation dryFireSound,
                                   ResourceLocation suppressedFireSound, NativeMagazineMount magazineMount, NativeAdsCalibration adsCalibration,
-                                  NativeFireProfile fire, NativeHitEffect hitEffect) {
+                                  NativeFireProfile fire, NativeHitEffect hitEffect, NativeActionType actionType,
+                                  int pelletsPerShot, double adsSpreadDegrees, Double headshotMultiplierOverride) {
     public NativeGunDefinition {
         java.util.Objects.requireNonNull(hitEffect, "hitEffect");
         java.util.Objects.requireNonNull(fire, "fire");
@@ -23,12 +24,21 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
         java.util.Objects.requireNonNull(fireSound, "fireSound");
         java.util.Objects.requireNonNull(dryFireSound, "dryFireSound");
         java.util.Objects.requireNonNull(adsCalibration, "adsCalibration");
+        java.util.Objects.requireNonNull(actionType, "actionType");
         if (!Double.isFinite(spreadDegrees) || spreadDegrees < 0 || spreadDegrees > 45)
             throw new IllegalArgumentException("Invalid spread half-angle");
+        if (!Double.isFinite(adsSpreadDegrees) || adsSpreadDegrees < 0 || adsSpreadDegrees > 45
+                || pelletsPerShot < 1 || pelletsPerShot > 64
+                || headshotMultiplierOverride != null && (!Double.isFinite(headshotMultiplierOverride)
+                || headshotMultiplierOverride < 1 || headshotMultiplierOverride > 100))
+            throw new IllegalArgumentException("Invalid pellet/ADS/headshot data");
+        if (actionType == NativeActionType.BREAK_ACTION && magazineCapacity != 2)
+            throw new IllegalArgumentException("V1 break action requires exactly two chambers");
         if (magazineCapacity <= 0 || magInTick < 0 || emptyMagInTick < 0 || fireIntervalTicks <= 0)
             throw new IllegalArgumentException("Invalid native gun timing/capacity");
     }
-    public double headshotMultiplier() { return NativeHeadshots.MULTIPLIER.get(); }
+    public double headshotMultiplier() { return headshotMultiplierOverride == null
+            ? NativeHeadshots.MULTIPLIER.get() : headshotMultiplierOverride; }
     public String fireMode() { return fire.defaultMode().key(); }
 
     // Packaged JSON defaults retained for compatibility with DEV tests; items resolve live by ID.

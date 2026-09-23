@@ -122,6 +122,7 @@
   "item.apocalypse_firstlight.p9_01": "P9-01 制式手枪",
   "item.apocalypse_firstlight.br51_01": "BR-51 战斗步枪",
   "item.apocalypse_firstlight.hr55": "HR-55 战斗步枪",
+  "item.apocalypse_firstlight.silverwood_12": "Silverwood 12 运动霰弹枪",
   "item.apocalypse_firstlight.crowbar": "撬棍",
   "item.apocalypse_firstlight.9x19mm_round": "9×19毫米手枪弹",
   "item.apocalypse_firstlight.762x51mm_round": "7.62×51毫米步枪弹",
@@ -174,6 +175,7 @@
 
   "tooltip.apocalypse_firstlight.stat.weapon_type": "武器类型",
   "tooltip.apocalypse_firstlight.stat.damage": "枪械伤害",
+  "tooltip.apocalypse_firstlight.stat.capacity": "容量",
   "tooltip.apocalypse_firstlight.stat.ammunition": "弹药类型",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "开火方式",
   "tooltip.apocalypse_firstlight.stat.range": "有效射程",
@@ -202,6 +204,7 @@
   "tooltip.apocalypse_firstlight.pistol_micro_red_dot.description": "一款紧凑型手枪瞄具，提供清晰瞄准点，便于快速捕捉近距离目标",
   "tooltip.apocalypse_firstlight.br51_01.description": "一款使用7.62×51毫米弹药的半自动战斗步枪，威力与射程出色，但后坐力较大",
   "tooltip.apocalypse_firstlight.hr55.description": "一款使用12.7×55毫米弹药的重型半自动战斗步枪，在近中距离拥有极强的制止力",
+  "tooltip.apocalypse_firstlight.silverwood_12.description": "一款现代商用上下双管运动霰弹枪，采用双膛折枪式结构并发射12号鹿弹",
   "tooltip.apocalypse_firstlight.p9_01.description": "一款紧凑可靠的9毫米半自动制式手枪，操控灵活，适合近距离交战",
 
   "tooltip.apocalypse_firstlight.thermal_generation": "热力发电：%s FE",

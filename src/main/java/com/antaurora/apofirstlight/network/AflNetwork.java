@@ -340,6 +340,9 @@ public final class AflNetwork {
     public static void nativeTrigger(int action,int slot,long shotId,long gunId) {
         if(channel!=null)channel.sendToServer(new NativeTriggerPacket(action,slot,shotId,gunId));
     }
+    public static void nativeTrigger(int action,int slot,long shotId,long gunId,boolean aiming) {
+        nativeTrigger(action == 1 && aiming ? 3 : action,slot,shotId,gunId);
+    }
     public record NativeTriggerPacket(int action,int slot,long shotId,long gunId) {
         static void encode(NativeTriggerPacket p,FriendlyByteBuf b){b.writeByte(p.action);b.writeVarInt(p.slot);b.writeLong(p.shotId);b.writeLong(p.gunId);}
         static NativeTriggerPacket decode(FriendlyByteBuf b){return new NativeTriggerPacket(b.readUnsignedByte(),b.readVarInt(),b.readLong(),b.readLong());}
@@ -348,7 +351,7 @@ public final class AflNetwork {
             c.enqueueWork(()->{var player=c.getSender();if(player==null)return;
                 switch(p.action){
                     case 0 -> com.antaurora.apofirstlight.weapon.NativeFireControl.release(player);
-                    case 1 -> {if(p.shotId>0)com.antaurora.apofirstlight.weapon.NativeFireControl.press(player,p.slot,p.shotId,p.gunId);}
+                    case 1, 3 -> {if(p.shotId>0)com.antaurora.apofirstlight.weapon.NativeFireControl.press(player,p.slot,p.shotId,p.gunId,p.action==3);}
                     case 2 -> com.antaurora.apofirstlight.weapon.NativeFireControl.switchMode(player,p.slot,p.gunId);
                     default -> { }
                 }

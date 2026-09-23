@@ -37,6 +37,12 @@ public final class AflItems {
                                     "inspect", "inspect_empty", "shoot", "put_away", "draw"),
                             java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_pos", "shell", 3.55125F)));
+    public static final RegistryObject<Item> SILVERWOOD_12 = ITEMS.register("silverwood_12", () ->
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "silverwood_12"),
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("silverwood_12", "static_idle",
+                            java.util.List.of("static_idle", "reload_empty", "reload_tactical", "draw", "put_away", "shoot", "inspect"),
+                            java.util.Set.of("static_idle"), "right_hand_anchor", "left_hand_anchor",
+                            "muzzle_upper_anchor", null)));
     public static final RegistryObject<Item> CAT = ITEMS.register("cat", () ->
             new com.antaurora.apofirstlight.weapon.CatNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "cat"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("cat", "static_idle",

@@ -8,6 +8,7 @@
 
 - `src/main/resources/data/apocalypse_firstlight/native_guns/p9_01.json`：`apocalypse_firstlight:p9_01`
 - `src/main/resources/data/apocalypse_firstlight/native_guns/br51_01.json`：`apocalypse_firstlight:br51_01`
+- `src/main/resources/data/apocalypse_firstlight/native_guns/silverwood_12.json`：`apocalypse_firstlight:silverwood_12`
 - datapack 使用同样的 `data/<namespace>/native_guns/<id>.json` 路径覆盖；一枪一份完整定义，不做字段合并。
 - Item 仍由 AflItems 注册，运行中的 Item 按 ID 查询 NativeGunData；NativeGunDefinition 的 DEV 默认常量也从打包 JSON 读取，不是运行时缓存入口。
 - 每份定义现在必须声明 `weapon_class`，公共框架不再根据 `p9_01` / `br51_01` 等 Registry ID 猜测类型。HUD、装匣节点、trail 与 ADS 使用类型默认值加单枪 JSON 覆盖；P9/BR51 的既有数值已显式冻结在各自 JSON。
@@ -19,12 +20,16 @@
 | --- | --- |
 | ammo / casing | 已注册物品 ID；弹壳渲染使用对应 item model |
 | magazine_capacity | 正整数容量 |
+| action_type（可选） | 缺省 magazine；Silverwood 为 break_action（V1 限双膛容量2），与 fire.mode=semi 的扣扳机语义独立 |
 | magazine_slot（可选） | accepts 数组声明兼容弹匣 ID；P9 接受 apocalypse_firstlight:p9_01_extended_magazine，BR51 接受 apocalypse_firstlight:br51_extended_magazine_35。NativeGunAmmo.capacity 在有效扩容附件下返回对应 24 或 35，否则使用基础容量。安装不补发弹药。HUD 固定为单行当前装弹与备弹，不再有 show_capacity 开关。可选 hotspot_anchor / hotspot_y 默认 magazine / -6.2，BR51 为 mag_standard / -4。 |
 | fire.modes / default_mode / interval_ticks / burst_count | modes 为非空且无重复的 semi / burst / auto 列表；default_mode 必须在列表内，缺省取首项；interval_ticks 为正整数；burst_count 缺省 3，范围为整数 2–32。兼容旧 fire.mode 单模式格式，但不可与 modes 同时声明。 |
 | damage.base | 非负身体伤害 |
+| damage.headshot_multiplier（可选） | Silverwood 每颗弹丸为1.25；缺省仍使用 NativeHeadshots 全局配置，既有枪械不变 |
 | damage.falloff_start / effective_range / max_range | 格；标称射程仍不参与命中计算 |
 | damage.min_damage_multiplier | 0–1 |
 | accuracy.base_spread_degrees / profile | 0–45°锥形半角；default或battle_rifle公共姿态预设 |
+| accuracy.ads_spread_degrees（可选） | 0–45°瞄准锥形半角，缺省等于 base_spread_degrees；Silverwood 为1.65°，腰射2.25°；仍乘现有姿态系数 |
+| fire.pellets_per_shot（可选） | 1–64，缺省1；Silverwood 为8，服务端每颗独立抽样、追踪、算伤害，然后按目标汇总以避免同tick受伤保护丢失弹丸 |
 | reload.tactical_seconds / empty_seconds | 非负秒，向上取整到服务端tick |
 | noise.radius / tinnitus | 非负半径；是否参与现有耳鸣累积系统 |
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
@@ -37,7 +42,7 @@ noise.radius 是裸枪基础值。NativeGunNoise 从真实 ItemStack 的有效 M
 
 recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizontalMax（右侧最大幅度）、horizontalLeftMin/RightMin（正数下限）、maxVertical/Horizontal；recoveryDelay、cameraRecoveryTime、modelRecoveryTime、horizontalRecoveryTime 为秒；modelPitch/Back/Yaw/Roll 为现有模型后坐参数，horizontalContinueChance 为0–1概率。上下限/有限数/恢复时间/cap均校验。
 
-爆头倍率仍由 NativeHeadshots 全局配置控制，不在单枪JSON重复定义。两把枪的姿态倍率原本不同，JSON只选择公共预设，不复制倍率数组；基础散布独立可调。
+既有枪的爆头倍率仍由 NativeHeadshots 全局配置控制；仅显式声明 `damage.headshot_multiplier` 的枪覆盖。两把枪的姿态倍率原本不同，JSON只选择公共预设，不复制倍率数组；基础散布独立可调。
 
 ## Java 边界
 
@@ -48,6 +53,8 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前共享协议版本为 28，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，V 快捷装拆已移除；维护台仍需满足服务端槽位校验，不保证删除整个槽位定义后能直接拆回配件。
 
 当前模式由服务端写入每把枪 ItemStack 的 `AflGunFireMode` 字符串，缺省读取 default_mode。重载后失效模式立即按新默认值读取，并在服务端 stack 初始化时规范化保存。重载清除旧 AUTO/BURST 调度。SEMI 只接受按下沿；BURST 松开仍完成剩余发数；AUTO 松开停止。每发都通过 NativeGunActions / NativeGunShot 原有链路。单模式枪切换不写 NBT、不提示、不播放声音。
+
+Silverwood 的双膛仅派生自现有 `AflGunAmmo.ammoInMagazine`：2=双实弹、1=上实弹/下空壳、0=双空壳。NativeTriggerPacket 保持协议29及原报文布局，新增 action=3 表示按下时已完成 ADS 的射击意图；其余 gun data 无 ADS 散布覆盖，因此既有枪精度不变。枪口视线校准只移动第一人称模型，不更改服务端玩家视线方向或原始前珠几何。完整状态与资源见 [Silverwood 12 V1](silverwood_12_v1.md)。
 
 后续射击、弹量读取、换弹、噪声/耳鸣、ADS时间/FOV、后坐与弹壳读取新数据。重载取消正在进行的枪械操作与旧射速冷却；现存弹量按新容量安全clamp，不补回被截断的弹药。动画资源/声音marker不随时长改写，因此大幅调整换弹时长需另外校准美术，不能把JSON时长误当成动画关键帧编辑。
 

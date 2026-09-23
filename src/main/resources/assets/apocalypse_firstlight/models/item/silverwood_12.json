@@ -1,0 +1,14 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {"particle": "apocalypse_firstlight:item/silverwood_12_inventory"},
+  "base": {"parent": "apocalypse_firstlight:item/silverwood_12_in_hand"},
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "loader": "forge:item_layers",
+      "textures": {"layer0": "apocalypse_firstlight:item/silverwood_12_inventory"},
+      "display": {"gui": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.95, 0.5, 1]}}
+    }
+  }
+}

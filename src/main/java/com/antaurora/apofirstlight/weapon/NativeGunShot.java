@@ -86,17 +86,43 @@ public final class NativeGunShot {
         }
     }
 
+    private static final class PelletDamage {
+        double amount;
+        boolean head;
+    }
+
     public static Hit execute(ServerPlayer shooter, NativeGunDefinition d) {
+        return execute(shooter, d, false);
+    }
+
+    public static Hit execute(ServerPlayer shooter, NativeGunDefinition d, boolean aiming) {
         Vec3 start = shooter.getEyePosition();
-        double spreadDegrees = NativeStanceAccuracy.evaluate(shooter, d).finalDegrees();
-        Hit hit = trace(shooter, start, spread(shooter.getLookAngle(), spreadDegrees, shooter.getRandom()), d.maxRange());
-        if (hit.entity() != null && (!(hit.entity() instanceof net.minecraft.world.entity.player.Player player)
-                || shooter.canHarmPlayer(player))) {
+        var stance = NativeStanceAccuracy.evaluate(shooter, d);
+        double spreadDegrees = aiming && d.spreadDegrees() > 0
+                ? stance.finalDegrees() * d.adsSpreadDegrees() / d.spreadDegrees() : stance.finalDegrees();
+        var damageByEntity = new java.util.IdentityHashMap<Entity, PelletDamage>();
+        Hit representative = null;
+        for (int pellet = 0; pellet < d.pelletsPerShot(); pellet++) {
+            // Each pellet independently samples the same established cone, traces and resolves hit part/range.
+            Hit hit = trace(shooter, start,
+                    spread(shooter.getLookAngle(), spreadDegrees, shooter.getRandom()), d.maxRange());
+            if (representative == null || representative.entity() == null && hit.entity() != null) representative = hit;
+            if (hit.entity() != null && (!(hit.entity() instanceof net.minecraft.world.entity.player.Player player)
+                    || shooter.canHarmPlayer(player))) {
+                var accumulated = damageByEntity.computeIfAbsent(hit.entity(), ignored -> new PelletDamage());
+                accumulated.amount += damageAt(d, start.distanceTo(hit.point()))
+                        * (hit.head() ? d.headshotMultiplier() : 1);
+                accumulated.head |= hit.head();
+            }
+        }
+        // Apply once per target so Minecraft's same-tick hurt immunity cannot discard later pellets.
+        if (!damageByEntity.isEmpty()) {
             var type = shooter.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(BULLET);
-            boolean damaged = hit.entity().hurt(new DamageSource(type, shooter),
-                    (float)(damageAt(d, start.distanceTo(hit.point())) * (hit.head() ? NativeHeadshots.MULTIPLIER.get() : 1)));
-            if (damaged && hit.entity() instanceof net.minecraft.world.entity.LivingEntity)
-                com.antaurora.apofirstlight.network.AflNetwork.sendNativeHit(shooter, hit.head());
+            for (var entry : damageByEntity.entrySet()) {
+                boolean damaged = entry.getKey().hurt(new DamageSource(type, shooter), (float)entry.getValue().amount);
+                if (damaged && entry.getKey() instanceof net.minecraft.world.entity.LivingEntity)
+                    com.antaurora.apofirstlight.network.AflNetwork.sendNativeHit(shooter, entry.getValue().head);
+            }
         }
         var noise=NativeGunNoise.resolve(shooter.getMainHandItem(),d);
         NoiseSystem.emit(new NoiseEvent(shooter, start, NoiseType.GUNSHOT, shooter.level().getGameTime(),
@@ -104,6 +130,6 @@ public final class NativeGunShot {
         if (d.gunshotTinnitus())
             com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker.onGunshot(
                     shooter.serverLevel(), shooter, start, noise.radius(), noise.suppressed());
-        return hit;
+        return representative;
     }
 }

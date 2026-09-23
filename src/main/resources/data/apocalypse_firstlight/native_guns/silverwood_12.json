@@ -1,0 +1,75 @@
+{
+  "weapon_class": "shotgun",
+  "action_type": "break_action",
+  "ammo": "apocalypse_firstlight:12_gauge_round",
+  "casing": "apocalypse_firstlight:12_gauge_casing",
+  "fire_sound": "apocalypse_firstlight:silverwood_12_fire",
+  "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
+  "magazine_capacity": 2,
+  "fire": {
+    "mode": "semi",
+    "interval_ticks": 6,
+    "pellets_per_shot": 8
+  },
+  "damage": {
+    "base": 4.5,
+    "headshot_multiplier": 1.25,
+    "falloff_start": 12,
+    "effective_range": 28,
+    "max_range": 48,
+    "min_damage_multiplier": 0.35
+  },
+  "accuracy": {
+    "base_spread_degrees": 2.25,
+    "ads_spread_degrees": 1.65,
+    "profile": "default"
+  },
+  "reload": {
+    "tactical_seconds": 2.52,
+    "empty_seconds": 3.0
+  },
+  "noise": {
+    "radius": 104,
+    "tinnitus": true
+  },
+  "ads": {
+    "time_seconds": 0.22,
+    "fov_multiplier": 0.92,
+    "profile": {
+      "anchor": "top_vent_rib/iron-axis",
+      "aim": [0, 9.88, 3.5],
+      "eye_relief": 0.22,
+      "hip_translation": [3.6, -7.2, -12],
+      "hip_rotation": [0, 0, 0],
+      "scale": 0.45,
+      "composition": [0, 0],
+      "root_pitch": 0,
+      "ads_rotation": [0, 0, 0]
+    }
+  },
+  "presentation": {
+    "hud": {"width": 72, "height": 8},
+    "mag_in_tick": 32,
+    "empty_mag_in_tick": 43,
+    "trail": "subtle_rifle"
+  },
+  "recoil": {
+    "verticalMin": 2.2,
+    "verticalMax": 2.8,
+    "horizontalMin": -0.35,
+    "horizontalMax": 0.35,
+    "maxVertical": 8,
+    "maxHorizontal": 1.8,
+    "recoveryDelay": 0.05,
+    "cameraRecoveryTime": 0.24,
+    "modelPitch": 6,
+    "modelBack": 0.05,
+    "modelYaw": 0.8,
+    "modelRoll": 0,
+    "modelRecoveryTime": 0.13,
+    "horizontalContinueChance": 0.65,
+    "horizontalRecoveryTime": 0.2,
+    "horizontalLeftMin": 0.1,
+    "horizontalRightMin": 0.1
+  }
+}

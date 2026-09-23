@@ -12,8 +12,39 @@ import software.bernie.geckolib.util.RenderUtils;
 
 /** Uses the unchanged AFL arm renderer; weapon-specific offsets belong in model resources. */
 public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.item.Item & software.bernie.geckolib.animatable.GeoItem> extends NativeGunContextRenderer<T> {
+    private String actionClip(T item) {
+        var manager = item.getAnimatableInstanceCache().getManagerForId(getInstanceId(item));
+        var controller = manager.getAnimationControllers().get("action");
+        return controller == null || controller.getTriggeredAnimation() == null
+                || controller.getAnimationState() == software.bernie.geckolib.core.animation.AnimationController.State.STOPPED
+                || controller.getCurrentAnimation() == null ? "" : controller.getCurrentAnimation().animation().name();
+    }
+
     @Override public void renderRecursively(PoseStack pose,T item,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,
             boolean reRender,float partial,int light,int overlay,float red,float green,float blue,float alpha){
+        if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem gun
+                && gun.definition().actionType() == com.antaurora.apofirstlight.weapon.NativeActionType.BREAK_ACTION) {
+            String name = bone.getName();
+            // Source-only loose ammunition is part of the unmodified artist export, never the live gun.
+            if (name.equals("source_only_reference")) return;
+            if (name.equals("live_shell_upper") || name.equals("live_shell_lower")
+                    || name.equals("spent_shell_upper") || name.equals("spent_shell_lower")) {
+                boolean authoredReload = renderPerspective != null && renderPerspective.firstPerson()
+                        && actionClip(item).startsWith("reload_");
+                boolean hidden = false;
+                if (!authoredReload) {
+                    var chambers = com.antaurora.apofirstlight.weapon.NativeBreakActionChambers.read(currentItemStack, gun.definition());
+                    hidden = switch (name) {
+                        case "live_shell_upper" -> chambers.upper() != com.antaurora.apofirstlight.weapon.NativeBreakActionChambers.State.LIVE;
+                        case "live_shell_lower" -> chambers.lower() != com.antaurora.apofirstlight.weapon.NativeBreakActionChambers.State.LIVE;
+                        case "spent_shell_upper" -> chambers.upper() != com.antaurora.apofirstlight.weapon.NativeBreakActionChambers.State.SPENT;
+                        default -> chambers.lower() != com.antaurora.apofirstlight.weapon.NativeBreakActionChambers.State.SPENT;
+                    };
+                }
+                bone.setHidden(hidden);
+                bone.setChildrenHidden(hidden);
+            }
+        }
         if(renderPerspective!=null&&renderPerspective.firstPerson()&&!reRender)
             FieldAttachmentHotspots.capture(currentItemStack,bone,pose);
         if(NativeMagazineRendering.replaces(currentItemStack,bone)){
@@ -51,6 +82,12 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                     boolean hasMuzzle=!com.antaurora.apofirstlight.weapon.NativeAttachments.active(currentItemStack,
                             com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.MUZZLE).isEmpty();
                     String muzzleAnchor=hasMuzzle&&definition.muzzleMount()!=null?definition.muzzleMount().anchor():profile.muzzleAnchor();
+                    if (definition.actionType() == com.antaurora.apofirstlight.weapon.NativeActionType.BREAK_ACTION) {
+                        int count = com.antaurora.apofirstlight.weapon.NativeGunAmmo.read(currentItemStack, definition);
+                        // The accepted shot already debited ammo: while shoot plays, count 1 still means LOWER fired.
+                        muzzleAnchor = count == 2 || count == 1 && actionClip(item).equals("shoot")
+                                ? "muzzle_lower_anchor" : "muzzle_upper_anchor";
+                    }
                     String fx = bone.getName().equals(profile.ejectionAnchor()) ? "ejection_anchor"
                             : bone.getName().equals(muzzleAnchor) ? "muzzle_anchor" : null;
                     if (fx != null) {

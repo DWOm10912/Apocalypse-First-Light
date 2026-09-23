@@ -7,11 +7,11 @@
 | 9x19mm_round | 9×19毫米手枪弹 | 9×19mm Pistol Round | P9-01 |
 | 762x51mm_round | 7.62×51毫米步枪弹 | 7.62×51mm Rifle Round | BR51-01 |
 | 12_7x55mm_round | 12.7×55毫米重型弹 | 12.7×55mm Heavy Round | HR55 |
-| 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | 已注册，尚未绑定枪械 |
+| 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | Silverwood 12；每次射击消耗1发，独立追踪8颗弹丸 |
 | 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 抛壳及普通物品 |
 | 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 抛壳及普通物品 |
 | 12_7x55mm_casing | 12.7×55毫米弹壳 | 12.7×55mm Casing | HR55 抛壳及普通物品 |
-| 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品，尚未接入抛壳 FX |
+| 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品；Silverwood V1 无射击时自动抛壳 FX/地面掉落 |
 
 八项均64堆叠，四种实弹进入 AFL 武器与弹药 标签，排序在枪械/撬棍之后。四种弹壳不加入创造标签，仅保留注册用于开发检查；不是面向玩家的获取内容。数字开头是合法 ResourceLocation 路径，无需前缀。弹壳不作为弹药，也没有回收配方；现有枪械射击不会生成可拾取弹壳实体。
 
@@ -25,7 +25,7 @@
 
 12.7×55mm资源复用同一普通 Item 注册路径：`src/main/blockbench/ammo_127x55_cube_v1/12_7x55mm_round.bbmodel` 为35 cubes，`12_7x55mm_casing.bbmodel` 为29 cubes；运行模型与贴图位于 `assets/apocalypse_firstlight/models/item/` 和 `textures/item/`，使用64×64黄铜/钢色贴图。该口径供 HR55 使用；抛壳使用同名的客户端模型预注册路径，不新增 Ammo 系统或属性。
 
-12 Gauge 资源直接采用独立可编辑源 `src/main/blockbench/12g_round.bbmodel` 与 `12g_casing.bbmodel` 对应的已提供 Java item JSON、64×64 PNG；各110 cubes，未重做几何、贴图或 UV。正式物品 ID 为 `12_gauge_round` / `12_gauge_casing`；模型文件在 `models/item/<ID>.json`，其贴图分别引用 `textures/item/12g_round.png` / `12g_casing.png`。沿用普通 Item 与现有创造标签规则，未接 Silverwood 12 或任何枪械 Runtime；GUI/手持/掉落视觉尚待实机验收。
+12 Gauge 资源直接采用独立可编辑源 `src/main/blockbench/12g_round.bbmodel` 与 `12g_casing.bbmodel` 对应的已提供 Java item JSON、64×64 PNG；各110 cubes，未重做几何、贴图或 UV。正式物品 ID 为 `12_gauge_round` / `12_gauge_casing`；模型文件在 `models/item/<ID>.json`，其贴图分别引用 `textures/item/12g_round.png` / `12g_casing.png`。沿用普通 Item 与现有创造标签规则；实弹现由 Silverwood 12 引用，空壳仅作已注册物品与模型内视觉，不自动生成 FX 或掉落实体。GUI/手持/掉落视觉尚待实机验收。
 
 普通Java三维item渲染，无Gecko动画/独立geo需求。GUI统一斜置，9mm比例1.2，7.62为1.05；第一人称0.45、第三人称0.25、Ground0.22。Ground横放；具体游戏内可读性待目测，不把离线渲染当成实机通过。
 
@@ -51,7 +51,7 @@ ammo、magazine_capacity和casing引用现由单枪 `data/apocalypse_firstlight/
 
 本规则验证：`creativeReserveAndModeSwitch` 覆盖两把枪的无弹药创造补弹、有限弹匣扣弹、空仓、实体弹药保留，以及切换生存/冒险后的有限补弹消耗；现有射击/换弹测试通过。共63项GameTest中62项通过，唯一失败仍为无关的 `nativenoiseflatdistances / Hearing boundary 20`（`creative-reserve-verification.log`）。独立 `compileJava processResources build --offline --stacktrace` 通过（`creative-reserve-build.log`）。本轮未进行图形客户端HUD验收。
 
-P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，HR55使用12_7x55mm_round；12_gauge_round尚未绑定枪械。背包HUD统计沿用同一definition口径查询。已装枪内弹数NBT不重置。现有枪械换弹时间、扣弹次数、dry-fire、伤害、精度、枪械模型、动画、Display均不变。
+P9-01只吃9x19mm_round，BR51-01只吃762x51mm_round，HR55使用12_7x55mm_round，Silverwood 12 使用12_gauge_round。背包HUD统计沿用同一definition口径查询；Silverwood 显示的是 2/1/0 发霰弹而非弹丸数。已装枪内弹数NBT不重置。既有枪械换弹时间、扣弹次数、dry-fire、伤害、精度、枪械模型、动画、Display均不变。
 
 两把枪均已切换对应弹壳；Casing实例保存诞生时的模型，不会因切枪改变。沿用 .072 FX比例、局部抛出方向、重力、阻力、翻滚、碰撞、弹跳、音效、寿命和上限。枪焰不变。未来新枪默认9mm，若有新口径需显式增加资源选择，当前仅两种正式枪。
 

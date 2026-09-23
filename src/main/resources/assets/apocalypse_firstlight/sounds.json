@@ -245,5 +245,23 @@
   "cat_idle_2": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/cat/idle_2", "stream": false, "attenuation_distance": 8}]
   },
+  "silverwood_12_fire": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/fire", "stream": false}]
+  },
+  "silverwood_12_reload_empty": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/reload_empty", "stream": false}]
+  },
+  "silverwood_12_reload_tactical": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/reload_tactical", "stream": false}]
+  },
+  "silverwood_12_draw": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/draw", "stream": false}]
+  },
+  "silverwood_12_put_away": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/put_away", "stream": false}]
+  },
+  "silverwood_12_inspect": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/inspect", "stream": false}]
+  },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }

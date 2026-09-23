@@ -66,7 +66,7 @@ public final class NativeGunInput {
             long shotId=NativeShotVisualSnapshot.capture();
             triggerSlot=mc.player.getInventory().selected;
             triggerGun=software.bernie.geckolib.animatable.GeoItem.getId(mc.player.getMainHandItem());
-            AflNetwork.nativeTrigger(1,triggerSlot,shotId,triggerGun);
+            AflNetwork.nativeTrigger(1,triggerSlot,shotId,triggerGun,NativeGunAds.progress(1) >= .95F);
             triggerSent=true;
         }
         attackHeld = true;

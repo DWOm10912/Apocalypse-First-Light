@@ -122,6 +122,7 @@
   "item.apocalypse_firstlight.p9_01": "P9-01 Service Pistol",
   "item.apocalypse_firstlight.br51_01": "BR-51 Battle Rifle",
   "item.apocalypse_firstlight.hr55": "HR-55 Battle Rifle",
+  "item.apocalypse_firstlight.silverwood_12": "Silverwood 12",
   "item.apocalypse_firstlight.crowbar": "Crowbar",
   "item.apocalypse_firstlight.9x19mm_round": "9×19mm Pistol Round",
   "item.apocalypse_firstlight.762x51mm_round": "7.62×51mm Rifle Round",
@@ -174,6 +175,7 @@
 
   "tooltip.apocalypse_firstlight.stat.weapon_type": "Weapon Type",
   "tooltip.apocalypse_firstlight.stat.damage": "Damage",
+  "tooltip.apocalypse_firstlight.stat.capacity": "Capacity",
   "tooltip.apocalypse_firstlight.stat.ammunition": "Ammunition",
   "tooltip.apocalypse_firstlight.stat.fire_mode": "Fire Mode",
   "tooltip.apocalypse_firstlight.stat.range": "Effective Range",
@@ -202,6 +204,7 @@
   "tooltip.apocalypse_firstlight.pistol_micro_red_dot.description": "A compact pistol sight that provides a clear aiming point for faster close-range target acquisition.",
   "tooltip.apocalypse_firstlight.br51_01.description": "A semi-automatic battle rifle chambered in 7.62×51mm, offering strong power and range at the cost of heavier recoil.",
   "tooltip.apocalypse_firstlight.hr55.description": "A heavy semi-automatic battle rifle chambered in 12.7×55mm, delivering formidable stopping power at close and medium range.",
+  "tooltip.apocalypse_firstlight.silverwood_12.description": "A modern over-under sporting shotgun with a two-chamber break action and 12 Gauge buckshot.",
   "tooltip.apocalypse_firstlight.p9_01.description": "A compact and reliable 9mm service pistol, easy to handle and well suited for close-range combat.",
 
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",
