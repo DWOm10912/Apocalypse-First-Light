@@ -73,6 +73,8 @@ node tools/export-afl-mesh.mjs --input src/main/blockbench/dev/afl_mesh_core_fix
 
 `NativeGunContextRenderer.renderCubesOfBone` 先沿用 Cube 绘制，再追加 Mesh。`NativeAnimatedWeaponRenderer` 和 `P901Renderer` 继承该薄适配；各自递归入口的临时弹匣替换、subtree 省略、shell 显隐仍控制是否进入 hook。Mesh 检查 own hidden；hidden child 遵循 Gecko 的原遍历。hook 也在 `reRender` 执行，避免使用会在 reRender 跳过的 layer callback。第三人称传入的是该路径真实的 frozen/static-idle bone 副本，未改变第三人称动画语义。没有 sidecar 时不提交 Mesh。
 
+正式 `apocalypse_firstlight:12_gauge_round` 是首个普通 Item 的真实资产 opt-in。Forge 1.20.1 没有独立的普通 Item 客户端扩展注册事件，因此 `Afl12GaugeRoundClient` 在客户端 setup 时仅给该既有 Item 实例设置 Forge 的 `renderProperties` 扩展，未改变 Registry ID、Item 类或弹药逻辑。`Afl12GaugeRoundRenderer` 使用 Gecko 当前 baked geo 骨骼和阶段1现有 `AflMeshCache` / `AflMeshRenderer`，每次绘制取当前缓存快照，不持有跨 F3+T 的旧 Mesh/GeoBone；一个 256×256 atlas，4 个纯 Mesh part、672 triangles，不新增 Cube、动画或另一套 Mesh backend。正式 item JSON 为 `builtin/entity` 且无 elements，避免旧 Java cube 与 Mesh 双重绘制；手持、掉落等 `display` 变换保留，`display.gui` 另调为近直立居中（rotation `[20,-25,0]`、translation `[0,-2.5,0]`、scale `[0.4,0.4,0.4]`）。旧 JSON 在 `models/item/legacy/12_gauge_round_java.json`。实际 GUI/手持/掉落、热重载与 shader 画面尚待实机验证。
+
 `MaintenanceGunRendering` 仍使用自己的静态 bind-pose 副本。Mesh 同步参与 draw 和 bounds；替换弹匣的 Mesh 与 Cube 同样省略。每个 part 的缓存 AABB 八角用同一 bone/pivot 矩阵变换，得到保守包围盒；纵向居中使用 Cube+Mesh 合并范围。Mesh resource generation 变化时清理 bounds/纵向中心缓存，避免仅 sidecar 改变而沿用旧边界。附件仍不参与重心重算；原静态副本的 subtree 省略规则保留。
 
 **Anchor contract changed = NO**。right/left hand、muzzle、shell、sight、maintenance/attachment anchors 与 hotspot semantics 均未改；没有 triangle picking。CPU 数据、cache 与 backend 分离，未来可替换提交 backend；当前没有实现或承诺 VBO。

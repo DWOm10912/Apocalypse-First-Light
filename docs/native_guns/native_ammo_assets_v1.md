@@ -25,21 +25,23 @@
 
 12.7×55mm资源复用同一普通 Item 注册路径：`src/main/blockbench/ammo_127x55_cube_v1/12_7x55mm_round.bbmodel` 为35 cubes，`12_7x55mm_casing.bbmodel` 为29 cubes；运行模型与贴图位于 `assets/apocalypse_firstlight/models/item/` 和 `textures/item/`，使用64×64黄铜/钢色贴图。该口径供 HR55 使用；抛壳使用同名的客户端模型预注册路径，不新增 Ammo 系统或属性。
 
-12 Gauge 资源直接采用独立可编辑源 `src/main/blockbench/12g_round.bbmodel` 与 `12g_casing.bbmodel` 对应的已提供 Java item JSON、64×64 PNG；各110 cubes，未重做几何、贴图或 UV。正式物品 ID 为 `12_gauge_round` / `12_gauge_casing`；模型文件在 `models/item/<ID>.json`，其贴图分别引用 `textures/item/12g_round.png` / `12g_casing.png`。沿用普通 Item 与现有创造标签规则；实弹现由 Silverwood 12 引用，空壳仅作已注册物品与模型内视觉，不自动生成 FX 或掉落实体。GUI/手持/掉落视觉尚待实机验收。
+12 Gauge 完整弹现以 `src/main/blockbench/12ga_hybrid_mesh_prototype.bbmodel` 为可编辑 Mesh 源，4 个部件、672 个三角面，共用原 256×256 贴图。正式 ID 仍为 `12_gauge_round`，仍是64堆叠普通 `Item`；仅客户端视觉入口改为 `models/item/12_gauge_round.json` 的 `builtin/entity`。GUI 的 `display.gui` 调为近直立居中（rotation `[20,-25,0]`、translation `[0,-2.5,0]`、scale `[0.4,0.4,0.4]`）；其他视角沿用原 `display` 变换。`Afl12GaugeRoundClient` 将现有 Item 的 Forge 客户端扩展绑定到 `Afl12GaugeRoundRenderer`；后者从 `geo/12_gauge_round.geo.json`、`meshes/12_gauge_round.aflmesh.json` 和 `textures/item/12_gauge_round_mesh.png` 读取骨骼、阶段1 Mesh sidecar 和原样贴图，使用现有 `AflMeshCache` / `AflMeshRenderer` 提交。旧110 cube 的 Java 模型原样留在 `models/item/legacy/12_gauge_round_java.json`，旧可编辑源 `src/main/blockbench/12g_round.bbmodel` 和 `textures/item/12g_round.png` 也保留，便于回滚。
 
-普通Java三维item渲染，无Gecko动画/独立geo需求。GUI统一斜置，9mm比例1.2，7.62为1.05；第一人称0.45、第三人称0.25、Ground0.22。Ground横放；具体游戏内可读性待目测，不把离线渲染当成实机通过。
+`12_gauge_casing` 仍使用原 `12g_casing.bbmodel` 对应的 Java item JSON 和64×64贴图；新的独立 spent Mesh 源暂不接入正式空壳。Silverwood 内部 live/spent shell 组、动画和玩法数据未变。GUI、手持、掉落、F3+T、Embeddium/Oculus 与法线/UV 视觉均待用户实机验收；离线导出与编译不等于这些场景通过。
+
+其他正式弹药继续使用普通 Java 三维 item 模型，无 Gecko 动画/独立 geo 需求。12 Gauge 完整弹例外：纯 Mesh 静态 geo，无新增动画；本轮仅调整其 GUI 图标的 `display.gui`，手持/掉落等视角保持原值。具体游戏内可读性待目测，不把离线检查当成实机通过。
 
 ## 文件与旧新映射
 
-上述八个 ID 均有以下正式文件（共24项）；12 Gauge 的可编辑源文件名使用 `12g_*`：
+上述八个 ID 均有正式 item 模型与贴图；12 Gauge 完整弹另有 Mesh sidecar/geo，源文件与贴图命名如下：
 
-- `src/main/blockbench/<ID>.bbmodel`（12 Gauge 使用 `12g_round.bbmodel` / `12g_casing.bbmodel`）
+- `src/main/blockbench/<ID>.bbmodel`（12 Gauge 完整弹当前源为 `12ga_hybrid_mesh_prototype.bbmodel`，旧源 `12g_round.bbmodel` 为回退；空壳仍为 `12g_casing.bbmodel`）
 - `src/main/resources/assets/apocalypse_firstlight/models/item/<ID>.json`
-- `src/main/resources/assets/apocalypse_firstlight/textures/item/<ID>.png`
+- `src/main/resources/assets/apocalypse_firstlight/textures/item/<ID>.png`（12 Gauge 完整弹当前使用 `12_gauge_round_mesh.png`，旧贴图为 `12g_round.png`；空壳仍使用 `12g_casing.png`）
 
 旧 `9mm_round` 注册通过 `registry/NativeWeaponLegacyMappings.java` 的 MissingMappings 转为 `9x19mm_round`，不把旧手枪弹转换为步枪弹；旧存档加载兼容尚待实机确认。旧 `9mm_round` / `9mm_casing` 源模型、item和 `9mm_palette.png` 留作历史对照，不再是正式引用。旧导出器 `tools/export-9mm-assets.mjs` 不用于当前资产。
 
-既有 9mm / 7.62 工作流：`node tools/export-native-ammo.mjs`；引用检查：`node tools/verify-native-ammo.mjs`。12 Gauge 直接使用已提供的 Java JSON / PNG，没有通过旧导出脚本重新制作。离线几何预览：`tools/preview-native-ammo.py` → `build/native-ammo-preview.png`，仅用于既有资产检查。
+既有 9mm / 7.62 工作流：`node tools/export-native-ammo.mjs`；引用检查：`node tools/verify-native-ammo.mjs`。12 Gauge 完整弹 Mesh sidecar 由 `node tools/export-afl-mesh.mjs` 从当前 Blockbench 源和对应 geo 确定性导出；旧 Java JSON / PNG 原样保留作为回退。离线几何预览：`tools/preview-native-ammo.py` → `build/native-ammo-preview.png`，仅用于既有资产检查。
 
 接入修改：`AflItems.java`、`AflCreativeTabs.java`、`NativeWeaponLegacyMappings.java`、`NativeGunDefinition.java`、`ConfiguredNativeGunItem.java`、中英文lang；客户端 `NativeGunFx.java`、`NativeGunFxModels.java`、`NativeAnimatedWeaponRenderer.java`；回归 `BR5101CombatGameTests.java`。
 
