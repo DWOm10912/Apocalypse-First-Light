@@ -26,3 +26,5 @@
 `static_idle` 作基线循环；`reload_empty`、`reload_tactical`、`draw`、`put_away`、`shoot`、`inspect` 均 `PLAY_ONCE`。五个非开火动作从动画0秒 sound cue 播放完整 Ogg；fire 只从服务端 accepted shot 播放，shoot 无重复声标记。摄像机继续使用现有旋转-only consumer，shoot 不使用动画 camera。Renderer 按装弹数隐藏/显示 `live_shell_upper/lower` 与 `spent_shell_upper/lower`；reload 期间解除运行时隐藏，由原动画 scale/运动关键帧控制。导出的 `source_only_reference` 只在 runtime 隐藏，原始 geo/animation/贴图字节不改。枪口上/下 anchor 由开火前弹数和 shoot 状态选择；无 ejection anchor，避免自动抛壳 FX。
 
 本轮未修改任何 Blockbench 可编辑源、音效混音脚本、其他枪数值、游戏外系统；未做配方、游戏资源导出、游戏内测试或提交推送。
+
+2026-09-24 补充：临时 `silverwood_12_mesh_test` 物品和运行资源已移除。正式 `silverwood_12` 继续使用本页列出的原模型；Hybrid Mesh 美术源仍保留在 `src/main/blockbench/silverwood_12_astra_medium_final_benchmark.bbmodel`，尚未接入正式枪。

@@ -14,7 +14,7 @@ GeckoLib 继续持有 skeleton、动画、骨骼姿态和 Cube 绘制。AFL 的�
 | 可选 Mesh sidecar | `assets/<namespace>/meshes/<id>.aflmesh.json` |
 | atlas | 沿用枪械 renderer 当前 texture；sidecar 不另选贴图 |
 
-`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55、P9 和正式 Silverwood 没有新增 sidecar；未修改其模型、动画、音效、数据或注册。Silverwood prototype 的正式骨骼重绑定与 `silverwood_12_mesh_test` 属于 Round 2，当前未实现。
+`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55、P9 和正式 Silverwood 没有新增 sidecar；未修改其模型、动画、音效、数据或注册。两个临时查看物品已移除；Silverwood Hybrid Mesh 尚未接入正式枪。
 
 ## Sidecar V1
 
@@ -79,26 +79,12 @@ node tools/export-afl-mesh.mjs --input src/main/blockbench/dev/afl_mesh_core_fix
 
 **Anchor contract changed = NO**。right/left hand、muzzle、shell、sight、maintenance/attachment anchors 与 hotspot semantics 均未改；没有 triangle picking。CPU 数据、cache 与 backend 分离，未来可替换提交 backend；当前没有实现或承诺 VBO。
 
-## Dev fixture 与已完成检查
+## 离线 fixture 与已完成检查
 
 - Editable source：`src/main/blockbench/dev/afl_mesh_core_fixture.bbmodel`。
-- 固定测试输入：`src/dev/resources/afl_mesh_core/fixture.{geo.json,aflmesh.json,animation.json,png,expected.json,item.json}`。
-- 1 Cube + 3 Mesh（4 triangles）；Cube/Mesh 共用 root；child 有非零 pivot/rotation，Mesh 自身也有非零 origin/rotation；独立 visibility bone；16×16 单 atlas；简单 child rotation 动画供后续验收。
-- 开发环境新增可获取的查看物品 `apocalypse_firstlight:afl_mesh_core_fixture`，注册类为 `src/dev/java/com/antaurora/apofirstlight/dev/AflMeshFixtureItem.java`。它继承 `NativeAnimatedWeaponItem`，复用现有 Native renderer；不是 `NativeGunItem`，没有枪械战斗数据，也不能放入维护台。注册有 `FMLEnvironment.production` 限制，dev 类沿用现有发布 JAR 排除规则。
-
-### 游戏内查看入口
-
-重新启动开发客户端后，在允许命令的世界执行：
-
-```mcfunction
-/give @s apocalypse_firstlight:afl_mesh_core_fixture
-```
-
-手持可查看 1 Cube + 3 Mesh；右键在 child rotation 动画与静态 bind pose 间切换。可用 F5、物品栏、掉落物或展示框观察其他角度。此查看物品在 F5 中仍播放测试动画，**不等同于 NativeGunItem 的 frozen 第三人称验收**；维护台和完整 Native Gun 显隐/附件组合仍待单独测试。
-
-`build.gradle` 将 `meshFixture` resource source set 仅加入 Forge 开发运行模块。`processMeshFixtureResources` 从上述原始 fixture 文件映射出 `assets/apocalypse_firstlight/{geo,meshes,animations,textures/item,models/item}/afl_mesh_core_fixture.*`，不用在 main assets 保留副本。开发启动会处理该 source set；正式 main JAR 不包含这些资源。新增物品必须重启客户端注册，F3+T 不能替代首次重启；后续热重载读取开发运行输出资源，并不会自动重新执行离线 converter。
-
-查看物品入口已实现；尚未启动游戏验证最终构图或实际注册/加载。不能把此入口的实现、离线测试或编译成功当作实机通过。
+- 固定测试输入：`src/dev/resources/afl_mesh_core/fixture.{geo.json,aflmesh.json,expected.json}`。
+- 1 Cube + 3 Mesh（4 triangles）；Cube/Mesh 共用 root；child 有非零 pivot/rotation，Mesh 自身也有非零 origin/rotation；独立 visibility bone；16×16 单 atlas。保留离线坐标验证数据，不再提供游戏内动画查看物品。
+此 fixture 只供 `tools/verify-afl-mesh.mjs` 离线验证坐标、loader 与 renderer；`afl_mesh_core_fixture` 和 `silverwood_12_mesh_test` 的物品注册、游戏资源映射及专用测试资产已经移除。已批准的 Silverwood 美术源 `src/main/blockbench/silverwood_12_astra_medium_final_benchmark.bbmodel` 保留为候选，不会自动进入正式枪。正式注册和资源仍使用原 Silverwood 模型。
 
 ```powershell
 node tools/verify-afl-mesh.mjs
@@ -110,6 +96,6 @@ node tools/verify-afl-mesh.mjs --java-renderer
 
 已完成：确定性输出、22 类 converter 错误、8 类实际 loader 错误、凹多边形三角化、flat normal/unit length、local bounds；非零 element/group 坐标相对独立 Blockbench THREE 参考的最大 double 误差约 `4.92e-11` 格。实际 Gecko traversal 和 renderer 也对同一参考验证 float 误差小于 `2e-6` 格；五组普通/镜像/非均匀缩放下 winding 与 normal 一致，UV/color/light/overlay 正确提交，hidden/null/零尺度不提交，变换后 bounds 包含 Mesh 顶点。无 sidecar 的 opt-in、frozen 遍历适配和 reload generation 失效连接另有静态检查。
 
-最小项目编译命令为 `./gradlew.bat compileJava --offline`，作为本轮最后动作，结果记录于任务最终报告。没有执行 `processResources`、`build`、`runClient` 或启动游戏。
+此前的最小项目编译使用 `./gradlew.bat compileJava --offline`；该结果不等同于客户端渲染验收。游戏内测试仍需单独执行。
 
 未完成的实机验收：Cube+Mesh 画面、第一人称/第三人称/维护台 framing、动画/hidden-child/reRender 与弹匣/shell 场景组合、实际热重载/坏资源回退、Embeddium/Oculus/shader 兼容。当前沿用原 buffer/state 以降低风险，不能据此宣称 shader 验收通过。
