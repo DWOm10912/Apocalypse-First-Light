@@ -2,6 +2,9 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.NativeSightRendering;
+import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
+import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
+import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.*;
@@ -21,7 +24,21 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     private static final Map<BakedGeoModel,List<GeoBone>> CACHE=new WeakHashMap<>();
     private static final Map<BakedGeoModel,List<net.minecraft.world.phys.AABB>> BOUNDS=new WeakHashMap<>();
     private static final Map<BakedGeoModel,Double> LONGITUDINAL_CENTERS=new WeakHashMap<>();
+    private static long meshGeneration = -1;
+    private static void refreshMeshBounds() {
+        long generation = AflMeshCache.snapshot().generation();
+        if (meshGeneration != generation) {
+            BOUNDS.clear(); LONGITUDINAL_CENTERS.clear();
+            meshGeneration = generation;
+        }
+    }
+    private static AflMeshModel mesh(ItemStack stack) {
+        if (!(stack.getItem() instanceof NativeGunItem gun)) return null;
+        var id=gun.definition().id();
+        return AflMeshCache.snapshot().get(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"));
+    }
     private static double longitudinalCenter(ItemStack stack,double fallback){
+        refreshMeshBounds();
         var m=model(stack);if(m==null)return fallback;
         return LONGITUDINAL_CENTERS.computeIfAbsent(m,key->{
             var boxes=bounds(stack);if(boxes.isEmpty())return fallback;
@@ -55,8 +72,9 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         pose.scale(p.scale(),p.scale(),p.scale());pose.translate(-p.centerX(),-p.centerY(),-longitudinalCenter(stack,p.centerZ()));
     }
     public static List<net.minecraft.world.phys.AABB> bounds(ItemStack stack){
+        refreshMeshBounds();
         var model=model(stack);if(model==null)return List.of();
-        return BOUNDS.computeIfAbsent(model,m->{var result=new ArrayList<net.minecraft.world.phys.AABB>();var pose=new PoseStack();for(var b:bones(stack,m))collect(b,pose,result);return List.copyOf(result);});
+        return BOUNDS.computeIfAbsent(model,m->{var result=new ArrayList<net.minecraft.world.phys.AABB>();var pose=new PoseStack();var mesh=mesh(stack);for(var b:bones(stack,m))collect(b,pose,result,mesh);return List.copyOf(result);});
     }
     /** Traverses the same immutable bind pose as the actual desktop renderer. */
     public static org.joml.Vector3f interactionPoint(ItemStack stack,com.antaurora.apofirstlight.weapon.NativeAttachment.Slot slot,PoseStack pose){
@@ -79,7 +97,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         }else for(var child:bone.getChildBones()){result=anchorPoint(child,pose,name,x,y,z);if(result!=null)break;}
         pose.popPose();return result;
     }
-    private static void collect(GeoBone bone,PoseStack pose,List<net.minecraft.world.phys.AABB> result){
+    private static void collect(GeoBone bone,PoseStack pose,List<net.minecraft.world.phys.AABB> result,AflMeshModel mesh){
         pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
         for(var cube:bone.getCubes()){
             pose.pushPose();RenderUtils.translateToPivotPoint(pose,cube);RenderUtils.rotateMatrixAroundCube(pose,cube);RenderUtils.translateAwayFromPivotPoint(pose,cube);
@@ -90,7 +108,8 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             }
             if(Double.isFinite(x))result.add(new net.minecraft.world.phys.AABB(x,y,z,xx,yy,zz));pose.popPose();
         }
-        for(var b:bone.getChildBones())collect(b,pose,result);pose.popPose();
+        AflMeshRenderer.collectBounds(mesh,bone,pose,result);
+        for(var b:bone.getChildBones())collect(b,pose,result,mesh);pose.popPose();
     }
     public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
         if(!(stack.getItem() instanceof NativeGunItem gun))return;
@@ -99,7 +118,8 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         var bones=bones(stack,model);
         pose.pushPose();transform(stack,pose);
         var type=RenderType.entityCutoutNoCull(new ResourceLocation(id.getNamespace(),"textures/item/"+id.getPath()+".png"));
-        for(var bone:bones)draw(bone,stack,pose,buffers,type,light);
+        var mesh=mesh(stack);
+        for(var bone:bones)draw(bone,stack,pose,buffers,type,light,mesh);
         pose.popPose();
     }
     private static GeoBone copy(GeoBone source,GeoBone parent,Map<String,float[]> rotations) {
@@ -114,7 +134,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         b.getCubes().addAll(source.getCubes());
         for(var child:source.getChildBones()){var c=copy(child,b,rotations);if(c!=null)b.getChildBones().add(c);}return b;
     }
-    private static void draw(GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,RenderType type,int light) {
+    private static void draw(GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,RenderType type,int light,AflMeshModel mesh) {
         p.pushPose();RenderUtils.prepMatrixForBone(p,b);
         boolean magazine=com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replaces(stack,b);
         if(magazine)com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
@@ -122,9 +142,11 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             p.pushPose();DRAWER.renderCube(p,cube,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);p.popPose();
         }
+        if(!magazine && mesh!=null)AflMeshRenderer.render(mesh,b,p,buffers.getBuffer(type),light,
+                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
         NativeSightRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack))
-            for(var child:b.getChildBones())draw(child,stack,p,buffers,type,light);
+            for(var child:b.getChildBones())draw(child,stack,p,buffers,type,light,mesh);
         p.popPose();
     }
     @Override public GeoModel<GeoItem> getGeoModel(){return null;}

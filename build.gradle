@@ -31,6 +31,27 @@ sourceSets {
         compileClasspath += sourceSets.main.output + configurations.runtimeClasspath
         runtimeClasspath += output + sourceSets.main.output + configurations.runtimeClasspath
     }
+    // Visual Mesh fixture resources belong to development runs, never the published main JAR.
+    meshFixture {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
+    }
+}
+
+tasks.named('processMeshFixtureResources', ProcessResources).configure {
+    def fixture = layout.projectDirectory.dir('src/dev/resources/afl_mesh_core')
+    [
+            'fixture.geo.json': 'geo/afl_mesh_core_fixture.geo.json',
+            'fixture.aflmesh.json': 'meshes/afl_mesh_core_fixture.aflmesh.json',
+            'fixture.animation.json': 'animations/afl_mesh_core_fixture.animation.json',
+            'fixture.png': 'textures/item/afl_mesh_core_fixture.png',
+            'fixture.item.json': 'models/item/afl_mesh_core_fixture.json'
+    ].each { input, target ->
+        from(fixture.file(input)) {
+            into "assets/apocalypse_firstlight/${target.substring(0, target.lastIndexOf('/'))}"
+            rename { target.substring(target.lastIndexOf('/') + 1) }
+        }
+    }
 }
 
 mixin {
@@ -85,6 +106,7 @@ minecraft {
             mods {
                 "${mod_id}" {
                     source sourceSets.main
+                    source sourceSets.meshFixture
                 }
             }
         }

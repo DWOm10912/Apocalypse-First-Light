@@ -55,6 +55,10 @@ UI/SFX 打磨后，按钮具有底板/边框/悬停/按下反馈与原版点击�
 
 未来事务：服务器验证 → 动作状态 → 临时视觉附件/双手动作 → Animation Complete → 服务器再次验证 → Commit Attachment。动画完成前不得写正式枪附件；左手稳定枪，右手操作配件或工具。
 
+## Hybrid Mesh Runtime Core V1
+
+2026-09-24：`MaintenanceGunRendering` 增加可选 Mesh sidecar 的静态 bind-pose 绘制，复用原 texture/buffer/light/overlay 和弹匣替换规则。基础枪体 bounds 与纵向居中现包含 Cube + Mesh；Mesh part 的缓存局部 AABB 使用相同 bone/pivot 矩阵变换，sidecar resource generation 改变时清理 bounds/纵向中心缓存。附件不参与重心重算。Anchor/hotspot 合同未变，没有 Mesh picking；无 sidecar 的旧枪保持原路径。离线 fixture、真实 PoseStack/GeoBone 顶点提交及变换 bounds 检查通过，维护台画面与热重载尚未实机验收。详见 [Hybrid Mesh Runtime V1](hybrid_mesh_runtime_v1.md)。下文历史验收不代表 Mesh 验收。
+
 ## 验证
 
 ### Camera / Layout / Transition Polish V1

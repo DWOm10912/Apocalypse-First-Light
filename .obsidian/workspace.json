@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/01 - 设计/武器/枪械.md",
+                "file": "docs/04 - 注意事项 重要内容.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "枪械"
+              "title": "04 - 注意事项 重要内容"
             }
           }
         ]
@@ -190,31 +190,32 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/level4201258017127530443.dat",
-    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-3515605582197888079.dat",
+    "run/saves/新的世界 (1)/level7010689081735038349.dat",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-2_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-2_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12_inventory.png",
-    "run/saves/新的世界 (1)/icon.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/gun/silverwood_12_hud.png",
-    "docs/native_guns/silverwood_12_v1.md",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/silverwood_12_inventory.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/gui/gun/silverwood_12_hud.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/silverwood_12.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/12g_round.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/12g_casing.png",
-    "docs/01 - 设计/武器/弹药.md",
-    "docs/01 - 设计/武器/枪械.md",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/12g_casing.png",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-2_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-2_-2.xwmc",
+    "build/resources/meshFixture/assets/apocalypse_firstlight/textures/item/afl_mesh_core_fixture.png",
+    "docs/native_guns/hybrid_mesh_runtime_v1.md",
+    "src/dev/resources/afl_mesh_core/fixture.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_seven_views.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_first_person_like.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_rear_three_quarter.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_front_three_quarter.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_rear.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_muzzle.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_top.png",
+    "src/main/blockbench/silverwood_benchmark_review/final_side.png",
     "docs/03 - 制作清单.md",
+    "docs/01 - 设计/武器/枪械.md",
+    "docs/native_guns/silverwood_12_v1.md",
+    "docs/01 - 设计/武器/弹药.md",
     "docs/native_guns/field_attachment_view_v1.md",
     "docs/worldgen/satellite_facility_islands_v3.md",
     "docs/ui/hud_layout_editor_v1.md",
@@ -234,7 +235,6 @@
     "docs/worldgen/highway_v2_orthogonal_routing_v1.md",
     "docs/worldgen/highway_v2_polyline_viaduct_v1.md",
     "docs/worldgen/highway_network_export_v2.md",
-    "docs/worldgen/highway_v2_satellite_routing_phase2b2.md",
-    "docs/worldgen/highway_v2_diagonal_geometry_v1.md"
+    "docs/worldgen/highway_v2_satellite_routing_phase2b2.md"
   ]
 }

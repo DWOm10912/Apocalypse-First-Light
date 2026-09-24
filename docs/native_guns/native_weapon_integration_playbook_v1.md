@@ -40,6 +40,10 @@ SPECIAL：特殊武器
 
 WeaponClass 与 NativeFireMode 完全独立。当前支持 SEMI / BURST / AUTO；枪机/装填方式仍是独立机制维度。
 
+Hybrid Mesh Runtime Core V1（2026-09-24）：PARTIAL。可选 `assets/<namespace>/meshes/<id>.aflmesh.json` 按 bone name 为既有 `geo/<id>.geo.json` 增加单 atlas 刚性 Mesh；GeckoLib 继续处理骨架、动画和 Cube。公共 context/第三人称与维护台 draw/bounds 已接入，Anchor contract 不变；无 sidecar 仍走旧绘制。离线 converter、loader、坐标及顶点提交检查通过；实机画面/热重载未验收，Silverwood 正式绑定未实现。资产制作和限制见 [Hybrid Mesh Runtime V1](hybrid_mesh_runtime_v1.md)，不能把任意 Free Model 无损直接导入当作当前能力。
+
+Mesh 开发查看入口：开发客户端重启后使用 `/give @s apocalypse_firstlight:afl_mesh_core_fixture`，右键切换动画/静态。该物品复用 Native renderer，但不是战斗枪械，不进入维护台，也不能替代 frozen 第三人称验收；类和 fixture 资源均排除于正式发布包。详见上述 Hybrid Mesh 文档。
+
 2. Known-Good Weapon Implementation Matrix
 
 当前正式 Native Gun 包括 P9、BR51、HR55、C.A.T。下表保留 P9/BR51 模板对比；HR55 为 SEMI-only，C.A.T 为 SEMI/AUTO。

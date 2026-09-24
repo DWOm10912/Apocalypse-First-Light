@@ -25,6 +25,10 @@ Current status: P9-01, BR51-01, HR55 and C.A.T use the public framework. P9/BR51
 
 Verification for this change: one offline `compileJava` invocation passed. No resource files or loading schema changed, so `processResources` was not run. No client, GameTest or multiplayer/visual test was run; F5, remote attachments/FX and returning to first person require user testing. Combat, ammunition, damage, FireMode, ADS and HUD behavior were not changed.
 
+## Hybrid Mesh Runtime Core V1
+
+2026-09-24: Native rendering now accepts an optional `meshes/<id>.aflmesh.json` sidecar alongside `geo/<id>.geo.json`. `NativeGunContextRenderer.renderCubesOfBone` appends rigid per-bone Mesh geometry after existing Cubes, using the actual animated or frozen third-person pose and existing buffers. `NativeAnimatedWeaponRenderer` and `P901Renderer` inherit this adapter. The independent maintenance renderer also supports Mesh drawing and generation-aware Cube+Mesh bounds. Anchor contracts and existing weapon assets are unchanged; no sidecar preserves the old render path. Core/headless verification is complete; graphical/reload acceptance and Silverwood binding remain pending. See [Hybrid Mesh Runtime V1](hybrid_mesh_runtime_v1.md) for the strict converter, coordinate contract, dev fixture and verification boundaries. The earlier verification paragraphs describe their respective changes, not Mesh runtime acceptance.
+
 ## Frozen existing behavior
 
 P9-01 and BR51-01 explicitly carry their accepted presentation values in JSON. Gameplay balance, semi-auto behavior, ammunition, capacities, reload durations, recoil, spread, ranges, noise, attachment compatibility, models, textures, animation resources, and maintenance behavior were not changed. P9's empty-reload two-tick visual synchronization remains an intentional P9-only implementation detail.
