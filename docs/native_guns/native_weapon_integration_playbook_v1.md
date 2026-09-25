@@ -40,7 +40,7 @@ SPECIAL：特殊武器
 
 WeaponClass 与 NativeFireMode 完全独立。当前支持 SEMI / BURST / AUTO；枪机/装填方式仍是独立机制维度。
 
-Hybrid Mesh Runtime Core V1（2026-09-24）：PARTIAL。可选 `assets/<namespace>/meshes/<id>.aflmesh.json` 按 bone name 为既有 `geo/<id>.geo.json` 增加单 atlas 刚性 Mesh；GeckoLib 继续处理骨架、动画和 Cube。公共 context/第三人称与维护台 draw/bounds 已接入，Anchor contract 不变；无 sidecar 仍走旧绘制。离线 converter、loader、坐标及顶点提交检查通过；实机画面/热重载未验收，Silverwood 正式绑定未实现。资产制作和限制见 [Hybrid Mesh Runtime V1](hybrid_mesh_runtime_v1.md)，不能把任意 Free Model 无损直接导入当作当前能力。
+Hybrid Mesh Runtime Core V1（2026-09-24）：PARTIAL。可选 `assets/<namespace>/meshes/<id>.aflmesh.json` 按 bone name 为既有 `geo/<id>.geo.json` 增加单 atlas 刚性 Mesh；GeckoLib 继续处理骨架、动画和 Cube。公共 context/第三人称与维护台 draw/bounds 已接入，Anchor contract 不变；无 sidecar 仍走旧绘制。离线 converter、loader、坐标及顶点提交检查通过；正式 `silverwood_12` 已绑定 V2 Hybrid sidecar，临时测试物品已删除，正式 ID 的图形/热重载仍待用户最终实机验收。资产制作和限制见 [Hybrid Mesh Runtime V1](hybrid_mesh_runtime_v1.md)，不能把任意 Free Model 无损直接导入当作当前能力。
 
 Mesh 开发查看物品 `afl_mesh_core_fixture` 已移除；离线 fixture 数据继续用于转换器、loader 与 renderer 验证。详见上述 Hybrid Mesh 文档。
 

@@ -69,7 +69,7 @@ public final class AflSounds {
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "hr55_" + action))))
             .toList();
     public static final java.util.List<RegistryObject<SoundEvent>> SILVERWOOD_12 = java.util.stream.Stream.of(
-            "fire", "reload_empty", "reload_tactical", "draw", "put_away", "inspect")
+            "fire", "open", "eject", "shell_insert", "close")
             .map(action -> SOUND_EVENTS.register("silverwood_12_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "silverwood_12_" + action))))
             .toList();

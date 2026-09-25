@@ -14,7 +14,7 @@ GeckoLib 继续持有 skeleton、动画、骨骼姿态和 Cube 绘制。AFL 的�
 | 可选 Mesh sidecar | `assets/<namespace>/meshes/<id>.aflmesh.json` |
 | atlas | 沿用枪械 renderer 当前 texture；sidecar 不另选贴图 |
 
-`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55、P9 和正式 Silverwood 没有新增 sidecar；未修改其模型、动画、音效、数据或注册。两个临时查看物品已移除；Silverwood Hybrid Mesh 尚未接入正式枪。
+`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55 和 P9 没有新增 sidecar，继续走旧绘制。正式 `silverwood_12` 现已通过 `meshes/silverwood_12.aflmesh.json` 绑定 Hybrid Mesh V2、Claude 动画和四个事件化机械音效；其 Registry ID 与原 Native Gun 玩法不变。临时测试物品已删除。
 
 ## Sidecar V1
 
@@ -84,7 +84,7 @@ node tools/export-afl-mesh.mjs --input src/main/blockbench/dev/afl_mesh_core_fix
 - Editable source：`src/main/blockbench/dev/afl_mesh_core_fixture.bbmodel`。
 - 固定测试输入：`src/dev/resources/afl_mesh_core/fixture.{geo.json,aflmesh.json,expected.json}`。
 - 1 Cube + 3 Mesh（4 triangles）；Cube/Mesh 共用 root；child 有非零 pivot/rotation，Mesh 自身也有非零 origin/rotation；独立 visibility bone；16×16 单 atlas。保留离线坐标验证数据，不再提供游戏内动画查看物品。
-此 fixture 只供 `tools/verify-afl-mesh.mjs` 离线验证坐标、loader 与 renderer；`afl_mesh_core_fixture` 和 `silverwood_12_mesh_test` 的物品注册、游戏资源映射及专用测试资产已经移除。已批准的 Silverwood 美术源 `src/main/blockbench/silverwood_12_astra_medium_final_benchmark.bbmodel` 保留为候选，不会自动进入正式枪。正式注册和资源仍使用原 Silverwood 模型。
+此 fixture 只供 `tools/verify-afl-mesh.mjs` 离线验证坐标、loader 与 renderer；`afl_mesh_core_fixture` 游戏物品仍已移除。正式 `silverwood_12` 使用 `src/main/blockbench/silverwood_12_hybrid_claude_handpolish_v4.bbmodel` 对应的 46 part / 4088 triangle sidecar、115 Cube 的 Gecko 骨架、七动画与 1024×1024 atlas。此前测试版的主要实机表现由用户验收；正式 ID 切换后的图形客户端、shader 与资源热重载仍待最终验收。
 
 ```powershell
 node tools/verify-afl-mesh.mjs

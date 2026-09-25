@@ -38,7 +38,7 @@
     "profile": {
       "anchor": "top_vent_rib/iron-axis",
       "aim": [0, 9.88, 3.5],
-      "eye_relief": 0.22,
+      "eye_relief": 0.4,
       "hip_translation": [3.6, -7.2, -12],
       "hip_rotation": [0, 0, 0],
       "scale": 0.45,

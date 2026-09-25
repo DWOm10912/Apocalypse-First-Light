@@ -1,30 +1,22 @@
-# Silverwood 12 V1 Runtime 接入
+# Silverwood 12 V2 正式资源
 
-状态：代码与正式资源已接入；仅 `compileJava --offline` 为本轮允许的编译检查。游戏内手持、ADS 像素级对准、八弹丸伤害/散布、动画与声音、双膛显示、切枪取消和 `PUT_AWAY_END_FLASH_TEST` 均待用户实机验收；不把静态检查或编译当作实机通过。
+状态：正式物品 `apocalypse_firstlight:silverwood_12` 已切换为 Hybrid Mesh V2；此前的临时测试物品及专属资源已移除。测试版的主要实机表现由用户验收，正式 ID 切换后的画面、音效与交互仍待用户最终实机复测；静态检查和 Java 编译不等于该验收。
 
-## 正式绑定
+## 正式绑定与资源
 
-- 枪：`apocalypse_firstlight:silverwood_12`，`AflItems.SILVERWOOD_12`，`ConfiguredNativeGunItem`；弹药/空壳：`apocalypse_firstlight:12_gauge_round` / `apocalypse_firstlight:12_gauge_casing`，均复用已注册普通 Item。
-- 调参：`src/main/resources/data/apocalypse_firstlight/native_guns/silverwood_12.json`。武器为 SHOTGUN、BREAK_ACTION、SEMI，容量2，6 tick/发；每发消耗一发霰弹，8 颗独立圆锥抽样与追踪。每颗基础4.5、爆头1.25×、12格起衰减、28格标称有效、48格最大、最低0.35×。同目标逐颗算伤害后一次结算，避免原版同 tick 受伤保护吞掉后续弹丸。枪声噪声104格并启用耳鸣；不新建弹丸实体。
-- 膛室真值源：`NativeGunAmmo.read`，2=上下 LIVE，1=上 LIVE/下 SPENT，0=上下 SPENT。第一枪下膛、第二枪上膛，0发复用通用 dry fire。射击不自动抽壳/抛物品；模型动画在换弹时视觉抛壳。
-- 换弹：原生会话及中断规则；空膛 `reload_empty` 60 tick，在第43 tick（第二发于动画2.1167秒落位后）结算；一发 `reload_tactical` 51 tick，在第32 tick（下膛新弹于1.6秒落位后）结算。结算时重新计算真实背包储备，沿用创造无限备弹规则；结束前 HUD 可能已显示新计数，但动画关键帧仍拥有换弹期 shell scale/轨迹的控制权。
-- 腰射/ADS：锥形半角2.25°/1.65°，继续叠加现有姿态倍率。ADS进入/退出0.22秒，FOV0.92；配置中的瞄准参考点 `[0,9.88,3.5]` 沿模型顶肋/前珠的 x=0、y≈9.88 轴；hip/ADS roll 均为0，满 ADS 时抑制此枪视觉 sway。只修正模型投影，视角方向仍作为服务端弹道起点与方向；未改前珠几何。精确像素重合待游戏内确认。
-- 后坐 V1：垂直2.2°–2.8°，水平±0.10°–0.35°，上限垂直8°/水平1.8°；枪模后坐 roll=0。无额外 shoot-camera 后坐。
-- HUD 沿用 NativeGunHud，只显示装弹数2/1/0及真实备弹；Tooltip 仍沿用共通样式，霰弹伤害显示 `4.5 × 8` 并增加此折枪容量2行。创造模式枪械/弹药标签已有枪与12 Gauge 实弹，空壳保持不入标签。
+- 正式 Registry ID、Native Gun 数据和物品类仍为 `apocalypse_firstlight:silverwood_12`、`data/apocalypse_firstlight/native_guns/silverwood_12.json`、`ConfiguredNativeGunItem`。创造模式武器栏只保留这一个 Silverwood。
+- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_claude_handpolish_v4.bbmodel`，为当前 V2 权威源；旧 Astra Medium V1 Blockbench 源已从工作区移除，未归档。没有重新导出或修改 Mesh、Rig、Anchor、关键帧和手部动作。
+- 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。资源来自已验收测试版，保留 46 Mesh part、4088 triangle、115 导出 Cube。旧 V1 的同名 geometry、动画和 atlas 已被 V2 覆盖，不再参与运行。
+- 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。正式路径均使用 V2 测试版图像及显示变换。
+- 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。动画时间线只使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。
+- `right_hand_anchor`、`left_hand_anchor`、双枪口锚点和四个 live/spent shell 节点保持 V2 测试版合同。Hybrid Mesh Runtime、共享 renderer、维护台适配和 12 Gauge 弹药/空壳资源均未改。
 
-## 资源与控制器
+## 玩法与 ADS
 
-| 资源 | 路径 |
-| --- | --- |
-| 几何 | `src/main/resources/assets/apocalypse_firstlight/geo/silverwood_12.geo.json` |
-| 七动画 | `src/main/resources/assets/apocalypse_firstlight/animations/silverwood_12.animation.json` |
-| 贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/item/silverwood_12.png` |
-| HUD / 背包 | `src/main/resources/assets/apocalypse_firstlight/textures/gui/gun/silverwood_12_hud.png` / `textures/item/silverwood_12_inventory.png` |
-| Item 模型 | `src/main/resources/assets/apocalypse_firstlight/models/item/silverwood_12.json` / `silverwood_12_in_hand.json` |
-| 六完整 Ogg | `src/main/resources/assets/apocalypse_firstlight/sounds/weapons/silverwood_12/{fire,reload_empty,reload_tactical,draw,put_away,inspect}.ogg` |
+- 武器为 SHOTGUN、BREAK_ACTION、SEMI；容量 2，6 tick/发，使用 `12_gauge_round` / `12_gauge_casing`。每发 8 颗弹丸，单颗基础伤害 4.5、爆头 1.25×；12 格起衰减、28 格有效、48 格最大、最低 0.35×。同目标逐颗计算后一次结算。噪声 104 格并启用耳鸣。
+- 膛室状态仍由 `NativeGunAmmo.read` 决定：2 发时上下 LIVE，1 发时上 LIVE/下 SPENT，0 发时上下 SPENT；第一枪下膛，第二枪上膛。射击不自动抽壳/抛物品；换弹动画表现视觉抛壳。
+- 空膛 `reload_empty` 60 tick、第 43 tick 结算；一发 `reload_tactical` 51 tick、第 32 tick 结算。沿用现有中断、背包储备和创造模式无限备弹规则。
+- ADS 锥形半角 1.65°，腰射 2.25°；进入/退出 0.22 秒，FOV 0.92。正式 V2 沿用用户在测试版验收的 `ads.profile.eye_relief = 0.4`，瞄准参考点 `[0,9.88,3.5]`、缩放 0.45、hip translation `[3.6,-7.2,-12]` 不变。这个视距值是已验收配置，不再使用此前短暂试验的 `1.05`。
+- 后坐仍为垂直 2.2°–2.8°、水平 ±0.10°–0.35°，上限垂直 8°/水平 1.8°；枪模 roll 为 0。HUD 沿用 NativeGunHud 的真实装弹数与备弹数，Tooltip 沿用正式 Silverwood 文案。
 
-`static_idle` 作基线循环；`reload_empty`、`reload_tactical`、`draw`、`put_away`、`shoot`、`inspect` 均 `PLAY_ONCE`。五个非开火动作从动画0秒 sound cue 播放完整 Ogg；fire 只从服务端 accepted shot 播放，shoot 无重复声标记。摄像机继续使用现有旋转-only consumer，shoot 不使用动画 camera。Renderer 按装弹数隐藏/显示 `live_shell_upper/lower` 与 `spent_shell_upper/lower`；reload 期间解除运行时隐藏，由原动画 scale/运动关键帧控制。导出的 `source_only_reference` 只在 runtime 隐藏，原始 geo/animation/贴图字节不改。枪口上/下 anchor 由开火前弹数和 shoot 状态选择；无 ejection anchor，避免自动抛壳 FX。
-
-本轮未修改任何 Blockbench 可编辑源、音效混音脚本、其他枪数值、游戏外系统；未做配方、游戏资源导出、游戏内测试或提交推送。
-
-2026-09-24 补充：临时 `silverwood_12_mesh_test` 物品和运行资源已移除。正式 `silverwood_12` 继续使用本页列出的原模型；Hybrid Mesh 美术源仍保留在 `src/main/blockbench/silverwood_12_astra_medium_final_benchmark.bbmodel`，尚未接入正式枪。
+正式 ID 的静止 ADS、连续开火、腰射、双膛状态、开合/装填、手臂、音效、背包/HUD、第三人称、维护台及资源热重载仍待用户最终实机复测。

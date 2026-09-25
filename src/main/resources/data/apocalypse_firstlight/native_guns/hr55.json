@@ -17,7 +17,7 @@
     ]
   },
 
-  "ammo": "apocalypse_firstlight:12_7x55mm_round",
+    "ammo": "apocalypse_firstlight:12_7x55mm_round",
 
   "fire_sound": "apocalypse_firstlight:hr55_fire",
   "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
