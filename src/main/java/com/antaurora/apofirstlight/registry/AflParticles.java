@@ -14,6 +14,9 @@ public final class AflParticles {
     public static final RegistryObject<SimpleParticleType> FALLOUT_DUST =
             PARTICLE_TYPES.register("fallout_dust", () -> new SimpleParticleType(false));
 
+    public static final RegistryObject<SimpleParticleType> CHAMBER_GAS =
+            PARTICLE_TYPES.register("chamber_gas", () -> new SimpleParticleType(false));
+
     private AflParticles() {
     }
     public static final RegistryObject<SimpleParticleType> HIT_YELLOW_STAR =

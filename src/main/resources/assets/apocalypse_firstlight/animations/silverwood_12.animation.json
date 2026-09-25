@@ -2452,6 +2452,9 @@
         "2.3": {
           "effect": "apocalypse_firstlight:silverwood_12_close"
         }
+      },
+      "timeline": {
+        "0.583": "chamber_eject_fx"
       }
     },
     "reload_tactical": {
@@ -4449,6 +4452,9 @@
         "1.81": {
           "effect": "apocalypse_firstlight:silverwood_12_close"
         }
+      },
+      "timeline": {
+        "0.583": "chamber_eject_fx"
       }
     },
     "draw": {
@@ -6394,28 +6400,28 @@
         },
         "spent_shell_upper": {
           "position": {
-            "0.0": {
+            "0": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.1": {
+            "2.717": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.117": {
+            "2.783": {
               "vector": [
                 0,
                 0,
                 0.45
               ]
             },
-            "3.15": {
+            "2.817": {
               "vector": [
                 0,
                 0,
@@ -6440,28 +6446,28 @@
         },
         "spent_shell_lower": {
           "position": {
-            "0.0": {
+            "0": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.1": {
+            "2.717": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.117": {
+            "2.783": {
               "vector": [
                 0,
                 0,
                 0.45
               ]
             },
-            "3.15": {
+            "2.817": {
               "vector": [
                 0,
                 0,
@@ -6486,28 +6492,28 @@
         },
         "extractor_or_ejector": {
           "position": {
-            "0.0": {
+            "0": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.1": {
+            "2.717": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.117": {
+            "2.783": {
               "vector": [
                 0,
                 0,
                 0.45
               ]
             },
-            "3.15": {
+            "2.817": {
               "vector": [
                 0,
                 0,
@@ -7498,28 +7504,28 @@
         },
         "live_shell_upper": {
           "position": {
-            "0.0": {
+            "0": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.1": {
+            "2.717": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.117": {
+            "2.783": {
               "vector": [
                 0,
                 0,
                 0.45
               ]
             },
-            "3.15": {
+            "2.817": {
               "vector": [
                 0,
                 0,
@@ -7544,28 +7550,28 @@
         },
         "live_shell_lower": {
           "position": {
-            "0.0": {
+            "0": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.1": {
+            "2.717": {
               "vector": [
                 0,
                 0,
                 0
               ]
             },
-            "3.117": {
+            "2.783": {
               "vector": [
                 0,
                 0,
                 0.45
               ]
             },
-            "3.15": {
+            "2.817": {
               "vector": [
                 0,
                 0,

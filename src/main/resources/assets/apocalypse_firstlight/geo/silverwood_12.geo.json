@@ -9687,6 +9687,24 @@
             14,
             33
           ]
+        },
+        {
+          "name": "upper_chamber_fx",
+          "parent": "ammo_state",
+          "pivot": [
+            0,
+            8.9,
+            3.7
+          ]
+        },
+        {
+          "name": "lower_chamber_fx",
+          "parent": "ammo_state",
+          "pivot": [
+            0,
+            7.18,
+            3.7
+          ]
         }
       ]
     }

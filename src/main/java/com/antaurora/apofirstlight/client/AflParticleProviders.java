@@ -14,6 +14,7 @@ public final class AflParticleProviders {
 
     @SubscribeEvent
     public static void register(RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(AflParticles.CHAMBER_GAS.get(), ChamberGasParticle.Provider::new);
         event.registerSpriteSet(AflParticles.FALLOUT_DUST.get(), FalloutDustParticle.Provider::new);
         event.registerSpriteSet(AflParticles.HIT_YELLOW_STAR.get(), StripHitParticle.Provider::new);
         event.registerSpriteSet(AflParticles.HIT_BLUE_STAR.get(), StripHitParticle.Provider::new);

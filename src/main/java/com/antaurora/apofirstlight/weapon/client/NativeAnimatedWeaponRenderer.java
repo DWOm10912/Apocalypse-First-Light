@@ -61,6 +61,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
             @Override public void handleAnimations(T item, long id,
                     software.bernie.geckolib.core.animation.AnimationState<T> state) {
                 NativeCameraBoneConsumer.shareFrameTick(this, id, state);
+                NativeChamberGasFx.bind(item, id, state);
                 super.handleAnimations(item, id, state);
             }
             @Override public ResourceLocation getModelResource(T i) { return profile.resource("geo", ".geo.json"); }
@@ -73,6 +74,13 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
             @Override public void renderForBone(PoseStack pose, T item, GeoBone bone,
                     RenderType type, MultiBufferSource buffers, VertexConsumer buffer, float partial, int light, int overlay) {
                 if (renderPerspective == null) return;
+                if (renderPerspective.firstPerson() && (bone.getName().equals("upper_chamber_fx")
+                        || bone.getName().equals("lower_chamber_fx"))) {
+                    var anchor = P901RenderMatrices.detachedCopy(pose);
+                    RenderUtils.translateToPivotPoint(anchor, bone);
+                    try { NativeChamberGasFx.anchor(getInstanceId(item), actionClip(item), bone.getName(), anchor, buffers, partial, light); }
+                    finally { buffers.getBuffer(type); }
+                }
                 try{NativeSightRendering.render(currentItemStack,bone,pose,buffers,light,overlay);}
                 finally{buffers.getBuffer(type);}
                 if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem

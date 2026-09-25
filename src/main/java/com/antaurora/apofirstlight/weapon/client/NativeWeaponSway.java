@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
@@ -12,6 +13,7 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class NativeWeaponSway {
+    private static final ResourceLocation SILVERWOOD_12 = new ResourceLocation("apocalypse_firstlight", "silverwood_12");
     private static Object level,player;
     private static float previous,amplitude;
     @SubscribeEvent public static void tick(TickEvent.ClientTickEvent e){
@@ -37,18 +39,21 @@ public final class NativeWeaponSway {
     public static void apply(PoseStack pose,float partial){
         var mc=Minecraft.getInstance();
         if(mc.level==null||mc.player==null||mc.screen!=null||!mc.options.getCameraType().isFirstPerson())return;
-        // Keep the Silverwood's authored rib/bead on the ballistic view axis at fully settled ADS.
-        if (mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun
-                && gun.definition().actionType() == com.antaurora.apofirstlight.weapon.NativeActionType.BREAK_ACTION
-                && NativeGunAds.progress(partial) >= .95F) return;
         var p=WeaponSwayProfile.DEFAULT;
+        float silverwoodAds = mc.player.getMainHandItem().getItem() instanceof NativeGunItem gun
+                && SILVERWOOD_12.equals(gun.definition().id()) ? NativeGunAds.progress(partial) : 0;
         double amount=Mth.lerp(partial,previous,amplitude);
         double seconds=(mc.level.getGameTime()+partial)/20d;
         double a=seconds*2*Math.PI/p.period(),b=seconds*2*Math.PI/p.secondaryPeriod();
-        pose.translate(p.x()*Math.sin(b)*amount,p.y()*Math.sin(a)*amount,0);
-        pose.mulPose(Axis.YP.rotationDegrees((float)(p.yaw()*(.8*Math.sin(b)+.2*Math.sin(a))*amount)));
-        pose.mulPose(Axis.XP.rotationDegrees((float)(p.pitch()*Math.sin(a)*amount)));
-        pose.mulPose(Axis.ZP.rotationDegrees((float)(p.roll()*Math.cos(b)*amount)));
+        // Blend the two waves while aiming so the slower Silverwood cadence cannot snap phase at ADS entry.
+        double sinA=Mth.lerp(silverwoodAds,Math.sin(a),Math.sin(a*.75));
+        double sinB=Mth.lerp(silverwoodAds,Math.sin(b),Math.sin(b*.75));
+        double cosB=Mth.lerp(silverwoodAds,Math.cos(b),Math.cos(b*.75));
+        double horizontal=1-.35*silverwoodAds,vertical=1-.20*silverwoodAds,roll=1-.50*silverwoodAds;
+        pose.translate(p.x()*horizontal*sinB*amount,p.y()*vertical*sinA*amount,0);
+        pose.mulPose(Axis.YP.rotationDegrees((float)(p.yaw()*horizontal*(.8*sinB+.2*sinA)*amount)));
+        pose.mulPose(Axis.XP.rotationDegrees((float)(p.pitch()*vertical*sinA*amount)));
+        pose.mulPose(Axis.ZP.rotationDegrees((float)(p.roll()*roll*cosB*amount)));
     }
     private NativeWeaponSway(){}
 }

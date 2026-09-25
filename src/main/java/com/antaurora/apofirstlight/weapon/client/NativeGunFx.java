@@ -160,13 +160,8 @@ public final class NativeGunFx {
             if (firstPerson != localFirst) continue;
             if (name.equals("ejection_anchor") && !shot.ejected) {
                 // Convert the rendered locator to world space, never substitute an eye/hand offset.
-                var matrix = new Matrix4f(WORLD_VIEW).invert();
-                if (firstPerson) {
-                    // Hand and world FOV differ. Unproject the actual hand clip position into the
-                    // world projection so the detached casing has no birth-frame screen jump.
-                    matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION));
-                }
-                matrix.mul(anchor.last().pose());
+                var matrix = firstPerson ? firstPersonToWorld(anchor)
+                        : new Matrix4f(WORLD_VIEW).invert().mul(anchor.last().pose());
                 var p = matrix.transformProject(new Vector3f());
                 var camera = mc.gameRenderer.getMainCamera().getPosition();
                 Vec3 origin = camera.add(p.x, p.y, p.z);
@@ -209,6 +204,27 @@ public final class NativeGunFx {
     private static Vec3 direction(Matrix4f matrix, float x, float y, float z) {
         Vector3f v = matrix.transformDirection(new Vector3f(x, y, z)).normalize();
         return new Vec3(v.x, v.y, v.z);
+    }
+
+    /** Reuse casing birth conversion for a final animated FP locator; returns camera-relative world space. */
+    static Matrix4f firstPersonToWorld(PoseStack anchor) {
+        checkWorld();
+        if (world == null || !viewValid) return null;
+        return new Matrix4f(WORLD_VIEW).invert()
+                .mul(new Matrix4f(WORLD_PROJECTION).invert())
+                .mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(), WORLD_PROJECTION))
+                .mul(anchor.last().pose());
+    }
+
+    /** Orientation only: no projection/FOV, translation or inherited axis lengths in a velocity. */
+    static Vec3 firstPersonDirection(PoseStack anchor, float x, float y, float z) {
+        checkWorld();
+        if (world == null || !viewValid) return Vec3.ZERO;
+        var orientation = new Matrix4f(WORLD_VIEW).invert().mul(anchor.last().pose()).normalize3x3();
+        var direction = orientation.transformDirection(new Vector3f(x, y, z)).normalize();
+        if (!Float.isFinite(direction.x) || !Float.isFinite(direction.y) || !Float.isFinite(direction.z))
+            return Vec3.ZERO;
+        return new Vec3(direction.x, direction.y, direction.z);
     }
 
     private static void drawFlash(PoseStack source, MultiBufferSource buffers, float age, Shot shot) {
