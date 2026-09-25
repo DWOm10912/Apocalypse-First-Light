@@ -19,6 +19,9 @@ public final class NativeGunShot {
     public static final ResourceKey<DamageType> BULLET = ResourceKey.create(Registries.DAMAGE_TYPE,
             new ResourceLocation("apocalypse_firstlight", "native_bullet"));
     public record Hit(Entity entity, Vec3 point, boolean head) {}
+    public record ShotResult(Hit representative, java.util.List<Vec3> endpoints) {
+        public ShotResult { endpoints = java.util.List.copyOf(endpoints); }
+    }
     public static final int MAX_PASS_THROUGH_BREAKABLE_BLOCKS = 16;
     public static final double EPSILON = .01;
     private NativeGunShot() {}
@@ -96,16 +99,22 @@ public final class NativeGunShot {
     }
 
     public static Hit execute(ServerPlayer shooter, NativeGunDefinition d, boolean aiming) {
+        return executeWithTrajectories(shooter, d, aiming).representative();
+    }
+
+    public static ShotResult executeWithTrajectories(ServerPlayer shooter, NativeGunDefinition d, boolean aiming) {
         Vec3 start = shooter.getEyePosition();
         var stance = NativeStanceAccuracy.evaluate(shooter, d);
         double spreadDegrees = aiming && d.spreadDegrees() > 0
                 ? stance.finalDegrees() * d.adsSpreadDegrees() / d.spreadDegrees() : stance.finalDegrees();
         var damageByEntity = new java.util.IdentityHashMap<Entity, PelletDamage>();
+        var endpoints = new java.util.ArrayList<Vec3>(d.pelletsPerShot());
         Hit representative = null;
         for (int pellet = 0; pellet < d.pelletsPerShot(); pellet++) {
             // Each pellet independently samples the same established cone, traces and resolves hit part/range.
             Hit hit = trace(shooter, start,
                     spread(shooter.getLookAngle(), spreadDegrees, shooter.getRandom()), d.maxRange());
+            endpoints.add(hit.point());
             if (representative == null || representative.entity() == null && hit.entity() != null) representative = hit;
             if (hit.entity() != null && (!(hit.entity() instanceof net.minecraft.world.entity.player.Player player)
                     || shooter.canHarmPlayer(player))) {
@@ -130,6 +139,6 @@ public final class NativeGunShot {
         if (d.gunshotTinnitus())
             com.antaurora.apofirstlight.tinnitus.GunshotExposureTracker.onGunshot(
                     shooter.serverLevel(), shooter, start, noise.radius(), noise.suppressed());
-        return representative;
+        return new ShotResult(representative, endpoints);
     }
 }

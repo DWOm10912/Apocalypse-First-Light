@@ -19,7 +19,7 @@ import software.bernie.geckolib.animatable.GeoItem;
 import java.util.ArrayDeque;
 import java.awt.Color;
 
-/** One server result, one rendered muzzle, one short-lived local ribbon. */
+/** One server shot, one rendered muzzle, one short-lived ribbon per authoritative trajectory. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class NativeBulletTrails {
     public static final int MAX_ACTIVE_TRAILS = 128;
@@ -33,10 +33,12 @@ public final class NativeBulletTrails {
     public static void snapshot(Vec3 origin,Vec3 end,NativeTrailProfile profile,long shotId){
         checkWorld();if(world==null||!enabled(profile))return;
         Vec3 delta=end.subtract(origin);double distance=delta.length();
-        if(!Double.isFinite(distance)||distance<=Math.max(.20,profile.hideDistance())||distance>128)return;
+        if(!Double.isFinite(distance)||distance<=Math.max(1e-4,profile.hideDistance())||distance>128)return;
         Vec3 direction=delta.scale(1/distance);
+        // Profiles with an authored muzzle-exit anchor need no extra near-barrel offset.
+        double startOffset=Math.min(.20,profile.hideDistance());
         if(ACTIVE.size()>=MAX_ACTIVE_TRAILS)ACTIVE.removeFirst();
-        ACTIVE.addLast(new Trail(origin.add(direction.scale(.20)),direction,distance-.20,profile,shotId,now()));
+        ACTIVE.addLast(new Trail(origin.add(direction.scale(startOffset)),direction,distance-startOffset,profile,shotId,now()));
     }
     private static double now() { return world.getGameTime() + Minecraft.getInstance().getFrameTime(); }
     private static void checkWorld() {
@@ -45,15 +47,21 @@ public final class NativeBulletTrails {
         if (world != null) PENDING.removeIf(p -> now() - p.received > 3);
     }
     public static void shot(int shooter, long gun, Vec3 end, long shotId) {
+        shot(shooter, gun, java.util.List.of(end), shotId);
+    }
+    public static void shot(int shooter, long gun, java.util.List<Vec3> ends, long shotId) {
         checkWorld();
-        if (world == null || !NativeTrailGeometry.finite(end)
+        if (world == null
                 || !(world.getEntity(shooter) instanceof LivingEntity entity)
                 || !(entity.getMainHandItem().getItem() instanceof NativeGunItem item)
                 || GeoItem.getId(entity.getMainHandItem()) != gun) return;
         var profile = item.definition().trail();
         if (!enabled(profile)) return;
-        if (PENDING.size() >= MAX_ACTIVE_TRAILS) PENDING.removeFirst();
-        PENDING.addLast(new Pending(shooter, gun, end, profile, shotId, now()));
+        for (Vec3 end : ends) {
+            if (!NativeTrailGeometry.finite(end)) continue;
+            if (PENDING.size() >= MAX_ACTIVE_TRAILS) PENDING.removeFirst();
+            PENDING.addLast(new Pending(shooter, gun, end, profile, shotId, now()));
+        }
     }
     private static boolean matches(Pending p, long gun, boolean firstPerson) {
         var mc = Minecraft.getInstance();

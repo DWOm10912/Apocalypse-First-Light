@@ -29,7 +29,7 @@
 | damage.min_damage_multiplier | 0–1 |
 | accuracy.base_spread_degrees / profile | 0–45°锥形半角；default或battle_rifle公共姿态预设 |
 | accuracy.ads_spread_degrees（可选） | 0–45°瞄准锥形半角，缺省等于 base_spread_degrees；Silverwood 为1.65°，腰射2.25°；仍乘现有姿态系数 |
-| fire.pellets_per_shot（可选） | 1–64，缺省1；Silverwood 为8，服务端每颗独立抽样、追踪、算伤害，然后按目标汇总以避免同tick受伤保护丢失弹丸 |
+| fire.pellets_per_shot（可选） | 1–64，缺省1；Silverwood 为8，服务端每颗独立抽样、追踪、算伤害，然后按目标汇总以避免同tick受伤保护丢失弹丸；每颗实际停止点也用于各自的视觉轨迹 |
 | reload.tactical_seconds / empty_seconds | 非负秒，向上取整到服务端tick |
 | noise.radius / tinnitus | 非负半径；是否参与现有耳鸣累积系统 |
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
@@ -50,11 +50,11 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 
 ## 重载与同步
 
-使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前共享协议版本为 28，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，V 快捷装拆已移除；维护台仍需满足服务端槽位校验，不保证删除整个槽位定义后能直接拆回配件。
+使用 AddReloadListenerEvent / SimpleJsonResourceReloadListener 扫描全部命名空间；完整校验后原子替换快照。登录与 /reload 完成通过现有网络通道的服务端到客户端数据包同步；集成服务端与客户端分开保存，断开连接清空客户端副本。当前共享协议版本为 30，双方需同版本模组。配件兼容声明同样随 gun data 同步，禁用兼容后已存配件停止显示及生效，V 快捷装拆已移除；维护台仍需满足服务端槽位校验，不保证删除整个槽位定义后能直接拆回配件。
 
 当前模式由服务端写入每把枪 ItemStack 的 `AflGunFireMode` 字符串，缺省读取 default_mode。重载后失效模式立即按新默认值读取，并在服务端 stack 初始化时规范化保存。重载清除旧 AUTO/BURST 调度。SEMI 只接受按下沿；BURST 松开仍完成剩余发数；AUTO 松开停止。每发都通过 NativeGunActions / NativeGunShot 原有链路。单模式枪切换不写 NBT、不提示、不播放声音。
 
-Silverwood 的双膛仅派生自现有 `AflGunAmmo.ammoInMagazine`：2=双实弹、1=上实弹/下空壳、0=双空壳。NativeTriggerPacket 保持协议29及原报文布局，新增 action=3 表示按下时已完成 ADS 的射击意图；其余 gun data 无 ADS 散布覆盖，因此既有枪精度不变。枪口视线校准只移动第一人称模型，不更改服务端玩家视线方向或原始前珠几何。完整状态与资源见 [Silverwood 12 V1](silverwood_12_v1.md)。
+Silverwood 的双膛仅派生自现有 `AflGunAmmo.ammoInMagazine`：2=双实弹、1=上实弹/下空壳、0=双空壳。NativeTriggerPacket 的 action=3 表示按下时已完成 ADS 的射击意图；本次共享协议升至 30，但该请求报文布局不变。其余 gun data 无 ADS 散布覆盖，因此既有枪精度不变。枪口视线校准只移动第一人称模型，不更改服务端玩家视线方向或原始前珠几何。完整状态与资源见 [Silverwood 12 V1](silverwood_12_v1.md)。
 
 后续射击、弹量读取、换弹、噪声/耳鸣、ADS时间/FOV、后坐与弹壳读取新数据。重载取消正在进行的枪械操作与旧射速冷却；现存弹量按新容量安全clamp，不补回被截断的弹药。动画资源/声音marker不随时长改写，因此大幅调整换弹时长需另外校准美术，不能把JSON时长误当成动画关键帧编辑。
 

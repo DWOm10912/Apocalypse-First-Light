@@ -52,23 +52,24 @@ public final class NativeShotVisualSnapshot {
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] capture id={} poseTime={} inputTime={} muzzle={}",id,p.time(),now(),p.muzzle());
         return id;
     }
-    public static boolean confirm(int shooter,long gun,long id,Vec3 end){
+    public static boolean confirm(int shooter,long gun,long id,java.util.List<Vec3> ends){
         check();var mc=Minecraft.getInstance();
         if(mc.player==null||mc.player.getId()!=shooter||id<=0)return false;
         var s=pending.remove(id);
-        if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("CONFIRM",id,"snapshot="+(s!=null)+" gun="+gun+" heldGun="+GeoItem.getId(mc.player.getMainHandItem())+" endpoint="+end+" firstPerson="+mc.options.getCameraType().isFirstPerson());
+        if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("CONFIRM",id,"snapshot="+(s!=null)+" gun="+gun+" heldGun="+GeoItem.getId(mc.player.getMainHandItem())+" endpoints="+ends.size()+" firstPerson="+mc.options.getCameraType().isFirstPerson());
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] pairing id={} snapshotGun={} resultGun={} heldGun={} firstPerson={}",id,s==null?null:s.gun(),gun,GeoItem.getId(mc.player.getMainHandItem()),mc.options.getCameraType().isFirstPerson());
         if(!mc.options.getCameraType().isFirstPerson())return false;
         // Local first-person positive IDs must never fall back to a later gun pose.
         NativeGunFx.shot(shooter,gun,true,id);
-        if(s==null||!NativeTrailGeometry.finite(end)||(s.gun()!=0&&s.gun()!=gun)
+        if(s==null||(s.gun()!=0&&s.gun()!=gun)
                 ||!(mc.player.getMainHandItem().getItem() instanceof NativeGunItem item))return true;
         if(GeoItem.getId(mc.player.getMainHandItem())!=gun)return true;
-        NativeBulletTrails.snapshot(s.muzzle(),end,item.definition().trail(),id);
+        for (Vec3 end : ends) if (NativeTrailGeometry.finite(end))
+            NativeBulletTrails.snapshot(s.muzzle(),end,item.definition().trail(),id);
         NativeGunFx.frozen(s,shooter,gun);
         if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FX_QUEUED",id,"muzzle="+s.muzzle()+" direction="+s.barrelDirection()+" suppressed="+s.suppressed());
         lastConfirmed=id;
-        if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] confirm id={} muzzle={} endpoint={}",id,s.muzzle(),end);
+        if(Boolean.getBoolean("afl.shotSnapshotDebug"))com.antaurora.apofirstlight.ApocalypseFirstLight.LOGGER.info("[SHOT SNAPSHOT] confirm id={} muzzle={} endpoints={}",id,s.muzzle(),ends.size());
         return true;
     }
     private NativeShotVisualSnapshot(){}

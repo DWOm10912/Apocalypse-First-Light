@@ -166,10 +166,11 @@ public final class NativeGunActions {
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         if (!reload) {
             sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
-            var hit = NativeGunShot.execute(player, definition,
+            var shot = NativeGunShot.executeWithTrajectories(player, definition,
                     aiming && !player.isSprinting() && !player.isUsingItem());
+            var hit = shot.representative();
             com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId,
-                    definition.hitEffect().onHit(hit.entity()!=null));
+                    definition.hitEffect().onHit(hit.entity()!=null), shot.endpoints());
         }
     }
 

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/03 - 注意事项 重要内容.md",
+                "file": "docs/项目内容/02 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03 - 注意事项 重要内容"
+              "title": "02 - 制作清单"
             }
           }
         ]
@@ -190,22 +190,24 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/level12883408699728739610.dat",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
+    "run/saves/新的世界 (1)/level463019809690660421.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
-    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-12069650081197225050.dat",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.temp",
+    "build/resources/main/assets/apocalypse_firstlight/textures/particle/chamber_smoke_base.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
+    "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
+    "docs/项目内容/03 - 注意事项 重要内容.md",
     "docs/native_guns/chamber_gas_fx_v1.md",
     "docs/项目内容/02 - 制作清单.md",
     "src/main/resources/assets/apocalypse_firstlight/textures/particle/chamber_smoke_base.png",
-    "docs/项目内容/03 - 注意事项 重要内容.md",
-    "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test_inventory.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/gun/silverwood_12_mesh_test_hud.png",
@@ -213,8 +215,6 @@
     "src/main/resources/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test_inventory.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test.png",
     "build/tmp/silverwood_claude_export/silverwood_12_mesh_test.png",
-    "build/tmp/silverwood-atlas.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/12_gauge_round_mesh.png",
     "docs/native_guns/hybrid_mesh_runtime_v1.md",
     "docs/项目内容/01 - 设计/武器/枪械.md",
     "docs/native_guns/silverwood_12_v1.md",

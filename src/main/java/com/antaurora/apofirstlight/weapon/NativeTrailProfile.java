@@ -9,12 +9,15 @@ public record NativeTrailProfile(Mode mode, double speed, double length, double 
             Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
     public static final NativeTrailProfile SUBTLE_RIFLE = new NativeTrailProfile(
             Mode.SUBTLE, 18, 3, .015, .032, 0xFFF5CD, 0xFFBE50, .65, .12, .40);
+    public static final NativeTrailProfile SUBTLE_BUCKSHOT = new NativeTrailProfile(
+            Mode.SUBTLE, 18, 1.5, .008, .018, 0xFFF5CD, 0xFFBE50, .48, .07, 0);
     public static final NativeTrailProfile ARGB_GRADIENT = new NativeTrailProfile(
             Mode.ARGB_GRADIENT, 18, 3, .020, .048, 0xFFFFFF, 0xFFFFFF, .90, .18, .40);
     public static NativeTrailProfile preset(String name) {
         return switch (name) {
             case "subtle_pistol" -> SUBTLE_PISTOL;
             case "subtle_rifle" -> SUBTLE_RIFLE;
+            case "subtle_buckshot" -> SUBTLE_BUCKSHOT;
             case "argb_gradient" -> ARGB_GRADIENT;
             default -> throw new IllegalArgumentException("presentation.trail: unknown preset " + name);
         };

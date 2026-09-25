@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "29";
+    private static final String PROTOCOL = "30";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -233,42 +233,63 @@ public final class AflNetwork {
         sendNativeShot(player,slot,gunId,shotEnd,shotId,"");
     }
     public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
-        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId,shotEnd,shotId,hitEffect));
+        sendNativeShot(player, slot, gunId, shotEnd, shotId, hitEffect, List.of(shotEnd));
+    }
+    public static void sendNativeShot(ServerPlayer player, int slot, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,
+                                      String hitEffect, List<net.minecraft.world.phys.Vec3> pelletEnds) {
+        channel.send(PacketDistributor.PLAYER.with(() -> player), new NativeShotS2CPacket(slot, gunId,shotEnd,shotId,hitEffect,pelletEnds));
         channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player),
-                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd,shotId,hitEffect));
+                new NativeShotFxS2CPacket(player.getId(), gunId, shotEnd,shotId,hitEffect,pelletEnds));
+    }
+
+    private static void writePelletEnds(FriendlyByteBuf b, List<net.minecraft.world.phys.Vec3> ends) {
+        b.writeVarInt(ends.size());
+        for (var end : ends) { b.writeDouble(end.x); b.writeDouble(end.y); b.writeDouble(end.z); }
+    }
+    private static List<net.minecraft.world.phys.Vec3> readPelletEnds(FriendlyByteBuf b) {
+        int count = b.readVarInt();
+        if (count < 1 || count > 64) throw new IllegalArgumentException("Invalid pellet endpoint count: " + count);
+        var ends = new ArrayList<net.minecraft.world.phys.Vec3>(count);
+        for (int i = 0; i < count; i++) ends.add(new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()));
+        return List.copyOf(ends);
     }
 
     /** Notification only; ammo, hitscan and HUD remain on their existing paths. */
-    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
-        public NativeShotFxS2CPacket(int shooterId,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(shooterId,gunId,end,shotId,"");}
+    public record NativeShotFxS2CPacket(int shooterId, long gunId, net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect,
+                                         List<net.minecraft.world.phys.Vec3> pelletEnds) {
+        public NativeShotFxS2CPacket { pelletEnds = List.copyOf(pelletEnds); }
+        public NativeShotFxS2CPacket(int shooterId,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(shooterId,gunId,end,shotId,"",List.of(end));}
         static void encode(NativeShotFxS2CPacket p, FriendlyByteBuf b) {
             b.writeVarInt(p.shooterId); b.writeLong(p.gunId);
             b.writeDouble(p.shotEnd.x); b.writeDouble(p.shotEnd.y); b.writeDouble(p.shotEnd.z);
             b.writeLong(p.shotId);
             b.writeUtf(p.hitEffect,64);
+            writePelletEnds(b, p.pelletEnds);
         }
         static NativeShotFxS2CPacket decode(FriendlyByteBuf b) {
             return new NativeShotFxS2CPacket(b.readVarInt(), b.readLong(),
-                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),b.readLong(),b.readUtf(64));
+                    new net.minecraft.world.phys.Vec3(b.readDouble(), b.readDouble(), b.readDouble()),b.readLong(),b.readUtf(64),readPelletEnds(b));
         }
         static void handle(NativeShotFxS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> {
                         com.antaurora.apofirstlight.weapon.client.NativeHitEffects.play(p.hitEffect,p.shotEnd);
-                        if(!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(p.shooterId,p.gunId,p.shotId,p.shotEnd)){
+                        if(!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(p.shooterId,p.gunId,p.shotId,p.pelletEnds)){
                             com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(p.shooterId, p.gunId);
-                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.shotEnd,p.shotId);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(p.shooterId, p.gunId, p.pelletEnds,p.shotId);
                         }
                     }));
             context.setPacketHandled(true);
         }
     }
 
-    public record NativeShotS2CPacket(int slot, long gunId,net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect) {
-        public NativeShotS2CPacket(int slot,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(slot,gunId,end,shotId,"");}
-        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId);b.writeDouble(p.shotEnd.x);b.writeDouble(p.shotEnd.y);b.writeDouble(p.shotEnd.z);b.writeLong(p.shotId);b.writeUtf(p.hitEffect,64); }
-        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong(),new net.minecraft.world.phys.Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readLong(),b.readUtf(64)); }
+    public record NativeShotS2CPacket(int slot, long gunId,net.minecraft.world.phys.Vec3 shotEnd,long shotId,String hitEffect,
+                                       List<net.minecraft.world.phys.Vec3> pelletEnds) {
+        public NativeShotS2CPacket { pelletEnds = List.copyOf(pelletEnds); }
+        public NativeShotS2CPacket(int slot,long gunId,net.minecraft.world.phys.Vec3 end,long shotId){this(slot,gunId,end,shotId,"",List.of(end));}
+        static void encode(NativeShotS2CPacket p, FriendlyByteBuf b) { b.writeVarInt(p.slot); b.writeLong(p.gunId);b.writeDouble(p.shotEnd.x);b.writeDouble(p.shotEnd.y);b.writeDouble(p.shotEnd.z);b.writeLong(p.shotId);b.writeUtf(p.hitEffect,64);writePelletEnds(b,p.pelletEnds); }
+        static NativeShotS2CPacket decode(FriendlyByteBuf b) { return new NativeShotS2CPacket(b.readVarInt(), b.readLong(),new net.minecraft.world.phys.Vec3(b.readDouble(),b.readDouble(),b.readDouble()),b.readLong(),b.readUtf(64),readPelletEnds(b)); }
         static void handle(NativeShotS2CPacket p, Supplier<NetworkEvent.Context> supplier) {
             var context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
@@ -276,9 +297,9 @@ public final class AflNetwork {
                         com.antaurora.apofirstlight.weapon.client.NativeHitEffects.play(p.hitEffect,p.shotEnd);
                         com.antaurora.apofirstlight.weapon.client.NativeGunHud.shot(p.slot, p.gunId);
                         var player=net.minecraft.client.Minecraft.getInstance().player;
-                        if(player!=null&&!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(player.getId(),p.gunId,p.shotId,p.shotEnd)){
+                        if(player!=null&&!com.antaurora.apofirstlight.weapon.client.NativeShotVisualSnapshot.confirm(player.getId(),p.gunId,p.shotId,p.pelletEnds)){
                             com.antaurora.apofirstlight.weapon.client.NativeGunFx.shot(player.getId(),p.gunId);
-                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(player.getId(),p.gunId,p.shotEnd,p.shotId);
+                            com.antaurora.apofirstlight.weapon.client.NativeBulletTrails.shot(player.getId(),p.gunId,p.pelletEnds,p.shotId);
                         }
                         com.antaurora.apofirstlight.weapon.client.NativeGunRecoil.confirmedShot(p.slot, p.gunId);
                     }));
