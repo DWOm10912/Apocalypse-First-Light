@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/04 - 注意事项 重要内容.md",
+                "file": "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "04 - 注意事项 重要内容"
+              "title": "04 - CurseForge 等 mod 发布页"
             }
           }
         ]
@@ -190,17 +190,19 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/level674979786255953260.dat",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/saves/新的世界 (1)/level11125797020848724182.dat",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-17654324256164213194.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
-    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-10748536160014228010.dat",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
+    "docs/项目内容/03 - 注意事项 重要内容.md",
+    "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test_inventory.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/gun/silverwood_12_mesh_test_hud.png",
@@ -212,29 +214,27 @@
     "build/resources/main/assets/apocalypse_firstlight/textures/item/12_gauge_round_mesh.png",
     "build/resources/meshFixture/assets/apocalypse_firstlight/textures/item/silverwood_12_mesh_test.png",
     "docs/native_guns/hybrid_mesh_runtime_v1.md",
-    "docs/03 - 制作清单.md",
-    "docs/01 - 设计/武器/枪械.md",
+    "docs/项目内容/02 - 制作清单.md",
+    "docs/项目内容/01 - 设计/武器/枪械.md",
     "docs/native_guns/silverwood_12_v1.md",
-    "docs/01 - 设计/武器/弹药.md",
+    "docs/项目内容/01 - 设计/武器/弹药.md",
     "docs/native_guns/field_attachment_view_v1.md",
     "docs/worldgen/satellite_facility_islands_v3.md",
     "docs/ui/hud_layout_editor_v1.md",
-    "docs/01 - 设计/工业/流体系统.md",
-    "docs/01 - 设计/工业/FE系统.md",
+    "docs/项目内容/01 - 设计/工业/流体系统.md",
+    "docs/项目内容/01 - 设计/工业/FE系统.md",
     "docs/worldgen/highway_v2_sea_bridge_v1_1c.md",
-    "docs/01 - 设计/国家系统.md",
-    "docs/01 - 设计/制作与进度/蓝图.md",
+    "docs/项目内容/01 - 设计/国家系统.md",
+    "docs/项目内容/01 - 设计/制作与进度/蓝图.md",
     "docs/worldgen/highway_v2_sea_bridge_v1_1b.md",
     "docs/worldgen/highway_v2_sea_bridge_v1_1a.md",
     "docs/authoring/afl_industrial_palette_v1.md",
-    "docs/04 - 注意事项 重要内容.md",
     "docs/worldgen/highway_v2_sea_bridge_v1.md",
     "docs/worldgen/highway_v2_branch_junction_turn_ramp_v1.md",
     "docs/worldgen/highway_v2_route_cost_fix.md",
     "docs/worldgen/highway_v2_shoreline_bridgehead_search_v1.md",
     "docs/worldgen/highway_v2_orthogonal_routing_v1.md",
     "docs/worldgen/highway_v2_polyline_viaduct_v1.md",
-    "docs/worldgen/highway_network_export_v2.md",
-    "docs/worldgen/highway_v2_satellite_routing_phase2b2.md"
+    "docs/worldgen/highway_network_export_v2.md"
   ]
 }

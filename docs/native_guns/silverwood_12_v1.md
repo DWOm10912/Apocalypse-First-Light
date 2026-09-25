@@ -5,7 +5,7 @@
 ## 正式绑定与资源
 
 - 正式 Registry ID、Native Gun 数据和物品类仍为 `apocalypse_firstlight:silverwood_12`、`data/apocalypse_firstlight/native_guns/silverwood_12.json`、`ConfiguredNativeGunItem`。创造模式武器栏只保留这一个 Silverwood。
-- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_claude_handpolish_v4.bbmodel`，为当前 V2 权威源；旧 Astra Medium V1 Blockbench 源已从工作区移除，未归档。没有重新导出或修改 Mesh、Rig、Anchor、关键帧和手部动作。
+- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_claude_reload_presentation_v2.bbmodel`，为当前权威源；旧 Astra Medium V1 Blockbench 源已从工作区移除，未归档。与上一版 handpolish_v4 相比，模型、Rig、Anchor、UV、贴图和 Display 均未改变；当前动画已更新为 Reload Presentation V2。
 - 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。资源来自已验收测试版，保留 46 Mesh part、4088 triangle、115 导出 Cube。旧 V1 的同名 geometry、动画和 atlas 已被 V2 覆盖，不再参与运行。
 - 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。正式路径均使用 V2 测试版图像及显示变换。
 - 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。动画时间线只使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。
@@ -20,3 +20,5 @@
 - 后坐仍为垂直 2.2°–2.8°、水平 ±0.10°–0.35°，上限垂直 8°/水平 1.8°；枪模 roll 为 0。HUD 沿用 NativeGunHud 的真实装弹数与备弹数，Tooltip 沿用正式 Silverwood 文案。
 
 正式 ID 的静止 ADS、连续开火、腰射、双膛状态、开合/装填、手臂、音效、背包/HUD、第三人称、维护台及资源热重载仍待用户最终实机复测。
+
+2026-09-24 Reload Presentation V2 同步：仅从当前可编辑源更新正式 `animations/silverwood_12.animation.json`。`reload_empty`、`reload_tactical`、`inspect` 的机械/手部/相机轨道和事件时间发生变化；两段换弹的 eject cue 从 0.427 秒移至 0.543 秒。七个动画片段名称与时长不变，`static_idle`、`draw`、`put_away`、`shoot` 的运行时轨道不变。正式 GEO、AFLMESH、贴图、ADS `eye_relief = 0.4`、Native Gun 玩法及 Hybrid Runtime 均未改；本轮同步与编译不代表新换弹构图已通过游戏内验收。

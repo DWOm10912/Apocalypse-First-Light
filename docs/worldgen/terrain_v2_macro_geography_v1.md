@@ -155,7 +155,7 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 
 ## Biome、出生生态与保水 — MAIN_NATION Biome Region Planner V1
 
-当前实现见[群系策略](../01%20-%20设计/世界与环境/群系.md)。本次仅修改biome分配与Scorched相关行为，Terrain relief/elevation与Macro topology不改。
+当前实现见[群系策略](群系.md)。本次仅修改biome分配与Scorched相关行为，Terrain relief/elevation与Macro topology不改。
 
 - MAINLAND：1个Startup Plains（核心160，边界208±32），0～3个Additional，其余LAND为Fallout。Satellite LAND全部Fallout。
 - Additional目标数量0/1/2/3概率40%/40%/15%/5%，每slot最多128候选，失败跳过。基础半径96～224、低频角度扰动24～48、最大包络间隔128；仅MAINLAND LAND，保守包围方形检查距岸≥112，不覆盖Beach。
