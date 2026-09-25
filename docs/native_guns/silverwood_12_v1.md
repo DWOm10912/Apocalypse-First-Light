@@ -1,12 +1,12 @@
 # Silverwood 12 V2 正式资源
 
-状态：正式物品 `apocalypse_firstlight:silverwood_12` 已切换为 Hybrid Mesh V2；此前的临时测试物品及专属资源已移除。测试版的主要实机表现由用户验收，正式 ID 切换后的画面、音效与交互仍待用户最终实机复测；静态检查和 Java 编译不等于该验收。
+状态：正式物品 `apocalypse_firstlight:silverwood_12` 已接入 Hybrid Mesh Hero Remaster V1 几何，保留 Reload Presentation V2 及后续检视弹仓时序修正。此前的临时测试物品及专属资源已移除。新几何的游戏内画面、音效与交互仍待用户实机复测；静态检查和资源处理不等于该验收。
 
 ## 正式绑定与资源
 
 - 正式 Registry ID、Native Gun 数据和物品类仍为 `apocalypse_firstlight:silverwood_12`、`data/apocalypse_firstlight/native_guns/silverwood_12.json`、`ConfiguredNativeGunItem`。创造模式武器栏只保留这一个 Silverwood。
-- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_claude_reload_presentation_v2.bbmodel`，为当前权威源；旧 Astra Medium V1 Blockbench 源已从工作区移除，未归档。与上一版 handpolish_v4 相比，模型、Rig、Anchor、UV、贴图和 Display 均未改变；当前动画已更新为 Reload Presentation V2。
-- 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。资源来自已验收测试版，保留 46 Mesh part、4088 triangle、115 导出 Cube。旧 V1 的同名 geometry、动画和 atlas 已被 V2 覆盖，不再参与运行。
+- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_hero_remaster_v1.bbmodel`，为当前权威源；此前 Reload Presentation V2 源仍保留供追溯。新源中的 `inspect` 上下 live/spent shell 与 extractor 时间点已同步正式运行时的 2.717 / 2.783 / 2.817 秒修正，其余七段动画沿用现有正式版本。
+- 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。Hero Remaster 当前为 45 Mesh part、5232 triangle、66 导出 Cube；atlas 像素与上版相同，正式动画 JSON 未重新导出。旧 V1 的同名资源已被后续版本覆盖，不再参与运行。
 - 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。正式路径均使用 V2 测试版图像及显示变换。
 - 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。音效时间线使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。两段 reload 另有独立视觉 cue `chamber_eject_fx`（0.583 秒），不加入服务端声音队列。
 - `right_hand_anchor`、`left_hand_anchor`、双枪口锚点和四个 live/spent shell 节点保持 V2 测试版合同。Hybrid Mesh Runtime、共享 renderer、维护台适配和 12 Gauge 弹药/空壳资源均未改。
@@ -29,3 +29,5 @@
 2026-09-24 检视弹仓呈现修正：在可编辑 `.bbmodel` 和正式动画 JSON 中，将 `inspect` 的上下 live/spent shell 与 extractor 的前移起点从 3.10 秒提前到枪管开始开合的 2.717 秒，并于 2.817 秒前完成可见伸出。此前枪管约 2.917 秒已开到位、弹壳却要等到约 3.117 秒才伸出，造成开膛后短暂空仓画面。只改这五个 inspect position 轨道；弹药真值、显隐规则、换弹/开火轨道与机械音效时刻不变。满 ADS 呼吸摆动及检视弹仓时序均待用户实机验收。
 
 2026-09-24 [Chamber Gas FX V1.2](chamber_gas_fx_v1.md)：两段换弹使用 0.583 秒独立视觉 cue，按现有 SPENT 状态逐膛喷气；LIVE 与 inspect 不触发。无几何 `upper_chamber_fx` / `lower_chamber_fx` 挂在 `ammo_state`，原骨骼与原动画关键帧保留。V1.1 实机反馈烟墙过浓，现每膛改为 3 个轴向 Jet Core + 3 个更小、更淡、寿命更短的 Expansion Cloud，随后约 1 秒间隔递增的淡余烟；已出生烟雾独立世界运动。Jet 速度、膛口位置、+Z 方向与去除轴长的变换不变。开发轴线默认关闭，仅开发环境可通过 `-Dafl.chamberGasAxisDebug=true` 开启。未接管世界弹壳；V1.2 仅静态及编译验证，实机烟量与遮挡待复测。
+
+2026-09-24 Hero Remaster V1 接入：正式 ID 直接使用新源的低面数双管、枪口、木托、护木、机匣与扳机护圈 Mesh。移除原先随 `chamber_upper` / `chamber_lower` 状态骨骼缩放的 48 个膛尾 Cube；新的膛尾轮廓固定在枪管 Mesh 上，状态骨骼只负责暗色膛室遮罩，避免开膛时轮廓突然长高。旧开锁拨片的一个 Cube 由 Mesh 取代。木托五个骨骼的 bind pivot 随新源下移 1 个 Blockbench 单位，枪托垫的 12 个 Cube 同步下移；双枪口、手部和 Chamber Gas FX 锚点保持原值。原先四处深棕色贴面花纹 Mesh 已去除，露出连续木纹表面。七段正式动画、枪械数据、ADS 与特效逻辑均未改变；只将正式 `inspect` 已有的弹仓时序修正写回新可编辑源。新几何在游戏内的材质与动作表现待实机验收。
