@@ -1,0 +1,81 @@
+{
+ "outName": "blackridge_50_blackiron_v5.png",
+ "refName": "blackridge_50_blackiron_v2.png",
+ "intLum": 18,
+ "gy": [
+  4.8,
+  9.8
+ ],
+ "gz": [
+  -10,
+  7.8
+ ],
+ "colors": {
+  "MAIN": [
+   54,
+   57,
+   63
+  ],
+  "CTRL": [
+   38,
+   39,
+   43
+  ],
+  "GRIP": [
+   21,
+   21,
+   23
+  ],
+  "MAG": [
+   50,
+   53,
+   58
+  ],
+  "BASEP": [
+   40,
+   41,
+   45
+  ],
+  "INTERNAL": [
+   12,
+   12,
+   14
+  ],
+  "FOLL": [
+   66,
+   68,
+   72
+  ],
+  "SIGHT": [
+   34,
+   35,
+   39
+  ]
+ },
+ "top": 1.08,
+ "bottom": 0.74,
+ "endFace": 0.96,
+ "sideLo": 0.86,
+ "sideHi": 1.06,
+ "band": 0.2,
+ "bandH": 0.8,
+ "bandW": 0.24,
+ "drift": 0.03,
+ "stipple": 0.12,
+ "recess": 0.74,
+ "smoothAngle": 40,
+ "edgeAngle": 55,
+ "edgeMinLen": 1.2,
+ "edgeBase": 0.35,
+ "edgeHi": 0.2,
+ "edgeW": 1.8,
+ "aoCore": 0.6,
+ "aoW": 3,
+ "floorMin": 0.5,
+ "baseplateH": 0.22,
+ "boreAxis": [
+  0,
+  8.68
+ ],
+ "boreR": 0.47
+}
