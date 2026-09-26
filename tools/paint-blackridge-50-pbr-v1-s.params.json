@@ -1,0 +1,168 @@
+{
+ "outName": "blackridge_50_s.png",
+ "refName": "blackridge_50_silver_basecolor_v2.png",
+ "intLum": 25,
+ "gy": [
+  4.8,
+  9.8
+ ],
+ "gz": [
+  -10,
+  7.8
+ ],
+ "colors": {
+  "MAIN": [
+   140,
+   143,
+   149
+  ],
+  "CTRL": [
+   96,
+   99,
+   105
+  ],
+  "GRIP": [
+   22,
+   22,
+   24
+  ],
+  "MAG": [
+   128,
+   131,
+   137
+  ],
+  "BASEP": [
+   110,
+   113,
+   118
+  ],
+  "INTERNAL": [
+   16,
+   16,
+   18
+  ],
+  "FOLL": [
+   120,
+   122,
+   126
+  ],
+  "SIGHT": [
+   40,
+   41,
+   45
+  ]
+ },
+ "top": 1.12,
+ "bottom": 0.6,
+ "endFace": 0.92,
+ "sideLo": 0.9,
+ "sideHi": 1,
+ "band": 0,
+ "bandH": 0.86,
+ "bandW": 0.065,
+ "drift": 0.015,
+ "stipple": 0.12,
+ "recess": 0.5,
+ "smoothAngle": 40,
+ "edgeAngle": 55,
+ "edgeMinLen": 1.2,
+ "edgeBase": 0.35,
+ "edgeHi": 0.26,
+ "edgeW": 1.1,
+ "aoCore": 0.4,
+ "aoW": 3,
+ "floorMin": 0.32,
+ "baseplateH": 0.22,
+ "boreAxis": [
+  0,
+  8.68
+ ],
+ "boreR": 0.47,
+ "dark": 0,
+ "darkH": 0.58,
+ "darkW": 0.15,
+ "skyLift": 0,
+ "flatFacing": true,
+ "fTop": 1.2,
+ "fUpper": 1.1,
+ "fLower": 0.74,
+ "fBottom": 0.56,
+ "hlAmp": 0.34,
+ "highlights": [
+  [
+   8.25,
+   0.045,
+   1
+  ],
+  [
+   6.95,
+   0.045,
+   0.5
+  ]
+ ],
+ "brushAmp": 0.035,
+ "brushPitch": 0.045,
+ "brushAlongFreq": 0.9,
+ "brushMinArea": 0.25,
+ "bevelArea": 0.04,
+ "bevelW": 2.5,
+ "recessW": 3,
+ "pbr": "spec",
+ "bg": [
+  32,
+  10,
+  0
+ ],
+ "spec": {
+  "main": {
+   "r": 180,
+   "g": 255,
+   "top": 12,
+   "upper": 8,
+   "lower": -15,
+   "bottom": -22,
+   "bevel": 205,
+   "recess": 118,
+   "brush": 7
+  },
+  "mag": {
+   "r": 168,
+   "g": 255,
+   "top": 6,
+   "upper": 4,
+   "lower": -12,
+   "bottom": -18,
+   "bevel": 185,
+   "recess": 118,
+   "brush": 5
+  },
+  "ctrl": {
+   "r": 140,
+   "g": 255,
+   "top": 6,
+   "upper": 4,
+   "lower": -8,
+   "bottom": -12,
+   "bevel": 158,
+   "recess": 100,
+   "brush": 0
+  },
+  "foll": {
+   "r": 150,
+   "g": 255
+  },
+  "sight": {
+   "r": 105,
+   "g": 255
+  },
+  "int": {
+   "r": 70,
+   "g": 255
+  },
+  "grip": {
+   "r": 32,
+   "g": 10,
+   "cell": 10
+  }
+ }
+}
