@@ -1,0 +1,307 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.blackridge_50",
+        "texture_width": 1024,
+        "texture_height": 1024,
+        "visible_bounds_width": 20,
+        "visible_bounds_height": 12,
+        "visible_bounds_offset": [
+          0,
+          5,
+          1
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            -3
+          ]
+        },
+        {
+          "name": "positioning",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "lefthand",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "lefthand_pos",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "lefthand"
+        },
+        {
+          "name": "left_hand_anchor",
+          "pivot": [
+            1.2,
+            5.8,
+            -2.5
+          ],
+          "parent": "lefthand_pos"
+        },
+        {
+          "name": "maintenance_anchor",
+          "pivot": [
+            0,
+            5.1,
+            -2
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "handling",
+          "pivot": [
+            -1.15,
+            4,
+            3.75
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "gun_body",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "handling"
+        },
+        {
+          "name": "frame",
+          "pivot": [
+            0,
+            5.3,
+            -0.2
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "grip",
+          "pivot": [
+            0,
+            4.2,
+            3.8
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "barrel",
+          "pivot": [
+            0,
+            8.3,
+            -4.3
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "muzzle_anchor",
+          "pivot": [
+            0,
+            8.28,
+            -9.94
+          ],
+          "parent": "barrel"
+        },
+        {
+          "name": "trigger",
+          "pivot": [
+            0,
+            6.7,
+            0.1
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "hammer",
+          "pivot": [
+            0,
+            7.9,
+            5.9
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "safety",
+          "pivot": [
+            0,
+            8.6,
+            3.8
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "slide_stop",
+          "pivot": [
+            1,
+            6.8,
+            1.9
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "magazine_release",
+          "pivot": [
+            0.7744,
+            5.1392,
+            1.448
+          ],
+          "parent": "gun_body"
+        },
+        {
+          "name": "slide",
+          "pivot": [
+            0,
+            8.4,
+            -2.2
+          ],
+          "parent": "handling"
+        },
+        {
+          "name": "front_sight",
+          "pivot": [
+            0,
+            9.6,
+            -9.2
+          ],
+          "parent": "slide"
+        },
+        {
+          "name": "rear_sight",
+          "pivot": [
+            0,
+            9.6,
+            4.1
+          ],
+          "parent": "slide"
+        },
+        {
+          "name": "ejection_anchor",
+          "pivot": [
+            -0.9,
+            9.3,
+            -1.8
+          ],
+          "parent": "slide"
+        },
+        {
+          "name": "sight_anchor",
+          "pivot": [
+            0,
+            9.86,
+            -9.2
+          ],
+          "parent": "slide"
+        },
+        {
+          "name": "extractor_visual",
+          "pivot": [
+            -0.4672,
+            8.6912,
+            0.2
+          ],
+          "parent": "slide"
+        },
+        {
+          "name": "magazine",
+          "pivot": [
+            0,
+            4,
+            3.8
+          ],
+          "parent": "handling"
+        },
+        {
+          "name": "follower",
+          "pivot": [
+            0,
+            7.936,
+            2.60171
+          ],
+          "parent": "magazine"
+        },
+        {
+          "name": "righthand",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "handling"
+        },
+        {
+          "name": "righthand_pos",
+          "pivot": [
+            0,
+            0,
+            -3
+          ],
+          "parent": "righthand"
+        },
+        {
+          "name": "right_hand_anchor",
+          "pivot": [
+            -1.15,
+            4,
+            3.75
+          ],
+          "parent": "righthand_pos"
+        },
+        {
+          "name": "mag_out",
+          "pivot": [
+            0,
+            4,
+            3.8
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "reload_magazine",
+          "pivot": [
+            0,
+            4,
+            3.8
+          ],
+          "parent": "mag_out"
+        },
+        {
+          "name": "empty_old_mag",
+          "pivot": [
+            0,
+            4,
+            3.8
+          ],
+          "parent": "root"
+        },
+        {
+          "name": "camera",
+          "pivot": [
+            0,
+            12,
+            15
+          ]
+        }
+      ]
+    }
+  ]
+}

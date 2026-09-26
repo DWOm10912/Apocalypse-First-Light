@@ -123,6 +123,7 @@
   "item.apocalypse_firstlight.br51_01": "BR-51 Battle Rifle",
   "item.apocalypse_firstlight.hr55": "HR-55 Battle Rifle",
   "item.apocalypse_firstlight.silverwood_12": "Silverwood 12",
+  "item.apocalypse_firstlight.blackridge_50": "Blackridge .50 Heavy Pistol",
   "item.apocalypse_firstlight.crowbar": "Crowbar",
   "item.apocalypse_firstlight.9x19mm_round": "9×19mm Pistol Round",
   "item.apocalypse_firstlight.762x51mm_round": "7.62×51mm Rifle Round",
@@ -132,6 +133,8 @@
   "item.apocalypse_firstlight.12_7x55mm_casing": "12.7×55mm Casing",
   "item.apocalypse_firstlight.12_gauge_round": "12 Gauge Shotgun Round",
   "item.apocalypse_firstlight.12_gauge_casing": "12 Gauge Casing",
+  "item.apocalypse_firstlight.50_ae_round": ".50 AE Round",
+  "item.apocalypse_firstlight.50_ae_casing": ".50 AE Spent Casing",
 
   "item.apocalypse_firstlight.steel_ingot": "Steel Ingot",
   "item.apocalypse_firstlight.industrial_waste_bucket": "Industrial Waste Bucket",
@@ -205,6 +208,7 @@
   "tooltip.apocalypse_firstlight.br51_01.description": "A semi-automatic battle rifle chambered in 7.62×51mm, offering strong power and range at the cost of heavier recoil.",
   "tooltip.apocalypse_firstlight.hr55.description": "A heavy semi-automatic battle rifle chambered in 12.7×55mm, delivering formidable stopping power at close and medium range.",
   "tooltip.apocalypse_firstlight.silverwood_12.description": "A modern over-under sporting shotgun with a two-chamber break action and 12 Gauge buckshot.",
+  "tooltip.apocalypse_firstlight.blackridge_50.description": "A heavy semi-automatic pistol chambered in .50 AE.",
   "tooltip.apocalypse_firstlight.p9_01.description": "A compact and reliable 9mm service pistol, easy to handle and well suited for close-range combat.",
 
   "tooltip.apocalypse_firstlight.thermal_generation": "Thermal Generation: %s FE",

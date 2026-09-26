@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
+import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
+import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -23,6 +26,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import software.bernie.geckolib.cache.GeckoLibCache;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.util.RenderUtils;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -35,7 +41,11 @@ public final class NativeGunFx {
     public static final ResourceLocation CASING_MODEL = id("item/9x19mm_casing");
     public static final ResourceLocation RIFLE_CASING_MODEL = id("item/762x51mm_casing");
     public static final ResourceLocation HEAVY_RIFLE_CASING_MODEL = id("item/12_7x55mm_casing");
+    private static final ResourceLocation FIFTY_AE_CASING_MODEL = id("item/50_ae_casing");
+    private static final ResourceLocation FIFTY_AE_CASING_GEO = id("geo/50_ae_casing.geo.json");
+    private static final ResourceLocation FIFTY_AE_CASING_TEXTURE = id("textures/item/blackridge_50ae_ammo_v1.png");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
+    private static final float FIFTY_AE_CASING_MESH_SCALE = .65F;
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
@@ -296,10 +306,13 @@ public final class NativeGunFx {
         var buffers = mc.renderBuffers().bufferSource();
         var type = RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS);
         var out = buffers.getBuffer(type);
+        var meshType = RenderType.entityCutoutNoCull(FIFTY_AE_CASING_TEXTURE);
+        var casingMesh = AflMeshCache.snapshot().get(FIFTY_AE_CASING_GEO);
+        var casingGeo = GeckoLibCache.getBakedModels().get(FIFTY_AE_CASING_GEO);
+        boolean drewMesh = false;
         Vec3 camera = event.getCamera().getPosition();
         var pose = event.getPoseStack();
         for (Casing c : CASINGS) {
-            var model = mc.getModelManager().getModel(c.model);
             Vec3 position = c.previous.lerp(c.position, event.getPartialTick());
             Vec3 rotation = c.oldRotation.lerp(c.rotation, event.getPartialTick());
             pose.pushPose();
@@ -307,19 +320,49 @@ public final class NativeGunFx {
             pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees((float)rotation.x));
             pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees((float)rotation.y));
             pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees((float)rotation.z));
-            pose.scale(CASING_SCALE,CASING_SCALE,CASING_SCALE);
-            pose.translate(-.5,-.5,-.5);
             int light = LevelRenderer.getLightColor(world, BlockPos.containing(position));
-            var random = RandomSource.create(0);
-            for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+            if (c.model.equals(FIFTY_AE_CASING_MODEL)) {
+                if (casingMesh != null && casingGeo != null) {
+                    pose.scale(FIFTY_AE_CASING_MESH_SCALE, FIFTY_AE_CASING_MESH_SCALE, FIFTY_AE_CASING_MESH_SCALE);
+                    // The source casing starts at Y=0. Center it before the existing tumbling rotations.
+                    var parts = casingMesh.parts("casing");
+                    if (!parts.isEmpty()) {
+                        var bounds = parts.get(0).bounds();
+                        pose.translate(-(bounds.minX() + bounds.maxX()) / 2,
+                                -(bounds.minY() + bounds.maxY()) / 2,
+                                -(bounds.minZ() + bounds.maxZ()) / 2);
+                    }
+                    var vertices = buffers.getBuffer(meshType);
+                    for (GeoBone bone : casingGeo.topLevelBones()) renderCasingMesh(casingMesh, bone, pose, vertices, light);
+                    drewMesh = true;
+                }
+            } else {
+                var model = mc.getModelManager().getModel(c.model);
+                pose.scale(CASING_SCALE,CASING_SCALE,CASING_SCALE);
+                pose.translate(-.5,-.5,-.5);
+                var random = RandomSource.create(0);
+                for (net.minecraft.core.Direction side : net.minecraft.core.Direction.values()) {
+                    random.setSeed(0);
+                    for (var q : model.getQuads(null, side, random)) out.putBulkData(pose.last(),q,1,1,1,light,OverlayTexture.NO_OVERLAY);
+                }
                 random.setSeed(0);
-                for (var q : model.getQuads(null, side, random)) out.putBulkData(pose.last(),q,1,1,1,light,OverlayTexture.NO_OVERLAY);
+                for (var q : model.getQuads(null, null, random)) out.putBulkData(pose.last(),q,1,1,1,light,OverlayTexture.NO_OVERLAY);
             }
-            random.setSeed(0);
-            for (var q : model.getQuads(null, null, random)) out.putBulkData(pose.last(),q,1,1,1,light,OverlayTexture.NO_OVERLAY);
             pose.popPose();
         }
         buffers.endBatch(type);
+        if (drewMesh) buffers.endBatch(meshType);
+    }
+
+    private static void renderCasingMesh(AflMeshModel mesh, GeoBone bone, PoseStack pose,
+                                         VertexConsumer vertices, int light) {
+        pose.pushPose();
+        try {
+            RenderUtils.prepMatrixForBone(pose, bone);
+            AflMeshRenderer.render(mesh, bone, pose, vertices, light, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+            if (!bone.isHidingChildren())
+                for (GeoBone child : bone.getChildBones()) renderCasingMesh(mesh, child, pose, vertices, light);
+        } finally { pose.popPose(); }
     }
 
     private static final class Shot {

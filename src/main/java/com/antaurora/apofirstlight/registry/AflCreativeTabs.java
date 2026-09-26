@@ -157,12 +157,15 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.BR51_01.get());
                         output.accept(AflItems.HR55.get());
                         output.accept(AflItems.SILVERWOOD_12.get());
+                        output.accept(AflItems.BLACKRIDGE_50.get());
                         output.accept(AflItems.CAT.get());
                         output.accept(AflItems.CROWBAR.get());
                         output.accept(AflItems.ROUND_9MM.get());
                         output.accept(AflItems.ROUND_762MM.get());
                         output.accept(AflItems.ROUND_127MM.get());
                         output.accept(AflItems.ROUND_12_GAUGE.get());
+                        output.accept(AflItems.ROUND_50_AE.get());
+                        output.accept(AflItems.CASING_50_AE.get());
                         output.accept(AflItems.PISTOL_RED_DOT.get());
                         output.accept(AflItems.RIFLE_RED_DOT_01.get());
                         output.accept(AflItems.PISTOL_SUPPRESSOR_01.get());

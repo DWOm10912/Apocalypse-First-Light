@@ -1,0 +1,65 @@
+{
+  "weapon_class": "pistol",
+  "ammo": "apocalypse_firstlight:50_ae_round",
+  "casing": "apocalypse_firstlight:50_ae_casing",
+  "fire_sound": "apocalypse_firstlight:blackridge_50_fire",
+  "dry_fire_sound": "apocalypse_firstlight:native_gun_dry_fire",
+  "suppressed_fire_sound": "apocalypse_firstlight:blackridge_50_suppressed",
+  "magazine_capacity": 7,
+  "fire": {"mode": "semi", "interval_ticks": 5},
+  "damage": {
+    "base": 15,
+    "headshot_multiplier": 1.5,
+    "falloff_start": 28,
+    "effective_range": 56,
+    "max_range": 72,
+    "min_damage_multiplier": 0.60
+  },
+  "accuracy": {
+    "base_spread_degrees": 1.00,
+    "ads_spread_degrees": 1.00,
+    "profile": "default"
+  },
+  "reload": {"tactical_seconds": 2.45, "empty_seconds": 2.70},
+  "noise": {"radius": 88, "tinnitus": true},
+  "ads": {
+    "time_seconds": 0.18,
+    "fov_multiplier": 0.94,
+    "profile": {
+      "anchor": "sight_anchor/rear-axis",
+      "aim": [0, 9.6, 4.1],
+      "eye_relief": 0.47,
+      "hip_translation": [3.25, -7.0, -12.25],
+      "hip_rotation": [0, 0, 0],
+      "scale": 0.45,
+      "composition": [0, 0],
+      "root_pitch": 0,
+      "ads_rotation": [0, 0, 0]
+    }
+  },
+  "presentation": {
+    "hud": {"width": 48, "height": 22},
+    "mag_in_tick": 25,
+    "empty_mag_in_tick": 23,
+    "trail": "subtle_pistol"
+  },
+  "recoil": {
+    "verticalMin": 2.00,
+    "verticalMax": 2.60,
+    "horizontalMin": -0.25,
+    "horizontalMax": 0.28,
+    "maxVertical": 7.5,
+    "maxHorizontal": 1.6,
+    "recoveryDelay": 0.05,
+    "cameraRecoveryTime": 0.24,
+    "modelPitch": 7,
+    "modelBack": 0.05,
+    "modelYaw": 0.8,
+    "modelRoll": 0.8,
+    "modelRecoveryTime": 0.13,
+    "horizontalContinueChance": 0.7,
+    "horizontalRecoveryTime": 0.2,
+    "horizontalLeftMin": 0.10,
+    "horizontalRightMin": 0.10
+  }
+}

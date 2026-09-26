@@ -40,7 +40,11 @@ export function triangulate(points, where='polygon') {
     n=n.map(v=>v/magnitude);
     const extent=Math.max(...[0,1,2].map(k=>Math.max(...points.map(p=>p[k]))-Math.min(...points.map(p=>p[k]))));
     const tolerance=Math.max(1e-5,extent*1e-5);
-    need(points.every(p=>Math.abs(dot(sub(p,points[0]),n))<=tolerance),`${where}: non-planar polygon (tolerance ${tolerance})`);
+    const deviation=Math.max(...points.map(p=>Math.abs(dot(sub(p,points[0]),n))));
+    // OBJ imports can carry mildly twisted quads. Triangulate those without rewriting
+    // the editable mesh; reject larger warps and non-planar n-gons as before.
+    need(deviation<=tolerance || points.length===4 && deviation<=extent*0.1,
+        `${where}: non-planar polygon (tolerance ${tolerance})`);
     const drop=n.map(Math.abs).indexOf(Math.max(...n.map(Math.abs)));
     const p=points.map(v=>v.filter((_,i)=>i!==drop));
     const turn=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
@@ -91,7 +95,9 @@ function rejectFeatures(value, where) {
 export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
     need(source?.meta?.model_format==='free',`${sourceName}: V1 requires Free Model`);
     rejectFeatures(source,sourceName);
-    need(Array.isArray(source.textures)&&source.textures.length===1,`${sourceName}: exactly one texture atlas required`);
+    // Additional authoring textures may belong to export=false reference arms.
+    // Exported mesh/cube faces must still use the sole runtime atlas at index 0.
+    need(Array.isArray(source.textures)&&source.textures.length>=1,`${sourceName}: runtime texture atlas required`);
     const texture=source.textures[0];
     need(!texture.frameCount || texture.frameCount===1,`${sourceName}: animated textures unsupported`);
     need(!texture.scope && (!texture.render_mode||texture.render_mode==='default')
@@ -134,7 +140,12 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
                 need(!visited.has(node),`duplicate element parent ${element.name}`);visited.add(node);
                 if(!enabled || element.export===false) continue;
                 need(parentBone,`${element.name}: mesh/cube requires parent bone group`);
-                if(element.type==='cube') continue; // Cube geo remains the existing separate artifact.
+                if(element.type==='cube') {
+                    for(const face of Object.values(element.faces??{}))
+                        need(face.texture===null||face.texture===0||face.texture===texture.uuid,
+                            `${sourceName} cube=${element.name}: exported cube uses an authoring-only texture`);
+                    continue; // Cube geo remains the existing separate artifact.
+                }
                 need(element.type==='mesh',`${element.name}: unsupported element type ${element.type}`);
                 const where=`${sourceName} bone=${parentBone.name} mesh=${element.name}`;
                 for(const key of Object.keys(element)) need(knownElementKeys.has(key),`${where}: unsupported field ${key}`);

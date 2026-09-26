@@ -43,6 +43,13 @@ public final class AflItems {
                             java.util.List.of("static_idle", "reload_empty", "reload_tactical", "draw", "put_away", "shoot", "inspect"),
                             java.util.Set.of("static_idle"), "right_hand_anchor", "left_hand_anchor",
                             "muzzle_upper_anchor", null)));
+    public static final RegistryObject<Item> BLACKRIDGE_50 = ITEMS.register("blackridge_50", () ->
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "blackridge_50"),
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("blackridge_50", "static_idle",
+                            java.util.List.of("static_idle", "static_bolt_caught", "shoot", "draw", "put_away",
+                                    "reload_tactical", "reload_empty", "inspect", "inspect_empty"),
+                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor",
+                            "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> CAT = ITEMS.register("cat", () ->
             new com.antaurora.apofirstlight.weapon.CatNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "cat"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("cat", "static_idle",
@@ -73,6 +80,8 @@ public final class AflItems {
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> ROUND_12_GAUGE = ITEMS.register("12_gauge_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> ROUND_50_AE = ITEMS.register("50_ae_round",
+            () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_9MM = ITEMS.register("9x19mm_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_762MM = ITEMS.register("762x51mm_casing",
@@ -80,6 +89,8 @@ public final class AflItems {
     public static final RegistryObject<Item> CASING_127MM = ITEMS.register("12_7x55mm_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> CASING_12_GAUGE = ITEMS.register("12_gauge_casing",
+            () -> new Item(new Item.Properties().stacksTo(64)));
+    public static final RegistryObject<Item> CASING_50_AE = ITEMS.register("50_ae_casing",
             () -> new Item(new Item.Properties().stacksTo(64)));
 
     public static final RegistryObject<Item> INDUSTRIAL_WASTE_BUCKET = ITEMS.register("industrial_waste_bucket",

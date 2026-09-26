@@ -28,6 +28,10 @@ bad(s=>s.elements[1].faces.surface.vertices[0]='unknown',/invalid vertex/);
 bad(s=>s.elements[1].faces.surface.texture=7,/unknown\/multiple texture/);
 bad(s=>s.elements[1].vertices.v1=s.elements[1].vertices.v0.slice(),/zero-area|duplicate/);
 bad(s=>s.elements[2].vertices.v3[2]=1,/non-planar/);
+const mildQuad=structuredClone(source);
+mildQuad.elements[2].vertices.v3[2]=0.1;
+assert.equal(convert(mildQuad,geo).parts.reduce((s,p)=>s+p.triangles.length,0),4,
+    'mildly non-planar imported quad must triangulate without source edits');
 bad(s=>s.elements[2].faces.surface.vertices=['v0','v2','v1','v3'],/self-intersecting|zero-area/);
 bad(s=>s.elements[1].weights={v0:{fixture_root:1}},/unsupported/);
 bad(s=>s.elements[1].morph_targets=[{}],/unsupported/);
@@ -88,7 +92,8 @@ assert.match(maintenance,/generation[\s\S]*BOUNDS\.clear\(\); LONGITUDINAL_CENTE
 assert.match(cache,/volatile Snapshot/);
 assert.match(cache,/current = new Snapshot\(current\.generation\(\) \+ 1, models\)/);
 const assets=path.join(root,'src/main/resources/assets/apocalypse_firstlight/meshes');
-for(const id of ['br51_01','hr55','p9_01','silverwood_12'])assert(!fs.existsSync(path.join(assets,id+'.aflmesh.json')),'Round 1 must not opt in official weapons');
+for(const id of ['br51_01','hr55','p9_01'])assert(!fs.existsSync(path.join(assets,id+'.aflmesh.json')),`${id} must remain on the Cube-only path`);
+assert(fs.existsSync(path.join(assets,'silverwood_12.aflmesh.json')),'formal Silverwood Hybrid sidecar missing');
 console.log(`PASS: deterministic fixture; ${rejected} invalid inputs rejected; concave triangulation; non-zero element/group pivots and rotations (max error ${maxError}); Mesh bounds; adapter/no-sidecar/reload static checks.`);
 
 if(process.argv.includes('--java-loader')||process.argv.includes('--java-renderer')) {

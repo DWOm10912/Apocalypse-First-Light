@@ -1,0 +1,13 @@
+{
+  "parent": "builtin/entity",
+  "textures": {"particle": "apocalypse_firstlight:item/blackridge_50ae_ammo_v1"},
+  "display": {
+    "thirdperson_righthand": {"rotation": [0, -25, 0], "scale": [2, 2, 2]},
+    "thirdperson_lefthand": {"rotation": [0, 25, 0], "scale": [2, 2, 2]},
+    "firstperson_righthand": {"rotation": [0, -25, 0], "translation": [0, 0.25, 0], "scale": [2.5, 2.5, 2.5]},
+    "firstperson_lefthand": {"rotation": [0, 25, 0], "translation": [0, 0.25, 0], "scale": [2.5, 2.5, 2.5]},
+    "ground": {"rotation": [0, 0, 90], "translation": [0, 0.75, 0], "scale": [2.2, 2.2, 2.2]},
+    "gui": {"rotation": [25, -30, -20], "translation": [0, 0, 0], "scale": [3.4, 3.4, 3.4]},
+    "fixed": {"rotation": [0, -25, 0], "scale": [2.2, 2.2, 2.2]}
+  }
+}

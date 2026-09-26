@@ -20,28 +20,36 @@ import software.bernie.geckolib.util.RenderUtils;
 
 /** Plain-Item bridge into the Phase 1 AFL Mesh cache and CPU triangle backend. */
 public final class Afl12GaugeRoundRenderer extends BlockEntityWithoutLevelRenderer {
-    private static final ResourceLocation GEOMETRY = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/12_gauge_round.geo.json");
-    private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/12_gauge_round_mesh.png");
+    private final ResourceLocation geometry;
+    private final ResourceLocation texture;
+    private final double verticalOffset;
 
     public Afl12GaugeRoundRenderer() {
+        this("12_gauge_round", "12_gauge_round_mesh", 0.32);
+    }
+
+    public Afl12GaugeRoundRenderer(String model, String atlas, double verticalOffset) {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+        this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
+        this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + atlas + ".png");
+        this.verticalOffset = verticalOffset;
     }
 
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose,
                              MultiBufferSource buffers, int light, int overlay) {
         // Both caches are replaced on F3+T. Never hold an old baked bone or sidecar across reloads.
-        AflMeshModel mesh = AflMeshCache.snapshot().get(GEOMETRY);
-        var geo = GeckoLibCache.getBakedModels().get(GEOMETRY);
+        AflMeshModel mesh = AflMeshCache.snapshot().get(geometry);
+        var geo = GeckoLibCache.getBakedModels().get(geometry);
         if (mesh == null || geo == null) return;
 
-        RenderType type = RenderType.entityCutoutNoCull(TEXTURE);
+        RenderType type = RenderType.entityCutoutNoCull(texture);
         VertexConsumer vertices = ItemRenderer.getFoilBufferDirect(buffers, type, context == ItemDisplayContext.GUI, stack.hasFoil());
         pose.pushPose();
         try {
             // ItemRenderer already applied the original display transforms and translated -0.5 on each axis.
             // Mesh vertices are centered on X/Z=0; put them at the old item model's center.
-            pose.translate(0.5, 0.32, 0.5);
+            pose.translate(0.5, verticalOffset, 0.5);
             for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
         } finally {
             pose.popPose();

@@ -260,5 +260,32 @@
   "silverwood_12_close": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/silverwood_12/silverwood_12_close", "stream": false}]
   },
+  "blackridge_50_fire": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_fire", "stream": false}]
+  },
+  "blackridge_50_suppressed": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_suppressed", "stream": false}]
+  },
+  "blackridge_50_magazine_release": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_release", "stream": false}]
+  },
+  "blackridge_50_magazine_out": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_out", "stream": false}]
+  },
+  "blackridge_50_magazine_flick": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_flick", "stream": false}]
+  },
+  "blackridge_50_magazine_in": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_magazine_in", "stream": false}]
+  },
+  "blackridge_50_slide_back": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_slide_back", "stream": false}]
+  },
+  "blackridge_50_slide_release": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_slide_release", "stream": false}]
+  },
+  "blackridge_50_safety_lever": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_safety_lever", "stream": false}]
+  },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
 }
