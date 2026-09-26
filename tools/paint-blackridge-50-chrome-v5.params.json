@@ -1,0 +1,85 @@
+{
+ "outName": "blackridge_50_silver_v5.png",
+ "refName": "blackridge_50_silver_v3.png",
+ "intLum": 25,
+ "gy": [
+  4.8,
+  9.8
+ ],
+ "gz": [
+  -10,
+  7.8
+ ],
+ "colors": {
+  "MAIN": [
+   170,
+   173,
+   178
+  ],
+  "CTRL": [
+   140,
+   143,
+   148
+  ],
+  "GRIP": [
+   22,
+   22,
+   24
+  ],
+  "MAG": [
+   130,
+   133,
+   138
+  ],
+  "BASEP": [
+   70,
+   72,
+   76
+  ],
+  "INTERNAL": [
+   18,
+   18,
+   20
+  ],
+  "FOLL": [
+   110,
+   112,
+   116
+  ],
+  "SIGHT": [
+   34,
+   35,
+   39
+  ]
+ },
+ "top": 1.12,
+ "bottom": 0.6,
+ "endFace": 0.96,
+ "sideLo": 0.78,
+ "sideHi": 1.08,
+ "band": 0.48,
+ "bandH": 0.86,
+ "bandW": 0.065,
+ "drift": 0.035,
+ "stipple": 0.12,
+ "recess": 0.66,
+ "smoothAngle": 40,
+ "edgeAngle": 55,
+ "edgeMinLen": 1.2,
+ "edgeBase": 0.35,
+ "edgeHi": 0.34,
+ "edgeW": 1.4,
+ "aoCore": 0.5,
+ "aoW": 3,
+ "floorMin": 0.5,
+ "baseplateH": 0.22,
+ "boreAxis": [
+  0,
+  8.68
+ ],
+ "boreR": 0.47,
+ "dark": 0.4,
+ "darkH": 0.58,
+ "darkW": 0.15,
+ "skyLift": 0.1
+}
