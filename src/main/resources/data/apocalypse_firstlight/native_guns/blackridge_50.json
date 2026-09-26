@@ -41,7 +41,14 @@
     "hud": {"width": 48, "height": 22},
     "mag_in_tick": 25,
     "empty_mag_in_tick": 23,
-    "trail": "subtle_pistol"
+    "trail": "subtle_pistol",
+    "magazine_round_visual": {
+      "anchor": "magazine_round_anchor",
+      "loaded_auxiliary_anchor": "reload_magazine_round_anchor",
+      "old_magazine_anchor": "empty_old_mag_round_anchor",
+      "geometry": "apocalypse_firstlight:geo/50_ae_round.geo.json",
+      "texture": "apocalypse_firstlight:textures/item/blackridge_50ae_ammo_v1.png"
+    }
   },
   "recoil": {
     "verticalMin": 2.00,

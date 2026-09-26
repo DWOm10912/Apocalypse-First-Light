@@ -28,6 +28,13 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     @Override public String inspectClip() {
         return profile.clips().contains("inspect") && NativeGunAnimations.hasClip(profile.id(), "inspect") ? "inspect" : null;
     }
+    @Override public String inspectClip(ItemStack stack) {
+        String fallback = inspectClip();
+        if (fallback != null && stack != null && NativeGunAmmo.read(stack, definition()) <= 0
+                && profile.clips().contains("inspect_empty")
+                && NativeGunAnimations.hasClip(profile.id(), "inspect_empty")) return "inspect_empty";
+        return fallback;
+    }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }

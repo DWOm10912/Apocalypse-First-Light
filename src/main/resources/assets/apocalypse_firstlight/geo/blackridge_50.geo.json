@@ -231,6 +231,20 @@
           "parent": "handling"
         },
         {
+          "name": "magazine_round_anchor",
+          "pivot": [
+            0,
+            7.96,
+            3.68
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "parent": "magazine"
+        },
+        {
           "name": "follower",
           "pivot": [
             0,
@@ -285,6 +299,20 @@
           "parent": "mag_out"
         },
         {
+          "name": "reload_magazine_round_anchor",
+          "pivot": [
+            0,
+            7.96,
+            3.68
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "parent": "reload_magazine"
+        },
+        {
           "name": "empty_old_mag",
           "pivot": [
             0,
@@ -292,6 +320,20 @@
             3.8
           ],
           "parent": "root"
+        },
+        {
+          "name": "empty_old_mag_round_anchor",
+          "pivot": [
+            0,
+            7.96,
+            3.68
+          ],
+          "rotation": [
+            90,
+            0,
+            0
+          ],
+          "parent": "empty_old_mag"
         },
         {
           "name": "camera",

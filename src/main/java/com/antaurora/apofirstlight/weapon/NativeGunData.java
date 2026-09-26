@@ -87,7 +87,8 @@ public final class NativeGunData {
         if(emptyMagIn>empty)throw new IllegalArgumentException("presentation.empty_mag_in_tick: exceeds empty reload");
         var hitEffect=p.has("hit_effect")&&!p.get("hit_effect").isJsonNull()
                 ?NativeHitEffect.parse(p.get("hit_effect").getAsString()):NativeHitEffect.NONE;
-        return new NativeGunPresentation(width,height,magIn,emptyMagIn,trail,hitEffect);
+        return new NativeGunPresentation(width,height,magIn,emptyMagIn,trail,hitEffect,
+                NativeMagazineRoundVisual.parse(p));
     }
     private static NativeAdsCalibration adsCalibration(JsonObject ads,WeaponClass weaponClass) {
         var base=NativeAdsCalibration.defaults(weaponClass);
@@ -140,7 +141,7 @@ public final class NativeGunData {
                     (float)num(ads,"fov_multiplier",Float.MIN_NORMAL,Float.MAX_VALUE),item(o,"casing",validate),NativeSightMount.parse(o,validate),
                     NativeMuzzleMount.parse(o,validate),sound(o,"fire_sound",validate),sound(o,"dry_fire_sound",validate),
                     suppressedSound(o,validate),NativeMagazineMount.parse(o,validate),adsCalibration(ads,weaponClass),fire,presentation.hitEffect(),
-                    actionType,pellets,adsSpread,headshot);
+                    actionType,pellets,adsSpread,headshot,presentation.magazineRoundVisual());
         }catch(RuntimeException e){throw new IllegalArgumentException(id+": "+e.getMessage(),e);}
     }
     @SubscribeEvent public static void register(AddReloadListenerEvent e) {

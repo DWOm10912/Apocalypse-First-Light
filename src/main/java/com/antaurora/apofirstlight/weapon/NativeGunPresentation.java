@@ -2,9 +2,13 @@ package com.antaurora.apofirstlight.weapon;
 
 /** Class defaults plus optional per-definition presentation overrides. */
 public record NativeGunPresentation(int hudWidth, int hudHeight, int magInTick, int emptyMagInTick,
-                                    NativeTrailProfile trail, NativeHitEffect hitEffect) {
+                                    NativeTrailProfile trail, NativeHitEffect hitEffect,
+                                    NativeMagazineRoundVisual magazineRoundVisual) {
+    public NativeGunPresentation(int width,int height,int magIn,int emptyMagIn,NativeTrailProfile trail,NativeHitEffect hitEffect) {
+        this(width,height,magIn,emptyMagIn,trail,hitEffect,null);
+    }
     public NativeGunPresentation(int width,int height,int magIn,int emptyMagIn,NativeTrailProfile trail) {
-        this(width,height,magIn,emptyMagIn,trail,NativeHitEffect.NONE);
+        this(width,height,magIn,emptyMagIn,trail,NativeHitEffect.NONE,null);
     }
     public static NativeGunPresentation defaults(WeaponClass weaponClass, int tacticalTicks, int emptyTicks) {
         return switch (weaponClass) {

@@ -11,6 +11,10 @@
 - `weapon/client/NativeGunInspect.java` 仅管理输入意图和 ADS 退出等待，不运行动画时钟。
 - `NativeGunItem.inspectClip()` 为可选能力；默认 null。
   ConfiguredNativeGunItem 要求 profile.clips 声明 inspect 且正式资源存在；否则 NO_OP。
+  对已支持检视的 Configured Native Gun，服务端 `inspectClip(ItemStack)` 读取当前主手枪的
+  `NativeGunAmmo.read(stack, definition)`：弹匣弹数 `> 0` 播放 `inspect`；`<= 0` 且 profile
+  声明并实际提供 `inspect_empty` 时播放 `inspect_empty`；缺少该 clip 时回退 `inspect`。
+  该选择不读取客户端模型姿态或顶弹显示。Blackridge 的两条资源均已存在；用户已报告有弹/空仓检视分支实机测试通过。
   BR51 正式动画名为 `inspect`，来源 `animations/br51_01.animation.json`。
   P9 在后续 P9 artist asset integration V1 中接入此能力：有弹为 `inspect`，空仓为
   `inspect_empty`，由 `inspectClip(ItemStack)` 根据服务端主手弹量选择。见
