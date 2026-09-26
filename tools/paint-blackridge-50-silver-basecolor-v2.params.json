@@ -1,0 +1,103 @@
+{
+ "outName": "blackridge_50_silver_basecolor_v2.png",
+ "refName": "blackridge_50_silver_v5.png",
+ "intLum": 25,
+ "gy": [
+  4.8,
+  9.8
+ ],
+ "gz": [
+  -10,
+  7.8
+ ],
+ "colors": {
+  "MAIN": [
+   165,
+   168,
+   174
+  ],
+  "CTRL": [
+   120,
+   123,
+   129
+  ],
+  "GRIP": [
+   22,
+   22,
+   24
+  ],
+  "MAG": [
+   150,
+   153,
+   159
+  ],
+  "BASEP": [
+   128,
+   131,
+   136
+  ],
+  "INTERNAL": [
+   18,
+   18,
+   20
+  ],
+  "FOLL": [
+   120,
+   122,
+   126
+  ],
+  "SIGHT": [
+   42,
+   43,
+   47
+  ]
+ },
+ "top": 1.12,
+ "bottom": 0.6,
+ "endFace": 0.92,
+ "sideLo": 0.88,
+ "sideHi": 1,
+ "band": 0,
+ "bandH": 0.86,
+ "bandW": 0.065,
+ "drift": 0.015,
+ "stipple": 0.12,
+ "recess": 0.52,
+ "smoothAngle": 40,
+ "edgeAngle": 55,
+ "edgeMinLen": 1.2,
+ "edgeBase": 0.35,
+ "edgeHi": 0.28,
+ "edgeW": 1.3,
+ "aoCore": 0.42,
+ "aoW": 3,
+ "floorMin": 0.32,
+ "baseplateH": 0.22,
+ "boreAxis": [
+  0,
+  8.68
+ ],
+ "boreR": 0.47,
+ "dark": 0,
+ "darkH": 0.58,
+ "darkW": 0.15,
+ "skyLift": 0,
+ "flatFacing": true,
+ "fTop": 1.28,
+ "fUpper": 1.16,
+ "fLower": 0.78,
+ "fBottom": 0.6,
+ "hlAmp": 0.55,
+ "highlights": [
+  [
+   8.25,
+   0.06,
+   1
+  ],
+  [
+   6.95,
+   0.055,
+   0.6
+  ]
+ ]
+}

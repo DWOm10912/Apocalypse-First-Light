@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/01 - 设计/武器/枪械.md",
+                "file": "docs/项目内容/02 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "枪械"
+              "title": "02 - 制作清单"
             }
           }
         ]
@@ -190,17 +190,19 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/level8641447816076280749.dat",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
+    "run/saves/新的世界 (1)/level6159094541745162077.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-2.xwmc.temp",
+    "docs/项目内容/01 - 设计/武器/枪械.md",
+    "src/main/blockbench/textures/blackridge_50_silver_basecolor_v2.png",
     "src/main/blockbench/textures/blackridge_50_silver_v5.png",
     "src/main/blockbench/textures/blackridge_50_silver_v4.png",
     "src/main/blockbench/textures/blackridge_50_silver_v3.png",
@@ -210,9 +212,7 @@
     "src/main/blockbench/textures/blackridge_50_blackiron_v5.png",
     "src/main/blockbench/textures/blackridge_50_blackiron_v3.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/gui/gun/blackridge_50_hud.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/blackridge_50_inventory.png",
     "docs/equipment/simple_hearing_protection_v1.md",
-    "docs/项目内容/01 - 设计/武器/枪械.md",
     "docs/项目内容/02 - 制作清单.md",
     "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
     "docs/项目内容/03 - 注意事项 重要内容.md",
