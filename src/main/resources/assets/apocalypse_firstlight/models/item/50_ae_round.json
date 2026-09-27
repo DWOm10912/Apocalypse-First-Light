@@ -6,8 +6,8 @@
     "thirdperson_lefthand": {"rotation": [0, 25, 0], "scale": [1.8, 1.8, 1.8]},
     "firstperson_righthand": {"rotation": [0, -25, 0], "translation": [0, 0.25, 0], "scale": [2.2, 2.2, 2.2]},
     "firstperson_lefthand": {"rotation": [0, 25, 0], "translation": [0, 0.25, 0], "scale": [2.2, 2.2, 2.2]},
-    "ground": {"rotation": [0, 0, 90], "translation": [0, 0.75, 0], "scale": [2, 2, 2]},
-    "gui": {"rotation": [25, -30, -45], "translation": [0, 0, 0], "scale": [3, 3, 3]},
+    "ground": {"rotation": [0, 0, 0], "translation": [0, 1.25, 0], "scale": [2, 2, 2]},
+    "gui": {"rotation": [20, -25, 0], "translation": [0, 0, 0], "scale": [3.8, 3.8, 3.8]},
     "fixed": {"rotation": [0, -25, 0], "scale": [2, 2, 2]}
   }
 }

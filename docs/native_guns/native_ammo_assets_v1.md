@@ -27,7 +27,7 @@
 
 12.7×55mm资源复用同一普通 Item 注册路径：`src/main/blockbench/ammo_127x55_cube_v1/12_7x55mm_round.bbmodel` 为35 cubes，`12_7x55mm_casing.bbmodel` 为29 cubes；运行模型与贴图位于 `assets/apocalypse_firstlight/models/item/` 和 `textures/item/`，使用64×64黄铜/钢色贴图。该口径供 HR55 使用；抛壳使用同名的客户端模型预注册路径，不新增 Ammo 系统或属性。
 
-12 Gauge 完整弹现以 `src/main/blockbench/12ga_hybrid_mesh_prototype.bbmodel` 为可编辑 Mesh 源，4 个部件、672 个三角面，共用原 256×256 贴图。正式 ID 仍为 `12_gauge_round`，仍是64堆叠普通 `Item`；仅客户端视觉入口改为 `models/item/12_gauge_round.json` 的 `builtin/entity`。GUI 的 `display.gui` 调为近直立居中（rotation `[20,-25,0]`、translation `[0,-2.5,0]`、scale `[0.4,0.4,0.4]`）；其他视角沿用原 `display` 变换。`AflStaticMeshItemClient` 将现有 Item 的 Forge 客户端扩展绑定到 `AflStaticMeshItemRenderer`；后者从 `geo/12_gauge_round.geo.json`、`meshes/12_gauge_round.aflmesh.json` 和 `textures/item/12_gauge_round_mesh.png` 读取骨骼、阶段1 Mesh sidecar 和原样贴图，使用现有 `AflMeshCache` / `AflMeshRenderer` 提交。旧110 cube 的 Java 模型原样留在 `models/item/legacy/12_gauge_round_java.json`，旧可编辑源 `src/main/blockbench/12g_round.bbmodel` 和 `textures/item/12g_round.png` 也保留，便于回滚。
+12 Gauge 完整弹现以 `src/main/blockbench/12ga_hybrid_mesh_prototype.bbmodel` 为可编辑 Mesh 源，4 个部件、672 个三角面，共用原 256×256 贴图。正式 ID 仍为 `12_gauge_round`，仍是64堆叠普通 `Item`；仅客户端视觉入口改为 `models/item/12_gauge_round.json` 的 `builtin/entity`。GUI 的 `display.gui` 为近直立摆放（rotation `[20,-25,0]`、translation `[0,-2.5,0]`），scale `[0.48,0.48,0.48]`；掉落物 `display.ground` 使用零旋转、translation `[0,1.25,0]`、scale `[0.2,0.2,0.2]`。其他两种整弹沿用此掉落旋转与 JSON 垂直位移，但需要下文所述的 GROUND 专用渲染偏移，才能抵消 Minecraft 按掉落缩放添加的悬浮高度。其他视角沿用原 `display` 变换。`AflStaticMeshItemClient` 将现有 Item 的 Forge 客户端扩展绑定到 `AflStaticMeshItemRenderer`；后者从 `geo/12_gauge_round.geo.json`、`meshes/12_gauge_round.aflmesh.json` 和 `textures/item/12_gauge_round_mesh.png` 读取骨骼、阶段1 Mesh sidecar 和原样贴图，使用现有 `AflMeshCache` / `AflMeshRenderer` 提交。旧110 cube 的 Java 模型原样留在 `models/item/legacy/12_gauge_round_java.json`，旧可编辑源 `src/main/blockbench/12g_round.bbmodel` 和 `textures/item/12g_round.png` 也保留，便于回滚。
 
 `12_gauge_casing` 仍使用原 `12g_casing.bbmodel` 对应的 Java item JSON 和64×64贴图；新的独立 spent Mesh 源暂不接入正式空壳。Silverwood 内部 live/spent shell 组、动画和玩法数据未变。GUI、手持、掉落、F3+T、Embeddium/Oculus 与法线/UV 视觉均待用户实机验收；离线导出与编译不等于这些场景通过。
 
@@ -42,13 +42,13 @@
 - **不变的部分**：
   - 圆周 20 段，比例沿用旧资产（1 单位约 18.58 mm）；
   - 壳体尺寸沿用旧资产：缩径底缘半径 0.3488、壳底 0.3732、壳口 0.3634、弹头 0.3418、壳长 1.763；
-  - 总高与旧资产完全相同：整弹 2.201056、空壳 1.773824。因此 Java 里的中心补偿 `0.431217` / `0.444568`（等于 0.5 − 总高/32）、物品 Display、Blackridge 的 `magazine_round_anchor` 和 `NativeGunFx` 都不用改。
+  - 总高与旧资产完全相同：整弹 2.201056、空壳 1.773824。原有中心补偿 `0.431217` / `0.444568`（等于 0.5 − 总高/32）仍用于非 GROUND 视角；整弹掉落物另有下文所述的 GROUND 专用偏移。Blackridge 的 `magazine_round_anchor` 和 `NativeGunFx` 不变。
 - **贴图**：两件仍共用 `textures/item/blackridge_50ae_ammo_v1.png`（源文件在 `src/main/blockbench/textures/`，内容已整体重画）。
   - 512×512，只有 Base Color，约 106 px/单位；两件的逻辑 UV 尺寸都是 512（弹壳原来是 16），弹壳 geo 的 `texture_width` / `texture_height` 同步改为 512。
   - 颜色：黄铜 188,152,84（比 9mm 略亮略黄），被甲铜 190,128,78，铅 78,80,86（平顶略亮，带极淡的低频斑驳），镍底火。
   - 分区方式、去锯齿的做法与 9mm 相同。
 - **显示与游戏内**：
-  - 整弹 GUI `display.gui` 为 `[25,-30,-45]` 旋转、3 倍缩放，绕中点呈弹头朝上的立体 45° 斜置；手持、掉落、展示各有独立缩放。
+  - 整弹 GUI `display.gui` 与 12 Gauge 使用相同的近直立旋转 `[20,-25,0]`，translation `[0,0,0]`，scale `[3.8,3.8,3.8]`。掉落物 `display.ground` 为零旋转、translation `[0,1.25,0]`、scale `[2,2,2]`。由于 Minecraft 的 `ItemEntityRenderer` 另外按 `0.25 × ground.scale` 抬高掉落物，整弹在 `AflStaticMeshItemRenderer` 的 GROUND 专用中心偏移为 `0.257`（其他视角仍为 `0.431217`），按 12 Gauge 的较低基准对齐。手持和展示未改。
   - Blackridge 已通过 `native_guns/blackridge_50.json` 绑定该弹药，容量 7；其射击消耗沿用现有 Native Gun 流程。
   - 新版已在 Blockbench 里按 Blackridge 弹匣锚点放入弹匣检查过，没有穿插。显示姿态和新外观都没有进游戏验证。
 
@@ -64,7 +64,7 @@
   - `models/item/9x19mm_round.json` / `9x19mm_casing.json` 改为 `builtin/entity`（particle 用 `item/9x19mm_ammo_v1`）；
   - `AflStaticMeshItemClient` 用现有的参数化 `AflStaticMeshItemRenderer` 绑定这两个物品，没有新增 renderer；
   - 中心补偿等于 0.5 − 模型总高/32：整弹 `0.451463`，空壳 `0.468168`；
-  - Display 缩放取 `.50 AE` 对应值的 1.2 倍：整弹 GUI 3.6、第一人称 2.64、第三人称 2.16、掉落和展示框 2.4；空壳 GUI 4.08、第一人称 3、第三人称 2.4、掉落和展示框 2.64。旋转与 `.50 AE` 相同。
+  - 整弹 GUI `display.gui` 与 12 Gauge 使用相同的近直立旋转 `[20,-25,0]`，translation `[0,0,0]`，scale `[4,4,4]`（Forge 1.20.1 的物品模型 JSON 缩放上限）。掉落物 `display.ground` 为零旋转、translation `[0,1.25,0]`、scale `[2.4,2.4,2.4]`；为抵消 `ItemEntityRenderer` 按此较大 scale 添加的悬浮高度，整弹在 `AflStaticMeshItemRenderer` 的 GROUND 专用中心偏移为 `0.2558333333`（其他视角仍为 `0.451463`），按 12 Gauge 的较低基准对齐。第一人称 2.64、第三人称 2.16、展示框 2.4 均未改。空壳 GUI 4.08、第一人称 3、第三人称 2.4、掉落和展示框 2.64 及原有旋转均未改。
 - **抛壳**：`NativeGunFx` 原来只为 `.50 AE` 弹壳写死了 Mesh 分支，现在改成按弹壳模型查表（`MESH_CASINGS`：geo、贴图、世界缩放）。
   - `item/50_ae_casing` 缩放 0.65 不变；
   - `item/9x19mm_casing`（即 `NativeGunFx.CASING_MODEL`）缩放 0.62，与旧 Cube 弹壳抛出时的大小一致；

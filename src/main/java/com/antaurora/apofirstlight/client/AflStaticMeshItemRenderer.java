@@ -23,16 +23,22 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
     private final ResourceLocation geometry;
     private final ResourceLocation texture;
     private final double verticalOffset;
+    private final double groundVerticalOffset;
 
     public AflStaticMeshItemRenderer() {
-        this("12_gauge_round", "12_gauge_round_mesh", 0.32);
+        this("12_gauge_round", "12_gauge_round_mesh", 0.32, 0.32);
     }
 
     public AflStaticMeshItemRenderer(String model, String atlas, double verticalOffset) {
+        this(model, atlas, verticalOffset, verticalOffset);
+    }
+
+    public AflStaticMeshItemRenderer(String model, String atlas, double verticalOffset, double groundVerticalOffset) {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
         this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
         this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + atlas + ".png");
         this.verticalOffset = verticalOffset;
+        this.groundVerticalOffset = groundVerticalOffset;
     }
 
     @Override
@@ -49,7 +55,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
         try {
             // ItemRenderer already applied the original display transforms and translated -0.5 on each axis.
             // Mesh vertices are centered on X/Z=0; put them at the old item model's center.
-            pose.translate(0.5, verticalOffset, 0.5);
+            pose.translate(0.5, context == ItemDisplayContext.GROUND ? groundVerticalOffset : verticalOffset, 0.5);
             for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
         } finally {
             pose.popPose();
