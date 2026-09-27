@@ -1,8 +1,9 @@
 // P9-01 V2 Pure Mesh generator.
 // Builds the new pistol inside the frozen P9 rig cage (bind-pose Blockbench coordinates, muzzle toward -Z,
 // ejection side +X) and writes Blockbench mesh elements keyed by the existing bone they replace, plus a packed
-// 1024 UV atlas and the V3 Base Color texture (P9_DIAG=1: flat identification colours instead).
-//   node tools/build-p9-01-v2-mesh.mjs <out.json> <out_temp_texture.rgba>
+// 1024 UV atlas, the Base Color texture (P9_DIAG=1: flat identification colours instead) and the LabPBR _s / _n maps
+// painted in the same raster pass (same UVs by construction).
+//   node tools/build-p9-01-v2-mesh.mjs <out.json> <base.rgba> [<spec_s.rgba> <normal_n.rgba>]
 // Design language: modern striker-fired duty pistol (squared slide with top chamfers, railed dust cover,
 // square-front guard with undercut, high beavertail, modular grip). Original geometry, no brand features.
 import fs from 'node:fs';
@@ -651,7 +652,7 @@ for (const p of parts) {
     for (const vi of verts) uv.set(vi, [dot(p.v[vi], t), -dot(p.v[vi], bt)]);
     const us = [...uv.values()], u0 = Math.min(...us.map(a => a[0])), v0 = Math.min(...us.map(a => a[1]));
     const w = Math.max(...us.map(a => a[0])) - u0, h = Math.max(...us.map(a => a[1])) - v0;
-    islands.push({part: p, faces: mem.map(i => F[i].f), uv, u0, v0, w, h});
+    islands.push({part: p, faces: mem.map(i => F[i].f), uv, u0, v0, w, h, t, bt});   // t / bt: +u / +v-up directions (normal map frame)
   }
 }
 function pack(scale) {
@@ -693,11 +694,17 @@ for (const is of islands) {
   const W = Math.ceil(is.w * scale) + 1, H = Math.ceil(is.h * scale) + 1;
   for (let y = is.py - 2; y < is.py + H + 2; y++) for (let x = is.px - 2; x < is.px + W + 2; x++) if (x >= 0 && y >= 0 && x < ATLAS && y < ATLAS) img.set([...c, 255], (y * ATLAS + x) * 4);
 }
+// LabPBR 1.3 companions (P9-01 PBR V1), written in the same raster pass so they always share the Base Color UVs:
+//   _s: R perceptual smoothness, G F0 (255 = metal, F0 from Base Color; 10 = dielectric ~0.04), B 0, A 255 (no emission)
+//   _n: RG tangent-space normal XY (OpenGL, +v up, same convention as Blackridge), B material AO, A 255 (no parallax)
+// Defaults outside islands: neutral dielectric, flat normal, no occlusion.
+const spec = Buffer.alloc(ATLAS * ATLAS * 4), nrm = Buffer.alloc(ATLAS * ATLAS * 4);
+for (let i = 0; i < ATLAS * ATLAS; i++) { spec.set([90, 10, 0, 255], i * 4); nrm.set([128, 128, 255, 255], i * 4); }
 // ================= Base Color painter (replaces the flat temp fill unless P9_DIAG) =================
 // Every face is rasterised into its UV island; colour comes from the part's material, a faint top-light facing
 // term, edge highlights on convex feature edges, soft darkening on concave edges (both only along texel-axis
 // aligned edges on large islands), and very light surface variation (brushed slide, grip stipple). No lighting is
-// baked beyond the faint facing term, no PBR data, no fake reflections. Deterministic (hash noise, no Math.random).
+// baked beyond the faint facing term, no fake reflections. Deterministic (hash noise, no Math.random).
 if (!process.env.P9_DIAG) {
   const hash = (a, b, c = 0) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
   const vnoise = x => { const i = Math.floor(x), f = x - i, s = f * f * (3 - 2 * f); return hash(i, 71) * (1 - s) + hash(i + 1, 71) * s; };
@@ -727,6 +734,32 @@ if (!process.env.P9_DIAG) {
     base:     {c: [40, 39, 39], hl: 12, cv: 0.30, st: 'polymer'},    // polymer baseplate
     follower: {c: [56, 54, 50], hl: 14, cv: 0.25, st: 'polymer'},    // warm dark polymer follower
   };
+  // ---------------- P9-01 PBR V1 material table (LabPBR _s / _n) ----------------
+  // sm: smoothness 0-255 on open faces; edge: narrow convex bevel strips and the axis-aligned rim next to hard edges
+  // (restrained wear: polished edges, no paint loss); metal: F0 from Base Color, else dielectric F0 0.04; ao: material
+  // occlusion for interiors only (the Base Color already darkens concave areas, so it stays mild).
+  const PBR = new Map([
+    [M.slide,    {sm: 125, edge: 160, metal: true}],             // black nitride steel slide: satin
+    [M.recess,   {sm: 80,  edge: 90,  metal: true, ao: 175}],    // port interior, slide inner walls
+    [M.breech,   {sm: 140, edge: 150, metal: true, ao: 200}],    // breech face seen through the port
+    [M.barrel,   {sm: 165, edge: 180, metal: true}],             // machined barrel (crown 180)
+    [M.hood,     {sm: 165, edge: 175, metal: true, ao: 215}],    // machined hood, under the slide
+    [M.ramp,     {sm: 205, edge: 210, metal: true, ao: 215}],    // polished feed ramp
+    [M.bore,     {sm: 70,  edge: 70,  metal: true, ao: 150}],    // bore, chamber, firing-pin hole
+    [M.frame,    {sm: 90,  edge: 100, metal: false}],            // dark molded polymer frame
+    [M.rail,     {sm: 90,  edge: 90,  metal: false}],
+    [M.guard,    {sm: 90,  edge: 100, metal: false}],
+    [M.grip,     {sm: 100, edge: 105, metal: false}],            // smooth grip border; stippled panels 35
+    [M.magwell,  {sm: 60,  edge: 60,  metal: false, ao: 150}],
+    [M.control,  {sm: 115, edge: 150, metal: true}],             // dark gunmetal controls, extractor, striker cap
+    [M.trigger,  {sm: 110, edge: 120, metal: false}],
+    [M.pin,      {sm: 150, edge: 165, metal: true}],
+    [M.sight,    {sm: 55,  edge: 70,  metal: true}],             // matte anti-glare sights
+    [M.mag,      {sm: 100, edge: 125, metal: true}],             // phosphated magazine tube
+    [M.lip,      {sm: 135, edge: 150, metal: true}],             // feed lips, polished by the rounds
+    [M.base,     {sm: 85,  edge: 95,  metal: false}],
+    [M.follower, {sm: 70,  edge: 70,  metal: false, ao: 190}],
+  ]);
   const matOf = (p, pos, n) => {
     const nm = p.name.replace(/_reload$/, '');
     if (nm === 'slide_breech_plate') return M.breech;
@@ -781,6 +814,51 @@ if (!process.env.P9_DIAG) {
   const hiddenJunction = (p, A, B, nj) => p.bone === 'slide2' && Math.abs(nj[2]) > 0.95 && JZ.some(z => Math.abs(A[2] - z) < 1e-4 && Math.abs(B[2] - z) < 1e-4)
     && !(Math.abs(A[2] - SLIDE.portR) < 1e-4 && (A[0] + B[0]) / 2 > -0.31 && (A[1] + B[1]) / 2 > 5.19 && (A[1] + B[1]) / 2 < 5.80);
   const recess = t => t === 'pocket' || t === 'step';
+  // ---------------- PBR helpers ----------------
+  const vn3 = (x, y, z) => {   // smooth 3D value noise in [0, 1]: low-frequency smoothness variation, never per-pixel
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), s = t => t * t * (3 - 2 * t), l = (a, b, t) => a + (b - a) * t;
+    const sx = s(x - xi), sy = s(y - yi), sz = s(z - zi), h = (a, b, c) => hash(a, b, c * 7919 + 17);
+    return l(l(l(h(xi, yi, zi), h(xi + 1, yi, zi), sx), l(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), sx), sy),
+      l(l(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), sx), l(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), sx), sy), sz);
+  };
+  // high-contact areas polish slightly: racking serration zones, slide-stop thumb pad, magazine catch face, trigger face
+  const contact = (m, pos, n) => {
+    if (m === M.slide && Math.abs(n[0]) > 0.9 && pos[1] > 4.9 && pos[1] < 5.5 && ((pos[2] > 1.55 && pos[2] < 3.45) || (pos[2] > -6.15 && pos[2] < -5.05))) return 12;
+    if (m === M.control && ((pos[0] < -0.924 && pos[2] > 0.56 && pos[2] < 0.97 && pos[1] > 4.49) || (pos[0] < -0.86 && pos[2] > 0.70 && pos[2] < 1.04 && pos[1] > 3.68 && pos[1] < 3.98))) return 15;
+    if (m === M.trigger && n[2] < -0.6) return 10;
+    return 0;
+  };
+  // ef: 0..1 edge factor (narrow convex bevel strip, or the axis-aligned rim beside a hard edge on a large face)
+  const specOf = (m, pos, n, ef, tag) => {
+    const P = PBR.get(m); let sm;
+    if (tag === 'panel') sm = 35;                                   // stippled grip panels: rough, the normal map carries the grain
+    else if (tag === 'pocket') sm = P.metal ? 95 : 80;              // serration grooves, frame channel / index recess
+    else if (tag === 'step') sm = P.metal ? 110 : 70;               // slide front step, grip panel step walls
+    else sm = P.sm + (P.edge - P.sm) * ef + contact(m, pos, n);
+    if (m === M.barrel && pos[2] < MUZZLE_Z + 0.05) sm = Math.max(sm, 180);   // muzzle crown
+    sm += (P.metal ? 5 : 3) * (2 * vn3(pos[0] * 3.2, pos[1] * 3.2, pos[2] * 3.2) - 1);
+    return [Math.max(0, Math.min(255, Math.round(sm))), P.metal ? 255 : 10, 0, 255];
+  };
+  const aoOf = (m, tag) => tag === 'pocket' ? (m === M.slide ? 205 : 215) : tag === 'step' ? 230 : (PBR.get(m).ao ?? 255);
+  const enc = v => Math.max(0, Math.min(255, Math.round((v * 0.5 + 0.5) * 255)));
+  const stippleH = (x, y) => 0.6 * hash(x >> 1, y >> 1, 13) + 0.4 * hash(x, y, 11);   // same cells as the Base Color stipple
+  // Tangent-space XY. frame = [+u, +v-up] of the face (island tangent projected on the face). Only two areas carry
+  // normal detail: the stippled grip panels and a rifling hint in the bore; everything else stays flat (no shimmer).
+  const normalOf = (p, m, pos, n, frame, px, py, tag) => {
+    if (tag === 'panel' && m === M.grip) {
+      const du = (stippleH(px + 1, py) - stippleH(px - 1, py)) / 2, dvUp = -(stippleH(px, py + 1) - stippleH(px, py - 1)) / 2;
+      const v = norm([-du * 0.9, -dvUp * 0.9, 1]); return [enc(v[0]), enc(v[1])];
+    }
+    if (p.name === 'barrel_bore') {   // six grooves, slight twist; slope only on the soft groove walls
+      const th = Math.atan2(pos[1] - AXIS_Y, pos[0]), ph = th / (2 * Math.PI) * 6 + (pos[2] - MUZZLE_Z) * 0.25, f = ph - Math.floor(ph);
+      const ds = (a, b, x) => { const t = (x - a) / (b - a); return t <= 0 || t >= 1 ? 0 : 6 * t * (1 - t) / (b - a); };
+      const v = norm(sub(n, mul([-Math.sin(th), Math.cos(th), 0], 0.04 * (ds(0, 0.2, f) - ds(0.45, 0.65, f)))));
+      return [enc(dot(v, frame[0])), enc(dot(v, frame[1]))];
+    }
+    return [128, 128];
+  };
+  const pbrStats = process.env.P9_PBR_STATS ? new Map() : null;
+  globalThis.__p9PbrStats = pbrStats;   // P9_PBR_STATS=1: per part / tag summary of the written _s / _n values
   img.fill(0); for (let i = 0; i < ATLAS * ATLAS; i++) img[i * 4 + 3] = 255;
   for (const p of parts) {
     const fid = new Map(p.f.map((f, i) => [f, i])), fn = p.f.map(f => norm(faceNormalRaw(p.v, f))), fc = p.f.map(f => centroid(f.map(i => p.v[i])));
@@ -791,6 +869,10 @@ if (!process.env.P9_DIAG) {
       const f0 = is.faces[0], m0 = matOf(p, fc[fid.get(f0)], fn[fid.get(f0)]), pc = colour(p, m0, fc[fid.get(f0)], fn[fid.get(f0)], 0, 0, 0, 0);
       const W = Math.ceil(is.w * scale) + 1, H = Math.ceil(is.h * scale) + 1;
       for (let y = is.py - 2; y < is.py + H + 2; y++) for (let x = is.px - 2; x < is.px + W + 2; x++) if (x >= 0 && y >= 0 && x < ATLAS && y < ATLAS) img.set(pc, (y * ATLAS + x) * 4);
+      { // PBR padding in the same bbox: the first face's open-surface values, flat normal
+        const t0 = p.t[fid.get(f0)], ps = specOf(m0, fc[fid.get(f0)], fn[fid.get(f0)], 0, t0), pn = [128, 128, aoOf(m0, t0), 255];
+        for (let y = is.py - 2; y < is.py + H + 2; y++) for (let x = is.px - 2; x < is.px + W + 2; x++) if (x >= 0 && y >= 0 && x < ATLAS && y < ATLAS) { spec.set(ps, (y * ATLAS + x) * 4); nrm.set(pn, (y * ATLAS + x) * 4); }
+      }
       // Edge terms per island, hard edges only (> ~25 deg): distance is measured to the island's own borders, so
       // triangulation seams inside a flat face never show and sliver triangles shade exactly like their neighbours.
       // Rolled bevels (15-22 deg steps) read through their face normals instead of drawn lines.
@@ -817,6 +899,7 @@ if (!process.env.P9_DIAG) {
       for (const f of is.faces) {
         const i = fid.get(f), n = fn[i], P2 = f.map(pix), P3 = f.map(k => p.v[k]), fm = matOf(p, fc[i], n);   // one material per face
         const fcol = fm.uni ? colour(p, fm, fc[i], n, 0, 0, 0, 0) : null;
+        const tf = norm(sub(is.t, mul(n, dot(is.t, n)))), frame = [tf, cross(n, tf)];   // normal-map frame of this face
         for (let t = 1; t + 1 < f.length; t++) {
           const A = P2[0], B = P2[t], C = P2[t + 1], a3 = P3[0], b3 = P3[t], c3 = P3[t + 1];
           const den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-9) continue;
@@ -831,14 +914,22 @@ if (!process.env.P9_DIAG) {
             if (!narrow) for (const sg of segs) { if (!sg.axis) continue; const ab = sub2(sg.b, sg.a), L2 = dot2(ab, ab) || 1, tt = Math.max(0, Math.min(1, dot2(sub2([X, Y], sg.a), ab) / L2)), dd = Math.hypot(...sub2([X, Y], add2(sg.a, mul2(ab, tt))));
               if (sg.cvx) e = Math.max(e, sg.s * Math.max(0, 1 - dd / 1.5)); else cc = Math.max(cc, sg.s * Math.max(0, 1 - dd / 2.5)); }
             img.set(fm.uni ? fcol : colour(p, fm, pos, n, x, y, e, cc, p.t[i]), (y * ATLAS + x) * 4);
+            const k4 = (y * ATLAS + x) * 4, nv = normalOf(p, fm, pos, n, frame, x, y, p.t[i]);
+            const sv = specOf(fm, pos, n, narrow ? Math.min(1, eU / 0.6) : Math.min(1, e), p.t[i]), ao = aoOf(fm, p.t[i]);
+            spec.set(sv, k4); nrm.set([nv[0], nv[1], ao, 255], k4);
+            if (pbrStats) { const key = `${p.name.replace(/_reload$/, '')}|${p.t[i] || '-'}`, st = pbrStats.get(key) || pbrStats.set(key, {n: 0, sum: 0, min: 255, max: 0, g: new Set(), ao: new Set(), nrm: 0}).get(key);
+              st.n++; st.sum += sv[0]; st.min = Math.min(st.min, sv[0]); st.max = Math.max(st.max, sv[0]); st.g.add(sv[1]); st.ao.add(ao); if (nv[0] !== 128 || nv[1] !== 128) st.nrm++; }
           }
         }
       }
     }
   }
 }
+if (globalThis.__p9PbrStats) for (const [k, v] of globalThis.__p9PbrStats) console.error(k.padEnd(34), 'px', String(v.n).padStart(6), 'R', (v.sum / v.n).toFixed(1).padStart(6), `[${v.min}-${v.max}]`.padStart(10), 'G', [...v.g].join('/').padEnd(7), 'AO', [...v.ao].join('/').padEnd(8), 'nrm px', v.nrm);
 fs.writeFileSync(process.argv[2], JSON.stringify({scale, elements}));
 if (process.argv[3]) fs.writeFileSync(process.argv[3], img);
+if (process.argv[4]) fs.writeFileSync(process.argv[4], spec);   // LabPBR _s (RGBA)
+if (process.argv[5]) fs.writeFileSync(process.argv[5], nrm);    // LabPBR _n (RGBA)
 const tri = elements.reduce((s, e) => s + Object.values(e.element.faces).reduce((a, f) => a + f.vertices.length - 2, 0), 0);
 console.log(JSON.stringify({parts: parts.length, islands: islands.length, texelPerUnit: scale, triangles: tri,
   perBone: elements.reduce((m, e) => (m[e.bone] = (m[e.bone] || 0) + 1, m), {})}));

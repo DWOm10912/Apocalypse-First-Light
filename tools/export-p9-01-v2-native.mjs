@@ -1,13 +1,14 @@
 // P9-01 V2 AFL Native export: writes NEW runtime resources only (never touches the legacy p9_01 resources).
 //   node tools/export-p9-01-v2-native.mjs [--check]
 // Outputs: geo/p9_01_v2_native.geo.json (bones only), meshes/p9_01_v2_native.aflmesh.json (Pure Mesh sidecar via
-// tools/export-afl-mesh.mjs), textures/item/p9_01_v2_native.png (V3 Base Color), models/item/p9_01_v2_native_in_hand.json.
+// tools/export-afl-mesh.mjs), textures/item/p9_01_v2_native.png (Base Color) + _s / _n (LabPBR, copied from the generator
+// output in src/main/blockbench/textures/), models/item/p9_01_v2_native_in_hand.json.
 // The animation JSON is written by tools/author-p9-01-v2-native-animations.mjs --write-runtime.
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact, meshCounts} from './export-afl-mesh.mjs';
-import {nativePath, FP_SCALE} from './build-p9-01-v2-native.mjs';
+import {nativePath, specPath, normalPath, FP_SCALE} from './build-p9-01-v2-native.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
@@ -15,6 +16,8 @@ const out = {
   geo: path.join(assets, 'geo/p9_01_v2_native.geo.json'),
   mesh: path.join(assets, 'meshes/p9_01_v2_native.aflmesh.json'),
   texture: path.join(assets, 'textures/item/p9_01_v2_native.png'),
+  spec: path.join(assets, 'textures/item/p9_01_v2_native_s.png'),
+  normal: path.join(assets, 'textures/item/p9_01_v2_native_n.png'),
   display: path.join(assets, 'models/item/p9_01_v2_native_in_hand.json'),
 };
 // Legacy P9 runtime files must stay untouched while they exist (the P9 runtime migration retired and removed them).
@@ -77,8 +80,10 @@ const legacyBefore = LEGACY.map(p => fs.readFileSync(path.join(assets, p)));
 if (process.argv.includes('--check')) {
   for (const [f, t] of [[out.geo, geoText], [out.mesh, meshText], [out.display, displayText]]) if (fs.readFileSync(f, 'utf8') !== t) throw new Error('stale ' + f);
   if (!fs.readFileSync(out.texture).equals(png)) throw new Error('stale ' + out.texture);
+  for (const [src, dst] of [[specPath, out.spec], [normalPath, out.normal]]) if (!fs.existsSync(dst) || !fs.readFileSync(dst).equals(fs.readFileSync(src))) throw new Error('stale ' + dst);
 } else {
   fs.writeFileSync(out.geo, geoText); fs.writeFileSync(out.mesh, meshText); fs.writeFileSync(out.texture, png); fs.writeFileSync(out.display, displayText);
+  fs.copyFileSync(specPath, out.spec); fs.copyFileSync(normalPath, out.normal);
 }
 LEGACY.forEach((p, i) => { if (!fs.readFileSync(path.join(assets, p)).equals(legacyBefore[i])) throw new Error('legacy resource changed: ' + p); });
 console.log(JSON.stringify({bones: bones.length, parts: model.parts.length, format_version: model.format_version, ...meshCounts(model),

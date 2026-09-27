@@ -15,6 +15,10 @@ import {fileURLToPath} from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const generatorPath = path.join(root, 'tools/build-p9-01-v2-mesh.mjs');
 export const texturePath = path.join(root, 'src/main/blockbench/textures/p9_01_v2_native.png');
+// LabPBR companions (P9-01 PBR V1), painted by the generator in the same pass as the Base Color; not embedded in the
+// bbmodel (same as Blackridge), exported next to the runtime Base Color by tools/export-p9-01-v2-native.mjs.
+export const specPath = path.join(root, 'src/main/blockbench/textures/p9_01_v2_native_s.png');
+export const normalPath = path.join(root, 'src/main/blockbench/textures/p9_01_v2_native_n.png');
 export const nativePath = path.join(root, 'src/main/blockbench/p9_01_v2_native.bbmodel');
 
 // ---------- rig facts (shared with the animation author) ----------
@@ -116,9 +120,12 @@ function encodePng(rgba, w, h) {
 export function build() {
   // Generator output: mesh elements (vertices relative to element origin, UVs in 1024 texture pixels) + RGBA atlas.
   const tmpJson = path.join(os.tmpdir(), 'p9_01_v2_native_gen.json'), tmpRgba = path.join(os.tmpdir(), 'p9_01_v2_native_gen.rgba');
-  execFileSync(process.execPath, [generatorPath, tmpJson, tmpRgba], {stdio: ['ignore', 'ignore', 'inherit']});
+  const tmpSpec = path.join(os.tmpdir(), 'p9_01_v2_native_gen_s.rgba'), tmpNormal = path.join(os.tmpdir(), 'p9_01_v2_native_gen_n.rgba');
+  execFileSync(process.execPath, [generatorPath, tmpJson, tmpRgba, tmpSpec, tmpNormal], {stdio: ['ignore', 'ignore', 'inherit']});
   const gen = JSON.parse(fs.readFileSync(tmpJson, 'utf8')), png = encodePng(fs.readFileSync(tmpRgba), 1024, 1024);
   fs.writeFileSync(texturePath, png);
+  fs.writeFileSync(specPath, encodePng(fs.readFileSync(tmpSpec), 1024, 1024));
+  fs.writeFileSync(normalPath, encodePng(fs.readFileSync(tmpNormal), 1024, 1024));
   // Free Model: uv size = texture pixel size (the mesh UVs are in 1024 px), as in Blackridge.
   const texture = {name: 'p9_01_v2_native.png', relative_path: 'textures/p9_01_v2_native.png', folder: '', namespace: '', id: '0', group: '', scope: 0,
     width: 1024, height: 1024, uv_width: 1024, uv_height: 1024, particle: false, use_as_default: false, layers_enabled: false, sync_to_project: '',

@@ -7,16 +7,18 @@
 | 用途 | 路径 |
 |---|---|
 | 正式可编辑源（Free Model） | `src/main/blockbench/p9_01_v2_native.bbmodel` |
-| 几何 + UV + Base Color 生成器 | `tools/build-p9-01-v2-mesh.mjs` |
+| 几何 + UV + Base Color + LabPBR `_s` / `_n` 生成器（同一趟光栅） | `tools/build-p9-01-v2-mesh.mjs` |
 | Rig 构建（直接运行生成器，把 Pure Mesh 挂到新 Rig，写出源贴图） | `tools/build-p9-01-v2-native.mjs` |
 | 源贴图（Base Color，内嵌于 bbmodel，同时写成独立文件） | `src/main/blockbench/textures/p9_01_v2_native.png` |
+| 源 PBR 贴图（LabPBR，不内嵌 bbmodel，与 Blackridge 相同） | `src/main/blockbench/textures/p9_01_v2_native_s.png`、`p9_01_v2_native_n.png` |
 | 动画生成（设计节点 → 60 Hz 烘焙线性关键帧） | `tools/author-p9-01-v2-native-animations.mjs --write-source --write-runtime` |
-| 运行时导出（geo / aflmesh / 贴图 / in_hand，`--check` 校验） | `tools/export-p9-01-v2-native.mjs` |
+| 运行时导出（geo / aflmesh / 贴图与 `_s` / `_n` / in_hand，`--check` 校验） | `tools/export-p9-01-v2-native.mjs` |
 | 第一人称离线预览（游戏同一变换链 + 真实手臂盒，P9 / Blackridge 并排） | `tools/preview-fp-arms.mjs` |
 | geo（仅骨骼，28 根） | `assets/apocalypse_firstlight/geo/p9_01_v2_native.geo.json` |
 | 动画 | `assets/apocalypse_firstlight/animations/p9_01_v2_native.animation.json` |
 | Pure Mesh sidecar（35 part，7768 三角形） | `assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json` |
-| Base Color（V4 A 版近黑；源内嵌、独立源文件与运行时 PNG 解码 RGBA 像素一致，PNG 字节编码不同） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native.png` |
+| Base Color（V4 A 版近黑；源内嵌、独立源文件与运行时 PNG 逐字节一致） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native.png` |
+| LabPBR 高光 / 法线（PBR V1，1024×1024 RGBA，与源文件逐字节一致） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native_s.png`、`p9_01_v2_native_n.png` |
 | Display（builtin/entity） | `assets/apocalypse_firstlight/models/item/p9_01_v2_native_in_hand.json` |
 
 重建顺序：`build` → `author --write-source --write-runtime` → `export`。`build` 重跑时保留源中已有动画。
@@ -257,6 +259,83 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - AFL 转换器接受全部面，`export-p9-01-v2-native.mjs --check` 通过。
 - 未进游戏，帧数变化需要实机复测。按上面的线性关系粗估，Sundial Lite 下 P9 约从 70 FPS 回到 95 FPS 左右，这只是估算。
 
+### PBR V1：LabPBR `_s` / `_n`（2026-09-27，待实机验收）
+
+**格式**（沿用 Blackridge PBR V1 的命名与运行时约定）：
+- `textures/item/p9_01_v2_native_s.png` 与 `p9_01_v2_native_n.png`，1024×1024 RGBA，与 Base Color 同一套 UV。
+- 运行时 Profile 绑定 `textures/item/p9_01_v2_native.png`，Oculus 按 LabPBR 命名在同目录查找 `_s` / `_n`。Java 未改。
+- `_s` 通道：
+  - R：感知光滑度；
+  - G：F0。金属 255，F0 取 Base Color；聚合物 10，约 0.04；
+  - B：0；
+  - A：255，不发光，这一版不做夜光瞄具。
+- `_n` 通道：
+  - RG：切线空间法线 XY，OpenGL，+v 向上；
+  - B：材质 AO；
+  - A：255，不启用视差。
+
+**生成方式**：两张图由 `tools/build-p9-01-v2-mesh.mjs` 在绘制 Base Color 的同一趟光栅里写出，与 Base Color 共用 UV 岛、部件材质分类、面标签和边缘判定。
+- 以后几何或 UV 再变，三张图会一起重新生成，不需要手工同步。
+- 法线的切线方向取每个面所在 UV 岛的 +u 方向，投影到面上。
+- 构建脚本把两张图写到 `src/main/blockbench/textures/`，导出脚本复制到运行时；`export-p9-01-v2-native.mjs --check` 逐字节校验三张图。
+- 设置 `P9_PBR_STATS=1` 运行生成器，可以按部件和面标签打印实际写出的数值。
+
+**材质表**：R 为基础值，edge 为倒角或高接触区的值。实际像素在基础值上还有 ±5（金属）或 ±3（聚合物）的低频起伏，约 0.3 单位尺度，不是逐像素噪点。
+
+| 材质 | 部件 | 类型（G） | R 基础 | R 倒角 / 边 | AO |
+|---|---|---|---|---|---|
+| 黑色氮化钢 | 滑套外表面 | 金属 255 | 125 | 160 | 255 |
+| 锯齿槽内 | 滑套凹槽 | 金属 255 | 95 | — | 205 |
+| 前段台阶面 | 滑套 | 金属 255 | 110 | — | 230 |
+| 抛壳口内壁 | 滑套内腔 | 金属 255 | 80 | 90 | 175 |
+| 弹底板 | 抛壳口内可见 | 金属 255 | 140 | 150 | 200 |
+| 机加工钢 | 枪管外管、膛室口 | 金属 255 | 165 | 180（枪口冠至少 180） | 255 |
+| 机加工钢 | 枪管罩 | 金属 255 | 165 | 175 | 215 |
+| 抛光钢 | 供弹坡 | 金属 255 | 205 | 210 | 215 |
+| 枪膛、膛室、击针孔 | 内腔 | 金属 255 | 70 | 70 | 150 |
+| 深色枪钢 | 控件、抽壳钩、击针尾盖 | 金属 255 | 115 | 150 | 255 |
+| 销钉 | | 金属 255 | 150 | 165 | 255 |
+| 哑光瞄具 | 准星、照门 | 金属 255 | 55 | 70 | 255 |
+| 磷化钢弹匣 | 弹匣本体 / 供弹唇 | 金属 255 | 100 / 135 | 125 / 150 | 255 |
+| 深色聚合物 | 机架、护圈、导轨 | 聚合物 10 | 90 | 100（导轨 90） | 255 |
+| 握把 | 光面边框 / 颗粒面板 / 台阶壁 | 聚合物 10 | 100 / 35 / 70 | 105 / — / — | 255 / 255 / 230 |
+| 机架凹槽 | 护木槽、食指凹台 | 聚合物 10 | 80 | — | 215 |
+| 弹匣井 | | 聚合物 10 | 60 | 60 | 150 |
+| 扳机 | | 聚合物 10 | 110 | 120 | 255 |
+| 弹匣底板 / 托弹板 | | 聚合物 10 | 85 / 70 | 95 / 70 | 255 / 190 |
+
+**克制的磨亮**：
+- 窄的凸倒角条整条使用 edge 值；大面上只在沿像素轴向的硬边旁 1.5 像素内过渡到 edge 值，斜向边不画，不会出现阶梯锯齿。
+- 高接触区在基础值上加：
+  - 滑套前后锯齿区的侧面 +12；
+  - 空仓挂机杆拇指垫和弹匣释放钮外表面 +15；
+  - 扳机指面 +10。
+- 不改底色，不做掉漆、白边或刮痕。
+
+**法线**：只用在两处，其余全部平整。
+- **握把颗粒面板**：与底色颗粒同一套 2 像素格点，最大倾斜约 0.35。
+- **枪膛**：6 条膛线的法线暗示，带轻微缠距，代替已删除的几何膛线。
+
+滑套和机架大面不加拉丝法线，避免物品贴图没有 mipmap 时，第一人称移动中出现闪烁。
+
+**AO**：只给内腔和凹槽，数值见上表。底色已经压暗过凹处，所以保持克制。
+
+**实际输出核对**（`P9_PBR_STATS=1`）：
+- 各部件 R 均值：滑套大面约 128，枪管约 167，供弹坡约 206，控件约 146（小件多为倒角窄条），机架约 92，握把面板约 35，弹匣本体约 109。
+- G 只有 255 与 10 两种值。
+- 法线像素只出现在握把面板（10,649 像素）与枪膛（902 像素）。
+
+**不变的部分**：
+- 几何、UV、Rig、动画、Java、Hybrid Mesh V2；
+- sidecar、geo、动画 JSON 与本轮开始时逐字节相同；
+- Base Color 像素完全相同，PNG 按标准编码器重新写出。
+
+**验证**：
+- 生成器、构建、导出和 `--check` 通过；
+- Blockbench 中把 `_s` 当作贴图查看，确认金属与聚合物分区落在正确部件上；
+- 未进游戏，需要在 Complementary 与 Sundial Lite 下实机验收；
+- 法线绿通道的方向沿用 Blackridge 的 OpenGL 约定，Blackridge 的 `_n` 也尚未实机确认。如果实机发现握把颗粒的明暗上下颠倒，两把枪应一起翻转 G 通道。
+
 ## 握姿与第一人称构图
 
 - 握姿与 Blackridge 统一（AFL 手部约定：锚点 = 手末端，前臂沿局部 -Y，掌心 +Z）。
@@ -322,7 +401,7 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 
 **CURRENT_RUNTIME**：`ConfiguredNativeGunItem` + `NativeAnimatedWeaponRenderer` + `NativePlayerArmRenderer` + AFL Hybrid Mesh；`AflItems.P9_01` 保留正式物品 ID，Profile 的资源 ID 为 `p9_01_v2_native`，骨骼锚点为 `right_hand_anchor`、`left_hand_anchor`、`muzzle_anchor`、`ejection_anchor`。
 
-**CURRENT_RESOURCE_PATHS**：geo `geo/p9_01_v2_native.geo.json`；animation `animations/p9_01_v2_native.animation.json`；aflmesh `meshes/p9_01_v2_native.aflmesh.json`；texture `textures/item/p9_01_v2_native.png`；display `models/item/p9_01_v2_native_in_hand.json`。`models/item/p9_01.json` 的手持路径指向 V2 Display；旧 `p9_01` Geo/动画/贴图/手持 Display 已从运行时资源中删除。
+**CURRENT_RESOURCE_PATHS**：geo `geo/p9_01_v2_native.geo.json`；animation `animations/p9_01_v2_native.animation.json`；aflmesh `meshes/p9_01_v2_native.aflmesh.json`；texture `textures/item/p9_01_v2_native.png`（LabPBR `_s` / `_n` 同目录，Oculus 按命名自动查找）；display `models/item/p9_01_v2_native_in_hand.json`。`models/item/p9_01.json` 的手持路径指向 V2 Display；旧 `p9_01` Geo/动画/贴图/手持 Display 已从运行时资源中删除。
 
 **NEW_ASSET_BONES**：root、handling、gun_body、barrel、muzzle_anchor、chamber_round_anchor、trigger、slide、front_sight、rear_sight、ejection_anchor、sight_anchor、magazine、follower、magazine_round_anchor、righthand、right_hand_anchor、lefthand、lefthand_pos、left_hand_anchor、mag_out、reload_magazine、mag_out_round_anchor、empty_old_mag、empty_old_mag_round_anchor、positioning、maintenance_anchor、camera。
 
