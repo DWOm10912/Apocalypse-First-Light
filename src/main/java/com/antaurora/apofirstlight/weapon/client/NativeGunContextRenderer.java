@@ -21,6 +21,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
     private final NativeThirdPersonPose thirdPerson = new NativeThirdPersonPose();
     private final String idle;
     private AflMeshModel mesh;
+    private boolean skipMeshShadow;
 
     protected NativeGunContextRenderer(GeoModel<T> model, String idle) {
         super(model);
@@ -31,7 +32,9 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
             MultiBufferSource buffers, VertexConsumer buffer, boolean reRender, float partial,
             int light, int overlay, float red, float green, float blue, float alpha) {
         var previousMesh = mesh;
+        boolean previousSkip = skipMeshShadow;
         mesh = AflMeshCache.snapshot().get(getGeoModel().getModelResource(item));
+        skipMeshShadow = mesh != null && NativeGunShadowSkip.shouldSkip(currentItemStack, renderPerspective, item);
         try {
             boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
@@ -46,7 +49,10 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
             updateAnimatedTextureFrame(item);
             for (var bone : frozen.topLevelBones())
                 renderRecursively(pose,item,bone,type,buffers,buffer,reRender,partial,light,overlay,red,green,blue,alpha);
-        } finally { mesh = previousMesh; }
+        } finally {
+            mesh = previousMesh;
+            skipMeshShadow = previousSkip;
+        }
     }
 
     @Override public void renderCubesOfBone(PoseStack pose, GeoBone bone, VertexConsumer buffer,
@@ -55,7 +61,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         // This per-bone geometry hook also runs on reRender. GeoRenderLayers do not.
         // Parent hiding and NativeAnimatedWeaponRenderer's replacement/early-return policy
         // already control entry here. The backend checks the bone's own hidden flag.
-        if (mesh != null) NativeGunRenderProfile.render(mesh, bone, pose, buffer, light, overlay,
+        if (mesh != null && !skipMeshShadow) NativeGunRenderProfile.render(mesh, bone, pose, buffer, light, overlay,
                 red, green, blue, alpha, currentItemStack, renderPerspective);
     }
 }
