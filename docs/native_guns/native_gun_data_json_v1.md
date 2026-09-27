@@ -35,7 +35,7 @@
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
 | sight_slot（可选） | anchor 名称、mount_offset 局部 xyz、ads_center 模型 xyz、accepts 兼容 SIGHT 物品 ID 数组；没有此字段即不支持。详见 [手枪红点 V1](pistol_red_dot_v1.md) |
 | recoil | NativeRecoilProfile同名数值字段，见下文 |
-| muzzle_slot（可选） | anchor 名称与 accepts 兼容 MUZZLE 物品 ID 数组；无字段不兼容。P9 首批接受 pistol_suppressor_01 |
+| muzzle_slot（可选） | anchor 名称与 accepts 兼容 MUZZLE 物品 ID 数组；无字段不兼容。锚点应位于枪口 crown 中心（枪膛轴线上、螺纹枪管前端），枪口装置以后端面原点、-Z 向前、缩放 1.0 挂载。P9 首批接受 pistol_suppressor_01（AFL 通用 9mm 消音器），锚点 `muzzle_anchor` = `[0,5.3752,-7.633]` |
 | suppressed_fire_sound（可选） | 已注册 SoundEvent ID；有效抑音附件使用此声音，缺省回退原枪声，不修改音量或衰减距离 |
 | presentation.magazine_round_visual（可选） | 通用动态顶弹：`anchor`、`geometry`、`texture` 为必填；`loaded_auxiliary_anchor` 与 `old_magazine_anchor` 可选且不得与其他锚点重名。`local_offset`（Blockbench 单位）和 `local_rotation`（角度）可选，均为三个有限数，缺省 `[0,0,0]`；在已继承锚点姿态后依次平移并绕 X/Y/Z 旋转。P9 用该局部修正适配现有 9mm 底面原点模型，Blackridge 未配置修正，保持原姿态。顶弹不改变弹量或换弹结算。 |
 

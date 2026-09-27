@@ -9,11 +9,11 @@
 | 项目 | 当前值 / 行为 |
 | --- | --- |
 | 名称 / ID | 手枪消音器 / `apocalypse_firstlight:pistol_suppressor_01` |
-| 槽位 / 当前兼容 | `MUZZLE` / P9-01；不兼容 BR51 |
+| 槽位 / 当前兼容 | `MUZZLE` / P9-01；不兼容 BR51。资产为 AFL 通用 9mm 手枪消音器（2026-09-27 Model V2），其他 9mm 手枪声明 `accepts` 并把锚点放在自己的枪口 crown 即可复用 |
 | 噪声半径倍率 | `0.05`；P9 `64 → 3` 格 |
 | 消音声 | 枪械定义 `apocalypse_firstlight:p9_01_suppressed` |
 | 玩家音频距离 | 不乘降噪倍率 |
-| 视觉出口 | 配件 `muzzle_exit_anchor`；隐藏裸枪焰并生成弱烟 |
+| 视觉出口 | 配件 `muzzle_exit_anchor` `(0,0,-7.85)`；隐藏裸枪焰并生成弱烟 |
 | 伤害 / 射程 / 后坐力 / 射速 | 无额外修改 |
 | 安装入口 | 仅枪械维护台安装 / 拆卸 / 更换 |
 
@@ -39,13 +39,15 @@ P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；�
 
 ## 渲染与资产
 
-可编辑源 src/main/blockbench/pistol_suppressor_01.bbmodel 与 geo、贴图保持原几何。独立静态Geo通过 NativeMuzzleRendering 挂到真实动画枪口锚点；当前 P9 由 NativeAnimatedWeaponRenderer 调用 NativeSightRendering，并与 MaintenanceGunRendering 复用同一附件渲染路径。旧 P901SightLayer 已随专用 Renderer 退役。维护台储存的还是原 ItemStack，不修改取回/占位/归属事务。
+2026-09-27 起资产为 Model V2（AFL 通用 9mm Pure Mesh，见 [Model V2](pistol_suppressor_01_model_v1.md)），由 `tools/build-pistol-suppressor-01.mjs` 生成源、Geo（仅骨骼）、`meshes/pistol_suppressor_01.aflmesh.json` 和 512×512 Base Color / `_s` / `_n`。`NativeMuzzleRendering.drawItem` 现在先查 `AflMeshCache`：附件 Geo 有 AFL Hybrid Mesh sidecar 时走 `AflHybridMeshRendering.renderAtCurrentPose`（同一 `entityCutoutNoCull` 贴图，调用者给出锚点姿态），没有 sidecar 的附件（`rifle_suppressor_01`、Geo 红点、扩容弹匣等）继续走原 GeckoLib Cube 路径，没有任何枪专属 renderer。附件通过 NativeMuzzleRendering 挂到真实动画枪口锚点；当前 P9 由 NativeAnimatedWeaponRenderer 调用 NativeSightRendering，并与 MaintenanceGunRendering 复用同一附件渲染路径。旧 P901SightLayer 已随专用 Renderer 退役。维护台储存的还是原 ItemStack，不修改取回/占位/归属事务。
 
-从附件实际Geo遍历 muzzle_exit_anchor=(0,0,-9.1)，组合为视觉出口。裸枪闪光隐藏，出口生成一颗弱烟粒子；轨迹视觉起点使用新出口，弹壳路径不改。独立附件使用 builtin/entity item模型与静态Geo绘制，小型手持/掉落缩放0.7；GUI缩放1.4。已安装枪的GUI仍使用既有平面枪图标，不动态合成消音器图标。
+从附件实际Geo遍历 muzzle_exit_anchor=(0,0,-7.85)（V1 为 -9.1，已废弃），组合为视觉出口。裸枪闪光隐藏，出口生成一颗弱烟粒子；轨迹视觉起点使用新出口，弹壳路径不改。独立附件使用 builtin/entity item模型，经同一 drawItem（现为 Mesh 路径）绘制，并以出口锚点居中；小型手持/掉落缩放0.7；GUI缩放1.6（V1 为 1.4，模型由 9.1 缩短到 7.85）。V2 资产与 Mesh 路径只通过了离线生成校验和 compileJava，手持、维护台、掉落物、GUI 与光影 PBR 尚未实机验收。已安装枪的GUI仍使用既有平面枪图标，不动态合成消音器图标。
 
 维护台 P9 的 3D 附件热点/鼠标装拆现见 [附件交互 V1](gun_maintenance_attachment_interaction_v1.md)。安装手臂/旋紧动画、其他枪附件兼容仍未实现；本轮无附件数值修改。
 
 ## 验证边界
+
+以下记录属于 V1 cube 资产时期（锚点、出口 -9.1、GUI 1.4），不代表 Model V2 已实机验收。
 
 - 服务端24/24 GameTest通过：build/suppressor-gametest.log。包括红点生存/创造回归、消音器消耗/占槽/过时请求/旁观拒绝、双槽序列化、箱子与掉落实体保存读取、拾回背包、两位FakePlayer维护台50次交错取回及fallback/重载/拆除，另含既有两枪射击/换弹/ADS与工作台回归。
 - 真实 NativeGunShot.execute 下游日志明确记录 GUNSHOT Radius=3.0：build/suppressor-gametest/logs/debug.log；未额外承诺本轮重新逐距离测试僵尸导航。

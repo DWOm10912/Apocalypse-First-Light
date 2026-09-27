@@ -18,7 +18,9 @@ const rotX = (p, deg, o) => { const c = Math.cos(deg * D), s = Math.sin(deg * D)
 
 // ---------- rig cage (frozen, from p9_01.bbmodel) ----------
 const MAG_PIVOT = [-0.0037, 3.5992, 1.647], MAG_TILT = -22;   // group "2"/"1" transform
-const AXIS_Y = 5.3752, MUZZLE_Z = -7.233;                       // muzzle_anchor
+// muzzle_anchor = crown plane at the front of the threaded muzzle extension; THREAD_L ahead of the unthreaded crown
+// (-7.233). Muzzle devices (pistol_suppressor_01) mount their rear face on this plane. Keep in sync with build-p9-01-v2-native.mjs.
+const AXIS_Y = 5.3752, THREAD_L = 0.40, MUZZLE_Z = -7.233 - THREAD_L;
 const SLIDE = {w: 0.86, yb: 4.80, yt: 5.95, zf: -7.11, zr: 3.58, portF: -1.62, portR: 0.05};
 
 // ---------- mesh builder ----------
@@ -373,11 +375,14 @@ function flankPockets(part, A, B, X, outlines, opt) {
 
 // ================= BARREL (bone barrel4) =================
 {
-  const C = [0, AXIS_Y], M = MUZZLE_Z;
+  const C = [0, AXIS_Y], M = MUZZLE_Z, SH = MUZZLE_Z + THREAD_L;   // crown (muzzle_anchor) / thread shoulder
   const b = P('barrel_tube', 'barrel4', 'barrel'); const N = 24;   // Performance Pass: 32 -> 24 (the crown silhouette still reads round in muzzle close-ups)
-  // 9 mm scale (1 unit ~ 18.8 mm): bore r 0.22, barrel r 0.35; recessed rounded crown
+  // 9 mm scale (1 unit ~ 18.8 mm): bore r 0.22, barrel r 0.35. Threaded muzzle extension (1/2x28-style look, stylised
+  // pitch): shoulder chamfer 0.35 -> 0.33 on the old crown plane, five V crests r 0.33 over roots r 0.305 (pitch 0.074),
+  // front chamfer, then the recessed crown on the muzzle_anchor plane.
   const cr = (r, z) => circle(0, AXIS_Y, r, N, z);
-  loft(b, [cr(0.22, M + 0.035), cr(0.26, M + 0.006), cr(0.31, M), cr(0.345, M + 0.012), cr(0.35, M + 0.04), cr(0.35, -1.60)], {capStart: false, capEnd: false});
+  const thread = []; for (let j = 9; j >= 1; j--) thread.push(cr(j % 2 ? 0.305 : 0.33, SH - 0.037 * j));
+  loft(b, [cr(0.22, M + 0.035), cr(0.26, M + 0.006), cr(0.30, M), cr(0.33, M + 0.03), ...thread, cr(0.33, SH), cr(0.35, SH + 0.02), cr(0.35, -1.60)], {capStart: false, capEnd: false});
   const bi = P('barrel_bore', 'barrel4', 'internal'); bi.inward = true;   // dark bore opening with depth; rifling left to texture / normal map
   loft(bi, [cr(0.22, M + 0.035), cr(0.22, M + 1.10)], {capStart: false, capEnd: true});
   // chamber hood / breech block: Z-lofted rounded section, rolled front bevel, rear face opened by the chamber

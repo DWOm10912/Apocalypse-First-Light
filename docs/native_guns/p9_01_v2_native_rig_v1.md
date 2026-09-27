@@ -16,7 +16,7 @@
 | 第一人称离线预览（游戏同一变换链 + 真实手臂盒，P9 / Blackridge 并排） | `tools/preview-fp-arms.mjs` |
 | geo（仅骨骼，28 根） | `assets/apocalypse_firstlight/geo/p9_01_v2_native.geo.json` |
 | 动画 | `assets/apocalypse_firstlight/animations/p9_01_v2_native.animation.json` |
-| Pure Mesh sidecar（35 part，7768 三角形） | `assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json` |
+| Pure Mesh sidecar（35 part，8248 三角形） | `assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json` |
 | Base Color（V4 A 版近黑；源内嵌、独立源文件与运行时 PNG 逐字节一致） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native.png` |
 | LabPBR 高光 / 法线（PBR V1，1024×1024 RGBA，与源文件逐字节一致） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native_s.png`、`p9_01_v2_native_n.png` |
 | Display（builtin/entity） | `assets/apocalypse_firstlight/models/item/p9_01_v2_native_in_hand.json` |
@@ -30,7 +30,7 @@ root [0,0,0]
 ├─ handling [0,3,2.06]                     枪 + 右手的共同控制节点；枢轴 = 右手握把上部
 │  ├─ gun_body [0,0,0]                     frame_receiver / core / rail / trigger_guard / grip / magwell / controls
 │  │  ├─ barrel [0,5.3752,-1.6]            barrel_tube / bore / hood / chamber_mouth / chamber / feed_ramp（固定，无倾转）
-│  │  │  ├─ muzzle_anchor [0,5.3752,-7.233]
+│  │  │  ├─ muzzle_anchor [0,5.3752,-7.633]   螺纹延伸段前端 crown；枪口装置后端面挂载平面
 │  │  │  └─ chamber_round_anchor [0,5.3752,-0.44]   预留，无几何
 │  │  └─ trigger [0,4.0432,-0.6026]        trigger_blade（静态）
 │  ├─ slide [0,5.3752,0]                   套筒 10 part；+Z 为后坐方向（挂机 1.88）
@@ -63,7 +63,7 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 
 ## 几何与 UV
 
-- Pure Mesh 与 Base Color（当前为 V4 A 版，见下文）由 `build-p9-01-v2-mesh.mjs` 生成，`build-p9-01-v2-native.mjs` 直接调用它，不再读取旧 `p9_01.bbmodel`（该文件停留在精修前的 11204 三角形版本，不再同步）。生成器本体 32 个 part、7076 三角形；Native 源另含换弹用的辅助弹匣副本，合计 35 个 Mesh、7768 三角形，常态第一人称可见 6384（2026-09-27 Geometry Performance Pass 之后）。
+- Pure Mesh 与 Base Color（当前为 V4 A 版，见下文）由 `build-p9-01-v2-mesh.mjs` 生成，`build-p9-01-v2-native.mjs` 直接调用它，不再读取旧 `p9_01.bbmodel`（该文件停留在精修前的 11204 三角形版本，不再同步）。生成器本体 32 个 part、7556 三角形；Native 源另含换弹用的辅助弹匣副本，合计 35 个 Mesh、8248 三角形，常态第一人称可见 6864（2026-09-27 Threaded Muzzle Extension 之后；Geometry Performance Pass 后为 7076 / 7768 / 6384）。
 - 贴图 UV 尺寸改为 1024。这是 Free Model 必需的：网格 UV 按 1024 像素编写，旧 GeckoLib 工程带的是项目分辨率 256。
 - 拓扑调整：`build-p9-01-v2-native.mjs` 的 `splitWarped` 把扭曲超过 AFL 转换器容差（>10%）的四边面沿对角线拆成两个三角形，顶点和 UV 不变，渲染表面相同。
 - sidecar 为满足运行时 4 MiB 字符上限（`AflMeshLoader.MAX_CHARACTERS`），数字行改为单行书写（数据与通用 `export-afl-mesh.mjs` 的 `serialize` 结果解析后完全相同，当前约 1.32 MB）。因此对这个文件应使用 `export-p9-01-v2-native.mjs --check` 校验，通用转换器的 `--check` 会因格式不同报 stale。
@@ -336,6 +336,25 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - 未进游戏，需要在 Complementary 与 Sundial Lite 下实机验收；
 - 法线绿通道的方向沿用 Blackridge 的 OpenGL 约定，Blackridge 的 `_n` 也尚未实机确认。如果实机发现握把颗粒的明暗上下颠倒，两把枪应一起翻转 G 通道。
 
+### Threaded Muzzle Extension（2026-09-27，待实机验收）
+
+为 AFL 通用 9mm 消音器（[`pistol_suppressor_01` Model V2](attachments/pistol_suppressor_01_model_v1.md)）提供枪械侧的外露螺纹枪管。螺纹属于 P9，不烘焙进通用消音器。
+
+- 位置：`barrel_tube` 在原 crown 平面（z −7.233）之前加长 `THREAD_L = 0.40`。
+  - 原枪管外径 r 0.35 在 z −7.213 结束，由 45° 小肩部倒角收到螺纹大径 r 0.33。
+  - 其后是 5 个 V 形牙顶（r 0.33）和牙底（r 0.305），节距 0.074，是按 1/2x28 外观做的风格化粗牙距。
+  - 前端 0.03 倒角后接凹入式 crown（r 0.30 → 0.26 → 内孔 0.22），crown 平面为 z **−7.633**。
+- `muzzle_anchor` 同步移到 `[0,5.3752,-7.633]`，仍为 barrel 的静态子骨骼，位于枪膛轴线上。契约：锚点 = 枪口 crown 中心，枪口装置的后端面挂在这里。
+  - 裸枪的枪口焰、弹道视觉起点和维护台 MUZZLE 热点随之前移 0.40。
+  - 装消音器后，套筒前端到消音器之间可以看到约 0.52 的枪管加螺纹。
+- 常量：`tools/build-p9-01-v2-mesh.mjs` 的 `THREAD_L` / `MUZZLE_Z = -7.233 - THREAD_L`，以及 `tools/build-p9-01-v2-native.mjs` 的 `MUZZLE_Z = -7.633`，两处须保持一致。
+  - 内孔 `barrel_bore` 仍从新 crown 向后 1.10 封底。
+  - 画笔中与 crown 相关的规则都跟随新 `MUZZLE_Z`：crown 平滑度 ≥ 180、内孔越深越暗、膛线相位。
+- 材质：沿用现有 `M.barrel` 钢，Base Color 74,75,76 系，平滑度 165，窄条倒角为 180。不新增材质、法线细节或 Java 逻辑。
+- 面数：`barrel_tube` 240 → 720 三角面（24 段 × 15 环带）。Native 合计 7768 → 8248，常态可见 6384 → 6864。装上消音器（1440）后约 8300，超出约 7000 的手枪预算参考线；用户已确认这是 guideline，优先保证第一人称圆柱轮廓。
+- 变化范围：Geo 只改了 `muzzle_anchor` pivot 的 Z，动画 JSON 与 in_hand Display 字节不变。1024 atlas 重新打包，新增的螺纹小岛使 Base Color、`_s`、`_n` 整体重排，材质表未变。
+- 验证：`export-p9-01-v2-native.mjs --check` 通过；Blockbench 离屏渲染确认螺纹侧面轮廓、crown 和消音器同轴贴合。未做游戏内验收。
+
 ## 握姿与第一人称构图
 
 - 握姿与 Blackridge 统一（AFL 手部约定：锚点 = 手末端，前臂沿局部 -Y，掌心 +Z）。
@@ -438,5 +457,5 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 **DYNAMIC_AMMO_READY** = MAGAZINE_ROUND_RUNTIME_INTEGRATED_UNVERIFIED（2026-09-27；三个弹匣顶弹锚点接入通用 Native Magazine Round 渲染，客户端修正后画面待用户验收；`chamber_round_anchor` 仍不用于动态膛内弹）。`native_guns/p9_01.json` 复用正式 `geo/9x19mm_round.geo.json` + `9x19mm_ammo_v1.png`，枪内顶弹以 `NativeGunAmmo.read > 0` 判定；新匣、旧匣同时受动作语义与 helper 骨骼可见性/零尺度控制。`inspect_empty` 和空仓换弹的旧匣不画顶弹。修正局部姿态后 `compileJava --offline` 成功，但任务为 `UP-TO-DATE`，没有重新执行 Java 编译。
 
   三个源锚点继续保持 pivot `[0,3.39381,1.85725]`、rotation `[-22,0,0]`，Rig/动画未改。Geo JSON 虽导出为 X `+22°`，GeckoLib 烘焙骨骼时会再取反，运行时锚点为 `-22°`。配置中的 `local_offset=[0,-0.000036,0.789958]`（Blockbench 单位）和 `local_rotation=[-90,0,0]` 把有效姿态对齐弹底 pivot `[0,3.6897,2.5897]`、rotation `[-112,0,0]`。先前误按 `+22°` 计算的 `local_offset=[0,0.548725,0.568273]` / `local_rotation=[90,0,0]` 会让三处顶弹反向并偏离供弹唇，已废弃。这只影响动态顶弹，不改变共享 9mm 模型或静态物品。膛室深约 0.85，短于 9mm 弹壳长 1.019，本轮不显示膛内弹。
-**ATTACHMENT_READY** = UNVERIFIED（旧 sight/muzzle/magazine 配置仍在 JSON，新扩容匣、红点和枪口附件暂缓；不可据此断言旧附件已适配）
+**ATTACHMENT_READY** = UNVERIFIED。MUZZLE：`pistol_suppressor_01` Model V2（通用 9mm Pure Mesh）经 `NativeMuzzleRendering` 的 Hybrid Mesh 分支挂在新 `muzzle_anchor` `[0,5.3752,-7.633]`，只通过 compileJava 与离线校验。sight / magazine 仍为旧配置，未对 V2 重新适配，不可据此断言可用。
 **MAINTENANCE_READY** = ASSET_ANCHOR_ONLY（maintenance_anchor 已建立；具体维护台取景未校准）

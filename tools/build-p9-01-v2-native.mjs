@@ -30,7 +30,7 @@ export const MAG_TILT = -22;
 export const HP = [0, 3.0, 2.06];                              // handling pivot = right grip (upper grip, on the grip axis)
 export const RP = [0, 0, 0], LP = [0, 0, 0];                   // hand chain pivots
 export const LA = [-1.5, 4.0, 0.5];                            // left_hand_anchor rest origin (any rigid point; solved per frame)
-const AXIS_Y = 5.3752, MUZZLE_Z = -7.233;
+const AXIS_Y = 5.3752, MUZZLE_Z = -7.633;   // crown of the threaded muzzle extension (tools/build-p9-01-v2-mesh.mjs: -7.233 - THREAD_L)
 
 const uuid = s => { const h = createHash('sha256').update('p9-01-v2-native:' + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 

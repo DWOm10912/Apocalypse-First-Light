@@ -3,7 +3,7 @@
   "gui_light": "front",
   "textures": {"particle": "apocalypse_firstlight:item/pistol_suppressor_01"},
   "display": {
-    "gui": {"rotation": [20, 65, 20], "scale": [1.4, 1.4, 1.4]},
+    "gui": {"rotation": [20, 65, 20], "scale": [1.6, 1.6, 1.6]},
     "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.7, 0.7, 0.7]},
     "fixed": {"rotation": [0, 90, 0], "scale": [1, 1, 1]},
     "firstperson_righthand": {"rotation": [0, -25, 0], "scale": [0.7, 0.7, 0.7]},

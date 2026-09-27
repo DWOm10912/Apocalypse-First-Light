@@ -10,7 +10,7 @@
 // No PBR, no headstamp text or brand marks.
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {runLatheAmmo, sm, mix, sc, hash} from './lathe-ammo-lib.mjs';
+import {runLathe, sm, mix, sc, hash} from './lathe-mesh-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
@@ -109,6 +109,6 @@ function paint(model, zone, p) {
   throw new Error('unpainted zone ' + zone);
 }
 
-runLatheAmmo({root, N, atlas: 512, background: [112, 88, 52], uuidSeed: 'afl-50ae-ammo-v2', models: MODELS, paint,
+runLathe({root, N, atlas: 512, background: [112, 88, 52], uuidSeed: 'afl-50ae-ammo-v2', models: MODELS, paint,
   sourceName: model => `50ae_${model}`, geoId: model => `geometry.50_ae_${model}`,
   texture: {name: 'blackridge_50ae_ammo_v1.png', relativePath: 'textures/blackridge_50ae_ammo_v1.png'}, out: OUT});

@@ -31,7 +31,7 @@
 
 `12_gauge_casing` 仍使用原 `12g_casing.bbmodel` 对应的 Java item JSON 和64×64贴图；新的独立 spent Mesh 源暂不接入正式空壳。Silverwood 内部 live/spent shell 组、动画和玩法数据未变。GUI、手持、掉落、F3+T、Embeddium/Oculus 与法线/UV 视觉均待用户实机验收；离线导出与编译不等于这些场景通过。
 
-`.50 AE` 标准源为 `src/main/blockbench/50ae_round.bbmodel` 和 `50ae_casing.bbmodel`。2026-09-27 起改为 V2 软尖弹（JSP），由 `node tools/build-50ae-ammo.mjs` 确定性生成（`--check` 校验），与 9mm 共用生成库 `tools/lathe-ammo-lib.mjs`。原先从 Blender 导入的空尖弹版本（`live_round` 512 三角面、`spent_case` 448 三角面）在 git 历史中可取回。
+`.50 AE` 标准源为 `src/main/blockbench/50ae_round.bbmodel` 和 `50ae_casing.bbmodel`。2026-09-27 起改为 V2 软尖弹（JSP），由 `node tools/build-50ae-ammo.mjs` 确定性生成（`--check` 校验），与 9mm 共用生成库 `tools/lathe-mesh-lib.mjs`（2026-09-27 由 `lathe-ammo-lib.mjs` 改名，现也生成通用 9mm 消音器；弹药输出逐字节不变）。原先从 Blender 导入的空尖弹版本（`live_round` 512 三角面、`spent_case` 448 三角面）在 git 历史中可取回。
 
 - **为什么换**：旧版弹头是铜色空尖，侧面看起来像放大的 9mm。新版参照软尖弹外观：被甲只包住弹头下段，上面露出一大块深灰色铅头，顶端是宽平面，和 9mm 全铜圆头一眼可分。
 - **整弹**：骨骼 `round`，共 1200 三角面。
@@ -73,7 +73,7 @@
 - **没有改动**：伤害、弹量、射速、配方、战利品、弹壳物理、Dynamic Ammo 判断逻辑。
 
 **生成与校验**
-- 全部由 `node tools/build-9x19mm-ammo.mjs` 确定性生成（共用 `tools/lathe-ammo-lib.mjs`）；加 `--check` 逐字节校验所有输出。在 Blockbench 里保存过的源文件，与生成结果只差 3×10⁻⁷ 以内的浮点舍入，已用生成器重新导出，使源文件与运行时资源重新一致。
+- 全部由 `node tools/build-9x19mm-ammo.mjs` 确定性生成（共用 `tools/lathe-mesh-lib.mjs`，原名 `lathe-ammo-lib.mjs`）；加 `--check` 逐字节校验所有输出。在 Blockbench 里保存过的源文件，与生成结果只差 3×10⁻⁷ 以内的浮点舍入，已用生成器重新导出，使源文件与运行时资源重新一致。
 - 两个 sidecar 由 `tools/export-afl-mesh.mjs` 的 `convert` / `serialize` 生成，AFL 转换器接受全部面。
 
 **文件**

@@ -12,7 +12,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 手枪微型红点瞄具 | `pistol_red_dot` | `SIGHT` | P9-01 | 使用红点光学轴进行 ADS 对齐；不额外增加倍率 | 已接入 / [红点 V1](../pistol_red_dot_v1.md) |
 | 步枪红点瞄具 | `rifle_red_dot_01` | `SIGHT` | BR51-01 | 原 BR51 红点独立资产化；光学轴 ADS，无额外倍率 | 已接入 / [步枪红点 V1](rifle_red_dot_01_v1.md) |
-| 手枪消音器 | `pistol_suppressor_01` | `MUZZLE` | P9-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入 / [手枪消音器 V1](pistol_suppressor_01_v1.md) |
+| 手枪消音器 | `pistol_suppressor_01` | `MUZZLE` | P9-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入；资产为 AFL 通用 9mm Pure Mesh（Model V2，待实机验收） / [手枪消音器 V1](pistol_suppressor_01_v1.md)、[Model V2](pistol_suppressor_01_model_v1.md) |
 | 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入，非 BR51 专属实现 / [步枪消音器 V1](rifle_suppressor_01_v1.md) |
 | P9-01 扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 24 发，替换弹匣外观 | 已接入 / [扩容弹匣 V1](../p9_01_extended_magazine_v1.md) |
 

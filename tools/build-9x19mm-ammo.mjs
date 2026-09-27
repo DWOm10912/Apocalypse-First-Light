@@ -1,5 +1,5 @@
 // 9x19mm Visible Ammo V1: live round + spent casing as pure Mesh (lathe profiles), one shared 512 Base Color atlas.
-// Mesh build, UV packing, painting and file output live in tools/lathe-ammo-lib.mjs.
+// Mesh build, UV packing, painting and file output live in tools/lathe-mesh-lib.mjs.
 //   node tools/build-9x19mm-ammo.mjs            -> writes sources, atlas, geo and AFL mesh sidecars
 //   node tools/build-9x19mm-ammo.mjs --check    -> verifies every output is up to date
 // Asset contract (same as the .50 AE standard assets): round axis +Y, case head on y = 0, centred on X/Z, one bone per
@@ -8,7 +8,7 @@
 // No PBR, no headstamp text or brand marks.
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {runLatheAmmo, sm, mix, sc, hash} from './lathe-ammo-lib.mjs';
+import {runLathe, sm, mix, sc, hash} from './lathe-mesh-lib.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
@@ -105,6 +105,6 @@ function paint(model, zone, p) {
   }
   throw new Error('unpainted zone ' + zone);
 }
-runLatheAmmo({root, N, atlas: 512, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-ammo', models: MODELS, paint,
+runLathe({root, N, atlas: 512, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-ammo', models: MODELS, paint,
   sourceName: model => `9x19mm_${model}_mesh`, geoId: model => `geometry.9x19mm_${model}`,
   texture: {name: '9x19mm_ammo_v1.png', relativePath: 'textures/9x19mm_ammo_v1.png'}, out: OUT});
