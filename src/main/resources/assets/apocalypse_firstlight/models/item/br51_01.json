@@ -13,25 +13,6 @@
       "loader": "forge:item_layers",
       "textures": {
         "layer0": "apocalypse_firstlight:item/br51_01_inventory"
-      },
-      "display": {
-        "gui": {
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "translation": [
-            0,
-            0,
-            0
-          ],
-          "scale": [
-            0.95,
-            0.46806866952789694,
-            1
-          ]
-        }
       }
     }
   }

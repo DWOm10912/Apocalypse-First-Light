@@ -21,6 +21,9 @@ Its gameplay definition is `src/main/resources/data/apocalypse_firstlight/native
 The editable source is `src/main/blockbench/hr55.bbmodel`. Runtime files are the `hr55`
 Geo/animation, texture, HUD, inventory image, and OGG resources below
 `src/main/resources/assets/apocalypse_firstlight/`.
+The inventory PNG now uses the shared 256×256 projected-bounds framing and no
+per-weapon GUI scale; the hand model and HUD retain their prior transforms. See
+`native_gun_inventory_presentation_v1.md`. Creative Tab appearance remains untested.
 
 The runtime geometry is `geometry.hr55`. It retains the authored `right_hand_anchor`,
 `left_hand_anchor`, `muzzle_pos`, `muzzle_anchor`, `shell`, and `sight_anchor` bones.

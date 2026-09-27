@@ -11,5 +11,5 @@ for(const k of ['thirdperson_righthand','thirdperson_lefthand']){
   hand.display[k]={rotation:[0,0,0],translation:[0,-1.82,-4.24],scale:[.4,.4,.4]};
   source.display[k]=structuredClone(hand.display[k]);
 }
-const wrapper={loader:'forge:separate_transforms',gui_light:'front',textures:{particle:'apocalypse_firstlight:item/br51_01_inventory'},base:{parent:'apocalypse_firstlight:item/br51_01_in_hand'},perspectives:{gui:{parent:'minecraft:item/generated',loader:'forge:item_layers',textures:{layer0:'apocalypse_firstlight:item/br51_01_inventory'},display:{gui:{rotation:[0,0,0],translation:[0,0,0],scale:[.95,.95*574/1165,1]}}}}};
+const wrapper={loader:'forge:separate_transforms',gui_light:'front',textures:{particle:'apocalypse_firstlight:item/br51_01_inventory'},base:{parent:'apocalypse_firstlight:item/br51_01_in_hand'},perspectives:{gui:{parent:'minecraft:item/generated',loader:'forge:item_layers',textures:{layer0:'apocalypse_firstlight:item/br51_01_inventory'}}}};
 for(const [p,o]of [[base+'br51_01_in_hand.json',hand],[base+'br51_01.json',wrapper],[sp,source]])fs.writeFileSync(p,JSON.stringify(o,null,2));

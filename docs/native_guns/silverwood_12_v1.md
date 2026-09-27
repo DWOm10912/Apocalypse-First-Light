@@ -7,7 +7,7 @@
 - 正式 Registry ID、Native Gun 数据和物品类仍为 `apocalypse_firstlight:silverwood_12`、`data/apocalypse_firstlight/native_guns/silverwood_12.json`、`ConfiguredNativeGunItem`。创造模式武器栏只保留这一个 Silverwood。
 - 可编辑源：`src/main/blockbench/silverwood_12_hybrid_hero_remaster_v1.bbmodel`，为当前权威源；此前 Reload Presentation V2 源仍保留供追溯。新源中的 `inspect` 上下 live/spent shell 与 extractor 时间点已同步正式运行时的 2.717 / 2.783 / 2.817 秒修正，其余七段动画沿用现有正式版本。
 - 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。Hero Remaster 当前为 45 Mesh part、5232 triangle、66 导出 Cube；atlas 像素与上版相同，正式动画 JSON 未重新导出。旧 V1 的同名资源已被后续版本覆盖，不再参与运行。
-- 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。正式路径均使用 V2 测试版图像及显示变换。
+- 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。HUD 与手持显示沿用原配置；背包 PNG 已使用统一视角重新捕图并按投影边界归一化为 256×256，GUI 子模型不再使用历史非等比 scale，见 `native_gun_inventory_presentation_v1.md`。
 - 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。音效时间线使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。两段 reload 另有独立视觉 cue `chamber_eject_fx`（0.583 秒），不加入服务端声音队列。
 - `right_hand_anchor`、`left_hand_anchor`、双枪口锚点和四个 live/spent shell 节点保持 V2 测试版合同。Hybrid Mesh Runtime、共享 renderer、维护台适配和 12 Gauge 弹药/空壳资源均未改。
 

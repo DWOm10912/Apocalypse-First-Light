@@ -13,13 +13,6 @@
       "loader": "forge:item_layers",
       "textures": {
         "layer0": "apocalypse_firstlight:item/hr55_inventory"
-      },
-      "display": {
-        "gui": {
-          "rotation": [0, 0, 0],
-          "translation": [0, 0, 0],
-          "scale": [0.95, 0.5, 1]
-        }
       }
     }
   }
