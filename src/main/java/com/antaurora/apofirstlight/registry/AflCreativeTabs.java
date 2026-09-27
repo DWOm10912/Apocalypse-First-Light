@@ -165,7 +165,6 @@ public final class AflCreativeTabs {
                         output.accept(AflItems.ROUND_127MM.get());
                         output.accept(AflItems.ROUND_12_GAUGE.get());
                         output.accept(AflItems.ROUND_50_AE.get());
-                        output.accept(AflItems.CASING_50_AE.get());
                         output.accept(AflItems.PISTOL_RED_DOT.get());
                         output.accept(AflItems.RIFLE_RED_DOT_01.get());
                         output.accept(AflItems.PISTOL_SUPPRESSOR_01.get());

@@ -67,6 +67,12 @@
   "p9_01_put_away": {
     "sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_put_away"]
   },
+  "p9_01_magazine_release": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_release"]},
+  "p9_01_magazine_seat": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_magazine_seat"]},
+  "p9_01_slide_back": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_slide_back"]},
+  "p9_01_slide_release": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_slide_release"]},
+  "p9_01_foley_raise": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_foley_raise"]},
+  "p9_01_foley_lower": {"sounds": ["apocalypse_firstlight:weapons/p9_01/p9_01_foley_lower"]},
   "explosion_tinnitus": {
     "sounds": [
       "apocalypse_firstlight:explosion_tinnitus"

@@ -27,7 +27,7 @@ public final class NativeSightRendering {
         var mount=gun.definition().sightMount();var sight=NativeAttachments.activeSight(stack);
         if(mount==null||sight.isEmpty()||!bone.getName().equals(mount.anchor()))return;
         var id=net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(sight.getItem());
-        var pose=P901RenderMatrices.detachedCopy(incoming);
+        var pose=NativeRenderMatrices.detachedCopy(incoming);
         RenderUtils.translateToPivotPoint(pose,bone);
         // Gecko has already converted source X into its traversal convention.
         // Runtime traversal is restored to model-render X by RenderUtils.

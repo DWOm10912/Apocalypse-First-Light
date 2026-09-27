@@ -32,7 +32,7 @@
   native-afl-gun-framework-v0.md。历史 V0.4.x 描述不覆盖当前 V0.5 源码。
 - C = src/main/java/com/antaurora/apofirstlight/weapon/client/：
   P901FirstPerson、P901Renderer、P901HandLayer、NativePlayerArmRenderer、
-  NativeHandBinding、P901Presentation、P901RenderMatrices。
+  NativeHandBinding、P901Presentation、NativeRenderMatrices。
 - src/main/blockbench/p9_01_v03_8_fire_slide_cleanup.bbmodel；
   Runtime：src/main/resources/assets/apocalypse_firstlight/geo/p9_01.geo.json、
   animations/p9_01.animation.json、models/item/p9_01_in_hand.json。

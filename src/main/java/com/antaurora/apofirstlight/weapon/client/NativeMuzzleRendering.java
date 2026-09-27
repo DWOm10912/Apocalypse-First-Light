@@ -27,7 +27,7 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
         if(gun==null||!(gun.getItem() instanceof NativeGunItem g))return;
         var mount=g.definition().muzzleMount();var item=NativeAttachments.active(gun,NativeAttachment.Slot.MUZZLE);
         if(mount==null||item.isEmpty()||!anchor.getName().equals(mount.anchor()))return;
-        var pose=P901RenderMatrices.detachedCopy(incoming);
+        var pose=NativeRenderMatrices.detachedCopy(incoming);
         RenderUtils.translateToPivotPoint(pose,anchor);
         drawItem(item,pose,buffers,light,overlay);
     }

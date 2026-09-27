@@ -4,8 +4,8 @@
     {
       "description": {
         "identifier": "geometry.50_ae_casing",
-        "texture_width": 16,
-        "texture_height": 16,
+        "texture_width": 512,
+        "texture_height": 512,
         "visible_bounds_width": 2,
         "visible_bounds_height": 2,
         "visible_bounds_offset": [

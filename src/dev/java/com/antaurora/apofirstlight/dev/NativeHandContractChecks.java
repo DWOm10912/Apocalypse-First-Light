@@ -126,7 +126,7 @@ public final class NativeHandContractChecks {
                         NativePlayerArmRenderer.PRESENTATION_X,NativePlayerArmRenderer.PRESENTATION_Y,NativePlayerArmRenderer.PRESENTATION_Z)));
                 require(maxScaleError<EPS,"universal final axes across parent scales");
                 for(boolean slim:new boolean[]{false,true}) {
-                    var skinPose=P901RenderMatrices.detachedCopy(bound);
+                    var skinPose=NativeRenderMatrices.detachedCopy(bound);
                     NativeHandBinding.apply(skinPose,side.equals("right"),slim);
                     var contact=skinPose.last().pose().transformPosition(new Vector3f(
                             NativeHandBinding.centreX(side.equals("right"),slim),10,0).div(16));
@@ -318,7 +318,7 @@ public final class NativeHandContractChecks {
     }
 
     private static PoseStack locator(P901Model model,String name,PoseStack base) {
-        var pose=P901RenderMatrices.detachedCopy(base); var chain=new ArrayList<GeoBone>();
+        var pose=NativeRenderMatrices.detachedCopy(base); var chain=new ArrayList<GeoBone>();
         for(var b=model.getBone(name).orElseThrow();b!=null;b=b.getParent()) chain.add(b);
         Collections.reverse(chain); for(var b:chain) RenderUtils.prepMatrixForBone(pose,b);
         RenderUtils.translateToPivotPoint(pose,model.getBone(name).orElseThrow()); return pose;

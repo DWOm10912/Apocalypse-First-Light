@@ -58,10 +58,10 @@ public final class Br51MagazineProbe {
                 case 12 -> {mc().player.closeContainer();mc().player.getInventory().selected=4;mc().options.setCameraType(CameraType.FIRST_PERSON);mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());p.teleportTo(p.serverLevel(),21,120,-1,java.util.Set.of(),180,0);NativeGunAmmo.set(p.getMainHandItem(),((NativeGunItem)p.getMainHandItem().getItem()).definition(),27);p.inventoryMenu.broadcastChanges();});}
                 case 13 -> {shot("fp");mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);}
                 case 14 -> {shot("tp");mc().options.setCameraType(CameraType.FIRST_PERSON);}
-                case 15 -> com.antaurora.apofirstlight.network.AflNetwork.requestP901(true,4);
+                case 15 -> com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,4);
                 case 16 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==35,"tactical fills 35");}
                 case 17 -> mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());NativeGunAmmo.set(p.getMainHandItem(),((NativeGunItem)p.getMainHandItem().getItem()).definition(),0);p.inventoryMenu.broadcastChanges();});
-                case 18 -> com.antaurora.apofirstlight.network.AflNetwork.requestP901(true,4);
+                case 18 -> com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,4);
                 case 19 -> {var g=mc().player.getMainHandItem();check(NativeGunAmmo.read(g,((NativeGunItem)g.getItem()).definition())==35,"empty fills 35");}
                 case 20 -> mc().getSingleplayerServer().execute(()->{var p=mc().getSingleplayerServer().getPlayerList().getPlayer(mc().player.getUUID());p.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);p.getInventory().setItem(9,new ItemStack(AflItems.BR51_EXTENDED_MAGAZINE_35.get()));p.inventoryMenu.broadcastChanges();});
                 case 21 -> mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));

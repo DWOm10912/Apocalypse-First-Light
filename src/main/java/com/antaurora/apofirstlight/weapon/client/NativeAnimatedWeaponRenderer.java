@@ -76,7 +76,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 if (renderPerspective == null) return;
                 if (renderPerspective.firstPerson() && (bone.getName().equals("upper_chamber_fx")
                         || bone.getName().equals("lower_chamber_fx"))) {
-                    var anchor = P901RenderMatrices.detachedCopy(pose);
+                    var anchor = NativeRenderMatrices.detachedCopy(pose);
                     RenderUtils.translateToPivotPoint(anchor, bone);
                     try { NativeChamberGasFx.anchor(getInstanceId(item), actionClip(item), bone.getName(), anchor, buffers, partial, light); }
                     finally { buffers.getBuffer(type); }
@@ -102,7 +102,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                     String fx = bone.getName().equals(profile.ejectionAnchor()) ? "ejection_anchor"
                             : bone.getName().equals(muzzleAnchor) ? "muzzle_anchor" : null;
                     if (fx != null) {
-                        var matrix = P901RenderMatrices.detachedCopy(pose);
+                        var matrix = NativeRenderMatrices.detachedCopy(pose);
                         RenderUtils.translateToPivotPoint(matrix, bone);
                         boolean attachedExit=fx.equals("muzzle_anchor")&&NativeMuzzleRendering.applyExit(currentItemStack,matrix);
                         boolean suppressed=com.antaurora.apofirstlight.weapon.NativeGunNoise.resolve(currentItemStack,
@@ -117,7 +117,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 if (!renderPerspective.firstPerson()) return;
                 boolean right = bone.getName().equals(profile.rightAnchor());
                 if (!right && !bone.getName().equals(profile.leftAnchor())) return;
-                PoseStack anchor = P901RenderMatrices.detachedCopy(pose);
+                PoseStack anchor = NativeRenderMatrices.detachedCopy(pose);
                 RenderUtils.translateToPivotPoint(anchor, bone);
                 try { NativePlayerArmRenderer.render(anchor, right, buffers, light, overlay); }
                 finally { buffers.getBuffer(type); }

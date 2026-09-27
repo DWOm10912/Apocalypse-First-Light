@@ -39,11 +39,11 @@ public final class ExtendedMagazineProbe {
             case 1->{shot("standard_fp");server(()->gun(true,17));}
             case 2->{
                 if(NativeGunAmmo.capacity(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=24)throw new IllegalStateException("client capacity");
-                shot("extended_fp");com.antaurora.apofirstlight.network.AflNetwork.requestP901(false,0);
+                shot("extended_fp");com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(false,0);
             }
-            case 3->{shot("after_fire");com.antaurora.apofirstlight.network.AflNetwork.requestP901(true,0);}
+            case 3->{shot("after_fire");com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,0);}
             case 4->{if(NativeGunAmmo.read(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=24)throw new IllegalStateException("reload24");server(()->{NativeGunAmmo.set(player().getMainHandItem(),NativeGunDefinition.P9_01,0);player().inventoryMenu.broadcastChanges();});}
-            case 5->com.antaurora.apofirstlight.network.AflNetwork.requestP901(true,0);
+            case 5->com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,0);
             case 6->{shot("reload_complete");mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);}
             case 7->{shot("third_person");mc().options.setCameraType(CameraType.FIRST_PERSON);server(()->{
                 var p=player();var root=new net.minecraft.core.BlockPos(20,120,0);

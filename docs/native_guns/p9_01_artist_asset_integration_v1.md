@@ -1,5 +1,7 @@
 # P9-01 Artist Asset Integration V1
 
+> 2026-09-26：可编辑源 `src/main/blockbench/p9_01.bbmodel` 已替换为 V2 Pure Mesh（旧 Cube 视觉已移除，Rig 不变）。Pure Mesh 几何仍未接入运行时；但 `reload_tactical` 和 `reload_empty` 已在当前源与运行时动画 JSON 中加入枪体和右手同步侧移，其余片段保持旧版。详见 [P9-01 V2 Pure Mesh](p9_01_v2_pure_mesh_v1.md)。下文“可编辑正式模型”指该文件的旧 Cube 内容，可从 git 历史取回。
+
 状态：正式资源与代码已接入；手臂现按 BR51 TaCZ→AFL adapter 模式挂到作者 `*_pos` 下，`compileJava` 与 P9 静态结构检查通过。**本次变更尚未实机验收**，不将手臂显示、握持姿态或声音记为客户端 PASS。下文较早的测试仅属于当时的资产接入版本。
 
 维护台回归修正：Artist V2 runtime Geo 的 identifier 已规范为 `geometry.p9_01`；P9 专用维护台中心按新版几何范围从旧资产坐标 `(-0.186, 0.416)` 重新标定为 `(-0.024, 0.160)`。维护台缩放 `0.55`、平移 `(0, 0.045, 0)`、旋转 `(0, -90, -90)` 与动态纵向居中保持不变；BR51 和其他枪械 profile 未改。代码与资源验证不等于客户端画面验收。

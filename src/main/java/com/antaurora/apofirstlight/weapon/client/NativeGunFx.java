@@ -41,11 +41,14 @@ public final class NativeGunFx {
     public static final ResourceLocation CASING_MODEL = id("item/9x19mm_casing");
     public static final ResourceLocation RIFLE_CASING_MODEL = id("item/762x51mm_casing");
     public static final ResourceLocation HEAVY_RIFLE_CASING_MODEL = id("item/12_7x55mm_casing");
-    private static final ResourceLocation FIFTY_AE_CASING_MODEL = id("item/50_ae_casing");
-    private static final ResourceLocation FIFTY_AE_CASING_GEO = id("geo/50_ae_casing.geo.json");
-    private static final ResourceLocation FIFTY_AE_CASING_TEXTURE = id("textures/item/blackridge_50ae_ammo_v1.png");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
-    private static final float FIFTY_AE_CASING_MESH_SCALE = .65F;
+    /** Static Hybrid Mesh casing: .aflmesh sidecar + GeckoLib geo, shared ammo atlas, world scale of the block-unit mesh. */
+    private record MeshCasing(ResourceLocation geometry, ResourceLocation texture, float scale) {}
+    // Casing item model id -> Pure Mesh casing. Calibres not listed keep their baked item-model quads.
+    // 9 mm: .62 keeps the old Cube casing's ejected size (8.762 px * CASING_SCALE / 1.01862 mesh units).
+    private static final java.util.Map<ResourceLocation, MeshCasing> MESH_CASINGS = java.util.Map.of(
+            id("item/50_ae_casing"), new MeshCasing(id("geo/50_ae_casing.geo.json"), id("textures/item/blackridge_50ae_ammo_v1.png"), .65F),
+            CASING_MODEL, new MeshCasing(id("geo/9x19mm_casing.geo.json"), id("textures/item/9x19mm_ammo_v1.png"), .62F));
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
@@ -131,7 +134,7 @@ public final class NativeGunFx {
                 if (flash.shot.gun != gun || !currentLocalFlash(flash)) continue;
                 float age = flash.lifetime.attachedAge(nanos, renderFrame);
                 if (age < 0) continue;
-                var exit = P901RenderMatrices.detachedCopy(anchor);
+                var exit = NativeRenderMatrices.detachedCopy(anchor);
                 exit.translate(0, 0, -barrelExitOffset / 16);
                 drawFlash(exit, buffers, age, flash.shot);
                 if(NativeGunFxDebug.ENABLED)NativeGunFxDebug.log("FLASH_ATTACHED_SUBMIT",flash.snapshot.shotId(),"age="+age+" gun="+gun+" buffer="+buffers.getClass().getName());
@@ -203,7 +206,7 @@ public final class NativeGunFx {
                 if (Double.isNaN(shot.flashStart)) shot.flashStart = now;
                 float age = (float)(now - shot.flashStart);
                 if (age >= 0 && age < FLASH_TICKS) {
-                    var exit = P901RenderMatrices.detachedCopy(anchor);
+                    var exit = NativeRenderMatrices.detachedCopy(anchor);
                     exit.translate(0, 0, -barrelExitOffset / 16);
                     drawFlash(exit, buffers, age, shot);
                 }
@@ -238,7 +241,7 @@ public final class NativeGunFx {
     }
 
     private static void drawFlash(PoseStack source, MultiBufferSource buffers, float age, Shot shot) {
-        var pose = P901RenderMatrices.detachedCopy(source);
+        var pose = NativeRenderMatrices.detachedCopy(source);
         // Remove inherited model scale for a single preset size in both perspectives.
         Vector3f scale = pose.last().pose().getScale(new Vector3f());
         pose.scale(1 / scale.x, 1 / scale.y, 1 / scale.z);
@@ -306,10 +309,8 @@ public final class NativeGunFx {
         var buffers = mc.renderBuffers().bufferSource();
         var type = RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS);
         var out = buffers.getBuffer(type);
-        var meshType = RenderType.entityCutoutNoCull(FIFTY_AE_CASING_TEXTURE);
-        var casingMesh = AflMeshCache.snapshot().get(FIFTY_AE_CASING_GEO);
-        var casingGeo = GeckoLibCache.getBakedModels().get(FIFTY_AE_CASING_GEO);
-        boolean drewMesh = false;
+        var meshSnapshot = AflMeshCache.snapshot();
+        var meshTypes = new java.util.LinkedHashSet<RenderType>();
         Vec3 camera = event.getCamera().getPosition();
         var pose = event.getPoseStack();
         for (Casing c : CASINGS) {
@@ -321,20 +322,28 @@ public final class NativeGunFx {
             pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees((float)rotation.y));
             pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees((float)rotation.z));
             int light = LevelRenderer.getLightColor(world, BlockPos.containing(position));
-            if (c.model.equals(FIFTY_AE_CASING_MODEL)) {
+            MeshCasing meshCasing = MESH_CASINGS.get(c.model);
+            if (meshCasing != null) {
+                var casingMesh = meshSnapshot.get(meshCasing.geometry());
+                var casingGeo = GeckoLibCache.getBakedModels().get(meshCasing.geometry());
                 if (casingMesh != null && casingGeo != null) {
-                    pose.scale(FIFTY_AE_CASING_MESH_SCALE, FIFTY_AE_CASING_MESH_SCALE, FIFTY_AE_CASING_MESH_SCALE);
-                    // The source casing starts at Y=0. Center it before the existing tumbling rotations.
+                    pose.scale(meshCasing.scale(), meshCasing.scale(), meshCasing.scale());
+                    // The source casing starts at Y=0. Center all of its parts before the existing tumbling rotations.
                     var parts = casingMesh.parts("casing");
                     if (!parts.isEmpty()) {
-                        var bounds = parts.get(0).bounds();
-                        pose.translate(-(bounds.minX() + bounds.maxX()) / 2,
-                                -(bounds.minY() + bounds.maxY()) / 2,
-                                -(bounds.minZ() + bounds.maxZ()) / 2);
+                        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, minZ = Double.MAX_VALUE;
+                        double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+                        for (var part : parts) {
+                            var b = part.bounds();
+                            minX = Math.min(minX, b.minX()); minY = Math.min(minY, b.minY()); minZ = Math.min(minZ, b.minZ());
+                            maxX = Math.max(maxX, b.maxX()); maxY = Math.max(maxY, b.maxY()); maxZ = Math.max(maxZ, b.maxZ());
+                        }
+                        pose.translate(-(minX + maxX) / 2, -(minY + maxY) / 2, -(minZ + maxZ) / 2);
                     }
+                    var meshType = RenderType.entityCutoutNoCull(meshCasing.texture());
+                    meshTypes.add(meshType);
                     var vertices = buffers.getBuffer(meshType);
                     for (GeoBone bone : casingGeo.topLevelBones()) renderCasingMesh(casingMesh, bone, pose, vertices, light);
-                    drewMesh = true;
                 }
             } else {
                 var model = mc.getModelManager().getModel(c.model);
@@ -351,7 +360,7 @@ public final class NativeGunFx {
             pose.popPose();
         }
         buffers.endBatch(type);
-        if (drewMesh) buffers.endBatch(meshType);
+        for (var meshType : meshTypes) buffers.endBatch(meshType);
     }
 
     private static void renderCasingMesh(AflMeshModel mesh, GeoBone bone, PoseStack pose,

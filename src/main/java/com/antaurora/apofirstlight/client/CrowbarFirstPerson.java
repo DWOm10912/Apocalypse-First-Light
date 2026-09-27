@@ -3,7 +3,7 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.interaction.CrowbarSmashTimeline;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.client.NativePlayerArmRenderer;
-import com.antaurora.apofirstlight.weapon.client.P901RenderMatrices;
+import com.antaurora.apofirstlight.weapon.client.NativeRenderMatrices;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -57,7 +57,7 @@ public final class CrowbarFirstPerson {
         Renderer(){super(new Model());addRenderLayer(new GeoRenderLayer<>(this){
             @Override public void renderForBone(PoseStack pose,ViewModel v,GeoBone bone,RenderType type,MultiBufferSource buffers,VertexConsumer buffer,float partial,int light,int overlay){
                 if(!bone.getName().equals("right_hand_anchor"))return;
-                var locator=P901RenderMatrices.detachedCopy(pose);RenderUtils.translateToPivotPoint(locator,bone);
+                var locator=NativeRenderMatrices.detachedCopy(pose);RenderUtils.translateToPivotPoint(locator,bone);
                 try{NativePlayerArmRenderer.renderFullSize(locator,v.right,buffers,light,overlay);}finally{buffers.getBuffer(type);}
             }
         });}
@@ -73,7 +73,7 @@ public final class CrowbarFirstPerson {
         if(player.isSpectator()||player.isScoping()||player.isSleeping())return;
         e.setCanceled(true);
         if(renderer==null)renderer=new Renderer();
-        var pose=P901RenderMatrices.detachedCopy(e.getPoseStack());
+        var pose=NativeRenderMatrices.detachedCopy(e.getPoseStack());
         VIEW.right=player.getMainArm()==HumanoidArm.RIGHT;
         if(!VIEW.right)pose.scale(-1,1,1);
         VIEW.ticks=CrowbarSmashClient.elapsed(e.getPartialTick());

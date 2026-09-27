@@ -24,8 +24,17 @@
 					]
 				},
 				{
-					"name": "righthand",
+					"name": "handling",
 					"parent": "root",
+					"pivot": [
+						0.6,
+						2.4,
+						2.5
+					]
+				},
+				{
+					"name": "righthand",
+					"parent": "handling",
 					"pivot": [
 						5.98125,
 						19,
@@ -79,7 +88,7 @@
 				},
 				{
 					"name": "g19_and_mag",
-					"parent": "root",
+					"parent": "handling",
 					"pivot": [
 						0,
 						2.5313,

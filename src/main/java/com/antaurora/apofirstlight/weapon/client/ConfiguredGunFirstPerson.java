@@ -20,7 +20,7 @@ public final class ConfiguredGunFirstPerson {
         e.setCanceled(true);
         if (e.getHand() != InteractionHand.MAIN_HAND || p.isSpectator() || p.isScoping()) return;
         boolean right = p.getMainArm() == HumanoidArm.RIGHT;
-        var pose = P901RenderMatrices.detachedCopy(e.getPoseStack());
+        var pose = NativeRenderMatrices.detachedCopy(e.getPoseStack());
         if(!FieldAttachmentViewState.isActive()){
             NativeWeaponSway.apply(pose,e.getPartialTick());
             NativeGunRecoil.applyViewmodel(pose);

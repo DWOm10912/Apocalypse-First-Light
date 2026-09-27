@@ -19,16 +19,16 @@ import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.util.RenderUtils;
 
 /** Plain-Item bridge into the Phase 1 AFL Mesh cache and CPU triangle backend. */
-public final class Afl12GaugeRoundRenderer extends BlockEntityWithoutLevelRenderer {
+public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRenderer {
     private final ResourceLocation geometry;
     private final ResourceLocation texture;
     private final double verticalOffset;
 
-    public Afl12GaugeRoundRenderer() {
+    public AflStaticMeshItemRenderer() {
         this("12_gauge_round", "12_gauge_round_mesh", 0.32);
     }
 
-    public Afl12GaugeRoundRenderer(String model, String atlas, double verticalOffset) {
+    public AflStaticMeshItemRenderer(String model, String atlas, double verticalOffset) {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
         this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
         this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + atlas + ".png");

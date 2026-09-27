@@ -41,7 +41,7 @@ final class NativeMagazineRoundRendering {
         float determinant = incoming.last().pose().determinant3x3();
         if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12f) return;
 
-        PoseStack local = P901RenderMatrices.detachedCopy(incoming);
+        PoseStack local = NativeRenderMatrices.detachedCopy(incoming);
         RenderUtils.translateToPivotPoint(local, bone);
         AflHybridMeshRendering.renderAtCurrentPose(visual.geometry(), visual.texture(),
                 local, buffers, light, overlay);

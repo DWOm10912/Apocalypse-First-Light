@@ -100,7 +100,7 @@ public final class NativeGunInput {
             stopTrigger();
             NativeGunInspect.cancel();
             NativeGunAds.reloadRequested();
-            AflNetwork.requestP901(true, mc.player.getInventory().selected);
+            AflNetwork.requestNativeGun(true, mc.player.getInventory().selected);
         }
         reloadHeld = RELOAD.isDown();
         if(modeClick&&!attackHeld&&!reloadClick

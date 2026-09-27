@@ -28,7 +28,7 @@ public final class P901HandLayer extends GeoRenderLayer<P901Item> {
         var rig = P901Renderer.RIG;
         boolean right = bone.getName().equals(rig.rightLocator());
         if (!right && !bone.getName().equals(rig.leftLocator())) return;
-        var locator = P901RenderMatrices.detachedCopy(pose);
+        var locator = NativeRenderMatrices.detachedCopy(pose);
         RenderUtils.translateToPivotPoint(locator, bone);
         try {
             // Preserve the authored grip contact while gently retracting only the

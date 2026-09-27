@@ -1,0 +1,286 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.p9_01_v2_native",
+				"texture_width": 1024,
+				"texture_height": 1024,
+				"visible_bounds_width": 16,
+				"visible_bounds_height": 10,
+				"visible_bounds_offset": [
+					0,
+					4,
+					0
+				]
+			},
+			"bones": [
+				{
+					"name": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "handling",
+					"parent": "root",
+					"pivot": [
+						0,
+						3,
+						2.06
+					]
+				},
+				{
+					"name": "gun_body",
+					"parent": "handling",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "barrel",
+					"parent": "gun_body",
+					"pivot": [
+						0,
+						5.3752,
+						-1.6
+					]
+				},
+				{
+					"name": "muzzle_anchor",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						5.3752,
+						-7.233
+					]
+				},
+				{
+					"name": "chamber_round_anchor",
+					"parent": "barrel",
+					"pivot": [
+						0,
+						5.3752,
+						-0.44
+					]
+				},
+				{
+					"name": "trigger",
+					"parent": "gun_body",
+					"pivot": [
+						0,
+						4.04318,
+						-0.60261
+					]
+				},
+				{
+					"name": "slide",
+					"parent": "handling",
+					"pivot": [
+						0,
+						5.3752,
+						0
+					]
+				},
+				{
+					"name": "front_sight",
+					"parent": "slide",
+					"pivot": [
+						0,
+						5.96718,
+						-6.22661
+					]
+				},
+				{
+					"name": "rear_sight",
+					"parent": "slide",
+					"pivot": [
+						0,
+						5.96718,
+						2.94939
+					]
+				},
+				{
+					"name": "ejection_anchor",
+					"parent": "slide",
+					"pivot": [
+						-0.8399,
+						5.64158,
+						-0.66181
+					]
+				},
+				{
+					"name": "sight_anchor",
+					"parent": "slide",
+					"pivot": [
+						0,
+						6.29278,
+						-6.22661
+					]
+				},
+				{
+					"name": "magazine",
+					"parent": "handling",
+					"pivot": [
+						0,
+						3.5992,
+						1.647
+					]
+				},
+				{
+					"name": "follower",
+					"parent": "magazine",
+					"pivot": [
+						0,
+						3.5992,
+						1.647
+					]
+				},
+				{
+					"name": "magazine_round_anchor",
+					"parent": "magazine",
+					"pivot": [
+						0,
+						3.39381,
+						1.85725
+					],
+					"rotation": [
+						22,
+						0,
+						0
+					]
+				},
+				{
+					"name": "righthand",
+					"parent": "handling",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "right_hand_anchor",
+					"parent": "righthand",
+					"pivot": [
+						0,
+						3,
+						2.06
+					]
+				},
+				{
+					"name": "lefthand",
+					"parent": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "lefthand_pos",
+					"parent": "lefthand",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "left_hand_anchor",
+					"parent": "lefthand_pos",
+					"pivot": [
+						1.5,
+						4,
+						0.5
+					]
+				},
+				{
+					"name": "mag_out",
+					"parent": "root",
+					"pivot": [
+						0,
+						3.5992,
+						1.647
+					]
+				},
+				{
+					"name": "reload_magazine",
+					"parent": "mag_out",
+					"pivot": [
+						0,
+						3.5992,
+						1.647
+					]
+				},
+				{
+					"name": "mag_out_round_anchor",
+					"parent": "reload_magazine",
+					"pivot": [
+						0,
+						3.39381,
+						1.85725
+					],
+					"rotation": [
+						22,
+						0,
+						0
+					]
+				},
+				{
+					"name": "empty_old_mag",
+					"parent": "root",
+					"pivot": [
+						0,
+						3.5992,
+						1.647
+					]
+				},
+				{
+					"name": "empty_old_mag_round_anchor",
+					"parent": "empty_old_mag",
+					"pivot": [
+						0,
+						3.39381,
+						1.85725
+					],
+					"rotation": [
+						22,
+						0,
+						0
+					]
+				},
+				{
+					"name": "positioning",
+					"parent": "root",
+					"pivot": [
+						0,
+						0,
+						0
+					]
+				},
+				{
+					"name": "maintenance_anchor",
+					"parent": "root",
+					"pivot": [
+						0,
+						4.6,
+						-1.6
+					]
+				},
+				{
+					"name": "camera",
+					"pivot": [
+						0,
+						12,
+						18
+					]
+				}
+			]
+		}
+	]
+}

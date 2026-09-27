@@ -32,7 +32,7 @@ public final class FieldAttachmentHotspots {
             boolean preferred=bone.getName().equals(d.preferred());
             if(!preferred&&!bone.getName().equals(d.fallback()))continue;
             var previous=HITS.get(slot);if(previous!=null&&previous.preferred()&&!preferred)continue;
-            var pose=P901RenderMatrices.detachedCopy(incoming);
+            var pose=NativeRenderMatrices.detachedCopy(incoming);
             RenderUtils.prepMatrixForBone(pose,bone);RenderUtils.translateToPivotPoint(pose,bone);
             var point=new Vector4f(preferred?0:d.x(),preferred?0:d.y(),preferred?0:d.z(),1);
             pose.last().pose().transform(point);

@@ -333,7 +333,7 @@ M_arm = M_locator × B_skin
 
 - `P901ReloadGrip`：**计划废弃/删除**。短掌段也不恢复；本轮没有删除。
 - `P901HandLayer`：重写为统一 locator → skin-arm adapter，去除 per-state geometry branch、武器专用朝向和重复姿态补偿。保留当前玩家/皮肤/context 范围判断与状态恢复经验。
-- `P901RenderMatrices`：保留并扩充测试；已有隔离不是问题来源。
+- `NativeRenderMatrices`：保留并扩充测试；已有隔离不是问题来源。
 - `P901FirstPerson`：保留 Native 局部所有权；本轮不引入 SBM 的切枪管理器。
 - `P901Renderer` / `P901Presentation`：最小迁移先保留共同求值与当前枪取景，不以修手为由改枪。以后是否把 presentation 收敛进 authoring view 要独立决策。
 - `P901AnimationController` / `NativeGunActions` / `P901Item`：最小 V1 保留动作与服务端逻辑。未来才讨论 clips/overlay/empty 状态。

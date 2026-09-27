@@ -1923,7 +1923,7 @@ Historical attempt, superseded by the V0.4.4 baseline restore below.
   return by 1.18s. Full 1.30s weapon_root/magazine/reload_magazine/left-anchor
   evaluation remains. Hand rendering uses the restored reference mapping in
   every state; gun side-open and hand-anchor motion are not rolled back.
-- **Ownership isolation**: `P901RenderMatrices.detachedCopy` creates
+- **Ownership isolation**: `NativeRenderMatrices.detachedCopy` creates
   separate pose AND normal matrix objects. The weapon entry copies the caller's
   camera stack and owns its push/finally/pop scope. The hand layer only reads
   the animated per-bone pose, copies it, and calibrates/renders on its own scoped
@@ -1967,7 +1967,7 @@ Historical attempt, superseded by the V0.4.4 baseline restore below.
   lines in the user's appended future-ammo/HUD checklist; they were preserved.
   The check excluding that checklist passes. No screenshots or previews were made.
 - **V0.4.4 changed files**: production `weapon/client/P901FirstPerson.java`,
-  `P901HandLayer.java`, new `P901RenderMatrices.java`; DEV
+  `P901HandLayer.java`, new `NativeRenderMatrices.java`; DEV
   `NativeGunMatrixChecks.java`, `NativeGunRuntimeSmokeCheck.java`,
   `NativeGunArmChecks.java`, `NativeGunArmClearance.java`,
   `NativeGunPresentationTrace.java`, `NativeGunArmTrace.java`. The four directly

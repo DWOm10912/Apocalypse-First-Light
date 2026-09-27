@@ -37,7 +37,7 @@ public final class P901FirstPerson {
         if (event.getHand() != InteractionHand.MAIN_HAND || player.isSpectator() || player.isScoping()) return;
         boolean right = player.getMainArm() == HumanoidArm.RIGHT;
         // Weapon owns its stack; neither renderer branch can alter the caller's camera stack.
-        var pose = P901RenderMatrices.detachedCopy(event.getPoseStack());
+        var pose = NativeRenderMatrices.detachedCopy(event.getPoseStack());
         pose.pushPose();
         try {
             if(!FieldAttachmentViewState.isActive()){

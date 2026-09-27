@@ -60,8 +60,8 @@ public final class AflNetwork {
                 ExplosionTinnitusS2CPacket::encode, ExplosionTinnitusS2CPacket::decode,
                 ExplosionTinnitusS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
-        channel.registerMessage(nextId++, P901C2SPacket.class,
-                P901C2SPacket::encode, P901C2SPacket::decode, P901C2SPacket::handle,
+        channel.registerMessage(nextId++, NativeGunC2SPacket.class,
+                NativeGunC2SPacket::encode, NativeGunC2SPacket::decode, NativeGunC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, NativeTriggerPacket.class,NativeTriggerPacket::encode,NativeTriggerPacket::decode,
                 NativeTriggerPacket::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
@@ -307,8 +307,8 @@ public final class AflNetwork {
         }
     }
 
-    public static void requestP901(boolean reload, int slot) {
-        requestP901(reload,slot,0);
+    public static void requestNativeGun(boolean reload, int slot) {
+        requestNativeGun(reload,slot,0);
     }
     public static void requestInspect(int slot, long id, boolean cancel) {
         if (channel != null) channel.sendToServer(new NativeInspectPacket(slot, id, cancel));
@@ -329,20 +329,20 @@ public final class AflNetwork {
             context.setPacketHandled(true);
         }
     }
-    public static void requestP901(boolean reload,int slot,long shotId){
-        if (channel != null) channel.sendToServer(new P901C2SPacket(reload, slot,shotId));
+    public static void requestNativeGun(boolean reload,int slot,long shotId){
+        if (channel != null) channel.sendToServer(new NativeGunC2SPacket(reload, slot,shotId));
     }
 
-    public record P901C2SPacket(boolean reload, int slot,long shotId) {
-        public static void encode(P901C2SPacket packet, FriendlyByteBuf buffer) {
+    public record NativeGunC2SPacket(boolean reload, int slot,long shotId) {
+        public static void encode(NativeGunC2SPacket packet, FriendlyByteBuf buffer) {
             buffer.writeBoolean(packet.reload);
             buffer.writeVarInt(packet.slot);
             buffer.writeLong(packet.shotId);
         }
-        public static P901C2SPacket decode(FriendlyByteBuf buffer) {
-            return new P901C2SPacket(buffer.readBoolean(), buffer.readVarInt(),buffer.readLong());
+        public static NativeGunC2SPacket decode(FriendlyByteBuf buffer) {
+            return new NativeGunC2SPacket(buffer.readBoolean(), buffer.readVarInt(),buffer.readLong());
         }
-        public static void handle(P901C2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
+        public static void handle(NativeGunC2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             if (context.getDirection() == net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER) {
                 context.enqueueWork(() -> {

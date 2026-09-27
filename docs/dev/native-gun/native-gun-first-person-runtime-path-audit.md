@@ -128,7 +128,7 @@ Geo 为 19 bones / 77 gun cubes。reference groups/cubes 的 export=false，故�
 ### 输入、动作与第三人称旁路
 
 - AflItems 注册 P901Item；Item 构造创建 Gecko 缓存、注册 synced animatable 和 `afl_hold` easing。
-- NativeGunInput.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.P901C2SPacket 发给服务端。
+- NativeGunInput.attack / tick 经 Forge input/tick 事件，取消原版近战摆手、边沿检测左键/R；经 AflNetwork.NativeGunC2SPacket 发给服务端。
 - AflNetwork.handle 在 server work queue 调 NativeGunActions.request；校验选中槽位、活体、主手类型与 busy session；给实际 stack 分配 GeckoLibID、同步物品，再 triggerAnim。
 - NativeGunActions 持有 WeakHashMap<ServerPlayer, Session>；Fire 锁 3 tick，Reload 锁 26 tick；声音 tick 8/19。切槽、死亡、维度变更停止具名动画。它不拥有 camera、hand scale 或 arm matrix。
 - Item.registerControllers 注册单个 action controller，fire/reload 都是 thenPlay；动画长度分别 0.14s / 1.30s。controller 只是给 presentation 提供原动画时钟，没有第二个视觉 reload 计时器。
@@ -314,7 +314,7 @@ D/NativeHandContractChecks:246–288 比较的是“源hierarchy计算后**额�
 | P901FirstPerson | ForgeRenderHandEvent → Presentation、RenderMatrices、ItemRenderer | ACTIVE；单入口，没有第二个AFL hand入口 | KEEP入口；静态视觉参数后续移交源 |
 | P901Renderer | Item extension → GeoItemRenderer、Model、HandLayer、Presentation、Rig、controller getter | ACTIVE；模型wrapper兼管legacy presentation/nonFP兼容 | REWRITE，分清数据authority，保留Gecko生命周期 |
 | P901HandLayer | Renderer构造注册 → per-bone callback → RenderMatrices、RenderUtils、NativePlayerArmRenderer | ACTIVE；仅adapter，无第二套手绘制 | KEEP，可日后内聚进通用renderer |
-| P901RenderMatrices | FirstPerson/HandLayer → PoseStack复制 | ACTIVE；和DEV copy工具概念重复但不是双绘 | KEEP，未来可通用改名/内聚 |
+| NativeRenderMatrices | FirstPerson/HandLayer → PoseStack复制 | ACTIVE；和DEV copy工具概念重复但不是双绘 | KEEP；通用命名已同步，矩阵逻辑不变 |
 | P901Presentation | FirstPerson/Renderer → 基线与Reload额外变换 | ACTIVE；和BB Display/weapon_root承担叠加视觉职责 | REWRITE，逐步源authoritative迁移，不直接删除 |
 | P901ReloadGrip | **无main caller**；仅DEV ReloadGripChecks/ArmTrace → 旧surface顶点 | DEAD production；仍打包，但默认不加载绘制 | DEAD；DEV调用一起清理后DELETE_LATER |
 | NativeGunRig | Renderer静态RIG实例 → GeoBone.updateScale | ACTIVE；Java .8和source .8重复维护 | KEEP metadata角色，scale authority需收敛 |
@@ -326,7 +326,7 @@ D/NativeHandContractChecks:246–288 比较的是“源hierarchy计算后**额�
 | P901Item（含匿名extension） | 注册/物品实例 → Renderer、PlayerPose、AnimationController、Gecko缓存 | ACTIVE，renderer/client extension及动画入口 | KEEP |
 | P901AnimationController | Item注册/Gecko process → super.process；Renderer读取reloadSeconds | ACTIVE，共享action时钟 | KEEP |
 | NativeGunActions（含Session） | packet/server events → synced trigger/stop、sounds | ACTIVE，服务端动作锁/音效；非手臂renderer | KEEP，不借本审计扩玩法 |
-| AflNetwork.P901C2SPacket | Input请求→channel注册→Actions.request | ACTIVE基础设施；不是FP视觉类 | KEEP |
+| AflNetwork.NativeGunC2SPacket | Input请求→channel注册→Actions.request | ACTIVE基础设施；不是FP视觉类 | KEEP |
 | AflItems.P9_01 | DeferredRegister→P901Item构造 | ACTIVE注册基础设施 | KEEP |
 | AflSounds相关注册 | Actions声音引用 | ACTIVE音频基础设施；不拥有手视觉 | KEEP |
 
@@ -441,7 +441,7 @@ V0.5 = PLANNED / NOT IMPLEMENTED。没有发现需要本轮越界紧急修改的
 
 - C/P901FirstPerson.java、P901Renderer.java、P901HandLayer.java：当前入口、枪/手接入桥。
 - C/NativePlayerArmRenderer.java、NativeHandBinding.java、NativeGunRig.java：当前完整skin手臂与canonical/独立gun契约。
-- C/P901Model.java、P901RenderMatrices.java：资源定位与独立矩阵所有权。
+- C/P901Model.java、NativeRenderMatrices.java：资源定位与独立矩阵所有权。
 - C/P901Presentation.java：**目前仍active**；只能在等价迁移后替换，不是死类。
 - C/P901PlayerPose.java中的PISTOL、W/Item/AnimationController/Actions、C/Input与Network/Registry：第三人称、动画与正常输入支持。
 - D/NativeHandContractChecks.java、NativeGunRuntimeSmokeCheck.java、NativeHandVisualGate.java及ArmChecks当前工具：先解除依赖和视觉门职责再整理；不要直接删掉留下调用断裂。

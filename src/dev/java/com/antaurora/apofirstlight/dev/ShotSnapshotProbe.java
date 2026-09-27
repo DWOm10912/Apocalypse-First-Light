@@ -48,7 +48,7 @@ public final class ShotSnapshotProbe {
             }else if(stage==1){
                 id=NativeShotVisualSnapshot.capture();frozen=pending().get(id);
                 if(frozen==null)throw new IllegalStateException("capture missing variant="+index);
-                NativeGunRecoil.syncAimBeforeShot();AflNetwork.requestP901(false,0,id);stage=2;
+                NativeGunRecoil.syncAimBeforeShot();AflNetwork.requestNativeGun(false,0,id);stage=2;
             }else{
                 var confirmed=NativeShotVisualSnapshot.class.getDeclaredField("lastConfirmed");confirmed.setAccessible(true);
                 if(confirmed.getLong(null)!=id)throw new IllegalStateException("effect not confirmed id="+id);
