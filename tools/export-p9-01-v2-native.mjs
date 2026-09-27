@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {convert, serialize} from './export-afl-mesh.mjs';
+import {convert, serializeCompact, meshCounts} from './export-afl-mesh.mjs';
 import {nativePath, FP_SCALE} from './build-p9-01-v2-native.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -65,10 +65,10 @@ const display = {
 };
 
 const geoText = JSON.stringify(geo, null, '\t') + '\n';
-// Same data as tools/export-afl-mesh.mjs serialize(), but numeric rows (vertices / triangles) on one line each:
-// the pretty-printed form of 12.6k triangles exceeds the runtime 4 MiB character limit (AflMeshLoader.MAX_CHARACTERS).
-const model = convert(source, geo, {}, nativePath);
-const meshText = serialize(model).replace(/\[\s*(-?[\d.e+-]+(?:,\s*-?[\d.e+-]+)*)\s*\]/g, (m, body) => '[' + body.split(/,\s*/).join(',') + ']');
+// Keep numeric vertex/face rows compact and retain the runtime 4 MiB limit.
+// Only this migrated asset opts into V2; the shared converter's default remains V1.
+const model = convert(source, geo, {}, nativePath, 2);
+const meshText = serializeCompact(model);
 if (meshText.length > 4 * 1024 * 1024) throw new Error('sidecar exceeds runtime 4 MiB limit');
 if (JSON.stringify(JSON.parse(meshText)) !== JSON.stringify(model)) throw new Error('compact sidecar changed data');
 const png = Buffer.from(source.textures[0].source.split(',')[1], 'base64');
@@ -81,5 +81,5 @@ if (process.argv.includes('--check')) {
   fs.writeFileSync(out.geo, geoText); fs.writeFileSync(out.mesh, meshText); fs.writeFileSync(out.texture, png); fs.writeFileSync(out.display, displayText);
 }
 LEGACY.forEach((p, i) => { if (!fs.readFileSync(path.join(assets, p)).equals(legacyBefore[i])) throw new Error('legacy resource changed: ' + p); });
-console.log(JSON.stringify({bones: bones.length, parts: model.parts.length, triangles: model.parts.reduce((s, p) => s + p.triangles.length, 0),
+console.log(JSON.stringify({bones: bones.length, parts: model.parts.length, format_version: model.format_version, ...meshCounts(model),
   fpTranslation: fpTr, fpScale: FP_SCALE, outputs: Object.values(out).map(p => path.relative(root, p))}, null, 1));

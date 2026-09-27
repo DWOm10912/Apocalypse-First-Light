@@ -1,6 +1,6 @@
-# AFL Hybrid Mesh Runtime V1 — Round 1
+# AFL Hybrid Mesh Runtime — V1 / V2
 
-2026-09-24。状态：核心实现；离线数据/坐标/顶点提交检查通过，图形客户端与资源热重载尚未实机验收。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
+2026-09-27。V2 状态：Quad 保留与 CPU 提交优化已实现；离线数据/坐标/顶点提交检查通过，V2 图形画面、PBR 和 CPU 耗时待用户实机验收。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
 
 ## 范围与 opt-in
 
@@ -14,7 +14,7 @@ GeckoLib 继续持有 skeleton、动画、骨骼姿态和 Cube 绘制。AFL 的�
 | 可选 Mesh sidecar | `assets/<namespace>/meshes/<id>.aflmesh.json` |
 | atlas | 沿用枪械 renderer 当前 texture；sidecar 不另选贴图 |
 
-`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55 和 P9 没有新增 sidecar，继续走旧绘制。正式 `silverwood_12` 现已通过 `meshes/silverwood_12.aflmesh.json` 绑定 Hybrid Mesh V2、Claude 动画和四个事件化机械音效；其 Registry ID 与原 Native Gun 玩法不变。临时测试物品已删除。
+`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55 继续走 Cube 路径。正式 `p9_01` 使用 `p9_01_v2_native.aflmesh.json`，与 `blackridge_50.aflmesh.json` 同为首批 **sidecar 格式 V2**。`silverwood_12.aflmesh.json` 与弹药 sidecar 保留格式 V1；此前 Silverwood 资产名中的“Hybrid Mesh V2”是模型迭代编号，不是本节的存储格式版本。Registry ID、动画和玩法未因本轮迁移改变。
 
 ## Sidecar V1
 
@@ -36,7 +36,40 @@ GeckoLib 继续持有 skeleton、动画、骨骼姿态和 Cube 绘制。AFL 的�
 
 每个 vertex 为 `[x,y,z,u,v]`，每个 triangle 为三个零起始索引。一个 part 对应一个 Mesh element、一个 bone；同一 bone 可有多个 part。Runtime 绑定稳定 bone name，不使用 Blockbench UUID。UV seams 允许重复位置、不同 UV；flat normal 按三角形叉乘生成，不接受自定义 smooth normals。
 
-Loader 校验版本、固定坐标/UV/winding 标记、字段集合、唯一 part 名、目标 bone 存在、atlas 与 geometry 描述一致、有限数、数组长度、索引范围、非零面积。顶点在转成 float 后再验证退化。限制：每份 JSON 最多 4 MiB 字符；1–128 parts；全模型最多 16,384 triangles、65,536 vertex slots；局部位置绝对值不超过 256 格；UV 在 `[0,1]`；atlas 各边 1–4096。未知/多余字段拒绝。错误包含资源路径，part 内错误另含 bone/part（名称无法解码时给 part 索引）。
+Loader 校验版本、固定坐标/UV/winding 标记、字段集合、唯一 part 名、目标 bone 存在、atlas 与 geometry 描述一致、有限数、数组长度、索引范围、非零面积。顶点在转成 float 后再验证退化。限制：每份 JSON 最多 4 MiB 字符；1–128 parts；全模型最多 16,384 triangle-equivalents（Quad 计 2）、65,536 vertex slots；局部位置绝对值不超过 256 格；UV 在 `[0,1]`；atlas 各边 1–4096。未知/多余字段拒绝。错误包含资源路径，part 内错误另含 bone/part（名称无法解码时给 part 索引）。
+
+## Sidecar V2 与回退
+
+`format_version: 2` 保持 V1 的 root 元数据、`vertices: [x,y,z,u,v]` 和 bone contract，只把 part 的 `triangles` 字段替换为 `faces`。每个 face 是 3 或 4 个索引，例如 `"faces": [[3,0,1,2], [4,5,6]]`。面顺序、逐 corner UV 和边界 winding 均保留，不合并 UV seam 或硬边。Runtime 用 primitive arrays 保存 corners 与 face offsets，加载时缓存 face count、triangle-equivalent、part count、版本和 bounds；V2 Quad 不再展开为两组三角形 corners。
+
+- 显式 `format_version: 1` 或**完全缺少版本字段**：只读取 V1 `triangles`；不能用缺少版本的文件承载 V2 `faces`。
+- 显式 `format_version: 2`：读取 `faces`，长度必须为 3/4；Quad 在 float 精度下必须为非退化、凸、平面面。Loader 对每个连续三点的单位法线差容差为 `2e-5`。
+- 其它版本、混用 `faces`/`triangles`、非整数索引和无效拓扑直接拒绝该 sidecar，沿用原资源错误隔离策略。
+- 通用导出器默认仍为 V1，使用 `--format v2` 明确选择 V2；P9 专用 `tools/export-p9-01-v2-native.mjs` 默认导出 V2，避免后续正常导出覆盖本轮迁移。其它资产不批量迁移。
+- 单资产回退：对相同 source/geo 使用通用导出器 `--format v1`，覆盖该资产的 sidecar 即可；Runtime 保留 V1 支持，无需回滚整个 Runtime。
+
+转换器先运行原确定性三角化验证。只有凸平面 Quad 且两半的 UV tangent/bitangent 方向连续时，才保留 Quad。坐标与 UV 按 runtime float 精度判断，单位法线及单位 tangent/bitangent 的向量差上限为 `1e-5`；退化 UV 不保留 Quad。四角循环旋转到原 ear-clipping 第一组三角形的位置，使 Minecraft 的 `ABC + CDA` 与原 V1 **使用同一条对角线**。凹 Quad、扭曲 Quad、UV 切线不连续的 Quad、真实 Triangle 和 n-gon 保留原 V1 三角化结果；没有修改源文件或为了提高 Quad 比例放宽要求。
+
+### 提交与 Oculus / Embeddium 审计
+
+原 Quad 在 `tools/export-afl-mesh.mjs:convert → triangulate` 被拆成两个三角形。当前 `entityCutoutNoCull` 使用 `DefaultVertexFormat.NEW_ENTITY` 和 `VertexFormat.Mode.QUADS`（已检查本地 Forge 47.4.22 类），每组三/四边面都必须提交 4 vertices：V2 Quad 为 `A,B,C,D`；真实 Triangle 和所有 V1 triangle 为 `A,B,C,C`。镜像时分别为 `A,D,C,B`、`A,C,B,B`，保持对角线、正面绕序和向外法线。
+
+已检查本地 Oculus `6020952` 的 `MixinBufferBuilder`、`NormalHelper` 及 Oculus/Embeddium `MixinSodiumBufferBuilder`：QUADS 每四个顶点触发 extended data，生成 mid-UV、normal/tangent；entity 路径使用传入法线和 `computeTangentSmooth`。本轮继续沿用同一个 VertexConsumer、RenderType、light/overlay、贴图及 `_s`/`_n` 绑定，不修改 Embeddium internals。原来的两个退化 Quad 改为一个原生 Quad 后，mid-UV 将描述完整面；这项附加数据自然会变化，不能把离线几何一致性当成所有 Shader/POM 行为的实机证明。切线连续检查保护 normal-map 方向，实际 LabPBR 高光、反射仍由用户验证。
+
+热路径原本没有逐顶点对象分配，pose/normal matrix 也已在循环外获取。本轮将矩阵系数及镜像 inverse-transpose 移到每次调用只计算一次；每 face 只变换一次 flat normal；Triangle 重复的第四角复用第三角的变换结果；parts 使用索引遍历，metrics 按 face 累计。未引入 VBO、GPU cache、OpenGL 或专用 Shader。隐藏骨骼、隐藏子树和零尺度 early skip 沿用原规则。
+
+### 首批静态提交预算（主枪默认可见部分）
+
+以下是导出/顶点捕获验证的**预期每次主枪绘制**，不是新的实机 CPU/FPS 测量。辅助弹匣 `reload_magazine`、`empty_old_mag` 不在默认可见预算内，换弹时 Profiler 会按实际提交统计。
+
+| 模型 | V1 triangle-equivalent | V2 Quad | V2 Triangle | V2 triangle-equivalent | V1 vertices | V2 vertices | 减少 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| P9-01 | 6384 | 988 | 4408 | 6384 | 25536 | 21584 | 15.48% |
+| Blackridge .50 | 4500 | 796 | 2908 | 4500 | 18000 | 14816 | 17.69% |
+
+含全部隐藏 helper 的 sidecar：P9 为 35 parts、1226 Quad、5316 Triangle、7768 triangle-equivalent；Blackridge 为 16 parts、878 Quad、3236 Triangle、4992 triangle-equivalent。P9 源含 3289 Quad，Blackridge 含 1961 Quad；未被保留的面继续三角化，故本轮不声称 25–50% 或 2× 收益。源 Geometry、UV、Rig、动画、贴图与玩法数据没有改变；只重导出这两个 sidecar 的表示。
+
+资产预算以 **visible triangle-equivalent** 计：手枪目标 4500–6000、soft limit 约 6500、hard limit 约 7000；SMG/Rifle 目标 6000–8000、soft limit 约 9000、hard limit 约 10000。大型特殊武器单独审核。这是作者验收预算，不是新增 runtime 拒绝条件；V2 节省顶点提交不等于可以无限增加面数。
 
 ## 坐标、pivot 与 winding 合同
 
@@ -58,9 +91,11 @@ Loader 校验版本、固定坐标/UV/winding 标记、字段集合、唯一 par
 
 ```powershell
 node tools/export-afl-mesh.mjs --input src/main/blockbench/dev/afl_mesh_core_fixture.bbmodel --geometry src/dev/resources/afl_mesh_core/fixture.geo.json --output src/dev/resources/afl_mesh_core/fixture.aflmesh.json --check
+node tools/export-afl-mesh.mjs --input src/main/blockbench/p9_01_v2_native.bbmodel --geometry src/main/resources/assets/apocalypse_firstlight/geo/p9_01_v2_native.geo.json --output src/main/resources/assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json --format v2 --compact --check
+node tools/export-afl-mesh.mjs --input src/main/blockbench/blackridge_50.bbmodel --geometry src/main/resources/assets/apocalypse_firstlight/geo/blackridge_50.geo.json --output src/main/resources/assets/apocalypse_firstlight/meshes/blackridge_50.aflmesh.json --format v2 --compact --check
 ```
 
-去掉 `--check` 才写出结果；`--mapping mapping.json` 的内容为 `{ "source_group_name": "runtime_bone_name" }`。未使用的 mapping、unknown parent、层级/pivot/rotation 不匹配直接报错。每个 face 支持 3–64 点的简单多边形；确定性 ear clipping 支持凹多边形。常规平面容差为 `max(1e-5, extent*1e-5)` source units，轻微扭曲四边面的例外见下文。排序由 bone name、part name、face key 确定。
+去掉 `--check` 才写出结果；`--compact` 仅把数值数组压到一行，保持数据完全相同，避免超过 4 MiB。`--mapping mapping.json` 的内容为 `{ "source_group_name": "runtime_bone_name" }`。未使用的 mapping、unknown parent、层级/pivot/rotation 不匹配直接报错。每个 face 支持 3–64 点的简单多边形；确定性 ear clipping 支持凹多边形。常规平面容差为 `max(1e-5, extent*1e-5)` source units，轻微扭曲四边面的例外见下文。排序由 bone name、part name、face key 确定。
 
 缺 UV、坏索引、零面积、多个 texture、材质模式/动画 strip、Mesh 自身动画、影响几何的未知属性、weighted skinning、morph、subdivision、动态拓扑等均 fail-fast。source 元素缩放也不在 V1 authoring 合同内；运行时 bone scale 由已有动画姿态处理。动画资源仍由原 Gecko 管线提供，转换器不生成动画。轻微扭曲的导入四边面可在导出时三角化：相对该面的最大轴向尺寸，平面偏差不超过 10%；顶点与可编辑面的边界不改动。超过此限或非平面的五边及以上面仍被拒绝。
 
@@ -91,20 +126,20 @@ node tools/export-afl-mesh.mjs --input src/main/blockbench/dev/afl_mesh_core_fix
 
 源码位于 `src/main/java/com/antaurora/apofirstlight/client/mesh/`：
 
-- `AflMeshLoader`：纯解析/验证，一次性展开三角形 corners，烘焙 flat normals 和 local AABB。
+- `AflMeshLoader`：纯解析/验证，一次性展开 V1 triangles / V2 faces 的 corners，烘焙 flat normals 和 local AABB；Quad 仅存四个 corners。
 - `AflMeshModel` / `AflMeshPart`：不可变 CPU 数据，不保存 live GeoBone 或 instance pose。
 - `AflMeshCache`：client reload listener 的 prepare 阶段扫描 sidecar，并从同一 ResourceManager 读取对应 geometry 验证；apply 原子替换不可变 snapshot，递增 generation。无需依赖 Gecko cache 的 apply 顺序。坏 sidecar 单独记录错误并省略，其他资源继续；移除或损坏的 sidecar 不保留上代 Mesh。无 GPU 资源生命周期。
-- `AflMeshRenderer`：每帧只根据当前 pose 提交已烘焙 corners；不解析 JSON、不三角化、不生成逐 face 对象。使用原 texture、VertexConsumer、RenderType、color、packedLight、overlay；现有 entity buffer 为 QUADS，所以每个三角形提交 `A,B,C,C`（第二个三角形退化）。未直接操作 OpenGL。
+- `AflMeshRenderer`：每帧只根据当前 pose 提交已烘焙 corners；不解析 JSON、不三角化、不生成逐 face 对象。使用原 texture、VertexConsumer、RenderType、color、packedLight、overlay；entity buffer 为 QUADS，native Quad 提交 `A,B,C,D`，Triangle 提交 `A,B,C,C`。未直接操作 OpenGL。
 
 `NativeGunContextRenderer.renderCubesOfBone` 先沿用 Cube 绘制，再追加 Mesh；本地玩家第一人称相机的 Shader shadow pass 例外，详见下节。当前枪械由 `NativeAnimatedWeaponRenderer` 继承该薄适配；其递归入口的临时弹匣替换、subtree 省略、shell 显隐仍控制是否进入 hook。P9 的旧 `P901Renderer` 已在通用 Runtime 迁移时退役。Mesh 检查 own hidden；hidden child 遵循 Gecko 的原遍历。hook 也在 `reRender` 执行，避免使用会在 reRender 跳过的 layer callback。第三人称传入的是该路径真实的 frozen/static-idle bone 副本，未改变第三人称动画语义。没有 sidecar 时不提交 Mesh。
 
-### Render Pass Probe 与本地第一人称阴影跳过（2026-09-27；优化待实机复验）
+### Render Pass Probe 与本地第一人称阴影跳过（2026-09-27）
 
-开发客户端可用 JVM 属性 `-Dafl.debug.renderProfile=true` 开启 `NativeGunRenderProfile`，正式发布环境始终关闭。Probe 只统计正式 `p9_01` 与 `blackridge_50` 的主枪 `AflMeshRenderer` 调用；独立弹药、弹壳 Mesh 不计入。Forge `RenderTickEvent.START/END` 定义一帧，连续 120 帧后以 `[AFL-RENDER-PROFILE]` 仅输出一次每枪/Shader 状态的调用、实际提交部件/三角形/顶点及 CPU 提交耗时。换枪或切换 Shader 状态后重新采样。`AflMeshRenderer` 对传入的隐藏骨骼、零缩放与无效法线记录可观察到的跳过数；Gecko 在进入 Mesh hook 前隐藏的子树无法在此层计数，日志明确标注 `hidden_skip_scope=invoked_bones_only`。
+开发客户端可用 JVM 属性 `-Dafl.debug.renderProfile=true` 开启 `NativeGunRenderProfile`，默认和正式发布环境关闭。Probe 只统计正式 `p9_01` 与 `blackridge_50` 的主枪 `AflMeshRenderer` 调用；独立弹药、弹壳 Mesh 不计入。Forge `RenderTickEvent.START/END` 定义一帧，连续 120 帧后以 `[AFL-RENDER-PROFILE]` 仅输出一次采样结果。换枪、Shader 状态、F5 相机类型或资源 generation 变化后重新采样。保留 total / pass、calls、parts、CPU 指标；新增 `format_version`（0=无提交调用，-1=混合版本）、`quad_faces_per_frame`、`triangle_faces_per_frame`、`triangle_equivalent_per_frame`。旧 `triangles_per_frame` 现在明确为 triangle-equivalent 的别名，Quad 计 2、Triangle 计 1；`vertices_per_frame` 是实际提交次数，不推算。CPU 是顶点提交的 CPU 耗时，不是 GPU 时间。隐藏/零尺度/无效法线的跳过数量同样用 triangle-equivalent；Gecko 在进入 hook 前隐藏的子树无法计数，日志标注 `hidden_skip_scope=invoked_bones_only`。
 
 Shader 启用与 shadow pass 由共享 `AflShaderCompat` 通过 Oculus/Iris 公开 API 软依赖反射获取；可选的内部 phase/name 反射只供 Probe 标注 hand phase 和包名。查询失败时不授权阴影跳过。原始实机样本中，Shader OFF 的 Blackridge/P9 主枪分别为 4500/6384 triangles/frame；Sundial Lite ON 时分别为 9000/12768，其中 main 与 shadow 各提交完整的 4500/6384 triangles。shadow 调用的 `ItemDisplayContext` 是第三人称手持，而当时客户端相机仍处于第一人称，因此不能仅凭 display context 识别本地玩家。
 
-`NativeGunShadowSkip` 在 Forge `RenderPlayerEvent.Pre/Post` 期间记录当前被渲染玩家；`NativeGunContextRenderer` 仅在当前物品为 `ConfiguredNativeGunItem`、第三人称手持路径、owner 是本地玩家、相机处于第一人称、Shader 与 shadow pass 均明确启用时，跳过该次 Pure Mesh 的 `AflMeshRenderer` 入口。它不更改 Cube、手臂、动态弹药、RenderType 或资源；F5 下的本地玩家、其他玩家及世界/GUI 物品不满足该条件。Render tick 边界清空 owner 上下文，以免取消的玩家渲染将上下文带到下一帧。`NativeGunRenderProfile` 保留用于复验；预期第一人称 Sundial 样本的 shadow triangles 为 0，main 维持原值。**本轮只进行离线编译，跳过后的实机画面、第三人称阴影和性能值仍待用户验证。**
+`NativeGunShadowSkip` 在 Forge `RenderPlayerEvent.Pre/Post` 期间记录当前被渲染玩家；`NativeGunContextRenderer` 仅在当前物品为 `ConfiguredNativeGunItem`、第三人称手持路径、owner 是本地玩家、相机处于第一人称、Shader 与 shadow pass 均明确启用时，跳过该次 Pure Mesh 的 `AflMeshRenderer` 入口。它不更改 Cube、手臂、动态弹药、RenderType 或资源；F5 下的本地玩家、其他玩家及世界/GUI 物品不满足该条件。Render tick 边界清空 owner 上下文，以免取消的玩家渲染将上下文带到下一帧。用户在本轮任务中反馈 P0（含阴影跳过及 P9 几何优化）后 Sundial Lite 双枪已约 120 FPS；该反馈不等于本轮 V2 实测。V2 未修改 shadow policy，`NativeGunRenderProfile` 保留用于复验，第一人称 shadow triangle-equivalent 仍应为 0。
 
 正式 `apocalypse_firstlight:12_gauge_round` 是首个普通 Item 的真实资产 opt-in；`.50 AE` 的 `50_ae_round` / `50_ae_casing` 和 9mm 的 `9x19mm_round` / `9x19mm_casing`（2026-09-27 起）现在也复用同一入口。Forge 1.20.1 没有独立的普通 Item 客户端扩展注册事件，因此 `AflStaticMeshItemClient` 在客户端 setup 时给这些 Item 实例设置 Forge `renderProperties` 扩展。`AflStaticMeshItemRenderer` 现以模型/纹理参数选择资源，继续使用 Gecko 当前 baked geo 骨骼和既有 `AflMeshCache` / `AflMeshRenderer`；每次绘制取当前缓存快照，不持有跨 F3+T 的旧 Mesh/GeoBone。12 Gauge 保持原 256×256 atlas、4 Mesh part/672 triangles 和原 display；.50 AE 两件为 `builtin/entity` Item。2026-09-27 起换成 V2 软尖弹资产：整弹 3 个 Mesh 部件、1200 三角面，空壳 2 个部件、1080 三角面，共用重画后的 `blackridge_50ae_ammo_v1.png`。总高不变，所以中心补偿常量也不变；详见 [native_ammo_assets_v1.md](native_ammo_assets_v1.md)。9mm 两件（整弹 1000、空壳 1080 三角面，共用 `9x19mm_ammo_v1.png`）的中心补偿为 `0.451463` / `0.468168`。抛壳侧，`NativeGunFx` 的 Mesh 弹壳现在按弹壳模型查表（`.50 AE` 与 9mm），不再只写死 `.50 AE`。实际 GUI/手持/掉落、热重载与 shader 画面仍待实机验证。
 
@@ -127,7 +162,7 @@ node tools/verify-afl-mesh.mjs --java-renderer
 
 第三个命令包含 loader 检查。Java 模式需要本机已缓存的本项目 Gson/Minecraft/GeckoLib/JOML 等依赖；JShell 直接执行实际源码，仅临时移除 package 声明。临时 harness 位于系统 temp，完成删除；不运行 Gradle、不生成项目 class 文件、不启动客户端。`--java-renderer` 使用真实 PoseStack/GeoBone/RenderUtils 和记录顶点的 VertexConsumer。
 
-已完成：确定性输出、22 类 converter 错误、8 类实际 loader 错误、凹多边形三角化、flat normal/unit length、local bounds；非零 element/group 坐标相对独立 Blockbench THREE 参考的最大 double 误差约 `4.92e-11` 格。实际 Gecko traversal 和 renderer 也对同一参考验证 float 误差小于 `2e-6` 格；五组普通/镜像/非均匀缩放下 winding 与 normal 一致，UV/color/light/overlay 正确提交，hidden/null/零尺度不提交，变换后 bounds 包含 Mesh 顶点。无 sidecar 的 opt-in、frozen 遍历适配和 reload generation 失效连接另有静态检查。
+已完成：确定性 V1 输出、22 类 converter 错误、实际 V1/无版本号/V2 loader 检查、凹多边形三角化、flat normal/unit length、local bounds；非零 element/group 坐标相对独立 Blockbench THREE 参考的最大 double 误差约 `4.92e-11` 格。实际 Gecko traversal 和 renderer 对参考验证 float 误差小于 `2e-6` 格；五组普通/镜像/非均匀缩放下 V1/V2 winding 与 normal 一致，UV/color/light/overlay 一致，hidden/null/零尺度不提交，bounds 包含提交顶点。V2 新增非法版本、非 3/4 面、自交/扭曲 Quad 拒绝测试，以及真实 Quad 4 次 / V1 两三角形 8 次提交和 metrics 检查。正式 P9、Blackridge 重新导出结果与保存的 V2 sidecar 一致，展开后逐 part 的 position/UV、带绕序的三角形与 V1 完全一致；所有当前正式 sidecar（含 V1 弹药）通过真实 Java loader。无 sidecar、P0 shadow skip hook、frozen 遍历和 reload generation 连接另有静态检查。**这些是离线验证，未启动游戏，未测 V2 实机 CPU、视觉或 Shader 输出。**
 
 此前的最小项目编译使用 `./gradlew.bat compileJava --offline`；该结果不等同于客户端渲染验收。游戏内测试仍需单独执行。
 

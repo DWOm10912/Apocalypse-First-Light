@@ -1,4 +1,4 @@
-// AFL Mesh V1: strict offline Free Model converter. Never rewrites source, Cube geo or animations.
+// AFL Mesh V1/V2: strict offline Free Model converter. Never rewrites source, Cube geo or animations.
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -18,6 +18,40 @@ const dot = (a,b) => a.reduce((sum,n,i)=>sum+n*b[i],0);
 const length = a => Math.hypot(...a);
 const compare = (a,b) => a<b?-1:a>b?1:0;
 const same = (a,b) => a.every((v,i)=>Math.abs(v-b[i])<1e-6);
+
+// Preserve the V1 ear-clipped diagonal, not just the outer boundary. Minecraft indexes
+// QUADS as ABC + CDA. Warped/concave faces and UV tangent discontinuities stay triangles.
+export function preservedQuad(vertices, triangles) {
+    if(vertices.length!==4) return null;
+    const first=triangles[0],order=[...first,[0,1,2,3].find(i=>!first.includes(i))];
+    const v=order.map(i=>vertices[i].map(Math.fround)),p=v.map(x=>x.slice(0,3));
+    const unit=a=>{const n=length(a);return n>1e-10?a.map(x=>x/n):null;};
+    const normal=unit(cross(sub(p[1],p[0]),sub(p[2],p[0])));
+    if(!normal) return null;
+    for(let i=0;i<4;i++) {
+        const n=unit(cross(sub(p[(i+1)%4],p[i]),sub(p[(i+2)%4],p[i])));
+        if(!n || length(sub(n,normal))>1e-5) return null;
+    }
+    const basis=([a,b,c])=>{
+        const e=sub(b.slice(0,3),a.slice(0,3)),f=sub(c.slice(0,3),a.slice(0,3));
+        const u=b[3]-a[3],v=b[4]-a[4],s=c[3]-a[3],t=c[4]-a[4],det=u*t-s*v;
+        if(Math.abs(det)<1e-12) return null;
+        const tangent=unit(e.map((x,i)=>(x*t-f[i]*v)/det));
+        const bitangent=unit(e.map((x,i)=>(f[i]*u-x*s)/det));
+        return tangent&&bitangent?[tangent,bitangent]:null;
+    };
+    const a=basis([v[0],v[1],v[2]]),b=basis([v[2],v[3],v[0]]);
+    if(!a || !b || a.some((n,i)=>length(sub(n,b[i]))>1e-5)) return null;
+    return order;
+}
+
+export function meshCounts(model) {
+    let quads=0,triangles=0;
+    for(const part of model.parts) for(const face of part.faces??part.triangles) {
+        if(face.length===4) quads++; else triangles++;
+    }
+    return {quads,triangles,triangleEquivalent:triangles+2*quads,vertices:4*(triangles+quads)};
+}
 
 // THREE Euler XYZ means Rx*Ry*Rz; Group ZYX means Rz*Ry*Rx (column vectors).
 // Mesh vertices are relative to element.origin, NOT absolute Blockbench coordinates.
@@ -92,7 +126,8 @@ function rejectFeatures(value, where) {
     }
 }
 
-export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
+export function convert(source, geometry, mapping={}, sourceName='bbmodel', formatVersion=1) {
+    need(formatVersion===1||formatVersion===2,'unsupported format version');
     need(source?.meta?.model_format==='free',`${sourceName}: V1 requires Free Model`);
     rejectFeatures(source,sourceName);
     // Additional authoring textures may belong to export=false reference arms.
@@ -157,7 +192,7 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
                 const origin=vec(element.origin??[0,0,0],3,`${where} origin`),rotation=vec(element.rotation??[0,0,0],3,`${where} rotation`);
                 // Target .geo pivot/rotation have the native exporter X and X/Y sign conversions.
                 const bp=parentBone.pivot??[0,0,0],pivot=[-bp[0],bp[1],bp[2]];
-                const vertices=[],triangles=[];
+                const vertices=[],triangles=[],faces=[];
                 need(element.faces&&element.vertices,`${where}: missing mesh data`);
                 for(const faceKey of Object.keys(element.faces).sort(compare)) {
                     const face=element.faces[faceKey],label=`${where} face=${faceKey}`;
@@ -179,9 +214,13 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
                         need(length(cross(sub(b,a),sub(c,a)))>1e-10,`${label}: zero-area triangle after coordinate bake`);
                         triangles.push(ids);
                     }
+                    if(formatVersion===2) {
+                        const quad=preservedQuad(vertices.slice(base),tris);
+                        faces.push(...(quad?[quad]:tris).map(face=>face.map(i=>base+i)));
+                    }
                 }
                 need(triangles.length,`${where}: no enabled triangles`);
-                parts.push({name:element.name,bone:parentBone.name,vertices,triangles});
+                parts.push({name:element.name,bone:parentBone.name,vertices,...(formatVersion===2?{faces}:{triangles})});
                 continue;
             }
             need(node&&typeof node==='object', 'invalid outliner node');
@@ -213,29 +252,33 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel') {
     }
     parts.sort((a,b)=>compare(a.bone,b.bone)||compare(a.name,b.name));
     need(parts.length>0&&parts.length<=128,'parts count must be 1..128');
-    need(parts.reduce((s,p)=>s+p.triangles.length,0)<=16384,'triangle hard limit 16384 exceeded');
+    need(meshCounts({parts}).triangleEquivalent<=16384,'triangle-equivalent hard limit 16384 exceeded');
     need(parts.reduce((s,p)=>s+p.vertices.length,0)<=65536,'vertex hard limit 65536 exceeded');
-    return {format_version:1,coordinate_space:'bone_pivot_local_blocks',uv_origin:'top_left',winding:'ccw',texture_size:size,parts};
+    return {format_version:formatVersion,coordinate_space:'bone_pivot_local_blocks',uv_origin:'top_left',winding:'ccw',texture_size:size,parts};
 }
 
 export const read = file => JSON.parse(fs.readFileSync(file,'utf8').replace(/^\uFEFF/,''));
 export const serialize = data => JSON.stringify(data,null,2)+'\n';
+export const serializeCompact = data => serialize(data).replace(/\[\s*(-?[\d.e+-]+(?:,\s*-?[\d.e+-]+)*)\s*\]/g,
+    (m,body)=>'['+body.split(/,\s*/).join(',')+']');
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
     try {
         const args=process.argv.slice(2),options={};
         for(let i=0;i<args.length;i++) {
-            const key=args[i];need(['--input','--geometry','--mapping','--output','--check'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
-            options[key]=key==='--check'?true:args[++i];
+            const key=args[i];need(['--input','--geometry','--mapping','--output','--format','--compact','--check'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
+            options[key]=['--check','--compact'].includes(key)?true:args[++i];
             need(options[key] && (options[key]===true || !options[key].startsWith('--')),`missing value for ${key}`);
         }
         need(options['--input']&&options['--geometry']&&options['--output'],
-            'Usage: node tools/export-afl-mesh.mjs --input source.bbmodel --geometry target.geo.json --output target.aflmesh.json [--mapping groups.json] [--check]');
+            'Usage: node tools/export-afl-mesh.mjs --input source.bbmodel --geometry target.geo.json --output target.aflmesh.json [--format v1|v2] [--compact] [--mapping groups.json] [--check]');
         const input=path.resolve(options['--input']),geometry=path.resolve(options['--geometry']),output=path.resolve(options['--output']);
         need(output.endsWith('.aflmesh.json')&&output!==input&&output!==geometry,'output must be a separate .aflmesh.json');
-        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input),text=serialize(model);
+        const format=options['--format']??'v1';need(['v1','v2'].includes(format),'--format must be v1 or v2');
+        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input,format==='v2'?2:1);
+        const text=(options['--compact']?serializeCompact:serialize)(model);
         need(text.length<=4*1024*1024,'sidecar exceeds runtime 4 MiB limit');
         if(options['--check']) need(fs.readFileSync(output,'utf8')===text,`stale sidecar ${output}`);
         else fs.writeFileSync(output,text);
-        console.log(`${options['--check']?'CHECKED':'EXPORTED'} ${model.parts.length} parts, ${model.parts.reduce((s,p)=>s+p.triangles.length,0)} triangles: ${output}`);
+        console.log(`${options['--check']?'CHECKED':'EXPORTED'} V${model.format_version} ${model.parts.length} parts, ${JSON.stringify(meshCounts(model))}: ${output}`);
     } catch(e) { console.error(e.message);process.exitCode=1; }
 }

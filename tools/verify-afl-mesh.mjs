@@ -7,7 +7,7 @@ import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
-import {convert,read,serialize,triangulate} from './export-afl-mesh.mjs';
+import {convert,read,serialize,triangulate,meshCounts,preservedQuad} from './export-afl-mesh.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fixture=path.join(root,'src/dev/resources/afl_mesh_core');
 const source=read(path.join(root,'src/main/blockbench/dev/afl_mesh_core_fixture.bbmodel'));
@@ -20,7 +20,7 @@ assert.equal(geo['minecraft:geometry'][0].bones[0].cubes.length,1);
 assert.equal(sidecar.parts.reduce((s,p)=>s+p.triangles.length,0),4);
 let rejected=0;
 function bad(change,pattern){const s=structuredClone(source),g=structuredClone(geo);change(s,g);assert.throws(()=>convert(s,g),pattern);rejected++;}
-bad(s=>s.textures.push({...s.textures[0]}),/one texture/);
+bad(s=>{s.textures.push({...s.textures[0]});s.elements[1].faces.surface.texture=1;},/unknown\/multiple texture/);
 bad(s=>s.textures[0].render_mode='emissive',/material mode unsupported/);
 bad(s=>{s.textures[0].width=16;s.textures[0].height=32;},/animated strip/);
 bad(s=>delete s.elements[1].faces.surface.uv.v0,/missing UV/);
@@ -85,7 +85,7 @@ assert(Math.min(...Object.values(expected).flat().map(v=>v[2]))<Math.min(...cube
 const native=fs.readFileSync(path.join(root,'src/main/java/com/antaurora/apofirstlight/weapon/client/NativeGunContextRenderer.java'),'utf8');
 const maintenance=fs.readFileSync(path.join(root,'src/main/java/com/antaurora/apofirstlight/client/MaintenanceGunRendering.java'),'utf8');
 const cache=fs.readFileSync(path.join(root,'src/main/java/com/antaurora/apofirstlight/client/mesh/AflMeshCache.java'),'utf8');
-assert.match(native,/super\.renderCubesOfBone[\s\S]*if \(mesh != null\) AflMeshRenderer\.render/);
+assert.match(native,/super\.renderCubesOfBone[\s\S]*if \(mesh != null && !skipMeshShadow\) NativeGunRenderProfile\.render/);
 assert.match(native,/frozen\.topLevelBones\(\)/);
 assert.match(maintenance,/AflMeshRenderer\.collectBounds/);
 assert.match(maintenance,/generation[\s\S]*BOUNDS\.clear\(\); LONGITUDINAL_CENTERS\.clear/);
@@ -95,6 +95,35 @@ const assets=path.join(root,'src/main/resources/assets/apocalypse_firstlight/mes
 for(const id of ['br51_01','hr55','p9_01'])assert(!fs.existsSync(path.join(assets,id+'.aflmesh.json')),`${id} must remain on the Cube-only path`);
 assert(fs.existsSync(path.join(assets,'silverwood_12.aflmesh.json')),'formal Silverwood Hybrid sidecar missing');
 console.log(`PASS: deterministic fixture; ${rejected} invalid inputs rejected; concave triangulation; non-zero element/group pivots and rotations (max error ${maxError}); Mesh bounds; adapter/no-sidecar/reload static checks.`);
+
+const sidecarV2=convert(source,geo,{},'fixture',2);
+assert.deepEqual(meshCounts(sidecarV2),{quads:1,triangles:2,triangleEquivalent:4,vertices:12});
+assert.equal(meshCounts(convert(mildQuad,geo,{},'warped',2)).quads,0,'warped quad must keep V1 normals');
+assert.throws(()=>convert(source,geo,{},'fixture',3),/format version/);
+const square=[[0,0,0,0,0],[1,0,0,1,0],[1,1,0,1,1],[0,1,0,0,1]];
+assert.deepEqual(preservedQuad(square,[[3,0,1],[1,2,3]]),[3,0,1,2],'preserve V1 diagonal');
+const uvSeam=structuredClone(square);uvSeam[2][3]=0.6;
+assert.equal(preservedQuad(uvSeam,[[3,0,1],[1,2,3]]),null,'tangent discontinuity fallback');
+const concaveQuad=[[0,0,0,0,0],[2,0,0,1,0],[0.5,0.5,0,0.5,0.5],[0,2,0,0,1]];
+assert.equal(preservedQuad(concaveQuad,triangulate(concaveQuad.map(v=>v.slice(0,3)))),null,'concave fallback');
+// Compare complete corner data and exact raster triangles (including the diagonal).
+const canonical=t=>[0,1,2].map(i=>JSON.stringify([...t.slice(i),...t.slice(0,i)])).sort()[0];
+for(const id of ['p9_01_v2_native','blackridge_50']) {
+    const s=read(path.join(root,'src/main/blockbench',id+'.bbmodel'));
+    const g=read(path.join(assets,'../geo',id+'.geo.json'));
+    const v1=convert(s,g),v2=convert(s,g,{},id,2);
+    assert.deepEqual(read(path.join(assets,id+'.aflmesh.json')),v2,'stale V2 '+id);
+    for(let i=0;i<v1.parts.length;i++) {
+        const a=v1.parts[i],b=v2.parts[i];
+        assert.equal(a.bone,b.bone);assert.equal(a.name,b.name);assert.deepEqual(a.vertices,b.vertices);
+        const expand=b.faces.flatMap(f=>f.length===3?[f]:[[f[0],f[1],f[2]],[f[2],f[3],f[0]]]);
+        assert.deepEqual(expand.map(canonical).sort(),a.triangles.map(canonical).sort(),'raster triangle/UV equality '+a.name);
+    }
+    const visible={parts:v2.parts.filter(p=>!['empty_old_mag','reload_magazine'].includes(p.bone))};
+    const stats=meshCounts(visible),expected=id==='blackridge_50'?4500:6384;
+    assert.equal(stats.triangleEquivalent,expected);
+    console.log('V2_ASSET_PASS '+id+' '+JSON.stringify({...stats,vertexReductionPercent:100*(1-stats.vertices/(4*expected))}));
+}
 
 if(process.argv.includes('--java-loader')||process.argv.includes('--java-renderer')) {
     const gradle=process.env.GRADLE_USER_HOME??path.join(os.homedir(),'.gradle');
@@ -115,6 +144,7 @@ if(process.argv.includes('--java-loader')||process.argv.includes('--java-rendere
         const geometry=JSON.stringify(fs.readFileSync(path.join(fixture,'fixture.geo.json'),'utf8'));
         const reference=JSON.stringify(fs.readFileSync(path.join(fixture,'fixture.expected.json'),'utf8'));
         const script=[...opens,`String geometryText = ${geometry};`,`String meshText = ${json};`,
+            `String meshTextV2 = ${JSON.stringify(serialize(sidecarV2))};`,
             'void require(boolean b, String m) { if (!b) throw new AssertionError(m); }',
             'void rejected(com.google.gson.JsonObject d, String fragment) throws Exception { try { AflMeshLoader.load("fixture:meshes/fixture.aflmesh.json",new java.io.StringReader(d.toString()),new java.io.StringReader(geometryText)); throw new AssertionError("accepted invalid mesh"); } catch (IllegalArgumentException e) { require(e.getMessage().contains("fixture:meshes/fixture.aflmesh.json") && e.getMessage().contains(fragment),e.getMessage()); } }',
             '{ try {',
@@ -122,7 +152,7 @@ if(process.argv.includes('--java-loader')||process.argv.includes('--java-rendere
             'var quad=m.parts("fixture_child").get(0); require(quad.cornerCount()==6,"quad bake");',
             'for(var b:java.util.List.of("fixture_root","fixture_child","visibility_test")) for(var p:m.parts(b)) for(int i=0;i<p.cornerCount();i++){ double n=0;for(int j=5;j<8;j++)n+=p.value(i,j)*p.value(i,j);require(Math.abs(n-1)<1e-5,"unit normal");var a=p.bounds();require(p.value(i,0)>=a.minX()&&p.value(i,0)<=a.maxX()&&p.value(i,2)>=a.minZ()&&p.value(i,2)<=a.maxZ(),"bounds contain vertices"); }',
             'var original=com.google.gson.JsonParser.parseString(meshText).getAsJsonObject();',
-            'var d=original.deepCopy();d.addProperty("format_version",2);rejected(d,"format_version");',
+            'var d=original.deepCopy();d.addProperty("format_version",3);rejected(d,"format_version");',
             'd=original.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().addProperty("bone","not_a_bone");rejected(d,"bone=not_a_bone part=rotated_child_quad");',
             'd=original.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("triangles").get(0).getAsJsonArray().set(0,new com.google.gson.JsonPrimitive(999));rejected(d,"invalid index");',
             'd=original.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("triangles").set(0,com.google.gson.JsonParser.parseString("[0,0,0]"));rejected(d,"zero-area");',
@@ -130,25 +160,37 @@ if(process.argv.includes('--java-loader')||process.argv.includes('--java-rendere
             'd=original.deepCopy();d.addProperty("skinning",true);rejected(d,"requires exactly");',
             'd=original.deepCopy();d.getAsJsonArray("texture_size").set(0,new com.google.gson.JsonPrimitive(32));rejected(d,"texture_size mismatch");',
             'd=original.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("vertices").get(0).getAsJsonArray().set(3,new com.google.gson.JsonPrimitive(2));rejected(d,"UV out");',
-            'System.out.println("JAVA_LOADER_CHECKS_PASS: actual V1 parser, flat-normal bake, local bounds, eight invalid-sidecar diagnostics");',
+            'd=original.deepCopy();d.remove("format_version");require(AflMeshLoader.load("legacy",new java.io.StringReader(d.toString()),new java.io.StringReader(geometryText)).formatVersion()==1,"unversioned V1");',
+            'var v2=com.google.gson.JsonParser.parseString(meshTextV2).getAsJsonObject();var m2=AflMeshLoader.load("v2",new java.io.StringReader(meshTextV2),new java.io.StringReader(geometryText));var q2=m2.parts("fixture_child").get(0);require(m2.formatVersion()==2&&q2.quadCount()==1&&q2.cornerCount()==4&&q2.triangleEquivalent()==2,"V2 quad bake");',
+            'd=v2.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("faces").set(0,com.google.gson.JsonParser.parseString("[0,1,2,3,0]"));rejected(d,"3/4 corners");',
+            'd=v2.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("faces").set(0,com.google.gson.JsonParser.parseString("[0,2,1,3]"));rejected(d,"convex and planar");',
+            'd=v2.deepCopy();d.getAsJsonArray("parts").get(0).getAsJsonObject().getAsJsonArray("vertices").get(0).getAsJsonArray().set(2,new com.google.gson.JsonPrimitive(1));rejected(d,"convex and planar");',
+            ...fs.readdirSync(assets).filter(f=>f.endsWith('.aflmesh.json')).map(f=>{
+                const file=path.join(assets,f),geoFile=path.join(assets,'../geo',f.replace('.aflmesh.json','.geo.json'));
+                const data=read(file),stats=meshCounts(data);
+                return `{try(var sr=java.nio.file.Files.newBufferedReader(java.nio.file.Path.of(${JSON.stringify(file)}));var gr=java.nio.file.Files.newBufferedReader(java.nio.file.Path.of(${JSON.stringify(geoFile)}))){var loaded=AflMeshLoader.load(${JSON.stringify(f)},sr,gr);require(loaded.formatVersion()==${data.format_version??1}&&loaded.partCount()==${data.parts.length},"production version/parts");int equivalents=0;for(var name:java.util.List.of(${[...new Set(data.parts.map(p=>p.bone))].map(JSON.stringify).join(',')}))for(var p:loaded.parts(name))equivalents+=p.triangleEquivalent();require(equivalents==${stats.triangleEquivalent},"production triangle count");}}`;
+            }),
+            'System.out.println("JAVA_LOADER_CHECKS_PASS: V1/unversioned/V2, normals/bounds, invalid versions/quads/indices, all production sidecars including ammo");',
             '} catch(Throwable e) { e.printStackTrace(); } }'];
         if(renderCheck)script.push(
             // Real Minecraft PoseStack, GeckoLib GeoBone/RenderUtils, and a recording VertexConsumer.
             'class Capture implements com.mojang.blaze3d.vertex.VertexConsumer { java.util.List<float[]> rows=new java.util.ArrayList<>(); public void vertex(float x,float y,float z,float r,float g,float b,float a,float u,float v,int o,int l,float nx,float ny,float nz){rows.add(new float[]{x,y,z,r,g,b,a,u,v,o,l,nx,ny,nz});} public com.mojang.blaze3d.vertex.VertexConsumer vertex(double x,double y,double z){return this;} public com.mojang.blaze3d.vertex.VertexConsumer color(int r,int g,int b,int a){return this;} public com.mojang.blaze3d.vertex.VertexConsumer uv(float u,float v){return this;} public com.mojang.blaze3d.vertex.VertexConsumer overlayCoords(int u,int v){return this;} public com.mojang.blaze3d.vertex.VertexConsumer uv2(int u,int v){return this;} public com.mojang.blaze3d.vertex.VertexConsumer normal(float x,float y,float z){return this;} public void endVertex(){} public void defaultColor(int r,int g,int b,int a){} public void unsetDefaultColor(){} }',
             '{ try {',
             'var model=AflMeshLoader.load("fixture",new java.io.StringReader(meshText),new java.io.StringReader(geometryText));',
+            'var modelV2=AflMeshLoader.load("fixture-v2",new java.io.StringReader(meshTextV2),new java.io.StringReader(geometryText));',
             `var reference=com.google.gson.JsonParser.parseString(${reference}).getAsJsonObject().getAsJsonObject("points");`,
             'var hierarchy=new java.util.LinkedHashMap<String,software.bernie.geckolib.cache.object.GeoBone>();for(var entry:com.google.gson.JsonParser.parseString(geometryText).getAsJsonObject().getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject().getAsJsonArray("bones")){var j=entry.getAsJsonObject();var b=new software.bernie.geckolib.cache.object.GeoBone(j.has("parent")?hierarchy.get(j.get("parent").getAsString()):null,j.get("name").getAsString(),false,0.0,false,false);var p=j.getAsJsonArray("pivot");var r=j.getAsJsonArray("rotation");b.setPivotX(-p.get(0).getAsFloat());b.setPivotY(p.get(1).getAsFloat());b.setPivotZ(p.get(2).getAsFloat());if(r!=null){b.setRotX((float)Math.toRadians(-r.get(0).getAsFloat()));b.setRotY((float)Math.toRadians(-r.get(1).getAsFloat()));b.setRotZ((float)Math.toRadians(r.get(2).getAsFloat()));}hierarchy.put(b.getName(),b);}',
             'for(var leaf:hierarchy.values()){var chain=new java.util.ArrayList<software.bernie.geckolib.cache.object.GeoBone>();for(var b=leaf;b!=null;b=b.getParent())chain.add(0,b);var p=new com.mojang.blaze3d.vertex.PoseStack();for(var b:chain)software.bernie.geckolib.util.RenderUtils.prepMatrixForBone(p,b);var out=new Capture();AflMeshRenderer.render(model,leaf,p,out,0,0,1,1,1,1);for(var part:model.parts(leaf.getName()))for(var point:reference.getAsJsonArray(part.name())){var xyz=point.getAsJsonArray();boolean found=false;for(var row:out.rows)if(Math.abs(row[0]-xyz.get(0).getAsDouble())<2e-6&&Math.abs(row[1]-xyz.get(1).getAsDouble())<2e-6&&Math.abs(row[2]-xyz.get(2).getAsDouble())<2e-6)found=true;require(found,"real Gecko traversal/source reference mismatch");}}',
             'var bone=new software.bernie.geckolib.cache.object.GeoBone(null,"fixture_child",false,0.0,false,false);bone.setPivotX(4);bone.setPivotY(8);bone.setPivotZ(-2);bone.setRotX(0.4f);bone.setRotY(0.6f);bone.setRotZ(-0.2f);bone.setPosX(2);bone.setPosY(3);bone.setPosZ(-1);',
-            'for(float[] scale:java.util.List.of(new float[]{1,1,1},new float[]{-1,1,1},new float[]{-2,-2,-2},new float[]{-2,3,0.5f},new float[]{-2,-3,0.5f})){',
-            'var pose=new com.mojang.blaze3d.vertex.PoseStack();pose.mulPose(new org.joml.Quaternionf().rotationXYZ(0.2f,-0.3f,0.4f));pose.scale(scale[0],scale[1],scale[2]);software.bernie.geckolib.util.RenderUtils.prepMatrixForBone(pose,bone);var before=new org.joml.Matrix4f(pose.last().pose());var capture=new Capture();AflMeshRenderer.render(model,bone,pose,capture,1234,5678,0.2f,0.4f,0.6f,0.8f);require(capture.rows.size()==8,"quad submission count");require(before.equals(pose.last().pose()),"pose leak");',
-            'var part=model.parts("fixture_child").get(0);for(int i=0;i<8;i+=4){var a=capture.rows.get(i);var b=capture.rows.get(i+1);var c=capture.rows.get(i+2);require(java.util.Arrays.equals(c,capture.rows.get(i+3)),"degenerate corner");var n=new org.joml.Vector3f(b[0]-a[0],b[1]-a[1],b[2]-a[2]).cross(c[0]-a[0],c[1]-a[1],c[2]-a[2]).normalize();require(n.dot(a[11],a[12],a[13])>0.9999,"winding/normal mismatch");require(a[9]==5678&&a[10]==1234&&a[3]==0.2f&&a[6]==0.8f,"light/overlay/color");require(a[7]==part.value(i/4*3,3)&&a[8]==part.value(i/4*3,4),"UV");}',
-            'var boxes=new java.util.ArrayList<net.minecraft.world.phys.AABB>();AflMeshRenderer.collectBounds(model,bone,pose,boxes);require(boxes.size()==1,"mesh bounds");var bounds=boxes.get(0).inflate(1e-6);for(var v:capture.rows)require(bounds.contains(v[0],v[1],v[2]),"transformed bounds miss vertex");',
-            'bone.setHidden(true);capture.rows.clear();AflMeshRenderer.render(model,bone,pose,capture,0,0,1,1,1,1);require(capture.rows.isEmpty(),"hidden bone");bone.setHidden(false);',
+            'for(var tested:java.util.List.of(model,modelV2)) for(float[] scale:java.util.List.of(new float[]{1,1,1},new float[]{-1,1,1},new float[]{-2,-2,-2},new float[]{-2,3,0.5f},new float[]{-2,-3,0.5f})){',
+            'var pose=new com.mojang.blaze3d.vertex.PoseStack();pose.mulPose(new org.joml.Quaternionf().rotationXYZ(0.2f,-0.3f,0.4f));pose.scale(scale[0],scale[1],scale[2]);software.bernie.geckolib.util.RenderUtils.prepMatrixForBone(pose,bone);var before=new org.joml.Matrix4f(pose.last().pose());var capture=new Capture();var metrics=new AflMeshRenderer.Metrics();AflMeshRenderer.render(tested,bone,pose,capture,1234,5678,0.2f,0.4f,0.6f,0.8f,metrics);require(capture.rows.size()==(tested.formatVersion()==2?4:8),"quad submission count");require(metrics.triangles==2&&metrics.vertices==capture.rows.size()&&metrics.quadFaces==(tested.formatVersion()==2?1:0),"metrics");require(before.equals(pose.last().pose()),"pose leak");',
+            'var part=tested.parts("fixture_child").get(0);for(int i=0;i<capture.rows.size();i+=4){var a=capture.rows.get(i);var b=capture.rows.get(i+1);var c=capture.rows.get(i+2);if(tested.formatVersion()==1)require(java.util.Arrays.equals(c,capture.rows.get(i+3)),"degenerate corner");var n=new org.joml.Vector3f(b[0]-a[0],b[1]-a[1],b[2]-a[2]).cross(c[0]-a[0],c[1]-a[1],c[2]-a[2]).normalize();require(n.dot(a[11],a[12],a[13])>0.9999,"winding/normal mismatch");require(a[9]==5678&&a[10]==1234&&a[3]==0.2f&&a[6]==0.8f,"light/overlay/color");require(a[7]==part.value(part.faceStart(i/4),3)&&a[8]==part.value(part.faceStart(i/4),4),"UV");}',
+            'var legacy=new Capture();AflMeshRenderer.render(model,bone,pose,legacy,1234,5678,0.2f,0.4f,0.6f,0.8f);for(var row:capture.rows){boolean found=false;for(var old:legacy.rows){boolean same=true;for(int k=0;k<row.length;k++)if(Math.abs(row[k]-old[k])>2e-5)same=false;if(same)found=true;}require(found,"V1/V2 corner attribute equality");}',
+            'var boxes=new java.util.ArrayList<net.minecraft.world.phys.AABB>();AflMeshRenderer.collectBounds(tested,bone,pose,boxes);require(boxes.size()==1,"mesh bounds");var bounds=boxes.get(0).inflate(1e-6);for(var v:capture.rows)require(bounds.contains(v[0],v[1],v[2]),"transformed bounds miss vertex");',
+            'bone.setHidden(true);capture.rows.clear();var hidden=new AflMeshRenderer.Metrics();AflMeshRenderer.render(tested,bone,pose,capture,0,0,1,1,1,1,hidden);require(capture.rows.isEmpty()&&hidden.hiddenTriangles==2,"hidden bone");bone.setHidden(false);',
             'capture.rows.clear();AflMeshRenderer.render(null,bone,pose,capture,0,0,1,1,1,1);require(capture.rows.isEmpty(),"no sidecar");',
-            'pose.scale(0,1,1);AflMeshRenderer.render(model,bone,pose,capture,0,0,1,1,1,1);require(capture.rows.isEmpty(),"singular transform");}',
-            'System.out.println("JAVA_RENDERER_CHECKS_PASS: actual renderer, real PoseStack/GeoBone, reflected/nonuniform transforms, winding/normals, UV/color/light/overlay, hidden/null, bounds");',
+            'pose.scale(0,1,1);var singular=new AflMeshRenderer.Metrics();AflMeshRenderer.render(tested,bone,pose,capture,0,0,1,1,1,1,singular);require(capture.rows.isEmpty()&&singular.zeroScaleTriangles==2,"singular transform");}',
+            'System.out.println("JAVA_RENDERER_CHECKS_PASS: V1/V2 actual renderer, real PoseStack/GeoBone, reflected/nonuniform transforms, winding/normals, UV/color/light/overlay equality, metrics, hidden/null, bounds");',
             '} catch(Throwable e) { e.printStackTrace(); } }');
         script.push('/exit');
         const entry=write('checks.jsh',script.join('\n'));
@@ -158,7 +200,8 @@ if(process.argv.includes('--java-loader')||process.argv.includes('--java-rendere
         const java=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',process.platform==='win32'?'java.exe':'java'):'java';
         const classpath=[gson];
         if(renderCheck){
-            classpath.push(path.join(gradle,'caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.4.22_mapped_official_1.20.1/forge-1.20.1-47.4.22_mapped_official_1.20.1-recomp.jar'));
+            const mcBase=path.join(gradle,'caches/forge_gradle/minecraft_user_repo/net/minecraftforge/forge/1.20.1-47.4.22_mapped_official_1.20.1/forge-1.20.1-47.4.22_mapped_official_1.20.1');
+            classpath.push(fs.existsSync(mcBase+'-recomp.jar')?mcBase+'-recomp.jar':mcBase+'.jar');
             classpath.push(...findJars(path.join(gradle,'caches/forge_gradle/deobf_dependencies/software/bernie/geckolib')));
             for(const dep of ['org.joml/joml','com.google.guava/guava','it.unimi.dsi/fastutil','org.slf4j/slf4j-api','com.mojang/logging','com.mojang/datafixerupper','org.apache.commons/commons-lang3'])
                 classpath.push(...findJars(path.join(gradle,'caches/modules-2/files-2.1',dep)));

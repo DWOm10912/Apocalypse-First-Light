@@ -11,7 +11,7 @@ import java.util.List;
 public final class AflMeshRenderer {
     /** Optional per-invocation counters for the gated render probe. Null leaves the normal path untouched. */
     public static final class Metrics {
-        public int parts, triangles, vertices;
+        public int parts, triangles, vertices, quadFaces, triangleFaces;
         public int hiddenTriangles, zeroScaleTriangles, invalidNormalTriangles;
     }
 
@@ -42,45 +42,51 @@ public final class AflMeshRenderer {
                 return;
             }
             boolean mirrored = determinant < 0;
-            for (var part : parts) {
+            float m00=matrix.m00(),m10=matrix.m10(),m20=matrix.m20(),m30=matrix.m30();
+            float m01=matrix.m01(),m11=matrix.m11(),m21=matrix.m21(),m31=matrix.m31();
+            float m02=matrix.m02(),m12=matrix.m12(),m22=matrix.m22(),m32=matrix.m32();
+            float n00=normal.m00(),n10=normal.m10(),n20=normal.m20();
+            float n01=normal.m01(),n11=normal.m11(),n21=normal.m21();
+            float n02=normal.m02(),n12=normal.m12(),n22=normal.m22();
+            // PoseStack negates its normal matrix for three negative scale axes.
+            // Compute the actual inverse transpose once per invocation for reflections.
+            if (mirrored) {
+                n00=(m11*m22-m21*m12)/determinant; n10=(m21*m02-m01*m22)/determinant; n20=(m01*m12-m11*m02)/determinant;
+                n01=(m20*m12-m10*m22)/determinant; n11=(m00*m22-m20*m02)/determinant; n21=(m10*m02-m00*m12)/determinant;
+                n02=(m10*m21-m20*m11)/determinant; n12=(m20*m01-m00*m21)/determinant; n22=(m00*m11-m10*m01)/determinant;
+            }
+            for (int p = 0; p < parts.size(); p++) {
+                var part = parts.get(p);
                 boolean submittedPart = false;
-                for (int triangle = 0; triangle < part.cornerCount(); triangle += 3) {
-                float nx = part.value(triangle, 5), ny = part.value(triangle, 6), nz = part.value(triangle, 7);
-                float x = normal.m00()*nx + normal.m10()*ny + normal.m20()*nz;
-                float y = normal.m01()*nx + normal.m11()*ny + normal.m21()*nz;
-                float z = normal.m02()*nx + normal.m12()*ny + normal.m22()*nz;
-                // PoseStack negates its normal matrix for three negative scale axes. Use the actual
-                // inverse transpose of the position matrix for reflections instead.
-                if (mirrored) {
-                    x = ((matrix.m11()*matrix.m22()-matrix.m21()*matrix.m12())*nx
-                            +(matrix.m21()*matrix.m02()-matrix.m01()*matrix.m22())*ny
-                            +(matrix.m01()*matrix.m12()-matrix.m11()*matrix.m02())*nz) / determinant;
-                    y = ((matrix.m20()*matrix.m12()-matrix.m10()*matrix.m22())*nx
-                            +(matrix.m00()*matrix.m22()-matrix.m20()*matrix.m02())*ny
-                            +(matrix.m10()*matrix.m02()-matrix.m00()*matrix.m12())*nz) / determinant;
-                    z = ((matrix.m10()*matrix.m21()-matrix.m20()*matrix.m11())*nx
-                            +(matrix.m20()*matrix.m01()-matrix.m00()*matrix.m21())*ny
-                            +(matrix.m00()*matrix.m11()-matrix.m10()*matrix.m01())*nz) / determinant;
-                }
+                for (int face = 0; face < part.faceCount(); face++) {
+                int start = part.faceStart(face), size = part.faceSize(face);
+                float nx = part.value(start, 5), ny = part.value(start, 6), nz = part.value(start, 7);
+                float x = n00*nx + n10*ny + n20*nz;
+                float y = n01*nx + n11*ny + n21*nz;
+                float z = n02*nx + n12*ny + n22*nz;
                 float length = (float)Math.sqrt(x*x + y*y + z*z);
                 if (!Float.isFinite(length) || length < 1e-12f) {
-                    if (metrics != null) metrics.invalidNormalTriangles++;
+                    if (metrics != null) metrics.invalidNormalTriangles += size - 2;
                     continue;
                 }
                 x /= length; y /= length; z /= length;
-                // Vanilla entity RenderTypes consume QUADS. A,B,C,C gives one real triangle.
-                // Reverse the real triangle on reflections while retaining outward transformed normals.
+                // QUADS: ABCD for native quads, ABCC for true/legacy triangles. Reflections
+                // reverse the boundary while retaining the quad AC diagonal and outward normal.
+                float px=0,py=0,pz=0,u=0,v=0;
                 for (int corner = 0; corner < 4; corner++) {
-                    int index = triangle + (corner == 0 ? 0 : mirrored ? (corner == 1 ? 2 : 1) : Math.min(corner, 2));
-                    float px=part.value(index,0), py=part.value(index,1), pz=part.value(index,2);
-                    buffer.vertex(matrix.m00()*px+matrix.m10()*py+matrix.m20()*pz+matrix.m30(),
-                            matrix.m01()*px+matrix.m11()*py+matrix.m21()*pz+matrix.m31(),
-                            matrix.m02()*px+matrix.m12()*py+matrix.m22()*pz+matrix.m32(),
-                            red, green, blue, alpha, part.value(index,3), part.value(index,4), overlay, light, x, y, z);
-                    if (metrics != null) metrics.vertices++;
+                    // The degenerate fourth corner reuses the already transformed third corner.
+                    if (corner < size) {
+                        int index = start + (mirrored && corner > 0 ? size - corner : corner);
+                        float vx=part.value(index,0),vy=part.value(index,1),vz=part.value(index,2);
+                        px=m00*vx+m10*vy+m20*vz+m30; py=m01*vx+m11*vy+m21*vz+m31; pz=m02*vx+m12*vy+m22*vz+m32;
+                        u=part.value(index,3); v=part.value(index,4);
+                    }
+                    buffer.vertex(px,py,pz,red,green,blue,alpha,u,v,overlay,light,x,y,z);
                 }
                 if (metrics != null) {
-                    metrics.triangles++;
+                    metrics.triangles += size - 2;
+                    if (size == 4) metrics.quadFaces++; else metrics.triangleFaces++;
+                    metrics.vertices += 4;
                     submittedPart = true;
                 }
                 }
@@ -91,7 +97,7 @@ public final class AflMeshRenderer {
 
     private static int triangleCount(List<AflMeshPart> parts) {
         int total = 0;
-        for (var part : parts) total += part.cornerCount() / 3;
+        for (int i = 0; i < parts.size(); i++) total += parts.get(i).triangleEquivalent();
         return total;
     }
 

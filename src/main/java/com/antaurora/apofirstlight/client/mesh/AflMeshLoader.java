@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
 
-/** Strict V1 decoder/baker; no Minecraft state, no topology work at render time. */
+/** Strict V1/V2 decoder/baker; no Minecraft state, no topology work at render time. */
 public final class AflMeshLoader {
     public static final int MAX_CHARACTERS = 4 * 1024 * 1024;
     public static final int MAX_PARTS = 128;
@@ -34,8 +34,11 @@ public final class AflMeshLoader {
     }
 
     private static AflMeshModel bake(JsonObject root, JsonObject geometry) {
-        keys(root, Set.of("format_version", "coordinate_space", "uv_origin", "winding", "texture_size", "parts"), "root");
-        require(integer(root.get("format_version"), "format_version") == 1, "unsupported format_version");
+        int version = root.has("format_version") ? integer(root.get("format_version"), "format_version") : 1;
+        require(version == 1 || version == 2, "unsupported format_version");
+        keys(root, root.has("format_version")
+                ? Set.of("format_version", "coordinate_space", "uv_origin", "winding", "texture_size", "parts")
+                : Set.of("coordinate_space", "uv_origin", "winding", "texture_size", "parts"), "root");
         require(string(root.get("coordinate_space"), "coordinate_space").equals("bone_pivot_local_blocks"), "unsupported coordinate_space");
         require(string(root.get("uv_origin"), "uv_origin").equals("top_left"), "unsupported uv_origin");
         require(string(root.get("winding"), "winding").equals("ccw"), "unsupported winding");
@@ -64,7 +67,8 @@ public final class AflMeshLoader {
                 var part = object(parts.get(partIndex), context);
                 String name = string(part.get("name"), "name"), bone = string(part.get("bone"), "bone");
                 context = "bone=" + bone + " part=" + name;
-                keys(part, Set.of("name", "bone", "vertices", "triangles"), context);
+                String faceKey = version == 1 ? "triangles" : "faces";
+                keys(part, Set.of("name", "bone", "vertices", faceKey), context);
                 require(names.add(name), "duplicate part name");
                 require(boneNames.contains(bone), "unknown parent bone");
                 var vertices = array(part.get("vertices"), -1, "vertices");
@@ -79,19 +83,26 @@ public final class AflMeshLoader {
                         data[i][j] = (float)value;
                     }
                 }
-                var triangles = array(part.get("triangles"), -1, "triangles");
-                totalTriangles += triangles.size();
-                require(!triangles.isEmpty() && totalTriangles <= MAX_TRIANGLES, "invalid/excessive triangles count");
-                float[] baked = new float[triangles.size() * 3 * AflMeshPart.STRIDE];
+                var faces = array(part.get(faceKey), -1, faceKey);
+                require(!faces.isEmpty() && faces.size() <= MAX_TRIANGLES, "invalid/excessive face count");
+                int[] offsets = new int[faces.size() + 1];
+                for (int f = 0; f < faces.size(); f++) {
+                    int size = array(faces.get(f), -1, "face[" + f + "]").size();
+                    require(size == 3 || version == 2 && size == 4, "face[" + f + "] requires 3/4 corners (V1: 3)");
+                    totalTriangles += size - 2;
+                    offsets[f + 1] = offsets[f] + size;
+                }
+                require(totalTriangles <= MAX_TRIANGLES, "excessive triangle-equivalent count");
+                float[] baked = new float[offsets[faces.size()] * AflMeshPart.STRIDE];
                 double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
                 double maxX = -minX, maxY = -minX, maxZ = -minX;
                 int at = 0;
-                for (int t = 0; t < triangles.size(); t++) {
-                    var indices = array(triangles.get(t), 3, "triangle[" + t + "]");
-                    int[] ids = new int[3];
-                    for (int j = 0; j < 3; j++) {
-                        ids[j] = integer(indices.get(j), "triangle[" + t + "] index");
-                        require(ids[j] >= 0 && ids[j] < data.length, "triangle[" + t + "] invalid index");
+                for (int t = 0; t < faces.size(); t++) {
+                    var indices = faces.get(t).getAsJsonArray();
+                    int[] ids = new int[indices.size()];
+                    for (int j = 0; j < ids.length; j++) {
+                        ids[j] = integer(indices.get(j), "face[" + t + "] index");
+                        require(ids[j] >= 0 && ids[j] < data.length, "face[" + t + "] invalid index");
                     }
                     float[] a = data[ids[0]], b = data[ids[1]], c = data[ids[2]];
                     double ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
@@ -99,6 +110,7 @@ public final class AflMeshLoader {
                     double nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
                     double length = Math.sqrt(nx * nx + ny * ny + nz * nz);
                     require(Double.isFinite(length) && length > 1e-10, "triangle[" + t + "] zero-area/degenerate triangle");
+                    if (ids.length == 4) validateQuad(data, ids, nx / length, ny / length, nz / length, t);
                     for (int id : ids) {
                         var v = data[id];
                         for (float value : v) baked[at++] = value;
@@ -107,13 +119,28 @@ public final class AflMeshLoader {
                         maxX = Math.max(maxX, v[0]); maxY = Math.max(maxY, v[1]); maxZ = Math.max(maxZ, v[2]);
                     }
                 }
-                result.computeIfAbsent(bone, ignored -> new ArrayList<>()).add(new AflMeshPart(name, baked,
+                result.computeIfAbsent(bone, ignored -> new ArrayList<>()).add(new AflMeshPart(name, baked, offsets,
                         new AflMeshPart.Bounds(minX, minY, minZ, maxX, maxY, maxZ)));
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalArgumentException(context + ": " + e.getMessage(), e);
             }
         }
-        return new AflMeshModel(result);
+        return new AflMeshModel(version, result);
+    }
+
+    private static void validateQuad(float[][] data, int[] ids, double nx, double ny, double nz, int face) {
+        // Every consecutive triple must have the same outward normal: rejects concavity,
+        // self-intersection, repeated positions and warps. Exporter uses a tighter tolerance.
+        for (int i = 0; i < 4; i++) {
+            float[] a = data[ids[i]], b = data[ids[(i + 1) % 4]], c = data[ids[(i + 2) % 4]];
+            double ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+            double vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+            double x = uy * vz - uz * vy, y = uz * vx - ux * vz, z = ux * vy - uy * vx;
+            double length = Math.sqrt(x*x + y*y + z*z);
+            require(Double.isFinite(length) && length > 1e-10, "face[" + face + "] degenerate quad");
+            double dx = x/length-nx, dy = y/length-ny, dz = z/length-nz;
+            require(dx*dx + dy*dy + dz*dz <= 4e-10, "face[" + face + "] quad must be convex and planar");
+        }
     }
 
     private static void keys(JsonObject object, Set<String> allowed, String where) {

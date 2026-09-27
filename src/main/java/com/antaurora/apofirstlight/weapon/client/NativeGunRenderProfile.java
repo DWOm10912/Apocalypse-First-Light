@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
+import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
 import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -35,7 +36,7 @@ public final class NativeGunRenderProfile {
     }
 
     private static final class Counts {
-        long calls, parts, triangles, vertices, cpuNs;
+        long calls, parts, triangles, vertices, cpuNs, quadFaces, triangleFaces;
         long hiddenTriangles, zeroScaleTriangles, invalidNormalTriangles;
 
         void add(AflMeshRenderer.Metrics metrics, long ns) {
@@ -43,6 +44,8 @@ public final class NativeGunRenderProfile {
             parts += metrics.parts;
             triangles += metrics.triangles;
             vertices += metrics.vertices;
+            quadFaces += metrics.quadFaces;
+            triangleFaces += metrics.triangleFaces;
             cpuNs += ns;
             hiddenTriangles += metrics.hiddenTriangles;
             zeroScaleTriangles += metrics.zeroScaleTriangles;
@@ -54,7 +57,7 @@ public final class NativeGunRenderProfile {
         final String weapon, shader, pack;
         final EnumMap<Pass, Counts> passes = new EnumMap<>(Pass.class);
         final Counts total = new Counts();
-        int frames;
+        int frames, formatVersion;
         long firstPersonShadowCalls, thirdPersonShadowCalls;
         boolean shadowUnconfirmed;
 
@@ -89,8 +92,9 @@ public final class NativeGunRenderProfile {
         }
 
         void logCounts(String pass, Counts counts) {
-            ApocalypseFirstLight.LOGGER.info("[AFL-RENDER-PROFILE] weapon={} pass={} calls_per_frame={} parts_per_frame={} triangles_per_frame={} vertices_per_frame={} cpu_ms_per_frame={} cpu_ms_per_call={}",
-                    weapon, pass, ratio(counts.calls, frames), ratio(counts.parts, frames),
+            ApocalypseFirstLight.LOGGER.info("[AFL-RENDER-PROFILE] weapon={} pass={} format_version={} calls_per_frame={} parts_per_frame={} triangles_per_frame={} quad_faces_per_frame={} triangle_faces_per_frame={} triangle_equivalent_per_frame={} vertices_per_frame={} cpu_ms_per_frame={} cpu_ms_per_call={}",
+                    weapon, pass, formatVersion, ratio(counts.calls, frames), ratio(counts.parts, frames),
+                    ratio(counts.triangles, frames), ratio(counts.quadFaces, frames), ratio(counts.triangleFaces, frames),
                     ratio(counts.triangles, frames), ratio(counts.vertices, frames),
                     ratio(counts.cpuNs / 1_000_000.0, frames), ratio(counts.cpuNs / 1_000_000.0, counts.calls));
         }
@@ -125,7 +129,8 @@ public final class NativeGunRenderProfile {
             Boolean shaderActive = AflShaderCompat.shaderActive();
             String shader = shaderActive == null ? "UNCONFIRMED" : shaderActive ? "YES" : "NO";
             String pack = Boolean.TRUE.equals(shaderActive) ? AflShaderCompat.packName() : "none";
-            String key = selected + '|' + shader + '|' + pack;
+            String key = selected + '|' + shader + '|' + pack + '|' + mc.options.getCameraType()
+                    + '|' + AflMeshCache.snapshot().generation();
             if (!key.equals(currentKey)) {
                 currentKey = key;
                 sample = new Sample(selected, shader, pack);
@@ -152,6 +157,8 @@ public final class NativeGunRenderProfile {
         String handPhase = firstPerson(perspective) && "YES".equals(sample.shader)
                 ? AflShaderCompat.handPhase() : null;
         Pass pass = classify(perspective, shadow, handPhase, sample.shader);
+        if (sample.formatVersion == 0) sample.formatVersion = mesh.formatVersion();
+        else if (sample.formatVersion != mesh.formatVersion()) sample.formatVersion = -1;
         var metrics = new AflMeshRenderer.Metrics();
         long start = System.nanoTime();
         AflMeshRenderer.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha, metrics);
