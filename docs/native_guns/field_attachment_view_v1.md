@@ -18,14 +18,16 @@ Java 路径均相对于 src/main/java/com/antaurora/apofirstlight/。
 
 - weapon/client/FieldAttachmentViewState：CLOSED/ENTERING/OPEN/EXITING、独立 NativeAdsProgress、进入时 level/player/slot/GeoItem ID/stack snapshot、取消原因；selected slot/pending 由同一 Screen 的共享 HUD 持有并经 state accessor 暴露。
 - client/FieldAttachmentScreen：透明非暂停 Screen；普通鼠标与键盘事件；调用同一 MaintenanceAttachmentHud，无第二套候选 UI。
-- weapon/client/FieldAttachmentTransform：在 ConfiguredGunFirstPerson 与 P901FirstPerson 的 renderStatic 前作用于同一父 PoseStack。以既有 ADS calibration 的 HIP 逆矩阵求展示校正，但使用独立 profile 和 progress；P9 composition 仍处在原位置。
+- weapon/client/FieldAttachmentTransform：在 `ConfiguredGunFirstPerson` 的 renderStatic 前作用于同一父 PoseStack，P9 也走该通用入口。以既有 ADS calibration 的 HIP 逆矩阵求展示校正，但使用独立 profile 和 progress；P9 的 composition 值仍来自其枪械定义。
 - weapon/client/FieldAttachmentViewProfile：独立资源 profile，进入时读取；不复用 MaintenanceViewProfile。
-- weapon/client/FieldAttachmentHotspots：在 NativeAnimatedWeaponRenderer/P901Renderer 原有递归绘制中，仅匹配三个受支持槽位的 anchor；应用该帧骨骼 pose、pivot 与真实第一人称 projection，转换为 GUI-scaled 点。每帧清空，尺寸实时读取；无第二次模型树遍历或 mesh picking。
+- weapon/client/FieldAttachmentHotspots：在 `NativeAnimatedWeaponRenderer` 的递归绘制中，仅匹配三个受支持槽位的 anchor；应用该帧骨骼 pose、pivot 与真实第一人称 projection，转换为 GUI-scaled 点。每帧清空，尺寸实时读取；无第二次模型树遍历或 mesh picking。
 - weapon/AttachmentHotspotDefinition：slot、preferred/fallback anchor、局部偏移；维护台的 interactionPoint 和 Field capture 共用。
 - client/AttachmentHudHost：gun/revision/projection/submit/action adapter。MaintenanceAttachmentHud 的既有维护台构造器继续提供 bench adapter；Field 提供 main-hand adapter。AttachmentCandidatePage、按钮、Context HUD、候选分页、音效和 pending UI 共用。
 - weapon/AttachmentModificationPolicy：共享 AFL Native Gun 与 C.A.T. 禁止规则。
 - weapon/AttachmentInteractionCore：共享安装/拆卸/替换、源物品精确匹配、消耗、旧附件归还、弹匣容量与溢出弹药返还、库存快照/失败掉落回滚。
 - weapon/FieldAttachmentActionRequest / FieldAttachmentOperation：主手交易请求、单玩家 pending、序号防重放、51-tick deadline、每 tick 与提交前重验及显式取消。
+
+V1 初次接入时 P9 曾通过 `P901FirstPerson`、`P901Renderer` 捕获热点；这两个专用类已在 P9 通用 Runtime 迁移时退役，Field 的当前入口如上。
 
 ## 主手服务端事务
 
@@ -55,7 +57,7 @@ V1.0.1 profile 新增模型空间 `center: [x,y,z]`。`x/y/z=0` 现在表示该 
 
 视觉中心来自当前 runtime geo 可见主体的模型空间包围中心初值，写入每枪 JSON，未硬编码进 Java：P9 `[-0.00185, 2.63681, -1.82842]`，BR51 `[-0.10793, 8.28125, -0.625]`，HR55 `[-0.21692, 5.85926, -1.61992]`。这些是一次性静态几何基准，仍需用户实机判断视觉质量中心与最终构图；后续仅调 JSON。
 
-热点捕获未改变：它仍在现有 P9/configured renderer 骨骼遍历中读取最终 PoseStack，因此新的中心、旋转、尺度和过渡会自然反映到 screen-space hotspot，不使用旧 transform 或单独像素补偿。附件业务、HUD、网络协议、服务端交易、C.A.T. policy 与维护台均未修改。
+热点捕获未改变：当前 P9 与其他 configured gun 都在 `NativeAnimatedWeaponRenderer` 骨骼遍历中读取最终 PoseStack，因此新的中心、旋转、尺度和过渡会自然反映到 screen-space hotspot，不使用旧 transform 或单独像素补偿。附件业务、HUD、网络协议、服务端交易、C.A.T. policy 与维护台均未修改。
 
 | Profile | x/y/z | center（模型单位） | pitch/yaw/roll（度） | scale multiplier | enter/exit ticks |
 |---|---|---|---|---|---|

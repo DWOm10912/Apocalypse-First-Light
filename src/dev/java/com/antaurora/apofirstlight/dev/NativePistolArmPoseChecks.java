@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflItems;
-import com.antaurora.apofirstlight.weapon.P901Item;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
@@ -80,7 +79,7 @@ public final class NativePistolArmPoseChecks {
     @SubscribeEvent
     public static void rendered(RenderPlayerEvent.Post event) {
         var mc=Minecraft.getInstance();
-        if(event.getEntity()!=mc.player || !(event.getEntity().getMainHandItem().getItem() instanceof P901Item)) return;
+        if(event.getEntity()!=mc.player || !event.getEntity().getMainHandItem().is(AflItems.P9_01.get())) return;
         String camera=mc.options.getCameraType().name();
         if(observed.add(camera)) ApocalypseFirstLight.LOGGER.info("[AFL ARMPOSE V0471 RENDER] completed PlayerRenderer; camera={}, skin={}, mainArm={}; not visual acceptance",camera,mc.player.getModelName(),mc.player.getMainArm());
     }

@@ -5,7 +5,7 @@
     "particle": "apocalypse_firstlight:item/p9_01_icon"
   },
   "base": {
-    "parent": "apocalypse_firstlight:item/p9_01_in_hand"
+    "parent": "apocalypse_firstlight:item/p9_01_v2_native_in_hand"
   },
   "perspectives": {
     "gui": {

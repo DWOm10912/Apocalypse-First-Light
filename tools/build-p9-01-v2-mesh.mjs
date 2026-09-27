@@ -296,25 +296,26 @@ function flankPockets(part, A, B, X, outlines, opt) {
   // front bevel: ahead of ZS the lower break grows into a large chamfer (0.12 x 0.17), ending in a crisp step at ZS
   const ZS = -6.25, frontSharp = [[-w + 0.12, yb], [w - 0.12, yb], [w, yb + 0.17], ...secSharp.slice(3, 9), [-w, yb + 0.17]];
   const secF = d => offRound(frontSharp, d, secR, 2);
-  const angs = angleSet(24, [...S0, ...secF(0)], C, S0.filter(p => Math.abs(p[0] - w) < 1e-9).map(p => Math.atan2(p[1] - C[1], p[0])));   // exact flank ends
+  // silhouette comes from the outline corners; uniform rays only add points on straight edges (Performance Pass: 24 -> 16)
+  const angs = angleSet(16, [...S0, ...secF(0)], C, S0.filter(p => Math.abs(p[0] - w) < 1e-9).map(p => Math.atan2(p[1] - C[1], p[0])));   // exact flank ends
   const ring = (d, z) => at(rayPoly(sec(d), C, angs), z), ringF = (d, z) => at(rayPoly(secF(d), C, angs), z);
-  // front segment: rolled nose bevel (r 0.10, 4 steps) + barrel opening; hole points share the ring angles
+  // front segment: rolled nose bevel (r 0.10, 3 rings) + barrel opening; hole points share the ring angles
   const s = P('slide_body', 'slide2', 'slide');
   const Rn = 0.10, nose = [];
-  for (let k = 0; k <= 3; k++) { const ph = Math.PI / 6 * k; nose.push(ringF(Rn * (1 - Math.sin(ph)), zf + Rn * (1 - Math.cos(ph)))); }
+  for (let k = 0; k <= 2; k++) { const ph = Math.PI / 4 * k; nose.push(ringF(Rn * (1 - Math.sin(ph)), zf + Rn * (1 - Math.cos(ph)))); }
   const CAV = 0.60;   // hollow channel ahead of the port: exposes the chamber when the slide is locked back (travel 1.88)
   // ringF(ZS) -> ring(ZS) share Z: welding collapses the common outline, the rest is the step face
   const rings = loft(s, [...nose, ringF(0, ZS), ring(0, ZS), ring(0, portF - CAV)], {capStart: false, capEnd: true});
-  const stepV = new Set([...rings[4], ...rings[5]]);   // step face: painted like a recess wall (no texture rim around it)
+  const stepV = new Set([...rings[3], ...rings[4]]);   // step face: painted like a recess wall (no texture rim around it)
   s.f.forEach((f, i) => { if (f.every(v => stepV.has(v))) s.t[i] = 'step'; });
   // serrations: closed grooves cut into both flanks (chamfered mouth, depth 0.045), 4 front leaning forward, 7 rear leaning back
   const GR = {y0: 4.94, y1: 5.47, W: 0.085, opt: {c: 0.012, D: 0.045, draft: 0.006}};
   const frontGrooves = Array.from({length: 4}, (_, i) => { const zb = -5.89 + i * 0.24; return grooveOutline(zb, zb - 0.135, GR.y0, GR.y1, GR.W); });
   const rearGrooves = Array.from({length: 7}, (_, i) => { const zb = 1.715 + i * 0.24; return grooveOutline(zb, zb + 0.153, GR.y0, GR.y1, GR.W); });
-  for (const side of [-1, 1]) flankPockets(s, rings[5], rings[6], side * w, frontGrooves, GR.opt);
-  const hole = angs.map(a => s.vtx([0.40 * Math.cos(a), AXIS_Y + 0.40 * Math.sin(a), zf])), mid = angs.map(a => s.vtx([0.415 * Math.cos(a), AXIS_Y + 0.415 * Math.sin(a), zf + 0.012]));
+  for (const side of [-1, 1]) flankPockets(s, rings[4], rings[5], side * w, frontGrooves, GR.opt);
+  const hole = angs.map(a => s.vtx([0.40 * Math.cos(a), AXIS_Y + 0.40 * Math.sin(a), zf]));
   const sleeve = angs.map(a => s.vtx([0.40 * Math.cos(a), AXIS_Y + 0.40 * Math.sin(a), zf + 0.35]));
-  for (let i = 0; i < angs.length; i++) { const j = (i + 1) % angs.length; s.face(rings[0][i], rings[0][j], mid[j], mid[i]); s.face(mid[i], mid[j], hole[j], hole[i]); s.face(hole[i], hole[j], sleeve[j], sleeve[i]); }
+  for (let i = 0; i < angs.length; i++) { const j = (i + 1) % angs.length; s.face(rings[0][i], rings[0][j], hole[j], hole[i]); s.face(hole[i], hole[j], sleeve[j], sleeve[i]); }
   // ejection port: rails (inner lips 0.56..0.62) run along the open bottom of the port and chamber cavity
   const LIP = 0.08;
   const notch = [[-0.56, yb], [-0.56, yb + LIP], [-0.62, yb + LIP], [-0.62, 5.64], [0.62, 5.64], [0.62, yb + LIP], [0.56, yb + LIP], [0.56, yb]];
@@ -338,13 +339,13 @@ function flankPockets(part, A, B, X, outlines, opt) {
   const chain = []; for (let i = st; S0[i % n0][1] > 5.16 && S0[i % n0][0] > -0.33; i++) chain.push(S0[i % n0]);
   const front = [[w, 5.16], ...chain, [-0.33, yt], [-0.30, yt - 0.03], [-0.30, 5.66], [-0.32, 5.64], [0.62, 5.64], [0.62, 5.18], [0.64, 5.20], [w - 0.04, 5.20]];
   pf.poly(front.map(([x, y]) => pf.vtx([x, y, portF])));
-  // rear segment: rolled rear bevel (r 0.08); its front cap (z = portR) is the breech face
+  // rear segment: rolled rear bevel (r 0.08, 3 rings); its front cap (z = portR) is the breech face
   const sr = P('slide_rear', 'slide2', 'slide'), Rr = 0.08, rear = [];
-  for (let k = 3; k >= 0; k--) { const ph = Math.PI / 6 * k; rear.push(at(sec(Rr * (1 - Math.sin(ph))), zr - Rr * (1 - Math.cos(ph)))); }
+  for (let k = 2; k >= 0; k--) { const ph = Math.PI / 4 * k; rear.push(at(sec(Rr * (1 - Math.sin(ph))), zr - Rr * (1 - Math.cos(ph)))); }
   const rr = loft(sr, [at(S0, portR), ...rear]);
   for (const side of [-1, 1]) flankPockets(sr, rr[0], rr[1], side * w, rearGrooves, GR.opt);
   // breech face: raised rounded plate with a firing-pin opening
-  const bp = P('slide_breech_plate', 'slide2', 'chamber'), bang = angleSet(40, null, C);
+  const bp = P('slide_breech_plate', 'slide2', 'chamber'), bang = angleSet(20, null, C);
   const plate = rayPoly(offRound(rectS(-0.36, 0.36, 5.02, 5.74), 0, 0.08, 3), C, bang);
   const pz = portR - 0.014, pF = plate.map(([x, y]) => bp.vtx([x, y, pz])), pB = plate.map(([x, y]) => bp.vtx([x, y, portR + 0.002]));
   const ph = circleAt(0.06, pz, bang).map(q => bp.vtx(q));
@@ -356,52 +357,51 @@ function flankPockets(part, A, B, X, outlines, opt) {
   prismXR(ex, [[portR - 0.04, 5.30], [0.92, 5.30], [0.98, 5.40], [0.92, 5.52], [portR - 0.04, 5.52]], w - 0.01, w + 0.04, {bev: 0.015, fil: 0.03, bevLo: false, fk: 1});
   // rear striker cap plate
   const cap = P('slide_striker_cap', 'slide2', 'ctrl');
-  prismXR(cap, [[zr - 0.06, 4.92], [zr + 0.03, 4.92], [zr + 0.03, 5.46], [zr - 0.06, 5.46]], -0.34, 0.34, {bev: 0.025, fil: 0.025, fk: 1});
+  prismXR(cap, [[zr - 0.06, 4.92], [zr + 0.03, 4.92], [zr + 0.03, 5.46], [zr - 0.06, 5.46]], -0.34, 0.34, {bev: 0.025, k: 1, fil: 0.025, fk: 1});
 }
 
 // ================= SIGHTS =================
 {
   const f = P('front_sight_post', 'front_sight', 'sight');
-  prismXR(f, [[-6.44, 5.90], [-5.96, 5.90], [-6.04, 6.29], [-6.34, 6.29]], -0.12, 0.12, {bev: 0.025, fil: 0.03, fk: 1});
+  prismXR(f, [[-6.44, 5.90], [-5.96, 5.90], [-6.04, 6.29], [-6.34, 6.29]], -0.12, 0.12, {bev: 0.025, k: 1, fil: 0.03, fk: 1});
   const r = P('rear_sight_body', 'rear_sight', 'sight');
   const prof = [[2.72, 5.86], [3.36, 5.86], [3.36, 6.22], [2.90, 6.29], [2.76, 6.29]];
-  prismXR(r, prof, -0.57, -0.11, {bev: 0.02, fil: 0.03, fk: 1}); prismXR(r, prof, 0.11, 0.57, {bev: 0.02, fil: 0.03, fk: 1});
+  prismXR(r, prof, -0.57, -0.11, {bev: 0.02, k: 1, fil: 0.03, fk: 1}); prismXR(r, prof, 0.11, 0.57, {bev: 0.02, k: 1, fil: 0.03, fk: 1});
   prismXR(r, [[2.74, 5.86], [3.34, 5.86], [3.34, 6.05], [2.74, 6.05]], -0.12, 0.12, {bev: 0, fil: 0.015});
 }
 
 // ================= BARREL (bone barrel4) =================
 {
   const C = [0, AXIS_Y], M = MUZZLE_Z;
-  const b = P('barrel_tube', 'barrel4', 'barrel'); const N = 32;
+  const b = P('barrel_tube', 'barrel4', 'barrel'); const N = 24;   // Performance Pass: 32 -> 24 (the crown silhouette still reads round in muzzle close-ups)
   // 9 mm scale (1 unit ~ 18.8 mm): bore r 0.22, barrel r 0.35; recessed rounded crown
   const cr = (r, z) => circle(0, AXIS_Y, r, N, z);
-  loft(b, [cr(0.22, M + 0.04), cr(0.24, M + 0.018), cr(0.27, M + 0.004), cr(0.30, M), cr(0.328, M + 0.004), cr(0.345, M + 0.018), cr(0.35, M + 0.04), cr(0.35, -1.60)], {capStart: false, capEnd: false});
-  const bi = P('barrel_bore', 'barrel4', 'internal'); bi.inward = true;   // dark bore; faint 6-groove rifling hint
-  const rif = z => circle(0, AXIS_Y, 0, N, z).map((_, i) => { const a = Math.PI / N + 2 * Math.PI * i / N, r = i % 16 < 3 || (i % 16 >= 8 && i % 16 < 11) ? 0.228 : 0.22; return [r * Math.cos(a), AXIS_Y + r * Math.sin(a), z]; });
-  loft(bi, [cr(0.22, M + 0.04), rif(M + 0.10), rif(M + 1.10)], {capStart: false, capEnd: true});
+  loft(b, [cr(0.22, M + 0.035), cr(0.26, M + 0.006), cr(0.31, M), cr(0.345, M + 0.012), cr(0.35, M + 0.04), cr(0.35, -1.60)], {capStart: false, capEnd: false});
+  const bi = P('barrel_bore', 'barrel4', 'internal'); bi.inward = true;   // dark bore opening with depth; rifling left to texture / normal map
+  loft(bi, [cr(0.22, M + 0.035), cr(0.22, M + 1.10)], {capStart: false, capEnd: true});
   // chamber hood / breech block: Z-lofted rounded section, rolled front bevel, rear face opened by the chamber
   // bottom at 4.98 (hidden in the slide / over the ramp block): the rear face keeps a rim around the r 0.335 chamber opening
   const hSharp = rectS(-0.47, 0.47, 4.98, 5.90), hsec = d => offRound(hSharp, d, 0.06, 2);
-  const hang = angleSet(32, hsec(0), C), hr = (d, z) => rayPoly(hsec(d), C, hang).map(([x, y]) => [x, y, z]);
+  const hang = angleSet(16, hsec(0), C), hr = (d, z) => rayPoly(hsec(d), C, hang).map(([x, y]) => [x, y, z]);
   const h = P('barrel_hood', 'barrel4', 'chamber'), hs = [];
-  for (let k = 0; k <= 2; k++) { const a = Math.PI / 4 * k; hs.push(hr(0.07 * (1 - Math.sin(a)), -1.60 + 0.07 * (1 - Math.cos(a)))); }
-  for (let k = 2; k >= 0; k--) { const a = Math.PI / 4 * k; hs.push(hr(0.03 * (1 - Math.sin(a)), 0.02 - 0.03 * (1 - Math.cos(a)))); }
+  for (let k = 0; k <= 1; k++) { const a = Math.PI / 2 * k; hs.push(hr(0.07 * (1 - Math.sin(a)), -1.60 + 0.07 * (1 - Math.cos(a)))); }   // front bevel hidden in the slide: one chamfer
+  for (let k = 1; k >= 0; k--) { const a = Math.PI / 2 * k; hs.push(hr(0.03 * (1 - Math.sin(a)), 0.02 - 0.03 * (1 - Math.cos(a)))); }   // rear edge: one chamfer
   const hl = loft(h, hs, {capStart: true, capEnd: false});
   const hh = circleAt(0.335, 0.02, hang).map(q => h.vtx(q));
   for (let i = 0; i < hang.length; i++) { const j = (i + 1) % hang.length; h.face(hl.at(-1)[i], hl.at(-1)[j], hh[j], hh[i]); }
   const cm = P('barrel_chamber_mouth', 'barrel4', 'chamber'); cm.inward = 'none';   // rounded chamber-mouth ring, proud of the hood face
-  loft(cm, [circleAt(0.345, 0.016, hang), circleAt(0.325, 0.032, hang), circleAt(0.295, 0.036, hang), circleAt(0.28, 0.033, hang)], {capStart: false, capEnd: false});
+  loft(cm, [circleAt(0.345, 0.016, hang), circleAt(0.315, 0.035, hang), circleAt(0.28, 0.033, hang)], {capStart: false, capEnd: false});
   const cb = P('barrel_chamber', 'barrel4', 'internal'); cb.inward = true;   // chamber (case r 0.265), cone down to the bore
   loft(cb, [circleAt(0.28, 0.033, hang), circleAt(0.28, -0.82, hang), circleAt(0.22, -0.95, hang)], {capStart: false, capEnd: true});
   // feed ramp: block under the chamber + curved, slightly troughed polished ramp from the chamber floor into the well
   const fr = P('barrel_feed_ramp', 'barrel4', 'ramp');
-  prismXR(fr, [[-0.40, 4.62], [0.035, 4.62], [0.035, 5.02], [-0.40, 5.02]], -0.24, 0.24, {bev: 0.02, fil: 0.02});
+  prismXR(fr, [[-0.40, 4.62], [0.035, 4.62], [0.035, 5.02], [-0.40, 5.02]], -0.24, 0.24, {bev: 0.02, k: 1, fil: 0.02, fk: 1});
   const base = 4.62, top0 = 5.098, ys = z => base + (top0 - base) * Math.pow(1 - (z - 0.035) / 0.405, 1.5);
   const rampSec = z => { const hgt = ys(z) - base, f = Math.min(1, hgt / 0.1), y = ys(z), dp = 0.022 * f, e = 0.02 * f;
     const pts = [[0.24, base], [0.24, y - e], [0.225, y]];
-    for (let i = 1; i <= 7; i++) { const x = 0.225 - 0.45 * i / 8; pts.push([x, y - dp * (1 - (x / 0.225) ** 2)]); }
+    for (let i = 1; i <= 3; i++) { const x = 0.225 - 0.45 * i / 4; pts.push([x, y - dp * (1 - (x / 0.225) ** 2)]); }
     pts.push([-0.225, y], [-0.24, y - e], [-0.24, base]); return pts.map(([x, yy]) => [x, yy, z]); };
-  loft(fr, Array.from({length: 8}, (_, i) => rampSec(0.035 + 0.40 * i / 7)));
+  loft(fr, Array.from({length: 5}, (_, i) => rampSec(0.035 + 0.40 * i / 4)));
 }
 
 // ================= FRAME (bone frame) =================
@@ -411,7 +411,7 @@ function flankPockets(part, A, B, X, outlines, opt) {
   // beavertail: long, upswept tail (tip z 4.22, y ~4.53); its top stays below the slide (y 4.80) over the full recoil stroke
   const RX = [[-6.94, 4.24], [-6.86, 4.78], [3.28, 4.78], [3.72, 4.73], [4.06, 4.68], [4.22, 4.62], [4.24, 4.52], [4.14, 4.44], [3.92, 4.38],
               [3.55, 4.27], [3.18, 4.10], [2.96, 3.98], [2.62, 3.80], [0.70, 3.80], [0.45, 4.02], [-6.72, 4.02]];
-  const RXF = RX.map(([z]) => z > 4.2 ? 0.05 : 0.06), RXr = offRound(RX, 0, RXF, 2);
+  const RXF = RX.map(([z]) => z > 4.2 ? 0.05 : 0.06), RXr = offRound(RX, 0, RXF, 1);
   const wellLine = (zLocal, off) => {
     const a = rotX([0, 3.0, zLocal], MAG_TILT, MAG_PIVOT), b = rotX([0, 5.0, zLocal], MAG_TILT, MAG_PIVOT);
     return [[a[2] + off, a[1]], [b[2] + off, b[1]]];
@@ -420,29 +420,29 @@ function flankPockets(part, A, B, X, outlines, opt) {
   const wf = wellLine(0.855, -0.02), wb = wellLine(2.695, 0.02);
   const r = P('frame_receiver', 'frame', 'frame');
   // side pockets: long dust-cover channel + support-finger index recess above the trigger guard
-  const sidePockets = [roundPoly(rectS(-6.40, -3.30, 4.175, 4.245), [0.035, 0.035, 0.035, 0.035], 3), roundPoly(rectS(-1.78, -0.84, 4.12, 4.34), [0.06, 0.06, 0.06, 0.06], 3)];
+  const sidePockets = [roundPoly(rectS(-6.40, -3.30, 4.175, 4.245), [0.025, 0.025, 0.025, 0.025], 1), roundPoly(rectS(-1.78, -0.84, 4.12, 4.34), [0.06, 0.06, 0.06, 0.06], 1)];
   const pocketOpt = {c: 0.01, D: 0.025, draft: 0.004};
-  prismXR(r, RX, -0.80, -0.45, {bev: 0.045, k: 2, fil: RXF, bevHi: false, holesLo: sidePockets, pocketOpt});
-  prismXR(r, RX, 0.45, 0.80, {bev: 0.045, k: 2, fil: RXF, bevLo: false, holesHi: sidePockets, pocketOpt});
+  prismXR(r, RX, -0.80, -0.45, {bev: 0.045, k: 1, fil: RXF, fk: 1, bevHi: false, holesLo: sidePockets, pocketOpt});
+  prismXR(r, RX, 0.45, 0.80, {bev: 0.045, k: 1, fil: RXF, fk: 1, bevLo: false, holesHi: sidePockets, pocketOpt});
   // upper band: slide-frame interface stands 0.04 proud of the dust cover (second hard-surface layer)
   const band = clipHalf(RXr, q => q[1] - 4.40);
-  prismXR(r, band, -0.84, -0.76, {bev: 0.02, fil: 0, bevHi: false}); prismXR(r, band, 0.76, 0.84, {bev: 0.02, fil: 0, bevLo: false});
+  prismXR(r, band, -0.84, -0.76, {bev: 0.02, k: 1, fil: 0, bevHi: false}); prismXR(r, band, 0.76, 0.84, {bev: 0.02, k: 1, fil: 0, bevLo: false});
   const rc = P('frame_receiver_core', 'frame', 'frame');
   const coreF = keepSide(RXr, wf, 1), coreB = keepSide(RXr, wb, -1);
   prismX(rc, coreF, 0, 0, [-0.45, 0.45]); prismX(rc, coreB, 0, 0, [-0.45, 0.45]);
   WELL_LINES.push(wf, wb);
   // accessory rail: rounded spine + 4 bevelled lands (slots between)
   const rail = P('frame_rail', 'frame', 'frame');
-  prismXR(rail, [[-6.60, 3.88], [-3.20, 3.88], [-3.12, 4.04], [-6.66, 4.04]], -0.56, 0.56, {bev: 0.025, fil: 0.03, fk: 1});
-  for (let i = 0; i < 4; i++) { const z = -6.50 + i * 0.86; prismXR(rail, [[z, 3.72], [z + 0.52, 3.72], [z + 0.52, 3.90], [z, 3.90]], -0.62, 0.62, {bev: 0.03, k: 1, fil: 0.03, fk: 1}); }
+  prismXR(rail, [[-6.60, 3.88], [-3.20, 3.88], [-3.12, 4.04], [-6.66, 4.04]], -0.56, 0.56, {bev: 0.025, k: 1, fil: 0.03, fk: 1});
+  for (let i = 0; i < 4; i++) { const z = -6.50 + i * 0.86; prismXR(rail, [[z, 3.72], [z + 0.52, 3.72], [z + 0.52, 3.90], [z, 3.90]], -0.62, 0.62, {bev: 0.03, k: 1, fil: 0}); }
   // trigger guard: square front, flat bottom, rising undercut; smoothed path, rounded lighter section
   const g = P('frame_trigger_guard', 'frame', 'frame');
-  const path = chaikin([[-2.46, 4.06], [-2.52, 3.30], [-2.56, 2.66], [-2.40, 2.44], [-2.05, 2.40], [-0.40, 2.40], [0.05, 2.48], [0.40, 2.78], [0.72, 3.30], [0.92, 3.70]], 2);
-  sweepYZ(g, path, offRound(rectS(-0.085, 0.085, -0.37, 0.37), 0, 0.07, 2));
+  const path = chaikin([[-2.46, 4.06], [-2.52, 3.30], [-2.56, 2.66], [-2.40, 2.44], [-2.05, 2.40], [-0.40, 2.40], [0.05, 2.48], [0.40, 2.78], [0.72, 3.30], [0.92, 3.70]], 1);
+  sweepYZ(g, path, offRound(rectS(-0.085, 0.085, -0.37, 0.37), 0, 0.07, 1));
   // grip module (magazine-aligned frame, rotated into the rig): superellipse outline, flat front strap,
   // rounder backstrap, palm swell on the flanks, flared magwell base with a rolled bottom edge
   const G = P('frame_grip', 'frame', 'grip');
-  const NG = 40, GZ0 = 0.64, GZ1 = 2.98, GZC = 1.775;
+  const NG = 28, GZ0 = 0.64, GZ1 = 2.98, GZC = 1.775;   // Performance Pass: 40 -> 28 columns
   const gripPt = (a, y, flare, swell = 0) => {
     const c = Math.cos(a), sn = Math.sin(a), fr = sn < 0, n = fr ? 5 : 4, hz0 = fr ? GZC - GZ0 : GZ1 - GZC;
     const z = GZC + Math.sign(sn) * (hz0 + flare) * Math.pow(Math.abs(sn), 2 / n), u = (z - GZC) / hz0;
@@ -456,7 +456,9 @@ function flankPockets(part, A, B, X, outlines, opt) {
   const PANEL = {aF: -24.2 * D, aB: 29.5 * D, y0: -0.36, y1: 2.72, depth: 0.025};
   const TAU = 2 * Math.PI, wrapA = a => ((a % TAU) + TAU) % TAU;
   const inA = a => { const w = wrapA(a); return w > wrapA(PANEL.aF) || w < PANEL.aB || (w > Math.PI - PANEL.aB && w < Math.PI - PANEL.aF); };
-  const cols = Array.from({length: NG}, (_, i) => ({a: TAU * i / NG, in: inA(TAU * i / NG), k: 0}));
+  const PB = [PANEL.aF, PANEL.aB, Math.PI - PANEL.aB, Math.PI - PANEL.aF].map(wrapA), angGap = (x, y) => Math.abs(Math.atan2(Math.sin(x - y), Math.cos(x - y)));
+  // uniform columns closer than ~3 deg to a panel boundary would make sliver strips next to the boundary columns
+  const cols = Array.from({length: NG}, (_, i) => ({a: TAU * i / NG, in: inA(TAU * i / NG), k: 0})).filter(c => PB.every(b => angGap(c.a, b) > 0.05));
   for (const [a, enter] of [[PANEL.aF, true], [PANEL.aB, false], [Math.PI - PANEL.aB, true], [Math.PI - PANEL.aF, false]])
     cols.push({a: wrapA(a), in: !enter, k: 0}, {a: wrapA(a), in: enter, k: 1});
   cols.sort((p, q) => p.a - q.a || p.k - q.k);
@@ -483,52 +485,52 @@ function flankPockets(part, A, B, X, outlines, opt) {
   for (let i = 0; i < cols.length; i++) { const j = (i + 1) % cols.length; MW.face(mw[0][j], mw[0][i], mw[1][i], mw[1][j]); }
   // controls on the left (-X) side: slide stop lever with raised thumb pad, takedown lever, magazine catch
   const c = P('frame_controls', 'frame', 'ctrl');
-  prismXR(c, [[-0.95, 4.42], [0.70, 4.42], [0.92, 4.50], [0.98, 4.70], [0.62, 4.66], [-0.95, 4.58]], -0.905, -0.80, {bev: 0.02, fil: 0.035, bevHi: false, fk: 1});
-  prismXR(c, [[0.60, 4.50], [0.90, 4.53], [0.945, 4.67], [0.63, 4.645]], -0.935, -0.88, {bev: 0.014, fil: 0.03, bevHi: false, fk: 1});
-  prismXR(c, [[-2.40, 4.30], [-1.92, 4.30], [-1.86, 4.46], [-2.00, 4.62], [-2.36, 4.58]], -0.89, -0.78, {bev: 0.02, fil: 0.05, bevHi: false, fk: 1});
-  prismXR(c, [[0.72, 3.70], [1.02, 3.70], [1.02, 3.96], [0.72, 3.96]], -0.88, -0.66, {bev: 0.025, fil: 0.07, bevHi: false, fk: 1});
+  prismXR(c, [[-0.95, 4.42], [0.70, 4.42], [0.92, 4.50], [0.98, 4.70], [0.62, 4.66], [-0.95, 4.58]], -0.905, -0.80, {bev: 0.02, k: 1, fil: 0.035, bevHi: false, fk: 1});
+  prismXR(c, [[0.60, 4.50], [0.90, 4.53], [0.945, 4.67], [0.63, 4.645]], -0.935, -0.88, {bev: 0.014, k: 1, fil: 0.03, bevHi: false, fk: 1});
+  prismXR(c, [[-2.40, 4.30], [-1.92, 4.30], [-1.86, 4.46], [-2.00, 4.62], [-2.36, 4.58]], -0.89, -0.78, {bev: 0.02, k: 1, fil: 0.05, bevHi: false, fk: 1});
+  prismXR(c, [[0.72, 3.70], [1.02, 3.70], [1.02, 3.96], [0.72, 3.96]], -0.88, -0.66, {bev: 0.025, k: 1, fil: 0.07, bevHi: false, fk: 1});
   for (const z of [0.68, 0.76, 0.84]) prismXR(c, [[z - 0.018, 4.55], [z + 0.018, 4.555], [z + 0.018, 4.645], [z - 0.018, 4.64]], -0.95, -0.925, {bev: 0.007, k: 1, fil: 0.008, fk: 1, bevHi: false});
   // magazine catch bezel: raised polymer ring around the button (0.02 clearance), 0.02 proud of the receiver side
   const bz = P('frame_mag_catch_bezel', 'frame', 'frame'), bO = rectS(0.64, 1.10, 3.62, 4.04), bI = rectS(0.70, 1.04, 3.68, 3.98);
-  const bR = (sharp, d, x) => offRound(sharp, d, 0.07, 2).map(([z, y]) => [x, y, z]);
+  const bR = (sharp, d, x) => offRound(sharp, d, 0.07, 1).map(([z, y]) => [x, y, z]);
   loft(bz, [bR(bO, 0, -0.70), bR(bO, 0, -0.808), bR(bO, 0.012, -0.82), bR(bI, -0.012, -0.82), bR(bI, 0, -0.808), bR(bI, 0, -0.70), bR(bO, 0, -0.70)], {capStart: false, capEnd: false});
   // receiver pins with chamfered heads
-  for (const [z, y] of [[-0.35, 4.28], [2.05, 4.28]]) for (const sx of [-1, 1]) lathe(c, [sx * 0.76, y, z], [sx, 0, 0], [[0, 0.07], [0.085, 0.07], [0.10, 0.055]], 16);
+  for (const [z, y] of [[-0.35, 4.28], [2.05, 4.28]]) for (const sx of [-1, 1]) lathe(c, [sx * 0.76, y, z], [sx, 0, 0], [[0, 0.07], [0.085, 0.07], [0.10, 0.055]], 8);
 }
 
 // ================= TRIGGER (bone trigger2) =================
 {
   // blade hangs from the hinge; finger face (-Z) is concave and the tip curls toward the muzzle
   const t = P('trigger_blade', 'trigger2', 'ctrl');
-  sweepYZ(t, chaikin([[-0.52, 4.02], [-0.50, 3.62], [-0.54, 3.24], [-0.63, 2.98], [-0.76, 2.82]], 2), offRound(rectS(-0.085, 0.085, -0.12, 0.12), 0, 0.05, 2));
+  sweepYZ(t, chaikin([[-0.52, 4.02], [-0.50, 3.62], [-0.54, 3.24], [-0.63, 2.98], [-0.76, 2.82]], 2), offRound(rectS(-0.085, 0.085, -0.12, 0.12), 0, 0.05, 1));
 }
 
 // ================= MAGAZINE (bones magazine / empty_old_magazine; mag-local frame) =================
-const NM = 24;
+const NM = 16;   // Performance Pass: 24 -> 16 (4 points per rounded corner)
 const magRing = (hx, z0, z1, rf, rb, y) => roundedRectXZ(hx, z0, z1, rf, rb, NM, y);
 function buildMagazine(bone, suffix) {
   const loc = {origin: MAG_PIVOT, rotation: [MAG_TILT, 0, 0]};
   const m = P('magazine_body' + suffix, bone, 'mag'); m.local = loc;
   // one closed cup (every ring wider than +-0.44 stays below the receiver rails at world y 3.80): body -> rolled upper taper -> thick feed lips curling over the top round (lip underside follows
   // a 0.255 circle around the round axis) -> inner walls down past the follower
+  // Performance Pass: 16 -> 11 rings; the lip curl keeps its outer shoulder, crest, inner hook and round-hugging underside
   const R = [[0.56, 0.92, 2.61, 0.13, 0.06, -0.70], [0.56, 0.92, 2.61, 0.13, 0.06, 3.24],
-    [0.548, 0.93, 2.605, 0.125, 0.06, 3.31], [0.525, 0.945, 2.60, 0.12, 0.058, 3.37], [0.49, 0.965, 2.595, 0.11, 0.055, 3.42],
-    [0.44, 0.99, 2.588, 0.10, 0.05, 3.46], [0.36, 1.02, 2.58, 0.095, 0.05, 3.50], [0.29, 1.05, 2.57, 0.09, 0.05, 3.52], [0.25, 1.07, 2.565, 0.085, 0.05, 3.518],
-    [0.222, 1.09, 2.56, 0.08, 0.05, 3.51], [0.207, 1.10, 2.56, 0.08, 0.05, 3.492], [0.21, 1.10, 2.56, 0.08, 0.05, 3.476],
+    [0.525, 0.945, 2.60, 0.12, 0.058, 3.37], [0.44, 0.99, 2.588, 0.10, 0.05, 3.46], [0.29, 1.05, 2.57, 0.09, 0.05, 3.52],
+    [0.222, 1.09, 2.56, 0.08, 0.05, 3.51], [0.207, 1.10, 2.56, 0.08, 0.05, 3.482],
     [0.232, 1.09, 2.56, 0.08, 0.05, 3.438], [0.247, 1.08, 2.56, 0.08, 0.05, 3.396], [0.50, 0.98, 2.55, 0.10, 0.04, 3.34], [0.50, 0.98, 2.55, 0.10, 0.04, 2.80]];
   const cut = q => { const f = Math.max(0, Math.min(1, (1.12 - q[2]) / 0.20)); return q[1] > 3.26 ? [q[0], 3.26 + (q[1] - 3.26) * (1 - 0.8 * f), q[2]] : q; };
   loft(m, R.map(([hx, z0, z1, rf, rb, y]) => magRing(hx, z0, z1, rf, rb, y).map(cut)));
   // baseplate: rolled bottom edge, thick plate, bevelled top edge stepping into the body, slight front finger lip
   const bp = P('magazine_baseplate' + suffix, bone, 'mag'); bp.local = loc;
   // lower lip flares 0.16 forward / 0.16 back (front finger hook, rear heel) and steps into the plate through a small shelf
-  loft(bp, [[0.70, 0.60, 2.96, 0.08, 0.08, -0.99], [0.73, 0.575, 2.99, 0.10, 0.10, -0.978], [0.74, 0.56, 3.00, 0.11, 0.10, -0.955],
-    [0.74, 0.56, 3.00, 0.11, 0.10, -0.905], [0.74, 0.585, 2.975, 0.105, 0.10, -0.89], [0.74, 0.72, 2.84, 0.10, 0.10, -0.875],
-    [0.74, 0.72, 2.84, 0.10, 0.10, -0.83], [0.728, 0.74, 2.828, 0.095, 0.095, -0.805], [0.70, 0.77, 2.80, 0.09, 0.09, -0.79],
-    [0.66, 0.84, 2.72, 0.12, 0.08, -0.77], [0.60, 0.88, 2.65, 0.13, 0.06, -0.72]].map(([hx, z0, z1, rf, rb, y]) => magRing(hx, z0, z1, rf, rb, y)));
+  loft(bp, [[0.70, 0.60, 2.96, 0.08, 0.08, -0.99], [0.74, 0.56, 3.00, 0.11, 0.10, -0.96],
+    [0.74, 0.56, 3.00, 0.11, 0.10, -0.905], [0.74, 0.72, 2.84, 0.10, 0.10, -0.875],
+    [0.74, 0.72, 2.84, 0.10, 0.10, -0.83], [0.70, 0.77, 2.80, 0.09, 0.09, -0.79],
+    [0.60, 0.88, 2.65, 0.13, 0.06, -0.72]].map(([hx, z0, z1, rf, rb, y]) => magRing(hx, z0, z1, rf, rb, y)));
   // follower: rolled top edge, flat round-support top at 3.065, side clearance 0.04 to the inner walls
   const fo = P('magazine_follower' + suffix, bone, 'follower'); fo.local = loc;
-  loft(fo, [[0.46, 1.02, 2.50, 0.08, 0.04, 2.84], [0.46, 1.02, 2.50, 0.08, 0.04, 2.99], [0.445, 1.04, 2.485, 0.075, 0.04, 3.035],
-    [0.41, 1.07, 2.465, 0.07, 0.04, 3.058], [0.37, 1.11, 2.44, 0.06, 0.04, 3.065]].map(([hx, z0, z1, rf, rb, y]) => magRing(hx, z0, z1, rf, rb, y)));
+  loft(fo, [[0.46, 1.02, 2.50, 0.08, 0.04, 2.84], [0.46, 1.02, 2.50, 0.08, 0.04, 2.99], [0.43, 1.05, 2.475, 0.072, 0.04, 3.05],
+    [0.37, 1.11, 2.44, 0.06, 0.04, 3.065]].map(([hx, z0, z1, rf, rb, y]) => magRing(hx, z0, z1, rf, rb, y)));
 }
 buildMagazine('magazine', '');
 buildMagazine('empty_old_magazine', '_reload');

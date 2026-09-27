@@ -1,12 +1,12 @@
-# P9-01 V2 Pure Mesh Rebuild + Visible Internal Mechanics + High-Fidelity Geometry Refinement（Pure Mesh 几何尚未接入运行时）
+# P9-01 V2 Pure Mesh Rebuild + Visible Internal Mechanics + High-Fidelity Geometry Refinement（历史几何阶段记录）
 
-> 2026-09-27：P9-01 V2 已在资产侧迁移到 AFL Native Rig 并重做 9 条动画，新源为 `src/main/blockbench/p9_01_v2_native.bbmodel`，独立运行时资源见 [p9_01_v2_native_rig_v1.md](p9_01_v2_native_rig_v1.md)。本文件描述的 `p9_01.bbmodel`（旧 TACZ/G19 Rig）及其运行时资源保持不变，仍是游戏当前使用的版本，直到 Java 迁移完成。生成器 `tools/build-p9-01-v2-mesh.mjs` 之后只服务 V2 Native 源。2026-09-27 起的生成器改动只进入 V2 Native 源，未回写 `p9_01.bbmodel`，详见 [p9_01_v2_native_rig_v1.md](p9_01_v2_native_rig_v1.md) 的「滑套前端噪点修复」和「Surface Detail Pass」：
+> **2026-09-27 状态更新：** 正式 `apocalypse_firstlight:p9_01` 已原子切换到 `src/main/blockbench/p9_01_v2_native.bbmodel` 导出的 AFL Native Rig/Pure Mesh 运行时资源。本文件记录此前 `p9_01.bbmodel` 过渡阶段的几何与动画检查，以下旧路径、换弹时长和“尚未导出”表述只对当时成立，不能用作当前运行时合同。当前资源、10 条资产 clip（其中 9 条启用）、34/40 tick 换弹与待验收项见 [p9_01_v2_native_rig_v1.md](p9_01_v2_native_rig_v1.md)。
 >
 > - 滑套前端去细条面、绘制器硬边改写；
 > - 锯齿由凸条改为切槽，新增滑套前段台阶、握把凹陷纹理面板、护木侧槽与食指定位凹台，尾托加长上翘，控件细节，弹匣底板唇边；
-> - 生成器现为 12508 三角形。下文的三角形数与绘制器描述对应 `p9_01.bbmodel` 当时的版本。
+> - Geometry Performance Pass 降低了采样密度，生成器现为 7076 三角形。下文的三角形数与绘制器描述对应 `p9_01.bbmodel` 当时的版本。
 
-状态：`src/main/blockbench/p9_01.bbmodel` 的可见几何已由旧 168 个 Cube 替换为 32 个原创 Pure Mesh，并补齐玩家正常可见的内部机械；High-Fidelity Geometry Refinement 后为 11204 三角形（精修前 2936；其中两份弹匣各 1380，任一时刻正常只显示一份）。状态：GEOMETRY_FREEZE_CANDIDATE（仅编辑器内验证）。**Pure Mesh 几何尚未接入运行时**：`geo/p9_01.geo.json` 与 `textures/item/p9_01.png` 仍是旧 Cube 资产，游戏内仍显示旧 P9。`animations/p9_01.animation.json` 已单独同步下述两条换弹片段的 handling 位移，其他动画保持原样；该动画变更尚未实机验证。P9 目前没有 `.aflmesh.json` sidecar，Hybrid Mesh 导出路径待工程接入（HYBRID_EXPORT = PENDING ENGINEERING PASS）。不要对新源运行旧的 `tools/export-native-gun.mjs`：它按旧 Cube 源编写，不支持 Mesh。
+当时状态（2026-09-26，已被新源取代）：`src/main/blockbench/p9_01.bbmodel` 的可见几何由旧 168 个 Cube 替换为 32 个原创 Pure Mesh，并补齐玩家正常可见的内部机械；High-Fidelity Geometry Refinement 后为 11204 三角形（精修前 2936；其中两份弹匣各 1380，任一时刻正常只显示一份）。当时仅编辑器内验证，旧 `geo/p9_01.geo.json` 与 `textures/item/p9_01.png` 尚未切到 Pure Mesh，`animations/p9_01.animation.json` 仅同步两条换弹片段的 handling 位移。此为历史过渡阶段；当前正式源及 sidecar 为 `p9_01_v2_native`，见上方状态说明。
 
 ## draw / put_away 重做（handling）
 

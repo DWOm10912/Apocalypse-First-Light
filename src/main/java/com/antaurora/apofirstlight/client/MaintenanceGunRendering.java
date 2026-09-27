@@ -33,9 +33,8 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         }
     }
     private static AflMeshModel mesh(ItemStack stack) {
-        if (!(stack.getItem() instanceof NativeGunItem gun)) return null;
-        var id=gun.definition().id();
-        return AflMeshCache.snapshot().get(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"));
+        var resource=asset(stack,"geo/",".geo.json");
+        return resource==null?null:AflMeshCache.snapshot().get(resource);
     }
     private static double longitudinalCenter(ItemStack stack,double fallback){
         refreshMeshBounds();
@@ -48,20 +47,26 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         });
     }
     private static BakedGeoModel model(ItemStack stack){
+        var resource=asset(stack,"geo/",".geo.json");
+        return resource==null?null:GeckoLibCache.getBakedModels().get(resource);
+    }
+    private static ResourceLocation asset(ItemStack stack,String folder,String suffix){
         if(!(stack.getItem() instanceof NativeGunItem gun))return null;
-        var id=gun.definition().id();return GeckoLibCache.getBakedModels().get(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"));
+        var id=gun.definition().id();
+        String path=gun.animationAsset()==null?id.getPath():gun.animationAsset();
+        return new ResourceLocation(id.getNamespace(),folder+path+suffix);
     }
     private static List<GeoBone> bones(ItemStack stack,BakedGeoModel model){return CACHE.computeIfAbsent(model,m->{
         // InitialSnapshot is populated lazily by animation controllers, so it can be null before first use.
         // Read authored rotations once per resource generation, never transient shared live bone rotations.
-        var rotations=new HashMap<String,float[]>();var id=((NativeGunItem)stack.getItem()).definition().id();
-        try(var reader=net.minecraft.client.Minecraft.getInstance().getResourceManager().openAsReader(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"))){
+        var rotations=new HashMap<String,float[]>();var resource=asset(stack,"geo/",".geo.json");
+        try(var reader=net.minecraft.client.Minecraft.getInstance().getResourceManager().openAsReader(resource)){
             var json=com.google.gson.JsonParser.parseReader(reader).getAsJsonObject();
             for(var element:json.getAsJsonArray("minecraft:geometry").get(0).getAsJsonObject().getAsJsonArray("bones")){
                 var bone=element.getAsJsonObject();var r=bone.getAsJsonArray("rotation");
                 if(r!=null)rotations.put(bone.get("name").getAsString(),new float[]{(float)Math.toRadians(-r.get(0).getAsDouble()),(float)Math.toRadians(-r.get(1).getAsDouble()),(float)Math.toRadians(r.get(2).getAsDouble())});
             }
-        }catch(java.io.IOException e){throw new IllegalStateException("Cannot load maintenance bind pose for "+id,e);}
+        }catch(java.io.IOException e){throw new IllegalStateException("Cannot load maintenance bind pose for "+resource,e);}
         return m.topLevelBones().stream().map(b->copy(b,null,rotations)).filter(Objects::nonNull).toList();
     });}
     public static void transform(ItemStack stack,PoseStack pose){
@@ -113,11 +118,11 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     }
     public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
         if(!(stack.getItem() instanceof NativeGunItem gun))return;
-        var id=gun.definition().id();var model=GeckoLibCache.getBakedModels().get(new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json"));
+        var model=GeckoLibCache.getBakedModels().get(asset(stack,"geo/",".geo.json"));
         if(model==null)return;
         var bones=bones(stack,model);
         pose.pushPose();transform(stack,pose);
-        var type=RenderType.entityCutoutNoCull(new ResourceLocation(id.getNamespace(),"textures/item/"+id.getPath()+".png"));
+        var type=RenderType.entityCutoutNoCull(asset(stack,"textures/item/",".png"));
         var mesh=mesh(stack);
         for(var bone:bones)draw(bone,stack,pose,buffers,type,light,mesh);
         pose.popPose();

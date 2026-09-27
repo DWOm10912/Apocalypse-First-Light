@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.weapon.client;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
 import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -56,6 +55,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         // This per-bone geometry hook also runs on reRender. GeoRenderLayers do not.
         // Parent hiding and NativeAnimatedWeaponRenderer's replacement/early-return policy
         // already control entry here. The backend checks the bone's own hidden flag.
-        if (mesh != null) AflMeshRenderer.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha);
+        if (mesh != null) NativeGunRenderProfile.render(mesh, bone, pose, buffer, light, overlay,
+                red, green, blue, alpha, currentItemStack, renderPerspective);
     }
 }

@@ -9,11 +9,27 @@ import java.util.List;
 
 /** CPU backend: consumes the current traversal pose and existing QUADS buffer, never changes render state. */
 public final class AflMeshRenderer {
+    /** Optional per-invocation counters for the gated render probe. Null leaves the normal path untouched. */
+    public static final class Metrics {
+        public int parts, triangles, vertices;
+        public int hiddenTriangles, zeroScaleTriangles, invalidNormalTriangles;
+    }
+
     public static void render(AflMeshModel model, GeoBone bone, PoseStack pose, VertexConsumer buffer,
                               int light, int overlay, float red, float green, float blue, float alpha) {
-        if (model == null || bone.isHidden()) return;
+        render(model, bone, pose, buffer, light, overlay, red, green, blue, alpha, null);
+    }
+
+    public static void render(AflMeshModel model, GeoBone bone, PoseStack pose, VertexConsumer buffer,
+                              int light, int overlay, float red, float green, float blue, float alpha,
+                              Metrics metrics) {
+        if (model == null || (metrics == null && bone.isHidden())) return;
         var parts = model.parts(bone.getName());
         if (parts.isEmpty()) return;
+        if (bone.isHidden()) {
+            if (metrics != null) metrics.hiddenTriangles = triangleCount(parts);
+            return;
+        }
         pose.pushPose();
         try {
             RenderUtils.translateToPivotPoint(pose, bone);
@@ -21,9 +37,14 @@ public final class AflMeshRenderer {
             var normal = pose.last().normal();
             // Zero-scale animation hides geometry; singular normal transforms must never submit NaNs.
             float determinant = matrix.determinant3x3();
-            if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12f) return;
+            if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12f) {
+                if (metrics != null) metrics.zeroScaleTriangles = triangleCount(parts);
+                return;
+            }
             boolean mirrored = determinant < 0;
-            for (var part : parts) for (int triangle = 0; triangle < part.cornerCount(); triangle += 3) {
+            for (var part : parts) {
+                boolean submittedPart = false;
+                for (int triangle = 0; triangle < part.cornerCount(); triangle += 3) {
                 float nx = part.value(triangle, 5), ny = part.value(triangle, 6), nz = part.value(triangle, 7);
                 float x = normal.m00()*nx + normal.m10()*ny + normal.m20()*nz;
                 float y = normal.m01()*nx + normal.m11()*ny + normal.m21()*nz;
@@ -42,7 +63,10 @@ public final class AflMeshRenderer {
                             +(matrix.m00()*matrix.m11()-matrix.m10()*matrix.m01())*nz) / determinant;
                 }
                 float length = (float)Math.sqrt(x*x + y*y + z*z);
-                if (!Float.isFinite(length) || length < 1e-12f) continue;
+                if (!Float.isFinite(length) || length < 1e-12f) {
+                    if (metrics != null) metrics.invalidNormalTriangles++;
+                    continue;
+                }
                 x /= length; y /= length; z /= length;
                 // Vanilla entity RenderTypes consume QUADS. A,B,C,C gives one real triangle.
                 // Reverse the real triangle on reflections while retaining outward transformed normals.
@@ -53,9 +77,22 @@ public final class AflMeshRenderer {
                             matrix.m01()*px+matrix.m11()*py+matrix.m21()*pz+matrix.m31(),
                             matrix.m02()*px+matrix.m12()*py+matrix.m22()*pz+matrix.m32(),
                             red, green, blue, alpha, part.value(index,3), part.value(index,4), overlay, light, x, y, z);
+                    if (metrics != null) metrics.vertices++;
                 }
+                if (metrics != null) {
+                    metrics.triangles++;
+                    submittedPart = true;
+                }
+                }
+                if (metrics != null && submittedPart) metrics.parts++;
             }
         } finally { pose.popPose(); }
+    }
+
+    private static int triangleCount(List<AflMeshPart> parts) {
+        int total = 0;
+        for (var part : parts) total += part.cornerCount() / 3;
+        return total;
     }
 
     /** Bind-pose framing uses the same pivot-local geometry as rendering; no triangle picking. */

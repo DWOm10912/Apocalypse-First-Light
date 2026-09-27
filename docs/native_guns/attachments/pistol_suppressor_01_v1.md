@@ -39,7 +39,7 @@ P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；�
 
 ## 渲染与资产
 
-可编辑源 src/main/blockbench/pistol_suppressor_01.bbmodel 与 geo、贴图保持原几何。独立静态Geo通过 NativeMuzzleRendering 挂到真实动画枪口锚点；P901SightLayer/NativeSightRendering 的共享路径被 P9、NativeAnimatedWeaponRenderer 和 MaintenanceGunRendering 复用。维护台储存的还是原 ItemStack，不修改取回/占位/归属事务。
+可编辑源 src/main/blockbench/pistol_suppressor_01.bbmodel 与 geo、贴图保持原几何。独立静态Geo通过 NativeMuzzleRendering 挂到真实动画枪口锚点；当前 P9 由 NativeAnimatedWeaponRenderer 调用 NativeSightRendering，并与 MaintenanceGunRendering 复用同一附件渲染路径。旧 P901SightLayer 已随专用 Renderer 退役。维护台储存的还是原 ItemStack，不修改取回/占位/归属事务。
 
 从附件实际Geo遍历 muzzle_exit_anchor=(0,0,-9.1)，组合为视觉出口。裸枪闪光隐藏，出口生成一颗弱烟粒子；轨迹视觉起点使用新出口，弹壳路径不改。独立附件使用 builtin/entity item模型与静态Geo绘制，小型手持/掉落缩放0.7；GUI缩放1.4。已安装枪的GUI仍使用既有平面枪图标，不动态合成消音器图标。
 

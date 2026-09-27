@@ -17,7 +17,9 @@ const out = {
   texture: path.join(assets, 'textures/item/p9_01_v2_native.png'),
   display: path.join(assets, 'models/item/p9_01_v2_native_in_hand.json'),
 };
-const LEGACY = ['geo/p9_01.geo.json', 'animations/p9_01.animation.json', 'textures/item/p9_01.png', 'models/item/p9_01_in_hand.json'];
+// Legacy P9 runtime files must stay untouched while they exist (the P9 runtime migration retired and removed them).
+const LEGACY = ['geo/p9_01.geo.json', 'animations/p9_01.animation.json', 'textures/item/p9_01.png', 'models/item/p9_01_in_hand.json']
+  .filter(p => fs.existsSync(path.join(assets, p)));
 
 const source = JSON.parse(fs.readFileSync(nativePath, 'utf8'));
 const byUuid = new Map(source.groups.map(g => [g.uuid, g]));

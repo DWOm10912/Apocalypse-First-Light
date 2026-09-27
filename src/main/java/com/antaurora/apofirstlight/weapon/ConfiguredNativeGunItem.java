@@ -15,6 +15,11 @@ import java.util.function.Consumer;
 
 /** Production gun: shared authoritative combat, configurable visual rig and source timelines. */
 public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
+    static {
+        // Existing authored animations (including Blackridge and P9 Native) use this hold easing.
+        // Register it independently of the retired P9 item constructor.
+        GeckoLibUtil.addCustomEasingType("afl_hold", argument -> progress -> 0);
+    }
     private final net.minecraft.resources.ResourceLocation definitionId;
     public final NativeAnimatedWeaponItem.Profile profile;
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
@@ -50,7 +55,15 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     @Override public void registerControllers(AnimatableManager.ControllerRegistrar registrar) {
         // The loaded idle supplies channels omitted by both empty state and one-shot actions.
         registrar.add(new AnimationController<>(this, "baseline", 0,
-                s -> s.setAndContinue(RawAnimation.begin().thenLoop(profile.idle()))));
+                s -> {
+                    var stack = s.getData(software.bernie.geckolib.constant.DataTickets.ITEMSTACK);
+                    if (profile.clips().contains("empty_idle") && stack != null
+                            && NativeGunAmmo.read(stack, definition()) == 0)
+                        return s.setAndContinue(profile.loops().contains("empty_idle")
+                                ? RawAnimation.begin().thenLoop("empty_idle")
+                                : RawAnimation.begin().thenPlayAndHold("empty_idle"));
+                    return s.setAndContinue(RawAnimation.begin().thenLoop(profile.idle()));
+                }));
         // This controller is processed after baseline and before action. An action that animates
         // the same bone (notably shoot/reload_empty's bolt) therefore owns that bone for its clip.
         if (profile.loops().contains("static_bolt_caught") && profile.clips().contains("static_bolt_caught"))

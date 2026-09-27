@@ -2,7 +2,7 @@ AFL Native Weapon Integration Playbook V1
 
 适用项目：Apocalypse: First Light / Minecraft 1.20.1 / Forge 47.4.22 / Java 17
 Mod ID：apocalypse_firstlight；Java 包：com.antaurora.apofirstlight
-审查/更新基线：2026-09-17 当前工作树；已同步 Native Gun Framework Generalization V1 与 P9 ADS Sight-Axis Calibration V2。本文只描述当前代码与正式运行时资源；历史文档仅用于解释沿革，不覆盖代码事实。
+审查/更新基线：2026-09-27 P9-01 V2 Native Pure Mesh 原子切换；其余框架章节沿用现有实现。P9 V2 尚未进行 `runClient` 或游戏内视觉、声音验收。
 
 1. Scope and Definitions
 
@@ -62,7 +62,7 @@ RIFLE / 半自动战斗步枪
 
 注册/生产 Item
 
-YES；专用 P901Item
+YES；通用 ConfiguredNativeGunItem（`p9_01_v2_native` Pure Mesh 资产）
 
 YES；通用 ConfiguredNativeGunItem
 
@@ -74,19 +74,19 @@ YES；同一公共链
 
 Ammo/Magazine
 
-9×19mm，17 发；可装 24 发扩容匣
+9×19mm，17 发；旧 24 发扩容匣配置仍在，V2 模型兼容未验证
 
 7.62×51mm，20 发；可装 35 发扩容匣
 
 Tactical / Empty reload
 
-YES / YES；P9 空仓提交有 2 tick 专用提前量
+YES / YES；34 / 40 tick；两种装填均在 tick 18 结算弹药
 
 YES / YES；按动画长度锁定
 
 ADS
 
-YES；专用 pistol profile；机械/红点
+YES；V2 机械瞄具数值已更新；旧红点配置仍在，V2 视觉未验证
 
 YES；rifle profile；机械/红点
 
@@ -110,13 +110,13 @@ YES；本枪 JSON 为 true
 
 Suppressor
 
-手枪消音器；声音与半径均接入
+旧手枪消音器配置与声音/半径路径仍在；V2 装配视觉未验证
 
 步枪消音器；声音与半径均接入
 
 Maintenance profile
 
-专用 .55 profile
+现有维护台 profile；V2 构图尚未实机验证
 
 DEFAULT .29 profile
 
@@ -140,23 +140,23 @@ Sound set
 
 模板用途
 
-手枪、专用作者 rig、P9 特例参考
+手枪、AFL Native Rig + Pure Mesh 接入参考；游戏内 QA 待完成
 
 新半自动步枪与通用配置枪首选
 
 当前结论
 
-KNOWN-GOOD / SPECIALIZED / VISUAL-QA-PARTIAL
+GENERIC-RUNTIME / V2-PURE-MESH / VISUAL-QA-PENDING
 
 KNOWN-GOOD / PRIMARY / VISUAL-QA-PARTIAL
 
 PRIMARY_KNOWN_GOOD_TEMPLATE = apocalypse_firstlight:br51_01
 SEMI_AUTO_RIFLE_CLOSEST_TEMPLATE = apocalypse_firstlight:br51_01
-OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, SPECIALIZED)
+OTHER_MATURE_TEMPLATE = apocalypse_firstlight:p9_01 (PISTOL, V2 PURE MESH; RUNTIME QA PENDING)
 
 HR55 已以 apocalypse_firstlight:hr55 注册，weapon_class=RIFLE，保持 SEMI-only。C.A.T 通过 CatNativeGunItem 继承 ConfiguredNativeGunItem，专用类只负责 idle 猫叫；火控走公共实现。
 
-选择 BR51-01 为主模板的原因不是“步枪看起来接近”，而是它已使用 ConfiguredNativeGunItem、通用 NativeAnimatedWeaponRenderer、完整数据 JSON、两种换弹、附件三槽、维护台、Noise/耳鸣与正式声音 cue。P9-01 同样完整，但含 P901Item、P901Renderer、P901FirstPerson、专用空仓提交和手臂构图等特例，不应作为默认复制源。
+选择 BR51-01 为主模板的原因是它已有完整数据 JSON、两种换弹、附件三槽、维护台、Noise/耳鸣与正式声音 cue。P9-01 已切换到 `ConfiguredNativeGunItem`、`NativeAnimatedWeaponRenderer`、`NativePlayerArmRenderer` 和 V2 Pure Mesh，仍需游戏内校准确认；新枪应按自身资产校准显示、ADS、动画与结算时机。
 
 3. Native Gun Architecture Map
 
@@ -194,7 +194,7 @@ HR55 已以 apocalypse_firstlight:hr55 注册，weapon_class=RIFLE，保持 SEMI
 
 弹药：weapon/NativeGunAmmo.java；命中：weapon/NativeGunShot.java
 
-渲染：weapon/client/NativeAnimatedWeaponRenderer.java；P9 特例为 P901Renderer.java
+渲染：weapon/client/NativeAnimatedWeaponRenderer.java；P9 同样进入此通用路径
 
 ADS：weapon/client/NativeGunAds.java、NativeAdsProfile.java
 
@@ -218,7 +218,7 @@ Tooltip：tooltip/AflEquipmentTooltip.java、AflTooltipStatType.java
 
 Profile 明确 asset ID、idle、全部 clip、循环 clip、right_hand_anchor、left_hand_anchor、枪口/抛壳 anchor、barrel exit offset。
 
-仅当公共 Item 无法表达真实状态/动画时才建专用类；P9 是特例，不是惯例。
+仅当公共 Item 无法表达真实状态/动画时才建专用类；P9 已不需要专用 Item。
 
 加入 AflCreativeTabs 的现有“AFL 武器与弹药”页。
 
@@ -242,13 +242,13 @@ runtime 至少有：geo/<weapon>.geo.json、animations/<weapon>.animation.json�
 
 GUI 推荐继续使用 forge:separate_transforms，平面 inventory 图与 builtin/entity 手持模型分离。
 
-ConfiguredNativeGunItem 自动创建 NativeAnimatedWeaponRenderer(Profile)；不要另写 renderer，除非有 P9 等已证明的专用需求。
+ConfiguredNativeGunItem 自动创建 NativeAnimatedWeaponRenderer(Profile)；P9 V2 使用 profile `p9_01_v2_native`，由 Profile/Presentation 指定动画、锚点和呈现值。
 
 第一/第三人称及左右手 Display 都要显式检查。右/左手 scale 不一致会直接破坏 ADS 对称假设。
 
-runtime geometry identifier 当前分别为 geometry.p9_01、geometry.br51_01。维护台按 ResourceLocation 读取 geo 文件，不按 identifier 查找，但 identifier 仍应与 <weapon> 规范一致，避免工具/导出/诊断漂移。
+runtime geometry identifier 当前分别为 geometry.p9_01_v2_native、geometry.br51_01。维护台按 ResourceLocation 读取 geo 文件，不按 identifier 查找，但 identifier 仍应与资产 ID 规范一致，避免工具/导出/诊断漂移。
 
-.bbmodel metadata 不是运行时真值：当前 P9 model_format=geckolib_model，BR51 源为 bedrock，两者都以导出的 runtime geo/animation 为准。不能把某个 model_format 字符串当成通用硬要求。
+.bbmodel metadata 不是运行时真值：当前 P9 V2 源为 Free Model Pure Mesh，BR51 源为 bedrock，两者都以导出的 runtime geo/animation 为准。不能把某个 model_format 字符串当成通用硬要求。
 
 4.4 Bone / Animation contract
 
@@ -318,9 +318,9 @@ Profile 声明且资源存在才启用
 
 inspect_empty
 
-P9-SPECIFIC
+PROFILE-DRIVEN
 
-P9 按弹量选择；通用配置枪不会自动选择
+P9 V2 Profile 提供 `inspect_empty`，通用动作链按弹量选择；其他枪需提供对应 clip
 
 bolt/pump/action
 
@@ -382,7 +382,7 @@ Pistol
 
 TEMPLATE：p9_01。
 
-REQUIRED DIFFERENCES：专用 P9 ADS/hand composition、P901Item/P901Renderer/P901FirstPerson、empty_idle、有弹/空仓 inspect 分支、P9 空仓换弹提前 2 tick 提交。P9 draw 动画会写 loaded slide；0 发 draw 时由后置的 `empty_draw_slide` 控制器仅恢复 `empty_idle` 的 slide 通道，不覆盖 shoot/reload/inspect。
+REQUIRED DIFFERENCES：P9 V2 Profile 的循环包含 `static_idle` 与 `empty_idle`，动作集包含有弹/空仓 inspect 分支。数据 JSON 对应 34 / 40 tick 的换弹，`mag_in_tick=18`、`empty_mag_in_tick=18`；V2 Display、ADS、手臂和非第一人称尺寸按新几何设置。`first_draw` 虽在动画资产中，但当前没有运行时触发条件。新手枪应根据自己的骨骼与动画定义这些值。
 
 OPTIONAL DIFFERENCES：手枪红点、手枪消音器、扩容匣。
 
@@ -581,16 +581,17 @@ sight_slot.ads_center：安装瞄具/红点的附件 ADS 校准，不替代裸�
 
 **anchor 字符串本身仍不是“自动读取 GeckoLib 瞄具骨骼并计算轴线”的运行时机制。**裸枪 ADS 依赖每枪 calibration 数据；附件渲染/维护台仍按各自 mount bone / hotspot 契约处理。
 
-P9 ADS Sight-Axis Calibration V2 当前已确认：
+P9 V2 Native 当前数据校准值（数值已接入，实机视觉待验证）：
 
-P9 aim = [1.50, 5.80, 2.97]
+P9 aim = [0, 5.96718, 2.94939]
 P9 ads_rotation = [0, 0, 0]
-P9 right-hand first-person actual scale = 0.45
-P9 ADS solve scale = 0.45
+P9 right-hand first-person actual scale = 0.53
+P9 ADS solve scale = 0.53
 P9 root_pitch = 0
-P9 runtime sight axis = [0, 0, -9.176]
+P9 eye relief = 0.47
+P9 hip translation = [3.25, -6.46691, -11.9885]
 
-P9 的前后机械瞄具轴本身已经沿模型 -Z，不需要额外 ADS rotation。旧 root_pitch=3 没有对应真实运行时几何旋转，却参与 HIP 逆矩阵，曾造成约 3° 的视觉偏差；当前已归零。BR51 当前 ads_rotation=[0,0,0]，现有 ADS 行为保持不变。
+P9 V2 采用新照门位置与无旋转第一人称 Display；`root_pitch=0`。上述值是新资源的静态配置，尚未通过游戏内 ADS 画面确认。BR51 当前 ads_rotation=[0,0,0]，其既有 ADS 行为不受 P9 切换影响。
 
 新枪 ADS 推荐顺序：
 
@@ -934,7 +935,7 @@ Persistence / Edge Cases
 
 Step 0 — Choose Known-Good Template [COPY]
 
-复制结构而非数值：以 br51_01 的 ConfiguredNativeGunItem + Profile + JSON + runtime resources 为模板。不要复制 P9 专用 Item/renderer/空仓提前提交。
+复制结构而非数值：以 br51_01 的 ConfiguredNativeGunItem + Profile + JSON + runtime resources 为模板。不要照抄 P9 V2 的构图、空仓或结算值。
 
 新的标准半自动步枪必须满足：
 
@@ -996,17 +997,17 @@ Step 6 — Fire / Semi-Auto [VERIFY]
 
 Step 7 — Reload [CALIBRATE + VERIFY]
 
-提供 reload_tactical/reload_empty，使 data 秒数、asset length、cue 与 mag-in commit 一致。验证无备弹拒绝、中断不扣弹、Creative 填满。不要复制 P9 的 2 tick 专用提前提交；不要为新步枪新增 weapon-ID commit timing 特判。
+提供 reload_tactical/reload_empty，使 data 秒数、asset length、cue 与 mag-in commit 一致。验证无备弹拒绝、中断不扣弹、Creative 填满。P9 V2 使用 1.7 / 2.0 秒，两种换弹均在 tick 18 结算；新枪仅在自身动画确实需要时配置结算 tick，不添加 weapon-ID 特判。
 
 Step 8 — Animation [NEW + VERIFY]
 
 Profile 列出全部 clip，仅 idle/empty baseline 在 loops 集合。检查 triggerable PLAY_ONCE、最后一发转空仓 baseline、draw lock、inspect 能力与 camera rotation。bolt/action 只有真实新机制存在时才能加入。
 
-当前通用配置枪的控制器顺序为 `baseline` → `empty_state`（仅当 Profile 同时列出空仓 loop/clip）→ `action`。`baseline` 维持完整 `static_idle` 姿态；`empty_state` 从当前渲染 stack 只读弹量，0 发循环 `static_bolt_caught`，有弹停止；`action` 仅运行触发的一次性动作，否则停止。后处理的动作通道覆盖空仓通道，因此 draw 不写 bolt 时空仓 bolt 仍保持，而 shoot/reload_empty 写 bolt 时动作优先。BR51/HR55 的 `static_bolt_caught` 可只是局部 bolt 通道，不能替换完整 `static_idle`。具体首帧视觉和联机同步仍需客户端实测。
+当前通用配置枪有 `baseline`、可选 `empty_state` 和 `action` 控制器。P9 V2 的 `baseline` 根据当前渲染 stack 弹量在 `static_idle` 与 `empty_idle` 之间选择；BR51 等使用 `static_bolt_caught` 的枪由单独 `empty_state` 表示挂机。`action` 控制开火、换弹、检视与 draw。P9 V2 的空仓 draw、首帧视觉和联机同步仍需客户端实测。
 
 First-Person-Only Animation V1（所有新 Native Gun 默认遵循）：
 
-- `weapon/client/NativeGunContextRenderer.java` 按 `ItemDisplayContext` 分流；通用 `NativeAnimatedWeaponRenderer` 与既有 `P901Renderer` 均接入。第一人称继续使用完整动画/controller、空仓状态、手臂、临时弹匣与 ADS。
+- `weapon/client/NativeGunContextRenderer.java` 按 `ItemDisplayContext` 分流；P9 与其他配置枪均使用 `NativeAnimatedWeaponRenderer`。第一人称继续使用完整动画/controller、空仓状态、手臂、临时弹匣与 ADS。
 - 第三人称左右手（本地 F5 与远端玩家一致）使用 `NativeThirdPersonPose` 的独立骨骼副本：从 authored initial transforms 应用现有 loaded idle clip 的 time-zero baked 通道值，固定为完整正常持枪姿态；不运行 draw / put_away / reload / inspect / gun-body shoot / empty-state overlay。不修改共享动画骨骼与 controller，不新增逐枪第三人称资源。
 - 新模型的 loaded idle 起始采样必须定义有效的完整正常姿态；不要依赖随时间变化的表达式来定义该静态姿态。缺少 loaded idle clip 会明确报错，不会静默回退 raw bind pose。模型或动画资源重载导致 baked identity 变化后，静态副本重新生成。
 - 第一人称专用几何优先放在 `fp_only_*` 子树。通用过滤同时识别现有 `empty_old_*`、`reload_mag*`、`new_mag*`、`ref_*`，以及 `additional_magazine`、`lefthand`、`righthand`、`left_hand_anchor`、`right_hand_anchor`、`camera`、`view`、`ref`、`refit`、`positioning`。过滤整个子树，因此真实枪体、正式弹匣或配件/FX 锚点不能放在这些节点下。

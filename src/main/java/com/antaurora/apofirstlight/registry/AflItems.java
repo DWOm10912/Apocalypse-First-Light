@@ -22,8 +22,13 @@ public final class AflItems {
     public static final RegistryObject<Item> SIMPLE_HEARING_PROTECTION = ITEMS.register("simple_hearing_protection",
             com.antaurora.apofirstlight.item.SimpleHearingProtectionItem::new);
 
-    public static final RegistryObject<Item> P9_01 = ITEMS.register("p9_01",
-            com.antaurora.apofirstlight.weapon.P901Item::new);
+    public static final RegistryObject<Item> P9_01 = ITEMS.register("p9_01", () ->
+            new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "p9_01"),
+                    new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("p9_01_v2_native", "static_idle",
+                            java.util.List.of("static_idle", "empty_idle", "reload_tactical", "reload_empty",
+                                    "shoot", "draw", "put_away", "inspect", "inspect_empty"),
+                            java.util.Set.of("static_idle", "empty_idle"), "right_hand_anchor", "left_hand_anchor",
+                            "muzzle_anchor", "ejection_anchor")));
     public static final RegistryObject<Item> BR51_01 = ITEMS.register("br51_01", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight","br51_01"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01", "static_idle",

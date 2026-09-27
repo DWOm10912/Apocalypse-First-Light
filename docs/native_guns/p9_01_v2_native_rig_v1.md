@@ -1,6 +1,6 @@
-# P9-01 V2 — AFL Native Rig + 9 Animation Rebuild（资产侧完成，未接入运行时）
+# P9-01 V2 — AFL Native Rig + Pure Mesh（已接入运行时，客户端待验收）
 
-状态（2026-09-27）：P9-01 V2 已在资产侧从旧 TACZ/G19 Rig 迁移到 AFL Native Gun 标准 Rig（与 Blackridge .50 同一套约定），并重做第一人称动画（现为 10 条，含 first_draw；2026-09-27 按 MW 风格手感重做）、导出独立的新运行时资源。**游戏当前仍使用旧 P9**：旧的 `p9_01.bbmodel`、`geo/p9_01.geo.json`、`animations/p9_01.animation.json`、`textures/item/p9_01.png`、`models/item/p9_01_in_hand.json` 均未改写。例外：音效文件 `p9_01_fire` / `p9_01_suppressed` / `p9_01_draw` / `p9_01_put_away` 已按用户要求替换为新版本，旧 P9 在游戏中也会使用新的开火声。Java 未改动；运行时切换由后续 Runtime Migration（Codex / Sol）完成。验证仅限离线预览与 Blockbench 渲染，未进游戏。
+状态（2026-09-27）：正式 Registry ID 仍为 `apocalypse_firstlight:p9_01`，Java 物品已切换到 `ConfiguredNativeGunItem`，运行时 Profile 指向 `p9_01_v2_native` Geo、动画、贴图、Display 与 Pure Mesh sidecar；玩家手臂走 `NativePlayerArmRenderer`。旧 P9 专用类及旧 Geo/动画/贴图/手持 Display 运行时资源已删除，旧 `.bbmodel` 只作历史源保留。V2 源有 10 条 clip，其中 9 条在 Profile 中启用；`first_draw` 仅作为资源存在，没有运行时触发。静态/离线结果不能代替客户端验证；尚未执行 `runClient` 或游戏内手部、ADS、附件、维护台、声音验收。
 
 ## 文件
 
@@ -15,8 +15,8 @@
 | 第一人称离线预览（游戏同一变换链 + 真实手臂盒，P9 / Blackridge 并排） | `tools/preview-fp-arms.mjs` |
 | geo（仅骨骼，28 根） | `assets/apocalypse_firstlight/geo/p9_01_v2_native.geo.json` |
 | 动画 | `assets/apocalypse_firstlight/animations/p9_01_v2_native.animation.json` |
-| Pure Mesh sidecar（35 part，14032 三角形） | `assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json` |
-| Base Color（V4 A 版近黑，与源内嵌贴图逐字节一致） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native.png` |
+| Pure Mesh sidecar（35 part，7768 三角形） | `assets/apocalypse_firstlight/meshes/p9_01_v2_native.aflmesh.json` |
+| Base Color（V4 A 版近黑；源内嵌、独立源文件与运行时 PNG 解码 RGBA 像素一致，PNG 字节编码不同） | `assets/apocalypse_firstlight/textures/item/p9_01_v2_native.png` |
 | Display（builtin/entity） | `assets/apocalypse_firstlight/models/item/p9_01_v2_native_in_hand.json` |
 
 重建顺序：`build` → `author --write-source --write-runtime` → `export`。`build` 重跑时保留源中已有动画。
@@ -61,10 +61,10 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 
 ## 几何与 UV
 
-- Pure Mesh 与 Base Color（当前为 V4 A 版，见下文）由 `build-p9-01-v2-mesh.mjs` 生成，`build-p9-01-v2-native.mjs` 直接调用它，不再读取旧 `p9_01.bbmodel`（该文件停留在精修前的 11204 三角形版本，不再同步）。生成器本体 32 个 part、12508 三角形；Native 源另含换弹用的辅助弹匣副本，合计 35 个 Mesh、14032 三角形（2026-09-27 Surface Detail Pass 之后）。
+- Pure Mesh 与 Base Color（当前为 V4 A 版，见下文）由 `build-p9-01-v2-mesh.mjs` 生成，`build-p9-01-v2-native.mjs` 直接调用它，不再读取旧 `p9_01.bbmodel`（该文件停留在精修前的 11204 三角形版本，不再同步）。生成器本体 32 个 part、7076 三角形；Native 源另含换弹用的辅助弹匣副本，合计 35 个 Mesh、7768 三角形，常态第一人称可见 6384（2026-09-27 Geometry Performance Pass 之后）。
 - 贴图 UV 尺寸改为 1024。这是 Free Model 必需的：网格 UV 按 1024 像素编写，旧 GeckoLib 工程带的是项目分辨率 256。
 - 拓扑调整：`build-p9-01-v2-native.mjs` 的 `splitWarped` 把扭曲超过 AFL 转换器容差（>10%）的四边面沿对角线拆成两个三角形，顶点和 UV 不变，渲染表面相同。
-- sidecar 为满足运行时 4 MiB 字符上限（`AflMeshLoader.MAX_CHARACTERS`），数字行改为单行书写（数据与通用 `export-afl-mesh.mjs` 的 `serialize` 结果解析后完全相同，当前约 2.41 MB）。因此对这个文件应使用 `export-p9-01-v2-native.mjs --check` 校验，通用转换器的 `--check` 会因格式不同报 stale。
+- sidecar 为满足运行时 4 MiB 字符上限（`AflMeshLoader.MAX_CHARACTERS`），数字行改为单行书写（数据与通用 `export-afl-mesh.mjs` 的 `serialize` 结果解析后完全相同，当前约 1.32 MB）。因此对这个文件应使用 `export-p9-01-v2-native.mjs --check` 校验，通用转换器的 `--check` 会因格式不同报 stale。
 
 ### 滑套前端噪点修复（2026-09-27）
 
@@ -131,6 +131,18 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - 其他硬边规则不变。握把颗粒纹理只画在 `panel` 面上。
 - 贴图密度由 28 降到 27 px/单位。
 
+**数据**（该轮结束时；之后的性能优化见「Geometry Performance Pass」）
+- 生成器：32 part、12508 三角形。
+- Native 源和运行时：35 个 Mesh、14032 三角形。
+- sidecar：约 2.41 MB（上限 4 MiB）。
+
+**验证**
+- Blockbench 离屏渲染：整枪左右两侧、后 3/4、前 3/4，以及锯齿、前段台阶、握把面板、护木槽和凹台的近景。
+- 贴图裁切检查。
+- `tools/preview-fp-arms.mjs` 第一人称预览：待机、空仓换弹、检视的关键帧。
+- AFL 转换器接受全部面，`export-p9-01-v2-native.mjs --check` 通过。
+- 未进游戏。
+
 ### V4 Base Color A 版：近黑（2026-09-27，待游戏内确认）
 
 参照一张黑色 striker-fired 手枪产品照，把整枪压到接近黑色。部件之间靠表面质感和 1–2 个色阶的冷暖差区分，不靠明暗差。
@@ -173,17 +185,77 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - `export-p9-01-v2-native.mjs --check` 通过。
 - 未进游戏。
 
-**数据**
-- 生成器：32 part、12508 三角形。
-- Native 源和运行时：35 个 Mesh、14032 三角形。
-- sidecar：约 2.41 MB（上限 4 MiB）。
+### Geometry Performance Pass（2026-09-27）
 
-**验证**
-- Blockbench 离屏渲染：整枪左右两侧、后 3/4、前 3/4，以及锯齿、前段台阶、握把面板、护木槽和凹台的近景。
-- 贴图裁切检查。
-- `tools/preview-fp-arms.mjs` 第一人称预览：待机、空仓换弹、检视的关键帧。
+**起因**：实机测试（Sundial Lite 光影）下，空手 200 FPS，拿 Blackridge 120 FPS，拿 P9 70 FPS。
+- 按帧耗时看，P9 多出约 9.3 ms，Blackridge 多出约 3.3 ms，比例与两者的常态可见三角面数（10984 对约 4500）基本一致。
+- 原因是 AFL Pure Mesh 仍走 CPU 逐顶点提交：每帧每个三角面在 Java 中变换，并按退化四边形提交 4 个顶点。开光影后单个顶点更贵，枪在一帧里也不止画一次，所以开销和三角面数成正比。
+
+**本轮做法**：只删玩家看不出来的几何，外形尺寸、Rig、锚点和动画都不变。
+
+**原则**：
+- 保留轮廓、主倒角、锯齿、抛壳口、瞄具和控件的外形；
+- 降低过密的圆周采样、多段滚圆倒角、平直边上的冗余采样，以及平时看不见的内部精度；
+- 微小表面细节以后交给贴图和法线贴图。
+
+**降低密度的位置**（都在 `tools/build-p9-01-v2-mesh.mjs`）：
+
+| 部位 | 之前 | 之后 |
+|---|---|---|
+| 滑套截面均匀采样（外形仍由拐角采样决定，枪口孔同步） | 24 | 16 |
+| 滑套前、后滚圆倒角 | 4 圈 | 3 圈 |
+| 枪口孔 | 带一圈倒角 | 直接接到孔边 |
+| 弹底板、击针孔 | 40 段 | 20 段 |
+| 枪管外管、枪膛 | 32 段 | 24 段（16 段在枪口极近景能看出折面，故取 24） |
+| 膛线几何 | 有 | 去掉，只保留有深度的暗色孔 |
+| 枪管罩、膛室、膛室口采样 | 32 段 | 16 段 + 拐角 |
+| 枪管罩前端倒角（藏在滑套里）、后端倒角 | 多段滚圆 | 各一道斜角 |
+| 供弹坡 | 8 截面 × 13 点 | 5 截面 × 9 点 |
+| 机匣侧板、上沿、芯体、导轨、准星、照门、各控件的倒角和轮廓圆角 | 2 段 | 1 段（导轨凸台去掉 0.03 的轮廓小圆角，只保留倒角） |
+| 护木槽、食指凹台的轮廓圆角 | 3 段 | 1 段（护木槽端部圆角半径 0.035 → 0.025，避免槽口外扩后出现交叉四边形） |
+| 扳机护圈 | 路径平滑 2 次，截面圆角 2 段 | 平滑 1 次，截面圆角 1 段 |
+| 扳机截面圆角 | 2 段 | 1 段 |
+| 握把圆周 | 40 列 | 28 列（加 8 列面板边界列；距面板边界不到约 3° 的均匀列直接去掉，避免细条面） |
+| 销钉 | 16 段 | 8 段 |
+| 弹匣圆周 | 24 段 | 16 段 |
+| 弹匣供弹唇 | 16 圈 | 11 圈（保留外肩、唇顶、内勾和贴住顶弹的下缘；与顶弹轴的最小间距仍为 0.2557） |
+| 弹匣底板、托弹板 | 11 圈、5 圈 | 7 圈、4 圈 |
+
+三个弹匣（枪内、`mag_out`、`empty_old_mag`）仍由同一套弹匣几何复制，同步降低。
+
+**结果**（三角面）：
+
+| 骨骼 | 之前 | 之后 |
+|---|---|---|
+| gun_body | 4832 | 2716 |
+| slide | 2022 | 1580 |
+| barrel | 1906 | 920 |
+| magazine | 1288 | 568 |
+| follower | 236 | 124 |
+| trigger | 332 | 220 |
+| rear_sight / front_sight | 276 / 92 | 196 / 60 |
+| reload_magazine（mag_out） | 1524 | 692 |
+| empty_old_mag | 1524 | 692 |
+| **总计** | **14032** | **7768** |
+| **常态第一人称可见**（总计减去两个隐藏的辅助弹匣） | **10984** | **6384**（−41.9%） |
+
+- 生成器本体：12508 → 7076。
+- sidecar：约 2.41 MB → 约 1.32 MB。
+- 采用的手枪预算：常态可见 4500–6000 为目标，约 6500 为软上限，约 7000 为硬上限，均按三角面计。
+
+**不变的部分**：
+- Rig、骨骼枢轴、全部锚点、动画 JSON（逐字节相同）、geo 和 Display 文件；
+- 材质基色和绘制规则。
+
+**UV 重新生成**：P9 的 UV 由生成器自动展开、自动打包，几何一变图集布局就会整体重排，所以这次 UV 和贴图是按同一套规则重新生成的，贴图密度仍为 28 px/单位。目前没有手绘贴图，也还没有 `_s` / `_n` 贴图，所以没有资产因此失效。以后如果制作 LabPBR 贴图，应在几何定稿后再做，或者改为从生成器输出。
+
+**工具**：旧 P9 的运行时文件已在迁移中删除，`tools/export-p9-01-v2-native.mjs` 改为只校验仍存在的旧文件。
+
+**验证**：
+- Blockbench 离屏渲染，优化前后同一机位对比：前 45°、后 45°、左侧整枪、枪口近景、滑套后坐锁定（抛壳口与膛室）、弹匣唇部与整只弹匣。枪口近景在改用 24 段后与原来一致，其余视角看不出差别。
+- `tools/preview-fp-arms.mjs` 第一人称对比：待机、检视 0.7 秒、空仓换弹 0.62 秒，轮廓没有可见差别。
 - AFL 转换器接受全部面，`export-p9-01-v2-native.mjs --check` 通过。
-- 未进游戏。
+- 未进游戏，帧数变化需要实机复测。按上面的线性关系粗估，Sundial Lite 下 P9 约从 70 FPS 回到 95 FPS 左右，这只是估算。
 
 ## 握姿与第一人称构图
 
@@ -227,7 +299,7 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - `foley_raise` / `foley_lower` 的动画标记已按用户要求移除（听感不理想，待重新处理）；两个文件与 `sounds.json` 登记保留，当前任何 clip 都不播放它们。
 - 处理：`draw` 剪掉开头 0.20 s 淡入空白，`foley_raise` 剪掉开头 0.09 s 并提高 9 dB（峰值约 -7 dB），`magazine_seat` 剪掉开头 0.08 s 静音；三者加 3 ms 淡入。其余原样复制。
 - 插匣为两段式：左手把弹匣推入大半（距到位 0.9），掌根向下让开约 1.1，再在 `seat` 时刻上拍到位（枪同时一震）。音效分两层：旧 `p9_01_magazine_in` 从到位前 0.275 s 开始播放，前段摩擦声对应弹匣进井，文件内 0.28 s 处自带的卡扣声恰好与到位重合；新 `p9_01_magazine_seat` 在到位前 0.005 s 播放，两者叠成一次拍到位的声音，不会先后响两次。`p9_01_magazine_out`（旧）继续用于脱匣；旧 `p9_01_slide_action`、整段 `p9_01_inspect` 本版不用。
-- **需要 Java 注册**：动画 marker 在 `NativeGunAnimations` 中按名字从 Forge 音效注册表取事件，6 个新事件必须在 `AflSounds` 中注册，否则不会发声（见交接部分）。
+- 动画 marker 在 `NativeGunAnimations` 中按名字从 Forge 音效注册表取事件；新增的正式 SoundEvent 已在 `AflSounds` 中注册，声音的实际播放/时机仍待客户端验收。
 - 现行 Java 切枪时只播放 put_away 中 tick ≤ 1 的标记，put_away 音效放在 0 秒。
 
 
@@ -241,16 +313,16 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 
   换弹和检视期间弹匣井始终露在右前臂之外，左手取匣和送匣路径清晰。
 - Blockbench 已打开新源文件，确认 V3 贴图对齐、参考臂与握把的关系、动画可播放。
-- 运行时动画用到的骨骼全部存在于 geo，时间轴有序、没有超出时长；导出 `--check` 通过；旧 P9 运行时资源经脚本逐字节比对未改动。
-- 未编译、未进游戏：手臂接触、ADS、第三人称、维护台、声音时机都需要实机验证。
+- 运行时动画用到的骨骼全部存在于 geo，时间轴有序、没有超出时长。当前 `tools/export-p9-01-v2-native.mjs --check` 的 Geo/Mesh/Display 对照匹配，但贴图字节比较会报 stale：源内嵌 PNG 与运行时 PNG 编码不同，解码 RGBA 像素相同。这是导出检查的字节一致性限制，不是已知视觉差异。
+- V2 切换尚未进行客户端实机验收：手臂接触、ADS、第三人称、维护台、附件、声音时机都需要人工确认。此前离线预览不等于游戏内 PASS。
 
-# Runtime Migration Contract（交给 Codex / Sol）
+# Runtime Contract（2026-09-27 已切换；以下旧骨骼映射供历史审计）
 
-**OLD_P9_RUNTIME**：`P901Item` + `P901Renderer`（`NativeGunRig("gun","right_hand_anchor","left_hand_anchor","root")`）+ `P901HandLayer`（ADS 时收缩手臂）+ `P901FirstPerson`（`COMPOSITION_X/Y` 平移）+ `P901SightLayer` + `P901AnimationController`；`P901Renderer` 中写死了 `g19_and_mag`（非第一人称尺寸兼容）与 `empty_old_magazine`（换弹可见性）；资源为 `p9_01.*`。
+**OLD_P9_RUNTIME（历史，已退休）**：`P901Item` + `P901Renderer`（`NativeGunRig("gun","right_hand_anchor","left_hand_anchor","root")`）+ `P901HandLayer`（ADS 时收缩手臂）+ `P901FirstPerson`（`COMPOSITION_X/Y` 平移）+ `P901SightLayer` + `P901AnimationController`；`P901Renderer` 中写死了 `g19_and_mag` 与 `empty_old_magazine`；资源为旧 `p9_01.*`。
 
-**EXPECTED_RUNTIME_TARGET**：`ConfiguredNativeGunItem` + `NativeAnimatedWeaponRenderer` + AFL Hybrid Mesh，参照 `AflItems.BLACKRIDGE_50`：`Profile(id, "static_idle", clips, loops, "right_hand_anchor", "left_hand_anchor", "muzzle_anchor", "ejection_anchor")`。
+**CURRENT_RUNTIME**：`ConfiguredNativeGunItem` + `NativeAnimatedWeaponRenderer` + `NativePlayerArmRenderer` + AFL Hybrid Mesh；`AflItems.P9_01` 保留正式物品 ID，Profile 的资源 ID 为 `p9_01_v2_native`，骨骼锚点为 `right_hand_anchor`、`left_hand_anchor`、`muzzle_anchor`、`ejection_anchor`。
 
-**NEW_RESOURCE_PATHS**：geo `geo/p9_01_v2_native.geo.json`；animation `animations/p9_01_v2_native.animation.json`；aflmesh `meshes/p9_01_v2_native.aflmesh.json`；texture `textures/item/p9_01_v2_native.png`；display `models/item/p9_01_v2_native_in_hand.json`。切换完成后可再决定是否改名回 `p9_01`（需同时处理旧资源和物品模型的 `forge:separate_transforms`）。
+**CURRENT_RESOURCE_PATHS**：geo `geo/p9_01_v2_native.geo.json`；animation `animations/p9_01_v2_native.animation.json`；aflmesh `meshes/p9_01_v2_native.aflmesh.json`；texture `textures/item/p9_01_v2_native.png`；display `models/item/p9_01_v2_native_in_hand.json`。`models/item/p9_01.json` 的手持路径指向 V2 Display；旧 `p9_01` Geo/动画/贴图/手持 Display 已从运行时资源中删除。
 
 **NEW_ASSET_BONES**：root、handling、gun_body、barrel、muzzle_anchor、chamber_round_anchor、trigger、slide、front_sight、rear_sight、ejection_anchor、sight_anchor、magazine、follower、magazine_round_anchor、righthand、right_hand_anchor、lefthand、lefthand_pos、left_hand_anchor、mag_out、reload_magazine、mag_out_round_anchor、empty_old_mag、empty_old_mag_round_anchor、positioning、maintenance_anchor、camera。
 
@@ -275,17 +347,17 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 | refit / idle_view / iron_view / refit_* / thirdperson_hand / ground / fixed | 删除（TACZ 残留） |
 | — | maintenance_anchor、chamber_round_anchor、follower（新增） |
 
-**clip 名**：static_idle、empty_idle、shoot、draw、put_away、first_draw、reload_tactical、reload_empty、inspect、inspect_empty。`first_draw` 为新增，需 Java 决定播放条件（首次装备或膛内无弹时代替 draw）。注意 Blackridge 的通用 Profile 用 `static_bolt_caught` 表示挂机循环，P9 按规格命名为 `empty_idle`：迁移时需把 `empty_idle` 放进 loops 并接到挂机状态，或在 Java 侧做名称映射。
+**clip 名**：动画资源共 10 条：static_idle、empty_idle、shoot、draw、put_away、first_draw、reload_tactical、reload_empty、inspect、inspect_empty。Profile 当前启用除 `first_draw` 外的九条；`first_draw` 没有触发条件。P9 0 发时由通用 `baseline` 选择 `empty_idle`，BR51 等 `static_bolt_caught` 由可选 `empty_state` 处理。
 
-**需要注意的兼容风险**：
-- 换弹时长：tactical 1.7 s / empty 2.0 s（旧版 2.38 / 3.12），入匣到位约在 0.86 s / 0.9 s。数据 JSON 的换弹时长和结算 tick 需按新 clip 设置。
-- 音效注册：在 `AflSounds` 中按现有写法新增 `pistolSound("magazine_release")`、`pistolSound("magazine_seat")`、`pistolSound("slide_back")`、`pistolSound("slide_release")`（`sounds.json` 已登记）；`foley_raise` / `foley_lower` 目前没有动画使用，注册可选。
-- ADS：新 Display 无旋转、缩放 0.53，照门 / 准星位置与旧 P9 不同，ADS profile 需重新校准。
+**当前配置与待验收**：
+- 换弹时长：tactical 1.7 s / 34 tick，empty 2.0 s / 40 tick（旧版 2.38 / 3.12）；`presentation.mag_in_tick=18`、`empty_mag_in_tick=18`。动画的 `magazine_seat` cue 在约 0.855 / 0.895 秒，实际音画及弹数结算仍待客户端验收。
+- 新音效事件已注册，`foley_raise` / `foley_lower` 无当前动画 marker；音效播放尚未实机验收。
+- ADS：V2 Display 无旋转、缩放 0.53；JSON 的 `aim=[0,5.96718,2.94939]`、`eye_relief=0.47`、`hip_translation=[3.25,-6.46691,-11.9885]` 已按新照门数值重设，视觉待验证。
 - 第三人称、GUI、地面、展示框的缩放未经实机校准。
 - 右手锚点带展示缩放后的手臂盒，新 Rig 不再需要 `P901HandLayer` 的 ADS 缩臂或 `P901FirstPerson` 的平移。
 
-**DYNAMIC_AMMO_READY** = YES（三个弹匣锚点 + chamber_round_anchor 已就位，无假子弹；Runtime 未接）
+**DYNAMIC_AMMO_READY** = ASSET_ANCHORS_ONLY（三个弹匣锚点 + chamber_round_anchor 在源里；新的动态顶弹与膛内可见弹本轮未接）
 
   2026-09-27 已知问题：三个弹匣锚点在顶弹中心，rotation 只有 `[-22,0,0]`，与 Blackridge 的锚点合同（原点在弹壳底面，模型 +Y 指向枪口）不一致。接入新的 9mm 可见弹药（`geo/9x19mm_round.geo.json`）前，需要改为 pivot `[0, 3.6897, 2.5897]`、rotation `[-112, 0, 0]`，细节见 [native_ammo_assets_v1.md](native_ammo_assets_v1.md)「9×19mm Visible Ammo V1」。膛室深约 0.85，短于 9mm 弹壳长 1.019，暂不适合显示膛内弹。
-**ATTACHMENT_READY** = YES（muzzle_anchor / sight_anchor 位置沿用 V2 几何）
-**MAINTENANCE_READY** = YES（maintenance_anchor 已建立；具体维护台取景未校准）
+**ATTACHMENT_READY** = UNVERIFIED（旧 sight/muzzle/magazine 配置仍在 JSON，新扩容匣、红点和枪口附件暂缓；不可据此断言旧附件已适配）
+**MAINTENANCE_READY** = ASSET_ANCHOR_ONLY（maintenance_anchor 已建立；具体维护台取景未校准）

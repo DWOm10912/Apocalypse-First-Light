@@ -1,8 +1,10 @@
 package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.weapon.P901Item;
-import com.antaurora.apofirstlight.weapon.client.P901Renderer;
+import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem;
+import com.antaurora.apofirstlight.weapon.NativeGunItem;
+import com.antaurora.apofirstlight.weapon.client.NativeAnimatedWeaponRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,22 +20,25 @@ public final class NativeGunPresentationTrace {
     @SubscribeEvent
     public static void rendered(GeoRenderEvent.Item.Post event) {
         if (!Boolean.getBoolean("afl.debug.nativeGunPresentation")) return;
-        if (!(event.getRenderer() instanceof P901Renderer renderer) || !renderer.isFirstPersonPass()) return;
+        if (!(event.getRenderer() instanceof NativeAnimatedWeaponRenderer<?> renderer)) return;
         var mc = Minecraft.getInstance();
-        if (mc.player == null || mc.isPaused()) return;
+        if (mc.player == null || mc.isPaused() || mc.screen != null
+                || !mc.options.getCameraType().isFirstPerson()) return;
         var stack = renderer.getCurrentItemStack();
-        var item = (P901Item)stack.getItem();
+        if (stack == null || stack != mc.player.getMainHandItem()
+                || stack.getItem() != AflItems.P9_01.get()
+                || !(stack.getItem() instanceof ConfiguredNativeGunItem item)) return;
         var controller = item.getAnimatableInstanceCache().getManagerForId(GeoItem.getId(stack))
-                .getAnimationControllers().get(P901Item.CONTROLLER);
+                .getAnimationControllers().get(NativeGunItem.ACTION_CONTROLLER);
         if (controller == null || controller.getTriggeredAnimation() == null || System.nanoTime() < nextLog) return;
         nextLog = System.nanoTime() + 150_000_000L;
-        var root = renderer.getGeoModel().getBone("weapon_root").orElseThrow();
+        var handling = renderer.getGeoModel().getBone("handling").orElseThrow();
         var mag = renderer.getGeoModel().getBone("magazine").orElseThrow();
         var left = renderer.getGeoModel().getBone("left_hand_anchor").orElseThrow();
-        ApocalypseFirstLight.LOGGER.info("[AFL PRESENTATION V05] renderedId={} heldId={} controller={} animation={} rootZ={} magY={} magScale={} leftY={} skin={} reloadSeconds={} sourceSideOpenY={}",
+        var slide = renderer.getGeoModel().getBone("slide").orElseThrow();
+        ApocalypseFirstLight.LOGGER.info("[AFL P9 V2 PRESENTATION] renderedId={} heldId={} controller={} animation={} handlingZ={} magY={} magScale={} leftY={} slideZ={} skin={}",
                 GeoItem.getId(stack), GeoItem.getId(mc.player.getMainHandItem()), controller.getAnimationState(),
                 controller.getCurrentAnimation() == null ? "pending" : controller.getCurrentAnimation().animation().name(),
-                root.getRotZ(), mag.getPosY(), mag.getScaleY(), left.getPosY(), mc.player.getModelName(), renderer.getReloadSeconds(),
-                renderer.getGeoModel().getBone("fp_root").orElseThrow().getRotY());
+                handling.getRotZ(), mag.getPosY(), mag.getScaleY(), left.getPosY(), slide.getPosZ(), mc.player.getModelName());
     }
 }

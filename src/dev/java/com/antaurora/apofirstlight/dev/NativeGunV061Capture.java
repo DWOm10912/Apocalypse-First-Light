@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -20,10 +21,11 @@ public final class NativeGunV061Capture {
         var mc=Minecraft.getInstance();
         if(mc.player==null || mc.level==null || mc.screen!=null || mc.getOverlay()!=null) return;
         var stack=mc.player.getMainHandItem();
-        if(!(stack.getItem() instanceof P901Item item))return;
+        if(!stack.is(AflItems.P9_01.get()) || !(stack.getItem() instanceof ConfiguredNativeGunItem item))return;
         var controller=item.getAnimatableInstanceCache().getManagerForId(GeoItem.getId(stack))
-                .getAnimationControllers().get(P901Item.CONTROLLER);
-        String clip=controller.getCurrentAnimation()==null ? "ready" : controller.getCurrentAnimation().animation().name().replace("animation.p9_01.","");
+                .getAnimationControllers().get(NativeGunItem.ACTION_CONTROLLER);
+        String clip=controller==null || controller.getCurrentAnimation()==null
+                ? "ready" : controller.getCurrentAnimation().animation().name();
         String state=NativeGunAmmo.read(stack,item.definition())+"-"+clip;
         if(!state.equals(previous)){ previous=state;elapsed=0; }
         int t=elapsed++;

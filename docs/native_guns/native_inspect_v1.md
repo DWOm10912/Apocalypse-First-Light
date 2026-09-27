@@ -1,5 +1,7 @@
 # Native Gun Inspect V1
 
+> P9 Native V2 cutover (2026-09-27): `ConfiguredNativeGunItem` now selects V2 `inspect` / `inspect_empty` (5.4 / 5.3 seconds) from `p9_01_v2_native.animation.json`. The earlier P9 client and GameTest results below apply to the retired rig and do not verify the new model or its hand/camera presentation. No client or GameTest was run for this cutover.
+
 状态：代码已实现，隔离服务端回归 3/3 通过；客户端体验验收进行中，未完成项目不记为实测 PASS。
 
 ## 输入与动作

@@ -7,8 +7,8 @@
 
 - `src/main/java/com/antaurora/apofirstlight/weapon/client/NativeCameraBoneConsumer.java`
   使用 Forge `ViewportEvent.ComputeCameraAngles`，只修改该事件的 pitch/yaw/roll。
-- `NativeAnimatedWeaponRenderer.java` 与 `P901Model.java` 的 GeoModel 在 `handleAnimations` 前共享本帧时间。
-- `NativeGunItem` 中仅 BR51-01 与 P9-01 启用；不改枪械战斗配置。
+- 当前 P9 与其他 configured gun 均由 `NativeAnimatedWeaponRenderer.java` 的 GeoModel 在 `handleAnimations` 前共享本帧时间；旧 `P901Model.java` 已退役。
+- 消费者面向带 animation asset 与 `camera` bone 的 `NativeGunItem`，按下述动作白名单决定是否应用；没有 P9/BR51 类别判断，不改枪械战斗配置。
 - 白名单：`inspect`、`inspect_empty`、`reload_tactical`、`reload_empty`、`draw`、`put_away`。
   `shoot`、idle 及其他动作不消费；NativeGunRecoil 和 Weapon Sway 保持原实现。
 - 只读取根级 `camera` 的 rotation，相对 initial snapshot；不读取 position/scale/pivot。
@@ -36,7 +36,7 @@ RenderTick START 丢弃该帧引用；缓存不保存 Camera Offset，不跨帧�
 逐帧 Blockbench 对照证据，不将整体观感认可扩展为全部轴向测试通过。
 
 每次事件从引擎新建 Camera 姿态开始，不累积 offset。
-action STOPPED、无 trigger、不在白名单、缺 bone/model、非 P9/BR51 均直接零消费。
+action STOPPED、无 trigger、不在白名单、缺 bone/model 或当前物品不是具备动画资源的 Native Gun 均直接零消费。
 无玩家/世界、死亡、旁观、睡眠、望远镜、界面/overlay、失焦、非第一人称、
 Camera entity 非本地玩家均不应用。换枪每帧重新读取主手，旧枪没有可继承的旋转缓存。
 不调用 player rotation setter，不改变玩家 look vector、服务端方向、弹道或 ADS。
@@ -52,5 +52,5 @@ bone 状态、动作、原始弧度、映射角度、scale 和 applied 状态。
 取得非零 camera rotation 并应用到 Camera 事件。此证据不代表轴向/观感已经验收。
 早期 Camera V1 用户反馈：当时检视交互尚未实装，其他效果没问题。随后 Inspect V1 已增加检视按键/交互；
 已有 `NativeGunActions.operation` 的 inspect 处理和资产轨道不等于正式检视交互已交付。
-待逐项确认：异常中断/换枪回零、第三人称切换、非 BR51/非枪、死亡/重生、
+待逐项确认：异常中断/换枪回零、第三人称切换、其他枪/非枪、死亡/重生、
 界面返回、ADS 前后、结束后射击。不将源码检查、构建通过或笼统观感认可记作整个矩阵 PASS。

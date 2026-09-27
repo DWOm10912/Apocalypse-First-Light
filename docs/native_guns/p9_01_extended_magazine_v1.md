@@ -1,5 +1,7 @@
 # P9-01 24-Round Extended Magazine V1
 
+> 2026-09-27 P9 Native V2 cutover: the 24-round attachment item, capacity rule and installation data remain registered, but the mounted model and reload visuals below were built for the retired P9 rig. The new `p9_01_v2_native` rig uses `magazine` / `empty_old_mag`, so the old replacement-bone contract and mounted fit require a separate V2 pass. The historical visual/client acceptance below does not verify the new P9. A new 24-round magazine is deferred.
+
 > 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 ## 配件与属性速查
@@ -19,7 +21,7 @@
 
 ## 接入状态
 
-Status: implemented; user accepted mounted fit and requested ending the task. Verification limits remain below.
+Status: gameplay attachment remains implemented; V2 mounted appearance and reload integration are unverified. The earlier accepted fit applies to the retired P9 rig.
 
 ## Behavior
 
@@ -50,7 +52,7 @@ Runtime files under `src/main/resources/assets/apocalypse_firstlight/`:
 - `models/item/p9_01_extended_magazine.json`
 - `geo/p9_01.geo.json` (only standard magazine and empty-reload duplicate geometry changed)
 
-Implementation: `NativeMagazineItem`, `NativeMagazineMount`, `NativeMagazineRendering`, attachment-aware `NativeGunAmmo`, `P901Renderer`, `MaintenanceGunRendering`, `MaintenanceAttachmentTransaction`.
+Historical implementation: `NativeMagazineItem`, `NativeMagazineMount`, `NativeMagazineRendering`, attachment-aware `NativeGunAmmo`, retired `P901Renderer`, `MaintenanceGunRendering`, `MaintenanceAttachmentTransaction`. Current P9 uses `NativeAnimatedWeaponRenderer`; its V2 replacement fit has not been accepted.
 
 ## Verification (historical integration results)
 

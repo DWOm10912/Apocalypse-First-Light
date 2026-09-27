@@ -21,10 +21,11 @@ All Java paths below are under `src/main/java/com/antaurora/apofirstlight/weapon
 | `NativeGunFx.anchor` first-person legacy tracer, ejection, suppressed smoke | Same sanitation; casing motion parameters unchanged |
 | `NativeGunFx.render` | AFTER_SKY world matrix capture, first frozen world flash and subsequent 50 ms attached tail unchanged |
 | `NativeBulletTrails.snapshot` | Frozen muzzle to authoritative endpoint; creation, lifetime, RenderType and draw stage unchanged |
-| `NativeGunFxLayer` / `P901Renderer` | P9 final bone and `NativeMuzzleRendering.applyExit` unchanged |
-| `NativeAnimatedWeaponRenderer` | BR51 mount selection, accessory exit and bare barrelExitOffset unchanged |
+| `NativeAnimatedWeaponRenderer` | Current P9 and BR51 final bone traversal, mount selection, `NativeMuzzleRendering.applyExit`, accessory exit and bare barrelExitOffset |
 | `NativeMuzzleRendering` | Existing accessory `muzzle_exit_anchor` traversal retained; optics/magazines do not select a muzzle attachment |
 | Third-person and server | No sanitation outside first-person branches; no ballistics, packets, damage, recoil, accuracy, ammo or attachment-state changes |
+
+At the V2 acceptance date, P9 entered FX through `NativeGunFxLayer` and `P901Renderer`. Its later runtime migration retired those adapters; the current P9 route is `NativeAnimatedWeaponRenderer` with the same `NativeGunFx.anchor` projection sanitizer.
 
 ## Verification
 

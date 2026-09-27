@@ -47,7 +47,7 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 - `NativeAdsProfile.forStack` 在安装兼容瞄具时使用 `sight_slot.ads_center` 替换机械瞄具坐标。旧值 `[2.48,7.756,2.04]` 与当前 Artist rig/HIP 标定不符，实机会把红点明显压向左下；现按用户截图重标为 `[1.50,5.80,2.04]`，保持当前 eye relief、FOV、进入时间、后坐力和伤害不变。最终像素级对齐仍需客户端复验。
 - 模型从真实 `sight_anchor` 遍历矩阵渲染，继承套筒后坐/后定、换弹、整枪 ADS、第三人称与地面显示变换，不使用屏幕固定 HUD 点。
 - 配件保存在枪 ItemStack 的 `AflAttachments.SIGHT` 完整配件 NBT。服务端原子装拆、正常背包同步负责客户端显示，丢弃/存档随枪保留；不以全局布尔值开关。
-- `NativeSightRendering` 是共享静态挂载渲染器，`P901SightLayer` 是首批 P9 接口适配。以后其他手枪需声明兼容 ID/局部安装点/ADS 点，并从其渲染器调用同一 anchor 消费者；不承诺只有 anchor 名称就自动完成所有渲染与 ADS 标定。
+- `NativeSightRendering` 是共享静态挂载渲染器；当前 P9 通过 `NativeAnimatedWeaponRenderer` 在动画 anchor 遍历中调用它。首批 P9 接口适配 `P901SightLayer` 已随专用 Renderer 退役。以后其他手枪仍需声明兼容 ID/局部安装点/ADS 点；不承诺只有 anchor 名称就自动完成所有渲染与 ADS 标定。
 - 当前网络协议 **22**；旧快捷装拆报文保留编号但不执行任何变更。玩家装拆仅使用维护台服务端事务。
 
 ## 导出与限制
