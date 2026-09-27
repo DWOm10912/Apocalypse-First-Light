@@ -42,7 +42,21 @@
       "ads_rotation": [0, 0, 0]
     }
   },
-  "presentation": {"hud": {"width": 36, "height": 22}, "mag_in_tick": 18, "empty_mag_in_tick": 18, "trail": "subtle_pistol"},
+  "presentation": {
+    "hud": {"width": 36, "height": 22},
+    "mag_in_tick": 18,
+    "empty_mag_in_tick": 18,
+    "trail": "subtle_pistol",
+    "magazine_round_visual": {
+      "anchor": "magazine_round_anchor",
+      "loaded_auxiliary_anchor": "mag_out_round_anchor",
+      "old_magazine_anchor": "empty_old_mag_round_anchor",
+      "geometry": "apocalypse_firstlight:geo/9x19mm_round.geo.json",
+      "texture": "apocalypse_firstlight:textures/item/9x19mm_ammo_v1.png",
+      "local_offset": [0, -0.000036, 0.789958],
+      "local_rotation": [-90, 0, 0]
+    }
+  },
   "recoil": {
     "verticalMin": 0.8,
     "verticalMax": 1.1,

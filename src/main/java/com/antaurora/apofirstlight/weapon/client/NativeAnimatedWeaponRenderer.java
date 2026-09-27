@@ -84,7 +84,7 @@ public final class NativeAnimatedWeaponRenderer<T extends net.minecraft.world.it
                 try{NativeSightRendering.render(currentItemStack,bone,pose,buffers,light,overlay);}
                 finally{buffers.getBuffer(type);}
                 try { NativeMagazineRoundRendering.render(currentItemStack,bone,pose,buffers,light,overlay,
-                        () -> actionClip(item)); }
+                        renderPerspective, () -> actionClip(item)); }
                 finally { buffers.getBuffer(type); }
                 if (item instanceof com.antaurora.apofirstlight.weapon.NativeGunItem
                         && (renderPerspective.firstPerson() || renderPerspective == net.minecraft.world.item.ItemDisplayContext.THIRD_PERSON_RIGHT_HAND

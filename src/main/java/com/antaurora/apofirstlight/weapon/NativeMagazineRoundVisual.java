@@ -6,7 +6,8 @@ import net.minecraft.resources.ResourceLocation;
 
 /** Optional asset contract shared by the main and auxiliary magazine top-round visuals. */
 public record NativeMagazineRoundVisual(String anchor, ResourceLocation geometry, ResourceLocation texture,
-                                        String loadedAuxiliaryAnchor, String oldMagazineAnchor) {
+                                        String loadedAuxiliaryAnchor, String oldMagazineAnchor,
+                                        float[] localOffset, float[] localRotation) {
     public NativeMagazineRoundVisual {
         validateAnchor(anchor, "anchor");
         if (loadedAuxiliaryAnchor != null) validateAnchor(loadedAuxiliaryAnchor, "loaded_auxiliary_anchor");
@@ -16,6 +17,8 @@ public record NativeMagazineRoundVisual(String anchor, ResourceLocation geometry
             throw new IllegalArgumentException("presentation.magazine_round_visual: anchors must be distinct");
         if (geometry == null || texture == null)
             throw new IllegalArgumentException("presentation.magazine_round_visual: geometry and texture are required");
+        validateVector(localOffset, "local_offset");
+        validateVector(localRotation, "local_rotation");
     }
 
     public static NativeMagazineRoundVisual parse(JsonObject presentation) {
@@ -25,7 +28,30 @@ public record NativeMagazineRoundVisual(String anchor, ResourceLocation geometry
         JsonObject visual = presentation.getAsJsonObject("magazine_round_visual");
         return new NativeMagazineRoundVisual(string(visual, "anchor"),
                 resource(visual, "geometry"), resource(visual, "texture"),
-                optionalAnchor(visual, "loaded_auxiliary_anchor"), optionalAnchor(visual, "old_magazine_anchor"));
+                optionalAnchor(visual, "loaded_auxiliary_anchor"), optionalAnchor(visual, "old_magazine_anchor"),
+                vector(visual, "local_offset"), vector(visual, "local_rotation"));
+    }
+
+    private static float[] vector(JsonObject object, String key) {
+        if (!object.has(key)) return new float[3];
+        if (!object.get(key).isJsonArray() || object.getAsJsonArray(key).size() != 3)
+            throw new IllegalArgumentException("presentation.magazine_round_visual." + key + ": expected three numbers");
+        float[] result = new float[3];
+        for (int i = 0; i < 3; i++) {
+            var entry = object.getAsJsonArray(key).get(i);
+            if (!entry.isJsonPrimitive() || !entry.getAsJsonPrimitive().isNumber())
+                throw new IllegalArgumentException("presentation.magazine_round_visual." + key + ": expected three numbers");
+            result[i] = entry.getAsFloat();
+        }
+        return result;
+    }
+
+    private static void validateVector(float[] vector, String key) {
+        if (vector == null || vector.length != 3)
+            throw new IllegalArgumentException("presentation.magazine_round_visual." + key + ": expected three numbers");
+        for (float value : vector)
+            if (!Float.isFinite(value))
+                throw new IllegalArgumentException("presentation.magazine_round_visual." + key + ": must be finite");
     }
 
     private static void validateAnchor(String anchor, String key) {

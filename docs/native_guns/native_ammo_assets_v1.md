@@ -126,13 +126,10 @@
 - 除约 ±0.3% 的拉制细纹外不加噪点。
 - 贴图密度约 149 px/单位。
 
-**接入 P9-01 前需要处理的事项**（本轮都没做）
-1. **弹匣顶弹**：`presentation.magazine_round_visual` 的 `geometry` 用 `apocalypse_firstlight:geo/9x19mm_round.geo.json`，`texture` 用 `apocalypse_firstlight:textures/item/9x19mm_ammo_v1.png`。
-   - P9 V2 现有的三个弹匣锚点在顶弹中心，rotation 只有 `[-22,0,0]`，和 Blackridge 的锚点合同（原点在弹壳底面，模型 +Y 指向枪口）不一致。
-   - 接入时应改为 pivot `[0, 3.6897, 2.5897]`、rotation `[-112, 0, 0]`。这个位置对应弹匣系 z 2.555 处的弹底。
-   - 比弹匣中心后移 0.0135，是为了让弹头避开 P9 弹匣前端居中的供弹唇横梁；弹底缘因此压进后壁 0.005，那里壁厚 0.06，看不到。
-2. **Mesh 抛壳与物品显示**：已接入（见上文「运行时接入」）。
-3. **膛内弹**：P9 膛室深约 0.85 单位，弹壳长 1.019。如果以后要显示膛内弹，需要先加深膛室。
+**P9-01 运行时接入状态（2026-09-27；`compileJava --offline` 成功但为 `UP-TO-DATE`，待客户端修正后验收）**
+1. **弹匣顶弹**：`presentation.magazine_round_visual` 已指向 `apocalypse_firstlight:geo/9x19mm_round.geo.json` 和 `apocalypse_firstlight:textures/item/9x19mm_ammo_v1.png`，复用通用 Native Magazine Round 渲染。枪内、`mag_out`、`empty_old_mag` 三处分别使用现成锚点。三个锚点在源文件中仍是顶弹中心、rotation `[-22,0,0]`；未改 Rig。Geo 的 `+22°` 在 GeckoLib 烘焙时取反，故通用配置应为 `local_offset=[0,-0.000036,0.789958]` 与 `local_rotation=[-90,0,0]`，有效姿态为弹底 pivot `[0,3.6897,2.5897]`、rotation `[-112,0,0]`，对应弹匣系 z 2.555。先前按 Geo JSON 正号直接计算的偏移/旋转会造成弹头反向和穿模，已废弃。最终遮挡仍需游戏内近景确认。
+2. **Mesh 抛壳与物品显示**：原有接入保留（见上文「运行时接入」），本次未修改。
+3. **膛内弹**：仍未实现。P9 膛室深约 0.85 单位，弹壳长 1.019；后续若显示膛内弹，需要单独处理。
 
 **验证**
 - Blockbench 离屏渲染：

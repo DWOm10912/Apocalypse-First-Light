@@ -356,8 +356,8 @@ camera [0,12,18]                           顶层；仅作小角度动画跟随
 - 第三人称、GUI、地面、展示框的缩放未经实机校准。
 - 右手锚点带展示缩放后的手臂盒，新 Rig 不再需要 `P901HandLayer` 的 ADS 缩臂或 `P901FirstPerson` 的平移。
 
-**DYNAMIC_AMMO_READY** = ASSET_ANCHORS_ONLY（三个弹匣锚点 + chamber_round_anchor 在源里；新的动态顶弹与膛内可见弹本轮未接）
+**DYNAMIC_AMMO_READY** = MAGAZINE_ROUND_RUNTIME_INTEGRATED_UNVERIFIED（2026-09-27；三个弹匣顶弹锚点接入通用 Native Magazine Round 渲染，客户端修正后画面待用户验收；`chamber_round_anchor` 仍不用于动态膛内弹）。`native_guns/p9_01.json` 复用正式 `geo/9x19mm_round.geo.json` + `9x19mm_ammo_v1.png`，枪内顶弹以 `NativeGunAmmo.read > 0` 判定；新匣、旧匣同时受动作语义与 helper 骨骼可见性/零尺度控制。`inspect_empty` 和空仓换弹的旧匣不画顶弹。修正局部姿态后 `compileJava --offline` 成功，但任务为 `UP-TO-DATE`，没有重新执行 Java 编译。
 
-  2026-09-27 已知问题：三个弹匣锚点在顶弹中心，rotation 只有 `[-22,0,0]`，与 Blackridge 的锚点合同（原点在弹壳底面，模型 +Y 指向枪口）不一致。接入新的 9mm 可见弹药（`geo/9x19mm_round.geo.json`）前，需要改为 pivot `[0, 3.6897, 2.5897]`、rotation `[-112, 0, 0]`，细节见 [native_ammo_assets_v1.md](native_ammo_assets_v1.md)「9×19mm Visible Ammo V1」。膛室深约 0.85，短于 9mm 弹壳长 1.019，暂不适合显示膛内弹。
+  三个源锚点继续保持 pivot `[0,3.39381,1.85725]`、rotation `[-22,0,0]`，Rig/动画未改。Geo JSON 虽导出为 X `+22°`，GeckoLib 烘焙骨骼时会再取反，运行时锚点为 `-22°`。配置中的 `local_offset=[0,-0.000036,0.789958]`（Blockbench 单位）和 `local_rotation=[-90,0,0]` 把有效姿态对齐弹底 pivot `[0,3.6897,2.5897]`、rotation `[-112,0,0]`。先前误按 `+22°` 计算的 `local_offset=[0,0.548725,0.568273]` / `local_rotation=[90,0,0]` 会让三处顶弹反向并偏离供弹唇，已废弃。这只影响动态顶弹，不改变共享 9mm 模型或静态物品。膛室深约 0.85，短于 9mm 弹壳长 1.019，本轮不显示膛内弹。
 **ATTACHMENT_READY** = UNVERIFIED（旧 sight/muzzle/magazine 配置仍在 JSON，新扩容匣、红点和枪口附件暂缓；不可据此断言旧附件已适配）
 **MAINTENANCE_READY** = ASSET_ANCHOR_ONLY（maintenance_anchor 已建立；具体维护台取景未校准）
