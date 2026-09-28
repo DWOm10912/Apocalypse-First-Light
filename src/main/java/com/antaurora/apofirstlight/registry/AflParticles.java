@@ -16,8 +16,6 @@ public final class AflParticles {
 
     public static final RegistryObject<SimpleParticleType> CHAMBER_GAS =
             PARTICLE_TYPES.register("chamber_gas", () -> new SimpleParticleType(false));
-    public static final RegistryObject<SimpleParticleType> SUPPRESSOR_MUZZLE_SMOKE =
-            PARTICLE_TYPES.register("suppressor_muzzle_smoke", () -> new SimpleParticleType(false));
 
     private AflParticles() {
     }

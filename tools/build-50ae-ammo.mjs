@@ -1,5 +1,6 @@
 // .50 AE Visible Ammo V2: jacketed soft point (JSP) live round + spent casing, pure Mesh, one shared 512 Base Color atlas.
-//   node tools/build-50ae-ammo.mjs            -> writes sources, atlas, geo and AFL mesh sidecars
+// Also writes the ejected-casing low-poly FX asset (50_ae_casing_fx, see the end of this file).
+//   node tools/build-50ae-ammo.mjs            -> writes sources, atlases, geo and AFL mesh sidecars
 //   node tools/build-50ae-ammo.mjs --check    -> verifies every output is up to date
 // Replaces the imported hollow-point asset so the calibre no longer reads like a large 9 mm FMJ from the side: a short
 // gilding-metal jacket and a big exposed dark lead nose with a wide flat meplat. Output paths, bone names ('round',
@@ -7,7 +8,7 @@
 // anchor, NativeGunFx, the item Display files and the Mesh item renderer's centre offsets (0.431217 / 0.444568 =
 // 0.5 - height / 32) stay valid without any Java or data change.
 // Scale and case dimensions follow the previous asset (1 unit ~ 18.58 mm; rebated rim, C.I.P. .50 Action Express).
-// No PBR, no headstamp text or brand marks.
+// High-detail assets: no PBR, no headstamp text or brand marks.
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runLathe, sm, mix, sc, hash} from './lathe-mesh-lib.mjs';
@@ -112,3 +113,47 @@ function paint(model, zone, p) {
 runLathe({root, N, atlas: 512, background: [112, 88, 52], uuidSeed: 'afl-50ae-ammo-v2', models: MODELS, paint,
   sourceName: model => `50ae_${model}`, geoId: model => `geometry.50_ae_${model}`,
   texture: {name: 'blackridge_50ae_ammo_v1.png', relativePath: 'textures/blackridge_50ae_ammo_v1.png'}, out: OUT});
+
+// ---------------- Ejected Casing Low-Poly FX (NativeGunFx ejection only) ----------------
+// Same rules as the 9 mm FX casing (tools/build-9x19mm-ammo.mjs): 8 segments, same outer dimensions, bone ('casing'),
+// axis and palette as the high-detail fired casing; the rebated rim and the extractor groove stay in the silhouette,
+// so the calibre still reads heavier than the 9 mm without more faces. 'facets' layout keeps every band a V2 quad.
+const FX_OUT = {
+  casing: {src: path.join(root, 'src/main/blockbench/50ae_casing_fx.bbmodel'), geo: path.join(assets, 'geo/50_ae_casing_fx.geo.json'), mesh: path.join(assets, 'meshes/50_ae_casing_fx.aflmesh.json')},
+  srcTexture: path.join(root, 'src/main/blockbench/textures/50_ae_casing_fx.png'), texture: path.join(assets, 'textures/item/50_ae_casing_fx.png'),
+  srcSpec: path.join(root, 'src/main/blockbench/textures/50_ae_casing_fx_s.png'), spec: path.join(assets, 'textures/item/50_ae_casing_fx_s.png'),
+  srcNormal: path.join(root, 'src/main/blockbench/textures/50_ae_casing_fx_n.png'), normal: path.join(assets, 'textures/item/50_ae_casing_fx_n.png'),
+};
+const FX = {mouthR: 0.3700, lipR: 0.3500, dish: 0.14, gy: (D.grooveY0 + D.grooveY1) / 2, dimpleR: 0.064};
+const FX_MODELS = {casing: {bone: 'casing', parts: [{name: 'casing_fx', runs: [
+  {region: 'fx_primer', map: 'facets', pts: [[0, 0], [D.primerR, 0, 'primer']]},
+  {region: 'fx_case', map: 'facets', pts: [[D.primerR, 0], [D.rimR, 0, 'head'], [D.rimR, D.rimT, 'rim'], [D.grooveR, FX.gy, 'groove'],
+    [D.bodyR, D.bevelY, 'bevel'], [FX.mouthR, D.casingTop, 'body'], [FX.lipR, D.casingTop, 'lipTop'], [0, D.casingTop - FX.dish, 'mouth']]}]}]}};
+// zone -> [smoothness, F0 (255 metal / 10 dielectric), AO]
+const FX_PBR = {primer: [140, 255, 255], head: [110, 255, 255], rim: [125, 255, 255], groove: [100, 255, 215], bevel: [110, 255, 255],
+  body: [115, 255, 255], lipTop: [135, 255, 255], mouth: [50, 10, 150]};
+function paintFx(model, zone, p) {
+  const r = Math.hypot(p[0], p[2]), y = p[1], f = y / D.caseL;
+  switch (zone) {
+    case 'primer': return sc(NICKEL, r < FX.dimpleR ? 0.55 + 0.45 * sm(0, FX.dimpleR, r) : 1.04 - 0.08 * (r / D.primerFaceR));   // strike, no geometry
+    case 'head': return sc(BRASS, 0.84 + 0.06 * sm(0.16, 0.32, r));
+    case 'rim': return sc(BRASS, 0.97);
+    case 'groove': return sc(BRASS, 0.70);
+    case 'bevel': return sc(BRASS, 0.80 + 0.12 * sm(FX.gy, D.bevelY, y));
+    case 'body': {
+      const c = sc(BRASS, 0.93 + 0.09 * sm(0.1, 0.26, f) - 0.03 * sm(0.74, 0.97, f));
+      return mix(sc(c, 1 - 0.10 * sm(0.80, 1.0, f)), [118, 106, 90], 0.14 * sm(0.80, 1.0, f));   // light powder soot at the mouth
+    }
+    case 'lipTop': return sc(BRASS, 1.10);
+    case 'mouth': return mix(sc(BRASS, 0.45), [16, 13, 10], sm(FX.lipR, 0.08, r));   // shallow sooted opening, darker to the centre
+  }
+  throw new Error('unpainted FX zone ' + zone);
+}
+function pbrFx(model, zone, p) {
+  const [s, f0, ao] = FX_PBR[zone], r = Math.hypot(p[0], p[2]);
+  return {s: [s, f0, 0, 255], n: [128, 128, zone === 'mouth' ? ao - 40 * sm(FX.lipR, 0.08, r) : ao, 255]};
+}
+runLathe({root, N: 8, atlas: 64, background: [112, 88, 52], uuidSeed: 'afl-50ae-casing-fx', models: FX_MODELS, paint: paintFx, pbr: pbrFx,
+  alignFacets: true, noOverdraw: true, meshFormat: 2, compact: true, uvDecimals: 8, posDecimals: 8,
+  sourceName: () => '50ae_casing_fx', geoId: () => 'geometry.50_ae_casing_fx',
+  texture: {name: '50_ae_casing_fx.png', relativePath: 'textures/50_ae_casing_fx.png'}, out: FX_OUT});

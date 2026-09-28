@@ -5,7 +5,6 @@ import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
 import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
 import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.antaurora.apofirstlight.registry.AflSounds;
-import com.antaurora.apofirstlight.registry.AflParticles;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -43,13 +42,16 @@ public final class NativeGunFx {
     public static final ResourceLocation RIFLE_CASING_MODEL = id("item/762x51mm_casing");
     public static final ResourceLocation HEAVY_RIFLE_CASING_MODEL = id("item/12_7x55mm_casing");
     public static final float FLASH_TICKS = 1.0F, FLASH_SCALE = .17F, CASING_SCALE = .072F;
-    /** Static Hybrid Mesh casing: .aflmesh sidecar + GeckoLib geo, shared ammo atlas, world scale of the block-unit mesh. */
-    private record MeshCasing(ResourceLocation geometry, ResourceLocation texture, float scale) {}
+    /** Static Hybrid Mesh casing: .aflmesh sidecar + GeckoLib geo, shared ammo atlas, world scale of the block-unit mesh.
+     *  fx*: the ejection-only low-poly casing (same size, bone and axis); geometry/texture: the item's high-detail fallback. */
+    private record MeshCasing(ResourceLocation geometry, ResourceLocation texture, ResourceLocation fxGeometry, ResourceLocation fxTexture, float scale) {}
     // Casing item model id -> Pure Mesh casing. Calibres not listed keep their baked item-model quads.
     // 9 mm: .62 keeps the old Cube casing's ejected size (8.762 px * CASING_SCALE / 1.01862 mesh units).
     private static final java.util.Map<ResourceLocation, MeshCasing> MESH_CASINGS = java.util.Map.of(
-            id("item/50_ae_casing"), new MeshCasing(id("geo/50_ae_casing.geo.json"), id("textures/item/blackridge_50ae_ammo_v1.png"), .65F),
-            CASING_MODEL, new MeshCasing(id("geo/9x19mm_casing.geo.json"), id("textures/item/9x19mm_ammo_v1.png"), .62F));
+            id("item/50_ae_casing"), new MeshCasing(id("geo/50_ae_casing.geo.json"), id("textures/item/blackridge_50ae_ammo_v1.png"),
+                    id("geo/50_ae_casing_fx.geo.json"), id("textures/item/50_ae_casing_fx.png"), .65F),
+            CASING_MODEL, new MeshCasing(id("geo/9x19mm_casing.geo.json"), id("textures/item/9x19mm_ammo_v1.png"),
+                    id("geo/9x19mm_casing_fx.geo.json"), id("textures/item/9x19mm_casing_fx.png"), .62F));
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
@@ -243,9 +245,16 @@ public final class NativeGunFx {
         if (!Double.isFinite(origin.x) || !Double.isFinite(origin.y) || !Double.isFinite(origin.z)
                 || !Double.isFinite(forward.x) || !Double.isFinite(forward.y) || !Double.isFinite(forward.z)
                 || forward.lengthSqr() < 1e-12) return;
-        Vec3 velocity=forward.normalize().scale(.035);
-        world.addParticle(AflParticles.SUPPRESSOR_MUZZLE_SMOKE.get(),origin.x,origin.y,origin.z,
+        Vec3 velocity=forward.normalize().scale(.012).add(0,.002,0);
+        var smoke=Minecraft.getInstance().particleEngine.createParticle(
+                net.minecraft.core.particles.ParticleTypes.SMOKE,origin.x,origin.y,origin.z,
                 velocity.x,velocity.y,velocity.z);
+        if(smoke!=null){
+            smoke.setPos(origin.x,origin.y,origin.z);
+            smoke.setParticleSpeed(velocity.x,velocity.y,velocity.z);
+            smoke.scale(.35F);
+            smoke.setLifetime(6);
+        }
     }
 
     /** Reuse casing birth conversion for a final animated FP locator; returns camera-relative world space. */
@@ -353,8 +362,11 @@ public final class NativeGunFx {
             int light = LevelRenderer.getLightColor(world, BlockPos.containing(position));
             MeshCasing meshCasing = MESH_CASINGS.get(c.model);
             if (meshCasing != null) {
-                var casingMesh = meshSnapshot.get(meshCasing.geometry());
-                var casingGeo = GeckoLibCache.getBakedModels().get(meshCasing.geometry());
+                // Ejection draws the FX-only low-poly casing; the item's high-detail mesh is only a fallback if it is missing.
+                boolean fx = meshSnapshot.get(meshCasing.fxGeometry()) != null && GeckoLibCache.getBakedModels().get(meshCasing.fxGeometry()) != null;
+                var geometry = fx ? meshCasing.fxGeometry() : meshCasing.geometry();
+                var casingMesh = meshSnapshot.get(geometry);
+                var casingGeo = GeckoLibCache.getBakedModels().get(geometry);
                 if (casingMesh != null && casingGeo != null) {
                     pose.scale(meshCasing.scale(), meshCasing.scale(), meshCasing.scale());
                     // The source casing starts at Y=0. Center all of its parts before the existing tumbling rotations.
@@ -369,7 +381,7 @@ public final class NativeGunFx {
                         }
                         pose.translate(-(minX + maxX) / 2, -(minY + maxY) / 2, -(minZ + maxZ) / 2);
                     }
-                    var meshType = RenderType.entityCutoutNoCull(meshCasing.texture());
+                    var meshType = RenderType.entityCutoutNoCull(fx ? meshCasing.fxTexture() : meshCasing.texture());
                     meshTypes.add(meshType);
                     var vertices = buffers.getBuffer(meshType);
                     for (GeoBone bone : casingGeo.topLevelBones()) renderCasingMesh(casingMesh, bone, pose, vertices, light);

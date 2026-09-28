@@ -120,7 +120,7 @@ for(const id of ['p9_01_v2_native','blackridge_50']) {
         assert.deepEqual(expand.map(canonical).sort(),a.triangles.map(canonical).sort(),'raster triangle/UV equality '+a.name);
     }
     const visible={parts:v2.parts.filter(p=>!['empty_old_mag','reload_magazine'].includes(p.bone))};
-    const stats=meshCounts(visible),expected=id==='blackridge_50'?4500:6384;
+    const stats=meshCounts(visible),expected=id==='blackridge_50'?4500:6864;   // P9: 6384 + 480 threaded muzzle extension (2026-09-27)
     assert.equal(stats.triangleEquivalent,expected);
     console.log('V2_ASSET_PASS '+id+' '+JSON.stringify({...stats,vertexReductionPercent:100*(1-stats.vertices/(4*expected))}));
 }

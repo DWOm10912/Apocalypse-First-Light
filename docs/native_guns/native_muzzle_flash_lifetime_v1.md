@@ -7,7 +7,7 @@
 - Following frames draw the fading tail in `NativeGunFx.anchor` under the current final muzzle pose, including recoil, ADS, sway and resolved attachment exit. Existing size, random roll/scale/alpha and fade curve retained. No detached multi-frame world core.
 - The same shot cannot draw both snapshot and attached tail in the same render frame. Repeated hand passes are deduplicated by frame. Each confirmed shot owns an independent timer; existing 128-effect cap retained.
 - Clear on world replacement, wrong held gun identity, non-first-person view, player death, menu/pause, or expiry. Effects waiting for first presentation retain the existing three-game-tick stale cutoff.
-- Third-person flash timing is unchanged. At this historical flash-lifetime checkpoint, suppressed shots retained their then-current smoke; the current suppressed path uses one [custom muzzle gas particle](suppressor_muzzle_gas_fx_v1.md) and no ordinary flash. Casing, tracer coordinates/endpoints, shot IDs, snapshot validity checks, networking, recoil values/deferral and flash RenderType are unchanged.
+- Third-person flash timing is unchanged. At this historical flash-lifetime checkpoint, suppressed shots retained their then-current smoke; the current suppressed path uses one [small Vanilla smoke particle](suppressor_muzzle_gas_fx_v1.md) and no ordinary flash. Casing, tracer coordinates/endpoints, shot IDs, snapshot validity checks, networking, recoil values/deferral and flash RenderType are unchanged.
 
 ## Scope / known limits
 

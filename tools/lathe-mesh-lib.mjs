@@ -5,11 +5,12 @@
 // and AFL mesh sidecars (with --check it verifies them instead).
 //
 // Profiles: part.runs = [{region, map, pts}], pts = [r, y, zone-of-the-segment-ending-here]. A run is a lathe 'strip'
-// (cylindrical unwrap: angle -> u, arc length -> v) or a 'disc' (planar top-down projection). The traversal direction
-// fixes the outward side: normal = (dy, -dr) in (r, y). Zone changes run along texel rows in the strips, so every band
-// edge is axis aligned (no stair-stepping). Profiles are authored around +Y (lathe space); cfg.transform maps a lathe
-// point to model space (a proper rotation, e.g. +Y -> -Z for muzzle devices), cfg.phase turns the angle origin (the strip
-// seam sits at angle phase).
+// (cylindrical unwrap: angle -> u, arc length -> v), a 'disc' (planar top-down projection) or 'facets' (every facet
+// laid out flat and congruent in its own column: the UV map of each quad is affine, so AFL Mesh V2 keeps tapered and
+// annular bands as quads; used by the low-poly FX casings). The traversal direction fixes the outward side: normal =
+// (dy, -dr) in (r, y). Zone changes run along texel rows in strips and facet columns, so every band edge is axis aligned
+// (no stair-stepping). Profiles are authored around +Y (lathe space); cfg.transform maps a lathe point to model space (a
+// proper rotation, e.g. +Y -> -Z for muzzle devices), cfg.phase turns the angle origin (the strip seam sits at angle phase).
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -28,19 +29,25 @@ const arcLen = pts => pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts
  * cfg: {root, N, atlas, background, uuidSeed, models: {<key>: {bone, parts, anchors?: [{name, pivot}], bounds?}},
  *       paint(model, zone, pos, px) -> sRGB, pbr?(model, zone, pos, px) -> {s: RGBA, n: RGBA}, sourceName(model),
  *       geoId(model), texture: {name, relativePath}, out: {<key>: {src, geo, mesh}, srcTexture, texture,
- *       srcSpec?, spec?, srcNormal?, normal?}, phase?, transform?, alignFacets?, meshFormat?, compact?}
+ *       srcSpec?, spec?, srcNormal?, normal?}, phase?, transform?, alignFacets?, meshFormat?, compact?,
+ *       uvDecimals?, posDecimals?}
  * pos is the lathe-space point (axis +Y). px describes the texel's surface: nr / ny = unit outward profile normal
  * (radial, axial) of the segment, theta = the texel's lathe angle, am = mid angle of the facet it lies on (strips: both
- * from the texel's u, so a facet's frame never leaks across a facet edge). alignFacets widens strip regions to a
- * multiple of N texels, so every facet edge lies on a texel boundary.
+ * from the texel's u, so a facet's frame never leaks across a facet edge). alignFacets widens strip / facet regions to
+ * a multiple of N texels, so every facet edge lies on a texel boundary. uvDecimals / posDecimals (default 4 / 6) set the
+ * source rounding; small V2 quads need more digits, or rounding noise alone fails the exporter's quad checks.
  */
 export function runLathe(cfg) {
   const {N, root} = cfg, ATLAS = cfg.atlas, PAD = 4, PH = cfg.phase || 0, ang = k => PH + 2 * Math.PI * k / N;
-  const toModel = cfg.transform || (p => p);
+  const toModel = cfg.transform || (p => p), UVD = cfg.uvDecimals ?? 4, POSD = cfg.posDecimals ?? 6;
+  // 'facets': chord half-width per unit radius, and the distance between the two chord midlines of a facet
+  const HS = Math.sin(Math.PI / N), slantOf = (a, b) => Math.hypot((b[0] - a[0]) * Math.cos(Math.PI / N), b[1] - a[1]);
   const regions = new Map();   // name -> {map, w, h} in units (scaled later)
   for (const m of Object.values(cfg.models)) for (const part of m.parts) for (const run of part.runs) {
     const rMax = Math.max(...run.pts.map(p => p[0]));
-    const need = run.map === 'strip' ? {w: 2 * Math.PI * rMax, h: arcLen(run.pts)} : {w: 2 * rMax, h: 2 * rMax};
+    const need = run.map === 'strip' ? {w: 2 * Math.PI * rMax, h: arcLen(run.pts)}
+      : run.map === 'facets' ? {w: N * 2 * rMax * HS, h: run.pts.slice(1).reduce((s, p, i) => s + slantOf(run.pts[i], p), 0)}
+      : {w: 2 * rMax, h: 2 * rMax};
     const g = regions.get(run.region);
     regions.set(run.region, {map: run.map, w: Math.max(g?.w || 0, need.w), h: Math.max(g?.h || 0, need.h)});
   }
@@ -48,7 +55,7 @@ export function runLathe(cfg) {
   function pack(s) {
     let x = PAD, y = PAD, rowH = 0;
     for (const [, g] of [...regions].sort((a, b) => b[1].h - a[1].h || a[0].localeCompare(b[0]))) {
-      const W = cfg.alignFacets && g.map === 'strip' ? Math.ceil(g.w * s / N) * N : Math.ceil(g.w * s), H = Math.ceil(g.h * s);
+      const W = cfg.alignFacets && g.map !== 'disc' ? Math.ceil(g.w * s / N) * N : Math.ceil(g.w * s), H = Math.ceil(g.h * s);
       if (x + W + PAD > ATLAS) { x = PAD; y += rowH + PAD; rowH = 0; }
       if (y + H + PAD > ATLAS) return false;
       Object.assign(g, {px: x, py: y, W, H}); x += W + PAD; rowH = Math.max(rowH, H);
@@ -66,14 +73,16 @@ export function runLathe(cfg) {
       const rings = run.pts.map(([r, y]) => ring(r, y));
       for (let i = 0; i + 1 < run.pts.length; i++) {
         const [ra, ya] = run.pts[i], [rb, yb, zone] = run.pts[i + 1], dr = rb - ra, dy = yb - ya, seg = Math.hypot(dr, dy);
-        const A = rings[i], B = rings[i + 1];
+        const A = rings[i], B = rings[i + 1], rise = run.map === 'facets' ? slantOf(run.pts[i], run.pts[i + 1]) : seg;
         for (let k = 0; k < N; k++) {
           const k1 = k + 1, a = A.length === 1 ? null : [A[k], A[k1 % N]], b = B.length === 1 ? null : [B[k], B[k1 % N]];
           const ids = a && b ? [a[0], a[1], b[1], b[0]] : a ? [a[0], a[1], B[0]] : [A[0], b[1], b[0]];
-          // UV per face corner: strips unwrap angle -> u, arc length -> v (seam face uses u = full width); discs project X/Z
+          // UV per face corner: strips unwrap angle -> u, arc length -> v (seam face uses u = full width); discs project X/Z;
+          // facets centre each chord on its column (the facet's own flat isosceles layout, so the map is affine)
           const uvOf = (id, onA, kk) => {
             if (run.map === 'disc') { const p = verts[id]; return [g.px + g.W / 2 + p[0] * S, g.py + g.H / 2 + p[2] * S]; }
             const pole = (onA ? A : B).length === 1;
+            if (run.map === 'facets') return [g.px + (k + 0.5) * g.W / N + (pole ? 0 : (kk === k ? -1 : 1) * (onA ? ra : rb) * HS * S), g.py + (v0 + (onA ? 0 : rise)) * S];
             return [g.px + (pole ? k + 0.5 : kk) / N * g.W, g.py + (v0 + (onA ? 0 : seg)) * S];
           };
           const uvs = a && b ? [uvOf(a[0], true, k), uvOf(a[1], true, k1), uvOf(b[1], false, k1), uvOf(b[0], false, k)]
@@ -85,7 +94,7 @@ export function runLathe(cfg) {
           if (dot(n, want) < 0) { f.ids = ids.slice().reverse(); f.uvs = uvs.slice().reverse(); }
           faces.push(f);
         }
-        v0 += seg;
+        v0 += rise;
       }
     }
     return {name: part.name, verts, faces};
@@ -155,8 +164,8 @@ export function runLathe(cfg) {
     const m = BUILT[model], gid = uuid(model + ':group'), anchors = (m.anchors || []).map(a => group(a.name, uuid(model + ':anchor:' + a.name), a.pivot));
     const elements = m.parts.map(part => {
       const key = i => i.toString(36).padStart(4, '0'), vertices = {}, faces = {};
-      part.verts.forEach((p, i) => { vertices[key(i)] = toModel(p).map(v => +v.toFixed(6) || 0); });
-      part.faces.forEach((f, i) => { faces['f' + key(i)] = {uv: Object.fromEntries(f.ids.map((id, j) => [key(id), f.uvs[j].map(v => +v.toFixed(4))])), vertices: f.ids.map(key), texture: 0}; });
+      part.verts.forEach((p, i) => { vertices[key(i)] = toModel(p).map(v => +v.toFixed(POSD) || 0); });
+      part.faces.forEach((f, i) => { faces['f' + key(i)] = {uv: Object.fromEntries(f.ids.map((id, j) => [key(id), f.uvs[j].map(v => +v.toFixed(UVD))])), vertices: f.ids.map(key), texture: 0}; });
       return {name: part.name, color: 0, origin: [0, 0, 0], rotation: [0, 0, 0], shading: 'flat', export: true, visibility: true, locked: false,
         render_order: 'default', scope: 0, allow_mirror_modeling: true, vertices, faces, type: 'mesh', uuid: uuid(model + ':' + part.name)};
     });
