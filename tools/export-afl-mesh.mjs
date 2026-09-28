@@ -194,8 +194,10 @@ function rejectFeatures(value, where) {
     }
 }
 
-export function convert(source, geometry, mapping={}, sourceName='bbmodel', formatVersion=1, diagnostics=null) {
+export function convert(source, geometry, mapping={}, sourceName='bbmodel', formatVersion=1, diagnostics=null, renderLayers={}) {
     need(formatVersion===1||formatVersion===2,'unsupported format version');
+    need(renderLayers && typeof renderLayers==='object' && !Array.isArray(renderLayers),'render layers must be part-name -> layer object');
+    for(const layer of Object.values(renderLayers)) need(['cutout','translucent'].includes(layer),'unknown render layer');
     need(source?.meta?.model_format==='free',`${sourceName}: V1 requires Free Model`);
     rejectFeatures(source,sourceName);
     // Additional authoring textures may belong to export=false reference arms.
@@ -293,7 +295,9 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel', form
                     }
                 }
                 need(triangles.length,`${where}: no enabled triangles`);
-                parts.push({name:element.name,bone:parentBone.name,vertices,...(formatVersion===2?{faces}:{triangles})});
+                parts.push({name:element.name,bone:parentBone.name,
+                    ...(Object.hasOwn(renderLayers,element.name)?{render_layer:renderLayers[element.name]}:{}),
+                    vertices,...(formatVersion===2?{faces}:{triangles})});
                 continue;
             }
             need(node&&typeof node==='object', 'invalid outliner node');
@@ -318,6 +322,7 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel', form
     walk(source.outliner);
     for(const e of elements.values()) need(visited.has(e.uuid)||e.export===false,`${e.name}: orphan element/unknown parent bone`);
     for(const key of Object.keys(mapping)) need(usedMapping.has(key),`unused group mapping ${key}`);
+    for(const name of Object.keys(renderLayers)) need(partNames.has(name),`unknown render layer part ${name}`);
     for(const animation of source.animations??[]) for(const [id,animator] of Object.entries(animation.animators??{})) {
         need(!elements.has(id)&&(!animator.type||['bone','effect'].includes(animator.type)),'mesh/topology animation unsupported');
         if(animator.type!=='effect') for(const key of animator.keyframes??[])
@@ -338,7 +343,7 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
     try {
         const args=process.argv.slice(2),options={};
         for(let i=0;i<args.length;i++) {
-            const key=args[i];need(['--input','--geometry','--mapping','--output','--format','--compact','--check','--diagnostics'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
+            const key=args[i];need(['--input','--geometry','--mapping','--layers','--output','--format','--compact','--check','--diagnostics'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
             options[key]=['--check','--compact','--diagnostics'].includes(key)?true:args[++i];
             need(options[key] && (options[key]===true || !options[key].startsWith('--')),`missing value for ${key}`);
         }
@@ -348,7 +353,8 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
         need(output.endsWith('.aflmesh.json')&&output!==input&&output!==geometry,'output must be a separate .aflmesh.json');
         const format=options['--format']??'v1';need(['v1','v2'].includes(format),'--format must be v1 or v2');
         const diagnostics=options['--diagnostics']?{}:null;
-        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input,format==='v2'?2:1,diagnostics);
+        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input,format==='v2'?2:1,diagnostics,
+            options['--layers']?read(options['--layers']):{});
         if(diagnostics) console.log(JSON.stringify(diagnostics));
         const text=(options['--compact']?serializeCompact:serialize)(model);
         need(text.length<=4*1024*1024,'sidecar exceeds runtime 4 MiB limit');

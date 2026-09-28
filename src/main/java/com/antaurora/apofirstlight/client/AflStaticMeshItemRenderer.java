@@ -56,7 +56,12 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
             // ItemRenderer already applied the original display transforms and translated -0.5 on each axis.
             // Mesh vertices are centered on X/Z=0; put them at the old item model's center.
             pose.translate(0.5, context == ItemDisplayContext.GROUND ? groundVerticalOffset : verticalOffset, 0.5);
-            for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
+            if (mesh.hasTranslucent()) {
+                com.antaurora.apofirstlight.client.mesh.AflHybridMeshRendering.renderAtCurrentPose(
+                        geometry, texture, pose, buffers, light, overlay);
+            } else {
+                for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
+            }
         } finally {
             pose.popPose();
         }

@@ -1,5 +1,7 @@
 # AFL Hybrid Mesh Runtime — V1 / V2
 
+2026-09-27 新增 [Transparent Hybrid Mesh Runtime V1](transparent_hybrid_mesh_runtime_v1.md)：V1/V2 part 可选 `render_layer`，缺省 CUTOUT，透明层使用标准 `entityNoOutline`。Mixed attachment/static presentation 先提交 cutout，再提交透明 parts；shadow pass 跳过透明层。首个正式资产为 pistol_red_dot，保持源几何/UV/贴图 alpha 24 不变。Shader OFF 路径就绪；Oculus 默认透明 shader 的 0.1 alpha test 仍可能裁掉镜片，透明 PBR 尚未实机通过。原低层单 VertexConsumer API 仍默认 CUTOUT，不自动分配第二个 buffer；新 mixed 调用者应使用高层双层入口。见专文的排序与 GPU 验证限制。
+
 2026-09-27。V2.1 工具链已实现保守的量化感知 Quad 恢复，存储格式仍为 V2。用户反馈此前 V2 实机通过；V2.1 的离线检查通过，新一轮图形/PBR/CPU 验收仍待用户执行。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
 
 ## 范围与 opt-in

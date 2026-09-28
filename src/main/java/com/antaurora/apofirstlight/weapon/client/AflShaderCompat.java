@@ -5,7 +5,7 @@ import net.minecraftforge.fml.ModList;
 import java.lang.reflect.Method;
 
 /** Optional Oculus/Iris queries. Missing or failing APIs never authorize a render skip. */
-final class AflShaderCompat {
+public final class AflShaderCompat {
     private static boolean initialized, shadowFailed, phaseFailed;
     private static Object api;
     private static Method shader, shadow, phase, pack;
@@ -48,7 +48,7 @@ final class AflShaderCompat {
         catch (ReflectiveOperationException | LinkageError e) { shadowFailed = true; return null; }
     }
 
-    static boolean activeShadowPass() {
+    public static boolean activeShadowPass() {
         return Boolean.TRUE.equals(shaderActive()) && Boolean.TRUE.equals(shadowPass());
     }
 

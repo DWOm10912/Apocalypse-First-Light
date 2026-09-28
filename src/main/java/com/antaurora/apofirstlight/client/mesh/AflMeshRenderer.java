@@ -23,8 +23,14 @@ public final class AflMeshRenderer {
     public static void render(AflMeshModel model, GeoBone bone, PoseStack pose, VertexConsumer buffer,
                               int light, int overlay, float red, float green, float blue, float alpha,
                               Metrics metrics) {
+        render(model, bone, pose, buffer, light, overlay, red, green, blue, alpha, metrics, AflMeshPart.Layer.CUTOUT);
+    }
+
+    public static void render(AflMeshModel model, GeoBone bone, PoseStack pose, VertexConsumer buffer,
+                              int light, int overlay, float red, float green, float blue, float alpha,
+                              Metrics metrics, AflMeshPart.Layer layer) {
         if (model == null || (metrics == null && bone.isHidden())) return;
-        var parts = model.parts(bone.getName());
+        var parts = model.parts(bone.getName(), layer);
         if (parts.isEmpty()) return;
         if (bone.isHidden()) {
             if (metrics != null) metrics.hiddenTriangles = triangleCount(parts);

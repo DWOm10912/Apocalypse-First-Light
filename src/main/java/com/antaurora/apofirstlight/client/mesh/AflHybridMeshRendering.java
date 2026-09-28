@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.util.RenderUtils;
+import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,25 +37,38 @@ public final class AflHybridMeshRendering {
         if (!textureExists.computeIfAbsent(texture,
                 id -> Minecraft.getInstance().getResourceManager().getResource(id).isPresent())) return;
 
-        VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));
+        RenderType opaque = RenderType.entityCutoutNoCull(texture);
+        VertexConsumer vertices = buffers.getBuffer(opaque);
         pose.pushPose();
         try {
             for (GeoBone bone : geo.topLevelBones())
-                renderBone(mesh, bone, pose, vertices, light, overlay);
+                renderBone(mesh, bone, pose, vertices, light, overlay, AflMeshPart.Layer.CUTOUT);
+            if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
+                // A caller-owned BufferSource may defer fixed buffers. Flush only our
+                // cutout type before the transparent submission, never the whole source.
+                if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(opaque);
+                // Vanilla entityTranslucent discards alpha < .1. entityNoOutline
+                // preserves low alpha, tests depth, writes color only, and is no-cull.
+                var transparent = RenderType.entityNoOutline(texture);
+                var glass = buffers.getBuffer(transparent);
+                for (GeoBone bone : geo.topLevelBones())
+                    renderBone(mesh, bone, pose, glass, light, overlay, AflMeshPart.Layer.TRANSLUCENT);
+                if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(transparent);
+            }
         } finally {
             pose.popPose();
         }
     }
 
     private static void renderBone(AflMeshModel mesh, GeoBone bone, PoseStack pose,
-                                   VertexConsumer vertices, int light, int overlay) {
+                                   VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
         pose.pushPose();
         try {
             RenderUtils.prepMatrixForBone(pose, bone);
-            AflMeshRenderer.render(mesh, bone, pose, vertices, light, overlay, 1, 1, 1, 1);
+            AflMeshRenderer.render(mesh, bone, pose, vertices, light, overlay, 1, 1, 1, 1, null, layer);
             if (!bone.isHidingChildren())
                 for (GeoBone child : bone.getChildBones())
-                    renderBone(mesh, child, pose, vertices, light, overlay);
+                    renderBone(mesh, child, pose, vertices, light, overlay, layer);
         } finally {
             pose.popPose();
         }

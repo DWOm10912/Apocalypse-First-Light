@@ -68,7 +68,14 @@ public final class AflMeshLoader {
                 String name = string(part.get("name"), "name"), bone = string(part.get("bone"), "bone");
                 context = "bone=" + bone + " part=" + name;
                 String faceKey = version == 1 ? "triangles" : "faces";
-                keys(part, Set.of("name", "bone", "vertices", faceKey), context);
+                keys(part, part.has("render_layer") ? Set.of("name", "bone", "vertices", faceKey, "render_layer")
+                        : Set.of("name", "bone", "vertices", faceKey), context);
+                AflMeshPart.Layer layer = AflMeshPart.Layer.CUTOUT;
+                if (part.has("render_layer")) {
+                    String value = string(part.get("render_layer"), "render_layer");
+                    require(value.equals("cutout") || value.equals("translucent"), "unknown render_layer " + value);
+                    if (value.equals("translucent")) layer = AflMeshPart.Layer.TRANSLUCENT;
+                }
                 require(names.add(name), "duplicate part name");
                 require(boneNames.contains(bone), "unknown parent bone");
                 var vertices = array(part.get("vertices"), -1, "vertices");
@@ -120,7 +127,7 @@ public final class AflMeshLoader {
                     }
                 }
                 result.computeIfAbsent(bone, ignored -> new ArrayList<>()).add(new AflMeshPart(name, baked, offsets,
-                        new AflMeshPart.Bounds(minX, minY, minZ, maxX, maxY, maxZ)));
+                        new AflMeshPart.Bounds(minX, minY, minZ, maxX, maxY, maxZ), layer));
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalArgumentException(context + ": " + e.getMessage(), e);
             }
