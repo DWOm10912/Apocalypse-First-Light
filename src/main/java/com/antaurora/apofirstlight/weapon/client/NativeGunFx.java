@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
 import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
 import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
 import com.antaurora.apofirstlight.registry.AflSounds;
+import com.antaurora.apofirstlight.registry.AflParticles;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -59,7 +60,14 @@ public final class NativeGunFx {
     public static void frozen(NativeShotVisualSnapshot.Snapshot snapshot,int shooter,long gun){
         checkWorld();if(world==null)return;
         if(snapshot.suppressed()){
-            var p=snapshot.muzzle();world.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE,p.x,p.y,p.z,0,.008,0);return;
+            // Present the gas at the next actual accessory exit pose. A delayed server
+            // confirmation can leave the frozen world-space muzzle behind the moving viewmodel.
+            for (int i=SHOTS.size()-1;i>=0;i--) {
+                var shot=SHOTS.get(i);
+                if (shot.frozen && shot.shooter==shooter && shot.gun==gun
+                        && shot.debugShotId==snapshot.shotId()) { shot.gasPending=true; break; }
+            }
+            return;
         }
         var shot=new Shot(shooter,gun,clock(Minecraft.getInstance().getFrameTime()));shot.flashStart=shot.received;
         if(FROZEN.size()>=128)FROZEN.remove(0);FROZEN.add(new Frozen(snapshot,shot,new NativeFlashLifetime()));
@@ -190,16 +198,17 @@ public final class NativeGunFx {
                 shot.ejected = true;
             }
             if (name.equals("muzzle_anchor")) {
-                if(shot.frozen)continue;
+                if(shot.frozen){
+                    if(firstPerson && shot.gasPending){
+                        shot.gasPending=false;
+                        suppressorGasAtAnchor(anchor,true,barrelExitOffset,mc.gameRenderer.getMainCamera().getPosition());
+                    }
+                    continue;
+                }
                 if(suppressed){
                     if(Double.isNaN(shot.flashStart)){
                         shot.flashStart=now;
-                        var matrix=new Matrix4f(WORLD_VIEW).invert();
-                        if(firstPerson)matrix.mul(new Matrix4f(WORLD_PROJECTION).invert()).mul(FirstPersonProjectionSanitizer.sanitize(RenderSystem.getProjectionMatrix(),WORLD_PROJECTION));
-                        matrix.mul(anchor.last().pose());
-                        var p=matrix.transformProject(new Vector3f(0,0,-barrelExitOffset/16));
-                        var origin=mc.gameRenderer.getMainCamera().getPosition().add(p.x,p.y,p.z);
-                        world.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE,origin.x,origin.y,origin.z,0,.008,0);
+                        suppressorGasAtAnchor(anchor,firstPerson,barrelExitOffset,mc.gameRenderer.getMainCamera().getPosition());
                     }
                     continue;
                 }
@@ -217,6 +226,26 @@ public final class NativeGunFx {
     private static Vec3 direction(Matrix4f matrix, float x, float y, float z) {
         Vector3f v = matrix.transformDirection(new Vector3f(x, y, z)).normalize();
         return new Vec3(v.x, v.y, v.z);
+    }
+
+    private static void suppressorGasAtAnchor(PoseStack anchor,boolean firstPerson,float barrelExitOffset,Vec3 camera) {
+        var matrix=firstPerson?firstPersonToWorld(anchor):new Matrix4f(WORLD_VIEW).invert().mul(anchor.last().pose());
+        if(matrix==null)return;
+        // The locator is at the front cap. Start just beyond its face so the
+        // small billboard is visibly born at the opening rather than inside it.
+        float z=-barrelExitOffset/16-.008F;
+        var p=matrix.transformProject(new Vector3f(0,0,z));
+        var ahead=matrix.transformProject(new Vector3f(0,0,z-.01F));
+        suppressorGas(camera.add(p.x,p.y,p.z),new Vec3(ahead.x-p.x,ahead.y-p.y,ahead.z-p.z));
+    }
+
+    private static void suppressorGas(Vec3 origin, Vec3 forward) {
+        if (!Double.isFinite(origin.x) || !Double.isFinite(origin.y) || !Double.isFinite(origin.z)
+                || !Double.isFinite(forward.x) || !Double.isFinite(forward.y) || !Double.isFinite(forward.z)
+                || forward.lengthSqr() < 1e-12) return;
+        Vec3 velocity=forward.normalize().scale(.035);
+        world.addParticle(AflParticles.SUPPRESSOR_MUZZLE_SMOKE.get(),origin.x,origin.y,origin.z,
+                velocity.x,velocity.y,velocity.z);
     }
 
     /** Reuse casing birth conversion for a final animated FP locator; returns camera-relative world space. */
@@ -380,7 +409,7 @@ public final class NativeGunFx {
         final int shooter; final long gun; final double received;
         final float roll = (RANDOM.nextFloat() - .5F) * 24, scale = .9F + RANDOM.nextFloat() * .2F;
         final float alpha = .95F + RANDOM.nextFloat() * .05F;
-        double flashStart = Double.NaN; boolean ejected;
+        double flashStart = Double.NaN; boolean ejected, gasPending;
         Shot(int shooter, long gun, double received) { this.shooter = shooter; this.gun = gun; this.received = received; }
     }
 
