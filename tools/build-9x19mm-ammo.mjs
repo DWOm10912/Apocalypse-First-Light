@@ -6,10 +6,11 @@
 // Asset contract (same as the .50 AE standard assets): round axis +Y, case head on y = 0, centred on X/Z, one bone per
 // model with pivot [0,0,0]. Scale follows the P9-01 model (1 Blockbench unit ~ 18.8 mm: case r 0.264 = P9 chamber r).
 // Dimensions after C.I.P. 9x19 mm Parabellum (OAL 29.2 mm = typical factory FMJ, fits the P9 magazine); the FMJ round-nose ogive and the fired-case details are original.
-// High-detail assets: no PBR, no headstamp text or brand marks.
+// Light LabPBR (_s / _n) from the shared zone table in tools/ammo-pbr.mjs, same as the FX casing; no headstamp text or brand marks.
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runLathe, sm, mix, sc, hash} from './lathe-mesh-lib.mjs';
+import {ammoPbr, AMMO_PBR} from './ammo-pbr.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const assets = path.join(root, 'src/main/resources/assets/apocalypse_firstlight');
@@ -18,6 +19,8 @@ const OUT = {
   casing: {src: path.join(root, 'src/main/blockbench/9x19mm_casing_mesh.bbmodel'), geo: path.join(assets, 'geo/9x19mm_casing.geo.json'), mesh: path.join(assets, 'meshes/9x19mm_casing.aflmesh.json')},
   srcTexture: path.join(root, 'src/main/blockbench/textures/9x19mm_ammo_v1.png'),
   texture: path.join(assets, 'textures/item/9x19mm_ammo_v1.png'),
+  srcSpec: path.join(root, 'src/main/blockbench/textures/9x19mm_ammo_v1_s.png'), spec: path.join(assets, 'textures/item/9x19mm_ammo_v1_s.png'),
+  srcNormal: path.join(root, 'src/main/blockbench/textures/9x19mm_ammo_v1_n.png'), normal: path.join(assets, 'textures/item/9x19mm_ammo_v1_n.png'),
 };
 
 // ---------------- dimensions (mm -> Blockbench units) ----------------
@@ -106,7 +109,7 @@ function paint(model, zone, p) {
   }
   throw new Error('unpainted zone ' + zone);
 }
-runLathe({root, N, atlas: 512, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-ammo', models: MODELS, paint,
+runLathe({root, N, atlas: 512, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-ammo', models: MODELS, paint, pbr: (model, zone) => ammoPbr(zone),
   sourceName: model => `9x19mm_${model}_mesh`, geoId: model => `geometry.9x19mm_${model}`,
   texture: {name: '9x19mm_ammo_v1.png', relativePath: 'textures/9x19mm_ammo_v1.png'}, out: OUT});
 
@@ -115,8 +118,8 @@ runLathe({root, N, atlas: 512, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-
 // Same outer dimensions, bone ('casing'), axis (+Y, case head on y = 0) and brass / nickel palette as the high-detail
 // fired casing above, so the ejection size and tumbling centre are unchanged. Every band is laid out as flat facets
 // ('facets' map), so AFL Mesh V2 keeps all side, rim and flat bands as quads. Inventory, world item, dynamic magazine
-// round and static display keep the high-detail assets. Light LabPBR: brass metal at medium smoothness, flat normals,
-// AO only in the extractor groove and the shallow dark mouth.
+// round and static display keep the high-detail assets. Light LabPBR from the shared zone table (tools/ammo-pbr.mjs):
+// brass metal at medium smoothness, flat normals, AO only in the extractor groove and the shallow dark mouth dish.
 const FX_OUT = {
   casing: {src: path.join(root, 'src/main/blockbench/9x19mm_casing_fx.bbmodel'), geo: path.join(assets, 'geo/9x19mm_casing_fx.geo.json'), mesh: path.join(assets, 'meshes/9x19mm_casing_fx.aflmesh.json')},
   srcTexture: path.join(root, 'src/main/blockbench/textures/9x19mm_casing_fx.png'), texture: path.join(assets, 'textures/item/9x19mm_casing_fx.png'),
@@ -127,10 +130,7 @@ const FX = {mouthR: 0.2606, lipR: 0.2446, dish: 0.10, gy: (D.grooveY0 + D.groove
 const FX_MODELS = {casing: {bone: 'casing', parts: [{name: 'casing_fx', runs: [
   {region: 'fx_primer', map: 'facets', pts: [[0, 0], [D.primerR, 0, 'primer']]},
   {region: 'fx_case', map: 'facets', pts: [[D.primerR, 0], [D.rimR, 0, 'head'], [D.rimR, D.rimT, 'rim'], [D.grooveR, FX.gy, 'groove'],
-    [D.bodyR, D.bevelY, 'bevel'], [FX.mouthR, D.caseL, 'body'], [FX.lipR, D.caseL, 'lipTop'], [0, D.caseL - FX.dish, 'mouth']]}]}]}};
-// zone -> [smoothness, F0 (255 metal / 10 dielectric), AO]
-const FX_PBR = {primer: [140, 255, 255], head: [110, 255, 255], rim: [125, 255, 255], groove: [100, 255, 215], bevel: [110, 255, 255],
-  body: [115, 255, 255], lipTop: [135, 255, 255], mouth: [50, 10, 150]};
+    [D.bodyR, D.bevelY, 'bevel'], [FX.mouthR, D.caseL, 'body'], [FX.lipR, D.caseL, 'lipTop'], [0, D.caseL - FX.dish, 'dish']]}]}]}};
 function paintFx(model, zone, p) {
   const r = Math.hypot(p[0], p[2]), y = p[1];
   switch (zone) {
@@ -144,13 +144,13 @@ function paintFx(model, zone, p) {
       return mix(sc(c, 1 - 0.10 * sm(0.80, 1.0, y)), [118, 106, 90], 0.14 * sm(0.80, 1.0, y));   // light powder soot at the mouth
     }
     case 'lipTop': return sc(BRASS, 1.10);
-    case 'mouth': return mix(sc(BRASS, 0.45), [16, 13, 10], sm(FX.lipR, 0.06, r));   // shallow sooted opening, darker to the centre
+    case 'dish': return mix(sc(BRASS, 0.45), [16, 13, 10], sm(FX.lipR, 0.06, r));   // shallow sooted opening, darker to the centre
   }
   throw new Error('unpainted FX zone ' + zone);
 }
 function pbrFx(model, zone, p) {
-  const [s, f0, ao] = FX_PBR[zone], r = Math.hypot(p[0], p[2]);
-  return {s: [s, f0, 0, 255], n: [128, 128, zone === 'mouth' ? ao - 40 * sm(FX.lipR, 0.06, r) : ao, 255]};
+  const r = Math.hypot(p[0], p[2]);
+  return ammoPbr(zone, zone === 'dish' ? AMMO_PBR.dish[2] - 40 * sm(FX.lipR, 0.06, r) : null);   // dish AO darkens to the centre
 }
 runLathe({root, N: 8, atlas: 64, background: [118, 92, 52], uuidSeed: 'afl-9x19mm-casing-fx', models: FX_MODELS, paint: paintFx, pbr: pbrFx,
   alignFacets: true, noOverdraw: true, meshFormat: 2, compact: true, uvDecimals: 8, posDecimals: 8,
