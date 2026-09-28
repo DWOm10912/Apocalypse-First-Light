@@ -376,6 +376,8 @@ damage/range/spread/accuracy profile/recoil/fire interval/noise/tinnitus/ADS tim
 
 使用新口径：在 AflItems 注册 round 与 casing；增加两者 item model/texture 与中英名称、round 的 .caliber key；加入武器页；JSON 分别填写 ammo/casing。当前两种口径没有 ammo tag 或配方引用，不能凭空宣称需要 tag/recipe；若设计要求可制造，再另行添加配方。
 
+若新口径的空壳是 Pure Mesh 并参与抛壳：高精度空壳只做物品和静态展示，同时制作 FX 专用低模 `<空壳 geo 名>_fx`，并在 `NativeGunFx.MESH_CASINGS` 登记 FX geo 和贴图。低模要求：约 8 段、80–160 三角面、64 或 128 贴图、V2 Quad、外形尺寸与骨骼契约和高精度版一致。规则与示例见 `native_ammo_assets_v1.md` 的 Ejected Casing Low-Poly FX V1。
+
 6. Weapon-Type Delta Profiles
 
 Pistol

@@ -9,11 +9,11 @@
 | 12_7x55mm_round | 12.7×55毫米重型弹 | 12.7×55mm Heavy Round | HR55 |
 | 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | Silverwood 12；每次射击消耗1发，独立追踪8颗弹丸 |
 | 50_ae_round | .50 AE 手枪弹 | .50 AE Round | Blackridge .50 唯一可用弹药；64 堆叠普通 Item，客户端使用静态 Hybrid Mesh |
-| 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 抛壳及普通物品 |
+| 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 弹壳类型及普通物品；飞行抛壳使用低模 `9x19mm_casing_fx`（见 Ejected Casing Low-Poly FX V1） |
 | 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 抛壳及普通物品 |
 | 12_7x55mm_casing | 12.7×55毫米弹壳 | 12.7×55mm Casing | HR55 抛壳及普通物品 |
 | 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品；Silverwood V1 无射击时自动抛壳 FX/地面掉落 |
-| 50_ae_casing | .50 AE 弹壳 | .50 AE Casing | 已注册的 3D 普通 Item；Blackridge 引用为弹壳类型；瞬时抛壳已接入现有 Mesh 渲染分支，待实机验收 |
+| 50_ae_casing | .50 AE 弹壳 | .50 AE Casing | 已注册的 3D 普通 Item；Blackridge 引用为弹壳类型；飞行抛壳使用低模 `50_ae_casing_fx`，待实机验收 |
 
 十项均64堆叠。原四种实弹和新 `.50 AE` 实弹进入 AFL 武器与弹药标签；仅新 `.50 AE` 空壳也进入该标签，原四种空壳仍不展示。数字开头是合法 ResourceLocation 路径，无需前缀。弹壳不作为弹药，也没有回收配方；当前枪械射击不会生成可拾取弹壳实体。
 
@@ -70,6 +70,7 @@
   - `item/9x19mm_casing`（即 `NativeGunFx.CASING_MODEL`）缩放 0.62，与旧 Cube 弹壳抛出时的大小一致；
   - 居中改为取弹壳所有部件包围盒的并集；
   - 其他口径仍用烘焙四边面。抛壳物理、寿命、上限都没有改。
+  - 2026-09-27 起这两个口径的飞行抛壳改用低模 FX 资产，高精度弹壳只作回退，见下文 Ejected Casing Low-Poly FX V1。
 - **没有改动**：伤害、弹量、射速、配方、战利品、弹壳物理、Dynamic Ammo 判断逻辑。
 
 **生成与校验**
@@ -141,6 +142,76 @@
 - `.\gradlew.bat compileJava --offline` 通过。
 - 未进游戏：GUI、手持、掉落、展示框和抛壳的画面都待实机验收。
 - `tools/verify-native-ammo.mjs` 已能识别 Mesh 物品：检查 geo、sidecar 和图集，方块检查改用 `legacy/` 里保留的 JSON。脚本仍 在 `762x51mm_round` 处失败：HEAD 中物品模型为 44 个元素、源文件为 13 个。这是既有问题，与本轮无关。
+
+### Ejected Casing Low-Poly FX V1（2026-09-27，待实机验收）
+
+**规则（今后所有会抛壳的 Pure Mesh 弹药默认遵守）**
+
+- **HIGH DETAIL CASING**：正式高精度空壳，例如 `9x19mm_casing`、`50_ae_casing`。只用于物品（背包、手持、掉落、展示框）和静态展示（检视、维护台）；弹匣顶弹用的是配套的高精度整弹。不再直接拿去做飞行抛壳。
+- **LOW POLY CASING FX**：`<空壳 geo 名>_fx`，只用于 `NativeGunFx` 的飞行抛壳，第一和第三人称共用同一资产，不注册 Item。
+- 以后新增会抛壳的 Pure Mesh 弹药，必须同时提供这两套资产。FX 版的约定：
+  - 与高精度空壳外形尺寸、骨骼 `casing`、+Y 轴、弹底 y = 0 一致；
+  - 圆周约 8 段、约 80–160 三角面；
+  - 贴图 64 或 128；
+  - AFL Mesh V2，侧面和平面环带保留为 Quad。
+
+**审计（按实际资源与代码，不按文档推断）**
+
+| 资产 | 形式 | 用途 |
+|---|---|---|
+| `9x19mm_round`、`50_ae_round`、`12_gauge_round` | Mesh 整弹 | 物品；前两者另作弹匣顶弹。整弹不参与抛壳 |
+| `9x19mm_casing`、`50_ae_casing` | Mesh 空壳（V1 sidecar，1080 三角面） | 物品展示；此前也被 `NativeGunFx.MESH_CASINGS` 直接用于抛壳，本轮改为 FX 资产 |
+| `762x51mm_casing`、`12_7x55mm_casing`、`12_gauge_casing` | Cube 物品模型 | BR51 / CAT / HR55 用烘焙四边面抛壳；Silverwood V1 不抛壳。不是 Mesh，本轮不适用 |
+| `src/main/blockbench/12ga_hybrid_mesh_spent.bbmodel` | 仅源原型 | 没有运行时 geo 或 sidecar，不参与抛壳 |
+
+**FX 资产**
+
+| | 9mm | .50 AE |
+|---|---|---|
+| Geo / Sidecar（V2） | `geo/9x19mm_casing_fx.geo.json`、`meshes/9x19mm_casing_fx.aflmesh.json` | `geo/50_ae_casing_fx.geo.json`、`meshes/50_ae_casing_fx.aflmesh.json` |
+| 运行时贴图（64×64，Base Color + `_s` + `_n`） | `textures/item/9x19mm_casing_fx.png` | `textures/item/50_ae_casing_fx.png` |
+| 源 | `src/main/blockbench/9x19mm_casing_fx.bbmodel`、`textures/9x19mm_casing_fx*.png` | `src/main/blockbench/50ae_casing_fx.bbmodel`、`textures/50_ae_casing_fx*.png` |
+| 生成 | `node tools/build-9x19mm-ammo.mjs`（同一脚本里的第二次 `runLathe`） | `node tools/build-50ae-ammo.mjs` |
+
+**几何**
+
+- 8 段，共用各自高精度生成器的尺寸常量 `D`。
+- 轮廓依次为：
+  - 底火面；弹底环面；底缘柱面；
+  - V 形抽壳槽：下斜面，再加上斜面回到壳体；
+  - 带锥度的壳体：9mm 半径 0.2641 → 0.2606，.50 AE 0.3732 → 0.3700；.50 AE 保留缩底缘（rebated rim）轮廓；
+  - 壳口端环：壁厚 9mm 0.016、.50 AE 0.020。比高精度稍厚，一方面让飞行中更易辨认，另一方面太窄的环在 float32 精度下过不了 V2 的平面检查；
+  - 壳口内浅暗碟：深 9mm 0.10、.50 AE 0.14。壳口不封死，但不做内壁。
+- 去掉的细节：底火窝、底缘小倒角、壳口内壁与底部、底火凹痕几何，以及所有细 bevel。凹痕只保留为底火中心的暗色渐变。
+- 尺寸与居中：高度与正式弹壳完全一致（9mm 1.01862，.50 AE 1.773824），最大半径差在 0.6% 以内。`NativeGunFx` 按包围盒并集居中后，翻滚中心不变，缩放 0.62 / 0.65 沿用。
+- UV：`tools/lathe-mesh-lib.mjs` 新增 `facets` 布局，每个棱面按自身平面上的等腰梯形放进自己的列，UV 映射是仿射的。配合 8 位小数，V2 保留了全部 48 个 Quad，只有两处极点扇面是三角形。
+
+**面数与每个弹壳的提交顶点**（每个面按 4 个顶点提交）
+
+| 弹壳 | 高精度三角面 | 高精度提交顶点 | FX 三角面 | FX 提交顶点 | 降幅 |
+|---|---|---|---|---|---|
+| 9mm | 1080（V1，全三角形） | 4320 | 112（48 Quad + 16 三角形） | 256 | 三角面 −89.6%，顶点 −94.1% |
+| .50 AE | 1080（V1，全三角形） | 4320 | 112（48 Quad + 16 三角形） | 256 | 三角面 −89.6%，顶点 −94.1% |
+
+**材质**
+
+- Base Color 沿用各自正式弹壳的黄铜、镍色板和分区倍率，去掉车削细纹、逐行拉丝这类高频项，壳口附近保留轻微火药烟熏。
+- `_s`：黄铜是金属（F0 = 255），平滑度 100–135，中等不镜面；底火镍 140；壳口暗碟是介电（F0 10），平滑度 50。
+- `_n`：全平面法线（128,128），AO 只加在抽壳槽（215）和壳口暗碟（150 → 110）。
+- 没有针对任何光影包的特殊处理。
+
+**运行时**
+
+- `NativeGunFx.MESH_CASINGS` 每项增加 `fxGeometry` / `fxTexture`。飞行抛壳优先画 FX 资产，只有 FX 的 geo 或 sidecar 缺失时才回退到正式高精度弹壳。
+- 物品（`AflStaticMeshItemClient`）、掉落、弹匣顶弹（`magazine_round_visual`）和展示仍使用高精度资产。
+- 抛壳速度、重力、旋转、寿命（50 tick）、上限（64 个）和落地声都没有改。
+
+**验证**
+
+- 两个弹药生成器的 `--check` 通过，高精度输出逐字节不变。
+- `node tools/verify-afl-mesh.mjs --java-loader` 通过：真实 Java 加载器在 JShell 中加载了全部生产 sidecar，包括两件 FX。
+- `compileJava --offline` 通过。
+- 未进游戏：单发、快速连射、Blackridge 开火、光影开关下的外观和帧时间都待实机验收。
 
 ## 文件与旧新映射
 
