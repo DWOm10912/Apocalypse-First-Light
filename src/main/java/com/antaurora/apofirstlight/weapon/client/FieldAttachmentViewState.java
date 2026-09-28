@@ -32,6 +32,7 @@ public final class FieldAttachmentViewState {
     public static String cancellationReason(){return cancellationReason;}
     public static NativeAttachment.Slot selectedSlot(){return screen==null?null:screen.selectedSlot();}
     public static boolean pending(){return screen!=null&&screen.pending();}
+    public static com.antaurora.apofirstlight.client.GunInspectionController inspection(){return screen==null?null:screen.inspection();}
     public static boolean matches(ItemStack stack){
         return isActive()&&stack.getItem()==snapshot.getItem()&&GeoItem.getId(stack)==gunId;
     }
@@ -42,10 +43,10 @@ public final class FieldAttachmentViewState {
                 ||!mc.isWindowActive()||mc.options.keyAttack.isDown()||NativeGunInput.firing()
                 ||!NativeGunInspect.action().isEmpty()||NativeGunInspect.blocksAds())return;
         var stack=p.getMainHandItem();
-        if(stack.getItem() instanceof CatNativeGunItem){
-            p.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused"),true);return;
+        if(stack.getItem() instanceof NativeGunItem gun && gun.inspectionRefusalReason()!=null){
+            p.displayClientMessage(gun.inspectionRefusalReason(),true);return;
         }
-        if(!AttachmentModificationPolicy.hasSlots(stack)||GeoItem.getId(stack)==Long.MAX_VALUE)return;
+        if(!AttachmentModificationPolicy.allowed(stack)||GeoItem.getId(stack)==Long.MAX_VALUE)return;
         slot=p.getInventory().selected;gunId=GeoItem.getId(stack);snapshot=stack.copy();
         level=mc.level;player=p;profile=FieldAttachmentViewProfile.load(stack);cancellationReason="";
         NativeGunAds.leaveForField();progress.reset();phase=Phase.ENTERING;
@@ -68,7 +69,7 @@ public final class FieldAttachmentViewState {
         if(mc.screen!=screen){removed(screen);return;}
         if(p==null||p!=player||mc.level!=level||!p.isAlive()||p.isSpectator()
                 ||!mc.options.getCameraType().isFirstPerson()||p.getInventory().selected!=slot
-                ||!matches(p.getMainHandItem())||!AttachmentModificationPolicy.hasSlots(p.getMainHandItem())){
+                ||!matches(p.getMainHandItem())||!AttachmentModificationPolicy.allowed(p.getMainHandItem())){
             cancellationReason="target invalid";var owner=screen;removed(owner);
             if(mc.screen==owner)mc.setScreen(null);return;
         }
@@ -76,6 +77,10 @@ public final class FieldAttachmentViewState {
         progress.tick(phase!=Phase.EXITING,profile.enterTicks(),profile.exitTicks());
         if(phase==Phase.ENTERING&&progress.sample(0)>=1)phase=Phase.OPEN;
         if(phase==Phase.EXITING&&progress.sample(0)<=0)mc.setScreen(null);
+    }
+    @SubscribeEvent public static void inspectionFrame(TickEvent.RenderTickEvent e){
+        if(e.phase==TickEvent.Phase.START&&isActive()&&screen!=null&&Minecraft.getInstance().screen==screen)
+            screen.inspection().frame(screen.gun(),System.nanoTime());
     }
     @SubscribeEvent public static void disconnect(net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut e){
         if(screen!=null)removed(screen);

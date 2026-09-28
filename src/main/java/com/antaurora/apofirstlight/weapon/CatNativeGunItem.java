@@ -34,6 +34,11 @@ public final class CatNativeGunItem extends ConfiguredNativeGunItem {
     }
 
     @Override
+    public net.minecraft.network.chat.Component inspectionRefusalReason() {
+        return net.minecraft.network.chat.Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused");
+    }
+
+    @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         super.inventoryTick(stack, level, entity, slot, selected);
         if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;

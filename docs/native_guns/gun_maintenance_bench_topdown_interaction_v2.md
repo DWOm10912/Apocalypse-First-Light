@@ -1,10 +1,14 @@
 # 枪械维护台俯视交互 V2
 
+2026-09-27 准入规则：所有 `NativeGunItem` 默认可放入维护台，包括没有配件槽的枪械；不使用枪械白名单或 registry namespace 门槛。`NativeGunItem.inspectionRefusalReason()` 默认 `null`，`CatNativeGunItem` 显式拒绝，客户端提示、服务端 `insertFrom` 与 `canPlaceItem` 使用同一准入规则。持久化/同步读取仍按枪械类型判断，以免政策变化抹除台内已有物品，原有安全取回不受拒绝规则影响。未运行客户端或 GameTest，本轮准入行为待实机验收。
+
+2026-09-27 当前观察操作见 [Gun Maintenance Inspection View V1](gun_maintenance_inspection_view_v1.md)：维护台枪械及镜头位置/朝向固定，左/中拖禁用，滚轮仅FOV缩放、R恢复75°；完整 Orbit 属于野外 Field 页面。光源不变，维护台热点与picking按同一缩放FOV投影。附件 UI 优先，底部候选列表单独接收翻页滚轮。基础摆放与真实物品事务未改变；新操作尚待用户实机验收。
+
 | 项目 | 当前行为 |
 |---|---|
 | 主体 | 真实世界 `apocalypse_firstlight:gun_maintenance_bench`，宽 2 × 高 2 × 深 1；不复制场景或枪到 GUI |
 | 进入 | 右键任意合法 part，空手/普通物品/P9/BR51 均可；不自动放枪、不传送玩家 |
-| 相机 | `MaintenanceCameraController`；俯角 73°、稳定态 FOV 75°；smoothstep 进入 0.22 秒、退出 0.16 秒，不写玩家位置/头部方向 |
+| 相机 | `MaintenanceCameraController`；俯角73°、固定镜头位置；默认FOV75°，仅允许有界FOV缩放（0.60–2.50倍）、无旋转/平移；smoothstep 进入 0.22 秒、退出 0.16 秒，不写玩家位置/头部方向 |
 | 坐标 | NORTH 本地维护垫中心 `(1.0375,1.03875,0.45625)`；目标高于垫中心 0.04；镜头比目标高 0.98、向前 `0.98/tan(73°)`；统一绕根格中心旋转支持四向 |
 | 叠加层 | 透明 `GunMaintenanceScreen` 仅接管鼠标及底部 9 格真实快捷栏/简短提示；不继承箱子 Container Screen，无大板、维护垫副本或独立枪预览 |
 | 输入 | 维护期间阻止普通移动、跳跃、转头、攻击/使用、Native 开火/ADS/换弹、丢弃、滚轮换格；隐藏原 HUD、方块选框与自身手臂/人物 |
@@ -21,6 +25,8 @@
 | 视觉配置 | `MaintenanceViewProfile` 集中控制；P9 scale 0.55、Y 偏移 0.045，BR51 scale 0.29、Y 偏移 0.045；均 Y −90°、Z −90°，枪管平行维护垫长边；原枪数据不变 |
 | 护垫 | 删除黑色 mat_dark_part 与白色 mat_small_component；源/完整 Java/分片/可选 Geo 同步，447 cubes；护垫、台钳、零件盒与贴图不变 |
 | 拆除/防复制 | 任意 part 拆除先清槽再单次掉枪；工作台仍钻石级镐正确掉落；取放服务器线程串行执行，重复/失效请求拒绝 |
+
+2026-09-27 手部隐藏补漏：MaintenanceModeEvents在HIGHEST优先级取消维护期间的RenderHandEvent，覆盖Oculus直接进入ItemInHandRenderer的路径以及原版双手/空手/持物；原GameRenderer拦截保留。退出页面后恢复普通手部。该补漏未做本轮实机验收。
 
 ## Return Interaction V2.1
 

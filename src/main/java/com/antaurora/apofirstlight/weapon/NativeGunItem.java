@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.weapon;
 public interface NativeGunItem extends software.bernie.geckolib.animatable.GeoItem {
     String ACTION_CONTROLLER = "action";
     NativeGunDefinition definition();
+    /** Field inspection and maintenance are opt-out, independent of attachment slots. */
+    default net.minecraft.network.chat.Component inspectionRefusalReason() { return null; }
     /** Null selects the generic no-animation fallback. */
     default String animationAsset() { return null; }
     /** Optional presentation capability; no substitute animation for unsupported guns. */

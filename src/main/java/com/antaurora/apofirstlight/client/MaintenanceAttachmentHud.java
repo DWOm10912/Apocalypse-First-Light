@@ -43,6 +43,12 @@ public final class MaintenanceAttachmentHud {
     private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";});}
     private Component installed(NativeAttachment.Slot slot){var item=NativeAttachments.stored(gun(),slot);return item.isEmpty()?text("none"):item.getHoverName();}
     public boolean selecting(){return selection;}
+    /** Maintenance viewport input must yield to modal candidates, transactions and context panels. */
+    public boolean blocksInspection(double x,double y){
+        return inspectionModal()||(locked!=null&&inside(x,y,hx,hy,140,65))||hit(x,y)!=null;
+    }
+    public boolean inspectionModal(){return selection||pending||afterPress!=null;}
+    public boolean candidateListHit(double x,double y){return selection&&inside(x,y,hotbarX(),hotbarY()-28,180,48);}
     public static int contextX(double anchorX,int width){return Math.max(4,Math.min(width-144,(int)anchorX+(anchorX<width/2d?-164:24)));}
     public void tick(){
         if(afterPress!=null&&System.nanoTime()>=pressedUntil){var action=afterPress;afterPress=null;action.run();}

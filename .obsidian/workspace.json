@@ -190,17 +190,19 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/level16274238565395203962.dat",
+    "run/saves/新的世界 (1)/level10520442311691464585.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-4818519962075675990.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
+    "run/logs/debug-1.log",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-10274141274283960154.dat",
+    "run/saves/新的世界 (1)/level5504518245021817583.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc",
-    "run/afl_authoring_bridge/session.json",
-    "run/saves/新的世界 (1)/level16379299203406643543.dat",
-    "run/config/xaero/lib/common.cfg.temp.backup0",
-    "run/config/xaero/lib/common.cfg.temp",
+    "build/resources/main/assets/apocalypse_firstlight/textures/item/p9_01_v2_native_n.png",
+    "docs/native_guns/gun_maintenance_inspection_view_v1.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/pistol_suppressor_01_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/pistol_suppressor_01_n.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/item/pistol_suppressor_01_n.png",
@@ -210,7 +212,6 @@
     "src/main/blockbench/textures/pistol_suppressor_01.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/p9_01_v2_native_s.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/gui/radiation_symbol.png",
     "docs/native_guns/native_gun_inventory_presentation_v1.md",
     "docs/native_guns/p9_01_v2_pure_mesh_v1.md",
     "docs/项目内容/01 - 设计/武器/枪械.md",
@@ -234,7 +235,6 @@
     "docs/worldgen/highway_v2_sea_bridge_v1_1a.md",
     "docs/authoring/afl_industrial_palette_v1.md",
     "docs/worldgen/highway_v2_sea_bridge_v1.md",
-    "docs/worldgen/highway_v2_branch_junction_turn_ramp_v1.md",
-    "docs/worldgen/highway_v2_route_cost_fix.md"
+    "docs/worldgen/highway_v2_branch_junction_turn_ramp_v1.md"
   ]
 }

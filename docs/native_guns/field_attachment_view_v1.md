@@ -1,10 +1,16 @@
 # Field Attachment View V1
 
+2026-09-27 入口修正：Field 现有非交互区左拖 Orbit、中拖 Pan、viewport 滚轮 Zoom、R 平滑复位。维护台枪械和镜头位置/方向固定，只允许FOV Zoom/Reset，禁止Orbit/Pan，并隐藏手臂；野外完整控制不变。详见 [Inspection Scope Correction](gun_maintenance_inspection_view_v1.md)。本次未运行客户端，编译结果见交付报告。
+
 状态：代码已实现；V1.0.2 基础 HUD 清理的 `compileJava --offline` 已通过，随后按用户实机反馈追加的“隐藏全部原版状态 HUD”未重新编译或实机验证。视觉、声音、真实鼠标输入、多人及 Shader 验收由用户手动完成。未新增动画、模型、音效或修理系统。
 
 ## 操作与边界
 
-默认 Z（Controls 可重绑）进入第一人称即时配件改装；再次按绑定键或 Esc 平滑退出。V 保持 Inspect，R 保持 Reload，B 保持 Fire Mode；旧 SightExchange 快捷安装继续为空操作。必须存活、非旁观、第一人称、主手为允许改装且有受支持槽位的 AFL Native Gun、没有其他 Screen、没有正在检视/换弹/装备/射击等动作。C.A.T. 显示既有拒绝提示。
+2026-09-27 拖拽连续性修正：只在鼠标按下时让附件 HUD/热点优先处理。已经从非交互区开始的左键 Orbit、中键 Pan 会保持拖拽，经过枪械轮廓、配件热点、Context 面板或 viewport 边缘不会停止，也不会因经过热点触发配件点击。松开、关闭、resize、Reset、目标/资源变化或进入配件选择/操作时仍取消。滚轮的 HUD 优先级不变；未进行实机鼠标验收。
+
+默认 Z（Controls 可重绑）进入第一人称野外检查；再次按绑定键或 Esc 平滑退出。页面外 V 保持 Inspect、R 保持 Reload、B 保持 Fire Mode；Field 内 R 用于复位视角；旧 SightExchange 快捷安装继续为空操作。必须存活、非旁观、第一人称、主手为单件且未被明确禁止检查的 Native Gun、没有其他 Screen、没有正在检视/换弹/装备/射击等动作；保留有效 GeoItem ID 检查。无配件槽也允许进入和持续查看，不再以槽位数量或 registry namespace 作为准入门槛。C.A.T. 显示既有拒绝提示。
+
+2026-09-27 默认准入：`NativeGunItem.inspectionRefusalReason()` 默认返回 `null`，表示允许野外检查与维护台使用；`CatNativeGunItem` 显式返回拒绝文案。新增枪械无需加入白名单；需要强制禁止时覆盖该方法。`AttachmentModificationPolicy.allowed` 供客户端与服务端共同使用。此变更完成代码检查，未运行客户端或 GameTest，实际准入及构图待用户验证。
 
 Field 使用当前真实主手 ItemStack 和现有 renderer。ENTERING/OPEN/EXITING 期间隐藏玩家双臂、跳过第一人称 sway/recoil/ADS、屏蔽 bob；关闭后恢复。透明非暂停 Screen 显示鼠标，阻断普通视角及快捷栏/丢弃/背包输入；背景世界继续运行。死亡、换维度、换枪/槽、旁观、第三人称、政策失效或 Screen 被替换时取消并关闭；Z/Esc 正常退出保留过渡动画。镜像使用玩家实际主手侧，不支持副手枪。
 
@@ -17,13 +23,13 @@ V1.0.2 在同一 ENTERING/OPEN/EXITING 生命周期内按帧抑制 Vanilla CROSS
 Java 路径均相对于 src/main/java/com/antaurora/apofirstlight/。
 
 - weapon/client/FieldAttachmentViewState：CLOSED/ENTERING/OPEN/EXITING、独立 NativeAdsProgress、进入时 level/player/slot/GeoItem ID/stack snapshot、取消原因；selected slot/pending 由同一 Screen 的共享 HUD 持有并经 state accessor 暴露。
-- client/FieldAttachmentScreen：透明非暂停 Screen；普通鼠标与键盘事件；调用同一 MaintenanceAttachmentHud，无第二套候选 UI。
-- weapon/client/FieldAttachmentTransform：在 `ConfiguredGunFirstPerson` 的 renderStatic 前作用于同一父 PoseStack，P9 也走该通用入口。以既有 ADS calibration 的 HIP 逆矩阵求展示校正，但使用独立 profile 和 progress；P9 的 composition 值仍来自其枪械定义。
+- client/FieldAttachmentScreen：透明非暂停 Screen，持有 GunInspectionController(true)；原附件交互未消费的输入才用于 Orbit/Zoom/Pan/Reset；共用 MaintenanceAttachmentHud，无第二套候选 UI。
+- weapon/client/FieldAttachmentTransform：在 `ConfiguredGunFirstPerson` 的 renderStatic 前作用于同一父 PoseStack，P9 也走该通用入口。在原校正前额外应用 camera-space inspection root；以既有 ADS calibration 的 HIP 逆矩阵求展示校正，但使用独立 profile 和 progress；P9 的 composition 值仍来自其枪械定义。
 - weapon/client/FieldAttachmentViewProfile：独立资源 profile，进入时读取；不复用 MaintenanceViewProfile。
 - weapon/client/FieldAttachmentHotspots：在 `NativeAnimatedWeaponRenderer` 的递归绘制中，仅匹配三个受支持槽位的 anchor；应用该帧骨骼 pose、pivot 与真实第一人称 projection，转换为 GUI-scaled 点。每帧清空，尺寸实时读取；无第二次模型树遍历或 mesh picking。
 - weapon/AttachmentHotspotDefinition：slot、preferred/fallback anchor、局部偏移；维护台的 interactionPoint 和 Field capture 共用。
 - client/AttachmentHudHost：gun/revision/projection/submit/action adapter。MaintenanceAttachmentHud 的既有维护台构造器继续提供 bench adapter；Field 提供 main-hand adapter。AttachmentCandidatePage、按钮、Context HUD、候选分页、音效和 pending UI 共用。
-- weapon/AttachmentModificationPolicy：共享 AFL Native Gun 与 C.A.T. 禁止规则。
+- weapon/AttachmentModificationPolicy：共享 Native Gun 默认准入与枪械显式拒绝规则；不依赖配件槽。
 - weapon/AttachmentInteractionCore：共享安装/拆卸/替换、源物品精确匹配、消耗、旧附件归还、弹匣容量与溢出弹药返还、库存快照/失败掉落回滚。
 - weapon/FieldAttachmentActionRequest / FieldAttachmentOperation：主手交易请求、单玩家 pending、序号防重放、51-tick deadline、每 tick 与提交前重验及显式取消。
 

@@ -27,6 +27,8 @@ public final class MaintenanceModeClientState {
         return leaving?exitWeight*(1-eased):eased;
     }
     public boolean ready(){return active()&&!leaving&&blend()>=1;}
+    public GunInspectionController inspection(){return owner.inspection();}
+    public void inspectionFrame(){if(active())owner.inspectionFrame();}
     public boolean leaving(){return leaving;}
     public boolean exitFinished(){return leaving&&blend()<=0;}
     public void beginExit(){if(!leaving){exitWeight=blend();leaving=true;transitionStart=System.nanoTime();}}
@@ -43,6 +45,7 @@ public final class MaintenanceModeClientState {
     public boolean valid(){var mc=Minecraft.getInstance();var b=bench();return b!=null&&mc.player!=null&&mc.level.dimension()==dimension&&b.stillValid(mc.player);}
     public Direction facing(){return bench().getBlockState().getValue(StaticWorkstationBlock.FACING);}
     public Vec3 cameraPosition(){return MaintenanceCameraController.world(target,facing(),MaintenanceCameraController.CAMERA);}
+    public double cameraFov(){return inspection().maintenanceFov();}
     public void exit(){
         if(owner==null)return;
         Minecraft.getInstance().options.setCameraType(originalCamera);

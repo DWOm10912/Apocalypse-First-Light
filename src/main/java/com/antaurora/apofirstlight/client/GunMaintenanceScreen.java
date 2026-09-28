@@ -14,17 +14,21 @@ import net.minecraft.world.entity.player.Inventory;
 public final class GunMaintenanceScreen extends Screen implements MenuAccess<GunMaintenanceMenu> {
     private final GunMaintenanceMenu menu;
     private int ticks;
-    private int catRefusalTicks;
+    private int refusalTicks;
+    private Component refusalReason;
     private final MaintenanceAttachmentHud attachments=new MaintenanceAttachmentHud(this);
+    private final GunInspectionController inspection=new GunInspectionController(false);
+    public GunInspectionController inspection(){return inspection;}
+    public void inspectionFrame(){inspection.frame(menu.synchronizedBench().getItem(0),System.nanoTime());}
     public void attachmentResult(int phase){attachments.result(phase);}
     public GunMaintenanceScreen(GunMaintenanceMenu menu,Inventory inventory,Component title){super(title);this.menu=menu;}
     @Override public GunMaintenanceMenu getMenu(){return menu;}
-    @Override protected void init(){MaintenanceModeClientState.INSTANCE.enter(this,menu.bench.getBlockPos());KeyMapping.releaseAll();}
+    @Override protected void init(){MaintenanceModeClientState.INSTANCE.enter(this,menu.bench.getBlockPos());inspection.resize(width,height);KeyMapping.releaseAll();}
     @Override public boolean isPauseScreen(){return false;}
     @Override public void tick(){
         var state=MaintenanceModeClientState.INSTANCE;
         if(state.exitFinished()){closeNow();return;}
-        if(catRefusalTicks>0)catRefusalTicks--;
+        if(refusalTicks>0)refusalTicks--;
         if(!state.leaving())attachments.tick();
         // Chunk/BE packets may follow the opening packet. No fake world preview while waiting.
         if(++ticks>10 && (!MaintenanceModeClientState.INSTANCE.valid()||minecraft.player==null||minecraft.player.containerMenu!=menu))closeNow();
@@ -32,13 +36,14 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     private void closeNow(){if(minecraft.player!=null)minecraft.player.closeContainer();else minecraft.setScreen(null);}
     @Override public void onClose(){
         if(MaintenanceModeClientState.INSTANCE.leaving())return;
+        inspection.cancelDrag();
         attachments.removed();
         // Cancel any pending server operation immediately, while retaining this input shield for the visual exit.
         if(minecraft.getConnection()!=null)minecraft.getConnection().send(new net.minecraft.network.protocol.game.ServerboundContainerClosePacket(menu.containerId));
         MaintenanceModeClientState.INSTANCE.beginExit();
     }
     private void clickSound(){minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),1f,.35f));}
-    @Override public void removed(){attachments.removed();MaintenanceModeClientState.INSTANCE.removed(this);KeyMapping.releaseAll();}
+    @Override public void removed(){inspection.cancelDrag();attachments.removed();MaintenanceModeClientState.INSTANCE.removed(this);KeyMapping.releaseAll();}
     public int hotbarX(){return (width-182)/2+1;}
     public int hotbarY(){return height-28;}
     public boolean gunHit(double x,double y){return MaintenanceGunPicking.hit(x,y,width,height);}
@@ -90,26 +95,48 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
         }
         var tooltip=returnTooltip(mouseX,mouseY);
         if(tooltip!=null)g.renderTooltip(font,tooltip,mouseX,mouseY);
-        else if(catRefusalTicks>0)g.drawCenteredString(font,Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused"),width/2,y-14,0xffffdddd);
+        else if(refusalTicks>0&&refusalReason!=null)g.drawCenteredString(font,refusalReason,width/2,y-14,0xffffdddd);
         else if(menu.bench.isEmpty())g.drawCenteredString(font,Component.translatable("screen.apocalypse_firstlight.maintenance_select"),width/2,y-14,0xffcccccc);
         attachments.render(g,mouseX,mouseY);
     }
     @Override public boolean mouseClicked(double x,double y,int button){
+        inspection.cancelDrag();
         if(!MaintenanceModeClientState.INSTANCE.ready())return true;
         if(attachments.click(x,y,button))return true;
+        if(inspection.inViewport(x,y)&&!attachments.blocksInspection(x,y)){
+            inspection.beginDrag(x,y,button);return true;
+        }
         if(button!=0)return true;
         if(y>=hotbarY()&&y<hotbarY()+20&&x>=hotbarX()&&x<hotbarX()+180){
             int slot=(int)(x-hotbarX())/20;
             if(slot==placeholderSlot()){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.RETURN_GUN);}
             else if(menu.bench.isEmpty()&&GunMaintenanceBenchBlockEntity.accepts(menu.slots.get(slot).getItem())){
                 clickSound();
-                if(!com.antaurora.apofirstlight.weapon.AttachmentModificationPolicy.allowed(menu.slots.get(slot).getItem()))catRefusalTicks=60;
+                if(!com.antaurora.apofirstlight.weapon.AttachmentModificationPolicy.allowed(menu.slots.get(slot).getItem())){
+                    refusalReason=((com.antaurora.apofirstlight.weapon.NativeGunItem)menu.slots.get(slot).getItem().getItem()).inspectionRefusalReason();
+                    refusalTicks=60;
+                }
                 else minecraft.gameMode.handleInventoryButtonClick(menu.containerId,slot);
             }
         }else if(takeButtonVisible()&&inside(x,y,takeButtonX(),hotbarY())){clickSound();minecraft.gameMode.handleInventoryButtonClick(menu.containerId,GunMaintenanceMenu.TAKE_GUN);}
-        // World-space clicks intentionally do nothing in V2.1; reserved for attachment/repair targets.
+        // Single clicks on empty world-space areas still do not take or modify the gun.
         return true;
     }
-    @Override public boolean keyPressed(int key,int scan,int mods){if(key==256||minecraft.options.keyInventory.matches(key,scan)){if(!attachments.back())onClose();}return true;}
-    @Override public boolean mouseScrolled(double x,double y,double delta){if(MaintenanceModeClientState.INSTANCE.ready())attachments.scroll(delta);return true;}
+    @Override public boolean keyPressed(int key,int scan,int mods){
+        if(key==256||minecraft.options.keyInventory.matches(key,scan)){inspection.cancelDrag();if(!attachments.back())onClose();}
+        else if(key==org.lwjgl.glfw.GLFW.GLFW_KEY_R&&MaintenanceModeClientState.INSTANCE.ready()&&!attachments.inspectionModal())inspection.reset(System.nanoTime());
+        return true;
+    }
+    @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){
+        if(MaintenanceModeClientState.INSTANCE.ready()&&!attachments.blocksInspection(x,y))inspection.drag(x,y,button);
+        else inspection.cancelDrag();
+        return true;
+    }
+    @Override public boolean mouseReleased(double x,double y,int button){inspection.cancelDrag();return true;}
+    @Override public boolean mouseScrolled(double x,double y,double delta){
+        if(!MaintenanceModeClientState.INSTANCE.ready())return true;
+        if(attachments.candidateListHit(x,y))attachments.scroll(delta);
+        else if(inspection.inViewport(x,y)&&!attachments.blocksInspection(x,y))inspection.scroll(delta);
+        return true;
+    }
 }

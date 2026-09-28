@@ -12,7 +12,7 @@ public final class MaintenanceGunPicking {
         double yaw=Math.toRadians(MaintenanceCameraController.yaw(s.facing())),pitch=Math.toRadians(MaintenanceCameraController.PITCH);
         var forward=new Vec3(-Math.sin(yaw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
         var right=new Vec3(-Math.cos(yaw),0,-Math.sin(yaw));var up=right.cross(forward);
-        double tangent=Math.tan(Math.toRadians(MaintenanceCameraController.FOV/2));
+        double tangent=Math.tan(Math.toRadians(s.cameraFov()/2));
         var end=origin.add(forward.add(right.scale((2*mouseX/width-1)*(double)width/height*tangent))
                 .add(up.scale((1-2*mouseY/height)*tangent)).normalize().scale(5));
         var p=new PoseStack();var pos=s.bench().getBlockPos();p.translate(pos.getX(),pos.getY(),pos.getZ());

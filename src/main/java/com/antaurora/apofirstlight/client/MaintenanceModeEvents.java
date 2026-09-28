@@ -8,6 +8,13 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid="apocalypse_firstlight",value=Dist.CLIENT)
 public final class MaintenanceModeEvents {
+    // Oculus calls ItemInHandRenderer directly, bypassing GameRenderer.renderItemInHand.
+    // Both vanilla and that shader path still dispatch this Forge hook for each hand.
+    @SubscribeEvent(priority=net.minecraftforge.eventbus.api.EventPriority.HIGHEST)
+    public static void hands(RenderHandEvent e){if(MaintenanceModeClientState.INSTANCE.active())e.setCanceled(true);}
+    @SubscribeEvent public static void inspection(net.minecraftforge.event.TickEvent.RenderTickEvent e){
+        if(e.phase==net.minecraftforge.event.TickEvent.Phase.START)MaintenanceModeClientState.INSTANCE.inspectionFrame();
+    }
     @SubscribeEvent public static void hud(RenderGuiEvent.Pre e){if(MaintenanceModeClientState.INSTANCE.active())e.setCanceled(true);}
     @SubscribeEvent public static void outline(RenderHighlightEvent.Block e){if(MaintenanceModeClientState.INSTANCE.active())e.setCanceled(true);}
     @SubscribeEvent public static void input(MovementInputUpdateEvent e){

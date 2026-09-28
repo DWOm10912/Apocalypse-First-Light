@@ -19,13 +19,13 @@ public final class MaintenanceHotspots {
     }
     public static Point projectWorld(Vec3 world,int width,int height){
         var s=MaintenanceModeClientState.INSTANCE;
-        // Exact basis of the fixed maintenance camera (no player bob/FOV), in GUI-scaled coordinates.
+        // Fixed position/orientation, zoomed FOV; model and attachment anchors stay on the bench.
         double yaw=Math.toRadians(MaintenanceCameraController.yaw(s.facing())),pitch=Math.toRadians(MaintenanceCameraController.PITCH);
         var forward=new Vec3(-Math.sin(yaw)*Math.cos(pitch),-Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch));
         var right=new Vec3(-Math.cos(yaw),0,-Math.sin(yaw));var up=right.cross(forward);
         var delta=world.subtract(s.cameraPosition());double depth=delta.dot(forward);
         if(depth<=.01)return null;
-        double focal=height/(2*Math.tan(Math.toRadians(MaintenanceCameraController.FOV/2)));
+        double focal=height/(2*Math.tan(Math.toRadians(s.cameraFov()/2)));
         return new Point(width/2d+delta.dot(right)*focal/depth,height/2d-delta.dot(up)*focal/depth);
     }
 }

@@ -29,16 +29,15 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
     public UUID originPlayerUUID(){return originPlayerUUID;}
     public GunMaintenanceBenchBlockEntity(BlockPos pos, BlockState state) { super(AflBlockEntities.GUN_MAINTENANCE_BENCH.get(),pos,state); }
     public static boolean accepts(ItemStack stack) {
-        var id=net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
-        return stack.getCount()==1 && stack.getItem() instanceof NativeGunItem
-                && id!=null && id.getNamespace().equals("apocalypse_firstlight");
+        // Type check for persisted/synchronized contents too; refusal must not erase a stored gun.
+        return stack.getCount()==1 && stack.getItem() instanceof NativeGunItem;
     }
     public boolean insertFrom(Player player,int slot) {
         if(level==null || level.isClientSide || !stillValid(player) || slot<0 || slot>8 || !isEmpty())return false;
         var stack=player.getInventory().getItem(slot);
         if(!accepts(stack))return false;
         if(!com.antaurora.apofirstlight.weapon.AttachmentModificationPolicy.allowed(stack)){
-            player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.cat.maintenance_refused"),true);
+            player.displayClientMessage(((NativeGunItem)stack.getItem()).inspectionRefusalReason(),true);
             return false;
         }
         maintenanceGunSlot=player.getInventory().removeItemNoUpdate(slot);
@@ -65,7 +64,7 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
     @Override public int getMaxStackSize(){return 1;}
     @Override public boolean isEmpty(){return maintenanceGunSlot.isEmpty();}
     @Override public ItemStack getItem(int slot){return slot==0?maintenanceGunSlot:ItemStack.EMPTY;}
-    @Override public boolean canPlaceItem(int slot,ItemStack stack){return slot==0 && accepts(stack);}
+    @Override public boolean canPlaceItem(int slot,ItemStack stack){return slot==0 && com.antaurora.apofirstlight.weapon.AttachmentModificationPolicy.allowed(stack);}
     @Override public ItemStack removeItem(int slot,int count){return count>0?removeItemNoUpdate(slot):ItemStack.EMPTY;}
     @Override public ItemStack removeItemNoUpdate(int slot){
         if(slot!=0)return ItemStack.EMPTY;

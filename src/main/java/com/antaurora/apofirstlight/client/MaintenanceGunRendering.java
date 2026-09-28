@@ -122,10 +122,13 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         if(model==null)return;
         var bones=bones(stack,model);
         pose.pushPose();transform(stack,pose);
-        var type=RenderType.entityCutoutNoCull(asset(stack,"textures/item/",".png"));
+        var type=renderType(stack);
         var mesh=mesh(stack);
         for(var bone:bones)draw(bone,stack,pose,buffers,type,light,mesh);
         pose.popPose();
+    }
+    static RenderType renderType(ItemStack stack) {
+        return RenderType.entityCutoutNoCull(asset(stack,"textures/item/",".png"));
     }
     private static GeoBone copy(GeoBone source,GeoBone parent,Map<String,float[]> rotations) {
         String n=source.getName();

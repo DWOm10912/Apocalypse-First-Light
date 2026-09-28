@@ -9,18 +9,29 @@ import org.joml.Vector3f;
 
 /** Parent correction, shared by both existing first-person render paths. */
 public final class FieldAttachmentTransform {
-    public static void apply(PoseStack pose,boolean right,float partial){
-        if(!FieldAttachmentViewState.isActive())return;
-        var stack=Minecraft.getInstance().player.getMainHandItem();
-        if(!(stack.getItem() instanceof NativeGunItem gun)||!FieldAttachmentViewState.matches(stack))return;
+    /** Full Field presentation in camera space, before inspection; also used by cached bounds. */
+    public static Matrix4f target(net.minecraft.world.item.ItemStack stack,boolean right){
+        if(!(stack.getItem() instanceof NativeGunItem gun))return new Matrix4f();
         var base=NativeAdsProfile.from(gun.definition().adsCalibration());
         var f=FieldAttachmentViewState.profile();
         var target=new Matrix4f().translation(f.x(),f.y(),f.z())
                 .rotate(new Quaternionf().rotationXYZ(rad(f.pitch()),rad(f.yaw()),rad(f.roll())))
                 .scale(base.scale()*f.scale()).translate(-f.centerX()/16,-f.centerY()/16,-f.centerZ()/16);
-        var correction=target.mul(base.hip().invert());
+        return right?target:new Matrix4f().scaling(-1,1,1).mul(target).scale(-1,1,1);
+    }
+    public static void apply(PoseStack pose,boolean right,float partial){
+        if(!FieldAttachmentViewState.isActive())return;
+        var stack=Minecraft.getInstance().player.getMainHandItem();
+        if(!(stack.getItem() instanceof NativeGunItem gun)||!FieldAttachmentViewState.matches(stack))return;
+        var base=NativeAdsProfile.from(gun.definition().adsCalibration());
+        var correction=target(stack,true).mul(base.hip().invert());
         if(!right)correction=new Matrix4f().scaling(-1,1,1).mul(correction).scale(-1,1,1);
         float p=FieldAttachmentViewState.progress(partial);
+        var inspection=FieldAttachmentViewState.inspection();
+        if(inspection!=null){
+            inspection.projection(com.mojang.blaze3d.systems.RenderSystem.getProjectionMatrix().m11());
+            inspection.apply(pose,p);
+        }
         var t=correction.getTranslation(new Vector3f());
         pose.translate(t.x*p,t.y*p,t.z*p);
         pose.mulPose(new Quaternionf().slerp(correction.getUnnormalizedRotation(new Quaternionf()),p));

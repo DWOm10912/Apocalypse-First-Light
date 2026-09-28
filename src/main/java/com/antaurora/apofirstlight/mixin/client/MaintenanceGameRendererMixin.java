@@ -13,7 +13,7 @@ public abstract class MaintenanceGameRendererMixin {
     @Inject(method="getFov",at=@At("RETURN"),cancellable=true)
     private void afl$fixedFov(Camera camera,float partial,boolean useSetting,CallbackInfoReturnable<Double> cir){
         var state=MaintenanceModeClientState.INSTANCE;
-        if(state.active())cir.setReturnValue(net.minecraft.util.Mth.lerp(state.blend(),cir.getReturnValue(),MaintenanceCameraController.FOV));
+        if(state.active())cir.setReturnValue(net.minecraft.util.Mth.lerp(state.blend(),cir.getReturnValue(),state.cameraFov()));
     }
     @Inject(method={"bobHurt","bobView"},at=@At("HEAD"),cancellable=true)
     private void afl$noBob(PoseStack pose,float partial,CallbackInfo ci){

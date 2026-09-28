@@ -1,5 +1,7 @@
 # Camera / Layout / Transition Polish V1
 
+2026-09-27 增量：[Inspection View V1](gun_maintenance_inspection_view_v1.md) 维护台枪械本体和镜头位置/朝向保持固定，仅FOV有界缩放/复位，禁止拖拽；完整 Orbit 仅属于野外 Field 页面。这里记录的默认相机位置、方向、75°默认FOV、光照及基础profile保留；实时FOV可缩放。维护期间通过Forge RenderHandEvent补充屏蔽Oculus手部路径；下文旧轮次实机证据不代表新 inspection controls 已通过实机验收。
+
 后续摆放规则：P9/BR51 及默认 profile 改为 Y/Z 均 −90°，与维护垫长边平行。静态基础枪体的纵向包围边界中点自动居中，按模型缓存；附件不参与计算，避免装卸时整枪移动。逐枪 scale/offset 保留，热点共用同一 transform。构建日志 `build/maintenance-parallel-build.log`；本次未做新的实机视觉验收。
 
 用户确认当前版本并要求结束，停止追加测试。
