@@ -129,18 +129,36 @@ public final class AflMeshLoader {
     }
 
     private static void validateQuad(float[][] data, int[] ids, double nx, double ny, double nz, int face) {
-        // Every consecutive triple must have the same outward normal: rejects concavity,
-        // self-intersection, repeated positions and warps. Exporter uses a tighter tolerance.
+        // Exporter owns authoring topology. This is a corruption check with a
+        // decimal (1e-10) + float-ULP error budget, not a second authoring classifier.
+        double error = 0, extent = 0;
+        for (int id : ids) for (int axis = 0; axis < 3; axis++)
+            error = Math.max(error, Math.ulp(data[id][axis]) * 0.5 + 5e-11);
+        for (int a : ids) for (int b : ids) {
+            double x = (double)data[a][0] - data[b][0], y = (double)data[a][1] - data[b][1], z = (double)data[a][2] - data[b][2];
+            extent = Math.max(extent, Math.sqrt(x*x+y*y+z*z));
+        }
+        double edgeError = 2 * Math.sqrt(3) * error;
+        double[] errors = new double[4], deviations = new double[4];
         for (int i = 0; i < 4; i++) {
             float[] a = data[ids[i]], b = data[ids[(i + 1) % 4]], c = data[ids[(i + 2) % 4]];
-            double ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
-            double vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+            double ux = (double)b[0] - a[0], uy = (double)b[1] - a[1], uz = (double)b[2] - a[2];
+            double vx = (double)c[0] - a[0], vy = (double)c[1] - a[1], vz = (double)c[2] - a[2];
             double x = uy * vz - uz * vy, y = uz * vx - ux * vz, z = ux * vy - uy * vx;
             double length = Math.sqrt(x*x + y*y + z*z);
             require(Double.isFinite(length) && length > 1e-10, "face[" + face + "] degenerate quad");
             double dx = x/length-nx, dy = y/length-ny, dz = z/length-nz;
-            require(dx*dx + dy*dy + dz*dz <= 4e-10, "face[" + face + "] quad must be convex and planar");
+            require((x*nx+y*ny+z*nz)>0, "face[" + face + "] quad must be convex and planar");
+            errors[i] = 2 * (edgeError * (Math.sqrt(ux*ux+uy*uy+uz*uz)
+                    + Math.sqrt(vx*vx+vy*vy+vz*vz)) + edgeError*edgeError) / length;
+            deviations[i] = Math.sqrt(dx*dx+dy*dy+dz*dz);
         }
+        for (int i=0;i<4;i++) require(deviations[i] <= Math.min(0.00202, 2e-5+errors[0]+errors[i]),
+                "face[" + face + "] quad must be convex and planar");
+        float[] a=data[ids[0]], d=data[ids[3]];
+        double distance=Math.abs(((double)d[0]-a[0])*nx+((double)d[1]-a[1])*ny+((double)d[2]-a[2])*nz);
+        require(distance <= extent*(2e-5+errors[0])+edgeError,
+                "face[" + face + "] quad must be convex and planar");
     }
 
     private static void keys(JsonObject object, Set<String> allowed, String where) {

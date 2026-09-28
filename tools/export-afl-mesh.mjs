@@ -45,6 +45,74 @@ export function preservedQuad(vertices, triangles) {
     return order;
 }
 
+// V2.1: source precision is authoritative. Never infer a lost authoring plane
+// from a rounded bbmodel. Recovery below is ONLY for our own decimal/float bake.
+export function classifyQuad(source, serialized, triangles) {
+    const reject=reason=>({order:null,reason});
+    if(source.length!==4) return reject(source.length>4?'TRIANGULATED_NGON':'SOURCE_TRIANGLE');
+    const order=[...triangles[0],[0,1,2,3].find(i=>!triangles[0].includes(i))];
+    const v=order.map(i=>source[i]),p=v.map(x=>x.slice(0,3));
+    const unit=a=>{const n=length(a);return n>1e-12?a.map(x=>x/n):null;};
+    const normals=p.map((a,i)=>unit(cross(sub(p[(i+1)%4],a),sub(p[(i+2)%4],a))));
+    if(normals.some(n=>!n)) return reject('TRIANGULATED_DEGENERATE');
+    if(normals.some(n=>dot(n,normals[0])<=0)) return reject('TRIANGULATED_CONCAVE_OR_SELF_INTERSECT');
+    const extent=Math.max(...p.flatMap(a=>p.map(b=>length(sub(a,b)))));
+    const angle=Math.max(...normals.map(n=>length(sub(n,normals[0]))));
+    const distance=Math.abs(dot(sub(p[3],p[0]),normals[0]));
+    if(angle>1e-5 || distance>extent*1e-5) return reject('TRIANGULATED_NON_PLANAR');
+    const basis=([a,b,c])=>{
+        const e=sub(b.slice(0,3),a.slice(0,3)),f=sub(c.slice(0,3),a.slice(0,3));
+        const u=b[3]-a[3],v=b[4]-a[4],s=c[3]-a[3],t=c[4]-a[4],det=u*t-s*v;
+        if(Math.abs(det)<1e-12) return null;
+        return {det,t:e.map((x,i)=>(x*t-f[i]*v)/det),b:e.map((x,i)=>(f[i]*u-x*s)/det)};
+    };
+    const a=basis([v[0],v[1],v[2]]),b=basis([v[2],v[3],v[0]]);
+    if(!a||!b||Math.sign(a.det)!==Math.sign(b.det)) return reject('TRIANGULATED_UV_UNSAFE');
+    // Compare full derivatives, not merely their normalized directions: protects
+    // affine interpolation and rejects equal-direction / different-scale UVs.
+    if(['t','b'].some(k=>length(sub(a[k],b[k]))>1e-5*Math.max(length(a[k]),length(b[k]))))
+        return reject('TRIANGULATED_UV_UNSAFE');
+    if(preservedQuad(serialized,triangles)) return {order,reason:'QUAD_PRESERVED_DIRECT'};
+    // Newly recovered faces must be planar in available source precision. A
+    // small genuine warp (including one already rounded into the source) is NOT evidence.
+    if(angle>1e-10||distance>Math.max(1e-14,extent*1e-12)) return reject('TRIANGULATED_NON_PLANAR');
+    const rounded=order.map(i=>serialized[i].map(Math.fround)),rp=rounded.map(x=>x.slice(0,3));
+    const error=Math.max(...v.flatMap((x,i)=>x.slice(0,3).map((n,j)=>Math.abs(n-rp[i][j]))));
+    const rn=rp.map((a,i)=>unit(cross(sub(rp[(i+1)%4],a),sub(rp[(i+2)%4],a))));
+    if(rn.some(n=>!n||dot(n,rn[0])<=0)) return reject('TRIANGULATED_NORMAL_UNSAFE');
+    for(let i=0;i<4;i++) {
+        const e=sub(p[(i+1)%4],p[i]),f=sub(p[(i+2)%4],p[i]);
+        // Each edge error <= 2 sqrt(3) e; cross-product error <=
+        // edgeError*(|edge1|+|edge2|)+edgeError^2. Unit-vector error <= 2*d/area.
+        const de=2*Math.sqrt(3)*error;
+        const bound=2*(de*(length(e)+length(f))+de*de)/length(cross(e,f))+1e-10;
+        if(length(sub(rn[i],normals[i]))>Math.min(1e-3,bound)) return reject('TRIANGULATED_NORMAL_UNSAFE');
+    }
+    if(Math.abs(dot(sub(rp[3],rp[0]),normals[0]))>2*Math.sqrt(3)*error+extent*1e-12)
+        return reject('TRIANGULATED_NON_PLANAR');
+    const ra=basis([rounded[0],rounded[1],rounded[2]]),rb=basis([rounded[2],rounded[3],rounded[0]]);
+    if(!ra||!rb||Math.sign(ra.det)!==Math.sign(a.det)||Math.sign(rb.det)!==Math.sign(b.det))
+        return reject('TRIANGULATED_TANGENT_UNSAFE');
+    // Both old triangles and the native quad must retain their source tangent
+    // orientation/handedness after float conversion; cap ill-conditioned UVs.
+    const tangentBound=(indices,k)=>{
+        const [x,y,z]=indices.map(i=>v[i]),[rx,ry,rz]=indices.map(i=>rounded[i]);
+        const e=sub(y.slice(0,3),x.slice(0,3)),f=sub(z.slice(0,3),x.slice(0,3));
+        const de=length(sub(sub(ry.slice(0,3),rx.slice(0,3)),e));
+        const df=length(sub(sub(rz.slice(0,3),rx.slice(0,3)),f));
+        const axis=k==='t'?4:3,u=y[axis]-x[axis],w=z[axis]-x[axis];
+        const du=Math.abs(ry[axis]-rx[axis]-u),dw=Math.abs(rz[axis]-rx[axis]-w);
+        // det magnitude cancels when normalizing; handedness checked above.
+        const numerator=sub(e.map(n=>n*w),f.map(n=>n*u));
+        return Math.min(1e-3,2*(de*Math.abs(w)+length(e)*dw+de*dw+
+            df*Math.abs(u)+length(f)*du+df*du)/length(numerator)+1e-10);
+    };
+    if(['t','b'].some(k=>!unit(ra[k])||!unit(rb[k])||
+        length(sub(unit(ra[k]),unit(a[k])))>tangentBound([0,1,2],k)||
+        length(sub(unit(rb[k]),unit(b[k])))>tangentBound([2,3,0],k))) return reject('TRIANGULATED_TANGENT_UNSAFE');
+    return {order,reason:'QUAD_RECOVERED_QUANTIZATION'};
+}
+
 export function meshCounts(model) {
     let quads=0,triangles=0;
     for(const part of model.parts) for(const face of part.faces??part.triangles) {
@@ -126,7 +194,7 @@ function rejectFeatures(value, where) {
     }
 }
 
-export function convert(source, geometry, mapping={}, sourceName='bbmodel', formatVersion=1) {
+export function convert(source, geometry, mapping={}, sourceName='bbmodel', formatVersion=1, diagnostics=null) {
     need(formatVersion===1||formatVersion===2,'unsupported format version');
     need(source?.meta?.model_format==='free',`${sourceName}: V1 requires Free Model`);
     rejectFeatures(source,sourceName);
@@ -203,9 +271,12 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel', form
                     const points=face.vertices.map(key=>vec(element.vertices[key],3,`${label} invalid vertex ${key}`));
                     const uv=face.vertices.map(key=>vec(face.uv?.[key],2,`${label} missing UV ${key}`));
                     const tris=triangulate(points,label),base=vertices.length;
+                    const precise=points.map((p,i)=>[
+                        ...sub(add(origin,rotate(p,rotation,'XYZ')),pivot).map(n=>n/16),
+                        ...uv[i].map((n,j)=>n/size[j])]);
                     points.forEach((p,i)=>{
-                        const local=sub(add(origin,rotate(p,rotation,'XYZ')),pivot).map(n=>clean(n/16));
-                        const tex=uv[i].map((n,j)=>clean(n/size[j]));
+                        const local=precise[i].slice(0,3).map(clean);
+                        const tex=precise[i].slice(3).map(clean);
                         need(local.every(n=>Math.abs(n)<=256)&&tex.every(n=>n>=0&&n<=1),`${label}: position/UV outside V1 range`);
                         vertices.push([...local,...tex]);
                     });
@@ -215,7 +286,9 @@ export function convert(source, geometry, mapping={}, sourceName='bbmodel', form
                         triangles.push(ids);
                     }
                     if(formatVersion===2) {
-                        const quad=preservedQuad(vertices.slice(base),tris);
+                        const result=classifyQuad(precise,vertices.slice(base),tris);
+                        const quad=result.order;
+                        if(diagnostics) diagnostics[result.reason]=(diagnostics[result.reason]??0)+1;
                         faces.push(...(quad?[quad]:tris).map(face=>face.map(i=>base+i)));
                     }
                 }
@@ -265,8 +338,8 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
     try {
         const args=process.argv.slice(2),options={};
         for(let i=0;i<args.length;i++) {
-            const key=args[i];need(['--input','--geometry','--mapping','--output','--format','--compact','--check'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
-            options[key]=['--check','--compact'].includes(key)?true:args[++i];
+            const key=args[i];need(['--input','--geometry','--mapping','--output','--format','--compact','--check','--diagnostics'].includes(key)&&!(key in options),`unknown/duplicate argument ${key}`);
+            options[key]=['--check','--compact','--diagnostics'].includes(key)?true:args[++i];
             need(options[key] && (options[key]===true || !options[key].startsWith('--')),`missing value for ${key}`);
         }
         need(options['--input']&&options['--geometry']&&options['--output'],
@@ -274,7 +347,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
         const input=path.resolve(options['--input']),geometry=path.resolve(options['--geometry']),output=path.resolve(options['--output']);
         need(output.endsWith('.aflmesh.json')&&output!==input&&output!==geometry,'output must be a separate .aflmesh.json');
         const format=options['--format']??'v1';need(['v1','v2'].includes(format),'--format must be v1 or v2');
-        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input,format==='v2'?2:1);
+        const diagnostics=options['--diagnostics']?{}:null;
+        const model=convert(read(input),read(geometry),options['--mapping']?read(options['--mapping']):{},input,format==='v2'?2:1,diagnostics);
+        if(diagnostics) console.log(JSON.stringify(diagnostics));
         const text=(options['--compact']?serializeCompact:serialize)(model);
         need(text.length<=4*1024*1024,'sidecar exceeds runtime 4 MiB limit');
         if(options['--check']) need(fs.readFileSync(output,'utf8')===text,`stale sidecar ${output}`);

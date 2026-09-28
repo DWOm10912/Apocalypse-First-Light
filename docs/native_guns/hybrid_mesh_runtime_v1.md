@@ -1,6 +1,6 @@
 # AFL Hybrid Mesh Runtime — V1 / V2
 
-2026-09-27。V2 状态：Quad 保留与 CPU 提交优化已实现；离线数据/坐标/顶点提交检查通过，V2 图形画面、PBR 和 CPU 耗时待用户实机验收。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
+2026-09-27。V2.1 工具链已实现保守的量化感知 Quad 恢复，存储格式仍为 V2。用户反馈此前 V2 实机通过；V2.1 的离线检查通过，新一轮图形/PBR/CPU 验收仍待用户执行。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
 
 ## 范围与 opt-in
 
@@ -48,7 +48,53 @@ Loader 校验版本、固定坐标/UV/winding 标记、字段集合、唯一 par
 - 通用导出器默认仍为 V1，使用 `--format v2` 明确选择 V2；P9 专用 `tools/export-p9-01-v2-native.mjs` 默认导出 V2，避免后续正常导出覆盖本轮迁移。其它资产不批量迁移。
 - 单资产回退：对相同 source/geo 使用通用导出器 `--format v1`，覆盖该资产的 sidecar 即可；Runtime 保留 V1 支持，无需回滚整个 Runtime。
 
-转换器先运行原确定性三角化验证。只有凸平面 Quad 且两半的 UV tangent/bitangent 方向连续时，才保留 Quad。坐标与 UV 按 runtime float 精度判断，单位法线及单位 tangent/bitangent 的向量差上限为 `1e-5`；退化 UV 不保留 Quad。四角循环旋转到原 ear-clipping 第一组三角形的位置，使 Minecraft 的 `ABC + CDA` 与原 V1 **使用同一条对角线**。凹 Quad、扭曲 Quad、UV 切线不连续的 Quad、真实 Triangle 和 n-gon 保留原 V1 三角化结果；没有修改源文件或为了提高 Quad 比例放宽要求。
+V2.0 历史策略在坐标/UV 舍入及 float 转换后，以单位法线和单位 tangent/bitangent 向量差 `1e-5` 判断 Quad。V2.1 改为下节的高精度分类和误差传播验证。四角仍循环旋转到原 ear-clipping 第一组三角形，使 Minecraft 的 `ABC + CDA` 与 V1 **使用同一条对角线**。凹面、扭曲面和不安全 UV 保留原三角化结果；非法自交面继续报错。
+
+### V2.1 Quantization-Aware Safe Quad Recovery
+
+状态 **PARTIAL（安全恢复与兼容性通过，收益低于最初估算，实机待验收）**。这不是新的存储格式；`format_version: 2`、VertexFormat、RenderType、Triangle ABCC、renderer、Oculus、shadow skip 和 NativeGunRenderProfile 均未改。只重导正式 P9 与 Blackridge sidecar；其它 V1/V2 弹药和静态附件不迁移。
+
+审计链：bbmodel polygon → deterministic triangulation → element rotation / pivot bake → block units / normalized UV → 原先 `clean(toFixed(10))` → `Math.fround` → Quad 判定 → sidecar → Java float bake / Quad revalidation → cached parts → 原 renderer。源数据实际已包含最多 4–5 位小数，不能声称恢复了源文件丢失的作者精度。序列化 positions 和 UV 均为 10 位小数；Java 又转 float。旧 exporter 角度向量差阈值 `1e-5`，旧 loader `2e-5`（平方 `4e-10`），后者虽较宽仍没有 float ULP / 面尺度误差预算。误判不是全部来自 exporter 的 10 位舍入，float 转换、源文件已有扭曲及 UV 非仿射也各自存在。
+
+新 `classifyQuad` 在 decimal/float bake 前读取当前可用 double 数据，exporter 是 topology authority。已直接满足旧 float 检查的面，还须通过高精度平面/凸性/完整 UV 导数检查。新增恢复要求源法线向量差 ≤`1e-10` 且点到平面距离 ≤`max(1e-14, extent*1e-12)`；这是数值平面证据，不根据 4–5 位源坐标猜测理想平面。源中已存在的微小真实 warp 不进入恢复分支。
+
+量化预算逐面使用 **实际 decimal + float 转换误差** `e`：每条边误差 ≤`2√3 e`，cross-product 误差 ≤`edgeError*(|edge1|+|edge2|)+edgeError²`，单位法线误差 ≤`2*crossError/area`。同时检查点到原平面距离。切线使用 UV numerator 的位置/UV 扰动界，比较两条历史三角形各自的 tangent/bitangent 与源结果及 handedness。单位方向误差另设 `1e-3` 硬上限，**上限不能单独放行，必须满足逐面解析误差界**；病态 UV/退化面回退。不是把全局 epsilon 改成 0.06°。
+
+完整 UV 导数还比较大小（相对误差 `1e-5`），弥补旧版本只比单位方向的漏洞。不同 handedness、seam、非仿射 distortion 拒绝；整面连续镜像且 handedness 一致可以保留，不把合法镜像误判为 seam。绝不跨源 face 合并；硬边保留，当前 flat-only schema 对 smooth/per-corner normals 显式拒绝，不丢弃它们后继续导出。
+
+Java loader 保留 schema/finite/index/count/degenerate 校验。Quad corruption check 用每坐标 `0.5 float ULP + 5e-11`、边长和面积推导 normal budget，另检查凸性、正 winding、距离。兼容旧 V2 的 `2e-5` 基线并有 `0.00202` 双法线总偏差硬上限；不会重新用固定作者阈值把合理量化的 Quad 拒绝。loader 不重做 UV 作者决策。新旧生产 sidecar 已通过实际 Java loader。
+
+#### 当前整资产 benchmark（含隐藏 helper，非实机 Main FP）
+
+| 指标 | P9 before → V2.1 | Blackridge before → V2.1 |
+|---|---:|---:|
+| Triangle-equivalent | 8248 → 8248 | 4992 → 4992 |
+| Quad | 1225 → 1306 | 878 → 927 |
+| Triangle | 5798 → 5636 | 3236 → 3138 |
+| Submitted vertices estimate | 28092 → 27768 | 16456 → 16260 |
+| 净减少 | 1.15335% | 1.19105% |
+| 新恢复 Quad | 120 | 92 |
+| 旧 Quad 因完整 UV 安全检查退回 Triangle | 39 | 43 |
+| Sidecar bytes | 1378408 → 1376915 | 800068 → 799091 |
+
+默认可见主枪（排除 `reload_magazine` / `empty_old_mag`）：P9 Quad `987→1024`、Triangle `4890→4816`、triangle-equivalent `6864` 不变、vertices `23508→23360`（0.62957%）；Blackridge Quad `796→845`、Triangle `2908→2810`、triangle-equivalent `4500` 不变、vertices `14816→14620`（1.32289%）。P9 已含此前新增螺纹枪管；下方 V2.0 的 6384/21584 是历史资产值，不能与当前值混算性能收益。
+
+`--diagnostics` 可选输出，默认不增加诊断噪声：
+
+| reason | P9 | Blackridge |
+|---|---:|---:|
+| QUAD_PRESERVED_DIRECT | 1186 | 835 |
+| QUAD_RECOVERED_QUANTIZATION | 120 | 92 |
+| TRIANGULATED_NON_PLANAR | 1296 | 475 |
+| TRIANGULATED_UV_UNSAFE | 927 | 559 |
+| SOURCE_TRIANGLE | 1190 | 1070 |
+| CONCAVE_OR_SELF_INTERSECT / DEGENERATE / TANGENT_UNSAFE / NORMAL_UNSAFE / NGON | 0 | 0 |
+
+计数采用首个失败条件，不是互相独立的缺陷统计。triangulate 在非法自交输入处直接报错，不输出 sidecar。当前源 face 已经有的舍入误差、非仿射 UV 和真实 warp 没有为提高比例而放宽；因此不宣称回收约 1378 面或获得原估算降幅。
+
+验证命令：`node tools/verify-afl-mesh-v21.mjs`（只读，HEAD 作 before 基线，提交后重跑时 before 会自然改变）；`node tools/verify-afl-mesh.mjs --java-renderer`（使用项目 `.gradle-user` 的缓存，不启动客户端）。前者逐 part 比较全部原始 position/UV，逐面展开比对 V1 历史 diagonal/winding，因 vertices 完全不变，bounds 也不变；新恢复面的两个历史 float normal 最大差：P9 `7.67224e-6`、Blackridge `4.70010e-7`，单位 tangent/bitangent 最大差 `2.71487e-4` / `3.51001e-5`，handedness 一致。包括 A–J 对抗案例；实际 Java loader/renderer 校验 V1/unversioned/V2、全生产 sidecar、普通/镜像/非均匀缩放、normal/UV/light/overlay、hidden/zero scale 和真实 4/8 次提交，均已通过。
+
+没有修改 bbmodel、geo、animation、UV、Base Color、`_s`、`_n`、ammo 或 rig。仅允许最后运行一次 `./gradlew.bat compileJava --offline`，编译结果随交付报告；不运行 build/processResources/runClient/GameTest。离线 normal/tangent 误差检查不是 LabPBR 实测：用户需用 NativeGunRenderProfile 复测 **Sundial + P9、Sundial + Blackridge、Shader OFF + P9**，比较 quad/triangle/triangle-equivalent、vertices_per_frame、cpu_ms_per_frame，以及 normal map/highlight/reflection 与 V2.0 是否一致。未测 CPU/GPU/FPS，不声称显著帧率提升。
 
 ### 提交与 Oculus / Embeddium 审计
 
@@ -58,7 +104,7 @@ Loader 校验版本、固定坐标/UV/winding 标记、字段集合、唯一 par
 
 热路径原本没有逐顶点对象分配，pose/normal matrix 也已在循环外获取。本轮将矩阵系数及镜像 inverse-transpose 移到每次调用只计算一次；每 face 只变换一次 flat normal；Triangle 重复的第四角复用第三角的变换结果；parts 使用索引遍历，metrics 按 face 累计。未引入 VBO、GPU cache、OpenGL 或专用 Shader。隐藏骨骼、隐藏子树和零尺度 early skip 沿用原规则。
 
-### 首批静态提交预算（主枪默认可见部分）
+### V2.0 历史首批静态提交预算（当前值见上节）
 
 以下是导出/顶点捕获验证的**预期每次主枪绘制**，不是新的实机 CPU/FPS 测量。辅助弹匣 `reload_magazine`、`empty_old_mag` 不在默认可见预算内，换弹时 Profiler 会按实际提交统计。
 
