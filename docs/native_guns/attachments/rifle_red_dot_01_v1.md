@@ -31,7 +31,7 @@
 | Root / 发光子组 | `rifle_red_dot_root` / `reticle` |
 | 安装中心 | BR51 空 `sight_anchor`，位置 `[0,12.75,5.54688]`；BR51 Native Rig V2 起 parent 为 `gun_body`（原 `positioning2`，世界位置不变），`scope_pos` 已删除 |
 
-BR51 源模型中的隐藏参考红点仍保留且不导出；没有加入整枪带镜变体，也没有在 runtime 基础枪模中加入红点 cube。只新增空挂载锚点，枪身、手部、弹匣、消音器和动画不变。
+BR51 源模型中的隐藏参考红点（`sight` 组）在 BR51 V2 Pure Mesh（Phase 2，2026-09-28）中已从主枪源删除，可从 Git `38b6c66` 恢复；本附件资产与其贴图不受影响。没有加入整枪带镜变体，也没有在 runtime 基础枪模中加入红点 cube。只新增空挂载锚点，枪身、手部、弹匣、消音器和动画不变。
 
 ## 通用接入
 

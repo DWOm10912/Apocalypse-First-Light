@@ -2,6 +2,10 @@
 
 2026-09-27，已实现，**未实机验证**。离线逐帧校验通过。
 
+> 后续：2026-09-28 BR51 V2 Pure Mesh + PBR（Phase 2）已在本 Rig 上完成，见 `br51_01_v2_pure_mesh_pbr.md`。
+> - 几何已从 Cube 改为 Pure Mesh，下文中的 cube 数、贴图和“仅源 `sight` / `grip_default`”描述均为 Phase 1 时的状态。
+> - 骨骼、枢轴和动画不变。
+
 本轮只把 BR51 的作者原始 TaCZ 风格骨骼迁移到 AFL 当前 Native Rig 语义（与 P9 / Blackridge 同一世代）。枪械外形、比例、UV、贴图、战斗数据、ADS、后坐和动画风格全部冻结，几何仍是 Cube / GeckoLib。Pure Mesh 与 PBR 属于 Phase 2，本轮未开始。
 
 ## 工具与文件
@@ -9,8 +13,8 @@
 - 迁移工具：`tools/migrate-br51-native-rig-v2.mjs`。
   - 在 TaCZ 世代文件上执行迁移并写出。
   - 在已迁移的文件上，从 Git 原件（`BR51_RIG_BASE`，缺省 `HEAD`）重新推导并逐字节比对，只校验、不写入。
-- 主枪源：`src/main/blockbench/br51_01.bbmodel`（84 组 / 828 cube / 8 条动画）。
-- 运行时：`geo/br51_01.geo.json`（68 骨骼 / 642 cube）、`animations/br51_01.animation.json`（8 条）。
+- 主枪源：`src/main/blockbench/br51_01.bbmodel`（Phase 1 时为 84 组 / 828 cube / 8 条动画；Phase 2 起为 72 组 / 39 mesh 部件）。
+- 运行时：`geo/br51_01.geo.json`（68 骨骼；Phase 1 时带 642 cube，Phase 2 起只有骨骼，几何由 `meshes/br51_01.aflmesh.json` 提供）、`animations/br51_01.animation.json`（8 条）。
 - 扩容弹匣参考源（只做源资产剥离，未接 Runtime、未 Mesh 化）：
   - `src/main/blockbench/br51_extended_magazine.bbmodel`：原 `mag_extended_2` + `hu7`，24 cube，未来的 BR51 Extended Magazine。
   - `src/main/blockbench/br51_drum_magazine.bbmodel`：原 `mag_extended_3`，51 cube，未来的 BR51 Drum Magazine。
@@ -117,10 +121,11 @@ root
 ## 仍存在的兼容与 Phase 2 前置
 
 - **LEGACY_COMPAT**：`muzzle_pos`（裸枪枪口特效）；通用 Runtime 排除表中的 `additional_magazine`（BR51 已不再使用，HR55 等其他旧资产可能仍用，保留）。
-- **Phase 2 前必须解决**：
-  - 枪身几何组仍是作者原名（`br51_01_default`、`bone*`、`octagon*`、`qianguan`、`group*`），Pure Mesh 化时按部件重建，不在本轮改名。
-  - 仅源的 `sight`（旧红点）与 `grip_default` 仍留在主枪源里，Phase 2 决定删除或独立。
-  - 定义裸枪出口的 AFL 锚点，取代 `muzzle_pos`。
+- **Phase 2 前必须解决**（2026-09-28 状态）：
+  - 枪身几何组仍是作者原名（`br51_01_default`、`bone*`、`octagon*`、`qianguan`、`group*`）。Phase 2 已按组重建为同名 mesh 部件，但仍未改名。
+  - 仅源的 `sight`（旧红点）与 `grip_default`：Phase 2 已从主枪源删除，可从 `38b6c66` 恢复。
+  - 定义裸枪出口的 AFL 锚点，取代 `muzzle_pos`：仍未完成。
+  - 显示弹药（`bullet*`、`bullet_in_barrel`、`reload_bullet*`）：Phase 2 起为空骨骼，等 7.62 弹药重置后接动态弹药逻辑。
   - `empty_old_mag` 仍挂在枪体下（P9 在 root 下），这是为了保持动画精确而保留的差异，重做换弹动画时再统一。
   - 扩容匣与弹鼓的 Mesh 重建与接入是独立任务。
 - **已可彻底删除（本轮已删）**：`constraint`、`positioning2`、`muzzle_flash`、`scope_pos`、`laser_pos`、`grip_pos`、`stock_pos`、`positioning` 及子组、`view` 及子组、`mag_and_lefthand`、`magazine_bullet`、`additional_magazine`、`gun_and_righthand`、`shell`、`mag_extended_1/2/3`、`hu3`、`hu7`，以及孤立通道 `bolt2`、`charger`。

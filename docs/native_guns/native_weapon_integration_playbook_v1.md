@@ -248,7 +248,7 @@ ConfiguredNativeGunItem 自动创建 NativeAnimatedWeaponRenderer(Profile)；P9 
 
 runtime geometry identifier 当前分别为 geometry.p9_01_v2_native、geometry.br51_01。维护台按 ResourceLocation 读取 geo 文件，不按 identifier 查找，但 identifier 仍应与资产 ID 规范一致，避免工具/导出/诊断漂移。
 
-.bbmodel metadata 不是运行时真值：当前 P9 V2 源为 Free Model Pure Mesh，BR51 源为 bedrock，两者都以导出的 runtime geo/animation 为准。不能把某个 model_format 字符串当成通用硬要求。
+.bbmodel metadata 不是运行时真值：当前 P9 V2 与 BR51（V2 Pure Mesh，2026-09-28）源均为 Free Model Pure Mesh，都以导出的 runtime geo/animation/mesh sidecar 为准。不能把某个 model_format 字符串当成通用硬要求。
 
 4.4 Bone / Animation contract
 
