@@ -190,17 +190,18 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json~",
-    "run/saves/新的世界 (1)/level5446202680000568864.dat",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
+    "run/saves/新的世界 (1)/level17112624958108444603.dat",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.temp",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_-1.xwmc.temp",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
+    "docs/native_guns/br51_01_native_rig_v2.md",
     "docs/项目内容/02 - 制作清单.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/p9_01_extended_magazine_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/p9_01_extended_magazine_n.png",
@@ -234,7 +235,6 @@
     "docs/项目内容/01 - 设计/国家系统.md",
     "docs/项目内容/01 - 设计/制作与进度/蓝图.md",
     "docs/worldgen/highway_v2_sea_bridge_v1_1b.md",
-    "docs/worldgen/highway_v2_sea_bridge_v1_1a.md",
-    "docs/authoring/afl_industrial_palette_v1.md"
+    "docs/worldgen/highway_v2_sea_bridge_v1_1a.md"
   ]
 }

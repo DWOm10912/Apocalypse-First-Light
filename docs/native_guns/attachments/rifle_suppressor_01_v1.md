@@ -33,7 +33,7 @@
 ## Rendering and sound
 
 - Independent geo/texture: `assets/apocalypse_firstlight/geo/rifle_suppressor_01.geo.json` and `textures/item/rifle_suppressor_01.png`. Approved model and neutral BR51-derived palette are preserved.
-- Editable sources remain under `src/main/blockbench/`. Production BR51 gains only an empty `muzzle_anchor`, parent `positioning2`, at `[0,11.4375,-26.2]`. Original cubes and animations stay unchanged. This seat sleeves over the original flash hider.
+- Editable sources remain under `src/main/blockbench/`. Production BR51 gains only an empty `muzzle_anchor` at `[0,11.4375,-26.2]` (parent `gun_body` since BR51 Native Rig V2, formerly `positioning2`; world position unchanged). Original cubes and animations stay unchanged. This seat sleeves over the original flash hider.
 - Shared renderer mounts `rifle_suppressor_root`; accessory `muzzle_exit_anchor` is `[0,0,-11.55]`. Mounted exit is `[0,11.4375,-37.75]` before animation/render transforms.
 - Equipped guns capture muzzle visuals at the definition's mounting anchor plus accessory exit. Bare BR51 still uses its original `muzzle_pos` and barrel offset. Existing shotId snapshot/tracer and suppressed FX consume the resolved exit, without changing server hit authority.
 - Gun-defined `suppressed_fire_sound`: `apocalypse_firstlight:br51_01_suppressed`, mapped in sounds.json to `br51_01/suppressed.ogg`. Imported from user `E:/Download/br_51_suppressed.ogg`, converted from stereo to 48 kHz mono for positional playback; original untouched. Bare BR51 sound remains unchanged.

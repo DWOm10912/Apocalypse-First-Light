@@ -10,13 +10,15 @@
 | Runtime | `assets/apocalypse_firstlight/geo/br51_extended_magazine_35.geo.json`、`textures/item/br51_extended_magazine_35.png`、`models/item/br51_extended_magazine_35.json`，均位于 `src/main/resources/` |
 | Item | builtin/entity + 共用 NativeMagazineRendering.ItemRenderer，真实独立 3D 物品，武器与弹药创造标签页，堆叠 1 |
 | 安装基准 | 原 `mag_standard` / `mag_extended_2` 共用 pivot `[0,9.41883,4.52607]`；独立模型减去该 pivot，挂回原骨骼时还原 |
-| 模型替换 | 仅有效附件替换 `mag_standard` 和 `empty_old_mag_standard` 的整个几何子树，避免保留标准底板造成双重渲染 |
+| 模型替换 | 仅有效附件替换 `mag_standard`（枪内）、`reload_mag_standard`（换弹新匣）和 `empty_old_mag_standard`（空仓旧匣）的整个几何子树，避免保留标准底板造成双重渲染。三者枢轴相同；BR51 Native Rig V2 起枪内与换弹新匣拆成两份，见 [BR51 Native Rig V2](../br51_01_native_rig_v2.md) |
 | 动画 | 复用现有 `reload_tactical` / `reload_empty`；不改动画文件，不接入 xmag、mag1 或 mag3 |
 | 维护台 | 仅维护台装拆、更换；共用 Context HUD / 候选页 / 原版点击声 / 2.480 s 操作声 / 服务端 51 tick 后重验提交 |
 | 热点 | BR51 magazine_slot 指定 `hotspot_anchor=mag_standard`、`hotspot_y=-4`；P9 现为 magazine + `hotspot_offset [0,-4.14,1.82]`（原装弹匣底板中心） |
 | HUD / Tooltip | 所有枪统一单行 `当前装弹 \| 备弹`；枪械 Tooltip 不显示容量，附件 Tooltip 仅保留介绍；BR51 实际容量为标准 20 / 扩容 35 |
 
 ## 资产审计
+
+> 2026-09-27 BR51 Native Rig V2：`mag_extended_2` 已提取为参考源 `src/main/blockbench/br51_extended_magazine.bbmodel` 并从主枪源删除；下段描述的是迁移前的源文件状态。
 
 源组 UUID `46cc9283-b086-1a54-5f74-226d18d42f6f`，源文件中 export=false、visibility=false。与标准匣处于同一 `magazine` driver；正式 runtime 只有标准几何及 `additional_magazine` 下的 `empty_old_mag_standard` 副本，没有 mag2 内嵌几何。源文件当前只有 8 条正式动画，没有待恢复的 xmag 动画。没有单独的 mag2 reload 副本，本次让现有旧弹匣副本也消费同一个独立附件。
 

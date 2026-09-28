@@ -29,7 +29,7 @@
 | 独立贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01.png`；复制 BR51 原图，不重绘，保留 128×128 UV / 256×256 像素 |
 | 独立物品模型 | `src/main/resources/assets/apocalypse_firstlight/models/item/rifle_red_dot_01.json` |
 | Root / 发光子组 | `rifle_red_dot_root` / `reticle` |
-| 安装中心 | BR51 新增空 `sight_anchor`，parent `positioning2`，位置 `[0,12.75,5.54688]`；原 `scope_pos` 不变 |
+| 安装中心 | BR51 空 `sight_anchor`，位置 `[0,12.75,5.54688]`；BR51 Native Rig V2 起 parent 为 `gun_body`（原 `positioning2`，世界位置不变），`scope_pos` 已删除 |
 
 BR51 源模型中的隐藏参考红点仍保留且不导出；没有加入整枪带镜变体，也没有在 runtime 基础枪模中加入红点 cube。只新增空挂载锚点，枪身、手部、弹匣、消音器和动画不变。
 

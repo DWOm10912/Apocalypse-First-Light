@@ -1,5 +1,7 @@
 # BR51-01 战斗步枪 Cleanup Audit
 
+> 2026-09-27：BR51 已迁移到 [Native Rig V2](br51_01_native_rig_v2.md)，本文中的 `gun_and_righthand`、`mag_and_lefthand`、`magazine_bullet`、`additional_magazine`、`positioning2`、`shell`、`mag_extended_*` 等骨骼名与层级均为迁移前的历史状态。
+
 > 当前正式型号：P9-01 制式手枪（p9_01）；BR51-01 战斗步枪（br51_01）。旧称仅作历史背景，当前映射与验证边界见 docs/native_guns/native_weapon_renaming_report.md。
 
 审计日期：2026-09-08。工程：`D:/Minecraft Modding/Apocalypse First Light/`。外部资源目录：`E:/Download/合集/BR51_01/`。

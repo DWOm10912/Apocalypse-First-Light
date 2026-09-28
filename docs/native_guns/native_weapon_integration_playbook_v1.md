@@ -256,7 +256,7 @@ runtime geometry identifier 当前分别为 geometry.p9_01_v2_native、geometry.
 
 right_hand_anchor、left_hand_anchor：第一人称真实玩家手臂。
 
-Profile 指定的 muzzle/ejection anchors；BR51 为 muzzle_pos / shell。
+Profile 指定的 muzzle/ejection anchors；BR51 为 muzzle_pos（LEGACY_COMPAT）/ ejection_anchor（Native Rig V2 起，原 shell）。
 
 有枪口附件时，JSON muzzle_slot.anchor（当前均为 muzzle_anchor）。
 

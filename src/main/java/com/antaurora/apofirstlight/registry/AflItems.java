@@ -34,7 +34,7 @@ public final class AflItems {
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("br51_01", "static_idle",
                             java.util.List.of("static_idle", "reload_empty", "reload_tactical", "static_bolt_caught",
                                     "inspect", "shoot", "put_away", "draw"),
-                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "shell", 4.8125F)));
+                            java.util.Set.of("static_idle", "static_bolt_caught"), "right_hand_anchor", "left_hand_anchor", "muzzle_pos", "ejection_anchor", 4.8125F)));
     public static final RegistryObject<Item> HR55 = ITEMS.register("hr55", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "hr55"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("hr55", "static_idle",
@@ -72,7 +72,7 @@ public final class AflItems {
             com.antaurora.apofirstlight.weapon.NativeMagazineItem::new);
     public static final RegistryObject<Item> BR51_EXTENDED_MAGAZINE_35 = ITEMS.register("br51_extended_magazine_35",
             () -> new com.antaurora.apofirstlight.weapon.NativeMagazineItem("br51_01",35,
-                    java.util.Set.of("mag_standard","empty_old_mag_standard"),true,3.8f));
+                    java.util.Set.of("mag_standard","reload_mag_standard","empty_old_mag_standard"),true,3.8f));
     public static final RegistryObject<Item> PISTOL_SUPPRESSOR_01 = ITEMS.register("pistol_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",
