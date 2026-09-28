@@ -10,8 +10,8 @@
 | --- | --- |
 | 名称 / ID | 手枪微型红点瞄具 / `apocalypse_firstlight:pistol_red_dot` |
 | 槽位 / 当前兼容 | `SIGHT` / P9-01 |
-| 主要效果 | Pure Mesh 外壳 + 半透明镜片；本轮无实体/准直瞄准点，ADS 沿用现有值待新资产校准 |
-| ADS 中心 | P9 当前视觉校准坐标 `[1.50,5.80,2.04]` |
+| 主要效果 | Pure Mesh 外壳 + 半透明镜片；第一人称准直红点（通用 `NativeCollimatedReticleRendering`，标记屏幕中心 / hitscan，只在视线穿过镜窗时显示），模型内无红点实体 |
+| ADS 中心 | P9 `ads_center = [0, 6.52778, 0.25339]`，即当前安装下镜片 `lens_center` 的枪模型坐标；机械安装 `mount_offset [0,-0.44,7.33]` 不变 |
 | FOV / ADS 时间 | 沿用 P9 `0.95` / `0.15 s`，无额外倍率或速度加成 |
 | 伤害 / 后坐力 / 散布 | 无额外修改 |
 | 安装入口 | 仅枪械维护台安装 / 拆卸 / 更换 |
@@ -42,7 +42,7 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 
 ## AFL Micro Pistol Red Dot V1 资产（2026-09-27，已接入，待实机验收）
 
-当前 `pistol_red_dot` 已切到 NativeSightItem(true) + Pure Mesh sidecar。5 个外壳 part 走 CUTOUT，optic_lens 走 TRANSLUCENT。保存源与源贴图未修改；只导出 runtime。Shader OFF 代码就绪，Oculus 默认 0.1 alpha test 可能丢弃 24/255 镜片，不能宣称透明 PBR 已通过。见 [透明 Runtime V1](transparent_hybrid_mesh_runtime_v1.md)。旧 body/reticle 资源仍保留作历史，但当前 Geo 路径不再绘制它们。
+当前 `pistol_red_dot` 已切到 NativeSightItem(true) + Pure Mesh sidecar。5 个外壳 part 走 CUTOUT，optic_lens 走 TRANSLUCENT。保存源与源贴图未修改；只导出 runtime。Shader OFF 代码就绪，Oculus 默认 0.1 alpha test 可能丢弃 24/255 镜片，不能宣称透明 PBR 已通过。见 [透明 Runtime V1](transparent_hybrid_mesh_runtime_v1.md)。旧 body/reticle 资源仍保留作历史，但当前 Geo 路径不再绘制它们。瞄准点由下文 [准直 Reticle Runtime V1](#准直-reticle-runtime-v1) 在第一人称单独绘制。
 
 **定位**：原创、无品牌的通用手枪微型红点，低矮、紧凑、大镜窗、薄镜框，倒角克制。通过统一的手枪瞄具安装接口使用，不是 P9 专用。首批目标是 P9 和 Blackridge，模型内部不包含任何枪专用偏移。
 
@@ -86,7 +86,7 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 - **定位骨骼**（都不是可见几何，模型里没有任何红点实体）：
   - `lens_center`：`optic_lens` 的子骨骼，枢轴 (0, 0.675, −0.85)，位于镜片平面中心，与镜窗开口中心一致。它带 −4°（绕 X）旋转，本地 +Z 就是镜片法线：朝射手，(0, 0.0698, 0.9976)；朝前的一侧为反向。Geo 按导出约定写成 rotation [4,0,0]。
   - `lens_aperture`：`lens_center` 的子骨骼，枢轴 (0.43, 0.97, −0.85)，Geo 中写为 x −0.43。它随父骨骼的倾斜落到镜片平面上，在镜片坐标系中的位置就是有效窗口的半宽和半高 (0.43, 0.295)。
-  - 以后的通用准直准星渲染会用这两个骨骼：判断屏幕中心视线与镜片平面的交点是否仍在有效窗口内，并作为光学对准的参考。
+  - 通用准直准星渲染（见下文）读取这两个骨骼：判断屏幕中心视线与镜片平面的交点是否仍在有效窗口内；P9 的 `ads_center` 也按 `lens_center` 求出。
 
 **材质**（Base Color / `_s` / `_n`）
 
@@ -104,32 +104,124 @@ P9 的源几何、静态 `sight_anchor`、Display 和全部动画关键帧**均�
 - 所有表面 `_n` 都是平面法线，只有通道带 AO，没有高频纹理。
 - 镜片 alpha 24/255 保持不变。Shader OFF 使用标准 entityNoOutline alpha blend、深度测试、关闭深度写入；Oculus 默认透明 shader 仍有 0.1 阈值，Shader ON 低 alpha 与 PBR 状态为 LIMITED，待实机验证。
 
-**建议的接入标定值**（按两把枪的实际网格截面测得，**尚未写入枪械数据**）：
+**早期建议标定值（历史，P9 未采用）**：按两把枪的实际网格截面测得。P9 实机确认现有机械安装正常后冻结 `mount_offset`，只按当前安装重算 `ads_center`（见下文 [P9 ADS 标定](#p9-ads-标定2026-09-27)）；Blackridge 仍未接入，下表只作后续参考。
 
 | 枪 | 瞄具平台 | `mount_offset` | `ads_center` |
 |---|---|---|---|
-| P9 | 套筒平顶 y 5.950，宽 1.10，z 0.1–2.7（抛壳口止于 0.05，照门起于 2.72） | [0, −0.33978, 7.62661] | [0, 6.628, 2.94939] |
-| Blackridge | 套筒平顶 y 9.754，宽 1.48，z 0.3–2.6 | [0, −0.103, 10.6] | [0, 10.432, 4.1] |
+| P9（未采用） | 套筒平顶 y 5.950，宽 1.10，z 0.1–2.7（抛壳口止于 0.05，照门起于 2.72） | [0, −0.33978, 7.62661] | [0, 6.628, 2.94939] |
+| Blackridge（未接入） | 套筒平顶 y 9.754，宽 1.48，z 0.3–2.6 | [0, −0.103, 10.6] | [0, 10.432, 4.1] |
 
 - 两把枪的 `sight_anchor` 都在套筒上。
-- 瞄具中心都放在 z 1.40，另加 0.003 抬升，避免和套筒顶面共面。
-- `ads_center` 的 z 沿用各自机瞄的 aim z（P9 2.94939，Blackridge 4.1），保持原有眼距。
-- 离线渲染的 ADS 视角确认：屏幕中心落在镜窗中心，两把枪的照门都在镜窗下方。
+- 当时建议把瞄具中心放在 z 1.40，另加 0.003 抬升；`ads_center` 的 z 沿用各自机瞄的 aim z（P9 2.94939，Blackridge 4.1）。
 
 **仍待后续轮次**
 
-1. 通用准直准星渲染（`NativeCollimatedReticleRendering`，只在第一人称）。
+1. 已完成：通用准直准星渲染 `NativeCollimatedReticleRendering`（只在第一人称），待实机验收。
 2. 已完成：NativeSightItem(true)、保存源导出、旧 body/reticle 停止绘制。独立物品 display 沿用旧值，视觉待验。
-3. 为 P9 和 Blackridge 写入上表的 `sight_slot`。
+3. P9：`ads_center` 已按 `lens_center` 重标，机械安装冻结，待实机验收。Blackridge：没有 `sight_slot`，需要在 P9 通过后单独做安装与 ADS 标定；运行时无需新代码。
 4. 已完成混合层代码；待验证 Shader OFF 画面与 Shader ON 低 alpha/PBR 限制。
 
-当前已经使用新 Mesh 外壳与镜片；准直 reticle 未实现，所以没有瞄准点。P9/Blackridge sight_slot 本轮未改，不宣称新模型 ADS 已校准。
+当前 P9 装上本红点后：新 Mesh 外壳与镜片，ADS 时镜片中心在屏幕中心，第一人称有准直红点。以上只经过离线计算、离线渲染和 compileJava，未启动客户端，不宣称实机通过。
+
+## P9 ADS 标定（2026-09-27）
+
+**机械安装（冻结，未修改）**：`sight_slot.anchor = sight_anchor`，`mount_offset = [0, −0.44, 7.33]`。用户实机确认安装正常；本轮用 bind pose 网格截面复核：
+
+- 左右居中：原点 x = 0，外壳关于 X 对称（右侧风偏盖与左侧按键只差 0.005）。
+- 贴合：sight 原点 (0, 5.85278, 1.10339)。套筒平顶 y 5.950，覆盖 z 0.05–2.70。底板占地 z 0.053–2.153，完全落在平顶上。
+  - 底板 y 5.853–5.958：厚 0.105 的底板有 0.097 藏在套筒内，只露出 0.008。
+  - 外壳底面（本地 y 0.09）比套筒顶面低 0.007。
+  - 结果：没有缝隙，也没有可见穿插，看起来是外壳直接坐在套筒上。
+- 抛壳口：底板前缘 z 0.0534，在抛壳口后沿（约 z 0.05）之后，不遮挡；抛壳锚点 z −0.66 在瞄具前方。
+
+按"安装正确就不为 ADS 移动 mount"的规则，mount 保持不变；上表 [0, −0.33978, …] 的"完全贴平"方案未采用。
+
+**ADS 中心**：`ads_center` 与机械安装独立，仍是手填数据（不做运行时自动推导），但数值按实际几何求出：
+
+```
+sight 原点   = sight_anchor pivot (0, 6.29278, −6.22661) + mount_offset (0, −0.44, 7.33) = (0, 5.85278, 1.10339)
+lens_center  = sight 原点 + 红点 geo lens_center pivot (0, 0.675, −0.85)          = (0, 6.52778, 0.25339)
+ads_center   = lens_center = [0, 6.52778, 0.25339]
+```
+
+- 求解：`NativeAdsProfile.ads() = T(0,0,−eyeRelief)·S(0.53)·R(ads_rotation)·T(−aim/16)`，`correction = ads·hip⁻¹` 已抵消 P9 第一人称 Display（translation [3.25, −6.46691, −11.9885]/16、rotation 0、scale 0.53、Geo 净 +0.01 Y）。完全 ADS 时 `lens_center` 落在视空间 (0, 0, −0.47)，即屏幕中心。
+- 偏斜：`ads_rotation = [0,0,0]`，aim x = 0，因此枪轴与视线平行，没有左右偏斜；基础机瞄轴本身沿模型 −Z（见 [ADS 文档](native_ads_v1.md)）。
+- 框景：镜片中心离眼 0.47（与机瞄 profile 到照门的 eye relief 相同）。因此整枪比机瞄 ADS 近 0.089 格：镜片在照门前 2.696 单位，乘 0.53/16。
+  - 手部 FOV 为 70 × ADS 倍率 0.95 = 66.5°。在 1080p 下镜窗约宽 56 px、高 36 px；枪最靠后的弹匣底板约在 0.33 格处，远离近裁面 0.05。
+  - 若实机觉得太近，可把 z 改回机瞄 aim z 2.94939：保持机瞄 ADS 的整枪距离，镜窗约小 16%，屏幕中心仍在镜片中心。
+- 离线软件渲染 ADS 视角：屏幕中心落在镜窗中心，镜框四周对称。
+- `NativeAdsProfile.forStack` 的调试标签仍为 `sight_anchor/reticle_dot`，只是标签，与几何无关。
+- 旧值历史：`[2.48, 7.756, 2.04]` → `[1.50, 5.80, 2.04]`（旧 cube 红点时代的截图标定），现均作废。
+
+## 准直 Reticle Runtime V1
+
+2026-09-27，已实现，**未实机验证**。P9 + 本红点先行；Blackridge 接入 `sight_slot` 后自动适用，不需新代码。
+
+**入口**：`weapon/client/NativeCollimatedReticleRendering`，通用类，没有 P9 或红点专用 renderer。
+
+1. `ConfiguredGunFirstPerson` 在第一人称 `renderStatic` 前调用 `begin()`，之后调用 `draw()`，在 finally 中调用 `end()`。
+2. 在这段时间内，`NativeSightRendering` 画完 Geo 瞄具后调用 `capture(sight, pose)`，记录瞄具原点矩阵。
+3. 其他上下文（第三人称、维护台、地面、GUI）不会 begin，因此不会记录或绘制。
+4. 整把枪提交完后才画红点，保证所有外壳和枪体的深度已经写入。
+
+**数据**（客户端资源，F3+T 重载即可实机微调）：`assets/apocalypse_firstlight/optics/pistol_red_dot.json` 对应物品 `apocalypse_firstlight:pistol_red_dot`。
+
+| 字段 | 当前值 | 含义 |
+|---|---|---|
+| `texture` | `apocalypse_firstlight:textures/effects/collimated_reticle_dot.png` | 柔边圆点贴图，必须存在，否则拒绝该文件 |
+| `color` | `[255, 38, 30]` | 顶点颜色染色，可加第 4 个 alpha |
+| `angular_diameter_degrees` | `0.4` | 贴图四边形的视角直径（含柔边；50% alpha 核心约为 0.68 倍，即约 0.27°）；0.01–5。实机后由 0.55 调小 |
+| `max_off_axis_degrees` | `12`（缺省 12） | 瞄具光轴（sight −Z）与视线的最大夹角；0–45 |
+| `lens_center_bone` / `lens_aperture_bone` | `lens_center` / `lens_aperture`（缺省同名） | 瞄具自身 geo 中的骨骼 |
+
+没有 `optics/<item>.json` 或没有 `collimated_reticle` 对象的瞄具不画红点。例如 `rifle_red_dot_01` 仍使用它自己的全亮 `reticle` cube，BR51 不变。
+
+**判定**（手部渲染的 pose 空间即视空间：相机在原点，屏幕中心 / hitscan 沿 −Z）：
+
+1. 从瞄具 geo 骨骼遍历（与绘制瞄具相同的 `prepMatrixForBone` 链）求 `lens_center` 坐标系。
+   - 本地 +Z 为镜片法线，带 −4° 倾角。
+   - `lens_aperture` 原点在该坐标系中的 |x|、|y| 为有效窗口的半宽和半高：0.43 × 0.295。
+2. 光轴门限：瞄具 −Z 与视线夹角大于 `max_off_axis_degrees` 时不画。避免检视、换弹或野外附件视图中斜看镜窗时出现红点。
+3. 求交：屏幕中心射线与镜片平面求交。平行或交点距离小于 0.05（近裁面）时不画。
+4. 窗口：交点换算回镜片坐标，超出半宽或半高就隐藏；在窗口内才画。
+5. 绘制：在交点处（向眼侧偏移 0.1%）画一个垂直于视线的四边形，半边长为 `t · tan(直径/2)`，`t` 为交点距离。因此屏幕尺寸只由视角决定，不随模型远近变化。
+   - ADS 时 `t` 约为 0.47；在 1080p、66.5° 手部 FOV 下，四边形约 5.8 px，核心约 3.9 px。
+
+**渲染状态**：私有 RenderType `afl_collimated_reticle`。
+
+- 着色器：原版 `rendertype_entity_translucent_emissive`，不受 lightmap 和漫反射明暗影响，顶点光照 FULL_BRIGHT。
+- 混合：TRANSLUCENT，alpha 低于 0.1 的像素丢弃。
+- 深度：LEQUAL 测试，关闭深度写入（COLOR_WRITE），NO_CULL。
+- 贴图：线性过滤。几像素的点在 TAA 抖动下仍保持圆形，不会闪烁。
+- 遮挡：比镜片更靠近眼的镜框、通道壁和枪体都通过深度遮挡红点。镜片本身不写深度，因此不会遮住红点。
+- 标准 BufferSource：外壳 cutout 与镜片在绘制瞄具时已定向 flush，红点在整枪之后提交并 flush。
+- Oculus：包装 buffer 按透明类别排序，不透明类在前；同类中镜片先请求，红点后请求。实际批处理顺序待实机确认。
+
+**Shadow**：只在第一人称手部绘制中存在，且提交前再用 `AflShaderCompat.activeShadowPass()` 跳过，不进入 shadow pass。
+
+**不改变**：实际 hitscan、`NativeGunShot`、ADS 进度和 FOV、`optic_lens` 几何、透明 Hybrid Mesh 框架、P9 几何与动画、枪口附件、BR51。
+
+**贴图**：`tools/build-collimated-reticle-dot.mjs`（加 `--check` 只校验）生成 32×32 贴图：
+
+- `collimated_reticle_dot.png`：RGB 全白，alpha 在核心内为 1，从半径 0.42 平滑过渡到 0.94 处为 0。
+- `collimated_reticle_dot_s.png`：LabPBR `_s`，R 0，G 10（介电），B 0，A 发光 = 254 × alpha。
+- 不做 `_n`，使用平面默认值。
+
+**已知限制**：
+
+- 红点标的是相机中心，也就是真实弹着方向，不模拟光轴视差。
+  - 因此 sway 或后坐让镜窗偏离屏幕中心时，红点不会跟着枪移动，而是在交点离开窗口时隐藏。
+  - P9 `recoil.modelPitch` 已从 5 调到 0.5（实机发现每发都把镜窗顶出中心，红点闪灭）。模型后坐绕相机旋转：单发 0.5° 时交点下移约 0.12 单位；半自动极限射速稳态约 0.64°，下移约 0.16 单位，都在窗口半高 0.295 内。相机后坐（真实瞄准上跳）不变，机瞄 ADS 与腰射的模型上跳也同样变小。
+  - `shoot` 动画第 1 帧 `handling` 约 4.3° 上抬并后移，离线估算单独就把交点推到约 −0.26（接近窗口下沿和发射器外壳），约 1–2 帧；本轮未改动画。
+- Shader ON：alpha 阈值 0.1 会切掉最外圈柔边。能否通过 `_s` 发光、bloom 强度，取决于光影包。
+- 与 Oculus 的批处理顺序、TAA 下的观感都未实机验证。
+- 只画一个红点；不做多点或 MOA 刻度环，也没有亮度档位。
 
 ## 挂载、保存与 ADS
 
 - `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 的 SIGHT 接入独立 `rifle_red_dot_01`，不接受本手枪红点。
 - P9 使用现有 `sight_anchor` 的动画变换并叠加 `sight_slot.mount_offset=[0,-0.44,7.33]` 渲染瞄具；挂载位置、模型和动画未因本次 ADS 重标而改变。
-- `NativeAdsProfile.forStack` 在安装兼容瞄具时使用 `sight_slot.ads_center` 替换机械瞄具坐标。旧值 `[2.48,7.756,2.04]` 与当前 Artist rig/HIP 标定不符，实机会把红点明显压向左下；现按用户截图重标为 `[1.50,5.80,2.04]`，保持当前 eye relief、FOV、进入时间、后坐力和伤害不变。最终像素级对齐仍需客户端复验。
+- `NativeAdsProfile.forStack` 在安装兼容瞄具时使用 `sight_slot.ads_center` 替换机械瞄具坐标。当前 P9 为 `[0, 6.52778, 0.25339]`（镜片 `lens_center`，见上文 [P9 ADS 标定](#p9-ads-标定2026-09-27)）；eye relief、FOV、进入时间、后坐力和伤害不变。旧值 `[2.48,7.756,2.04]`、`[1.50,5.80,2.04]` 属于旧 cube 红点，已作废。像素级对齐仍需客户端复验。
 - 模型从真实 `sight_anchor` 遍历矩阵渲染，继承套筒后坐/后定、换弹、整枪 ADS、第三人称与地面显示变换，不使用屏幕固定 HUD 点。
 - 配件保存在枪 ItemStack 的 `AflAttachments.SIGHT` 完整配件 NBT。服务端原子装拆、正常背包同步负责客户端显示，丢弃/存档随枪保留；不以全局布尔值开关。
 - `NativeSightRendering` 是共享静态挂载渲染器；当前 P9 通过 `NativeAnimatedWeaponRenderer` 在动画 anchor 遍历中调用它。首批 P9 接口适配 `P901SightLayer` 已随专用 Renderer 退役。以后其他手枪仍需声明兼容 ID/局部安装点/ADS 点；不承诺只有 anchor 名称就自动完成所有渲染与 ADS 标定。

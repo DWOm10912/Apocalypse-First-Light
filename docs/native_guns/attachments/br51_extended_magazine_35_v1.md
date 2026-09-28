@@ -13,7 +13,7 @@
 | 模型替换 | 仅有效附件替换 `mag_standard` 和 `empty_old_mag_standard` 的整个几何子树，避免保留标准底板造成双重渲染 |
 | 动画 | 复用现有 `reload_tactical` / `reload_empty`；不改动画文件，不接入 xmag、mag1 或 mag3 |
 | 维护台 | 仅维护台装拆、更换；共用 Context HUD / 候选页 / 原版点击声 / 2.480 s 操作声 / 服务端 51 tick 后重验提交 |
-| 热点 | BR51 magazine_slot 指定 `hotspot_anchor=mag_standard`、`hotspot_y=-4`；P9 保持原 magazine / -6.2 |
+| 热点 | BR51 magazine_slot 指定 `hotspot_anchor=mag_standard`、`hotspot_y=-4`；P9 现为 magazine + `hotspot_offset [0,-4.14,1.82]`（原装弹匣底板中心） |
 | HUD / Tooltip | 所有枪统一单行 `当前装弹 \| 备弹`；枪械 Tooltip 不显示容量，附件 Tooltip 仅保留介绍；BR51 实际容量为标准 20 / 扩容 35 |
 
 ## 资产审计

@@ -12,7 +12,8 @@ public record AttachmentHotspotDefinition(NativeAttachment.Slot slot,String pref
             case SIGHT -> new AttachmentHotspotDefinition(slot,"maintenance_sight_anchor",d.sightMount().anchor(),
                     d.sightMount().x()/16f,d.sightMount().y()/16f,d.sightMount().z()/16f);
             case MUZZLE -> new AttachmentHotspotDefinition(slot,"maintenance_muzzle_anchor",d.muzzleMount().anchor(),0,0,0);
-            case MAGAZINE -> new AttachmentHotspotDefinition(slot,null,d.magazineMount().hotspotAnchor(),0,d.magazineMount().hotspotY()/16f,0);
+            case MAGAZINE -> new AttachmentHotspotDefinition(slot,null,d.magazineMount().hotspotAnchor(),
+                    d.magazineMount().hotspotX()/16f,d.magazineMount().hotspotY()/16f,d.magazineMount().hotspotZ()/16f);
         };
     }
 }

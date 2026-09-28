@@ -581,6 +581,8 @@ eyeRelief：控制枪/瞄具与摄像机的前后关系。
 
 sight_slot.ads_center：安装瞄具/红点的附件 ADS 校准，不替代裸枪机械瞄具基础校准。
 
+准直红点瞄具：`ads_center` = `sight_anchor` pivot + `mount_offset` + 瞄具 geo `lens_center` pivot（均为 Gecko 模型单位）。这样 ADS 时镜片中心落在屏幕中心、离眼 eyeRelief。红点本身由通用 `NativeCollimatedReticleRendering` 按瞄具的 `assets/<ns>/optics/<item>.json` 绘制，新枪不需要写 reticle 代码。
+
 **anchor 字符串本身仍不是“自动读取 GeckoLib 瞄具骨骼并计算轴线”的运行时机制。**裸枪 ADS 依赖每枪 calibration 数据；附件渲染/维护台仍按各自 mount bone / hotspot 契约处理。
 
 P9 V2 Native 当前数据校准值（数值已接入，实机视觉待验证）：
@@ -659,7 +661,7 @@ NativeGunShot.execute 每次成功射击发布 NoiseType.GUNSHOT，source ID 为
 
 每把正式枪必须在 MaintenanceViewProfile.PROFILES 建立显式条目；否则落到 BR51 使用的 DEFAULT，这只是一项实现回退，不是新枪适配完成。需校准：scale、offset xyz、rotation xyz、center xyz、clickWidth。纵向中心会从 base gun bounds 动态求得，附件不会令枪跳动。
 
-热点：SIGHT/MUZZLE 优先找 maintenance_sight_anchor / maintenance_muzzle_anchor，否则回退 gun JSON mount bone；MAGAZINE 使用 magazine_slot.hotspot_anchor/hotspot_y。MaintenanceHotspots 再按固定维护台相机投影。
+热点：SIGHT/MUZZLE 优先找 maintenance_sight_anchor / maintenance_muzzle_anchor，否则回退 gun JSON mount bone；MAGAZINE 使用 magazine_slot.hotspot_anchor + hotspot_offset [x,y,z]（或旧的 hotspot_y，只沿 Y）；弹匣倾斜的枪要用 hotspot_offset 指到露出的弹匣底板。MaintenanceHotspots 再按固定维护台相机投影。
 
 通用回归规则：
 

@@ -34,6 +34,8 @@ public final class NativeSightRendering {
         pose.translate(mount.x()/16F,mount.y()/16F,mount.z()/16F);
         if(sight.getItem() instanceof NativeSightItem item&&item.usesGeoModel()){
             NativeMuzzleRendering.drawItem(sight,pose,buffers,light,overlay);
+            // First-person hand draw only (armed by ConfiguredGunFirstPerson); the dot is drawn after the whole gun.
+            NativeCollimatedReticleRendering.capture(sight,pose);
             return;
         }
         pose.translate(-.5,-.5,-.5); // Cubes are authored around (8,8,8) in item JSON.

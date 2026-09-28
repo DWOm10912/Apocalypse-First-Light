@@ -1,0 +1,10 @@
+{
+  "collimated_reticle": {
+    "texture": "apocalypse_firstlight:textures/effects/collimated_reticle_dot.png",
+    "color": [255, 38, 30],
+    "angular_diameter_degrees": 0.4,
+    "max_off_axis_degrees": 12,
+    "lens_center_bone": "lens_center",
+    "lens_aperture_bone": "lens_aperture"
+  }
+}

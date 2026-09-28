@@ -66,7 +66,7 @@
     "maxHorizontal": 1,
     "recoveryDelay": 0.05,
     "cameraRecoveryTime": 0.18,
-    "modelPitch": 5,
+    "modelPitch": 0.5,
     "modelBack": 0.04,
     "modelYaw": 0.75,
     "modelRoll": 0.75,
@@ -77,7 +77,11 @@
     "horizontalRightMin": 0.06
   },
   "casing": "apocalypse_firstlight:9x19mm_casing",
-  "magazine_slot": {"accepts": ["apocalypse_firstlight:p9_01_extended_magazine"]},
+  "magazine_slot": {
+    "hotspot_anchor": "magazine",
+    "hotspot_offset": [0, -4.14, 1.82],
+    "accepts": ["apocalypse_firstlight:p9_01_extended_magazine"]
+  },
   "suppressed_fire_sound": "apocalypse_firstlight:p9_01_suppressed",
   "muzzle_slot": {
     "anchor": "muzzle_anchor",
@@ -86,7 +90,7 @@
   "sight_slot": {
     "anchor": "sight_anchor",
     "mount_offset": [0, -0.44, 7.33],
-    "ads_center": [1.50, 5.80, 2.04],
+    "ads_center": [0, 6.52778, 0.25339],
     "accepts": ["apocalypse_firstlight:pistol_red_dot"]
   }
 }

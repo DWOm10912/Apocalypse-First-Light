@@ -20,7 +20,7 @@ node tools/verify-transparent-mesh.mjs
 
 ## Render path
 
-`NativeSightRendering` → `NativeMuzzleRendering.drawItem` → `AflHybridMeshRendering.renderAtCurrentPose`。Pistol sight 使用 `NativeSightItem(true)`，安装、维护台、野外检查与独立 builtin/entity 物品共用此入口。P9 sight_slot 保持原值，可能需要后续新模型构图校准；本轮禁止修改它。Blackridge 当前没有 sight_slot，**NOT YET WIRED**。
+`NativeSightRendering` → `NativeMuzzleRendering.drawItem` → `AflHybridMeshRendering.renderAtCurrentPose`。Pistol sight 使用 `NativeSightItem(true)`，安装、维护台、野外检查与独立 builtin/entity 物品共用此入口。本轮 P9 sight_slot 保持原值。之后的准直 Reticle 轮次已按新镜片 `lens_center` 重标 P9 `ads_center = [0, 6.52778, 0.25339]`，机械 `mount_offset` 未变，见 [红点 V1 · P9 ADS 标定](pistol_red_dot_v1.md#p9-ads-标定2026-09-27)。Blackridge 当前没有 sight_slot，**NOT YET WIRED**。
 
 `AflHybridMeshRendering` 使用调用方的 MultiBufferSource 与当前 PoseStack，在同一同步调用中：
 
@@ -70,4 +70,7 @@ node tools/verify-transparent-mesh.mjs
 - `verify-afl-mesh.mjs --java-renderer`：真实 Java V1/unversioned/V2 loader、全部生产 sidecar、非法 metadata 拒绝、缓存 layer 分区；真实 renderer 单层排除/无重复提交、当前 bone transform/UV/normal/attributes 完全一致，PASS。保留原 V2/V2.1 检查。
 - 最后只运行一次 `gradlew.bat compileJava --offline`，结果见交付；不运行 processResources/build/runClient/GameTest。
 - 用户矩阵：P9 安装红点，Shader OFF → Sundial Lite → Complementary；检查外壳不透明、淡色透明镜片、镜框遮挡、无黑片/z-fighting/额外阴影；野外检查旋转看斜角，维护台/独立物品确认跟随。Shader ON 须特别记录低 alpha 是否被阈值裁掉及 PBR 响应。
-- 新资产不含实体 reticle，本轮也不实现准直投影，故当前新红点**没有瞄准点**。正式 reticle 与新 sight_slot 校准是后续独立任务。
+- 新资产不含实体 reticle，本轮也不实现准直投影，故本轮结束时新红点没有瞄准点。
+  - 后续已由通用 `NativeCollimatedReticleRendering` 在第一人称绘制准直红点。
+  - 它读取同一 `lens_center` / `lens_aperture`，在整枪之后提交；它的 RenderType 是私有的 emissive translucent，不属于本框架，本框架也未为它修改。
+  - 详见 [红点 V1 · 准直 Reticle Runtime V1](pistol_red_dot_v1.md#准直-reticle-runtime-v1)。
