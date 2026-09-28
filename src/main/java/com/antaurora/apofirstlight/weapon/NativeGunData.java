@@ -107,7 +107,6 @@ public final class NativeGunData {
         try {
             var f=o.getAsJsonObject("fire");var d=o.getAsJsonObject("damage");
             var a=o.getAsJsonObject("accuracy");var reload=o.getAsJsonObject("reload");var noise=o.getAsJsonObject("noise");var ads=o.getAsJsonObject("ads");
-            var fire=NativeFireProfile.parse(f);
             double start=num(d,"falloff_start",0,Double.MAX_VALUE);
             double range=num(d,"max_range",start,Double.MAX_VALUE);
             int tactical=(int)Math.ceil(num(reload,"tactical_seconds",0,100000)*20);
@@ -118,6 +117,15 @@ public final class NativeGunData {
                     "horizontalContinueChance","horizontalRecoveryTime","horizontalLeftMin","horizontalRightMin"))
                 num(recoil,key,-Double.MAX_VALUE,Double.MAX_VALUE);
             var rp=GSON.fromJson(recoil,NativeRecoilProfile.class);
+            // fire.mode_overrides.<mode>.recoil: partial object over this gun's recoil block (same keys, same validation)
+            var fire=NativeFireProfile.parse(f,patch->{
+                var merged=recoil.deepCopy();
+                for(var e:patch.entrySet()){
+                    if(!merged.has(e.getKey()))throw new IllegalArgumentException("fire.mode_overrides.recoil: unknown key "+e.getKey());
+                    merged.add(e.getKey(),e.getValue());num(merged,e.getKey(),-Double.MAX_VALUE,Double.MAX_VALUE);
+                }
+                return GSON.fromJson(merged,NativeRecoilProfile.class);
+            });
             var ap=switch(a.get("profile").getAsString()) {
                 case "default"->NativeAccuracyProfile.DEFAULT; case "battle_rifle"->NativeAccuracyProfile.BATTLE_RIFLE;
                 default->throw new IllegalArgumentException("accuracy.profile: unknown preset");

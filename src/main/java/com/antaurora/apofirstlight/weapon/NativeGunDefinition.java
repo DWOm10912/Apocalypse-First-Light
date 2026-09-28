@@ -41,6 +41,10 @@ public record NativeGunDefinition(ResourceLocation id, WeaponClass weaponClass, 
     public double headshotMultiplier() { return headshotMultiplierOverride == null
             ? NativeHeadshots.MULTIPLIER.get() : headshotMultiplierOverride; }
     public String fireMode() { return fire.defaultMode().key(); }
+    /** Shot interval of one fire mode (fire.mode_overrides.<mode>.interval_ticks, else fire.interval_ticks). */
+    public int fireIntervalTicks(NativeFireMode mode) { return fire.intervalTicks(mode, fireIntervalTicks); }
+    /** Recoil of one fire mode (fire.mode_overrides.<mode>.recoil merged over recoil, else recoil). */
+    public NativeRecoilProfile recoil(NativeFireMode mode) { return fire.recoil(mode, recoil); }
 
     // Packaged JSON defaults retained for compatibility with DEV tests; items resolve live by ID.
     public static final NativeGunDefinition P9_01 = NativeGunData.packaged(new ResourceLocation("apocalypse_firstlight", "p9_01"));

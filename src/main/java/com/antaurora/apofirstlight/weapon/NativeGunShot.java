@@ -107,6 +107,11 @@ public final class NativeGunShot {
         var stance = NativeStanceAccuracy.evaluate(shooter, d);
         double spreadDegrees = aiming && d.spreadDegrees() > 0
                 ? stance.finalDegrees() * d.adsSpreadDegrees() / d.spreadDegrees() : stance.finalDegrees();
+        // Sustained-fire bloom of the held stack's fire mode, once per shot (all pellets share the cone).
+        var held = shooter.getMainHandItem();
+        var mode = held.getItem() instanceof NativeGunItem gun && gun.definition().id().equals(d.id())
+                ? NativeFireModes.current(held, d) : d.fire().defaultMode();
+        spreadDegrees += NativeFireBloom.shot(shooter, d, mode);
         var damageByEntity = new java.util.IdentityHashMap<Entity, PelletDamage>();
         var endpoints = new java.util.ArrayList<Vec3>(d.pelletsPerShot());
         Hit representative = null;

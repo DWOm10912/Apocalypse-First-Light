@@ -63,7 +63,10 @@ public final class NativeGunRecoil {
         lastNanos = System.nanoTime();
         double v = STATE.vertical(), h = STATE.horizontal();
         var random = player.getRandom();
-        STATE.kick(gun.definition().recoil(), random.nextDouble(), random.nextDouble(),
+        // Per-fire-mode recoil (fire.mode_overrides.<mode>.recoil), read from the synced stack's current mode.
+        var definition = gun.definition();
+        STATE.kick(definition.recoil(com.antaurora.apofirstlight.weapon.NativeFireModes.current(player.getMainHandItem(), definition)),
+                random.nextDouble(), random.nextDouble(),
                 random.nextDouble(), random.nextDouble(), player.getXRot() + 90.0);
         applyAim(STATE.vertical() - v, STATE.horizontal() - h);
         if(Boolean.getBoolean("afl.shotSnapshotDebug"))ApocalypseFirstLight.LOGGER.info("[SHOT RECOIL] applied gun={} frame-end-or-before-next-input",confirmedGunId);

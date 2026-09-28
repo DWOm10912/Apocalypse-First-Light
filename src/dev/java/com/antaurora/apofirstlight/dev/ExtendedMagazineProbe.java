@@ -38,11 +38,11 @@ public final class ExtendedMagazineProbe {
             });}
             case 1->{shot("standard_fp");server(()->gun(true,17));}
             case 2->{
-                if(NativeGunAmmo.capacity(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=24)throw new IllegalStateException("client capacity");
+                if(NativeGunAmmo.capacity(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=28)throw new IllegalStateException("client capacity");
                 shot("extended_fp");com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(false,0);
             }
             case 3->{shot("after_fire");com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,0);}
-            case 4->{if(NativeGunAmmo.read(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=24)throw new IllegalStateException("reload24");server(()->{NativeGunAmmo.set(player().getMainHandItem(),NativeGunDefinition.P9_01,0);player().inventoryMenu.broadcastChanges();});}
+            case 4->{if(NativeGunAmmo.read(mc().player.getMainHandItem(),NativeGunDefinition.P9_01)!=28)throw new IllegalStateException("reload28");server(()->{NativeGunAmmo.set(player().getMainHandItem(),NativeGunDefinition.P9_01,0);player().inventoryMenu.broadcastChanges();});}
             case 5->com.antaurora.apofirstlight.network.AflNetwork.requestNativeGun(true,0);
             case 6->{shot("reload_complete");mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);}
             case 7->{shot("third_person");mc().options.setCameraType(CameraType.FIRST_PERSON);server(()->{
@@ -57,7 +57,7 @@ public final class ExtendedMagazineProbe {
                 if(com.antaurora.apofirstlight.client.MaintenanceHotspots.project(NativeAttachment.Slot.MAGAZINE,screen.width,screen.height)==null)throw new IllegalStateException("magazine hotspot");
                 mc().player.closeContainer();server(()->{player().setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.P9_01_EXTENDED_MAGAZINE.get()));player().inventoryMenu.broadcastChanges();});}
             case 10->{shot("standalone");mc().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc().player));}
-            case 11->{shot("inventory");finish("PASS capacity packet, actual fire/reload24, maintenance hotspot; screenshots require inspection");}
+            case 11->{shot("inventory");finish("PASS capacity packet, actual fire/reload28, maintenance hotspot; screenshots require inspection");}
         }}catch(Exception ex){finish("FAIL "+ex);}
     }
 }

@@ -74,7 +74,7 @@ YES；同一公共链
 
 Ammo/Magazine
 
-9×19mm，17 发；旧 24 发扩容匣配置仍在，V2 模型兼容未验证
+9×19mm，17 发；28 发扩容匣 V2（Pure Mesh，替换 magazine / reload_magazine / empty_old_mag），待实机验收
 
 7.62×51mm，20 发；可装 35 发扩容匣
 
@@ -332,11 +332,11 @@ NOT IMPLEMENTED
 
 4.5 Combat checklist
 
-NativeGunInput 发送按下/松开沿，NativeFireControl 服务端管理每位玩家的触发状态。SEMI 按下只一发；BURST 松开仍完成 burst_count 发；AUTO 按住按 interval_ticks 连发，松开取消。
+NativeGunInput 发送按下/松开沿，NativeFireControl 服务端管理每位玩家的触发状态。SEMI 按下只一发；BURST 松开仍完成 burst_count 发；AUTO 按住按该模式的 interval_ticks 连发，松开取消。
 
 NativeGunActions 在服务端校验主手、槽位、动作锁、射速与弹量，成功后先扣弹再执行 hitscan。
 
-fire.interval_ticks 最低间隔；理论 RPM=1200 / interval_ticks。P9 为 400 RPM，BR51 为 300 RPM。
+fire.interval_ticks 最低间隔；理论 RPM=1200 / interval_ticks（服务端 tick 调度，只能取整数 tick：2=600、3=400）。fire.mode_overrides.<mode> 可单独覆盖某模式的 interval_ticks、部分 recoil 和服务端 bloom（NativeFireBloom，只在配置了 bloom 的模式生效）。冷却 NEXT_FIRE 与射击动画会话都按开火时的当前模式计时，切模式不能绕过冷却。P9 为 SEMI 400 / AUTO 600 RPM（默认 SEMI），BR51 为 300 RPM，CAT 为 600 RPM。
 
 NativeFireProfile 解析有序 modes、default_mode、burst_count（默认 3，合法整数 2..32）。旧 mode:semi 兼容为单模式。非法模式、重复/空列表、非法默认值和 burst_count 拒绝加载。
 

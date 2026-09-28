@@ -32,7 +32,7 @@ public final class ExtendedMagazineTests {
         var magItem=AflItems.P9_01_EXTENDED_MAGAZINE.get();
         var ammo=net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(d.ammoType());
         h.assertTrue(!NativeAttachments.compatible(new ItemStack(AflItems.BR51_01.get()),new ItemStack(magItem)),"BR51 incompatible");
-        for(int count:new int[]{0,5,17,19,24}){
+        for(int count:new int[]{0,5,17,19,28}){
             bench.clearContent();p.getInventory().clearContent();q.getInventory().clearContent();
             p.getInventory().setItem(4,new ItemStack(AflItems.P9_01.get()));
             h.assertTrue(menu.clickMenuButton(p,4),"Place P9");
@@ -42,10 +42,10 @@ public final class ExtendedMagazineTests {
             h.assertTrue(MaintenanceAttachmentTransaction.commit(p,first),"Install");
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(q,stale),"Concurrent stale install rejected");
             var gun=bench.getItem(0);
-            h.assertTrue(NativeGunAmmo.capacity(gun,d)==24&&NativeGunAmmo.read(gun,d)==17,"Install raises limit without free rounds");
+            h.assertTrue(NativeGunAmmo.capacity(gun,d)==28&&NativeGunAmmo.read(gun,d)==17,"Install raises limit without free rounds");
             NativeGunAmmo.set(gun,d,count);
             var saved=ItemStack.of(gun.save(new net.minecraft.nbt.CompoundTag()));
-            h.assertTrue(NativeGunAmmo.capacity(saved,d)==24&&NativeGunAmmo.read(saved,d)==count,"Stack persistence");
+            h.assertTrue(NativeGunAmmo.capacity(saved,d)==28&&NativeGunAmmo.read(saved,d)==count,"Stack persistence");
             var remove=request(p,bench,-1);
             h.assertTrue(MaintenanceAttachmentTransaction.commit(p,remove),"Remove");
             h.assertTrue(!MaintenanceAttachmentTransaction.commit(p,remove),"Repeated remove rejected");
@@ -56,16 +56,16 @@ public final class ExtendedMagazineTests {
         h.assertTrue(MaintenanceAttachmentTransaction.commit(p,request(p,bench,12)),"Reinstall");
         NativeGunAmmo.set(bench.getItem(0),d,17);
         for(int i=0;i<36;i++)if(p.getInventory().getItem(i).is(ammo))p.getInventory().setItem(i,ItemStack.EMPTY);
-        p.getInventory().setItem(13,new ItemStack(ammo,10));
-        h.assertTrue(NativeGunAmmo.transfer(p.getInventory(),bench.getItem(0),d)==7&&NativeGunAmmo.read(bench.getItem(0),d)==24&&p.getInventory().getItem(13).getCount()==3,"Reload fills24 consumes7");
-        for(int i=0;i<24;i++)h.assertTrue(NativeGunAmmo.consumeOne(bench.getItem(0),d),"24 rounds can fire");
-        h.assertTrue(!NativeGunAmmo.consumeOne(bench.getItem(0),d),"25th cannot fire");
-        NativeGunAmmo.set(bench.getItem(0),d,24);
+        p.getInventory().setItem(13,new ItemStack(ammo,14));
+        h.assertTrue(NativeGunAmmo.transfer(p.getInventory(),bench.getItem(0),d)==11&&NativeGunAmmo.read(bench.getItem(0),d)==28&&p.getInventory().getItem(13).getCount()==3,"Reload fills28 consumes11");
+        for(int i=0;i<28;i++)h.assertTrue(NativeGunAmmo.consumeOne(bench.getItem(0),d),"28 rounds can fire");
+        h.assertTrue(!NativeGunAmmo.consumeOne(bench.getItem(0),d),"29th cannot fire");
+        NativeGunAmmo.set(bench.getItem(0),d,28);
         for(int i=0;i<36;i++)p.getInventory().setItem(i,new ItemStack(Items.STONE,64));
         level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(root).inflate(5)).forEach(net.minecraft.world.entity.Entity::discard);
         h.assertTrue(MaintenanceAttachmentTransaction.commit(p,request(p,bench,-1)),"Full inventory detach");
         var drops=level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,new net.minecraft.world.phys.AABB(root).inflate(5));
-        h.assertTrue(drops.stream().filter(e->e.getItem().is(ammo)).mapToInt(e->e.getItem().getCount()).sum()==7,"Seven overflow rounds dropped");
+        h.assertTrue(drops.stream().filter(e->e.getItem().is(ammo)).mapToInt(e->e.getItem().getCount()).sum()==11,"Eleven overflow rounds dropped");
         h.assertTrue(drops.stream().filter(e->e.getItem().is(magItem)).mapToInt(e->e.getItem().getCount()).sum()==1,"One magazine dropped");
         drops.forEach(net.minecraft.world.entity.Entity::discard);bench.clearContent();p.containerMenu=p.inventoryMenu;q.containerMenu=q.inventoryMenu;
         h.succeed();

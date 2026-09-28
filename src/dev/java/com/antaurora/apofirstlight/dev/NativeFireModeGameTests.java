@@ -36,7 +36,13 @@ public final class NativeFireModeGameTests {
         return NativeGunData.parse(new ResourceLocation("apocalypse_firstlight","cat"),o,false);
     }
     private static void contracts(GameTestHelper h) {
-        for(String id:List.of("p9_01","br51_01","hr55")) {
+        var p9=NativeGunData.parse(new ResourceLocation("apocalypse_firstlight","p9_01"),json("p9_01"),false);
+        h.assertTrue(p9.fire().modes().equals(List.of(NativeFireMode.SEMI,NativeFireMode.AUTO))&&p9.fire().defaultMode()==NativeFireMode.SEMI,"P9 SEMI/AUTO, default SEMI");
+        h.assertTrue(p9.fireIntervalTicks(NativeFireMode.SEMI)==3&&p9.fireIntervalTicks(NativeFireMode.AUTO)==2&&p9.fireIntervalTicks()==3,"P9 per-mode interval");
+        h.assertTrue(p9.recoil(NativeFireMode.SEMI)==p9.recoil()&&p9.recoil(NativeFireMode.AUTO).verticalMin()==1.0
+                &&p9.recoil(NativeFireMode.AUTO).modelPitch()==.32&&p9.recoil(NativeFireMode.AUTO).modelBack()==p9.recoil().modelBack(),"P9 AUTO recoil patch");
+        h.assertTrue(p9.fire().bloom(NativeFireMode.SEMI)==null&&p9.fire().bloom(NativeFireMode.AUTO).perShotDegrees()==.45,"P9 AUTO-only bloom");
+        for(String id:List.of("br51_01","hr55")) {
             var d=NativeGunData.parse(new ResourceLocation("apocalypse_firstlight",id),json(id),false);
             h.assertTrue(d.fire().modes().equals(List.of(NativeFireMode.SEMI)),"legacy SEMI "+id);
             var stack=new ItemStack(AflItems.CAT.get());var before=stack.copy();
@@ -47,7 +53,12 @@ public final class NativeFireModeGameTests {
         for(String fire:List.of("{\"mode\":\"invalid\"}","{\"modes\":[\"semi\"],\"default_mode\":\"auto\"}",
                 "{\"mode\":\"semi\",\"burst_count\":0}","{\"mode\":\"semi\",\"burst_count\":2.5}",
                 "{\"mode\":\"semi\",\"burst_count\":\"3\"}","{\"mode\":\"semi\",\"burst_count\":33}",
-                "{\"modes\":[]}","{\"modes\":[\"semi\",\"semi\"]}")) {
+                "{\"modes\":[]}","{\"modes\":[\"semi\",\"semi\"]}",
+                "{\"mode\":\"semi\",\"mode_overrides\":{\"auto\":{\"interval_ticks\":2}}}",
+                "{\"mode\":\"semi\",\"mode_overrides\":{\"semi\":{\"interval_ticks\":0}}}",
+                "{\"mode\":\"semi\",\"mode_overrides\":{\"semi\":{\"rpm\":600}}}",
+                "{\"mode\":\"semi\",\"mode_overrides\":{\"semi\":{\"recoil\":{\"verticalMin\":1}}}}",
+                "{\"mode\":\"semi\",\"mode_overrides\":{\"semi\":{\"bloom\":{\"per_shot_degrees\":1,\"max_degrees\":1,\"recovery_ticks\":0}}}}")) {
             boolean rejected=false;try{NativeFireProfile.parse(JsonParser.parseString(fire).getAsJsonObject());}catch(RuntimeException e){rejected=true;}
             h.assertTrue(rejected,"invalid fire rejected: "+fire);
         }
@@ -59,7 +70,7 @@ public final class NativeFireModeGameTests {
             h.assertTrue(NativeFireModes.current(stack,d)==mode,"serialized stack mode");
         }
         stack.getOrCreateTag().putString(NativeFireModes.TAG,"auto");
-        NativeFireModes.sanitize(stack,NativeGunDefinition.P9_01);
+        NativeFireModes.sanitize(stack,NativeGunDefinition.BR51_01);
         h.assertTrue(stack.getTag().getString(NativeFireModes.TAG).equals("semi"),"removed mode falls back and persists");
         h.succeed();
     }

@@ -54,7 +54,7 @@ public final class NativeFireControl {
         NativeGunActions.request(p,false,slot,shotId,aiming);
         if(NativeGunAmmo.read(s.stack,d)>=before)return;
         s.remaining=s.mode==NativeFireMode.BURST?d.fire().burstCount()-1:s.mode==NativeFireMode.AUTO?1:0;
-        s.due=p.server.getTickCount()+d.fireIntervalTicks();
+        s.due=p.server.getTickCount()+d.fireIntervalTicks(s.mode);
     }
     /** Called after action-session processing, never runs a second damage implementation. */
     public static void tick(ServerPlayer p) {
@@ -72,7 +72,7 @@ public final class NativeFireControl {
         NativeGunActions.request(p,false,s.slot,id);
         if(NativeGunAmmo.read(s.stack,d)>=before){s.remaining=0;if(!s.held)cancel(p);return;}
         if(s.mode==NativeFireMode.BURST)s.remaining--;
-        s.due=p.server.getTickCount()+d.fireIntervalTicks();
+        s.due=p.server.getTickCount()+d.fireIntervalTicks(s.mode);
         if(s.remaining==0&&!s.held)cancel(p);
     }
     public static boolean switchMode(ServerPlayer p,int slot,long gunId) {

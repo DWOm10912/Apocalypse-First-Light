@@ -117,6 +117,8 @@ public final class NativeGunActions {
         NativeGunDefinition definition = item.definition();
         ItemStack held = player.getMainHandItem();
         boolean lastShot = false;
+        // Shot cadence follows the stack's current fire mode (fire.mode_overrides.<mode>.interval_ticks).
+        int interval = definition.fireIntervalTicks();
         if (reload) {
             if (NativeGunAmmo.read(held, definition) >= NativeGunAmmo.capacity(held,definition)
                     || NativeGunAmmo.reserve(player.getInventory(), definition) == 0) return;
@@ -130,9 +132,10 @@ public final class NativeGunActions {
                 return;
             }
             int ammoBefore = NativeGunAmmo.read(held, definition);
+            interval = definition.fireIntervalTicks(NativeFireModes.current(held, definition));
             if (!NativeGunAmmo.consumeOne(held, definition)) return;
             int ammoAfter = NativeGunAmmo.read(held, definition);
-            NEXT_FIRE.put(player, now + definition.fireIntervalTicks());
+            NEXT_FIRE.put(player, now + interval);
             // This transition is authoritative because it is observed immediately around consumeOne.
             // Store it on the accepted shot session; clients never infer the last round themselves.
             lastShot = NativeShotAnimationPolicy.isLastShot(ammoBefore, ammoAfter);
@@ -143,7 +146,7 @@ public final class NativeGunActions {
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = now;
         state.reloadStartedEmpty = reload && NativeGunAmmo.read(held, definition) == 0;
-        state.end = now + (reload ? item.reloadTicks(state.reloadStartedEmpty) : definition.fireIntervalTicks());
+        state.end = now + (reload ? item.reloadTicks(state.reloadStartedEmpty) : interval);
         state.slot = slot;
         state.reload = reload;
         state.lastShot = lastShot;
