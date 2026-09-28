@@ -5,6 +5,10 @@ const crop={min:vec,max:vec};
 const inspect={target,...crop};
 const slice={...inspect,coordinate:int,relative:bool,encoding:{type:'string',enum:['category','palette']},downsample:{type:'integer',minimum:1,maximum:32}};
 const edit={target:{type:'string',enum:['AUTHORING_SESSION']},...crop,dry_run:bool};
+const facing={type:'string',enum:['north','south','east','west','up','down']};
+// Only named variant properties allowed by describe_block (e.g. hinge); values are plain strings, never NBT.
+const variants={type:'object',additionalProperties:{type:'string'}};
+const policy={type:'string',enum:['AIR_ONLY','REPLACEABLE'],default:'AIR_ONLY'};
 const tool=(name,description,properties={},required=[],write=false)=>({name,description,inputSchema:{type:'object',properties,required,additionalProperties:false},annotations:{readOnlyHint:!write,destructiveHint:write,idempotentHint:!write,openWorldHint:false}});
 export const tools=[
   tool('minecraft_status','Call first. Refreshes world/dimension binding; inspect this before each authoring round.'),
@@ -33,7 +37,14 @@ export const tools=[
   tool('we_move','Move source by block offset. Use dry_run first.',{...edit,offset:vec},['offset'],true),
   tool('we_undo','Undo last bridge edit only. Manual conflicts rejected.',{dry_run:bool},[],true),
   tool('we_redo','Redo last bridge edit only. Manual conflicts rejected.',{dry_run:bool},[],true),
-  tool('export_target_registry','Export actual running block registry/properties for offline reference compatibility. No world edits.'),
+  tool('export_target_registry','Export actual running block registry/properties (plus authoring metadata) for offline reference compatibility. No world edits.'),
+  // Bridge V2: rules live in the Java AuthoringFixtureRegistry; Node only validates shape and forwards.
+  tool('describe_block','Authoritative authoring contract for any block id: BlockEntity, whitelist class, property roles, facings, inventory, multiblock parts/offsets per facing, master part, support, placement tool. Call before placing unfamiliar AFL fixtures.',{block_id:str},['block_id']),
+  tool('list_authoring_fixtures','Catalog of Java-whitelisted authoring fixtures (retail, doors, storage, office, restroom, utility). Filters are optional; include_blocked lists machines/unsafe blocks too.',{category:str,block_entity_only:bool,multiblock_only:bool,include_blocked:bool}),
+  tool('place_fixture','Place one whitelisted single-cell fixture (BlockEntity allowed) inside the authoring plot. Java builds the state and an empty BlockEntity; raw NBT is never accepted. One undo step (we_undo).',{block_id:str,pos:vec,facing:facing,properties:variants,replace_policy:policy,dry_run:bool},['block_id','pos'],true),
+  tool('place_multiblock','Place a complete whitelisted multiblock from its anchor (master part, see describe_block). All parts are validated first and placed atomically or not at all; one undo step (we_undo).',{block_id:str,anchor:vec,facing:facing,properties:variants,replace_policy:policy,dry_run:bool},['block_id','anchor','facing'],true),
+  tool('reconcile_shapes','Recompute connection states (panes, bars, railings, fences, walls, stairs, AFL partitions/door_support, desktop lowered) in the plot or a crop. Pure updateShape only; one undo step.',{target:{type:'string',enum:['AUTHORING_SESSION']},...crop,dry_run:bool},[],true),
+  tool('audit_support','Read-only audit: canSurvive, multiblock orphan/mismatched parts, missing/unsafe BlockEntities, nonempty inventories, stale connections. Defaults to the authoring plot.',{target:{...target,default:'AUTHORING_SESSION'},...crop}),
   tool('reference_import_status','List only explicitly allowlisted reference archives.'),
   tool('reference_map_scan','Offline scan of a launch-allowlisted source. No paste.',{source_id:int,radius:int,y_min:int,y_max:int},['source_id']),
   tool('reference_candidates','Read last scan candidates. User must choose before extract.'),

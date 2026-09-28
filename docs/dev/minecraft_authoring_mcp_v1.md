@@ -30,6 +30,10 @@ Implementation exists; **V1 acceptance remains partial while selection/write/wor
 
    **Before compiling, cleaning, processing resources or redeploying, fully exit any Minecraft client loading this checkout's classes/resources. Never build against a running development client.** Start it only after those tasks finish. A release jar does **not** contain this bridge; replacing a PCL release jar will not activate it.
 
+## Add to Claude Code (project scope)
+
+The project-root `.mcp.json` registers the same server as `afl_minecraft` for Claude Code. It is **project scope only**: there is no global user registration, and the Codex configuration below is unchanged. It launches `tools/afl_minecraft_mcp/server.mjs` with `--game-dir run` and the local Python runtime. No reference ZIP is configured, because the Codex example path is not present on this workstation. `claude mcp get afl_minecraft` lists it as `Project config (shared via .mcp.json)`, *Pending approval* (2026-09-28); Claude Code asks for a one-time approval on first use. The game-side HTTP handshake additionally needs the development client running with the bridge enabled. That runtime connection has **not** been confirmed from Claude Code yet.
+
 ## Add to Codex / Astra
 
 Merge the `[mcp_servers.afl_minecraft]` table from `tools/afl_minecraft_mcp/codex.mcp.example.toml` into `C:\Users\willi\.codex\config.toml` (or the trusted project's `.codex/config.toml`), preserving other settings. Paths in the example match this workstation. Relaunch/reload the MCP host so its tool catalog picks up the server. Do not copy the game token into Codex config.
@@ -62,13 +66,16 @@ Start every round with `minecraft_status`. This binds the external client to the
 | `we_set/replace/walls/faces` | Exact namespaced block states; optional inclusive absolute `min`/`max`, otherwise whole authoring plot |
 | `we_copy/paste/rotate_clipboard` | Isolated own-draft clipboard, never reference source; `to` is paste minimum; 0/90/180/270 Y rotation |
 | `we_stack/move` | Explicit block-unit `offset`; stack `count`1..128; checked whole affected bounds |
-| `we_undo/redo` | Separate bridge history; manual conflicts reject instead of clobbering user edits |
+| `we_undo/redo` | One shared bridge history for WorldEdit edits **and** V2 fixture/multiblock/reconcile edits; manual conflicts reject instead of clobbering user edits. V2 entries undo without WorldEdit |
 | `we_batch_set` | 1–128 ordered exact-state cuboids (`min`, `max`, `block`); summed volume including overlaps ≤250,000. Full preflight before writing, one undo entry, same scope/entity/material restrictions and rollback on failure. Dry run also checks history capacity. |
-| `export_target_registry` | Actual running block IDs/properties, dedicated JSON file, no world edits |
+| `export_target_registry` | Actual running block IDs/properties plus a per-block `authoring` object (allowed, class, category, multiblock/size, inventory, support, placement tool), dedicated JSON file, no world edits |
+| `describe_block`, `list_authoring_fixtures` | V2 authoritative fixture contract and catalog from Java (see [Bridge V2](#afl-authoring-bridge-v2--blockentity--multiblock-2026-09-28)) |
+| `place_fixture`, `place_multiblock` | V2 whitelisted fixture placement; Java builds states and empty BlockEntities; atomic; one undo step |
+| `reconcile_shapes`, `audit_support` | V2 undoable connection-state reconciliation and read-only support/multiblock/BlockEntity audit |
 
 Read targets: `REFERENCE_SELECTION` (default), `AUTHORING_SESSION`, `REFERENCE_AREA`. Optional `min`/`max` crops must be entirely inside the target. Downsample1..32 is nearest-grid sampling, not majority aggregation. Legend: `#` solid, `G` glass, `D` door, `S` stairs, `A` air, `W` wood/furniture, `M` metal, `?` other. Categories are heuristics; exact palettes remain authoritative.
 
-Block writes always require AUTHORING_SESSION (except the explicitly separate reference paste workflow). Both source and destination must fit. Reads/edits max250,000 blocks; never silently load chunks. Bounds, permission, entities, unsafe states and all destination blocks are checked before editing. Pattern V1 deliberately supports one exact state, not arbitrary WorldEdit expressions/NBT. Regular draft edits reject existing block entities, fluids, falling blocks and hazardous dynamic machinery. No new gameplay blocks added, so no mining/tier changes.
+Block writes always require AUTHORING_SESSION (except the explicitly separate reference paste workflow). Both source and destination must fit. Reads/edits max250,000 blocks; never silently load chunks. Bounds, permission, entities, unsafe states and all destination blocks are checked before editing. Pattern V1 deliberately supports one exact state, not arbitrary WorldEdit expressions/NBT. Generic WorldEdit materials still never carry a BlockEntity or a multiblock part. Since Bridge V2, existing cells may hold **whitelisted, empty** authoring fixtures, and copy/move/replace/delete/patch are allowed on whole multiblocks only. Any other BlockEntity, a nonempty inventory or a loot table rejects the edit with `UNSAFE_BLOCK_ENTITY_PRESENT` (block id, position, reason). Fluids, falling blocks and hazardous dynamic machinery stay rejected. No new gameplay blocks added, so no mining/tier changes.
 
 ### Industrial utility light safety correction (2026-09-10)
 
@@ -88,6 +95,140 @@ The pre-fix run reproduced `UNSAFE_OR_DYNAMIC_BLOCK: apocalypse_firstlight:indus
 Final targeted result: **1/1 GameTest group passed** with actual WorldEdit (`build/industrial-light-targeted-verified.log`); Node MCP tests also passed **5/5**. An initial standalone test configuration selected zero cases because the template namespace differed; that run is not acceptance evidence. The corrected template namespace and init-script completion-marker check prevent a zero-test run from being reported as passing this regression.
 
 `gradlew build --offline` passed (`build/industrial-light-build-final.log`, including 9,078 projection-math cases). The resulting `build/libs/apocalypse_firstlight-1.0.0.jar` was checked and contains no `com/antaurora/apofirstlight/dev/**` entries. The corrected bridge is compiled into development classes for the next `runClient`; nothing was deployed into a running client or PCL instance. All compilation and headless tests ran after the user exited Minecraft.
+
+## AFL Authoring Bridge V2 — BlockEntity / Multiblock (2026-09-28)
+
+**Status: implemented; `compileJava` PASS; GameTest source written but not run; no in-game runtime verification.**
+
+This is development tooling only: every class is under `src/dev/java/.../dev/authoring/bridge/`, which the release jar excludes. V2 is a compatibility wrapper, and no block, BlockEntity, model or gameplay class was changed.
+- Part geometry calls each block's own public `partPosition` helpers. The glass double door's helper is private, so one documented locator mirrors it.
+- Survival is decided by each block's own `canSurvive`.
+- A later mesh/model reset may replace the scattered per-block multiblock logic. When that happens, only this adapter layer needs updating.
+
+### Policy
+
+- **No raw NBT.** Agents send only `block_id`, position, `facing`, named variant properties and a replace policy. Unknown arguments (e.g. `nbt`) are rejected. Java builds the exact `BlockState`, and the chunk creates a default BlockEntity. Inventories start empty and no loot table is set.
+- **Java is authoritative.** `AuthoringFixtureRegistry` (dev source set) is the single whitelist; Node only mirrors schemas and forwards requests. `export_target_registry` copies the same metadata for external tools.
+- **Classes:** `SAFE_FIXTURE` and `STORAGE_WITH_INVENTORY` are placeable; `MACHINE` and `UNSAFE` are not. Any BlockEntity block missing from the registry (e.g. `minecraft:furnace`, other mods) is treated as `UNSAFE`.
+- **Final export stays manual.** There is no MCP export tool; only the user runs `/afl_author export`.
+- **Buildings are authored intact.** Damage, debris, broken glass and scenario-time states are not bridge features; for example `vending_machine` is fixed to `broken=false`.
+
+### Fixture registry (`describe_block` is authoritative)
+
+| Class | Blocks |
+| --- | --- |
+| SAFE_FIXTURE | beverage_cooler (2×2), chest_freezer (2×1), cash_register, commercial_glass_double_door (2×2), restroom_stall_door, steel_door, poplar_door (two-tall), modern_office_desk (3×1), modern_office_chair, modern_lcd_monitor, office_computer_station, office_keyboard, office_mouse, low_filing_cabinet, tall_filing_cabinet, office_multifunction_printer (two-tall), office_cubicle_partition, restroom_partition, commercial_flushometer_toilet, commercial_wall_mounted_sink (two-tall), metal_trash_can, commercial_dumpster (2×1), water_dispenser (two-tall), industrial_utility_light, industrial_electrical_box |
+| STORAGE_WITH_INVENTORY (must start and stay empty) | retail_shelf_single (two-tall), vending_machine (two-tall), industrial_locker (two-tall), lead_chest, `minecraft:chest` (single only), `minecraft:barrel` |
+| MACHINE (blocked) | alloy_furnace, chemical_reactor, compressor, crusher, industrial_furnace, thermal_generator, gun_maintenance_bench, precision_fabrication_station |
+| UNSAFE (blocked) | energy_cell, fluid_tank, every unregistered BlockEntity block |
+
+Fixed authoring states:
+- Coolers: `left_open=false`, `right_open=false`.
+- Freezer: `lid=closed`.
+- Doors: `open=false`, and `powered=false` where the block has it.
+- Vending machine: `broken=false`.
+- Chests: `type=single`, `waterlogged=false`.
+- Barrel: `open=false`.
+
+The only variant property is `hinge` (stall, steel and poplar doors). Connection properties (`north/south/east/west`, `door_support`, desktop `lowered`) are computed and never supplied.
+
+Multiblock definitions (anchor = master part; parts are placed in the listed order):
+
+| Block(s) | Anchor / master | Other parts |
+| --- | --- | --- |
+| Two-tall blocks (`half`) | `lower` | `upper` above |
+| beverage_cooler | `lower_left` | right column at `facing.getCounterClockWise()`, upper row above |
+| chest_freezer | `left` | `right` at `facing.getCounterClockWise()` |
+| commercial_glass_double_door | `lower_left` | second leaf at `facing.getClockWise()`, upper row above |
+| commercial_dumpster | `master` | `secondary` at `facing.getClockWise()` |
+| modern_office_desk | `center` | `left` counter-clockwise, `right` clockwise |
+| Static workstations | `base` | definitions kept for audit and split checks only |
+
+`describe_block` returns every part's offset for each allowed facing and says which part owns the BlockEntity.
+
+### Tools
+
+| Tool | Behavior |
+| --- | --- |
+| `describe_block {block_id}` | Any registry block: BlockEntity, class, allowed, placement tool, property roles (FACING/PART/VARIANT/FIXED/CONNECTION_COMPUTED/DEFAULT/FREE), allowed facings, inventory, multiblock size/master/parts/offsets, support text, notes, `shape_reconcile_safe` |
+| `list_authoring_fixtures {category?, block_entity_only?, multiblock_only?, include_blocked?}` | Catalog. Categories: retail, doors, storage, office, restroom, utility; machine and workstation appear only with `include_blocked` |
+| `place_fixture {block_id, pos, facing?, properties?, replace_policy?, dry_run?}` | Single-cell fixtures only |
+| `place_multiblock {block_id, anchor, facing, properties?, replace_policy?, dry_run?}` | All parts computed in Java; if any part is occupied, unsupported or outside the plot, the whole request fails |
+| `reconcile_shapes {min?, max?, dry_run?}` | Recompute connection states in the plot or a crop; one undo step |
+| `audit_support {target?, min?, max?}` | Read-only; defaults to the authoring plot |
+
+`replace_policy` is `AIR_ONLY` (default) or `REPLACEABLE`, which also allows replaceable non-BlockEntity cells such as grass. Placement never overwrites an existing fixture.
+
+### Placement sequence (AUTHORING_SAFE_UPDATES)
+
+1. Check the whitelist, variant/fixed properties and facing, then plot scope, loaded chunks and world bounds. Every target cell must be free and entity-free.
+2. Apply the published simplified support rule as an early check: `FLOOR`, `FLOOR_OR_DESK`, `FLOOR_CLEAR_ABOVE`, `ATTACHED_OPPOSITE_FACING`, `NONE` or `BLOCK_RULE`. A `dry_run` stops here and changes nothing.
+3. Write all parts with `UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE | UPDATE_SUPPRESS_DROPS`.
+   - Happens: client sync, lighting, heightmaps, BlockEntity creation.
+   - Does not happen: neighbour notifications, neighbour shape cascades, drops, random ticks.
+4. Self-connected fixtures (partitions, desktop items) compute their own shape from their neighbours.
+5. Verify each part's own `canSurvive`, BlockEntity presence on the owner part and an empty inventory. On any failure, every touched cell is restored (`PLACEMENT_FAILED_ROLLED_BACK`).
+6. Reconcile only shape-safe neighbours inside the plot, for example a partition's `door_support` next to a new stall door. A neighbour that would break is reported as a warning and left unchanged.
+7. Record the placement and its neighbour changes as **one** entry in the shared history.
+
+Result fields:
+- `placed`, `block_id`
+- `parts[{pos, part, final_state, block_entity}]`
+- `final_state` (single-cell fixtures)
+- `block_entity_created`, `empty_inventory_confirmed`
+- `warnings`
+- `support_check`: `STATIC_RULE` for dry runs, `CAN_SURVIVE` for real placement
+- `raw_nbt_accepted=false`
+
+### Shared history, regions and generic WorldEdit
+
+- **Shared history.** `we_undo`/`we_redo` walk one history: at most 32 entries / ≈1,000,000 changes, memory-only, cleared by a new or cancelled reservation.
+  - Undo removes placed fixtures; the chunk drops their BlockEntities, so no orphans remain.
+  - Redo recreates them empty.
+  - Undo/redo is refused if a fixture inventory has since become nonempty.
+- **WorldEdit on existing fixtures.** Copy/move/stack/paste/set/replace may include whitelisted empty fixtures, but every part of each multiblock must be inside the edit (`MULTIBLOCK_SPLIT` otherwise). WorldEdit history comparison now uses block states; inventories are protected by the region guard.
+- **Generic WorldEdit materials.** `we_set/we_walls/we_faces/we_batch_set` still reject every BlockEntity state (`UNSAFE_OR_DYNAMIC_BLOCK`, including `minecraft:chest`). They now also reject multiblock parts (`MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK`), e.g. `water_dispenser[half=lower]` or `steel_door`.
+  - Vanilla doors are not in the registry and keep the V1 WorldEdit behavior.
+  - `we_replace` may *match* a whitelisted single-cell fixture to delete it, but not a multiblock part.
+
+### Reconciliation and audit
+
+`reconcile_shapes` only touches blocks whose `updateShape` is a pure connection function:
+- vanilla panes, iron bars and `steel_railing` (`CrossCollisionBlock`), fences, walls, stairs, fence gates;
+- AFL office/restroom partitions, including `door_support`;
+- desktop items (`lowered`).
+
+It computes every new state before writing anything. Results that would remove a block are skipped and reported. Doors, lights, electrical boxes and most AFL fixtures are excluded on purpose, because their `updateShape` can drop items or remove blocks.
+
+`audit_support` never edits. For each issue it reports position, block and expected support; the issue list is capped at 512 entries, but the counts are complete. Issue types:
+- `UNSUPPORTED`: the block's own `canSurvive` is false.
+- `ORPHAN_PART`, `PART_STATE_MISMATCH`: incomplete or inconsistent multiblocks.
+- `MISSING_BLOCK_ENTITY`, `UNSAFE_BLOCK_ENTITY`.
+- `NONEMPTY_INVENTORY`, `LOOT_TABLE_PRESENT`.
+- `CONNECTION_STALE`: run `reconcile_shapes`.
+
+### Implementation / verification
+
+Java:
+- `AuthoringFixtureRegistry.java`: contract, catalog, self-check `problems()`.
+- `AuthoringRegionGuard.java`: material, region and inventory policy.
+- `BridgeHistory.java`: shared history and controlled entries.
+- `FixtureAdapter.java`: placement, reconcile, audit.
+- Changes in `WorldEditAdapter.java`, `BridgeRouter.java` and `RegistrySnapshot.java`.
+
+Node: `tools/afl_minecraft_mcp/models.mjs` (+6 tools) and `test/bridge.test.mjs`.
+
+- `gradlew compileJava --offline`: **PASS** (2026-09-28, `build/bridge-v2-compile.log`).
+- Node tests: **6/6 PASS**, including a new V2 check for schemas, no raw NBT and no export tool.
+- GameTest `FixtureBridgeGameTests.java`: covers the 15 required cases. Entry point: `gradlew -I src/dev/bridge-fixture-gametest.init.gradle runGameTestServer --offline -PaflWithoutTacz`. **Not run** in this task.
+  - Covered: registry self-check, whitelisted and blocked placement, empty inventories, nonempty protection, single and multiblock undo/redo, atomic failure, orphan and support audit, invalid facing/property, reconciliation, partition `door_support`, ordinary AFL blocks, WorldEdit chest/multiblock guards, and WorldEdit undo of a whole multiblock.
+- The existing bridge GameTests were **not rerun** after the history refactor.
+
+Known limits:
+- Out of scope: vanilla double chests, vanilla doors in `place_multiblock`, machines, energy/fluid blocks.
+- The `redstone` name filter still rejects `redstone_lamp`.
+- Metadata sockets/entrances are deferred to V2.1.
+- Some fixtures (cooler, freezer, dumpster, desk, workstation) still run their scheduled-tick integrity check one tick after placement and remove genuinely orphaned parts, exactly as in normal gameplay.
 
 ## Restricted inspection viewpoints (2026-09-10)
 
@@ -167,4 +308,4 @@ Final `gradlew build --offline` also passed (`build/camera-build-final.log`, inc
 | CAMERA_NO_RETURN_POINT | No successful move saved an anchor, it was consumed, or the reservation/world/bridge changed; inspect current position |
 | CAMERA_NOT_SETTLED | Wait briefly for two matching rendered frames; check `camera_status.client_frame_ready`, do not screenshot a stale frame or poll forever |
 
-Restricted explicit camera move/status/restore and `we_batch_set` are implemented. Automatic viewpoint generation, smooth camera paths, detached cameras and a one-call multi-view capture tool are not implemented.
+Restricted explicit camera move/status/restore, `we_batch_set` and the Bridge V2 fixture tools are implemented. Automatic viewpoint generation, smooth camera paths, detached cameras and a one-call multi-view capture tool are not implemented.

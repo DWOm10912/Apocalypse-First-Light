@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "afl_minecraft": {
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "D:\\Minecraft Modding\\Apocalypse First Light\\tools\\afl_minecraft_mcp\\server.mjs",
+        "--game-dir",
+        "D:\\Minecraft Modding\\Apocalypse First Light\\run",
+        "--python",
+        "C:\\Users\\willi\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe"
+      ]
+    }
+  }
+}

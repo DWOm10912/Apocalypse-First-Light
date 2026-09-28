@@ -35,6 +35,16 @@ test('restricted camera schema and mutation annotations',()=>{
   for(const t of camera)assert.equal(t.annotations.readOnlyHint,t.name==='camera_status');
   assert.ok(!tools.some(t=>/^(execute_command|teleport|set_gamemode|send_chat)$/.test(t.name)));
 });
+test('bridge V2 fixture tools: schemas, write annotations and no raw NBT',()=>{
+  const byName=Object.fromEntries(tools.map(t=>[t.name,t]));
+  for(const name of ['describe_block','list_authoring_fixtures','place_fixture','place_multiblock','reconcile_shapes','audit_support'])assert.ok(byName[name],name);
+  for(const name of ['place_fixture','place_multiblock','reconcile_shapes'])assert.equal(byName[name].annotations.readOnlyHint,false);
+  for(const name of ['describe_block','list_authoring_fixtures','audit_support'])assert.equal(byName[name].annotations.readOnlyHint,true);
+  assert.deepEqual(byName.place_multiblock.inputSchema.required,['block_id','anchor','facing']);
+  for(const t of tools)assert.ok(!Object.keys(t.inputSchema.properties).some(k=>/nbt|tag|data/i.test(k)),`${t.name} must not accept raw NBT`);
+  assert.equal(byName.place_fixture.inputSchema.properties.properties.additionalProperties.type,'string');
+  assert.ok(!tools.some(t=>/export/.test(t.name)&&t.name!=='export_target_registry'),'final export stays manual');
+});
 test('disconnected discovery fails closed',async()=>{await assert.rejects(()=>new BridgeClient('test/not-a-world').call('we_set',{block:'minecraft:air'}),/MCP_NOT_CONNECTED/);});
 test('world handshake, token forwarding, and changed discovery rejects write before HTTP',async()=>{
   const dir=await mkdtemp(path.join(os.tmpdir(),'afl-bridge-test-'));await mkdir(path.join(dir,'afl_authoring_bridge'));let calls=0;
