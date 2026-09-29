@@ -3,8 +3,9 @@
 
   "sight_slot": {
     "anchor": "sight_anchor",
-    "mount_offset": [0, 0, 0],
-    "ads_center": [0, 13.4625, -2.8438],
+    "mount_interface": "rifle_optic_rail",
+    "mount_offset": [0, 0.30403, -0.00719],
+    "ads_center": [0, 13.48438, -2.8438],
     "accepts": [
       "apocalypse_firstlight:rifle_red_dot_01"
     ]

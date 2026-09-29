@@ -172,9 +172,10 @@ ads_center   = lens_center = [0, 6.52778, 0.25339]
 | `color` | `[255, 38, 30]` | 顶点颜色染色，可加第 4 个 alpha |
 | `angular_diameter_degrees` | `0.4` | 贴图四边形的视角直径（含柔边；50% alpha 核心约为 0.68 倍，即约 0.27°）；0.01–5。实机后由 0.55 调小 |
 | `max_off_axis_degrees` | `12`（缺省 12） | 瞄具光轴（sight −Z）与视线的最大夹角；0–45 |
+| `aperture_shape` | 缺省 `rectangle` | `rectangle` 或 `ellipse`（2026-09-28 新增，圆管瞄具用）；椭圆时交点按半轴椭圆判定 |
 | `lens_center_bone` / `lens_aperture_bone` | `lens_center` / `lens_aperture`（缺省同名） | 瞄具自身 geo 中的骨骼 |
 
-没有 `optics/<item>.json` 或没有 `collimated_reticle` 对象的瞄具不画红点。例如 `rifle_red_dot_01` 仍使用它自己的全亮 `reticle` cube，BR51 不变。
+没有 `optics/<item>.json` 或没有 `collimated_reticle` 对象的瞄具不画红点。2026-09-28 起 `rifle_red_dot_01` 也改用本渲染（`optics/rifle_red_dot_01.json`，椭圆窗口），旧的全亮 `reticle` cube 已退出，见 [步枪红点 Pure Mesh V1](attachments/rifle_red_dot_01_pure_mesh_v1.md)。
 
 **判定**（手部渲染的 pose 空间即视空间：相机在原点，屏幕中心 / hitscan 沿 −Z）：
 
@@ -183,7 +184,7 @@ ads_center   = lens_center = [0, 6.52778, 0.25339]
    - `lens_aperture` 原点在该坐标系中的 |x|、|y| 为有效窗口的半宽和半高：0.43 × 0.295。
 2. 光轴门限：瞄具 −Z 与视线夹角大于 `max_off_axis_degrees` 时不画。避免检视、换弹或野外附件视图中斜看镜窗时出现红点。
 3. 求交：屏幕中心射线与镜片平面求交。平行或交点距离小于 0.05（近裁面）时不画。
-4. 窗口：交点换算回镜片坐标，超出半宽或半高就隐藏；在窗口内才画。
+4. 窗口：交点换算回镜片坐标，超出半宽或半高就隐藏（`aperture_shape: ellipse` 时按半轴椭圆判定）；在窗口内才画。
 5. 绘制：在交点处（向眼侧偏移 0.1%）画一个垂直于视线的四边形，半边长为 `t · tan(直径/2)`，`t` 为交点距离。因此屏幕尺寸只由视角决定，不随模型远近变化。
    - ADS 时 `t` 约为 0.47；在 1080p、66.5° 手部 FOV 下，四边形约 5.8 px，核心约 3.9 px。
 
@@ -219,7 +220,7 @@ ads_center   = lens_center = [0, 6.52778, 0.25339]
 
 ## 挂载、保存与 ADS
 
-- `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 的 SIGHT 接入独立 `rifle_red_dot_01`，不接受本手枪红点。
+- `NativeGunDefinition.sightMount` 来自可选 JSON `sight_slot`；P9 白名单仅含本配件。BR51 与 HR55 的 SIGHT 接入独立 `rifle_red_dot_01`，不接受本手枪红点。
 - P9 使用现有 `sight_anchor` 的动画变换并叠加 `sight_slot.mount_offset=[0,-0.44,7.33]` 渲染瞄具；挂载位置、模型和动画未因本次 ADS 重标而改变。
 - `NativeAdsProfile.forStack` 在安装兼容瞄具时使用 `sight_slot.ads_center` 替换机械瞄具坐标。当前 P9 为 `[0, 6.52778, 0.25339]`（镜片 `lens_center`，见上文 [P9 ADS 标定](#p9-ads-标定2026-09-27)）；eye relief、FOV、进入时间、后坐力和伤害不变。旧值 `[2.48,7.756,2.04]`、`[1.50,5.80,2.04]` 属于旧 cube 红点，已作废。像素级对齐仍需客户端复验。
 - 模型从真实 `sight_anchor` 遍历矩阵渲染，继承套筒后坐/后定、换弹、整枪 ADS、第三人称与地面显示变换，不使用屏幕固定 HUD 点。

@@ -1,3 +1,5 @@
+// LEGACY (2026-09-28): superseded by tools/build-rifle-red-dot-01.mjs (Pure Mesh rifle_red_dot_01); do not run. The BR51 source
+// no longer has the sight group, and its outputs are now generated files. Kept as history of the V1 cube optic.
 // Deterministic extraction of approved BR51 geometry, not a redesign or texture repaint.
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'../../..'),base='src/main/resources/assets/apocalypse_firstlight/';

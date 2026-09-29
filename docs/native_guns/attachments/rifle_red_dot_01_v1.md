@@ -7,15 +7,16 @@
 | 项目 | 当前实现 |
 | --- | --- |
 | 名称 / ID | 步枪红点瞄具 / Rifle Red Dot Sight / `apocalypse_firstlight:rifle_red_dot_01` |
-| 槽位 / 兼容 | `SIGHT`；BR51-01 为第一兼容枪，非 BR51 专属实现 |
-| 来源 | BR51 源模型原生隐藏 `sight`，没有重新设计 |
+| 槽位 / 兼容 | `SIGHT`；BR51-01、HR55，挂载接口 `rifle_optic_rail`，非 BR51 专属实现 |
+| 资产 | 2026-09-28 起为原创封闭短管微型红点 Pure Mesh + PBR，见 [Pure Mesh V1](rifle_red_dot_01_pure_mesh_v1.md)；此前为 BR51 源模型隐藏 `sight` 的 cube 提取（下文“源资产审计与提取”，历史） |
+| 瞄准点 | 通用第一人称准直红点，圆形窗口（`optics/rifle_red_dot_01.json`）；旧的全亮 `reticle` cube 已退出 |
 | 安装 / 拆卸 / 更换 | 仅枪械维护台；不恢复 V 快捷入口 |
-| ADS 对齐点 | 枪体模型坐标 `[0,14.8125,3.70313]` |
-| ADS FOV / 进入时间 | 保持 BR51 原值 `0.89` / `0.2 s`；不增加高倍镜效果 |
+| ADS 对齐点 | 镜片中心 `lens_center` 的枪模型坐标：BR51 `[0,14.8125,3.70313]`，HR55 `[0,13.48438,-2.8438]` |
+| ADS FOV / 进入时间 | 保持各枪原值（BR51 `0.89` / `0.2 s`，HR55 `0.92` / `0.2 s`）；不增加高倍镜效果 |
 | 数值属性 | 无额外伤害、后坐力、散布、射程、射速、换弹速度修改 |
 | 槽位共存 | SIGHT 与 `rifle_suppressor_01` MUZZLE 独立保存和装拆 |
 
-## 源资产审计与提取
+## 源资产审计与提取（历史：V1 cube 资产，2026-09-28 起不再使用）
 
 `src/main/blockbench/br51_01.bbmodel` 中的 `sight` 原为 `export=false / visibility=false`。只提取它直接包含的 28 个 cube 和 `bone15_illuminated` 中的 1 个既有瞄准点。子组 `bone16` 是延伸导轨辅助几何，不复制；激光器、手电及其他子树不复制。
 
@@ -23,20 +24,20 @@
 
 | 资产 | 路径 / 接口 |
 | --- | --- |
-| 独立可编辑源 | `src/main/blockbench/rifle_red_dot_01.bbmodel` |
-| 可重复提取脚本 | `src/main/blockbench/extract_rifle_red_dot.cjs` |
-| 独立 runtime geo | `src/main/resources/assets/apocalypse_firstlight/geo/rifle_red_dot_01.geo.json` |
-| 独立贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01.png`；复制 BR51 原图，不重绘，保留 128×128 UV / 256×256 像素 |
+| 独立可编辑源 | `src/main/blockbench/rifle_red_dot_01.bbmodel`（历史，不再导出；当前源为 `rifle_red_dot_01_mesh.bbmodel`） |
+| 可重复提取脚本 | `src/main/blockbench/extract_rifle_red_dot.cjs`（LEGACY，勿运行；BR51 源已无 `sight` 组） |
+| 独立 runtime geo | `src/main/resources/assets/apocalypse_firstlight/geo/rifle_red_dot_01.geo.json`（现为 Pure Mesh 的骨骼 Geo） |
+| 独立贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01.png`；当时复制 BR51 原图（现已被 Pure Mesh 512 图集覆盖） |
 | 独立物品模型 | `src/main/resources/assets/apocalypse_firstlight/models/item/rifle_red_dot_01.json` |
-| Root / 发光子组 | `rifle_red_dot_root` / `reticle` |
-| 安装中心 | BR51 空 `sight_anchor`，位置 `[0,12.75,5.54688]`；BR51 Native Rig V2 起 parent 为 `gun_body`（原 `positioning2`，世界位置不变），`scope_pos` 已删除 |
+| Root / 发光子组 | `rifle_red_dot_root` / `reticle`（现为 `sight_root`，无发光组） |
+| 安装中心 | 当时 mount_offset 为零，直接对齐 BR51 空 `sight_anchor` `[0,12.75,5.54688]`（现按 `rifle_optic_rail` 放在导轨顶面）；BR51 Native Rig V2 起 parent 为 `gun_body`（原 `positioning2`，世界位置不变），`scope_pos` 已删除 |
 
 BR51 源模型中的隐藏参考红点（`sight` 组）在 BR51 V2 Pure Mesh（Phase 2，2026-09-28）中已从主枪源删除，可从 Git `38b6c66` 恢复；本附件资产与其贴图不受影响。没有加入整枪带镜变体，也没有在 runtime 基础枪模中加入红点 cube。只新增空挂载锚点，枪身、手部、弹匣、消音器和动画不变。
 
 ## 通用接入
 
 - `NativeSightItem` 可选择现有 baked-item 或独立 Geo 展示路径，P9 保留原路径。Geo 瞄具通过 `NativeSightRendering` 调用共用静态 Geo 绘制，不新建 BR51 专属渲染器或 ADS handler。
-- BR51 `sight_slot` 声明 anchor、零 mount_offset、ads_center 和 accepts。后续步枪可提供自己的对应数据，复用同一配件资产。
+- 枪的 `sight_slot` 声明 anchor、`mount_interface: rifle_optic_rail`、mount_offset（把瞄具原点放到自己的导轨顶面）、ads_center（镜片中心）和 accepts。当前 BR51 与 HR55 已标定，数值见 [Pure Mesh V1](rifle_red_dot_01_pure_mesh_v1.md)；后续步枪提供自己的这组数据即可复用同一资产。
 - `NativeAdsProfile.forStack` 读取实际装备的兼容 SIGHT 并解算光学轴。无配件继续原机械瞄准；真弹道保持 camera/look vector，视觉点不控制命中方向。
 - `AflAttachments.SIGHT` 保存真实附件 ItemStack；共用维护台 hotspot、Context HUD、完整 Inventory 候选投影、原版点击音与 2.480 秒操作声。51 tick 后服务端重新验证并提交，期间不提前出现/消失。
 - 兼容判断、revision、stale rejection 和安全返还均沿用 `MaintenanceAttachmentTransaction`。协议仍为 22，旧 V 报文继续为空操作。
@@ -50,7 +51,9 @@ BR51 源模型中的隐藏参考红点（`sight` 组）在 BR51 V2 Pure Mesh（P
 
 修正后客户端验证：`build/rifle-sight-item-client.log` 中 `[RIFLE SIGHT ITEM] PASS` 确认渲染器类型；`build/thermal-fluid-client/screenshots/rifle_red_dot_inventory.png` 已人工复核，普通背包第一格显示完整独立 3D 瞄具，未越出槽位。重新编译记录：`build/rifle-sight-item-build.log`。本次未重跑全套枪械 GameTest。
 
-## 验证边界
+## 验证边界（历史：V1 cube 资产）
+
+以下记录针对 2026-09-28 之前的 cube 资产；Pure Mesh V1 只经过离线校验和 compileJava，未实机验证。
 
 源码审计确认原红点 28+1 cube、原发光点与隐藏状态；独立贴图与 BR51 原贴图 SHA256 一致。Blockbench MCP 本次未连接，未完成实时 Blockbench 检查。
 

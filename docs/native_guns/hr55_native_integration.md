@@ -45,7 +45,11 @@ This is the center of the visible circular window, rather than the rear U-notch,
 ADS composition matches the BR51-style sight picture. The sight mount uses the same aim
 point. This is visual-only and does not alter hitscan or projectile direction.
 
-The HR55 accepts `rifle_red_dot_01` through its sight slot. Its `muzzle_slot` (anchor
+The HR55 accepts `rifle_red_dot_01` through its sight slot (`mount_interface` `rifle_optic_rail`). Since 2026-09-28
+the Pure Mesh optic sits on the top rail (rib top y 11.484375): `mount_offset` `[0, 0.30403, -0.00719]`, and
+`ads_center` `[0, 13.48438, -2.8438]` is the mounted `lens_center` (y was 13.4625; z, and so the ADS framing,
+unchanged). Offline solve and render only, not verified in game; see
+`attachments/rifle_red_dot_01_pure_mesh_v1.md`. Its `muzzle_slot` (anchor
 `muzzle_anchor`) has an empty `accepts` list: no suppressor attachment is currently compatible.
 (It briefly accepted `rifle_suppressor_01`; that 7.62x51mm device was removed on 2026-09-28 because
 HR55 fires 12.7x55mm.) The supplied

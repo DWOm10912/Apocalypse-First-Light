@@ -34,7 +34,7 @@
 | reload.tactical_seconds / empty_seconds | 非负秒，向上取整到服务端tick |
 | noise.radius / tinnitus | 非负半径；是否参与现有耳鸣累积系统 |
 | ads.time_seconds / fov_multiplier | 非负进入/退出时长；正数FOV倍率 |
-| sight_slot（可选） | anchor 名称、mount_offset 局部 xyz、ads_center 模型 xyz、accepts 兼容 SIGHT 物品 ID 数组；没有此字段即不支持。详见 [手枪红点 V1](pistol_red_dot_v1.md) |
+| sight_slot（可选） | anchor 名称、mount_offset 局部 xyz、ads_center 模型 xyz、accepts 兼容 SIGHT 物品 ID 数组；没有此字段即不支持。可选 `mount_interface`（2026-09-28）：accepts 中声明了接口的瞄具（`data/<ns>/native_attachments/<id>.json` 的 `mount_interface`）必须与之一致，否则拒绝加载；accepts 仍是运行时兼容依据。当前 BR51 与 HR55 为 `rifle_optic_rail`（导轨顶面原点，见 [步枪红点 Pure Mesh V1](attachments/rifle_red_dot_01_pure_mesh_v1.md)），P9 不声明。详见 [手枪红点 V1](pistol_red_dot_v1.md) |
 | recoil | NativeRecoilProfile同名数值字段，见下文 |
 | muzzle_slot（可选） | anchor 名称与 accepts 兼容 MUZZLE 物品 ID 数组；无字段不兼容。锚点应位于枪口 crown 中心（枪膛轴线上、螺纹枪管前端），枪口装置以后端面原点、-Z 向前、缩放 1.0 挂载。P9 首批接受 pistol_suppressor_01（AFL 通用 9mm 消音器），锚点 `muzzle_anchor` = `[0,5.3752,-7.633]` |
 | suppressed_fire_sound（可选） | 已注册 SoundEvent ID；有效抑音附件使用此声音，缺省回退原枪声，不修改音量或衰减距离 |

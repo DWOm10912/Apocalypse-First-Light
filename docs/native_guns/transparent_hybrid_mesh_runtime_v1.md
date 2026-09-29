@@ -18,6 +18,8 @@ node tools/verify-transparent-mesh.mjs
 
 该导出器读取保存的 `src/main/blockbench/pistol_red_dot_mesh.bbmodel`，从原 groups/outliner 提取 geo，保留 lens_center/lens_aperture，复制作者三张 atlas；**不运行几何生成器、不写源模型或源贴图**。本轮发现 `build-pistol-red-dot.mjs --check` 与保存源不同，故不使用生成器覆盖保存源。不要用它的 `--runtime` 代替正式透明导出流程。
 
+第二个使用该层的资产（2026-09-28）：`rifle_red_dot_01`。它的生成器 `tools/build-rifle-red-dot-01.mjs` 直接把映射 `{optic_lens: translucent}` 传给 `convert()`，没有单独的 layers 文件。镜片 alpha 为 40/255，高于 Oculus 0.1 的阈值，所以 Shader ON 时应作为透明面绘制而不被丢弃（未实机验证）。见 [步枪红点 Pure Mesh V1](attachments/rifle_red_dot_01_pure_mesh_v1.md)。
+
 ## Render path
 
 `NativeSightRendering` → `NativeMuzzleRendering.drawItem` → `AflHybridMeshRendering.renderAtCurrentPose`。Pistol sight 使用 `NativeSightItem(true)`，安装、维护台、野外检查与独立 builtin/entity 物品共用此入口。本轮 P9 sight_slot 保持原值。之后的准直 Reticle 轮次已按新镜片 `lens_center` 重标 P9 `ads_center = [0, 6.52778, 0.25339]`，机械 `mount_offset` 未变，见 [红点 V1 · P9 ADS 标定](pistol_red_dot_v1.md#p9-ads-标定2026-09-27)。Blackridge 当前没有 sight_slot，**NOT YET WIRED**。

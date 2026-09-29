@@ -11,7 +11,7 @@
 | 配件 | Registry ID | 槽位 | 当前兼容枪械 | 当前主要效果 | 状态 / 详情 |
 | --- | --- | --- | --- | --- | --- |
 | 手枪微型红点瞄具 | `pistol_red_dot` | `SIGHT` | P9-01 | ADS 对准镜片中心；第一人称准直红点；不额外增加倍率 | 已接入 / [红点 V1](../pistol_red_dot_v1.md) |
-| 步枪红点瞄具 | `rifle_red_dot_01` | `SIGHT` | BR51-01 | 原 BR51 红点独立资产化；光学轴 ADS，无额外倍率 | 已接入 / [步枪红点 V1](rifle_red_dot_01_v1.md) |
+| 步枪红点瞄具 | `rifle_red_dot_01` | `SIGHT` | BR51-01、HR55（接口 `rifle_optic_rail`） | 封闭短管微型红点；ADS 对准镜片中心；第一人称准直红点（圆形窗口）；不额外增加倍率 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_red_dot_01_pure_mesh_v1.md)、[接入 V1](rifle_red_dot_01_v1.md) |
 | 手枪消音器 | `pistol_suppressor_01` | `MUZZLE` | P9-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入；资产为 AFL 通用 9mm Pure Mesh（Model V2，待实机验收） / [手枪消音器 V1](pistol_suppressor_01_v1.md)、[Model V2](pistol_suppressor_01_model_v1.md) |
 | 7.62×51mm 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01（`rifle_fh_qd`，额定 7.62×51mm；HR55 已移除） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md)、[接入 V1](rifle_suppressor_01_v1.md) |
 | P9-01 28发扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 28 发；Pure Mesh 加长钢匣 + 握把延长套 + 加厚底板 | 已接入（V2，待实机验收） / [扩容弹匣 V2](../p9_01_extended_magazine_v1.md) |
@@ -34,8 +34,10 @@
 | 手枪红点 | ADS 光学轴 | 对齐 | P9 `ads_center = [0, 6.52778, 0.25339]` | 当前安装下镜片 `lens_center` 的枪模型坐标；不是伤害、精度或后坐力增益 | `NativeAdsProfile`、P9 `sight_slot` |
 | 手枪红点 | 准直红点 | 视觉 | 0.4° 四边形（核心约 0.27°），颜色 `[255,38,30]`，光轴门限 12° | 仅第一人称；标记屏幕中心 / hitscan，只在视线穿过镜窗时显示；不改弹道 | `NativeCollimatedReticleRendering`、`optics/pistol_red_dot.json` |
 | 手枪红点 | ADS FOV / 进入时间 | 保持 | 沿用 P9 `0.95` / `0.15 s` | 当前无配件额外倍率和举枪速度加成 | P9 `ads`、`NativeAdsProfile` |
-| 步枪红点 | ADS 光学轴 | 对齐 | BR51 `[0,14.8125,3.70313]` | 原源模型瞄准点中心，不改变弹道 | BR51 `sight_slot`、`NativeAdsProfile` |
-| 步枪红点 | ADS FOV / 进入时间 | 保持 | BR51 `0.89` / `0.2 s` | 无高倍率效果或数值加成 | BR51 `ads` |
+| 步枪红点 | ADS 光学轴 | 对齐 | BR51 `[0,14.8125,3.70313]`；HR55 `[0,13.48438,-2.8438]` | 装上后镜片 `lens_center` 的枪模型坐标，不改变弹道 | 各枪 `sight_slot`、`NativeAdsProfile` |
+| 步枪红点 | 准直红点 | 视觉 | 0.35° 四边形，颜色 `[255,38,30]`，光轴门限 12°，椭圆窗口半轴 0.51 | 仅第一人称；标记屏幕中心 / hitscan，只在视线穿过圆形镜窗时显示；不改弹道 | `NativeCollimatedReticleRendering`、`optics/rifle_red_dot_01.json` |
+| 步枪红点 | 挂载接口 | 校验 | `rifle_optic_rail` | 槽位声明的接口不一致时拒绝加载该枪数据 | `native_attachments/rifle_red_dot_01.json` → `NativeAttachmentData`、`NativeSightMount` |
+| 步枪红点 | ADS FOV / 进入时间 | 保持 | BR51 `0.89` / `0.2 s`；HR55 `0.92` / `0.2 s` | 无高倍率效果或数值加成 | 各枪 `ads` |
 | P9 扩容弹匣 | `capacity()` | 覆盖 | `28` 发 | 原容量 17 → 28（差值 +11），不是全枪通用“+11”修改器 | `NativeMagazineItem`、`NativeGunAmmo` |
 | P9 扩容弹匣 | 多余弹药处理 | 事务规则 | 容量降低时安全返还 | 安装不免费补弹；拆卸不吞掉超容量弹药 | `MaintenanceAttachmentTransaction` |
 

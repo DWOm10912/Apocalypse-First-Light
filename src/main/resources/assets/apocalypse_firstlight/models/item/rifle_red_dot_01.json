@@ -1,13 +1,128 @@
 {
   "parent": "builtin/entity",
-  "textures": {"particle":"apocalypse_firstlight:item/rifle_red_dot_01"},
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/rifle_red_dot_01"
+  },
   "display": {
-    "gui":{"rotation":[25,135,0],"translation":[0,-2,0],"scale":[3,3,3]},
-    "ground":{"translation":[0,2,0],"scale":[1,1,1]},
-    "fixed":{"scale":[2,2,2]},
-    "firstperson_righthand":{"rotation":[0,90,0],"scale":[1,1,1]},
-    "firstperson_lefthand":{"rotation":[0,-90,0],"scale":[1,1,1]},
-    "thirdperson_righthand":{"scale":[1,1,1]},
-    "thirdperson_lefthand":{"scale":[1,1,1]}
+    "gui": {
+      "rotation": [
+        20,
+        140,
+        0
+      ],
+      "translation": [
+        0,
+        -4.352,
+        -1.192
+      ],
+      "scale": [
+        4,
+        4,
+        4
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.002,
+        -0.943,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0.01,
+        -5.39,
+        0
+      ],
+      "scale": [
+        4,
+        4,
+        4
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -35,
+        0
+      ],
+      "translation": [
+        0,
+        -0.943,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        -35,
+        0
+      ],
+      "translation": [
+        0,
+        -0.943,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.002,
+        -0.943,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.002,
+        -0.943,
+        0
+      ],
+      "scale": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    }
   }
 }

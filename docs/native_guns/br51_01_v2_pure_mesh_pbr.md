@@ -51,7 +51,7 @@
 - **源中移除**（均为 `export=false`、从不导出，动画 animator 无关键帧，可从 `38b6c66` 恢复）：
   - 旧 TaCZ 参考红点 / 激光组 `sight`，含 11 个组、134 个 cube。
   - 参考前握把 `grip_default`，46 个 cube。
-  - 独立步枪红点资产 `rifle_red_dot_01` 早已提取，不受影响。
+  - 独立步枪红点资产 `rifle_red_dot_01` 早已提取，不受影响。（2026-09-28 红点另行重置为 Pure Mesh，BR51 `sight_slot` 改为 `mount_interface rifle_optic_rail`、`mount_offset [0, 0.0625, -1.11375]`，`ads_center` 不变；见 `attachments/rifle_red_dot_01_pure_mesh_v1.md`。）
 
 ## 材质与贴图
 

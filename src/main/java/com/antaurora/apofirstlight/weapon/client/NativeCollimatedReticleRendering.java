@@ -37,7 +37,8 @@ import java.util.function.Function;
  * Generic first-person collimated reticle for Geo sights that ship {@code assets/<ns>/optics/<item>.json}.
  * The dot marks the hitscan ray (camera centre = view -Z). It sits where that ray crosses the optic's lens plane
  * ({@code lens_center} bone, local +Z = lens normal) and shows only while the crossing is inside the effective window
- * ({@code lens_aperture} bone = window half extents in the lens frame) and the optic axis (sight -Z) is within the
+ * ({@code lens_aperture} bone = window half extents in the lens frame; a rectangle, or an ellipse for round tube optics
+ * with {@code aperture_shape: "ellipse"}) and the optic axis (sight -Z) is within the
  * spec's off-axis limit of the view. Its screen size is a fixed angle, never a model size. The already drawn housing
  * occludes it through depth; it writes colour only, never runs in a shadow pass or outside the first-person hand draw,
  * and never feeds aiming or hitscan. The model carries no reticle geometry.
@@ -48,9 +49,9 @@ public final class NativeCollimatedReticleRendering {
     // Vanilla hand projection near plane; a crossing closer than this cannot be on screen.
     private static final float NEAR = .05F;
 
-    /** Angles in radians; colour 0..1; bone names inside the sight's own geo. */
+    /** Angles in radians; colour 0..1; bone names inside the sight's own geo; ellipse = round window (tube optics). */
     public record Spec(ResourceLocation texture, float red, float green, float blue, float alpha,
-                       float angularDiameter, float maxOffAxis, String lensCenter, String lensAperture) {}
+                       float angularDiameter, float maxOffAxis, String lensCenter, String lensAperture, boolean ellipse) {}
 
     private static volatile Map<ResourceLocation, Spec> specs = Map.of();
     // Render thread only: armed around one first-person gun draw, filled by the sight mount of that draw.
@@ -98,8 +99,12 @@ public final class NativeCollimatedReticleRendering {
         }
         float diameter = degrees(o, "angular_diameter_degrees", Float.NaN, .01F, 5F);
         float offAxis = degrees(o, "max_off_axis_degrees", 12F, 0F, 45F);
+        String shape = o.has("aperture_shape") ? o.get("aperture_shape").getAsString() : "rectangle";
+        if (!shape.equals("rectangle") && !shape.equals("ellipse"))
+            throw new IllegalArgumentException("aperture_shape must be rectangle or ellipse");
         return new Spec(texture, rgba[0], rgba[1], rgba[2], rgba[3], diameter, offAxis,
-                bone(o, "lens_center_bone", "lens_center"), bone(o, "lens_aperture_bone", "lens_aperture"));
+                bone(o, "lens_center_bone", "lens_center"), bone(o, "lens_aperture_bone", "lens_aperture"),
+                shape.equals("ellipse"));
     }
 
     private static float degrees(JsonObject o, String key, float fallback, float min, float max) {
@@ -161,7 +166,8 @@ public final class NativeCollimatedReticleRendering {
         if (!(t > NEAR)) return;
         // Crossing in lens coordinates; u and v stay orthogonal with equal length (rigid pose, uniform scale).
         var r = new Vector3f(-c.x, -c.y, -t - c.z);
-        if (Math.abs(r.dot(u) / u.lengthSquared()) > halfWidth || Math.abs(r.dot(v) / v.lengthSquared()) > halfHeight) return;
+        float x = r.dot(u) / u.lengthSquared() / halfWidth, y = r.dot(v) / v.lengthSquared() / halfHeight;
+        if (spec.ellipse() ? x * x + y * y > 1 : Math.abs(x) > 1 || Math.abs(y) > 1) return;
 
         float half = t * (float) Math.tan(spec.angularDiameter() * .5F);
         float z = -t * (1 - 1e-3F); // a hair toward the eye; never coplanar with the lens

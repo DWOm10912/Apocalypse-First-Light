@@ -2,7 +2,8 @@
   "weapon_class": "rifle",
   "sight_slot": {
     "anchor": "sight_anchor",
-    "mount_offset": [0, 0, 0],
+    "mount_interface": "rifle_optic_rail",
+    "mount_offset": [0, 0.0625, -1.11375],
     "ads_center": [0, 14.8125, 3.70313],
     "accepts": ["apocalypse_firstlight:rifle_red_dot_01"]
   },

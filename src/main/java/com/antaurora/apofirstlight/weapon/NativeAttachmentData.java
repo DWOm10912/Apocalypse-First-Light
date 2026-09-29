@@ -8,8 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Optional packaged attachment data: data/&lt;ns&gt;/native_attachments/&lt;path&gt;.json (no file = code defaults).
- * noise_multiplier tunes a muzzle device; rated_ammo / mount_interface describe what it fits. Gun JSON accepts lists stay
- * the runtime authority; these two fields only validate them (see NativeMuzzleMount).
+ * noise_multiplier tunes a muzzle device; rated_ammo / mount_interface describe what it fits (a sight declares only
+ * mount_interface). Gun JSON accepts lists stay the runtime authority; these two fields only validate them (see
+ * NativeMuzzleMount, NativeSightMount).
  */
 public record NativeAttachmentData(Double noiseMultiplier, ResourceLocation ratedAmmo, String mountInterface) {
     public static final NativeAttachmentData NONE=new NativeAttachmentData(null,null,null);
