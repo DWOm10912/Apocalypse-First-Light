@@ -124,6 +124,12 @@
       }
     ]
   },
+  "br51_01_inspect_slide_back": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/inspect_slide_back", "stream": false}]
+  },
+  "br51_01_inspect_slide_release": {
+    "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/inspect_slide_release", "stream": false}]
+  },
   "br51_01_suppressed": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/br51_01/suppressed", "stream": false}]
   },

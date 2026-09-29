@@ -195,6 +195,28 @@ Base Color 与 PBR 在同一次光栅中写出，三张图共用同一套 UV。
 - 物品栏图标：2026-09-28 已换成 Mesh 版捕图（源为 `src/main/blockbench/inventory_icons/br51_01_inventory.png`），并按 `native_gun_inventory_presentation_v1.md` 的 `LONG_GUN` 规则框定为 256×256；Creative Tab 未实机复查。
 - 显示弹药：2026-09-28 已接入动态顶弹（两发），见下文。枪膛内那发（`bullet_in_barrel`）尚未接入。
 
+## 检视的拉机声（2026-09-28，未实机验证）
+
+- 原作者的检视（`inspect`）在 3.458 → 3.75 s 把枪机拉到后位，只用 `br51_01_draw`（拔枪声）充当拉机声；4.208 → 4.292 s 枪机回到前位时没有声音。
+- 中间曾临时用空仓换弹的 `reload_empty_4` 补回位声，用户反馈听着不对，已被下面两段专用音频取代。
+- 用户用 Adobe 制作了两段音频：`E:/Download/br51_slide_back.ogg`、`br51_slide_release.ogg`，原文件未改。
+- 处理后放在 `sounds/weapons/br51_01/`：
+  - 转为 48 kHz 单声道，Minecraft 才会做距离衰减和方位定位。
+  - 裁掉开头空白，瞬态前留 10 ms。
+  - 响度（2026-09-28 用户反馈“太小”后重做，从原始文件一次处理）：增益后接限幅器（上限 −1 dBFS）。后拉 +15 dB，回位 +12 dB，最响 100 ms 分别从 −18.9 / −15.8 升到 −13.3 / −12.0 dBFS，无削波。
+    - BR51 换弹主体声（`reload_empty_2/3/4`、`reload_tactical_1/2`）为 −8 到 −10 dBFS；两声是短促单击，峰值比平均高约 18 dB，再往上拉会把“咔”的层次压平，所以停在差 3–4 dB 的位置。
+
+| 文件 | 时长 | 瞬态 | 平均响度 | 关键帧 | 对齐 |
+|---|---|---|---|---|---|
+| `inspect_slide_back.ogg` | 0.305 s | 起拉 35 ms，撞停 105–115 ms | 最响 100 ms −13.3 dBFS | 3.635 s | 撞停落在 3.75 s，枪机到达后位 |
+| `inspect_slide_release.ogg` | 0.441 s | 撞击 60–65 ms | 最响 100 ms −12.0 dBFS | 4.26 s | 撞击落在 4.325 s，枪机到位后 0.033 s，与空仓换弹的回位时间关系一致 |
+
+- 新声音事件 `br51_01_inspect_slide_back` / `br51_01_inspect_slide_release`：`AflSounds.BR51_01` 列表加两项，`sounds.json` 加两条。
+- 检视动画去掉 3.5 s 的 `draw`（以及临时的 4.225 s `reload_empty_4`），换成上表两帧。
+  - 运行时 `animations/br51_01.animation.json` 只改这几帧。
+  - 源文件由 `tools/build-br51-01-v2-mesh.mjs` 生成时同步写入（`INSPECT_RACK`，UUID 固定）。
+- 检视时长、骨骼通道和其他声音都不变；`compileJava --offline` 通过。
+
 ## 动态弹药（顶部两发，2026-09-28，compileJava 通过，未实机验证）
 
 - **弹药资产**：`geo/762x51mm_round.geo.json` 与 `textures/item/762x51mm_ammo_v1.png`，即 Pure Mesh 7.62×51mm 整弹，见 `native_ammo_assets_v1.md`。

@@ -55,7 +55,8 @@ public final class AflSounds {
 
     public static final java.util.List<RegistryObject<SoundEvent>> BR51_01 = java.util.stream.Stream.of(
             "fire", "reload_empty_1", "reload_empty_2", "reload_empty_3", "reload_empty_4",
-            "reload_tactical_1", "reload_tactical_2", "reload_tactical_3", "draw", "put_away")
+            "reload_tactical_1", "reload_tactical_2", "reload_tactical_3", "draw", "put_away",
+            "inspect_slide_back", "inspect_slide_release")
             .map(action -> SOUND_EVENTS.register("br51_01_" + action, () -> SoundEvent.createVariableRangeEvent(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "br51_01_" + action))))
             .toList();

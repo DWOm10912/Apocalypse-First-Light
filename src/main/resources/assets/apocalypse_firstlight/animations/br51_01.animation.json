@@ -3416,8 +3416,11 @@
         "2.4583": {
           "effect": "apocalypse_firstlight:br51_01_reload_tactical_2"
         },
-        "3.5": {
-          "effect": "apocalypse_firstlight:br51_01_draw"
+        "3.635": {
+          "effect": "apocalypse_firstlight:br51_01_inspect_slide_back"
+        },
+        "4.26": {
+          "effect": "apocalypse_firstlight:br51_01_inspect_slide_release"
         }
       }
     },

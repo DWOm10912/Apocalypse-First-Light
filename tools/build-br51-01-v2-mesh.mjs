@@ -662,6 +662,19 @@ const source = buildSource();
 }
 for (const g of source.groups) delete g.bedrock_binding;   // Bedrock-only field; the Free Model source has no binding
 Object.assign(source.textures[0], {relative_path: 'textures/br51_01.png', folder: '', namespace: ''});
+// Inspect rack sounds (2026-09-28): the author's inspect pulls the bolt back (3.458 -> 3.75 s) with 'draw' standing in
+// for the pull and lets it forward (4.208 -> 4.292 s) silently. Two dedicated user-made sounds replace that:
+// inspect_slide_back (its rear-stop transient 0.115 s into the file lands on the bolt reaching the rear, 3.75 s) and
+// inspect_slide_release (impact 0.065 s in lands 0.033 s after the bolt is home, the reload_empty timing).
+export const INSPECT_RACK = [{time: 3.635, effect: 'apocalypse_firstlight:br51_01_inspect_slide_back', seed: 'inspect-slide-back-sound'},
+  {time: 4.26, effect: 'apocalypse_firstlight:br51_01_inspect_slide_release', seed: 'inspect-slide-release-sound'}];
+{
+  const inspect = source.animations.find(a => a.name === 'inspect');
+  const fx = Object.values(inspect.animators).find(a => a.type === 'effect');
+  fx.keyframes = fx.keyframes.filter(k => !(k.time === 3.5 && k.data_points[0].effect === 'apocalypse_firstlight:br51_01_draw'));
+  for (const k of INSPECT_RACK) fx.keyframes.push({channel: 'sound', data_points: [{effect: k.effect, locator: '', file: ''}],
+    uuid: uuid(k.seed), time: k.time, color: -1, interpolation: 'linear'});
+}
 // Rifle Suppressor V1 (2026-09-28): muzzle_anchor = the muzzle-device mounting shoulder (front face of the flash hider's rear
 // collar, where a QD suppressor seats), no longer mid-hider at z -26.2. Empty locator; nothing else in the rig moves.
 export const MUZZLE_ANCHOR = [0, 11.4375, -23.98437];
