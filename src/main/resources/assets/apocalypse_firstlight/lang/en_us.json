@@ -370,5 +370,9 @@
 
   "hint.apocalypse_firstlight.break_glass": "Break glass",
   "item.apocalypse_firstlight.cat": "C.A.T",
-  "tooltip.apocalypse_firstlight.cat.description": "Please do not ask how it works...."
+  "tooltip.apocalypse_firstlight.cat.description": "Please do not ask how it works....",
+  "tooltip.apocalypse_firstlight.inventory.locked": "Locked inventory slot",
+  "tooltip.apocalypse_firstlight.inventory.locked.hint": "Equip a backpack to increase storage capacity",
+  "tooltip.apocalypse_firstlight.inventory.overflow": "Exceeds current storage capacity",
+  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "Items can be removed, but new items cannot be inserted"
 }

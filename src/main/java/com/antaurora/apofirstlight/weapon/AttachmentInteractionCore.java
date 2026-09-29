@@ -39,16 +39,17 @@ public final class AttachmentInteractionCore {
         var inv=player.getInventory();var before=new java.util.ArrayList<ItemStack>();
         for(int i=0;i<36;i++)before.add(inv.getItem(i).copy());
         if(!remove)source.shrink(1); // Both entry points conserve real items, including creative players.
+        int insertionLimit=com.antaurora.apofirstlight.inventory.PlayerStorageCapacity.getUnlockedInventorySlots(player);
         var dropped=new java.util.ArrayList<net.minecraft.world.entity.item.ItemEntity>();
         for(var returned:returns){
-            for(int i=0;i<36&&!returned.isEmpty();i++){
+            for(int i=0;i<insertionLimit&&!returned.isEmpty();i++){
                 var slot=inv.getItem(i);
                 if(!slot.isEmpty()&&ItemStack.isSameItemSameTags(slot,returned)){
                     int amount=Math.min(returned.getCount(),Math.max(0,slot.getMaxStackSize()-slot.getCount()));
                     slot.grow(amount);returned.shrink(amount);
                 }
             }
-            for(int i=0;i<36&&!returned.isEmpty();i++)if(inv.getItem(i).isEmpty()){
+            for(int i=0;i<insertionLimit&&!returned.isEmpty();i++)if(inv.getItem(i).isEmpty()){
                 int amount=Math.min(returned.getCount(),returned.getMaxStackSize());
                 var part=returned.copy();part.setCount(amount);inv.setItem(i,part);returned.shrink(amount);
             }

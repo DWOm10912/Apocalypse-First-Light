@@ -370,5 +370,9 @@
 
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
   "item.apocalypse_firstlight.cat": "C.A.T",
-  "tooltip.apocalypse_firstlight.cat.description": "请不要询问它的工作原理..."
+  "tooltip.apocalypse_firstlight.cat.description": "请不要询问它的工作原理...",
+  "tooltip.apocalypse_firstlight.inventory.locked": "未解锁的背包栏位",
+  "tooltip.apocalypse_firstlight.inventory.locked.hint": "装备背包可增加储物空间",
+  "tooltip.apocalypse_firstlight.inventory.overflow": "超出当前储物容量",
+  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "可以取出物品，但无法放入新的物品"
 }
