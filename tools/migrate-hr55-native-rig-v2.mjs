@@ -2,7 +2,7 @@
 // geometry, UVs, texture, animations and feel unchanged (same method as tools/migrate-br51-native-rig-v2.mjs).
 //   node tools/migrate-hr55-native-rig-v2.mjs   -> on the TaCZ-era files: syncs, migrates and writes them;
 //                                                 on already migrated files: re-derives from git (HR55_RIG_BASE, default
-//                                                 HEAD) and only verifies the outputs
+//                                                 97e9270, the pre-migration commit) and only verifies the outputs
 // 1) Sync (the runtime is the tested truth; the editable source had drifted):
 //    - sight_anchor pivot: runtime (0, 11.18035, -2.10661) (rifle red dot calibration), source still (0, 16.28, -23.1)
 //    - sound markers: the runtime uses registered events (apocalypse_firstlight:hr55_*), shoot has none (NativeGunActions
@@ -217,7 +217,7 @@ function evaluate(geo, clip, t) {
 // ---------------- run ----------------
 const disk = JSON.parse(read(P.src));
 const migrated = !disk.groups.some(g => g.name === 'root_ash12_1');
-const base = process.env.HR55_RIG_BASE || 'HEAD';
+const base = process.env.HR55_RIG_BASE || '97e9270';   // last commit with the TaCZ-era HR55 files (the migration landed in e184568)
 const original = p => migrated ? execFileSync('git', ['show', `${base}:${p}`], {cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28}) : read(p);
 const src0 = JSON.parse(original(P.src)), geo0 = JSON.parse(original(P.geo)), anim0 = JSON.parse(original(P.anim));
 const synced = clone(src0), sync = syncSource(synced, geo0, anim0);

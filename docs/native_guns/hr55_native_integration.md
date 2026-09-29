@@ -33,6 +33,12 @@ source was synchronized to the runtime first (sight_anchor pivot, sound markers,
 `muzzle_pos` uses a 3.55125-unit barrel-exit offset derived from the source's actual
 muzzle-anchor separation.
 
+Since 2026-09-28 the `12_7x55mm_round` / `12_7x55mm_casing` items are Pure Mesh (brass case, bimetal
+jacket, exposed aluminium nose), and HR55 ejects the low-poly `12_7x55mm_casing_fx` at world scale 0.436,
+the same flight size as the former cube casing. The two visible magazine rounds (`bullet1` / `bullet2`)
+are still the gun model's own cubes until HR55 Phase 2. See "12.7×55mm Visible Ammo V1" in
+`native_ammo_assets_v1.md`; not verified in game.
+
 The nine HR55 clips (`shoot`, `static_idle`, `reload_tactical`, `reload_empty`,
 `inspect`, `inspect_empty`, `draw`, `put_away`, and `static_bolt_caught`) now give
 `right_hand_anchor` one constant Position keyframe at time 0: `[0, -7, 0]`.

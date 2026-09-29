@@ -29,6 +29,10 @@ public final class AflStaticMeshItemClient {
             // ground offset puts its base 0.014 above the entity like the other rounds (0.25 + 0.014 / ground scale 1.33).
             bind(AflItems.ROUND_762MM.get(), "762x51mm_round", "762x51mm_ammo_v1", 0.396628, 0.2605263158);
             bind(AflItems.CASING_762MM.get(), "762x51mm_casing", "762x51mm_ammo_v1", 0.425436);
+            // 12.7x55mm set (tools/build-127x55mm-ammo.mjs): 0.5 - height / 32 (round 3.109, casing 2.34453); the round's
+            // ground offset puts its base 0.014 above the entity like the other rounds (0.25 + 0.014 / ground scale 1.415).
+            bind(AflItems.ROUND_127MM.get(), "12_7x55mm_round", "12_7x55mm_ammo_v1", 0.40284375, 0.2598939929);
+            bind(AflItems.CASING_127MM.get(), "12_7x55mm_casing", "12_7x55mm_ammo_v1", 0.4267334375);
         });
     }
 

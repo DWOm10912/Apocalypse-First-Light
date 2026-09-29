@@ -1,6 +1,6 @@
 // Light LabPBR for AFL lathe ammo: one zone table shared by every calibre's high-detail atlas (rounds, casings) and its
 // ejected-casing FX asset, so a flying casing, the same casing as an item and the magazine top round read as the same
-// materials under shader packs. Used by tools/build-9x19mm-ammo.mjs and tools/build-50ae-ammo.mjs.
+// materials under shader packs. Used by tools/build-9x19mm-ammo.mjs, tools/build-50ae-ammo.mjs, tools/build-762x51mm-ammo.mjs and tools/build-127x55mm-ammo.mjs.
 // _s: R perceptual smoothness, G F0 (255 = metal, the Base Color is F0; 10 = dielectric, F0 ~0.04), B 0, A 255 (no emission).
 // _n: flat tangent normal (128, 128) and B = AO. Nothing high-frequency: rounds and casings are small (shimmer).
 
@@ -19,6 +19,9 @@ export const AMMO_PBR = {
   jacket: [125, 255, 255], jacketEdge: [140, 255, 255],
   // exposed soft-point lead: dielectric with a slight sheen (as a metal its dark Base Color would turn near black)
   lead: [80, 10, 255], meplat: [85, 10, 255],
+  // 12.7x55 light bullet: the bimetal jacket's bright cut lip, then the exposed aluminium core (satin metal, a little
+  // rougher than the jackets so it reads matte; the small flat meplat rougher still)
+  jacketLip: [145, 255, 245], alu: [95, 255, 255], aluTip: [85, 255, 235],
 };
 
 /** LabPBR texel values for a paint zone; ao overrides the table's AO (e.g. a radial gradient). */

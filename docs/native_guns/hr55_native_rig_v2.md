@@ -12,7 +12,7 @@
 
 - **迁移工具**：`tools/migrate-hr55-native-rig-v2.mjs`。
   - 在 TaCZ 世代的文件上：先同步、再迁移，然后写出。
-  - 在已迁移的文件上：从 git 原件（`HR55_RIG_BASE`，缺省 `HEAD`）重新推导，再逐字节比对（忽略 CRLF / LF 差异），只校验、不写入。
+  - 在已迁移的文件上：从 git 原件（`HR55_RIG_BASE`，缺省 `97e9270`，即迁移提交 `e184568` 之前的最后一个提交）重新推导，再逐字节比对（忽略 CRLF / LF 差异），只校验、不写入。
 - **主枪源**：`src/main/blockbench/hr55.bbmodel`。组数 55 → 40，cube 数 820 → 748，动画 9 条。
 - **运行时**：`geo/hr55.geo.json`（骨骼 50 → 35，cube 742 个不变）、`animations/hr55.animation.json`（9 条）。两个文件改为标准两空格缩进的 JSON，内容等价。
 - **扩容弹匣参考源**：`src/main/blockbench/hr55_extended_magazine.bbmodel`。

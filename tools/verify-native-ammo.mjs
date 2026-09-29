@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 const r='src/main/resources/assets/apocalypse_firstlight/';
-for(const id of ['9x19mm_round','762x51mm_round','9x19mm_casing','762x51mm_casing']){
+// legacy Cube sources outside src/main/blockbench/<id>.bbmodel
+const SRC={'12_7x55mm_round':'ammo_127x55_cube_v1/12_7x55mm_round','12_7x55mm_casing':'ammo_127x55_cube_v1/12_7x55mm_casing'};
+for(const id of ['9x19mm_round','762x51mm_round','12_7x55mm_round','9x19mm_casing','762x51mm_casing','12_7x55mm_casing']){
  // Pure Mesh items (builtin/entity + Static Hybrid Mesh renderer): check the mesh route; the Cube checks below then
  // apply to the retained legacy Cube model.
  const main=JSON.parse(fs.readFileSync(r+'models/item/'+id+'.json'));
@@ -11,7 +13,7 @@ for(const id of ['9x19mm_round','762x51mm_round','9x19mm_casing','762x51mm_casin
   console.log(id+': Pure Mesh item (geo, aflmesh, atlas) OK');
  }
  const m=meshItem?JSON.parse(fs.readFileSync(r+'models/item/legacy/'+id+'_java.json')):main;
- const b=JSON.parse(fs.readFileSync('src/main/blockbench/'+id+'.bbmodel'));
+ const b=JSON.parse(fs.readFileSync('src/main/blockbench/'+(SRC[id]??id)+'.bbmodel'));
  assert.equal(m.elements.length,b.elements.length);
  assert.equal(m.textures['0'],'apocalypse_firstlight:item/'+id);
  assert.ok(fs.existsSync(r+'textures/item/'+id+'.png'));
