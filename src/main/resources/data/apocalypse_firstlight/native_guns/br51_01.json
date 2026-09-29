@@ -59,7 +59,16 @@
       "ads_rotation": [0, 0, 0]
     }
   },
-  "presentation": {"hud": {"width": 60, "height": 12}, "mag_in_tick": 52, "trail": "subtle_rifle"},
+  "presentation": {
+    "hud": {"width": 60, "height": 12}, "mag_in_tick": 52, "trail": "subtle_rifle",
+    "magazine_round_visual": {
+      "anchor": ["7", "3"],
+      "loaded_auxiliary_anchor": ["reload_bullet_7", "reload_bullet_3"],
+      "geometry": "apocalypse_firstlight:geo/762x51mm_round.geo.json",
+      "texture": "apocalypse_firstlight:textures/item/762x51mm_ammo_v1.png",
+      "local_offset": [0, -1.96832, 0]
+    }
+  },
   "recoil": {
     "verticalMin": 1.35,
     "verticalMax": 1.75,

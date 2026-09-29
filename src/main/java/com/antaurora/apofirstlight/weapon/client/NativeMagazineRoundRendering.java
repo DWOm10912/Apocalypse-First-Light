@@ -22,22 +22,23 @@ final class NativeMagazineRoundRendering {
         if (definition == null) return;
         var visual = definition.magazineRoundVisual();
         if (visual == null || bone.isHidden()) return;
-        boolean main = visual.anchor().equals(bone.getName());
-        boolean loadedAuxiliary = bone.getName().equals(visual.loadedAuxiliaryAnchor());
-        boolean oldMagazine = bone.getName().equals(visual.oldMagazineAnchor());
-        if (!main && !loadedAuxiliary && !oldMagazine) return;
+        // index = position from the top of the magazine (0 = top round); round i needs more than i rounds loaded
+        String name = bone.getName();
+        int main = visual.mainIndex(name), loadedAuxiliary = visual.loadedAuxiliaryIndex(name), oldMagazine = visual.oldMagazineIndex(name);
+        if (main < 0 && loadedAuxiliary < 0 && oldMagazine < 0) return;
         if (NativeGunShadowSkip.shouldSkip(stack, perspective, stack.getItem())) return;
         for (GeoBone parent = bone.getParent(); parent != null; parent = parent.getParent())
             if (parent.isHidingChildren() || parent.isHidden()) return;
         int ammo = NativeGunAmmo.read(stack, definition);
-        if (main) {
-            if (ammo <= 0) return;
+        if (main >= 0) {
+            if (ammo <= main) return;
         } else {
             String clip = actionClip.get();
-            if (loadedAuxiliary) {
+            if (loadedAuxiliary >= 0) {
+                // reloads bring a full magazine; inspect shows the gun's own magazine with its real count
                 if (!"reload_tactical".equals(clip) && !"reload_empty".equals(clip)
-                        && !("inspect".equals(clip) && ammo > 0)) return;
-            } else if (!"reload_tactical".equals(clip) || ammo <= 0) return;
+                        && !("inspect".equals(clip) && ammo > loadedAuxiliary)) return;
+            } else if (!"reload_tactical".equals(clip) || ammo <= oldMagazine) return;
         }
 
         // GeckoLib has already applied this bone and all ancestors to incoming.

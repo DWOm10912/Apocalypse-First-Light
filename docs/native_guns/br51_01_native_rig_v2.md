@@ -125,7 +125,7 @@ root
   - 枪身几何组仍是作者原名（`br51_01_default`、`bone*`、`octagon*`、`qianguan`、`group*`）。Phase 2 已按组重建为同名 mesh 部件，但仍未改名。
   - 仅源的 `sight`（旧红点）与 `grip_default`：Phase 2 已从主枪源删除，可从 `38b6c66` 恢复。
   - 定义裸枪出口的 AFL 锚点，取代 `muzzle_pos`：仍未完成。
-  - 显示弹药（`bullet*`、`bullet_in_barrel`、`reload_bullet*`）：Phase 2 起为空骨骼，等 7.62 弹药重置后接动态弹药逻辑。
+  - 显示弹药（`bullet*`、`bullet_in_barrel`、`reload_bullet*`）：Phase 2 起为空骨骼。2026-09-28 起 `7` / `3` 和 `reload_bullet_7` / `reload_bullet_3` 由动态弹药系统绘制顶部两发（见 `br51_01_v2_pure_mesh_pbr.md`）；`bullet_in_barrel` 仍未接入。
   - `empty_old_mag` 仍挂在枪体下（P9 在 root 下），这是为了保持动画精确而保留的差异，重做换弹动画时再统一。
   - 扩容匣与弹鼓的 Mesh 重建与接入是独立任务。
 - **已可彻底删除（本轮已删）**：`constraint`、`positioning2`、`muzzle_flash`、`scope_pos`、`laser_pos`、`grip_pos`、`stock_pos`、`positioning` 及子组、`view` 及子组、`mag_and_lefthand`、`magazine_bullet`、`additional_magazine`、`gun_and_righthand`、`shell`、`mag_extended_1/2/3`、`hu3`、`hu7`，以及孤立通道 `bolt2`、`charger`。

@@ -38,7 +38,7 @@
 | recoil | NativeRecoilProfile同名数值字段，见下文 |
 | muzzle_slot（可选） | anchor 名称与 accepts 兼容 MUZZLE 物品 ID 数组；无字段不兼容。锚点应位于枪口 crown 中心（枪膛轴线上、螺纹枪管前端），枪口装置以后端面原点、-Z 向前、缩放 1.0 挂载。P9 首批接受 pistol_suppressor_01（AFL 通用 9mm 消音器），锚点 `muzzle_anchor` = `[0,5.3752,-7.633]` |
 | suppressed_fire_sound（可选） | 已注册 SoundEvent ID；有效抑音附件使用此声音，缺省回退原枪声，不修改音量或衰减距离 |
-| presentation.magazine_round_visual（可选） | 通用动态顶弹：`anchor`、`geometry`、`texture` 为必填；`loaded_auxiliary_anchor` 与 `old_magazine_anchor` 可选且不得与其他锚点重名。`local_offset`（Blockbench 单位）和 `local_rotation`（角度）可选，均为三个有限数，缺省 `[0,0,0]`；在已继承锚点姿态后依次平移并绕 X/Y/Z 旋转。P9 用该局部修正适配现有 9mm 底面原点模型，Blackridge 未配置修正，保持原姿态。顶弹不改变弹量或换弹结算。 |
+| presentation.magazine_round_visual（可选） | 通用动态顶弹：`anchor`、`geometry`、`texture` 为必填；`loaded_auxiliary_anchor` 与 `old_magazine_anchor` 可选，所有锚点不得重名。每个锚点字段既可以是单个骨骼名，也可以是从顶往下排列的骨骼名数组（2026-09-28 起，用于双排弹匣）：第 i 个（从 0 起）在余弹多于 i 发时显示；换弹时的新匣视为满匣，全部显示；检视中的弹匣和战术换弹的旧匣按实际余弹。`local_offset`（Blockbench 单位）和 `local_rotation`（角度）可选，均为三个有限数，缺省 `[0,0,0]`；在已继承锚点姿态后依次平移并绕 X/Y/Z 旋转。P9 用该局部修正适配现有 9mm 底面原点模型，Blackridge 未配置修正，保持原姿态。顶弹不改变弹量或换弹结算。 |
 
 noise.radius 是裸枪基础值。NativeGunNoise 从真实 ItemStack 的有效 MUZZLE 读取通用附件倍率；pistol_suppressor_01 为 0.05，最终半径 max(1, round(base × multiplier))，P9 64→3。NoiseSystem/感染者听觉和耳鸣入口使用同一最终状态。P9 tinnitus=false 保持不变；伤害、散布、后坐等数值不变。
 

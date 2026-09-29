@@ -252,7 +252,7 @@
 **范围**
 - 整弹 `762x51mm_round`、空壳 `762x51mm_casing`、飞行抛壳 FX `762x51mm_casing_fx` 全部改为 Pure Mesh。
 - 两个注册 ID 不变，没有新增物品。
-- 本轮不做 BR51 动态弹药渲染。
+- 同一天随后接入 BR51 动态顶弹：顶部两发，用整弹 Mesh，配置在 `native_guns/br51_01.json` 的 `presentation.magazine_round_visual`，详见 `br51_01_v2_pure_mesh_pbr.md`。
 
 **生成**
 - 命令：`node tools/build-762x51mm-ammo.mjs`，加 `--check` 逐字节校验。
