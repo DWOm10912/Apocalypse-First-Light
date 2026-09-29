@@ -167,6 +167,7 @@ public final class AflCreativeTabs {
             AflItems.RIFLE_RED_DOT_01,
             AflItems.PISTOL_SUPPRESSOR_01,
             AflItems.RIFLE_SUPPRESSOR_01,
+            AflItems.HEAVY_SUPPRESSOR_01,
             AflItems.P9_01_EXTENDED_MAGAZINE,
             AflItems.BR51_EXTENDED_MAGAZINE_35,
             AflItems.BR51_DRUM_MAGAZINE_50);

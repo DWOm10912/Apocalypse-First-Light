@@ -101,7 +101,7 @@
 | 枪 | 结果 |
 |---|---|
 | BR51-01 | 兼容（`mount_interface: rifle_fh_qd`） |
-| HR55（12.7×55mm） | 已移出 `accepts`，槽位保留为空列表，不能再安装 |
+| HR55（12.7×55mm） | 已移出 `accepts`，不能安装。2026-09-29 起 HR55 的枪口槽改为 `heavy_brake_qd` 接口，只接受 12.7×55mm 重型消音器，见 `heavy_suppressor_01_pure_mesh_v1.md` |
 | C.A.T. | 没有枪口槽，未改 |
 | 其他枪 | 未增加兼容 |
 

@@ -24,7 +24,7 @@ Geo/animation, texture, HUD, inventory image, and OGG resources below
 Since 2026-09-29 (Phase 2, `hr55_v2_pure_mesh_pbr.md`) the gun is Pure Mesh: the source is a Free Model generated
 by `tools/build-hr55-v2-mesh.mjs`, the runtime geo keeps the bones without cubes, `meshes/hr55.aflmesh.json` (V2)
 carries the geometry, and `textures/item/hr55.png` / `_s.png` / `_n.png` are the 1024 Base Color + LabPBR maps.
-The inventory image is still the cube-era capture.
+The inventory image is the Mesh-era capture since 2026-09-29 (`native_gun_inventory_presentation_v1.md`).
 The inventory PNG now uses the shared 256×256 projected-bounds framing and no
 per-weapon GUI scale; the hand model and HUD retain their prior transforms. See
 `native_gun_inventory_presentation_v1.md`. Creative Tab appearance remains untested.
@@ -68,16 +68,23 @@ The HR55 accepts `rifle_red_dot_01` through its sight slot (`mount_interface` `r
 the Pure Mesh optic sits on the top rail (rib top y 11.484375): `mount_offset` `[0, 0.30403, -0.00719]`, and
 `ads_center` `[0, 13.48438, -2.8438]` is the mounted `lens_center` (y was 13.4625; z, and so the ADS framing,
 unchanged). Offline solve and render only, not verified in game; see
-`attachments/rifle_red_dot_01_pure_mesh_v1.md`. Its `muzzle_slot` (anchor
-`muzzle_anchor`) has an empty `accepts` list: no suppressor attachment is currently compatible.
-(It briefly accepted `rifle_suppressor_01`; that 7.62x51mm device was removed on 2026-09-28 because
-HR55 fires 12.7x55mm.) The supplied
-`hr55_fire_suppressed` event and audio are nevertheless registered now for later use;
-they cannot be selected until a HR55-compatible muzzle attachment is authored and enabled.
+`attachments/rifle_red_dot_01_pure_mesh_v1.md`. Its `muzzle_slot` (anchor `muzzle_anchor`, `mount_interface`
+`heavy_brake_qd`) accepts `heavy_suppressor_01`, the 12.7x55mm Heavy Suppressor (2026-09-29): an overbore can that
+slides over the brake, seats on the brake collar and sleeves back over the barrel to just short of the handguard;
+noise radius x0.05 (128 -> 6 blocks), fire sound `hr55_fire_suppressed`. For it `muzzle_anchor` moved from mid-barrel
+`[0, 7.32835, -16.13348]` to the brake collar's rear face on the bore axis, `[0, 7.34375, -18.38375]`
+(`MUZZLE_ANCHOR` in `tools/build-hr55-v2-mesh.mjs`); bare-gun muzzle effects still use `muzzle_pos`. See
+`attachments/heavy_suppressor_01_pure_mesh_v1.md`; offline checks only, not verified in game. (It briefly accepted
+`rifle_suppressor_01`; that 7.62x51mm device was removed on 2026-09-28 because HR55 fires 12.7x55mm.)
 
 The `shoot` clip has no animation sound marker. Successful firing plays the authoritative
 `hr55_fire` event once through `NativeGunActions`; reload, inspect, draw, and put-away
 markers are normalized to registered `apocalypse_firstlight:hr55_*` events.
+HR55's reload and inspect sounds are single long mono files (`reload_tactical` 2.05 s, `reload_empty` 3.03 s,
+`inspect` 6.22 s; fire, draw and put-away are stereo). Minecraft positions mono sounds in the world, and the native
+actions used to play every cue at the spot where it started, so turning and walking away during a reload left the
+sound behind ("sounds like surround"). Since 2026-09-29 `NativeGunActions` binds all weapon sounds to the shooter
+entity, so they follow the player; range, volume and hearing protection are unchanged. Not verified in game.
 
 ## Verification boundary
 

@@ -1,7 +1,7 @@
 // Offline checks for HR55 V2 Pure Mesh + PBR (Phase 2) and its dynamic 12.7x55mm top rounds.
 //   node tools/verify-hr55-v2-mesh.mjs      -> HR55_V2_OFFLINE_PASS
 // Uses the shipped runtime files, the generator (up to date, z-fighting cleared) and the Phase 1 reference at git REF:
-// rig (bones unchanged + the two reload round bones), animations (Phase 1 + the reload_empty right-hand grip blend),
+// rig (bones unchanged but the moved muzzle_anchor, + the two reload round bones), animations (Phase 1 + the reload_empty right-hand grip blend),
 // sidecar sanity and budget, reload copy, maps (1024, no warm pixels, LabPBR channels), silhouette against the Phase 1
 // cubes (orthographic XOR), an independent coplanar-overlap audit of the shipped sidecar, the dynamic ammo placement
 // against the Phase 1 cube rounds, and the reload_empty right-hand contacts (magazine floors, charging-handle knob).
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {collectGroups, zFightLevels, M4} from './cube-slab-mesh-lib.mjs';
-import {REF, zFight, stats, RELOAD_EMPTY_RIGHT_HAND} from './build-hr55-v2-mesh.mjs';
+import {REF, zFight, stats, RELOAD_EMPTY_RIGHT_HAND, MUZZLE_ANCHOR} from './build-hr55-v2-mesh.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const A = path.join(root, 'src/main/resources/assets/apocalypse_firstlight'), D = path.join(root, 'src/main/resources/data/apocalypse_firstlight');
@@ -30,7 +30,10 @@ const geo = read(path.join(A, 'geo/hr55.geo.json'))['minecraft:geometry'][0], ge
 assert.equal(geo.description.texture_width, 1024); assert.equal(geo.description.texture_height, 1024);
 assert(geo.bones.every(b => !b.cubes), 'runtime geo still has cubes');
 const strip = b => JSON.stringify({name: b.name, parent: b.parent ?? null, pivot: b.pivot, rotation: b.rotation ?? null});
-assert.deepEqual(geo.bones.filter(b => !/^reload_bullet\d$/.test(b.name)).map(strip), geo0.bones.map(strip), 'Phase 1 bones changed');
+// muzzle_anchor moved to the heavy_brake_qd mounting point (2026-09-29); every other Phase 1 bone is unchanged
+assert.deepEqual(geo.bones.find(b => b.name === 'muzzle_anchor').pivot, [-MUZZLE_ANCHOR[0] || 0, MUZZLE_ANCHOR[1], MUZZLE_ANCHOR[2]], 'muzzle_anchor');
+const phase1Bones = geo0.bones.map(b => b.name === 'muzzle_anchor' ? {...b, pivot: [-MUZZLE_ANCHOR[0] || 0, MUZZLE_ANCHOR[1], MUZZLE_ANCHOR[2]]} : b);
+assert.deepEqual(geo.bones.filter(b => !/^reload_bullet\d$/.test(b.name)).map(strip), phase1Bones.map(strip), 'Phase 1 bones changed');
 for (const [n, like] of [['reload_bullet1', 'bullet1'], ['reload_bullet2', 'bullet2']]) {
   const b = geo.bones.find(q => q.name === n); assert(b, n); assert.equal(b.parent, 'reload_mag_standard'); assert.deepEqual(b.pivot, geo0.bones.find(q => q.name === like).pivot);
 }

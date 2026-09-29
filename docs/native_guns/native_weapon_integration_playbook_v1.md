@@ -645,6 +645,10 @@ dry-fire / 无动画开火 fallback 已泛化为数据或通用语义事件；�
 
 reload/draw/put-away/inspect 的声音由 NativeGunAnimations.cues 从正式 animation JSON marker 转为服务端 tick cue。
 
+播放方式（2026-09-29 起）：NativeGunActions 的所有武器声（开火、干击、动画 cue、通用换弹声）都以 `SoundSource.PLAYERS`、音量 / 音高 1.0 绑定到开枪玩家实体播放（`Level.playSound(null, player, ...)` → `ClientboundSoundEntityPacket` → `EntityBoundSoundInstance`），声源随玩家移动。此前是在触发那一刻玩家所在的世界坐标播放：长的单声道音效（HR55 换弹 2–3 秒、检视 6 秒）会留在原地，玩家转身走开后逐渐听不见。传播距离、音量和听力保护衰减都不变。
+
+声道约定：Minecraft 只对单声道音效做距离衰减和方位定位；立体声文件对范围内的所有人都以原音量、无方位播放。当前 BR51 / P9 等大部分武器声是立体声，HR55 的换弹和检视声是单声道。
+
 P9 marker 有兼容映射；其他资产 marker 必须是合法完整 ResourceLocation。
 
 12.2 Noise System

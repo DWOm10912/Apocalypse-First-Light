@@ -1,0 +1,5 @@
+{
+  "noise_multiplier": 0.05,
+  "rated_ammo": "apocalypse_firstlight:12_7x55mm_round",
+  "mount_interface": "heavy_brake_qd"
+}

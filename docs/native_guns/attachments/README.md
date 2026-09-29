@@ -14,6 +14,7 @@
 | 步枪红点瞄具 | `rifle_red_dot_01` | `SIGHT` | BR51-01、HR55（接口 `rifle_optic_rail`） | 封闭短管微型红点；ADS 对准镜片中心；第一人称准直红点（圆形窗口）；不额外增加倍率 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_red_dot_01_pure_mesh_v1.md)、[接入 V1](rifle_red_dot_01_v1.md) |
 | 手枪消音器 | `pistol_suppressor_01` | `MUZZLE` | P9-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入；资产为 AFL 通用 9mm Pure Mesh（Model V2，待实机验收） / [手枪消音器 V1](pistol_suppressor_01_v1.md)、[Model V2](pistol_suppressor_01_model_v1.md) |
 | 7.62×51mm 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01（`rifle_fh_qd`，额定 7.62×51mm；HR55 已移除） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md)、[接入 V1](rifle_suppressor_01_v1.md) |
+| 12.7×55mm 重型消音器 | `heavy_suppressor_01` | `MUZZLE` | HR55（`heavy_brake_qd`，额定 12.7×55mm） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换；反向套管式，套住制退器并向后包住枪管 | 已接入（2026-09-29，Pure Mesh + PBR V1，待实机验收） / [重型消音器 V1](heavy_suppressor_01_pure_mesh_v1.md) |
 | P9-01 28发扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 28 发；Pure Mesh 加长钢匣 + 握把延长套 + 加厚底板 | 已接入（V2，待实机验收） / [扩容弹匣 V2](../p9_01_extended_magazine_v1.md) |
 
 | BR51-01 50发弹鼓 | `br51_drum_magazine_50` | `MAGAZINE` | BR51-01 | 20→50；方形双鼓；空仓换弹改用专用拼接动画 `reload_empty_drum`（3.2 s），战术换弹复用原动画；维护台平放自动抬高避免穿垫 | 已接入（2026-09-28，待实机验收） / [弹鼓 V1](br51_drum_magazine_50_v1.md) |
@@ -21,7 +22,7 @@
 
 物品栏图标：所有配件统一朝向与大小（2026-09-28，`NativeAttachmentGuiFit`，最长边占格 85%），见 [枪械物品栏展示 · 配件物品栏图标](../native_gun_inventory_presentation_v1.md)。
 
-兼容范围不按配件名称自动推断：当前手枪消音器和手枪红点不能装 BR51，步枪消音器和步枪红点不能装 P9；BR51 接受专属 `br51_extended_magazine_35`。未来步枪可通过自己的兼容声明、挂载点与 ADS 数据复用步枪配件。当前扩容弹匣另有 `NativeMagazineItem.accepts` 的逐附件枪型限制，不能仅改 JSON 就宣称支持其他枪。
+兼容范围不按配件名称自动推断：当前手枪消音器和手枪红点不能装 BR51，步枪消音器和步枪红点不能装 P9；7.62×51mm 步枪消音器和 12.7×55mm 重型消音器按口径与接口严格区分，不能互换；BR51 接受专属 `br51_extended_magazine_35`。未来步枪可通过自己的兼容声明、挂载点与 ADS 数据复用步枪配件。当前扩容弹匣另有 `NativeMagazineItem.accepts` 的逐附件枪型限制，不能仅改 JSON 就宣称支持其他枪。
 
 ## 当前属性明细
 
@@ -31,6 +32,7 @@
 | --- | --- | --- | --- | --- | --- |
 | 手枪消音器 | `noiseRadiusMultiplier` | 倍率 | `0.05` | P9：64 → 3 格；最终取整并至少 1 格 | `NativeSuppressorItem` 代码默认值（无配件数据文件）、`NativeGunNoise` |
 | 7.62×51mm 步枪消音器 | `noise_multiplier` | 倍率 | `0.05` | BR51：112 → 6 格；最终取整并至少 1 格 | `data/apocalypse_firstlight/native_attachments/rifle_suppressor_01.json` → `NativeAttachmentData`、`NativeSuppressorItem`、`NativeGunNoise` |
+| 12.7×55mm 重型消音器 | `noise_multiplier` | 倍率 | `0.05` | HR55：128 → 6 格；最终取整并至少 1 格 | `data/apocalypse_firstlight/native_attachments/heavy_suppressor_01.json` → `NativeAttachmentData`、`NativeSuppressorItem`、`NativeGunNoise` |
 | 两种消音器 | `suppressesFireSound` | 开关 | `true` | 选择枪械定义的 `suppressed_fire_sound`，不是配件绑定同一声音 | `NativeSuppressorItem`、枪械 JSON |
 | 两种消音器 | 玩家音频传播距离 | 保持 | 不乘 `0.05` | AI 听觉噪声半径与玩家音频衰减分开 | `NativeGunNoise` 与既有声音播放路径 |
 | 两种消音器 | 枪口焰 / 出口 | 视觉 | 抑制裸枪焰，使用配件出口 | smoke / tracer 视觉从 `muzzle_exit_anchor` 出发，不改服务端命中规则 | `NativeMuzzleRendering`、既有 shot visual 路径 |

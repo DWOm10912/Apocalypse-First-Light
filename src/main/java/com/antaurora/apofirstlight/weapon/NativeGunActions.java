@@ -256,9 +256,11 @@ public final class NativeGunActions {
         } finally { NativeFireControl.tick(player); }
     }
 
+    // Bound to the player entity (ClientboundSoundEntityPacket -> EntityBoundSoundInstance), not to the position the
+    // action started at: a long mono action sound (HR55 reload_empty 3 s, inspect 6 s) follows the shooter instead of
+    // staying behind when they turn and walk away. Same source, volume, pitch and audible range as before.
     private static void sound(ServerPlayer player, SoundEvent sound) {
-        player.serverLevel().playSound(null, player.getX(), player.getY(), player.getZ(),
-                sound, SoundSource.PLAYERS, 1.0F, 1.0F);
+        player.serverLevel().playSound(null, player, sound, SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     private static boolean isInspect(String clip) {

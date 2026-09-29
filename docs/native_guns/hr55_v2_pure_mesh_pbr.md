@@ -13,7 +13,7 @@
   - 全部动画（唯一例外是 2026-09-29 空仓换弹的右手偏移，见“空仓换弹右手接触修正”）、战斗数据、ADS、后坐；
   - 红点装配数据、抛壳。
 - **没做**：
-  - 物品栏图标仍是 cube 版捕图，需要在 Blockbench 用捕图脚本重拍，见最后一节；
+  - 物品栏图标：2026-09-29 已换成用户的 Mesh 版捕图，见 `native_gun_inventory_presentation_v1.md`；
   - 扩容弹匣参考源 `hr55_extended_magazine.bbmodel` 没有接入。
 
 ## 工具与文件
@@ -201,7 +201,8 @@
 ## 锚点与装配
 
 - 所有锚点的名字、父级和世界位置都与 Phase 1 相同：
-  - `sight_anchor`、`muzzle_anchor`、`muzzle_pos`；
+  - `sight_anchor`、`muzzle_pos`；
+  - `muzzle_anchor` 是例外：2026-09-29 为 12.7×55mm 重型消音器移到制退器套环后端面 `[0, 7.34375, −18.38375]`，见 `attachments/heavy_suppressor_01_pure_mesh_v1.md`；
   - `ejection_anchor`，抛壳仍用 12.7×55mm 低模 FX；
   - 双手锚点、`camera`。
 - **步枪红点**：`tools/verify-rifle-red-dot-01.mjs` 通过。
@@ -283,4 +284,4 @@
 - 换弹：新旧弹匣的显隐，新匣上两发顶弹的位置。
 - 顶弹：枪内弹匣在检视和换弹时是否看得到，唇口穿插是否可见。
 - 红点装在提把导轨上的外观。
-- 物品栏图标仍是 cube 版。要换成 Mesh 版：在 Blockbench 打开 `hr55.bbmodel`，运行 `tools/capture-native-gun-inventory-source.blockbench.js`，再运行 `tools/normalize-native-gun-inventory-icons.py`。流程见 `native_gun_inventory_presentation_v1.md`。
+- 物品栏图标：2026-09-29 已换成 Mesh 版捕图（256×256，边界与 BR51 相同），物品栏里的观感待实机确认。

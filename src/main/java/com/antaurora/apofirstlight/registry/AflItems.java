@@ -81,6 +81,9 @@ public final class AflItems {
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> RIFLE_SUPPRESSOR_01 = ITEMS.register("rifle_suppressor_01",
             com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
+    // 12.7x55mm heavy suppressor (heavy_brake_qd, native_attachments/heavy_suppressor_01.json): HR55.
+    public static final RegistryObject<Item> HEAVY_SUPPRESSOR_01 = ITEMS.register("heavy_suppressor_01",
+            com.antaurora.apofirstlight.weapon.NativeSuppressorItem::new);
     public static final RegistryObject<Item> ROUND_9MM = ITEMS.register("9x19mm_round",
             () -> new Item(new Item.Properties().stacksTo(64)));
     public static final RegistryObject<Item> ROUND_762MM = ITEMS.register("762x51mm_round",

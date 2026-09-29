@@ -1575,7 +1575,8 @@ Only three sounds are copied/registered in `AflSounds` and `sounds.json`:
 | 9mm_magazine_in.ogg | p9_01_magazine_in | Reload tick 19 (0.95s), source seated at 0.93s |
 
 SoundSource.PLAYERS, volume/pitch 1.0, source at player position, server world
-broadcast including shooter. Quantization error is 0.02s for each reload cue.
+broadcast including shooter. (Since 2026-09-29 the source is bound to the shooter entity and follows them; see
+`docs/native_guns/native_weapon_integration_playbook_v1.md` 12.1.) Quantization error is 0.02s for each reload cue.
 Each cue has an explicit once-per-session guard; changing held stack cancels
 pending cues. Reload has no slide action, so no slide_action sound is played.
 Suppressed/dry-fire/casing/slide files remain unused in the user's source folder.

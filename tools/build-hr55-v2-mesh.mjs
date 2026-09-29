@@ -151,6 +151,12 @@ const animText0 = gitShow(ANIM_PATH).replace(/\r\n/g, '\n'), anim = JSON.parse(a
 assert(JSON.stringify(anim, null, 2) === animText0, 'Phase 1 animation file is not in canonical two-space JSON');
 anim.animations.reload_empty.bones.right_hand_anchor.position = Object.fromEntries(RELOAD_EMPTY_RIGHT_HAND.map(([t, y]) => [t ? String(t) : '0.0', {vector: [0, y, 0]}]));
 
+// ---------------- muzzle attachment mount (2026-09-29, 12.7x55mm Heavy Suppressor V1) ----------------
+// muzzle_anchor = the heavy_brake_qd mounting point: on the bore axis (y 7.34375, the barrel / collar / brake centre) at
+// the rear face of the brake collar (octagon2, z -18.38375). It was mid-barrel at [0, 7.32835, -16.13348] (no device there,
+// 0.015 below the bore). Empty locator; the bare-gun muzzle effects keep muzzle_pos + 3.55125, nothing else moves.
+export const MUZZLE_ANCHOR = [0, 7.34375, -18.38375];
+
 // ---------------- outputs ----------------
 const uuid = s => { const h = createHash('sha256').update('afl-hr55-v2-native:' + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const r12 = v => +v.toFixed(12) || 0;   // full bake precision: V2 keeps a planar quad only when the source proves it
@@ -177,6 +183,7 @@ export function buildSource() {
     parent.children.push({uuid: id, isOpen: false, children: []});
   }
   for (const g of src.groups) delete g.bedrock_binding;   // Bedrock-only field; the Free Model source has no binding
+  byName.get('muzzle_anchor').origin = MUZZLE_ANCHOR.slice();
   // reload_empty right-hand contact (same keys as the runtime clip below; Blockbench position = runtime (-x, y, z))
   const anchor = src.animations.find(a => a.name === 'reload_empty').animators[byName.get('right_hand_anchor').uuid];
   anchor.keyframes = [...anchor.keyframes.filter(k => k.channel !== 'position'), ...RELOAD_EMPTY_RIGHT_HAND.map(([t, y]) => ({channel: 'position',
@@ -197,6 +204,7 @@ const geo = JSON.parse(gitShow('src/main/resources/assets/apocalypse_firstlight/
   for (const b of G.bones) delete b.cubes;
   const at = G.bones.findIndex(b => b.name === 'reload_mag_standard');
   G.bones.splice(at + 1, 0, ...RELOAD_ROUNDS.map(([name, like]) => ({name, parent: 'reload_mag_standard', pivot: G.bones.find(b => b.name === like).pivot.slice()})));
+  G.bones.find(b => b.name === 'muzzle_anchor').pivot = [-MUZZLE_ANCHOR[0] || 0, MUZZLE_ANCHOR[1], MUZZLE_ANCHOR[2]];
 }
 const sidecar = convert(source, geo, {}, 'hr55.bbmodel', 2);
 const meshText = serializeCompact(sidecar);

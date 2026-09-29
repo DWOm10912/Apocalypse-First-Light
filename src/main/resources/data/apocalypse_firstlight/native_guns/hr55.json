@@ -13,7 +13,8 @@
 
   "muzzle_slot": {
     "anchor": "muzzle_anchor",
-    "accepts": []
+    "mount_interface": "heavy_brake_qd",
+    "accepts": ["apocalypse_firstlight:heavy_suppressor_01"]
   },
 
     "ammo": "apocalypse_firstlight:12_7x55mm_round",
