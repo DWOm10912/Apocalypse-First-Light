@@ -1,0 +1,5 @@
+{
+  "noise_multiplier": 0.05,
+  "rated_ammo": "apocalypse_firstlight:762x51mm_round",
+  "mount_interface": "rifle_fh_qd"
+}

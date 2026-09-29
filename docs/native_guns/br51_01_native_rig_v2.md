@@ -94,7 +94,7 @@ root
 | 项 | 状态 | 说明 |
 |---|---|---|
 | SIGHT_ANCHOR | PASS | `sight_anchor` 名称与世界位置不变，父级由 `positioning2` 改为 `gun_body`；`rifle_red_dot_01` 与其 `reticle` 全亮组不受影响 |
-| MUZZLE_ANCHOR | PASS | `muzzle_anchor`（附件安装面）不变 |
+| MUZZLE_ANCHOR | PASS | `muzzle_anchor`（附件安装面）不变。2026-09-28 起移到消焰器台肩 `[0,11.4375,-23.98437]`（7.62×51mm 步枪消音器 V1） |
 | 裸枪枪口特效 | LEGACY_COMPAT | `muzzle_pos` + Profile `barrelExitOffset` 4.8125，等于消焰器前端。它与安装面不是同一点，Phase 2 重建枪管时再定 AFL 名称 |
 | CASING_ANCHOR | PASS | `shell` → `ejection_anchor`，位置不变；`AflItems` 中 BR51 Profile 同步 |
 | 弹匣热点 | PASS | `magazine_slot.hotspot_anchor = mag_standard` 不变 |

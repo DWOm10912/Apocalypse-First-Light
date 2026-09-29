@@ -13,7 +13,7 @@
 | 手枪微型红点瞄具 | `pistol_red_dot` | `SIGHT` | P9-01 | ADS 对准镜片中心；第一人称准直红点；不额外增加倍率 | 已接入 / [红点 V1](../pistol_red_dot_v1.md) |
 | 步枪红点瞄具 | `rifle_red_dot_01` | `SIGHT` | BR51-01 | 原 BR51 红点独立资产化；光学轴 ADS，无额外倍率 | 已接入 / [步枪红点 V1](rifle_red_dot_01_v1.md) |
 | 手枪消音器 | `pistol_suppressor_01` | `MUZZLE` | P9-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入；资产为 AFL 通用 9mm Pure Mesh（Model V2，待实机验收） / [手枪消音器 V1](pistol_suppressor_01_v1.md)、[Model V2](pistol_suppressor_01_model_v1.md) |
-| 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01 | 游戏噪声半径 ×0.05；消音声与出口视觉切换 | 已接入，非 BR51 专属实现 / [步枪消音器 V1](rifle_suppressor_01_v1.md) |
+| 7.62×51mm 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01（`rifle_fh_qd`，额定 7.62×51mm；HR55 已移除） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md)、[接入 V1](rifle_suppressor_01_v1.md) |
 | P9-01 28发扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 28 发；Pure Mesh 加长钢匣 + 握把延长套 + 加厚底板 | 已接入（V2，待实机验收） / [扩容弹匣 V2](../p9_01_extended_magazine_v1.md) |
 
 | BR51-01 35发扩容弹匣 | `br51_extended_magazine_35` | `MAGAZINE` | BR51-01 | 20→35；独立 mag2 与换弹副本替换；溢出安全返还 | 已接入 / [35R V1](br51_extended_magazine_35_v1.md) |
@@ -26,8 +26,8 @@
 
 | 配件 | 属性 / 效果 | 类型 | 当前值 | 实际结果 / 边界 | 实现来源 |
 | --- | --- | --- | --- | --- | --- |
-| 手枪消音器 | `noiseRadiusMultiplier` | 倍率 | `0.05` | P9：64 → 3 格；最终取整并至少 1 格 | `NativeSuppressorItem`、`NativeGunNoise` |
-| 步枪消音器 | `noiseRadiusMultiplier` | 倍率 | `0.05` | BR51：112 → 6 格；最终取整并至少 1 格 | `NativeSuppressorItem`、`NativeGunNoise` |
+| 手枪消音器 | `noiseRadiusMultiplier` | 倍率 | `0.05` | P9：64 → 3 格；最终取整并至少 1 格 | `NativeSuppressorItem` 代码默认值（无配件数据文件）、`NativeGunNoise` |
+| 7.62×51mm 步枪消音器 | `noise_multiplier` | 倍率 | `0.05` | BR51：112 → 6 格；最终取整并至少 1 格 | `data/apocalypse_firstlight/native_attachments/rifle_suppressor_01.json` → `NativeAttachmentData`、`NativeSuppressorItem`、`NativeGunNoise` |
 | 两种消音器 | `suppressesFireSound` | 开关 | `true` | 选择枪械定义的 `suppressed_fire_sound`，不是配件绑定同一声音 | `NativeSuppressorItem`、枪械 JSON |
 | 两种消音器 | 玩家音频传播距离 | 保持 | 不乘 `0.05` | AI 听觉噪声半径与玩家音频衰减分开 | `NativeGunNoise` 与既有声音播放路径 |
 | 两种消音器 | 枪口焰 / 出口 | 视觉 | 抑制裸枪焰，使用配件出口 | smoke / tracer 视觉从 `muzzle_exit_anchor` 出发，不改服务端命中规则 | `NativeMuzzleRendering`、既有 shot visual 路径 |

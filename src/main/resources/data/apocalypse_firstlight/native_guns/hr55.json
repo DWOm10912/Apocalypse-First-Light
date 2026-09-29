@@ -12,9 +12,7 @@
 
   "muzzle_slot": {
     "anchor": "muzzle_anchor",
-    "accepts": [
-      "apocalypse_firstlight:rifle_suppressor_01"
-    ]
+    "accepts": []
   },
 
     "ammo": "apocalypse_firstlight:12_7x55mm_round",

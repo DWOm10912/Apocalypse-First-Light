@@ -1,5 +1,7 @@
 # Generic Rifle Suppressor Model V1
 
+> **OBSOLETE (2026-09-28)**：本文描述的 56 段 cube 模型、128×256 贴图、旧锚点 `-26.2` 与出口 `-11.55` 已被 [7.62×51mm 步枪消音器 Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md) 取代（同一注册 ID）。以下仅作历史。
+
 Asset ID: `rifle_suppressor_01`. Name: 步枪消音器 / Rifle Suppressor.
 
 Status: independent model/texture and BR51 static mock mount completed. Now registered and equippable through [formal integration V1](rifle_suppressor_01_v1.md). The model-only milestone below is historical; integration does not alter accessory geometry or texture.

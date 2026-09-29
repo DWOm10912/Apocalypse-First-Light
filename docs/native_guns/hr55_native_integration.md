@@ -45,8 +45,10 @@ This is the center of the visible circular window, rather than the rear U-notch,
 ADS composition matches the BR51-style sight picture. The sight mount uses the same aim
 point. This is visual-only and does not alter hitscan or projectile direction.
 
-The HR55 accepts `rifle_red_dot_01` through its sight slot. It deliberately has no
-`muzzle_slot` in V1: no suppressor attachment is currently compatible. The supplied
+The HR55 accepts `rifle_red_dot_01` through its sight slot. Its `muzzle_slot` (anchor
+`muzzle_anchor`) has an empty `accepts` list: no suppressor attachment is currently compatible.
+(It briefly accepted `rifle_suppressor_01`; that 7.62x51mm device was removed on 2026-09-28 because
+HR55 fires 12.7x55mm.) The supplied
 `hr55_fire_suppressed` event and audio are nevertheless registered now for later use;
 they cannot be selected until a HR55-compatible muzzle attachment is authored and enabled.
 

@@ -1,5 +1,11 @@
 # BR51 Generic Rifle Suppressor Integration V1
 
+> **2026-09-28 更新**：资产、定位与兼容规则已由 [7.62×51mm 步枪消音器 Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md) 取代；下文的集成流程（维护台交易、声音、噪声公式）仍然有效。与下文不同之处：
+> - 显示名为 7.62×51mm 步枪消音器；模型为 Pure Mesh + LabPBR（512），不再是 cube / 旧 BR51 配色。
+> - BR51 `muzzle_anchor` 为消焰器台肩 `[0,11.4375,-23.98437]`（原 `-26.2`）；配件出口 `muzzle_exit_anchor` 为 `[0,0,-13.2]`，装上后出口 `[0,11.4375,-37.18437]`（原 `-37.75`）。
+> - 噪声倍率 0.05 来自配件数据 `native_attachments/rifle_suppressor_01.json`（原写死在 Java 里）。
+> - 兼容：BR51 声明 `mount_interface: rifle_fh_qd`；HR55 已移出 `accepts`。
+
 > 当前附件入口：维护台与 Z Field Attachment View V1 共用附件业务、候选 HUD、音效及服务端原子交易。共享通道协议为 **29**，客户端/服务端须匹配；以下旧协议和验证记录属于历史。V 仍为 Inspect，快捷安装未恢复。详见 `docs/native_guns/field_attachment_view_v1.md`。
 
 ## 配件与属性速查

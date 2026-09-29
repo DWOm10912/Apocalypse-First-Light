@@ -444,22 +444,23 @@ for (const is of islands) for (const {f} of is.faces) { const m = faceUV.get(is.
 // brighter machined bolt, dark treated sights, stamped-steel magazine, black polymer stock / grip / floorplate.
 // Separation through value + smoothness + metal; bevel highlights, hole-wall occlusion and the original artist's
 // panel zoning (below) keep the surfaces from reading as an untextured clay model.
-export const MATS = {   // base colour, bevel highlight (added), smoothness open / edge, F0 (255 metal, 10 dielectric)
-  // black-steel rifle: every metal stays in the graphite / black range; parts separate by small value steps, the
-  // bevel highlights and smoothness, never by a light body colour
-  receiver:   {c: [46, 49, 52], hl: 24, sm: 118, se: 150, f0: 255},
-  lower:      {c: [43, 46, 49], hl: 22, sm: 110, se: 140, f0: 255},
-  handguard:  {c: [49, 52, 56], hl: 24, sm: 132, se: 160, f0: 255},
-  rail:       {c: [38, 40, 43], hl: 20, sm: 124, se: 150, f0: 255},
-  barrel:     {c: [32, 33, 35], hl: 16, sm: 142, se: 165, f0: 255},
-  muzzle:     {c: [36, 37, 39], hl: 18, sm: 120, se: 150, f0: 255},
-  bolt:       {c: [84, 86, 89], hl: 26, sm: 165, se: 190, f0: 255},
-  hinge:      {c: [47, 49, 52], hl: 22, sm: 122, se: 150, f0: 255},
-  sight:      {c: [40, 42, 45], hl: 20, sm: 132, se: 150, f0: 255},
-  magazine:   {c: [44, 46, 49], hl: 22, sm: 112, se: 145, f0: 255},
-  floorplate: {c: [28, 29, 30], hl: 6, sm: 62, se: 72, f0: 10},
-  stock:      {c: [35, 36, 38], hl: 8, sm: 58, se: 70, f0: 10},
-  grip:       {c: [32, 33, 34], hl: 7, sm: 48, se: 60, f0: 10},
+export const MATS = {   // base colour, bevel highlight (added), smoothness open / edge, F0 open (255 metal, else linear F0), F0 of bevels
+  // Texture pass (2026-09-28): black-steel rifle one step darker; every large surface is a COATING (phosphate /
+  // ceramic-coated steel, hard-anodised aluminium: F0 ~0.09, matte) so shader packs no longer mirror the sky off the
+  // side panels; only the machined bolt group is bare metal, and the bevel strips read as worn bare edges (metal F0).
+  receiver:   {c: [40, 43, 46], hl: 22, sm: 86,  se: 140, f0: 24, edgeF0: 255},
+  lower:      {c: [38, 40, 43], hl: 20, sm: 80,  se: 132, f0: 24, edgeF0: 255},
+  handguard:  {c: [43, 46, 49], hl: 22, sm: 96,  se: 145, f0: 24, edgeF0: 255},
+  rail:       {c: [33, 35, 38], hl: 18, sm: 90,  se: 138, f0: 24, edgeF0: 255},
+  barrel:     {c: [28, 29, 31], hl: 14, sm: 92,  se: 140, f0: 24, edgeF0: 255},
+  muzzle:     {c: [32, 33, 35], hl: 16, sm: 84,  se: 132, f0: 24, edgeF0: 255},
+  bolt:       {c: [76, 78, 81], hl: 24, sm: 165, se: 190, f0: 255},
+  hinge:      {c: [41, 43, 46], hl: 20, sm: 86,  se: 136, f0: 24, edgeF0: 255},
+  sight:      {c: [35, 37, 40], hl: 18, sm: 76,  se: 128, f0: 24, edgeF0: 255},
+  magazine:   {c: [39, 41, 43], hl: 20, sm: 82,  se: 132, f0: 24, edgeF0: 255},
+  floorplate: {c: [25, 26, 27], hl: 5, sm: 62, se: 72, f0: 10},
+  stock:      {c: [31, 32, 34], hl: 7, sm: 58, se: 70, f0: 10},
+  grip:       {c: [28, 29, 30], hl: 6, sm: 48, se: 60, f0: 10},
 };
 // ---- tone zoning from the original artist's texture ----
 // Every reference cube face carries one mean tone (its UV rect in the Phase 1 atlas). A texel on the new mesh takes the
@@ -529,15 +530,18 @@ const vn3 = (x, y, z) => {   // smooth 3D value noise in [0, 1]: low-frequency v
 };
 // One texel: material base x faint top light x zoning x (wall / underside occlusion), bevel strips carry the edge
 // highlight as one uniform tone (no per-pixel rims, no staircases); metals get a faint low-frequency value / smoothness drift.
+// Bevel strips shorter than BEVEL_FULL fade their highlight out: short bright dashes alias into sparkle at distance.
+const BEVEL_FULL = 0.35;
+const faceLen = (part, f) => f.__len ??= Math.max(...f.ids.map((id, k) => Math.hypot(...sub(part.v[f.ids[(k + 1) % f.ids.length]], part.v[id]))));
 function shade(part, f, n, pos, z, e = 0, cc = 0) {
-  const m = MATS[f.mat], metal = m.f0 === 255, drift = metal ? 2 * vn3(pos[0] * 1.4, pos[1] * 1.4, pos[2] * 1.4) - 1 : 0;
+  const m = MATS[f.mat], metal = m.f0 === 255 || !!m.edgeF0, drift = metal ? 2 * vn3(pos[0] * 1.4, pos[1] * 1.4, pos[2] * 1.4) - 1 : 0;
   let k = (1 + 0.03 * n[1] - 0.02 * Math.max(0, -n[1])) * z * (1 + 0.012 * drift);
   if (f.tag === 'wall') k *= 0.74;
   k *= 1 - 0.28 * cc;
-  const hl = f.tag === 'bevel' ? m.hl : m.hl * 0.8 * e;
+  const hl = f.tag === 'bevel' ? m.hl * Math.min(1, faceLen(part, f) / BEVEL_FULL) : m.hl * 0.8 * e;
   const ao = f.tag === 'wall' ? 195 : f.tag === 'cap' && n[1] < -0.5 ? 225 : 255;
   const sm = (f.tag === 'bevel' ? m.se : f.tag === 'wall' ? m.sm - 20 : m.sm + (m.se - m.sm) * e) + (metal ? 5 * drift : 0);
-  return {c: m.c.map(v => v * k + hl), s: [sm, m.f0, 0, 255], n: [128, 128, Math.round(ao * (1 - 0.18 * cc)), 255]};
+  return {c: m.c.map(v => v * k + hl), s: [sm, f.tag === 'bevel' && m.edgeF0 ? m.edgeF0 : m.f0, 0, 255], n: [128, 128, Math.round(ao * (1 - 0.18 * cc)), 255]};
 }
 const img = Buffer.alloc(ATLAS * ATLAS * 4), spec = Buffer.alloc(ATLAS * ATLAS * 4), nrm = Buffer.alloc(ATLAS * ATLAS * 4);
 for (let i = 0; i < ATLAS * ATLAS; i++) { img.set([40, 42, 44, 255], i * 4); spec.set([100, 255, 0, 255], i * 4); nrm.set([128, 128, 255, 255], i * 4); }
@@ -571,7 +575,7 @@ for (const is of islands) {
     for (const g of em.get(key)) { if (g === f || inIs.has(g)) continue; const d = dot(n, fNorm(g)); if (d > 0.9) continue;
       const cg = g.ids.reduce((s, i) => add(s, mul(is.part.v[i], 1 / g.ids.length)), [0, 0, 0]);
       const A = uvOf(is, a), B = uvOf(is, b), du = Math.abs(B[0] - A[0]), dv = Math.abs(B[1] - A[1]);
-      if (!(du < 0.07 * dv || dv < 0.07 * du) || Math.hypot(du, dv) < 1.5) continue;
+      if (!(du < 0.07 * dv || dv < 0.07 * du) || Math.hypot(du, dv) < BEVEL_FULL * S) continue;   // no rims on short edges
       segs.push({a: A, b: B, cvx: dot(sub(cg, is.part.v[a]), n) < 0, s: Math.min(1, (1 - d) / 0.35)}); }
   });
   is.segs = segs;
@@ -658,10 +662,15 @@ const source = buildSource();
 }
 for (const g of source.groups) delete g.bedrock_binding;   // Bedrock-only field; the Free Model source has no binding
 Object.assign(source.textures[0], {relative_path: 'textures/br51_01.png', folder: '', namespace: ''});
+// Rifle Suppressor V1 (2026-09-28): muzzle_anchor = the muzzle-device mounting shoulder (front face of the flash hider's rear
+// collar, where a QD suppressor seats), no longer mid-hider at z -26.2. Empty locator; nothing else in the rig moves.
+export const MUZZLE_ANCHOR = [0, 11.4375, -23.98437];
+source.groups.find(g => g.name === 'muzzle_anchor').origin = MUZZLE_ANCHOR.slice();
 // runtime geo: the Phase 1 bones unchanged (names, parents, pivots, rotations), cubes removed, 1024 atlas
 const geo = JSON.parse(gitShow(`src/main/resources/assets/apocalypse_firstlight/geo/br51_01.geo.json`));
 Object.assign(geo['minecraft:geometry'][0].description, {texture_width: ATLAS, texture_height: ATLAS});
 for (const b of geo['minecraft:geometry'][0].bones) delete b.cubes;
+geo['minecraft:geometry'][0].bones.find(b => b.name === 'muzzle_anchor').pivot = [-MUZZLE_ANCHOR[0] || 0, MUZZLE_ANCHOR[1], MUZZLE_ANCHOR[2]];
 const sidecar = convert(source, geo, {}, 'br51_01.bbmodel', 2);
 const meshText = serializeCompact(sidecar);
 assert(meshText.length < 4 * 1024 * 1024, 'sidecar exceeds runtime 4 MiB limit');

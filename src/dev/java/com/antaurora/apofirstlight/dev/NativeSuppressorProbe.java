@@ -52,7 +52,7 @@ public final class NativeSuppressorProbe {
                 var exit=new com.mojang.blaze3d.vertex.PoseStack();
                 check(com.antaurora.apofirstlight.weapon.client.NativeMuzzleRendering.applyExit(mc().player.getMainHandItem(),exit),"cached exit loaded");
                 var v=exit.last().pose().transformPosition(new org.joml.Vector3f());
-                check(Math.abs(v.z+(rifle()?11.55F:9.1F)/16)<.0001&&Math.abs(v.x)<.0001&&Math.abs(v.y)<.0001,"exit exact/coaxial");
+                check(Math.abs(v.z+(rifle()?13.2F:9.1F)/16)<.0001&&Math.abs(v.x)<.0001&&Math.abs(v.y)<.0001,"exit exact/coaxial");
                 server(()->{player().setItemInHand(InteractionHand.OFF_HAND,ItemStack.EMPTY);player().inventoryMenu.broadcastChanges();});
             }
             case 5 -> {shot("suppressed_fp");server(()->NativeGunActions.request(player(),false,0));}
