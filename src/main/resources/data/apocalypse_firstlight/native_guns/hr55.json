@@ -105,7 +105,16 @@
     "mag_in_tick": 48,
     "empty_mag_in_tick": 59,
 
-    "trail": "subtle_rifle"
+    "trail": "subtle_rifle",
+
+    "magazine_round_visual": {
+      "anchor": ["bullet1", "bullet2"],
+      "loaded_auxiliary_anchor": ["reload_bullet1", "reload_bullet2"],
+      "geometry": "apocalypse_firstlight:geo/12_7x55mm_round.geo.json",
+      "texture": "apocalypse_firstlight:textures/item/12_7x55mm_ammo_v1.png",
+      "local_offset": [0, 0, 2.11708],
+      "local_rotation": [-90, 0, 0]
+    }
   },
 
   "recoil": {

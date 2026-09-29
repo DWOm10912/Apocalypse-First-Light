@@ -43,6 +43,8 @@ Blockbench 统一视角捕图已逐张检查，没有参考臂方块；Python �
 - 本机没有 Pillow，这次用等价的 Node 面积平均重采样生成，框定尺寸与位置和工具一致，但像素与 LANCZOS 结果不同。装好 Pillow 后重跑 `tools/normalize-native-gun-inventory-icons.py` 即可改为标准输出；在此之前它的 `--check` 会报 BR51 不一致。
 - 未进行 Creative Tab 实机复查。没有运行 Java 编译（无 Java 改动），也没有进行游戏客户端/Creative Tab 验收。
 
+2026-09-29 HR55 V2 Pure Mesh（`hr55_v2_pure_mesh_pbr.md`）：枪的几何和贴图已换成 Mesh 版，但 `hr55_inventory.png` 仍是 cube 版捕图，尚未重拍。按上面的流程在 Blockbench 捕图、再运行规范化工具即可替换。
+
 ## 配件物品栏图标（2026-09-28）
 
 所有配件（两种红点、两种消音器、P9 28 发扩容匣、BR51 35 发扩容匣、BR51 50 发弹鼓）在物品栏里统一朝向、统一大小。已通过 `compileJava` 并离线模拟，未实机查看。

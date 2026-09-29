@@ -6,7 +6,9 @@
 1. 把可编辑源同步成与运行时完全一致，源文件从此是唯一准绳；
 2. 把枪械师的 TaCZ 风格骨骼迁移到 AFL 原生 Rig 语义，与 P9 V2、BR51 同一世代。
 
-枪械外形、比例、cube、UV、贴图、战斗数据、ADS、后坐和全部动画都冻结，几何仍是 Cube / GeckoLib。Pure Mesh + PBR 是下一轮（Phase 2）。
+枪械外形、比例、cube、UV、贴图、战斗数据、ADS、后坐和全部动画都冻结，几何仍是 Cube / GeckoLib。
+
+**后续**：2026-09-29 Phase 2 已把几何改为 Pure Mesh + PBR，并接入 12.7×55mm 动态顶弹，见 `hr55_v2_pure_mesh_pbr.md`。本文描述的 cube 数、贴图和 `bullet` 骨骼下的 cube 弹是 Phase 1 的状态；骨骼层级和动画在 Phase 2 保持不变，只新增 `reload_bullet1` / `reload_bullet2` 两根空骨骼。
 
 ## 工具与文件
 
@@ -43,7 +45,7 @@ afl_equip_motion
       ├─ righthand → righthand_pos → right_hand_anchor
       ├─ gun_body              原 root_ash12：枪体，换弹 / 检视时相对双手运动
       │  ├─ magazine           枪内弹匣；换弹时它就是被取下 / 甩出的旧匣
-      │  │  ├─ bullet → bullet1, bullet2   顶部可见弹（cube，Phase 3 换动态弹药）
+      │  │  ├─ bullet → bullet1, bullet2   顶部可见弹（Phase 1 为 cube；Phase 2 起为空骨骼，由动态弹药绘制 12.7 整弹）
       │  │  └─ mag_standard
       │  ├─ reload_magazine    原 additional_magazine：换上的新匣，只在换弹中显示
       │  │  └─ reload_mag_standard

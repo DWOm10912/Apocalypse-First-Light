@@ -21,6 +21,10 @@ Its gameplay definition is `src/main/resources/data/apocalypse_firstlight/native
 The editable source is `src/main/blockbench/hr55.bbmodel`. Runtime files are the `hr55`
 Geo/animation, texture, HUD, inventory image, and OGG resources below
 `src/main/resources/assets/apocalypse_firstlight/`.
+Since 2026-09-29 (Phase 2, `hr55_v2_pure_mesh_pbr.md`) the gun is Pure Mesh: the source is a Free Model generated
+by `tools/build-hr55-v2-mesh.mjs`, the runtime geo keeps the bones without cubes, `meshes/hr55.aflmesh.json` (V2)
+carries the geometry, and `textures/item/hr55.png` / `_s.png` / `_n.png` are the 1024 Base Color + LabPBR maps.
+The inventory image is still the cube-era capture.
 The inventory PNG now uses the shared 256×256 projected-bounds framing and no
 per-weapon GUI scale; the hand model and HUD retain their prior transforms. See
 `native_gun_inventory_presentation_v1.md`. Creative Tab appearance remains untested.
@@ -35,9 +39,11 @@ muzzle-anchor separation.
 
 Since 2026-09-28 the `12_7x55mm_round` / `12_7x55mm_casing` items are Pure Mesh (brass case, bimetal
 jacket, exposed aluminium nose), and HR55 ejects the low-poly `12_7x55mm_casing_fx` at world scale 0.436,
-the same flight size as the former cube casing. The two visible magazine rounds (`bullet1` / `bullet2`)
-are still the gun model's own cubes until HR55 Phase 2. See "12.7×55mm Visible Ammo V1" in
-`native_ammo_assets_v1.md`; not verified in game.
+the same flight size as the former cube casing. See "12.7×55mm Visible Ammo V1" in
+`native_ammo_assets_v1.md`; not verified in game. Since Phase 2 the two visible magazine rounds are
+dynamic: `presentation.magazine_round_visual` draws the 12.7×55mm Pure Mesh round on the empty
+`bullet1` / `bullet2` bones and, for the new magazine during reloads, on `reload_bullet1` / `reload_bullet2`
+(under `reload_mag_standard`).
 
 The nine HR55 clips (`shoot`, `static_idle`, `reload_tactical`, `reload_empty`,
 `inspect`, `inspect_empty`, `draw`, `put_away`, and `static_bolt_caught`) now give
@@ -47,6 +53,10 @@ right-hand locator without changing its pivot, reference-arm geometry, or the
 existing parent animation keys. `reload_empty` still animates `righthand_pos`,
 so the local offset is not a guaranteed rigid screen-space translation.
 The editable `.bbmodel` and runtime `hr55.animation.json` carry the same offset.
+Since 2026-09-29 `reload_empty` blends that offset out while the right hand works (0 from 0.25 s to 3.2167 s, linear
+blends 0.0833 -> 0.25 s and 3.2167 -> 3.4667 s): the right hand pulls the old magazine, seats the new one and slaps
+the charging handle there, and the constant -7 kept it 8-11 units away from all three. The other eight clips keep the
+constant offset. See `hr55_v2_pure_mesh_pbr.md`; not verified in game.
 First-person visual acceptance remains pending an in-game check.
 
 Iron-sight ADS centers the authored front sight-ring window at `[0, 11.52334, -4.5]`.

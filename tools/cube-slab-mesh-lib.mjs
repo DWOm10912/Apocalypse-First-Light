@@ -8,10 +8,19 @@
 //   paint(opts)                         Base Color + LabPBR _s / _n in one raster pass: material base, faint top light, tone
 //                                       zoning from the reference atlas, bevel highlight, island-edge rims, wall occlusion
 //   png(rgba, w, h)                     deterministic RGBA PNG encoder
+//   zFightLevels(parts, slabs)          coplanar same-facing overlaps between slabs -> per-slab priority levels (GROW)
 // Method (per original geometry group): the group's cubes are layered by their extent along the extrusion axis; each
 // layer's projected footprint is rasterised, traced, simplified (cube stair-steps become straight edges) and extruded
 // with a real chamfer; layers fully enclosed by a wider layer are dropped; cubes whose rotation breaks every axis stay
 // oriented boxes.
+// Opt-in rules (2026-09-28, HR55; defaults leave every earlier output byte-identical):
+//   SPLIT arrays   several material regions per group (first matching region wins)
+//   SNAP           traced outline vertices snap back to the cube coordinates they came from (exact dimensions: the
+//                  1/32 raster otherwise shifts an edge by up to 1/64)
+//   GROW           per-slab priority inflation: every extruded shape / box records a slab key; where two slabs have
+//                  coplanar same-facing overlapping faces (z-fighting), the larger one grows by a tiny step so its face
+//                  lies in front (see zFightLevels)
+//   THIN           zero-thickness cubes become thin closed plates instead of two coincident opposite caps
 import zlib from 'node:zlib';
 
 // ---------------- math ----------------
@@ -195,6 +204,34 @@ function shapes(loops, eps, minArea = 0.004) {
   return outers.map(o => ({outer: o, holes: holes.filter(h => inPoly(h[0], o) && Math.abs(area2(h)) < Math.abs(area2(o)))}));
 }
 
+// SNAP: each outline coordinate moves to the nearest cube coordinate within tol (sorted targets U / V); consecutive
+// duplicates and fold-back spikes are removed; an outline that would flip, shrink or self-intersect keeps its raster shape
+const nearest = (S, x) => { let lo = 0, hi = S.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] < x) lo = m; else hi = m; } return Math.abs(S[lo] - x) <= Math.abs(S[hi] - x) ? S[lo] : S[hi]; };
+function snapLoop(L, U, V, tol) {
+  let out = L.map(([u, v]) => { const a = nearest(U, u), b = nearest(V, v); return [Math.abs(a - u) <= tol ? a : u, Math.abs(b - v) <= tol ? b : v]; });
+  for (let changed = true; changed && out.length >= 3;) {
+    changed = false;
+    for (let i = 0; i < out.length && out.length >= 3; i++) {
+      const a = out[(i + out.length - 1) % out.length], b = out[i], c = out[(i + 1) % out.length];
+      const dup = Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-9;
+      const spike = Math.abs((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])) < 1e-12 && (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]) < 0;
+      if (dup || spike) { out.splice(i, 1); changed = true; i--; }
+    }
+  }
+  return out;
+}
+export function snapShape(sh, U, V, tol) {
+  const orig = [sh.outer, ...sh.holes], loops = orig.map(L => snapLoop(L, U, V, tol));
+  if (loops.some((L, i) => L.length < 3 || Math.sign(area2(L)) !== Math.sign(area2(orig[i])) || Math.abs(area2(L)) < 0.5 * Math.abs(area2(orig[i])))) return sh;
+  if (!simpleLoops(loops)) return sh;
+  // loops must stay apart (a hole snapped onto the outline or onto another hole cannot be bridged) and triangulable
+  const segD = (p, a, b) => { const ab = sub(b, a), t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / (dot(ab, ab) || 1))); return Math.hypot(...sub(p, add(a, mul(ab, t)))); };
+  for (let i = 0; i < loops.length; i++) for (let j = 0; j < loops.length; j++) if (i !== j)
+    for (const p of loops[i]) for (let k = 0; k < loops[j].length; k++) if (segD(p, loops[j][k], loops[j][(k + 1) % loops[j].length]) < 1e-6) return sh;
+  try { triangulate(loops[0], loops.slice(1)); } catch { return sh; }
+  return {outer: loops[0], holes: loops.slice(1)};
+}
+
 // ---------------- parts ----------------
 export class Part {
   constructor(name, bone, mat) { Object.assign(this, {name, bone, mat, v: [], f: []}); }
@@ -204,7 +241,7 @@ export class Part {
       if (Math.max(...P.map(q => Math.abs(dot(sub(q, P[0]), n)))) > ext * 0.02) { for (const t of [[0, 1, 2], [2, 3, 0]]) this.face(t.map(k => ids[k]), hint, tag, mat); return; } }
     const n = newell(ids.map(i => this.v[i])); if (Math.hypot(...n) < 1e-10) return;
     if (dot(n, hint) < 0) ids = ids.slice().reverse();
-    this.f.push({ids, tag, mat});
+    this.f.push(this.slab === undefined ? {ids, tag, mat} : {ids, tag, mat, slab: this.slab});
   }
 }
 // axis x: plane (u, v) = (z, y); axis y: plane (u, v) = (z, x)
@@ -214,11 +251,13 @@ export const AX = {
   z: {k: 2, to3: (u, v, a) => [u, v, a], uv: p => [p[0], p[1]], n: [0, 0, 1]},   // front section (x, y) along the bore
 };
 const OTHER = {x: [1, 2], y: [0, 2], z: [0, 1]};   // cube rotation axes that break each extrusion
-// Extrude one shape between a0 and a1 along the axis with chamfer c (falls back to 0 when the inset is invalid)
-export function extrude(part, ax, shape, a0, a1, c, tag = 'side') {
+// Extrude one shape between a0 and a1 along the axis with chamfer c (falls back to 0 when the inset is invalid);
+// grow > 0 inflates the whole solid (outline and both ends) by that amount (GROW priority, see zFightLevels)
+export function extrude(part, ax, shape, a0, a1, c, tag = 'side', grow = 0) {
   const A = AX[ax];
   // small features (rail teeth, pins, thin strips) stay crisp: a chamfer there only costs faces at first-person distance
   if (a1 - a0 < 0.3 || Math.abs(area2(shape.outer)) < 0.12) c = 0;
+  if (grow > 0) { shape = {outer: offset(shape.outer, -grow), holes: shape.holes.map(h => offset(h, -grow))}; a0 -= grow; a1 += grow; }
   c = Math.min(c, (a1 - a0) / 3);
   let loops = [shape.outer, ...shape.holes], inset = loops.map(L => offset(L, c));
   const shrinks = (L, i) => Math.sign(area2(L)) === Math.sign(area2(loops[i])) && (i === 0 ? Math.abs(area2(L)) < Math.abs(area2(loops[i])) : Math.abs(area2(L)) > Math.abs(area2(loops[i])));
@@ -256,9 +295,10 @@ export function revolve(part, cx, cy, profile, seg, phase = Math.PI / seg, tag =
     }
   }
 }
-// Oriented box from a reference cube (plain, for the few odd compound-rotated pieces)
-export function box(part, cube, tag = 'side') {
-  const C = cube.corners, ids = C.map(p => part.vtx(p)), ctr = mul(C.reduce((a, p) => add(a, p), [0, 0, 0]), 1 / 8);
+// Oriented box from a reference cube (plain, for the few odd compound-rotated pieces); grow inflates it in its own frame
+export function box(part, cube, tag = 'side', grow = 0) {
+  const C = grow > 0 ? Array.from({length: 8}, (_, k) => M4.pt(cube.M, [0, 1, 2].map(i => (k >> i) & 1 ? cube.to[i] + grow : cube.from[i] - grow))) : cube.corners;
+  const ids = C.map(p => part.vtx(p)), ctr = mul(C.reduce((a, p) => add(a, p), [0, 0, 0]), 1 / 8);
   for (const q of [[0, 2, 3, 1], [4, 5, 7, 6], [0, 1, 5, 4], [2, 6, 7, 3], [0, 4, 6, 2], [1, 3, 7, 5]]) {
     const fc = mul(q.reduce((a, i) => add(a, C[i]), [0, 0, 0]), 1 / 4); part.face(q.map(i => ids[i]), sub(fc, ctr), tag);
   }
@@ -275,13 +315,17 @@ export const inRegion = (p, R) => { let c = false; for (let i = 0, j = R.length 
 /**
  * rules: MAT (group -> material, else defaultMat), AXIS (group -> forced axis), BONE (group -> target bone, else the group),
  * EPS (group -> stair removal, else 0.045), CHAMFER (material -> chamfer, else 0.03), SPLIT (group -> {region (side profile
- * z, y), name, mat}: region pixels become their own material part), latheMat (default material of latheGroup).
+ * z, y), name, mat} or an array of them: region pixels become their own material part, first matching region wins),
+ * latheMat (default material of latheGroup), SNAP (true: outline vertices snap to the cube coordinates within 0.75 px),
+ * GROW (Map slab key -> inflation; slab keys and volumes are recorded in SLABS either way), THIN (thickness given to
+ * zero-thickness cubes, 0 = off).
  */
-export function createBuilder({MAT = {}, AXIS = {}, BONE = {}, EPS = {}, CHAMFER = {}, SPLIT = {}, defaultMat = 'receiver', latheMat = 'barrel'} = {}) {
-  const PARTS = [];
+export function createBuilder({MAT = {}, AXIS = {}, BONE = {}, EPS = {}, CHAMFER = {}, SPLIT = {}, defaultMat = 'receiver', latheMat = 'barrel', SNAP = false, GROW = null, THIN = 0} = {}) {
+  const PARTS = [], SLABS = new Map();
   const P = (name, bone, mat) => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
+  const slab = (part, key, volume) => { part.slab = key; SLABS.set(key, {volume, part: part.name}); return GROW?.get(key) || 0; };
   function slabGroup(name, info) {
-    const mat = MAT[name] || defaultMat, bone = BONE[name] || name, split = SPLIT[name];
+    const mat = MAT[name] || defaultMat, bone = BONE[name] || name, splits = [SPLIT[name] || []].flat();
     const grot = info.group.rotation || [0, 0, 0];
     // per cube: the axis its own rotation keeps valid (unrotated -> side profile x); compound rotations -> oriented box
     const axisOf = c => { const r = c.rot, n = r.filter(v => v).length, ok = a => !OTHER[a].some(i => r[i] || grot[i]);
@@ -293,9 +337,13 @@ export function createBuilder({MAT = {}, AXIS = {}, BONE = {}, EPS = {}, CHAMFER
     const part = P(`${name}`, bone, mat), stats = {x: 0, y: 0, z: 0, dropped: 0, boxes: boxes.length};
     for (const ax of ['x', 'y', 'z']) {
       const cubes = byAxis[ax]; if (!cubes.length) continue;
-      const A = AX[ax], layers = [];
+      const A = AX[ax], layers = [], ctr = (Math.min(...cubes.flatMap(c => c.corners.map(p => p[A.k]))) + Math.max(...cubes.flatMap(c => c.corners.map(p => p[A.k])))) / 2;
       for (const c of cubes) {
-        const vs = c.corners.map(p => p[A.k]), a0 = Math.min(...vs), a1 = Math.max(...vs);
+        const vs = c.corners.map(p => p[A.k]);
+        let a0 = Math.min(...vs), a1 = Math.max(...vs);
+        // THIN: a zero-thickness cube (the cube modeller's backing plane) becomes a thin closed plate, grown toward the
+        // group's middle so its visible face stays where the plane was (a zero-thickness slab has two coincident caps)
+        if (THIN && a1 - a0 < 1e-4) { if ((a0 + a1) / 2 >= ctr) a0 -= THIN; else a1 += THIN; }
         let L = layers.find(l => Math.abs(l.a0 - a0) < 0.02 && Math.abs(l.a1 - a1) < 0.02);
         if (!L) layers.push(L = {a0, a1, polys: []});
         L.polys.push(hull(c.corners.map(A.uv)));
@@ -310,19 +358,28 @@ export function createBuilder({MAT = {}, AXIS = {}, BONE = {}, EPS = {}, CHAMFER
         return false;
       });
       stats[ax] = kept.length; stats.dropped += layers.length - kept.length;
-      for (const L of kept) {
+      // SNAP targets: every cube corner coordinate of this axis' layers, per in-plane axis
+      const snapU = SNAP ? [...new Set(all.map(p => p[0]))].sort((a, b) => a - b) : null, snapV = SNAP ? [...new Set(all.map(p => p[1]))].sort((a, b) => a - b) : null;
+      kept.forEach((L, li) => {
         const masks = [[L.fp, part, mat]];
-        if (split && ax === 'x') { // region pixels become their own material part (straight internal cut)
-          const a = {...L.fp, m: new Uint8Array(L.fp.m)}, b = {...L.fp, m: new Uint8Array(L.fp.m)};
+        if (splits.length && ax === 'x') { // region pixels become their own material part (straight internal cut)
+          const ms = [L.fp, ...splits].map(() => ({...L.fp, m: new Uint8Array(L.fp.m)}));
           for (let j = 0; j < L.fp.H; j++) for (let i = 0; i < L.fp.W; i++) { const k = j * L.fp.W + i; if (!L.fp.m[k]) continue;
-            (inRegion([L.fp.ox + (i + 0.5) / RES, L.fp.oy + (j + 0.5) / RES], split.region) ? a : b).m[k] = 0; }
-          const sp = PARTS.find(p => p.name === split.name) || P(split.name, bone, split.mat);
-          masks.splice(0, 1, [a, part, mat], [b, sp, split.mat]);
+            const q = [L.fp.ox + (i + 0.5) / RES, L.fp.oy + (j + 0.5) / RES], r = 1 + splits.findIndex(sp => inRegion(q, sp.region));
+            ms.forEach((mm, s) => { if (s !== r) mm.m[k] = 0; }); }
+          const sps = splits.map(sp => PARTS.find(p => p.name === sp.name) || P(sp.name, bone, sp.mat));
+          masks.splice(0, 1, [ms[0], part, mat], ...splits.map((sp, s) => [ms[s + 1], sps[s], sp.mat]));
         }
-        for (const [fp, target, m] of masks) for (const sh of shapes(traceLoops(fp), EPS[name] ?? 0.045)) extrude(target, ax, sh, L.a0, L.a1, CHAMFER[m] ?? 0.03);
-      }
+        masks.forEach(([fp, target, m], mi) => shapes(traceLoops(fp), EPS[name] ?? 0.045).forEach((sh, si) => {
+          if (SNAP) sh = snapShape(sh, snapU, snapV, 0.75 / RES);
+          const vol = (Math.abs(area2(sh.outer)) - sh.holes.reduce((s, h) => s + Math.abs(area2(h)), 0)) * (L.a1 - L.a0);
+          extrude(target, ax, sh, L.a0, L.a1, CHAMFER[m] ?? 0.03, 'side', slab(target, `${name}|${ax}|${li}|${mi}|${si}`, vol));
+        }));
+      });
     }
-    for (const c of boxes) box(part, c, 'bevel');
+    boxes.forEach((c, i) => box(part, c, 'bevel', slab(part, `${name}|box|${i}`, [0, 1, 2].reduce((s, k) => s * (c.to[k] - c.from[k]), 1))));
+    delete part.slab;
+    for (const sp of splits) { const q = PARTS.find(p => p.name === sp.name); if (q) delete q.slab; }
     return stats;
   }
   function latheGroup(name, info, seg) {
@@ -333,7 +390,59 @@ export function createBuilder({MAT = {}, AXIS = {}, BONE = {}, EPS = {}, CHAMFER
     revolve(part, cx, cy, [[z0, 0], [z1, 0], [z1, r - c], [z1 - c, r], [z0 + c, r], [z0, r - c]], seg);
     return {cx, cy, r, z0, z1};
   }
-  return {PARTS, P, slabGroup, latheGroup};
+  return {PARTS, P, slabGroup, latheGroup, SLABS};
+}
+
+/**
+ * Z-fighting audit / priority levels. Faces of different slabs (slab key, else the part) that lie in one plane (normal
+ * and offset within tol), face the same way and overlap by more than minArea conflict. The larger slab (SLABS volume, ties
+ * by key) wins; faces outside SLABS (lathe / custom parts) cannot grow and always lose. level(slab) = 1 + the highest level
+ * it beats, so GROW = level x step puts every winner's face in front of all the faces it overlaps.
+ * prior (Map win -> Set of losers) carries the conflicts of earlier passes, so the levels of an iterated build (grown
+ * faces can newly overlap a neighbour grown by the same amount) only ever rise; floor (Map key -> minimum level) lifts a
+ * winner whose grown face landed on another face's plane. Returns {levels: Map key -> level,
+ * beats, pairs: [{win, lose, area}], unresolved: [...], area}.
+ */
+export function zFightLevels(parts, slabs, {skip = () => false, tol = 1e-3, minArea = 1e-5, prior = null, floor = null} = {}) {
+  const F = [];
+  for (const p of parts) {
+    if (p.copyOf || skip(p)) continue;
+    for (const f of p.f) {
+      const P = f.ids.map(i => p.v[i]), nn = newell(P), len = Math.hypot(...nn); if (len < 1e-10) continue;
+      const n = mul(nn, 1 / len), t = norm(Math.abs(n[0]) < 0.9 ? cross(n, [1, 0, 0]) : cross(n, [0, 1, 0])), b = cross(n, t);
+      let Q = P.map(q => [dot(q, t), dot(q, b)]); if (area2(Q) < 0) Q = Q.reverse();
+      F.push({key: f.slab ?? 'part:' + p.name, n, d: dot(n, P[0]), Q, box: [Math.min(...Q.map(q => q[0])), Math.min(...Q.map(q => q[1])), Math.max(...Q.map(q => q[0])), Math.max(...Q.map(q => q[1]))]});
+    }
+  }
+  const clip = (S, C) => { let out = S;
+    for (let i = 0; i < C.length && out.length; i++) { const a = C[i], b = C[(i + 1) % C.length], inp = out; out = [];
+      const side = p => (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]);
+      for (let j = 0; j < inp.length; j++) { const p = inp[j], q = inp[(j + 1) % inp.length], sp = side(p), sq = side(q);
+        if (sp >= 0) out.push(p); if (sp * sq < 0) { const k = sp / (sp - sq); out.push([p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k]); } } }
+    return out; };
+  const byN = new Map();
+  for (const f of F) { const k = f.n.map(v => Math.round(v * 2000)).join(','); (byN.get(k) || byN.set(k, []).get(k)).push(f); }
+  const vol = k => slabs.get(k)?.volume ?? -Infinity, beats = new Map(), pairs = [], unresolved = [];
+  for (const [w, ls] of prior || []) beats.set(w, new Set(ls));
+  const seen = new Map(), where = new Map();   // "win|lose" -> accumulated area, first shared plane (diagnostics)
+  for (const list of byN.values()) {
+    list.sort((a, b) => a.d - b.d);
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length && list[j].d - list[i].d < tol; j++) {
+      const A = list[i], B = list[j]; if (A.key === B.key || dot(A.n, B.n) < 0.9999) continue;
+      if (A.box[0] >= B.box[2] || B.box[0] >= A.box[2] || A.box[1] >= B.box[3] || B.box[1] >= A.box[3]) continue;
+      const c = clip(A.Q, B.Q), a = c.length >= 3 ? Math.abs(area2(c)) : 0; if (a < minArea) continue;
+      const [win, lose] = vol(A.key) > vol(B.key) || (vol(A.key) === vol(B.key) && A.key > B.key) ? [A.key, B.key] : [B.key, A.key];
+      if (!slabs.has(win)) { unresolved.push({a: A.key, b: B.key, area: a}); continue; }
+      const k = win + '\u0000' + lose; seen.set(k, (seen.get(k) || 0) + a);
+      if (!where.has(k)) where.set(k, {n: A.n.map(v => +v.toFixed(4)), d: [+A.d.toFixed(5), +B.d.toFixed(5)]});
+      (beats.get(win) || beats.set(win, new Set()).get(win)).add(lose);
+    }
+  }
+  for (const [k, a] of seen) { const [win, lose] = k.split('\u0000'); pairs.push({win, lose, area: a, plane: where.get(k)}); }
+  const levels = new Map(), keys = [...new Set([...beats.keys(), ...[...beats.values()].flatMap(s => [...s]), ...(floor?.keys() || [])])];
+  keys.sort((a, b) => (vol(a) - vol(b)) || (a < b ? -1 : a > b ? 1 : 0));
+  for (const k of keys) { let lv = floor?.get(k) || 0; for (const l of beats.get(k) || []) lv = Math.max(lv, (levels.get(l) || 0) + 1); if (lv) levels.set(k, lv); }
+  return {levels, beats, pairs, unresolved, area: pairs.reduce((s, p) => s + p.area, 0) + unresolved.reduce((s, p) => s + p.area, 0)};
 }
 
 // ---------------- UV: planar islands (normal flood fill), shelf packing ----------------

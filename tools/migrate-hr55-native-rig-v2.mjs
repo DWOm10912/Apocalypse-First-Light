@@ -3,6 +3,7 @@
 //   node tools/migrate-hr55-native-rig-v2.mjs   -> on the TaCZ-era files: syncs, migrates and writes them;
 //                                                 on already migrated files: re-derives from git (HR55_RIG_BASE, default
 //                                                 97e9270, the pre-migration commit) and only verifies the outputs
+//                                                 (after Phase 2 against the Phase 1 files in git, HR55_RIG_PHASE1)
 // 1) Sync (the runtime is the tested truth; the editable source had drifted):
 //    - sight_anchor pivot: runtime (0, 11.18035, -2.10661) (rifle red dot calibration), source still (0, 16.28, -23.1)
 //    - sound markers: the runtime uses registered events (apocalypse_firstlight:hr55_*), shoot has none (NativeGunActions
@@ -311,9 +312,12 @@ console.log('sync:', JSON.stringify({pivots: sync.pivots, sounds: sync.sounds.le
 
 const outputs = [[P.src, JSON.stringify(src1)], [P.geo, JSON.stringify(geo1, null, 2)], [P.anim, JSON.stringify(anim1, null, 2)], [P.ext, JSON.stringify(ref)]];
 if (migrated) {
-  // git autocrlf may check these out with CRLF: compare the content, not the line endings
-  for (const [file, data] of outputs) assert.equal(read(file).replace(/\r\n/g, '\n'), data, 'stale ' + file);
-  console.log(`CHECK OK (re-derived from ${base})`);
+  // Once Phase 2 (tools/build-hr55-v2-mesh.mjs, Pure Mesh) has replaced the working files, the Phase 1 outputs live in git
+  // (HR55_RIG_PHASE1, default e184568); git autocrlf may check files out with CRLF: compare content, not line endings
+  const phase2 = disk.elements.some(e => e.type === 'mesh'), phase1 = process.env.HR55_RIG_PHASE1 || 'e184568';
+  const current = file => phase2 ? execFileSync('git', ['show', `${phase1}:${file}`], {cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28}) : read(file);
+  for (const [file, data] of outputs) assert.equal(current(file).replace(/\r\n/g, '\n'), data, 'stale ' + file);
+  console.log(`CHECK OK (re-derived from ${base}${phase2 ? `, compared with the Phase 1 files at ${phase1}` : ''})`);
 } else {
   for (const [file, data] of outputs) fs.writeFileSync(path.join(ROOT, file), data);
   console.log('wrote ' + outputs.map(([f]) => f).join(', '));

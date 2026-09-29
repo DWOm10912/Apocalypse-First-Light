@@ -16,7 +16,7 @@ GeckoLib 继续持有 skeleton、动画、骨骼姿态和 Cube 绘制。AFL 的�
 | 可选 Mesh sidecar | `assets/<namespace>/meshes/<id>.aflmesh.json` |
 | atlas | 沿用枪械 renderer 当前 texture；sidecar 不另选贴图 |
 
-`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51、HR55 继续走 Cube 路径。枪口 / 瞄具 / 弹匣附件共用的 `NativeMuzzleRendering.drawItem` 也按此 opt-in：附件 Geo 在 `AflMeshCache` 中有 sidecar 时走 `AflHybridMeshRendering.renderAtCurrentPose`，否则走原 Cube 路径（2026-09-27 起首个 Mesh 附件为 `pistol_suppressor_01.aflmesh.json`，格式 V2）。正式 `p9_01` 使用 `p9_01_v2_native.aflmesh.json`，与 `blackridge_50.aflmesh.json` 同为首批 **sidecar 格式 V2**。`silverwood_12.aflmesh.json` 与弹药 sidecar 保留格式 V1；此前 Silverwood 资产名中的“Hybrid Mesh V2”是模型迭代编号，不是本节的存储格式版本。Registry ID、动画和玩法未因本轮迁移改变。
+`NO_SIDECAR => OLD_RENDER_PATH_UNCHANGED`。BR51（2026-09-28）和 HR55（2026-09-29）后来都改为 V2 sidecar，见 `br51_01_v2_pure_mesh_pbr.md`、`hr55_v2_pure_mesh_pbr.md`。枪口 / 瞄具 / 弹匣附件共用的 `NativeMuzzleRendering.drawItem` 也按此 opt-in：附件 Geo 在 `AflMeshCache` 中有 sidecar 时走 `AflHybridMeshRendering.renderAtCurrentPose`，否则走原 Cube 路径（2026-09-27 起首个 Mesh 附件为 `pistol_suppressor_01.aflmesh.json`，格式 V2）。正式 `p9_01` 使用 `p9_01_v2_native.aflmesh.json`，与 `blackridge_50.aflmesh.json` 同为首批 **sidecar 格式 V2**。`silverwood_12.aflmesh.json` 与弹药 sidecar 保留格式 V1；此前 Silverwood 资产名中的“Hybrid Mesh V2”是模型迭代编号，不是本节的存储格式版本。Registry ID、动画和玩法未因本轮迁移改变。
 
 ## Sidecar V1
 
