@@ -220,7 +220,7 @@ Profile 明确 asset ID、idle、全部 clip、循环 clip、right_hand_anchor�
 
 仅当公共 Item 无法表达真实状态/动画时才建专用类；P9 已不需要专用 Item。
 
-加入 AflCreativeTabs 的现有“AFL 武器与弹药”页。
+加入 AflCreativeTabs：枪放“黎明启示录 · 枪械”页（按手枪 → 步枪 → 霰弹枪归位），新弹药放“弹药”页，配件放“配件”页，弹壳不进标签页（2026-09-28 起，见 `docs/ui/creative_tabs_v1.md`）。
 
 4.2 Localization / Tooltip
 

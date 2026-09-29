@@ -36,7 +36,7 @@ assert.equal(zh['block.apocalypse_firstlight.metal_trash_can'], '铁质垃圾桶
 assert.match(blockJava, /METAL_TRASH_CAN = BLOCKS\.register\("metal_trash_can"/);
 assert.match(blockJava, /METAL_TRASH_CAN[\s\S]*?requiresCorrectToolForDrops\(\)[\s\S]*?noOcclusion\(\)/);
 assert.match(itemJava, /METAL_TRASH_CAN = ITEMS\.register\("metal_trash_can"/);
-assert.match(tabJava, /output\.accept\(AflItems\.METAL_TRASH_CAN\.get\(\)\)/);
+assert.match(tabJava, /FURNITURE = tab\("furniture"[^;]*AflItems\.METAL_TRASH_CAN,/);   // listed in the furniture tab
 assert.doesNotMatch(implementation, /BlockEntity|Menu|Inventory|OPEN|LID_OPEN|FACING/);
 assert.match(implementation, /COLLISION_SHAPE/);
 assert.match(implementation, /OUTLINE_SHAPE/);

@@ -190,18 +190,19 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-12216403147041317866.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
-    "run/logs/debug-1.log",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
-    "docs/native_guns/attachments/rifle_red_dot_01_pure_mesh_v1.md",
-    "docs/native_guns/attachments/rifle_red_dot_01_pure_mesh_v1.md.tmp.36080.0aeed241bfdc",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc",
-    "run/saves/新的世界 (1)/level10267145068076806518.dat",
-    "tools/verify-rifle-red-dot-01.mjs",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
+    "run/afl_authoring_bridge/session.json",
+    "run/saves/新的世界 (1)/level18422344163361776966.dat",
+    "run/config/xaero/lib/common.cfg.temp.backup0",
+    "run/config/xaero/lib/common.cfg.temp",
+    "run/logs/2026-09-28-18.log.gz",
+    "docs/ui/creative_tabs_v1.md",
+    "docs/native_guns/attachments/rifle_red_dot_01_pure_mesh_v1.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01_n.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/item/rifle_red_dot_01_n.png",
@@ -234,7 +235,6 @@
     "docs/ui/hud_layout_editor_v1.md",
     "docs/项目内容/01 - 设计/工业/流体系统.md",
     "docs/项目内容/01 - 设计/工业/FE系统.md",
-    "docs/worldgen/highway_v2_sea_bridge_v1_1c.md",
-    "docs/项目内容/01 - 设计/国家系统.md"
+    "docs/worldgen/highway_v2_sea_bridge_v1_1c.md"
   ]
 }

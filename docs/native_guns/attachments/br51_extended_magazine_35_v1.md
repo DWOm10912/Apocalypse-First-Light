@@ -8,7 +8,7 @@
 | 来源 | 原 BR51 `mag_extended_2`：20 个主体 cube + 4 个原底板 cube，保留 UV 和原贴图 |
 | 独立源 / 生成器 | `src/main/blockbench/br51_extended_magazine_35.bbmodel` / `extract_br51_magazine_35.cjs` |
 | Runtime | `assets/apocalypse_firstlight/geo/br51_extended_magazine_35.geo.json`、`textures/item/br51_extended_magazine_35.png`、`models/item/br51_extended_magazine_35.json`，均位于 `src/main/resources/` |
-| Item | builtin/entity + 共用 NativeMagazineRendering.ItemRenderer，真实独立 3D 物品，武器与弹药创造标签页，堆叠 1 |
+| Item | builtin/entity + 共用 NativeMagazineRendering.ItemRenderer，真实独立 3D 物品，“黎明启示录 · 配件”创造标签页（2026-09-28 起），堆叠 1 |
 | 安装基准 | 原 `mag_standard` / `mag_extended_2` 共用 pivot `[0,9.41883,4.52607]`；独立模型减去该 pivot，挂回原骨骼时还原 |
 | 主枪 Pure Mesh（2026-09-28） | BR51 主枪与标准弹匣已改为 Pure Mesh（见 `docs/native_guns/br51_01_v2_pure_mesh_pbr.md`）。替换骨骼 `mag_standard` / `reload_mag_standard` / `empty_old_mag_standard` 与枢轴不变，本附件仍是 cube 资产、自带贴图，未 Mesh 化；在 Mesh 主枪上替换标准弹匣子树的效果**未实机验证** |
 | 模型替换 | 仅有效附件替换 `mag_standard`（枪内）、`reload_mag_standard`（换弹新匣）和 `empty_old_mag_standard`（空仓旧匣）的整个几何子树，避免保留标准底板造成双重渲染。三者枢轴相同；BR51 Native Rig V2 起枪内与换弹新匣拆成两份，见 [BR51 Native Rig V2](../br51_01_native_rig_v2.md) |

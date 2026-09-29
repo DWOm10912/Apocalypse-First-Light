@@ -20,7 +20,7 @@
 
 当前 Tooltip 仅显示原版名称和灰色非斜体介绍，不再显示额外的“瞄准：红点瞄具”行或分割线。配件装拆仅通过枪械维护台，无快捷键。统一规则见 [装备 Tooltip V1](../ui/equipment_tooltip_v1.md)。
 
-正式物品：`apocalypse_firstlight:pistol_red_dot`，最大堆叠 1，进入「AFL 武器与弹药」标签页配件位置。本手枪红点当前只兼容 P9-01；步枪另有独立 `rifle_red_dot_01`。无配件耐久、品质或倍率选项；装拆复用维护台 UI，无安装手臂动画。
+正式物品：`apocalypse_firstlight:pistol_red_dot`，最大堆叠 1，进入「黎明启示录 · 配件」标签页（2026-09-28 起，原「AFL 武器与弹药」已拆分）。本手枪红点当前只兼容 P9-01；步枪另有独立 `rifle_red_dot_01`。无配件耐久、品质或倍率选项；装拆复用维护台 UI，无安装手臂动画。
 
 ## 使用
 

@@ -4,183 +4,199 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
+import java.util.List;
+import java.util.function.Supplier;
+
+/**
+ * AFL creative tabs, in display order (each tab is chained after the previous one). Every registered AFL item appears in
+ * exactly one tab, except the ammunition casings, which stay development-only registrations.
+ */
 public final class AflCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ApocalypseFirstLight.MOD_ID);
 
-    public static final RegistryObject<CreativeModeTab> BLOCKS = CREATIVE_MODE_TABS.register("blocks", () ->
-            CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(AflItems.STEEL_BLOCK.get()))
-                    .title(Component.translatable("itemGroup.apocalypse_firstlight.blocks"))
-                    .displayItems((parameters, output) -> {
-                        output.accept(AflItems.REINFORCED_CONCRETE.get());
-                        output.accept(AflItems.REINFORCED_CONCRETE_SLAB.get());
-                        output.accept(AflItems.REINFORCED_CONCRETE_STAIRS.get());
-                        output.accept(AflItems.STEEL_BLOCK.get());
-                        output.accept(AflItems.STEEL_CABLE.get());
-                        output.accept(AflItems.STEEL_BEAM.get());
-                        output.accept(AflItems.STEEL_BRACE.get());
-                        output.accept(AflItems.ALUMINUM_BLOCK.get());
-                        output.accept(AflItems.LEAD_BLOCK.get());
-                        output.accept(AflItems.ZINC_BLOCK.get());
-                        output.accept(AflItems.TIN_BLOCK.get());
-                        output.accept(AflItems.NICKEL_BLOCK.get());
-                        output.accept(AflItems.SILVER_BLOCK.get());
-                        output.accept(AflItems.TUNGSTEN_BLOCK.get());
-                        output.accept(AflItems.BAUXITE_ORE.get());
-                        output.accept(AflItems.GALENA_ORE.get());
-                        output.accept(AflItems.SPHALERITE_ORE.get());
-                        output.accept(AflItems.CASSITERITE_ORE.get());
-                        output.accept(AflItems.PENTLANDITE_ORE.get());
-                        output.accept(AflItems.WOLFRAMITE_ORE.get());
-                        output.accept(AflItems.SPODUMENE_ORE.get());
-                        output.accept(AflItems.STEEL_BLOCK_SLAB.get());
-                        output.accept(AflItems.STEEL_BLOCK_STAIRS.get());
-                        output.accept(AflItems.STEEL_PLATE.get());
-                        output.accept(AflItems.STEEL_PLATE_SLAB.get());
-                        output.accept(AflItems.STEEL_PLATE_STAIRS.get());
-                        output.accept(AflItems.STEEL_GRATE.get());
-                        output.accept(AflItems.STEEL_RAILING.get());
-                        output.accept(AflItems.STEEL_DOOR.get());
-                        output.accept(AflItems.INDUSTRIAL_UTILITY_LIGHT.get());
-                        output.accept(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get());
-                        output.accept(AflItems.INDUSTRIAL_LOCKER.get());
-                        output.accept(AflItems.LEAD_CHEST.get());
-                        output.accept(AflItems.GUN_MAINTENANCE_BENCH.get());
-                        output.accept(AflItems.PRECISION_FABRICATION_STATION.get());
-                        output.accept(AflItems.RETAIL_SHELF_SINGLE.get());
-                        output.accept(AflItems.CASH_REGISTER.get());
-                        output.accept(AflItems.WATER_DISPENSER.get());
-                        output.accept(AflItems.METAL_TRASH_CAN.get());
-                        output.accept(AflItems.COMMERCIAL_DUMPSTER.get());
-                        output.accept(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get());
-                        output.accept(AflItems.BEVERAGE_COOLER.get());
-                        output.accept(AflItems.CHEST_FREEZER.get());
-                        output.accept(AflItems.VENDING_MACHINE.get());
-                        output.accept(AflItems.MODERN_OFFICE_DESK.get());
-                        output.accept(AflItems.MODERN_OFFICE_CHAIR.get());
-                        output.accept(AflItems.MODERN_LCD_MONITOR.get());
-                        output.accept(AflItems.OFFICE_COMPUTER_STATION.get());
-                        output.accept(AflItems.OFFICE_KEYBOARD.get());
-                        output.accept(AflItems.OFFICE_MOUSE.get());
-                        output.accept(AflItems.OFFICE_CUBICLE_PARTITION.get());
-                        output.accept(AflItems.RESTROOM_PARTITION.get());
-                        output.accept(AflItems.RESTROOM_STALL_DOOR.get());
-                        output.accept(AflItems.COMMERCIAL_FLUSHOMETER_TOILET.get());
-                        output.accept(AflItems.COMMERCIAL_WALL_MOUNTED_SINK.get());
-                        output.accept(AflItems.LOW_FILING_CABINET.get());
-                        output.accept(AflItems.TALL_FILING_CABINET.get());
-                        output.accept(AflItems.OFFICE_MULTIFUNCTION_PRINTER.get());
-                        output.accept(AflItems.FALLOUT_SOIL.get());
-                        output.accept(AflItems.SCORCHED_SOIL.get());
-                        output.accept(AflItems.FUSED_GROUND.get());
-                        output.accept(AflItems.ASPHALT.get());
-                        output.accept(AflItems.THERMAL_GENERATOR.get());
-                        output.accept(AflItems.ENERGY_CELL.get());
-                        output.accept(AflItems.CRUSHER.get());
-                        output.accept(AflItems.INDUSTRIAL_FURNACE.get());
-                        output.accept(AflItems.ALLOY_FURNACE.get());
-                        output.accept(AflItems.COMPRESSOR.get());
-                        output.accept(AflItems.CHEMICAL_REACTOR.get());
-                        output.accept(AflItems.POWER_CABLE.get());
-                        output.accept(AflItems.FLUID_PIPE.get());
-                        output.accept(AflItems.FLUID_TANK.get());
-                        output.accept(AflItems.INDUSTRIAL_WASTE_BUCKET.get());
-                        output.accept(AflItems.POPLAR_LOG.get());
-                        output.accept(AflItems.STRIPPED_POPLAR_LOG.get());
-                        output.accept(AflItems.POPLAR_WOOD.get());
-                        output.accept(AflItems.STRIPPED_POPLAR_WOOD.get());
-                        output.accept(AflItems.POPLAR_PLANKS.get());
-                        output.accept(AflItems.POPLAR_STAIRS.get());
-                        output.accept(AflItems.POPLAR_SLAB.get());
-                        output.accept(AflItems.POPLAR_DOOR.get());
-                        output.accept(AflItems.POPLAR_TRAPDOOR.get());
-                        output.accept(AflItems.POPLAR_LEAVES.get());
-                        output.accept(AflItems.POPLAR_SAPLING.get());
-                    })
-                    .build());
+    public static final RegistryObject<CreativeModeTab> BUILDING_BLOCKS = tab("building_blocks", null, AflItems.REINFORCED_CONCRETE,
+            AflItems.REINFORCED_CONCRETE,
+            AflItems.REINFORCED_CONCRETE_SLAB,
+            AflItems.REINFORCED_CONCRETE_STAIRS,
+            AflItems.STEEL_BLOCK,
+            AflItems.STEEL_BLOCK_SLAB,
+            AflItems.STEEL_BLOCK_STAIRS,
+            AflItems.STEEL_PLATE,
+            AflItems.STEEL_PLATE_SLAB,
+            AflItems.STEEL_PLATE_STAIRS,
+            AflItems.STEEL_BEAM,
+            AflItems.STEEL_BRACE,
+            AflItems.STEEL_CABLE,
+            AflItems.STEEL_GRATE,
+            AflItems.STEEL_RAILING,
+            AflItems.STEEL_DOOR,
+            AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR,
+            AflItems.INDUSTRIAL_UTILITY_LIGHT,
+            AflItems.ALUMINUM_BLOCK,
+            AflItems.LEAD_BLOCK,
+            AflItems.ZINC_BLOCK,
+            AflItems.TIN_BLOCK,
+            AflItems.NICKEL_BLOCK,
+            AflItems.SILVER_BLOCK,
+            AflItems.TUNGSTEN_BLOCK,
+            AflItems.ASPHALT,
+            AflItems.EDGE_LANE_WHITE,
+            AflItems.EDGE_LANE_YELLOW,
+            AflItems.WHITE_LANE_DIVIDER);
 
-    public static final RegistryObject<CreativeModeTab> ITEMS = CREATIVE_MODE_TABS.register("items", () ->
-            CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(AflItems.STEEL_SCRAP.get()))
-                    .title(Component.translatable("itemGroup.apocalypse_firstlight.items"))
-                    .displayItems((parameters, output) -> {
-                        output.accept(AflItems.STEEL_INGOT.get());
-                        output.accept(AflItems.STEEL_SHEET.get());
-                        output.accept(AflItems.ALUMINUM_INGOT.get());
-                        output.accept(AflItems.ALUMINUM_SHEET.get());
-                        output.accept(AflItems.BAUXITE.get());
-                        output.accept(AflItems.ALUMINA.get());
-                        output.accept(AflItems.GALENA.get());
-                        output.accept(AflItems.SPHALERITE.get());
-                        output.accept(AflItems.CASSITERITE.get());
-                        output.accept(AflItems.PENTLANDITE.get());
-                        output.accept(AflItems.WOLFRAMITE.get());
-                        output.accept(AflItems.TUNGSTEN_OXIDE.get());
-                        output.accept(AflItems.TUNGSTEN_POWDER.get());
-                        output.accept(AflItems.TUNGSTEN_INGOT.get());
-                        output.accept(AflItems.TUNGSTEN_SHEET.get());
-                        output.accept(AflItems.TUNGSTEN_CARBIDE_POWDER.get());
-                        output.accept(AflItems.CEMENTED_CARBIDE_INGOT.get());
-                        output.accept(AflItems.KUNZITE.get());
-                        output.accept(AflItems.LITHIUM_CARBONATE.get());
-                        output.accept(AflItems.LEAD_INGOT.get());
-                        output.accept(AflItems.LEAD_SHEET.get());
-                        output.accept(AflItems.ZINC_INGOT.get());
-                        output.accept(AflItems.ZINC_SHEET.get());
-                        output.accept(AflItems.TIN_INGOT.get());
-                        output.accept(AflItems.TIN_SHEET.get());
-                        output.accept(AflItems.NICKEL_INGOT.get());
-                        output.accept(AflItems.NICKEL_SHEET.get());
-                        output.accept(AflItems.SILVER_SCRAP.get());
-                        output.accept(AflItems.SILVER_INGOT.get());
-                        output.accept(AflItems.SILVER_SHEET.get());
-                        output.accept(AflItems.STEEL_SCRAP.get());
-                        output.accept(AflItems.CONCRETE_RUBBLE.get());
-                        output.accept(AflItems.PLASTIC_SCRAP.get());
-                        output.accept(AflItems.PLASTIC_PELLETS.get());
-                        output.accept(AflItems.PLASTIC_SHEET.get());
-                        output.accept(AflItems.GEIGER_COUNTER.get());
-                    })
-                    .build());
+    public static final RegistryObject<CreativeModeTab> NATURAL_BLOCKS = tab("natural_blocks", BUILDING_BLOCKS, AflItems.GALENA_ORE,
+            AflItems.BAUXITE_ORE,
+            AflItems.GALENA_ORE,
+            AflItems.SPHALERITE_ORE,
+            AflItems.CASSITERITE_ORE,
+            AflItems.PENTLANDITE_ORE,
+            AflItems.WOLFRAMITE_ORE,
+            AflItems.SPODUMENE_ORE,
+            AflItems.FALLOUT_SOIL,
+            AflItems.SCORCHED_SOIL,
+            AflItems.FUSED_GROUND,
+            AflItems.POPLAR_LOG,
+            AflItems.STRIPPED_POPLAR_LOG,
+            AflItems.POPLAR_WOOD,
+            AflItems.STRIPPED_POPLAR_WOOD,
+            AflItems.POPLAR_PLANKS,
+            AflItems.POPLAR_STAIRS,
+            AflItems.POPLAR_SLAB,
+            AflItems.POPLAR_DOOR,
+            AflItems.POPLAR_TRAPDOOR,
+            AflItems.POPLAR_LEAVES,
+            AflItems.POPLAR_SAPLING);
 
-    public static final RegistryObject<CreativeModeTab> WEAPONS_AND_AMMUNITION =
-            CREATIVE_MODE_TABS.register("weapons_and_ammunition", () -> CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(AflItems.P9_01.get()))
-                    .title(Component.translatable("itemGroup.apocalypse_firstlight.weapons_and_ammunition"))
-                    .displayItems((parameters, output) -> {
-                        output.accept(AflItems.P9_01.get());
-                        output.accept(AflItems.BR51_01.get());
-                        output.accept(AflItems.HR55.get());
-                        output.accept(AflItems.SILVERWOOD_12.get());
-                        output.accept(AflItems.BLACKRIDGE_50.get());
-                        output.accept(AflItems.CAT.get());
-                        output.accept(AflItems.CROWBAR.get());
-                        output.accept(AflItems.ROUND_9MM.get());
-                        output.accept(AflItems.ROUND_762MM.get());
-                        output.accept(AflItems.ROUND_127MM.get());
-                        output.accept(AflItems.ROUND_12_GAUGE.get());
-                        output.accept(AflItems.ROUND_50_AE.get());
-                        output.accept(AflItems.PISTOL_RED_DOT.get());
-                        output.accept(AflItems.RIFLE_RED_DOT_01.get());
-                        output.accept(AflItems.PISTOL_SUPPRESSOR_01.get());
-                        output.accept(AflItems.RIFLE_SUPPRESSOR_01.get());
-                        output.accept(AflItems.P9_01_EXTENDED_MAGAZINE.get());
-                        output.accept(AflItems.BR51_EXTENDED_MAGAZINE_35.get());
-                    })
-                    .build());
+    public static final RegistryObject<CreativeModeTab> INDUSTRY = tab("industry", NATURAL_BLOCKS, AflItems.CRUSHER,
+            AflItems.THERMAL_GENERATOR,
+            AflItems.ENERGY_CELL,
+            AflItems.POWER_CABLE,
+            AflItems.CRUSHER,
+            AflItems.INDUSTRIAL_FURNACE,
+            AflItems.ALLOY_FURNACE,
+            AflItems.COMPRESSOR,
+            AflItems.CHEMICAL_REACTOR,
+            AflItems.FLUID_PIPE,
+            AflItems.FLUID_TANK,
+            AflItems.INDUSTRIAL_WASTE_BUCKET,
+            AflItems.GUN_MAINTENANCE_BENCH,
+            AflItems.PRECISION_FABRICATION_STATION);
 
-    public static final RegistryObject<CreativeModeTab> EQUIPMENT = CREATIVE_MODE_TABS.register("equipment", () ->
-            CreativeModeTab.builder()
-                    .withTabsBefore(WEAPONS_AND_AMMUNITION.getId())
-                    .icon(() -> new ItemStack(AflItems.SIMPLE_HEARING_PROTECTION.get()))
-                    .title(Component.translatable("itemGroup.apocalypse_firstlight.equipment"))
-                    .displayItems((parameters, output) -> output.accept(AflItems.SIMPLE_HEARING_PROTECTION.get()))
-                    .build());
+    public static final RegistryObject<CreativeModeTab> FURNITURE = tab("furniture", INDUSTRY, AflItems.VENDING_MACHINE,
+            AflItems.INDUSTRIAL_LOCKER,
+            AflItems.LEAD_CHEST,
+            AflItems.INDUSTRIAL_ELECTRICAL_BOX,
+            AflItems.RETAIL_SHELF_SINGLE,
+            AflItems.CASH_REGISTER,
+            AflItems.BEVERAGE_COOLER,
+            AflItems.CHEST_FREEZER,
+            AflItems.VENDING_MACHINE,
+            AflItems.WATER_DISPENSER,
+            AflItems.METAL_TRASH_CAN,
+            AflItems.COMMERCIAL_DUMPSTER,
+            AflItems.MODERN_OFFICE_DESK,
+            AflItems.MODERN_OFFICE_CHAIR,
+            AflItems.MODERN_LCD_MONITOR,
+            AflItems.OFFICE_COMPUTER_STATION,
+            AflItems.OFFICE_KEYBOARD,
+            AflItems.OFFICE_MOUSE,
+            AflItems.OFFICE_CUBICLE_PARTITION,
+            AflItems.LOW_FILING_CABINET,
+            AflItems.TALL_FILING_CABINET,
+            AflItems.OFFICE_MULTIFUNCTION_PRINTER,
+            AflItems.RESTROOM_PARTITION,
+            AflItems.RESTROOM_STALL_DOOR,
+            AflItems.COMMERCIAL_FLUSHOMETER_TOILET,
+            AflItems.COMMERCIAL_WALL_MOUNTED_SINK);
+
+    public static final RegistryObject<CreativeModeTab> MATERIALS = tab("materials", FURNITURE, AflItems.STEEL_INGOT,
+            AflItems.STEEL_INGOT,
+            AflItems.STEEL_SHEET,
+            AflItems.ALUMINUM_INGOT,
+            AflItems.ALUMINUM_SHEET,
+            AflItems.BAUXITE,
+            AflItems.ALUMINA,
+            AflItems.GALENA,
+            AflItems.SPHALERITE,
+            AflItems.CASSITERITE,
+            AflItems.PENTLANDITE,
+            AflItems.WOLFRAMITE,
+            AflItems.TUNGSTEN_OXIDE,
+            AflItems.TUNGSTEN_POWDER,
+            AflItems.TUNGSTEN_INGOT,
+            AflItems.TUNGSTEN_SHEET,
+            AflItems.TUNGSTEN_CARBIDE_POWDER,
+            AflItems.CEMENTED_CARBIDE_INGOT,
+            AflItems.KUNZITE,
+            AflItems.LITHIUM_CARBONATE,
+            AflItems.LEAD_INGOT,
+            AflItems.LEAD_SHEET,
+            AflItems.ZINC_INGOT,
+            AflItems.ZINC_SHEET,
+            AflItems.TIN_INGOT,
+            AflItems.TIN_SHEET,
+            AflItems.NICKEL_INGOT,
+            AflItems.NICKEL_SHEET,
+            AflItems.SILVER_SCRAP,
+            AflItems.SILVER_INGOT,
+            AflItems.SILVER_SHEET,
+            AflItems.STEEL_SCRAP,
+            AflItems.CONCRETE_RUBBLE,
+            AflItems.PLASTIC_SCRAP,
+            AflItems.PLASTIC_PELLETS,
+            AflItems.PLASTIC_SHEET);
+
+    // Pistols, then rifles, then shotguns.
+    public static final RegistryObject<CreativeModeTab> FIREARMS = tab("firearms", MATERIALS, AflItems.BR51_01,
+            AflItems.P9_01,
+            AflItems.BLACKRIDGE_50,
+            AflItems.BR51_01,
+            AflItems.HR55,
+            AflItems.CAT,
+            AflItems.SILVERWOOD_12);
+
+    // By slot (sight, muzzle, magazine); pistol attachments before rifle ones within a slot.
+    public static final RegistryObject<CreativeModeTab> ATTACHMENTS = tab("attachments", FIREARMS, AflItems.RIFLE_RED_DOT_01,
+            AflItems.PISTOL_RED_DOT,
+            AflItems.RIFLE_RED_DOT_01,
+            AflItems.PISTOL_SUPPRESSOR_01,
+            AflItems.RIFLE_SUPPRESSOR_01,
+            AflItems.P9_01_EXTENDED_MAGAZINE,
+            AflItems.BR51_EXTENDED_MAGAZINE_35);
+
+    // In the firearms order: 9mm (P9), .50 AE (Blackridge), 7.62 (BR51, C.A.T.), 12.7x55 (HR55), 12 gauge (Silverwood).
+    public static final RegistryObject<CreativeModeTab> AMMUNITION = tab("ammunition", ATTACHMENTS, AflItems.ROUND_762MM,
+            AflItems.ROUND_9MM,
+            AflItems.ROUND_50_AE,
+            AflItems.ROUND_762MM,
+            AflItems.ROUND_127MM,
+            AflItems.ROUND_12_GAUGE);
+
+    public static final RegistryObject<CreativeModeTab> MELEE_AND_EQUIPMENT = tab("melee_and_equipment", AMMUNITION, AflItems.CROWBAR,
+            AflItems.CROWBAR,
+            AflItems.SIMPLE_HEARING_PROTECTION,
+            AflItems.GEIGER_COUNTER);
+
+    /** Title key itemGroup.apocalypse_firstlight.&lt;id&gt;; placed after {@code after} when given. */
+    @SafeVarargs
+    private static RegistryObject<CreativeModeTab> tab(String id, RegistryObject<CreativeModeTab> after,
+                                                       Supplier<? extends Item> icon, Supplier<? extends Item>... items) {
+        List<Supplier<? extends Item>> contents = List.of(items);
+        return CREATIVE_MODE_TABS.register(id, () -> {
+            var builder = CreativeModeTab.builder();
+            if (after != null) builder.withTabsBefore(after.getId());
+            return builder.icon(() -> new ItemStack(icon.get()))
+                    .title(Component.translatable("itemGroup." + ApocalypseFirstLight.MOD_ID + "." + id))
+                    .displayItems((parameters, output) -> contents.forEach(item -> output.accept(item.get())))
+                    .build();
+        });
+    }
 
     private AflCreativeTabs() {
     }

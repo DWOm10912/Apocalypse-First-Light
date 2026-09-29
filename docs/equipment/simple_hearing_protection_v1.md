@@ -70,7 +70,7 @@ W W
 
 I = `minecraft:iron_ingot`，L = `minecraft:leather`，W = `minecraft:wool` item tag（任意颜色）；产出 1。
 
-独立创造页 Registry `apocalypse_firstlight:equipment`，中文精确为 **黎明启示录 装备**，英文 `Apocalypse: First Light Equipment`。图标和当前唯一条目均为耳罩。通过 Forge `withTabsBefore(WEAPONS_AND_AMMUNITION.getId())` 让武器页位于装备页之前；不移动、重排武器页条目。
+创造页：2026-09-28 起位于 **黎明启示录 · 近战与装备**（`apocalypse_firstlight:melee_and_equipment`，英文 `AFL · Melee & Equipment`），排在撬棍之后、盖革计数器之前。原来只放耳罩的独立“黎明启示录 装备”页（`equipment`）已移除，见 [创造标签页 V1](../ui/creative_tabs_v1.md)。
 
 `en_us.json` / `zh_cn.json` 包含 item、itemGroup 和一条 `tooltip.apocalypse_firstlight.simple_hearing_protection.description` 键；不再保留重复的 `world_sound` / `hearing_impact` 功能行键。
 

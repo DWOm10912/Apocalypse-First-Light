@@ -41,7 +41,7 @@ BR51 源模型中的隐藏参考红点（`sight` 组）在 BR51 V2 Pure Mesh（P
 - `NativeAdsProfile.forStack` 读取实际装备的兼容 SIGHT 并解算光学轴。无配件继续原机械瞄准；真弹道保持 camera/look vector，视觉点不控制命中方向。
 - `AflAttachments.SIGHT` 保存真实附件 ItemStack；共用维护台 hotspot、Context HUD、完整 Inventory 候选投影、原版点击音与 2.480 秒操作声。51 tick 后服务端重新验证并提交，期间不提前出现/消失。
 - 兼容判断、revision、stale rejection 和安全返还均沿用 `MaintenanceAttachmentTransaction`。协议仍为 22，旧 V 报文继续为空操作。
-- 所有支持的枪械渲染环境读取同一个真实 ItemStack；无独立维护台 sight 状态。独立配件进入武器与弹药创造标签页，使用简洁中英文 Tooltip。
+- 所有支持的枪械渲染环境读取同一个真实 ItemStack；无独立维护台 sight 状态。独立配件进入“黎明启示录 · 配件”创造标签页（2026-09-28 起），使用简洁中英文 Tooltip。
 
 ### 背包独立 3D 展示修正
 

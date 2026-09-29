@@ -2,7 +2,7 @@
 
 ## 当前行为
 
-- 唯一方块/物品 ID：`apocalypse_firstlight:vending_machine`；建筑方块 Creative Tab，中英文名称已注册。
+- 唯一方块/物品 ID：`apocalypse_firstlight:vending_machine`；“黎明启示录 · 家具与设施” Creative Tab（2026-09-28 起，见 `docs/ui/creative_tabs_v1.md`），中英文名称已注册。
 - 属性 `facing=north/east/south/west`、`half=lower/upper`、`broken=false/true`。新取得的机器默认玻璃完整；破损机器物品带 `AflBrokenGlass` 标记，重放时两半均维持破损状态。下半唯一 BlockEntity，上半跟随状态；空间不足不放置。
 - 主手持 `apocalypse_firstlight:crowbar` 右键正面完整玻璃：服务端预约该机器并启动独立第一人称 `smash_glass`；第12 tick（0.60秒）重新验证目标后才破碎，两半同步，库存保留。动作共33 tick（1.65秒）。侧面、背面、支付区、机顶不触发。
 - 提示为“破坏玻璃”，与 `MaintenanceAttachmentHud` 共用 `AttachmentHintStyle`：150ms 渐入/淡出、灰色无阴影文字、深灰底板、命中点右14/上16像素。世界交互以准星为锚点，已破碎时淡出。

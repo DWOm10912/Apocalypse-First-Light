@@ -4,7 +4,7 @@ Status: Commercial Wall-Mounted Sink V1 is a registered, static, dry decoration 
 
 - Source: `src/main/blockbench/commercial_wall_mounted_sink.bbmodel`
 - Independent texture: `src/main/blockbench/textures/commercial_wall_mounted_sink.png` (128 × 128, embedded in source as well).
-- Registry ID: `apocalypse_firstlight:commercial_wall_mounted_sink`; item in the existing Blocks/decoration creative tab. English: Commercial Wall-Mounted Sink; Chinese: 商业壁挂式洗手台.
+- Registry ID: `apocalypse_firstlight:commercial_wall_mounted_sink`; item in the “AFL · Furniture & Fixtures” creative tab (since 2026-09-28, see `docs/ui/creative_tabs_v1.md`). English: Commercial Wall-Mounted Sink; Chinese: 商业壁挂式洗手台.
 - Runtime: Forge static OBJ/MTL under `assets/apocalypse_firstlight/models/block/`, block/item JSON, blockstate JSON, and pixel-identical `textures/block/commercial_wall_mounted_sink.png`. `tools/export-commercial-wall-sink-obj.blockbench.js` regenerates the 250-object OBJ from the saved source. OBJ is used because the approved cube geometry has multi-axis faceted rotations that ordinary block-element JSON cannot represent.
 - Geometry: 250 cubes, no zero or negative axis dimensions.
 - Transformed bounding size: 14.4277 wide × 11.7956 high × 10.2139 deep model units.

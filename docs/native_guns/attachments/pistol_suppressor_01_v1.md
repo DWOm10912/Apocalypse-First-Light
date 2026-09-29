@@ -23,7 +23,7 @@
 
 ## 当前范围
 
-- 物品/附件 ID：apocalypse_firstlight:pistol_suppressor_01，手枪消音器 / Pistol Suppressor，堆叠1，创造「AFL 武器与弹药」标签页。无新配方。
+- 物品/附件 ID：apocalypse_firstlight:pistol_suppressor_01，手枪消音器 / Pistol Suppressor，堆叠1，创造「黎明启示录 · 配件」标签页（2026-09-28 起，原「AFL 武器与弹药」已拆分）。无新配方。
 - 首批仅 P9：枪数据 muzzle_slot.anchor=muzzle_anchor，accepts=[apocalypse_firstlight:pistol_suppressor_01]。BR51不兼容。
 - NativeAttachment 的 MUZZLE 与原 SIGHT 共用 NativeAttachments 和 AflAttachments NBT。独立 NativeSuppressorItem 定义 noiseRadiusMultiplier=0.05、suppressesFireSound=true；倍率不写进 P9 类。
 - 玩家必须在枪械维护台安装、拆卸和更换；按候选来源消耗物品，返还保留完整 NBT，共用 51 tick 延迟提交。V 快捷装拆已移除。

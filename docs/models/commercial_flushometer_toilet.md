@@ -4,7 +4,7 @@ Status: V1 static decorative block registered and exported for Forge 1.20.1. Gam
 
 ## V1 game integration
 
-- Registry ID: `apocalypse_firstlight:commercial_flushometer_toilet`; building/decorative creative tab. English `Commercial Flushometer Toilet`, Chinese `商业马桶`.
+- Registry ID: `apocalypse_firstlight:commercial_flushometer_toilet`; “AFL · Furniture & Fixtures” creative tab (since 2026-09-28, see `docs/ui/creative_tabs_v1.md`). English `Commercial Flushometer Toilet`, Chinese `商业马桶`.
 - One ordinary block, no BlockEntity, animation, interaction, water, fluid or flush logic. Horizontal `facing` places the model front toward the player and rotates its selection/collision shape with the same NORTH origin. Model front=-Z/NORTH, wall-side flange=+Z/SOUTH. No wall-support requirement.
 - Source-space extrema: X=-4.863948..4.863948, Y=0..15.75, Z=-6.598100..8 units. After centering in the Minecraft block, OBJ bounds are X=0.196003..0.803997, Y=0..0.984375, Z=0.087619..1.0. Thus occupancy is **1×1×1**; no upper half.
 - Static rendering uses Forge's OBJ geometry loader, because the source has many non-cardinal and multiple-axis cube rotations that ordinary vanilla element rotation cannot represent. Blockbench's native exporter creates `models/block/commercial_flushometer_toilet.obj`; `commercial_flushometer_toilet.mtl` resolves the 128×128 atlas at `textures/block/commercial_flushometer_toilet.png`. The item model shares the block geometry. Runtime resources, not editable source geometry, are under `src/main/resources/assets/apocalypse_firstlight/`.
