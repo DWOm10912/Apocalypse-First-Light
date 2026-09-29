@@ -1,6 +1,7 @@
 // Light LabPBR for AFL lathe ammo: one zone table shared by every calibre's high-detail atlas (rounds, casings) and its
 // ejected-casing FX asset, so a flying casing, the same casing as an item and the magazine top round read as the same
-// materials under shader packs. Used by tools/build-9x19mm-ammo.mjs, tools/build-50ae-ammo.mjs, tools/build-762x51mm-ammo.mjs and tools/build-127x55mm-ammo.mjs.
+// materials under shader packs. Used by tools/build-9x19mm-ammo.mjs, tools/build-50ae-ammo.mjs, tools/build-762x51mm-ammo.mjs,
+// tools/build-127x55mm-ammo.mjs and tools/build-12ga-ammo.mjs.
 // _s: R perceptual smoothness, G F0 (255 = metal, the Base Color is F0; 10 = dielectric, F0 ~0.04), B 0, A 255 (no emission).
 // _n: flat tangent normal (128, 128) and B = AO. Nothing high-frequency: rounds and casings are small (shimmer).
 
@@ -22,6 +23,10 @@ export const AMMO_PBR = {
   // 12.7x55 light bullet: the bimetal jacket's bright cut lip, then the exposed aluminium core (satin metal, a little
   // rougher than the jackets so it reads matte; the small flat meplat rougher still)
   jacketLip: [145, 255, 245], alu: [95, 255, 255], aluTip: [85, 255, 235],
+  // 12 Gauge shotshell: semi-gloss moulded polymer hull and star crimp (dielectric), the dark inside of an opened hull, and
+  // the steel battery-cup primer (metal, a little rougher than the nickel rifle primers)
+  shellHull: [100, 10, 255], shellHullTop: [95, 10, 240], shellCrimp: [90, 10, 255], shellInner: [60, 10, 170],
+  shellPrimer: [125, 255, 245],
 };
 
 /** LabPBR texel values for a paint zone; ao overrides the table's AO (e.g. a radial gradient). */

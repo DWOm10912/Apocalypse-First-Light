@@ -7,12 +7,12 @@
 | 9x19mm_round | 9×19毫米手枪弹 | 9×19mm Pistol Round | P9-01 |
 | 762x51mm_round | 7.62×51毫米步枪弹 | 7.62×51mm Rifle Round | BR51-01（2026-09-28 起为 Pure Mesh 物品，见 7.62×51mm Visible Ammo V1） |
 | 12_7x55mm_round | 12.7×55毫米重型弹 | 12.7×55mm Heavy Round | HR55（2026-09-28 起为 Pure Mesh 物品，见 12.7×55mm Visible Ammo V1） |
-| 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | Silverwood 12；每次射击消耗1发，独立追踪8颗弹丸 |
+| 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | Silverwood 12；每次射击消耗1发，独立追踪8颗弹丸（2026-09-29 起 V2 sidecar + PBR，见 12 Gauge Visible Ammo V1） |
 | 50_ae_round | .50 AE 手枪弹 | .50 AE Round | Blackridge .50 唯一可用弹药；64 堆叠普通 Item，客户端使用静态 Hybrid Mesh |
 | 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 弹壳类型及普通物品；飞行抛壳使用低模 `9x19mm_casing_fx`（见 Ejected Casing Low-Poly FX V1） |
 | 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 / C.A.T. 抛壳及普通物品（2026-09-28 起为 Pure Mesh，抛壳用低模 FX） |
 | 12_7x55mm_casing | 12.7×55毫米弹壳 | 12.7×55mm Casing | HR55 抛壳及普通物品（2026-09-28 起为 Pure Mesh，抛壳用低模 FX） |
-| 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品；Silverwood V1 无射击时自动抛壳 FX/地面掉落 |
+| 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品（2026-09-29 起为 Pure Mesh，用手工空壳原型）；Silverwood V1 无射击时自动抛壳 FX/地面掉落，低模抛壳 FX 已做好但未接入 |
 | 50_ae_casing | .50 AE 弹壳 | .50 AE Casing | 已注册的 3D 普通 Item；Blackridge 引用为弹壳类型；飞行抛壳使用低模 `50_ae_casing_fx`，待实机验收 |
 
 十项均64堆叠。五种实弹位于“黎明启示录 · 弹药”标签（2026-09-28 起，原“AFL 武器与弹药”已拆分）；五种空壳（含 `.50 AE`）都不进任何创造标签，见 `docs/ui/creative_tabs_v1.md`。数字开头是合法 ResourceLocation 路径，无需前缀。弹壳不作为弹药，也没有回收配方；当前枪械射击不会生成可拾取弹壳实体。
@@ -29,7 +29,7 @@
 
 12 Gauge 完整弹现以 `src/main/blockbench/12ga_hybrid_mesh_prototype.bbmodel` 为可编辑 Mesh 源，4 个部件、672 个三角面，共用原 256×256 贴图。正式 ID 仍为 `12_gauge_round`，仍是64堆叠普通 `Item`；仅客户端视觉入口改为 `models/item/12_gauge_round.json` 的 `builtin/entity`。GUI 的 `display.gui` 为近直立摆放（rotation `[20,-25,0]`、translation `[0,-2.5,0]`），scale `[0.48,0.48,0.48]`；掉落物 `display.ground` 使用零旋转、translation `[0,1.25,0]`、scale `[0.2,0.2,0.2]`。其他两种整弹沿用此掉落旋转与 JSON 垂直位移，但需要下文所述的 GROUND 专用渲染偏移，才能抵消 Minecraft 按掉落缩放添加的悬浮高度。其他视角沿用原 `display` 变换。`AflStaticMeshItemClient` 将现有 Item 的 Forge 客户端扩展绑定到 `AflStaticMeshItemRenderer`；后者从 `geo/12_gauge_round.geo.json`、`meshes/12_gauge_round.aflmesh.json` 和 `textures/item/12_gauge_round_mesh.png` 读取骨骼、阶段1 Mesh sidecar 和原样贴图，使用现有 `AflMeshCache` / `AflMeshRenderer` 提交。旧110 cube 的 Java 模型原样留在 `models/item/legacy/12_gauge_round_java.json`，旧可编辑源 `src/main/blockbench/12g_round.bbmodel` 和 `textures/item/12g_round.png` 也保留，便于回滚。
 
-`12_gauge_casing` 仍使用原 `12g_casing.bbmodel` 对应的 Java item JSON 和64×64贴图；新的独立 spent Mesh 源暂不接入正式空壳。Silverwood 内部 live/spent shell 组、动画和玩法数据未变。GUI、手持、掉落、F3+T、Embeddium/Oculus 与法线/UV 视觉均待用户实机验收；离线导出与编译不等于这些场景通过。
+（2026-09-29 更新：整弹 sidecar 改为 V2 并补上 PBR；`12_gauge_casing` 改用手工空壳原型 `12ga_hybrid_mesh_spent.bbmodel` 的 Pure Mesh，原 110 cube 的 Java 模型移到 `models/item/legacy/12_gauge_casing_java.json`，旧源 `12g_casing.bbmodel` 和 `textures/item/12g_casing.png` 保留作回退。详见下文「12 Gauge Visible Ammo V1」。）Silverwood 内部 live/spent shell 组、动画和玩法数据未变。GUI、手持、掉落、F3+T、Embeddium/Oculus 与法线/UV 视觉均待用户实机验收；离线导出与编译不等于这些场景通过。
 
 `.50 AE` 标准源为 `src/main/blockbench/50ae_round.bbmodel` 和 `50ae_casing.bbmodel`。2026-09-27 起改为 V2 软尖弹（JSP），由 `node tools/build-50ae-ammo.mjs` 确定性生成（`--check` 校验），与 9mm 共用生成库 `tools/lathe-mesh-lib.mjs`（2026-09-27 由 `lathe-ammo-lib.mjs` 改名，现也生成通用 9mm 消音器；弹药输出逐字节不变）。原先从 Blender 导入的空尖弹版本（`live_round` 512 三角面、`spent_case` 448 三角面）在 git 历史中可取回。
 
@@ -52,7 +52,7 @@
   - Blackridge 已通过 `native_guns/blackridge_50.json` 绑定该弹药，容量 7；其射击消耗沿用现有 Native Gun 流程。
   - 新版已在 Blockbench 里按 Blackridge 弹匣锚点放入弹匣检查过，没有穿插。显示姿态和新外观都没有进游戏验证。
 
-截至 2026-09-28，只有 `12_gauge_casing` 仍使用普通 Java 三维 item 模型；9mm、7.62、12.7、.50 AE 的整弹与空壳以及 12 Gauge 完整弹都是纯 Mesh 静态 geo，均为普通 Item 而非枪械 renderer；具体游戏内可读性待目测，不把离线检查当成实机通过。
+2026-09-29 起，全部十种弹药物品（9mm、7.62、12.7、.50 AE、12 Gauge 的整弹与空壳）都是纯 Mesh 静态 geo，不再有普通 Java 三维 item 模型，均为普通 Item 而非枪械 renderer；具体游戏内可读性待目测，不把离线检查当成实机通过。
 
 ### 9×19mm Visible Ammo V1：纯 Mesh 整弹 + 空壳（2026-09-27，已替换为正式运行时资产，待实机验收）
 
@@ -161,8 +161,7 @@
 |---|---|---|
 | `9x19mm_round`、`50_ae_round`、`12_gauge_round` | Mesh 整弹 | 物品；前两者另作弹匣顶弹。整弹不参与抛壳 |
 | `9x19mm_casing`、`50_ae_casing` | Mesh 空壳（V1 sidecar，1080 三角面） | 物品展示；此前也被 `NativeGunFx.MESH_CASINGS` 直接用于抛壳，本轮改为 FX 资产 |
-| `12_gauge_casing` | Cube 物品模型 | Silverwood V1 不抛壳。不是 Mesh，本轮不适用（`762x51mm_casing` 与 `12_7x55mm_casing` 自 2026-09-28 起改为 Mesh + 低模 FX，见 7.62×51mm / 12.7×55mm Visible Ammo V1；此前 HR55 用烘焙四边面画 cube 抛壳） |
-| `src/main/blockbench/12ga_hybrid_mesh_spent.bbmodel` | 仅源原型 | 没有运行时 geo 或 sidecar，不参与抛壳 |
+| `12_gauge_casing` | 2026-09-29 起为 Mesh 空壳（源为 `12ga_hybrid_mesh_spent.bbmodel`），并有低模 `12_gauge_casing_fx` | Silverwood V1 不抛壳，FX 未接入 `NativeGunFx`（`762x51mm_casing` 与 `12_7x55mm_casing` 自 2026-09-28 起改为 Mesh + 低模 FX，见 7.62×51mm / 12.7×55mm Visible Ammo V1；此前 HR55 用烘焙四边面画 cube 抛壳） |
 
 **FX 资产**
 
@@ -245,7 +244,7 @@
   - 源：`src/main/blockbench/textures/` 下同名文件。
   - 不内嵌 bbmodel（与 P9、Blackridge 相同）。Oculus 按 Base Color 同目录的命名自动查找。
 - **不变**：Base Color、几何、UV、geo、sidecar、Blockbench 源都逐字节不变（`--check` 通过）；FX 弹壳改为引用同一张表后，输出也逐字节不变。没有 Java 改动。
-- **不包括 12 号霰弹**：`12_gauge_round` 的 Mesh 是另外制作的四件式资产（`12ga_hybrid_mesh_prototype.bbmodel`，V1 sidecar，256 图集 `12_gauge_round_mesh.png`，零件按材质命名：聚合物壳身、黄铜底部、钢底火、折叠封口），不走车床生成库；`12_gauge_casing` 仍是 Cube 物品模型，Silverwood 也不抛壳。它的 PBR 需要另做。
+- **不包括 12 号霰弹**：`12_gauge_round` 的 Mesh 是另外制作的四件式资产（`12ga_hybrid_mesh_prototype.bbmodel`，V1 sidecar，256 图集 `12_gauge_round_mesh.png`，零件按材质命名：聚合物壳身、黄铜底部、钢底火、折叠封口），不走车床生成库；`12_gauge_casing` 当时仍是 Cube 物品模型，Silverwood 也不抛壳。2026-09-29 已另行补上 PBR，并把空壳接成 Mesh，见下文「12 Gauge Visible Ammo V1」。
 
 ### 7.62×51mm Visible Ammo V1：纯 Mesh 整弹 + 空壳 + 抛壳 FX（2026-09-28，已替换运行时资源，compileJava 通过，待实机验收）
 
@@ -463,18 +462,80 @@
 - HR55 的飞行抛壳（大小、翻滚、落地）。
 - 光影下被甲、切口和铝芯的材质区分。
 
+### 12 Gauge Visible Ammo V1：原型 Mesh 接入 + PBR + 抛壳 FX（2026-09-29，已替换运行时资源，compileJava 通过，待实机验收）
+
+**范围**
+- 不重新建模：沿用两份手工 Mesh 原型。
+  - 整弹：`src/main/blockbench/12ga_hybrid_mesh_prototype.bbmodel`，酒红塑料壳身、黄铜底（带底缘和底火窝）、内凹钢底火、六瓣星形折叠封口。
+  - 空壳：`src/main/blockbench/12ga_hybrid_mesh_spent.bbmodel`，同样的壳身和底，打击过的底火，打开的六瓣口和内壁。
+- 两份源都不被改写；共用的 256 贴图 `textures/item/12_gauge_round_mesh.png` 逐字节不变（生成器会核对它与两份源内嵌的贴图一致）。
+- 两个注册 ID 不变，没有新增物品。
+
+**生成**：`node tools/build-12ga-ammo.mjs`，加 `--check` 逐字节校验。
+
+| 输出 | 内容 |
+| --- | --- |
+| `meshes/12_gauge_round.aflmesh.json` | 整弹改为 V2 sidecar（原为 V1）：672 三角等效，84 个四边形 + 504 个三角形；`geo/12_gauge_round.geo.json` 不变 |
+| `geo/12_gauge_casing.geo.json`、`meshes/12_gauge_casing.aflmesh.json` | 新增空壳（V2）：696 三角等效，96 个四边形 + 504 个三角形，高 18.945 |
+| `textures/item/12_gauge_round_mesh_s.png` / `_n.png`（256） | 两件共用的 LabPBR；源副本在 `src/main/blockbench/textures/`（含 Base Color 副本） |
+| `12_gauge_casing_fx`（`src/main/blockbench/12_gauge_casing_fx.bbmodel`、`geo` / `meshes`、`textures/item/12_gauge_casing_fx{,_s,_n}.png`，64） | 低模抛壳 FX |
+
+- 手工 UV 不是按平面约束做的，V2 只保住了一部分四边形，其余按规则三角化；提交顶点仍比 V1 少约 12–14%。
+
+**PBR**（共享材质表 `tools/ammo-pbr.mjs`，本轮新增四个塑料分区和钢底火分区）
+
+| 部分 | 分区 | 平滑度 / F0 / AO |
+| --- | --- | --- |
+| 塑料壳身外表面 | `shellHull` | 100 / 非金属 / 255 |
+| 壳身顶缘 | `shellHullTop` | 95 / 非金属 / 240 |
+| 星形封口 | `shellCrimp` | 90 / 非金属；AO 从边缘 255 到中心 190，表现折痕的凹陷 |
+| 壳身内壁、空壳开口内侧 | `shellInner` | 60 / 非金属 / 170；开口内侧越深越暗（150–210） |
+| 黄铜底 | `head` / `body` / `rim` / `rimtop` | 与其他弹药的黄铜相同（金属） |
+| 钢底火 | `shellPrimer` / `primerSide` | 125 / 金属 / 245；侧面 110 / 金属 / 200 |
+
+- 按每个面所属部件和朝向决定分区：朝向轴心的面是内壁，底面是弹底，等等。然后按 UV 光栅化到两件共用的贴图上。
+- 整弹先画；空壳只填整弹没用到的像素，也就是它的开口部分。
+- 手工 UV 里黄铜外表面、底缘顶面和底火窝有少量共用像素，按“可见外表面优先”处理。底火窝的面积全部和外表面共用，所以窝没有单独的 PBR 值，跟随黄铜外表面。
+- `_n` 为平直法线加 AO，与其他弹药相同。
+
+**空壳物品**
+- `models/item/12_gauge_casing.json` 改为 `builtin/entity`（particle 用 `item/12_gauge_round_mesh`），原 110 cube 的 Java 模型移到 `models/item/legacy/12_gauge_casing_java.json`。
+- `AflStaticMeshItemClient` 新增一行绑定：中心偏移 = 0.5 − 18.945/32 = −0.09203125，与其他空壳同一规则。
+- 摆放与 7.62 / 12.7 空壳相同：GUI [25,-30,-20]，掉落横躺 [0,0,90]、平移 [0,0.75,0]。
+- 缩放按“缩放 × 高度”与 7.62 空壳一致换算：GUI 0.3186、第一人称 0.2343、第三人称 0.1877、掉落 / 展示框 0.2066。
+- 整弹的显示变换和绑定没有改（它的显示高度本来就与 7.62 整弹接近）。
+
+**低模抛壳 FX（未接入）**
+- 与其他口径的 FX 规则相同：8 段、144 三角等效（64 个四边形 + 16 个三角形）、64 贴图、骨骼 `casing`、+Y 轴、弹底在 y = 0。
+- 高度 18.945、最大半径 3.45，与高精度空壳一致。
+- 轮廓：底火盘、黄铜底面、带倒角的底缘、黄铜段、壳身、开口唇和一个暗色浅口碟（开口内部不建模）。
+- 配色从共享贴图采样：壳身 127,35,42，黄铜 169,132,68，钢底火 178,187,181；底火中心画出打击痕迹，不做几何。
+- **没有接入 `NativeGunFx`**：Silverwood 12 是折开式，目前不抛壳。以后加上折开退壳时，在 `NativeGunFx.MESH_CASINGS` 加一项即可。
+
+**以后重做 Silverwood 12**：枪膛里的 4 发（上下管各一发实弹 / 空壳）是同一套原型缩小约 0.11 倍后放进枪模型的独立拷贝。重做时可以从这两份源生成枪比例的版本，接成动态显示，不用重新建模。
+
+**校验**
+- `node tools/build-12ga-ammo.mjs --check`：通过。9mm、.50 AE、7.62、12.7 的生成器 `--check` 也通过，共享材质表的新增项不影响它们。
+- `node tools/verify-afl-mesh.mjs --java-loader`：通过，真实加载器加载了全部生产 sidecar，包括这三个。
+- `./gradlew compileJava --offline`：通过。
+- 离线渲染看过整弹、空壳、FX 的侧面、口部和弹底。
+
+**未实机验证**
+- 空壳在物品栏、手持、掉落时的大小和摆位。
+- 光影下塑料、黄铜、钢底火的区分。
+
 ## 文件与旧新映射
 
-上述十个 ID 均有 item 模型与贴图资源；除 `12_gauge_casing` 外都另有 Mesh sidecar/geo（9mm、7.62、12.7 的 Mesh 资源命名见各自的 Visible Ammo V1 小节），.50 AE 共用正式 Base Color atlas。源文件与贴图命名如下：
+上述十个 ID 均有 item 模型与贴图资源，并且全部另有 Mesh sidecar/geo（9mm、7.62、12.7、12 Gauge 的 Mesh 资源命名见各自的 Visible Ammo V1 小节），.50 AE 共用正式 Base Color atlas。源文件与贴图命名如下：
 
-- `src/main/blockbench/<ID>.bbmodel`（12 Gauge 完整弹当前源为 `12ga_hybrid_mesh_prototype.bbmodel`，旧源 `12g_round.bbmodel` 为回退；空壳仍为 `12g_casing.bbmodel`）
+- `src/main/blockbench/<ID>.bbmodel`（12 Gauge 完整弹当前源为 `12ga_hybrid_mesh_prototype.bbmodel`，旧源 `12g_round.bbmodel` 为回退；空壳当前源为 `12ga_hybrid_mesh_spent.bbmodel`，旧源 `12g_casing.bbmodel` 为回退）
 - `src/main/resources/assets/apocalypse_firstlight/models/item/<ID>.json`
-- `src/main/resources/assets/apocalypse_firstlight/textures/item/<ID>.png`（12 Gauge 完整弹当前使用 `12_gauge_round_mesh.png`，旧贴图为 `12g_round.png`；空壳仍使用 `12g_casing.png`）
+- `src/main/resources/assets/apocalypse_firstlight/textures/item/<ID>.png`（12 Gauge 整弹和空壳共用 `12_gauge_round_mesh.png`（2026-09-29 起另有 `_s` / `_n`），旧贴图 `12g_round.png` / `12g_casing.png` 只被 legacy 模型引用）
 - `.50 AE` 两件源文件分别为 `50ae_round.bbmodel` / `50ae_casing.bbmodel`，共用运行贴图 `textures/item/blackridge_50ae_ammo_v1.png`，并分别有 `geo/50_ae_round.geo.json` / `50_ae_casing.geo.json` 与同名 `meshes/*.aflmesh.json`。`NativeGunFx` 对 .50 AE 弹壳使用现有 Mesh 缓存、GeckoLib 骨骼与共用 atlas 绘制，旧口径继续使用烘焙四边面；物品本身的 3D 渲染已配置。开火抛壳与物品显示均待实机验收。
 
 旧 `9mm_round` 注册通过 `registry/NativeWeaponLegacyMappings.java` 的 MissingMappings 转为 `9x19mm_round`，不把旧手枪弹转换为步枪弹；旧存档加载兼容尚待实机确认。旧 `9mm_round` / `9mm_casing` 源模型、item和 `9mm_palette.png` 留作历史对照，不再是正式引用。旧导出器 `tools/export-9mm-assets.mjs` 不用于当前资产。
 
-既有 9mm / 7.62 工作流：`node tools/export-native-ammo.mjs`；引用检查：`node tools/verify-native-ammo.mjs`。12 Gauge 完整弹的 Mesh sidecar 由 `node tools/export-afl-mesh.mjs` 从对应 Blockbench 源和 geo 确定性导出；.50 AE 与新 9mm 两套的源文件、贴图、geo 和 sidecar 分别由 `node tools/build-50ae-ammo.mjs`、`node tools/build-9x19mm-ammo.mjs` 一次生成（内部同样调用该转换器）；旧 12 Gauge Java JSON / PNG 原样保留作为回退。离线几何预览：`tools/preview-native-ammo.py` → `build/native-ammo-preview.png`，仅用于既有资产检查。
+既有 9mm / 7.62 工作流：`node tools/export-native-ammo.mjs`；引用检查：`node tools/verify-native-ammo.mjs`。12 Gauge 整弹与空壳的 V2 sidecar、空壳 geo、`_s` / `_n` 和低模抛壳 FX 由 `node tools/build-12ga-ammo.mjs` 从两份手工 Blockbench 源确定性生成（`--check` 校验；2026-09-29 前整弹 sidecar 由 `tools/export-afl-mesh.mjs` 直接导出为 V1）；.50 AE 与新 9mm 两套的源文件、贴图、geo 和 sidecar 分别由 `node tools/build-50ae-ammo.mjs`、`node tools/build-9x19mm-ammo.mjs` 一次生成（内部同样调用该转换器）；旧 12 Gauge Java JSON / PNG 原样保留作为回退。离线几何预览：`tools/preview-native-ammo.py` → `build/native-ammo-preview.png`，仅用于既有资产检查。
 
 接入修改：`AflItems.java`、`AflCreativeTabs.java`、`NativeWeaponLegacyMappings.java`、`NativeGunDefinition.java`、`ConfiguredNativeGunItem.java`、中英文lang；客户端 `NativeGunFx.java`、`NativeGunFxModels.java`、`NativeAnimatedWeaponRenderer.java`；回归 `BR5101CombatGameTests.java`。
 

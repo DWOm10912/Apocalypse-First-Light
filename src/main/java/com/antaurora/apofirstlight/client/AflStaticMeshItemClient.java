@@ -18,6 +18,9 @@ public final class AflStaticMeshItemClient {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             bind(AflItems.ROUND_12_GAUGE.get(), "12_gauge_round", "12_gauge_round_mesh", 0.32);
+            // 12 Gauge fired shell (tools/build-12ga-ammo.mjs, hand-made 12ga_hybrid_mesh_spent): 0.5 - height 18.945 / 32,
+            // shares the round's atlas; display scales keep scale x height equal to the other casings.
+            bind(AflItems.CASING_12_GAUGE.get(), "12_gauge_casing", "12_gauge_round_mesh", -0.09203125);
             // ItemEntityRenderer adds 0.25 * ground scale above the entity. Keep these upright rounds
             // at the same visible base height as the 12 Gauge shell without changing other views.
             bind(AflItems.ROUND_50_AE.get(), "50_ae_round", "blackridge_50ae_ammo_v1", 0.431217, 0.257);

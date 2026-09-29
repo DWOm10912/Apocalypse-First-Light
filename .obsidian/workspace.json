@@ -190,6 +190,7 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
+    "build/reobfJar/mappings.tsrg",
     "run/saves/新的世界 (1)/level9190270311818539075.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
@@ -200,7 +201,6 @@
     "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_0.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_0.xwmc",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_-1.xwmc",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_n.png",
