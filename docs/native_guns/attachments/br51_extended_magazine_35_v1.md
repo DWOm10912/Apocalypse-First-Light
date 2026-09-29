@@ -1,23 +1,25 @@
 # BR51-01 35发扩容弹匣 V1
 
+> 2026-09-28 起资产为 Pure Mesh + PBR V2，见 [35R V2](br51_extended_magazine_35_v2.md)；本文的容量、事务、维护台与接入规则仍是现行规则，资产相关行已按 V2 更新，其余 cube 资产描述为历史。
+
 | 项目 | 当前实现 |
 | --- | --- |
 | ID / 名称 | `apocalypse_firstlight:br51_extended_magazine_35` / BR51-01 35发扩容弹匣 / BR51-01 35-Round Extended Magazine |
 | 槽位 / 兼容 | MAGAZINE，仅 BR51-01；与 P9 弹匣不通用 |
 | 容量 | 标准 20；有效附件覆盖为 35，不自动装弹 |
-| 来源 | 原 BR51 `mag_extended_2`：20 个主体 cube + 4 个原底板 cube，保留 UV 和原贴图 |
-| 独立源 / 生成器 | `src/main/blockbench/br51_extended_magazine_35.bbmodel` / `extract_br51_magazine_35.cjs` |
-| Runtime | `assets/apocalypse_firstlight/geo/br51_extended_magazine_35.geo.json`、`textures/item/br51_extended_magazine_35.png`、`models/item/br51_extended_magazine_35.json`，均位于 `src/main/resources/` |
+| 来源 | 原 BR51 `mag_extended_2`：20 个主体 cube + 4 个原底板 cube。V1 保留 UV 和原贴图；V2（2026-09-28）以这批 cube 为参考重建为 Pure Mesh |
+| 独立源 / 生成器 | 当前：`src/main/blockbench/br51_extended_magazine_35_mesh.bbmodel` / `tools/build-br51-extended-magazine-35-v2.mjs`。历史：cube 源 `br51_extended_magazine_35.bbmodel`（V2 的参考源），提取脚本 `extract_br51_magazine_35.cjs`（LEGACY，勿运行） |
+| Runtime | `assets/apocalypse_firstlight/geo/br51_extended_magazine_35.geo.json`（V2 只剩骨骼）、`meshes/br51_extended_magazine_35.aflmesh.json`、`textures/item/br51_extended_magazine_35{,_s,_n}.png`（512）、`models/item/br51_extended_magazine_35.json`，均位于 `src/main/resources/` |
 | Item | builtin/entity + 共用 NativeMagazineRendering.ItemRenderer，真实独立 3D 物品，“黎明启示录 · 配件”创造标签页（2026-09-28 起），堆叠 1 |
 | 安装基准 | 原 `mag_standard` / `mag_extended_2` 共用 pivot `[0,9.41883,4.52607]`；独立模型减去该 pivot，挂回原骨骼时还原 |
-| 主枪 Pure Mesh（2026-09-28） | BR51 主枪与标准弹匣已改为 Pure Mesh（见 `docs/native_guns/br51_01_v2_pure_mesh_pbr.md`）。替换骨骼 `mag_standard` / `reload_mag_standard` / `empty_old_mag_standard` 与枢轴不变，本附件仍是 cube 资产、自带贴图，未 Mesh 化；在 Mesh 主枪上替换标准弹匣子树的效果**未实机验证** |
+| 主枪 Pure Mesh（2026-09-28） | BR51 主枪与标准弹匣已改为 Pure Mesh（见 `docs/native_guns/br51_01_v2_pure_mesh_pbr.md`）。替换骨骼 `mag_standard` / `reload_mag_standard` / `empty_old_mag_standard` 与枢轴不变。本附件同日也改为 Pure Mesh + PBR（[V2](br51_extended_magazine_35_v2.md)），材质和贴图密度与标准匣一致；在 Mesh 主枪上的实际效果**未实机验证** |
 | 模型替换 | 仅有效附件替换 `mag_standard`（枪内）、`reload_mag_standard`（换弹新匣）和 `empty_old_mag_standard`（空仓旧匣）的整个几何子树，避免保留标准底板造成双重渲染。三者枢轴相同；BR51 Native Rig V2 起枪内与换弹新匣拆成两份，见 [BR51 Native Rig V2](../br51_01_native_rig_v2.md) |
 | 动画 | 复用现有 `reload_tactical` / `reload_empty`；不改动画文件，不接入 xmag、mag1 或 mag3 |
 | 维护台 | 仅维护台装拆、更换；共用 Context HUD / 候选页 / 原版点击声 / 2.480 s 操作声 / 服务端 51 tick 后重验提交 |
 | 热点 | BR51 magazine_slot 指定 `hotspot_anchor=mag_standard`、`hotspot_y=-4`；P9 现为 magazine + `hotspot_offset [0,-4.14,1.82]`（原装弹匣底板中心） |
 | HUD / Tooltip | 所有枪统一单行 `当前装弹 \| 备弹`；枪械 Tooltip 不显示容量，附件 Tooltip 仅保留介绍；BR51 实际容量为标准 20 / 扩容 35 |
 
-## 资产审计
+## 资产审计（历史：V1 cube 资产）
 
 > 2026-09-27 BR51 Native Rig V2：`mag_extended_2` 已提取为参考源 `src/main/blockbench/br51_extended_magazine.bbmodel` 并从主枪源删除；下段描述的是迁移前的源文件状态。
 

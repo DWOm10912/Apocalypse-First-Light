@@ -16,7 +16,7 @@
 | 7.62×51mm 步枪消音器 | `rifle_suppressor_01` | `MUZZLE` | BR51-01（`rifle_fh_qd`，额定 7.62×51mm；HR55 已移除） | 游戏噪声半径 ×0.05（数据层）；消音声与出口视觉切换 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V1（待实机验收） / [Pure Mesh V1](rifle_suppressor_01_pure_mesh_v1.md)、[接入 V1](rifle_suppressor_01_v1.md) |
 | P9-01 28发扩容弹匣 | `p9_01_extended_magazine` | `MAGAZINE` | P9-01 | 弹匣容量覆盖为 28 发；Pure Mesh 加长钢匣 + 握把延长套 + 加厚底板 | 已接入（V2，待实机验收） / [扩容弹匣 V2](../p9_01_extended_magazine_v1.md) |
 
-| BR51-01 35发扩容弹匣 | `br51_extended_magazine_35` | `MAGAZINE` | BR51-01 | 20→35；独立 mag2 与换弹副本替换；溢出安全返还 | 已接入 / [35R V1](br51_extended_magazine_35_v1.md) |
+| BR51-01 35发扩容弹匣 | `br51_extended_magazine_35` | `MAGAZINE` | BR51-01 | 20→35；替换枪内、换弹新匣和空仓旧匣三处弹匣；溢出安全返还；底板两侧黄褐识别条 | 已接入；2026-09-28 资产为 Pure Mesh + PBR V2（待实机验收） / [35R V2](br51_extended_magazine_35_v2.md)、[35R V1](br51_extended_magazine_35_v1.md) |
 
 兼容范围不按配件名称自动推断：当前手枪消音器和手枪红点不能装 BR51，步枪消音器和步枪红点不能装 P9；BR51 接受专属 `br51_extended_magazine_35`。未来步枪可通过自己的兼容声明、挂载点与 ADS 数据复用步枪配件。当前扩容弹匣另有 `NativeMagazineItem.accepts` 的逐附件枪型限制，不能仅改 JSON 就宣称支持其他枪。
 

@@ -1,3 +1,5 @@
+// LEGACY (2026-09-28): superseded by tools/build-br51-extended-magazine-35-v2.mjs (Pure Mesh V2); do not run. The BR51 source
+// no longer has mag_extended_2, and the runtime geo / texture it wrote are now generated files. Kept as history of the V1 cube magazine.
 // Asset extraction only: original Mag2 geometry/UV, including its existing baseplate.
 const fs=require('fs'),path=require('path'),assert=require('assert');
 const root=path.resolve(__dirname,'../../..'),asset='src/main/resources/assets/apocalypse_firstlight/';
