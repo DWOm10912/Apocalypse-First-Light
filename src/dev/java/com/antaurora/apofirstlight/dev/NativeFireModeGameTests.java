@@ -42,9 +42,18 @@ public final class NativeFireModeGameTests {
         h.assertTrue(p9.recoil(NativeFireMode.SEMI)==p9.recoil()&&p9.recoil(NativeFireMode.AUTO).verticalMin()==1.0
                 &&p9.recoil(NativeFireMode.AUTO).modelPitch()==.32&&p9.recoil(NativeFireMode.AUTO).modelBack()==p9.recoil().modelBack(),"P9 AUTO recoil patch");
         h.assertTrue(p9.fire().bloom(NativeFireMode.SEMI)==null&&p9.fire().bloom(NativeFireMode.AUTO).perShotDegrees()==.45,"P9 AUTO-only bloom");
-        for(String id:List.of("br51_01","hr55")) {
+        // BR51 (2026-09-28) and HR55 (2026-09-29): SEMI default + AUTO with its own interval, recoil patch and bloom
+        for(var gun:List.of(new Object[]{"br51_01",4,3,1.5,.5},new Object[]{"hr55",5,4,2.0,.7})) {
+            String id=(String)gun[0];
             var d=NativeGunData.parse(new ResourceLocation("apocalypse_firstlight",id),json(id),false);
-            h.assertTrue(d.fire().modes().equals(List.of(NativeFireMode.SEMI)),"legacy SEMI "+id);
+            h.assertTrue(d.fire().modes().equals(List.of(NativeFireMode.SEMI,NativeFireMode.AUTO))&&d.fire().defaultMode()==NativeFireMode.SEMI,id+" SEMI/AUTO, default SEMI");
+            h.assertTrue(d.fireIntervalTicks(NativeFireMode.SEMI)==(int)gun[1]&&d.fireIntervalTicks(NativeFireMode.AUTO)==(int)gun[2],id+" per-mode interval");
+            h.assertTrue(d.recoil(NativeFireMode.SEMI)==d.recoil()&&d.recoil(NativeFireMode.AUTO).verticalMin()==(double)gun[3],id+" AUTO recoil patch");
+            h.assertTrue(d.fire().bloom(NativeFireMode.SEMI)==null&&d.fire().bloom(NativeFireMode.AUTO).perShotDegrees()==(double)gun[4],id+" AUTO-only bloom");
+        }
+        {   // Blackridge .50 stays a single-mode (legacy fire.mode) gun
+            var d=NativeGunData.parse(new ResourceLocation("apocalypse_firstlight","blackridge_50"),json("blackridge_50"),false);
+            h.assertTrue(d.fire().modes().equals(List.of(NativeFireMode.SEMI)),"legacy SEMI blackridge_50");
             var stack=new ItemStack(AflItems.CAT.get());var before=stack.copy();
             h.assertTrue(!NativeFireModes.cycle(stack,d)&&ItemStack.matches(before,stack),"single mode has no mutation");
         }
@@ -113,7 +122,8 @@ public final class NativeFireModeGameTests {
                 cancellation(h,mode,reason);
             emptyMagazine(h,mode);
         }
-        for(String id:List.of("p9_01","br51_01","hr55"))legacy(h,id);
+        // single-mode guns only (P9, BR51 and HR55 now switch SEMI/AUTO)
+        for(String id:List.of("blackridge_50"))legacy(h,id);
     }
 
     private static ServerPlayer fixture(GameTestHelper h,String name,ItemStack stack) {

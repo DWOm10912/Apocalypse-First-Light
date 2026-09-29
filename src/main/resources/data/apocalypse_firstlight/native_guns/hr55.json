@@ -26,8 +26,37 @@
   "magazine_capacity": 20,
 
   "fire": {
-    "mode": "semi",
-    "interval_ticks": 5
+    "modes": ["semi", "auto"],
+    "default_mode": "semi",
+    "interval_ticks": 5,
+    "mode_overrides": {
+      "auto": {
+        "interval_ticks": 4,
+        "recoil": {
+          "verticalMin": 2.0,
+          "verticalMax": 2.6,
+          "horizontalMin": -0.5,
+          "horizontalMax": 0.55,
+          "maxVertical": 11,
+          "maxHorizontal": 3.0,
+          "recoveryDelay": 0.15,
+          "cameraRecoveryTime": 0.38,
+          "horizontalContinueChance": 0.55,
+          "horizontalRecoveryTime": 0.32,
+          "horizontalLeftMin": 0.14,
+          "horizontalRightMin": 0.16,
+          "modelPitch": 3.5,
+          "modelYaw": 1.1,
+          "modelRoll": 1.1,
+          "modelRecoveryTime": 0.14
+        },
+        "bloom": {
+          "per_shot_degrees": 0.7,
+          "max_degrees": 3.0,
+          "recovery_ticks": 16
+        }
+      }
+    }
   },
 
   "damage": {

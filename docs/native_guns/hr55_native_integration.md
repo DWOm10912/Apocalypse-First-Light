@@ -2,7 +2,7 @@
 
 ## Current behavior
 
-`apocalypse_firstlight:hr55` is a JSON-defined, semi-automatic battle rifle using
+`apocalypse_firstlight:hr55` is a JSON-defined, select-fire (semi default, full auto since 2026-09-29) battle rifle using
 `apocalypse_firstlight:12_7x55mm_round`. It has a 20-round magazine, emits
 `apocalypse_firstlight:12_7x55mm_casing`, and uses the native gun system's normal
 server-authoritative fire, reload, projectile, tooltip, HUD, maintenance, and attachment paths.
@@ -10,10 +10,13 @@ server-authoritative fire, reload, projectile, tooltip, HUD, maintenance, and at
 Its gameplay definition is `src/main/resources/data/apocalypse_firstlight/native_guns/hr55.json`:
 
 - damage: 26 base, with falloff starting at 32 blocks and ending at 96 blocks;
-- semi-auto interval: 5 ticks (240 RPM);
+- fire modes: semi (default) and auto, switched with B; semi interval 5 ticks (240 RPM), auto 4 ticks (300 RPM,
+  theoretical DPS ~130 vs ~104 semi) with a heavier auto-only recoil patch (vertical 2.0-2.6 deg/shot, cap 11 deg,
+  horizontal cap 3.0 deg) and sustained-fire bloom (+0.7 deg/shot, cap 3.0 deg, 16-tick decay), one step heavier than
+  BR51's auto (`fire.mode_overrides.auto`);
 - tactical / empty reload: 3.88 / 4.29 seconds;
 - ammo transfers at ticks 48 / 59 respectively, matching the visible magazine-settle phase;
-- ADS: 0.25 seconds, 0.92 FOV multiplier;
+- ADS: 0.20 seconds, 0.92 FOV multiplier;
 - noise radius: 128 blocks, with tinnitus enabled.
 
 ## Visual and sound assets
