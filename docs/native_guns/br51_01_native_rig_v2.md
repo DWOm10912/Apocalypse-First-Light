@@ -121,7 +121,7 @@ root
 
 ## 仍存在的兼容与 Phase 2 前置
 
-- **LEGACY_COMPAT**：`muzzle_pos`（裸枪枪口特效）；通用 Runtime 排除表中的 `additional_magazine`（BR51 已不再使用，HR55 等其他旧资产可能仍用，保留）。
+- **LEGACY_COMPAT**：`muzzle_pos`（裸枪枪口特效）；通用 Runtime 排除表中的 `additional_magazine`（BR51 已不再使用；HR55 自 2026-09-28 Native Rig V2 起也不再使用，见 `hr55_native_rig_v2.md`；目前没有资产在用，作为旧 rig 的兼容项保留）。
 - **Phase 2 前必须解决**（2026-09-28 状态）：
   - 枪身几何组仍是作者原名（`br51_01_default`、`bone*`、`octagon*`、`qianguan`、`group*`）。Phase 2 已按组重建为同名 mesh 部件，但仍未改名。
   - 仅源的 `sight`（旧红点）与 `grip_default`：Phase 2 已从主枪源删除，可从 `38b6c66` 恢复。

@@ -25,8 +25,11 @@ The inventory PNG now uses the shared 256×256 projected-bounds framing and no
 per-weapon GUI scale; the hand model and HUD retain their prior transforms. See
 `native_gun_inventory_presentation_v1.md`. Creative Tab appearance remains untested.
 
-The runtime geometry is `geometry.hr55`. It retains the authored `right_hand_anchor`,
-`left_hand_anchor`, `muzzle_pos`, `muzzle_anchor`, `shell`, and `sight_anchor` bones.
+The runtime geometry is `geometry.hr55`. Since the 2026-09-28 Native Rig V2 (Phase 1, see
+`hr55_native_rig_v2.md`) the rig uses AFL native names (`handling`, `gun_body`, `magazine`,
+`reload_magazine`, `righthand` / `lefthand`) and keeps the `right_hand_anchor`, `left_hand_anchor`,
+`muzzle_pos`, `muzzle_anchor`, `ejection_anchor` (was `shell`) and `sight_anchor` bones; the editable
+source was synchronized to the runtime first (sight_anchor pivot, sound markers, inspect keys).
 `muzzle_pos` uses a 3.55125-unit barrel-exit offset derived from the source's actual
 muzzle-anchor separation.
 
