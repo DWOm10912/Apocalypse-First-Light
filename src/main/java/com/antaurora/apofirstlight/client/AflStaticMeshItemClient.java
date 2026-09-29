@@ -25,6 +25,10 @@ public final class AflStaticMeshItemClient {
             // 9x19mm Pure Mesh set (tools/build-9x19mm-ammo.mjs): offset = 0.5 - mesh height / 32 centres it like .50 AE.
             bind(AflItems.ROUND_9MM.get(), "9x19mm_round", "9x19mm_ammo_v1", 0.451463, 0.2558333333);
             bind(AflItems.CASING_9MM.get(), "9x19mm_casing", "9x19mm_ammo_v1", 0.468168);
+            // 7.62x51mm set (tools/build-762x51mm-ammo.mjs): 0.5 - height / 32 (round 3.30791, casing 2.38605); the round's
+            // ground offset puts its base 0.014 above the entity like the other rounds (0.25 + 0.014 / ground scale 1.33).
+            bind(AflItems.ROUND_762MM.get(), "762x51mm_round", "762x51mm_ammo_v1", 0.396628, 0.2605263158);
+            bind(AflItems.CASING_762MM.get(), "762x51mm_casing", "762x51mm_ammo_v1", 0.425436);
         });
     }
 

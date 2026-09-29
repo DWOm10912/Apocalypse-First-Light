@@ -5,12 +5,12 @@
 | ID（均为 apocalypse_firstlight 命名空间） | 中文 | 英文 | 用途 |
 | --- | --- | --- | --- |
 | 9x19mm_round | 9×19毫米手枪弹 | 9×19mm Pistol Round | P9-01 |
-| 762x51mm_round | 7.62×51毫米步枪弹 | 7.62×51mm Rifle Round | BR51-01 |
+| 762x51mm_round | 7.62×51毫米步枪弹 | 7.62×51mm Rifle Round | BR51-01（2026-09-28 起为 Pure Mesh 物品，见 7.62×51mm Visible Ammo V1） |
 | 12_7x55mm_round | 12.7×55毫米重型弹 | 12.7×55mm Heavy Round | HR55 |
 | 12_gauge_round | 12号霰弹 | 12 Gauge Shotgun Round | Silverwood 12；每次射击消耗1发，独立追踪8颗弹丸 |
 | 50_ae_round | .50 AE 手枪弹 | .50 AE Round | Blackridge .50 唯一可用弹药；64 堆叠普通 Item，客户端使用静态 Hybrid Mesh |
 | 9x19mm_casing | 9×19毫米弹壳 | 9×19mm Casing | P9-01 弹壳类型及普通物品；飞行抛壳使用低模 `9x19mm_casing_fx`（见 Ejected Casing Low-Poly FX V1） |
-| 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 抛壳及普通物品 |
+| 762x51mm_casing | 7.62×51毫米弹壳 | 7.62×51mm Casing | BR51-01 / C.A.T. 抛壳及普通物品（2026-09-28 起为 Pure Mesh，抛壳用低模 FX） |
 | 12_7x55mm_casing | 12.7×55毫米弹壳 | 12.7×55mm Casing | HR55 抛壳及普通物品 |
 | 12_gauge_casing | 12号霰弹空壳 | 12 Gauge Casing | 已注册普通物品；Silverwood V1 无射击时自动抛壳 FX/地面掉落 |
 | 50_ae_casing | .50 AE 弹壳 | .50 AE Casing | 已注册的 3D 普通 Item；Blackridge 引用为弹壳类型；飞行抛壳使用低模 `50_ae_casing_fx`，待实机验收 |
@@ -161,7 +161,7 @@
 |---|---|---|
 | `9x19mm_round`、`50_ae_round`、`12_gauge_round` | Mesh 整弹 | 物品；前两者另作弹匣顶弹。整弹不参与抛壳 |
 | `9x19mm_casing`、`50_ae_casing` | Mesh 空壳（V1 sidecar，1080 三角面） | 物品展示；此前也被 `NativeGunFx.MESH_CASINGS` 直接用于抛壳，本轮改为 FX 资产 |
-| `762x51mm_casing`、`12_7x55mm_casing`、`12_gauge_casing` | Cube 物品模型 | BR51 / CAT / HR55 用烘焙四边面抛壳；Silverwood V1 不抛壳。不是 Mesh，本轮不适用 |
+| `12_7x55mm_casing`、`12_gauge_casing` | Cube 物品模型 | HR55 用烘焙四边面抛壳；Silverwood V1 不抛壳。不是 Mesh，本轮不适用（`762x51mm_casing` 自 2026-09-28 起改为 Mesh + 低模 FX，见 7.62×51mm Visible Ammo V1） |
 | `src/main/blockbench/12ga_hybrid_mesh_spent.bbmodel` | 仅源原型 | 没有运行时 geo 或 sidecar，不参与抛壳 |
 
 **FX 资产**
@@ -246,6 +246,103 @@
   - 不内嵌 bbmodel（与 P9、Blackridge 相同）。Oculus 按 Base Color 同目录的命名自动查找。
 - **不变**：Base Color、几何、UV、geo、sidecar、Blockbench 源都逐字节不变（`--check` 通过）；FX 弹壳改为引用同一张表后，输出也逐字节不变。没有 Java 改动。
 - **不包括 12 号霰弹**：`12_gauge_round` 的 Mesh 是另外制作的四件式资产（`12ga_hybrid_mesh_prototype.bbmodel`，V1 sidecar，256 图集 `12_gauge_round_mesh.png`，零件按材质命名：聚合物壳身、黄铜底部、钢底火、折叠封口），不走车床生成库；`12_gauge_casing` 仍是 Cube 物品模型，Silverwood 也不抛壳。它的 PBR 需要另做。
+
+### 7.62×51mm Visible Ammo V1：纯 Mesh 整弹 + 空壳 + 抛壳 FX（2026-09-28，已替换运行时资源，compileJava 通过，待实机验收）
+
+**范围**
+- 整弹 `762x51mm_round`、空壳 `762x51mm_casing`、飞行抛壳 FX `762x51mm_casing_fx` 全部改为 Pure Mesh。
+- 两个注册 ID 不变，没有新增物品。
+- 本轮不做 BR51 动态弹药渲染。
+
+**生成**
+- 命令：`node tools/build-762x51mm-ammo.mjs`，加 `--check` 逐字节校验。
+- 共用 `tools/lathe-mesh-lib.mjs` 与 `tools/ammo-pbr.mjs`。
+- 输出 V2 sidecar：锥面 / 环面用 `facets` 展开，坐标保留 12 位小数（FX 为 8 位）。
+
+**文件**
+
+| 用途 | 路径 |
+|---|---|
+| 整弹源（骨骼 `round`） | `src/main/blockbench/762x51mm_round_mesh.bbmodel` |
+| 空壳源（骨骼 `casing`） | `src/main/blockbench/762x51mm_casing_mesh.bbmodel` |
+| 抛壳 FX 源 | `src/main/blockbench/762x51mm_casing_fx.bbmodel` |
+| 运行时 geo / sidecar | `geo\|meshes/762x51mm_round`、`762x51mm_casing`、`762x51mm_casing_fx` |
+| 整弹 + 空壳共用图集 | `textures/item/762x51mm_ammo_v1{,_s,_n}.png`（512） |
+| FX 图集 | `textures/item/762x51mm_casing_fx{,_s,_n}.png`（64） |
+
+- 源贴图副本在 `src/main/blockbench/textures/`。
+- 旧 cube 物品模型移到 `models/item/legacy/762x51mm_round_java.json` 和 `legacy/762x51mm_casing_java.json`，与 9mm / 12 Gauge 的回退惯例相同。
+- 旧 `762x51mm_round.bbmodel`、`762x51mm_casing.bbmodel` 和旧 PNG 保留作历史，只被 legacy 模型引用。
+
+**比例**
+- 跟 BR51-01 模型一致，1 单位约 21.5 mm。
+- 整弹直径 0.559、全长 3.308，与 BR51 原来的显示弹（0.551 × 3.32）相同，以后动态弹药可以直接放进 BR51 弹匣（内深 3.97）。
+
+**尺寸（C.I.P. / NATO 7.62×51，M80 式 147 gr 普通弹）**
+- 壳体：底缘 Ø12.01、壳底 Ø11.96、肩部 Ø11.53（39.62 处，20° 肩）、瓶颈 Ø8.72、壳长 51.18。
+- 抽壳槽：Ø10.39。
+- 弹头：Ø7.82，切线卵形，0.1 mm 平头。
+- 全长：71.12。
+- 船尾在瓶颈内，不建模。
+- 空壳（击发后）：
+  - 瓶颈胀到膛室，Ø8.88，口部微微滚边，壳长 51.30。
+  - 壳壁约 0.4 mm，内壁偏暗。
+  - 6 mm 处为底部隔层，有传火孔。
+  - 底火上有击针凹痕。
+
+**面数**
+
+| 资产 | 分段 | 三角等效 | 面组成 |
+|---|---|---|---|
+| 整弹 | 20 | 1160 | 552 四边形 + 56 三角形 |
+| 空壳 | 20 | 1040 | 483 四边形 + 74 三角形 |
+| 抛壳 FX | 8 | 144 | 64 四边形 + 16 三角形 |
+
+- FX 没有底火窝、倒角、内壁和凹痕几何，只保留瓶颈肩部轮廓和一个浅口碟面。
+
+**外观**
+- 与 9mm / .50 AE 同一套干净画法。
+- 黄铜壳体带很淡的瓶颈 / 肩部退火色，空壳口部有轻微火药烟熏。
+- 铜色被甲比黄铜更偏粉；底火为黄铜色。
+- 无弹头色环、底火印字或品牌标识。
+- `_n` 为平直法线加 AO，没有把棱面伪装成圆柱的法线平滑（按用户要求本轮不做）。
+- `_s` 使用共享弹药材质表；肩部 / 瓶颈按壳体，底火按底面 / 边缘 / 槽。
+
+**物品显示（与其他 Mesh 弹药同一套规则）**
+- 两个物品模型都是 `builtin/entity`（particle 用 `item/762x51mm_ammo_v1`）。
+- `AflStaticMeshItemClient` 新增两行绑定，复用 `AflStaticMeshItemRenderer`，没有新增渲染器。
+- 居中：中心偏移 = 0.5 − 高度/32。整弹 0.396628，空壳 0.425436。
+- 整弹掉落物偏移 0.2605263158，使底部高于实体 0.014，与其他整弹一致。
+- 旋转和平移与 9mm / .50 AE 完全相同：
+  - 整弹 GUI [20,-25,0]，掉落直立。
+  - 空壳 GUI [25,-30,-20]，掉落横躺 [0,0,90]、平移 [0,0.75,0]。
+- 缩放按模型高度换算，使视觉大小与 .50 AE 一致：
+
+| 视角 | 整弹 | 空壳 |
+|---|---|---|
+| GUI | 2.53 | 2.53 |
+| 第一人称 | 1.46 | 1.86 |
+| 第三人称 | 1.2 | 1.49 |
+| 掉落 / 展示框 | 1.33 | 1.64 |
+
+**抛壳**
+- `NativeGunFx.MESH_CASINGS` 新增 `item/762x51mm_casing`（即 `RIFLE_CASING_MODEL`，BR51 与 C.A.T. 共用）：FX geo / 图集，高精度空壳作回退，世界缩放 0.41。
+- 0.41 让飞行尺寸与旧 cube 抛壳一致：旧模型 13.565 px × `CASING_SCALE` 0.072 = 0.061 格，新 FX 为 2.386/16 × 0.41 = 0.061 格。
+- 抛壳物理、寿命、上限都没有改。
+
+**校验**
+- 生成器 `--check` 通过；9mm / .50 AE 的 `--check` 也通过，共享库未受影响。
+- `verify-afl-mesh --java-loader` 通过，加载全部生产 sidecar，含这 3 个；无 NaN。
+- 背面可见检测：
+  - 整弹常规视角为 0，空壳常规视角为 0。
+  - 近距离仰视时，空壳和已上线的 9mm 空壳在离线渲染器里都出现同样的伪影，是渲染器问题，不是模型问题。
+- `verify-native-ammo.mjs`：已识别两个 Mesh 物品，随后仍在旧 cube 回退模型的元素数（44 对 13）处失败，这是上文记录的既有问题。
+- `compileJava --offline` 通过。
+
+**未实机验证**
+- 物品栏、手持、掉落物的大小和摆位。
+- BR51 / C.A.T. 的飞行抛壳。
+- 光影下的材质。
 
 ## 文件与旧新映射
 

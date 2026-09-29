@@ -51,7 +51,10 @@ public final class NativeGunFx {
             id("item/50_ae_casing"), new MeshCasing(id("geo/50_ae_casing.geo.json"), id("textures/item/blackridge_50ae_ammo_v1.png"),
                     id("geo/50_ae_casing_fx.geo.json"), id("textures/item/50_ae_casing_fx.png"), .65F),
             CASING_MODEL, new MeshCasing(id("geo/9x19mm_casing.geo.json"), id("textures/item/9x19mm_ammo_v1.png"),
-                    id("geo/9x19mm_casing_fx.geo.json"), id("textures/item/9x19mm_casing_fx.png"), .62F));
+                    id("geo/9x19mm_casing_fx.geo.json"), id("textures/item/9x19mm_casing_fx.png"), .62F),
+            // 7.62x51mm: .41 keeps the old cube casing's flight size (0.061 block long)
+            RIFLE_CASING_MODEL, new MeshCasing(id("geo/762x51mm_casing.geo.json"), id("textures/item/762x51mm_ammo_v1.png"),
+                    id("geo/762x51mm_casing_fx.geo.json"), id("textures/item/762x51mm_casing_fx.png"), .41F));
     public static final int MAX_CASINGS = 64, CASING_TICKS = 50;
     public static final double GRAVITY = .04, DRAG = .98;
     private static final RandomSource RANDOM = RandomSource.create();
