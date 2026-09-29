@@ -1,0 +1,8 @@
+{
+  "reload_overrides": {
+    "empty": {
+      "clip": "reload_empty_drum",
+      "seconds": 3.1667
+    }
+  }
+}

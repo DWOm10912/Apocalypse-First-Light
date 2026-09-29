@@ -15,7 +15,7 @@ Asset ID：`pistol_suppressor_01`（Registry ID 未变）。2026-09-27 起为 **
 | Geo（仅骨骼，identifier `geometry.pistol_suppressor_01`，512×512） | `assets/apocalypse_firstlight/geo/pistol_suppressor_01.geo.json` |
 | Pure Mesh sidecar（V2，紧凑书写，约 217 KB） | `assets/apocalypse_firstlight/meshes/pistol_suppressor_01.aflmesh.json` |
 | 运行时贴图（与源文件逐字节一致；Oculus 按命名自动查找 `_s` / `_n`） | `assets/apocalypse_firstlight/textures/item/pistol_suppressor_01.png`、`_s.png`、`_n.png` |
-| 物品模型（`builtin/entity`；GUI 缩放 1.4 → 1.6，补偿变短的模型） | `assets/apocalypse_firstlight/models/item/pistol_suppressor_01.json` |
+| 物品模型（`builtin/entity`；GUI 缩放 1.4 → 1.6，补偿变短的模型；2026-09-28 起物品栏改为配件统一朝向与大小，GUI 缩放固定为 1，由 `NativeAttachmentGuiFit` 适配） | `assets/apocalypse_firstlight/models/item/pistol_suppressor_01.json` |
 
 重建：`node tools/build-pistol-suppressor-01.mjs`；校验：加 `--check`。
 

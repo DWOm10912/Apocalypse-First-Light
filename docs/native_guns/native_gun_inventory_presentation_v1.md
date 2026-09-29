@@ -42,3 +42,20 @@ Blockbench 统一视角捕图已逐张检查，没有参考臂方块；Python �
 - 此前该捕图被直接放进 `textures/item/`，GUI 按非正方形铺满整格，看起来没有缩放。现已按本工具的 `LONG_GUN` 规则（最长轴 88%、整数尺寸、向下取整居中）重新框定为 256×256，边界 `[15,64,239,191]`。
 - 本机没有 Pillow，这次用等价的 Node 面积平均重采样生成，框定尺寸与位置和工具一致，但像素与 LANCZOS 结果不同。装好 Pillow 后重跑 `tools/normalize-native-gun-inventory-icons.py` 即可改为标准输出；在此之前它的 `--check` 会报 BR51 不一致。
 - 未进行 Creative Tab 实机复查。没有运行 Java 编译（无 Java 改动），也没有进行游戏客户端/Creative Tab 验收。
+
+## 配件物品栏图标（2026-09-28）
+
+所有配件（两种红点、两种消音器、P9 28 发扩容匣、BR51 35 发扩容匣、BR51 50 发弹鼓）在物品栏里统一朝向、统一大小。已通过 `compileJava` 并离线模拟，未实机查看。
+
+- **朝向**：各配件物品模型的 `display.gui` 统一为 `rotation [20, 135, 0]`、`translation [0, 0, 0]`、`scale [1, 1, 1]`，`gui_light: side`。模型的前方（−Z，枪口方向）朝左、略朝向玩家，略带俯视，与枪械图标“枪口朝左、看左侧”一致。
+- **大小与居中**：
+  - 由 `weapon/client/NativeAttachmentGuiFit` 完成，只在 `ItemDisplayContext.GUI` 下生效。
+  - 取模型绑定姿态的包围盒（Gecko cube 与 AFL mesh 都计入），把中心移到格子中心，再按当前 GUI 变换下的投影宽高，把最长边缩放到格子的 85%（枪械图标为 82–89%）。
+  - 这样不受模型实际尺寸、原点位置的影响，也绕开了原版 display 缩放最大 4 的限制（例如手枪红点实际需要约 6 倍）。
+  - 包围盒按物品缓存，资源重载时清空。
+- **接入**：
+  - `NativeMuzzleRendering.ItemRenderer`（瞄具、枪口装置）在 GUI 下不再按出口位置居中；
+  - `NativeMagazineRendering.ItemRenderer`（弹匣）在 GUI 下不再使用 `itemLift`，但保留 `itemTilt`（P9 28 发匣先回正 22°，再适配）。
+- **其他情境不变**：手持、地面掉落、物品展示框仍使用各自原有的 display 与渲染偏移。
+- **新配件**：只需把 `display.gui` 设成上面这一组值，不用逐个调缩放。步枪红点的物品模型由 `tools/build-rifle-red-dot-01.mjs` 生成，已同步；手枪红点导出器会读回现有 display，已通过 `--check`。
+- **离线模拟**：同一算法下，7 个配件的最长边均为 85%，适配缩放依次为手枪红点 5.99、步枪红点 3.49、手枪消音器 2.10、步枪消音器 1.27、P9 28 发匣 1.76、35 发匣 1.16、弹鼓 1.10（改动前各自手调为 5.6→被截断为 4、4、1.6、1.1、1.5、1.25、1.25，旋转也各不相同）。

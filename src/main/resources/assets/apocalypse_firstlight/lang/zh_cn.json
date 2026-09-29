@@ -119,6 +119,7 @@
   "item.apocalypse_firstlight.762x51mm_round.caliber": "7.62×51毫米",
   "item.apocalypse_firstlight.12_7x55mm_round.caliber": "12.7×55毫米",
   "item.apocalypse_firstlight.br51_extended_magazine_35": "BR-51 扩容弹匣",
+  "item.apocalypse_firstlight.br51_drum_magazine_50": "BR-51 弹鼓",
   "item.apocalypse_firstlight.rifle_red_dot_01": "步枪红点瞄具",
   "item.apocalypse_firstlight.rifle_suppressor_01": "7.62×51mm 步枪消音器",
   "item.apocalypse_firstlight.p9_01_extended_magazine": "P9-01 28发扩容弹匣",
@@ -205,6 +206,7 @@
   "tooltip.apocalypse_firstlight.value.noise_radius": "%s格",
 
   "tooltip.apocalypse_firstlight.br51_extended_magazine_35.description": "一款为BR-51设计的35发扩容弹匣，可显著提升持续交火能力",
+  "tooltip.apocalypse_firstlight.br51_drum_magazine_50.description": "一款为BR-51设计的50发双鼓弹匣，大幅提升持续火力，但空仓更换更费时",
   "tooltip.apocalypse_firstlight.rifle_red_dot_01.description": "一款通用步枪红点瞄具，提供清晰瞄准点，便于快速捕捉目标",
   "tooltip.apocalypse_firstlight.rifle_suppressor_01.description": "一款套装在兼容消焰器上的 7.62×51mm 快拆步枪消音器，可大幅降低枪声传播范围并削弱枪口焰",
   "tooltip.apocalypse_firstlight.p9_01_extended_magazine.description": "一款为P9-01专门设计的28发扩容弹匣，加长钢制弹匣配握把延长套和加固底板，可显著提升持续交火能力",

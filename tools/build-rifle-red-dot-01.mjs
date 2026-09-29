@@ -387,7 +387,8 @@ const display = (rotation, s) => {
   return {rotation, translation: [0, 1, 2].map(i => +(-(Math.min(...Q.map(q => q[i])) + Math.max(...Q.map(q => q[i]))) / 2).toFixed(3) || 0), scale: [s, s, s]};
 };
 const item = {parent: 'builtin/entity', gui_light: 'side', textures: {particle: 'apocalypse_firstlight:item/rifle_red_dot_01'}, display: {
-  gui: display([20, 140, 0], 4.0),
+  // inventory: the shared attachment view (rotation only); NativeAttachmentGuiFit centres and sizes every attachment alike
+  gui: {rotation: [20, 135, 0], translation: [0, 0, 0], scale: [1, 1, 1]},
   ground: display([0, 0, 0], 0.7),
   fixed: display([0, 180, 0], 4.0),
   firstperson_righthand: display([0, -35, 0], 0.7),

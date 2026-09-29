@@ -45,6 +45,7 @@ public final class NativeGunActions {
         boolean inPlayed;
         boolean lastShot;
         boolean lockHandoffPlayed;
+        int magInTick;
         int slot;
         net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension;
     }
@@ -146,11 +147,13 @@ public final class NativeGunActions {
         state.id = GeoItem.getOrAssignId(state.stack, player.serverLevel());
         state.start = now;
         state.reloadStartedEmpty = reload && NativeGunAmmo.read(held, definition) == 0;
-        state.end = now + (reload ? item.reloadTicks(state.reloadStartedEmpty) : interval);
+        // A fitted magazine may override the reload (clip, length, commit tick); fixed for this session.
+        state.end = now + (reload ? item.reloadTicks(held, state.reloadStartedEmpty) : interval);
+        state.magInTick = reload ? item.magInTick(held, state.reloadStartedEmpty) : 0;
         state.slot = slot;
         state.reload = reload;
         state.lastShot = lastShot;
-        state.clip = reload ? item.reloadClip(state.reloadStartedEmpty)
+        state.clip = reload ? item.reloadClip(held, state.reloadStartedEmpty)
                 : item.fireClip(state.lastShot);
         if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         state.dimension = player.level().dimension();
@@ -226,9 +229,8 @@ public final class NativeGunActions {
             return true;
         });
         if (state.reload && state.item.animationAsset() != null) {
-            // The authored magazine-in time is part of each gun's presentation definition.
-            long ammoCommitTick = state.start + (state.reloadStartedEmpty
-                    ? state.item.definition().emptyMagInTick() : state.item.definition().magInTick());
+            // The authored magazine-in time is part of each gun's presentation definition (or the magazine's override).
+            long ammoCommitTick = state.start + state.magInTick;
             if (!state.inPlayed && now >= ammoCommitTick) {
                 NativeGunAmmo.transfer(player.getInventory(), state.stack, state.item.definition());
                 syncInventory(player);

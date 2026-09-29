@@ -42,6 +42,9 @@ public class ConfiguredNativeGunItem extends Item implements NativeGunItem {
     }
     @Override public String fireClip(boolean last) { return "shoot"; }
     @Override public String reloadClip(boolean empty) { return empty ? "reload_empty" : "reload_tactical"; }
+    @Override public boolean supportsClip(String clip) {
+        return profile.clips().contains(clip) && NativeGunAnimations.hasClip(profile.id(), clip);
+    }
     @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
     @Override public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (!level.isClientSide) NativeGunAmmo.initialize(stack, definition());

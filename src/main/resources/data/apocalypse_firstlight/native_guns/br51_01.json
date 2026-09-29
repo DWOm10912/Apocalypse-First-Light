@@ -20,7 +20,7 @@
   "magazine_slot": {
     "hotspot_anchor": "mag_standard",
     "hotspot_y": -4,
-    "accepts": ["apocalypse_firstlight:br51_extended_magazine_35"]
+    "accepts": ["apocalypse_firstlight:br51_extended_magazine_35", "apocalypse_firstlight:br51_drum_magazine_50"]
   },
   "fire": {
     "modes": ["semi", "auto"],

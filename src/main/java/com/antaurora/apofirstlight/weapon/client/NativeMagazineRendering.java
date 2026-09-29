@@ -25,8 +25,12 @@ public final class NativeMagazineRendering {
         @Override public void renderByItem(ItemStack stack,ItemDisplayContext context,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
             float lift=stack.getItem() instanceof NativeMagazineItem m?m.itemLift():0;
             float tilt=stack.getItem() instanceof NativeMagazineItem t?t.itemTilt():0;
-            pose.pushPose();pose.translate(.5,.5+lift/16,.5);
+            // Inventory: the authored tilt still straightens the magazine, then one orientation and size for every
+            // attachment (NativeAttachmentGuiFit) replaces the per-magazine lift.
+            boolean gui=context==ItemDisplayContext.GUI;
+            pose.pushPose();pose.translate(.5,.5+(gui?0:lift/16),.5);
             if(tilt!=0)pose.mulPose(com.mojang.math.Axis.XP.rotationDegrees(tilt));
+            if(gui)NativeAttachmentGuiFit.apply(stack,pose);
             NativeMuzzleRendering.drawItem(stack,pose,buffers,light,overlay);pose.popPose();
         }
     }

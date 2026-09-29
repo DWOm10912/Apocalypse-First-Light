@@ -24,11 +24,12 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     private static final Map<BakedGeoModel,List<GeoBone>> CACHE=new WeakHashMap<>();
     private static final Map<BakedGeoModel,List<net.minecraft.world.phys.AABB>> BOUNDS=new WeakHashMap<>();
     private static final Map<BakedGeoModel,Double> LONGITUDINAL_CENTERS=new WeakHashMap<>();
+    private static final Map<BakedGeoModel,Map<net.minecraft.world.item.Item,Double>> REST_LIFTS=new WeakHashMap<>();
     private static long meshGeneration = -1;
     private static void refreshMeshBounds() {
         long generation = AflMeshCache.snapshot().generation();
         if (meshGeneration != generation) {
-            BOUNDS.clear(); LONGITUDINAL_CENTERS.clear();
+            BOUNDS.clear(); LONGITUDINAL_CENTERS.clear(); REST_LIFTS.clear();
             meshGeneration = generation;
         }
     }
@@ -70,11 +71,53 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         return m.topLevelBones().stream().map(b->copy(b,null,rotations)).filter(Objects::nonNull).toList();
     });}
     public static void transform(ItemStack stack,PoseStack pose){
-        var p=MaintenanceViewProfile.of(stack);pose.translate(p.offsetX(),p.offsetY(),p.offsetZ());
+        // A fitted replacement magazine that reaches past the base gun toward the mat (a drum on a gun lying on its side)
+        // lifts the whole weapon by that overhang so it rests on the mat; never lowers it, never shifts it sideways.
+        var p=MaintenanceViewProfile.of(stack);pose.translate(p.offsetX(),p.offsetY()+restLift(stack,p),p.offsetZ());
         pose.mulPose(Axis.YP.rotationDegrees(p.rotationY()));pose.mulPose(Axis.XP.rotationDegrees(p.rotationX()));pose.mulPose(Axis.ZP.rotationDegrees(p.rotationZ()));
         // Center the immutable base gun's muzzle-to-stock bounds; attachments must not make it jump.
         // Per-gun offsetX remains available for deliberate workspace fine tuning.
         pose.scale(p.scale(),p.scale(),p.scale());pose.translate(-p.centerX(),-p.centerY(),-longitudinalCenter(stack,p.centerZ()));
+    }
+    /** Bench-space height (after scale) by which the fitted replacement magazine overhangs the base gun's lowest point. */
+    static double restLift(ItemStack stack,MaintenanceViewProfile p){
+        refreshMeshBounds();
+        var model=model(stack);
+        var magazine=com.antaurora.apofirstlight.weapon.NativeAttachments.active(stack,com.antaurora.apofirstlight.weapon.NativeAttachment.Slot.MAGAZINE);
+        if(model==null||!(magazine.getItem() instanceof com.antaurora.apofirstlight.weapon.NativeMagazineItem))return 0;
+        return REST_LIFTS.computeIfAbsent(model,m->new HashMap<>()).computeIfAbsent(magazine.getItem(),item->{
+            // Same rotation as transform(): translation and centring cancel out of the difference.
+            var rotation=new org.joml.Quaternionf().rotationY((float)Math.toRadians(p.rotationY()))
+                    .rotateX((float)Math.toRadians(p.rotationX())).rotateZ((float)Math.toRadians(p.rotationZ()));
+            var fitted=new ArrayList<net.minecraft.world.phys.AABB>();
+            for(var b:bones(stack,model))collectMagazine(stack,b,new PoseStack(),magazine,fitted);
+            double base=lowest(bounds(stack),rotation),overhang=lowest(fitted,rotation);
+            return Double.isFinite(base)&&Double.isFinite(overhang)&&overhang<base?(base-overhang)*p.scale():0;
+        });
+    }
+    private static double lowest(List<net.minecraft.world.phys.AABB> boxes,org.joml.Quaternionf rotation){
+        double low=Double.POSITIVE_INFINITY;
+        for(var b:boxes)for(int i=0;i<8;i++){
+            var v=rotation.transform(new org.joml.Vector3f((float)((i&1)==0?b.minX:b.maxX),(float)((i&2)==0?b.minY:b.maxY),(float)((i&4)==0?b.minZ:b.maxZ)));
+            low=Math.min(low,v.y);
+        }
+        return low;
+    }
+    /** Bounds of the replacement magazine geometry where NativeMagazineRendering draws it (replaced bone pivot, bind pose). */
+    private static void collectMagazine(ItemStack stack,GeoBone bone,PoseStack pose,ItemStack magazine,List<net.minecraft.world.phys.AABB> out){
+        pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
+        if(com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replaces(stack,bone)){
+            var id=net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(magazine.getItem());
+            var geometry=new ResourceLocation(id.getNamespace(),"geo/"+id.getPath()+".geo.json");
+            var geo=GeckoLibCache.getBakedModels().get(geometry);
+            if(geo!=null){
+                pose.pushPose();RenderUtils.translateToPivotPoint(pose,bone);
+                for(var b:geo.topLevelBones())collect(b,pose,out,AflMeshCache.snapshot().get(geometry));
+                pose.popPose();
+            }
+        }
+        for(var child:bone.getChildBones())collectMagazine(stack,child,pose,magazine,out);
+        pose.popPose();
     }
     public static List<net.minecraft.world.phys.AABB> bounds(ItemStack stack){
         refreshMeshBounds();

@@ -168,7 +168,8 @@ public final class AflCreativeTabs {
             AflItems.PISTOL_SUPPRESSOR_01,
             AflItems.RIFLE_SUPPRESSOR_01,
             AflItems.P9_01_EXTENDED_MAGAZINE,
-            AflItems.BR51_EXTENDED_MAGAZINE_35);
+            AflItems.BR51_EXTENDED_MAGAZINE_35,
+            AflItems.BR51_DRUM_MAGAZINE_50);
 
     // In the firearms order: 9mm (P9), .50 AE (Blackridge), 7.62 (BR51, C.A.T.), 12.7x55 (HR55), 12 gauge (Silverwood).
     public static final RegistryObject<CreativeModeTab> AMMUNITION = tab("ammunition", ATTACHMENTS, AflItems.ROUND_762MM,

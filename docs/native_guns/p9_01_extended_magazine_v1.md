@@ -59,7 +59,7 @@
 - 渲染：`NativeMagazineRendering` → `NativeMuzzleRendering.drawItem` → AFL Hybrid Mesh sidecar。
   - 第一人称、第三人称、换弹动画、维护台（`MaintenanceGunRendering` 已调用同一替换）与 Field 视图共用这条路径。
   - 换弹新匣与旧匣的显隐完全由现有动画骨骼缩放决定，没有改动画。
-- 物品栏 / 掉落物 / 手持物品：`NativeMagazineRendering.ItemRenderer`，`itemLift` 3.58。
+- 物品栏 / 掉落物 / 手持物品：`NativeMagazineRendering.ItemRenderer`，`itemLift` 3.58（2026-09-28 起物品栏改为配件统一朝向与大小，不再使用 `itemLift`，只保留 22° 回正，见 `native_gun_inventory_presentation_v1.md`）。
   - 新增 `NativeMagazineItem.itemTilt` = 22：绕 X +22° 撤销烘进资产的握把倾角，让独立物品竖直显示。
   - BR51 等其他弹匣走原 5 参构造，倾角为 0，行为不变。
   - 物品模型 `models/item/p9_01_extended_magazine.json`（`builtin/entity`）沿用。

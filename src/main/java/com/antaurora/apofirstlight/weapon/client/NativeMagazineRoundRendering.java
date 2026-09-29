@@ -35,9 +35,10 @@ final class NativeMagazineRoundRendering {
         } else {
             String clip = actionClip.get();
             if (loadedAuxiliary >= 0) {
-                // reloads bring a full magazine; inspect shows the gun's own magazine with its real count
-                if (!"reload_tactical".equals(clip) && !"reload_empty".equals(clip)
-                        && !("inspect".equals(clip) && ammo > loadedAuxiliary)) return;
+                // reloads (incl. magazine-specific reload_* variants) bring a full magazine; inspect shows the
+                // gun's own magazine with its real count
+                boolean reloading = clip != null && clip.startsWith("reload_");
+                if (!reloading && !("inspect".equals(clip) && ammo > loadedAuxiliary)) return;
             } else if (!"reload_tactical".equals(clip) || ammo <= oldMagazine) return;
         }
 

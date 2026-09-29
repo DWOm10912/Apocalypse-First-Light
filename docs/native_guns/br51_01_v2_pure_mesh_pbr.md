@@ -7,7 +7,7 @@
 ## 工具与文件
 
 - 生成器：`tools/build-br51-01-v2-mesh.mjs`
-  - 2026-09-28 起，切块成型、UV 岛、绘制与 PNG 编码抽成共享库 `tools/cube-slab-mesh-lib.mjs`（原样搬出，BR51 的材质表、规则表和输出仍在本生成器里）；重构后 `--check` 逐字节一致，BR51 输出没有变化。35 发扩容匣 V2 使用同一个库。
+  - 2026-09-28 起，切块成型、UV 岛、绘制与 PNG 编码抽成共享库 `tools/cube-slab-mesh-lib.mjs`（原样搬出，BR51 的材质表、规则表和输出仍在本生成器里）；重构后 `--check` 逐字节一致，BR51 输出没有变化。35 发扩容匣 V2 与 50 发弹鼓 V1 使用同一个库。
   - `node tools/build-br51-01-v2-mesh.mjs`：写出全部产物
   - `--check`：逐字节确定性校验
   - `--debug <out.bbmodel>`：只写源到指定位置（预览用）

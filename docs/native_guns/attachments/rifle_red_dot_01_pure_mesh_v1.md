@@ -123,7 +123,8 @@ Registry ID、名称、Tooltip、槽位不变：`apocalypse_firstlight:rifle_red
 
 - 物品模型为 `builtin/entity`，渲染器是 `NativeMuzzleRendering.ItemRenderer`，它把原点（导轨顶面）放在物品中心。
 - 每种展示情境的 translation 都由生成器计算：先旋转、缩放，再把变换后的包围盒中心移回原点，所以各情境都居中。GUI 离线复算：宽 ±0.29、高 ±0.425 格，占格子高度约 85%。
-- 缩放：GUI 4.0（原版上限）、物品展示框 4.0、手持和地面 0.7。
+- 缩放：物品展示框 4.0，手持和地面 0.7。
+- 物品栏（GUI）：2026-09-28 起改为所有配件共用的朝向 `[20, 135, 0]`、缩放 1，由 `NativeAttachmentGuiFit` 统一居中并把最长边缩放到格子的 85%；上面的生成器居中只用于其他情境。见 `native_gun_inventory_presentation_v1.md`。
 - 背包、手持与地面的实际观感未实机验证。
 
 ## 离线校验（`node tools/verify-rifle-red-dot-01.mjs`：RIFLE_RED_DOT_V1_OFFLINE_PASS）

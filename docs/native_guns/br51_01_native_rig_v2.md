@@ -98,6 +98,7 @@ root
 | 裸枪枪口特效 | LEGACY_COMPAT | `muzzle_pos` + Profile `barrelExitOffset` 4.8125，等于消焰器前端。它与安装面不是同一点，Phase 2 重建枪管时再定 AFL 名称 |
 | CASING_ANCHOR | PASS | `shell` → `ejection_anchor`，位置不变；`AflItems` 中 BR51 Profile 同步 |
 | 弹匣热点 | PASS | `magazine_slot.hotspot_anchor = mag_standard` 不变 |
+| 50 发弹鼓（2026-09-28） | 离线 | 同样替换这三根骨骼；动画文件新增拼接的空仓换弹 `reload_empty_drum`（`tools/build-br51-drum-reload.mjs`，只写入运行时动画，Blockbench 源不含），BR51 动画清单同步加入 |
 | 35 发扩容匣 | PASS | 替换骨骼改为 `mag_standard`、`reload_mag_standard`、`empty_old_mag_standard`（`AflItems`），`subtree=true`；三者枢轴相同 |
 | 手部 | PASS | `right_hand_anchor` / `left_hand_anchor` 世界位置逐帧一致 |
 

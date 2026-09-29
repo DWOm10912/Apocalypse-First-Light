@@ -72,12 +72,16 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
         public ItemRenderer(){super(Minecraft.getInstance().getBlockEntityRenderDispatcher(),Minecraft.getInstance().getEntityModels());}
         @Override public void renderByItem(ItemStack item,ItemDisplayContext context,PoseStack pose,MultiBufferSource buffers,int light,int overlay){
             pose.pushPose();pose.translate(.5,.5,.5);
-            // Origin is the rear mount; center standalone presentation on the authored exit.
-            var exit=new PoseStack();
-            var model=model(item);
-            if(model!=null)for(var bone:model.topLevelBones())if(exit(bone,exit)){
-                var v=exit.last().pose().transformPosition(new org.joml.Vector3f());
-                pose.translate(-v.x/2,-v.y/2,-v.z/2);break;
+            // Inventory: one orientation and size for every attachment (NativeAttachmentGuiFit).
+            if(context==ItemDisplayContext.GUI)NativeAttachmentGuiFit.apply(item,pose);
+            else{
+                // Origin is the rear mount; center standalone presentation on the authored exit.
+                var exit=new PoseStack();
+                var model=model(item);
+                if(model!=null)for(var bone:model.topLevelBones())if(exit(bone,exit)){
+                    var v=exit.last().pose().transformPosition(new org.joml.Vector3f());
+                    pose.translate(-v.x/2,-v.y/2,-v.z/2);break;
+                }
             }
             drawItem(item,pose,buffers,light,overlay);pose.popPose();
         }
