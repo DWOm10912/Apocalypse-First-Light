@@ -22,8 +22,37 @@
     "accepts": ["apocalypse_firstlight:br51_extended_magazine_35"]
   },
   "fire": {
-    "mode": "semi",
-    "interval_ticks": 4
+    "modes": ["semi", "auto"],
+    "default_mode": "semi",
+    "interval_ticks": 4,
+    "mode_overrides": {
+      "auto": {
+        "interval_ticks": 3,
+        "recoil": {
+          "verticalMin": 1.5,
+          "verticalMax": 1.95,
+          "horizontalMin": -0.34,
+          "horizontalMax": 0.42,
+          "maxVertical": 9,
+          "maxHorizontal": 2.6,
+          "recoveryDelay": 0.12,
+          "cameraRecoveryTime": 0.32,
+          "horizontalContinueChance": 0.6,
+          "horizontalRecoveryTime": 0.28,
+          "horizontalLeftMin": 0.1,
+          "horizontalRightMin": 0.12,
+          "modelPitch": 3,
+          "modelYaw": 0.9,
+          "modelRoll": 0.9,
+          "modelRecoveryTime": 0.12
+        },
+        "bloom": {
+          "per_shot_degrees": 0.5,
+          "max_degrees": 2.2,
+          "recovery_ticks": 12
+        }
+      }
+    }
   },
   "damage": {
     "base": 18,

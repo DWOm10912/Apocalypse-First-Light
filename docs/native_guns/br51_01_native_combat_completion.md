@@ -11,7 +11,7 @@
 `AflNetwork.sendNativeShot` 成功射击通知。保留历史类名以兼容现有包与测试，不复制第二套射击系统。
 `NativeAnimatedWeaponItem.Profile` 仅复用视觉配置数据；调试物品的动画命令不接受生产 BR51_01。
 
-临时参数：20 发；半自动（按下沿），间隔 4 tick；基础伤害 18 Minecraft HP。
+临时参数：20 发；半自动（按下沿），间隔 4 tick；基础伤害 18 Minecraft HP。（2026-09-28 起 BR51 为半自动 / 全自动两种模式，默认半自动，全自动 3 tick，带独立后坐与连射散布；当前数值见 [武器设计 · BR-51](../项目内容/01 - 设计/武器/枪械.md)。）
 弹药实际 ID 为 `apocalypse_firstlight:762x51mm_round`；沿用 `AflGunAmmo/ammoInMagazine`，新物品默认满弹，已有空仓不会初始化补满。
 衰减、射程、Noise、recoil/trail暂为共享占位；BR51-01基础散布现为0.30°半角，采用通用姿态精度与BATTLE_RIFLE倍率，见native_stance_accuracy_v1.md。
 BR51_01已接入用户专用HUD剪影与GUI图标，详见br51_01_third_person_and_icons.md。
