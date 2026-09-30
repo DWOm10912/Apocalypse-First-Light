@@ -35,4 +35,5 @@ public final class AflMeshModel {
     public boolean hasTranslucent() { return !translucent.isEmpty(); }
     public int partCount() { return partCount; }
     public int formatVersion() { return formatVersion; }
+    public java.util.Set<String> boneNames() { return bones.keySet(); }
 }

@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.client.mesh;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfiles;
+import com.antaurora.apofirstlight.client.blockmesh.AflBlockMeshProfileLoader;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
@@ -22,10 +25,12 @@ public final class AflMeshCache {
     }
     private static volatile Snapshot current = new Snapshot(0, Map.of());
     public static Snapshot snapshot() { return current; }
+    private record ReloadData(Map<ResourceLocation, AflMeshModel> meshes,
+                              Map<ResourceLocation, AflBlockMeshProfile> blockProfiles) {}
 
     @SubscribeEvent public static void register(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(new SimplePreparableReloadListener<Map<ResourceLocation, AflMeshModel>>() {
-            @Override protected Map<ResourceLocation, AflMeshModel> prepare(ResourceManager manager, ProfilerFiller profiler) {
+        event.registerReloadListener(new SimplePreparableReloadListener<ReloadData>() {
+            @Override protected ReloadData prepare(ResourceManager manager, ProfilerFiller profiler) {
                 var loaded = new HashMap<ResourceLocation, AflMeshModel>();
                 manager.listResources("meshes", id -> id.getPath().endsWith(SUFFIX)).forEach((sidecar, resource) -> {
                     String path = sidecar.getPath();
@@ -39,10 +44,11 @@ public final class AflMeshCache {
                         ApocalypseFirstLight.LOGGER.error("Rejected AFL mesh sidecar {}: {}", sidecar, e.getMessage());
                     }
                 });
-                return Map.copyOf(loaded);
+                return new ReloadData(Map.copyOf(loaded), AflBlockMeshProfileLoader.loadAll(manager, loaded));
             }
-            @Override protected void apply(Map<ResourceLocation, AflMeshModel> models, ResourceManager manager, ProfilerFiller profiler) {
-                current = new Snapshot(current.generation() + 1, models);
+            @Override protected void apply(ReloadData data, ResourceManager manager, ProfilerFiller profiler) {
+                current = new Snapshot(current.generation() + 1, data.meshes());
+                AflBlockMeshProfiles.replace(data.blockProfiles());
             }
         });
     }
