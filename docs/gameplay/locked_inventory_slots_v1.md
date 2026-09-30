@@ -71,3 +71,11 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 验收范围为 Locked Inventory Slots V1。本轮仍未实现的 Backpack / Weight / Stamina 等字段继续保持 NO，不因验收通过而变成已实现。
 
 第三方模组若直接修改 Inventory.items / setItem 或自行重写转移且绕开上述插入接口，需单独接入同一策略。本实现有意保留这些底层写入能力供存档同步、管理员写入和事务回滚，不能把任意直接写入一概视为正常玩家插入。
+
+## 与容器逐格搜索的关系（2026-09-29）
+
+[Progressive Container Search V1](progressive_container_search_v1.md) 的"隐藏格"是另一套独立系统，两者不共用代码或状态：
+- 隐藏格由遮罩视图或客户端镜像承载，不是 `Inventory`，所以 `PlayerStorageCapacity.isLocked` 对它们永远为 false。
+- 本文所列的 Mixin 仍然作用于搜索菜单里的玩家背包格。
+- 两套限制可以同时生效，例如把已揭示的物品 Shift 转入背包时，锁定格照常被跳过。
+- 本节只记录兼容关系；Locked Inventory 的行为和验收结果没有任何改动。
