@@ -19,6 +19,7 @@ import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {applySource as applyInspectRack} from './br51-inspect-rack.mjs';
 import {M4, add, mul, Part, revolve, box, inRegion, collectGroups, createBuilder, unwrap, paint} from './cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -173,18 +174,16 @@ const source = buildSource();
 }
 for (const g of source.groups) delete g.bedrock_binding;   // Bedrock-only field; the Free Model source has no binding
 Object.assign(source.textures[0], {relative_path: 'textures/br51_01.png', folder: '', namespace: ''});
-// Inspect rack sounds (2026-09-28): the author's inspect pulls the bolt back (3.458 -> 3.75 s) with 'draw' standing in
-// for the pull and lets it forward (4.208 -> 4.292 s) silently. Two dedicated user-made sounds replace that:
-// inspect_slide_back (its rear-stop transient 0.115 s into the file lands on the bolt reaching the rear, 3.75 s) and
-// inspect_slide_release (impact 0.065 s in lands 0.033 s after the bolt is home, the reload_empty timing).
-export const INSPECT_RACK = [{time: 3.635, effect: 'apocalypse_firstlight:br51_01_inspect_slide_back', seed: 'inspect-slide-back-sound'},
-  {time: 4.26, effect: 'apocalypse_firstlight:br51_01_inspect_slide_release', seed: 'inspect-slide-release-sound'}];
+// Inspect rack (2026-09-28, re-timed 2026-09-29): the author's inspect pulled the bolt back slowly (3.458 -> 3.75 s) with
+// 'draw' standing in for the pull and let it forward (4.208 -> 4.292 s) silently. It is now one quick rack at the end of
+// the gun's settle, synced to the empty reload's charging-handle sound reload_empty_4 (tools/br51-inspect-rack.mjs, which
+// also rewrites the runtime clip); the two dedicated inspect_slide_* sounds of 2026-09-28 are no longer used.
 {
   const inspect = source.animations.find(a => a.name === 'inspect');
   const fx = Object.values(inspect.animators).find(a => a.type === 'effect');
   fx.keyframes = fx.keyframes.filter(k => !(k.time === 3.5 && k.data_points[0].effect === 'apocalypse_firstlight:br51_01_draw'));
-  for (const k of INSPECT_RACK) fx.keyframes.push({channel: 'sound', data_points: [{effect: k.effect, locator: '', file: ''}],
-    uuid: uuid(k.seed), time: k.time, color: -1, interpolation: 'linear'});
+  const byName = new Map(source.groups.map(g => [g.name, g.uuid]));
+  applyInspectRack(inspect, name => byName.get(name), uuid);
 }
 // Rifle Suppressor V1 (2026-09-28): muzzle_anchor = the muzzle-device mounting shoulder (front face of the flash hider's rear
 // collar, where a QD suppressor seats), no longer mid-hider at z -26.2. Empty locator; nothing else in the rig moves.

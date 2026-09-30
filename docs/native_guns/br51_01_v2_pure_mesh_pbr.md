@@ -197,7 +197,29 @@ Base Color 与 PBR 在同一次光栅中写出，三张图共用同一套 UV。
 - 物品栏图标：2026-09-28 已换成 Mesh 版捕图（源为 `src/main/blockbench/inventory_icons/br51_01_inventory.png`），并按 `native_gun_inventory_presentation_v1.md` 的 `LONG_GUN` 规则框定为 256×256；Creative Tab 未实机复查。
 - 显示弹药：2026-09-28 已接入动态顶弹（两发），见下文。枪膛内那发（`bullet_in_barrel`）尚未接入。
 
-## 检视的拉机声（2026-09-28，未实机验证）
+## 检视的拉机动作与声音（2026-09-29 重做，未实机验证）
+
+用户希望检视结尾的拉机声和空仓换弹最后的拉机声一样，所以这次改动作去配合空仓换弹的 `reload_empty_4`，而不是给原来的动作配新声音。
+
+- **`reload_empty_4` 的结构**（1.047 s）：
+  - 0–95 ms 是几下轻微咔哒：手抓住拉机柄、拉到后位；
+  - 100–160 ms 是主撞击：枪机复位；
+  - 240 ms 还有一下轻响，之后是低音量的手部杂音。
+- **动作**：右手仍在 3.375 s 搭上拉机柄。枪照原作者的动作翻转、在 3.83–4.21 s 静止展示，其间枪机保持在前位、不再提前拉开。展示末尾一次快速拉放：
+  - 4.100 → 4.225 s 拉到后位（4 单位，先慢后快，2.1475 处与原动作的缓入比例相同）；
+  - 停 0.01 s；
+  - 4.235 → 4.260 s 放回，枪机复位。
+- **声音**：`reload_empty_4` 放在 4.149 s。服务端按 `ceil(t × 20)` 取 tick，所以它在第 83 tick（4.15 s）响起。
+  - 前面的轻咔哒落在拉到后位前后，主撞击落在 4.25–4.31 s，与 4.26 s 枪机复位对齐。
+  - 原作者在 4.2917 s 的枪身反冲和 4.25 → 4.2917 s 的镜头震动，正好跟在撞击后面。
+- **右手**：全程跟着拉机柄，相对枪机的位置恒定，已离线逐帧核对。4.26 s 放开后，在 4.36 s 离开拉机柄（原为 4.333 s），4.458 s 回到原来的位置。
+- **其它不变**：根骨骼、镜头、左手、弹匣的所有关键帧，检视时长 5.25 s，以及前两个声音（0.625 s、2.4583 s）。
+- **不再使用**：`br51_01_inspect_slide_back` / `br51_01_inspect_slide_release` 这两个声音事件。它们仍保留在 `AflSounds` 和 `sounds.json` 里，文件也还在，没有删除。
+- **工具**：`tools/br51-inspect-rack.mjs` 改写运行时 `animations/br51_01.animation.json` 里检视这一段（`--check` 可校验）。`tools/build-br51-01-v2-mesh.mjs` 导入同一份关键帧，同步写进源文件。
+  - 两边的 `--check` 都通过；`tools/build-br51-drum-reload.mjs --check` 也通过，它会读写同一个文件，但只动鼓形弹匣换弹那一段。
+- **没有改 Java**，所以没有重新编译。
+
+### 历史：2026-09-28 的专用拉机声（已被上面取代）
 
 - 原作者的检视（`inspect`）在 3.458 → 3.75 s 把枪机拉到后位，只用 `br51_01_draw`（拔枪声）充当拉机声；4.208 → 4.292 s 枪机回到前位时没有声音。
 - 中间曾临时用空仓换弹的 `reload_empty_4` 补回位声，用户反馈听着不对，已被下面两段专用音频取代。
@@ -216,7 +238,7 @@ Base Color 与 PBR 在同一次光栅中写出，三张图共用同一套 UV。
 - 新声音事件 `br51_01_inspect_slide_back` / `br51_01_inspect_slide_release`：`AflSounds.BR51_01` 列表加两项，`sounds.json` 加两条。
 - 检视动画去掉 3.5 s 的 `draw`（以及临时的 4.225 s `reload_empty_4`），换成上表两帧。
   - 运行时 `animations/br51_01.animation.json` 只改这几帧。
-  - 源文件由 `tools/build-br51-01-v2-mesh.mjs` 生成时同步写入（`INSPECT_RACK`，UUID 固定）。
+  - 源文件由 `tools/build-br51-01-v2-mesh.mjs` 生成时同步写入（当时是 `INSPECT_RACK`，UUID 固定；2026-09-29 起改由 `tools/br51-inspect-rack.mjs` 提供）。
 - 检视时长、骨骼通道和其他声音都不变；`compileJava --offline` 通过。
 
 ## 动态弹药（顶部两发，2026-09-28，compileJava 通过，未实机验证）
