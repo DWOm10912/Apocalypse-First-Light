@@ -23,7 +23,8 @@
 //   THIN           zero-thickness cubes become thin closed plates instead of two coincident opposite caps
 // Material colour functions (2026-09-29, Silverwood 12 V3; array colours leave every earlier output byte-identical):
 //   MATS[mat].c may be (pos, n) => colour, or => {c, sm, ao} to vary smoothness / occlusion per texel as well
-//   (engraving grooves, checkering panels)
+//   (engraving grooves, checkering panels). 2026-09-29 (Industrial Locker V2): the function also receives (part, face), so one
+//   material can be zoned per part without splitting its UV islands; earlier callers ignore the extra arguments.
 import zlib from 'node:zlib';
 
 // ---------------- math ----------------
@@ -579,7 +580,7 @@ export function paint({PARTS, islands, S, uvOf, atlas: ATLAS, pad: PAD, MATS, ZO
     // m.c may be a function of the model-space position and normal (a low-frequency pattern such as wood grain). It returns
     // either a colour, or {c, sm, ao}: sm replaces the open-surface smoothness (not on bevel strips), ao scales the occlusion
     // (engraving grooves, checkering panels)
-    const px = typeof m.c === 'function' ? m.c(pos, n) : m.c, base = Array.isArray(px) ? px : px.c;
+    const px = typeof m.c === 'function' ? m.c(pos, n, part, f) : m.c, base = Array.isArray(px) ? px : px.c;
     const own = !Array.isArray(px) && px.sm !== undefined && f.tag !== 'bevel';
     const ao = (f.tag === 'wall' ? 195 : f.tag === 'cap' && n[1] < -0.5 ? 225 : 255) * (Array.isArray(px) ? 1 : px.ao ?? 1);
     const sm = (f.tag === 'bevel' ? m.se : own ? px.sm : f.tag === 'wall' ? m.sm - 20 : m.sm + (m.se - m.sm) * e) + (metal ? 5 * drift : 0);

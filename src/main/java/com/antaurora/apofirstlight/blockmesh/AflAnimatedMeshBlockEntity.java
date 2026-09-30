@@ -9,8 +9,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 
-/** Optional base for animated mesh BEs; authority and interaction remain in the concrete block. */
-public abstract class AflAnimatedMeshBlockEntity extends BlockEntity {
+/** Optional base for animated mesh BEs; authority and interaction remain in the concrete block. See AflAnimatedMeshHost. */
+public abstract class AflAnimatedMeshBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
     private final ResourceLocation meshProfile;
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
 
@@ -42,15 +42,10 @@ public abstract class AflAnimatedMeshBlockEntity extends BlockEntity {
 
     /** NBT-driven targets must also call this after applying update tag / BE packet data. */
     public final void refreshMeshAnimationTargets() {
-        if (level == null || !level.isClientSide || meshAnimation == null || meshProfile == null) return;
-        var profile = AflBlockMeshProfiles.get(meshProfile);
-        meshAnimation.configure(profile);
-        if (profile != null) for (var channel : profile.animations().keySet())
-            meshAnimation.target(channel, meshAnimationTarget(channel), level.getGameTime());
+        AflAnimatedMeshHost.refreshTargets(level, meshProfile, meshAnimation, this::meshAnimationTarget);
     }
 
     @Override public AABB getRenderBoundingBox() {
-        var profile = AflBlockMeshProfiles.get(meshProfile);
-        return profile == null ? new AABB(worldPosition) : profile.bounds(meshFacing()).move(worldPosition);
+        return AflAnimatedMeshHost.renderBounds(worldPosition, meshProfile, meshFacing());
     }
 }

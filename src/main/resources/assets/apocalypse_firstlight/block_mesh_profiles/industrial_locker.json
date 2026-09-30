@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/industrial_locker.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/industrial_locker.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.1,
+    -0.015625,
+    -0.679375,
+    1.084026,
+    2.015625,
+    0.9
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "door": {
+      "pivot": [
+        0.378125,
+        0,
+        -0.41375
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            0,
+            -100,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

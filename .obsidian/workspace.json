@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/01 - 设计/武器/枪械.md",
+                "file": "docs/项目内容/01 - 设计/武器/近战武器/撬棍.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "枪械"
+              "title": "撬棍"
             }
           }
         ]
@@ -190,17 +190,29 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
-    "build/reobfJar/mappings.tsrg",
-    "run/saves/新的世界 (1)/level9190270311818539075.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_0.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/caves/-4/cache_1/0_0.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc",
+    "run/saves/新的世界 (1)/level15277650971871219377.dat",
+    "run/afl_authoring_bridge/session.json",
+    "run/saves/新的世界 (1)/level14696461065095846395.dat",
+    "run/config/xaero/lib/common.cfg.temp.backup0",
+    "run/logs/debug-1.log",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/industrial_locker_n.png",
+    "docs/rendering/mesh_shape_runtime_v1.md",
+    "docs/models/industrial_locker_v2.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/industrial_locker_s.png",
+    "docs/项目内容/01 - 设计/武器/弹药.md",
+    "docs/native_guns/attachments/br51_drum_magazine_50_v1.md",
+    "docs/项目内容/01 - 设计/武器/配件.md",
+    "docs/项目内容/01 - 设计/武器/近战武器/撬棍.md",
+    "docs/项目内容/01 - 设计/生存/生存状态.md",
+    "docs/项目内容/01 - 设计/世界与环境/原版改动.md",
+    "docs/项目内容/01 - 设计/战利品/战利品规则.md",
+    "docs/项目内容/01 - 设计/武器/枪械.md",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/tungsten_sheet.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_n.png",
@@ -210,11 +222,8 @@
     "src/main/resources/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_n.png",
     "src/main/blockbench/textures/heavy_suppressor_01_n.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01_s.png",
-    "src/main/blockbench/textures/heavy_suppressor_01_s.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/item/heavy_suppressor_01.png",
     "docs/native_guns/hr55_v2_pure_mesh_pbr.md",
     "docs/native_guns/hr55_native_rig_v2.md",
-    "docs/native_guns/attachments/br51_drum_magazine_50_v1.md",
     "docs/native_guns/attachments/br51_extended_magazine_35_v2.md",
     "docs/ui/creative_tabs_v1.md",
     "docs/native_guns/attachments/rifle_red_dot_01_pure_mesh_v1.md",
@@ -226,15 +235,6 @@
     "docs/native_guns/suppressor_muzzle_gas_fx_v1.md",
     "docs/native_guns/gun_maintenance_inspection_view_v1.md",
     "docs/native_guns/native_gun_inventory_presentation_v1.md",
-    "docs/native_guns/p9_01_v2_pure_mesh_v1.md",
-    "docs/项目内容/01 - 设计/武器/枪械.md",
-    "docs/equipment/simple_hearing_protection_v1.md",
-    "docs/项目内容/04 - CurseForge 等 mod 发布页.md",
-    "docs/项目内容/03 - 注意事项 重要内容.md",
-    "docs/native_guns/chamber_gas_fx_v1.md",
-    "docs/native_guns/hybrid_mesh_runtime_v1.md",
-    "docs/native_guns/silverwood_12_v1.md",
-    "docs/项目内容/01 - 设计/武器/弹药.md",
-    "docs/native_guns/field_attachment_view_v1.md"
+    "docs/native_guns/p9_01_v2_pure_mesh_v1.md"
   ]
 }

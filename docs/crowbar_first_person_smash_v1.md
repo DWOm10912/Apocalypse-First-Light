@@ -4,7 +4,7 @@
 
 - `CrowbarItem` 是普通单目标近战 Item：6伤害、13 tick蓄力、480耐久，无自定义右键/使用持续时间；此次保留该物品和攻击逻辑。
 - 售货机使用单一注册ID `vending_machine`，`broken`属性选择BER的两套玻璃模型，下半BE保存4×3展示槽。此次保留模型、掉落破损标记、库存迁移及拿放逻辑。
-- `MaintenanceAttachmentHud` 和 `VendingMachineHint` 已共用 `AttachmentHintStyle`：150ms渐入淡出、灰字、深灰底、无文字阴影。继续复用；动作中提示淡出。
+- `MaintenanceAttachmentHud` 和 `WorldInteractionHint`（原 `VendingMachineHint`，2026-09-29 改名，售货机逻辑不变，同一提示也用于工业储物柜） 已共用 `AttachmentHintStyle`：150ms渐入淡出、灰字、深灰底、无文字阴影。继续复用；动作中提示淡出。
 - Native第一人称入口是`RenderHandEvent`，枪械Geo骨骼定位点经`NativeHandBinding`交给`NativePlayerArmRenderer`绘制玩家皮肤和袖子。此次复用这两项接触坐标/渲染能力，抽取模板中的右臂Classic/Slim预览结构。
 - `NativeCameraBoneConsumer` 当前是BR51限定的枪械动画消费者；撬棍使用自身动作时钟的短促命中镜头反馈。没有接入枪械弹药、ADS、射击控制器或枪械recoil状态。
 
@@ -47,7 +47,7 @@ START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_mac
 - `src/main/java/com/antaurora/apofirstlight/interaction/CrowbarSmashTimeline.java`
 - `src/main/java/com/antaurora/apofirstlight/client/CrowbarFirstPerson.java`
 - `src/main/java/com/antaurora/apofirstlight/client/CrowbarSmashClient.java`
-- `src/main/java/com/antaurora/apofirstlight/client/VendingMachineHint.java`
+- `src/main/java/com/antaurora/apofirstlight/client/WorldInteractionHint.java`（原 `VendingMachineHint.java`，2026-09-29 改名）
 - `src/main/java/com/antaurora/apofirstlight/block/VendingMachineBlock.java`
 - `src/main/java/com/antaurora/apofirstlight/network/AflNetwork.java`
 - `src/main/java/com/antaurora/apofirstlight/network/CrowbarSmashPacket.java`

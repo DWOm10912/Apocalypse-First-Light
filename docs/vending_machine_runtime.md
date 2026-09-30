@@ -33,7 +33,7 @@ NORTH 局部方块坐标：X=(5.63/16,9.23/16,12.83/16)，中心 Y=(9.35+4.7×�
 - `src/main/java/com/antaurora/apofirstlight/block/VendingMachineBlock.java`
 - `src/main/java/com/antaurora/apofirstlight/blockentity/VendingMachineBlockEntity.java`
 - `src/main/java/com/antaurora/apofirstlight/client/VendingMachineRenderer.java`
-- `src/main/java/com/antaurora/apofirstlight/client/VendingMachineHint.java`
+- `src/main/java/com/antaurora/apofirstlight/client/WorldInteractionHint.java`（原 `VendingMachineHint.java`，2026-09-29 改名）
 - `src/main/java/com/antaurora/apofirstlight/client/AttachmentHintStyle.java`
 - `src/main/java/com/antaurora/apofirstlight/client/MaintenanceAttachmentHud.java`
 - `src/main/java/com/antaurora/apofirstlight/client/AflBlockEntityRenderers.java`

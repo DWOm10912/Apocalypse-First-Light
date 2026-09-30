@@ -1,10 +1,9 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现，尚无正式资产接入**。
-- `compileJava --offline` 只跑了一次，结果 PASS。
-- 没有运行客户端、服务端、GameTest，也没有做实机验证；下文所有行为都是代码层面的设计与静态核对，实机表现以用户测试为准。
-- `industrial_locker` 没有迁移，仍是普通容器。
-- 目前唯一的使用者是开发演示方块（见第 21 节）。
+状态（2026-09-29）：**通用框架已实现**。首个正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
+- **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
+- 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
+- 另有开发演示方块（见第 21 节）。
 
 ## 1. 目的
 
@@ -175,7 +174,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 `时长 = baseTicksPerSlot × (1 + durationJitter × u(seed, 格)) / (玩家修正 × 环境修正)`，结果限制在 1–32767 ticks。
 
 - `u` 是由 seed 和格序号算出的 [-1, 1) 值，**与格子内容完全无关**。时长不会因为格里有枪、稀有物资或者是空格而改变，所以计时不会泄露内容。
-- `durationJitter` 允许 0–0.5，框架默认 0.15。框架默认 `baseTicksPerSlot` 为 20，这只是占位，具体资产的平衡另定。
+- `durationJitter` 允许 0–0.5，框架默认 0.15。框架默认 `baseTicksPerSlot` 为 40（2026-09-29 按用户反馈由 20 调整，约 2 秒/格），这只是占位，具体资产的平衡另定。
 - 修正入口：
   - `playerMultiplier(ServerPlayer, 容器)`：未来的搜刮技能、特质；
   - `environmentMultiplier(ServerLevel, 容器)`：未来的黑暗、手电、疲劳、伤势。
@@ -303,8 +302,8 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 当前 `AflContainerSearchScreen` 只是**开发占位**，以后的正式 UI 替换这个 Screen 即可，数据 contract 不变：
 - 原版箱子背景；
-- 隐藏格：深色遮罩加一个 "?"；
-- 当前格：从下往上的浅色进度填充；
+- 隐藏格：只有深色遮罩，不再显示 "?"；
+- 当前格：遮罩上一个 7×7 像素的小放大镜，围绕格子中心以 2 GUI 像素半径缓慢转圈，每 1.6 秒一圈（2026-09-29 取代原来从下往上的进度填充；储物柜接入时由 1 秒放慢到 1.6 秒）。放大镜下方的格子底边有一条很淡的 1 像素进度线（alpha 0x70），这是唯一的进度表现。纯色块绘制，没有贴图；
 - 刚揭示的格子：约 6 tick 的淡出闪光；
 - 标题行右侧显示 `已揭示/总数`。
 
@@ -319,7 +318,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 开发演示方块 `apocalypse_firstlight:dev_search_crate`：
 - 代码位于 `src/dev/java/com/antaurora/apofirstlight/dev/containersearch/`，发布 jar 通过 `exclude 'com/antaurora/apofirstlight/dev/**'` 排除，只在开发环境注册。
-- 18 格（2 行），12 ticks/格，jitter 0.2，噪声 8 格/40 ticks。
+- 18 格（2 行），40 ticks/格（与框架默认一致），jitter 0.2，噪声 8 格/40 ticks。
 - 没有物品、模型、贴图、语言键或掉落表，显示为缺失模型。
 - 这是开发专用方块，不是生存内容，所以没有挖掘标签，用手即可破坏。
 
@@ -343,7 +342,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - 没有修改 LootTable、建筑 loot 或世界生成；没有修改货架、售货机、展示柜；没有全局替换原版箱子。
 - 仍然存在的信息路径见第 7 节。
 
-## 23. industrial_locker 下一轮接入
+## 23. industrial_locker 接入（2026-09-29 已完成，以下为当时的计划）
 
 1. `IndustrialLockerBlockEntity` 实现 `AflSearchableContainer`，加入状态字段、settings 和 `aflSearchRequiredOnInit() = lootTable != null`；按第 4 节补齐 5 个覆写，以及 load/save。54 格对应 6 行。
 2. `IndustrialLockerBlock` 里的 `playerWillDestroy`、`destroyFromSupport`，以及 `IndustrialMaterialExplosionDrops` 中的储物柜分支，把原来的 `dropContentsOnce` 改为调用 `dropContentsOnBreak`，保留原有的"只掉一次"保护。方块物品的掉落规则不变。
@@ -360,4 +359,5 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
   - `ServerPlayer`、`Player`、`ClientboundContainerSetDataPacket`
   - `AbstractContainerScreen`
 - `compileJava --offline` 一次，PASS。
-- **没有**进行实机、GameTest、多人或抓包验证。上文所有运行时行为均为设计意图，待用户实机确认。
+- 2026-09-29 用户实机测试 V1，确认全部 PASS。代理自己没有进行实机、GameTest、多人或抓包验证。
+- 之后的图标与 40 ticks 调整：`compileJava --offline` 一次 PASS，未实机复测。

@@ -25,8 +25,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class DevSearchCrateBlockEntity extends RandomizableContainerBlockEntity implements AflSearchableContainer {
     private static final int SIZE = 18;
-    /** Short test timing plus an audible noise hook; not a balance proposal for any real asset. */
-    private static final AflContainerSearchSettings SETTINGS = new AflContainerSearchSettings(12, 0.2F, 8.0F, 40);
+    /** Framework default timing plus an audible noise hook; not a balance proposal for any real asset. */
+    private static final AflContainerSearchSettings SETTINGS = new AflContainerSearchSettings(40, 0.2F, 8.0F, 40);
 
     private final AflContainerSearchState search = new AflContainerSearchState();
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);

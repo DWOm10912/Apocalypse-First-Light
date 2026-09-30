@@ -34,9 +34,15 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
     }
 
     public AflStaticMeshItemRenderer(String model, String atlas, double verticalOffset, double groundVerticalOffset) {
+        this(new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json"),
+                new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + atlas + ".png"), verticalOffset, groundVerticalOffset);
+    }
+
+    /** Explicit atlas location, for block items that share their block's Pure Mesh atlas (textures/block/...). */
+    public AflStaticMeshItemRenderer(ResourceLocation geometry, ResourceLocation texture, double verticalOffset, double groundVerticalOffset) {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
-        this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
-        this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + atlas + ".png");
+        this.geometry = geometry;
+        this.texture = texture;
         this.verticalOffset = verticalOffset;
         this.groundVerticalOffset = groundVerticalOffset;
     }

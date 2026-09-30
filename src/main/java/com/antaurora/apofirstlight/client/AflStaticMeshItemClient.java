@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.registry.AflItems;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
@@ -36,6 +37,11 @@ public final class AflStaticMeshItemClient {
             // ground offset puts its base 0.014 above the entity like the other rounds (0.25 + 0.014 / ground scale 1.415).
             bind(AflItems.ROUND_127MM.get(), "12_7x55mm_round", "12_7x55mm_ammo_v1", 0.40284375, 0.2598939929);
             bind(AflItems.CASING_127MM.get(), "12_7x55mm_casing", "12_7x55mm_ammo_v1", 0.4267334375);
+            // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
+            // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
+            bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/industrial_locker.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/industrial_locker.png"), 0.0, 0.0), "industrial_locker");
         });
     }
 
@@ -44,6 +50,10 @@ public final class AflStaticMeshItemClient {
     }
 
     private static void bind(Item item, String model, String atlas, double verticalOffset, double groundVerticalOffset) {
+        bind(item, () -> new AflStaticMeshItemRenderer(model, atlas, verticalOffset, groundVerticalOffset), model);
+    }
+
+    private static void bind(Item item, java.util.function.Supplier<AflStaticMeshItemRenderer> factory, String model) {
         try {
             // Forge 1.20.1 has no separate ordinary-Item extension registration event.
             Field field = Item.class.getDeclaredField("renderProperties");
@@ -53,7 +63,7 @@ public final class AflStaticMeshItemClient {
 
                 @Override
                 public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                    if (renderer == null) renderer = new AflStaticMeshItemRenderer(model, atlas, verticalOffset, groundVerticalOffset);
+                    if (renderer == null) renderer = factory.get();
                     return renderer;
                 }
             });

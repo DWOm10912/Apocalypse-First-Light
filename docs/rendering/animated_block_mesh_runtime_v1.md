@@ -6,7 +6,15 @@
 
 **STATIC PROP → baked model / OBJ**：桌、椅、垃圾桶、静态货架、钢支撑、HVAC、电气面板等永久静态资产继续原路径。
 
-**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 lead chest、glass double door、stall door、cooler、freezer、machines **没有迁移**；industrial_locker V2 美术与生产接入另做。
+**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 lead chest、glass double door、stall door、cooler、freezer、machines **没有迁移**。
+
+**首个正式资产（2026-09-29）**：`industrial_locker` V2，见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
+
+**接口扩展（2026-09-29，唯一的运行时改动）**：新增 `blockmesh/AflAnimatedMeshHost` 接口，渲染器的泛型约束从 `T extends AflAnimatedMeshBlockEntity` 改为 `T extends BlockEntity & AflAnimatedMeshHost`。
+- 原因：Java 只能单继承，储物柜必须继续继承 `RandomizableContainerBlockEntity`，才能满足逐格搜索和容器的 contract。
+- 行为不变：`AflAnimatedMeshBlockEntity` 现在实现这个接口，它的刷新和 bounds 逻辑移到接口的静态方法 `refreshTargets` / `renderBounds` 里，逻辑没有改动。
+- 不受影响：profile 格式、动画状态、提交路径、渲染器行为都没有变。
+- 接入方式：必须保留其它父类的方块实体直接实现 `AflAnimatedMeshHost`，并在 `onLoad`、`setBlockState`、`getRenderBoundingBox` 中调用这两个静态方法。
 
 ## 已审查和复用的基础
 
@@ -30,7 +38,7 @@
 | `assets/<namespace>/textures/block/<id>.png` | Base Color，整模型一个 atlas |
 | 同目录 `<id>_s.png` / `<id>_n.png` | 可选 LabPBR companions，同 UV、同尺寸 |
 
-`AflAnimatedMeshBlockEntity` 子类在构造时传入 **完整 profile ResourceLocation**（包含 `block_mesh_profiles/` 和 `.json`），实现 `meshAnimationTarget(channel)`。客户端注册：
+`AflAnimatedMeshBlockEntity` 子类在构造时传入 **完整 profile ResourceLocation**（包含 `block_mesh_profiles/` 和 `.json`），实现 `meshAnimationTarget(channel)`；必须保留其它父类的方块实体改为实现 `AflAnimatedMeshHost`（见上文）。客户端注册：
 
 ```java
 event.registerBlockEntityRenderer(MY_BLOCK_ENTITY.get(), AflAnimatedBlockMeshRenderer::new);
@@ -114,13 +122,13 @@ mesh、分层列表、profile 树、变换定义、bounds 均在 reload 时缓�
 
 支持刚性 part 层级、一个 atlas、独立 boolean channels、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning、连续循环 rotor 时钟、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO 或完整 emissive policy。
 
-industrial_locker V2 后续只需制作保存源和 sidecar、确定 body/door binding 及 hinge、生成三张 atlas、填写 profile、BE 映射开门状态、注册通用 renderer 并设置完整 bounds；继续复用现有容器权限/库存业务。**本轮未改变该方块的状态、GUI、碰撞、loot 或生产 renderer**。
+industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-industrial-locker-v2.mjs`，bones `body` / `door`，通道 `open`，-100°，10 ticks），详见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 
 潜在回归范围只有共享 `AflMeshRenderer` 的无语义顶点循环抽取以及 `AflMeshCache` 的新增 profile 加载阶段。静态比较确认抽取前后顶点循环一致；枪械/物品调用方、mesh parser、资产、shader、RenderType/VertexFormat 定义均未变。不能以此声称枪械画面已经实测。
 
 ## 冻结 Runtime 文件清单
 
 - 共享底层：`src/main/java/com/antaurora/apofirstlight/client/mesh/{AflMeshCache,AflMeshModel,AflMeshRenderer}.java`。
-- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity}.java`。
+- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入）。
 - 新增客户端：`src/main/java/com/antaurora/apofirstlight/client/blockmesh/{AflBlockMeshProfileLoader,AflAnimatedBlockMeshRenderer}.java`。
 - 文档：本文件及 `docs/native_guns/hybrid_mesh_runtime_v1.md` 的共享底层说明。

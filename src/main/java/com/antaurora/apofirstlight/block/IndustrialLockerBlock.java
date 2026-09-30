@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
+import com.antaurora.apofirstlight.meshshape.AflMeshShapeBlock;
+import net.minecraft.resources.ResourceLocation;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
@@ -22,9 +25,15 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -33,19 +42,28 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class IndustrialLockerBlock extends Block implements EntityBlock {
+public class IndustrialLockerBlock extends Block implements EntityBlock, AflMeshShapeBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final net.minecraft.world.level.block.state.properties.EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
-    private static final VoxelShape NORTH_SHAPE = Shapes.box(2 / 16.0, 0, 1 / 16.0, 14 / 16.0, 1, 14 / 16.0);
-    private static final VoxelShape SOUTH_SHAPE = Shapes.box(2 / 16.0, 0, 2 / 16.0, 14 / 16.0, 1, 15 / 16.0);
-    private static final VoxelShape EAST_SHAPE = Shapes.box(1 / 16.0, 0, 2 / 16.0, 14 / 16.0, 1, 14 / 16.0);
-    private static final VoxelShape WEST_SHAPE = Shapes.box(2 / 16.0, 0, 2 / 16.0, 15 / 16.0, 1, 14 / 16.0);
+    /** Door state on both halves: drives the animated door, the shape state (closed / open) and screen validity. */
+    public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
+    /** Physical / selection shapes, interaction regions (door, interior) and prompt anchors, generated with the mesh. */
+    public static final ResourceLocation SHAPE_PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "industrial_locker");
+
+    /** What aiming at a region does in the current state. */
+    public enum Action {
+        NONE(null), OPEN_DOOR("open"), CLOSE_DOOR("close"), SEARCH("search"), VIEW("view");
+        private final String hintKey;
+        Action(String hintKey) { this.hintKey = hintKey; }
+        /** hint.apocalypse_firstlight.locker.* suffix, or null. */
+        public String hintKey() { return hintKey; }
+    }
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
     private static final Set<BlockPos> SUPPORT_DESTROYING = new HashSet<>();
 
     public IndustrialLockerBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(HALF, DoubleBlockHalf.LOWER).setValue(OPEN, false));
     }
 
     @Override
@@ -62,12 +80,15 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
             return null;
         }
         Direction front = context.getHorizontalDirection().getOpposite();
-        return defaultBlockState().setValue(FACING, front).setValue(HALF, DoubleBlockHalf.LOWER);
+        return defaultBlockState().setValue(FACING, front).setValue(HALF, DoubleBlockHalf.LOWER).setValue(OPEN, false);
     }
 
     @Override
     public void setPlacedBy(Level level, BlockPos position, BlockState state, @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         level.setBlock(position.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
+        if (!level.isClientSide() && level.getBlockEntity(position) instanceof IndustrialLockerBlockEntity locker) {
+            locker.markPlacedByPlayer();
+        }
     }
 
     @Override
@@ -109,14 +130,77 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
+        if (player.isSpectator()) {
+            return InteractionResult.PASS;
+        }
+        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
+        var region = meshInteraction(state, position, player);
+        Action action = region == null || !(level.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker)
+                ? Action.NONE : action(state, region.region(), locker);
+        if (action == Action.NONE) {
+            return InteractionResult.PASS;
+        }
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
-        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
-        if (level.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker) {
-            player.openMenu(locker);
+        BlockState lowerState = level.getBlockState(lower);
+        if (!lowerState.is(this)) {
+            return InteractionResult.CONSUME;
+        }
+        switch (action) {
+            case OPEN_DOOR -> setOpen(level, lower, lowerState, true, player);
+            case CLOSE_DOOR -> setOpen(level, lower, lowerState, false, player);
+            default -> player.openMenu((IndustrialLockerBlockEntity) level.getBlockEntity(lower));
         }
         return InteractionResult.CONSUME;
+    }
+
+    private static void setOpen(Level level, BlockPos lower, BlockState lowerState, boolean open, Player player) {
+        level.setBlock(lower, lowerState.setValue(OPEN, open), Block.UPDATE_ALL);
+        BlockState upper = level.getBlockState(lower.above());
+        if (upper.is(lowerState.getBlock())) {
+            level.setBlock(lower.above(), upper.setValue(OPEN, open), Block.UPDATE_ALL);
+        }
+        level.playSound(null, lower.above(), open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 0.7F, 1.15F);
+        level.gameEvent(player, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, lower);
+    }
+
+    /**
+     * Region + state -> action, shared by the server use() and the client world interaction prompt:
+     * door + closed -> open; door + open -> close; interior + open -> search (hidden slots left) or view.
+     */
+    public static Action action(BlockState state, String region, IndustrialLockerBlockEntity locker) {
+        boolean open = state.getValue(OPEN);
+        if ("door".equals(region)) {
+            return open ? Action.CLOSE_DOOR : Action.OPEN_DOOR;
+        }
+        if ("interior".equals(region) && open) {
+            return locker.isSearchCompleteForPrompt() ? Action.VIEW : Action.SEARCH;
+        }
+        return Action.NONE;
+    }
+
+    // ---- AFL Mesh Shape runtime ----
+
+    @Override
+    public ResourceLocation meshShapeProfile() {
+        return SHAPE_PROFILE;
+    }
+
+    @Override
+    public String meshShapeState(BlockState state) {
+        return state.getValue(OPEN) ? "open" : "closed";
+    }
+
+    @Override
+    public int meshShapeCell(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? 1 : 0;
+    }
+
+    /** Lower half: the AFL Animated Block Mesh Runtime draws the whole locker; the baked model is particle only. */
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? RenderShape.ENTITYBLOCK_ANIMATED : super.getRenderShape(state);
     }
 
     @Override
@@ -171,13 +255,12 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return switch (state.getValue(FACING)) {
-            case NORTH -> NORTH_SHAPE;
-            case SOUTH -> SOUTH_SHAPE;
-            case EAST -> EAST_SHAPE;
-            case WEST -> WEST_SHAPE;
-            default -> Shapes.empty();
-        };
+        return meshSelectionShape(state);
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
+        return meshPhysicalShape(state);
     }
 
     @Override
@@ -188,6 +271,6 @@ public class IndustrialLockerBlock extends Block implements EntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, HALF);
+        builder.add(FACING, HALF, OPEN);
     }
 }

@@ -369,6 +369,10 @@
   "message.apocalypse_firstlight.cat.maintenance_refused": "这只猫貌似不喜欢你这么干",
 
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
+  "hint.apocalypse_firstlight.locker.open": "打开",
+  "hint.apocalypse_firstlight.locker.search": "搜索",
+  "hint.apocalypse_firstlight.locker.view": "查看",
+  "hint.apocalypse_firstlight.locker.close": "关门",
   "item.apocalypse_firstlight.cat": "C.A.T",
   "tooltip.apocalypse_firstlight.cat.description": "请不要询问它的工作原理...",
   "tooltip.apocalypse_firstlight.inventory.locked": "未解锁的背包栏位",

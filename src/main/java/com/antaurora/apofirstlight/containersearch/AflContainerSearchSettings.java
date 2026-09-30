@@ -11,7 +11,7 @@ package com.antaurora.apofirstlight.containersearch;
 public record AflContainerSearchSettings(int baseTicksPerSlot, float durationJitter, float noiseRadius,
                                          int noiseIntervalTicks) {
     /** Framework default only; assets choose their own balance. */
-    public static final AflContainerSearchSettings DEFAULT = new AflContainerSearchSettings(20, 0.15F, 0.0F, 0);
+    public static final AflContainerSearchSettings DEFAULT = new AflContainerSearchSettings(40, 0.15F, 0.0F, 0);
 
     public AflContainerSearchSettings {
         if (baseTicksPerSlot < 1 || baseTicksPerSlot > Short.MAX_VALUE) {

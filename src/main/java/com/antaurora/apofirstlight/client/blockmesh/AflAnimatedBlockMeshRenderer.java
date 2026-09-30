@@ -11,10 +11,11 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
 /** Native, asset-independent BER. No GeoBone, weapon controller, packets or mutable shared poses. */
-public final class AflAnimatedBlockMeshRenderer<T extends AflAnimatedMeshBlockEntity> implements BlockEntityRenderer<T> {
+public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnimatedMeshHost> implements BlockEntityRenderer<T> {
     public AflAnimatedBlockMeshRenderer(BlockEntityRendererProvider.Context context) {}
 
     @Override public void render(T entity, float partialTick, PoseStack pose, MultiBufferSource buffers,
