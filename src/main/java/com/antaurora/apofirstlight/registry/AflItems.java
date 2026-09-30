@@ -47,7 +47,7 @@ public final class AflItems {
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("silverwood_12", "static_idle",
                             java.util.List.of("static_idle", "reload_empty", "reload_tactical", "draw", "put_away", "shoot", "inspect"),
                             java.util.Set.of("static_idle"), "right_hand_anchor", "left_hand_anchor",
-                            "muzzle_upper_anchor", null)));
+                            "muzzle_right_anchor", null)));
     public static final RegistryObject<Item> BLACKRIDGE_50 = ITEMS.register("blackridge_50", () ->
             new com.antaurora.apofirstlight.weapon.ConfiguredNativeGunItem(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "blackridge_50"),
                     new com.antaurora.apofirstlight.weapon.NativeAnimatedWeaponItem.Profile("blackridge_50", "static_idle",

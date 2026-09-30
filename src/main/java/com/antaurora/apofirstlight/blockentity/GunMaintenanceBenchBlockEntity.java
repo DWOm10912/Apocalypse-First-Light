@@ -49,7 +49,7 @@ public final class GunMaintenanceBenchBlockEntity extends BlockEntity implements
         var inventory=player.getInventory();int target=-1;
         if(player.getUUID().equals(originPlayerUUID) && originHotbarSlot>=0 && originHotbarSlot<9
                 && inventory.getItem(originHotbarSlot).isEmpty())target=originHotbarSlot;
-        if(target<0)for(int i=0;i<36;i++)if(inventory.getItem(i).isEmpty()){target=i;break;}
+        if(target<0)target=inventory.getFreeSlot();
         var stack=maintenanceGunSlot;
         maintenanceGunSlot=ItemStack.EMPTY;
         if(target>=0)inventory.setItem(target,stack);

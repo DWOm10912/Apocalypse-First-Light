@@ -2,10 +2,10 @@ package com.antaurora.apofirstlight.weapon;
 
 import net.minecraft.world.item.ItemStack;
 
-/** Fixed lower-then-upper two-chamber interpretation of the existing synced ammo count. */
+/** Fixed right-then-left (side-by-side) two-chamber interpretation of the existing synced ammo count. */
 public final class NativeBreakActionChambers {
     public enum State { LIVE, SPENT }
-    public record Pair(State lower, State upper) {}
+    public record Pair(State right, State left) {}
 
     private NativeBreakActionChambers() {}
 

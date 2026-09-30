@@ -25,8 +25,8 @@
     "profile": "default"
   },
   "reload": {
-    "tactical_seconds": 2.52,
-    "empty_seconds": 3.0
+    "tactical_seconds": 2.8,
+    "empty_seconds": 3.2
   },
   "noise": {
     "radius": 104,
@@ -49,8 +49,8 @@
   },
   "presentation": {
     "hud": {"width": 72, "height": 8},
-    "mag_in_tick": 32,
-    "empty_mag_in_tick": 43,
+    "mag_in_tick": 38,
+    "empty_mag_in_tick": 38,
     "trail": "subtle_buckshot"
   },
   "recoil": {

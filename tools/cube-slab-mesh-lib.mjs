@@ -21,6 +21,9 @@
 //                  coplanar same-facing overlapping faces (z-fighting), the larger one grows by a tiny step so its face
 //                  lies in front (see zFightLevels)
 //   THIN           zero-thickness cubes become thin closed plates instead of two coincident opposite caps
+// Material colour functions (2026-09-29, Silverwood 12 V3; array colours leave every earlier output byte-identical):
+//   MATS[mat].c may be (pos, n) => colour, or => {c, sm, ao} to vary smoothness / occlusion per texel as well
+//   (engraving grooves, checkering panels)
 import zlib from 'node:zlib';
 
 // ---------------- math ----------------
@@ -573,9 +576,14 @@ export function paint({PARTS, islands, S, uvOf, atlas: ATLAS, pad: PAD, MATS, ZO
     if (f.tag === 'wall') k *= 0.74;
     k *= 1 - 0.28 * cc;
     const hl = f.tag === 'bevel' ? m.hl * Math.min(1, faceLen(part, f) / BEVEL_FULL) : m.hl * 0.8 * e;
-    const ao = f.tag === 'wall' ? 195 : f.tag === 'cap' && n[1] < -0.5 ? 225 : 255;
-    const sm = (f.tag === 'bevel' ? m.se : f.tag === 'wall' ? m.sm - 20 : m.sm + (m.se - m.sm) * e) + (metal ? 5 * drift : 0);
-    return {c: m.c.map(v => v * k + hl), s: [sm, f.tag === 'bevel' && m.edgeF0 ? m.edgeF0 : m.f0, 0, 255], n: [128, 128, Math.round(ao * (1 - 0.18 * cc)), 255]};
+    // m.c may be a function of the model-space position and normal (a low-frequency pattern such as wood grain). It returns
+    // either a colour, or {c, sm, ao}: sm replaces the open-surface smoothness (not on bevel strips), ao scales the occlusion
+    // (engraving grooves, checkering panels)
+    const px = typeof m.c === 'function' ? m.c(pos, n) : m.c, base = Array.isArray(px) ? px : px.c;
+    const own = !Array.isArray(px) && px.sm !== undefined && f.tag !== 'bevel';
+    const ao = (f.tag === 'wall' ? 195 : f.tag === 'cap' && n[1] < -0.5 ? 225 : 255) * (Array.isArray(px) ? 1 : px.ao ?? 1);
+    const sm = (f.tag === 'bevel' ? m.se : own ? px.sm : f.tag === 'wall' ? m.sm - 20 : m.sm + (m.se - m.sm) * e) + (metal ? 5 * drift : 0);
+    return {c: base.map(v => v * k + hl), s: [sm, f.tag === 'bevel' && m.edgeF0 ? m.edgeF0 : m.f0, 0, 255], n: [128, 128, Math.round(ao * (1 - 0.18 * cc)), 255]};
   }
   const img = Buffer.alloc(ATLAS * ATLAS * 4), spec = Buffer.alloc(ATLAS * ATLAS * 4), nrm = Buffer.alloc(ATLAS * ATLAS * 4);
   for (let i = 0; i < ATLAS * ATLAS; i++) { img.set(background.c, i * 4); spec.set(background.s, i * 4); nrm.set(background.n, i * 4); }

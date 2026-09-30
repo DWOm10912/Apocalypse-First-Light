@@ -1,6 +1,6 @@
 # Locked Inventory Slots V1
 
-状态：代码已实现，客户端、真实服务端交互及存档回归待用户实机验证。本轮仅运行一次 `compileJava --offline`，结果见交付报告；没有执行 build、GameTest 或 runClient。
+状态：**Locked Inventory Slots V1 Result = 全部 PASS**。2026-09-29 用户确认已完成实机测试，并要求将本轮验收项目全部标记为 PASS。此前唯一一次 `compileJava --offline` 已通过；本次仅更新验收记录，没有重新编译或启动测试。
 
 ## 唯一容量策略
 
@@ -52,10 +52,22 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 
 背包提示为已约定的后续玩法文案；**Backpack、Weight、Stamina、扩容物品及 Custom Inventory 均未实现**。后续 18/27/36 容量只应扩展同一策略入口。
 
-## 验证边界
+## 验收结果
 
-已静态核对本机 Forge 47.4.22 / Minecraft 1.20.1 的 Slot、Inventory、AbstractContainerMenu、InvWrapper 与配方书方法，以及 AFL 的返还和 clone 入口。编译不能证明 Mixin 实际加载、GUI 外观或多人交互通过。
+已静态核对本机 Forge 47.4.22 / Minecraft 1.20.1 的 Slot、Inventory、AbstractContainerMenu、InvWrapper 与配方书方法，以及 AFL 的返还和 clone 入口。实机验收依据为用户在 2026-09-29 的确认：“把Locked Inventory Slots V1 Result标记为全部pass，我测试过了”。以下均按该确认记录，不记为 Codex 自动化测试或 GameTest 结果。
 
-手测重点：生存/冒险 9 格；锁定槽拒绝点击、拖拽、数字键放入；满快捷栏地面拾取/箱子与机器 Shift 转入失败；旧存档与创造切生存的物品保留且可部分/双击取出；转创造遮罩消失；旁观不受本机制限制；keepInventory 两种死亡规则沿用原版。
+| 验收项目 | 结果 |
+|---|---|
+| 统一 Player Storage Capacity Policy；生存/冒险 9 格 | PASS |
+| Creative / Spectator unrestricted | PASS |
+| Locked Empty / Locked Occupied；Overflow 可取出、不可插入 | PASS |
+| 服务端限制；点击、Shift、数字键、拖拽、双击 | PASS |
+| 自动拾取、容器转移及现有 AFL 返还路径 | PASS |
+| 模式切换、已有存档、死亡/重生安全 | PASS |
+| 盔甲、副手、合成及其他非储物槽不受锁定影响 | PASS |
+| 灰色遮罩、单斜线、中英文 Tooltip | PASS |
+| `compileJava --offline`（此前一次编译） | PASS |
+
+验收范围为 Locked Inventory Slots V1。本轮仍未实现的 Backpack / Weight / Stamina 等字段继续保持 NO，不因验收通过而变成已实现。
 
 第三方模组若直接修改 Inventory.items / setItem 或自行重写转移且绕开上述插入接口，需单独接入同一策略。本实现有意保留这些底层写入能力供存档同步、管理员写入和事务回滚，不能把任意直接写入一概视为正常玩家插入。

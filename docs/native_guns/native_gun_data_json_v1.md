@@ -56,7 +56,7 @@ recoil：verticalMin/Max、horizontalMin（负的左侧最大幅度）/horizonta
 
 当前模式由服务端写入每把枪 ItemStack 的 `AflGunFireMode` 字符串，缺省读取 default_mode。重载后失效模式立即按新默认值读取，并在服务端 stack 初始化时规范化保存。重载清除旧 AUTO/BURST 调度。SEMI 只接受按下沿；BURST 松开仍完成剩余发数；AUTO 松开停止。每发都通过 NativeGunActions / NativeGunShot 原有链路。单模式枪切换不写 NBT、不提示、不播放声音。
 
-Silverwood 的双膛仅派生自现有 `AflGunAmmo.ammoInMagazine`：2=双实弹、1=上实弹/下空壳、0=双空壳。NativeTriggerPacket 的 action=3 表示按下时已完成 ADS 的射击意图；本次共享协议升至 30，但该请求报文布局不变。其余 gun data 无 ADS 散布覆盖，因此既有枪精度不变。枪口视线校准只移动第一人称模型，不更改服务端玩家视线方向或原始前珠几何。完整状态与资源见 [Silverwood 12 V1](silverwood_12_v1.md)。
+Silverwood 的双膛仅派生自现有 `AflGunAmmo.ammoInMagazine`：2=双实弹、1=左实弹/右空壳、0=双空壳（2026-09-29 V3 起为左右并列双管，右管先发；此前上下管版本为上实弹/下空壳）。NativeTriggerPacket 的 action=3 表示按下时已完成 ADS 的射击意图；本次共享协议升至 30，但该请求报文布局不变。其余 gun data 无 ADS 散布覆盖，因此既有枪精度不变。枪口视线校准只移动第一人称模型，不更改服务端玩家视线方向或原始前珠几何。完整状态与资源见 [Silverwood 12 V1](silverwood_12_v1.md) 和 [Silverwood 12 V3](silverwood_12_v3_sxs.md)。
 
 后续射击、弹量读取、换弹、噪声/耳鸣、ADS时间/FOV、后坐与弹壳读取新数据。重载取消正在进行的枪械操作与旧射速冷却；现存弹量按新容量安全clamp，不补回被截断的弹药。动画资源/声音marker不随时长改写，因此大幅调整换弹时长需另外校准美术，不能把JSON时长误当成动画关键帧编辑。
 

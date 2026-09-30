@@ -200,7 +200,7 @@ Shader 启用与 shadow pass 由共享 `AflShaderCompat` 通过 Oculus/Iris 公�
 - Editable source：`src/main/blockbench/dev/afl_mesh_core_fixture.bbmodel`。
 - 固定测试输入：`src/dev/resources/afl_mesh_core/fixture.{geo.json,aflmesh.json,expected.json}`。
 - 1 Cube + 3 Mesh（4 triangles）；Cube/Mesh 共用 root；child 有非零 pivot/rotation，Mesh 自身也有非零 origin/rotation；独立 visibility bone；16×16 单 atlas。保留离线坐标验证数据，不再提供游戏内动画查看物品。
-此 fixture 只供 `tools/verify-afl-mesh.mjs` 离线验证坐标、loader 与 renderer；`afl_mesh_core_fixture` 游戏物品仍已移除。正式 `silverwood_12` 当前可编辑源为 `src/main/blockbench/silverwood_12_hybrid_claude_reload_presentation_v2.bbmodel`；其 46 part / 4088 triangle sidecar、115 Cube 的 Gecko 骨架和 1024×1024 atlas 与前版相同，七动画中的换弹与检视轨道已同步至新源。此前测试版的主要实机表现由用户验收；新换弹动画、正式 ID 图形客户端、shader 与资源热重载仍待最终验收。
+此 fixture 只供 `tools/verify-afl-mesh.mjs` 离线验证坐标、loader 与 renderer；`afl_mesh_core_fixture` 游戏物品仍已移除。正式 `silverwood_12` 自 2026-09-29 起为 V3 左右并列双管：可编辑源 `src/main/blockbench/silverwood_12.bbmodel`（由 `tools/build-silverwood-12-v3.mjs` 生成），V2 sidecar 24 个部件（含 4 发膛内弹壳）、三角等效 6580，无 Cube，1024 atlas 加 `_s` / `_n`，见 `silverwood_12_v3_sxs.md`。（历史：此前可编辑源为 `silverwood_12_hybrid_claude_reload_presentation_v2.bbmodel`，46 part / 4088 triangle sidecar 加 115 Cube 骨架。）V3 未实机验证。
 
 ```powershell
 node tools/verify-afl-mesh.mjs

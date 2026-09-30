@@ -1,23 +1,33 @@
 # Silverwood 12 V2 正式资源
 
-状态：正式物品 `apocalypse_firstlight:silverwood_12` 已接入 Hybrid Mesh Hero Remaster V1 几何，保留 Reload Presentation V2 及后续检视弹仓时序修正。此前的临时测试物品及专属资源已移除。新几何的游戏内画面、音效与交互仍待用户实机复测；静态检查和资源处理不等于该验收。
+> **2026-09-29 起模型、层级和动画已被 V3（左右并列双管）取代**，见 [silverwood_12_v3_sxs.md](silverwood_12_v3_sxs.md)。
+> - 本文下列内容仍然有效：玩法、ADS 数据、音效事件、HUD / 手持配置。
+> - 描述上下管几何、Hero Remaster 源、上下膛骨骼、换弹 / 检视动画和喷气 cue 的段落都是历史记录。
+
+状态（历史，V3 之前）：正式物品 `apocalypse_firstlight:silverwood_12` 已接入 Hybrid Mesh Hero Remaster V1 几何，保留 Reload Presentation V2 及后续检视弹仓时序修正。此前的临时测试物品及专属资源已移除。新几何的游戏内画面、音效与交互仍待用户实机复测；静态检查和资源处理不等于该验收。
 
 ## 正式绑定与资源
 
 - 正式 Registry ID、Native Gun 数据和物品类仍为 `apocalypse_firstlight:silverwood_12`、`data/apocalypse_firstlight/native_guns/silverwood_12.json`、`ConfiguredNativeGunItem`。创造模式武器栏只保留这一个 Silverwood。
-- 可编辑源：`src/main/blockbench/silverwood_12_hybrid_hero_remaster_v1.bbmodel`，为当前权威源；此前 Reload Presentation V2 源仍保留供追溯。新源中的 `inspect` 上下 live/spent shell 与 extractor 时间点已同步正式运行时的 2.717 / 2.783 / 2.817 秒修正，其余七段动画沿用现有正式版本。
-- 运行时 geometry：`assets/apocalypse_firstlight/geo/silverwood_12.geo.json`；Hybrid sidecar：`assets/apocalypse_firstlight/meshes/silverwood_12.aflmesh.json`；七动画：`assets/apocalypse_firstlight/animations/silverwood_12.animation.json`；1024×1024 atlas：`assets/apocalypse_firstlight/textures/item/silverwood_12.png`。Hero Remaster 当前为 45 Mesh part、5232 triangle、66 导出 Cube；atlas 像素与上版相同，正式动画 JSON 未重新导出。旧 V1 的同名资源已被后续版本覆盖，不再参与运行。
+- 可编辑源（**已过时**）：`src/main/blockbench/silverwood_12_hybrid_hero_remaster_v1.bbmodel` 曾为权威源，2026-09-29 起改为 V3 的 `src/main/blockbench/silverwood_12.bbmodel`（由 `tools/build-silverwood-12-v3.mjs` 生成）；两份旧源仍保留供追溯。旧源中的 `inspect` 上下 live/spent shell 与 extractor 时间点曾同步正式运行时的 2.717 / 2.783 / 2.817 秒修正。
+- 运行时路径不变：geometry `assets/apocalypse_firstlight/geo/silverwood_12.geo.json`、sidecar `meshes/silverwood_12.aflmesh.json`、七动画 `animations/silverwood_12.animation.json`、1024×1024 atlas `textures/item/silverwood_12.png`。内容已换成 V3：24 个 Mesh 部件（含 4 发膛内弹壳）、三角等效 6580、无 Cube，另有 `_s` / `_n` PBR 图；七条动画已按 V3 重做。（历史：Hero Remaster 为 45 Mesh part、5232 triangle、66 导出 Cube。）
 - 背包/HUD：`textures/item/silverwood_12_inventory.png`、`textures/gui/gun/silverwood_12_hud.png`；物品模型：`models/item/silverwood_12.json`、`silverwood_12_in_hand.json`。HUD 与手持显示沿用原配置；背包 PNG 已使用统一视角重新捕图并按投影边界归一化为 256×256，GUI 子模型不再使用历史非等比 scale，见 `native_gun_inventory_presentation_v1.md`。
-- 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。音效时间线使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。两段 reload 另有独立视觉 cue `chamber_eject_fx`（0.583 秒），不加入服务端声音队列。
-- `right_hand_anchor`、`left_hand_anchor`、双枪口锚点和四个 live/spent shell 节点保持 V2 测试版合同。Hybrid Mesh Runtime、共享 renderer、维护台适配和 12 Gauge 弹药/空壳资源均未改。
+- 枪声继续使用正式 `silverwood_12_fire` 的 accepted-shot 路径。音效时间线使用 `silverwood_12_open`、`silverwood_12_eject`、`silverwood_12_shell_insert`、`silverwood_12_close` 四个机械事件；旧 V1 的整段 reload、draw、put-away、inspect 音轨与事件已移除。`shoot` 动画保留 fire cue 供资源一致性检查，但服务端 cue 队列过滤它，避免重复枪声。（历史）两段 reload 曾有独立视觉 cue `chamber_eject_fx`（0.583 秒）；V3 换弹没有加回它，因为新的装填姿势让膛口正对镜头，见 `chamber_gas_fx_v1.md`。V3 的音效时间点见 `silverwood_12_v3_sxs.md`。
+- 锚点（V3）：`right_hand_anchor`、`left_hand_anchor` 名称不变，位置和朝向见 V3 文档；双枪口锚点改为 `muzzle_right_anchor` / `muzzle_left_anchor`；四个 shell 节点改为 `live_shell_right/left`、`spent_shell_right/left`，目前是空骨骼。Hybrid Mesh Runtime、维护台适配和 12 Gauge 弹药/空壳资源均未改。
 
 ## 玩法与 ADS
 
 - 武器为 SHOTGUN、BREAK_ACTION、SEMI；容量 2，6 tick/发，使用 `12_gauge_round` / `12_gauge_casing`。每发 8 颗弹丸，单颗基础伤害 4.5、爆头 1.25×；12 格起衰减、28 格有效、48 格最大、最低 0.35×。同目标逐颗计算后一次结算。噪声 104 格并启用耳鸣。
 - 每发的 8 颗弹丸继续各自使用既有腰射/ADS 圆锥散布与独立服务端射线；服务端现在把 8 个真实停止点随一次开火确认发给客户端。第一人称冻结枪口或第三人称当前枪口锚点是同发 8 条短、淡轨迹的共同视觉起点。`presentation.trail = subtle_buckshot`（18 格/tick、1.5 格长度、核心宽 0.008/alpha 0.48、外层宽 0.018/alpha 0.07）；不改变单颗伤害 4.5、全中基础总伤害 36、射程、后坐或弹药消耗。共享网络协议现为 30，两端须使用同版；此项完成静态检查，但指定的离线编译在 Gradle 8.8 Wrapper 下载阶段被环境阻断，Java 尚未编译，8 条轨迹的实机显示待用户验收。
 - 轨迹起点修正：`subtle_buckshot` 的隐藏近端由 0.40 格改为 0，第一人称冻结轨迹也不再额外前移 0.20 格。火焰与轨迹仍复用同一枪口快照，第三人称仍复用当前枪口锚点；真实服务端眼位射线和停止点不变。因此近端不再被人为截出约 0.60 格空隙，但从枪口连到眼位射线终点的近距离视差仍可能使视觉线相对枪管有角度。本次使用项目本地 Gradle 缓存运行一次 `compileJava --offline` 成功；画面对齐仍待用户实机复核。
-- 膛室状态仍由 `NativeGunAmmo.read` 决定：2 发时上下 LIVE，1 发时上 LIVE/下 SPENT，0 发时上下 SPENT；第一枪下膛，第二枪上膛。射击不自动抽壳/抛物品；换弹动画表现视觉抛壳。
-- 空膛 `reload_empty` 60 tick、第 43 tick 结算；一发 `reload_tactical` 51 tick、第 32 tick 结算。沿用现有中断、背包储备和创造模式无限备弹规则。
+- 膛室状态仍由 `NativeGunAmmo.read` 决定。V3 起为左右管（`NativeBreakActionChambers.Pair(right, left)`）：
+  - 2 发时两膛 LIVE；
+  - 1 发时右膛 SPENT、左膛 LIVE；
+  - 0 发时两膛 SPENT；
+  - 第一枪右管，第二枪左管。
+
+  射击不自动抽壳/抛物品。V3 换弹动画里空膛把枪往左下倒出两枚空壳，单发补弹用手捏出右膛空壳，都只是画面表现（历史：上下管版本第一枪下膛、第二枪上膛）。
+- 换弹（2026-09-29 V3 起）：空膛 `reload_empty` 64 tick（3.2 秒），第 38 tick 结算；一发 `reload_tactical` 56 tick（2.8 秒），第 38 tick 结算。沿用现有中断、背包储备和创造模式无限备弹规则。（历史：空膛 60 tick / 第 43 tick，一发 51 tick / 第 32 tick。）
 - ADS 锥形半角 1.65°，腰射 2.25°；进入/退出 0.22 秒，FOV 0.92。正式 V2 沿用用户在测试版验收的 `ads.profile.eye_relief = 0.4`，瞄准参考点 `[0,9.88,3.5]`、缩放 0.45、hip translation `[3.6,-7.2,-12]` 不变。这个视距值是已验收配置，不再使用此前短暂试验的 `1.05`。
 - 第一人称呼吸摆动由 `weapon/client/NativeWeaponSway.java` 控制：满 ADS 的 `BREAK_ACTION` 整类跳过已移除；正式 Silverwood 在 ADS 过渡中平滑混合到横向 0.65×、纵向 0.80×、频率 0.75×、roll 0.50× 的通用 ADS sway。腰射沿用通用参数，BR51、HR55 和 P9 的摆动参数不变。此视觉变换只作用于渲染，不改变弹道或后坐数值。
 - 后坐仍为垂直 2.2°–2.8°、水平 ±0.10°–0.35°，上限垂直 8°/水平 1.8°；枪模 roll 为 0。HUD 沿用 NativeGunHud 的真实装弹数与备弹数，Tooltip 沿用正式 Silverwood 文案。

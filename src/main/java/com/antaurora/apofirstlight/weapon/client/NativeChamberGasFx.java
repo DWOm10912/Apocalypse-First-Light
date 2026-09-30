@@ -68,8 +68,8 @@ public final class NativeChamberGasFx {
             // The server syncs the held stack before triggering reload. Read BEFORE its later ammo commit.
             var chambers = NativeBreakActionChambers.read(mc.player.getMainHandItem(), gun.definition());
             var emitters = new ArrayList<Emitter>(2);
-            if (chambers.upper() == NativeBreakActionChambers.State.SPENT) emitters.add(new Emitter("upper_chamber_fx"));
-            if (chambers.lower() == NativeBreakActionChambers.State.SPENT) emitters.add(new Emitter("lower_chamber_fx"));
+            if (chambers.right() == NativeBreakActionChambers.State.SPENT) emitters.add(new Emitter("right_chamber_fx"));
+            if (chambers.left() == NativeBreakActionChambers.State.SPENT) emitters.add(new Emitter("left_chamber_fx"));
             session = new Session(mc.level, id, clip, mc.level.getGameTime() + mc.getFrameTime(), emitters);
         });
     }
@@ -155,10 +155,10 @@ public final class NativeChamberGasFx {
         var end = origin.add((float)axis.x * .18F, (float)axis.y * .18F, (float)axis.z * .18F, new Vector3f());
         // Map the world ray back only for debug drawing; particle direction never uses this inverse.
         var localEnd = matrix.invert().transformProject(end);
-        boolean upper = name.equals("upper_chamber_fx");
+        boolean right = name.equals("right_chamber_fx");
         var out = buffers.getBuffer(RenderType.lines());
         var normal = new Vector3f(localEnd).normalize();
-        float r = upper ? .1F : 1F, g = upper ? 1F : .7F, b = upper ? 1F : .1F;
+        float r = right ? .1F : 1F, g = right ? 1F : .7F, b = right ? 1F : .1F;
         out.vertex(pose.last().pose(), 0, 0, 0).color(r, g, b, 1)
                 .normal(pose.last().normal(), normal.x, normal.y, normal.z).endVertex();
         out.vertex(pose.last().pose(), localEnd.x, localEnd.y, localEnd.z).color(r, g, b, 1)

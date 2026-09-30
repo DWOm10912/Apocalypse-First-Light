@@ -17,7 +17,7 @@
 | 真实槽 | 沿用服务器 `GunMaintenanceBenchBlockEntity.maintenanceGunSlot`，容量 1，仅正式 AFL Native 枪；服务器重验 Menu、索引和槽状态后移动真实 ItemStack |
 | 持久化 | 完整 ItemStack/NBT、originHotbarSlot、originPlayerUUID；关闭、断线、卸载和存档重启不返还 |
 | 取回 | V2.1：原玩家点击原快捷栏位置虚影，非原玩家点击快捷栏右侧拿取按钮；枪身 hover/点击不再承担取回 |
-| 回退 | 原玩家原空格优先，再当前玩家快捷栏空格→主背包空格→脚下掉落；任何玩家均可取，绝不覆盖或写别人的背包 |
+| 回退 | 原玩家原空快捷栏优先，再通过 `Inventory.getFreeSlot()` 查找当前容量内空格，最后脚下掉落；生存/冒险仅 9 格，创造/旁观保留 36 格，见 [Locked Inventory V1](../gameplay/locked_inventory_slots_v1.md)。任何玩家均可取，绝不覆盖或写别人的背包；2026-09-29 用户确认 Locked Inventory V1 全部实机验收 PASS |
 | 桌面枪 | 仅根 BE 的 BER 读取真实槽；空台无枪；附件由同一真实 ItemStack 读取 |
 | 维护姿态 | 独立缓存的原始模型静态骨架；不继承第一/第三人称、物品栏姿态，不播放 idle/shoot/reload/ADS |
 | P9 弹匣 | 原模型 magazine 的 22° 骨骼旋转从资源读取，避免动画初始快照未生成时变成 0°；隐藏 reload_magazine/empty_old 临时骨骼，正式弹匣保留，不写原模型或第一人称动画 |

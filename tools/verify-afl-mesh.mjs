@@ -93,7 +93,7 @@ assert.match(cache,/volatile Snapshot/);
 assert.match(cache,/current = new Snapshot\(current\.generation\(\) \+ 1, models\)/);
 const assets=path.join(root,'src/main/resources/assets/apocalypse_firstlight/meshes');
 for(const id of ['p9_01'])assert(!fs.existsSync(path.join(assets,id+'.aflmesh.json')),`${id} must remain on the Cube-only path`);   // HR55 left the Cube path in Phase 2 (2026-09-29)
-assert(fs.existsSync(path.join(assets,'silverwood_12.aflmesh.json')),'formal Silverwood Hybrid sidecar missing');
+assert(fs.existsSync(path.join(assets,'silverwood_12.aflmesh.json')),'Silverwood 12 V3 sidecar missing');
 console.log(`PASS: deterministic fixture; ${rejected} invalid inputs rejected; concave triangulation; non-zero element/group pivots and rotations (max error ${maxError}); Mesh bounds; adapter/no-sidecar/reload static checks.`);
 
 const sidecarV2=convert(source,geo,{},'fixture',2);
@@ -112,7 +112,7 @@ const concaveQuad=[[0,0,0,0,0],[2,0,0,1,0],[0.5,0.5,0,0.5,0.5],[0,2,0,0,1]];
 assert.equal(preservedQuad(concaveQuad,triangulate(concaveQuad.map(v=>v.slice(0,3)))),null,'concave fallback');
 // Compare complete corner data and exact raster triangles (including the diagonal).
 const canonical=t=>[0,1,2].map(i=>JSON.stringify([...t.slice(i),...t.slice(0,i)])).sort()[0];
-for(const id of ['p9_01_v2_native','blackridge_50','br51_01','hr55']) {
+for(const id of ['p9_01_v2_native','blackridge_50','br51_01','hr55','silverwood_12']) {
     const s=read(path.join(root,'src/main/blockbench',id+'.bbmodel'));
     const g=read(path.join(assets,'../geo',id+'.geo.json'));
     const v1=convert(s,g),v2=convert(s,g,{},id,2);
@@ -126,7 +126,7 @@ for(const id of ['p9_01_v2_native','blackridge_50','br51_01','hr55']) {
     // BR51 (Phase 2, 2026-09-28, no visible ammo): reload / dropped magazine copies live on reload_* / empty_old_* bones
     // HR55 (Phase 2, 2026-09-29, dynamic ammo): the reload magazine copy lives on reload_mag_standard
     const visible={parts:v2.parts.filter(p=>['br51_01','hr55'].includes(id)?!/^(reload_|empty_old_)/.test(p.bone):!['empty_old_mag','reload_magazine'].includes(p.bone))};
-    const stats=meshCounts(visible),expected={blackridge_50:4500,br51_01:8614,hr55:8156}[id]??6864;   // P9: 6384 + 480 threaded muzzle extension (2026-09-27)
+    const stats=meshCounts(visible),expected={blackridge_50:4500,br51_01:8614,hr55:8156,silverwood_12:6580}[id]??6864;   // P9: 6384 + 480 threaded muzzle extension (2026-09-27); Silverwood 12 V3 SxS incl. 4 chamber shells (2026-09-29)
     assert.equal(stats.triangleEquivalent,expected);
     console.log('V2_ASSET_PASS '+id+' '+JSON.stringify({...stats,vertexReductionPercent:100*(1-stats.vertices/(4*expected))}));
 }
