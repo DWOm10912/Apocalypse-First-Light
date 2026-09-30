@@ -50,6 +50,20 @@ public final class AflSounds {
 
     public static final RegistryObject<SoundEvent> VENDING_MACHINE_BREAK = SOUND_EVENTS.register("vending_machine_break",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID,"vending_machine_break")));
+    // Industrial locker door (the close file's slam sits at ~0.47 s, the end of the 10-tick door animation)
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_OPEN = simple("industrial_locker_open");
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_CLOSE = simple("industrial_locker_close");
+    // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
+    public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
+    public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");
+    public static final RegistryObject<SoundEvent> SHEET_METAL_PLACE = simple("sheet_metal_place");
+    public static final RegistryObject<SoundEvent> SHEET_METAL_HIT = simple("sheet_metal_hit");
+    public static final RegistryObject<SoundEvent> SHEET_METAL_FALL = simple("sheet_metal_fall");
+
+    private static RegistryObject<SoundEvent> simple(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
+    }
+
     private AflSounds() {
     }
 

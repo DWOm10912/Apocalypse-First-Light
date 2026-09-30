@@ -184,7 +184,7 @@ public final class AflBlocks {
     public static final RegistryObject<Block> INDUSTRIAL_LOCKER = BLOCKS.register("industrial_locker",
             () -> new IndustrialLockerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F)
-                    .sound(SoundType.METAL)
+                    .sound(AflSoundTypes.SHEET_METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> RETAIL_SHELF_SINGLE = BLOCKS.register("retail_shelf_single",

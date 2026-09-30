@@ -299,5 +299,18 @@
   "blackridge_50_safety_lever": {
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_safety_lever", "stream": false}]
   },
-  "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]}
+  "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]},
+  "industrial_locker_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_open",
+    "sounds": [{"name": "apocalypse_firstlight:industrial_locker/open"}]
+  },
+  "industrial_locker_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_close",
+    "sounds": [{"name": "apocalypse_firstlight:industrial_locker/close"}]
+  },
+  "sheet_metal_break": {"subtitle": "subtitles.block.generic.break", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.188, "volume": 0.3}, {"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.25, "volume": 0.45}, {"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.313, "volume": 0.45}]},
+  "sheet_metal_step": {"subtitle": "subtitles.block.generic.footsteps", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 0.95}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.05}]},
+  "sheet_metal_place": {"subtitle": "subtitles.block.generic.place", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.188}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.25}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.313}]},
+  "sheet_metal_hit": {"subtitle": "subtitles.block.generic.hit", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 1.9}, {"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 2}, {"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 2.1}]},
+  "sheet_metal_fall": {"subtitle": "subtitles.block.generic.fall", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.267}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.333}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.4}]}
 }

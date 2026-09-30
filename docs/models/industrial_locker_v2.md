@@ -13,7 +13,7 @@
 | Registry ID | `apocalypse_firstlight:industrial_locker`，不变 |
 | 两格高、朝向规则、放置规则 | 不变 |
 | 碰撞 / 选框 | 2026-09-29 起由 Mesh Shape profile 提供（见下文）：关门时是柜体 + 门板，开门时是柜体 + 打开后的门板 |
-| 挖掘 | 不变：硬度 5、爆炸抗性 8、`requiresCorrectToolForDrops()`、`minecraft:mineable/pickaxe` + `minecraft:needs_diamond_tool` |
+| 挖掘 | 规则不变（2026-09-30 起方块声音改用 `AflSoundTypes.SHEET_METAL`，见"音效"）：硬度 5、爆炸抗性 8、`requiresCorrectToolForDrops()`、`minecraft:mineable/pickaxe` + `minecraft:needs_diamond_tool` |
 | 掉落 | 方块本身不变（正确工具在生存模式下掉 1 个储物柜）；库存掉落规则见"搜索"一节 |
 | 容量 | **54 → 27 格（3 行）**，用户要求。开发阶段，不做旧存档迁移，旧存档中 27 格以后的物品不会读入 |
 | 外观 | 3 个 cube 的旧模型 → Pure Mesh + LabPBR，门可开关 |
@@ -147,14 +147,44 @@ Base Color 分区（2026-09-29 按用户要求加强，关掉 PBR 也要能读�
 
 | 区域 + 状态 | 提示 | 右键 |
 |---|---|---|
-| `door` + 关 | 打开 / Open | 设置 `open=true`，播放开门动画和原版 `IRON_DOOR_OPEN`（音量 0.7、音高 1.15），不弹界面 |
-| `door` + 开 | 关门 / Close | 设置 `open=false`（`IRON_DOOR_CLOSE`）；瞄准打开后的门板任意位置都可以 |
+| `door` + 关 | 打开 / Open | 设置 `open=true`，播放开门动画和 `industrial_locker_open`（见"音效"），不弹界面 |
+| `door` + 开 | 关门 / Close | 设置 `open=false`，播放 `industrial_locker_close`；瞄准打开后的门板任意位置都可以 |
 | `interior` + 开，还有未揭示的格子 | 搜索 / Search | 打开 Progressive Search 界面，开始或继续搜索 |
 | `interior` + 开，已全部揭示，或是玩家自己放的储物柜 | 查看 / View | 普通 3 行箱子界面 |
 
 - 上一版的"空手潜行关门"和门锁小区域判定（`ANCHOR_*`、`atInteractionAnchor`）都已删除。
 - 关门时所有正在查看这个储物柜的界面都会关闭（方块实体的 `stillValid` 要求 `open`），进行中的搜索随之暂停。
 - 感染者破门逻辑只处理门、栅栏门、玻璃等，`open` 属性对它没有影响；储物柜开门不发交互噪音。
+
+## 音效（2026-09-30）
+
+素材来自用户提供的 `E:/Download/*.wav`（1 秒、立体声、48 kHz）。本次只接入储物柜自己的门声和钣金方块声；格栅和搜索音效暂不接入。
+
+**处理**：
+- 双声道混成单声道（左右相关度 0.93–1.00，不会相互抵消），编码为 48 kHz ogg vorbis（q6）。
+- 裁掉首尾的静音，结尾加 60–150 ms 淡出。
+- 峰值统一到 -1 ~ -4 dBFS；破坏声持续时间长，压到 -4。
+
+| 事件 | 文件 | 源文件（SHA256 前 16 位） | 处理 |
+|---|---|---|---|
+| `industrial_locker_open` | `sounds/industrial_locker/open.ogg`（0.68 s） | `locker_open.wav` c0a2206f152e6860 | 去掉开头 60 ms；锁舌声在 53 ms，第二声约在 480 ms（门接近全开） |
+| `industrial_locker_close` | `sounds/industrial_locker/close.ogg`（1.17 s） | `locker_close.wav` b51e4c4e7ac6586b | 前面补 220 ms 静音，把撞击声移到 **471 ms**，对上 10 tick 关门动画的结束 |
+| `sheet_metal_hit` | `sounds/sheet_metal/hit.ogg`（0.26 s） | `sheet_metal_hit.wav` 03c7b491d783ddef | 裁剪 |
+| `sheet_metal_step` / `sheet_metal_fall` | `sounds/sheet_metal/step.ogg`（0.20 s） | `sheet_metal_step.wav` 1129a84ae7c1cb37 | 裁剪，+3.7 dB |
+| `sheet_metal_break` | `sounds/sheet_metal/break.ogg`（0.95 s） | `sheet_metal_break.wav` ba15ad6080fc58f4 | 裁剪，峰值 -4 dB；2026-09-30 实机反馈太吵，`sounds.json` 里再加 `volume: 0.45`（约 -7 dB） |
+| `sheet_metal_place` | `sounds/sheet_metal/place.ogg`（0.52 s） | `sheet_metal_place.wav` 69862e18a65cbf93 | 裁剪 |
+
+**开关门**：`IndustrialLockerBlock.setOpen` 由服务端播放，音量 0.8，音高在 0.96–1.04 之间随机，替换原来的原版铁门声。字幕为"储物柜门打开 / 储物柜门关上"（`subtitles.apocalypse_firstlight.industrial_locker_*`）。
+
+**挖掘、破坏、放置、脚步、摔落**：
+- 新增共享声音套 `registry/AflSoundTypes.SHEET_METAL`（`ForgeSoundType`，音量 1、音高 1），代表"空心喷涂钣金柜"这一类声学材质。
+- 目前只有储物柜使用它；文件柜、电箱、垃圾桶等以后可以直接改用同一套。
+- 原版播放方块声时会给音高乘一个系数：挖掘 ×0.5，破坏和放置 ×0.8，脚步 ×1，摔落 ×0.75。`sounds.json` 里每条声音的 `pitch` 抵消了这个系数，让素材按原音高播放。
+- 每个事件都只有一段录音，所以同一文件列了三条，音高相差 ±5%，作为变体。
+- 摔落复用脚步素材。字幕使用原版的 `subtitles.block.generic.*`。
+- 感染者听到的破坏噪音按方块标签判断，与声音套无关，所以不受影响。
+
+未实机试听。
 
 ## 搜索
 

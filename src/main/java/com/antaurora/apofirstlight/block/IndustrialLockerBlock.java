@@ -6,6 +6,7 @@ import com.antaurora.apofirstlight.meshshape.AflMeshShapeBlock;
 import net.minecraft.resources.ResourceLocation;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -161,7 +162,8 @@ public class IndustrialLockerBlock extends Block implements EntityBlock, AflMesh
         if (upper.is(lowerState.getBlock())) {
             level.setBlock(lower.above(), upper.setValue(OPEN, open), Block.UPDATE_ALL);
         }
-        level.playSound(null, lower.above(), open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 0.7F, 1.15F);
+        level.playSound(null, lower.above(), open ? AflSounds.INDUSTRIAL_LOCKER_OPEN.get() : AflSounds.INDUSTRIAL_LOCKER_CLOSE.get(),
+                SoundSource.BLOCKS, 0.8F, 0.96F + level.random.nextFloat() * 0.08F);
         level.gameEvent(player, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, lower);
     }
 
