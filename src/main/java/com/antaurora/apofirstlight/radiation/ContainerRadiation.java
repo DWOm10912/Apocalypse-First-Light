@@ -188,7 +188,7 @@ public final class ContainerRadiation {
             BlockState state = chunk.getBlockState(position);
             if (state.is(RadiationShielding.SHIELDING_BLOCKS)
                     && context.countShieldingBlock(position, state)) {
-                context.transmission *= RadiationShielding.RC_TRANSMISSION;
+                context.transmission *= RadiationShielding.transmission(state);
                 if (context.transmission <= MIN_POINT_TRANSMISSION) return context.transmission;
             }
             return null;

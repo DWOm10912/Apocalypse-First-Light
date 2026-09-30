@@ -6,7 +6,7 @@
 
 **STATIC PROP → baked model / OBJ**：桌、椅、垃圾桶、静态货架、钢支撑、HVAC、电气面板等永久静态资产继续原路径。
 
-**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 lead chest、glass double door、stall door、cooler、freezer、machines **没有迁移**。
+**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、cooler、freezer、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（[lead_chest_v2.md](../models/lead_chest_v2.md)）。
 
 **首个正式资产（2026-09-29）**：`industrial_locker` V2，见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 

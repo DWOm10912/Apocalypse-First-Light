@@ -1,13 +1,11 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
-import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
+import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -49,7 +47,7 @@ public final class WorldInteractionHint {
         Target target=null;
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             target=vendingMachine(mc,hit);
-            if(target==null) target=industrialLocker(mc,hit);
+            if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
@@ -74,15 +72,13 @@ public final class WorldInteractionHint {
                 ? new Target(Component.translatable("hint.apocalypse_firstlight.break_glass"),null) : null;
     }
 
-    /** Mesh Shape interaction region under the crosshair + locker state -> open / close / search / view at the region's anchor. */
-    private static Target industrialLocker(Minecraft mc,BlockHitResult hit) {
+    /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */
+    private static Target meshInteraction(Minecraft mc,BlockHitResult hit) {
         var s=mc.level.getBlockState(hit.getBlockPos());
-        if(!(s.getBlock() instanceof IndustrialLockerBlock block)) return null;
-        var lower=s.getValue(IndustrialLockerBlock.HALF)==DoubleBlockHalf.UPPER?hit.getBlockPos().below():hit.getBlockPos();
-        if(!(mc.level.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker)) return null;
+        if(!(s.getBlock() instanceof AflMeshInteractionBlock block)) return null;
         var region=block.meshInteraction(s,hit.getBlockPos(),mc.player);
         if(region==null) return null;
-        var action=IndustrialLockerBlock.action(s,region.region(),locker);
-        return action.hintKey()==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.locker."+action.hintKey()),region.anchor());
+        var key=block.interactionHintKey(mc.level,s,hit.getBlockPos(),region.region());
+        return key==null?null:new Target(Component.translatable(key),region.anchor());
     }
 }

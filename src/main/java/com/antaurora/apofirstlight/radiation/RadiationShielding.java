@@ -1,16 +1,21 @@
 package com.antaurora.apofirstlight.radiation;
 
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 
 public final class RadiationShielding {
     public static final TagKey<Block> SHIELDING_BLOCKS = TagKey.create(
             net.minecraft.core.registries.Registries.BLOCK,
             new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "radiation_shielding"));
+    /** Per shielding block crossed by a ray: reinforced concrete and any other tagged block. */
     public static final double RC_TRANSMISSION = 0.35;
+    /** Per block of lead shielding bricks: the dense shield, roughly two concrete blocks in one. */
+    public static final double LEAD_TRANSMISSION = 0.15;
     public static final int RAY_COUNT = 14;
     public static final int MAX_DISTANCE = 8;
 
@@ -34,8 +39,9 @@ public final class RadiationShielding {
             for (int step = 1; step <= MAX_DISTANCE && transmission > 0.01; step++) {
                 BlockPos samplePos = BlockPos.containing(originX + direction[0] * step,
                         originY + direction[1] * step, originZ + direction[2] * step);
-                if (level.getBlockState(samplePos).is(SHIELDING_BLOCKS)) {
-                    transmission *= RC_TRANSMISSION;
+                BlockState state = level.getBlockState(samplePos);
+                if (state.is(SHIELDING_BLOCKS)) {
+                    transmission *= transmission(state);
                     countedBlocks++;
                 }
             }
@@ -43,6 +49,12 @@ public final class RadiationShielding {
             totalTransmission += transmission;
         }
         return new Sample(totalTransmission / RAY_COUNT, hitRays, countedBlocks);
+    }
+
+    /** Transmission of one shielding block ({@link #SHIELDING_BLOCKS}); 1.0 for everything else. */
+    public static double transmission(BlockState state) {
+        if (!state.is(SHIELDING_BLOCKS)) return 1.0;
+        return state.is(AflBlocks.LEAD_SHIELDING_BRICKS.get()) ? LEAD_TRANSMISSION : RC_TRANSMISSION;
     }
 
     public record Sample(double transmission, int shieldingRaysHit, int shieldingBlocksCounted) {

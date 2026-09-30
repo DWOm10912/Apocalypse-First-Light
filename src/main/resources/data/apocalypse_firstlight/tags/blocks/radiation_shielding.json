@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "apocalypse_firstlight:lead_shielding_bricks",
     "apocalypse_firstlight:reinforced_concrete"
   ]
 }

@@ -1,0 +1,22 @@
+{
+  "type": "apocalypse_firstlight:alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "minecraft:iron_ingot"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "tag": "apocalypse_firstlight:steelmaking_carbon"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:steel_billet",
+    "count": 1
+  },
+  "processing_time": 200
+}

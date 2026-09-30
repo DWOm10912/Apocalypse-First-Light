@@ -115,6 +115,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> REINFORCED_CONCRETE_STAIRS = ITEMS.register("reinforced_concrete_stairs",
             () -> new BlockItem(AflBlocks.REINFORCED_CONCRETE_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LEAD_SHIELDING_BRICKS = ITEMS.register("lead_shielding_bricks",
+            () -> new BlockItem(AflBlocks.LEAD_SHIELDING_BRICKS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK = ITEMS.register("steel_block",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_CABLE = ITEMS.register("steel_cable",
@@ -123,14 +125,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_BEAM.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BRACE = ITEMS.register("steel_brace",
             () -> new BlockItem(AflBlocks.STEEL_BRACE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ALUMINUM_BLOCK = ITEMS.register("aluminum_block",
-            () -> new BlockItem(AflBlocks.ALUMINUM_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> BAUXITE_ORE = ITEMS.register("bauxite_ore",
             () -> new BlockItem(AflBlocks.BAUXITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> GALENA_ORE = ITEMS.register("galena_ore",
             () -> new BlockItem(AflBlocks.GALENA_ORE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> LEAD_BLOCK = ITEMS.register("lead_block",
-            () -> new BlockItem(AflBlocks.LEAD_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> LEAD_CHEST = ITEMS.register("lead_chest",
             () -> new LeadChestBlockItem(AflBlocks.LEAD_CHEST.get(), new Item.Properties()));
     public static final RegistryObject<Item> GUN_MAINTENANCE_BENCH = ITEMS.register("gun_maintenance_bench",
@@ -139,24 +137,14 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.PRECISION_FABRICATION_STATION.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPHALERITE_ORE = ITEMS.register("sphalerite_ore",
             () -> new BlockItem(AflBlocks.SPHALERITE_ORE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ZINC_BLOCK = ITEMS.register("zinc_block",
-            () -> new BlockItem(AflBlocks.ZINC_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> CASSITERITE_ORE = ITEMS.register("cassiterite_ore",
             () -> new BlockItem(AflBlocks.CASSITERITE_ORE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> TIN_BLOCK = ITEMS.register("tin_block",
-            () -> new BlockItem(AflBlocks.TIN_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> PENTLANDITE_ORE = ITEMS.register("pentlandite_ore",
             () -> new BlockItem(AflBlocks.PENTLANDITE_ORE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> NICKEL_BLOCK = ITEMS.register("nickel_block",
-            () -> new BlockItem(AflBlocks.NICKEL_BLOCK.get(), new Item.Properties()));
-    public static final RegistryObject<Item> SILVER_BLOCK = ITEMS.register("silver_block",
-            () -> new BlockItem(AflBlocks.SILVER_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> WOLFRAMITE_ORE = ITEMS.register("wolframite_ore",
             () -> new BlockItem(AflBlocks.WOLFRAMITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> SPODUMENE_ORE = ITEMS.register("spodumene_ore",
             () -> new BlockItem(AflBlocks.SPODUMENE_ORE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> TUNGSTEN_BLOCK = ITEMS.register("tungsten_block",
-            () -> new BlockItem(AflBlocks.TUNGSTEN_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_SLAB = ITEMS.register("steel_block_slab",
             () -> new BlockItem(AflBlocks.STEEL_BLOCK_SLAB.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_BLOCK_STAIRS = ITEMS.register("steel_block_stairs",
@@ -173,13 +161,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.STEEL_PLATE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_DOOR = ITEMS.register("steel_door",
             () -> new BlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties()));
-    public static final RegistryObject<Item> STEEL_INGOT = ITEMS.register("steel_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> STEEL_SHEET = ITEMS.register("steel_sheet",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> ALUMINUM_INGOT = ITEMS.register("aluminum_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> ALUMINUM_SHEET = ITEMS.register("aluminum_sheet",
+    // AFL V1 functional materials (docs/gameplay/material_system_v1.md): no per-metal ingot / sheet / block templates
+    public static final RegistryObject<Item> STEEL_BILLET = ITEMS.register("steel_billet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> BAUXITE = ITEMS.register("bauxite",
             () -> new Item(new Item.Properties()));
@@ -191,29 +174,13 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> CASSITERITE = ITEMS.register("cassiterite",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> LEAD_INGOT = ITEMS.register("lead_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> LEAD_SHEET = ITEMS.register("lead_sheet",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> ZINC_INGOT = ITEMS.register("zinc_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> ZINC_SHEET = ITEMS.register("zinc_sheet",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> TIN_INGOT = ITEMS.register("tin_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> TIN_SHEET = ITEMS.register("tin_sheet",
+    public static final RegistryObject<Item> LEAD_BRICK = ITEMS.register("lead_brick",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PENTLANDITE = ITEMS.register("pentlandite",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> NICKEL_INGOT = ITEMS.register("nickel_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> NICKEL_SHEET = ITEMS.register("nickel_sheet",
+    public static final RegistryObject<Item> ELECTROLYTIC_NICKEL = ITEMS.register("electrolytic_nickel",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SILVER_SCRAP = ITEMS.register("silver_scrap",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> SILVER_INGOT = ITEMS.register("silver_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> SILVER_SHEET = ITEMS.register("silver_sheet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> WOLFRAMITE = ITEMS.register("wolframite",
             () -> new Item(new Item.Properties()));
@@ -221,17 +188,15 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> TUNGSTEN_POWDER = ITEMS.register("tungsten_powder",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> KUNZITE = ITEMS.register("kunzite",
+    public static final RegistryObject<Item> SPODUMENE_CONCENTRATE = ITEMS.register("spodumene_concentrate",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> LITHIUM_CARBONATE = ITEMS.register("lithium_carbonate",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> TUNGSTEN_INGOT = ITEMS.register("tungsten_ingot",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> TUNGSTEN_SHEET = ITEMS.register("tungsten_sheet",
+    public static final RegistryObject<Item> TUNGSTEN_FILAMENT = ITEMS.register("tungsten_filament",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> TUNGSTEN_CARBIDE_POWDER = ITEMS.register("tungsten_carbide_powder",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> CEMENTED_CARBIDE_INGOT = ITEMS.register("cemented_carbide_ingot",
+    public static final RegistryObject<Item> CEMENTED_CARBIDE_INSERT = ITEMS.register("cemented_carbide_insert",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
@@ -354,8 +319,6 @@ public final class AflItems {
     public static final RegistryObject<Item> PLASTIC_SCRAP = ITEMS.register("plastic_scrap",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PLASTIC_PELLETS = ITEMS.register("plastic_pellets",
-            () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> PLASTIC_SHEET = ITEMS.register("plastic_sheet",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
             () -> new Item(new Item.Properties().stacksTo(1)));

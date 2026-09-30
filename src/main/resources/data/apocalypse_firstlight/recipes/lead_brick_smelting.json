@@ -1,0 +1,11 @@
+{
+  "type": "apocalypse_firstlight:industrial_smelting",
+  "ingredient": {
+    "item": "apocalypse_firstlight:galena"
+  },
+  "result": {
+    "item": "apocalypse_firstlight:lead_brick",
+    "count": 1
+  },
+  "processing_time": 200
+}

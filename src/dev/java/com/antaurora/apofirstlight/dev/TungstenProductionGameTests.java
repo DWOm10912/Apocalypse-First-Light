@@ -3,12 +3,10 @@ package com.antaurora.apofirstlight.dev;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.ChemicalReactorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.AlloyFurnaceBlockEntity;
-import com.antaurora.apofirstlight.blockentity.CompressorBlockEntity;
 import com.antaurora.apofirstlight.blockentity.CrusherBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IndustrialFurnaceBlockEntity;
 import com.antaurora.apofirstlight.recipe.AlloyingRecipe;
 import com.antaurora.apofirstlight.recipe.ChemicalReactingRecipe;
-import com.antaurora.apofirstlight.recipe.CompressingRecipe;
 import com.antaurora.apofirstlight.recipe.CrushingRecipe;
 import com.antaurora.apofirstlight.recipe.IndustrialSmeltingRecipe;
 import com.antaurora.apofirstlight.registry.AflBlocks;
@@ -70,19 +68,16 @@ public final class TungstenProductionGameTests {
                 IndustrialSmeltingRecipe.class);
         h.assertTrue(reduction.processingTime() == 300 && reduction.result().is(AflItems.TUNGSTEN_POWDER.get()),
                 "Tungsten oxide reduction recipe changed");
-        h.assertTrue(sintering.processingTime() == 400 && sintering.result().is(AflItems.TUNGSTEN_INGOT.get()),
+        h.assertTrue(sintering.processingTime() == 400 && sintering.result().is(AflItems.TUNGSTEN_FILAMENT.get()),
                 "Tungsten powder sintering recipe changed");
 
-        CompressingRecipe sheet = recipe(h, "tungsten_sheet_compressing", CompressingRecipe.class);
-        h.assertTrue(sheet.processingTime() == 300 && sheet.result().is(AflItems.TUNGSTEN_SHEET.get()),
-                "Tungsten sheet recipe must take 300 ticks");
         AlloyingRecipe carbide = recipe(h, "tungsten_carbide_powder_alloying", AlloyingRecipe.class);
-        AlloyingRecipe cemented = recipe(h, "cemented_carbide_alloying", AlloyingRecipe.class);
+        AlloyingRecipe cemented = recipe(h, "cemented_carbide_insert_alloying", AlloyingRecipe.class);
         h.assertTrue(carbide.processingTime() == 600
                         && carbide.result().is(AflItems.TUNGSTEN_CARBIDE_POWDER.get()),
                 "Tungsten carbide powder recipe changed");
         h.assertTrue(cemented.processingTime() == 800
-                        && cemented.result().is(AflItems.CEMENTED_CARBIDE_INGOT.get()),
+                        && cemented.result().is(AflItems.CEMENTED_CARBIDE_INSERT.get()),
                 "Cemented carbide recipe changed");
         SimpleContainer coalInput = new SimpleContainer(
                 new ItemStack(AflItems.TUNGSTEN_POWDER.get()), new ItemStack(Items.COAL));
@@ -196,13 +191,13 @@ public final class TungstenProductionGameTests {
         }
         h.assertTrue(sintering.getStoredEnergy() == 0
                         && sintering.getItem(IndustrialFurnaceBlockEntity.outputSlot(0))
-                        .is(AflItems.TUNGSTEN_INGOT.get()),
+                        .is(AflItems.TUNGSTEN_FILAMENT.get()),
                 "Industrial sintering did not complete at 400 ticks / 9,600 FE");
         h.succeed();
     }
 
     @GameTest(template = "waste_empty")
-    public static void crusherCompressorAndAlloyCompleteTungstenRecipes(GameTestHelper h) {
+    public static void crusherAndAlloyFurnaceCompleteTungstenRecipes(GameTestHelper h) {
         BlockPos crusherPosition = new BlockPos(2, 2, 2);
         for (int run = 0; run < 10; run++) {
             h.setBlock(crusherPosition, Blocks.AIR);
@@ -218,16 +213,6 @@ public final class TungstenProductionGameTests {
                             && crushed.getCount() >= 1 && crushed.getCount() <= 3,
                     "Crusher run " + run + " did not produce 1..3 Wolframite for exactly 3,200 FE");
         }
-
-        CompressorBlockEntity compressor = compressor(h, new BlockPos(5, 2, 2), 4_800);
-        compressor.setItem(CompressorBlockEntity.INPUT_SLOT, new ItemStack(AflItems.TUNGSTEN_INGOT.get()));
-        for (int tick = 0; tick < 300; tick++) {
-            CompressorBlockEntity.serverTick(h.getLevel(), compressor.getBlockPos(),
-                    compressor.getBlockState(), compressor);
-        }
-        h.assertTrue(compressor.getStoredEnergy() == 0
-                        && compressor.getOutputStack().is(AflItems.TUNGSTEN_SHEET.get()),
-                "Compressor did not produce Tungsten Sheet in 300 ticks / 4,800 FE");
 
         AlloyFurnaceBlockEntity carbide = alloyFurnace(h, new BlockPos(8, 2, 2), 14_400);
         carbide.setItem(AlloyFurnaceBlockEntity.INPUT_A_SLOT,
@@ -245,13 +230,13 @@ public final class TungstenProductionGameTests {
         cemented.setItem(AlloyFurnaceBlockEntity.INPUT_A_SLOT,
                 new ItemStack(AflItems.TUNGSTEN_CARBIDE_POWDER.get()));
         cemented.setItem(AlloyFurnaceBlockEntity.INPUT_B_SLOT,
-                new ItemStack(AflItems.NICKEL_INGOT.get()));
+                new ItemStack(AflItems.ELECTROLYTIC_NICKEL.get()));
         for (int tick = 0; tick < 800; tick++) {
             AlloyFurnaceBlockEntity.serverTick(h.getLevel(), cemented.getBlockPos(),
                     cemented.getBlockState(), cemented);
         }
         h.assertTrue(cemented.getStoredEnergy() == 0
-                        && cemented.getOutputStack().is(AflItems.CEMENTED_CARBIDE_INGOT.get()),
+                        && cemented.getOutputStack().is(AflItems.CEMENTED_CARBIDE_INSERT.get()),
                 "Alloy Furnace did not produce cemented carbide in 800 ticks / 19,200 FE");
         h.succeed();
     }
@@ -304,15 +289,6 @@ public final class TungstenProductionGameTests {
         state.putInt("EnergyStored", energy);
         crusher.load(state);
         return crusher;
-    }
-
-    private static CompressorBlockEntity compressor(GameTestHelper h, BlockPos position, int energy) {
-        h.setBlock(position, AflBlocks.COMPRESSOR.get());
-        CompressorBlockEntity compressor = (CompressorBlockEntity) h.getBlockEntity(position);
-        CompoundTag state = new CompoundTag();
-        state.putInt("EnergyStored", energy);
-        compressor.load(state);
-        return compressor;
     }
 
     private static AlloyFurnaceBlockEntity alloyFurnace(GameTestHelper h, BlockPos position, int energy) {

@@ -1,6 +1,6 @@
 {
   "parent": "builtin/entity",
-  "textures": {"particle": "apocalypse_firstlight:block/aluminum_block"},
+  "textures": {"particle": "apocalypse_firstlight:entity/commercial_glass_double_door"},
   "display": {
     "gui": {"rotation": [25, 45, 0], "translation": [0, -2.3, 0], "scale": [0.32, 0.32, 0.32]},
     "ground": {"translation": [0, 2, 0], "scale": [0.24, 0.24, 0.24]},

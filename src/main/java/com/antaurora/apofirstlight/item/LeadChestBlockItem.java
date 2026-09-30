@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.item;
 
-import com.antaurora.apofirstlight.client.LeadChestItemRenderer;
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.AflStaticMeshItemRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -21,7 +23,10 @@ public class LeadChestBlockItem extends BlockItem {
 
             @Override
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                if (renderer == null) renderer = new LeadChestItemRenderer();
+                // Lead Chest V2 Pure Mesh (closed pose), same geo / sidecar / atlas as the block
+                if (renderer == null) renderer = new AflStaticMeshItemRenderer(
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/lead_chest.geo.json"),
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/lead_chest.png"), 0.0, 0.0);
                 return renderer;
             }
         });

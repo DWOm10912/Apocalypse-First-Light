@@ -2,7 +2,7 @@ package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
-import com.antaurora.apofirstlight.meshshape.AflMeshShapeBlock;
+import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import net.minecraft.resources.ResourceLocation;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class IndustrialLockerBlock extends Block implements EntityBlock, AflMeshShapeBlock {
+public class IndustrialLockerBlock extends Block implements EntityBlock, AflMeshInteractionBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final net.minecraft.world.level.block.state.properties.EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     /** Door state on both halves: drives the animated door, the shape state (closed / open) and screen validity. */
@@ -180,6 +180,14 @@ public class IndustrialLockerBlock extends Block implements EntityBlock, AflMesh
             return locker.isSearchCompleteForPrompt() ? Action.VIEW : Action.SEARCH;
         }
         return Action.NONE;
+    }
+
+    @Override
+    public String interactionHintKey(Level level, BlockState state, BlockPos pos, String region) {
+        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+        if (!(level.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker)) return null;
+        String key = action(state, region, locker).hintKey();
+        return key == null ? null : "hint.apocalypse_firstlight.locker." + key;
     }
 
     // ---- AFL Mesh Shape runtime ----

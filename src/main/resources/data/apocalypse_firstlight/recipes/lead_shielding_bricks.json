@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "LL",
+    "LL"
+  ],
+  "key": {
+    "L": {
+      "item": "apocalypse_firstlight:lead_brick"
+    }
+  },
+  "result": {
+    "item": "apocalypse_firstlight:lead_shielding_bricks",
+    "count": 1
+  }
+}

@@ -135,3 +135,9 @@
 - 不支持 UP/DOWN 朝向。
 - 不支持资源包或数据包重载形状。
 - 旧家具没有迁移。
+
+## 2026-09-30 追加：通用交互提示接口与第二个接入
+
+- 新增 `meshshape/AflMeshInteractionBlock`（继承 `AflMeshShapeBlock`）：方块实现 `interactionHintKey(level, state, pos, region)`，根据瞄中的区域和自身状态返回提示文字键。`WorldInteractionHint` 对所有实现者用同一分支显示提示，并画在该区域锚点的屏幕投影旁；方块自己的 `use()` 必须做同样的判定。
+- `IndustrialLockerBlock` 改为实现这个接口，行为不变；`LeadChestBlock` 是第二个接入（`lid` / `interior` 区域，见 [lead_chest_v2.md](../models/lead_chest_v2.md)）。
+- 铅箱开盖后竖起的盖子高出本格（y 最高约 22 px）。碰撞可以正常超出本格；但补充选中检测只查水平相邻格，所以盖子高出本格的那一段选不中，本格高度内的部分仍可以选中并用来关盖。

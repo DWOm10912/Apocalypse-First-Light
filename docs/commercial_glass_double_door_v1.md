@@ -10,7 +10,7 @@
 - 破坏任一部分会清理整组。生存模式使用正确工具时掉落一个门物品；创造模式不掉落。挖掘要求镐及铁级或以上，依照本版门的任务要求；虽然铝质工业结构的通用默认规则是钻石级，本门采用明确指定的铁级例外。
 - 物品在创意栏可取得，提供中英文名称。贴图与音效资源随 Mod 打包。
 - Block Entity 的渲染边界按四朝向覆盖完整双格、双层门及门扇转开空间，避免主方块离开视锥时整门被提前裁剪。
-- 方块状态引用仅含 `particle` 的无几何模型，粒子使用铝块纹理；静态方块模型不参与门的绘制，实际门体仍由 GeckoLib 渲染。
+- 方块状态引用仅含 `particle` 的无几何模型，粒子使用门自己的贴图 `textures/entity/commercial_glass_double_door.png`（2026-09-30 起；原来借用的铝块贴图随铝块一起被 Material System V1 删除）；静态方块模型不参与门的绘制，实际门体仍由 GeckoLib 渲染。
 
 ## 源与运行时资源
 
@@ -18,7 +18,7 @@
 - 导出同步：`tools/export-commercial-glass-double-door.mjs`。运行时几何、动画、透明贴图分别位于 `src/main/resources/assets/apocalypse_firstlight/{geo,animations,textures/entity}/commercial_glass_double_door.*`。
 - 音效注册为 `commercial_glass_double_door_open` 与 `commercial_glass_double_door_close`，资源位于 `sounds/glass_door_open.ogg`、`sounds/glass_door_close.ogg`。
 - 方块、主 Block Entity 和渲染实现分别位于 `CommercialGlassDoubleDoorBlock`、`CommercialGlassDoubleDoorBlockEntity`、`CommercialGlassDoubleDoorRenderer`。物品使用专用 GeckoLib 渲染器。
-- 粒子模型：`src/main/resources/assets/apocalypse_firstlight/models/block/commercial_glass_double_door.json`，由同名 `blockstates` 文件引用。物品模型的粒子也使用相同铝块贴图。
+- 粒子模型：`src/main/resources/assets/apocalypse_firstlight/models/block/commercial_glass_double_door.json`，由同名 `blockstates` 文件引用。物品模型的粒子也使用这张门贴图。门贴图不在 `textures/block/` 下，所以在 `assets/minecraft/atlases/blocks.json` 里以 `single` 来源加入方块图集，粒子才能取到。粒子会随机取到门贴图的一小块，可能取到半透明玻璃区域；换贴图后的粒子外观未实机查看。
 
 ## 验证边界
 
