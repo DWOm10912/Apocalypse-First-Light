@@ -116,7 +116,7 @@
 
 ## 贴图
 
-钢坯、铅砖、电解镍、钨丝、硬质合金坯件、钢废料是 3D Mesh 物品，没有 2D 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
+钢坯、铅砖、电解镍、钨丝、硬质合金坯件、钢废料在世界里是 3D Mesh，在物品栏里是由同一个 Mesh 画出的 16×16 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
 
 其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致），没有噪点、污渍或文字。物品图标用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边）；方块贴图按钢块的画法：大块形状、1 px 倒角（上、左亮，下、右暗）、平缓的明暗，没有 1 px 的重复小细节。同一个生成器也画钢制板材（`block/steel_plate`，见 [工业钢结构 Palette](../authoring/afl_industrial_palette_v1.md)）。
 
@@ -144,7 +144,7 @@
 
 ## 需要实机验证
 
-1. 五个 3D Mesh 物品和两张新贴图在物品栏里是否清楚，能不能一眼区分（Mesh 物品的重点见 material_meshes_v1.md）。
+1. 六个 Mesh 物品的物品栏图标和两张新贴图是否清楚，能不能一眼区分（Mesh 物品的重点见 material_meshes_v1.md）。
 2. JEI：五个分类的配方条目、压缩分类是否因为没有配方而被隐藏。
 3. 铅屏蔽砖：钻石镐挖掘掉落、铁镐不掉落；辐射 HUD 在一层铅砖后面的读数。
 4. 玻璃门和铅箱的破坏粒子。

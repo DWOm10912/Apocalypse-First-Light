@@ -1,6 +1,7 @@
-// AFL Material Meshes V1: six Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in every view
-// (inventory, hand, ground, item frame). One bone, one 256 LabPBR atlas (Base Color / _s / _n) per item.
-//   node tools/build-material-meshes-v1.mjs            -> writes sources, atlases, geo, AFL mesh sidecars and item models
+// AFL Material Meshes V1: six Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in the world views
+// (hand, ground, item frame); the inventory shows a 16x16 2D icon drawn from the same mesh in the same view, so the
+// materials tab stays pixel art. One bone, one 256 LabPBR atlas (Base Color / _s / _n) per item.
+//   node tools/build-material-meshes-v1.mjs            -> writes sources, atlases, geo, AFL mesh sidecars, icons and item models
 //   node tools/build-material-meshes-v1.mjs --check    -> verifies every output is up to date
 // Frame (px): mesh centred on X / Z, resting on y = 0; the item renderer's vertical offset (0.5 - height / 32) centres it.
 // Items are authored at icon size (longest side 9-13 px), not real-world size, so they read like other held items.
@@ -126,7 +127,7 @@ function tungstenFilament() {
   return {PARTS: [wire], MATS: {
     tungsten: {c: [178, 179, 184], hl: 6, sm: 150, se: 170, f0: 255},  // drawn tungsten wire
     moly:     {c: [150, 150, 147], hl: 6, sm: 128, se: 150, f0: 255},  // molybdenum support leads
-  }, uv: {islands: [tubeIsland(wire, band, tex)], S: 8, uvOf: (is, id) => is.tex.get(id), faceUV: new Map([[wire, tubeFaceUV(wire, tex)]])}};
+  }, icon: {coverage: 0.3, view: [15, 180, 0]}, uv: {islands: [tubeIsland(wire, band, tex)], S: 8, uvOf: (is, id) => is.tex.get(id), faceUV: new Map([[wire, tubeFaceUV(wire, tex)]])}};
 }
 
 /** True when point p lies inside the closed mesh of part (ray parity along a fixed skew direction). */
@@ -212,7 +213,7 @@ function steelScrap() {
     rustSheet: {c: [98, 90, 85], hl: 4, sm: 40, se: 50, f0: 20},      // rust-filmed fragment: rough dielectric
     rust:      {c: [96, 88, 82], hl: 4, sm: 40, se: 50, f0: 20},      // rebar: desaturated light rust
     rib:       {c: [104, 97, 91], hl: 4, sm: 50, se: 56, f0: 20},     // rib crests, rubbed slightly cleaner
-  }, bg: 'plate', uv: {islands: [...UA.islands, tubeIsland(rebar, band, tex)], S: UA.S,
+  }, bg: 'plate', icon: {view: [45, 225, 0], mat: {plate: [120, 118, 114], scale: [74, 75, 78], rustSheet: [116, 94, 80], rust: [104, 84, 72], rib: [104, 84, 72], edge: [136, 133, 128]}}, uv: {islands: [...UA.islands, tubeIsland(rebar, band, tex)], S: UA.S,
     uvOf: (is, id) => is.tex ? is.tex.get(id) : UA.uvOf(is, id), faceUV: new Map([...UA.faceUV, [rebar, tubeFaceUV(rebar, tex)]])}};
 }
 
@@ -225,10 +226,57 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
   const z = rz(az); return p => rx(ry(z(p)));
 };
 
-// one inventory view for every material: vanilla block-item angle, no roll, so the slots line up
+/**
+ * 16x16 inventory icon drawn from the mesh in the inventory view (the item model's GUI perspective shows this sprite, the
+ * mesh is only used in the world): flat tone per face (top brightest, screen-left side lighter than screen-right, like
+ * vanilla block icons), each pixel takes the face that covers most of it (no anti-aliasing), a darker seam where one part
+ * passes in front of another, then a vanilla rim (darker silhouette pixels at the bottom / right).
+ * icon: {mat: {name: other material name or [r, g, b]}} (icon-only colours: pixel art wants more contrast between pieces
+ * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less).
+ */
+function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5} = {}) {
+  // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
+  const N = 16, SS = 6, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation, tris = [];
+  const colourOf = m => { const o = iconMat[m]; return Array.isArray(o) ? o : MATS[o ?? m].c; };
+  for (const p of PARTS) for (const f of p.f) {
+    const P = f.ids.map(i => { const q = rot(p.v[i]).map(v => v * s); return [8 + q[0] + tr[0], 8 - q[1] - tr[1], q[2]]; });
+    const n3 = norm(newell(f.ids.map(i => rot(p.v[i]))));
+    if (n3[2] <= 0) continue;                                            // faces turned away are always behind others
+    const tone = 0.66 + 0.33 * Math.max(0, n3[1]) - 0.12 * n3[0], c = colourOf(f.mat).map(v => v * tone);
+    for (let q = 1; q + 1 < P.length; q++) tris.push({P: [P[0], P[q], P[q + 1]], c, part: p});
+  }
+  const px = new Array(N * N).fill(null);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const votes = new Map();
+    for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
+      const X = x + (sx + 0.5) / SS, Y = y + (sy + 0.5) / SS; let best = null, bz = -Infinity;
+      for (const tri of tris) {
+        const [A, B, C] = tri.P, den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) continue;
+        const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
+        if (l1 < 0 || l2 < 0 || l3 < 0) continue;
+        const z = l1 * A[2] + l2 * B[2] + l3 * C[2]; if (z > bz) { bz = z; best = {tri, z}; }
+      }
+      if (best) { const v = votes.get(best.tri.c) || {n: 0, part: best.tri.part, z: 0}; v.n++; v.z += best.z; votes.set(best.tri.c, v); }
+    }
+    let win = null, total = 0; for (const [c, v] of votes) { total += v.n; if (!win || v.n > win.v.n) win = {c, v}; }
+    if (win && total >= coverage * SS * SS) px[y * N + x] = {c: win.c, part: win.v.part, z: win.v.z / win.v.n};
+  }
+  const out = Buffer.alloc(N * N * 4), at = (x, y) => x < 0 || y < 0 || x >= N || y >= N ? null : px[y * N + x];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const p = at(x, y); if (!p) continue;
+    let c = p.c;
+    if (!at(x + 1, y) || !at(x, y + 1)) c = c.map(v => v * 0.62); else if (!at(x - 1, y) || !at(x, y - 1)) c = c.map(v => v * 0.86);
+    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part && q.z > p.z; })) c = c.map(v => v * 0.74);
+    out.set([...c.map(v => Math.max(0, Math.min(255, Math.round(v)))), 255], (y * N + x) * 4);
+  }
+  return png(out, N, N);
+}
+
+// inventory icon view: vanilla block-item angle, no roll; an item may pick its own (icon.view), still without roll
 const GUI = [30, 225, 0];
 
-function bake(id, {PARTS, MATS, uv, bg, gui = GUI}) {
+function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
+  const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
   const shift = [-(lo[0] + hi[0]) / 2, -lo[1], -(lo[2] + hi[2]) / 2];
@@ -266,8 +314,8 @@ function bake(id, {PARTS, MATS, uv, bg, gui = GUI}) {
     visible_bounds_width: 2, visible_bounds_height: 2, visible_bounds_offset: [0, 0.5, 0]}, bones: [{name: id, pivot: [0, 0, 0]}]}]};
   const sidecar = convert(source, geo, {}, id + '.bbmodel', 2);
 
-  // display: GUI fitted to 14 of 16 slot pixels from the projected mesh; the other views share one size rule
-  // (longest side normalised to 12 px) so every material is held at the same apparent size
+  // inventory view fitted to 14 of 16 slot pixels from the projected mesh (used to draw the 2D icon); the world views share
+  // one size rule (longest side normalised to 12 px) so every material is held at the same apparent size
   const centred = PARTS.flatMap(p => p.v).map(q => [q[0], q[1] - size[1] / 2, q[2]]), rot = R3(gui);
   const pr = centred.map(rot), px = pr.map(q => q[0]), py = pr.map(q => q[1]);
   const w = Math.max(...px) - Math.min(...px), h = Math.max(...py) - Math.min(...py), s = r3(14 / Math.max(w, h));
@@ -277,10 +325,14 @@ function bake(id, {PARTS, MATS, uv, bg, gui = GUI}) {
     thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.42 * k)},
     firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1, 0], scale: S3(0.5 * k)},
     ground: {rotation: [0, 0, 0], translation: [0, 3, 0], scale: S3(0.4 * k)},
-    gui: {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)},
     fixed: {rotation: [0, 0, 0], translation: [0, 0, 0], scale: S3(0.7 * k)},
   };
-  const itemModel = {parent: 'builtin/entity', textures: {particle: `apocalypse_firstlight:item/${atlasName}`}, display};
+  const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
+  // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
+  const icon = `apocalypse_firstlight:item/${id}`;
+  const itemModel = {loader: 'forge:separate_transforms', gui_light: 'front', textures: {particle: icon},
+    base: {parent: 'builtin/entity', textures: {particle: icon}, display},
+    perspectives: {gui: {parent: 'minecraft:item/generated', textures: {layer0: icon}}}};
   const offset = r6(0.5 - size[1] / 32);
 
   const outputs = [
@@ -288,11 +340,12 @@ function bake(id, {PARTS, MATS, uv, bg, gui = GUI}) {
     [path.join(ASSETS, `geo/${id}.geo.json`), JSON.stringify(geo, null, 2) + '\n'],
     [path.join(ASSETS, `meshes/${id}.aflmesh.json`), serializeCompact(sidecar)],
     [path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
+    [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(PARTS, MATS, iconView, size[1] / 2, iconOpts)],
     ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), painted.PNG[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), painted.PNG[i]]]),
   ];
   const zf = zFightLevels(PARTS, new Map());
   const stats = {id, triangles: sidecar.parts.flatMap(p => p.faces).reduce((t, q) => t + q.length - 2, 0), size: size.map(r3), texelsPerPx: r3(UV.S),
-    verticalOffset: offset, gui: display.gui, coplanar: zf.unresolved.length};
+    verticalOffset: offset, iconView, coplanar: zf.unresolved.length};
   return {outputs, stats};
 }
 
