@@ -1,6 +1,93 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "builtin/entity",
   "textures": {
-    "layer0": "apocalypse_firstlight:item/steel_scrap"
+    "particle": "apocalypse_firstlight:item/steel_scrap_mesh"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.481,
+        0.481,
+        0.481
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        1,
+        0
+      ],
+      "scale": [
+        0.573,
+        0.573,
+        0.573
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.458,
+        0.458,
+        0.458
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        1.088,
+        0.648,
+        0
+      ],
+      "scale": [
+        1.502,
+        1.502,
+        1.502
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.802,
+        0.802,
+        0.802
+      ]
+    }
   }
 }

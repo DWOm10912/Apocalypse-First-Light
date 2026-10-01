@@ -43,6 +43,7 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.ELECTROLYTIC_NICKEL.get(), "electrolytic_nickel", "electrolytic_nickel_mesh", 0.44375);
             bind(AflItems.TUNGSTEN_FILAMENT.get(), "tungsten_filament", "tungsten_filament_mesh", 0.263462);
             bind(AflItems.CEMENTED_CARBIDE_BLANK.get(), "cemented_carbide_blank", "cemented_carbide_blank_mesh", 0.388885);
+            bind(AflItems.STEEL_SCRAP.get(), "steel_scrap", "steel_scrap_mesh", 0.446402);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

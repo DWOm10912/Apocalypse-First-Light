@@ -1,4 +1,4 @@
-// AFL Material Meshes V1: five Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in every view
+// AFL Material Meshes V1: six Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in every view
 // (inventory, hand, ground, item frame). One bone, one 256 LabPBR atlas (Base Color / _s / _n) per item.
 //   node tools/build-material-meshes-v1.mjs            -> writes sources, atlases, geo, AFL mesh sidecars and item models
 //   node tools/build-material-meshes-v1.mjs --check    -> verifies every output is up to date
@@ -74,11 +74,44 @@ function cementedCarbideBlank() {
 }
 
 /**
+ * Sweep a closed tube along a path (rings of sides + 1 vertices, the last one repeats the first so the UV seam is clean).
+ * radius(i) per ring, mat(i) per segment i -> i + 1, capMat for both end caps. UV: one strip in the atlas band {x, y, w, h},
+ * arc length along u, around the tube along v. Returns the vertex -> texel map.
+ */
+function sweepTube(part, path, {sides, radius, mat, capMat, band}) {
+  const T = path.map((p, i) => norm(sub(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])));
+  let n = cross(T[0], [0, 0, 1]); n = norm(Math.hypot(...n) < 1e-6 ? cross(T[0], [1, 0, 0]) : n);
+  const rings = [], arc = [0];
+  for (let i = 0; i < path.length; i++) {
+    if (i) { n = norm(sub(n, mul(T[i], dot(n, T[i])))); arc.push(arc[i - 1] + Math.hypot(...sub(path[i], path[i - 1]))); }
+    const b = cross(T[i], n), r = radius(i);
+    rings.push(Array.from({length: sides + 1}, (_, j) => { const a = 2 * Math.PI * j / sides; return part.vtx(add(path[i], add(mul(n, r * Math.cos(a)), mul(b, r * Math.sin(a))))); }));
+  }
+  const tex = new Map(), total = arc[arc.length - 1];
+  const U = s => band.x + 0.5 + (s / total) * (band.w - 1), V = j => band.y + 0.5 + (j / sides) * (band.h - 1);
+  rings.forEach((ring, i) => ring.forEach((id, j) => tex.set(id, [U(arc[i]), V(j)])));
+  for (let i = 0; i + 1 < path.length; i++) for (let j = 0; j < sides; j++) {
+    const ids = [rings[i][j], rings[i][j + 1], rings[i + 1][j + 1], rings[i + 1][j]];
+    const mid = mul(ids.reduce((s, id) => add(s, part.v[id]), [0, 0, 0]), 0.25), axis = mul(add(path[i], path[i + 1]), 0.5);
+    // triangles, not quads: along a tight bend a ring-to-ring quad can twist enough to self-intersect
+    for (const tri of [[0, 1, 2], [0, 2, 3]]) part.face(tri.map(k => ids[k]), sub(mid, axis), 'side', mat(i));
+  }
+  for (const [i, sgn] of [[0, -1], [path.length - 1, 1]]) {
+    const c = part.vtx(path[i]); tex.set(c, [U(arc[i]), V(sides / 2)]);
+    for (let j = 0; j < sides; j++) part.face([c, rings[i][j], rings[i][j + 1]], mul(T[i], sgn), 'cap', capMat);
+  }
+  return tex;
+}
+/** The whole tube part as one UV island (its strip), for paint(). */
+const tubeIsland = (part, band, tex) => ({part, faces: part.f.map(f => ({f, n: norm(newell(f.ids.map(id => part.v[id])))})), px: band.x, py: band.y, W: band.w, H: band.h, tex});
+const tubeFaceUV = (part, tex) => new Map(part.f.map(f => [f, f.ids.map(id => tex.get(id))]));
+
+/**
  * Tungsten filament: a five-turn coil on two support leads, one continuous wire swept as a 6-sided tube. Thick enough
  * (0.84 px) to stay visible in the inventory. The tube gets its own UV: one strip along the wire (uniform material).
  */
 function tungstenFilament() {
-  const R = 1.35, yc = 5.8, x0 = -3.4, x1 = 3.4, turns = 5, perTurn = 12, lx = 4.2, r = 0.42, sides = 6;
+  const R = 1.35, yc = 5.8, x0 = -3.4, x1 = 3.4, turns = 5, perTurn = 12, lx = 4.2;
   const path = [[-lx, 0, 0], [-lx, 2.0, 0], [-lx, 4.0, 0]];
   const coil0 = path.length;
   for (let i = 0; i <= turns * perTurn; i++) {
@@ -88,35 +121,99 @@ function tungstenFilament() {
   const coil1 = path.length - 1;
   path.push([lx, 4.0, 0], [lx, 2.0, 0], [lx, 0, 0]);
   const isLead = path.map((_, i) => i < coil0 || i > coil1);
-  const wire = new Part('wire', 'tungsten_filament', 'tungsten');
-  const T = path.map((p, i) => norm(sub(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])));
-  let n = norm(cross(T[0], [0, 0, 1]));
-  const rings = [], arc = [0];
-  for (let i = 0; i < path.length; i++) {
-    if (i) { n = norm(sub(n, mul(T[i], dot(n, T[i])))); arc.push(arc[i - 1] + Math.hypot(...sub(path[i], path[i - 1]))); }
-    const b = cross(T[i], n);
-    rings.push(Array.from({length: sides + 1}, (_, j) => { const a = 2 * Math.PI * j / sides; return wire.vtx(add(path[i], add(mul(n, r * Math.cos(a)), mul(b, r * Math.sin(a))))); }));
-  }
-  const tex = new Map(), total = arc[arc.length - 1], H = 14;
-  const U = s => PAD + 0.5 + (s / total) * (ATLAS - 2 * PAD - 1), V = j => PAD + 0.5 + (j / sides) * (H - 1);
-  rings.forEach((ring, i) => ring.forEach((id, j) => tex.set(id, [U(arc[i]), V(j)])));
-  for (let i = 0; i + 1 < path.length; i++) for (let j = 0; j < sides; j++) {
-    const ids = [rings[i][j], rings[i][j + 1], rings[i + 1][j + 1], rings[i + 1][j]];
-    const mid = mul(ids.reduce((s, id) => add(s, wire.v[id]), [0, 0, 0]), 0.25), axis = mul(add(path[i], path[i + 1]), 0.5);
-    // triangles, not quads: along the tight coil a ring-to-ring quad can twist enough to self-intersect
-    for (const tri of [[0, 1, 2], [0, 2, 3]]) wire.face(tri.map(k => ids[k]), sub(mid, axis), 'side', isLead[i] && isLead[i + 1] ? 'moly' : 'tungsten');
-  }
-  for (const [i, sgn] of [[0, -1], [path.length - 1, 1]]) {
-    const c = wire.vtx(path[i]); tex.set(c, [U(arc[i]), V(sides / 2)]);
-    for (let j = 0; j < sides; j++) wire.face([c, rings[i][j], rings[i][j + 1]], mul(T[i], sgn), 'cap', 'moly');
-  }
-  // one island: the whole wire strip
-  const island = {part: wire, faces: wire.f.map(f => ({f, n: norm(newell(f.ids.map(id => wire.v[id])))})), px: PAD, py: PAD, W: ATLAS - 2 * PAD, H, tex};
-  const faceUV = new Map([[wire, new Map(wire.f.map(f => [f, f.ids.map(id => tex.get(id))]))]]);
+  const wire = new Part('wire', 'tungsten_filament', 'tungsten'), band = {x: PAD, y: PAD, w: ATLAS - 2 * PAD, h: 14};
+  const tex = sweepTube(wire, path, {sides: 6, radius: () => 0.42, mat: i => isLead[i] && isLead[i + 1] ? 'moly' : 'tungsten', capMat: 'moly', band});
   return {PARTS: [wire], MATS: {
     tungsten: {c: [178, 179, 184], hl: 6, sm: 150, se: 170, f0: 255},  // drawn tungsten wire
     moly:     {c: [150, 150, 147], hl: 6, sm: 128, se: 150, f0: 255},  // molybdenum support leads
-  }, uv: {islands: [island], S: 8, uvOf: (is, id) => is.tex.get(id), faceUV}};
+  }, uv: {islands: [tubeIsland(wire, band, tex)], S: 8, uvOf: (is, id) => is.tex.get(id), faceUV: new Map([[wire, tubeFaceUV(wire, tex)]])}};
+}
+
+/** True when point p lies inside the closed mesh of part (ray parity along a fixed skew direction). */
+function insidePart(part, p) {
+  const d = norm([0.31, 0.83, 0.47]); let hits = 0;
+  for (const f of part.f) for (let q = 1; q + 1 < f.ids.length; q++) {
+    const A = part.v[f.ids[0]], B = part.v[f.ids[q]], C = part.v[f.ids[q + 1]], e1 = sub(B, A), e2 = sub(C, A), h = cross(d, e2), det = dot(e1, h);
+    if (Math.abs(det) < 1e-12) continue;
+    const s = sub(p, A), u = dot(s, h) / det; if (u < 0 || u > 1) continue;
+    const qv = cross(s, e1), v = dot(d, qv) / det; if (v < 0 || u + v > 1) continue;
+    if (dot(e2, qv) / det > 1e-6) hits++;
+  }
+  return hits % 2 === 1;
+}
+/** No vertex or edge midpoint of one part may lie inside another part (the pile pieces only touch or float apart). */
+function assertNoPenetration(parts, id) {
+  for (const a of parts) for (const b of parts) if (a !== b) {
+    const pts = [...a.v, ...a.f.flatMap(f => f.ids.map((v, k) => mul(add(a.v[v], a.v[f.ids[(k + 1) % f.ids.length]]), 0.5)))];
+    const bad = pts.find(p => insidePart(b, p));
+    if (bad) throw new Error(`${id}: ${a.name} penetrates ${b.name} at ${bad.map(v => v.toFixed(2))}`);
+  }
+}
+
+/**
+ * Steel scrap: a small pile of torn sheet fragments in one weathered-steel family (references: scrap yards / stamping
+ * scrap): two flat fragments on the ground (the large one punched with two holes), one leaning on the large one's front
+ * edge, a small shard lying on top, and a short bent rebar across the two flat ones.
+ * PBR per piece, no rust patches: dull bare sheet steel (LabPBR iron, rough), one rust-filmed fragment and the rebar
+ * (desaturated rust, rough dielectric), one mill-scale fragment; sheared and punched edges a little brighter.
+ * All tones stay within a narrow grey range so the pile reads as one material.
+ */
+function steelScrap() {
+  const TH = 0.45, zx = L => L.map(([x, z]) => [z, x]);
+  // a flat fragment from a convex plan outline (x, z), optional punched holes, then placed by the given transforms
+  const sheet = (name, mat, edgeMat, plan, holes, fns) => {
+    const p = new Part(name, 'steel_scrap', mat);
+    extrude(p, 'y', {outer: orient(zx(plan), true), holes: holes.map(([x, z]) => orient(circle(z, x, 0.55, 10), false))}, 0, TH, 0);
+    for (const f of p.f) if (f.tag === 'side' || f.tag === 'wall') f.mat = edgeMat;
+    transform(p, ...fns);
+    return p;
+  };
+  const restOn = (p, y) => { const low = Math.min(...p.v.map(q => q[1])); transform(p, move([0, y - low, 0])); };
+
+  const big = sheet('sheet_big', 'plate', 'edge', [[-3.0, -2.0], [0.2, -2.4], [2.9, -1.6], [3.1, 0.9], [2.2, 2.2], [-1.2, 2.4], [-3.2, 1.0]],
+    [[-1.4, 0.4], [0.7, -0.2]], [rotY(8)]);
+  const rusty = sheet('sheet_rusty', 'rustSheet', 'rustSheet', [[-1.8, -1.2], [1.6, -1.5], [2.0, 0.4], [0.6, 1.4], [-1.6, 1.1]], [],
+    [rotY(-20), move([-5.4, 0, -0.4])]);
+  // leaning fragment: tilted 34 degrees about its long axis, low edge on the ground in front, rising toward the big one
+  const lean = sheet('sheet_lean', 'scale', 'edge', [[-2.2, -1.0], [1.8, -1.3], [2.3, 0.6], [0.4, 1.1], [-2.0, 0.8]], [],
+    [rotX(-34), rotY(12), move([0.6, 0, -3.3])]);
+  restOn(lean, 0);
+  const shard = sheet('sheet_shard', 'plate', 'edge', [[-1.2, -0.8], [1.3, -0.6], [0.2, 1.0]], [], [rotY(30), move([1.6, 0, 0.3])]);
+  restOn(shard, TH + 0.02);
+
+  // short rebar lying across the two flat fragments (one bend, rounded by a quadratic fillet), low ribs every 0.9 px
+  const RB = 0.45, RIB = 0.51, dense = [];
+  {
+    const y = TH + RIB + 0.01, P0 = [-6.3, y, 0.5], B = [-2.4, y, 1.0], P1 = [0.2, y, 2.0];
+    const line = (a, b) => { const n = Math.ceil(Math.hypot(...sub(b, a)) / 0.02); return Array.from({length: n}, (_, i) => add(a, mul(sub(b, a), i / n))); };
+    const pts = [...line(P0, B), ...line(B, P1), P1], F = 0.8;
+    const ia = pts.findIndex(p => Math.hypot(...sub(p, B)) < F), ib = pts.length - 1 - [...pts].reverse().findIndex(p => Math.hypot(...sub(p, B)) < F);
+    const A = pts[ia - 1], C = pts[ib + 1];
+    dense.push(...pts.slice(0, ia));
+    for (let i = 0; i <= 24; i++) { const s = i / 24; dense.push(add(add(mul(A, (1 - s) ** 2), mul(B, 2 * s * (1 - s))), mul(C, s * s))); }
+    dense.push(...pts.slice(ib + 2));
+  }
+  const ds = [0]; for (let i = 1; i < dense.length; i++) ds.push(ds[i - 1] + Math.hypot(...sub(dense[i], dense[i - 1])));
+  const at = s => { let i = ds.findIndex(v => v >= s); if (i <= 0) return dense[Math.max(i, 0)]; const k = (s - ds[i - 1]) / (ds[i] - ds[i - 1]); return add(dense[i - 1], mul(sub(dense[i], dense[i - 1]), k)); };
+  const total = ds[ds.length - 1], S = [0], R = [RB];
+  for (let s = 0.25; s + 0.6 < total - 0.15; s += 0.9) for (const [o, r] of [[0, RB], [0.1, RIB], [0.2, RB], [0.55, RB]]) { S.push(s + o); R.push(r); }
+  S.push(total); R.push(RB);
+  const rebar = new Part('rebar', 'steel_scrap', 'rust'), band = {x: PAD, y: 236, w: ATLAS - 2 * PAD, h: 14};
+  const tex = sweepTube(rebar, S.map(at), {sides: 6, radius: i => R[i], mat: i => R[i] === RIB || R[i + 1] === RIB ? 'rib' : 'rust', capMat: 'rust', band});
+
+  const PILE = [big, rusty, lean, shard, rebar];
+  assertNoPenetration(PILE, 'steel_scrap');
+  // the sheets unwrap into the top 232 x 232, the rebar strip takes the band below
+  const sheets = [big, rusty, lean, shard], UA = unwrap(sheets, {atlas: 232, pad: PAD, startS: 40, stepS: 0.25});
+  return {PARTS: PILE, MATS: {
+    plate:     {c: [100, 98, 95], hl: 10, sm: 62, se: 88, f0: 230},   // dull bare sheet steel: LabPBR iron, rough
+    scale:     {c: [84, 84, 85], hl: 10, sm: 60, se: 84, f0: 30},     // mill-scale fragment: dielectric, matte
+    edge:      {c: [122, 119, 115], hl: 8, sm: 92, se: 108, f0: 230}, // sheared / punched edges of the bare pieces
+    rustSheet: {c: [98, 90, 85], hl: 4, sm: 40, se: 50, f0: 20},      // rust-filmed fragment: rough dielectric
+    rust:      {c: [96, 88, 82], hl: 4, sm: 40, se: 50, f0: 20},      // rebar: desaturated light rust
+    rib:       {c: [104, 97, 91], hl: 4, sm: 50, se: 56, f0: 20},     // rib crests, rubbed slightly cleaner
+  }, bg: 'plate', uv: {islands: [...UA.islands, tubeIsland(rebar, band, tex)], S: UA.S,
+    uvOf: (is, id) => is.tex ? is.tex.get(id) : UA.uvOf(is, id), faceUV: new Map([...UA.faceUV, [rebar, tubeFaceUV(rebar, tex)]])}};
 }
 
 // ---------------------------------------------------------------- bake
@@ -131,7 +228,7 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
 // one inventory view for every material: vanilla block-item angle, no roll, so the slots line up
 const GUI = [30, 225, 0];
 
-function bake(id, {PARTS, MATS, uv, gui = GUI}) {
+function bake(id, {PARTS, MATS, uv, bg, gui = GUI}) {
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
   const shift = [-(lo[0] + hi[0]) / 2, -lo[1], -(lo[2] + hi[2]) / 2];
@@ -140,7 +237,7 @@ function bake(id, {PARTS, MATS, uv, gui = GUI}) {
 
   const UV = uv ?? unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 40, stepS: 0.25});
   for (const p of PARTS) assert(p.f.every(f => UV.faceUV.get(p)?.has(f)), 'unmapped face in ' + id + '/' + p.name);
-  const main = MATS[PARTS[0].f[0].mat];
+  const main = MATS[bg ?? PARTS[0].f[0].mat];
   const painted = paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas: ATLAS, pad: PAD, MATS, ZONED: new Set(), groupInfo: new Map(),
     sourceGroups: () => [], refTexture: {source: DUMMY}, refUvWidth: 1, background: {c: [...main.c, 255], s: [main.sm, main.f0, 0, 255], n: [128, 128, 255, 255]}});
 
@@ -205,6 +302,7 @@ export const ITEMS = {
   electrolytic_nickel: electrolyticNickel,
   tungsten_filament: tungstenFilament,
   cemented_carbide_blank: cementedCarbideBlank,
+  steel_scrap: steelScrap,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

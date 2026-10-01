@@ -2,7 +2,7 @@
 
 状态（2026-09-30）：**已实现，未实机验证**。`compileJava --offline` 一次 PASS；配方、JEI、贴图、辐射屏蔽和挖掘掉落都没有在游戏里看过。
 
-2026-09-30 追加：钢坯、铅砖、电解镍、钨丝和硬质合金坯件改为 3D Mesh 物品，见 [material_meshes_v1.md](../models/material_meshes_v1.md)；硬质合金刀片改名为硬质合金坯件（`cemented_carbide_blank`）。
+2026-09-30 追加：钢坯、铅砖、电解镍、钨丝、硬质合金坯件和钢废料改为 3D Mesh 物品，见 [material_meshes_v1.md](../models/material_meshes_v1.md)；硬质合金刀片改名为硬质合金坯件（`cemented_carbide_blank`）。
 
 **配方说明**：下面列出的配方是当前游戏里生效的配方。材料的正式配方计划等机器都做完后再统一设计，所以这些配方会再改。
 
@@ -116,7 +116,7 @@
 
 ## 贴图
 
-钢坯、铅砖、电解镍、钨丝、硬质合金坯件是 3D Mesh 物品，没有 2D 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
+钢坯、铅砖、电解镍、钨丝、硬质合金坯件、钢废料是 3D Mesh 物品，没有 2D 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
 
 其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致），没有噪点、污渍或文字。物品图标用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边）；方块贴图按钢块的画法：大块形状、1 px 倒角（上、左亮，下、右暗）、平缓的明暗，没有 1 px 的重复小细节。同一个生成器也画钢制板材（`block/steel_plate`，见 [工业钢结构 Palette](../authoring/afl_industrial_palette_v1.md)）。
 
