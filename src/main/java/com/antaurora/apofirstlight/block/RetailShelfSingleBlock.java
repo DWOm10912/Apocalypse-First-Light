@@ -183,8 +183,9 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
             return InteractionResult.PASS;
         }
 
-        int slot = getClickedSlot(player.getEyePosition(), level.getBlockState(lower).getValue(FACING), lower, hit);
-        if (slot < 0) {
+        Direction facing = level.getBlockState(lower).getValue(FACING);
+        int cell = getClickedCell(player.getEyePosition(), facing, lower, hit);
+        if (cell < 0) {
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) {
@@ -192,6 +193,12 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         }
 
         ItemStack held = player.getItemInHand(hand);
+        int slot = chooseSlot(cell, !shelf.isEmpty(RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT)),
+                !shelf.isEmpty(RetailShelfLayout.slot(cell, RetailShelfLayout.BACK)), !held.isEmpty(),
+                aimsAtBack(facing, lower, hit));
+        if (slot < 0) {
+            return InteractionResult.PASS;
+        }
         if (shelf.isEmpty(slot) && !held.isEmpty()) {
             shelf.insertOne(slot, held);
             if (!player.getAbilities().instabuild) {
@@ -209,7 +216,12 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         return InteractionResult.PASS;
     }
 
-    public static int getClickedSlot(Vec3 eye, Direction facing, BlockPos lower, BlockHitResult hit) {
+    /**
+     * The deck cell (deck * COLUMNS + column, 0..14) the crosshair points at, or -1. Displayed items are not solid, so the
+     * eye ray runs to the shelf surface it hit (a deck top, the price-tag lip, the back panel or a deck underside); the
+     * cell is the first target volume (both depth ranks of one column on one deck) the ray enters on the way.
+     */
+    public static int getClickedCell(Vec3 eye, Direction facing, BlockPos lower, BlockHitResult hit) {
         Vec3 eyeCanonical = toCanonical(facing, eye.x - lower.getX(), eye.y - lower.getY(), eye.z - lower.getZ());
         Vec3 hitLocation = hit.getLocation();
         Vec3 hitCanonical = toCanonical(facing, hitLocation.x - lower.getX(), hitLocation.y - lower.getY(),
@@ -217,34 +229,46 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
 
         if (eyeCanonical.z >= RetailShelfLayout.DISPLAY_Z
                 || hitCanonical.z < RetailShelfLayout.FRONT_Z - 0.02D
-                || hitCanonical.z > 1.02D
-                || RetailShelfLayout.DISPLAY_Z - hitCanonical.z
-                > RetailShelfLayout.MAX_PROJECTION_BEHIND_HIT) {
+                || hitCanonical.z > 1.02D) {
             return -1;
         }
 
-        double dz = hitCanonical.z - eyeCanonical.z;
-        if (dz <= 1.0E-7D) {
+        // t = 1 is the hit surface; a volume first entered behind it is hidden by the shelf.
+        Vec3 ray = hitCanonical.subtract(eyeCanonical);
+        int nearest = -1;
+        double nearestT = 1.0D + 1.0E-4D;
+        for (int cell = 0; cell < RetailShelfLayout.CELLS; cell++) {
+            double t = RetailShelfLayout.cellEntry(cell, eyeCanonical, ray);
+            if (t < nearestT) {
+                nearestT = t;
+                nearest = cell;
+            }
+        }
+        return nearest;
+    }
+
+    /** Where the crosshair lands: on the back half of a deck, the back panel or the back of a deck underside. */
+    public static boolean aimsAtBack(Direction facing, BlockPos lower, BlockHitResult hit) {
+        Vec3 hitLocation = hit.getLocation();
+        return toCanonical(facing, hitLocation.x - lower.getX(), hitLocation.y - lower.getY(),
+                hitLocation.z - lower.getZ()).z >= RetailShelfLayout.DISPLAY_Z;
+    }
+
+    /**
+     * Front-first access, no restocking (taking the front item leaves the back one where it is). Taking: the front item,
+     * else the back one. Placing: never past a front item; into the front when only the back is filled; where the
+     * crosshair lands when both are free. Returns the slot, or -1 when nothing applies.
+     */
+    public static int chooseSlot(int cell, boolean frontFilled, boolean backFilled, boolean placing, boolean aimBack) {
+        int front = RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT);
+        int back = RetailShelfLayout.slot(cell, RetailShelfLayout.BACK);
+        if (!placing) {
+            return frontFilled ? front : backFilled ? back : -1;
+        }
+        if (frontFilled) {
             return -1;
         }
-
-        // The visible front lip can be hit before the virtual item plane. The ray
-        // may continue only through the shelf's bounded, already-reached depth.
-        double t = (RetailShelfLayout.DISPLAY_Z - eyeCanonical.z) / dz;
-        if (t < 0.0D) {
-            return -1;
-        }
-
-        double projectedX = eyeCanonical.x + t * (hitCanonical.x - eyeCanonical.x);
-        double projectedY = eyeCanonical.y + t * (hitCanonical.y - eyeCanonical.y);
-        int column = RetailShelfLayout.nearestColumn(projectedX);
-        int layer = RetailShelfLayout.nearestRow(projectedY);
-
-        if (Math.abs(projectedX - RetailShelfLayout.columnX(column)) > RetailShelfLayout.X_HIT_TOLERANCE
-                || Math.abs(projectedY - RetailShelfLayout.rowY(layer)) > RetailShelfLayout.Y_HIT_TOLERANCE) {
-            return -1;
-        }
-        return layer * RetailShelfLayout.COLUMNS + column;
+        return backFilled || !aimBack ? front : back;
     }
 
     private static Vec3 toCanonical(Direction facing, double localX, double localY, double localZ) {

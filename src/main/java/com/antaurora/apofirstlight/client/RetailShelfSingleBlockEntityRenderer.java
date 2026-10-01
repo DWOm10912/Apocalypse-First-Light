@@ -39,11 +39,12 @@ public class RetailShelfSingleBlockEntityRenderer implements BlockEntityRenderer
                 continue;
             }
 
-            int layer = slot / RetailShelfLayout.COLUMNS;
-            int column = slot % RetailShelfLayout.COLUMNS;
+            int cell = RetailShelfLayout.cellOf(slot);
+            int layer = cell / RetailShelfLayout.COLUMNS;
+            int column = cell % RetailShelfLayout.COLUMNS;
             poseStack.pushPose();
             poseStack.translate(RetailShelfLayout.columnX(column), RetailShelfLayout.rowY(layer),
-                    RetailShelfLayout.DISPLAY_Z);
+                    RetailShelfLayout.depthZ(RetailShelfLayout.depthOf(slot)));
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
             poseStack.scale(RetailShelfLayout.ITEM_SCALE, RetailShelfLayout.ITEM_SCALE,
                     RetailShelfLayout.ITEM_SCALE);

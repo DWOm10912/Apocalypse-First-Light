@@ -1,0 +1,4 @@
+# AFL Retail Shelf V3
+newmtl shelf
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/retail_shelf_single
