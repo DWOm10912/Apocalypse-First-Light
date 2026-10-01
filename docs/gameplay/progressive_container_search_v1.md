@@ -1,6 +1,6 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)。
+状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)。
 - **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
 - 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
 - 另有开发演示方块（见第 21 节）。
@@ -38,14 +38,15 @@ AFL 的储物分为两类，两者并存，不强行统一：
 | `AflContainerSearch` | 资产调用的静态入口：生命周期、菜单、自动化、破坏、比较器、debug |
 | `AflContainerSearchView` | 服务端遮罩视图，菜单只能看到它 |
 | `AflContainerSearchSlot` | 隐藏时完全惰性的格子 |
-| `AflContainerSearchMenu` | 9×1–9×6 的搜索菜单，两端共用 |
+| `AflContainerSearchMenu` | 搜索菜单，两端共用；按 `AflContainerSearchLayout` 摆放格子（9×1–9×6 箱子网格，或 3×3 发射器网格） |
+| `AflContainerSearchLayout` | 菜单布局：箱子网格的格子与背包坐标照原版 `ChestMenu`，3×3 照原版 `DispenserMenu`（2026-09-30 新增） |
 | `AflContainerSearchItemHandler` | Forge 自动化看到的遮罩视图 |
 
 其它文件：
 - 菜单类型注册：`registry/AflMenus.java` 的 `SEARCHABLE_CONTAINERS`。
 - 客户端：`client/AflContainerSearchScreen.java`（开发占位遮罩），在 `client/AflMenuScreens.java` 注册。
 
-新增 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`。和原版 `GENERIC_9xN` 一样按行数各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
+新增 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`，以及 `apocalypse_firstlight:searchable_container_3x3`（2026-09-30）。和原版 `GENERIC_9xN` / `GENERIC_3x3` 一样按布局各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
 
 ## 4. 接入 contract
 
@@ -213,7 +214,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 | 物品自定义堆叠覆写、Forge `onItemStackedOn` | 在 `clicked` 前置拦截下都不会执行；即使绕过，写入也会被遮罩视图拒绝 |
 | 伪造点击包 | 服务端同样执行以上检查，客户端声称的格子内容会被下一次同步纠正 |
 
-已揭示的格子恢复原版规则。玩家之后放进去的物品永远可见，因为揭示状态属于格子，不属于原来的战利品。搜索完成后再次打开，直接使用原版 `ChestMenu`（`GENERIC_9xN`）。
+已揭示的格子恢复原版规则。玩家之后放进去的物品永远可见，因为揭示状态属于格子，不属于原来的战利品。搜索完成后再次打开，直接使用原版菜单：箱子网格用 `ChestMenu`（`GENERIC_9xN`），3×3 用 `DispenserMenu`（`GENERIC_3x3`）。
 
 ## 13. 漏斗、Forge ItemHandler 与自动化
 
@@ -331,7 +332,11 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 ## 22. V1 明确不支持 / 已知限制
 
-- 只提供 9×1–9×6 的箱子网格菜单。其它布局（例如 5 格工具箱）需要自己写菜单：可以复用 `AflContainerSearchView`、`AflContainerSearchSlot` 和状态对象，但同步需要自己实现。
+- 只提供两种布局：9×1–9×6 的箱子网格，以及 3×3 的发射器网格（2026-09-30）。
+  - 默认按格数推出箱子网格：`AflSearchableContainer.aflSearchLayout()` 默认对 9、18……54 格返回对应行数，其它格数返回 null，菜单不会打开。
+  - 9 格的容器想用 3×3，就覆写 `aflSearchLayout()`，返回 `AflContainerSearchLayout.GRID_3X3`。
+  - 其它布局（例如 5 格工具箱）仍需在 `AflContainerSearchLayout` 里补一种，并配上对应的原版背景。
+- 2026-09-30 为支持 3×3，`AflContainerSearchMenu` 从继承 `ChestMenu` 改为继承 `AbstractContainerMenu`，自己按布局摆格子。箱子网格的格子坐标、Shift 点击转移、`stillValid`、关闭时的 `stopOpen` 都与原版 `ChestMenu` 逐行一致，搜索同步逻辑没有改动；菜单注册名不变。界面（`AflContainerSearchScreen`）对 3×3 使用原版 `dispenser.png` 背景，标题居中，和原版发射器界面相同。
 - 半格进度不持久化；没有按玩家分别记录的搜索；没有重新布防。
 - 以下功能都没有做：
   - 快速搜索与仔细搜索双模式；

@@ -1,0 +1,76 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/industrial_electrical_box.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/industrial_electrical_box.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.171875,
+    0.071875,
+    0.100281,
+    0.989832,
+    0.890625,
+    1.014375
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "door": {
+      "pivot": [
+        0.309375,
+        0,
+        0.23125
+      ]
+    },
+    "latch": {
+      "parent": "door",
+      "pivot": [
+        -0.26875,
+        0.475,
+        0.1875
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            0,
+            -100,
+            0
+          ]
+        }
+      }
+    },
+    "unlock": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "transforms": {
+        "latch": {
+          "rotation": [
+            0,
+            0,
+            90
+          ]
+        }
+      }
+    }
+  }
+}

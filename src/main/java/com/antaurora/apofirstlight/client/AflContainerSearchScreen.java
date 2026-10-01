@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client;
 
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,12 +12,13 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
 /**
- * Vanilla chest layout plus a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are
+ * Vanilla chest (9 x 1..6) or dispenser (3 x 3) layout plus a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are
  * masked, only the slot being searched shows a small circling magnifier and a faint progress line.
  * All state comes from {@link AflContainerSearchMenu}; the screen never decides when a slot is revealed.
  */
 public final class AflContainerSearchScreen extends AbstractContainerScreen<AflContainerSearchMenu> {
     private static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/container/generic_54.png");
+    private static final ResourceLocation BACKGROUND_3X3 = new ResourceLocation("textures/gui/container/dispenser.png");
     private static final int HIDDEN_FILL = 0xE01A1D21;
     private static final int REVEAL_FLASH_RGB = 0xD8DEE4;
     private static final float REVEAL_FLASH_TICKS = 6.0F;
@@ -36,14 +38,23 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     /** Restrained progress: a faint 1 px line along the slot's bottom edge, under the magnifier. */
     private static final int PROGRESS_LINE = 0x70C8CED4;
 
-    private final int rows;
+    private final AflContainerSearchLayout layout;
     private float partialTick;
 
     public AflContainerSearchScreen(AflContainerSearchMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
-        this.rows = menu.getRowCount();
-        this.imageHeight = 114 + rows * 18;
+        this.layout = menu.layout();
+        this.imageHeight = layout.isChest() ? 114 + layout.rows() * 18 : 166;
         this.inventoryLabelY = imageHeight - 94;
+    }
+
+    /** The 3 x 3 screen centres its title like the vanilla dispenser screen. */
+    @Override
+    protected void init() {
+        super.init();
+        if (!layout.isChest()) {
+            titleLabelX = (imageWidth - font.width(title)) / 2;
+        }
     }
 
     @Override
@@ -58,6 +69,11 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
+        if (!layout.isChest()) {
+            graphics.blit(BACKGROUND_3X3, x, y, 0, 0, imageWidth, imageHeight);
+            return;
+        }
+        int rows = layout.rows();
         graphics.blit(BACKGROUND, x, y, 0, 0, imageWidth, rows * 18 + 17);
         graphics.blit(BACKGROUND, x, y + rows * 18 + 17, 0, 126, imageWidth, 96);
     }

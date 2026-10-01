@@ -49,6 +49,11 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/industrial_locker.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/industrial_locker.png"), 0.0, 0.0), "industrial_locker");
+            // Industrial Electrical Box V2 (tools/build-industrial-electrical-box-v2.mjs): the block's mesh and atlas, door closed;
+            // mesh origin = block bottom centre, the item model's GUI view is fitted by the generator
+            bind(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/industrial_electrical_box.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/industrial_electrical_box.png"), 0.0, 0.0), "industrial_electrical_box");
         });
     }
 

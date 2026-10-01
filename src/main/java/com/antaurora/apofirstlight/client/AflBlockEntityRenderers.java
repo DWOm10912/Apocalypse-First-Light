@@ -20,6 +20,8 @@ public final class AflBlockEntityRenderers {
                 EnergyCellBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Lead Chest V3
+        event.registerBlockEntityRenderer(AflBlockEntities.INDUSTRIAL_ELECTRICAL_BOX.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Industrial Electrical Box V2
         event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), CommercialGlassDoubleDoorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.RESTROOM_STALL_DOOR.get(), RestroomStallDoorRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.BEVERAGE_COOLER.get(), BeverageCoolerRenderer::new);

@@ -106,7 +106,7 @@ V2 的生成器 `tools/build-lead-chest-v2.mjs` 已删除：它写的是同一�
 - 播放：`LeadChestBlock.setOpen` 在服务端播放，音量 0.8（与储物柜相同）。音高只在 0.98–1.02 之间随机，±2% 不会让对好的时间点明显漂移。
 - 字幕："铅箱打开 / 铅箱关上"（`subtitles.apocalypse_firstlight.lead_chest_*`）。
 
-生成器：`tools/build-lead-chest-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。源素材是用户生成的六段单一事件录音（1 秒，立体声，48 kHz），生成器会按 SHA-256 前 16 位校验：
+生成器：`tools/build-lead-chest-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音的函数已于 2026-09-30 移到共享库 `tools/sound-mix-lib.mjs`（配电箱音效也用它），参数没变；当时源素材已不在 `E:/Download`，所以没能重新生成做逐字节比对，现有的两段成品没有改动。要重新生成，需要把六段源素材放回源目录。源素材是用户生成的六段单一事件录音（1 秒，立体声，48 kHz），生成器会按 SHA-256 前 16 位校验：
 
 | 源文件 | SHA-256 前 16 位 | 内容 |
 |---|---|---|

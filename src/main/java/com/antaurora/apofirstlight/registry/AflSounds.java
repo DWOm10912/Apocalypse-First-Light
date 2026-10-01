@@ -56,6 +56,10 @@ public final class AflSounds {
     // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
     public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");
+    // Industrial Electrical Box: tools/build-industrial-electrical-box-sounds-v1.mjs (one latch click for lock and unlock)
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_LATCH = simple("industrial_electrical_box_latch");
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_OPEN = simple("industrial_electrical_box_open");
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_CLOSE = simple("industrial_electrical_box_close");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

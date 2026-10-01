@@ -104,8 +104,9 @@ final class AuthoringFixtureRegistry {
             new Def(A+"steel_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),
             new Def(A+"poplar_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),
             new Def(A+"industrial_locker",storage,"storage").facing(H4).multi(TWO_TALL).inventory().support(Support.FLOOR)
-                    .notes("54-slot container on the lower half; must start and stay empty (no loot table)."),
-            new Def(A+"lead_chest",storage,"storage").facing(H4).fixed("type","single","waterlogged","false").inventory().support(Support.NONE),
+                    .notes("27-slot container on the lower half; must start and stay empty (no loot table)."),
+            new Def(A+"lead_chest",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.NONE)
+                    .notes("27-slot shielded box (V3); lid starts closed; must start and stay empty (no loot table)."),
             new Def("minecraft:chest",storage,"storage").facing(H4).fixed("type","single","waterlogged","false").inventory().support(Support.NONE)
                     .notes("Single chest only; double-chest pairing is not authored. Generic WorldEdit writes of chests stay forbidden."),
             new Def("minecraft:barrel",storage,"storage").facing(ALL6).fixed("open","false").inventory().support(Support.NONE),
@@ -130,7 +131,8 @@ final class AuthoringFixtureRegistry {
                     .notes("2 wide. Anchor = master; secondary at facing.getClockWise()."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
             new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
-            new Def(A+"industrial_electrical_box",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
+            new Def(A+"industrial_electrical_box",storage,"utility").facing(H4).fixed("open","false","locked","true").inventory().support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Wall-mounted only (V2, no ceiling mount); facing = the door side. 9-slot container, door starts closed, locked and empty."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"chemical_reactor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"compressor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),

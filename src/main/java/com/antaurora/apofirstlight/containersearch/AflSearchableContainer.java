@@ -23,6 +23,16 @@ public interface AflSearchableContainer extends Container {
     AflContainerSearchSettings aflSearchSettings();
 
     /**
+     * Menu layout. Default: the chest grid for 9, 18, ... 54 slots (null for other sizes); a 9-slot container that
+     * should look like a dispenser returns {@link AflContainerSearchLayout#GRID_3X3}.
+     */
+    @Nullable
+    default AflContainerSearchLayout aflSearchLayout() {
+        int size = getContainerSize();
+        return size % 9 == 0 && size >= 9 && size <= 54 ? AflContainerSearchLayout.chest(size / 9) : null;
+    }
+
+    /**
      * Asked exactly once, when the search state is first initialized on the server and before any loot is
      * unpacked. The answer is persisted. Typical world-loot containers answer {@code lootTable != null}.
      */

@@ -6,6 +6,7 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.DispenserMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
@@ -58,22 +59,26 @@ public final class AflContainerSearch {
 
     /**
      * For the asset's {@code createMenu(int, Inventory)}: a search menu while anything is hidden, afterwards the
-     * ordinary vanilla chest menu. Supports 9 x 1..6 grids; returns null (menu not opened) for other sizes.
+     * ordinary vanilla menu of the same layout (chest grid 9 x 1..6, or the 3 x 3 dispenser grid). The layout comes
+     * from {@link AflSearchableContainer#aflSearchLayout()}; returns null (menu not opened) when it does not match the
+     * container size.
      */
     @Nullable
     public static AbstractContainerMenu createMenu(int containerId, Inventory inventory,
                                                    AflSearchableContainer container) {
         int size = container.getContainerSize();
-        int rows = size / 9;
-        if (size % 9 != 0 || rows < 1 || rows > 6) {
-            ApocalypseFirstLight.LOGGER.error("Searchable container at {} has {} slots; the chest-grid search menu "
-                    + "needs 9, 18, 27, 36, 45 or 54", container.getBlockPos(), size);
+        AflContainerSearchLayout layout = container.aflSearchLayout();
+        if (layout == null || layout.size() != size) {
+            ApocalypseFirstLight.LOGGER.error("Searchable container at {} has {} slots and layout {}; a search menu "
+                    + "needs a 9 x 1..6 chest grid or the 3 x 3 grid of the same size", container.getBlockPos(), size, layout);
             return null;
         }
         if (isComplete(container)) {
-            return new ChestMenu(VANILLA_GRIDS.get(rows - 1), containerId, inventory, container, rows);
+            return layout.isChest()
+                    ? new ChestMenu(VANILLA_GRIDS.get(layout.rows() - 1), containerId, inventory, container, layout.rows())
+                    : new DispenserMenu(containerId, inventory, container);
         }
-        return AflContainerSearchMenu.server(containerId, inventory, container, rows);
+        return AflContainerSearchMenu.server(containerId, inventory, container, layout);
     }
 
     /**

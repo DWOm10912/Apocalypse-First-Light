@@ -7,7 +7,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ChestMenu;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.MenuType;
@@ -19,7 +19,9 @@ import java.util.Arrays;
 import java.util.BitSet;
 
 /**
- * Chest-grid menu (9 x 1..6) over a searchable container. Server side it wraps the masked
+ * Search menu over a searchable container, laid out like the vanilla screen of its {@link AflContainerSearchLayout}
+ * (chest grid 9 x 1..6 like {@code ChestMenu}, or the 3 x 3 dispenser grid like {@code DispenserMenu}; slot positions,
+ * shift-click transfer, validity and closing follow those vanilla menus). Server side it wraps the masked
  * {@link AflContainerSearchView}; client side it mirrors only what the server sent.
  *
  * <p>Search presentation travels through ordinary menu data slots, in this order: the reveal mask in 16-bit words,
@@ -28,12 +30,14 @@ import java.util.BitSet;
  * a slot is in progress; clients interpolate the progress from their own synchronized game time. The flags word is
  * always sent last, which tells the client when the initial state is complete.
  */
-public final class AflContainerSearchMenu extends ChestMenu {
+public final class AflContainerSearchMenu extends AbstractContainerMenu {
     private static final int EXTRA_DATA = 4;
     private static final int FLAG_SEARCHING = 1;
     private static final int FLAG_COMPLETE = 2;
     private static final int FLAG_SYNCED = 0x40;
 
+    private final Container container;
+    private final AflContainerSearchLayout layout;
     @Nullable
     private final AflContainerSearchView server;
     @Nullable
@@ -47,13 +51,32 @@ public final class AflContainerSearchMenu extends ChestMenu {
     private boolean installed;
     private boolean closed;
 
-    private AflContainerSearchMenu(MenuType<?> type, int id, Inventory inventory, Container container, int rows,
+    private AflContainerSearchMenu(MenuType<?> type, int id, Inventory inventory, Container container,
+                                   AflContainerSearchLayout layout,
                                    @Nullable AflContainerSearchView server, @Nullable ClientMirror client) {
-        super(type, id, inventory, container, rows);
+        super(type, id);
+        checkContainerSize(container, layout.size());
+        this.container = container;
+        this.layout = layout;
+        container.startOpen(inventory.player);
+        // container grid: masked slots (the server view and the client mirror are both reveal masks)
+        for (int row = 0; row < layout.rows(); row++) {
+            for (int column = 0; column < layout.columns(); column++) {
+                addSlot(new AflContainerSearchSlot(container, column + row * layout.columns(), layout.slotX(column), layout.slotY(row)));
+            }
+        }
+        for (int row = 0; row < 3; row++) {
+            for (int column = 0; column < 9; column++) {
+                addSlot(new Slot(inventory, column + row * 9 + 9, 8 + column * 18, layout.inventoryY() + row * 18));
+            }
+        }
+        for (int column = 0; column < 9; column++) {
+            addSlot(new Slot(inventory, column, 8 + column * 18, layout.inventoryY() + 58));
+        }
         this.server = server;
         this.client = client;
         this.player = inventory.player;
-        this.slotCount = rows * 9;
+        this.slotCount = layout.size();
         this.maskWords = (slotCount + 15) / 16;
         this.synced = new int[maskWords + EXTRA_DATA];
         this.synced[maskWords] = -1;
@@ -67,24 +90,48 @@ public final class AflContainerSearchMenu extends ChestMenu {
         }
     }
 
-    static AflContainerSearchMenu server(int id, Inventory inventory, AflSearchableContainer owner, int rows) {
+    static AflContainerSearchMenu server(int id, Inventory inventory, AflSearchableContainer owner, AflContainerSearchLayout layout) {
         AflContainerSearchView view = new AflContainerSearchView(owner);
-        return new AflContainerSearchMenu(AflMenus.searchableContainer(rows), id, inventory, view, rows, view, null);
+        return new AflContainerSearchMenu(AflMenus.searchableContainer(layout), id, inventory, view, layout, view, null);
     }
 
-    /** Client factory used by the registered menu types; the server sends no extra open data. */
-    public static AflContainerSearchMenu client(int rows, int id, Inventory inventory) {
-        ClientMirror mirror = new ClientMirror(rows * 9);
-        return new AflContainerSearchMenu(AflMenus.searchableContainer(rows), id, inventory, mirror, rows, null, mirror);
+    /** Client factory used by the registered menu types (one per layout); the server sends no extra open data. */
+    public static AflContainerSearchMenu client(AflContainerSearchLayout layout, int id, Inventory inventory) {
+        ClientMirror mirror = new ClientMirror(layout.size());
+        return new AflContainerSearchMenu(AflMenus.searchableContainer(layout), id, inventory, mirror, layout, null, mirror);
     }
 
-    /** ChestMenu adds plain container slots from its constructor; replace them with masked ones. */
+    public AflContainerSearchLayout layout() {
+        return layout;
+    }
+
     @Override
-    protected Slot addSlot(Slot slot) {
-        if (slot.getClass() == Slot.class && slot.container instanceof AflContainerSearchSlot.RevealMask) {
-            slot = new AflContainerSearchSlot(slot.container, slot.getContainerSlot(), slot.x, slot.y);
+    public boolean stillValid(Player viewer) {
+        return container.stillValid(viewer);
+    }
+
+    /** Vanilla chest transfer: container slots go to the player inventory (end first), inventory slots to the container. */
+    @Override
+    public ItemStack quickMoveStack(Player mover, int index) {
+        ItemStack moved = ItemStack.EMPTY;
+        Slot slot = slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stack = slot.getItem();
+            moved = stack.copy();
+            if (index < slotCount) {
+                if (!moveItemStackTo(stack, slotCount, slots.size(), true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (!moveItemStackTo(stack, 0, slotCount, false)) {
+                return ItemStack.EMPTY;
+            }
+            if (stack.isEmpty()) {
+                slot.setByPlayer(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
         }
-        return super.addSlot(slot);
+        return moved;
     }
 
     /** Hidden container slots ignore every click type, including drag steps and number-key / offhand swaps. */
@@ -120,6 +167,7 @@ public final class AflContainerSearchMenu extends ChestMenu {
     @Override
     public void removed(Player leaving) {
         super.removed(leaving);
+        container.stopOpen(leaving);
         closed = true;
         if (server != null) {
             server.owner().aflSearchState().detach(server.owner(), this);
