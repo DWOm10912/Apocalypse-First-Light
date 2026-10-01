@@ -6,7 +6,7 @@
 
 **STATIC PROP → baked model / OBJ**：桌、椅、垃圾桶、静态货架、钢支撑、HVAC、电气面板等永久静态资产继续原路径。
 
-**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、cooler、freezer、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。cash register 同理：钱箱要能拉出来搜刮，2026-09-30 改走本运行时（可动部件是钱箱，[cash_register_v2.md](../models/cash_register_v2.md)）。
+**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、freezer、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。cash register 同理：钱箱要能拉出来搜刮，2026-09-30 改走本运行时（可动部件是钱箱，[cash_register_v2.md](../models/cash_register_v2.md)）。beverage cooler 也于 2026-09-30 迁移，只换了渲染：两扇门是可动部件；门逻辑、四格结构和形状仍是原来的代码，门开始转动由方块事件通知客户端（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）。
 
 **首个正式资产（2026-09-29）**：`industrial_locker` V2，见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 
@@ -23,7 +23,7 @@
 - `AflMeshModel` / `AflMeshPart`：继续按 bone / cutout / translucent 缓存 parts、corners、face offsets。只新增只读 `boneNames()`，用于校验 profile 不遗漏 mesh。
 - `AflMeshRenderer`：把原顶点循环抽成 `renderPartsAtCurrentPose`。旧 GeoBone API 仍先平移到 pivot 再调用同一循环；hidden/zero-scale、镜像法线、Quad/退化 Quad、UV、light/overlay、metrics 语义保留。
 - `AflStaticMeshItemRenderer`、`AflHybridMeshRendering`、`NativeAnimatedWeaponRenderer` 调用方式及正式资产均未改。新 BER 不使用 GeoBone/GeckoLib 动画控制器、不共享枪械实例姿态；已有项目 GeckoLib 依赖没有新增、升级或移除。
-- 现有 lead chest / double door / stall / cooler / freezer 为专用 `GeoBlockRenderer`；部分机器组合 baked model、流体/物品与手工顶点。现有 BER 注册使用 `EntityRenderersEvent.RegisterRenderers`。保留这些实现及各自状态同步。
+- 现有 double door / stall / freezer 为专用 `GeoBlockRenderer`（lead chest、cooler 已迁移到本运行时）；部分机器组合 baked model、流体/物品与手工顶点。现有 BER 注册使用 `EntityRenderersEvent.RegisterRenderers`。保留这些实现及各自状态同步。
 - 现有 easing 只有特定功能的私有函数和枪械 hold easing；没有合适的独立通用接口。本轮用小型本地 easing enum，不牵入枪械动画高层。
 
 ## 资源与注册

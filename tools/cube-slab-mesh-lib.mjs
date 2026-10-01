@@ -497,7 +497,7 @@ export function unwrap(PARTS, {atlas, pad, startS, stepS}) {
 }
 
 // ---------------- Base Color + LabPBR (same raster pass) ----------------
-function readPng(b) {
+export function readPng(b) {
   let p = 8, w, h, ct, id = [];
   while (p < b.length) { const l = b.readUInt32BE(p), t = b.toString('ascii', p + 4, p + 8), d = b.subarray(p + 8, p + 8 + l); if (t === 'IHDR') { w = d.readUInt32BE(0); h = d.readUInt32BE(4); ct = d[9]; } if (t === 'IDAT') id.push(d); p += 12 + l; }
   const bpp = ct === 6 ? 4 : 3, raw = zlib.inflateSync(Buffer.concat(id)), st = w * bpp, px = Buffer.alloc(h * st);

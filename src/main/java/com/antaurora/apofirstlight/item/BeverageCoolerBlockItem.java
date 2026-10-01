@@ -1,8 +1,10 @@
 package com.antaurora.apofirstlight.item;
 
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
-import com.antaurora.apofirstlight.client.BeverageCoolerItemRenderer;
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.AflStaticMeshItemRenderer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,7 +27,10 @@ public final class BeverageCoolerBlockItem extends BlockItem {
         consumer.accept(new IClientItemExtensions() {
             private BlockEntityWithoutLevelRenderer renderer;
             @Override public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                if (renderer == null) renderer = new BeverageCoolerItemRenderer();
+                // Beverage Cooler V2 mesh and atlas, doors closed; the item model's views are centred by the generator
+                if (renderer == null) renderer = new AflStaticMeshItemRenderer(
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/beverage_cooler.geo.json"),
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/beverage_cooler.png"), 0.0, 0.0);
                 return renderer;
             }
         });

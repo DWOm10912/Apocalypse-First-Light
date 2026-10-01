@@ -1,26 +1,37 @@
 package com.antaurora.apofirstlight.blockentity;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
+import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import software.bernie.geckolib.animatable.GeoBlockEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
-/** The master owns two concurrent animation controllers; BlockState owns durable end poses. */
-public final class BeverageCoolerBlockEntity extends BlockEntity implements GeoBlockEntity {
-    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+/**
+ * The master cell's block entity: door transitions and the AFL Animated Block Mesh Runtime host (Beverage Cooler V2,
+ * tools/build-beverage-cooler-v2.mjs; channels {@code left_open} / {@code right_open}). BlockState owns the durable door
+ * poses and is committed {@link BeverageCoolerBlock#ANIMATION_TICKS} after a click; the server announces each started
+ * transition with a block event, so clients start the swing at the click instead of at the commit.
+ */
+public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
+    public static final ResourceLocation MESH_PROFILE =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/beverage_cooler.json");
+    private static final int EVENT_LEFT_DOOR = 1;
+    private static final int EVENT_RIGHT_DOOR = 2;
+
+    private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private Boolean pendingLeft;
     private Boolean pendingRight;
     private long leftFinishTick;
     private long rightFinishTick;
+    /** Client: door targets announced by the server and not yet committed to the block state. */
+    private Boolean announcedLeft;
+    private Boolean announcedRight;
 
     public BeverageCoolerBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.BEVERAGE_COOLER.get(), pos, state);
@@ -45,7 +56,9 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements GeoB
             pendingRight = targetOpen;
             rightFinishTick = tick + BeverageCoolerBlock.ANIMATION_TICKS;
         }
-        triggerAnim(left ? "left_door_controller" : "right_door_controller", targetOpen ? "open" : "close");
+        if (level != null) {
+            level.blockEvent(worldPosition, getBlockState().getBlock(), left ? EVENT_LEFT_DOOR : EVENT_RIGHT_DOOR, targetOpen ? 1 : 0);
+        }
         return true;
     }
 
@@ -69,25 +82,60 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements GeoB
         return Math.min(left, right) == Long.MAX_VALUE ? 0 : Math.min(left, right);
     }
 
+    /** Server: true broadcasts the door event to nearby clients; client: the announced swing starts now. */
     @Override
-    public void registerControllers(AnimatableManager.ControllerRegistrar controllers) {
-        AnimationController<BeverageCoolerBlockEntity> left = new AnimationController<>(this,
-                "left_door_controller", 0, state -> state.setAndContinue(RawAnimation.begin().thenLoop(
-                getBlockState().getValue(BeverageCoolerBlock.LEFT_OPEN)
-                        ? "left_door_open_pose" : "left_door_closed_pose")));
-        left.triggerableAnim("open", RawAnimation.begin().thenPlay("left_door_open"));
-        left.triggerableAnim("close", RawAnimation.begin().thenPlay("left_door_close"));
-        controllers.add(left);
-
-        AnimationController<BeverageCoolerBlockEntity> right = new AnimationController<>(this,
-                "right_door_controller", 0, state -> state.setAndContinue(RawAnimation.begin().thenLoop(
-                getBlockState().getValue(BeverageCoolerBlock.RIGHT_OPEN)
-                        ? "right_door_open_pose" : "right_door_closed_pose")));
-        right.triggerableAnim("open", RawAnimation.begin().thenPlay("right_door_open"));
-        right.triggerableAnim("close", RawAnimation.begin().thenPlay("right_door_close"));
-        controllers.add(right);
+    public boolean triggerEvent(int id, int param) {
+        if (id != EVENT_LEFT_DOOR && id != EVENT_RIGHT_DOOR) return super.triggerEvent(id, param);
+        if (level != null && level.isClientSide) {
+            if (id == EVENT_LEFT_DOOR) announcedLeft = param != 0;
+            else announcedRight = param != 0;
+            refreshMeshAnimationTargets();
+        }
+        return true;
     }
 
-    @Override public AnimatableInstanceCache getAnimatableInstanceCache() { return cache; }
-    @Override public double getTick(Object object) { return level == null ? 0 : level.getGameTime(); }
+    private boolean doorTarget(boolean left) {
+        Boolean announced = left ? announcedLeft : announcedRight;
+        return announced != null ? announced
+                : getBlockState().getValue(left ? BeverageCoolerBlock.LEFT_OPEN : BeverageCoolerBlock.RIGHT_OPEN);
+    }
+
+    // ---- AFL Animated Block Mesh Runtime ----
+
+    @Override
+    public ResourceLocation meshProfile() {
+        return MESH_PROFILE;
+    }
+
+    @Override
+    public AflBlockMeshAnimationState meshAnimation() {
+        return meshAnimation;
+    }
+
+    @Override
+    public Direction meshFacing() {
+        return getBlockState().getValue(BeverageCoolerBlock.FACING);
+    }
+
+    @Override
+    public void refreshMeshAnimationTargets() {
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation,
+                channel -> "left_open".equals(channel) ? doorTarget(true) : "right_open".equals(channel) && doorTarget(false));
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        refreshMeshAnimationTargets();
+    }
+
+    /** The committed state catches up with an announced swing: follow the block state again. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public void setBlockState(BlockState state) {
+        super.setBlockState(state);
+        if (announcedLeft != null && state.getValue(BeverageCoolerBlock.LEFT_OPEN) == announcedLeft) announcedLeft = null;
+        if (announcedRight != null && state.getValue(BeverageCoolerBlock.RIGHT_OPEN) == announcedRight) announcedRight = null;
+        refreshMeshAnimationTargets();
+    }
 }

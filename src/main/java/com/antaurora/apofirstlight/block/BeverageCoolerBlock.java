@@ -303,8 +303,17 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
         }
     }
 
+    /** Drawn by the master's AFL Animated Block Mesh Runtime renderer; the baked model is particle only. */
     @Override
     public RenderShape getRenderShape(BlockState state) { return RenderShape.INVISIBLE; }
+
+    /** Door-start block events (BeverageCoolerBlockEntity#startDoor) go to the master's block entity. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean triggerEvent(BlockState state, Level level, BlockPos pos, int id, int param) {
+        var entity = level.getBlockEntity(pos);
+        return entity != null && entity.triggerEvent(id, param);
+    }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
