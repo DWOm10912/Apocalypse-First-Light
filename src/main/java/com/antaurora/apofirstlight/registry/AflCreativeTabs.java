@@ -70,6 +70,7 @@ public final class AflCreativeTabs {
     public static final RegistryObject<CreativeModeTab> INDUSTRY = tab("industry", NATURAL_BLOCKS, AflItems.CRUSHER,
             AflItems.THERMAL_GENERATOR,
             AflItems.ENERGY_CELL,
+            AflItems.ENERGY_BATTERY,
             AflItems.POWER_CABLE,
             AflItems.CRUSHER,
             AflItems.INDUSTRIAL_FURNACE,

@@ -268,6 +268,9 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENERGY_CELL = ITEMS.register("energy_cell",
             () -> new BlockItem(AflBlocks.ENERGY_CELL.get(), new Item.Properties().stacksTo(1)));
+    // Energy Battery V1: small rechargeable cell, made empty, 50,000 FE (machine_balance/energy_battery.json)
+    public static final RegistryObject<Item> ENERGY_BATTERY = ITEMS.register("energy_battery",
+            () -> new com.antaurora.apofirstlight.item.EnergyBatteryItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CRUSHER = ITEMS.register("crusher",
             () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> INDUSTRIAL_FURNACE = ITEMS.register("industrial_furnace",

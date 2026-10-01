@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/01 - 设计/武器/近战武器/撬棍.md",
+                "file": "docs/项目内容/02 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "撬棍"
+              "title": "02 - 制作清单"
             }
           }
         ]
@@ -190,6 +190,8 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
+    "docs/项目内容/03 - 注意事项 重要内容.md",
+    "docs/项目内容/01 - 设计/武器/近战武器/撬棍.md",
     "run/saves/新的世界 (1)/level10172119609358210908.dat",
     "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-9527732123788498876.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
@@ -200,7 +202,6 @@
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc",
     "run/afl_authoring_bridge/session.json",
-    "run/saves/新的世界 (1)/level13167656316246408409.dat",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/industrial_locker_n.png",
     "docs/rendering/mesh_shape_runtime_v1.md",
     "docs/models/industrial_locker_v2.md",
@@ -208,7 +209,6 @@
     "docs/项目内容/01 - 设计/武器/弹药.md",
     "docs/native_guns/attachments/br51_drum_magazine_50_v1.md",
     "docs/项目内容/01 - 设计/武器/配件.md",
-    "docs/项目内容/01 - 设计/武器/近战武器/撬棍.md",
     "docs/项目内容/01 - 设计/生存/生存状态.md",
     "docs/项目内容/01 - 设计/世界与环境/原版改动.md",
     "docs/项目内容/01 - 设计/战利品/战利品规则.md",

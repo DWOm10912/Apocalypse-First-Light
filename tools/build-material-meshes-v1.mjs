@@ -275,7 +275,7 @@ function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5
 // inventory icon view: vanilla block-item angle, no roll; an item may pick its own (icon.view), still without roll
 const GUI = [30, 225, 0];
 
-function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
+export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
   const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
