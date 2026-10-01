@@ -7,16 +7,20 @@ import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -32,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  * Clients get the tray item and a display state: powered (buffer above zero, or power received within the last second;
  * lights the rack lamps and the screens) and the item's energy / capacity, synced when the charge crosses a whole percent.
  * Also the AFL Animated Block Mesh Runtime host: no animations; the lit or unlit lamp set by the powered state.
+ * Sounds (tools/build-charging-station-sounds-v1.mjs): the start beeps and the full chime are played here when the synced
+ * state changes; the charging hum is client-side (client/ChargingStationSoundController, from {@link #charging()}).
  */
 public final class ChargingStationBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
     public static final ResourceLocation MESH_PROFILE =
@@ -183,10 +189,31 @@ public final class ChargingStationBlockEntity extends BlockEntity implements Afl
         boolean nowPowered = energyStored > 0 || level.getGameTime() - lastReceiveTick <= POWER_HOLD_TICKS;
         if (!force && nowPowered == powered && capacity == itemCapacity
                 && percent(energy, capacity) == percent(itemEnergy, itemCapacity)) return;
+        boolean wasCharging = charging(), wasFullAndLit = powered && full(itemEnergy, itemCapacity);
         powered = nowPowered;
         itemEnergy = energy;
         itemCapacity = capacity;
+        // start beeps when charging begins (item placed on a powered station, or power back); the chime once the item is
+        // full, also for an item placed already full
+        if (charging() && !wasCharging) playStatusSound(AflSounds.CHARGING_STATION_START.get());
+        else if (powered && full(itemEnergy, itemCapacity) && !wasFullAndLit) playStatusSound(AflSounds.CHARGING_STATION_FULL.get());
         sync();
+    }
+
+    /** Powered with an item that is not full yet: the screens count up and the hum plays (ChargingStationSoundController). */
+    public boolean charging() {
+        return powered && !item.isEmpty() && itemCapacity > 0 && percent(itemEnergy, itemCapacity) < 100;
+    }
+
+    private static boolean full(int energy, int capacity) {
+        return capacity > 0 && percent(energy, capacity) >= 100;
+    }
+
+    /** From the front control strip (tools/build-charging-station-v1.mjs PANEL). */
+    private void playStatusSound(SoundEvent sound) {
+        if (level == null) return;
+        Vec3 at = ChargingStationBlock.sourceToWorld(worldPosition, getBlockState().getValue(ChargingStationBlock.FACING), 8.0, 10.8, -7.0);
+        level.playSound(null, at.x, at.y, at.z, sound, SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 
     /** Every removal path of the master cell ends here (ChargingStationBlock#onRemove): the tray item drops once. */

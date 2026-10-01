@@ -72,6 +72,29 @@
 - 背面接口：每格背面正中一块 6 × 6 px 钢板，从机壳背面（z 7.38）伸到方块边界（z 8），中间一个 r 1.95 的圆插座和触点，符合 [电源接口规格](power_cable_v2.md)。
 - 选中框和碰撞是简化的盒子组合：机柜连托盘、后挡板、横撑，以及两端的端架和腿；端架斜顶做了一级台阶。
 
+## 声音（2026-10-01，未实机验证）
+
+| 声音 | 什么时候 | 来源 |
+|---|---|---|
+| 放上 / 取下 | 托盘放上或取下物品，从托盘位置发出 | 原版皮革装备声 `item.armor.equip_leather`（用户选的），音高 0.97–1.03 随机 |
+| 开始充电 `charging_station_start` | 开始充电的那一刻：有电时放上没满的物品，或者托盘上有没满的物品时来电；和放上声同时播放，两声"滴"落在 0.12 s 和 0.30 s，跟在放下声后面 | `sounds/charging_station/start.ogg` |
+| 充满 `charging_station_full` | 物品充到 100% 时响一次；有电时放上一个本来就满的物品也会响 | `sounds/charging_station/full.ogg` |
+| 充电中 `charging_station_hum` | 有电、托盘上有物品、还没满时循环播放，从充电站中间发出，8 格内听得到（`attenuation_distance` 8，线性衰减）；停止充电、方块没了或玩家走出 9 格就停 | `sounds/charging_station/hum.ogg`，客户端 `client/ChargingStationSoundController` 每 5 tick 扫一次附近区块里的充电站 |
+
+开始和充满两声从正面控制条发出，服务端播放，附近玩家都听得到。字幕：充电站开始充电 / 充电站：充电完成 / 充电站嗡嗡作响。
+
+- 构建脚本：`tools/build-charging-station-sounds-v1.mjs`（素材在 `E:/Download`，按 SHA-256 前缀校验）。三个素材都是用户生成的 1 秒 48 kHz 立体声 WAV，左右相关性 0.998–0.999，合成单声道。
+- **开始音**：素材只有一个 80 ms、6.26 kHz 的极尖短音（前面带一点 12.5 kHz 的咔哒），也不是要的"两声上扬"。用同一个素材叠两次，分别降到 2.8 kHz 和 3.8 kHz（播放速率 0.45 / 0.6，时长按同样比例变长），做成两声上扬的"滴-滴"。比电箱开门声低 8 LU。
+- **充满音**：素材是 932 / 621 / 932 Hz 三个短音加一个 697 Hz（带八度）的"叮"。裁掉开头 0.06 s 里的 5.3 kHz 咔哒，其余不动。比电箱开门声低 2 LU。
+- **嗡嗡声**：素材音色稳定（50 Hz、149 Hz 基频和谐波），但音量一秒内涨了 18 dB，线圈高频声跟着变大，文件在最响处直接结束，用户听到结尾有炸音。只用前面平稳的 0.02–0.70 s：
+  - 按每个 20 ms 周期把音量拉平；
+  - 剪成 30 个整周期（0.6 s），开头 4 个周期和结尾之后的延续交叉淡化，接缝两边相位一致。
+  - 这个处理放在 `tools/sound-mix-lib.mjs` 新加的 `buildLoop` 里，以后别的循环音也能用。
+  - 比电箱开门声低 16 LU。
+- **循环核对**：用和 Minecraft 1.20.1 `OggAudioStream` 一样的 stb_vorbis 逐帧解码。
+  - 解出来正好 28,800 个采样（0.6 s），和设计长度一致。ffmpeg 解码少 128 个，是 ffmpeg 自己的处理，不影响游戏。
+  - 首尾跳变 0.00011，比内部采样步长的中位数 0.0002 还小；最后一个周期和第一个周期的差异 0.086，小于内部相邻周期的中位数 0.097；30 个周期的音量都在 ±0.35 dB 以内。
+
 ## 代码
 
 | 文件 | 内容 |
@@ -81,6 +104,8 @@
 | `item/ChargingStationBlockItem.java` | 两格放置，物品渲染 |
 | `client/ChargingStationRenderer.java` | 机身、托盘物品、电量条、读数 |
 | `client/WorldInteractionHint.java` | 托盘提示 |
+| `client/ChargingStationSoundController.java` | 充电中的嗡嗡循环 |
+| `registry/AflSounds.java`、`sounds.json` | `charging_station_start` / `_full` / `_hum` |
 | `energy/MachineBalanceManager.java` | `ChargingStationBalance` |
 
 ## 实机检查要点（2026-10-01 PASS）
@@ -94,7 +119,6 @@
 
 ## 没做的
 
-- 声音（放上、取下、充满）。
 - 合成配方（等机器都做完再统一定）。
 - Jade 显示。
 - 长条充能武器的专门摆放（以后加物品标签，再定大小和朝向）。

@@ -1,6 +1,7 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
 // Used by tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
-// tools/build-cash-register-sounds-v1.mjs and tools/build-beverage-cooler-sounds-v1.mjs (needs ffmpeg).
+// tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs and
+// tools/build-charging-station-sounds-v1.mjs (needs ffmpeg). buildLoop makes seamless loops from steady hums.
 // Loudness: BS.1770 K-weighting. Each element is first brought to the same 100 ms short-window loudness (a click and a
 // thud then sit at the same level), then mixed with a role gain; each finished sound is scaled so its maximum momentary
 // loudness (400 ms) matches a reference sound plus an offset, with the sample peak kept at or below -1 dBFS.
@@ -96,4 +97,41 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
       layers: out.layers.map(L => `${L.src}${L.rate ? '@' + L.rate : ''} peak at ${L.at}s, ${(TARGET_ELEMENT - level[L.src] + L.gain).toFixed(1)} dB`)};
   }
   return {sourceLevels100ms: Object.fromEntries(Object.entries(level).map(([k, v]) => [k, +v.toFixed(1)])), ...report};
+}
+
+/**
+ * Seamless loop from a steady, periodic source (a hum): the window [from, from + periods x period + crossfade periods) is
+ * levelled (gain = mean level / RMS of each period, smoothed over `smooth` periods, so a swelling source plays at one
+ * level), then the loop is `periods` whole periods long and its first `crossfade` periods are a linear crossfade from
+ * the continuation after the loop end into the loop start; whole periods keep both sides in phase, so the seam does not
+ * click. source: {name, sha} (WAV in srcDir); file and reference relative to soundsDir; offset as buildSounds. The level
+ * is matched on the 400 ms momentary loudness of the loop. Returns a report.
+ */
+export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0}) {
+  const wav = path.join(srcDir, source.name + '.wav');
+  const h = createHash('sha256').update(fs.readFileSync(wav)).digest('hex').slice(0, 16);
+  if (h !== source.sha) throw new Error(`${source.name}.wav changed (sha ${h}, expected ${source.sha})`);
+  const P = Math.round(period * SR), L = periods * P, C = crossfade * P, start = Math.round(from * SR);
+  const x = decode(wav).slice(start, start + L + C);
+  if (x.length < L + C) throw new Error(`${source.name}: window runs past the end of the source`);
+  const rms = Array.from({length: periods + crossfade}, (_, k) => { let e = 0; for (let i = k * P; i < (k + 1) * P; i++) e += x[i] * x[i]; return Math.sqrt(e / P); });
+  const smoothRms = rms.map((_, k) => { let s = 0, n = 0; for (let j = Math.max(0, k - smooth); j <= Math.min(rms.length - 1, k + smooth); j++) { s += rms[j]; n++; } return s / n; });
+  const mean = Math.exp(smoothRms.reduce((s, v) => s + Math.log(v), 0) / smoothRms.length);
+  // per-sample gain, interpolated between period centres
+  const levelled = x.map((v, i) => { const t = Math.max(0, Math.min(smoothRms.length - 1, i / P - 0.5)), k = Math.floor(t), f = t - k;
+    return v * mean / (smoothRms[k] * (1 - f) + smoothRms[Math.min(k + 1, smoothRms.length - 1)] * f); });
+  const loop = levelled.slice(0, L);
+  for (let i = 0; i < C; i++) { const w = i / C; loop[i] = levelled[i] * w + levelled[L + i] * (1 - w); }
+  const ref = maxLoudness(decode(path.join(soundsDir, reference)), 0.4) + offset;
+  const twice = new Float64Array(2 * L); twice.set(loop); twice.set(loop, L);   // measure across the seam
+  let gain = ref - maxLoudness(twice, 0.4);
+  const pk = 20 * Math.log10(peak(loop)) + gain;
+  if (pk > PEAK_CEILING) gain -= pk - PEAK_CEILING;
+  const out = loop.map(v => v * db(gain));
+  writeOgg(out, path.join(soundsDir, file));
+  const enc = decode(path.join(soundsDir, file));
+  const seam = Math.abs(out[0] - out[L - 1]), step = out.reduce((m, v, i) => i ? Math.max(m, Math.abs(v - out[i - 1])) : m, 0);
+  return {file, seconds: +(enc.length / SR).toFixed(4), samples: enc.length, expectedSamples: L, targetLUFS: +ref.toFixed(1),
+    maxMomentaryLUFS: +maxLoudness(enc, 0.4).toFixed(1), peakDbfs: +(20 * Math.log10(peak(enc))).toFixed(1), peakLimited: pk > PEAK_CEILING,
+    sourceSwingDb: +(20 * Math.log10(Math.max(...rms) / Math.min(...rms))).toFixed(1), seamJump: +seam.toFixed(5), largestStep: +step.toFixed(5)};
 }

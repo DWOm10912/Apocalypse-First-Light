@@ -6,6 +6,8 @@ import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
@@ -219,15 +221,24 @@ public final class ChargingStationBlock extends Block implements EntityBlock, Af
         if (station.item().isEmpty()) {
             if (held.isEmpty() || !ChargingStationBlockEntity.canCharge(held)) return InteractionResult.PASS;
             if (level.isClientSide) return InteractionResult.SUCCESS;
+            playTraySound(level, master, state.getValue(FACING));
             station.place(held);
             if (!player.getAbilities().instabuild) held.shrink(1);
             return InteractionResult.CONSUME;
         }
         if (!held.isEmpty()) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
+        playTraySound(level, master, state.getValue(FACING));
         ItemStack removed = station.take();
         if (!player.getInventory().add(removed)) player.drop(removed, false);
         return InteractionResult.CONSUME;
+    }
+
+    /** Placing and taking the tray item: the vanilla leather armour equip sound (user's choice), from the tray. */
+    private static void playTraySound(Level level, BlockPos master, Direction facing) {
+        Vec3 at = sourceToWorld(master, facing, ITEM_X, ITEM_Y + 1.0, ITEM_Z);
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.ARMOR_EQUIP_LEATHER, SoundSource.BLOCKS, 1.0F,
+                0.97F + level.random.nextFloat() * 0.06F);
     }
 
     @Override

@@ -66,6 +66,10 @@ public final class AflSounds {
     // Beverage Cooler doors: tools/build-beverage-cooler-sounds-v1.mjs (both doors share them)
     public static final RegistryObject<SoundEvent> BEVERAGE_COOLER_DOOR_OPEN = simple("beverage_cooler_door_open");
     public static final RegistryObject<SoundEvent> BEVERAGE_COOLER_DOOR_CLOSE = simple("beverage_cooler_door_close");
+    // Charging Station (tools/build-charging-station-sounds-v1.mjs); placing / taking the item uses the vanilla leather equip sound
+    public static final RegistryObject<SoundEvent> CHARGING_STATION_START = simple("charging_station_start");
+    public static final RegistryObject<SoundEvent> CHARGING_STATION_FULL = simple("charging_station_full");
+    public static final RegistryObject<SoundEvent> CHARGING_STATION_HUM = simple("charging_station_hum");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");
