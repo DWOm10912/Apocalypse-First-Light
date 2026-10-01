@@ -39,6 +39,9 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.IndustrialElectricalBoxBlockEntity>> INDUSTRIAL_ELECTRICAL_BOX =
             BLOCK_ENTITIES.register("industrial_electrical_box", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.IndustrialElectricalBoxBlockEntity::new, AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.CashRegisterBlockEntity>> CASH_REGISTER =
+            BLOCK_ENTITIES.register("cash_register", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.CashRegisterBlockEntity::new, AflBlocks.CASH_REGISTER.get()).build(null));
     public static final RegistryObject<BlockEntityType<CommercialGlassDoubleDoorBlockEntity>> COMMERCIAL_GLASS_DOUBLE_DOOR =
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,

@@ -12,7 +12,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import java.lang.reflect.Field;
 
-/** Binds the opted-in plain Items (ammo, Material Meshes V1) and the locker item to the AFL Mesh item renderer. */
+/** Binds the opted-in plain Items (ammo, Material Meshes V1) and the Pure Mesh block items (locker, electrical box, cash register) to the AFL Mesh item renderer. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class AflStaticMeshItemClient {
     @SubscribeEvent
@@ -54,6 +54,10 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.INDUSTRIAL_ELECTRICAL_BOX.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/industrial_electrical_box.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/industrial_electrical_box.png"), 0.0, 0.0), "industrial_electrical_box");
+            // Cash Register V2 (tools/build-cash-register-v2.mjs): the block's mesh and atlas, drawer closed; GUI view fitted
+            bind(AflItems.CASH_REGISTER.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/cash_register.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/cash_register.png"), 0.0, 0.0), "cash_register");
         });
     }
 

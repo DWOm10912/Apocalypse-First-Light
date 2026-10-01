@@ -7,7 +7,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | Registry ID suffix | GUI translation [X,Y,Z] |
 | --- | --- |
 | `retail_shelf_single` | `[-0.75,-2.9,0]` |
-| `cash_register` | `[0,2.2,0]` |
+| `cash_register` | 2026-09-30 起由 `tools/build-cash-register-v2.mjs` 生成：rotation `[30,225,0]`、translation `[-0.038,1.482,0]`、scale 0.711（V2 Mesh，见 [cash_register_v2.md](cash_register_v2.md)） |
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
 | `beverage_cooler` | `[0,-2.1,0]` |
 | `chest_freezer` | `[0,-0.1,0]` |

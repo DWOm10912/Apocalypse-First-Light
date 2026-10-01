@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/cash_register.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/cash_register.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.046875,
+    -0.015625,
+    -0.429375,
+    0.953125,
+    0.759375,
+    0.894375
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "drawer": {
+      "pivot": [
+        0,
+        0.109375,
+        -0.3875
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 6,
+      "easing": "linear",
+      "transforms": {
+        "drawer": {
+          "translation": [
+            0,
+            0,
+            -0.5
+          ]
+        }
+      }
+    }
+  }
+}

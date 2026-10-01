@@ -6,7 +6,7 @@
 
 **STATIC PROP → baked model / OBJ**：桌、椅、垃圾桶、静态货架、钢支撑、HVAC、电气面板等永久静态资产继续原路径。
 
-**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、cooler、freezer、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。
+**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、cooler、freezer、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。cash register 同理：钱箱要能拉出来搜刮，2026-09-30 改走本运行时（可动部件是钱箱，[cash_register_v2.md](../models/cash_register_v2.md)）。
 
 **首个正式资产（2026-09-29）**：`industrial_locker` V2，见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 

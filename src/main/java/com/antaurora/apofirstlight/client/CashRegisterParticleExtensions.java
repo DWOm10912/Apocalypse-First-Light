@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.client.extensions.common.IClientBlockExtensions;
 
-/** Fixed debris budget for the detailed static block model. */
+/** Fixed debris budget for the detailed register (the vanilla debris would subdivide every shape box). */
 public final class CashRegisterParticleExtensions implements IClientBlockExtensions {
     private static final int PARTICLES_PER_BREAK = 16;
 

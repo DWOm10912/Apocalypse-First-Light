@@ -96,7 +96,8 @@ final class AuthoringFixtureRegistry {
                     .notes("2 wide x 1 tall. Anchor = left master (BlockEntity); right part at facing.getCounterClockWise(). Lid starts closed."),
             new Def(A+"vending_machine",storage,"retail").facing(H4).multi(TWO_TALL).fixed("broken","false").inventory().support(Support.FLOOR)
                     .notes("Intact source state only (broken=false). Display slots start empty; damage belongs to the later world pass."),
-            new Def(A+"cash_register",safe,"retail").facing(H4).support(Support.FLOOR),
+            new Def(A+"cash_register",storage,"retail").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Countertop POS (V2); facing = the operator side. 9-slot cash drawer, starts closed and empty; it slides 0.5 block out toward the operator when opened."),
             new Def(A+"commercial_glass_double_door",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
                     .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity); the second leaf is at facing.getClockWise(), the opposite side from beverage_cooler."),
             new Def(A+"restroom_stall_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false").support(Support.FLOOR)

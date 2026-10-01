@@ -1,27 +1,93 @@
 {
-  "parent": "apocalypse_firstlight:block/cash_register",
-  "gui_light": "side",
+  "parent": "builtin/entity",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cash_register"
+  },
   "display": {
-    "thirdperson_righthand": {
-      "rotation": [75, 45, 0], "translation": [0, 2, 0], "scale": [0.65, 0.65, 0.65]
-    },
-    "thirdperson_lefthand": {
-      "rotation": [75, 45, 0], "translation": [0, 2, 0], "scale": [0.65, 0.65, 0.65]
-    },
-    "firstperson_righthand": {
-      "rotation": [0, 45, 0], "translation": [0, 1.5, 0], "scale": [0.75, 0.75, 0.75]
-    },
-    "firstperson_lefthand": {
-      "rotation": [0, 225, 0], "translation": [0, 1.5, 0], "scale": [0.75, 0.75, 0.75]
-    },
     "gui": {
-      "rotation": [25, 135, 0], "translation": [0, 2.2, 0], "scale": [0.85, 0.85, 0.85]
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        -0.038,
+        1.482,
+        0
+      ],
+      "scale": [
+        0.711,
+        0.711,
+        0.711
+      ]
     },
     "ground": {
-      "translation": [0, 1.5, 0], "scale": [0.65, 0.65, 0.65]
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.3,
+        0.3,
+        0.3
+      ]
     },
     "fixed": {
-      "rotation": [0, 180, 0], "scale": [0.8, 0.8, 0.8]
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        315,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        315,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
     }
   }
 }

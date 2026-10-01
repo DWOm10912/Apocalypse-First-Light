@@ -1,5 +1,6 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
-// Used by tools/build-lead-chest-sounds-v1.mjs and tools/build-industrial-electrical-box-sounds-v1.mjs (needs ffmpeg).
+// Used by tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs and
+// tools/build-cash-register-sounds-v1.mjs (needs ffmpeg).
 // Loudness: BS.1770 K-weighting. Each element is first brought to the same 100 ms short-window loudness (a click and a
 // thud then sit at the same level), then mixed with a role gain; each finished sound is scaled so its maximum momentary
 // loudness (400 ms) matches a reference sound plus an offset, with the sample peak kept at or below -1 dBFS.

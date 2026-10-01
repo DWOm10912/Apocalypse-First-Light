@@ -60,6 +60,9 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_LATCH = simple("industrial_electrical_box_latch");
     public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_OPEN = simple("industrial_electrical_box_open");
     public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_CLOSE = simple("industrial_electrical_box_close");
+    // Cash Register: tools/build-cash-register-sounds-v1.mjs (the open sound carries the bell)
+    public static final RegistryObject<SoundEvent> CASH_REGISTER_OPEN = simple("cash_register_open");
+    public static final RegistryObject<SoundEvent> CASH_REGISTER_CLOSE = simple("cash_register_close");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");
