@@ -74,8 +74,10 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
         if (context == ItemDisplayContext.GUI && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
     }
 
+    /** Bones flagged {@code neverRender} in the geo (e.g. a block's lit lamp set) are block-only and skipped here. */
     private static void renderBone(AflMeshModel mesh, GeoBone bone, PoseStack pose,
                                    VertexConsumer vertices, int light, int overlay) {
+        if (Boolean.TRUE.equals(bone.shouldNeverRender())) return;
         pose.pushPose();
         try {
             RenderUtils.prepMatrixForBone(pose, bone);

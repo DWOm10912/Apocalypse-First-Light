@@ -271,6 +271,9 @@ public final class AflItems {
     // Energy Battery V1: small rechargeable cell, made empty, 50,000 FE (machine_balance/energy_battery.json)
     public static final RegistryObject<Item> ENERGY_BATTERY = ITEMS.register("energy_battery",
             () -> new com.antaurora.apofirstlight.item.EnergyBatteryItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CHARGING_STATION = ITEMS.register("charging_station",
+            () -> new com.antaurora.apofirstlight.item.ChargingStationBlockItem((com.antaurora.apofirstlight.block.ChargingStationBlock)
+                    AflBlocks.CHARGING_STATION.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CRUSHER = ITEMS.register("crusher",
             () -> new BlockItem(AflBlocks.CRUSHER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> INDUSTRIAL_FURNACE = ITEMS.register("industrial_furnace",

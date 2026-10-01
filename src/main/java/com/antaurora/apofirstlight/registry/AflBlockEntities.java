@@ -46,6 +46,11 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get()).build(null));
+    /** Both cells of the Charging Station carry one (the right cell only forwards its power port to the master). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity>> CHARGING_STATION =
+            BLOCK_ENTITIES.register("charging_station", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity::new,
+                            AflBlocks.CHARGING_STATION.get()).build(null));
     public static final RegistryObject<BlockEntityType<BeverageCoolerBlockEntity>> BEVERAGE_COOLER =
             BLOCK_ENTITIES.register("beverage_cooler", () ->
                     BlockEntityType.Builder.of(BeverageCoolerBlockEntity::new,

@@ -28,6 +28,8 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(AflBlockEntities.RESTROOM_STALL_DOOR.get(), RestroomStallDoorRenderer::new);
         // Beverage Cooler V2: displayed items, then the generic AFL Animated Block Mesh renderer
         event.registerBlockEntityRenderer(AflBlockEntities.BEVERAGE_COOLER.get(), BeverageCoolerRenderer::new);
+        // Charging Station V1: the generic AFL Animated Block Mesh renderer plus the tray item and the front displays
+        event.registerBlockEntityRenderer(AflBlockEntities.CHARGING_STATION.get(), ChargingStationRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.CHEST_FREEZER.get(), ChestFreezerRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.VENDING_MACHINE.get(), VendingMachineRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.FLUID_TANK.get(), FluidTankRenderer::new);

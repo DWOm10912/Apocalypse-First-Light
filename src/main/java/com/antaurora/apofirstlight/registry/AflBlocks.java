@@ -310,6 +310,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> ENERGY_CELL = BLOCKS.register("energy_cell",
             () -> new EnergyCellBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));
+    // Charging Station V1: two-cell Pure Mesh charging bench, cable-fed (machine_balance/charging_station.json)
+    public static final RegistryObject<Block> CHARGING_STATION = BLOCKS.register("charging_station",
+            () -> new com.antaurora.apofirstlight.block.ChargingStationBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> CRUSHER = BLOCKS.register("crusher",
             () -> new CrusherBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .requiresCorrectToolForDrops()));

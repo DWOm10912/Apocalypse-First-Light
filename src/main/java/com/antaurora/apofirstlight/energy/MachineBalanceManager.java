@@ -34,6 +34,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "energy_cell");
     private static final ResourceLocation ENERGY_BATTERY_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "energy_battery");
+    private static final ResourceLocation CHARGING_STATION_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "charging_station");
     private static final ResourceLocation CRUSHER_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "crusher");
     private static final ResourceLocation INDUSTRIAL_FURNACE_ID =
@@ -48,6 +50,7 @@ public final class MachineBalanceManager {
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
     private static volatile EnergyBatteryBalance energyBattery = fallbackEnergyBattery();
+    private static volatile ChargingStationBalance chargingStation = fallbackChargingStation();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -73,6 +76,10 @@ public final class MachineBalanceManager {
 
     public static EnergyBatteryBalance energyBattery() {
         return energyBattery;
+    }
+
+    public static ChargingStationBalance chargingStation() {
+        return chargingStation;
     }
 
     public static CrusherBalance crusher() {
@@ -148,6 +155,10 @@ public final class MachineBalanceManager {
     public record EnergyBatteryBalance(int capacityFe, int maxReceiveFePerTick, int maxExtractFePerTick) {
     }
 
+    /** Charging Station: internal buffer, cable input limit, and the charge rate into the item on the tray. */
+    public record ChargingStationBalance(int capacityFe, int maxReceiveFePerTick, int chargeFePerTick) {
+    }
+
     public record CrusherBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
@@ -176,6 +187,7 @@ public final class MachineBalanceManager {
             ThermalGeneratorBalance loadedThermal = loadThermalGenerator(resources.get(THERMAL_GENERATOR_ID));
             EnergyCellBalance loadedCell = loadEnergyCell(resources.get(ENERGY_CELL_ID));
             EnergyBatteryBalance loadedBattery = loadEnergyBattery(resources.get(ENERGY_BATTERY_ID));
+            ChargingStationBalance loadedStation = loadChargingStation(resources.get(CHARGING_STATION_ID));
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -186,6 +198,7 @@ public final class MachineBalanceManager {
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
             energyBattery = loadedBattery;
+            chargingStation = loadedStation;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -204,6 +217,9 @@ public final class MachineBalanceManager {
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Energy Battery balance: capacity={} FE, receive={} FE/t, extract={} FE/t",
                     loadedBattery.capacityFe(), loadedBattery.maxReceiveFePerTick(), loadedBattery.maxExtractFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Charging Station balance: capacity={} FE, receive={} FE/t, charge={} FE/t",
+                    loadedStation.capacityFe(), loadedStation.maxReceiveFePerTick(), loadedStation.chargeFePerTick());
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Crusher balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedCrusher.capacityFe(), loadedCrusher.maxReceiveFePerTick(), loadedCrusher.workFePerTick());
@@ -299,6 +315,21 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static ChargingStationBalance loadChargingStation(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "charging_station.json");
+            return new ChargingStationBalance(
+                    requirePositiveInt(root, "capacity_fe", "charging_station.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "charging_station.json"),
+                    requirePositiveInt(root, "charge_fe_per_tick", "charging_station.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/charging_station.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackChargingStation();
+        }
+    }
+
     private static CrusherBalance loadCrusher(@Nullable JsonElement element) {
         try {
             JsonObject root = requireObject(element, "crusher.json");
@@ -390,6 +421,11 @@ public final class MachineBalanceManager {
     /** Same values as machine_balance/energy_battery.json; also what clients use without the server's data. */
     private static EnergyBatteryBalance fallbackEnergyBattery() {
         return new EnergyBatteryBalance(50_000, 128, 128);
+    }
+
+    /** Same values as machine_balance/charging_station.json. */
+    private static ChargingStationBalance fallbackChargingStation() {
+        return new ChargingStationBalance(10_000, 256, 128);
     }
 
     private static CrusherBalance fallbackCrusher() {

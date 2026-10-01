@@ -72,6 +72,7 @@ public final class AflCreativeTabs {
             AflItems.ENERGY_CELL,
             AflItems.ENERGY_BATTERY,
             AflItems.POWER_CABLE,
+            AflItems.CHARGING_STATION,
             AflItems.CRUSHER,
             AflItems.INDUSTRIAL_FURNACE,
             AflItems.ALLOY_FURNACE,

@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -14,7 +15,11 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
-/** Native, asset-independent BER. No GeoBone, weapon controller, packets or mutable shared poses. */
+/**
+ * Native, asset-independent BER. No GeoBone, weapon controller, packets or mutable shared poses. The host decides per
+ * frame which profile parts are visible and which draw at full brightness ({@link AflAnimatedMeshHost#meshPartVisible},
+ * {@link AflAnimatedMeshHost#meshPartEmissive}).
+ */
 public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnimatedMeshHost> implements BlockEntityRenderer<T> {
     public AflAnimatedBlockMeshRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -34,27 +39,27 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             pose.translate(profile.origin().x, profile.origin().y, profile.origin().z);
             pose.scale((float)profile.scale().x, (float)profile.scale().y, (float)profile.scale().z);
             var cutout = RenderType.entityCutoutNoCull(profile.texture());
-            draw(profile, mesh, entity.meshAnimation(), time, pose, buffers.getBuffer(cutout),
+            draw(entity, profile, mesh, time, pose, buffers.getBuffer(cutout),
                     packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT);
             if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(cutout);
                 var translucent = RenderType.entityNoOutline(profile.texture());
-                draw(profile, mesh, entity.meshAnimation(), time, pose, buffers.getBuffer(translucent),
+                draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
                         packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT);
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(translucent);
             }
         } finally { pose.popPose(); }
     }
 
-    private static void draw(AflBlockMeshProfile profile, AflMeshModel mesh, AflBlockMeshAnimationState animation,
-                             double time, PoseStack pose, VertexConsumer vertices, int light, int overlay,
-                             AflMeshPart.Layer layer) {
-        for (var part : profile.roots()) drawPart(part, Vec3.ZERO, mesh, animation, time, pose, vertices, light, overlay, layer);
+    private static void draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
+                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
+        for (var part : profile.roots()) drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer);
     }
 
-    private static void drawPart(Part part, Vec3 parentPivot, AflMeshModel mesh, AflBlockMeshAnimationState animation,
-                                 double time, PoseStack pose, VertexConsumer vertices, int light, int overlay,
-                                 AflMeshPart.Layer layer) {
+    private static void drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
+                                 PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
+        if (!host.meshPartVisible(part.bone())) return;
+        AflBlockMeshAnimationState animation = host.meshAnimation();
         pose.pushPose();
         try {
             Transform rest = part.rest();
@@ -69,8 +74,8 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                     (float)(rest.scale().y * (1 + (target.scale().y - 1) * t)),
                     (float)(rest.scale().z * (1 + (target.scale().z - 1) * t)));
             AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(part.bone(), layer), pose, vertices,
-                    light, overlay, 1, 1, 1, 1, null);
-            for (var child : part.children()) drawPart(child, part.pivot(), mesh, animation, time, pose, vertices, light, overlay, layer);
+                    host.meshPartEmissive(part.bone()) ? LightTexture.FULL_BRIGHT : light, overlay, 1, 1, 1, 1, null);
+            for (var child : part.children()) drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer);
         } finally { pose.popPose(); }
     }
 

@@ -24,6 +24,19 @@ public interface AflAnimatedMeshHost {
     /** Client only; call after any authoritative state change (block state, update tag). */
     void refreshMeshAnimationTargets();
 
+    /**
+     * Profile part visibility, read every frame. A hidden part skips its geometry and its children. Used for alternative
+     * part sets, e.g. a lamp's unlit and lit lenses (the lit set carries LabPBR emission in the atlas).
+     */
+    default boolean meshPartVisible(String part) {
+        return true;
+    }
+
+    /** Parts drawn at full brightness instead of the block light (lit lamps, screens), read every frame. */
+    default boolean meshPartEmissive(String part) {
+        return false;
+    }
+
     /** Shared body of {@link #refreshMeshAnimationTargets()}: channel targets from the concrete block's authority. */
     static void refreshTargets(Level level, ResourceLocation meshProfile, AflBlockMeshAnimationState animation,
                                Predicate<String> target) {

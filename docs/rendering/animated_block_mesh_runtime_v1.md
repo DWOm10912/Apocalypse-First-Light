@@ -100,7 +100,14 @@ profile 最多 128 parts、32 channels、32 层深度；拒绝未知字段、非
 
 已读本机 Oculus 6020952 的 `SimplePBRLoader`、`PBRTextureManager` 和 `MixinGameRenderer`：它按 Base Texture ResourceLocation 查同目录 companions；有 default holder/default normal/default specular；标准 cutout 可进入 block-entity shader 分支。**这是代码兼容性依据，不是新 BER 的 GPU 绑定/PBR 实机 PASS**。无 shaders 使用 Base Color；缺 `_s`/`_n` 交给 Oculus 既有默认值，不由 AFL 主动打开缺失图。Embeddium 仍通过原 VertexConsumer 路径，无 internals patch。
 
-renderer 原样传递 dispatcher 的 `packedLight`（sky + block light）与 `packedOverlay`，不 FULL_BRIGHT。位置/法线经过同一 PoseStack；低层保留逆转置、归一化及奇异矩阵保护。V1 是 **BER 采样点世界光照**，不是 baked terrain 的逐顶点邻接 AO，也不是大门每个移动端点独立取光。AO 可用材质表达；未来可在分 part 提交处扩展 light/emissive policy，本轮未实现强制自发光。
+renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）与 `packedOverlay`。位置/法线经过同一 PoseStack；低层保留逆转置、归一化及奇异矩阵保护。V1 是 **BER 采样点世界光照**，不是 baked terrain 的逐顶点邻接 AO，也不是大门每个移动端点独立取光。AO 可用材质表达。
+
+**部件显示与自发光（2026-10-01，充电站加入）**：`AflAnimatedMeshHost` 新增两个默认方法，renderer 每帧逐 part 询问：
+
+- `meshPartVisible(part)`（默认 true）：返回 false 时跳过这个 part 的几何体和它的子 part。用于同一位置的两套部件互相替换，例如指示灯的暗灯 / 亮灯两套镜片（亮灯那套在贴图 `_s` 的 alpha 里带 LabPBR 自发光，这样光影下只有亮着的灯发光）。
+- `meshPartEmissive(part)`（默认 false）：返回 true 时这个 part 用 `LightTexture.FULL_BRIGHT` 代替方块光照。
+
+已有资产都不覆盖这两个方法，行为不变。备用的那套部件在 geo 骨骼上标 `neverRender: true`，`AflStaticMeshItemRenderer` 会跳过这种骨骼，所以物品模型只显示默认那套。第一个使用者是 [Charging Station V1](../models/charging_station_v1.md)；饮料冷柜的灯以后也照这个做。
 
 透明排序和 shader alpha 阈值仍受既有 [Transparent Hybrid Mesh 限制](../native_guns/transparent_hybrid_mesh_runtime_v1.md) 约束，不保证相交玻璃/液体或不同 shader pack 的透明 PBR。
 
@@ -120,7 +127,7 @@ mesh、分层列表、profile 树、变换定义、bounds 均在 reload 时缓�
 
 ## V1 边界与后续接入
 
-支持刚性 part 层级、一个 atlas、独立 boolean channels、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning、连续循环 rotor 时钟、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO 或完整 emissive policy。
+支持刚性 part 层级、一个 atlas、独立 boolean channels、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning、连续循环 rotor 时钟、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO；自发光只有上面的逐 part 全亮度开关，没有更细的光照策略。
 
 industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-industrial-locker-v2.mjs`，bones `body` / `door`，通道 `open`，-100°，10 ticks），详见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 
@@ -129,6 +136,6 @@ industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-indu
 ## 冻结 Runtime 文件清单
 
 - 共享底层：`src/main/java/com/antaurora/apofirstlight/client/mesh/{AflMeshCache,AflMeshModel,AflMeshRenderer}.java`。
-- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入）。
+- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入，2026-10-01 加入 `meshPartVisible` / `meshPartEmissive` 默认方法）。
 - 新增客户端：`src/main/java/com/antaurora/apofirstlight/client/blockmesh/{AflBlockMeshProfileLoader,AflAnimatedBlockMeshRenderer}.java`。
 - 文档：本文件及 `docs/native_guns/hybrid_mesh_runtime_v1.md` 的共享底层说明。

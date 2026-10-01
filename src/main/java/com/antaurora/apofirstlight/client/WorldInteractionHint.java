@@ -3,6 +3,8 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
+import com.antaurora.apofirstlight.block.ChargingStationBlock;
+import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.registry.AflItems;
@@ -19,6 +21,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
+
+import java.util.Locale;
 
 /**
  * World interaction prompt (formerly VendingMachineHint): one {@link AttachmentHintStyle} label with a shared fade. Each
@@ -51,6 +55,7 @@ public final class WorldInteractionHint {
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
+            if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
@@ -95,6 +100,29 @@ public final class WorldInteractionHint {
         var door=BeverageCoolerBlock.promptDoor(mc.level,hit.getBlockPos(),s,hit.getLocation());
         return door==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.beverage_cooler."+(door.open()?"close":"open")),
                 BeverageCoolerBlock.promptAnchor(door.master(),door.facing(),door.left(),door.open()));
+    }
+
+    /**
+     * Charging station tray, resolved like ChargingStationBlock#use (main hand first, then the off hand): place a chargeable
+     * item, "cannot charge" for anything else, or take the item back (either hand empty) with its synced FE; drawn above
+     * the tray.
+     */
+    private static Target chargingStation(Minecraft mc,BlockHitResult hit) {
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof ChargingStationBlock)) return null;
+        var master=ChargingStationBlock.masterPosition(hit.getBlockPos(),s);
+        if(!(mc.level.getBlockEntity(master) instanceof ChargingStationBlockEntity station)||!station.isMaster()) return null;
+        Vec3 anchor=ChargingStationBlock.sourceToWorld(master,s.getValue(ChargingStationBlock.FACING),
+                ChargingStationBlock.ITEM_X,ChargingStationBlock.ITEM_Y+2.5,ChargingStationBlock.ITEM_Z);
+        var main=mc.player.getMainHandItem();var off=mc.player.getOffhandItem();
+        if(station.item().isEmpty()) {
+            if(main.isEmpty()&&off.isEmpty()) return null;
+            boolean chargeable=ChargingStationBlockEntity.canCharge(main)||ChargingStationBlockEntity.canCharge(off);
+            return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station."+(chargeable?"place":"cannot_charge")),anchor);
+        }
+        if(!main.isEmpty()&&!off.isEmpty()) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station.take",
+                String.format(Locale.ROOT,"%,d",station.itemEnergy()),String.format(Locale.ROOT,"%,d",station.itemCapacity())),anchor);
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */
