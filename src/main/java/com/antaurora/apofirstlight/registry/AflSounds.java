@@ -63,6 +63,9 @@ public final class AflSounds {
     // Cash Register: tools/build-cash-register-sounds-v1.mjs (the open sound carries the bell)
     public static final RegistryObject<SoundEvent> CASH_REGISTER_OPEN = simple("cash_register_open");
     public static final RegistryObject<SoundEvent> CASH_REGISTER_CLOSE = simple("cash_register_close");
+    // Beverage Cooler doors: tools/build-beverage-cooler-sounds-v1.mjs (both doors share them)
+    public static final RegistryObject<SoundEvent> BEVERAGE_COOLER_DOOR_OPEN = simple("beverage_cooler_door_open");
+    public static final RegistryObject<SoundEvent> BEVERAGE_COOLER_DOOR_CLOSE = simple("beverage_cooler_door_close");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

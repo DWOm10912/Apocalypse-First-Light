@@ -2,12 +2,21 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
+import com.antaurora.apofirstlight.block.BeverageCoolerLayout;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Container;
+import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -17,14 +26,19 @@ import net.minecraft.world.phys.AABB;
  * tools/build-beverage-cooler-v2.mjs; channels {@code left_open} / {@code right_open}). BlockState owns the durable door
  * poses and is committed {@link BeverageCoolerBlock#ANIMATION_TICKS} after a click; the server announces each started
  * transition with a block event, so clients start the swing at the click instead of at the commit.
+ * Also the display: {@link BeverageCoolerLayout#SLOTS} slots of one item each (front rank 0-29, back rank 30-59), saved as
+ * {@code Items} and synced to clients for rendering, the same contract as the retail shelf.
  */
-public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
+public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost, Container {
+    public static final int SIZE = BeverageCoolerLayout.SLOTS;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/beverage_cooler.json");
     private static final int EVENT_LEFT_DOOR = 1;
     private static final int EVENT_RIGHT_DOOR = 2;
 
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
+    private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
+    private boolean contentsDropped;
     private Boolean pendingLeft;
     private Boolean pendingRight;
     private long leftFinishTick;
@@ -98,6 +112,122 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
         Boolean announced = left ? announcedLeft : announcedRight;
         return announced != null ? announced
                 : getBlockState().getValue(left ? BeverageCoolerBlock.LEFT_OPEN : BeverageCoolerBlock.RIGHT_OPEN);
+    }
+
+    // ---- display (one item per slot) ----
+
+    public boolean isEmpty(int slot) {
+        return items.get(slot).isEmpty();
+    }
+
+    @Override
+    public int getContainerSize() {
+        return SIZE;
+    }
+
+    @Override
+    public int getMaxStackSize() {
+        return 1;
+    }
+
+    @Override
+    public boolean canPlaceItem(int slot, ItemStack stack) {
+        return slot >= 0 && slot < SIZE && items.get(slot).isEmpty() && !stack.isEmpty();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return items.stream().allMatch(ItemStack::isEmpty);
+    }
+
+    @Override
+    public ItemStack getItem(int slot) {
+        return items.get(slot);
+    }
+
+    @Override
+    public ItemStack removeItem(int slot, int amount) {
+        ItemStack removed = ContainerHelper.removeItem(items, slot, amount);
+        if (!removed.isEmpty()) sync();
+        return removed;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int slot) {
+        return ContainerHelper.takeItem(items, slot);
+    }
+
+    @Override
+    public void setItem(int slot, ItemStack stack) {
+        items.set(slot, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
+        sync();
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return Container.stillValidBlockEntity(this, player);
+    }
+
+    @Override
+    public void clearContent() {
+        items.replaceAll(ignored -> ItemStack.EMPTY);
+        sync();
+    }
+
+    public void insertOne(int slot, ItemStack source) {
+        if (canPlaceItem(slot, source)) setItem(slot, source);
+    }
+
+    public ItemStack removeOne(int slot) {
+        ItemStack removed = items.get(slot);
+        items.set(slot, ItemStack.EMPTY);
+        sync();
+        return removed;
+    }
+
+    /** Every removal path of the master cell ends here (BeverageCoolerBlock#onRemove): each item drops once. */
+    public void dropContentsOnce() {
+        if (contentsDropped || level == null) return;
+        contentsDropped = true;
+        for (ItemStack item : items) {
+            if (!item.isEmpty()) Block.popResource(level, worldPosition, item.copy());
+        }
+        items.replaceAll(ignored -> ItemStack.EMPTY);
+        setChanged();
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
+        ContainerHelper.loadAllItems(tag, items);
+        for (int slot = 0; slot < SIZE; slot++) {
+            if (items.get(slot).getCount() > 1) items.set(slot, items.get(slot).copyWithCount(1));
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        ContainerHelper.saveAllItems(tag, items);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        return saveWithoutMetadata();
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    private void sync() {
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            BlockState state = getBlockState();
+            level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+        }
     }
 
     // ---- AFL Animated Block Mesh Runtime ----

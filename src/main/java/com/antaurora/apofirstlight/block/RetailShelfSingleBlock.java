@@ -254,21 +254,10 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
                 hitLocation.z - lower.getZ()).z >= RetailShelfLayout.DISPLAY_Z;
     }
 
-    /**
-     * Front-first access, no restocking (taking the front item leaves the back one where it is). Taking: the front item,
-     * else the back one. Placing: never past a front item; into the front when only the back is filled; where the
-     * crosshair lands when both are free. Returns the slot, or -1 when nothing applies.
-     */
+    /** {@link DisplayDepthRule} for one shelf cell. Returns the slot, or -1 when nothing applies. */
     public static int chooseSlot(int cell, boolean frontFilled, boolean backFilled, boolean placing, boolean aimBack) {
-        int front = RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT);
-        int back = RetailShelfLayout.slot(cell, RetailShelfLayout.BACK);
-        if (!placing) {
-            return frontFilled ? front : backFilled ? back : -1;
-        }
-        if (frontFilled) {
-            return -1;
-        }
-        return backFilled || !aimBack ? front : back;
+        return DisplayDepthRule.choose(RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT),
+                RetailShelfLayout.slot(cell, RetailShelfLayout.BACK), frontFilled, backFilled, placing, aimBack);
     }
 
     private static Vec3 toCanonical(Direction facing, double localX, double localY, double localZ) {

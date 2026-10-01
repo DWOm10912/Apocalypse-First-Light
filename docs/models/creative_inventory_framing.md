@@ -9,7 +9,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | `retail_shelf_single` | `[-0.75,-2.9,0]` |
 | `cash_register` | 2026-09-30 起由 `tools/build-cash-register-v2.mjs` 生成：rotation `[30,225,0]`、translation `[-0.038,1.482,0]`、scale 0.711（V2 Mesh，见 [cash_register_v2.md](cash_register_v2.md)） |
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
-| `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,45,0]`、translation `[1.78,-1.619,-2.887]`、scale 0.328（V2 Mesh，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |
+| `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-1.78,-3.254,0.613]`、scale 0.328（V2 Mesh，2026-10-01 修正为正面朝外，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |
 | `chest_freezer` | `[0,-0.1,0]` |
 | `vending_machine` | `[0,-4,0]` |
 | `modern_office_desk` | `[0,0,0]` |

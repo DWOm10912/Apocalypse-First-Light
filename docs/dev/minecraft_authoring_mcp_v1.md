@@ -117,8 +117,8 @@ This is development tooling only: every class is under `src/dev/java/.../dev/aut
 
 | Class | Blocks |
 | --- | --- |
-| SAFE_FIXTURE | beverage_cooler (2×2), chest_freezer (2×1), commercial_glass_double_door (2×2), restroom_stall_door, steel_door, poplar_door (two-tall), modern_office_desk (3×1), modern_office_chair, modern_lcd_monitor, office_computer_station, office_keyboard, office_mouse, low_filing_cabinet, tall_filing_cabinet, office_multifunction_printer (two-tall), office_cubicle_partition, restroom_partition, commercial_flushometer_toilet, commercial_wall_mounted_sink (two-tall), metal_trash_can, commercial_dumpster (2×1), water_dispenser (two-tall), industrial_utility_light |
-| STORAGE_WITH_INVENTORY (must start and stay empty) | retail_shelf_single (two-tall), vending_machine (two-tall), industrial_locker (two-tall), lead_chest, industrial_electrical_box (wall only, 9 slots), cash_register (9-slot cash drawer), `minecraft:chest` (single only), `minecraft:barrel` |
+| SAFE_FIXTURE | chest_freezer (2×1), commercial_glass_double_door (2×2), restroom_stall_door, steel_door, poplar_door (two-tall), modern_office_desk (3×1), modern_office_chair, modern_lcd_monitor, office_computer_station, office_keyboard, office_mouse, low_filing_cabinet, tall_filing_cabinet, office_multifunction_printer (two-tall), office_cubicle_partition, restroom_partition, commercial_flushometer_toilet, commercial_wall_mounted_sink (two-tall), metal_trash_can, commercial_dumpster (2×1), water_dispenser (two-tall), industrial_utility_light |
+| STORAGE_WITH_INVENTORY (must start and stay empty) | retail_shelf_single (two-tall), vending_machine (two-tall), industrial_locker (two-tall), lead_chest, industrial_electrical_box (wall only, 9 slots), cash_register (9-slot cash drawer), beverage_cooler (2×2, 60-slot display), `minecraft:chest` (single only), `minecraft:barrel` |
 | MACHINE (blocked) | alloy_furnace, chemical_reactor, compressor, crusher, industrial_furnace, thermal_generator, gun_maintenance_bench, precision_fabrication_station |
 | UNSAFE (blocked) | energy_cell, fluid_tank, every unregistered BlockEntity block |
 

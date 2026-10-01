@@ -17,7 +17,7 @@ V3 只换外观：模型、贴图和 PBR，以及跟着外形调整的 Mesh Shap
 | 逐格搜索 | 接入 Progressive Container Search，40 ticks/格 |
 | 声音 | 2026-09-30 起有开合音效，方块音效改为原版下界合金块（见"音效"） |
 | 骨骼与动画 | `body`、`lid`、`latch_left`、`latch_right`，通道 `open`，14 ticks，`ease_in_out`：盖子绕后合页转 +100°，两个搭扣各绕下端转 −120° 向前翻下 |
-| 物品 | `LeadChestBlockItem` 用 `AflStaticMeshItemRenderer` 画同一份 Mesh（关盖姿态），`models/item/lead_chest.json` 的 display 不变 |
+| 物品 | `LeadChestBlockItem` 用 `AflStaticMeshItemRenderer` 画同一份 Mesh（关盖姿态），`models/item/lead_chest.json` 的 display 沿用 V1，只有 GUI 视角在 2026-10-01 从 `[30,45,0]` 改为 `[30,225,0]`：原来物品栏里显示的是背面（用户发现），现在和配电箱、收银机一样是正面朝外 |
 
 ## 模型
 

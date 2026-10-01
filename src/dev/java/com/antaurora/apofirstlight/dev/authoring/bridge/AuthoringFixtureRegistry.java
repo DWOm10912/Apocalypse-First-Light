@@ -90,8 +90,8 @@ final class AuthoringFixtureRegistry {
         var defs=List.of(
             new Def(A+"retail_shelf_single",storage,"retail").facing(H4).multi(TWO_TALL).inventory().support(Support.FLOOR)
                     .notes("Two-tall display shelf. The lower half owns the display BlockEntity, which always starts empty."),
-            new Def(A+"beverage_cooler",safe,"retail").facing(H4).multi(COOLER).fixed("left_open","false","right_open","false").support(Support.FLOOR)
-                    .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity); the right column is at facing.getCounterClockWise(). Doors start closed."),
+            new Def(A+"beverage_cooler",storage,"retail").facing(H4).multi(COOLER).fixed("left_open","false","right_open","false").inventory().support(Support.FLOOR)
+                    .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity with the 60-slot display, starts empty); the right column is at facing.getCounterClockWise(). Doors start closed."),
             new Def(A+"chest_freezer",safe,"retail").facing(H4).multi(FREEZER).fixed("lid","closed").support(Support.FLOOR)
                     .notes("2 wide x 1 tall. Anchor = left master (BlockEntity); right part at facing.getCounterClockWise(). Lid starts closed."),
             new Def(A+"vending_machine",storage,"retail").facing(H4).multi(TWO_TALL).fixed("broken","false").inventory().support(Support.FLOOR)

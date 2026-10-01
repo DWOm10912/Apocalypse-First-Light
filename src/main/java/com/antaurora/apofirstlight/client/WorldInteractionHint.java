@@ -1,12 +1,15 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
+import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
@@ -47,6 +50,7 @@ public final class WorldInteractionHint {
         Target target=null;
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             target=vendingMachine(mc,hit);
+            if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
@@ -70,6 +74,27 @@ public final class WorldInteractionHint {
         return s.getBlock() instanceof VendingMachineBlock && !s.getValue(VendingMachineBlock.BROKEN)
                 && VendingMachineBlock.frontPoint(s,hit.getBlockPos(),mc.player.getEyePosition(),hit)!=null
                 ? new Target(Component.translatable("hint.apocalypse_firstlight.break_glass"),null) : null;
+    }
+
+    /**
+     * Beverage cooler doors, resolved like a click (BeverageCoolerDoorInput first ray-tests open leaves, also where they
+     * swing out of their cells, then the vanilla hit): open / close, drawn at the door's pull handle.
+     */
+    private static Target coolerDoor(Minecraft mc,BlockHitResult hit) {
+        Vec3 eye=mc.player.getEyePosition();
+        Vec3 end=eye.add(mc.player.getViewVector(1.0F).scale(mc.gameMode==null?4.5:mc.gameMode.getPickRange()));
+        var leaf=BeverageCoolerDoorRaycast.find(mc.level,mc.player,eye,end);
+        if(leaf!=null) {
+            var facing=mc.level.getBlockState(leaf.master()).getValue(BeverageCoolerBlock.FACING);
+            return new Target(Component.translatable("hint.apocalypse_firstlight.beverage_cooler.close"),
+                    BeverageCoolerBlock.promptAnchor(leaf.master(),facing,leaf.left(),true));
+        }
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof BeverageCoolerBlock)) return null;
+        var door=BeverageCoolerBlock.promptDoor(mc.level,hit.getBlockPos(),s,hit.getLocation());
+        return door==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.beverage_cooler."+(door.open()?"close":"open")),
+                BeverageCoolerBlock.promptAnchor(door.master(),door.facing(),door.left(),door.open()));
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

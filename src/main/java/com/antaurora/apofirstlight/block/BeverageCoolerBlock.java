@@ -1,14 +1,17 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -42,7 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Four-cell, independently hinged, no-inventory commercial cooler. */
+/** Four-cell, independently hinged commercial cooler; the master's block entity holds the 60-slot display. */
 public final class BeverageCoolerBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
@@ -207,7 +210,7 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos master = masterPosition(position, state);
         Door door = hitDoor(hit.getLocation(), master, state.getValue(FACING), state);
-        if (door == Door.NONE) return InteractionResult.PASS;
+        if (door == Door.NONE) return useDisplay(level, master, player, hand, hit);
         if (level.isClientSide) return InteractionResult.SUCCESS;
         BlockState masterState = level.getBlockState(master);
         if (!masterState.is(this) || masterState.getValue(PART) != Part.LOWER_LEFT
@@ -222,9 +225,91 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
             boolean target = !masterState.getValue(left ? LEFT_OPEN : RIGHT_OPEN);
             if (cooler.startDoor(left, target, level.getGameTime())) {
                 level.scheduleTick(master, this, ANIMATION_TICKS);
+                playDoorSound(level, master, state.getValue(FACING), left, target);
             }
         }
         return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Display: through an open door, the crosshair picks a cell behind that door (BeverageCoolerLayout#targetCell) and the
+     * front-first rule (DisplayDepthRule) the slot; one item is placed from the hand or taken into the inventory.
+     */
+    private static InteractionResult useDisplay(Level level, BlockPos master, Player player, InteractionHand hand, BlockHitResult hit) {
+        BlockState masterState = level.getBlockState(master);
+        if (!(masterState.getBlock() instanceof BeverageCoolerBlock) || masterState.getValue(PART) != Part.LOWER_LEFT
+                || !(level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler)) return InteractionResult.PASS;
+        Direction facing = masterState.getValue(FACING);
+        Vec3 hitSource = BeverageCoolerLayout.toSource(hit.getLocation(), master, facing);
+        int cell = BeverageCoolerLayout.targetCell(BeverageCoolerLayout.toSource(player.getEyePosition(), master, facing), hitSource,
+                masterState.getValue(LEFT_OPEN), masterState.getValue(RIGHT_OPEN));
+        if (cell < 0) return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+
+        int front = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.FRONT);
+        int back = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.BACK);
+        ItemStack held = player.getItemInHand(hand);
+        int slot = DisplayDepthRule.choose(front, back, !cooler.isEmpty(front), !cooler.isEmpty(back), !held.isEmpty(),
+                BeverageCoolerLayout.aimsAtBack(hitSource));
+        if (slot < 0) return InteractionResult.PASS;
+        if (cooler.isEmpty(slot) && !held.isEmpty()) {
+            cooler.insertOne(slot, held);
+            if (!player.getAbilities().instabuild) held.shrink(1);
+            return InteractionResult.CONSUME;
+        }
+        if (!cooler.isEmpty(slot) && held.isEmpty()) {
+            ItemStack removed = cooler.removeOne(slot);
+            if (!player.getInventory().add(removed)) player.drop(removed, false);
+            return InteractionResult.CONSUME;
+        }
+        return InteractionResult.PASS;
+    }
+
+    /**
+     * Played at the click, together with the swing: the sounds are placed on the eight-tick door animation
+     * (tools/build-beverage-cooler-sounds-v1.mjs: the seal pop near the start of opening, the seal suction on the last
+     * frame of closing), so the pitch only varies by +-2 %. Heard from the middle of the clicked door's column.
+     */
+    private static void playDoorSound(Level level, BlockPos master, Direction facing, boolean left, boolean open) {
+        BlockPos column = left ? master : master.relative(facing.getCounterClockWise());
+        level.playSound(null, column.getX() + 0.5D, column.getY() + 1.0D, column.getZ() + 0.5D,
+                open ? AflSounds.BEVERAGE_COOLER_DOOR_OPEN.get() : AflSounds.BEVERAGE_COOLER_DOOR_CLOSE.get(),
+                SoundSource.BLOCKS, 0.8F, 0.98F + level.random.nextFloat() * 0.04F);
+    }
+
+    /** Client prompt (WorldInteractionHint): the door a vanilla hit on any cooler cell aims at, with its committed state. */
+    public record DoorPrompt(BlockPos master, Direction facing, boolean left, boolean open) {}
+
+    @Nullable
+    public static DoorPrompt promptDoor(BlockGetter level, BlockPos position, BlockState state, Vec3 hitLocation) {
+        BlockPos master = masterPosition(position, state);
+        BlockState masterState = level.getBlockState(master);
+        if (!(masterState.getBlock() instanceof BeverageCoolerBlock) || masterState.getValue(PART) != Part.LOWER_LEFT) return null;
+        Direction facing = masterState.getValue(FACING);
+        Door door = hitDoor(hitLocation, master, facing, masterState);
+        if (door == Door.NONE) return null;
+        boolean left = door == Door.LEFT;
+        return new DoorPrompt(master, facing, left, masterState.getValue(left ? LEFT_OPEN : RIGHT_OPEN));
+    }
+
+    /**
+     * Prompt anchor: the door's pull handle (source units x 8.36 / 7.64, y 16.3, z -8), swung with an open door
+     * (-95 / +95 degrees about its hinge, the Beverage Cooler V2 mesh profile's door angles).
+     */
+    public static Vec3 promptAnchor(BlockPos master, Direction facing, boolean left, boolean open) {
+        double x = left ? 8.36 : 7.64, z = -8.0;
+        if (open) {
+            double hingeX = left ? 22.87 : -6.87, hingeZ = -7.495, angle = Math.toRadians(left ? -95 : 95);
+            double dx = x - hingeX, dz = z - hingeZ;
+            x = hingeX + dx * Math.cos(angle) + dz * Math.sin(angle);
+            z = hingeZ - dx * Math.sin(angle) + dz * Math.cos(angle);
+        }
+        // inverse of hitDoor's mapping: source x runs along facing.getClockWise() from the middle line, source -z along facing
+        Direction leftward = facing.getClockWise();
+        double midX = master.getX() + 0.5 - leftward.getStepX() * 0.5, midZ = master.getZ() + 0.5 - leftward.getStepZ() * 0.5;
+        double across = (x - 8) / 16, forward = -z / 16;
+        return new Vec3(midX + leftward.getStepX() * across + facing.getStepX() * forward, master.getY() + 16.3 / 16,
+                midZ + leftward.getStepZ() * across + facing.getStepZ() * forward);
     }
 
     /** Hit coordinates and outline boxes are derived from the same north-facing source axes. */
@@ -280,6 +365,8 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos position, BlockState replacement, boolean moved) {
+        if (!state.is(replacement.getBlock()) && state.getValue(PART) == Part.LOWER_LEFT
+                && level.getBlockEntity(position) instanceof BeverageCoolerBlockEntity cooler) cooler.dropContentsOnce();
         if (!state.is(replacement.getBlock()))
             removePeers(level, masterPosition(position, state), state.getValue(FACING), position);
         super.onRemove(state, level, position, replacement, moved);

@@ -230,8 +230,10 @@ const itemDisplay = (() => {
     const s = typeof fit === 'number' && fit > 1 ? r3(fit / Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))) : fit;
     const c = [(Math.max(...xs) + Math.min(...xs)) / 2, (Math.max(...ys) + Math.min(...ys)) / 2, (Math.max(...zs) + Math.min(...zs)) / 2];
     return {rotation: [r[0], r[1], 0], translation: [r3(-s * c[0] + extra[0]), r3(-s * c[1] + extra[1]), r3(-s * c[2] + extra[2])], scale: S3(s)}; };
-  return {gui: view([25, 45], 14), ground: view([0, 0], 0.22, [0, 3, 0]), fixed: view([0, 180], 0.38),
-    thirdperson_righthand: view([75, 45], 0.25, [0, 2.5, 0]), firstperson_righthand: view([0, 45], 0.28, [0, 1, 0])};
+  // the front (-Z) toward the viewer like a vanilla block item: gui / hands at 225 deg, item frame at 0 (V1 used 45 / 180
+  // for its X-mirrored GeckoLib geometry, which turned the V2 mesh around)
+  return {gui: view([25, 225], 14), ground: view([0, 0], 0.22, [0, 3, 0]), fixed: view([0, 0], 0.38),
+    thirdperson_righthand: view([75, 225], 0.25, [0, 2.5, 0]), firstperson_righthand: view([0, 225], 0.28, [0, 1, 0])};
 })();
 const itemModel = {parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${ID}`}, display: itemDisplay};
 const blockModel = {textures: {particle: `apocalypse_firstlight:block/${ID}`}};
