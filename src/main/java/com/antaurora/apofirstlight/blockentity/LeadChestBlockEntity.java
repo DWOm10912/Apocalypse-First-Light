@@ -32,9 +32,9 @@ import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Lead Chest V2: 27-slot shielded cask with Progressive Container Search (world loot) and an animated Pure Mesh lid
+ * Lead Chest (V2 behaviour, V3 look): 27-slot shielded box with Progressive Container Search (world loot) and an animated Pure Mesh lid
  * (channel {@code open} from the block state's OPEN). Radiation keeps treating this class as the 0.5-transmission lead
- * container (ContainerRadiation); that rule is unchanged by V2.
+ * container (ContainerRadiation); that rule is unchanged by V2 / V3.
  */
 public class LeadChestBlockEntity extends RandomizableContainerBlockEntity implements AflSearchableContainer, AflAnimatedMeshHost {
     public static final int SIZE = 27;

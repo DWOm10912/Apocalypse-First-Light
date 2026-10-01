@@ -70,7 +70,7 @@
 | 噪音 | 与钢块一样不在 `noise_metal_blocks` 里，破坏噪音走默认类别 |
 
 - 辐射：`RadiationShielding.transmission(BlockState)` 按方块返回单层透射率；环境辐射的 14 条射线采样和容器点源的单条射线都用它。标签里的其它方块仍是 0.35。规则见 [辐射系统.md](../项目内容/01%20-%20设计/辐射/辐射系统.md) 第 6 节。
-- 贴图是中性铅灰，不是旧铅块的紫色。铅箱（`lead_chest`）的紫灰色本轮不改。
+- 贴图是中性铅灰，不是旧铅块的紫色。铅箱（`lead_chest`）V3 也改成了中性灰的铅内胆（[lead_chest_v3.md](../models/lead_chest_v3.md)）。
 
 ## 删除的内容
 

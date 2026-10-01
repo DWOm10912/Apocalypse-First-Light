@@ -308,6 +308,14 @@
     "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_close",
     "sounds": [{"name": "apocalypse_firstlight:industrial_locker/close"}]
   },
+  "lead_chest_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.lead_chest_open",
+    "sounds": [{"name": "apocalypse_firstlight:lead_chest/open"}]
+  },
+  "lead_chest_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.lead_chest_close",
+    "sounds": [{"name": "apocalypse_firstlight:lead_chest/close"}]
+  },
   "sheet_metal_break": {"subtitle": "subtitles.block.generic.break", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.188, "volume": 0.3}, {"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.25, "volume": 0.45}, {"name": "apocalypse_firstlight:sheet_metal/break", "pitch": 1.313, "volume": 0.45}]},
   "sheet_metal_step": {"subtitle": "subtitles.block.generic.footsteps", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 0.95}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.05}]},
   "sheet_metal_place": {"subtitle": "subtitles.block.generic.place", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.188}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.25}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.313}]},

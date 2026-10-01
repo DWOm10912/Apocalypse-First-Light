@@ -23,7 +23,7 @@ public class LeadChestBlockItem extends BlockItem {
 
             @Override
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                // Lead Chest V2 Pure Mesh (closed pose), same geo / sidecar / atlas as the block
+                // Lead Chest V3 Pure Mesh (closed pose), same geo / sidecar / atlas as the block
                 if (renderer == null) renderer = new AflStaticMeshItemRenderer(
                         new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/lead_chest.geo.json"),
                         new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/lead_chest.png"), 0.0, 0.0);

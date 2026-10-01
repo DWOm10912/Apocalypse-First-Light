@@ -111,7 +111,7 @@ public final class AflBlocks {
     public static final RegistryObject<Block> LEAD_CHEST = BLOCKS.register("lead_chest",
             () -> new LeadChestBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F)
-                    .sound(SoundType.METAL)
+                    .sound(SoundType.NETHERITE_BLOCK)   // heavy, dead metal: steel skin over a lead core
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<com.antaurora.apofirstlight.block.StaticWorkstationBlock> GUN_MAINTENANCE_BENCH = BLOCKS.register("gun_maintenance_bench",

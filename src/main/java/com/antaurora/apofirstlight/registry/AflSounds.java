@@ -53,6 +53,9 @@ public final class AflSounds {
     // Industrial locker door (the close file's slam sits at ~0.47 s, the end of the 10-tick door animation)
     public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_OPEN = simple("industrial_locker_open");
     public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_CLOSE = simple("industrial_locker_close");
+    // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
+    public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
+    public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

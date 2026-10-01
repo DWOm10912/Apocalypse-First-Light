@@ -7,11 +7,13 @@ import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.noise.NoiseEvent;
 import com.antaurora.apofirstlight.noise.NoiseSystem;
 import com.antaurora.apofirstlight.noise.NoiseType;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -38,7 +40,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Lead Chest V2 (tools/build-lead-chest-v2.mjs): single-block shielded cask. Open the lid first (aim at the cask), then
+ * Lead Chest V3 (tools/build-lead-chest-v3.mjs, stainless-clad lead shielding box; behaviour unchanged since V2): single-block shielded box. Open the lid first (aim at the cask), then
  * search / view through the opening; aiming at the standing lid closes it. No double chests, not a vanilla chest.
  * Shapes, interaction regions and prompt anchors come from data/apocalypse_firstlight/mesh_shapes/lead_chest.json.
  */
@@ -114,9 +116,14 @@ public class LeadChestBlock extends Block implements EntityBlock, AflMeshInterac
         return InteractionResult.CONSUME;
     }
 
-    /** No sounds yet (V2 audio pass pending); the open noise keeps the infected hearing the cask as before. */
+    /**
+     * Latches, seal and lid are one sound per direction, already placed on the lid animation's keyframes (the lid lands at
+     * 0.70 s when closing), so the pitch only varies by +-2 % to keep that timing; the open noise is unchanged.
+     */
     private static void setOpen(Level level, BlockPos pos, BlockState state, boolean open, Player player) {
         level.setBlock(pos, state.setValue(OPEN, open), Block.UPDATE_ALL);
+        level.playSound(null, pos, open ? AflSounds.LEAD_CHEST_OPEN.get() : AflSounds.LEAD_CHEST_CLOSE.get(),
+                SoundSource.BLOCKS, 0.8F, 0.98F + level.random.nextFloat() * 0.04F);
         level.gameEvent(player, open ? GameEvent.CONTAINER_OPEN : GameEvent.CONTAINER_CLOSE, pos);
         if (open && level instanceof ServerLevel server) {
             NoiseSystem.emit(new NoiseEvent(player, pos.getCenter(), NoiseType.INTERACTION, server.getGameTime(),
