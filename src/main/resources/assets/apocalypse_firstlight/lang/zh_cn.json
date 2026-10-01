@@ -386,6 +386,8 @@
   "hint.apocalypse_firstlight.charging_station.place": "放上充电",
   "hint.apocalypse_firstlight.charging_station.cannot_charge": "无法充电",
   "hint.apocalypse_firstlight.charging_station.take": "取下（%s / %s FE）",
+  "hint.apocalypse_firstlight.power_cable.cut": "断开这一侧",
+  "hint.apocalypse_firstlight.power_cable.join": "接上这一侧",
   "item.apocalypse_firstlight.cat": "C.A.T",
   "tooltip.apocalypse_firstlight.cat.description": "请不要询问它的工作原理...",
   "tooltip.apocalypse_firstlight.inventory.locked": "未解锁的背包栏位",

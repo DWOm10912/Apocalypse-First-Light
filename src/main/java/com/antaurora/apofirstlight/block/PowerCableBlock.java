@@ -4,27 +4,40 @@ import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.PipeBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Power Cable V2: a bundled cable connecting in six directions to other cables and to AFL power ports
  * ({@link AflPowerPortBlock}). The block state only records which sides connect; the client model
  * (client/PowerCableBakedModel) picks straight runs, bends, junction boxes, end caps and plugs from them. FE transfer is
  * energy/PowerCableTransfer (unchanged). Old V1 states carried a {@code show_core} property, which is dropped on load.
+ * <p>
+ * Cable-to-cable links (2026-10-01) are chosen, not automatic, so parallel runs stay apart: a new cable links to the
+ * cable it was placed against and to line ends it continues ({@link #getStateForPlacement}); a cable never changes a
+ * link to a neighbouring cable on its own, it mirrors that neighbour's side. Sneaking with an empty main hand,
+ * a right click cuts or joins one cable-to-cable side ({@link #toggleSide}; PowerCableToggleEvents lets the click through).
+ * Power ports always connect.
  */
 public final class PowerCableBlock extends PipeBlock {
     private static final double ARM = 2.2;       // half thickness of a run (the bundle is 3.7 px across)
-    private static final double BOX = 3.2;       // junction box half size
+    private static final double BOX = 2.6;       // junction box half size (tools/build-power-cable-v2.mjs BOX)
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
     public PowerCableBlock(Properties properties) {
@@ -38,21 +51,98 @@ public final class PowerCableBlock extends PipeBlock {
                 .setValue(DOWN, false));
     }
 
+    /**
+     * Links of a new cable: power ports always; the cable it was placed against; every neighbouring line end it continues
+     * straight (a lone cable, or a cable whose single link points away from here); and, only when no cable was linked
+     * that way, the neighbouring line ends it turns a corner onto (this also closes a loop; a cable whose only link is a
+     * power port is extended straight out of the port only). Cables of other runs that already have two or more links
+     * are left alone, so parallel runs do not merge. Checked offline against straight runs, corners, loops, two runs
+     * from neighbouring ports laid row by row or alternately, and branches.
+     */
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        BlockState state = defaultBlockState();
+        Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
+        // the block the cable was placed against; none when the click replaced a replaceable block in place
+        BlockPos against = context.replacingClickedOnBlock() ? null : pos.relative(context.getClickedFace().getOpposite());
+        BlockState state = defaultBlockState();
+        boolean cableLinked = false;
+        int corners = 0;
         for (Direction direction : Direction.values()) {
-            BlockState neighborState = context.getLevel().getBlockState(pos.relative(direction));
-            state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), connectsTo(direction, neighborState));
+            BlockPos neighborPos = pos.relative(direction);
+            BlockState neighborState = level.getBlockState(neighborPos);
+            boolean connect;
+            if (!neighborState.is(this)) {
+                connect = isUtilityPortFace(neighborState, direction.getOpposite());
+            } else {
+                int links = links(neighborState);
+                Direction only = links == 1 ? firstLink(neighborState) : null;
+                connect = neighborPos.equals(against) || links == 0 || only == direction;
+                cableLinked |= connect;
+                if (!connect && only != null && level.getBlockState(neighborPos.relative(only)).is(this))
+                    corners |= 1 << direction.ordinal();
+            }
+            state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), connect);
+        }
+        if (!cableLinked) {
+            for (Direction direction : Direction.values())
+                if ((corners & 1 << direction.ordinal()) != 0) state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), true);
         }
         return state;
     }
 
+    @Nullable
+    private static Direction firstLink(BlockState state) {
+        for (Direction direction : Direction.values()) if (state.getValue(PROPERTY_BY_DIRECTION.get(direction))) return direction;
+        return null;
+    }
+
+    /** A neighbouring cable's side is mirrored (both ends always agree); power ports connect whenever present. */
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        return state.setValue(PROPERTY_BY_DIRECTION.get(direction), connectsTo(direction, neighborState));
+        boolean connect = neighborState.is(this)
+                ? neighborState.getValue(PROPERTY_BY_DIRECTION.get(direction.getOpposite()))
+                : isUtilityPortFace(neighborState, direction.getOpposite());
+        return state.setValue(PROPERTY_BY_DIRECTION.get(direction), connect);
+    }
+
+    /** Sneak + right click with an empty main hand: cut or join the aimed cable-to-cable side. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand,
+                                 BlockHitResult hit) {
+        if (!canToggle(player, hand)) return InteractionResult.PASS;
+        Direction side = toggleSide(state, pos, hit.getLocation(), hit.getDirection());
+        if (!level.getBlockState(pos.relative(side)).is(this)) return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+        // the neighbour follows through updateShape
+        level.setBlock(pos, state.setValue(PROPERTY_BY_DIRECTION.get(side), !state.getValue(PROPERTY_BY_DIRECTION.get(side))),
+                UPDATE_ALL);
+        return InteractionResult.CONSUME;
+    }
+
+    public static boolean canToggle(Player player, InteractionHand hand) {
+        return hand == InteractionHand.MAIN_HAND && player.getMainHandItem().isEmpty() && player.isSecondaryUseActive();
+    }
+
+    /**
+     * The side a toggle click means: on an arm (beyond the centre core along an axis), that arm's direction; on the core,
+     * the clicked face, so a side without an arm can be joined by clicking the core's face toward it.
+     */
+    public static Direction toggleSide(BlockState state, BlockPos pos, Vec3 hit, Direction face) {
+        double core = (isJunction(state) ? BOX : ARM) / 16.0 + 0.003;
+        double[] d = {hit.x - pos.getX() - 0.5, hit.y - pos.getY() - 0.5, hit.z - pos.getZ() - 0.5};
+        Direction best = face;
+        double max = core;
+        for (Direction.Axis axis : Direction.Axis.values()) {
+            double v = d[axis.ordinal()];
+            if (Math.abs(v) > max) {
+                max = Math.abs(v);
+                best = Direction.fromAxisAndDirection(axis, v > 0 ? Direction.AxisDirection.POSITIVE : Direction.AxisDirection.NEGATIVE);
+            }
+        }
+        return best;
     }
 
     @Override
@@ -93,6 +183,17 @@ public final class PowerCableBlock extends PipeBlock {
         return Block.box(8 - hx, 8 - hy, 8 - hz, 8 + hx, 8 + hy, 8 + hz);
     }
 
+    private static int links(BlockState state) {
+        int count = 0;
+        for (Direction direction : Direction.values()) if (state.getValue(PROPERTY_BY_DIRECTION.get(direction))) count++;
+        return count;
+    }
+
+    private static boolean isJunction(BlockState state) {
+        int count = links(state);
+        return count == 0 || count >= 3;
+    }
+
     // ---- connections ----
 
     /** What a connected side of a cable leads to (the client model's choice of run end). */
@@ -118,10 +219,10 @@ public final class PowerCableBlock extends PipeBlock {
         return machineState.getBlock() instanceof AflPowerPortBlock port && port.hasPowerPort(machineState, face);
     }
 
-    private static boolean connectsTo(Direction directionToNeighbor, BlockState neighborState) {
-        if (neighborState.is(AflBlocks.POWER_CABLE.get())) {
-            return true;
-        }
-        return isUtilityPortFace(neighborState, directionToNeighbor.getOpposite());
+    /** Client prompt: the cable side a sneak toggle would change, if that side leads to another cable. */
+    @Nullable
+    public static Direction promptToggleSide(BlockGetter level, BlockPos pos, BlockState state, Vec3 hit, Direction face) {
+        Direction side = toggleSide(state, pos, hit, face);
+        return level.getBlockState(pos.relative(side)).is(AflBlocks.POWER_CABLE.get()) ? side : null;
     }
 }

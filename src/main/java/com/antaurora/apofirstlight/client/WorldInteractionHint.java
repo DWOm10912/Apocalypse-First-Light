@@ -4,12 +4,16 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
 import com.antaurora.apofirstlight.block.ChargingStationBlock;
+import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.level.block.PipeBlock;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -56,6 +60,7 @@ public final class WorldInteractionHint {
             target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
+            if(target==null) target=powerCable(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
@@ -123,6 +128,21 @@ public final class WorldInteractionHint {
         if(!main.isEmpty()&&!off.isEmpty()) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.charging_station.take",
                 String.format(Locale.ROOT,"%,d",station.itemEnergy()),String.format(Locale.ROOT,"%,d",station.itemCapacity())),anchor);
+    }
+
+    /**
+     * Power cable, while sneaking with an empty main hand: the cable-to-cable side a click would cut or join
+     * (PowerCableBlock#toggleSide), drawn on that side of the cable.
+     */
+    private static Target powerCable(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!PowerCableBlock.canToggle(mc.player,InteractionHand.MAIN_HAND)) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof PowerCableBlock)) return null;
+        Direction side=PowerCableBlock.promptToggleSide(mc.level,hit.getBlockPos(),s,hit.getLocation(),hit.getDirection());
+        if(side==null) return null;
+        boolean connected=s.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(side));
+        Vec3 anchor=Vec3.atCenterOf(hit.getBlockPos()).add(side.getStepX()*.3,side.getStepY()*.3,side.getStepZ()*.3);
+        return new Target(Component.translatable("hint.apocalypse_firstlight.power_cable."+(connected?"cut":"join")),anchor);
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

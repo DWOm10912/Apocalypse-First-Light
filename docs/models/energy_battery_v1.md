@@ -1,6 +1,6 @@
 # Energy Battery V1（能量电池）
 
-状态（2026-10-01）：**物品已实现，未实机验证**。`compileJava --offline` 一次 PASS。外观只看过离线预览。生存里给电池充电用充电站（2026-10-01 已实现，未实机验证，见 [Charging Station V1](charging_station_v1.md)）；创造模式物品栏里也有空电池和满电电池。
+状态（2026-10-01）：**物品已实现，未实机验证**。`compileJava --offline` 一次 PASS。外观只看过离线预览。生存里给电池充电用充电站（2026-10-01 已实现，用户实机 PASS，见 [Charging Station V1](charging_station_v1.md)）；创造模式物品栏里也有空电池和满电电池。
 
 ## 定位（2026-10-01 与用户商定）
 

@@ -28,8 +28,8 @@ const rotAbout = (v, n, a) => add(add(mul(v, Math.cos(a)), mul(cross(n, v), Math
 export const WIRE = {r: 0.85, sides: 8};
 export const D_WIRE = WIRE.r / Math.cos(Math.PI / 6);                 // conductors touch: bundle radius 1.83
 export const BAND = {r: 2.05, len: 0.9};
-export const BOX = 3.2;                                               // junction box half size
-export const GLAND = {r: 2.25, len: 0.8, at: 3.6};
+export const BOX = 2.6;                                               // junction box half size (5.2 px; 6.4 px until 2026-10-01)
+export const GLAND = {r: 2.2, len: 0.8, at: BOX + 0.4};                // cable gland seated on the box face
 export const PLUG = {start: 4.6, body: [4.6, 6.6, 2.15], nut: [5.55, 6.45, 2.5], flange: [6.5, 8.0, 1.9]};   // [from, to, radius]
 export const PORT = {plate: 3.0, socket: 1.95};                       // machine side: 6x6 plate, socket radius (docs only)
 export const CAP = {from: 1.6, to: -0.6, r: 2.1, cableEnd: 1.2};
@@ -116,7 +116,7 @@ for (const dir of Object.keys(DIRS)) {
   piece(`end_plug_${dir}`, m => { bundleStraight(m, mul(t, CAP.cableEnd), mul(t, PLUG.start + 0.3), axis); plug(m, dir); collar(m, mul(t, (CAP.from + CAP.to) / 2), t, CAP.r, CAP.from - CAP.to, 'cap'); });
 }
 for (const axis of ['x', 'y', 'z']) piece(`band_${axis}`, m => collar(m, [0, 0, 0], axis === 'x' ? [1, 0, 0] : axis === 'y' ? [0, 1, 0] : [0, 0, 1], BAND.r, BAND.len, 'band'));
-piece('box', m => { chamferBox(m, BOX, 0.35, 'box'); boxMesh(m, [0, BOX + 0.06, 0], [BOX - 0.55, 0.08, BOX - 0.55], 'band'); });
+piece('box', m => { chamferBox(m, BOX, 0.3, 'box'); boxMesh(m, [0, BOX + 0.06, 0], [BOX - 0.55, 0.08, BOX - 0.55], 'band'); });
 // bends: quarter arc between face centres a and b (radius 8 about the shared block edge), the bundle rolled linearly so
 // it matches the per-axis basis at both faces (a three-conductor bundle is symmetric under 120 degree turns)
 const NAMES = Object.keys(DIRS);

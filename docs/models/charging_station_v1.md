@@ -1,6 +1,6 @@
 # Charging Station V1（充电站，第一台 Mesh 机器）
 
-状态（2026-10-01）：**已实现，未实机验证**。`compileJava --offline` 一次 PASS。外观只看过离线预览（无光影、无游戏内光照）。属性见 [机器.md 第 9 节](../项目内容/01%20-%20设计/方块/机器.md)。
+状态（2026-10-01）：**已实现，用户实机检查 PASS**（光影下，接两路线缆）。`compileJava --offline` 一次 PASS。属性见 [机器.md 第 9 节](../项目内容/01%20-%20设计/方块/机器.md)。
 
 ## 设计
 
@@ -83,7 +83,7 @@
 | `client/WorldInteractionHint.java` | 托盘提示 |
 | `energy/MachineBalanceManager.java` | `ChargingStationBalance` |
 
-## 待实机确认
+## 实机检查要点（2026-10-01 PASS）
 
 1. 放置、朝向、两格的选中框和碰撞，拆除和掉落（生存模式，钻石镐）；
 2. 线缆接到两个背面接口时插头和接口板是否对齐；断开、接上时的状态变化；
