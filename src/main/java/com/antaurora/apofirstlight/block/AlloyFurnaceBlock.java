@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public final class AlloyFurnaceBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class AlloyFurnaceBlock extends HorizontalDirectionalBlock implements EntityBlock, com.antaurora.apofirstlight.energy.AflPowerPortBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
     public AlloyFurnaceBlock(Properties properties) {

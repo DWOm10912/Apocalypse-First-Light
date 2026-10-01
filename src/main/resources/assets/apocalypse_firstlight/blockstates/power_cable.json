@@ -1,44 +1,7 @@
 {
-  "multipart": [
-    {
-      "when": { "show_core": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_core" }
-    },
-    {
-      "when": { "show_core": "true", "north": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm" }
-    },
-    {
-      "when": { "show_core": "true", "east": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm", "y": 90 }
-    },
-    {
-      "when": { "show_core": "true", "south": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm", "y": 180 }
-    },
-    {
-      "when": { "show_core": "true", "west": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm", "y": 270 }
-    },
-    {
-      "when": { "show_core": "true", "up": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm", "x": 270 }
-    },
-    {
-      "when": { "show_core": "true", "down": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_arm", "x": 90 }
-    },
-    {
-      "when": { "show_core": "false", "north": "true", "south": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_straight" }
-    },
-    {
-      "when": { "show_core": "false", "east": "true", "west": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_straight", "y": 90 }
-    },
-    {
-      "when": { "show_core": "false", "up": "true", "down": "true" },
-      "apply": { "model": "apocalypse_firstlight:block/power_cable_straight", "x": 90 }
+  "variants": {
+    "": {
+      "model": "apocalypse_firstlight:block/power_cable/box"
     }
-  ]
+  }
 }

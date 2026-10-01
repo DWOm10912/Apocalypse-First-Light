@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public final class CompressorBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class CompressorBlock extends HorizontalDirectionalBlock implements EntityBlock, com.antaurora.apofirstlight.energy.AflPowerPortBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
     public CompressorBlock(Properties properties) {

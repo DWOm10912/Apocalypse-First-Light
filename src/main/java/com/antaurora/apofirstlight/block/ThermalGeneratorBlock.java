@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.EnumMap;
 
-public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class ThermalGeneratorBlock extends HorizontalDirectionalBlock implements EntityBlock, com.antaurora.apofirstlight.energy.AflPowerPortBlock {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
     public static Direction inputFluidFace(BlockState state) { return state.getValue(FACING).getClockWise(); }
     public static Direction outputFluidFace(BlockState state) { return state.getValue(FACING).getCounterClockWise(); }

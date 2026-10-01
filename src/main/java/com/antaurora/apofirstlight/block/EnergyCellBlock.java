@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public final class EnergyCellBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class EnergyCellBlock extends HorizontalDirectionalBlock implements EntityBlock, com.antaurora.apofirstlight.energy.AflPowerPortBlock {
     public EnergyCellBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));

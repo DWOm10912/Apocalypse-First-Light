@@ -1,0 +1,4 @@
+# AFL Power Cable V2
+newmtl cable
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/power_cable
