@@ -80,6 +80,8 @@ V2 取代 V1 文档（原 `docs/cash_register_model.md`，已删除）。Registr
 
 ## 音效（2026-09-30）
 
+**可听半径**（2026-10-01）：在 `sounds.json` 里用 `attenuation_distance` 设定（原来是原版默认的 16 格），声音随距离线性变小，到半径处听不到；播放音量都不超过 1，所以半径就是实际范围。开钱箱（带收银铃）12 格，关钱箱 10 格。
+
 生成器：`tools/build-cash-register-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音用共享库 `tools/sound-mix-lib.mjs`：K 加权，每段素材先拉到相同的 100 ms 响度，再按关键帧对齐混合，峰值不超过 -1 dBFS，输出单声道 48 kHz Ogg Vorbis。
 
 源素材是用户生成的三段单一事件录音（1 秒，立体声，48 kHz）：

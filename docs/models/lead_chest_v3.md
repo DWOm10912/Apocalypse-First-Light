@@ -100,6 +100,8 @@ V2 的生成器 `tools/build-lead-chest-v2.mjs` 已删除：它写的是同一�
 
 ## 音效（2026-09-30）
 
+**可听半径**（2026-10-01）：在 `sounds.json` 里用 `attenuation_distance` 设定（原来是原版默认的 16 格），声音随距离线性变小，到半径处听不到；播放音量都不超过 1，所以半径就是实际范围。开盖、合盖 12 格。
+
 **方块音效**：挖掘、破坏、放置、脚步、摔落改用原版 `SoundType.NETHERITE_BLOCK`（原来是 `METAL`）。钢皮包铅芯应该是沉闷、厚重、不怎么回响的金属声，原版的下界合金块最接近。没有新文件。
 
 **开合音效**：`lead_chest_open` → `sounds/lead_chest/open.ogg`（0.84 s），`lead_chest_close` → `sounds/lead_chest/close.ogg`（1.03 s）。

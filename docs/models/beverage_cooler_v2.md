@@ -55,6 +55,8 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
 
 ## 音效（2026-10-01）
 
+**可听半径**（2026-10-01）：在 `sounds.json` 里用 `attenuation_distance` 设定（原来是原版默认的 16 格），声音随距离线性变小，到半径处听不到；播放音量都不超过 1，所以半径就是实际范围。开门、关门 10 格。
+
 生成器：`tools/build-beverage-cooler-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音用共享库 `tools/sound-mix-lib.mjs`，方法与收银机、配电箱相同：K 加权，先把素材拉到相同的 100 ms 响度，再按关键帧对齐，峰值不超过 -1 dBFS，输出单声道 48 kHz Ogg Vorbis。左右两扇门共用。
 
 | 事件 | 文件 | 源文件（SHA-256 前 16 位） | 对齐 | 成品响度 |
