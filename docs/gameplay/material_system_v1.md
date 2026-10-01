@@ -118,12 +118,12 @@
 
 钢坯、铅砖、电解镍、钨丝、硬质合金坯件是 3D Mesh 物品，没有 2D 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
 
-其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致）。用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边），没有噪点、污渍或文字。
+其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致），没有噪点、污渍或文字。物品图标用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边）；方块贴图按钢块的画法：大块形状、1 px 倒角（上、左亮，下、右暗）、平缓的明暗，没有 1 px 的重复小细节。同一个生成器也画钢制板材（`block/steel_plate`，见 [工业钢结构 Palette](../authoring/afl_industrial_palette_v1.md)）。
 
 | 贴图 | 形状 |
 |---|---|
 | `item/spodumene_concentrate` | 一小堆块状的浅灰绿解理碎粒，不是粉末锥堆 |
-| `block/lead_shielding_bricks` | 错缝砌筑的铅砖，竖缝是 ">" 形的 V 口，干砌细缝；每块砖只有很小的整体明暗差 |
+| `block/lead_shielding_bricks` | 一格两层大砖（每层 7 px 高 + 1 px 缝），上下错开半块，干砌细缝；偏冷的深铅灰 [94,98,107]，缝只比砖面略暗；砖面只有平缓明暗和很淡的倒角。2026-09-30 重画：旧版是 4 层小砖加三色带和 ">" 形竖缝，平铺后像 1.12 风格的横条纹 |
 
 新物品不再共用旧的锭、板或粉末形状。旧的锭、板贴图和 7 张金属块贴图已删除。
 

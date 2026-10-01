@@ -28,7 +28,7 @@
 | `apocalypse_firstlight:steel_brace` | 钢斜撑 | 镂空斜撑框架 | `axis=x/y/z` | 桥梁与塔架加固 |
 | `apocalypse_firstlight:steel_block_slab` | 钢块台阶 | 实体钢结构变体 | `type`, `waterlogged` | 半高结构面 |
 | `apocalypse_firstlight:steel_block_stairs` | 钢块楼梯 | 实体钢结构变体 | 原版楼梯状态 | 楼梯与结构收边 |
-| `apocalypse_firstlight:steel_plate` | 钢制板材 | 实体铺设面 | 无 | 平台、设备底板、封板 |
+| `apocalypse_firstlight:steel_plate` | 钢制板材 | 实体铺设面 | 无 | 平台、设备底板、封板；贴图（台阶、楼梯共用）是一格一整块螺栓钢板，四角 2×2 螺栓，比钢块暗、偏冷（2026-09-30 重画，生成器 `tools/build-material-textures-v1.mjs`；旧版是 3×2 小板加成排铆钉点） |
 | `apocalypse_firstlight:steel_plate_slab` | 钢板台阶 | 板材变体 | `type`, `waterlogged` | 半高平台 |
 | `apocalypse_firstlight:steel_plate_stairs` | 钢板楼梯 | 板材变体 | 原版楼梯状态 | 平台楼梯 |
 | `apocalypse_firstlight:steel_grate` | 钢格栅 | 镂空平台 | 专用连接/形状以源码为准 | 工业走道与格栅面 |

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // AFL Material System V1 textures (docs/gameplay/material_system_v1.md).
 // 16x16 textures built from small geometric shapes, flat low-frequency shading (no noise, stains or text): the spodumene
-// concentrate icon and the lead shielding bricks block. Steel billet, lead brick, electrolytic nickel, tungsten filament
+// concentrate icon, the lead shielding bricks block and the steel plate block (also used by its slab and stairs). Steel billet, lead brick, electrolytic nickel, tungsten filament
 // and the cemented carbide blank are 3D meshes instead (tools/build-material-meshes-v1.mjs).
 //   node tools/build-material-textures-v1.mjs           write the PNGs
 //   node tools/build-material-textures-v1.mjs --check   fail when a PNG differs from the generator output
@@ -117,23 +117,46 @@ function spodumeneConcentrate() {
 
 // ---------------------------------------------------------------- block
 
-/** Lead shielding bricks: staggered courses of chevron-jointed cast lead bricks, dry laid (thin dark joints). */
+// Block textures follow the steel block (modern vanilla style): few large shapes, a 1 px bevel (light top / left, dark
+// bottom / right), gentle value ramps and contrast, no 1 px repeating detail.
+
+/** Tileable value noise on a cells x cells lattice over the 16 px tile, smoothstep interpolated, in [0, 1]. */
+function lowFreq(seed, cells = 4) {
+  const h = i => { let x = Math.imul(i + 1, 0x9E3779B1) ^ Math.imul(seed + 7, 0x85EBCA77); x ^= x >>> 15; x = Math.imul(x, 0xC2B2AE3D); x ^= x >>> 13; return (x >>> 0) / 4294967295; };
+  const g = (i, j) => h(((j + cells) % cells) * cells + ((i + cells) % cells)), s = v => v * v * (3 - 2 * v), step = N / cells;
+  return (x, y) => {
+    const u = (x + 0.5) / step - 0.5, v = (y + 0.5) / step - 0.5, i = Math.floor(u), j = Math.floor(v), fu = s(u - i), fv = s(v - j);
+    const top = g(i, j) + (g(i + 1, j) - g(i, j)) * fu, bot = g(i, j + 1) + (g(i + 1, j + 1) - g(i, j + 1)) * fu;
+    return top + (bot - top) * fv;
+  };
+}
+
+/** Lead shielding bricks: two courses of large cast lead bricks per block, half-bond, dry laid with thin joints. */
 function leadShieldingBricks() {
-  const icon = new Icon();
-  const face = [104, 108, 116], lit = [120, 124, 132], low = [90, 94, 102], joint = [60, 63, 70];
-  const tone = [0, 3, -3, 2, -2, 4, 1, -4];                          // per-brick, low frequency only
-  for (let course = 0; course < 4; course++) {
-    const y0 = course * 4, shift = course % 2 ? 4 : 0;
-    for (let r = 0; r < 4; r++) for (let x = 0; x < N; x++) {
-      const y = y0 + r;
-      if (r === 3) { icon.set(x, y, joint); continue; }              // bed joint
-      const lx = (x - shift + N) % N, chev = r === 1 ? 1 : 0;         // '>' shaped head joint
-      const k = (lx - chev + N) % 8;
-      if (k === 0) { icon.set(x, y, joint); continue; }
-      const brick = (Math.floor(((lx - chev + N) % N) / 8) + course * 2) % tone.length;
-      const base = r === 0 ? lit : r === 2 ? low : face;
-      icon.set(x, y, base.map(v => clamp(v + tone[brick])));
-    }
+  const icon = new Icon(), face = [94, 98, 107], joint = [70, 73, 81], n = lowFreq(7);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const course = y >> 3, r = y & 7, lx = (x - (course ? 8 : 0) + N) % N;   // r 7 = bed joint, lx 0 = head joint
+    if (r === 7 || lx === 0) { icon.set(x, y, joint); continue; }
+    let k = 1 + 0.03 * (3 - r) / 3 + (course ? -0.015 : 0.015) + 0.03 * (n(x, y) - 0.5);
+    if (r === 0) k += 0.10; else if (r === 6) k -= 0.07;                     // top / lower arris
+    if (lx === 1) k += 0.05; else if (lx === 15) k -= 0.05;                  // left / right arris
+    icon.set(x, y, face.map(v => clamp(v * k)));
+  }
+  return icon;
+}
+
+/** Steel plate: one bolted plate per block, steel-block bevel, cooler and darker than the steel block, 2 x 2 corner bolts. */
+function steelPlate() {
+  const icon = new Icon(), base = [70, 74, 82], n = lowFreq(11);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    let k = 1 + 0.04 * (7.5 - y) / 7.5 + 0.03 * (n(x, y) - 0.5);
+    if (x === 15 || y === 15) k -= 0.30; else if (x === 0 || y === 0) k += 0.22;
+    icon.set(x, y, base.map(v => clamp(v * k)));
+  }
+  const at = (x, y, dk) => icon.set(x, y, icon.get(x, y).map(v => clamp(v * (1 + dk))));
+  for (const [bx, by] of [[2, 2], [12, 2], [2, 12], [12, 12]]) {
+    at(bx, by, 0.30); at(bx + 1, by, 0.12); at(bx, by + 1, 0.12); at(bx + 1, by + 1, -0.08);   // domed head, lit from top left
+    at(bx + 2, by + 1, -0.10); at(bx + 1, by + 2, -0.10); at(bx + 2, by + 2, -0.12);          // soft shadow
   }
   return icon;
 }
@@ -143,6 +166,7 @@ function leadShieldingBricks() {
 const OUT = {
   'item/spodumene_concentrate.png': spodumeneConcentrate,
   'block/lead_shielding_bricks.png': leadShieldingBricks,
+  'block/steel_plate.png': steelPlate,
 };
 
 const check = process.argv.includes('--check');
