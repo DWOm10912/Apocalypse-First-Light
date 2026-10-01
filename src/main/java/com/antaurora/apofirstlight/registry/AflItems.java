@@ -196,7 +196,7 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> TUNGSTEN_CARBIDE_POWDER = ITEMS.register("tungsten_carbide_powder",
             () -> new Item(new Item.Properties()));
-    public static final RegistryObject<Item> CEMENTED_CARBIDE_INSERT = ITEMS.register("cemented_carbide_insert",
+    public static final RegistryObject<Item> CEMENTED_CARBIDE_BLANK = ITEMS.register("cemented_carbide_blank",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));

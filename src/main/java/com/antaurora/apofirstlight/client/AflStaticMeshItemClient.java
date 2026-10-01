@@ -12,7 +12,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import java.lang.reflect.Field;
 
-/** Binds the opted-in plain ammo Items to the existing AFL Mesh item renderer. */
+/** Binds the opted-in plain Items (ammo, Material Meshes V1) and the locker item to the AFL Mesh item renderer. */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class AflStaticMeshItemClient {
     @SubscribeEvent
@@ -37,6 +37,12 @@ public final class AflStaticMeshItemClient {
             // ground offset puts its base 0.014 above the entity like the other rounds (0.25 + 0.014 / ground scale 1.415).
             bind(AflItems.ROUND_127MM.get(), "12_7x55mm_round", "12_7x55mm_ammo_v1", 0.40284375, 0.2598939929);
             bind(AflItems.CASING_127MM.get(), "12_7x55mm_casing", "12_7x55mm_ammo_v1", 0.4267334375);
+            // Material Meshes V1 (tools/build-material-meshes-v1.mjs): offset = 0.5 - mesh height / 32 centres each mesh, its own atlas.
+            bind(AflItems.STEEL_BILLET.get(), "steel_billet", "steel_billet_mesh", 0.3875);
+            bind(AflItems.LEAD_BRICK.get(), "lead_brick", "lead_brick_mesh", 0.40625);
+            bind(AflItems.ELECTROLYTIC_NICKEL.get(), "electrolytic_nickel", "electrolytic_nickel_mesh", 0.44375);
+            bind(AflItems.TUNGSTEN_FILAMENT.get(), "tungsten_filament", "tungsten_filament_mesh", 0.263462);
+            bind(AflItems.CEMENTED_CARBIDE_BLANK.get(), "cemented_carbide_blank", "cemented_carbide_blank_mesh", 0.388885);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
@@ -68,7 +74,7 @@ public final class AflStaticMeshItemClient {
                 }
             });
         } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Cannot bind the ammo Mesh renderer to Forge's Item extension: " + model, e);
+            throw new IllegalStateException("Cannot bind the AFL Mesh item renderer to Forge's Item extension: " + model, e);
         }
     }
 

@@ -123,7 +123,7 @@ public final class AflCreativeTabs {
             AflItems.TUNGSTEN_POWDER,
             AflItems.TUNGSTEN_FILAMENT,
             AflItems.TUNGSTEN_CARBIDE_POWDER,
-            AflItems.CEMENTED_CARBIDE_INSERT,
+            AflItems.CEMENTED_CARBIDE_BLANK,
             AflItems.SPODUMENE_CONCENTRATE,
             AflItems.LITHIUM_CARBONATE,
             AflItems.BAUXITE,

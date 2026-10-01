@@ -72,12 +72,12 @@ public final class TungstenProductionGameTests {
                 "Tungsten powder sintering recipe changed");
 
         AlloyingRecipe carbide = recipe(h, "tungsten_carbide_powder_alloying", AlloyingRecipe.class);
-        AlloyingRecipe cemented = recipe(h, "cemented_carbide_insert_alloying", AlloyingRecipe.class);
+        AlloyingRecipe cemented = recipe(h, "cemented_carbide_blank_alloying", AlloyingRecipe.class);
         h.assertTrue(carbide.processingTime() == 600
                         && carbide.result().is(AflItems.TUNGSTEN_CARBIDE_POWDER.get()),
                 "Tungsten carbide powder recipe changed");
         h.assertTrue(cemented.processingTime() == 800
-                        && cemented.result().is(AflItems.CEMENTED_CARBIDE_INSERT.get()),
+                        && cemented.result().is(AflItems.CEMENTED_CARBIDE_BLANK.get()),
                 "Cemented carbide recipe changed");
         SimpleContainer coalInput = new SimpleContainer(
                 new ItemStack(AflItems.TUNGSTEN_POWDER.get()), new ItemStack(Items.COAL));
@@ -236,7 +236,7 @@ public final class TungstenProductionGameTests {
                     cemented.getBlockState(), cemented);
         }
         h.assertTrue(cemented.getStoredEnergy() == 0
-                        && cemented.getOutputStack().is(AflItems.CEMENTED_CARBIDE_INSERT.get()),
+                        && cemented.getOutputStack().is(AflItems.CEMENTED_CARBIDE_BLANK.get()),
                 "Alloy Furnace did not produce cemented carbide in 800 ticks / 19,200 FE");
         h.succeed();
     }

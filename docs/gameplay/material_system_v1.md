@@ -2,6 +2,10 @@
 
 状态（2026-09-30）：**已实现，未实机验证**。`compileJava --offline` 一次 PASS；配方、JEI、贴图、辐射屏蔽和挖掘掉落都没有在游戏里看过。
 
+2026-09-30 追加：钢坯、铅砖、电解镍、钨丝和硬质合金坯件改为 3D Mesh 物品，见 [material_meshes_v1.md](../models/material_meshes_v1.md)；硬质合金刀片改名为硬质合金坯件（`cemented_carbide_blank`）。
+
+**配方说明**：下面列出的配方是当前游戏里生效的配方。材料的正式配方计划等机器都做完后再统一设计，所以这些配方会再改。
+
 ## 原则
 
 - 不再给每种金属做"锭 + 板 + 存储块"三件套。旧的锭和板共用同一个形状，只是换颜色；存储块也只是换色方块，没有用途。
@@ -19,13 +23,13 @@
 | `lead_brick` | 铅砖 / Lead Brick | 工业熔炉：方铅矿 | 合成铅屏蔽砖 |
 | `lead_shielding_bricks`（方块） | 铅屏蔽砖 / Lead Shielding Bricks | 4 × 铅砖（2×2 有序合成） | 辐射屏蔽建筑方块 |
 | `pentlandite` | 镍黄铁矿 / Pentlandite | 粉碎镍黄铁矿矿石 | 化学反应器 → 电解镍 |
-| `electrolytic_nickel` | 电解镍 / Electrolytic Nickel | 化学反应器：镍黄铁矿 + 水 | 硬质合金刀片的粘结金属 |
+| `electrolytic_nickel` | 电解镍 / Electrolytic Nickel | 化学反应器：镍黄铁矿 + 水 | 硬质合金坯件的粘结金属 |
 | `wolframite` | 黑钨矿 / Wolframite | 粉碎黑钨矿矿石 | 化学反应器 → 氧化钨 |
 | `tungsten_oxide` | 氧化钨 / Tungsten Oxide | 化学反应器：黑钨矿 + 水 | 工业熔炉 → 钨粉 |
 | `tungsten_powder` | 钨粉 / Tungsten Powder | 工业熔炉：氧化钨 | 钨丝、碳化钨粉 |
 | `tungsten_filament` | 钨丝 / Tungsten Filament | 工业熔炉：钨粉（烧结） | **暂无** |
-| `tungsten_carbide_powder` | 碳化钨粉 / Tungsten Carbide Powder | 合金炉：钨粉 + 煤炭 / 木炭 | 硬质合金刀片 |
-| `cemented_carbide_insert` | 硬质合金刀片 / Cemented Carbide Insert | 合金炉：碳化钨粉 + 电解镍 | **暂无** |
+| `tungsten_carbide_powder` | 碳化钨粉 / Tungsten Carbide Powder | 合金炉：钨粉 + 煤炭 / 木炭 | 硬质合金坯件 |
+| `cemented_carbide_blank` | 硬质合金坯件 / Cemented Carbide Blank | 合金炉：碳化钨粉 + 电解镍 | **暂无** |
 | `spodumene_concentrate` | 锂辉石精矿 / Spodumene Concentrate | 粉碎锂辉石矿石 | 化学反应器 → 碳酸锂 |
 | `lithium_carbonate` | 碳酸锂 / Lithium Carbonate | 化学反应器：锂辉石精矿 + 水 | **暂无** |
 | `bauxite`、`alumina`、`sphalerite`、`cassiterite`、`silver_scrap` | 铝土、氧化铝、闪锌矿、锡石、银废料 | **暂无**（对应矿石只掉落自身，没有粉碎配方） | **暂无** |
@@ -46,7 +50,7 @@
 黑钨矿矿石 ──粉碎机──> 黑钨矿 ×1–3 ──化学反应器 + 水──> 氧化钨 ──工业熔炉 300t──> 钨粉
     钨粉 ──工业熔炉 400t（烧结）──> 钨丝
     钨粉 + 煤炭/木炭 ──合金炉 600t──> 碳化钨粉
-    碳化钨粉 + 电解镍 ──合金炉 800t──> 硬质合金刀片
+    碳化钨粉 + 电解镍 ──合金炉 800t──> 硬质合金坯件
 
 锂辉石矿石 ──粉碎机──> 锂辉石精矿 ×1–3 ──化学反应器 + 水 300t──> 碳酸锂 (+ 工业废液)
 ```
@@ -89,7 +93,7 @@
 | `lead_ingot` | `lead_brick` |
 | `nickel_ingot` | `electrolytic_nickel` |
 | `tungsten_ingot` | `tungsten_filament` |
-| `cemented_carbide_ingot` | `cemented_carbide_insert` |
+| `cemented_carbide_ingot` | `cemented_carbide_blank`（中间短暂叫过 `cemented_carbide_insert`，已删除） |
 | `kunzite` | `spodumene_concentrate` |
 | `lead_block`（方块） | `lead_shielding_bricks`（方块） |
 
@@ -100,7 +104,7 @@
 | 变更 | 配方 |
 |---|---|
 | 删除 | 8 个 `*_sheet_compressing`（钢、铝、铅、锌、锡、镍、银、钨）；`steel_ingot_from_alloying`；`cemented_carbide_alloying` |
-| 新增 | `steel_billet_alloying`、`cemented_carbide_insert_alloying`、`galena_ore_crushing`、`lead_brick_smelting`、`lead_shielding_bricks`、`pentlandite_ore_crushing`、`pentlandite_chemical_processing`、`spodumene_ore_crushing`、`spodumene_chemical_processing` |
+| 新增 | `steel_billet_alloying`、`cemented_carbide_blank_alloying`、`galena_ore_crushing`、`lead_brick_smelting`、`lead_shielding_bricks`、`pentlandite_ore_crushing`、`pentlandite_chemical_processing`、`spodumene_ore_crushing`、`spodumene_chemical_processing` |
 | 修改 | `tungsten_powder_sintering`：输出从钨锭改为钨丝，400 ticks 不变 |
 | 不变 | `wolframite_ore_crushing`、`wolframite_chemical_processing`、`tungsten_oxide_reduction`、`tungsten_carbide_powder_alloying`、`reinforced_concrete_crushing`、`simple_hearing_protection` |
 
@@ -112,16 +116,13 @@
 
 ## 贴图
 
-生成器：`tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致）。全部是 16×16，用小的几何体生成：斜投影的棱柱，超采样填充，外加一圈原版风格的深色描边。没有噪点、污渍或文字。
+钢坯、铅砖、电解镍、钨丝、硬质合金坯件是 3D Mesh 物品，没有 2D 图标，见 [material_meshes_v1.md](../models/material_meshes_v1.md)。
+
+其余两张是 16×16 贴图，生成器 `tools/build-material-textures-v1.mjs`（`--check` 检查 PNG 是否与生成结果一致）。用小的几何体生成（轴测棱柱，超采样填充，原版风格的深色描边），没有噪点、污渍或文字。
 
 | 贴图 | 形状 |
 |---|---|
-| `item/steel_billet` | 方截面长条，斜向远处；靠近观察者的一端是亮的锯切面 |
-| `item/lead_brick` | 厚重的铸造砖，一端 V 形凸出、另一端 V 形凹口（互锁屏蔽砖），中性铅灰 |
-| `item/electrolytic_nickel` | 几块又厚又平的方形阴极片，偏暖的银色 |
 | `item/spodumene_concentrate` | 一小堆块状的浅灰绿解理碎粒，不是粉末锥堆 |
-| `item/tungsten_filament` | 两根支架之间的螺旋线圈；前半圈亮、后半圈暗 |
-| `item/cemented_carbide_insert` | 平放的 80° 菱形可转位刀片，深灰，中心有压紧孔 |
 | `block/lead_shielding_bricks` | 错缝砌筑的铅砖，竖缝是 ">" 形的 V 口，干砌细缝；每块砖只有很小的整体明暗差 |
 
 新物品不再共用旧的锭、板或粉末形状。旧的锭、板贴图和 7 张金属块贴图已删除。
@@ -143,7 +144,7 @@
 
 ## 需要实机验证
 
-1. 七个新贴图在物品栏里是否清楚，形状能不能一眼区分。
+1. 五个 3D Mesh 物品和两张新贴图在物品栏里是否清楚，能不能一眼区分（Mesh 物品的重点见 material_meshes_v1.md）。
 2. JEI：五个分类的配方条目、压缩分类是否因为没有配方而被隐藏。
 3. 铅屏蔽砖：钻石镐挖掘掉落、铁镐不掉落；辐射 HUD 在一层铅砖后面的读数。
 4. 玻璃门和铅箱的破坏粒子。

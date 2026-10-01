@@ -1,7 +1,7 @@
 {
   "parent": "builtin/entity",
   "textures": {
-    "particle": "apocalypse_firstlight:item/lead_brick_mesh"
+    "particle": "apocalypse_firstlight:item/cemented_carbide_blank_mesh"
   },
   "display": {
     "thirdperson_righthand": {
@@ -62,14 +62,14 @@
         0
       ],
       "translation": [
-        1.4,
-        0.64,
+        0,
+        0,
         0
       ],
       "scale": [
-        1.32,
-        1.32,
-        1.32
+        1.315,
+        1.315,
+        1.315
       ]
     },
     "fixed": {
