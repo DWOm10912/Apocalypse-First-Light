@@ -1,8 +1,10 @@
 package com.antaurora.apofirstlight.item;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.ChestFreezerBlock;
-import com.antaurora.apofirstlight.client.ChestFreezerItemRenderer;
+import com.antaurora.apofirstlight.client.AflStaticMeshItemRenderer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,7 +23,10 @@ public final class ChestFreezerBlockItem extends BlockItem {
         consumer.accept(new IClientItemExtensions() {
             private BlockEntityWithoutLevelRenderer renderer;
             @Override public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                if (renderer == null) renderer = new ChestFreezerItemRenderer();
+                // Chest Freezer V2 mesh and atlas, lids closed, status lights off (lights_lit is neverRender)
+                if (renderer == null) renderer = new AflStaticMeshItemRenderer(
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/chest_freezer.geo.json"),
+                        new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/chest_freezer.png"), 0.0, 0.0);
                 return renderer;
             }
         });

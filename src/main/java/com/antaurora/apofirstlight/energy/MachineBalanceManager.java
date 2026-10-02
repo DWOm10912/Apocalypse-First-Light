@@ -36,6 +36,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "energy_battery");
     private static final ResourceLocation BEVERAGE_COOLER_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "beverage_cooler");
+    private static final ResourceLocation CHEST_FREEZER_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chest_freezer");
     private static final ResourceLocation CHARGING_STATION_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "charging_station");
     private static final ResourceLocation CRUSHER_ID =
@@ -53,7 +55,8 @@ public final class MachineBalanceManager {
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
     private static volatile EnergyBatteryBalance energyBattery = fallbackEnergyBattery();
     private static volatile ChargingStationBalance chargingStation = fallbackChargingStation();
-    private static volatile BeverageCoolerBalance beverageCooler = fallbackBeverageCooler();
+    private static volatile ApplianceBalance beverageCooler = fallbackBeverageCooler();
+    private static volatile ApplianceBalance chestFreezer = fallbackChestFreezer();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -85,8 +88,12 @@ public final class MachineBalanceManager {
         return chargingStation;
     }
 
-    public static BeverageCoolerBalance beverageCooler() {
+    public static ApplianceBalance beverageCooler() {
         return beverageCooler;
+    }
+
+    public static ApplianceBalance chestFreezer() {
+        return chestFreezer;
     }
 
     public static CrusherBalance crusher() {
@@ -167,11 +174,11 @@ public final class MachineBalanceManager {
     }
 
     /**
-     * Beverage Cooler: small buffer, cable input limit, the lights' draw whenever lit, and the compressor's draw while it
-     * runs, in cycles of on / off ticks.
+     * Cold appliances (Beverage Cooler, Chest Freezer; energy/CompressorAppliance): small buffer, cable input limit, the
+     * lights' draw whenever lit, and the compressor's draw while it runs, in cycles of on / off ticks.
      */
-    public record BeverageCoolerBalance(int capacityFe, int maxReceiveFePerTick, int lightFePerTick, int compressorFePerTick,
-                                       int compressorOnTicks, int compressorOffTicks) {
+    public record ApplianceBalance(int capacityFe, int maxReceiveFePerTick, int lightFePerTick, int compressorFePerTick,
+                                   int compressorOnTicks, int compressorOffTicks) {
     }
 
     public record CrusherBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
@@ -203,7 +210,10 @@ public final class MachineBalanceManager {
             EnergyCellBalance loadedCell = loadEnergyCell(resources.get(ENERGY_CELL_ID));
             EnergyBatteryBalance loadedBattery = loadEnergyBattery(resources.get(ENERGY_BATTERY_ID));
             ChargingStationBalance loadedStation = loadChargingStation(resources.get(CHARGING_STATION_ID));
-            BeverageCoolerBalance loadedCooler = loadBeverageCooler(resources.get(BEVERAGE_COOLER_ID));
+            ApplianceBalance loadedCooler = loadAppliance(resources.get(BEVERAGE_COOLER_ID), "beverage_cooler.json",
+                    fallbackBeverageCooler());
+            ApplianceBalance loadedFreezer = loadAppliance(resources.get(CHEST_FREEZER_ID), "chest_freezer.json",
+                    fallbackChestFreezer());
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -216,6 +226,7 @@ public final class MachineBalanceManager {
             energyBattery = loadedBattery;
             chargingStation = loadedStation;
             beverageCooler = loadedCooler;
+            chestFreezer = loadedFreezer;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -241,6 +252,10 @@ public final class MachineBalanceManager {
                     "[AFL ELECTRICITY] Beverage Cooler balance: capacity={} FE, receive={} FE/t, light={} FE/t, compressor={} FE/t, cycle={}/{} ticks",
                     loadedCooler.capacityFe(), loadedCooler.maxReceiveFePerTick(), loadedCooler.lightFePerTick(),
                     loadedCooler.compressorFePerTick(), loadedCooler.compressorOnTicks(), loadedCooler.compressorOffTicks());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Chest Freezer balance: capacity={} FE, receive={} FE/t, light={} FE/t, compressor={} FE/t, cycle={}/{} ticks",
+                    loadedFreezer.capacityFe(), loadedFreezer.maxReceiveFePerTick(), loadedFreezer.lightFePerTick(),
+                    loadedFreezer.compressorFePerTick(), loadedFreezer.compressorOnTicks(), loadedFreezer.compressorOffTicks());
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Crusher balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedCrusher.capacityFe(), loadedCrusher.maxReceiveFePerTick(), loadedCrusher.workFePerTick());
@@ -351,21 +366,21 @@ public final class MachineBalanceManager {
         }
     }
 
-    private static BeverageCoolerBalance loadBeverageCooler(@Nullable JsonElement element) {
+    private static ApplianceBalance loadAppliance(@Nullable JsonElement element, String file, ApplianceBalance fallback) {
         try {
-            JsonObject root = requireObject(element, "beverage_cooler.json");
-            return new BeverageCoolerBalance(
-                    requirePositiveInt(root, "capacity_fe", "beverage_cooler.json"),
-                    requirePositiveInt(root, "max_receive_fe_per_tick", "beverage_cooler.json"),
-                    requirePositiveInt(root, "light_fe_per_tick", "beverage_cooler.json"),
-                    requirePositiveInt(root, "compressor_fe_per_tick", "beverage_cooler.json"),
-                    requirePositiveInt(root, "compressor_on_ticks", "beverage_cooler.json"),
-                    requirePositiveInt(root, "compressor_off_ticks", "beverage_cooler.json"));
+            JsonObject root = requireObject(element, file);
+            return new ApplianceBalance(
+                    requirePositiveInt(root, "capacity_fe", file),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", file),
+                    requirePositiveInt(root, "light_fe_per_tick", file),
+                    requirePositiveInt(root, "compressor_fe_per_tick", file),
+                    requirePositiveInt(root, "compressor_on_ticks", file),
+                    requirePositiveInt(root, "compressor_off_ticks", file));
         } catch (RuntimeException exception) {
             ApocalypseFirstLight.LOGGER.error(
-                    "[AFL ELECTRICITY] Invalid or missing machine_balance/beverage_cooler.json; using safe fallback: {}",
-                    exception.getMessage());
-            return fallbackBeverageCooler();
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/{}; using safe fallback: {}",
+                    file, exception.getMessage());
+            return fallback;
         }
     }
 
@@ -468,8 +483,13 @@ public final class MachineBalanceManager {
     }
 
     /** Same values as machine_balance/beverage_cooler.json. */
-    private static BeverageCoolerBalance fallbackBeverageCooler() {
-        return new BeverageCoolerBalance(20, 32, 1, 4, 400, 800);
+    private static ApplianceBalance fallbackBeverageCooler() {
+        return new ApplianceBalance(20, 32, 1, 4, 400, 800);
+    }
+
+    /** Same values as machine_balance/chest_freezer.json. */
+    private static ApplianceBalance fallbackChestFreezer() {
+        return new ApplianceBalance(20, 32, 1, 6, 600, 600);
     }
 
     private static CrusherBalance fallbackCrusher() {

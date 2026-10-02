@@ -3,8 +3,10 @@ package com.antaurora.apofirstlight.client;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.ChargingStationBlock;
+import com.antaurora.apofirstlight.block.ChestFreezerBlock;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
+import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -31,8 +33,8 @@ import java.util.function.Supplier;
 
 /**
  * Quiet block loops driven by a block entity's synced state (seamless loops from tools/sound-mix-lib.mjs buildLoop; their
- * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's
- * compressor while it runs. Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
+ * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's and
+ * the chest freezer's compressor while it runs (the freezer's the same loop, deeper). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
  * sound stops itself when its condition ends, the block entity is gone, or the player leaves the range.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -42,7 +44,7 @@ public final class BlockLoopSoundController {
     private static final int SCAN_INTERVAL_TICKS = 5;
 
     private record Source<T extends BlockEntity>(Class<T> type, Predicate<T> active, Function<T, Vec3> position,
-                                                 Supplier<SoundEvent> sound) {
+                                                 Supplier<SoundEvent> sound, float pitch) {
         boolean activeOn(BlockEntity entity) {
             return type.isInstance(entity) && active.test(type.cast(entity));
         }
@@ -56,11 +58,15 @@ public final class BlockLoopSoundController {
             new Source<>(ChargingStationBlockEntity.class, station -> station.isMaster() && station.charging(),
                     station -> ChargingStationBlock.sourceToWorld(station.getBlockPos(),
                             station.getBlockState().getValue(ChargingStationBlock.FACING), 8.0, 8.0, 0.0),
-                    AflSounds.CHARGING_STATION_HUM),
+                    AflSounds.CHARGING_STATION_HUM, 1.0F),
             new Source<>(BeverageCoolerBlockEntity.class, BeverageCoolerBlockEntity::compressorRunning,
                     cooler -> BeverageCoolerBlock.compressorPosition(cooler.getBlockPos(),
                             cooler.getBlockState().getValue(BeverageCoolerBlock.FACING)),
-                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP));
+                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, 1.0F),
+            new Source<>(ChestFreezerBlockEntity.class, ChestFreezerBlockEntity::compressorRunning,
+                    freezer -> ChestFreezerBlock.compressorPosition(freezer.getBlockPos(),
+                            freezer.getBlockState().getValue(ChestFreezerBlock.FACING)),
+                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, ChestFreezerBlockEntity.COMPRESSOR_PITCH));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;
@@ -121,7 +127,7 @@ public final class BlockLoopSoundController {
             this.attenuation = SoundInstance.Attenuation.LINEAR;
             this.relative = false;
             this.volume = 1.0F;
-            this.pitch = 1.0F;
+            this.pitch = source.pitch();
             this.x = at.x;
             this.y = at.y;
             this.z = at.z;

@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
+import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -10,7 +13,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -23,6 +28,8 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -41,12 +48,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Two-cell chest freezer. Logical LEFT/master is the visual left half; front is -Z. */
-public final class ChestFreezerBlock extends Block implements EntityBlock {
+/**
+ * Two-cell chest freezer with two sliding glass lids. Logical LEFT/master is the visual left half; front is -Z. One AFL
+ * power port on the back of the master cell; with power (ChestFreezerBlockEntity) the status display and LED are on and
+ * the compressor runs in cycles. Contents: the master's 18-slot searchable container, opened from the well of the open
+ * half; the goods drawn inside follow how much it holds.
+ */
+public final class ChestFreezerBlock extends Block implements EntityBlock, AflPowerPortBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final EnumProperty<LidState> LID = EnumProperty.create("lid", LidState.class);
-    public static final int ANIMATION_TICKS = 14; // four source animations are 0.70 seconds
+    public static final int ANIMATION_TICKS = 14; // the mesh profile's 0.70 s slides
+    /** tools/build-chest-freezer-v2.mjs LIDS / LID_TRAVEL, source px: each lid's grip (middle x, top y) when closed. */
+    private static final double LEFT_GRIP_X = 8.25, LEFT_GRIP_Y = 14.8, RIGHT_GRIP_X = 7.75, RIGHT_GRIP_Y = 15.4;
+    private static final double LID_TRAVEL = 14.15;
 
     private record Mutation(LevelAccessor level, BlockPos master) {}
     private record ShapeKey(Part part, Direction facing, LidState lid) {}
@@ -132,6 +147,8 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
             success = true;
             level.updateNeighborsAt(master, this);
             level.updateNeighborsAt(right, this);
+            // the cells are set with UPDATE_KNOWN_SHAPE; a power cable already lying behind the port reshapes now
+            level.getBlockState(master).updateNeighbourShapes(level, master, UPDATE_CLIENTS);
             return true;
         } finally {
             if (!success && leftPlaced) {
@@ -193,26 +210,36 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
         }
     }
 
+    /** Placed by a player: its contents are the player's own, never searched. */
+    @Override
+    public void setPlacedBy(Level level, BlockPos position, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        if (!level.isClientSide && level.getBlockEntity(position) instanceof ChestFreezerBlockEntity freezer) freezer.markPlacedByPlayer();
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
+        if (player.isSpectator()) return InteractionResult.PASS;
         BlockPos master = masterPosition(position, state);
         double[] local = localHit(hit.getLocation(), master, state.getValue(FACING));
-        // Only actual lid projection can activate it. An open half's floor remains a no-op.
-        if (local[1] < 14.1 || local[1] > 16.1 || local[2] < 1.75 || local[2] > 14.25
-                || local[0] < 1.65 || local[0] > 30.35) return InteractionResult.PASS;
-        if (level.isClientSide) return InteractionResult.SUCCESS;
         BlockState masterState = level.getBlockState(master);
+        // the well of the open half: search / view the contents (not while a lid slides)
+        if (masterState.is(this) && masterState.getValue(PART) == Part.LEFT && inOpenWell(masterState.getValue(LID), local)) {
+            if (!(level.getBlockEntity(master) instanceof ChestFreezerBlockEntity freezer) || freezer.lidMoving())
+                return InteractionResult.CONSUME;
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+            player.openMenu(freezer);
+            return InteractionResult.CONSUME;
+        }
+        if (!onLid(local)) return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
         if (!masterState.is(this) || masterState.getValue(PART) != Part.LEFT
                 || masterState.getValue(FACING) != state.getValue(FACING)) return InteractionResult.CONSUME;
         LidState stable = masterState.getValue(LID);
         if (!matches(level.getBlockState(partPosition(master, state.getValue(FACING), Part.RIGHT)),
                 state.getValue(FACING), Part.RIGHT, stable)) return InteractionResult.CONSUME;
-        LidState target;
-        if (stable == LidState.CLOSED) target = local[0] < 16 ? LidState.LEFT_OPEN : LidState.RIGHT_OPEN;
-        else if (stable == LidState.LEFT_OPEN && local[0] >= 16) target = LidState.CLOSED;
-        else if (stable == LidState.RIGHT_OPEN && local[0] < 16) target = LidState.CLOSED;
-        else return InteractionResult.CONSUME;
+        LidState target = clickTarget(stable, local);
+        if (target == null) return InteractionResult.CONSUME;
         if (level.getBlockEntity(master) instanceof ChestFreezerBlockEntity freezer
                 && freezer.startTransition(target, level.getGameTime())) {
             level.scheduleTick(master, this, ANIMATION_TICKS);
@@ -222,6 +249,81 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
                     AflSounds.CHEST_FREEZER_SLIDE.get(), SoundSource.BLOCKS, 0.8F, 1.0F);
         }
         return InteractionResult.CONSUME;
+    }
+
+    /** Only the actual lid projection can activate it. An open half's floor remains a no-op. */
+    private static boolean onLid(double[] local) {
+        return local[1] >= 14.1 && local[1] <= 16.1 && local[2] >= 1.75 && local[2] <= 14.25
+                && local[0] >= 1.65 && local[0] <= 30.35;
+    }
+
+    /** The well (liner, below the lid tracks) of the half that stands open; a closed half's lid takes the hit first. */
+    private static boolean inOpenWell(LidState stable, double[] local) {
+        if (local[1] < 3.5 || local[1] >= 14.1 || local[2] < 1.6 || local[2] > 14.4) return false;
+        return stable == LidState.LEFT_OPEN ? local[0] >= 1.6 && local[0] < 16
+                : stable == LidState.RIGHT_OPEN && local[0] >= 16 && local[0] <= 30.4;
+    }
+
+    /**
+     * The lid state a click starts (use() and the prompt): a closed lid opens (the half that was hit); with one half
+     * open, a click on the stacked lids over the other half closes it. Null: not on a lid, or nothing to do.
+     */
+    @Nullable
+    private static LidState clickTarget(LidState stable, double[] local) {
+        if (!onLid(local)) return null;
+        if (stable == LidState.CLOSED) return local[0] < 16 ? LidState.LEFT_OPEN : LidState.RIGHT_OPEN;
+        if (stable == LidState.LEFT_OPEN && local[0] >= 16) return LidState.CLOSED;
+        if (stable == LidState.RIGHT_OPEN && local[0] < 16) return LidState.CLOSED;
+        return null;
+    }
+
+    /**
+     * What a click at this hit would do (WorldInteractionHint): hint key suffix open / close / search / view, and where to
+     * draw it: the grip of the lid that moves, or the middle of the open half's well. Nothing while a lid slides.
+     */
+    public record Prompt(String key, Vec3 anchor) {}
+
+    @Nullable
+    public static Prompt prompt(BlockGetter level, BlockPos position, BlockState state, Vec3 hitLocation) {
+        BlockPos master = masterPosition(position, state);
+        BlockState masterState = level.getBlockState(master);
+        if (!(masterState.getBlock() instanceof ChestFreezerBlock) || masterState.getValue(PART) != Part.LEFT
+                || !(level.getBlockEntity(master) instanceof ChestFreezerBlockEntity freezer) || freezer.lidMoving()) return null;
+        Direction facing = masterState.getValue(FACING);
+        LidState stable = masterState.getValue(LID);
+        double[] local = localHit(hitLocation, master, facing);
+        if (inOpenWell(stable, local))
+            return new Prompt(freezer.isSearchCompleteForPrompt() ? "view" : "search",
+                    MeshSourceFrame.toWorld(master, facing, stable == LidState.LEFT_OPEN ? 15.0 : 1.0, 12.0, 0));
+        LidState target = clickTarget(stable, local);
+        if (target == null) return null;
+        // the master's lid opens toward the slave half (source -x), the slave's toward the master half
+        Vec3 anchor = target == LidState.LEFT_OPEN || stable == LidState.LEFT_OPEN
+                ? MeshSourceFrame.toWorld(master, facing, LEFT_GRIP_X - (stable == LidState.LEFT_OPEN ? LID_TRAVEL : 0), LEFT_GRIP_Y + 0.5, 0)
+                : MeshSourceFrame.toWorld(master, facing, RIGHT_GRIP_X + (stable == LidState.RIGHT_OPEN ? LID_TRAVEL : 0), RIGHT_GRIP_Y + 0.5, 0);
+        return new Prompt(target == LidState.CLOSED ? "close" : "open", anchor);
+    }
+
+    /** Where the compressor sounds come from: low in the master cell, behind the control panel (source px 16, 3, 0). */
+    public static Vec3 compressorPosition(BlockPos master, Direction facing) {
+        return MeshSourceFrame.toWorld(master, facing, 16.0, 3.0, 0.0);
+    }
+
+    /** The master's block entity runs the power and the compressor on the server, the cold mist on the client. */
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (state.getValue(PART) != Part.LEFT || type != AflBlockEntities.CHEST_FREEZER.get()) return null;
+        if (level.isClientSide) return (BlockEntityTicker<T>) (BlockEntityTicker<ChestFreezerBlockEntity>) (l, p, s, freezer) ->
+                com.antaurora.apofirstlight.client.ColdMist.freezerTick(l, p, s, freezer);
+        return (BlockEntityTicker<T>) (BlockEntityTicker<ChestFreezerBlockEntity>) (l, p, s, freezer) -> freezer.serverTick();
+    }
+
+    /** The power port (tools/build-chest-freezer-v2.mjs POWER_PORT): the master cell's back face only. */
+    @Override
+    public boolean hasPowerPort(BlockState state, Direction face) {
+        return state.getValue(PART) == Part.LEFT && face == state.getValue(FACING).getOpposite();
     }
 
     /** Logical 0..32 X, 0..16 Z frame, with master in X=0..16; source Geo is centered. */
@@ -261,9 +363,25 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos position, BlockState replacement, boolean moved) {
-        if (!state.is(replacement.getBlock()))
+        if (!state.is(replacement.getBlock())) {
             removePeer(level, masterPosition(position, state), state.getValue(FACING), position);
+            // the master's contents, by every removal path: revealed slots drop, never-seen loot is lost
+            if (level.getBlockEntity(position) instanceof ChestFreezerBlockEntity freezer) freezer.dropContentsOnce();
+            level.updateNeighbourForOutputSignal(position, this);
+        }
         super.onRemove(state, level, position, replacement, moved);
+    }
+
+    @Override
+    public boolean hasAnalogOutputSignal(BlockState state) {
+        return true;
+    }
+
+    /** Comparator fullness of the master's revealed slots only, so it never hints at unsearched loot. */
+    @Override
+    public int getAnalogOutputSignal(BlockState state, Level level, BlockPos position) {
+        return level.getBlockEntity(masterPosition(position, state)) instanceof ChestFreezerBlockEntity freezer
+                ? AflContainerSearch.revealedAnalogSignal(freezer) : 0;
     }
 
     private void removePeer(LevelAccessor level, BlockPos master, Direction facing, BlockPos keep) {
@@ -281,6 +399,14 @@ public final class ChestFreezerBlock extends Block implements EntityBlock {
         } finally {
             MUTATIONS.remove(mutation);
         }
+    }
+
+    /** Lid-start block events (ChestFreezerBlockEntity#startTransition) go to the master's block entity. */
+    @Override
+    @SuppressWarnings("deprecation")
+    public boolean triggerEvent(BlockState state, Level level, BlockPos pos, int id, int param) {
+        var entity = level.getBlockEntity(pos);
+        return entity != null && entity.triggerEvent(id, param);
     }
 
     @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.INVISIBLE; }

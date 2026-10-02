@@ -5,6 +5,7 @@ import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerLayout;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
+import com.antaurora.apofirstlight.energy.CompressorAppliance;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -14,8 +15,6 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Player;
@@ -28,7 +27,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,23 +37,17 @@ import org.jetbrains.annotations.Nullable;
  * transition with a block event, so clients start the swing at the click instead of at the commit.
  * Also the display: {@link BeverageCoolerLayout#SLOTS} slots of one item each (front rank 0-29, back rank 30-59), saved as
  * {@code Items} and synced to clients for rendering, the same contract as the retail shelf.
- * Power (2026-10-01, machine_balance/beverage_cooler.json): a tiny FE buffer (about a second of use, so the cooler goes
- * dark soon after the cable is cut) fed only through the power port on the master's back; the lights draw while lit and the compressor while it runs, in cycles (on / off ticks) that restart
- * when the power comes back. Lit = the LIT block state (BeverageCoolerBlock#setLit): on while the buffer pays for the
- * lights, back on only once the buffer is full again, so a weak supply does not flicker. The
- * compressor starts at the beginning of an on phase and stops at its end or when the buffer cannot pay, so it starts at
- * most once a cycle; start / stop are played here, the running loop on clients (client/BlockLoopSoundController) from
- * the synced {@link #compressorRunning()}. No effect on the goods yet.
+ * Power (2026-10-01, machine_balance/beverage_cooler.json): {@link CompressorAppliance} (buffer, lights, compressor
+ * cycle), fed only through the power port on the master's back. Lit = the LIT block state (BeverageCoolerBlock#setLit).
+ * No effect on the goods yet.
  */
-public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost, Container {
+public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost, Container,
+        CompressorAppliance.Host {
     public static final int SIZE = BeverageCoolerLayout.SLOTS;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/beverage_cooler.json");
     private static final int EVENT_LEFT_DOOR = 1;
     private static final int EVENT_RIGHT_DOOR = 2;
-    private static final String ENERGY_KEY = "EnergyStored";
-    private static final String CYCLE_KEY = "CompressorCycle";
-    private static final String COMPRESSOR_KEY = "CompressorRunning";
 
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
@@ -67,58 +59,8 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
     /** Client: door targets announced by the server and not yet committed to the block state. */
     private Boolean announcedLeft;
     private Boolean announcedRight;
-    private int energyStored;
-    private long receiveBudgetTick = Long.MIN_VALUE;
-    private int receivedThisTick;
-    private int compressorCycle;
-    private boolean compressorRunning;
-
-    private final IEnergyStorage inputStorage = new IEnergyStorage() {
-        @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            MachineBalanceManager.BeverageCoolerBalance balance = MachineBalanceManager.beverageCooler();
-            long tick = level == null ? 0 : level.getGameTime();
-            if (receiveBudgetTick != tick) {
-                receiveBudgetTick = tick;
-                receivedThisTick = 0;
-            }
-            int accepted = Math.min(Math.max(0, maxReceive), Math.min(
-                    Math.max(0, balance.maxReceiveFePerTick() - receivedThisTick),
-                    Math.max(0, balance.capacityFe() - energyStored)));
-            if (!simulate && accepted > 0) {
-                energyStored += accepted;
-                receivedThisTick += accepted;
-                setChanged();
-            }
-            return accepted;
-        }
-
-        @Override
-        public int extractEnergy(int maxExtract, boolean simulate) {
-            return 0;
-        }
-
-        @Override
-        public int getEnergyStored() {
-            return energyStored;
-        }
-
-        @Override
-        public int getMaxEnergyStored() {
-            return MachineBalanceManager.beverageCooler().capacityFe();
-        }
-
-        @Override
-        public boolean canExtract() {
-            return false;
-        }
-
-        @Override
-        public boolean canReceive() {
-            return true;
-        }
-    };
-    private LazyOptional<IEnergyStorage> inputCapability = LazyOptional.of(() -> inputStorage);
+    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::beverageCooler,
+            AflSounds.BEVERAGE_COOLER_COMPRESSOR_START, AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP, 1.0F);
 
     public BeverageCoolerBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.BEVERAGE_COOLER.get(), pos, state);
@@ -191,70 +133,52 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
 
     /** Server, master only (BeverageCoolerBlock#getTicker). */
     public void serverTick() {
-        if (level == null || !(getBlockState().getBlock() instanceof BeverageCoolerBlock block)) return;
-        MachineBalanceManager.BeverageCoolerBalance balance = MachineBalanceManager.beverageCooler();
-        if (energyStored > balance.capacityFe()) energyStored = balance.capacityFe();   // after a balance reload
-        boolean lit = getBlockState().getValue(BeverageCoolerBlock.LIT);
-        int before = energyStored;
-        if (lit && energyStored < balance.lightFePerTick()) {
-            lit = false;
-            block.setLit(level, worldPosition, false);
-        } else if (!lit && energyStored >= balance.capacityFe()) {
-            lit = true;
-            compressorCycle = 0;
-            block.setLit(level, worldPosition, true);
-        }
-        if (lit) {
-            energyStored -= balance.lightFePerTick();
-            int period = balance.compressorOnTicks() + balance.compressorOffTicks();
-            int phase = Math.floorMod(compressorCycle, period);
-            if (!compressorRunning && phase == 0 && energyStored >= balance.compressorFePerTick()) setCompressor(true);
-            else if (compressorRunning && (phase >= balance.compressorOnTicks() || energyStored < balance.compressorFePerTick()))
-                setCompressor(false);
-            if (compressorRunning) energyStored -= balance.compressorFePerTick();
-            compressorCycle = (phase + 1) % period;
-        } else if (compressorRunning) {
-            setCompressor(false);
-        }
-        if (energyStored != before) setChanged();
-    }
-
-    private void setCompressor(boolean running) {
-        compressorRunning = running;
-        if (level != null) {
-            Vec3 at = BeverageCoolerBlock.compressorPosition(worldPosition, getBlockState().getValue(BeverageCoolerBlock.FACING));
-            SoundEvent sound = running ? AflSounds.BEVERAGE_COOLER_COMPRESSOR_START.get() : AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP.get();
-            level.playSound(null, at.x, at.y, at.z, sound, SoundSource.BLOCKS, 1.0F, 0.98F + level.random.nextFloat() * 0.04F);
-        }
-        sync();
+        if (level == null || !(getBlockState().getBlock() instanceof BeverageCoolerBlock)) return;
+        power.serverTick();
     }
 
     /** Synced: the compressor is running (clients play its loop). */
     public boolean compressorRunning() {
-        return compressorRunning;
+        return power.compressorRunning();
     }
 
-    private boolean lit() {
+    @Override
+    public boolean lit() {
         return getBlockState().getValue(BeverageCoolerBlock.LIT);
+    }
+
+    @Override
+    public void setLit(boolean lit) {
+        if (level != null && getBlockState().getBlock() instanceof BeverageCoolerBlock block) block.setLit(level, worldPosition, lit);
+    }
+
+    @Override
+    public Vec3 compressorPosition() {
+        return BeverageCoolerBlock.compressorPosition(worldPosition, getBlockState().getValue(BeverageCoolerBlock.FACING));
+    }
+
+    @Override
+    public void syncAppliance() {
+        sync();
     }
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
         if (capability == ForgeCapabilities.ENERGY && side != null && getBlockState().getBlock() instanceof BeverageCoolerBlock block
-                && block.hasPowerPort(getBlockState(), side)) return inputCapability.cast();
+                && block.hasPowerPort(getBlockState(), side)) return power.capability().cast();
         return super.getCapability(capability, side);
     }
 
     @Override
     public void invalidateCaps() {
         super.invalidateCaps();
-        inputCapability.invalidate();
+        power.invalidateCaps();
     }
 
     @Override
     public void reviveCaps() {
         super.reviveCaps();
-        inputCapability = LazyOptional.of(() -> inputStorage);
+        power.reviveCaps();
     }
 
     // ---- display (one item per slot) ----
@@ -347,18 +271,14 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
         for (int slot = 0; slot < SIZE; slot++) {
             if (items.get(slot).getCount() > 1) items.set(slot, items.get(slot).copyWithCount(1));
         }
-        energyStored = Math.max(0, Math.min(tag.getInt(ENERGY_KEY), MachineBalanceManager.beverageCooler().capacityFe()));
-        compressorCycle = Math.max(0, tag.getInt(CYCLE_KEY));
-        compressorRunning = tag.getBoolean(COMPRESSOR_KEY);
+        power.load(tag);
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         ContainerHelper.saveAllItems(tag, items);
-        tag.putInt(ENERGY_KEY, energyStored);
-        tag.putInt(CYCLE_KEY, compressorCycle);
-        tag.putBoolean(COMPRESSOR_KEY, compressorRunning);
+        power.save(tag);
     }
 
     @Override

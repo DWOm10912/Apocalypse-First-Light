@@ -17,6 +17,10 @@ public final class AflParticles {
     public static final RegistryObject<SimpleParticleType> CHAMBER_GAS =
             PARTICLE_TYPES.register("chamber_gas", () -> new SimpleParticleType(false));
 
+    /** Cold air of a powered chest freezer (client/ColdMist). */
+    public static final RegistryObject<SimpleParticleType> COLD_MIST =
+            PARTICLE_TYPES.register("cold_mist", () -> new SimpleParticleType(false));
+
     private AflParticles() {
     }
     public static final RegistryObject<SimpleParticleType> HIT_YELLOW_STAR =

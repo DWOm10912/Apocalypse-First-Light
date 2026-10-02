@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
 import com.antaurora.apofirstlight.block.ChargingStationBlock;
+import com.antaurora.apofirstlight.block.ChestFreezerBlock;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
@@ -59,6 +60,7 @@ public final class WorldInteractionHint {
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
+            if(target==null) target=freezerLid(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
@@ -105,6 +107,19 @@ public final class WorldInteractionHint {
         var door=BeverageCoolerBlock.promptDoor(mc.level,hit.getBlockPos(),s,hit.getLocation());
         return door==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.beverage_cooler."+(door.open()?"close":"open")),
                 BeverageCoolerBlock.promptAnchor(door.master(),door.facing(),door.left(),door.open()));
+    }
+
+    /**
+     * Chest freezer, resolved like ChestFreezerBlock#use: open the hit half, close the open half from the stacked lids
+     * (drawn above the grip of the lid that moves), or search / view the contents from the open half's well (drawn in
+     * its middle); nothing while a lid slides.
+     */
+    private static Target freezerLid(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof ChestFreezerBlock)) return null;
+        var prompt=ChestFreezerBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation());
+        return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.chest_freezer."+prompt.key()),prompt.anchor());
     }
 
     /**

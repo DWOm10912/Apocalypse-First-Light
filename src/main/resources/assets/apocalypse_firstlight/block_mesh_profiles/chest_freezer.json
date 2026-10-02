@@ -1,0 +1,257 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/chest_freezer.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/chest_freezer.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -1.015625,
+    -0.015625,
+    -0.015625,
+    1.015625,
+    1.003125,
+    1.015625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "left_lid": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "right_lid": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights_lit": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_0_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_0_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_0_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_1_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_1_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_1_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_2_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_2_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_2_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_3_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_3_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_3_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_4_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_4_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_4_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_5_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_5_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_5_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_6_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_6_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_6_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_7_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_7_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_7_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "animations": {
+    "left_open": {
+      "duration_ticks": 14,
+      "easing": "ease_in_out",
+      "transforms": {
+        "left_lid": {
+          "translation": [
+            -0.884375,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "right_open": {
+      "duration_ticks": 14,
+      "easing": "ease_in_out",
+      "transforms": {
+        "right_lid": {
+          "translation": [
+            0.884375,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

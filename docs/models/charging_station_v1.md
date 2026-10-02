@@ -106,7 +106,7 @@
 | `item/ChargingStationBlockItem.java` | 两格放置，物品渲染 |
 | `client/ChargingStationRenderer.java` | 机身、托盘物品、电量条、读数 |
 | `client/WorldInteractionHint.java` | 托盘提示 |
-| `client/BlockLoopSoundController.java` | 充电中的嗡嗡循环（和冷柜压缩机共用） |
+| `client/BlockLoopSoundController.java` | 充电中的嗡嗡循环（和饮料冷柜、冷冻冰柜的压缩机循环共用；每个声源有自己的音高） |
 | `registry/AflSounds.java`、`sounds.json` | `charging_station_start` / `_full` / `_hum` |
 | `energy/MachineBalanceManager.java` | `ChargingStationBalance` |
 

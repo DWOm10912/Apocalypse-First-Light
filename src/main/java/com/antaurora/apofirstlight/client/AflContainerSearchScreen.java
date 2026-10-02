@@ -12,7 +12,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
 /**
- * Vanilla chest (9 x 1..6) or dispenser (3 x 3) layout plus a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are
+ * Vanilla chest (9 x 1..6) or dispenser (3 x 3) layout, or AFL's 6 x 3 grid on the chest panel, plus a DEVELOPMENT PLACEHOLDER search overlay (plain fills, no textures): hidden slots are
  * masked, only the slot being searched shows a small circling magnifier and a faint progress line.
  * All state comes from {@link AflContainerSearchMenu}; the screen never decides when a slot is revealed.
  */
@@ -20,6 +20,8 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     private static final ResourceLocation BACKGROUND = new ResourceLocation("textures/gui/container/generic_54.png");
     private static final ResourceLocation BACKGROUND_3X3 = new ResourceLocation("textures/gui/container/dispenser.png");
     private static final int HIDDEN_FILL = 0xE01A1D21;
+    /** The vanilla container panel grey, to blank the 9-wide slot rows under a narrower grid. */
+    private static final int PANEL = 0xFFC6C6C6;
     private static final int REVEAL_FLASH_RGB = 0xD8DEE4;
     private static final float REVEAL_FLASH_TICKS = 6.0F;
     /** 7x7 magnifier: R = rim, G = glass, H = handle. Its lens center (2.5, 2.5) follows the orbit. */
@@ -44,7 +46,7 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     public AflContainerSearchScreen(AflContainerSearchMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         this.layout = menu.layout();
-        this.imageHeight = layout.isChest() ? 114 + layout.rows() * 18 : 166;
+        this.imageHeight = layout == AflContainerSearchLayout.GRID_3X3 ? 166 : 114 + layout.rows() * 18;
         this.inventoryLabelY = imageHeight - 94;
     }
 
@@ -52,7 +54,7 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     @Override
     protected void init() {
         super.init();
-        if (!layout.isChest()) {
+        if (layout == AflContainerSearchLayout.GRID_3X3) {
             titleLabelX = (imageWidth - font.width(title)) / 2;
         }
     }
@@ -69,13 +71,22 @@ public final class AflContainerSearchScreen extends AbstractContainerScreen<AflC
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
-        if (!layout.isChest()) {
+        if (layout == AflContainerSearchLayout.GRID_3X3) {
             graphics.blit(BACKGROUND_3X3, x, y, 0, 0, imageWidth, imageHeight);
             return;
         }
         int rows = layout.rows();
         graphics.blit(BACKGROUND, x, y, 0, 0, imageWidth, rows * 18 + 17);
         graphics.blit(BACKGROUND, x, y + rows * 18 + 17, 0, 126, imageWidth, 96);
+        if (layout.columns() < 9) {
+            // a narrower AFL grid: blank the chest's slot rows, then frame each slot with the chest's own slot frame
+            graphics.fill(x + 7, y + 17, x + 169, y + 17 + rows * 18, PANEL);
+            for (int row = 0; row < rows; row++) {
+                for (int column = 0; column < layout.columns(); column++) {
+                    graphics.blit(BACKGROUND, x + layout.slotX(column) - 1, y + layout.slotY(row) - 1, 7, 17, 18, 18);
+                }
+            }
+        }
     }
 
     @Override
