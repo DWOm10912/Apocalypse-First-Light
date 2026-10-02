@@ -35,6 +35,244 @@
         0,
         -0.41375
       ]
+    },
+    "goods_floor_a_carton": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_holdall": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_toolbox": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_boots": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_backpack": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_sneakers": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_sports_bag": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_a_basketball": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_carton": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_holdall": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_toolbox": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_boots": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_backpack": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_sneakers": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_sports_bag": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_floor_b_basketball": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_a_carton": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_a_thermos": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_a_hard_hat": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_a_books": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_b_carton": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_b_thermos": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_b_hard_hat": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_shelf_b_books": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_rod_jacket": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_rod_vest": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_a_tote": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_a_gloves": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_a_hard_hat": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_a_backpack": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_b_tote": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_b_gloves": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_b_hard_hat": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_hook_b_backpack": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
     }
   },
   "animations": {

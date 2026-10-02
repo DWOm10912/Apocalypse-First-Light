@@ -157,6 +157,8 @@ public class IndustrialLockerBlock extends Block implements EntityBlock, AflMesh
     }
 
     private static void setOpen(Level level, BlockPos lower, BlockState lowerState, boolean open, Player player) {
+        // world loot is rolled as the door opens, so the goods inside show how much it holds (container goods)
+        if (open && level.getBlockEntity(lower) instanceof IndustrialLockerBlockEntity locker) locker.unpackLootTable(player);
         level.setBlock(lower, lowerState.setValue(OPEN, open), Block.UPDATE_ALL);
         BlockState upper = level.getBlockState(lower.above());
         if (upper.is(lowerState.getBlock())) {

@@ -2,17 +2,23 @@
 // Block Mesh Runtime (bones 'body' and 'door', channel 'open') and in inventories by AflStaticMeshItemRenderer.
 //   node tools/build-industrial-locker-v2.mjs            -> writes source, runtime geo / sidecar / profile / maps / mesh shapes
 //   node tools/build-industrial-locker-v2.mjs --check    -> verifies every output is up to date
+//   node tools/build-industrial-locker-v2.mjs --preview DIR -> writes only geo / sidecar / maps into DIR (offline review)
 // Frame (Blockbench source, px): block bottom centre at the origin, 2 blocks tall (y 0..32), the door faces -Z (NORTH at
 // facing=north), +X is the viewer's LEFT when standing in front of it. Footprint = the unchanged NORTH collision box
 // x 2..14 / z 1..14 px (-6..6 / -7..6 here). The door hinges on the viewer's left (+X), the handle and lock sit right.
 // Materials: cool grey powder-coated steel (a coating in LabPBR terms: F0 24, semi-matte), darker interior, galvanized
 // hardware (handle, hinges, lock, rods, hooks). Clean, no rust or painted marks (AFL low-noise rule).
+// Goods (2026-10-01): the stocked filler, anonymous things at seven spots (floor_a / floor_b, shelf_a / shelf_b, rod,
+// hook_a / hook_b; _a on the viewer's left), every prop that may stand at a spot as its own bone goods_<spot>_<prop>
+// (neverRender: not in the item icon). IndustrialLockerBlockEntity picks one prop per spot from its goods theme and
+// shows as many spots as the contents call for (tools/afl-goods-props.mjs builds the props).
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, AX, extrude, add, sub, mul, dot, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {goodsProps, frame, PROP_MATS} from './afl-goods-props.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -97,6 +103,47 @@ function louver(part, x0, x1, yTop, drop, out) {
   cyl(rod, 'y', -6.1, -4.6, 0.14, 3.6, 29.6, 6);
   for (const y of [6.0, 27.0]) slab(rod, 'z', [-4.95, y, DOOR.z1], [-4.25, y + 0.5, -5.88], 0);
 }
+// ---------------- goods: one bone per prop and spot (IndustrialLockerBlockEntity.GOODS lists the same names) ----------------
+export const GOODS = {
+  floor: ['carton', 'holdall', 'toolbox', 'boots', 'backpack', 'sneakers', 'sports_bag', 'basketball'],
+  shelf: ['carton', 'thermos', 'hard_hat', 'books'],
+  rod: ['jacket', 'vest'],
+  hook: ['tote', 'gloves', 'hard_hat', 'backpack'],
+};
+export const GOODS_AT = {floorY: 2.72, shelfY: 26.37, spotX: 2.75, rodY: 24.6, rodZ: 0.8, hookX: 3, hookY: 20.95, wallZ: BACK - T};
+const GOODS_BONES = [];
+{
+  let seed = 0x10cce5;
+  const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+  const G = goodsProps(P, rnd), {range} = G, A = GOODS_AT;
+  const bone = (spot, prop) => { const b = `goods_${spot}_${prop}`; GOODS_BONES.push(b); return b; };
+  for (const [spot, x] of [['floor_a', A.spotX], ['floor_b', -A.spotX]]) {
+    const at = (z, yaw = 0) => frame({x, y: A.floorY, z, yaw});
+    G.cartons(bone(spot, 'carton'), at(range(-1.6, 1.6), range(-0.15, 0.15)), [4.0, 4.6, 4.4, 5.4, 3.4, 4.2], rnd() < 0.55 ? 2 : 1);
+    G.holdall(bone(spot, 'holdall'), at(range(-1.2, 1.2), range(-0.08, 0.08)), range(3.8, 4.3), range(6.0, 7.0), range(2.4, 2.8));
+    G.toolbox(bone(spot, 'toolbox'), at(range(-1.0, 1.4), range(-0.1, 0.1)));
+    G.boots(bone(spot, 'boots'), at(range(-1.0, 1.2), range(-0.12, 0.12)));
+    G.backpack(bone(spot, 'backpack'), at(A.wallZ - 0.1, range(-0.1, 0.1)));
+    G.sneakers(bone(spot, 'sneakers'), at(range(-1.2, 1.0), range(-0.15, 0.15)));
+    G.sportsBag(bone(spot, 'sports_bag'), at(range(-1.0, 1.0), range(-0.08, 0.08)));
+    G.basketball(bone(spot, 'basketball'), at(range(-2.2, 2.4), range(0, 6.28)));
+  }
+  for (const [spot, x] of [['shelf_a', A.spotX], ['shelf_b', -A.spotX]]) {
+    const at = (z, yaw = 0) => frame({x, y: A.shelfY, z, yaw});
+    G.cartons(bone(spot, 'carton'), at(range(-1.4, 1.2), range(-0.15, 0.15)), [3.4, 4.0, 3.4, 4.2, 2.4, 3.0], 1);
+    G.thermosLunch(bone(spot, 'thermos'), at(range(-1.5, 1.5), range(-0.2, 0.2)));
+    G.hardHat(bone(spot, 'hard_hat'), at(range(-1.6, 1.6), range(0, 6.28)), false);
+    G.books(bone(spot, 'books'), at(range(-1.4, 1.4), range(-0.2, 0.2)));
+  }
+  G.jacket(bone('rod', 'jacket'), frame({}), A.rodY, A.rodZ);
+  G.vest(bone('rod', 'vest'), frame({}), A.rodY, A.rodZ);
+  for (const [spot, x] of [['hook_a', A.hookX], ['hook_b', -A.hookX]]) {
+    G.tote(bone(spot, 'tote'), frame({x}), A.hookY, A.wallZ);
+    G.gloves(bone(spot, 'gloves'), frame({x}), A.hookY, A.wallZ);
+    G.hardHat(bone(spot, 'hard_hat'), frame({x, y: A.hookY - 1.75, z: A.wallZ - 0.15}), true);
+    G.backpack(bone(spot, 'backpack'), frame({x, z: A.wallZ - 0.1}), A.hookY);
+  }
+}
 // interior-facing faces of the carcass take the darker interior finish (and read as such when the door is open)
 {
   const IN = {min: [-W + T - 1e-3, 2.7 - 1e-3, FZ - 1e-3], max: [W - T + 1e-3, TOP + 1e-3, BACK - T + 1e-3]}, mid = [0, 17, 0];
@@ -168,6 +215,7 @@ export const MATS = {   // Base Color (sRGB or zoning function), bevel highlight
   louverGap: {c: TONE.gap, hl: 0, sm: 40, se: 40, f0: 24},
   zinc:      {c: (pos, n, part) => HARDWARE[part.name] || [146, 150, 154], hl: 16, sm: 118, se: 150, f0: 255},
   lock:      {c: [146, 140, 128], hl: 14, sm: 130, se: 150, f0: 255},   // warm nickel cylinder, apart from the zinc
+  ...PROP_MATS,
 };
 const ATLAS = 512, PAD = 2;   // entity textures have no mipmaps; 2 px gutters are enough
 const UV = unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 16, stepS: 0.25});
@@ -179,7 +227,8 @@ const painted = paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas
 // ---------------- source (Free Model) ----------------
 const uuid = s => { const h = createHash('sha256').update('afl-industrial-locker-v2:' + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const r12 = v => +v.toFixed(12) || 0;
-const RIG = [['body', [0, 0, 0]], ['door', HINGE]];
+const RIG = [['body', [0, 0, 0]], ['door', HINGE], ...GOODS_BONES.map(b => [b, [0, 0, 0]])];
+const NEVER_RENDER = new Set(GOODS_BONES);
 function buildSource() {
   const groups = RIG.map(([name, origin]) => ({name, uuid: uuid('group:' + name), export: true, locked: false, scope: 0, selected: false, visibility: true,
     _static: {properties: {}, temp_data: {}}, origin: origin.slice(), rotation: [0, 0, 0], color: 0, children: [], reset: false, shade: true,
@@ -210,7 +259,8 @@ const source = buildSource();
 // ---------------- runtime ----------------
 const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.industrial_locker', texture_width: ATLAS, texture_height: ATLAS,
   visible_bounds_width: 3, visible_bounds_height: 3, visible_bounds_offset: [0, 1, 0]},
-  bones: RIG.map(([name, origin]) => ({name, pivot: [-origin[0] || 0, origin[1], origin[2]]}))}]};
+  bones: RIG.map(([name, origin]) => NEVER_RENDER.has(name) ? {name, pivot: [-origin[0] || 0, origin[1], origin[2]], neverRender: true}
+    : {name, pivot: [-origin[0] || 0, origin[1], origin[2]]})}]};
 const sidecar = convert(source, geo, {}, 'industrial_locker.bbmodel', 2);
 const meshText = serializeCompact(sidecar);
 
@@ -219,7 +269,7 @@ const r6 = v => +v.toFixed(6);
 const bounds = (() => {
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], take = q => q.forEach((v, k) => { lo[k] = Math.min(lo[k], v); hi[k] = Math.max(hi[k], v); });
   for (const p of PARTS) for (const q of p.v) {
-    if (p.bone === 'body') { take(q); continue; }
+    if (p.bone !== 'door') { take(q); continue; }
     for (let s = 0; s <= 20; s++) { const a = OPEN_DEGREES * s / 20 * Math.PI / 180, x = q[0] - HINGE[0], z = q[2] - HINGE[2];
       take([HINGE[0] + x * Math.cos(a) + z * Math.sin(a), q[1], HINGE[2] - x * Math.sin(a) + z * Math.cos(a)]); }
   }
@@ -228,7 +278,7 @@ const bounds = (() => {
 })();
 const profile = {format_version: 1, geometry: 'apocalypse_firstlight:geo/industrial_locker.geo.json',
   texture: 'apocalypse_firstlight:textures/block/industrial_locker.png', origin: [0, 0, 0], scale: [1, 1, 1], facing: 'horizontal', bounds,
-  parts: {body: {pivot: [0, 0, 0]}, door: {pivot: HINGE.map(v => r6(v / 16))}},
+  parts: {body: {pivot: [0, 0, 0]}, door: {pivot: HINGE.map(v => r6(v / 16))}, ...Object.fromEntries(GOODS_BONES.map(b => [b, {pivot: [0, 0, 0]}]))},
   animations: {open: {duration_ticks: 10, easing: 'ease_in_out', transforms: {door: {rotation: [0, OPEN_DEGREES, 0]}}}}};
 
 // Mesh Shape profile (docs/rendering/mesh_shape_runtime_v1.md): simplified physical / selection boxes, named interaction
@@ -259,15 +309,27 @@ const outputs = [[path.join(bb, 'industrial_locker.bbmodel'), JSON.stringify(sou
   [shapeFile, JSON.stringify(SHAPES, null, 2) + '\n'],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/industrial_locker${k}.png`), painted.PNG[i]], [path.join(assets, `textures/block/industrial_locker${k}.png`), painted.PNG[i]]])];
 
-const faces = sidecar.parts.flatMap(p => p.faces), zf = zFightLevels(PARTS, new Map());
+// coplanar check: the locker alone, then each goods bone with it (a spot never shows two props at once)
+const isGoods = p => p.bone.startsWith('goods_');
+const zfs = [zFightLevels(PARTS, new Map(), {skip: isGoods}), ...GOODS_BONES.map(b => zFightLevels(PARTS, new Map(), {skip: p => isGoods(p) && p.bone !== b}))];
+const faces = sidecar.parts.flatMap(p => p.faces), zf = {unresolved: zfs.flatMap(z => z.unresolved)};
+const trisOf = p => p.f.reduce((t, f) => t + f.ids.length - 2, 0);
 export const stats = {triangles: faces.reduce((s, q) => s + q.length - 2, 0), quads: faces.filter(q => q.length === 4).length, tris: faces.filter(q => q.length === 3).length,
   parts: sidecar.parts.length, texelsPerPx: UV.S, islands: UV.islands.length, coplanarOverlaps: zf.unresolved.length, bounds,
-  byBone: Object.fromEntries(['body', 'door'].map(b => [b, PARTS.filter(p => p.bone === b).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0)]))};
+  byBone: Object.fromEntries(['body', 'door'].map(b => [b, PARTS.filter(p => p.bone === b).reduce((s, p) => s + trisOf(p), 0)])),
+  goods: Object.fromEntries(GOODS_BONES.map(b => [b, PARTS.filter(p => p.bone === b).reduce((s, p) => s + trisOf(p), 0)]))};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   console.log(JSON.stringify(stats));
   if (zf.unresolved.length) console.log('COPLANAR', JSON.stringify(zf.unresolved.slice(0, 12)));
-  if (process.argv.includes('--check')) {
+  const pi = process.argv.indexOf('--preview');
+  if (pi > 0) {
+    const dir = process.argv[pi + 1]; fs.mkdirSync(dir, {recursive: true});
+    fs.writeFileSync(path.join(dir, 'industrial_locker.geo.json'), JSON.stringify(geo, null, 2) + '\n');
+    fs.writeFileSync(path.join(dir, 'industrial_locker.aflmesh.json'), meshText);
+    ['', '_s', '_n'].forEach((k, i) => fs.writeFileSync(path.join(dir, 'industrial_locker' + k + '.png'), painted.PNG[i]));
+    console.log('preview written to ' + dir);
+  } else if (process.argv.includes('--check')) {
     for (const [file, data] of outputs) { const cur = fs.existsSync(file) ? fs.readFileSync(file) : null; if (!cur || !cur.equals(Buffer.isBuffer(data) ? data : Buffer.from(data))) throw new Error('stale ' + path.relative(ROOT, file)); }
     console.log('CHECK OK');
   } else {

@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.ChestFreezerBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
+import com.antaurora.apofirstlight.containersearch.AflContainerGoods;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchSettings;
@@ -112,15 +113,13 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
         return Arrays.stream(compartments).mapToObj(c -> "goods_" + c + "_" + random.nextInt(GOODS_ARRANGEMENTS)).toArray(String[]::new);
     }
 
-    /** Goods shown for this many occupied slots: none when empty, then about two compartments for every three stacks. */
+    /** Goods shown for this many occupied slots (the shared container goods rule, AflContainerGoods#shown). */
     public static int goodsFor(int occupied) {
-        return Math.min(GOODS_COMPARTMENTS, (occupied * 2 + 2) / 3);
+        return AflContainerGoods.shown(occupied, GOODS_COMPARTMENTS);
     }
 
     private int goodsNow() {
-        int occupied = 0;
-        for (ItemStack stack : items) if (!stack.isEmpty()) occupied++;
-        return goodsFor(occupied);
+        return goodsFor(AflContainerGoods.occupied(items));
     }
 
     private void showGoods(int count) {

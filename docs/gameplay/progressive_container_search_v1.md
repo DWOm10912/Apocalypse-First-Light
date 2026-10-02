@@ -323,14 +323,15 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - 没有物品、模型、贴图、语言键或掉落表，显示为缺失模型。
 - 这是开发专用方块，不是生存内容，所以没有挖掘标签，用手即可破坏。
 
-刷出指定的可搜索容器（2026-10-01，开发环境，OP 2 级）：`/dev container_search spawn <方块> [loot <战利品表> | fill <格数>]`
+刷出指定的可搜索容器（2026-10-01，开发环境，OP 2 级）：`/dev container_search spawn <方块> [theme <主题>] [loot <战利品表> | fill <格数>]`
 - `<方块>` 自动补全 AFL 里所有方块实体是可搜索容器的方块（`industrial_locker`、`lead_chest`、`industrial_electrical_box`、`cash_register`、`chest_freezer` 等，按方块实体判断，不是写死的清单）。
 - 看着一个方块（8 格内）执行，容器放在被看着的那一面上，和玩家放置一样：朝向玩家，多格方块的每一格都会放好；放不下时报错。
 - 放好后清掉"玩家放置、不需要搜索"的初始化，变成还没搜过的世界战利品：
   - 不带参数：战利品表 `minecraft:chests/simple_dungeon`；
   - `loot <表>`：指定战利品表（自动补全所有已加载的表）；
   - `fill <格数>`：随机挑这么多格放测试食物（生肉、鱼、浆果、冰、雪球等，每格 1–16 个），同样要搜索才能看到。用于测试冷冻冰柜"东西越多，摆得越满"。
-- 冷冻冰柜在第一次服务端 tick 时就生成战利品，其它容器在第一次打开时生成。
+- `theme <主题>`：直接指定货物主题（[container_goods_v1.md](container_goods_v1.md)），自动补全已加载的主题；只对有主题的容器有效（目前是储物柜），其它容器会提示忽略。不写时按战利品表决定。
+- 冷冻冰柜在第一次服务端 tick 时就生成战利品，储物柜在第一次开门时生成，其它容器在第一次打开时生成。
 - 代码：`src/dev/java/com/antaurora/apofirstlight/dev/containersearch/DevContainerSearchCommands.java`。没有实机验证。
 
 用法：

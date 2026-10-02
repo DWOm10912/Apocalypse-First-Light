@@ -1,0 +1,7 @@
+{
+  "loot_tables": [
+    "apocalypse_firstlight:chests/industrial/",
+    "apocalypse_firstlight:chests/factory/",
+    "apocalypse_firstlight:chests/warehouse/"
+  ]
+}

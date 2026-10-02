@@ -1,9 +1,13 @@
 package com.antaurora.apofirstlight.dev.containersearch;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.containersearch.AflContainerGoods;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.containersearch.AflGoodsThemes;
 import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -42,10 +46,12 @@ import java.util.List;
  * DEVELOPMENT ONLY (OP 2).
  * <ul>
  * <li>{@code /dev container_search info}: read-only state of the searchable container in view.</li>
- * <li>{@code /dev container_search spawn <block> [loot <table> | fill <slots>]}: places an AFL searchable container on
- * the block in view, as a player would (facing the player, every cell of a multi-cell block), then turns it into
- * unsearched world loot: from the loot table (default {@link #DEFAULT_LOOT}; the freezer rolls it on its first server
- * tick, the others on first opening), or with that many random slots of test food, hidden until searched.</li>
+ * <li>{@code /dev container_search spawn <block> [theme <theme>] [loot <table> | fill <slots>]}: places an AFL searchable
+ * container on the block in view, as a player would (facing the player, every cell of a multi-cell block), then turns it
+ * into unsearched world loot: from the loot table (default {@link #DEFAULT_LOOT}; the freezer rolls it on its first
+ * server tick, the locker when its door first opens, the others on first opening), or with that many random slots of
+ * test food, hidden until searched. {@code theme} sets the goods theme outright (containers with themed goods only,
+ * AflContainerGoods.Themed); otherwise it follows the loot table (AflGoodsThemes).</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -65,17 +71,29 @@ public final class DevContainerSearchCommands {
                 .then(Commands.literal("container_search")
                         .then(Commands.literal("info").executes(DevContainerSearchCommands::info))
                         .then(Commands.literal("spawn")
-                                .then(Commands.argument("block", ResourceLocationArgument.id())
-                                        .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(searchableBlocks(), builder))
-                                        .executes(context -> spawn(context, DEFAULT_LOOT, -1))
-                                        .then(Commands.literal("loot")
-                                                .then(Commands.argument("table", ResourceLocationArgument.id())
-                                                        .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(
-                                                                context.getSource().getServer().getLootData().getKeys(LootDataType.TABLE), builder))
-                                                        .executes(context -> spawn(context, ResourceLocationArgument.getId(context, "table"), -1))))
-                                        .then(Commands.literal("fill")
-                                                .then(Commands.argument("slots", IntegerArgumentType.integer(0, 54))
-                                                        .executes(context -> spawn(context, null, IntegerArgumentType.getInteger(context, "slots")))))))));
+                                .then(contents(Commands.argument("block", ResourceLocationArgument.id())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(searchableBlocks(), builder)), false)
+                                        .then(Commands.literal("theme")
+                                                .then(contents(Commands.argument("theme", StringArgumentType.word())
+                                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(AflGoodsThemes.themes(), builder)), true)))))));
+    }
+
+    /** The spawn endings under a node: nothing (default loot), loot <table>, fill <slots>; themed reads the theme argument. */
+    private static <T extends ArgumentBuilder<CommandSourceStack, T>> T contents(T node, boolean themed) {
+        return node.executes(context -> spawn(context, DEFAULT_LOOT, -1, theme(context, themed)))
+                .then(Commands.literal("loot")
+                        .then(Commands.argument("table", ResourceLocationArgument.id())
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(
+                                        context.getSource().getServer().getLootData().getKeys(LootDataType.TABLE), builder))
+                                .executes(context -> spawn(context, ResourceLocationArgument.getId(context, "table"), -1, theme(context, themed)))))
+                .then(Commands.literal("fill")
+                        .then(Commands.argument("slots", IntegerArgumentType.integer(0, 54))
+                                .executes(context -> spawn(context, null, IntegerArgumentType.getInteger(context, "slots"), theme(context, themed)))));
+    }
+
+    @Nullable
+    private static String theme(CommandContext<CommandSourceStack> context, boolean themed) {
+        return themed ? StringArgumentType.getString(context, "theme") : null;
     }
 
     private static int info(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -90,12 +108,16 @@ public final class DevContainerSearchCommands {
         return 0;
     }
 
-    /** lootTable for loot mode, or fill >= 0 slots of test food. */
-    private static int spawn(CommandContext<CommandSourceStack> context, @Nullable ResourceLocation lootTable, int fill)
-            throws CommandSyntaxException {
+    /** lootTable for loot mode, or fill >= 0 slots of test food; theme: the goods theme outright, or null. */
+    private static int spawn(CommandContext<CommandSourceStack> context, @Nullable ResourceLocation lootTable, int fill,
+                             @Nullable String theme) throws CommandSyntaxException {
         CommandSourceStack source = context.getSource();
         ServerPlayer player = source.getPlayerOrException();
         ResourceLocation id = ResourceLocationArgument.getId(context, "block");
+        if (theme != null && !AflGoodsThemes.themes().contains(theme)) {
+            source.sendFailure(Component.literal("Unknown goods theme: " + theme + " (loaded: " + AflGoodsThemes.themes() + ")"));
+            return 0;
+        }
         if (!searchableBlocks().contains(id)) {
             source.sendFailure(Component.literal("Not an AFL searchable container: " + id + " (try " + searchableBlocks() + ")"));
             return 0;
@@ -147,10 +169,19 @@ public final class DevContainerSearchCommands {
             }
             what = count + " slots of test food";
         }
+        if (theme != null) {
+            if (container instanceof AflContainerGoods.Themed themed) {
+                themed.setGoodsTheme(theme);
+                what += ", goods theme " + theme;
+            } else {
+                what += " (theme ignored: " + id + " has no goods themes)";
+            }
+        }
         container.setChanged();
         level.sendBlockUpdated(at, container.getBlockState(), container.getBlockState(), Block.UPDATE_CLIENTS);
         BlockPos placed = at;
-        source.sendSuccess(() -> Component.literal("Spawned " + id + " at " + placed.toShortString() + " as unsearched world loot: " + what), true);
+        String message = "Spawned " + id + " at " + placed.toShortString() + " as unsearched world loot: " + what;
+        source.sendSuccess(() -> Component.literal(message), true);
         return 1;
     }
 
