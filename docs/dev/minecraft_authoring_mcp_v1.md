@@ -187,7 +187,7 @@ Result fields:
   - Redo recreates them empty.
   - Undo/redo is refused if a fixture inventory has since become nonempty.
 - **WorldEdit on existing fixtures.** Copy/move/stack/paste/set/replace may include whitelisted empty fixtures, but every part of each multiblock must be inside the edit (`MULTIBLOCK_SPLIT` otherwise). WorldEdit history comparison now uses block states; inventories are protected by the region guard.
-- **Generic WorldEdit materials.** `we_set/we_walls/we_faces/we_batch_set` still reject every BlockEntity state (`UNSAFE_OR_DYNAMIC_BLOCK`, including `minecraft:chest`). They now also reject multiblock parts (`MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK`), e.g. `water_dispenser[half=lower]` or `steel_door`.
+- **Generic WorldEdit materials.** `we_set/we_walls/we_faces/we_batch_set` still reject every BlockEntity state (`UNSAFE_OR_DYNAMIC_BLOCK`, including `minecraft:chest`). They now also reject multiblock parts (`MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK`), e.g. `poplar_door[half=lower]` or `steel_door`. (`water_dispenser` was the example until its V2 of 2026-10-01 gave it a block entity; it is now rejected earlier as `UNSAFE_OR_DYNAMIC_BLOCK` and still placed through `place_multiblock`.)
   - Vanilla doors are not in the registry and keep the V1 WorldEdit behavior.
   - `we_replace` may *match* a whitelisted single-cell fixture to delete it, but not a multiblock part.
 

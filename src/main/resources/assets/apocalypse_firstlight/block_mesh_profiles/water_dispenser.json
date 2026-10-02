@@ -1,0 +1,54 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/water_dispenser.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/water_dispenser.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.010297,
+    -0.015625,
+    0.275,
+    0.865625,
+    1.990625,
+    1.015625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "bottle": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights_lit": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

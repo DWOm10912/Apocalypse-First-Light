@@ -40,6 +40,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chest_freezer");
     private static final ResourceLocation VENDING_MACHINE_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "vending_machine");
+    private static final ResourceLocation WATER_DISPENSER_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "water_dispenser");
     private static final ResourceLocation CHARGING_STATION_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "charging_station");
     private static final ResourceLocation CRUSHER_ID =
@@ -60,6 +62,7 @@ public final class MachineBalanceManager {
     private static volatile ApplianceBalance beverageCooler = fallbackBeverageCooler();
     private static volatile ApplianceBalance chestFreezer = fallbackChestFreezer();
     private static volatile ApplianceBalance vendingMachine = fallbackVendingMachine();
+    private static volatile ApplianceBalance waterDispenser = fallbackWaterDispenser();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -102,6 +105,11 @@ public final class MachineBalanceManager {
     /** Lights only: the compressor fields are 0. */
     public static ApplianceBalance vendingMachine() {
         return vendingMachine;
+    }
+
+    /** Lights only (the indicator LEDs): the compressor fields are 0. */
+    public static ApplianceBalance waterDispenser() {
+        return waterDispenser;
     }
 
     public static CrusherBalance crusher() {
@@ -184,7 +192,7 @@ public final class MachineBalanceManager {
     /**
      * Cold appliances (Beverage Cooler, Chest Freezer; energy/CompressorAppliance): small buffer, cable input limit, the
      * lights' draw whenever lit, and the compressor's draw while it runs, in cycles of on / off ticks. Lights-only
-     * appliances (Vending Machine) have no compressor fields in their file and 0 here.
+     * appliances (Vending Machine, Water Dispenser) have no compressor fields in their file and 0 here.
      */
     public record ApplianceBalance(int capacityFe, int maxReceiveFePerTick, int lightFePerTick, int compressorFePerTick,
                                    int compressorOnTicks, int compressorOffTicks) {
@@ -225,6 +233,8 @@ public final class MachineBalanceManager {
                     fallbackChestFreezer());
             ApplianceBalance loadedVending = loadLightsOnly(resources.get(VENDING_MACHINE_ID), "vending_machine.json",
                     fallbackVendingMachine());
+            ApplianceBalance loadedDispenser = loadLightsOnly(resources.get(WATER_DISPENSER_ID), "water_dispenser.json",
+                    fallbackWaterDispenser());
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -239,6 +249,7 @@ public final class MachineBalanceManager {
             beverageCooler = loadedCooler;
             chestFreezer = loadedFreezer;
             vendingMachine = loadedVending;
+            waterDispenser = loadedDispenser;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -271,6 +282,9 @@ public final class MachineBalanceManager {
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Vending Machine balance: capacity={} FE, receive={} FE/t, light={} FE/t",
                     loadedVending.capacityFe(), loadedVending.maxReceiveFePerTick(), loadedVending.lightFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Water Dispenser balance: capacity={} FE, receive={} FE/t, light={} FE/t",
+                    loadedDispenser.capacityFe(), loadedDispenser.maxReceiveFePerTick(), loadedDispenser.lightFePerTick());
             ApocalypseFirstLight.LOGGER.info(
                     "[AFL ELECTRICITY] Crusher balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedCrusher.capacityFe(), loadedCrusher.maxReceiveFePerTick(), loadedCrusher.workFePerTick());
@@ -524,6 +538,11 @@ public final class MachineBalanceManager {
 
     /** Same values as machine_balance/vending_machine.json (lights only). */
     private static ApplianceBalance fallbackVendingMachine() {
+        return new ApplianceBalance(20, 32, 1, 0, 0, 0);
+    }
+
+    /** Same values as machine_balance/water_dispenser.json (lights only). */
+    private static ApplianceBalance fallbackWaterDispenser() {
         return new ApplianceBalance(20, 32, 1, 0, 0, 0);
     }
 

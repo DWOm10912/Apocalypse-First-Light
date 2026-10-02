@@ -21,7 +21,7 @@ import java.util.function.Supplier;
  * start / stop are played here, the running loop on clients (client/BlockLoopSoundController) from the synced
  * {@link #compressorRunning()}. Values: machine_balance (MachineBalanceManager.ApplianceBalance).
  *
- * <p>Lights only (the Vending Machine): built without compressor sounds, it never runs the compressor and ignores the
+ * <p>Lights only (the Vending Machine, the Water Dispenser): built without compressor sounds, it never runs the compressor and ignores the
  * balance's compressor fields; the buffer and the lights work the same.
  */
 public final class CompressorAppliance {

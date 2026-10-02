@@ -60,6 +60,10 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CASH_REGISTER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/cash_register.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/cash_register.png"), 0.0, 0.0), "cash_register");
+            // Water Dispenser V2 (tools/build-water-dispenser-v2.mjs): the block's mesh and atlas, lights off; views fitted by the generator
+            bind(AflItems.WATER_DISPENSER.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/water_dispenser.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/water_dispenser.png"), 0.0, 0.0), "water_dispenser");
         });
     }
 

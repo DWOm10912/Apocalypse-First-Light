@@ -1,5 +1,8 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.blockentity.WaterDispenserBlockEntity;
+import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
+import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -13,12 +16,18 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.AABB;
@@ -30,44 +39,43 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
-/** Static two-block office prop. The lower half owns the rendered model and item drop. */
-public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
+/**
+ * Water Dispenser V2 (2026-10-01, tools/build-water-dispenser-v2.mjs, Pure Mesh): a two-block office water cooler,
+ * decoration plus power. The lower half owns the block entity (the mesh, the indicator lights' power) and the item drop.
+ * {@link #LIT} on both halves: the indicator LEDs' lit set (no block light, the LEDs are tiny), fed through the standard
+ * power port on the lower half's back. No water, drinking or storage yet.
+ */
+public final class WaterDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
+    // Model-fitted boxes (tools/build-water-dispenser-v2.mjs, north-facing block px), used for both outline and collision.
+    // The cabinet stands at the back of the block, its back (with the recessed power port) on the boundary.
     private static final VoxelShape LOWER_NORTH = Shapes.or(
-            // Feet and plinth.
-            Block.box(1.7, 0.0, 2.1, 14.3, 1.0, 13.9),
-            // Main cabinet shell.
-            Block.box(2.0, 1.0, 2.15, 14.0, 16.0, 13.75),
-            // Front controls and drip-tray projection.
-            Block.box(2.85, 9.45, 1.4, 13.15, 16.0, 2.15)
+            // Cabinet, the drip tray's lip included.
+            Block.box(2.4, 0.0, 4.65, 13.6, 16.0, 16.0),
+            // Paper cup tube on the right side.
+            Block.box(0.4, 10.9, 7.7, 2.4, 16.0, 9.9)
     ).optimize();
     private static final VoxelShape UPPER_NORTH = Shapes.or(
-            // Cabinet crown rendered above the lower block boundary.
-            Block.box(1.95, 0.0, 1.7, 14.05, 4.55, 13.8),
-            // Bottle socket and neck.
-            Block.box(5.1, 4.4, 5.1, 10.9, 5.2, 10.9),
-            // Bottle base, lower shoulder, body, upper shoulder and cap.
-            Block.box(3.7, 5.2, 3.7, 12.3, 6.5, 12.3),
-            Block.box(2.8, 6.5, 2.8, 13.2, 7.7, 13.2),
-            Block.box(3.2, 7.7, 3.2, 12.8, 12.8, 12.8),
-            Block.box(2.8, 12.8, 2.8, 13.2, 14.05, 13.2),
-            Block.box(3.6, 14.05, 3.6, 12.4, 15.55, 12.4)
+            // Cabinet top with the faceplate and LEDs.
+            Block.box(2.4, 0.0, 4.75, 13.6, 4.6, 16.0),
+            // Top cap.
+            Block.box(2.7, 4.6, 5.3, 13.3, 5.2, 15.7),
+            // Paper cup tube.
+            Block.box(0.4, 0.0, 7.7, 2.4, 2.3, 9.9),
+            // Bottle seat and bottle.
+            Block.box(3.3, 5.2, 5.8, 12.7, 15.6, 15.2)
     ).optimize();
-    // Follow the thermal generator fix exactly: collision remains model-derived, while
-    // targeting exposes only one closed outer envelope and therefore no internal seams.
-    private static final VoxelShape LOWER_OUTLINE_NORTH = Block.box(1.7, 0.0, 1.4, 14.3, 16.0, 14.35);
-    private static final VoxelShape UPPER_OUTLINE_NORTH = Block.box(1.95, 0.0, 1.7, 14.05, 15.55, 13.8);
-    private static final Map<Direction, VoxelShape> LOWER_COLLISION_SHAPES = horizontalRotations(LOWER_NORTH);
-    private static final Map<Direction, VoxelShape> UPPER_COLLISION_SHAPES = horizontalRotations(UPPER_NORTH);
-    private static final Map<Direction, VoxelShape> LOWER_OUTLINE_SHAPES = horizontalRotations(LOWER_OUTLINE_NORTH);
-    private static final Map<Direction, VoxelShape> UPPER_OUTLINE_SHAPES = horizontalRotations(UPPER_OUTLINE_NORTH);
+    private static final Map<Direction, VoxelShape> LOWER_SHAPES = horizontalRotations(LOWER_NORTH);
+    private static final Map<Direction, VoxelShape> UPPER_SHAPES = horizontalRotations(UPPER_NORTH);
 
     public WaterDispenserBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
-                .setValue(HALF, DoubleBlockHalf.LOWER));
+                .setValue(HALF, DoubleBlockHalf.LOWER)
+                .setValue(LIT, false));
     }
 
     @Override
@@ -110,11 +118,13 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos currentPos, BlockPos neighborPos) {
         DoubleBlockHalf half = state.getValue(HALF);
-        if (half == DoubleBlockHalf.UPPER && direction == Direction.DOWN
-                && (!neighborState.is(this)
-                || neighborState.getValue(HALF) != DoubleBlockHalf.LOWER
-                || neighborState.getValue(FACING) != state.getValue(FACING))) {
-            return Blocks.AIR.defaultBlockState();
+        if (half == DoubleBlockHalf.UPPER && direction == Direction.DOWN) {
+            if (!neighborState.is(this)
+                    || neighborState.getValue(HALF) != DoubleBlockHalf.LOWER
+                    || neighborState.getValue(FACING) != state.getValue(FACING)) {
+                return Blocks.AIR.defaultBlockState();
+            }
+            return state.setValue(LIT, neighborState.getValue(LIT));
         }
         if (half == DoubleBlockHalf.LOWER && direction == Direction.UP
                 && (!neighborState.is(this)
@@ -144,20 +154,45 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
         super.playerWillDestroy(level, position, state, player);
     }
 
+    /** Indicator lights on / off: LIT on both halves (the mesh's light set follows it). */
+    public void setLit(Level level, BlockPos lower, boolean lit) {
+        BlockState state = level.getBlockState(lower);
+        if (!state.is(this) || state.getValue(HALF) != DoubleBlockHalf.LOWER || state.getValue(LIT) == lit) return;
+        level.setBlock(lower, state.setValue(LIT, lit), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        BlockState upper = level.getBlockState(lower.above());
+        if (upper.is(this) && upper.getValue(HALF) == DoubleBlockHalf.UPPER)
+            level.setBlock(lower.above(), upper.setValue(LIT, lit), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+    }
+
+    /** The power port (tools/build-water-dispenser-v2.mjs POWER_PORT, recessed into the back): the lower half's back face only. */
+    @Override
+    public boolean hasPowerPort(BlockState state, Direction face) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER && face == state.getValue(FACING).getOpposite();
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos position, BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? new WaterDispenserBlockEntity(position, state) : null;
+    }
+
+    /** Server, lower half: the indicator lights' power (WaterDispenserBlockEntity#serverTick). */
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide || state.getValue(HALF) != DoubleBlockHalf.LOWER || type != AflBlockEntities.WATER_DISPENSER.get()) return null;
+        return (BlockEntityTicker<T>) (BlockEntityTicker<WaterDispenserBlockEntity>) (l, p, s, dispenser) -> dispenser.serverTick();
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.ENTITYBLOCK_ANIMATED;
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return outlineShapesFor(state).get(state.getValue(FACING));
-    }
-
-    @Override
-    public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos position) {
-        return outlineShapesFor(state).get(state.getValue(FACING));
-    }
-
-    @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
-                                        CollisionContext context) {
-        return collisionShapesFor(state).get(state.getValue(FACING));
+        return shapesFor(state).get(state.getValue(FACING));
     }
 
     @Override
@@ -177,15 +212,11 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, HALF);
+        builder.add(FACING, HALF, LIT);
     }
 
-    private static Map<Direction, VoxelShape> outlineShapesFor(BlockState state) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_OUTLINE_SHAPES : UPPER_OUTLINE_SHAPES;
-    }
-
-    private static Map<Direction, VoxelShape> collisionShapesFor(BlockState state) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_COLLISION_SHAPES : UPPER_COLLISION_SHAPES;
+    private static Map<Direction, VoxelShape> shapesFor(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? LOWER_SHAPES : UPPER_SHAPES;
     }
 
     private static Map<Direction, VoxelShape> horizontalRotations(VoxelShape north) {

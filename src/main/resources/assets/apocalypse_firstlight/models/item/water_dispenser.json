@@ -1,73 +1,93 @@
 {
-  "parent": "apocalypse_firstlight:block/water_dispenser_render",
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/water_dispenser"
+  },
   "display": {
-    "thirdperson_righthand": {
-      "scale": [
-        0.25,
-        0.25,
-        0.25
-      ]
-    },
-    "thirdperson_lefthand": {
-      "scale": [
-        0.25,
-        0.25,
-        0.25
-      ]
-    },
-    "firstperson_righthand": {
-      "scale": [
-        0.3,
-        0.3,
-        0.3
-      ]
-    },
-    "firstperson_lefthand": {
-      "scale": [
-        0.3,
-        0.3,
-        0.3
-      ]
-    },
     "gui": {
       "rotation": [
-        24,
-        140,
+        25,
+        225,
         0
       ],
       "translation": [
-        0,
-        -3,
-        0
+        0.801,
+        -3.198,
+        -0.172
       ],
       "scale": [
-        0.4,
-        0.4,
-        0.4
+        0.453,
+        0.453,
+        0.453
       ]
     },
     "ground": {
-      "translation": [
+      "rotation": [
         0,
-        2,
+        0,
         0
       ],
+      "translation": [
+        0.248,
+        1.05,
+        -0.581
+      ],
       "scale": [
-        0.35,
-        0.35,
-        0.35
+        0.25,
+        0.25,
+        0.25
       ]
     },
     "fixed": {
-      "translation": [
+      "rotation": [
         0,
-        -3,
+        0,
         0
       ],
+      "translation": [
+        0.447,
+        -3.51,
+        -1.046
+      ],
       "scale": [
-        0.4,
-        0.4,
-        0.4
+        0.45,
+        0.45,
+        0.45
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        0.495,
+        1.826,
+        -1.846
+      ],
+      "scale": [
+        0.28,
+        0.28,
+        0.28
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0.566,
+        -1.496,
+        0.566
+      ],
+      "scale": [
+        0.32,
+        0.32,
+        0.32
       ]
     }
   }
