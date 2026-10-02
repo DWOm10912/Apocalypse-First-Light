@@ -216,6 +216,7 @@ public final class AflBlocks {
     public static final RegistryObject<Block> BEVERAGE_COOLER = BLOCKS.register("beverage_cooler",
             () -> new BeverageCoolerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(BeverageCoolerBlock.LIT) ? BeverageCoolerBlock.LIGHT_LEVEL : 0)
                     .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> VENDING_MACHINE = BLOCKS.register("vending_machine",
             () -> new com.antaurora.apofirstlight.block.VendingMachineBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

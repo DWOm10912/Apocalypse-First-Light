@@ -1,7 +1,8 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
 // Used by tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
-// tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs and
-// tools/build-charging-station-sounds-v1.mjs (needs ffmpeg). buildLoop makes seamless loops from steady hums.
+// tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs,
+// tools/build-charging-station-sounds-v1.mjs and tools/build-beverage-cooler-compressor-sounds-v1.mjs (needs ffmpeg).
+// buildLoop makes seamless loops from steady hums (optionally with the ticks in the highs turned down).
 // Loudness: BS.1770 K-weighting. Each element is first brought to the same 100 ms short-window loudness (a click and a
 // thud then sit at the same level), then mixed with a role gain; each finished sound is scaled so its maximum momentary
 // loudness (400 ms) matches a reference sound plus an offset, with the sample peak kept at or below -1 dBFS.
@@ -105,9 +106,14 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
  * level), then the loop is `periods` whole periods long and its first `crossfade` periods are a linear crossfade from
  * the continuation after the loop end into the loop start; whole periods keep both sides in phase, so the seam does not
  * click. source: {name, sha} (WAV in srcDir); file and reference relative to soundsDir; offset as buildSounds. The level
- * is matched on the 400 ms momentary loudness of the loop. Returns a report.
+ * is matched on the 400 ms momentary loudness of the loop. declick (dB, optional): ticks and rattles in a textured
+ * source repeat with every loop and read as a hitch. They live in the highs while a hum lives in the lows, so the signal
+ * is split at DECLICK.cutoff (400 Hz, 4th-order) into complementary bands (low-pass + remainder) and in the high band a 2.5 ms block whose
+ * RMS stands more than `declick` dB above the median block RMS of the 80 ms either side is turned down to that limit;
+ * the low band is untouched. Pick the window to avoid rattle bursts longer than a few blocks (a median cannot see them).
+ * Returns a report.
  */
-export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0}) {
+export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick}) {
   const wav = path.join(srcDir, source.name + '.wav');
   const h = createHash('sha256').update(fs.readFileSync(wav)).digest('hex').slice(0, 16);
   if (h !== source.sha) throw new Error(`${source.name}.wav changed (sha ${h}, expected ${source.sha})`);
@@ -118,8 +124,10 @@ export function buildLoop({srcDir, soundsDir, source, file, from, period, period
   const smoothRms = rms.map((_, k) => { let s = 0, n = 0; for (let j = Math.max(0, k - smooth); j <= Math.min(rms.length - 1, k + smooth); j++) { s += rms[j]; n++; } return s / n; });
   const mean = Math.exp(smoothRms.reduce((s, v) => s + Math.log(v), 0) / smoothRms.length);
   // per-sample gain, interpolated between period centres
-  const levelled = x.map((v, i) => { const t = Math.max(0, Math.min(smoothRms.length - 1, i / P - 0.5)), k = Math.floor(t), f = t - k;
+  let levelled = x.map((v, i) => { const t = Math.max(0, Math.min(smoothRms.length - 1, i / P - 0.5)), k = Math.floor(t), f = t - k;
     return v * mean / (smoothRms[k] * (1 - f) + smoothRms[Math.min(k + 1, smoothRms.length - 1)] * f); });
+  const excessBefore = declick !== undefined ? maxHighExcess(levelled) : 0;
+  if (declick !== undefined) levelled = declickHighs(levelled, declick);
   const loop = levelled.slice(0, L);
   for (let i = 0; i < C; i++) { const w = i / C; loop[i] = levelled[i] * w + levelled[L + i] * (1 - w); }
   const ref = maxLoudness(decode(path.join(soundsDir, reference)), 0.4) + offset;
@@ -133,5 +141,31 @@ export function buildLoop({srcDir, soundsDir, source, file, from, period, period
   const seam = Math.abs(out[0] - out[L - 1]), step = out.reduce((m, v, i) => i ? Math.max(m, Math.abs(v - out[i - 1])) : m, 0);
   return {file, seconds: +(enc.length / SR).toFixed(4), samples: enc.length, expectedSamples: L, targetLUFS: +ref.toFixed(1),
     maxMomentaryLUFS: +maxLoudness(enc, 0.4).toFixed(1), peakDbfs: +(20 * Math.log10(peak(enc))).toFixed(1), peakLimited: pk > PEAK_CEILING,
-    sourceSwingDb: +(20 * Math.log10(Math.max(...rms) / Math.min(...rms))).toFixed(1), seamJump: +seam.toFixed(5), largestStep: +step.toFixed(5)};
+    sourceSwingDb: +(20 * Math.log10(Math.max(...rms) / Math.min(...rms))).toFixed(1), seamJump: +seam.toFixed(5), largestStep: +step.toFixed(5),
+    ...(declick !== undefined ? {highExcessBeforeDb: +excessBefore.toFixed(1), highExcessAfterDb: +maxHighExcess(out).toFixed(1)} : {})};
+}
+
+export const DECLICK = {cutoff: 400, block: 0.0025, around: 0.08};
+function lowPass(x, fc) {   // 4th-order Butterworth: two RBJ biquads, Q 0.5412 and 1.3066
+  const w = 2 * Math.PI * fc / SR, c = Math.cos(w);
+  return [0.5412, 1.3066].reduce((y, q) => { const al = Math.sin(w) / (2 * q), a0 = 1 + al;
+    return biquad(y, [(1 - c) / 2 / a0, (1 - c) / a0, (1 - c) / 2 / a0], [1, -2 * c / a0, (1 - al) / a0]); }, x);
+}
+// high band and, per 2.5 ms block, its RMS over the median block RMS within +-80 ms, dB
+function highExcess(x) {
+  const lo = lowPass(x, DECLICK.cutoff), hi = x.map((v, i) => v - lo[i]);
+  const B = Math.round(DECLICK.block * SR), M = Math.round(DECLICK.around / DECLICK.block), n = Math.ceil(x.length / B), rb = [];
+  for (let k = 0; k < n; k++) { let e = 0, c = 0; for (let i = k * B; i < Math.min(x.length, (k + 1) * B); i++) { e += hi[i] * hi[i]; c++; } rb.push(Math.sqrt(e / c)); }
+  const excess = rb.map((r, k) => { const w = rb.slice(Math.max(0, k - M), Math.min(n, k + M + 1)).sort((a, b) => a - b); return 20 * Math.log10((r + 1e-12) / (w[w.length >> 1] + 1e-12)); });
+  return {lo, hi, B, excess};
+}
+const maxHighExcess = x => Math.max(...highExcess(x).excess);
+// turn high-band blocks down to limitDb above their median; each block's gain is the lowest of it and its neighbours,
+// interpolated per sample, so the gain moves before a tick arrives and never steps; low band + scaled high band
+function declickHighs(x, limitDb) {
+  const {lo, hi, B, excess} = highExcess(x), n = excess.length;
+  const gains = excess.map(e => e > limitDb ? db(limitDb - e) : 1);
+  const g = gains.map((v, k) => Math.min(v, k ? gains[k - 1] : 1, k + 1 < n ? gains[k + 1] : 1));
+  return x.map((_, i) => { const t = Math.max(0, i / B - 0.5), k = Math.min(n - 1, Math.floor(t)), f = Math.min(1, t - k);
+    return lo[i] + hi[i] * (g[k] * (1 - f) + g[Math.min(n - 1, k + 1)] * f); });
 }

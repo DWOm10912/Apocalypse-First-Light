@@ -38,6 +38,23 @@
             16,
             -7.495
           ]
+        },
+        {
+          "name": "lights",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "lights_lit",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
         }
       ]
     }

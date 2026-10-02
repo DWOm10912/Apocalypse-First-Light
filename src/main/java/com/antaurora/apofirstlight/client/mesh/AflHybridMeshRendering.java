@@ -60,8 +60,10 @@ public final class AflHybridMeshRendering {
         }
     }
 
+    /** Bones flagged {@code neverRender} in the geo (a block's lit lamp set) are block-only and skipped, as in AflStaticMeshItemRenderer. */
     private static void renderBone(AflMeshModel mesh, GeoBone bone, PoseStack pose,
                                    VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
+        if (Boolean.TRUE.equals(bone.shouldNeverRender())) return;
         pose.pushPose();
         try {
             RenderUtils.prepMatrixForBone(pose, bone);

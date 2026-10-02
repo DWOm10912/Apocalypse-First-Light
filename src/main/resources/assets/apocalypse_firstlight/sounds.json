@@ -344,6 +344,18 @@
     "subtitle": "subtitles.apocalypse_firstlight.beverage_cooler_door_close",
     "sounds": [{"name": "apocalypse_firstlight:beverage_cooler/door_close", "attenuation_distance": 10}]
   },
+  "beverage_cooler_compressor_start": {
+    "subtitle": "subtitles.apocalypse_firstlight.beverage_cooler_compressor_start",
+    "sounds": [{"name": "apocalypse_firstlight:beverage_cooler/compressor_start", "attenuation_distance": 10}]
+  },
+  "beverage_cooler_compressor_stop": {
+    "subtitle": "subtitles.apocalypse_firstlight.beverage_cooler_compressor_stop",
+    "sounds": [{"name": "apocalypse_firstlight:beverage_cooler/compressor_stop", "attenuation_distance": 10}]
+  },
+  "beverage_cooler_compressor_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.beverage_cooler_compressor_loop",
+    "sounds": [{"name": "apocalypse_firstlight:beverage_cooler/compressor_loop", "attenuation_distance": 8}]
+  },
   "charging_station_start": {
     "subtitle": "subtitles.apocalypse_firstlight.charging_station_start",
     "sounds": [{"name": "apocalypse_firstlight:charging_station/start", "attenuation_distance": 8}]

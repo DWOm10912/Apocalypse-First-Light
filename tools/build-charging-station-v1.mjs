@@ -20,6 +20,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, AX, extrude, mul, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {addPowerPort} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -51,7 +52,7 @@ export const FRONT = DESK.z0 - 0.12;                                 // front pl
 export const BAR = {x0: 2.0, x1: 20.9, y0: 10.2, y1: 11.5};         // charge bar window
 export const READOUT = {x0: -3.3, x1: 1.3, y0: 10.0, y1: 11.7};     // % readout screen
 export const KNOB = {x: -4.6, y: 10.85, r: 0.62};
-export const PORT = {half: 3.0, socket: 1.95, y: 8, cells: [0, 16]}; // AFL power port standard, one per cell (back face)
+export const PORT = {y: 8, cells: [0, 16]};                         // AFL power port, one per cell (back face centre)
 export const ITEM = {x: 8, y: TRAY.y, z: (TRAY.z0 + TRAY.z1) / 2};  // the tray item's resting point
 
 {
@@ -83,14 +84,10 @@ export const ITEM = {x: 8, y: TRAY.y, z: (TRAY.z0 + TRAY.z1) / 2};  // the tray 
     slab(cells, 'z', [x0, RACK.y0 + 0.35, DESK.z0 - 0.12], [x0 + 2.36, RACK.y1 - 0.35, DESK.z0 - 0.02], 0);
     for (const p of [lamps, lit]) cyl(p, 'z', x0 + 1.18, RACK.y0 + 1.15, 0.36, DESK.z0 - 0.3, DESK.z0 - 0.1, 8);
   }
-  // power ports on the back of each cell: plate flush with the block boundary (z 8), round socket with a contact pin
-  const plate = P('port_plates', 'port'), socket = P('port_sockets', 'socket'), pin = P('port_pins', 'knob');
-  for (const cx of PORT.cells) {
-    extrude(plate, 'z', {outer: orient(rect(cx - PORT.half, PORT.y - PORT.half, cx + PORT.half, PORT.y + PORT.half), true),
-      holes: [orient(circle(cx, PORT.y, PORT.socket, 16), false)]}, DESK.z1 - 0.02, 8, 0.12);
-    cyl(socket, 'z', cx, PORT.y, PORT.socket - 0.05, DESK.z1 - 0.02, DESK.z1 + 0.22, 16);
-    cyl(pin, 'z', cx, PORT.y, 0.45, DESK.z1 + 0.22, DESK.z1 + 0.42, 8);
-  }
+  // power ports on the back of each cell (tools/afl-power-port.mjs): the plate stands out from the casing back to the
+  // block boundary (z 8), round socket with a contact pin
+  const port = {plate: P('port_plates', 'port'), socket: P('port_sockets', 'socket'), pin: P('port_pins', 'knob')};
+  for (const cx of PORT.cells) addPowerPort(port, cx, PORT.y, DESK.z1);
   // feet pads under the legs
   const feet = P('feet', 'rubber');
   for (const x of [X0 + LEG / 2, X1 - LEG / 2]) for (const [z0, z1] of [[-8, -5.6], [6.4, 8]]) slab(feet, 'y', [x - 0.9, 0, z0 + 0.1], [x + 0.9, 0.36, z1 - 0.1], 0);

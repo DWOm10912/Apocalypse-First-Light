@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
+import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
+import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,6 +26,8 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -45,12 +49,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Four-cell, independently hinged commercial cooler; the master's block entity holds the 60-slot display. */
-public final class BeverageCoolerBlock extends Block implements EntityBlock {
+/**
+ * Four-cell, independently hinged commercial cooler; the master's block entity holds the 60-slot display. One AFL power
+ * port on the back of the master (lower-left) cell (2026-10-01). With power (BeverageCoolerBlockEntity) the lights are on:
+ * {@link #LIT} on all four cells, block light {@link #LIGHT_LEVEL}, the lit light set of the mesh; and the compressor runs
+ * in cycles. No gameplay effect on the goods yet.
+ */
+public final class BeverageCoolerBlock extends Block implements EntityBlock, AflPowerPortBlock {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final BooleanProperty LEFT_OPEN = BooleanProperty.create("left_open");
     public static final BooleanProperty RIGHT_OPEN = BooleanProperty.create("right_open");
+    /** Lights on (the cooler has power); the same on all four cells. */
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    public static final int LIGHT_LEVEL = 10;
     public static final int ANIMATION_TICKS = 8;
 
     private record Mutation(LevelAccessor level, BlockPos master) {}
@@ -66,7 +78,7 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
     public BeverageCoolerBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH)
-                .setValue(PART, Part.LOWER_LEFT).setValue(LEFT_OPEN, false).setValue(RIGHT_OPEN, false));
+                .setValue(PART, Part.LOWER_LEFT).setValue(LEFT_OPEN, false).setValue(RIGHT_OPEN, false).setValue(LIT, false));
     }
 
     /** Source-model +X points to the viewer's left; other cells go to the viewer's right. */
@@ -143,6 +155,8 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
             }
             success = true;
             for (Part part : Part.values()) level.updateNeighborsAt(partPosition(master, facing, part), this);
+            // the cells are set with UPDATE_KNOWN_SHAPE; a power cable already lying behind the port reshapes now
+            level.getBlockState(master).updateNeighbourShapes(level, master, UPDATE_CLIENTS);
             return true;
         } finally {
             if (!success) previous.forEach((position, oldState) -> {
@@ -151,6 +165,44 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
             MUTATIONS.remove(mutation);
             if (success && !level.isClientSide) level.scheduleTick(master, this, 1);
         }
+    }
+
+    /** Lights on / off: LIT on all four cells (light level and the mesh's light set follow it). */
+    public void setLit(Level level, BlockPos master, boolean lit) {
+        BlockState state = level.getBlockState(master);
+        if (!state.is(this) || state.getValue(PART) != Part.LOWER_LEFT || state.getValue(LIT) == lit) return;
+        Direction facing = state.getValue(FACING);
+        Mutation mutation = new Mutation(level, master.immutable());
+        if (!MUTATIONS.add(mutation)) return;
+        try {
+            for (Part part : Part.values()) {
+                BlockPos pos = partPosition(master, facing, part);
+                BlockState partState = level.getBlockState(pos);
+                if (partState.is(this)) level.setBlock(pos, partState.setValue(LIT, lit), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
+            }
+        } finally {
+            MUTATIONS.remove(mutation);
+        }
+    }
+
+    /** Where the compressor sounds come from: the bottom middle, toward the back (source px 8, 2, 4). */
+    public static Vec3 compressorPosition(BlockPos master, Direction facing) {
+        return MeshSourceFrame.toWorld(master, facing, 8.0, 2.0, 4.0);
+    }
+
+    /** The master's block entity runs the power and the compressor on the server. */
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        if (level.isClientSide || state.getValue(PART) != Part.LOWER_LEFT || type != AflBlockEntities.BEVERAGE_COOLER.get()) return null;
+        return (BlockEntityTicker<T>) (BlockEntityTicker<BeverageCoolerBlockEntity>) (l, p, s, cooler) -> cooler.serverTick();
+    }
+
+    /** The power port (tools/build-beverage-cooler-v2.mjs POWER_PORT): the master cell's back face only. */
+    @Override
+    public boolean hasPowerPort(BlockState state, Direction face) {
+        return state.getValue(PART) == Part.LOWER_LEFT && face == state.getValue(FACING).getOpposite();
     }
 
     @Override
@@ -536,7 +588,7 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, PART, LEFT_OPEN, RIGHT_OPEN);
+        builder.add(FACING, PART, LEFT_OPEN, RIGHT_OPEN, LIT);
     }
 
     public enum Part implements StringRepresentable {

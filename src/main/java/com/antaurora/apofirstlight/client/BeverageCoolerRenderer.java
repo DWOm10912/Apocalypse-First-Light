@@ -7,6 +7,7 @@ import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
 import com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -20,6 +21,7 @@ import net.minecraft.world.item.ItemStack;
  * the items would show untinted in front of the glass.
  */
 public final class BeverageCoolerRenderer implements BlockEntityRenderer<BeverageCoolerBlockEntity> {
+    private static final int LIT_ITEM_BLOCK_LIGHT = 14;
     private final AflAnimatedBlockMeshRenderer<BeverageCoolerBlockEntity> cabinet;
     private final ItemRenderer itemRenderer;
 
@@ -33,7 +35,11 @@ public final class BeverageCoolerRenderer implements BlockEntityRenderer<Beverag
                        int packedLight, int packedOverlay) {
         if (cooler.getLevel() == null) return;
         if (!cooler.isEmpty()) {
-            renderItems(cooler, pose, buffers, packedLight, packedOverlay);
+            // lit cabinet: the goods take the LED light (block light 14) whatever the room's light
+            int itemLight = cooler.getBlockState().getValue(BeverageCoolerBlock.LIT)
+                    ? LightTexture.pack(Math.max(LightTexture.block(packedLight), LIT_ITEM_BLOCK_LIGHT), LightTexture.sky(packedLight))
+                    : packedLight;
+            renderItems(cooler, pose, buffers, itemLight, packedOverlay);
             if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
         }
         cabinet.render(cooler, partialTick, pose, buffers, packedLight, packedOverlay);

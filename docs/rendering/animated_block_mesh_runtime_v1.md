@@ -107,9 +107,11 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 - `meshPartVisible(part)`（默认 true）：返回 false 时跳过这个 part 的几何体和它的子 part。用于同一位置的两套部件互相替换，例如指示灯的暗灯 / 亮灯两套镜片（亮灯那套在贴图 `_s` 的 alpha 里带 LabPBR 自发光，这样光影下只有亮着的灯发光）。
 - `meshPartEmissive(part)`（默认 false）：返回 true 时这个 part 用 `LightTexture.FULL_BRIGHT` 代替方块光照。
 
-已有资产都不覆盖这两个方法，行为不变。备用的那套部件在 geo 骨骼上标 `neverRender: true`，`AflStaticMeshItemRenderer` 会跳过这种骨骼，所以物品模型只显示默认那套。第一个使用者是 [Charging Station V1](../models/charging_station_v1.md)；饮料冷柜的灯以后也照这个做。
+已有资产都不覆盖这两个方法，行为不变。备用的那套部件在 geo 骨骼上标 `neverRender: true`，`AflStaticMeshItemRenderer` 会跳过这种骨骼，所以物品模型只显示默认那套。使用者：[Charging Station V1](../models/charging_station_v1.md) 的指示灯，[Beverage Cooler V2](../models/beverage_cooler_v2.md) 的门头灯箱和 LED 灯条（2026-10-01）。带玻璃等半透明部件的物品走 `AflHybridMeshRendering`，它也跳过 `neverRender` 骨骼。
 
 透明排序和 shader alpha 阈值仍受既有 [Transparent Hybrid Mesh 限制](../native_guns/transparent_hybrid_mesh_runtime_v1.md) 约束，不保证相交玻璃/液体或不同 shader pack 的透明 PBR。
+
+**已知光影包差异（2026-10-01，用户实机）**：Oculus 用 `gbuffers_block_translucent` 画方块实体的透明层，光影包没有这个程序就退回 `gbuffers_block`。Sundial Lite v1.2.0 就没有，而且 `gbuffers_block` 只对颜色缓冲做 alpha 混合，所以透明部件后面那些像素的材质、自发光、法线、光照都被透明部件的值覆盖：玻璃后面的自发光部件不再发光，光照也变成玻璃所在格的光照。Complementary Reimagined r5.9 有这个程序，用户实机确认不受影响（2026-10-01）。用户决定先不处理。实例见 [Beverage Cooler V2](../models/beverage_cooler_v2.md) 的"已知问题"。
 
 ## Bounds、缓存与 reload
 

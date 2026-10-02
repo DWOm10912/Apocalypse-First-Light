@@ -1,0 +1,8 @@
+{
+  "capacity_fe": 20,
+  "max_receive_fe_per_tick": 32,
+  "light_fe_per_tick": 1,
+  "compressor_fe_per_tick": 4,
+  "compressor_on_ticks": 400,
+  "compressor_off_ticks": 800
+}

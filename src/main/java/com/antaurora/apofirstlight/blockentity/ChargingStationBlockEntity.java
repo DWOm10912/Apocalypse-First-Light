@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
  * lights the rack lamps and the screens) and the item's energy / capacity, synced when the charge crosses a whole percent.
  * Also the AFL Animated Block Mesh Runtime host: no animations; the lit or unlit lamp set by the powered state.
  * Sounds (tools/build-charging-station-sounds-v1.mjs): the start beeps and the full chime are played here when the synced
- * state changes; the charging hum is client-side (client/ChargingStationSoundController, from {@link #charging()}).
+ * state changes; the charging hum is client-side (client/BlockLoopSoundController, from {@link #charging()}).
  */
 public final class ChargingStationBlockEntity extends BlockEntity implements AflAnimatedMeshHost {
     public static final ResourceLocation MESH_PROFILE =
@@ -200,7 +200,7 @@ public final class ChargingStationBlockEntity extends BlockEntity implements Afl
         sync();
     }
 
-    /** Powered with an item that is not full yet: the screens count up and the hum plays (ChargingStationSoundController). */
+    /** Powered with an item that is not full yet: the screens count up and the hum plays (client/BlockLoopSoundController). */
     public boolean charging() {
         return powered && !item.isEmpty() && itemCapacity > 0 && percent(itemEnergy, itemCapacity) < 100;
     }

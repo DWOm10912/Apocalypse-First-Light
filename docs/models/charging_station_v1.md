@@ -69,7 +69,7 @@
   - 方块不烘焙（`RenderShape.INVISIBLE`），由主格的方块实体渲染器 `client/ChargingStationRenderer` 画。它先用通用的 `AflAnimatedBlockMeshRenderer` 画机身，再画托盘物品和正面显示。
   - 显示用全亮度；读数用游戏字体（`POLYGON_OFFSET`）；阴影 pass 不画显示。
   - 亮灯 / 暗灯用 Animated Block Mesh Runtime 新增的 `meshPartVisible` / `meshPartEmissive` 选择。
-- 背面接口：每格背面正中一块 6 × 6 px 钢板，从机壳背面（z 7.38）伸到方块边界（z 8），中间一个 r 1.95 的圆插座和触点，符合 [电源接口规格](power_cable_v2.md)。
+- 背面接口（生成代码是共用的 `tools/afl-power-port.mjs`）：每格背面正中一块 6 × 6 px 钢板，从机壳背面（z 7.38）伸到方块边界（z 8），中间一个 r 1.95 的圆插座和触点，符合 [电源接口规格](power_cable_v2.md)。
 - 选中框和碰撞是简化的盒子组合：机柜连托盘、后挡板、横撑，以及两端的端架和腿；端架斜顶做了一级台阶。
 
 ## 声音（2026-10-01，用户实机 PASS）
@@ -81,7 +81,7 @@
 | 放上 / 取下 | 托盘放上或取下物品，从托盘位置发出 | 原版皮革装备声 `item.armor.equip_leather`（用户选的），音高 0.97–1.03 随机 |
 | 开始充电 `charging_station_start` | 开始充电的那一刻：有电时放上没满的物品，或者托盘上有没满的物品时来电；和放上声同时播放，两声"滴"落在 0.12 s 和 0.30 s，跟在放下声后面 | `sounds/charging_station/start.ogg` |
 | 充满 `charging_station_full` | 物品充到 100% 时响一次；有电时放上一个本来就满的物品也会响 | `sounds/charging_station/full.ogg` |
-| 充电中 `charging_station_hum` | 有电、托盘上有物品、还没满时循环播放，从充电站中间发出，8 格内听得到（`attenuation_distance` 8，线性衰减）；停止充电、方块没了或玩家走出 9 格就停 | `sounds/charging_station/hum.ogg`，客户端 `client/ChargingStationSoundController` 每 5 tick 扫一次附近区块里的充电站 |
+| 充电中 `charging_station_hum` | 有电、托盘上有物品、还没满时循环播放，从充电站中间发出，8 格内听得到（`attenuation_distance` 8，线性衰减）；停止充电、方块没了或玩家走出 9 格就停 | `sounds/charging_station/hum.ogg`，客户端 `client/BlockLoopSoundController`（通用的方块循环音控制器，冷柜压缩机也用它）每 5 tick 扫一次附近区块 |
 
 开始和充满两声从正面控制条发出，服务端播放，附近玩家都听得到。字幕：充电站开始充电 / 充电站：充电完成 / 充电站嗡嗡作响。
 
@@ -106,7 +106,7 @@
 | `item/ChargingStationBlockItem.java` | 两格放置，物品渲染 |
 | `client/ChargingStationRenderer.java` | 机身、托盘物品、电量条、读数 |
 | `client/WorldInteractionHint.java` | 托盘提示 |
-| `client/ChargingStationSoundController.java` | 充电中的嗡嗡循环 |
+| `client/BlockLoopSoundController.java` | 充电中的嗡嗡循环（和冷柜压缩机共用） |
 | `registry/AflSounds.java`、`sounds.json` | `charging_station_start` / `_full` / `_hum` |
 | `energy/MachineBalanceManager.java` | `ChargingStationBalance` |
 

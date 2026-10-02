@@ -4,6 +4,8 @@
 - **模型和渲染已重做，用户实机确认外观没问题**。用户开着光影截了图：两个朝向，玻璃可见，金属丝隔板的镂空正常，打开的门也正常。音效和交互提示也已实机 PASS。
 - **摆放功能（60 格）已实现，用户 2026-10-01 实机确认 PASS**，见"摆放"。
 - `compileJava --offline` 每次改动后 PASS（包括 `src/dev`），GameTest 按规则没有运行。
+- **电源接口（2026-10-01，未实机验证）**：背面加了标准电源接口，见"电源接口"。
+- **用电、灯光、压缩机声音（2026-10-01，未实机验证）**：见"用电与灯光"和"压缩机声音"。还没有玩法效果（以后的腐败系统再做）。
 
 V2 换了模型和渲染，并加上了摆放。门的逻辑、四格结构、碰撞和选中形状、开门点击检测、挖掘规则都沿用 V1（见下面"沿用 V1 的运行逻辑"）。
 
@@ -13,12 +15,83 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
 - GeckoLib 动画 `animations/beverage_cooler.animation.json` 和贴图 `textures/entity/beverage_cooler.png`；
 - 渲染类 `BeverageCoolerRenderer`、`BeverageCoolerModel`、`BeverageCoolerItemRenderer`。
 
+## 电源接口（2026-10-01）
+
+- 位置：主格（正对冷柜时的左下格）背面正中，从背后看是右下。另外三格没有接口。
+- 外形和充电站相同（`tools/afl-power-port.mjs`）：6 × 6 px 钢板、r 1.95 的插座和触点。冷柜的后壁本身就贴在方块边界上，所以不做凸台，而是在后壁上开一个 6.1 × 6.1 px 的方孔，把接口板嵌进去，板面正好在边界上，四周留 0.05 px 的细缝，后壁和接口板的面不重叠。
+- 背面的维修面板原来横跨两列（x −6..22），改成只在另一列（x −6..12），百叶不动，给接口让位。
+- 代码：`BeverageCoolerBlock` 实现 `AflPowerPortBlock`，`hasPowerPort` 只对主格的背面返回 true，所以能源线缆接过来时会插上插头。放置冷柜后通知主格周围的方块更新形状，冷柜后面原本就有的线缆也会接上。
+- 接口后面是主格方块实体的能量缓冲，只接收、不输出。
+
+## 用电与灯光（2026-10-01）
+
+数值在 `data/apocalypse_firstlight/machine_balance/beverage_cooler.json`（缺失或无效时用同样的默认值）：
+
+| 项目 | 值 |
+|---|---:|
+| 内部缓冲 | 20 FE（约 1 秒的用量；第一版是 2,000 FE，断电后灯还能亮约 100 秒，用户实机发现） |
+| 最大输入 | 32 FE/t |
+| 灯 | 1 FE/t（亮着就耗） |
+| 压缩机 | 4 FE/t（运行时） |
+| 压缩机周期 | 运行 400 tick（20 秒）、停 800 tick（40 秒） |
+| 平均 | 约 2.3 FE/t；一台热力发电机（16 FE/t）能带 6 台左右 |
+
+- **亮灯**：缓冲够付灯的电就一直亮；灭了以后，要等缓冲充满才重新亮，供电不足时不会一闪一闪。线缆断开后，压缩机最多再转零点几秒，灯最多再亮约 1 秒。
+- **亮灯时**：
+  - 四格方块状态 `lit=true`，发出 10 级方块光，不开光影也能照亮周围；
+  - 门头灯箱和三条 LED 灯条换成亮的那套：白光 LED、亮起来的蓝色灯箱，全亮度渲染，贴图 `_s` 带 LabPBR 自发光（LED 230、灯箱 190）；
+  - 柜里的商品按 14 级方块光渲染，隔着玻璃看是亮的。
+- **没电时**：灯灭，方块光 0，商品按周围环境的亮度渲染，压缩机停。
+- **压缩机**：
+  - 亮灯后从一个周期的开头算起，所以一来电就启动。
+  - 每个运行段开头启动，运行段结束或者缓冲付不起 4 FE/t 时停机，所以一个周期最多启动一次。
+  - 有电时每分钟会听到一次停机声：那是周期里的正常停机，灯不受影响，40 秒后自动再启动（用户实机时以为是断电，2026-10-01 说明）。
+- 存档保存缓冲电量、周期位置、压缩机是否在转；拆掉时缓冲丢失。
+- 代码：
+  - `BeverageCoolerBlock`：`LIT` 属性、`setLit`（四格一起改）、主格的服务端 ticker、`compressorPosition`（压缩机声音位置：底部中间偏后）；
+  - `BeverageCoolerBlockEntity`：缓冲、耗电、压缩机周期、启停声音、Mesh 宿主的灯光开关；
+  - `client/BeverageCoolerRenderer`：亮灯时商品的光照；
+  - `AflBlocks`：光照等级 `lit ? 10 : 0`；
+  - `MachineBalanceManager.BeverageCoolerBalance`。
+- 模型：门头灯箱和 LED 灯条从 `body` 移到 `lights` 骨骼，同样的几何再做一套放在 `lights_lit`（geo 里 `neverRender`，物品图标只显示暗的那套）。
+- 灯管位置（2026-10-01 改）：第一版的灯条是贴在侧壁上的薄片，朝向侧面，正好在门框内沿后面；顶灯条在玻璃开口上沿之上，被门框上横档挡住。门全关上时从外面看不出灯亮没亮（用户实机发现）。现在两侧是 0.36 px 宽的竖灯管（x −6.24..−5.88 和 21.88..22.24），正面落在玻璃开口里面；顶灯管降到 y 27.6–27.8、横跨两列（x −4.8..20.8），在开口上沿（28.15）以下；灯座跟着加宽、下移。离线渲染确认门关着时三根灯管都能透过玻璃看到。
+
+## 已知问题：Sundial Lite 下关着门看不到灯管发光（2026-10-01，暂不修）
+
+- 现象（用户实机）：不开光影时灯管透过玻璃能看到。开 Sundial Lite v1.2.0 时，门开着三根灯管很亮，门一关，灯管透过玻璃就和普通内壁一样不发光；门外的灯箱照常发光。
+- 原因（查了本机 Oculus 6020952 和光影包）：
+  - Oculus 画方块实体的半透明部件（玻璃用 `entityNoOutline`）时用 `gbuffers_block_translucent`，光影包没有这个程序就退回 `gbuffers_block`。
+  - Sundial Lite 没有这个程序，而且 `blend.gbuffers_block = ONE ZERO ONE ZERO`：只有颜色缓冲（`colortex0`）按 alpha 混合，材质、自发光、法线、光照这些缓冲都被玻璃自己的值直接覆盖。
+  - 结果：玻璃后面像素的颜色还在，自发光被玻璃（不发光）盖掉了，光照也换成了玻璃那一格的方块光。
+- 只有 Sundial Lite 这样：本机的 Complementary Reimagined r5.9 三个维度都有 `gbuffers_block_translucent`，玻璃走专门的半透明程序，用户 2026-10-01 实机确认：关着门三根灯管透过玻璃照常发光。用户觉得 Complementary 比 Sundial 柔和，打算以后录视频用 Sundial，准备试 Sundial 完整版（非 Lite）。
+- 用户决定：是个别光影包的问题，先不修，记下来（2026-10-01）。
+- 以后要修的话，两个方向：
+  - 在玻璃之后把亮着的灯管再画一遍，把自发光写回去。需要先确认 Oculus 的 `FullyBufferedMultiBufferSource` 会不会打乱我们手动 flush 的顺序。
+  - 给门玻璃做一套"亮灯玻璃"子部件，跟着门转，亮灯时让玻璃自己带一点自发光、用更亮的光照。缺点：门开着时，透过玻璃看到的外面也会被提亮。
+- 其它放在玻璃后面的自发光部件（以后的设备）在 Sundial Lite 下也会这样，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)。
+
+## 压缩机声音（2026-10-01）
+
+| 声音 | 什么时候 | 可听半径 |
+|---|---|---:|
+| `beverage_cooler_compressor_start` | 压缩机启动（服务端播放） | 10 格 |
+| `beverage_cooler_compressor_stop` | 压缩机停机（服务端播放） | 10 格 |
+| `beverage_cooler_compressor_loop` | 运行中循环，客户端 `client/BlockLoopSoundController` 按同步的"压缩机在转"状态播放 | 8 格 |
+
+- 位置：冷柜底部中间偏后（压缩机所在）。
+- 构建脚本：`tools/build-beverage-cooler-compressor-sounds-v1.mjs`。素材是用户生成的 1 秒 48 kHz 立体声 WAV，在 `E:/Download`。
+  - 启动：整段用。
+  - 停机：裁掉开头 0.3 秒平稳的低嗡，让停机的抖动来得快一点。
+  - 循环：压缩机基频 58.9 Hz（周期 815 个采样）。素材在 0.22–0.34 秒有一串咔嗒（比正常质感高 12.7 dB），0.67、0.82–0.94 秒还有零星几下。第一版循环（从 0.02 秒起 49 个周期）包含了那一串咔嗒，每 0.83 秒重复一次，用户实机听到"跳了一帧"。现在从 0.35 秒起取 29 个整周期（0.49 秒），避开那一串；拉平音量；400 Hz 以上的高频咔嗒压到比中位电平高 2.5 dB 以内（`buildLoop` 新增的 `declick`，低频不动）；首尾交叉淡化。
+- 循环核对：用 Minecraft 同款的 stb_vorbis 解码，正好 23,635 个采样，和设计长度一致；接缝处跳变 0.001，在正常采样步长之内；最大瞬态比正常质感的中位高 9.3 dB（第一版 12.5 dB），剩下的都是和正常质感同量级的点。压缩机本身约 4 dB 的起伏保留。
+- 响度：比电箱开门声低，启动 8 LU、停机 10 LU、循环 14 LU。
+- 字幕：冷柜压缩机启动 / 停止 / 运转。
 ## 模型
 
 | 项目 | 值 |
 |---|---|
 | 生成器 | `tools/build-beverage-cooler-v2.mjs`（`--check` 校验成品是否最新，`--preview DIR` 只输出 geo、sidecar 和贴图） |
-| 成品 | **1544 个三角面**（body 1152、每扇门 196），23 个 Mesh part，没有共面重叠。V1 是 452 个方块（约 2700 个四边形），其中 5 层金属丝隔板就占 295 个方块 |
+| 成品 | **1868 个三角面**（body 1380、每扇门 196、灯光两套各 48，同一时刻只画一套），28 个 Mesh part，没有共面重叠（加电源接口前是 1544 个三角面、23 个 part；加亮灯那套前是 1820 个、26 个）。V1 是 452 个方块（约 2700 个四边形），其中 5 层金属丝隔板就占 295 个方块 |
 | 贴图 | 512 atlas，`textures/block/beverage_cooler{,_s,_n}.png`。左上 448×448 是 2 texel/px 的常规展开；底部一条 508×16 是金属丝隔板的镂空图案，5 层隔板的上下两面共用 |
 | 可编辑源 | `src/main/blockbench/beverage_cooler.bbmodel`（Free Model，组 `body`、`left_door`、`right_door`）和 `src/main/blockbench/textures/beverage_cooler{,_s,_n}.png` |
 | 运行时 | `geo/beverage_cooler.geo.json`（只有骨骼，覆盖了 V1 的 GeckoLib geo）、`meshes/beverage_cooler.aflmesh.json`（两块玻璃在 `translucent` 层，其余为 cutout）、`block_mesh_profiles/beverage_cooler.json`；方块模型 `models/block/beverage_cooler.json` 只有粒子贴图（原来是黑色混凝土，现在用新贴图） |

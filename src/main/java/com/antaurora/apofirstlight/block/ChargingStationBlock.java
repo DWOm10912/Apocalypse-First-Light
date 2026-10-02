@@ -95,11 +95,7 @@ public final class ChargingStationBlock extends Block implements EntityBlock, Af
 
     /** A source-px point of the station (master-relative, the cooler's convention) in world coordinates. */
     public static Vec3 sourceToWorld(BlockPos master, Direction facing, double x, double y, double z) {
-        Direction leftward = facing.getClockWise();
-        double midX = master.getX() + 0.5 - leftward.getStepX() * 0.5, midZ = master.getZ() + 0.5 - leftward.getStepZ() * 0.5;
-        double across = (x - 8) / 16, forward = -z / 16;
-        return new Vec3(midX + leftward.getStepX() * across + facing.getStepX() * forward, master.getY() + y / 16,
-                midZ + leftward.getStepZ() * across + facing.getStepZ() * forward);
+        return MeshSourceFrame.toWorld(master, facing, x, y, z);
     }
 
     private BlockState stateFor(Direction facing, Part part) {

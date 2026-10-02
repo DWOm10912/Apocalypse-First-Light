@@ -1,6 +1,8 @@
 // Beverage Cooler V2: two-door glass merchandiser (2 wide x 2 tall) as Pure Mesh + 512 LabPBR atlas, rendered by the AFL
 // Animated Block Mesh Runtime (bones 'body', 'left_door', 'right_door'; channels 'left_open' / 'right_open') and in
-// inventories by AflStaticMeshItemRenderer. The door logic, cells and shapes stay in BeverageCoolerBlock (V1 runtime).
+// inventories by AflStaticMeshItemRenderer. Lights (2026-10-01): the header lightbox and the three LED diffusers are bone
+// 'lights' (unlit) and again bone 'lights_lit' (bright, LabPBR emissive, neverRender in the geo so items show the unlit
+// set); BeverageCoolerBlockEntity shows one set by the block state's LIT and draws the lit one at full brightness. The door logic, cells and shapes stay in BeverageCoolerBlock (V1 runtime).
 //   node tools/build-beverage-cooler-v2.mjs                 -> writes source, runtime geo / sidecar / profile / maps / item model
 //   node tools/build-beverage-cooler-v2.mjs --check         -> verifies every output is up to date
 //   node tools/build-beverage-cooler-v2.mjs --preview DIR   -> writes only geo / sidecar / maps into DIR (offline review)
@@ -16,6 +18,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, AX, extrude, mul, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {addPowerPort, portHole} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -28,6 +31,7 @@ export const SHIFT = -16;                                                     //
 export const SHELF_TOPS = [4.16, 9.01, 13.86, 18.71, 23.56];
 export const DECK = {x0: -6.15, x1: 22.15, z0: -4.4, z1: 4.5};               // wire deck between the rails
 export const HINGE = {right: [-6.87, 16, -7.495], left: [22.87, 16, -7.495]};
+export const POWER_PORT = {x: 16, y: 8};   // back face centre of the master (lower-left) cell; the rear wall lies on the boundary
 export const DOOR_DEGREES = {left: -95, right: 95}, DOOR_TICKS = 8;            // BeverageCoolerBlock.ANIMATION_TICKS
 
 // ---------------- primitives ----------------
@@ -48,16 +52,27 @@ function cyl(part, ax, cu, cv, r, a0, a1, seg) {
     for (let i = 0; i < seg; i++) part.face([c, ring_[i], ring_[(i + 1) % seg]], mul(A.n, s), 'cap'); }
 }
 
+// ---------------- lights: unlit set (bone 'lights') and lit set (bone 'lights_lit'), same geometry ----------------
+// The LED tubes sit inside the door openings (the frames' inner edges are at x -6.28 / 22.28, the opening top at y 28.15),
+// so their front faces show through the closed glass: two side tubes standing off the wall housings, one ceiling tube
+// hanging below the opening top across both columns. (Until 2026-10-01 thin diffusers lay behind the frames, unseen.)
+function lights(bone, suffix) {
+  slab(P('lightbox' + suffix, bone, 'lightbox' + suffix), 'z', [-6, 29.55, -6.98], [22, 31.35, -6.88], 0);
+  const leds = P('led_diffusers' + suffix, bone, 'led' + suffix);
+  slab(leds, 'x', [-6.24, 4.2, -5.9], [-5.88, 28.2, -5.4], 0);
+  slab(leds, 'x', [21.88, 4.2, -5.9], [22.24, 28.2, -5.4], 0);
+  slab(leds, 'y', [-4.8, 27.6, -3.8], [20.8, 27.8, -2.1], 0);
+}
+
 // ---------------- body ----------------
 {
   const cab = P('cabinet', 'body', 'cabinet');
   slab(cab, 'x', [-8, 0.4, -7.35], [-6.95, 32, 8], 0.25);                    // side walls (with the front posts)
   slab(cab, 'x', [22.95, 0.4, -7.35], [24, 32, 8], 0.25);
-  slab(cab, 'z', [-6.95, 0.4, 6.8], [22.95, 32, 8], 0);                      // rear wall
+  frame(cab, [-6.95, 0.4, 22.95, 32], portHole(POWER_PORT.x, POWER_PORT.y), 6.8, 8, 0);   // rear wall, opening for the power port
   slab(cab, 'y', [-6.95, 31.7, -6.8], [22.95, 32, 6.8], 0);                  // roof over the lightbox housing
   slab(cab, 'y', [-6.95, 0.4, -6.8], [22.95, 0.7, 6.8], 0);                  // base plate
   frame(P('header_frame', 'body', 'cabinet'), [-6.95, 28.9, 22.95, 32], [-6, 29.55, 22, 31.35], -7.35, -6.8, 0.1);
-  slab(P('lightbox', 'body', 'lightbox'), 'z', [-6, 29.55, -6.98], [22, 31.35, -6.88], 0);
   frame(P('grille_frame', 'body', 'cabinet'), [-6.95, 0.4, 22.95, 3.5], [-6.55, 0.7, 22.55, 3.18], -7.35, -6.8, 0.1);
   slab(P('grille_back', 'body', 'grille_dark'), 'z', [-6.55, 0.7, -7.0], [22.55, 3.18, -6.9], 0);
   const louvers = P('louvers', 'body', 'grille');
@@ -66,11 +81,16 @@ function cyl(part, ax, cu, cv, r, a0, a1, seg) {
   slab(P('thermostat_display', 'body', 'display'), 'z', [20.0, 2.74, -7.55], [21.2, 3.03, -7.51], 0);
   const feet = P('feet', 'body', 'rubber');
   for (const x of [-6.55, 22.55]) for (const z of [-5.47, 6.42]) slab(feet, 'y', [x - 0.8, 0, z - 0.82], [x + 0.8, 0.4, z + 0.82], 0);
-  // back: service panel with a louvred vent
-  slab(P('service_panel', 'body', 'trim'), 'z', [-6, 1, 8.0], [22, 8, 8.06], 0);
+  // back: service panel with a louvred vent (on the second column), the power port set into the rear wall beside it
+  // (tools/afl-power-port.mjs, AFL power port standard; 2026-10-01)
+  slab(P('service_panel', 'body', 'trim'), 'z', [-6, 1, 8.0], [12, 8, 8.06], 0);
+  addPowerPort({plate: P('port_plate', 'body', 'port'), socket: P('port_socket', 'body', 'socket'), pin: P('port_pin', 'body', 'port_pin')},
+    POWER_PORT.x, POWER_PORT.y);
   const rear = P('rear_louvers', 'body', 'grille');
   for (let i = 0; i < 6; i++) slab(rear, 'z', [-4.8, 2.25 + 0.58 * i, 8.06], [3.8, 2.5 + 0.58 * i, 8.1], 0);
   // white liner, rear air duct, shelf standards, corner LED strips, ceiling light
+  lights('lights', '');
+  lights('lights_lit', '_lit');
   const liner = P('liner', 'body', 'liner');
   slab(liner, 'x', [-6.95, 3.5, -6.8], [-6.7, 28.9, 6.8], 0);
   slab(liner, 'x', [22.7, 3.5, -6.8], [22.95, 28.9, 6.8], 0);
@@ -80,12 +100,8 @@ function cyl(part, ax, cu, cv, r, a0, a1, seg) {
   const fittings = P('liner_fittings', 'body', 'fitting');
   slab(fittings, 'z', [7.15, 4.0, 6.14], [8.85, 28.3, 6.35], 0);
   for (const x of [-5.85, 21.85]) slab(fittings, 'z', [x - 0.15, 3.7, 6.06], [x + 0.15, 28.4, 6.35], 0);
-  for (const [x0, x1] of [[-6.7, -6.28], [22.28, 22.7]]) slab(fittings, 'x', [x0, 4.05, -5.95], [x1, 28.35, -5.35], 0);
-  slab(fittings, 'y', [-0.5, 28.38, -4.0], [16.5, 28.6, -1.9], 0);
-  const leds = P('led_diffusers', 'body', 'led');
-  slab(leds, 'x', [-6.28, 4.2, -5.9], [-6.22, 28.2, -5.4], 0);
-  slab(leds, 'x', [22.22, 4.2, -5.9], [22.28, 28.2, -5.4], 0);
-  slab(leds, 'y', [0, 28.32, -3.7], [16, 28.38, -2.2], 0);
+  for (const [x0, x1] of [[-6.7, -6.22], [22.22, 22.7]]) slab(fittings, 'x', [x0, 4.05, -5.95], [x1, 28.35, -5.35], 0);   // LED housings
+  slab(fittings, 'y', [-5, 27.78, -4.0], [21, 28.6, -1.9], 0);
   // shelves: rails, cross supports, label channel; the deck is a cutout-textured quad pair (own atlas strip)
   const rails = P('shelf_rails', 'body', 'rail'), labels = P('shelf_labels', 'body', 'label'), decks = P('wire_decks', 'body', 'wire');
   for (const T of SHELF_TOPS) {
@@ -120,13 +136,18 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   cabinet:     {c: [44, 47, 52], hl: 10, sm: 96, se: 118, f0: 20},      // charcoal powder-coated steel
   trim:        {c: [60, 64, 70], hl: 8, sm: 98, se: 116, f0: 20},
   lightbox:    {c: [64, 104, 138], hl: 4, sm: 118, se: 118, f0: 20},    // blank blue diffuser (unlit)
+  lightbox_lit: {c: [150, 206, 246], hl: 0, sm: 150, se: 150, f0: 20},  // the same, lit (emissive, LIGHT_EMISSION)
   grille:      {c: [34, 36, 40], hl: 6, sm: 86, se: 100, f0: 20},
   grille_dark: {c: [16, 17, 19], hl: 0, sm: 60, se: 60, f0: 20},
   display:     {c: [14, 16, 18], hl: 2, sm: 200, se: 200, f0: 20},
   rubber:      {c: [26, 26, 28], hl: 4, sm: 40, se: 48, f0: 20},
+  port:        {c: [134, 138, 144], hl: 12, sm: 112, se: 130, f0: 20},  // power port plate (as the charging station's)
+  socket:      {c: [24, 25, 28], hl: 0, sm: 60, se: 60, f0: 20},
+  port_pin:    {c: [40, 42, 46], hl: 10, sm: 110, se: 130, f0: 20},
   liner:       {c: [184, 190, 194], hl: 6, sm: 122, se: 134, f0: 20},   // white enamel liner
   fitting:     {c: [150, 156, 160], hl: 8, sm: 118, se: 132, f0: 20},
   led:         {c: [222, 226, 228], hl: 4, sm: 150, se: 150, f0: 20},   // opal diffusers (unlit)
+  led_lit:     {c: [255, 255, 255], hl: 0, sm: 170, se: 170, f0: 20},   // the same, lit white (emissive, LIGHT_EMISSION)
   rail:        {c: [204, 208, 210], hl: 8, sm: 142, se: 156, f0: 20},   // epoxy-coated shelf frame
   label:       {c: [196, 200, 202], hl: 4, sm: 104, se: 110, f0: 20},
   wire:        {c: [208, 212, 214], hl: 0, sm: 150, se: 150, f0: 20},   // painted by hand below (cutout pattern)
@@ -134,6 +155,7 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   glass:       {c: [150, 186, 204], hl: 0, sm: 235, se: 235, f0: 10},   // alpha set below
   metal:       {c: [168, 171, 175], hl: 16, sm: 150, se: 170, f0: 255}, // stainless handles, hinges
 };
+export const LIGHT_EMISSION = {led_lit: 230, lightbox_lit: 190};   // LabPBR _s alpha (0..254 = emission strength)
 export const GLASS_ALPHA = 56;                    // > 26 (0.1): survives the shader packs' translucent alpha test
 export const WIRE = {pitch: 0.65, width: 0.18};   // px, across X
 
@@ -163,6 +185,8 @@ for (let x = STRIP.x - PAD; x < STRIP.x + STRIP.w + PAD; x++) {
     setPx(2, x, y, [128, 128, 255, 255]);
   }
 }
+for (const is of UV.islands) if (LIGHT_EMISSION[is.part.mat] !== undefined)
+  for (let y = is.py - PAD; y < is.py + is.H + PAD; y++) for (let x = is.px - PAD; x < is.px + is.W + PAD; x++) MAPS[1][(y * ATLAS + x) * 4 + 3] = LIGHT_EMISSION[is.part.mat];
 const PNGS = MAPS.map(px => png(px, ATLAS, ATLAS));
 
 // ---------------- source (Free Model) ----------------
@@ -170,7 +194,7 @@ const ID = 'beverage_cooler';
 const uuid = s => { const h = createHash('sha256').update('afl-beverage-cooler-v2:' + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const r12 = v => +v.toFixed(12) || 0;
 const pivot = side => [HINGE[side][0] + SHIFT, HINGE[side][1], HINGE[side][2]];
-const RIG = [['body', [0, 0, 0]], ['left_door', pivot('left')], ['right_door', pivot('right')]];
+const RIG = [['body', [0, 0, 0]], ['left_door', pivot('left')], ['right_door', pivot('right')], ['lights', [0, 0, 0]], ['lights_lit', [0, 0, 0]]];
 const source = (() => {
   const groups = RIG.map(([name, origin]) => ({name, uuid: uuid('group:' + name), export: true, locked: false, scope: 0, selected: false, visibility: true,
     _static: {properties: {}, temp_data: {}}, origin: origin.slice(), rotation: [0, 0, 0], color: 0, children: [], reset: false, shade: true,
@@ -200,7 +224,7 @@ const source = (() => {
 // ---------------- runtime ----------------
 const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.' + ID, texture_width: ATLAS, texture_height: ATLAS,
   visible_bounds_width: 4, visible_bounds_height: 3, visible_bounds_offset: [0, 1, 0]},
-  bones: RIG.map(([name, origin]) => ({name, pivot: [-origin[0] || 0, origin[1], origin[2]]}))}]};
+  bones: RIG.map(([name, origin]) => ({name, pivot: [-origin[0] || 0, origin[1], origin[2]], ...(name === 'lights_lit' ? {neverRender: true} : {})}))}]};
 const LAYERS = Object.fromEntries(PARTS.filter(p => p.mat === 'glass').map(p => [p.name, 'translucent']));
 const sidecar = convert(source, geo, {}, ID + '.bbmodel', 2, null, LAYERS);
 const meshText = serializeCompact(sidecar);
@@ -208,7 +232,7 @@ const meshText = serializeCompact(sidecar);
 const r3 = v => +v.toFixed(3) || 0, r6 = v => +v.toFixed(6) || 0;
 const aroundY = (q, pv, deg) => { const a = deg * Math.PI / 180, x = q[0] - pv[0], z = q[2] - pv[2];   // same convention as the locker / electrical box doors
   return [pv[0] + x * Math.cos(a) + z * Math.sin(a), q[1], pv[2] - x * Math.sin(a) + z * Math.cos(a)]; };
-const posed = (p, t) => p.bone === 'body' ? p.v : p.v.map(q => aroundY(q, pivot(p.bone.split('_')[0]), DOOR_DEGREES[p.bone.split('_')[0]] * t));
+const posed = (p, t) => !p.bone.endsWith('_door') ? p.v : p.v.map(q => aroundY(q, pivot(p.bone.split('_')[0]), DOOR_DEGREES[p.bone.split('_')[0]] * t));
 const aabbOf = pts => [0, 1, 2].map(k => Math.min(...pts.map(q => q[k]))).concat([0, 1, 2].map(k => Math.max(...pts.map(q => q[k]))));
 const bounds = (() => {
   const b = aabbOf(PARTS.flatMap(p => Array.from({length: 11}, (_, s) => posed(p, s / 10)).flat())), m = 0.25;
@@ -244,7 +268,7 @@ const outputs = [[path.join(bb, ID + '.bbmodel'), JSON.stringify(source)], [path
   [path.join(assets, `models/item/${ID}.json`), JSON.stringify(itemModel, null, 2) + '\n'], [path.join(assets, `models/block/${ID}.json`), JSON.stringify(blockModel, null, 2) + '\n'],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${ID}${k}.png`), PNGS[i]], [path.join(assets, `textures/block/${ID}${k}.png`), PNGS[i]]])];
 
-const faces = sidecar.parts.flatMap(p => p.faces), zf = zFightLevels(PARTS, new Map());
+const faces = sidecar.parts.flatMap(p => p.faces), zf = zFightLevels(PARTS, new Map(), {skip: p => p.bone === 'lights_lit'});
 export const stats = {triangles: faces.reduce((s, q) => s + q.length - 2, 0), parts: sidecar.parts.length, texelsPerPx: UV.S, islands: UV.islands.length + 1,
   translucent: Object.keys(LAYERS), coplanarOverlaps: zf.unresolved.length, bounds, closed: aabbOf(PARTS.flatMap(p => p.v)).map(r3), gui: itemDisplay.gui,
   byBone: Object.fromEntries(RIG.map(([b]) => [b, PARTS.filter(p => p.bone === b).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0)]))};
