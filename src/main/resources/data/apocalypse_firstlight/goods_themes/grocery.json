@@ -1,0 +1,7 @@
+{
+  "loot_tables": [
+    "apocalypse_firstlight:chests/supermarket/",
+    "apocalypse_firstlight:chests/grocery/",
+    "apocalypse_firstlight:chests/store/"
+  ]
+}

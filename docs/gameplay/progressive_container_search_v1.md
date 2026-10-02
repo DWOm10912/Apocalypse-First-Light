@@ -1,6 +1,6 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)。
+状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
 - **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
 - 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
 - 另有开发演示方块（见第 21 节）。
@@ -16,12 +16,14 @@
 
 ## 2. 适用与不适用
 
-AFL 的储物分为两类，两者并存，不强行统一：
+AFL 的储物分为两类：
 
 | 类别 | 例子 | 规则 |
 |---|---|---|
-| **SEARCHABLE CLOSED STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、封闭冷柜、封闭设备柜 | 适合接入本系统 |
-| **VISIBLE STORAGE** | 货架、武器架、自动售货机、开放展示柜 | 物品直接在世界里渲染、实时交互，**不接入**；这些方块会把物品 NBT 同步给客户端用于显示，本身就和隐藏格不兼容 |
+| **SEARCHABLE STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、冷冻冰柜、封闭设备柜；2026-10-01 起还有货架、饮料冷柜、自动售货机 | 接入本系统。看得见里面的容器画通用货物模型代替真实物品（数量跟着装了几格走，看不出是什么），见 [container_goods_v1.md](container_goods_v1.md) |
+| **VISIBLE STORAGE** | 武器架（以后做） | 物品直接在世界里渲染、实时交互，**不接入**；这类方块会把物品 NBT 同步给客户端用于显示，本身就和隐藏格不兼容 |
+
+2026-10-01 用户决定：除了武器架（挂的是哪把枪很重要），货架、饮料冷柜、售货机都改用搜索 + 通用货物；玩家不再能在货架上摆自己的东西展示。
 
 只有显式实现 `AflSearchableContainer` 的 AFL 容器才使用本系统。原版箱子、木桶以及其它 AFL 容器行为完全不变，没有做全局替换。
 

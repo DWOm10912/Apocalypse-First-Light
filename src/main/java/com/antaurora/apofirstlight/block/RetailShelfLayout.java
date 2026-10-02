@@ -4,8 +4,9 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Canonical north-facing layout, measured from the production shelf model (tools/build-retail-shelf-v3.mjs, built from the
- * V2 cube source). Each deck holds 3 columns x 2 depth ranks: the front rank keeps the V2 slot numbers 0..14 (existing
- * worlds load unchanged), the back rank is 15..29.
+ * V2 cube source): 5 decks x 3 columns = 15 cells. Since 2026-10-01 the cells only place the goods (one library product
+ * each, RetailShelfSingleBlockEntityRenderer) and the aim test (RetailShelfSingleBlock#getClickedCell); the contents are a
+ * plain 9-slot searchable container. The two depth ranks remain as aim-test geometry.
  */
 public final class RetailShelfLayout {
     public static final int ROWS = 5;
@@ -14,12 +15,10 @@ public final class RetailShelfLayout {
     public static final int FRONT = 0;
     public static final int BACK = 1;
     public static final int DEPTHS = 2;
-    public static final int SLOTS = CELLS * DEPTHS;
-    public static final int MAX_STACK_PER_SLOT = 1;
 
     public static final float ITEM_SCALE = 0.24F;
     // Usable deck depth (source units, front toward -Z): from behind the price-tag lip to the back stop.
-    private static final double DECK_FRONT_Z = (8.0D - 1.446D) / 16.0D;
+    public static final double DECK_FRONT_Z = (8.0D - 1.446D) / 16.0D;
     private static final double DECK_BACK_Z = (8.0D + 7.084D) / 16.0D;
     /** Middle of the usable deck depth: the boundary between the front and the back rank. */
     public static final double DISPLAY_Z = (DECK_FRONT_Z + DECK_BACK_Z) / 2.0D;
@@ -35,18 +34,6 @@ public final class RetailShelfLayout {
     private static final double[] DEPTH_Z = {(3.0D * DECK_FRONT_Z + DECK_BACK_Z) / 4.0D, (DECK_FRONT_Z + 3.0D * DECK_BACK_Z) / 4.0D};
 
     private RetailShelfLayout() {
-    }
-
-    public static int slot(int cell, int depth) {
-        return cell + depth * CELLS;
-    }
-
-    public static int cellOf(int slot) {
-        return slot % CELLS;
-    }
-
-    public static int depthOf(int slot) {
-        return slot / CELLS;
     }
 
     public static double columnX(int column) {

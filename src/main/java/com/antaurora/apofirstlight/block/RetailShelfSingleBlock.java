@@ -99,10 +99,12 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
                 .setValue(HALF, DoubleBlockHalf.LOWER);
     }
 
+    /** Places the upper half; a shelf placed by a player holds the player's own things, never searched. */
     @Override
     public void setPlacedBy(Level level, BlockPos position, BlockState state,
                             @Nullable net.minecraft.world.entity.LivingEntity placer, ItemStack stack) {
         level.setBlock(position.above(), state.setValue(HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
+        if (!level.isClientSide && level.getBlockEntity(position) instanceof RetailShelfSingleBlockEntity shelf) shelf.markPlacedByPlayer();
     }
 
     @Override
@@ -175,51 +177,25 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         EXPLOSION_DESTROYING.clear();
     }
 
+    /** Aiming at the decks from the front: search the shelf, or view it once searched (3 x 3 menu). */
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
+        if (player.isSpectator()) return InteractionResult.PASS;
         BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
-        if (!(level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf)) {
+        if (!(level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf)
+                || getClickedCell(player.getEyePosition(), level.getBlockState(lower).getValue(FACING), lower, hit) < 0) {
             return InteractionResult.PASS;
         }
-
-        Direction facing = level.getBlockState(lower).getValue(FACING);
-        int cell = getClickedCell(player.getEyePosition(), facing, lower, hit);
-        if (cell < 0) {
-            return InteractionResult.PASS;
-        }
-        if (level.isClientSide()) {
-            return InteractionResult.SUCCESS;
-        }
-
-        ItemStack held = player.getItemInHand(hand);
-        int slot = chooseSlot(cell, !shelf.isEmpty(RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT)),
-                !shelf.isEmpty(RetailShelfLayout.slot(cell, RetailShelfLayout.BACK)), !held.isEmpty(),
-                aimsAtBack(facing, lower, hit));
-        if (slot < 0) {
-            return InteractionResult.PASS;
-        }
-        if (shelf.isEmpty(slot) && !held.isEmpty()) {
-            shelf.insertOne(slot, held);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            return InteractionResult.CONSUME;
-        }
-        if (!shelf.isEmpty(slot) && held.isEmpty()) {
-            ItemStack removed = shelf.removeOne(slot);
-            if (!player.getInventory().add(removed)) {
-                player.drop(removed, false);
-            }
-            return InteractionResult.CONSUME;
-        }
-        return InteractionResult.PASS;
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        player.openMenu(shelf);
+        return InteractionResult.CONSUME;
     }
 
     /**
-     * The deck cell (deck * COLUMNS + column, 0..14) the crosshair points at, or -1. Displayed items are not solid, so the
-     * eye ray runs to the shelf surface it hit (a deck top, the price-tag lip, the back panel or a deck underside); the
-     * cell is the first target volume (both depth ranks of one column on one deck) the ray enters on the way.
+     * The deck cell (deck * COLUMNS + column, 0..14) the crosshair points at, or -1: whether the player aims at the
+     * shelf's goods (use() and the prompt). Goods are not solid, so the eye ray runs to the shelf surface it hit (a deck
+     * top, the price-tag lip, the back panel or a deck underside); the cell is the first target volume the ray enters.
      */
     public static int getClickedCell(Vec3 eye, Direction facing, BlockPos lower, BlockHitResult hit) {
         Vec3 eyeCanonical = toCanonical(facing, eye.x - lower.getX(), eye.y - lower.getY(), eye.z - lower.getZ());
@@ -247,19 +223,6 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         return nearest;
     }
 
-    /** Where the crosshair lands: on the back half of a deck, the back panel or the back of a deck underside. */
-    public static boolean aimsAtBack(Direction facing, BlockPos lower, BlockHitResult hit) {
-        Vec3 hitLocation = hit.getLocation();
-        return toCanonical(facing, hitLocation.x - lower.getX(), hitLocation.y - lower.getY(),
-                hitLocation.z - lower.getZ()).z >= RetailShelfLayout.DISPLAY_Z;
-    }
-
-    /** {@link DisplayDepthRule} for one shelf cell. Returns the slot, or -1 when nothing applies. */
-    public static int chooseSlot(int cell, boolean frontFilled, boolean backFilled, boolean placing, boolean aimBack) {
-        return DisplayDepthRule.choose(RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT),
-                RetailShelfLayout.slot(cell, RetailShelfLayout.BACK), frontFilled, backFilled, placing, aimBack);
-    }
-
     private static Vec3 toCanonical(Direction facing, double localX, double localY, double localZ) {
         return switch (facing) {
             case NORTH -> new Vec3(localX, localY, localZ);
@@ -276,6 +239,17 @@ public class RetailShelfSingleBlock extends HorizontalDirectionalBlock implement
         VoxelShape canonical = state.getValue(HALF) == DoubleBlockHalf.LOWER
                 ? NORTH_LOWER_SHAPE : NORTH_UPPER_SHAPE;
         return rotateShape(canonical, state.getValue(FACING));
+    }
+
+    /** Server, lower half: rolls pending world loot at once (RetailShelfSingleBlockEntity#serverTick). */
+    @Override
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(
+            Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+        if (level.isClientSide || state.getValue(HALF) != DoubleBlockHalf.LOWER) return null;
+        return (net.minecraft.world.level.block.entity.BlockEntityTicker<T>) (net.minecraft.world.level.block.entity.BlockEntityTicker<RetailShelfSingleBlockEntity>)
+                (tickerLevel, tickerPos, tickerState, shelf) -> shelf.serverTick();
     }
 
     @Override

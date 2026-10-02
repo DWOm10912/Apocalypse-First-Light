@@ -54,7 +54,8 @@ public final class VendingMachineGameTests {
             h.assertTrue(l.getBlockState(p).getValue(VendingMachineBlock.FACING)==f,"facing "+f);
             var be=(VendingMachineBlockEntity)l.getBlockEntity(p);
             h.assertTrue(be!=null&&l.getBlockEntity(p.above())==null,"lower-only BE");
-            h.assertTrue(!be.put(0,new ItemStack(Items.APPLE))&&be.take(0).isEmpty(),"intact storage locked");
+            h.assertTrue(be.getContainerSize()==VendingMachineBlockEntity.SIZE&&!be.canPlaceItem(0,new ItemStack(Items.APPLE))
+                    &&!be.canTakeItem(be,0,ItemStack.EMPTY),"intact glass locks the contents");
             player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(AflItems.CROWBAR.get()));
             Vec3 eye=world(p,f,new Vec3(.55,1.2,-2));player.setPos(eye.x,eye.y-player.getEyeHeight(),eye.z);
             Vec3 point=world(p,f,new Vec3(.55,1.2,.18/16));
@@ -75,28 +76,18 @@ public final class VendingMachineGameTests {
             com.antaurora.apofirstlight.interaction.CrowbarSmashAction.advance(player);
             h.assertTrue(!com.antaurora.apofirstlight.interaction.CrowbarSmashAction.active(player),"recovery releases reservation");
             h.assertTrue(l.getBlockEntity(p)==be,"state retains BE");
-            for(int slot=0;slot<VendingMachineBlockEntity.SIZE;slot++) {
-                h.assertTrue(be.put(slot,new ItemStack(Items.APPLE,5)),"insert "+slot);
-                h.assertTrue(be.getItem(slot).getCount()==1,"single item");
-                Vec3 front=new Vec3(VendingMachineBlockEntity.displayX(slot),VendingMachineBlockEntity.displayY(slot),.18/16);
-                h.assertTrue(VendingMachineBlock.slot(front)==slot,"slot mapping "+slot);
-                Vec3 target=world(p,f,front);BlockPos half=front.y>=1?p.above():p;
+            h.assertTrue(be.canPlaceItem(0,new ItemStack(Items.APPLE)),"broken glass opens the contents to automation");
+            // broken glass: aiming at the front opens the menu (both halves), nothing moves by hand
+            for(double y:new double[]{.7,1.3}) {
+                Vec3 target=world(p,f,new Vec3(.55,y,.18/16));BlockPos half=y>=1?p.above():p;
                 player.setItemInHand(InteractionHand.MAIN_HAND,ItemStack.EMPTY);
-                b.use(l.getBlockState(half),l,half,player,InteractionHand.MAIN_HAND,new BlockHitResult(target,f,half,false));
-                h.assertTrue(be.getItem(slot).isEmpty(),"take via block "+slot);
+                h.assertTrue(b.use(l.getBlockState(half),l,half,player,InteractionHand.MAIN_HAND,new BlockHitResult(target,f,half,false)).consumesAction()
+                        &&player.containerMenu!=player.inventoryMenu,"broken front opens the menu "+f+" "+y);
+                player.closeContainer();
             }
-            be.put(3,new ItemStack(Items.DIAMOND));
+            be.setItem(3,new ItemStack(Items.DIAMOND));
             var saved=be.saveWithoutMetadata();var restored=new VendingMachineBlockEntity(p,l.getBlockState(p));restored.load(saved);
             h.assertTrue(restored.getItem(3).is(Items.DIAMOND),"NBT roundtrip");
-            var legacy=new net.minecraft.nbt.CompoundTag();
-            var oldItems=net.minecraft.core.NonNullList.withSize(8,ItemStack.EMPTY);
-            oldItems.set(0,new ItemStack(Items.APPLE));oldItems.set(1,new ItemStack(Items.DIAMOND));
-            oldItems.set(2,new ItemStack(Items.STICK));oldItems.set(3,new ItemStack(Items.IRON_INGOT));
-            net.minecraft.world.ContainerHelper.saveAllItems(legacy,oldItems);
-            var migrated=new VendingMachineBlockEntity(p,l.getBlockState(p));migrated.load(legacy);
-            h.assertTrue(migrated.getItem(0).is(Items.APPLE)&&migrated.getItem(1).isEmpty()
-                    &&migrated.getItem(2).is(Items.DIAMOND)&&migrated.getItem(3).is(Items.STICK)
-                    &&migrated.getItem(5).is(Items.IRON_INGOT),"V1 two-column NBT migration");
             h.assertTrue(!b.getCollisionShape(l.getBlockState(p),l,p,net.minecraft.world.phys.shapes.CollisionContext.empty()).isEmpty(),"broken collision remains");
             player.setItemInHand(InteractionHand.MAIN_HAND,new ItemStack(Items.DIAMOND_PICKAXE));
             h.assertTrue(player.gameMode.destroyBlock(p.above()),"mine upper");

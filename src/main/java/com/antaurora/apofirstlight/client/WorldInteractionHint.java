@@ -6,6 +6,10 @@ import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
 import com.antaurora.apofirstlight.block.ChargingStationBlock;
 import com.antaurora.apofirstlight.block.ChestFreezerBlock;
 import com.antaurora.apofirstlight.block.PowerCableBlock;
+import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
+import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
+import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
+import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
@@ -61,6 +65,7 @@ public final class WorldInteractionHint {
             target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=freezerLid(mc,hit);
+            if(target==null) target=retailContents(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
@@ -107,6 +112,35 @@ public final class WorldInteractionHint {
         var door=BeverageCoolerBlock.promptDoor(mc.level,hit.getBlockPos(),s,hit.getLocation());
         return door==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.beverage_cooler."+(door.open()?"close":"open")),
                 BeverageCoolerBlock.promptAnchor(door.master(),door.facing(),door.left(),door.open()));
+    }
+
+    /**
+     * Searchable retail fixtures (2026-10-01), resolved like their use(): a shelf aimed at its decks, the cooler aimed
+     * behind an open door, the vending machine aimed at its broken glass. "Search" while hidden slots remain, else "View";
+     * drawn at the crosshair.
+     */
+    private static Target retailContents(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);var eye=mc.player.getEyePosition();
+        String key=null;Boolean complete=null;
+        if(s.getBlock() instanceof RetailShelfSingleBlock) {
+            var lower=s.getValue(RetailShelfSingleBlock.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER?pos.below():pos;
+            if(mc.level.getBlockEntity(lower) instanceof RetailShelfSingleBlockEntity shelf
+                    &&RetailShelfSingleBlock.getClickedCell(eye,mc.level.getBlockState(lower).getValue(RetailShelfSingleBlock.FACING),lower,hit)>=0) {
+                key="retail_shelf";complete=shelf.isSearchCompleteForPrompt();
+            }
+        } else if(s.getBlock() instanceof BeverageCoolerBlock) {
+            var master=BeverageCoolerBlock.masterPosition(pos,s);
+            if(BeverageCoolerBlock.aimsInside(mc.level,master,eye,hit.getLocation())
+                    &&mc.level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler) {
+                key="beverage_cooler";complete=cooler.isSearchCompleteForPrompt();
+            }
+        } else if(s.getBlock() instanceof VendingMachineBlock&&s.getValue(VendingMachineBlock.BROKEN)
+                &&VendingMachineBlock.frontPoint(s,pos,eye,hit)!=null
+                &&mc.level.getBlockEntity(VendingMachineBlock.lower(s,pos)) instanceof VendingMachineBlockEntity machine) {
+            key="vending_machine";complete=machine.isSearchCompleteForPrompt();
+        }
+        return key==null?null:new Target(Component.translatable("hint.apocalypse_firstlight."+key+"."+(complete?"view":"search")),null);
     }
 
     /**

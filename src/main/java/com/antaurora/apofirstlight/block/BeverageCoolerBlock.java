@@ -257,12 +257,19 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Afl
         }
     }
 
+    /** Placed by a player: its contents are the player's own, never searched. */
+    @Override
+    public void setPlacedBy(Level level, BlockPos position, BlockState state, @Nullable net.minecraft.world.entity.LivingEntity placer,
+                            ItemStack stack) {
+        if (!level.isClientSide && level.getBlockEntity(position) instanceof BeverageCoolerBlockEntity cooler) cooler.markPlacedByPlayer();
+    }
+
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos master = masterPosition(position, state);
         Door door = hitDoor(hit.getLocation(), master, state.getValue(FACING), state);
-        if (door == Door.NONE) return useDisplay(level, master, player, hand, hit);
+        if (door == Door.NONE) return useContents(level, master, player, hit);
         if (level.isClientSide) return InteractionResult.SUCCESS;
         BlockState masterState = level.getBlockState(master);
         if (!masterState.is(this) || masterState.getValue(PART) != Part.LOWER_LEFT
@@ -283,38 +290,22 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Afl
         return InteractionResult.CONSUME;
     }
 
-    /**
-     * Display: through an open door, the crosshair picks a cell behind that door (BeverageCoolerLayout#targetCell) and the
-     * front-first rule (DisplayDepthRule) the slot; one item is placed from the hand or taken into the inventory.
-     */
-    private static InteractionResult useDisplay(Level level, BlockPos master, Player player, InteractionHand hand, BlockHitResult hit) {
+    /** Contents: aiming behind an open door (any shelf cell there, BeverageCoolerLayout#targetCell) searches or views. */
+    private static InteractionResult useContents(Level level, BlockPos master, Player player, BlockHitResult hit) {
+        if (player.isSpectator() || !aimsInside(level, master, player.getEyePosition(), hit.getLocation())) return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+        if (level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler) player.openMenu(cooler);
+        return InteractionResult.CONSUME;
+    }
+
+    /** True when the eye ray reaches a shelf cell behind an open door (use() and the prompt). */
+    public static boolean aimsInside(BlockGetter level, BlockPos master, Vec3 eye, Vec3 hitLocation) {
         BlockState masterState = level.getBlockState(master);
         if (!(masterState.getBlock() instanceof BeverageCoolerBlock) || masterState.getValue(PART) != Part.LOWER_LEFT
-                || !(level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler)) return InteractionResult.PASS;
+                || !(level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity)) return false;
         Direction facing = masterState.getValue(FACING);
-        Vec3 hitSource = BeverageCoolerLayout.toSource(hit.getLocation(), master, facing);
-        int cell = BeverageCoolerLayout.targetCell(BeverageCoolerLayout.toSource(player.getEyePosition(), master, facing), hitSource,
-                masterState.getValue(LEFT_OPEN), masterState.getValue(RIGHT_OPEN));
-        if (cell < 0) return InteractionResult.PASS;
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
-        int front = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.FRONT);
-        int back = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.BACK);
-        ItemStack held = player.getItemInHand(hand);
-        int slot = DisplayDepthRule.choose(front, back, !cooler.isEmpty(front), !cooler.isEmpty(back), !held.isEmpty(),
-                BeverageCoolerLayout.aimsAtBack(hitSource));
-        if (slot < 0) return InteractionResult.PASS;
-        if (cooler.isEmpty(slot) && !held.isEmpty()) {
-            cooler.insertOne(slot, held);
-            if (!player.getAbilities().instabuild) held.shrink(1);
-            return InteractionResult.CONSUME;
-        }
-        if (!cooler.isEmpty(slot) && held.isEmpty()) {
-            ItemStack removed = cooler.removeOne(slot);
-            if (!player.getInventory().add(removed)) player.drop(removed, false);
-            return InteractionResult.CONSUME;
-        }
-        return InteractionResult.PASS;
+        return BeverageCoolerLayout.targetCell(BeverageCoolerLayout.toSource(eye, master, facing), BeverageCoolerLayout.toSource(hitLocation, master, facing),
+                masterState.getValue(LEFT_OPEN), masterState.getValue(RIGHT_OPEN)) >= 0;
     }
 
     /**

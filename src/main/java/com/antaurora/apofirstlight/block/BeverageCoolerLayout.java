@@ -5,49 +5,31 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Beverage Cooler display layout, measured from the V2 mesh (tools/build-beverage-cooler-v2.mjs). Coordinates are the
+ * Beverage Cooler shelf layout, measured from the V2 mesh (tools/build-beverage-cooler-v2.mjs). Coordinates are the
  * cooler's source units (px): x runs along FACING's clockwise side from the right outer wall (-8) to the left outer wall
  * (24), the two doors meet at x = 8; y up from the floor of the master cell; z toward the back, the door glass at about
- * -7. Five shelves x 6 columns (columns 0-2 behind the right door, 3-5 behind the left door) x 2 depth ranks: the front
- * rank is slots 0-29, the back rank 30-59 (cell = shelf * 6 + column).
+ * -7. Five shelves x 6 columns (columns 0-2 behind the right door, 3-5 behind the left door), cell = shelf * 6 + column.
+ * Since 2026-10-01 the cells only place the goods (BeverageCoolerRenderer) and the aim test (#targetCell); the contents
+ * are a plain 18-slot searchable container.
  */
 public final class BeverageCoolerLayout {
     public static final int SHELVES = 5;
     public static final int COLUMNS = 6;
     public static final int CELLS = SHELVES * COLUMNS;
-    public static final int FRONT = 0;
-    public static final int BACK = 1;
-    public static final int DEPTHS = 2;
-    public static final int SLOTS = CELLS * DEPTHS;
-    public static final float ITEM_SCALE = 0.24F;
 
     private static final double[] SHELF_TOPS = {4.16D, 9.01D, 13.86D, 18.71D, 23.56D};
     // wire deck between the side rails, split at the meeting stiles; rails front / back
     private static final double DECK_X0 = -6.15D;
     private static final double DECK_X1 = 22.15D;
     private static final double MID_X = 8.0D;
-    private static final double DECK_Z0 = -4.4D;
+    public static final double DECK_Z0 = -4.4D;
     private static final double DECK_Z1 = 4.5D;
     private static final double LABEL_Z = -5.1D;
-    /** Middle of the deck depth: the boundary between the front and the back rank. */
-    public static final double DEPTH_SPLIT_Z = (DECK_Z0 + DECK_Z1) / 2.0D;
     // target volume of a cell: 0.5 px below the deck top (the rails) to 4.3 px above it (under the next shelf's rails)
     private static final double BELOW_TOP = 0.5D;
     private static final double ABOVE_TOP = 4.3D;
 
     private BeverageCoolerLayout() {
-    }
-
-    public static int slot(int cell, int depth) {
-        return cell + depth * CELLS;
-    }
-
-    public static int cellOf(int slot) {
-        return slot % CELLS;
-    }
-
-    public static int depthOf(int slot) {
-        return slot / CELLS;
     }
 
     /** Columns 3-5 are behind the left door (the master side), 0-2 behind the right door. */
@@ -68,17 +50,6 @@ public final class BeverageCoolerLayout {
         return SHELF_TOPS[shelf];
     }
 
-    /** Item centre height: an item stands on the deck. */
-    public static double itemY(int shelf) {
-        return SHELF_TOPS[shelf] + ITEM_SCALE * 8.0D;
-    }
-
-    /** Rank centres: the quarter points of the deck depth. */
-    public static double depthZ(int depth) {
-        double quarter = (DECK_Z1 - DECK_Z0) / 4.0D;
-        return depth == FRONT ? DECK_Z0 + quarter : DECK_Z1 - quarter;
-    }
-
     /** World position -> source units of the cooler whose master (lower-left) cell is at {@code master}. */
     public static Vec3 toSource(Vec3 world, BlockPos master, Direction facing) {
         Direction leftward = facing.getClockWise();
@@ -92,8 +63,8 @@ public final class BeverageCoolerLayout {
     }
 
     /**
-     * The cell (0..29) the eye ray points at: displayed items are not solid, so the ray runs to the cooler surface it hit
-     * (a deck, the back wall, a side wall); the cell is the first target volume (both ranks of one column on one shelf)
+     * The cell (0..29) the eye ray points at: goods are not solid, so the ray runs to the cooler surface it hit
+     * (a deck, the back wall, a side wall); the cell is the first target volume (one column on one shelf, the deck's depth)
      * the ray enters on the way. Only cells behind an open door count. -1 when none.
      */
     public static int targetCell(Vec3 eye, Vec3 hit, boolean leftOpen, boolean rightOpen) {
@@ -111,11 +82,6 @@ public final class BeverageCoolerLayout {
             }
         }
         return nearest;
-    }
-
-    /** Where the crosshair lands: on the back half of a deck or the back wall. */
-    public static boolean aimsAtBack(Vec3 hit) {
-        return hit.z >= DEPTH_SPLIT_Z;
     }
 
     private static double cellEntry(int cell, Vec3 origin, Vec3 direction) {

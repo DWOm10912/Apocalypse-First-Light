@@ -16,6 +16,11 @@ public final class AflContainerGoods {
         return Math.max(0, Math.min(spots, (occupied * 2 + 2) / 3));
     }
 
+    /** Spots shown when a container is full at {@code fullAt} occupied slots: in proportion, at least one while it holds anything. */
+    public static int shown(int occupied, int spots, int fullAt) {
+        return occupied <= 0 ? 0 : Math.min(spots, (spots * occupied + fullAt - 1) / fullAt);
+    }
+
     public static int occupied(Iterable<ItemStack> items) {
         int occupied = 0;
         for (ItemStack stack : items) if (!stack.isEmpty()) occupied++;

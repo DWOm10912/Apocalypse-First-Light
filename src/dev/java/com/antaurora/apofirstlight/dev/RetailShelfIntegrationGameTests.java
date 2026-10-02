@@ -4,19 +4,20 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.RetailShelfLayout;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
+import com.antaurora.apofirstlight.containersearch.AflContainerGoods;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.NonNullList;
 import net.minecraft.gametest.framework.GameTestGenerator;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.StructureUtils;
 import net.minecraft.gametest.framework.TestFunction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -73,46 +74,48 @@ public final class RetailShelfIntegrationGameTests {
         var shelf = (RetailShelfSingleBlockEntity) helper.getLevel().getBlockEntity(lower);
         helper.assertTrue(shelf != null && helper.getLevel().getBlockEntity(lower.above()) == null,
                 "only lower shelf owns a BlockEntity");
-        helper.assertTrue(shelf.getContainerSize() == 30 && shelf.getMaxStackSize() == 1,
-                "five decks by three columns by two depth ranks and one item per display slot");
+        helper.assertTrue(shelf.getContainerSize() == RetailShelfSingleBlockEntity.SIZE
+                        && shelf.aflSearchLayout() == AflContainerSearchLayout.GRID_3X3,
+                "searchable container of 9 slots in the 3 x 3 menu");
+        helper.assertTrue(AflContainerSearch.isComplete(shelf), "a player-placed shelf is never searched");
 
         assertLayoutAndShapes(helper, lower);
         assertWorldRayTrace(helper, helper.absolutePos(new BlockPos(11, 2, 7)));
-        assertLegacySave(helper, shelf);
-        assertOneItemSemantics(helper, shelf);
-        assertUpperUse(helper, lower, shelf);
-        assertFrontFirst(helper);
+        reset(helper, lower);
+        helper.assertTrue(place(helper, lower), "shelf replaces for the menu test");
+        assertUpperUse(helper, lower, (RetailShelfSingleBlockEntity) helper.getLevel().getBlockEntity(lower));
+        assertWorldLoot(helper, lower);
 
         reset(helper, lower);
         helper.assertTrue(place(helper, lower), "shelf replaces after reset");
         var dropShelf = (RetailShelfSingleBlockEntity) helper.getLevel().getBlockEntity(lower);
         dropShelf.setItem(0, new ItemStack(Items.PAPER));
-        dropShelf.setItem(14, new ItemStack(Items.APPLE));
-        dropShelf.setItem(29, new ItemStack(Items.BREAD));
+        dropShelf.setItem(4, new ItemStack(Items.APPLE));
+        dropShelf.setItem(8, new ItemStack(Items.BREAD));
         helper.assertTrue(destroy(helper, lower, AflItems.RETAIL_SHELF_SINGLE.get()) == 1,
                 "lower break drops one shelf");
         assertCleared(helper, lower);
         helper.assertTrue(countDrops(helper, lower, Items.PAPER) == 1
                         && countDrops(helper, lower, Items.APPLE) == 1
                         && countDrops(helper, lower, Items.BREAD) == 1,
-                "lower break drops each displayed item once");
+                "lower break drops each stored item once");
 
         reset(helper, lower);
         helper.assertTrue(place(helper, lower), "shelf places for upper break");
         dropShelf = (RetailShelfSingleBlockEntity) helper.getLevel().getBlockEntity(lower);
         dropShelf.setItem(0, new ItemStack(Items.PAPER));
-        dropShelf.setItem(14, new ItemStack(Items.APPLE));
-        dropShelf.setItem(29, new ItemStack(Items.BREAD));
+        dropShelf.setItem(4, new ItemStack(Items.APPLE));
+        dropShelf.setItem(8, new ItemStack(Items.BREAD));
         helper.assertTrue(destroy(helper, lower.above(), AflItems.RETAIL_SHELF_SINGLE.get()) == 1,
                 "upper break drops one shelf");
         assertCleared(helper, lower);
         helper.assertTrue(countDrops(helper, lower, Items.PAPER) == 1
                         && countDrops(helper, lower, Items.APPLE) == 1
                         && countDrops(helper, lower, Items.BREAD) == 1,
-                "upper break drops each displayed item once");
+                "upper break drops each stored item once");
 
-        ApocalypseFirstLight.LOGGER.info("[AFL RETAIL SHELF TEST] PASS 30 slots (15 cells x front/back), four-facing real ray hits, "
-                + "front/back aim, front-first rule, five collision decks, old 12-slot NBT, stack-one, upper forwarding, "
+        ApocalypseFirstLight.LOGGER.info("[AFL RETAIL SHELF TEST] PASS 9-slot searchable container, four-facing real ray hits "
+                + "on the 15 deck cells, five collision decks, upper-half menu, world loot rolled on the first tick with goods, "
                 + "single lower/upper drops");
         helper.succeed();
     }
@@ -137,29 +140,23 @@ public final class RetailShelfIntegrationGameTests {
                 double x = RetailShelfLayout.columnX(column);
                 double y = RetailShelfLayout.rowY(row);
                 BlockPos hitPos = y >= 1.0D ? lower.above() : lower;
-                // level aim through the cell onto the back panel: this cell, back half
+                // level aim through the cell onto the back panel
                 var panelHit = new BlockHitResult(world(lower, facing, x, y, 15.424D / 16.0D), facing, hitPos, false);
                 helper.assertTrue(RetailShelfSingleBlock.getClickedCell(world(lower, facing, x, y, -0.5D), facing, lower,
                         panelHit) == cell, facing + " level aim selects cell " + cell);
-                helper.assertTrue(RetailShelfSingleBlock.aimsAtBack(facing, lower, panelHit),
-                        facing + " back panel hit aims at the back rank");
                 double deckTop = RetailShelfLayout.deckTopUnits(row) / 16.0D;
                 double lipY = deckTop + 0.003D;
                 var lipHit = new BlockHitResult(world(lower, facing, x, lipY, RetailShelfLayout.FRONT_Z + 0.012D),
                         facing, hitPos, false);
                 helper.assertTrue(RetailShelfSingleBlock.getClickedCell(world(lower, facing, x, lipY, -0.5D),
                         facing, lower, lipHit) == cell, facing + " front lip maps to cell " + cell);
-                helper.assertTrue(!RetailShelfSingleBlock.aimsAtBack(facing, lower, lipHit),
-                        facing + " lip hit aims at the front rank");
-                // looking down onto the deck top: the landing depth picks the rank
+                // looking down onto the deck top, front or back half
                 Vec3 above = world(lower, facing, x, deckTop + 0.3D, 0.0D);
                 for (int depth = 0; depth < RetailShelfLayout.DEPTHS; depth++) {
                     var deckHit = new BlockHitResult(world(lower, facing, x, deckTop, RetailShelfLayout.depthZ(depth)),
                             Direction.UP, hitPos, false);
-                    helper.assertTrue(RetailShelfSingleBlock.getClickedCell(above, facing, lower, deckHit) == cell
-                                    && RetailShelfSingleBlock.aimsAtBack(facing, lower, deckHit)
-                                    == (depth == RetailShelfLayout.BACK),
-                            facing + " deck-top landing selects cell " + cell + " rank " + depth);
+                    helper.assertTrue(RetailShelfSingleBlock.getClickedCell(above, facing, lower, deckHit) == cell,
+                            facing + " deck-top landing selects cell " + cell + " (" + depth + ")");
                 }
             }
         }
@@ -205,46 +202,7 @@ public final class RetailShelfIntegrationGameTests {
         }
     }
 
-    private static void assertLegacySave(GameTestHelper helper, RetailShelfSingleBlockEntity shelf) {
-        Item[] legacyItems = {Items.PAPER, Items.APPLE, Items.BREAD, Items.CARROT, Items.POTATO,
-                Items.BOOK, Items.STRING, Items.STICK, Items.IRON_INGOT, Items.GLASS,
-                Items.COAL, Items.REDSTONE};
-        NonNullList<ItemStack> old = NonNullList.withSize(12, ItemStack.EMPTY);
-        for (int slot = 0; slot < old.size(); slot++) old.set(slot, new ItemStack(legacyItems[slot]));
-        CompoundTag tag = new CompoundTag();
-        ContainerHelper.saveAllItems(tag, old);
-        shelf.load(tag);
-        for (int slot = 0; slot < old.size(); slot++) {
-            helper.assertTrue(shelf.getItem(slot).is(legacyItems[slot]) && shelf.getItem(slot).getCount() == 1,
-                    "legacy slot " + slot + " keeps its item and order");
-        }
-        for (int slot = 12; slot < RetailShelfLayout.SLOTS; slot++) helper.assertTrue(shelf.isEmpty(slot), "new slot starts empty");
-
-        old.set(0, new ItemStack(Items.PAPER, 4));
-        tag = new CompoundTag();
-        ContainerHelper.saveAllItems(tag, old);
-        shelf.load(tag);
-        helper.assertTrue(shelf.getItem(0).getCount() == 1, "legacy overstack becomes one visible item");
-        CompoundTag persisted = shelf.saveWithoutMetadata();
-        shelf.load(persisted);
-        for (int remaining = 3; remaining >= 0; remaining--) {
-            helper.assertTrue(shelf.removeOne(0).getCount() == 1, "legacy item remains retrievable");
-            helper.assertTrue(shelf.getItem(0).getCount() == (remaining > 0 ? 1 : 0),
-                    "legacy reserve refills only one display item");
-        }
-    }
-
-    private static void assertOneItemSemantics(GameTestHelper helper, RetailShelfSingleBlockEntity shelf) {
-        ItemStack large = new ItemStack(Items.DIAMOND, 64);
-        shelf.setItem(14, large);
-        helper.assertTrue(shelf.getItem(14).getCount() == 1 && large.getCount() == 64,
-                "setItem clamps without mutating the caller's stack");
-        helper.assertTrue(!shelf.canPlaceItem(14, large), "occupied display slot rejects hopper insertion");
-        helper.assertTrue(shelf.canPlaceItem(13, large), "empty display slot accepts insertion");
-        helper.assertTrue(shelf.removeItem(14, 64).getCount() == 1 && shelf.isEmpty(14),
-                "container extraction cannot take more than one");
-    }
-
+    /** A click on the upper half forwards to the lower shelf and opens its menu (no items move by hand any more). */
     private static void assertUpperUse(GameTestHelper helper, BlockPos lower, RetailShelfSingleBlockEntity shelf) {
         var player = FakePlayerFactory.get(helper.getLevel(), new GameProfile(UUID.randomUUID(), "shelf_upper_use"));
         player.setGameMode(GameType.SURVIVAL);
@@ -254,47 +212,30 @@ public final class RetailShelfIntegrationGameTests {
         var hit = new BlockHitResult(new Vec3(lower.getX() + 0.5D, lower.getY() + y,
                 lower.getZ() + 15.424D / 16.0D), Direction.NORTH, lower.above(), false);
         BlockState upper = helper.getLevel().getBlockState(lower.above());
-        var block = AflBlocks.RETAIL_SHELF_SINGLE.get();
-        var result = block.use(upper, helper.getLevel(), lower.above(), player, InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(result.consumesAction() && shelf.getItem(28).is(Items.EMERALD)
-                        && shelf.getItem(28).getCount() == 1 && shelf.isEmpty(13)
-                        && player.getMainHandItem().getCount() == 1,
-                "upper-half click forwards to lower and inserts exactly one item where it lands (back rank)");
-        result = block.use(upper, helper.getLevel(), lower.above(), player, InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(result.consumesAction() && shelf.getItem(13).is(Items.EMERALD)
-                        && player.getMainHandItem().isEmpty(),
-                "with the back rank filled the next item goes to the front");
-        player.getInventory().selected = 8; // taken items land in slot 0, the hand stays empty
-        result =block.use(upper, helper.getLevel(), lower.above(), player, InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(result.consumesAction() && shelf.isEmpty(13) && shelf.getItem(28).is(Items.EMERALD)
-                        && player.getInventory().countItem(Items.EMERALD) == 1,
-                "taking empties the front first and leaves the back item in place");
-        result = block.use(upper, helper.getLevel(), lower.above(), player, InteractionHand.MAIN_HAND, hit);
-        helper.assertTrue(result.consumesAction() && shelf.isEmpty(28)
-                        && player.getInventory().countItem(Items.EMERALD) == 2,
-                "the back item is reachable once the front is empty");
+        var result = AflBlocks.RETAIL_SHELF_SINGLE.get().use(upper, helper.getLevel(), lower.above(), player, InteractionHand.MAIN_HAND, hit);
+        helper.assertTrue(result.consumesAction() && player.containerMenu != player.inventoryMenu
+                        && player.getMainHandItem().getCount() == 2 && shelf.isEmpty(),
+                "upper-half click opens the shelf menu and moves nothing");
+        player.closeContainer();
     }
 
-    private static void assertFrontFirst(GameTestHelper helper) {
-        int cell = 7;
-        int front = RetailShelfLayout.slot(cell, RetailShelfLayout.FRONT);
-        int back = RetailShelfLayout.slot(cell, RetailShelfLayout.BACK);
-        helper.assertTrue(front == 7 && back == 22, "front rank keeps the V2 slot numbers, back rank is +15");
-        for (boolean aimBack : new boolean[]{false, true}) {
-            helper.assertTrue(RetailShelfSingleBlock.chooseSlot(cell, false, false, true, aimBack) == (aimBack ? back : front),
-                    "placing into an empty cell follows the aim");
-            helper.assertTrue(RetailShelfSingleBlock.chooseSlot(cell, false, true, true, aimBack) == front,
-                    "placing with only the back filled goes to the front");
-            helper.assertTrue(RetailShelfSingleBlock.chooseSlot(cell, true, false, true, aimBack) == -1
-                            && RetailShelfSingleBlock.chooseSlot(cell, true, true, true, aimBack) == -1,
-                    "nothing is placed past a front item");
-            helper.assertTrue(RetailShelfSingleBlock.chooseSlot(cell, true, true, false, aimBack) == front
-                            && RetailShelfSingleBlock.chooseSlot(cell, true, false, false, aimBack) == front,
-                    "taking always starts at the front");
-            helper.assertTrue(RetailShelfSingleBlock.chooseSlot(cell, false, true, false, aimBack) == back
-                            && RetailShelfSingleBlock.chooseSlot(cell, false, false, false, aimBack) == -1,
-                    "the back item is taken once the front is empty");
-        }
+    /** World loot: rolled on the first server tick, searched, and the goods count follows the occupied slots. */
+    private static void assertWorldLoot(GameTestHelper helper, BlockPos lower) {
+        reset(helper, lower);
+        var level = helper.getLevel();
+        BlockState state = AflBlocks.RETAIL_SHELF_SINGLE.get().defaultBlockState();
+        level.setBlock(lower, state.setValue(RetailShelfSingleBlock.HALF, DoubleBlockHalf.LOWER), Block.UPDATE_ALL);
+        level.setBlock(lower.above(), state.setValue(RetailShelfSingleBlock.HALF, DoubleBlockHalf.UPPER), Block.UPDATE_ALL);
+        var shelf = (RetailShelfSingleBlockEntity) level.getBlockEntity(lower);
+        shelf.setLootTable(new ResourceLocation("chests/simple_dungeon"), 42L);
+        helper.assertTrue(shelf.getUpdateTag().getInt("Goods") == 0, "nothing shows before the loot is rolled");
+        shelf.serverTick();
+        int occupied = AflContainerGoods.occupied(List.of(shelf.getItem(0), shelf.getItem(1), shelf.getItem(2), shelf.getItem(3),
+                shelf.getItem(4), shelf.getItem(5), shelf.getItem(6), shelf.getItem(7), shelf.getItem(8)));
+        helper.assertTrue(!AflContainerSearch.isComplete(shelf), "world loot is searched");
+        helper.assertTrue(shelf.getUpdateTag().getInt("Goods")
+                        == AflContainerGoods.shown(occupied, RetailShelfLayout.CELLS, RetailShelfSingleBlockEntity.GOODS_FULL_AT),
+                "goods follow the rolled loot (" + occupied + " slots)");
     }
 
     private static boolean place(GameTestHelper helper, BlockPos lower) {

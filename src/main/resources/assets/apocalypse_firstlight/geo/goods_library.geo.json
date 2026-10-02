@@ -1,0 +1,181 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.goods_library",
+        "texture_width": 512,
+        "texture_height": 512,
+        "visible_bounds_width": 1,
+        "visible_bounds_height": 1,
+        "visible_bounds_offset": [
+          0,
+          0.5,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "boxes_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "cans_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "cans",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "bottles_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "bottles",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "jars_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "jars",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "bags_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "pill_boxes_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "pill_boxes",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "med_bottles",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "med_bottles_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "tubes_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "paint_cans",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "paint_cans_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "spray_cans_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "spray_cans",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "part_boxes",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "cartons_tint",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "cartons",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}

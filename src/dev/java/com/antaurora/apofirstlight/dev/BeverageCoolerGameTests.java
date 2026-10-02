@@ -5,6 +5,8 @@ import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerLayout;
 import com.antaurora.apofirstlight.block.BeverageCoolerDoorRaycast;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.authlib.GameProfile;
@@ -221,8 +223,8 @@ public final class BeverageCoolerGameTests {
             helper.assertTrue(level.getBlockState(master).getValue(BeverageCoolerBlock.LEFT_OPEN),
                     "scheduled tick commits left after animation");
             checkShape(helper, master, Direction.NORTH, true, false);
-            checkDisplay(helper, block, master, player);
-            ApocalypseFirstLight.LOGGER.info("[AFL BEVERAGE COOLER TEST] PASS four facings, four states, full open-leaf ray hits, independent concurrent doors, terminal shapes, delayed commit, 2x1x2 placement, blocked placement, iron tier, four break parts and single drops, creative and explosion cleanup, 60-slot display behind open doors with front-first access and contents drop");
+            checkContents(helper, block, master, player);
+            ApocalypseFirstLight.LOGGER.info("[AFL BEVERAGE COOLER TEST] PASS four facings, four states, full open-leaf ray hits, independent concurrent doors, terminal shapes, delayed commit, 2x1x2 placement, blocked placement, iron tier, four break parts and single drops, creative and explosion cleanup, 18-slot searchable contents opened behind an open door and dropped once");
             helper.succeed();
         });
     }
@@ -276,49 +278,43 @@ public final class BeverageCoolerGameTests {
     }
 
     /**
-     * Left door open, right closed (NORTH): a level aim through shelf 1, column 4 onto the back wall fills the back rank
-     * first, then the front; taking empties the front first. The closed right half is out of reach. Breaking the master
-     * drops the display contents once.
+     * Left door open, right closed (NORTH): a level aim through shelf 1, column 4 onto the back wall opens the contents
+     * (18 slots, 6 x 3 menu; placed by a player, so never searched) and moves nothing by hand. The closed right half is
+     * out of reach. Breaking the master drops the contents once.
      */
-    private static void checkDisplay(GameTestHelper helper, BeverageCoolerBlock block, BlockPos master,
-                                     net.minecraft.server.level.ServerPlayer player) {
+    private static void checkContents(GameTestHelper helper, BeverageCoolerBlock block, BlockPos master,
+                                      net.minecraft.server.level.ServerPlayer player) {
         var level = helper.getLevel();
         var cooler = (BeverageCoolerBlockEntity) level.getBlockEntity(master);
-        helper.assertTrue(cooler != null && cooler.getContainerSize() == 60 && cooler.getMaxStackSize() == 1,
-                "60 display slots of one item");
-        int cell = 6 + 4;
-        int front = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.FRONT), back = BeverageCoolerLayout.slot(cell, BeverageCoolerLayout.BACK);
-        helper.assertTrue(front == 10 && back == 40, "front rank 0-29, back rank 30-59");
-        double x = BeverageCoolerLayout.columnX(4), y = BeverageCoolerLayout.itemY(1);
+        helper.assertTrue(cooler != null && cooler.getContainerSize() == BeverageCoolerBlockEntity.SIZE
+                        && cooler.aflSearchLayout() == AflContainerSearchLayout.GRID_6X3 && AflContainerSearch.isComplete(cooler),
+                "18-slot searchable contents in the 6 x 3 menu, never searched when placed by a player");
+        double x = BeverageCoolerLayout.columnX(4), y = BeverageCoolerLayout.shelfTop(1) + 2.0;
         Vec3 eye = point(master, Direction.NORTH, x, y, -24);
         Vec3 wall = point(master, Direction.NORTH, x, y, 6.8);
         player.setPos(eye.x, eye.y - player.getEyeHeight(), eye.z);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.APPLE, 2));
         var aim = new BlockHitResult(wall, Direction.NORTH, master, false);
         helper.assertTrue(block.use(level.getBlockState(master), level, master, player, InteractionHand.MAIN_HAND, aim).consumesAction()
-                        && cooler.getItem(back).is(Items.APPLE) && cooler.isEmpty(front), "first item lands at the back");
-        block.use(level.getBlockState(master), level, master, player, InteractionHand.MAIN_HAND, aim);
-        helper.assertTrue(cooler.getItem(front).is(Items.APPLE) && player.getMainHandItem().isEmpty(),
-                "with the back filled the next item goes to the front");
-        player.getInventory().selected = 8;
-        block.use(level.getBlockState(master), level, master, player, InteractionHand.MAIN_HAND, aim);
-        helper.assertTrue(cooler.isEmpty(front) && cooler.getItem(back).is(Items.APPLE), "taking empties the front first");
+                        && player.containerMenu != player.inventoryMenu && player.getMainHandItem().getCount() == 2 && cooler.isEmpty(),
+                "aiming behind the open door opens the contents and moves nothing");
+        player.closeContainer();
 
         double rightX = BeverageCoolerLayout.columnX(1);
         Vec3 rightEye = point(master, Direction.NORTH, rightX, y, -24);
         player.setPos(rightEye.x, rightEye.y - player.getEyeHeight(), rightEye.z);
-        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.BREAD));
         BlockPos rightCell = BeverageCoolerBlock.partPosition(master, Direction.NORTH, BeverageCoolerBlock.Part.LOWER_RIGHT);
         var closedAim = new BlockHitResult(point(master, Direction.NORTH, rightX, y, 6.8), Direction.NORTH, rightCell, false);
-        helper.assertTrue(!block.use(level.getBlockState(rightCell), level, rightCell, player, InteractionHand.MAIN_HAND, closedAim).consumesAction()
-                        && cooler.isEmpty(BeverageCoolerLayout.slot(6 + 1, BeverageCoolerLayout.BACK)), "the closed right half is out of reach");
+        helper.assertTrue(!block.use(level.getBlockState(rightCell), level, rightCell, player, InteractionHand.MAIN_HAND, closedAim).consumesAction(),
+                "the closed right half is out of reach");
 
+        cooler.setItem(3, new ItemStack(Items.APPLE));
         level.getEntitiesOfClass(ItemEntity.class, new AABB(master).inflate(4)).forEach(ItemEntity::discard);
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.IRON_PICKAXE));
-        helper.assertTrue(player.gameMode.destroyBlock(master), "break the master with a display item inside");
+        helper.assertTrue(player.gameMode.destroyBlock(master), "break the master with an item inside");
         int apples = level.getEntitiesOfClass(ItemEntity.class, new AABB(master).inflate(4)).stream()
                 .filter(item -> item.getItem().is(Items.APPLE)).mapToInt(item -> item.getItem().getCount()).sum();
-        helper.assertTrue(apples == 1, "the displayed item drops once, got " + apples);
+        helper.assertTrue(apples == 1, "the stored item drops once, got " + apples);
     }
 
     private static void click(BeverageCoolerBlock block, net.minecraft.world.level.Level level,

@@ -9,16 +9,15 @@
 - 主手专用单手 ViewModel 使用 Native 玩家皮肤/袖子渲染，含蓄力、朝屏幕中心前砸、1 tick命中停顿、回位；命中时12个玻璃粒子与轻微镜头反馈。起手不再触发原版挥手。未增加撬棍耐久消耗规则。
 - 动作期间同一玩家/同一机器只能有一项预约；命中前每tick检查工具、热栏、距离、视线、目标BE身份及玩家状态。换物品、移开准星、离开距离、目标消失、退出或打开界面会取消；取消停止对应音效，不回滚已经提交的破碎。动作期间左键取消，重复右键被拦截。细节及验证见 [crowbar_first_person_smash_v1.md](crowbar_first_person_smash_v1.md)。
 - 音效 `apocalypse_firstlight:vending_machine_break` 来自用户最新 `E:/Download/vending_machine_break.ogg`，未转换，SHA256 `19c346082141e16317e1dfdf2a7b363fdaffee05de3d2d748f886d7c98c1ad9a`。实测1.027483秒，碎裂起音约0.04765秒。起手静音；S2C命中确认一起启动声音、命中姿势和破碎显示。等待确认时姿势停留在命中前，避免声音/视觉先于提交。旧音频及分段方案已弃用。
-- 完整玻璃禁止库存拿放。破碎后空手右键对应格拿取，手持物品右键空格放入1件；满格不替换。不实现 Container 或物品能力，漏斗不能绕过玻璃。
-- 默认库存为空，无默认随机商品。可通过破碎后手动填充或未来 worldgen/NBT 初始化；无 GUI、付费系统、多排深度、撬门、开门或 worldgen。
+- **内容（2026-10-01 改，没有实机验证）**：不再逐格拿放真实物品。下半的方块实体改为 9 格可搜索容器（3×3 界面，接入逐格搜索，每格 20 ticks / 1 秒，±15%）；玻璃完好时打不开，砸碎后瞄准正面玻璃区（`frontPoint`）右键打开，提示"搜索 / 查看"（画在准星处）。玻璃完好时漏斗和物品能力都拿不到东西（`canPlaceItem` / `canTakeItem` 要求 `broken`，物品能力返回空），砸碎后按搜索框架的规则。
+- 玻璃后面画通用货物（[container_goods_v1.md](gameplay/container_goods_v1.md)）：12 条货道各一种：易拉罐、瓶子、零食袋，按标准格位的 0.85 画；显示几条 = 有东西的格数 × 12 / 6，向上取整（6 格以上全摆满）。世界战利品在第一次服务端 tick 时生成（隔着玻璃一开始就要能看出满不满），只是生成，格子仍要搜。玩家放置的不用搜。
+- 没有付费系统、撬门、开门或 worldgen。
 
 ## 展示与模型坐标
 
-12 槽 = 4层×3列，单排；每层三条可见货道都可交互。旧版 8 槽 NBT 加载时把每层原左右两列映射到新槽 0、2，中间槽 1 留空；新存档写 `LayoutVersion=2`。
+货道 = 4层×3列（2026-10-01 起只用来摆货物，容器本身是 9 格）。NORTH 局部方块坐标：货道中心 X=(5.63/16,9.23/16,12.83/16)，托盘顶面 Y=(8.0+4.7×层号)/16，托盘前沿 Z=2.75/16（`VendingMachineBlockEntity.laneX / laneY / LANE_FRONT_Z`）。原来的 12 槽实时摆放、旧 8 槽迁移和 `LayoutVersion` 已删除（开发阶段，老存档只读入前 9 格）。
 
-NORTH 局部方块坐标：X=(5.63/16,9.23/16,12.83/16)，中心 Y=(9.35+4.7×层号)/16，Z=4.4/16；物品 FIXED 比例0.15。槽号从下到上、局部负X到正X，每层三个。列分界为 X=7.43/16、11.03/16；准星在玻璃前面投影区按对应行列划分，不存在后排。
-
-源文件 X/Z 加8、Y不变，UV从128像素转换到16单位，无镜像转换。运行时 `body` 为269 cubes，完整玻璃1 cube，破碎残片22 cubes；共用贴图。BER 将不透明主体、商品和透明玻璃分开绘制，按 `broken` 选玻璃模型。BlockState JSON 是粒子占位，实际状态模型由 BER 选择；不是两个 Registry ID。`entity/vending_machine` 纹理必须显式纳入 `minecraft:blocks` 图集；已在 `assets/minecraft/atlases/blocks.json` 添加单图来源，修复游戏内紫黑缺失贴图。
+源文件 X/Z 加8、Y不变，UV从128像素转换到16单位，无镜像转换。运行时 `body` 为269 cubes，完整玻璃1 cube，破碎残片22 cubes；共用贴图。BER 依次画不透明主体、货物和透明玻璃，按 `broken` 选玻璃模型。BlockState JSON 是粒子占位，实际状态模型由 BER 选择；不是两个 Registry ID。`entity/vending_machine` 纹理必须显式纳入 `minecraft:blocks` 图集；已在 `assets/minecraft/atlases/blocks.json` 添加单图来源，修复游戏内紫黑缺失贴图。
 
 为让破洞与后墙区别更清晰，两份源模型的 `back_liner` 单独改为图集中较深的中性灰 `bin` 材质 UV；几何与玻璃碎片数量不变。修改同步到 `scripts/build_vending_machine_blockbench.js`，`scripts/tune_vending_machine_liner.js` 对既有源文件执行相同的幂等 UV 调整，`scripts/export_vending_machine_runtime.js` 导出运行时模型。
 
@@ -53,7 +52,7 @@ NORTH 局部方块坐标：X=(5.63/16,9.23/16,12.83/16)，中心 Y=(9.35+4.7×�
 ## 验证
 
 - `gradlew.bat build runGameTestServer --offline -I scripts/vending-tests.init.gradle --console=plain` 已通过；专用 GameTest 1/1 通过。
-- 专用 GameTest 综合场景包括四朝向放置、下半BE、锁定库存、正面破碎、上下同步、12格拿取、旧 8 槽 NBT 迁移、破损机器掉落及重放、碰撞保留、生存六种工具掉落及单次库存掉落、创造拆除、上方阻挡放置、支撑移除。
+- 专用 GameTest 综合场景包括四朝向放置、下半BE、锁定库存、正面破碎、上下同步、12格拿取、旧 8 槽 NBT 迁移、破损机器掉落及重放、碰撞保留、生存六种工具掉落及单次库存掉落、创造拆除、上方阻挡放置、支撑移除。（以上是当时的运行结果。2026-10-01 GameTest 改写：12 格拿取和旧 8 槽迁移换成"玻璃完好时内容锁住、砸碎后瞄准正面上下两半都能打开界面"，**改写后没有运行**。）
 - 运行时使用项目本地 `GRADLE_USER_HOME=.gradle-user`。
 - 图形客户端验证与独立砸击动作的最新结果见 `crowbar_first_person_smash_v1.md`；服务端测试本身不能证明视觉与音效体验。
 - 背板改色已检查两份源模型与运行时 body UV；独立砸击动画和延迟命中已由 Crowbar First-Person V1 替换原先的即时破碎流程。

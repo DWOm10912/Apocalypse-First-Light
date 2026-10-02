@@ -1,0 +1,6 @@
+{
+  "loot_tables": [
+    "apocalypse_firstlight:chests/pharmacy/",
+    "apocalypse_firstlight:chests/hospital/"
+  ]
+}

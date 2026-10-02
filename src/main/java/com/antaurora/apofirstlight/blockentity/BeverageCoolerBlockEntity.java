@@ -5,6 +5,14 @@ import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.BeverageCoolerLayout;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
+import com.antaurora.apofirstlight.containersearch.AflContainerGoods;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchSettings;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchState;
+import com.antaurora.apofirstlight.containersearch.AflGoodsState;
+import com.antaurora.apofirstlight.containersearch.AflGoodsThemes;
+import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -13,45 +21,67 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * The master cell's block entity: door transitions and the AFL Animated Block Mesh Runtime host (Beverage Cooler V2,
  * tools/build-beverage-cooler-v2.mjs; channels {@code left_open} / {@code right_open}). BlockState owns the durable door
  * poses and is committed {@link BeverageCoolerBlock#ANIMATION_TICKS} after a click; the server announces each started
  * transition with a block event, so clients start the swing at the click instead of at the commit.
- * Also the display: {@link BeverageCoolerLayout#SLOTS} slots of one item each (front rank 0-29, back rank 30-59), saved as
- * {@code Items} and synced to clients for rendering, the same contract as the retail shelf.
- * Power (2026-10-01, machine_balance/beverage_cooler.json): {@link CompressorAppliance} (buffer, lights, compressor
+ * <p>Contents (2026-10-01): a {@link #SIZE}-slot searchable container (6 x 3 menu, quick search), opened through an open
+ * door; no longer a display of real items. What shows on the shelves is the shared goods library
+ * (docs/gameplay/container_goods_v1.md), drinks, one product per shelf cell (BeverageCoolerLayout.CELLS), as many cells
+ * as the contents call for. Clients get the theme and that count, never the items.
+ * <p>Power (2026-10-01, machine_balance/beverage_cooler.json): {@link CompressorAppliance} (buffer, lights, compressor
  * cycle), fed only through the power port on the master's back. Lit = the LIT block state (BeverageCoolerBlock#setLit).
- * No effect on the goods yet.
  */
-public final class BeverageCoolerBlockEntity extends BlockEntity implements AflAnimatedMeshHost, Container,
-        CompressorAppliance.Host {
-    public static final int SIZE = BeverageCoolerLayout.SLOTS;
+public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockEntity
+        implements AflSearchableContainer, AflAnimatedMeshHost, CompressorAppliance.Host, AflContainerGoods.Themed {
+    public static final int SIZE = 18;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/beverage_cooler.json");
+    /** Goods stand in the open behind the glass: 20 ticks (1 s) a slot, +-15 % seed jitter, no rummaging noise. */
+    public static final AflContainerSearchSettings SEARCH_SETTINGS = new AflContainerSearchSettings(20, 0.15F, 0.0F, 0);
+    /** Every shelf cell shows from this many occupied slots on. */
+    public static final int GOODS_FULL_AT = 12;
+    /** Library products (tools/build-goods-library-v1.mjs): drinks, whatever the theme. */
+    public static final Map<String, List<String>> GOODS_PRODUCTS = Map.of(AflGoodsThemes.GENERIC, List.of("cans", "bottles", "cartons"));
     private static final int EVENT_LEFT_DOOR = 1;
     private static final int EVENT_RIGHT_DOOR = 2;
+    private static final String SYNC_SEARCH_COMPLETE = "AflSearchComplete";
 
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
     private boolean contentsDropped;
+    private final AflContainerSearchState search = new AflContainerSearchState();
+    private final AflGoodsState goods = new AflGoodsState(BeverageCoolerLayout.CELLS, GOODS_FULL_AT, GOODS_PRODUCTS);
+    /** Transient: true only while markPlacedByPlayer() commits the one-time search initialization. */
+    private boolean placedByPlayer;
+    private boolean clientSearchComplete = true;
     private Boolean pendingLeft;
     private Boolean pendingRight;
     private long leftFinishTick;
@@ -131,9 +161,10 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
 
     // ---- power: lights and compressor ----
 
-    /** Server, master only (BeverageCoolerBlock#getTicker). */
+    /** Server, master only (BeverageCoolerBlock#getTicker): world loot is rolled at once (it shows through the glass), then the power. */
     public void serverTick() {
         if (level == null || !(getBlockState().getBlock() instanceof BeverageCoolerBlock)) return;
+        if (lootTable != null) unpackLootTable(null);
         power.serverTick();
     }
 
@@ -181,11 +212,7 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
         power.reviveCaps();
     }
 
-    // ---- display (one item per slot) ----
-
-    public boolean isEmpty(int slot) {
-        return items.get(slot).isEmpty();
-    }
+    // ---- contents: Progressive Container Search ----
 
     @Override
     public int getContainerSize() {
@@ -193,102 +220,164 @@ public final class BeverageCoolerBlockEntity extends BlockEntity implements AflA
     }
 
     @Override
-    public int getMaxStackSize() {
-        return 1;
+    protected NonNullList<ItemStack> getItems() {
+        return items;
+    }
+
+    @Override
+    protected void setItems(NonNullList<ItemStack> items) {
+        this.items = items;
+    }
+
+    @Override
+    protected Component getDefaultName() {
+        return Component.translatable("block.apocalypse_firstlight.beverage_cooler");
+    }
+
+    @Override
+    protected AbstractContainerMenu createMenu(int id, Inventory inventory) {
+        return AflContainerSearch.createMenu(id, inventory, this);
+    }
+
+    /** Both doors shut closes every open inventory screen (and so pauses a running search). */
+    @Override
+    public boolean stillValid(Player player) {
+        BlockState state = getBlockState();
+        return super.stillValid(player) && (state.getValue(BeverageCoolerBlock.LEFT_OPEN) || state.getValue(BeverageCoolerBlock.RIGHT_OPEN));
+    }
+
+    /** Every removal path of the master cell ends here (BeverageCoolerBlock#onRemove): revealed slots drop, unseen loot is lost. */
+    public void dropContentsOnce() {
+        if (contentsDropped || level == null) return;
+        contentsDropped = true;
+        AflContainerSearch.dropContentsOnBreak(level, worldPosition, this);
+        clearContent();
+    }
+
+    @Override
+    public AflContainerSearchState aflSearchState() {
+        return search;
+    }
+
+    @Override
+    public AflContainerSearchSettings aflSearchSettings() {
+        return SEARCH_SETTINGS;
+    }
+
+    @Override
+    public AflContainerSearchLayout aflSearchLayout() {
+        return AflContainerSearchLayout.GRID_6X3;
+    }
+
+    @Override
+    public boolean aflSearchRequiredOnInit() {
+        return !placedByPlayer && lootTable != null;
+    }
+
+    public void markPlacedByPlayer() {
+        placedByPlayer = true;
+        AflContainerSearch.isComplete(this);
+        placedByPlayer = false;
+    }
+
+    /** Rolling the loot also fixes the goods theme, from the loot table. */
+    @Override
+    public void unpackLootTable(@Nullable Player player) {
+        goods.recordTheme(lootTable);
+        AflContainerSearch.beforeLootUnpack(this);
+        super.unpackLootTable(player);
     }
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return slot >= 0 && slot < SIZE && items.get(slot).isEmpty() && !stack.isEmpty();
+        return AflContainerSearch.canPlaceItem(this, slot) && super.canPlaceItem(slot, stack);
     }
 
     @Override
-    public boolean isEmpty() {
-        return items.stream().allMatch(ItemStack::isEmpty);
+    public boolean canTakeItem(Container target, int slot, ItemStack stack) {
+        return AflContainerSearch.canTakeItem(this, slot) && super.canTakeItem(target, slot, stack);
     }
 
     @Override
-    public ItemStack getItem(int slot) {
-        return items.get(slot);
+    protected IItemHandler createUnSidedHandler() {
+        return AflContainerSearch.itemHandler(this);
     }
 
     @Override
-    public ItemStack removeItem(int slot, int amount) {
-        ItemStack removed = ContainerHelper.removeItem(items, slot, amount);
-        if (!removed.isEmpty()) sync();
-        return removed;
+    public void onAflSearchCompleted(ServerLevel level) {
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
+    }
+
+    public boolean isSearchCompleteForPrompt() {
+        return level != null && level.isClientSide ? clientSearchComplete : AflContainerSearch.isComplete(this);
+    }
+
+    // ---- goods ----
+
+    /** Client: the shelf cells that show, with their products. */
+    public List<AflGoodsState.Spot> shownGoods() {
+        return goods.shown(worldPosition);
     }
 
     @Override
-    public ItemStack removeItemNoUpdate(int slot) {
-        return ContainerHelper.takeItem(items, slot);
-    }
-
-    @Override
-    public void setItem(int slot, ItemStack stack) {
-        items.set(slot, stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
+    public void setGoodsTheme(String theme) {
+        goods.setTheme(theme);
         sync();
     }
 
+    /** Server: any change of the contents resends the goods count when it moves. */
     @Override
-    public boolean stillValid(Player player) {
-        return Container.stillValidBlockEntity(this, player);
+    public void setChanged() {
+        super.setChanged();
+        if (level != null && !level.isClientSide && lootTable == null && goods.refresh(items))
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
     }
 
-    @Override
-    public void clearContent() {
-        items.replaceAll(ignored -> ItemStack.EMPTY);
-        sync();
-    }
-
-    public void insertOne(int slot, ItemStack source) {
-        if (canPlaceItem(slot, source)) setItem(slot, source);
-    }
-
-    public ItemStack removeOne(int slot) {
-        ItemStack removed = items.get(slot);
-        items.set(slot, ItemStack.EMPTY);
-        sync();
-        return removed;
-    }
-
-    /** Every removal path of the master cell ends here (BeverageCoolerBlock#onRemove): each item drops once. */
-    public void dropContentsOnce() {
-        if (contentsDropped || level == null) return;
-        contentsDropped = true;
-        for (ItemStack item : items) {
-            if (!item.isEmpty()) Block.popResource(level, worldPosition, item.copy());
-        }
-        items.replaceAll(ignored -> ItemStack.EMPTY);
-        setChanged();
-    }
+    // ---- persistence and client sync (power, search completion, goods theme and count; never items) ----
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
         items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
-        ContainerHelper.loadAllItems(tag, items);
-        for (int slot = 0; slot < SIZE; slot++) {
-            if (items.get(slot).getCount() > 1) items.set(slot, items.get(slot).copyWithCount(1));
-        }
+        if (!tryLoadLootTable(tag)) ContainerHelper.loadAllItems(tag, items);
+        search.load(tag);
+        goods.load(tag, items);
         power.load(tag);
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
-        ContainerHelper.saveAllItems(tag, items);
+        if (!trySaveLootTable(tag)) ContainerHelper.saveAllItems(tag, items);
+        search.save(tag);
+        goods.save(tag);
         power.save(tag);
     }
 
     @Override
     public CompoundTag getUpdateTag() {
-        return saveWithoutMetadata();
+        CompoundTag tag = new CompoundTag();
+        power.save(tag);
+        tag.putBoolean(SYNC_SEARCH_COMPLETE, AflContainerSearch.isComplete(this));
+        goods.writeSync(tag, items, lootTable != null);
+        return tag;
     }
 
     @Override
     public ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        power.load(tag);
+        clientSearchComplete = tag.getBoolean(SYNC_SEARCH_COMPLETE);
+        goods.readSync(tag);
+    }
+
+    @Override
+    public void onDataPacket(Connection connection, ClientboundBlockEntityDataPacket packet) {
+        if (packet.getTag() != null) handleUpdateTag(packet.getTag());
     }
 
     private void sync() {
