@@ -56,7 +56,7 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
 - 模型：门头灯箱和 LED 灯条从 `body` 移到 `lights` 骨骼，同样的几何再做一套放在 `lights_lit`（geo 里 `neverRender`，物品图标只显示暗的那套）。
 - 灯管位置（2026-10-01 改）：第一版的灯条是贴在侧壁上的薄片，朝向侧面，正好在门框内沿后面；顶灯条在玻璃开口上沿之上，被门框上横档挡住。门全关上时从外面看不出灯亮没亮（用户实机发现）。现在两侧是 0.36 px 宽的竖灯管（x −6.24..−5.88 和 21.88..22.24），正面落在玻璃开口里面；顶灯管降到 y 27.6–27.8、横跨两列（x −4.8..20.8），在开口上沿（28.15）以下；灯座跟着加宽、下移。离线渲染确认门关着时三根灯管都能透过玻璃看到。
 
-## 已知问题：Sundial Lite 下关着门看不到灯管发光（2026-10-01，暂不修）
+## Sundial 下关着门看不到灯管发光（2026-10-01 发现，已修，未实机验证）
 
 - 现象（用户实机）：不开光影时灯管透过玻璃能看到。开 Sundial Lite v1.2.0 时，门开着三根灯管很亮，门一关，灯管透过玻璃就和普通内壁一样不发光；门外的灯箱照常发光。
 - 原因（查了本机 Oculus 6020952 和光影包）：
@@ -64,10 +64,15 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
   - Sundial Lite 没有这个程序，而且 `blend.gbuffers_block = ONE ZERO ONE ZERO`：只有颜色缓冲（`colortex0`）按 alpha 混合，材质、自发光、法线、光照这些缓冲都被玻璃自己的值直接覆盖。
   - 结果：玻璃后面像素的颜色还在，自发光被玻璃（不发光）盖掉了，光照也换成了玻璃那一格的方块光。
 - 只有 Sundial Lite 这样：本机的 Complementary Reimagined r5.9 三个维度都有 `gbuffers_block_translucent`，玻璃走专门的半透明程序，用户 2026-10-01 实机确认：关着门三根灯管透过玻璃照常发光。用户觉得 Complementary 比 Sundial 柔和，打算以后录视频用 Sundial，准备试 Sundial 完整版（非 Lite）。
-- 用户决定：是个别光影包的问题，先不修，记下来（2026-10-01）。
-- 以后要修的话，两个方向：
-  - 在玻璃之后把亮着的灯管再画一遍，把自发光写回去。需要先确认 Oculus 的 `FullyBufferedMultiBufferSource` 会不会打乱我们手动 flush 的顺序。
-  - 给门玻璃做一套"亮灯玻璃"子部件，跟着门转，亮灯时让玻璃自己带一点自发光、用更亮的光照。缺点：门开着时，透过玻璃看到的外面也会被提亮。
+- 用户先说个别光影包的问题先留着；试了 Sundial 完整版（Alpha Build 2026-09-25）问题还在，因为用户要用 Sundial 录视频，决定修（2026-10-01）。
+- 完整版和 Lite 在这一点上一样：同样没有 `gbuffers_block_translucent`，`gbuffers_block` 的混合设置相同。完整版多的是体素路径追踪（全局光照、反射、接触阴影、降噪，16 个 deferred、15 个 composite 程序）、Distant Horizons / voxy 支持、物理海洋等。它的路径追踪只认体素化的原版方块（贴图取自原版方块图集），我们用方块实体渲染器画的 Mesh 模型不在它的光照世界里：不挡光、灯不参与间接光照、玻璃反射异常，画面显得很怪，帧数也从约 200 降到约 80。不建议用完整版录我们的内容。
+- **修法**（`client/blockmesh/AflAnimatedBlockMeshRenderer`，通用，所有带半透明部件的 Mesh 方块都生效）：玻璃画完后，把可见的发光部件用一个自定义渲染类型 `afl_mesh_emissive_relit` 再画一遍。
+  - 查了 Oculus：`FullyBufferedMultiBufferSource.endBatch(RenderType)` 是空方法，手动 flush 在开光影时不起作用。所有绘制最后由 `GraphTranslucencyRenderOrderManager` 排序：先按透明类别（不透明 → 不透明贴花 → 普通半透明 → 贴花），同一类别里只有分组的实体才按调用先后排。方块实体不分组，所以同类里的先后不确定。
+  - 第一版修法（2026-10-01）用的是 `entityTranslucent`，和玻璃同属普通半透明。用户实机没有效果，很可能补画排到了玻璃前面。
+  - 现在补画类型的透明方式是 glint，Oculus 把它归到"贴花"类，一定排在所有普通半透明（包括玻璃）之后。着色器仍是实体半透明的，在光影下和玻璃走同一个程序：Sundial 里是 `gbuffers_block`，光影包自己的混合设置覆盖 glint 叠加，直接把灯管的颜色、自发光、光照写回去。
+  - 不开光影时，原版按我们手动 flush 的顺序画，glint 是叠加混合，全亮度的灯管叠在玻璃上，只会更亮。
+  - 代价：灯管那几个像素上没有玻璃的颜色和反射（灯管本来就是最亮的地方，看不出来）。门开着时补画和原来画的位置重合，没有变化。
+- 待实机确认（第二版）：Sundial Lite 下关着门灯管发光；Complementary 和不开光影时灯管正常，没有闪烁、没有过亮。
 - 其它放在玻璃后面的自发光部件（以后的设备）在 Sundial Lite 下也会这样，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)。
 
 ## 压缩机声音（2026-10-01）

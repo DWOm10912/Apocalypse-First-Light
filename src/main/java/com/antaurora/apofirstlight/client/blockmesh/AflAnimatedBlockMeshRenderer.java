@@ -4,8 +4,13 @@ import com.antaurora.apofirstlight.blockmesh.*;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.*;
 import com.antaurora.apofirstlight.client.mesh.*;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.Util;
+import net.minecraft.resources.ResourceLocation;
+import java.util.function.Function;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -47,17 +52,38 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                 draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
                         packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT);
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(translucent);
+                // Emissive parts once more, after the glass. Packs without gbuffers_block_translucent (Sundial) draw the
+                // glass with gbuffers_block, which overwrites the material buffers behind it; the redraw writes the
+                // emissive parts' material back (see RelitType for why it lands after the glass).
+                var relit = RelitType.of(profile.texture());
+                VertexConsumer relitVertices = null;
+                for (var part : profile.roots()) {
+                    if (!hasVisibleEmissive(entity, part)) continue;
+                    if (relitVertices == null) relitVertices = buffers.getBuffer(relit);
+                    drawPart(entity, part, Vec3.ZERO, mesh, time, pose, relitVertices, packedLight, packedOverlay,
+                            AflMeshPart.Layer.CUTOUT, true);
+                }
+                if (relitVertices != null && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(relit);
             }
         } finally { pose.popPose(); }
     }
 
-    private static void draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
-                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
-        for (var part : profile.roots()) drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer);
+    private static boolean hasVisibleEmissive(AflAnimatedMeshHost host, Part part) {
+        if (!host.meshPartVisible(part.bone())) return false;
+        if (host.meshPartEmissive(part.bone())) return true;
+        for (var child : part.children()) if (hasVisibleEmissive(host, child)) return true;
+        return false;
     }
 
+    private static void draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
+                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
+        for (var part : profile.roots()) drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer, false);
+    }
+
+    /** emissiveOnly: only the geometry of emissive parts (the after-glass redraw); the pose still walks every part. */
     private static void drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
-                                 PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
+                                 PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
+                                 boolean emissiveOnly) {
         if (!host.meshPartVisible(part.bone())) return;
         AflBlockMeshAnimationState animation = host.meshAnimation();
         pose.pushPose();
@@ -73,10 +99,44 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             pose.scale((float)(rest.scale().x * (1 + (target.scale().x - 1) * t)),
                     (float)(rest.scale().y * (1 + (target.scale().y - 1) * t)),
                     (float)(rest.scale().z * (1 + (target.scale().z - 1) * t)));
-            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(part.bone(), layer), pose, vertices,
-                    host.meshPartEmissive(part.bone()) ? LightTexture.FULL_BRIGHT : light, overlay, 1, 1, 1, 1, null);
-            for (var child : part.children()) drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer);
+            boolean emissive = host.meshPartEmissive(part.bone());
+            if (emissive || !emissiveOnly)
+                AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(part.bone(), layer), pose, vertices,
+                        emissive ? LightTexture.FULL_BRIGHT : light, overlay, 1, 1, 1, 1, null);
+            for (var child : part.children())
+                drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer, emissiveOnly);
         } finally { pose.popPose(); }
+    }
+
+    /**
+     * The after-glass redraw of emissive parts. With shaders on, Oculus 6020952 batches every draw (its endBatch(type) is a
+     * no-op) and orders render types by transparency class (opaque, opaque decal, general translucent, decal, ...); within
+     * a class it only keeps call order for draws grouped per entity, and block entities are not grouped, so a second
+     * plain translucent type may land before the glass. GLINT transparency puts this type in the decal class, drawn after
+     * every general translucent type. Its shader is the entity translucent one, so a pack maps it to the same program as
+     * the glass, and the pack's blend for that program (Sundial: replace, colour alpha-blended) applies. Without shaders
+     * the explicit flushes keep the order and the additive glint blend lays the full-bright parts over the glass as light.
+     */
+    private static final class RelitType extends RenderType {
+        private static final Function<ResourceLocation, RenderType> TYPES = Util.memoize(RelitType::build);
+
+        private static RenderType build(ResourceLocation texture) {
+            return create("afl_mesh_emissive_relit", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, false, false,
+                    CompositeState.builder().setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
+                            .setTextureState(new TextureStateShard(texture, false, false))
+                            .setTransparencyState(GLINT_TRANSPARENCY).setCullState(NO_CULL)
+                            .setLightmapState(LIGHTMAP).setOverlayState(OVERLAY)
+                            .setDepthTestState(LEQUAL_DEPTH_TEST).setWriteMaskState(COLOR_WRITE)
+                            .createCompositeState(false));
+        }
+
+        static RenderType of(ResourceLocation texture) {
+            return TYPES.apply(texture);
+        }
+
+        private RelitType() {
+            super("unused", DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 0, false, false, () -> {}, () -> {});
+        }
     }
 
     private static void rotate(PoseStack pose, double x, double y, double z) {

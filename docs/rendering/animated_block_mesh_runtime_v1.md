@@ -111,7 +111,16 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 
 透明排序和 shader alpha 阈值仍受既有 [Transparent Hybrid Mesh 限制](../native_guns/transparent_hybrid_mesh_runtime_v1.md) 约束，不保证相交玻璃/液体或不同 shader pack 的透明 PBR。
 
-**已知光影包差异（2026-10-01，用户实机）**：Oculus 用 `gbuffers_block_translucent` 画方块实体的透明层，光影包没有这个程序就退回 `gbuffers_block`。Sundial Lite v1.2.0 就没有，而且 `gbuffers_block` 只对颜色缓冲做 alpha 混合，所以透明部件后面那些像素的材质、自发光、法线、光照都被透明部件的值覆盖：玻璃后面的自发光部件不再发光，光照也变成玻璃所在格的光照。Complementary Reimagined r5.9 有这个程序，用户实机确认不受影响（2026-10-01）。用户决定先不处理。实例见 [Beverage Cooler V2](../models/beverage_cooler_v2.md) 的"已知问题"。
+**已知光影包差异（2026-10-01，用户实机）**：Oculus 用 `gbuffers_block_translucent` 画方块实体的透明层，光影包没有这个程序就退回 `gbuffers_block`。Sundial Lite v1.2.0 就没有，而且 `gbuffers_block` 只对颜色缓冲做 alpha 混合，所以透明部件后面那些像素的材质、自发光、法线、光照都被透明部件的值覆盖：玻璃后面的自发光部件不再发光，光照也变成玻璃所在格的光照。Complementary Reimagined r5.9 有这个程序，用户实机确认不受影响（2026-10-01）。
+
+**发光部件在半透明层之后补画（2026-10-01）**：有半透明部件时，renderer 在画完半透明层后，把当前可见的发光部件（`meshPartEmissive`）用自定义渲染类型 `afl_mesh_emissive_relit`（`RelitType`）再画一遍（全亮度），把被透明部件覆盖掉的材质写回去。排序依据：
+- Oculus 6020952 的 `FullyBufferedMultiBufferSource.endBatch(RenderType)` 是空方法，开光影时上面的定向 flush 都不起作用。
+- 绘制顺序由 `GraphTranslucencyRenderOrderManager` 决定：先按透明类别分组，顺序是不透明 → 不透明贴花 → 普通半透明 → 贴花（glint / crumbling 透明）→ water_mask → lines。分类见 `MixinCompositeRenderType`。
+- 同一类别里，只有 Oculus 分了组的绘制（实体，`MixinLevelRenderer` 的 pre/postRenderEntity）才按调用先后连边排序；方块实体不分组，同类里的先后不确定。第一版用 `entityTranslucent` 补画，实机无效。
+- 所以补画类型用 glint 透明方式进"贴花"类，一定在所有普通半透明之后。着色器用实体半透明的，光影包会把它映射到和玻璃相同的程序，并用该程序自己的混合设置（Sundial：颜色 alpha 混合，其余直接写入）。
+- 不开光影时由上面的定向 flush 保证顺序，glint 叠加混合让全亮度部件在玻璃上显得更亮。
+
+没有半透明部件或没有可见发光部件的资产不补画，行为不变。第二版待实机确认（见冷柜文档）。
 
 ## Bounds、缓存与 reload
 
