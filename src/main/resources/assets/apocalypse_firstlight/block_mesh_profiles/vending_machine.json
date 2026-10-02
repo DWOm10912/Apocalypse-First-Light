@@ -1,0 +1,138 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/vending_machine.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/vending_machine.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.003125,
+    -0.015625,
+    -0.015625,
+    1.003125,
+    2.003125,
+    1.015625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_3": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_4": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_5": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_6": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_7": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_8": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_9": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_10": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "coil_11": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "glass": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lights_lit": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

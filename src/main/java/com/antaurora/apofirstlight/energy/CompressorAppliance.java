@@ -20,6 +20,9 @@ import java.util.function.Supplier;
  * the beginning of an on phase and stops at its end or when the buffer cannot pay, so it starts at most once a cycle;
  * start / stop are played here, the running loop on clients (client/BlockLoopSoundController) from the synced
  * {@link #compressorRunning()}. Values: machine_balance (MachineBalanceManager.ApplianceBalance).
+ *
+ * <p>Lights only (the Vending Machine): built without compressor sounds, it never runs the compressor and ignores the
+ * balance's compressor fields; the buffer and the lights work the same.
  */
 public final class CompressorAppliance {
     private static final String ENERGY_KEY = "EnergyStored";
@@ -112,6 +115,11 @@ public final class CompressorAppliance {
         this.pitch = pitch;
     }
 
+    /** Lights only, no compressor. */
+    public <T extends BlockEntity & Host> CompressorAppliance(T owner, Supplier<MachineBalanceManager.ApplianceBalance> balance) {
+        this(owner, balance, null, null, 1.0F);
+    }
+
     /** Server, master only, every tick. */
     public void serverTick() {
         Level level = owner.getLevel();
@@ -130,6 +138,10 @@ public final class CompressorAppliance {
         }
         if (lit) {
             energyStored -= values.lightFePerTick();
+            if (startSound == null) {
+                if (energyStored != before) owner.setChanged();
+                return;
+            }
             int period = values.compressorOnTicks() + values.compressorOffTicks();
             int phase = Math.floorMod(compressorCycle, period);
             if (!compressorRunning && phase == 0 && energyStored >= values.compressorFePerTick()) setCompressor(level, true);

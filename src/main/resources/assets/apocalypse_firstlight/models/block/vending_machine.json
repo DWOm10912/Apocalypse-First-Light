@@ -1,6 +1,5 @@
 {
   "textures": {
-    "particle": "minecraft:block/gray_concrete"
-  },
-  "elements": []
+    "particle": "apocalypse_firstlight:block/vending_machine"
+  }
 }

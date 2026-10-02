@@ -11,7 +11,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
 | `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-1.78,-3.254,0.613]`、scale 0.328（V2 Mesh，2026-10-01 修正为正面朝外，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |
 | `chest_freezer` | 2026-10-01 起由 `tools/build-chest-freezer-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-2.5,-1.063,2.138]`、scale 0.442（V2 Mesh，正面朝外，见 [chest_freezer_v2.md](chest_freezer_v2.md)） |
-| `vending_machine` | `[0,-4,0]` |
+| `vending_machine` | 2026-10-01 起由 `tools/build-vending-machine-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-0.014,-2.883,-1.412]`、scale 0.397（V2 Mesh，正面朝外，见 [vending_machine_v2.md](vending_machine_v2.md)） |
 | `modern_office_desk` | `[0,0,0]` |
 | `modern_lcd_monitor` | `[0,0.7,0]` |
 | `office_computer_station` | `[0,1,0]` |

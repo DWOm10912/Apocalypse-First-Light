@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
+import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.item.VendingMachineBlockItem;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.interaction.CrowbarSmashAction;
@@ -21,16 +22,23 @@ import net.minecraft.world.phys.*;
 import net.minecraft.world.phys.shapes.*;
 
 /**
- * One identity, lower-owned contents (a searchable container since 2026-10-01: searched through broken glass, the goods
- * behind the glass from the shared goods library), fixed cabinet collision in both glass states.
+ * Vending Machine V2 (2026-10-01, tools/build-vending-machine-v2.mjs, Pure Mesh): one identity over two halves, lower-owned
+ * contents (a searchable container: searched through broken glass, the goods behind the glass from the shared goods
+ * library), fixed cabinet collision in both glass states. {@link #BROKEN} and {@link #LIT} on both halves; lights only
+ * (no cooling), fed through the standard power port on the lower half's back: LIT gives block light {@link #LIGHT_LEVEL}
+ * and the mesh's lit light set (VendingMachineBlockEntity, energy/CompressorAppliance in lights-only mode).
  */
-public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty BROKEN = BooleanProperty.create("broken");
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    public static final int LIGHT_LEVEL = 8;
+    /** The glass opening (tools/build-vending-machine-v2.mjs OPENING), block px in the north-facing frame, both halves. */
+    private static final double GLASS_X0 = 5.2, GLASS_X1 = 14.8, GLASS_Y0 = 7.6, GLASS_Y1 = 26.6;
     public VendingMachineBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH)
-                .setValue(HALF, DoubleBlockHalf.LOWER).setValue(BROKEN, false));
+                .setValue(HALF, DoubleBlockHalf.LOWER).setValue(BROKEN, false).setValue(LIT, false));
     }
     public static BlockPos lower(BlockState state, BlockPos pos) {
         return state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
@@ -53,7 +61,7 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         if (d == (upper ? Direction.DOWN : Direction.UP)) {
             if (!n.is(this) || n.getValue(HALF) == s.getValue(HALF) || n.getValue(FACING) != s.getValue(FACING))
                 return Blocks.AIR.defaultBlockState();
-            if (upper) return s.setValue(BROKEN, n.getValue(BROKEN));
+            if (upper) return s.setValue(BROKEN, n.getValue(BROKEN)).setValue(LIT, n.getValue(LIT));
         }
         if (!upper && d == Direction.DOWN && !n.isFaceSturdy(l, np, Direction.UP)) return Blocks.AIR.defaultBlockState();
         return s;
@@ -77,10 +85,23 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         if (!s.is(next.getBlock()) && l.getBlockEntity(p) instanceof VendingMachineBlockEntity be) be.dropContentsOnce();
         super.onRemove(s,l,p,next,moving);
     }
+    /** Lights on / off: LIT on both halves (light level and the mesh's light set follow it). */
+    public void setLit(Level level, BlockPos lower, boolean lit) {
+        BlockState state = level.getBlockState(lower);
+        if (!state.is(this) || state.getValue(HALF) != DoubleBlockHalf.LOWER || state.getValue(LIT) == lit) return;
+        level.setBlock(lower, state.setValue(LIT, lit), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
+        BlockState upper = level.getBlockState(lower.above());
+        if (upper.is(this) && upper.getValue(HALF) == DoubleBlockHalf.UPPER)
+            level.setBlock(lower.above(), upper.setValue(LIT, lit), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
+    }
+    /** The power port (tools/build-vending-machine-v2.mjs POWER_PORT): the lower half's back face only. */
+    @Override public boolean hasPowerPort(BlockState state, Direction face) {
+        return state.getValue(HALF) == DoubleBlockHalf.LOWER && face == state.getValue(FACING).getOpposite();
+    }
     @Override public BlockEntity newBlockEntity(BlockPos p, BlockState s) {
         return s.getValue(HALF) == DoubleBlockHalf.LOWER ? new VendingMachineBlockEntity(p,s) : null;
     }
-    /** Server, lower half: rolls pending world loot at once (VendingMachineBlockEntity#serverTick). */
+    /** Server, lower half: rolls pending world loot at once and runs the lights' power (VendingMachineBlockEntity#serverTick). */
     @Override @SuppressWarnings("unchecked")
     public <T extends BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(Level level, BlockState state,
                                                                                                        net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
@@ -93,7 +114,7 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         // Tiny symmetric inset matches the saved source. Never remove cabinet collision when glass breaks.
         return box(.18,0,.18,15.82,16,15.82);
     }
-    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b) { b.add(FACING,HALF,BROKEN); }
+    @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> b) { b.add(FACING,HALF,BROKEN,LIT); }
     @Override public BlockState rotate(BlockState s, Rotation r) { return s.setValue(FACING,r.rotate(s.getValue(FACING))); }
     @Override public BlockState mirror(BlockState s, Mirror m) { return s.rotate(m.getRotation(s.getValue(FACING))); }
 
@@ -112,8 +133,8 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         Vec3 e = canonical(s.getValue(FACING),eye.subtract(origin));
         Vec3 h = canonical(s.getValue(FACING),hit.getLocation().subtract(origin));
         if (e.z >= h.z || h.z > .08 || h.z < -.02) return null;
-        // Match the glass's saved source X/Y, not the full front/payment panel.
-        return h.x >= 4.26/16 && h.x <= 14.33/16 && h.y >= 7.78/16 && h.y <= 26.68/16 ? h : null;
+        // the glass opening only, not the payment column, header or bin
+        return h.x >= GLASS_X0/16 && h.x <= GLASS_X1/16 && h.y >= GLASS_Y0/16 && h.y <= GLASS_Y1/16 ? h : null;
     }
     @Override public InteractionResult use(BlockState s, Level l, BlockPos p, Player player, InteractionHand hand, BlockHitResult hit) {
         Vec3 point = frontPoint(s,p,player.getEyePosition(),hit);

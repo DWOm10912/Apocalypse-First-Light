@@ -18,12 +18,15 @@ import software.bernie.geckolib.cache.GeckoLibCache;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.util.RenderUtils;
 
+import java.util.function.Predicate;
+
 /** Plain-Item bridge into the Phase 1 AFL Mesh cache and CPU triangle backend. */
 public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRenderer {
     private final ResourceLocation geometry;
     private final ResourceLocation texture;
     private final double verticalOffset;
     private final double groundVerticalOffset;
+    private Predicate<ItemStack> opaqueOnly = stack -> false;
 
     public AflStaticMeshItemRenderer() {
         this("12_gauge_round", "12_gauge_round_mesh", 0.32, 0.32);
@@ -47,6 +50,12 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
         this.groundVerticalOffset = groundVerticalOffset;
     }
 
+    /** Stacks drawn without the mesh's translucent layer (the Vending Machine's broken-glass item: no glass). */
+    public AflStaticMeshItemRenderer opaqueOnly(Predicate<ItemStack> opaqueOnly) {
+        this.opaqueOnly = opaqueOnly;
+        return this;
+    }
+
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose,
                              MultiBufferSource buffers, int light, int overlay) {
@@ -62,7 +71,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
             // ItemRenderer already applied the original display transforms and translated -0.5 on each axis.
             // Mesh vertices are centered on X/Z=0; put them at the old item model's center.
             pose.translate(0.5, context == ItemDisplayContext.GROUND ? groundVerticalOffset : verticalOffset, 0.5);
-            if (mesh.hasTranslucent()) {
+            if (mesh.hasTranslucent() && !opaqueOnly.test(stack)) {
                 com.antaurora.apofirstlight.client.mesh.AflHybridMeshRendering.renderAtCurrentPose(
                         geometry, texture, pose, buffers, light, overlay);
             } else {

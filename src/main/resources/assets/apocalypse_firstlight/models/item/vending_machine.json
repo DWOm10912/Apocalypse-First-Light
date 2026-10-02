@@ -1,30 +1,36 @@
 {
   "parent": "builtin/entity",
+  "gui_light": "side",
   "textures": {
-    "particle": "minecraft:block/gray_concrete"
+    "particle": "apocalypse_firstlight:block/vending_machine"
   },
   "display": {
     "gui": {
       "rotation": [
-        20,
-        35,
+        25,
+        225,
         0
       ],
       "translation": [
-        0,
-        -4,
-        0
+        -0.014,
+        -2.883,
+        -1.412
       ],
       "scale": [
-        0.4,
-        0.4,
-        0.4
+        0.397,
+        0.397,
+        0.397
       ]
     },
     "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
       "translation": [
         0,
-        2,
+        1.025,
         0
       ],
       "scale": [
@@ -36,37 +42,52 @@
     "fixed": {
       "rotation": [
         0,
-        180,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -3.555,
         0
       ],
       "scale": [
-        0.4,
-        0.4,
-        0.4
+        0.45,
+        0.45,
+        0.45
       ]
     },
     "thirdperson_righthand": {
       "rotation": [
         75,
-        45,
+        225,
         0
       ],
+      "translation": [
+        -0.01,
+        1.886,
+        -2.154
+      ],
       "scale": [
-        0.25,
-        0.25,
-        0.25
+        0.28,
+        0.28,
+        0.28
       ]
     },
     "firstperson_righthand": {
       "rotation": [
         0,
-        45,
+        225,
         0
       ],
+      "translation": [
+        -0.011,
+        -1.528,
+        -0.011
+      ],
       "scale": [
-        0.3,
-        0.3,
-        0.3
+        0.32,
+        0.32,
+        0.32
       ]
     }
   }

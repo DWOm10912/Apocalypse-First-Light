@@ -3,7 +3,7 @@
 ## 审查与取舍
 
 - `CrowbarItem` 是普通单目标近战 Item：6伤害、13 tick蓄力、480耐久，无自定义右键/使用持续时间；此次保留该物品和攻击逻辑。
-- 售货机使用单一注册ID `vending_machine`，`broken`属性选择BER的两套玻璃模型，下半BE保存4×3展示槽。此次保留模型、掉落破损标记、库存迁移及拿放逻辑。
+- 售货机使用单一注册ID `vending_machine`，`broken`属性选择BER的两套玻璃模型，下半BE保存4×3展示槽。此次保留模型、掉落破损标记、库存迁移及拿放逻辑。（当时的情况。现在：2026-10-01 起内容是 9 格可搜索容器；同一天售货机换成 V2 Mesh 模型，`broken` 只是不画玻璃、没有残片，砸玻璃的区域换成新窗口，动作、音效和时间轴不变，见 [vending_machine_v2.md](models/vending_machine_v2.md)。）
 - `MaintenanceAttachmentHud` 和 `WorldInteractionHint`（原 `VendingMachineHint`，2026-09-29 改名，售货机逻辑不变，同一提示也用于工业储物柜） 已共用 `AttachmentHintStyle`：150ms渐入淡出、灰字、深灰底、无文字阴影。继续复用；动作中提示淡出。
 - Native第一人称入口是`RenderHandEvent`，枪械Geo骨骼定位点经`NativeHandBinding`交给`NativePlayerArmRenderer`绘制玩家皮肤和袖子。此次复用这两项接触坐标/渲染能力，抽取模板中的右臂Classic/Slim预览结构。
 - `NativeCameraBoneConsumer` 当前是BR51限定的枪械动画消费者；撬棍使用自身动作时钟的短促命中镜头反馈。没有接入枪械弹药、ADS、射击控制器或枪械recoil状态。
@@ -39,7 +39,7 @@
 
 新增有方向限制的`CrowbarSmashPacket`（S2C START/IMPACT/CANCEL/END）和`Cancel`（C2S动作UUID）；C2S不能提交破碎，不能取消别人的动作。本功能当时将`AflNetwork`协议从24升为25；厕所隔间门报文接入后当前为26，双方需同版。广播给跟踪玩家及本人，单次动作无逐帧/逐tick广播。
 
-START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_machine_break`。取消停止对应声音；已提交的破碎不回滚。恢复期间禁止该玩家提前拿放展示物。独立多人延迟环境仍待验证。
+START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_machine_break`。取消停止对应声音；已提交的破碎不回滚。恢复期间禁止该玩家提前打开售货机（当时是拿放展示物，2026-10-01 起是搜索界面）。独立多人延迟环境仍待验证。
 
 ## 变更文件
 
@@ -63,7 +63,7 @@ START仅启动动作；IMPACT给本人及跟踪观察者播放一次`vending_mac
 
 ## 验证
 
-- `build runGameTestServer --offline -I scripts/vending-tests.init.gradle`：通过，综合GameTest 1/1。包含四朝向延迟命中、重复请求、取消、同机竞争，以及原12槽/旧8槽迁移/破损掉落重放/生存工具掉落规则回归。
+- `build runGameTestServer --offline -I scripts/vending-tests.init.gradle`：通过，综合GameTest 1/1。包含四朝向延迟命中、重复请求、取消、同机竞争，以及原12槽/旧8槽迁移/破损掉落重放/生存工具掉落规则回归。（V1 时期的结果；2026-10-01 改写后的 GameTest 没有运行。）
 - 图形客户端探针：最新1.027483秒音频/33 tick时间轴通过；帧1/8/10/11为完整，帧12开始破碎，恢复完成PASS。已检查右手待机和中心砸击截图。一次探针因窗口鼠标视角偏离而超时，固定测试视线后重跑通过；该固定仅限开发探针。独立测试目录为`build/crowbar-smash-client`，使用复制的测试世界，未操作用户正式存档。
 - 截图：`build/crowbar-smash-client/screenshots/crowbar_smash_idle_hint.png`、`crowbar_smash_t12.png`。测试客户端为英文语言，提示显示Break glass；中文资源仍为“破坏玻璃”。
 - 独立多人延迟/第三方着色器、实际扬声器听感与主观打击感尚未验证。

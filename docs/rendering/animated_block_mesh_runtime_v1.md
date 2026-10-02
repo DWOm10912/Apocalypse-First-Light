@@ -6,7 +6,7 @@
 
 **STATIC PROP → baked model / OBJ**：桌、椅、垃圾桶、静态货架、钢支撑、HVAC、电气面板等永久静态资产继续原路径。
 
-**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。cash register 同理：钱箱要能拉出来搜刮，2026-09-30 改走本运行时（可动部件是钱箱，[cash_register_v2.md](../models/cash_register_v2.md)）。beverage cooler 也于 2026-09-30 迁移，只换了渲染：两扇门是可动部件；门逻辑、四格结构和形状仍是原来的代码，门开始转动由方块事件通知客户端（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）。chest freezer 于 2026-10-01 迁移：两片滑盖是可动部件（平移动画）；盖子状态机、两格结构和形状仍是原来的代码，滑盖开始由方块事件通知客户端（[chest_freezer_v2.md](../models/chest_freezer_v2.md)）。
+**ANIMATED PROP → AFL Animated Block Mesh Runtime**：仅用于几何需要连续运动的柜门、箱盖、滑门、机器运动部件。现有 glass double door、stall door、machines **没有迁移**；lead chest 已于 2026-09-30 迁移（当前外观 V3，[lead_chest_v3.md](../models/lead_chest_v3.md)）。industrial electrical box 因为要能开门搜刮，2026-09-30 也改走本运行时（门是可动部件，[industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)）；它不再是上面"静态电气面板"那一类。cash register 同理：钱箱要能拉出来搜刮，2026-09-30 改走本运行时（可动部件是钱箱，[cash_register_v2.md](../models/cash_register_v2.md)）。beverage cooler 也于 2026-09-30 迁移，只换了渲染：两扇门是可动部件；门逻辑、四格结构和形状仍是原来的代码，门开始转动由方块事件通知客户端（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）。chest freezer 于 2026-10-01 迁移：两片滑盖是可动部件（平移动画）；盖子状态机、两格结构和形状仍是原来的代码，滑盖开始由方块事件通知客户端（[chest_freezer_v2.md](../models/chest_freezer_v2.md)）。vending machine 于 2026-10-01 重做（V2）并改走本运行时：没有动画，只用部件显示（`broken` 时不画玻璃，两套灯），两半结构、砸玻璃和形状仍是原来的代码（[vending_machine_v2.md](../models/vending_machine_v2.md)）。
 
 **首个正式资产（2026-09-29）**：`industrial_locker` V2，见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 
@@ -107,7 +107,7 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 - `meshPartVisible(part)`（默认 true）：返回 false 时跳过这个 part 的几何体和它的子 part。用于同一位置的两套部件互相替换，例如指示灯的暗灯 / 亮灯两套镜片（亮灯那套在贴图 `_s` 的 alpha 里带 LabPBR 自发光，这样光影下只有亮着的灯发光）。
 - `meshPartEmissive(part)`（默认 false）：返回 true 时这个 part 用 `LightTexture.FULL_BRIGHT` 代替方块光照。
 
-已有资产都不覆盖这两个方法，行为不变。备用的那套部件在 geo 骨骼上标 `neverRender: true`，`AflStaticMeshItemRenderer` 会跳过这种骨骼，所以物品模型只显示默认那套。使用者：[Charging Station V1](../models/charging_station_v1.md) 的指示灯，[Beverage Cooler V2](../models/beverage_cooler_v2.md) 的门头灯箱和 LED 灯条（2026-10-01），[Chest Freezer V2](../models/chest_freezer_v2.md) 的显示屏和电源指示灯（2026-10-01）。带玻璃等半透明部件的物品走 `AflHybridMeshRendering`，它也跳过 `neverRender` 骨骼。
+已有资产都不覆盖这两个方法，行为不变。备用的那套部件在 geo 骨骼上标 `neverRender: true`，`AflStaticMeshItemRenderer` 会跳过这种骨骼，所以物品模型只显示默认那套。使用者：[Charging Station V1](../models/charging_station_v1.md) 的指示灯，[Beverage Cooler V2](../models/beverage_cooler_v2.md) 的门头灯箱和 LED 灯条（2026-10-01），[Chest Freezer V2](../models/chest_freezer_v2.md) 的显示屏和电源指示灯（2026-10-01），[Vending Machine V2](../models/vending_machine_v2.md) 的灯箱、LED 灯条、显示屏，砸碎后不画的玻璃，以及有货的货道不画的螺旋前段（2026-10-01）。带玻璃等半透明部件的物品走 `AflHybridMeshRendering`，它也跳过 `neverRender` 骨骼。
 
 透明排序和 shader alpha 阈值仍受既有 [Transparent Hybrid Mesh 限制](../native_guns/transparent_hybrid_mesh_runtime_v1.md) 约束，不保证相交玻璃/液体或不同 shader pack 的透明 PBR。
 

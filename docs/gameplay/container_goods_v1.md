@@ -1,8 +1,8 @@
 # Container Goods V1（容器货物显示）
 
-状态（2026-10-01）：**已实现，没有实机验证**。`compileJava --offline` PASS（main 源集包含 `src/dev`）。已接入：
+状态（2026-10-01）：**已实现**。货架、饮料冷柜、售货机这一轮（商品库）**用户实机 PASS**；冰柜和储物柜的货物没有单独的 PASS 记录。以后：等饮料、各种小物件的 Mesh 模型做多了，再回来换掉或扩充商品库（用户 2026-10-01：先保持现在这样）。`compileJava --offline` PASS（main 源集包含 `src/dev`）。已接入：
 - 冷冻冰柜（[chest_freezer_v2.md](../models/chest_freezer_v2.md)）、工业储物柜（[industrial_locker_v2.md](../models/industrial_locker_v2.md)）：各自生成器里的专用货物模型；
-- 货架（[retail_shelf_v3.md](../models/retail_shelf_v3.md)）、饮料冷柜（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）、自动售货机（[vending_machine_runtime.md](../vending_machine_runtime.md)）：共用的商品库，见"商品库"。这三个原来是实时摆放真实物品，2026-10-01 用户决定改成搜索 + 通用货物（以后的武器架仍实时显示）。
+- 货架（[retail_shelf_v3.md](../models/retail_shelf_v3.md)）、饮料冷柜（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）、自动售货机（[vending_machine_v2.md](../models/vending_machine_v2.md)）：共用的商品库，见"商品库"。这三个原来是实时摆放真实物品，2026-10-01 用户决定改成搜索 + 通用货物（以后的武器架仍实时显示）。
 
 ## 是什么
 
@@ -69,7 +69,7 @@
 这三个容器的格位多（15–30 个）、尺寸相近，所以不像储物柜那样每个位置建一份骨骼，而是共用一个商品库：每种商品只建一次模，渲染器在每个显示的格位上画一遍，颜色用顶点色随机。
 
 - 生成器：`tools/build-goods-library-v1.mjs`（`--check`、`--preview DIR`）。输出 `geo/goods_library.geo.json`、`meshes/goods_library.aflmesh.json`、`textures/block/goods_library{,_s,_n}.png`（512 atlas，13.25 texel/px），可编辑源 `src/main/blockbench/goods_library.bbmodel`。没有 profile，渲染器直接按骨骼画。
-- 每种商品按标准格位建模：宽 4、高 4.6、深 8 px，正面朝 -z，原点在格位底面中心；容器按自己的格位缩放（货架 1.0、饮料冷柜 0.93、售货机 0.85），商品前沿对齐格位前沿。
+- 每种商品按标准格位建模：宽 4、高 4.6、深 8 px，正面朝 -z，原点在格位底面中心；容器按自己的格位缩放（货架 1.0、饮料冷柜 0.93、售货机 0.76：2026-10-01 售货机 V2 货道变窄，原来是 0.85），商品前沿对齐格位前沿。
 - 每种商品两个骨骼：`<商品>`（固定颜色：瓶盖、金属盖、白纸、牛皮纸）和 `<商品>_tint`（浅中性色 214，按格位上色）。9 种包装色（暗红、蓝、绿、黄、橙、紫、青、白、棕，乘在 214 上，最亮约 184）。
 - 为了每帧重画也不卡，面数压得很低，没有倒角：
 

@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.blockentity;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
+import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshAnimationState;
 import com.antaurora.apofirstlight.containersearch.AflContainerGoods;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchLayout;
@@ -9,13 +12,17 @@ import com.antaurora.apofirstlight.containersearch.AflContainerSearchState;
 import com.antaurora.apofirstlight.containersearch.AflGoodsState;
 import com.antaurora.apofirstlight.containersearch.AflGoodsThemes;
 import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
+import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
@@ -27,6 +34,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,8 +51,16 @@ import java.util.Map;
  * ({@link #ROWS} x {@link #COLUMNS}), as many lanes as the contents call for; world loot is rolled on the first server
  * tick so they show through intact glass. Hoppers and item handlers reach it only once the glass is broken, then under
  * the search framework's rules. Clients get the theme and that count, never the items.
+ *
+ * <p>V2 (2026-10-01): drawn by the AFL Animated Block Mesh Runtime (block_mesh_profiles/vending_machine.json, no
+ * animation): the 'glass' part hides once the glass is broken (an empty frame, no shards), 'lights' / 'lights_lit' follow
+ * LIT. Power (machine_balance/vending_machine.json): {@link CompressorAppliance} in lights-only mode, fed only through the
+ * power port on the lower half's back.
  */
-public final class VendingMachineBlockEntity extends RandomizableContainerBlockEntity implements AflSearchableContainer, AflContainerGoods.Themed {
+public final class VendingMachineBlockEntity extends RandomizableContainerBlockEntity
+        implements AflSearchableContainer, AflContainerGoods.Themed, AflAnimatedMeshHost, CompressorAppliance.Host {
+    public static final ResourceLocation MESH_PROFILE =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/vending_machine.json");
     public static final int ROWS = 4;
     public static final int COLUMNS = 3;
     public static final int LANES = ROWS * COLUMNS;
@@ -60,21 +79,34 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     /** Transient: true only while markPlacedByPlayer() commits the one-time search initialization. */
     private boolean placedByPlayer;
     private boolean clientSearchComplete = true;
+    /** Mesh parts 'coil_<lane>' (tools/build-vending-machine-v2.mjs COIL_BONES) to their lanes. */
+    private static final Map<String, Integer> COIL_LANES = java.util.stream.IntStream.range(0, LANES).boxed()
+            .collect(java.util.stream.Collectors.toUnmodifiableMap(lane -> "coil_" + lane, lane -> lane));
+    /** Client, render only: the lanes the last {@link #shownGoods()} filled. */
+    private int shownLanes;
+    private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
+    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::vendingMachine);
 
     public VendingMachineBlockEntity(BlockPos p, BlockState s) {
         super(AflBlockEntities.VENDING_MACHINE.get(), p, s);
     }
 
-    /** A lane's tray: x (centre), y (tray top), z (the tray's front edge), blocks, in the north-facing frame. */
+    /**
+     * A lane (tools/build-vending-machine-v2.mjs LANE_X / TRAY_TOPS / GOODS_FRONT_Z), source px: the block's bottom centre
+     * at the origin, +x the viewer's left, front toward -z. Lane = row * COLUMNS + column; row 0 at the bottom, column 0
+     * on the viewer's left.
+     */
     public static double laneX(int lane) {
-        return (5.63 + lane % COLUMNS * 3.6) / 16;
+        return 5.2 - lane % COLUMNS * 3.2;
     }
 
+    /** The lane's tray top. */
     public static double laneY(int lane) {
-        return (8.0 + lane / COLUMNS * 4.7) / 16;
+        return 7.9 + lane / COLUMNS * 4.75;
     }
 
-    public static final double LANE_FRONT_Z = 2.75 / 16;
+    /** The products' front edge. */
+    public static final double LANE_FRONT_Z = -6.4;
 
     @Override
     public int getContainerSize() {
@@ -151,9 +183,36 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
         super.unpackLootTable(player);
     }
 
-    /** Server, every tick: world loot is rolled at once (not on first opening), so the goods seen from outside show how much it holds. */
+    /**
+     * Server, every tick: world loot is rolled at once (not on first opening), so the goods seen from outside show how
+     * much it holds; then the lights' power.
+     */
     public void serverTick() {
         if (lootTable != null) unpackLootTable(null);
+        power.serverTick();
+    }
+
+    // ---- power: lights only ----
+
+    @Override
+    public boolean lit() {
+        return getBlockState().getValue(VendingMachineBlock.LIT);
+    }
+
+    @Override
+    public void setLit(boolean lit) {
+        if (level != null && getBlockState().getBlock() instanceof VendingMachineBlock block) block.setLit(level, worldPosition, lit);
+    }
+
+    /** No compressor: never used. */
+    @Override
+    public Vec3 compressorPosition() {
+        return Vec3.atCenterOf(worldPosition);
+    }
+
+    @Override
+    public void syncAppliance() {
+        setChanged();
     }
 
     /** Hoppers (and every other automation) only through broken glass. */
@@ -167,12 +226,26 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
         return getBlockState().getValue(VendingMachineBlock.BROKEN) && AflContainerSearch.canTakeItem(this, slot) && super.canTakeItem(target, slot, stack);
     }
 
+    /** Energy only through the power port; items only through broken glass. */
     @Override
-    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> capability,
-                                                                           @Nullable net.minecraft.core.Direction side) {
-        if (capability == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER && !getBlockState().getValue(VendingMachineBlock.BROKEN))
-            return net.minecraftforge.common.util.LazyOptional.empty();
+    public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction side) {
+        if (capability == ForgeCapabilities.ENERGY) return side != null && getBlockState().getBlock() instanceof VendingMachineBlock block
+                && block.hasPowerPort(getBlockState(), side) ? power.capability().cast() : LazyOptional.empty();
+        if (capability == ForgeCapabilities.ITEM_HANDLER && !getBlockState().getValue(VendingMachineBlock.BROKEN))
+            return LazyOptional.empty();
         return super.getCapability(capability, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        power.invalidateCaps();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        power.reviveCaps();
     }
 
     @Override
@@ -191,9 +264,13 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
 
     // ---- goods ----
 
-    /** Client: the lanes that show, with their products. */
+    /** Client: the lanes that show, with their products; also notes them for the coil fronts (VendingMachineRenderer calls it every frame, before the mesh). */
     public List<AflGoodsState.Spot> shownGoods() {
-        return goods.shown(worldPosition);
+        List<AflGoodsState.Spot> spots = goods.shown(worldPosition);
+        int lanes = 0;
+        for (AflGoodsState.Spot spot : spots) lanes |= 1 << spot.cell();
+        shownLanes = lanes;
+        return spots;
     }
 
     @Override
@@ -220,6 +297,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
         if (!tryLoadLootTable(tag)) ContainerHelper.loadAllItems(tag, items);
         search.load(tag);
         goods.load(tag, items);
+        power.load(tag);
     }
 
     @Override
@@ -228,6 +306,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
         if (!trySaveLootTable(tag)) ContainerHelper.saveAllItems(tag, items);
         search.save(tag);
         goods.save(tag);
+        power.save(tag);
     }
 
     @Override
@@ -256,6 +335,57 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
 
     @Override
     public AABB getRenderBoundingBox() {
-        return new AABB(worldPosition).expandTowards(0, 1, 0);
+        return AflAnimatedMeshHost.renderBounds(worldPosition, MESH_PROFILE, meshFacing());
+    }
+
+    // ---- AFL Animated Block Mesh Runtime ----
+
+    @Override
+    public ResourceLocation meshProfile() {
+        return MESH_PROFILE;
+    }
+
+    @Override
+    public AflBlockMeshAnimationState meshAnimation() {
+        return meshAnimation;
+    }
+
+    @Override
+    public Direction meshFacing() {
+        return getBlockState().getValue(VendingMachineBlock.FACING);
+    }
+
+    /** No animation channels. */
+    @Override
+    public void refreshMeshAnimationTargets() {
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, channel -> false);
+    }
+
+    /**
+     * No glass once broken; the lit light set (LabPBR emissive, full brightness) while LIT, else the unlit one; a lane's
+     * coil front ('coil_<lane>', where the products stand) only while the lane shows no goods: the products are wider
+     * than the coil and would cut through it.
+     */
+    @Override
+    public boolean meshPartVisible(String part) {
+        Integer lane = COIL_LANES.get(part);
+        if (lane != null) return (shownLanes & 1 << lane) == 0;
+        return switch (part) {
+            case "glass" -> !getBlockState().getValue(VendingMachineBlock.BROKEN);
+            case "lights" -> !lit();
+            case "lights_lit" -> lit();
+            default -> true;
+        };
+    }
+
+    @Override
+    public boolean meshPartEmissive(String part) {
+        return "lights_lit".equals(part);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        refreshMeshAnimationTargets();
     }
 }

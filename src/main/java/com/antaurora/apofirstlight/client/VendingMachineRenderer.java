@@ -1,48 +1,53 @@
 package com.antaurora.apofirstlight.client;
 
-import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.VendingMachineBlock;
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
+import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
+import com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer;
 import com.antaurora.apofirstlight.client.goods.AflGoodsLibrary;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.*;
-import net.minecraft.client.renderer.blockentity.*;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ModelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 
 /**
- * Body, then the goods behind the glass (2026-10-01: the shared goods library, one product per lane that shows, at 0.85
- * of the nominal cell: a lane is 3.6 px apart and 4.3 px clear), then the intact or broken glass (translucent, last).
+ * Vending Machine V2: the goods (the shared goods library, drinks and snacks, one product per lane that shows), then the
+ * cabinet, glass and lights through the generic AFL Animated Block Mesh renderer. The goods are flushed first, because the
+ * generic renderer flushes the translucent glass immediately: drawn after it, they would show untinted in front of it.
  */
-@Mod.EventBusSubscriber(modid=ApocalypseFirstLight.MOD_ID,bus=Mod.EventBusSubscriber.Bus.MOD,value=Dist.CLIENT)
 public final class VendingMachineRenderer implements BlockEntityRenderer<VendingMachineBlockEntity> {
-    private static final float GOODS_SCALE = 0.85F;
+    private static final int LIT_ITEM_BLOCK_LIGHT = 14;
+    /** A lane is 3.2 px wide (the coil 2.5 px) and 4.45 px clear: the nominal products (4 px wide) at 0.76. */
+    private static final float GOODS_SCALE = 0.76F;
+    /** Lane frame: the block's bottom centre turned by FACING, source px / 16. */
     private static final AflGoodsLibrary.CellPosition LANES = lane -> new double[]{
-            VendingMachineBlockEntity.laneX(lane), VendingMachineBlockEntity.laneY(lane), VendingMachineBlockEntity.LANE_FRONT_Z};
-    private static ResourceLocation model(String part) { return new ResourceLocation(ApocalypseFirstLight.MOD_ID,"block/vending_machine_"+part); }
-    @SubscribeEvent public static void models(ModelEvent.RegisterAdditional event) {
-        for (String part : new String[]{"body","intact_glass","broken_glass"}) event.register(model(part));
+            VendingMachineBlockEntity.laneX(lane) / 16.0D, VendingMachineBlockEntity.laneY(lane) / 16.0D,
+            VendingMachineBlockEntity.LANE_FRONT_Z / 16.0D};
+    private final AflAnimatedBlockMeshRenderer<VendingMachineBlockEntity> cabinet;
+
+    public VendingMachineRenderer(BlockEntityRendererProvider.Context context) {
+        this.cabinet = new AflAnimatedBlockMeshRenderer<>(context);
     }
-    public VendingMachineRenderer(BlockEntityRendererProvider.Context context) {}
-    private static void draw(String part, VendingMachineBlockEntity be, PoseStack pose, MultiBufferSource buffers, RenderType type,int light,int overlay) {
-        var mc=Minecraft.getInstance();
-        mc.getBlockRenderer().getModelRenderer().renderModel(pose.last(),buffers.getBuffer(type),be.getBlockState(),
-                mc.getModelManager().getModel(model(part)),1,1,1,light,overlay);
-    }
-    @Override public void render(VendingMachineBlockEntity be,float partial,PoseStack pose,MultiBufferSource buffers,int light,int overlay) {
-        pose.pushPose();pose.translate(.5,0,.5);
-        float angle=switch(be.getBlockState().getValue(VendingMachineBlock.FACING)) {
-            case EAST -> -90; case SOUTH -> 180; case WEST -> 90; default -> 0;
-        };
-        pose.mulPose(Axis.YP.rotationDegrees(angle));pose.translate(-.5,0,-.5);
-        draw("body",be,pose,buffers,RenderType.cutout(),light,overlay);
-        AflGoodsLibrary.draw(be.shownGoods(),LANES,GOODS_SCALE,pose,buffers,light,overlay);
-        draw(be.getBlockState().getValue(VendingMachineBlock.BROKEN)?"broken_glass":"intact_glass",be,pose,buffers,RenderType.translucent(),light,overlay);
-        pose.popPose();
+
+    @Override
+    public void render(VendingMachineBlockEntity machine, float partialTick, PoseStack pose, MultiBufferSource buffers,
+                       int packedLight, int packedOverlay) {
+        if (machine.getLevel() == null) return;
+        var spots = machine.shownGoods();
+        if (!spots.isEmpty()) {
+            // lit cabinet: the goods take the LED strip's light (block light 14) whatever the room's light
+            int goodsLight = machine.getBlockState().getValue(VendingMachineBlock.LIT)
+                    ? LightTexture.pack(Math.max(LightTexture.block(packedLight), LIT_ITEM_BLOCK_LIGHT), LightTexture.sky(packedLight))
+                    : packedLight;
+            pose.pushPose();
+            pose.translate(0.5D, 0.0D, 0.5D);
+            pose.mulPose(Axis.YP.rotationDegrees(AflBlockMeshProfile.facingDegrees(machine.getBlockState().getValue(VendingMachineBlock.FACING))));
+            AflGoodsLibrary.draw(spots, LANES, GOODS_SCALE, pose, buffers, goodsLight, packedOverlay);
+            pose.popPose();
+            if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
+        }
+        cabinet.render(machine, partialTick, pose, buffers, packedLight, packedOverlay);
     }
 }

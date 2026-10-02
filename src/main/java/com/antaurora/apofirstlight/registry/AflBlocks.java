@@ -220,7 +220,10 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> VENDING_MACHINE = BLOCKS.register("vending_machine",
             () -> new com.antaurora.apofirstlight.block.VendingMachineBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(3.0F,5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+                    .strength(3.0F,5.0F).sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.VendingMachineBlock.LIT)
+                            ? com.antaurora.apofirstlight.block.VendingMachineBlock.LIGHT_LEVEL : 0)
+                    .requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> CHEST_FREEZER = BLOCKS.register("chest_freezer",
             () -> new ChestFreezerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)
