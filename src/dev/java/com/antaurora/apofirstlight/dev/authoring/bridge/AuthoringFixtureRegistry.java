@@ -127,7 +127,8 @@ final class AuthoringFixtureRegistry {
             new Def(A+"commercial_flushometer_toilet",safe,"restroom").facing(H4),
             new Def(A+"commercial_wall_mounted_sink",safe,"restroom").facing(H4).multi(TWO_TALL).support(Support.NONE)
                     .notes("Engine needs no support; place it against a wall for the intended look."),
-            new Def(A+"metal_trash_can",safe,"utility"),
+            new Def(A+"metal_trash_can",storage,"utility").facing(H4).fixed("open","false").inventory()
+                    .notes("V2 (2026-10-02): 9-slot searchable container with a hinged lid; starts shut and empty."),
             new Def(A+"commercial_dumpster",safe,"utility").facing(H4).multi(DUMPSTER).support(Support.FLOOR)
                     .notes("2 wide. Anchor = master; secondary at facing.getClockWise()."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),

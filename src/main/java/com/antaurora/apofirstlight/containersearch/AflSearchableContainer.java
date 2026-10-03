@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.containersearch;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.Container;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,6 +46,16 @@ public interface AflSearchableContainer extends Container {
     BlockState getBlockState();
 
     boolean isRemoved();
+
+    /**
+     * The looping sound heard at the container while its search runs (AflContainerSearchState, client/
+     * ContainerSearchSoundController). One shared rustle for every container for now (user 2026-10-02: no materials yet);
+     * a container may return its own loop later, or null for silence.
+     */
+    @Nullable
+    default SoundEvent aflSearchSound() {
+        return com.antaurora.apofirstlight.registry.AflSounds.CONTAINER_SEARCH_RUMMAGE.get();
+    }
 
     /** A search session began because at least one valid searcher is viewing. */
     default void onAflSearchStarted(ServerLevel level) {

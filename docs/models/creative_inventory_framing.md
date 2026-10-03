@@ -11,6 +11,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
 | `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-1.78,-3.254,0.613]`、scale 0.328（V2 Mesh，2026-10-01 修正为正面朝外，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |
 | `chest_freezer` | 2026-10-01 起由 `tools/build-chest-freezer-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-2.5,-1.063,2.138]`、scale 0.442（V2 Mesh，正面朝外，见 [chest_freezer_v2.md](chest_freezer_v2.md)） |
+| `metal_trash_can` | 2026-10-02 起由 `tools/build-metal-trash-can-v2.mjs` 生成：rotation `[30,225,0]`、translation `[0,0.348,-0.079]`、scale 0.759（V2 Mesh，见 [metal_trash_can_v2.md](metal_trash_can_v2.md)） |
 | `water_dispenser` | 2026-10-01 起由 `tools/build-water-dispenser-v2.mjs` 生成：rotation `[25,225,0]`、translation `[0.801,-3.198,-0.172]`、scale 0.453（V2 Mesh，正面朝外，见 [water_dispenser_v2.md](water_dispenser_v2.md)） |
 | `vending_machine` | 2026-10-01 起由 `tools/build-vending-machine-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-0.014,-2.883,-1.412]`、scale 0.397（V2 Mesh，正面朝外，见 [vending_machine_v2.md](vending_machine_v2.md)） |
 | `modern_office_desk` | `[0,0,0]` |
@@ -27,6 +28,6 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 
 The retail shelf item duplicates its parent's non-GUI display contexts while overriding GUI only, preventing partial display inheritance from changing held or ground appearance. The restroom stall door's item transform matches its commercial-door template so `tools/build-restroom-doorway-runtime.mjs` does not undo the adjustment. Generated office and cabinet item values live in `tools/export-office-props-runtime.mjs` and `tools/export-filing-cabinets-runtime.mjs`; re-exporting those assets preserves the GUI positions. `office_mouse.json` is a hand-authored item asset and is explicitly excluded from the office exporter so its existing geometry, rotation and other contexts are not overwritten.
 
-The other custom icons in the screenshot were already visually centered to within about half a GUI pixel and were left untouched: industrial locker, lead chest, gun maintenance bench, precision fabrication station, water dispenser (until V2; now generated, see the table), metal trash can, commercial dumpster, modern office chair, tall filing cabinet and multifunction printer.
+The other custom icons in the screenshot were already visually centered to within about half a GUI pixel and were left untouched: industrial locker, lead chest, gun maintenance bench, precision fabrication station, water dispenser and metal trash can (until their V2; now generated, see the table), commercial dumpster, modern office chair, tall filing cabinet and multifunction printer.
 
 Verification boundary: source screenshot alignment and static resource/export checks confirm the intended offsets, but a restarted graphical client review of the post-change inventory and hotbar is still pending. Headless compilation alone does not prove pixel-perfect in-game rendering at every GUI scale.

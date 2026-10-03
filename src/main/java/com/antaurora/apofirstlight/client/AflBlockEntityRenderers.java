@@ -32,7 +32,9 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(AflBlockEntities.CHARGING_STATION.get(), ChargingStationRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.CHEST_FREEZER.get(), ChestFreezerRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.VENDING_MACHINE.get(), VendingMachineRenderer::new);
-        // Water Dispenser V2: generic AFL Animated Block Mesh Runtime
+        // Metal Trash Can V2 and Water Dispenser V2: generic AFL Animated Block Mesh Runtime
+        event.registerBlockEntityRenderer(AflBlockEntities.METAL_TRASH_CAN.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.WATER_DISPENSER.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.FLUID_TANK.get(), FluidTankRenderer::new);

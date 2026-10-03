@@ -60,6 +60,10 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CASH_REGISTER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/cash_register.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/cash_register.png"), 0.0, 0.0), "cash_register");
+            // Metal Trash Can V2 (tools/build-metal-trash-can-v2.mjs): the block's mesh and atlas, lid shut, no bags; views fitted by the generator
+            bind(AflItems.METAL_TRASH_CAN.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/metal_trash_can.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/metal_trash_can.png"), 0.0, 0.0), "metal_trash_can");
             // Water Dispenser V2 (tools/build-water-dispenser-v2.mjs): the block's mesh and atlas, lights off; views fitted by the generator
             bind(AflItems.WATER_DISPENSER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/water_dispenser.geo.json"),

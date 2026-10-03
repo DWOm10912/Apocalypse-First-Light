@@ -53,6 +53,12 @@ public final class AflSounds {
     // Industrial locker door (the close file's slam sits at ~0.47 s, the end of the 10-tick door animation)
     public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_OPEN = simple("industrial_locker_open");
     public static final RegistryObject<SoundEvent> INDUSTRIAL_LOCKER_CLOSE = simple("industrial_locker_close");
+    // Progressive Container Search: the one search sound for every searchable container, a seamless rustle loop
+    // (tools/build-container-search-sounds-v2.mjs), looped by client/ContainerSearchSoundController while a search runs
+    public static final RegistryObject<SoundEvent> CONTAINER_SEARCH_RUMMAGE = simple("container_search_rummage");
+    // Metal Trash Can V2 lid, on the 8-tick lid animation (tools/build-metal-trash-can-sounds-v1.mjs)
+    public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_OPEN = simple("metal_trash_can_open");
+    public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_CLOSE = simple("metal_trash_can_close");
     // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
     public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");

@@ -9,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import com.antaurora.apofirstlight.network.AflNetwork;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 
@@ -48,6 +49,10 @@ public final class AflContainerSearchState {
     private long currentStart;
     private int currentDuration;
     private long lastNoise;
+    /** The search sound: when the clients are next reminded that it runs, and whether they were told it does (transient). */
+    private static final int SOUND_SYNC_TICKS = 20;
+    private long nextSoundSync;
+    private boolean soundOn;
     private int[] order;
     private long orderSeed;
 
@@ -168,6 +173,7 @@ public final class AflContainerSearchState {
         if (!running) {
             running = true;
             lastNoise = now;
+            nextSoundSync = now;
             owner.onAflSearchStarted(level);
         }
         if (currentSlot < 0 && !beginNextSlot(owner, level, now, searchers)) {
@@ -181,12 +187,34 @@ public final class AflContainerSearchState {
             owner.onAflSearchSlotRevealed(level, slot);
             if (isComplete(owner)) {
                 running = false;
+                soundOff(owner, level);
                 owner.onAflSearchCompleted(level);
                 return;
             }
             beginNextSlot(owner, level, now, searchers);
         }
         emitNoise(owner, level, now, searchers.get(0));
+        syncSound(owner, level, now);
+    }
+
+    /**
+     * While the session runs: tells the clients tracking the container's chunk to loop its search sound there
+     * (client/ContainerSearchSoundController; 8 blocks, sounds.json), at once and then every {@link #SOUND_SYNC_TICKS} as
+     * a keep-alive, so a player walking up later hears it too. One session per container: several viewers never stack it.
+     */
+    private void syncSound(AflSearchableContainer owner, ServerLevel level, long now) {
+        var sound = owner.aflSearchSound();
+        if (sound == null || now < nextSoundSync) return;
+        nextSoundSync = now + SOUND_SYNC_TICKS;
+        soundOn = true;
+        AflNetwork.containerSearchSound(level, owner.getBlockPos(), sound.getLocation());
+    }
+
+    /** The session paused, finished or lost its container: the loop fades out (clients also end it when the reminders stop). */
+    private void soundOff(AflSearchableContainer owner, ServerLevel level) {
+        if (!soundOn) return;
+        soundOn = false;
+        AflNetwork.containerSearchSound(level, owner.getBlockPos(), null);
     }
 
     private boolean beginNextSlot(AflSearchableContainer owner, ServerLevel level, long now,
@@ -205,6 +233,7 @@ public final class AflContainerSearchState {
         running = false;
         currentSlot = -1;
         if (owner.getLevel() instanceof ServerLevel level) {
+            soundOff(owner, level);
             owner.onAflSearchStopped(level);
         }
     }

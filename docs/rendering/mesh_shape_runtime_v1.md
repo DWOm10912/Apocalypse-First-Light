@@ -2,7 +2,7 @@
 
 状态（2026-09-30）：**坐标契约修复已实现，修复后实机验证待用户完成**。
 - `compileJava --offline` 一次 PASS。
-- 第一个正式接入是 `industrial_locker`（见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)）。
+- 第一个正式接入是 `industrial_locker`（见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)）。2026-10-02 起 `metal_trash_can` 也用（单格，`closed` / `open`，区域 `lid` / `mouth`，见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)）。
 
 ## 五层彼此独立
 

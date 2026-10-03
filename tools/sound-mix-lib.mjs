@@ -1,8 +1,10 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
 // Used by tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
 // tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs,
-// tools/build-charging-station-sounds-v1.mjs and tools/build-beverage-cooler-compressor-sounds-v1.mjs (needs ffmpeg).
-// buildLoop makes seamless loops from steady hums (optionally with the ticks in the highs turned down).
+// tools/build-charging-station-sounds-v1.mjs, tools/build-beverage-cooler-compressor-sounds-v1.mjs,
+// tools/build-container-search-sounds-v2.mjs (a mirrored loop) and tools/build-metal-trash-can-sounds-v1.mjs (needs ffmpeg).
+// buildLoop makes seamless loops from steady hums (optionally with the ticks in the highs turned down), or, with
+// mirror, from steady noise such as a rustle (the window forward then backward: no crossfade, no seam).
 // Loudness: BS.1770 K-weighting. Each element is first brought to the same 100 ms short-window loudness (a click and a
 // thud then sit at the same level), then mixed with a role gain; each finished sound is scaled so its maximum momentary
 // loudness (400 ms) matches a reference sound plus an offset, with the sample peak kept at or below -1 dBFS.
@@ -111,9 +113,12 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
  * is split at DECLICK.cutoff (400 Hz, 4th-order) into complementary bands (low-pass + remainder) and in the high band a 2.5 ms block whose
  * RMS stands more than `declick` dB above the median block RMS of the 80 ms either side is turned down to that limit;
  * the low band is untouched. Pick the window to avoid rattle bursts longer than a few blocks (a median cannot see them).
- * Returns a report.
+ * mirror (with crossfade 0): for steady noise with no period to keep in phase (a rustle). The levelled window plays
+ * forward, then backward without its two end samples, so both joins repeat a sample's neighbour: no crossfade dip, no
+ * seam, and the loop is twice the window. Reversed noise sounds the same; keep the window free of anything with a
+ * direction (an attack, a word). Returns a report.
  */
-export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick}) {
+export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick, mirror = false}) {
   const wav = path.join(srcDir, source.name + '.wav');
   const h = createHash('sha256').update(fs.readFileSync(wav)).digest('hex').slice(0, 16);
   if (h !== source.sha) throw new Error(`${source.name}.wav changed (sha ${h}, expected ${source.sha})`);
@@ -128,18 +133,21 @@ export function buildLoop({srcDir, soundsDir, source, file, from, period, period
     return v * mean / (smoothRms[k] * (1 - f) + smoothRms[Math.min(k + 1, smoothRms.length - 1)] * f); });
   const excessBefore = declick !== undefined ? maxHighExcess(levelled) : 0;
   if (declick !== undefined) levelled = declickHighs(levelled, declick);
-  const loop = levelled.slice(0, L);
+  if (mirror && C) throw new Error(`${source.name}: a mirrored loop takes no crossfade`);
+  let loop = levelled.slice(0, L);
   for (let i = 0; i < C; i++) { const w = i / C; loop[i] = levelled[i] * w + levelled[L + i] * (1 - w); }
+  if (mirror) { const m = new Float64Array(2 * L - 2); m.set(loop); for (let i = 1; i < L - 1; i++) m[L - 1 + i] = loop[L - 1 - i]; loop = m; }
+  const N = loop.length;
   const ref = maxLoudness(decode(path.join(soundsDir, reference)), 0.4) + offset;
-  const twice = new Float64Array(2 * L); twice.set(loop); twice.set(loop, L);   // measure across the seam
+  const twice = new Float64Array(2 * N); twice.set(loop); twice.set(loop, N);   // measure across the seam
   let gain = ref - maxLoudness(twice, 0.4);
   const pk = 20 * Math.log10(peak(loop)) + gain;
   if (pk > PEAK_CEILING) gain -= pk - PEAK_CEILING;
   const out = loop.map(v => v * db(gain));
   writeOgg(out, path.join(soundsDir, file));
   const enc = decode(path.join(soundsDir, file));
-  const seam = Math.abs(out[0] - out[L - 1]), step = out.reduce((m, v, i) => i ? Math.max(m, Math.abs(v - out[i - 1])) : m, 0);
-  return {file, seconds: +(enc.length / SR).toFixed(4), samples: enc.length, expectedSamples: L, targetLUFS: +ref.toFixed(1),
+  const seam = Math.abs(out[0] - out[N - 1]), step = out.reduce((m, v, i) => i ? Math.max(m, Math.abs(v - out[i - 1])) : m, 0);
+  return {file, seconds: +(enc.length / SR).toFixed(4), samples: enc.length, expectedSamples: N, targetLUFS: +ref.toFixed(1),
     maxMomentaryLUFS: +maxLoudness(enc, 0.4).toFixed(1), peakDbfs: +(20 * Math.log10(peak(enc))).toFixed(1), peakLimited: pk > PEAK_CEILING,
     sourceSwingDb: +(20 * Math.log10(Math.max(...rms) / Math.min(...rms))).toFixed(1), seamJump: +seam.toFixed(5), largestStep: +step.toFixed(5),
     ...(declick !== undefined ? {highExcessBeforeDb: +excessBefore.toFixed(1), highExcessAfterDb: +maxHighExcess(out).toFixed(1)} : {})};

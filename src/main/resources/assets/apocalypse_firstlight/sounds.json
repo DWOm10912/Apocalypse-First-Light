@@ -300,6 +300,18 @@
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_safety_lever", "stream": false}]
   },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]},
+  "container_search_rummage": {
+    "subtitle": "subtitles.apocalypse_firstlight.container_search_rummage",
+    "sounds": [{"name": "apocalypse_firstlight:container_search/rustle_loop", "attenuation_distance": 8}]
+  },
+  "metal_trash_can_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.metal_trash_can_open",
+    "sounds": [{"name": "apocalypse_firstlight:metal_trash_can/open", "attenuation_distance": 12}]
+  },
+  "metal_trash_can_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.metal_trash_can_close",
+    "sounds": [{"name": "apocalypse_firstlight:metal_trash_can/close", "attenuation_distance": 12}]
+  },
   "industrial_locker_open": {
     "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_open",
     "sounds": [{"name": "apocalypse_firstlight:industrial_locker/open", "attenuation_distance": 12}]

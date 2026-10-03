@@ -1,0 +1,64 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.metal_trash_can",
+        "texture_width": 512,
+        "texture_height": 512,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2.5,
+        "visible_bounds_offset": [
+          0,
+          0.75,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "lid",
+          "pivot": [
+            0,
+            13.85,
+            6.42
+          ]
+        },
+        {
+          "name": "goods_bag_0",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "goods_bag_1",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "goods_bag_2",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        }
+      ]
+    }
+  ]
+}

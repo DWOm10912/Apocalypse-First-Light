@@ -1,0 +1,76 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/metal_trash_can.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/metal_trash_can.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.078125,
+    -0.015625,
+    0.097062,
+    0.921875,
+    1.6605,
+    0.979688
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lid": {
+      "pivot": [
+        0,
+        0.865625,
+        0.40125
+      ]
+    },
+    "goods_bag_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_bag_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_bag_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "lid": {
+          "rotation": [
+            80,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

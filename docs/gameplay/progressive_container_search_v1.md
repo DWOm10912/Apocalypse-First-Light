@@ -1,6 +1,6 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
+状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`metal_trash_can` V2（2026-10-02，9 格 / 3×3，40 ticks/格，没有翻找声音；开盖后搜索），见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
 - **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
 - 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
 - 另有开发演示方块（见第 21 节）。
@@ -20,7 +20,7 @@ AFL 的储物分为两类：
 
 | 类别 | 例子 | 规则 |
 |---|---|---|
-| **SEARCHABLE STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、冷冻冰柜、封闭设备柜；2026-10-01 起还有货架、饮料冷柜、自动售货机 | 接入本系统。看得见里面的容器画通用货物模型代替真实物品（数量跟着装了几格走，看不出是什么），见 [container_goods_v1.md](container_goods_v1.md) |
+| **SEARCHABLE STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、冷冻冰柜、封闭设备柜、垃圾桶（2026-10-02）；2026-10-01 起还有货架、饮料冷柜、自动售货机 | 接入本系统。看得见里面的容器画通用货物模型代替真实物品（数量跟着装了几格走，看不出是什么），见 [container_goods_v1.md](container_goods_v1.md) |
 | **VISIBLE STORAGE** | 武器架（以后做） | 物品直接在世界里渲染、实时交互，**不接入**；这类方块会把物品 NBT 同步给客户端用于显示，本身就和隐藏格不兼容 |
 
 2026-10-01 用户决定：除了武器架（挂的是哪把枪很重要），货架、饮料冷柜、售货机都改用搜索 + 通用货物；玩家不再能在货架上摆自己的东西展示。
@@ -260,8 +260,31 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 - `AflContainerSearchSettings.noiseRadius` 和 `noiseIntervalTicks` 都大于 0 时，搜索进行中每隔 interval 发出一次噪声，经现有 `NoiseSystem.emit` 送入感染者听觉。
 - 噪声类型为 `INTERACTION`，声源是当前搜索者，位置是容器中心，sourceId 是方块 ID。
-- 两者任一为 0 即关闭；框架默认关闭。
-- 没有新增音效，也没有定正式数值；以后由资产配置，例如钢柜较响、木柜较轻。
+- 两者任一为 0 即关闭；框架默认关闭。现在所有容器都是关闭的（9 个容器的设置都是 0）。
+- 这个 hook 只给感染者听觉用，**不是能听到的声音**；能听到的翻找声见下面 17a，两者互不影响。正式数值以后由资产配置，例如钢柜较响、木柜较轻。
+
+## 17a. 搜索声（2026-10-02 第二版，没有实机验证）
+
+用户 2026-10-02 定：**所有容器共用一套搜索声**，暂时不分材质；周围玩家都能听到；不做"找到东西"的提示音。
+
+**第一版（同一天替换）**：三段 1 秒左右的翻找声，服务端每 0.8–1.1 秒随机放一段。用户听了觉得怪：素材里有轻碰和闷响，音量起伏大，一段接一段放有断续感。用户要"纯沙沙声"，自己生成了一段新素材，要求做成**单个无缝循环**。三段旧声音（`sounds/container_search/rummage_{1,2,3}.ogg`）和旧生成器 `tools/build-container-search-sounds-v1.mjs` 已删除。
+
+**现在**：
+- 声音事件 `apocalypse_firstlight:container_search_rummage`（名字没改），一个循环文件 `sounds/container_search/rustle_loop.ogg`：2.6 s、单声道 48 kHz、124798 个采样，接头无缝。可听 8 格（`sounds.json` 的 `attenuation_distance`）。字幕"翻找 / Rummaging"。
+- 素材：用户用 AI 音效工具生成的 `E:/Download/rustle.wav`（2 s 立体声 48 kHz，左右相关度 0.95，SHA-256 前缀 c794eebeba06e379）。
+- 生成器 `tools/build-container-search-sounds-v2.mjs`（共享库 `tools/sound-mix-lib.mjs` 的 `buildLoop`，需要 ffmpeg）：
+  - 素材前 0.4 s 淡入、最后 0.25 s 淡出，只取中间平稳的 1.3 s（0.40–1.70 s）；
+  - 按 50 ms 一段拉平音量，增益只在前后各一段内平滑。原素材起伏约 20 dB，1.25 s 处还有一下 50 ms 的掉声；平滑范围大时这个掉声会留成每圈两次的小空档，所以缩到一段，处理后起伏在 10 dB 以内；
+  - 高频里的几处咔哒压到比周围最多高 10 dB（原来最大高 21 dB）；
+  - 正放一遍再倒放一遍拼成循环（`buildLoop` 2026-10-02 新加的 `mirror` 选项）。沙沙声这种平稳的噪声倒放听不出区别，两个接头都是相邻采样，不需要交叉淡化，也就不会在接头处掉音量；长度也翻倍，不容易听出重复；
+  - 响度：比储物柜开门声低 10 LU（400 ms 最大瞬时响度 −32.7 LUFS），因为它是连续的；峰值 −17.1 dBFS。
+- 播放（循环在客户端，开关由服务端）：
+  - 服务端（`AflContainerSearchState`）：搜索进程开始时立刻、之后每 20 tick 给跟踪这个区块的客户端发一次"正在搜"（`ContainerSearchSoundS2CPacket`，带声音 ID）；搜索暂停（最后一个人关掉界面、离开、盖上 / 关门）、搜完、容器失效时发一次"停了"。网络协议从 30 升到 31，客户端和服务端版本必须一致。
+  - 客户端（`client/ContainerSearchSoundController`）：收到"正在搜"且自己在 8 格内，就在容器中心开始循环；已经在放就只刷新时间。3 tick 淡入、3 tick 淡出，开关时不会咔哒。收到"停了"、超过 40 tick 没收到提醒、容器不见了、人走出 9 格时淡出停止；离开后再走回来，下一次提醒（最多 1 秒）就会重新开始。
+  - 每个容器只有一个共享的搜索进程，几个人同时看也只放一份。
+  - 音高固定 1.0，音量 1.0，方块声音类别。
+- 扩展点：`AflSearchableContainer#aflSearchSound()`，默认返回这套共用循环；以后某个容器要换成自己的材质声，就覆盖它返回另一个循环声音，返回 null 则不出声。
+- 所有接入的容器都自动有：储物柜、铅箱、电箱、收银机、货架、饮料冷柜、冷冻冰柜、售货机、垃圾桶。
 
 ## 18. 事件 hook
 

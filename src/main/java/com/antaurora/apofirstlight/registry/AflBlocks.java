@@ -200,7 +200,7 @@ public final class AflBlocks {
     public static final RegistryObject<Block> METAL_TRASH_CAN = BLOCKS.register("metal_trash_can",
             () -> new MetalTrashCanBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
-                    .sound(SoundType.METAL)
+                    .sound(AflSoundTypes.SHEET_METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> COMMERCIAL_DUMPSTER = BLOCKS.register("commercial_dumpster",

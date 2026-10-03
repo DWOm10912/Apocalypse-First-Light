@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "30";
+    private static final String PROTOCOL = "31";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -101,6 +101,15 @@ public final class AflNetwork {
                 FieldAttachmentCancel::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++,FieldAttachmentResult.class,FieldAttachmentResult::encode,FieldAttachmentResult::decode,
                 FieldAttachmentResult::handle,java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, ContainerSearchSoundS2CPacket.class, ContainerSearchSoundS2CPacket::encode,
+                ContainerSearchSoundS2CPacket::decode, ContainerSearchSoundS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Progressive Container Search: a container's search sound running (its id, repeated as a keep-alive) or stopped (null), to everyone tracking its chunk. */
+    public static void containerSearchSound(ServerLevel level, BlockPos pos, @org.jetbrains.annotations.Nullable ResourceLocation sound) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(pos)),
+                new ContainerSearchSoundS2CPacket(pos.immutable(), sound));
     }
 
     public static void requestFieldAttachment(com.antaurora.apofirstlight.weapon.FieldAttachmentActionRequest request){
