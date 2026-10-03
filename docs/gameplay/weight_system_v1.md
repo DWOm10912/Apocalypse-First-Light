@@ -272,9 +272,16 @@ Tier：ratio <0.75 LIGHT；<1 APPROACHING_COMFORT；<2 HEAVY；其余 SEVERE。t
 
 ## 物品重量 Tooltip
 
-当前已加入中英文两行提示：普通物品“单件重量”和“堆叠总重量”；Native Gun首行使用“整枪重量（含附件及弹药）”。即使数量为1也显示两行。“堆叠总重量”仅指鼠标所指ItemStack，不是玩家全部携带重量。
+只显示一行（2026-10-03 按用户要求改，原来是“单件重量”和“堆叠总重量”两行）：
+- 数量为 1：`重量：45 kg`；
+- 数量大于 1：`重量：12 g × 64 = 768 g`，即单件 × 数量 = 这一堆的总重；
+- Native Gun：`整枪重量（含附件及弹药）：3.88 kg`。
 
-例如64发9mm：单件12 g，堆叠768 g；10个苹果：单件200 g，堆叠2 kg。低于1000g使用g，其余使用kg，保留整克精度并去掉末尾零。估值/fallback/未覆盖内容均追加“（估算）”；首批数据仍全部是测试估值。
+总重只指鼠标所指ItemStack，不是玩家全部携带重量。例如：64发9mm 是 `12 g × 64 = 768 g`；10个苹果是 `200 g × 10 = 2 kg`。低于1000g使用g，其余使用kg，保留整克精度并去掉末尾零。
+
+不再追加“（估算）”：数据全部是测试估值，每个物品都带这个后缀，没有区分作用。估值、fallback 等数据质量信息只在 `/aflweight held` / `coverage` 里看。高级提示框（F3+H）下，只有用到 fallback 的物品多一行深灰色“没有质量数据，按默认值计算”。
+
+语言键：`weight.single`、`weight.stack`、`weight.assembled`、`weight.fallback`、`weight.pending`，原来的 `weight.unit`、`weight.estimated` 已删除。
 
 只计算当前悬停stack，不扫描客户端背包，不发送悬停请求。复用 `StackMassCalculator.mass(stack, ClientWeightState.data())`；枪械使用当前客户端已同步的附件/弹药NBT及NativeGun规则，随后随原库存同步更新。尚未收到服务器质量表时只提示“等待服务器数据”，不编造0重量或使用旧表。客户端没有世界时不显示该提示。没有新增正式Weight HUD。
 
