@@ -312,6 +312,14 @@
     "subtitle": "subtitles.apocalypse_firstlight.metal_trash_can_close",
     "sounds": [{"name": "apocalypse_firstlight:metal_trash_can/close", "attenuation_distance": 12}]
   },
+  "commercial_dumpster_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.commercial_dumpster_open",
+    "sounds": [{"name": "apocalypse_firstlight:commercial_dumpster/open", "attenuation_distance": 16}]
+  },
+  "commercial_dumpster_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.commercial_dumpster_close",
+    "sounds": [{"name": "apocalypse_firstlight:commercial_dumpster/close", "attenuation_distance": 16}]
+  },
   "industrial_locker_open": {
     "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_open",
     "sounds": [{"name": "apocalypse_firstlight:industrial_locker/open", "attenuation_distance": 12}]

@@ -1,7 +1,7 @@
 # Container Goods V1（容器货物显示）
 
 状态（2026-10-01）：**已实现**。货架、饮料冷柜、售货机这一轮（商品库）**用户实机 PASS**；冰柜和储物柜的货物没有单独的 PASS 记录。以后：等饮料、各种小物件的 Mesh 模型做多了，再回来换掉或扩充商品库（用户 2026-10-01：先保持现在这样）。`compileJava --offline` PASS（main 源集包含 `src/dev`）。已接入：
-- 冷冻冰柜（[chest_freezer_v2.md](../models/chest_freezer_v2.md)）、工业储物柜（[industrial_locker_v2.md](../models/industrial_locker_v2.md)）、金属垃圾桶（[metal_trash_can_v2.md](../models/metal_trash_can_v2.md)，2026-10-02，三个黑色垃圾袋，没有实机验证）：各自生成器里的专用货物模型；
+- 冷冻冰柜（[chest_freezer_v2.md](../models/chest_freezer_v2.md)）、工业储物柜（[industrial_locker_v2.md](../models/industrial_locker_v2.md)）、金属垃圾桶（[metal_trash_can_v2.md](../models/metal_trash_can_v2.md)，2026-10-02，三个黑色垃圾袋）、商业垃圾箱（[commercial_dumpster_v2.md](../models/commercial_dumpster_v2.md)，2026-10-02，每边两个底袋、一块压扁纸箱、一个上层袋，没有实机验证）：各自生成器里的专用货物模型；
 - 货架（[retail_shelf_v3.md](../models/retail_shelf_v3.md)）、饮料冷柜（[beverage_cooler_v2.md](../models/beverage_cooler_v2.md)）、自动售货机（[vending_machine_v2.md](../models/vending_machine_v2.md)）：共用的商品库，见"商品库"。这三个原来是实时摆放真实物品，2026-10-01 用户决定改成搜索 + 通用货物（以后的武器架仍实时显示）。
 
 ## 是什么
@@ -16,10 +16,10 @@
 
 - 显示几处：
   - 冷冻冰柜、储物柜：有东西的格数 × 2 / 3，向上取整，不超过这个容器的位置数（`AflContainerGoods.shown(occupied, spots)`）。1 格 → 1，3 格 → 2，6 格 → 4，9 格 → 6，12 格 → 8。
-  - 货架、饮料冷柜、售货机、垃圾桶：按比例，"装满几格就全摆满"由容器定（`AflContainerGoods.shown(occupied, spots, fullAt)`，向上取整，有东西时至少 1 处）：垃圾桶 3 个袋子 / 6 格满（从桶底往上叠，不随机），货架 15 处 / 6 格满，饮料冷柜 30 处 / 12 格满，售货机 12 处 / 6 格满。
+  - 货架、饮料冷柜、售货机、垃圾桶：按比例，"装满几格就全摆满"由容器定（`AflContainerGoods.shown(occupied, spots, fullAt)`，向上取整，有东西时至少 1 处）：垃圾桶 3 个袋子 / 6 格满（从桶底往上叠，不随机），垃圾箱 8 件 / 14 格满（两边轮流，先填哪边由位置决定），货架 15 处 / 6 格满，饮料冷柜 30 处 / 12 格满，售货机 12 处 / 6 格满。
 - 拿走东西时，最后填上的那处先消失。
 - 客户端只收到"显示几处"和主题名，物品本身不同步。
-- 战利品要先生成才知道有几格，所以这些容器会提前生成战利品（只是生成，格子仍要搜才能看到）：冷冻冰柜、货架、饮料冷柜、售货机在第一次服务端 tick（从外面看得到里面），垃圾桶在第一次开盖时，储物柜在第一次开门时。
+- 战利品要先生成才知道有几格，所以这些容器会提前生成战利品（只是生成，格子仍要搜才能看到）：冷冻冰柜、货架、饮料冷柜、售货机在第一次服务端 tick（从外面看得到里面），垃圾桶和垃圾箱在第一次开盖时，储物柜在第一次开门时。
 - 货物模型的骨骼都标 `neverRender`，物品图标里不出现；在世界里由方块实体的 `meshPartVisible` 决定显示哪些。
 
 ## 主题（goods themes）

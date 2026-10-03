@@ -85,6 +85,11 @@ final class AuthoringFixtureRegistry {
         Def notes(String n){notes=n;return this;}
         Fixture build(){return new Fixture(id,c,category,facing,Set.copyOf(facings),Map.copyOf(variants),Map.copyOf(fixed),Set.copyOf(connections),inventory,support,shape,multi,notes);}
     }
+    /** Commercial Dumpster V2, one block per colour: 18-slot searchable container, two lids, starts shut and empty. */
+    private static Def dumpster(String id){
+        return new Def(A+id,AuthoringClass.STORAGE_WITH_INVENTORY,"utility").facing(H4).multi(DUMPSTER).fixed("left_open","false","right_open","false")
+                .inventory().support(Support.FLOOR).notes("2 wide. Anchor = master; secondary at facing.getClockWise(). V2: 18-slot searchable container, two lids, starts shut and empty.");
+    }
     private static Map<String,Fixture> build(){
         var safe=AuthoringClass.SAFE_FIXTURE;var storage=AuthoringClass.STORAGE_WITH_INVENTORY;var machine=AuthoringClass.MACHINE;var unsafe=AuthoringClass.UNSAFE;
         var defs=List.of(
@@ -129,8 +134,10 @@ final class AuthoringFixtureRegistry {
                     .notes("Engine needs no support; place it against a wall for the intended look."),
             new Def(A+"metal_trash_can",storage,"utility").facing(H4).fixed("open","false").inventory()
                     .notes("V2 (2026-10-02): 9-slot searchable container with a hinged lid; starts shut and empty."),
-            new Def(A+"commercial_dumpster",safe,"utility").facing(H4).multi(DUMPSTER).support(Support.FLOOR)
-                    .notes("2 wide. Anchor = master; secondary at facing.getClockWise()."),
+            dumpster("commercial_dumpster"),
+            dumpster("commercial_dumpster_blue"),
+            dumpster("commercial_dumpster_brown"),
+            dumpster("commercial_dumpster_gray"),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
             new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
             new Def(A+"industrial_electrical_box",storage,"utility").facing(H4).fixed("open","false","locked","true").inventory().support(Support.ATTACHED_OPPOSITE_FACING)

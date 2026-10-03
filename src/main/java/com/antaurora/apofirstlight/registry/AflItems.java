@@ -216,6 +216,18 @@ public final class AflItems {
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER.get(),
                     new Item.Properties()));
+    public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_BLUE = ITEMS.register("commercial_dumpster_blue",
+            () -> new CommercialDumpsterBlockItem(
+                    (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_BLUE.get(),
+                    new Item.Properties()));
+    public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_BROWN = ITEMS.register("commercial_dumpster_brown",
+            () -> new CommercialDumpsterBlockItem(
+                    (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_BROWN.get(),
+                    new Item.Properties()));
+    public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_GRAY = ITEMS.register("commercial_dumpster_gray",
+            () -> new CommercialDumpsterBlockItem(
+                    (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_GRAY.get(),
+                    new Item.Properties()));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

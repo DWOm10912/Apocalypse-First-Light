@@ -60,6 +60,19 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CASH_REGISTER.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/cash_register.geo.json"),
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/cash_register.png"), 0.0, 0.0), "cash_register");
+            // Commercial Dumpster V2 (tools/build-commercial-dumpster-v2.mjs): one mesh, each colour's atlas, lids shut, no goods
+            bind(AflItems.COMMERCIAL_DUMPSTER.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/commercial_dumpster.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/commercial_dumpster_green.png"), 0.0, 0.0), "commercial_dumpster");
+            bind(AflItems.COMMERCIAL_DUMPSTER_BLUE.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/commercial_dumpster.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/commercial_dumpster_blue.png"), 0.0, 0.0), "commercial_dumpster_blue");
+            bind(AflItems.COMMERCIAL_DUMPSTER_BROWN.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/commercial_dumpster.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/commercial_dumpster_brown.png"), 0.0, 0.0), "commercial_dumpster_brown");
+            bind(AflItems.COMMERCIAL_DUMPSTER_GRAY.get(), () -> new AflStaticMeshItemRenderer(
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/commercial_dumpster.geo.json"),
+                    new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/block/commercial_dumpster_gray.png"), 0.0, 0.0), "commercial_dumpster_gray");
             // Metal Trash Can V2 (tools/build-metal-trash-can-v2.mjs): the block's mesh and atlas, lid shut, no bags; views fitted by the generator
             bind(AflItems.METAL_TRASH_CAN.get(), () -> new AflStaticMeshItemRenderer(
                     new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/metal_trash_can.geo.json"),

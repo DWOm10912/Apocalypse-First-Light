@@ -65,6 +65,7 @@ public final class WorldInteractionHint {
             target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=freezerLid(mc,hit);
+            if(target==null) target=dumpsterLid(mc,hit);
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
@@ -154,6 +155,18 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof ChestFreezerBlock)) return null;
         var prompt=ChestFreezerBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation());
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.chest_freezer."+prompt.key()),prompt.anchor());
+    }
+
+    /**
+     * Commercial dumpster, resolved like CommercialDumpsterBlock#use: open the hit half's lid (drawn at its grip); on an open
+     * half, search / view from its mouth or shut it from its walls.
+     */
+    private static Target dumpsterLid(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CommercialDumpsterBlock)) return null;
+        var prompt=com.antaurora.apofirstlight.block.CommercialDumpsterBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation());
+        return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.dumpster."+prompt.key()),prompt.anchor());
     }
 
     /**

@@ -1,0 +1,131 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/commercial_dumpster.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/commercial_dumpster_gray.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.015625,
+    -0.015625,
+    -0.058875,
+    2.015625,
+    2.340937,
+    1.009375
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "lid_left": {
+      "pivot": [
+        0.96875,
+        1.357756,
+        0.45625
+      ]
+    },
+    "lid_right": {
+      "pivot": [
+        0.03125,
+        1.357756,
+        0.45625
+      ]
+    },
+    "goods_right_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_right_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_right_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_right_3": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_left_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_left_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_left_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "goods_left_3": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "animations": {
+    "left_open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "lid_left": {
+          "rotation": [
+            95,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "right_open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "lid_right": {
+          "rotation": [
+            95,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

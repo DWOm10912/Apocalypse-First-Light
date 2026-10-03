@@ -203,12 +203,18 @@ public final class AflBlocks {
                     .sound(AflSoundTypes.SHEET_METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
-    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER = BLOCKS.register("commercial_dumpster",
-            () -> new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(3.5F, 6.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion()));
+    // Commercial Dumpster V2 (2026-10-02): one block per body colour, same class, mesh and block entity type
+    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER = BLOCKS.register("commercial_dumpster", () -> dumpster("green"));
+    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_BLUE = BLOCKS.register("commercial_dumpster_blue", () -> dumpster("blue"));
+    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_BROWN = BLOCKS.register("commercial_dumpster_brown", () -> dumpster("brown"));
+    public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_GRAY = BLOCKS.register("commercial_dumpster_gray", () -> dumpster("gray"));
+    private static CommercialDumpsterBlock dumpster(String colour) {
+        return new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                .strength(3.5F, 6.0F)
+                .sound(AflSoundTypes.SHEET_METAL)
+                .requiresCorrectToolForDrops()
+                .noOcclusion(), colour);
+    }
     public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR = BLOCKS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5F, 6.0F).sound(SoundType.METAL)

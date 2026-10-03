@@ -1,6 +1,6 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`metal_trash_can` V2（2026-10-02，9 格 / 3×3，40 ticks/格，没有翻找声音；开盖后搜索），见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
+状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`metal_trash_can` V2（2026-10-02，9 格 / 3×3，40 ticks/格；开盖后搜索），见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)；`commercial_dumpster` V2（2026-10-02，四种颜色，18 格 / 6×3，40 ticks/格；两块盖子分开开，任一边开着都能搜），见 [commercial_dumpster_v2.md](../models/commercial_dumpster_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
 - **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
 - 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
 - 另有开发演示方块（见第 21 节）。
@@ -20,7 +20,7 @@ AFL 的储物分为两类：
 
 | 类别 | 例子 | 规则 |
 |---|---|---|
-| **SEARCHABLE STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、冷冻冰柜、封闭设备柜、垃圾桶（2026-10-02）；2026-10-01 起还有货架、饮料冷柜、自动售货机 | 接入本系统。看得见里面的容器画通用货物模型代替真实物品（数量跟着装了几格走，看不出是什么），见 [container_goods_v1.md](container_goods_v1.md) |
+| **SEARCHABLE STORAGE** | 储物柜、文件柜、厨房柜、药柜、工具箱、抽屉、衣柜、铅箱、军用储物箱、冷冻冰柜、封闭设备柜、垃圾桶、商业垃圾箱（2026-10-02）；2026-10-01 起还有货架、饮料冷柜、自动售货机 | 接入本系统。看得见里面的容器画通用货物模型代替真实物品（数量跟着装了几格走，看不出是什么），见 [container_goods_v1.md](container_goods_v1.md) |
 | **VISIBLE STORAGE** | 武器架（以后做） | 物品直接在世界里渲染、实时交互，**不接入**；这类方块会把物品 NBT 同步给客户端用于显示，本身就和隐藏格不兼容 |
 
 2026-10-01 用户决定：除了武器架（挂的是哪把枪很重要），货架、饮料冷柜、售货机都改用搜索 + 通用货物；玩家不再能在货架上摆自己的东西展示。
@@ -263,7 +263,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - 两者任一为 0 即关闭；框架默认关闭。现在所有容器都是关闭的（9 个容器的设置都是 0）。
 - 这个 hook 只给感染者听觉用，**不是能听到的声音**；能听到的翻找声见下面 17a，两者互不影响。正式数值以后由资产配置，例如钢柜较响、木柜较轻。
 
-## 17a. 搜索声（2026-10-02 第二版，没有实机验证）
+## 17a. 搜索声（2026-10-02 第二版，用户实机 PASS）
 
 用户 2026-10-02 定：**所有容器共用一套搜索声**，暂时不分材质；周围玩家都能听到；不做"找到东西"的提示音。
 
@@ -284,7 +284,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
   - 每个容器只有一个共享的搜索进程，几个人同时看也只放一份。
   - 音高固定 1.0，音量 1.0，方块声音类别。
 - 扩展点：`AflSearchableContainer#aflSearchSound()`，默认返回这套共用循环；以后某个容器要换成自己的材质声，就覆盖它返回另一个循环声音，返回 null 则不出声。
-- 所有接入的容器都自动有：储物柜、铅箱、电箱、收银机、货架、饮料冷柜、冷冻冰柜、售货机、垃圾桶。
+- 所有接入的容器都自动有：储物柜、铅箱、电箱、收银机、货架、饮料冷柜、冷冻冰柜、售货机、垃圾桶、商业垃圾箱。
 
 ## 18. 事件 hook
 

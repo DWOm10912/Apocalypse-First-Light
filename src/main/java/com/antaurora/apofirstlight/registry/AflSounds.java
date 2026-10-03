@@ -59,6 +59,9 @@ public final class AflSounds {
     // Metal Trash Can V2 lid, on the 8-tick lid animation (tools/build-metal-trash-can-sounds-v1.mjs)
     public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_OPEN = simple("metal_trash_can_open");
     public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_CLOSE = simple("metal_trash_can_close");
+    // Commercial Dumpster V2 lids (every colour), on the 10-tick lid animation (tools/build-commercial-dumpster-sounds-v1.mjs)
+    public static final RegistryObject<SoundEvent> COMMERCIAL_DUMPSTER_OPEN = simple("commercial_dumpster_open");
+    public static final RegistryObject<SoundEvent> COMMERCIAL_DUMPSTER_CLOSE = simple("commercial_dumpster_close");
     // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
     public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");
