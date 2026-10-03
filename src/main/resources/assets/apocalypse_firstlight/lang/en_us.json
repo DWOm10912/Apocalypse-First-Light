@@ -19,6 +19,7 @@
   "itemGroup.apocalypse_firstlight.attachments": "AFL · Attachments",
   "itemGroup.apocalypse_firstlight.ammunition": "AFL · Ammunition",
   "itemGroup.apocalypse_firstlight.melee_and_equipment": "AFL · Melee & Equipment",
+  "itemGroup.apocalypse_firstlight.survival_supplies": "AFL · Survival Supplies",
 
   "block.apocalypse_firstlight.reinforced_concrete": "Reinforced Concrete",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "Reinforced Concrete Slab",
@@ -166,6 +167,9 @@
   "item.apocalypse_firstlight.plastic_scrap": "Plastic Scrap",
   "item.apocalypse_firstlight.plastic_pellets": "Plastic Pellets",
   "item.apocalypse_firstlight.geiger_counter": "Geiger Counter",
+  "item.apocalypse_firstlight.dirty_water_bottle": "Dirty Water Bottle",
+  "item.apocalypse_firstlight.boiled_water_bottle": "Boiled Water Bottle",
+  "item.apocalypse_firstlight.purified_water_bottle": "Purified Water Bottle",
   "item.apocalypse_firstlight.simple_hearing_protection": "Simple Hearing Protection",
   "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "Temporary earmuffs made of simple materials can significantly relieve tinnitus and reduce external sounds.",
 
@@ -306,10 +310,19 @@
 
   "death.attack.apocalypse_firstlight.native_bullet": "%1$s was shot by %2$s",
   "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s was shot by %2$s using %3$s",
+  "death.attack.apocalypse_firstlight.dehydration": "%1$s died of thirst",
+  "death.attack.apocalypse_firstlight.dehydration.player": "%1$s died of thirst whilst fighting %2$s",
+  "death.attack.apocalypse_firstlight.hypothermia": "%1$s froze to death",
+  "death.attack.apocalypse_firstlight.hypothermia.player": "%1$s froze to death whilst fighting %2$s",
+  "death.attack.apocalypse_firstlight.heatstroke": "%1$s died of heatstroke",
+  "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s died of heatstroke whilst fighting %2$s",
+  "hud.apocalypse_firstlight.temperature.core": "Core %s",
+  "hud.apocalypse_firstlight.temperature.ambient": "Air %s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
 
   "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
+  "effect.apocalypse_firstlight.gastroenteritis": "Stomach Bug",
 
   "fluid.apocalypse_firstlight.industrial_waste": "Industrial Waste",
 
@@ -432,5 +445,6 @@
   "tooltip.apocalypse_firstlight.weight.assembled": "Assembled weight (attachments and ammo): %s",
   "tooltip.apocalypse_firstlight.weight.stack": "Weight: %s × %s = %s",
   "tooltip.apocalypse_firstlight.weight.fallback": "No mass data; default value used",
-  "tooltip.apocalypse_firstlight.weight.pending": "Weight: awaiting server data"
+  "tooltip.apocalypse_firstlight.weight.pending": "Weight: awaiting server data",
+  "message.apocalypse_firstlight.thirst.gastro_symptom": "Your stomach cramps"
 }

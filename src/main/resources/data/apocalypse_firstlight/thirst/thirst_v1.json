@@ -1,0 +1,38 @@
+{
+  "max": 100,
+  "base_per_hour": 100,
+  "exertion_per_100_stamina": 3,
+  "bottle": 20,
+  "sip": 5,
+  "sip_cooldown_ticks": 10,
+  "foods": {
+    "minecraft:milk_bucket": 30,
+    "minecraft:melon_slice": 6,
+    "minecraft:apple": 2,
+    "minecraft:mushroom_stew": 10,
+    "minecraft:rabbit_stew": 10,
+    "minecraft:beetroot_soup": 10,
+    "minecraft:suspicious_stew": 10,
+    "minecraft:honey_bottle": 5
+  },
+  "thirsty_below": 30,
+  "dehydrated_below": 15,
+  "stamina_regen_thirsty": 0.75,
+  "stamina_regen_dehydrated": 0.5,
+  "damage_interval_seconds": 10,
+  "sickness": {
+    "chance_bottle": 0.2,
+    "chance_sip": 0.05,
+    "duration_seconds": 300,
+    "thirst_multiplier": 2,
+    "extra_exhaustion_per_second": 0.05,
+    "stamina_regen": 0.75,
+    "symptom_min_seconds": 60,
+    "symptom_max_seconds": 90,
+    "symptom_thirst": 8,
+    "symptom_food": 2,
+    "symptom_nausea_seconds": 4
+  },
+  "dose_per_bottle": [0, 0.02, 0.05, 0.15, 0.4, 1.0],
+  "dose_per_sip": [0, 0.005, 0.0125, 0.04, 0.1, 0.25]
+}

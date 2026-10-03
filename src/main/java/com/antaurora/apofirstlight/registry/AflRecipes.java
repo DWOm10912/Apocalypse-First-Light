@@ -30,6 +30,16 @@ public final class AflRecipes {
     public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS =
             DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, ApocalypseFirstLight.MOD_ID);
 
+    // Thirst V1: boiling dirty water keeps its radiation contamination (thirst/WaterBoilingRecipes); vanilla recipe types
+    public static final RegistryObject<RecipeSerializer<com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Smelting>> BOILING_SMELTING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("boiling_smelting", () -> new com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Serializer<>(
+                    com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Smelting::new, 200));
+    public static final RegistryObject<RecipeSerializer<com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Smoking>> BOILING_SMOKING_SERIALIZER =
+            RECIPE_SERIALIZERS.register("boiling_smoking", () -> new com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Serializer<>(
+                    com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Smoking::new, 100));
+    public static final RegistryObject<RecipeSerializer<com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Campfire>> BOILING_CAMPFIRE_SERIALIZER =
+            RECIPE_SERIALIZERS.register("boiling_campfire_cooking", () -> new com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Serializer<>(
+                    com.antaurora.apofirstlight.thirst.WaterBoilingRecipes.Campfire::new, 100));
     public static final RegistryObject<RecipeType<CrushingRecipe>> CRUSHING_TYPE =
             RECIPE_TYPES.register("crushing", () -> RecipeType.simple(CRUSHING_ID));
     public static final RegistryObject<RecipeSerializer<CrushingRecipe>> CRUSHING_SERIALIZER =

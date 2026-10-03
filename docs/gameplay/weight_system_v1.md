@@ -3,7 +3,7 @@
 状态：**Core 已实现，客户端启动、联机、实机计算与生命周期验收待用户测试**。唯一一次 `compileJava --offline` 的结果记录在本次交付报告；本文不把编译等同于实机通过。首批质量与容量均为测试估值，尚未完成平衡。
 
 2026-10-03 补数据（用户要求）：
-- 全部 135 个 AFL 物品都有显式质量；
+- 全部 AFL 物品都有显式质量（2026-10-03 口渴 V1 后共 138 个）；
 - 补了常用原版 tag 和物品；
 - 液体储罐、热能发电机、化学反应器带着的液体计重，标准容器 NBT 里的物品计重；
 - `/aflweight coverage` 把所有缺显式质量的 AFL 物品都算缺失；
@@ -53,7 +53,7 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 数据（`src/main/resources/data/apocalypse_firstlight/item_mass/`）：
 - `core_v1.json`：policy、枪、弹药、配件、材料（codex 首批）；
-- `afl_content_v1.json`：其余 87 个 AFL 物品；
+- `afl_content_v1.json`：其余 90 个 AFL 物品（含口渴 V1 的三种水瓶）；
 - `vanilla_common_v1.json`：原版物品和 tag 规则。
 
 检查工具：`node tools/check-item-mass.mjs`（见“检查工具”）。Tooltip中英文语言键在 `src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json` 与 `en_us.json`，前缀 `tooltip.apocalypse_firstlight.weight.`。
@@ -212,7 +212,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
 | 杨木 | 原木、去皮原木、木头、去皮木头 0.4；木板 0.1；楼梯 0.075；台阶 0.05；门 1；活板门 0.5；树叶、树苗 0.05 |
 | 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
-| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；geiger_counter 0.5；concrete_rubble 0.1 |
+| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；dirty_water_bottle、boiled_water_bottle、purified_water_bottle 0.5（玻璃瓶 0.2 + 0.3 升水）；geiger_counter 0.5；concrete_rubble 0.1 |
 
 原版（`vanilla_common_v1.json`）：
 - 94 条 tag 规则、342 个显式物品。
@@ -452,7 +452,7 @@ coverage 每页20个AFL物品，报告来源：
 - `--vanilla-fallback`：列出仍是 fallback 的原版物品；
 - `--item <id>`：查一个物品最后算成多重、来自哪条规则（可以写多个，原版可省略 `minecraft:`）。
 
-有错误时退出码为 1。2026-10-03 运行结果：AFL 135/135 显式，原版显式 346、tag 722、fallback 170，PASS。
+有错误时退出码为 1。2026-10-03 运行结果（口渴 V1 后）：AFL 138/138 显式，原版显式 346、tag 722、fallback 170，PASS。
 
 以下是**用户待执行**步骤，尚未取得 PASS。建议测试存档、开启命令，先用空库存隔离差值；不要求在正式存档清空物品。拿在cursor/合成格时由服务器控制台或另一个OP执行 `aflweight player 玩家名`，避免关闭GUI导致物品返回库存。
 

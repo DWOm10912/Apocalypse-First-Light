@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "35";
+    private static final String PROTOCOL = "37";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -106,6 +106,22 @@ public final class AflNetwork {
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.weight.WeightPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.stamina.StaminaPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.thirst.ThirstPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.temperature.TemperaturePackets.register(channel, nextId);
+    }
+
+    /** Temperature V1: the player's own temperature state. */
+    public static void temperatureState(ServerPlayer player, com.antaurora.apofirstlight.temperature.TemperaturePackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Thirst V1: the player's own thirst. */
+    public static void thirstState(ServerPlayer player, com.antaurora.apofirstlight.thirst.ThirstPackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    /** Thirst V1 (client): one sip at the water source in view. */
+    public static void thirstSip() {
+        if (channel != null) channel.sendToServer(new com.antaurora.apofirstlight.thirst.ThirstPackets.Sip());
     }
 
     /** Stamina V1: the player's own stamina state. */

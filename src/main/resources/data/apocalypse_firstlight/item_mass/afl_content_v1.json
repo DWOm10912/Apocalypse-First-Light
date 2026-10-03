@@ -189,6 +189,18 @@
       "unit_mass_kg": 0.5,
       "estimated": true
     },
+    "apocalypse_firstlight:dirty_water_bottle": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:boiled_water_bottle": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:purified_water_bottle": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
     "apocalypse_firstlight:vending_machine": {
       "unit_mass_kg": 45,
       "estimated": true

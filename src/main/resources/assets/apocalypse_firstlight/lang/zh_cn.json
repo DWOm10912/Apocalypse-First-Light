@@ -19,6 +19,7 @@
   "itemGroup.apocalypse_firstlight.attachments": "黎明启示录 · 配件",
   "itemGroup.apocalypse_firstlight.ammunition": "黎明启示录 · 弹药",
   "itemGroup.apocalypse_firstlight.melee_and_equipment": "黎明启示录 · 近战与装备",
+  "itemGroup.apocalypse_firstlight.survival_supplies": "黎明启示录 · 生存补给",
 
   "block.apocalypse_firstlight.reinforced_concrete": "钢筋混凝土",
   "block.apocalypse_firstlight.reinforced_concrete_slab": "钢筋混凝土台阶",
@@ -166,6 +167,9 @@
   "item.apocalypse_firstlight.plastic_scrap": "废塑料",
   "item.apocalypse_firstlight.plastic_pellets": "塑料颗粒",
   "item.apocalypse_firstlight.geiger_counter": "盖革计数器",
+  "item.apocalypse_firstlight.dirty_water_bottle": "脏水瓶",
+  "item.apocalypse_firstlight.boiled_water_bottle": "煮沸水瓶",
+  "item.apocalypse_firstlight.purified_water_bottle": "纯净水瓶",
   "item.apocalypse_firstlight.simple_hearing_protection": "简易隔音耳罩",
   "tooltip.apocalypse_firstlight.simple_hearing_protection.description": "用简易材料制成的临时耳罩，能够显著缓解耳鸣，并降低外界声音",
 
@@ -306,10 +310,19 @@
 
   "death.attack.apocalypse_firstlight.native_bullet": "%1$s 被 %2$s 射杀了",
   "death.attack.apocalypse_firstlight.native_bullet.item": "%1$s 被 %2$s 用 %3$s 射杀了",
+  "death.attack.apocalypse_firstlight.dehydration": "%1$s 渴死了",
+  "death.attack.apocalypse_firstlight.dehydration.player": "%1$s 在与 %2$s 战斗时渴死了",
+  "death.attack.apocalypse_firstlight.hypothermia": "%1$s 冻死了",
+  "death.attack.apocalypse_firstlight.hypothermia.player": "%1$s 在与 %2$s 战斗时冻死了",
+  "death.attack.apocalypse_firstlight.heatstroke": "%1$s 死于热射病",
+  "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s 在与 %2$s 战斗时死于热射病",
+  "hud.apocalypse_firstlight.temperature.core": "体温 %s",
+  "hud.apocalypse_firstlight.temperature.ambient": "环境 %s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "沉降荒原",
 
   "effect.apocalypse_firstlight.radiation_sickness": "辐射病",
+  "effect.apocalypse_firstlight.gastroenteritis": "肠胃感染",
 
   "fluid.apocalypse_firstlight.industrial_waste": "工业废液",
 
@@ -432,5 +445,6 @@
   "tooltip.apocalypse_firstlight.weight.assembled": "整枪重量（含附件及弹药）：%s",
   "tooltip.apocalypse_firstlight.weight.stack": "重量：%s × %s = %s",
   "tooltip.apocalypse_firstlight.weight.fallback": "没有质量数据，按默认值计算",
-  "tooltip.apocalypse_firstlight.weight.pending": "重量：等待服务器数据"
+  "tooltip.apocalypse_firstlight.weight.pending": "重量：等待服务器数据",
+  "message.apocalypse_firstlight.thirst.gastro_symptom": "肚子一阵绞痛"
 }

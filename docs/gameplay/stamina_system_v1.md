@@ -1,6 +1,6 @@
 # AFL Stamina V1（耐力）
 
-状态：**已实现（2026-10-03），编译通过，没有实机验证**。设计和取舍见 `docs/项目内容/01 - 设计/生存/耐力.md`；本文写的是当前实际行为。数值全部是测试起点。
+状态：**已实现，用户实机测试 PASS（2026-10-03）**。临时耐力环 HUD 按用户安排留到正式生存 HUD 时一起重做。设计和取舍见 `docs/项目内容/01 - 设计/生存/耐力.md`；本文写的是当前实际行为。数值全部是测试起点。
 
 ## 文件
 
@@ -14,6 +14,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `stamina/ClientStamina.java` | 客户端：本人状态、喘息声调度、力竭挖掘变慢 |
 | `stamina/ClientStaminaHud.java` | 临时耐力环 HUD |
 | `stamina/StaminaCommands.java` | `/aflstamina` 调试命令 |
+| `stamina/PlayerStamina#consumeSpent` | 口渴 V1：把实际花掉的耐力交给口渴（每 100 点口渴 −3） |
 | `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重或力竭时禁止疾跑（和负重共用） |
 | `weapon/NativeGunActions.java` | 开枪、换弹时扣耐力 |
 | `weapon/NativeGunShot.java` | 疲劳时散布变大 |
@@ -24,7 +25,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 ## 数值（`stamina_v1.json`）
 
 - 最大 100。
-- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5。
+- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5；口渴时再乘口渴倍率（口渴 < 30 ×0.75、< 15 ×0.5，肠胃感染 ×0.75，见 `thirst_system_v1.md`）。
 - 恢复延迟：费力动作后 1.0 秒；降到 0 后 2.0 秒。
 - 力竭解除：耐力回到 30。
 
@@ -98,7 +99,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 `ClientStaminaHud`，overlay `apocalypse_firstlight:stamina_ring`。正式生存 HUD 以后再做，见 `耐力.md` 第 12 节。
 
-- 位置：负重条左边一个圆环（GUI 坐标，圆心在负重条左端左边 9 像素、屏幕高度 − 29.5，外半径 5.5、环宽 1.5），在副手格上方，不挡副手格。
+- 位置：负重条左边的圆环（GUI 坐标，圆心在负重条左端左边 22 像素、屏幕高度 − 29.5，外半径 5.5、环宽 1.5），在副手格上方，不挡副手格。2026-10-03 口渴 V1 把水滴环放在负重条旁边（左 9 像素），耐力环往左挪了一格；绘制改用共用的 `client/AflRingIcon`。
 - 环从顶上开始顺时针随耐力填充，中间一个跑步小人。
 - 颜色：正常浅灰，< 30 琥珀，力竭红。
 - 填充和负重条一样平滑过渡（时间常数 0.12 秒）。
@@ -130,7 +131,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - 感染者能不能听到喘息声，留给感染者听觉系统。
 - 口渴、体温、受伤对耐力的影响（`耐力.md` 第 13 节预留）。
 
-## 验收（待用户执行）
+## 验收（2026-10-03 用户测试 PASS）
 
 用 Survival 和测试存档：
 1. 疾跑：满耐力空手约跑 12.5 秒后力竭，停跑；站着约 2 秒后开始回，回到 30 后能再跑。

@@ -173,6 +173,13 @@ public final class AflCreativeTabs {
             AflItems.SIMPLE_HEARING_PROTECTION,
             AflItems.GEIGER_COUNTER);
 
+    // Thirst V1: water first; later drinks, food and medicine
+    public static final RegistryObject<CreativeModeTab> SURVIVAL_SUPPLIES = tab("survival_supplies", MELEE_AND_EQUIPMENT,
+            AflItems.PURIFIED_WATER_BOTTLE,
+            AflItems.DIRTY_WATER_BOTTLE,
+            AflItems.BOILED_WATER_BOTTLE,
+            AflItems.PURIFIED_WATER_BOTTLE);
+
     /** Title key itemGroup.apocalypse_firstlight.&lt;id&gt;; placed after {@code after} when given. */
     @SafeVarargs
     private static RegistryObject<CreativeModeTab> tab(String id, RegistryObject<CreativeModeTab> after,

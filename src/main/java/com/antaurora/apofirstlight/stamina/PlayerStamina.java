@@ -34,7 +34,7 @@ public final class PlayerStamina {
     private static final Map<ServerPlayer, State> STATES = new HashMap<>();
 
     private static final class State {
-        double value = Double.NaN, lastX, lastY, lastZ;
+        double value = Double.NaN, lastX, lastY, lastZ, spent;
         boolean winded, mined, hasLast, forceSync = true;
         int delay, lastSyncTick = Integer.MIN_VALUE, breathTick = Integer.MIN_VALUE;
         float sentValue = Float.NaN, sentSway = Float.NaN;
@@ -75,7 +75,9 @@ public final class PlayerStamina {
     public static void spend(ServerPlayer player, double amount, boolean movement) {
         if (!enabled(player) || amount <= 0) return;
         var s = state(player);
-        s.value -= amount * weight(player)[movement ? 0 : 1];
+        double cost = amount * weight(player)[movement ? 0 : 1];
+        s.value -= cost;
+        s.spent += cost;
         s.delay = Math.max(s.delay, (int)Math.round(StaminaConfig.get().delaySeconds * 20));
         settle(s);
     }
@@ -88,6 +90,15 @@ public final class PlayerStamina {
     public static void reload(ServerPlayer player, ResourceLocation gun) {
         var costs = StaminaConfig.get().costs;
         spend(player, costs.reloadsByGun.getOrDefault(gun.toString(), costs.reload), false);
+    }
+
+    /** Thirst V1: the stamina spent since the last call (costs as charged, after the load), then reset. */
+    public static double consumeSpent(ServerPlayer player) {
+        var s = STATES.get(player);
+        if (s == null) return 0;
+        double spent = s.spent;
+        s.spent = 0;
+        return spent;
     }
 
     /** Clamp; entering 0 makes the player winded (longer delay); back at winded_resume clears it. */
@@ -126,12 +137,14 @@ public final class PlayerStamina {
             drain *= w[0];
             if (s.mined) { drain += c.costs.mining * w[1]; effort = true; s.mined = false; }
             s.value -= drain / 20;
+            s.spent += drain / 20;
             if (effort) s.delay = Math.max(s.delay, (int)Math.round(c.delaySeconds * 20));
             if (s.delay > 0) s.delay--;
             else {
                 double regen = c.regen * w[2];
                 if (player.isInWater()) regen *= c.regenInWater;
                 if (player.getFoodData().getFoodLevel() <= c.lowFoodLevel) regen *= c.regenLowFood;
+                regen *= com.antaurora.apofirstlight.thirst.PlayerThirst.staminaRegenMultiplier(player); // thirsty, sick
                 s.value += regen / 20;
             }
             settle(s);

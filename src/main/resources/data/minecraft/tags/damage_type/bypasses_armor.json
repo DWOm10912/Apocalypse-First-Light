@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:dehydration",
+    "apocalypse_firstlight:hypothermia",
+    "apocalypse_firstlight:heatstroke"
+  ]
+}

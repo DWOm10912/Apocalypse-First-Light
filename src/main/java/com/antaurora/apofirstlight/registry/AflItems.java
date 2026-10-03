@@ -340,6 +340,14 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GEIGER_COUNTER = ITEMS.register("geiger_counter",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    // Thirst V1 (docs/gameplay/thirst_system_v1.md): filled at a water source (dirty); boiled, it becomes purified water
+    // when it carries no radiation and boiled water (still radioactive) when it does
+    public static final RegistryObject<Item> DIRTY_WATER_BOTTLE = ITEMS.register("dirty_water_bottle",
+            () -> new com.antaurora.apofirstlight.thirst.ThirstWaterItem(true, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> BOILED_WATER_BOTTLE = ITEMS.register("boiled_water_bottle",
+            () -> new com.antaurora.apofirstlight.thirst.ThirstWaterItem(false, new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> PURIFIED_WATER_BOTTLE = ITEMS.register("purified_water_bottle",
+            () -> new com.antaurora.apofirstlight.thirst.ThirstWaterItem(false, new Item.Properties().stacksTo(16)));
 
     private AflItems() {
     }

@@ -13,6 +13,9 @@ public final class AflMobEffects {
 
     public static final RegistryObject<MobEffect> RADIATION_SICKNESS =
             MOB_EFFECTS.register("radiation_sickness", RadiationSicknessEffect::new);
+    /** Thirst V1: stomach bug from raw water; the symptoms are applied by thirst/PlayerThirst. */
+    public static final RegistryObject<MobEffect> GASTROENTERITIS =
+            MOB_EFFECTS.register("gastroenteritis", com.antaurora.apofirstlight.thirst.GastroenteritisEffect::new);
 
     private AflMobEffects() {
     }

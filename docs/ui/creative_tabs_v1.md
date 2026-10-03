@@ -2,6 +2,8 @@
 
 2026-09-28 重排：原来的 4 页（方块 / 物品 / AFL 武器与弹药 / 装备）拆成 9 页。已通过 `compileJava`，未实机查看。
 
+2026-10-03 口渴 V1：新增第 10 页“生存补给”。
+
 2026-09-30 Material System V1：建筑页去掉 7 种金属存储块、加入铅屏蔽砖；材料页按生产链重排，图标改为钢坯。见 [材料体系](../gameplay/material_system_v1.md)。
 
 - 代码：`src/main/java/com/antaurora/apofirstlight/registry/AflCreativeTabs.java`。
@@ -22,6 +24,7 @@
 | 7 | `attachments` | 配件 / Attachments | 步枪红点 | 按槽位排列：瞄具 → 枪口 → 弹匣；同一槽位内手枪用在前、步枪用在后（枪口：手枪消音器、7.62×51mm 步枪消音器、12.7×55mm 重型消音器；弹匣：P9 28 发、BR51 35 发、BR51 50 发弹鼓） |
 | 8 | `ammunition` | 弹药 / Ammunition | 7.62×51mm 步枪弹 | 与枪械页同序：9×19mm、.50 AE、7.62×51mm、12.7×55mm、12 Gauge |
 | 9 | `melee_and_equipment` | 近战与装备 / Melee & Equipment | 撬棍 | 撬棍、简易隔音耳罩、盖革计数器 |
+| 10 | `survival_supplies` | 生存补给 / Survival Supplies | 纯净水瓶 | 脏水瓶、煮沸水瓶、纯净水瓶（2026-10-03 口渴 V1 新增此页；以后放饮料、食物、药品） |
 
 ## 规则
 
