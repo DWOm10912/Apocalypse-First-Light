@@ -1,0 +1,353 @@
+{
+  "format_version": 1,
+  "items": {
+    "apocalypse_firstlight:reinforced_concrete": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:reinforced_concrete_slab": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:reinforced_concrete_stairs": {
+      "unit_mass_kg": 2.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lead_shielding_bricks": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_block": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_block_slab": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_block_stairs": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate_slab": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate_stairs": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_grate": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_railing": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_beam": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_brace": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_cable": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_door": {
+      "unit_mass_kg": 15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:asphalt": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fallout_soil": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:scorched_soil": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fused_ground": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:bauxite_ore": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:galena_ore": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sphalerite_ore": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cassiterite_ore": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pentlandite_ore": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wolframite_ore": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:spodumene_ore": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_log": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stripped_poplar_log": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_wood": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stripped_poplar_wood": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_planks": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_stairs": {
+      "unit_mass_kg": 0.375,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_slab": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_door": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_trapdoor": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_leaves": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_sapling": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:edge_lane_white": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:edge_lane_yellow": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_lane_divider": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:power_cable": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fluid_pipe": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:industrial_utility_light": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:concrete_rubble": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:industrial_waste_bucket": {
+      "unit_mass_kg": 13,
+      "estimated": true
+    },
+    "apocalypse_firstlight:geiger_counter": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:vending_machine": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_dumpster": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_dumpster_blue": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_dumpster_brown": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_dumpster_gray": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_glass_double_door": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:beverage_cooler": {
+      "unit_mass_kg": 35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:gun_maintenance_bench": {
+      "unit_mass_kg": 35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:precision_fabrication_station": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:chest_freezer": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lead_chest": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:office_multifunction_printer": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:industrial_locker": {
+      "unit_mass_kg": 25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tall_filing_cabinet": {
+      "unit_mass_kg": 25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:modern_office_desk": {
+      "unit_mass_kg": 25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:retail_shelf_single": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_flushometer_toilet": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:water_dispenser": {
+      "unit_mass_kg": 15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:industrial_electrical_box": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:modern_office_chair": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:low_filing_cabinet": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:restroom_partition": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:commercial_wall_mounted_sink": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:metal_trash_can": {
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "apocalypse_firstlight:office_cubicle_partition": {
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "apocalypse_firstlight:restroom_stall_door": {
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cash_register": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:office_computer_station": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:modern_lcd_monitor": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:office_keyboard": {
+      "unit_mass_kg": 0.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:office_mouse": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:crusher": {
+      "unit_mass_kg": 50,
+      "estimated": true
+    },
+    "apocalypse_firstlight:industrial_furnace": {
+      "unit_mass_kg": 50,
+      "estimated": true
+    },
+    "apocalypse_firstlight:alloy_furnace": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:chemical_reactor": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:compressor": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:thermal_generator": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:energy_cell": {
+      "unit_mass_kg": 35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fluid_tank": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:charging_station": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    }
+  }
+}

@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.weight;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.weapon.NativeAttachment;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,9 +26,12 @@ public final class WeightCommands {
                 .then(Commands.literal("player").then(Commands.argument("target", EntityArgument.player())
                         .executes(c -> summary(c.getSource(), EntityArgument.getPlayer(c, "target"), true))
                         .then(Commands.literal("held").executes(c -> held(c.getSource(), EntityArgument.getPlayer(c, "target"))))))
-                .then(Commands.literal("coverage").executes(c -> coverage(c.getSource(), 1))
+                .then(Commands.literal("coverage").executes(c -> coverage(c.getSource(), 1, false))
                         .then(Commands.argument("page", IntegerArgumentType.integer(1))
-                                .executes(c -> coverage(c.getSource(), IntegerArgumentType.getInteger(c, "page"))))));
+                                .executes(c -> coverage(c.getSource(), IntegerArgumentType.getInteger(c, "page"), false)))
+                        .then(Commands.literal("missing").executes(c -> coverage(c.getSource(), 1, true))
+                                .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                                        .executes(c -> coverage(c.getSource(), IntegerArgumentType.getInteger(c, "page"), true))))));
     }
     private static void say(CommandSourceStack source, String message) {
         source.sendSuccess(() -> Component.literal(message), false);
@@ -56,29 +58,35 @@ public final class WeightCommands {
         // Issues are deduplicated; explicit estimates and missing-rule reasons remain distinguishable.
         for (String issue : new TreeSet<>(result.issues())) say(source, issue);
     }
-    private static int coverage(CommandSourceStack source, int page) {
+    /** Every AFL item needs its own rule (items / native_guns); one covered only by a tag or the fallback is missing. */
+    private static int coverage(CommandSourceStack source, int page, boolean missingOnly) {
         var data = ItemMassData.snapshot();
         List<String> rows = new ArrayList<>();
-        int fallback = 0, missingCritical = 0;
+        int items = 0, fallback = 0, tagOnly = 0;
         for (var id : new TreeSet<>(ForgeRegistries.ITEMS.getKeys())) {
             if (!id.getNamespace().equals(ApocalypseFirstLight.MOD_ID)) continue;
+            items++;
             var item = ForgeRegistries.ITEMS.getValue(id);
+            String row;
+            boolean explicit;
             if (item instanceof NativeGunItem gun) {
-                boolean missing = !data.guns().containsKey(gun.definition().id());
-                if (missing) { fallback++; missingCritical++; }
-                rows.add(id + " -> " + (missing ? "FALLBACK missing native_guns rule" : "EXPLICIT native_guns (receiver + magazine + actual ammo)"));
+                explicit = data.guns().containsKey(gun.definition().id());
+                if (!explicit) fallback++;
+                row = id + " -> " + (explicit ? "EXPLICIT native_guns (receiver + magazine + actual ammo)" : "FALLBACK missing native_guns rule");
             } else {
                 var unit = data.unit(id);
-                boolean explicit = unit.source().startsWith("item:");
+                explicit = unit.source().startsWith("item:");
                 if (unit.source().startsWith("fallback:")) fallback++;
-                boolean critical = item instanceof NativeAttachment || id.getPath().endsWith("_round") || id.getPath().endsWith("_casing");
-                if (critical && !explicit) missingCritical++;
-                rows.add(id + " -> " + unit.grams() + " g " + unit.source() + (unit.estimated() ? " ESTIMATED" : " EXACT"));
+                else if (!explicit) tagOnly++;
+                row = id + " -> " + unit.grams() + " g " + unit.source() + (unit.estimated() ? " ESTIMATED" : " EXACT");
             }
+            if (!explicit) row += " MISSING_EXPLICIT";
+            if (!missingOnly || !explicit) rows.add(row);
         }
         int pages = Math.max(1, (rows.size() + 19) / 20);
-        say(source, "AFL mass coverage revision=" + data.revision() + " items=" + rows.size() + " fallback=" + fallback
-                + " critical_missing_explicit=" + missingCritical + " page=" + page + "/" + pages);
+        say(source, "AFL mass coverage revision=" + data.revision() + " items=" + items + " missing_explicit=" + (fallback + tagOnly)
+                + " (fallback=" + fallback + " tag_only=" + tagOnly + ")" + (missingOnly ? " [missing only]" : "")
+                + " page=" + page + "/" + pages);
         if (page > pages) return 0;
         for (int i = (page - 1) * 20; i < Math.min(rows.size(), page * 20); i++) say(source, rows.get(i));
         return 1;

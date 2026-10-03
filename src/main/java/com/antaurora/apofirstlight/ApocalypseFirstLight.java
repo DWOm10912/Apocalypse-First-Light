@@ -66,6 +66,7 @@ public class ApocalypseFirstLight {
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> Regions.register(new AflOverworldRegion(
                 new ResourceLocation(MOD_ID, "overworld"), AflOverworldRegion.REGION_WEIGHT)));
+        event.enqueueWork(com.antaurora.apofirstlight.weight.AflCarriedContents::register);
         event.enqueueWork(() -> {
             FireBlock fire = (FireBlock) Blocks.FIRE;
             fire.setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5);

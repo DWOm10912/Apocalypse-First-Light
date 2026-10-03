@@ -130,11 +130,11 @@ public final class AflItems {
     public static final RegistryObject<Item> GALENA_ORE = ITEMS.register("galena_ore",
             () -> new BlockItem(AflBlocks.GALENA_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> LEAD_CHEST = ITEMS.register("lead_chest",
-            () -> new LeadChestBlockItem(AflBlocks.LEAD_CHEST.get(), new Item.Properties()));
+            () -> new LeadChestBlockItem(AflBlocks.LEAD_CHEST.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> GUN_MAINTENANCE_BENCH = ITEMS.register("gun_maintenance_bench",
-            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.GUN_MAINTENANCE_BENCH.get(), new Item.Properties()));
+            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.GUN_MAINTENANCE_BENCH.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> PRECISION_FABRICATION_STATION = ITEMS.register("precision_fabrication_station",
-            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.PRECISION_FABRICATION_STATION.get(), new Item.Properties()));
+            () -> new com.antaurora.apofirstlight.item.StaticWorkstationBlockItem(AflBlocks.PRECISION_FABRICATION_STATION.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SPHALERITE_ORE = ITEMS.register("sphalerite_ore",
             () -> new BlockItem(AflBlocks.SPHALERITE_ORE.get(), new Item.Properties()));
     public static final RegistryObject<Item> CASSITERITE_ORE = ITEMS.register("cassiterite_ore",
@@ -201,73 +201,73 @@ public final class AflItems {
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_ELECTRICAL_BOX = ITEMS.register("industrial_electrical_box",
-            () -> new BlockItem(AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> INDUSTRIAL_LOCKER = ITEMS.register("industrial_locker",
-            () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",
-            () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CASH_REGISTER = ITEMS.register("cash_register",
-            () -> new BlockItem(AflBlocks.CASH_REGISTER.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.CASH_REGISTER.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> WATER_DISPENSER = ITEMS.register("water_dispenser",
-            () -> new BlockItem(AflBlocks.WATER_DISPENSER.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.WATER_DISPENSER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> METAL_TRASH_CAN = ITEMS.register("metal_trash_can",
-            () -> new BlockItem(AflBlocks.METAL_TRASH_CAN.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.METAL_TRASH_CAN.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> COMMERCIAL_DUMPSTER = ITEMS.register("commercial_dumpster",
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER.get(),
-                    new Item.Properties()));
+                    new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_BLUE = ITEMS.register("commercial_dumpster_blue",
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_BLUE.get(),
-                    new Item.Properties()));
+                    new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_BROWN = ITEMS.register("commercial_dumpster_brown",
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_BROWN.get(),
-                    new Item.Properties()));
+                    new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_DUMPSTER_GRAY = ITEMS.register("commercial_dumpster_gray",
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_GRAY.get(),
-                    new Item.Properties()));
+                    new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
-            () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties()));
+            () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",
             () -> new BeverageCoolerBlockItem((com.antaurora.apofirstlight.block.BeverageCoolerBlock)
-                    AflBlocks.BEVERAGE_COOLER.get(), new Item.Properties()));
+                    AflBlocks.BEVERAGE_COOLER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> VENDING_MACHINE = ITEMS.register("vending_machine",
-            () -> new com.antaurora.apofirstlight.item.VendingMachineBlockItem(AflBlocks.VENDING_MACHINE.get(),new Item.Properties()));
+            () -> new com.antaurora.apofirstlight.item.VendingMachineBlockItem(AflBlocks.VENDING_MACHINE.get(),new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CHEST_FREEZER = ITEMS.register("chest_freezer",
             () -> new ChestFreezerBlockItem((com.antaurora.apofirstlight.block.ChestFreezerBlock)
-                    AflBlocks.CHEST_FREEZER.get(), new Item.Properties()));
+                    AflBlocks.CHEST_FREEZER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> MODERN_OFFICE_DESK = ITEMS.register("modern_office_desk",
             () -> new ModernOfficeDeskBlockItem(
                     (com.antaurora.apofirstlight.block.ModernOfficeDeskBlock) AflBlocks.MODERN_OFFICE_DESK.get(),
-                    new Item.Properties()));
+                    new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> MODERN_OFFICE_CHAIR = ITEMS.register("modern_office_chair",
-            () -> new BlockItem(AflBlocks.MODERN_OFFICE_CHAIR.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.MODERN_OFFICE_CHAIR.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> MODERN_LCD_MONITOR = ITEMS.register("modern_lcd_monitor",
-            () -> new BlockItem(AflBlocks.MODERN_LCD_MONITOR.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.MODERN_LCD_MONITOR.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> OFFICE_COMPUTER_STATION = ITEMS.register("office_computer_station",
-            () -> new BlockItem(AflBlocks.OFFICE_COMPUTER_STATION.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.OFFICE_COMPUTER_STATION.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> OFFICE_KEYBOARD = ITEMS.register("office_keyboard",
-            () -> new BlockItem(AflBlocks.OFFICE_KEYBOARD.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.OFFICE_KEYBOARD.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> OFFICE_MOUSE = ITEMS.register("office_mouse",
-            () -> new BlockItem(AflBlocks.OFFICE_MOUSE.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.OFFICE_MOUSE.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> OFFICE_CUBICLE_PARTITION = ITEMS.register("office_cubicle_partition",
-            () -> new BlockItem(AflBlocks.OFFICE_CUBICLE_PARTITION.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.OFFICE_CUBICLE_PARTITION.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> RESTROOM_PARTITION = ITEMS.register("restroom_partition",
-            () -> new BlockItem(AflBlocks.RESTROOM_PARTITION.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.RESTROOM_PARTITION.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> RESTROOM_STALL_DOOR = ITEMS.register("restroom_stall_door",
-            () -> new com.antaurora.apofirstlight.item.RestroomStallDoorBlockItem(AflBlocks.RESTROOM_STALL_DOOR.get(), new Item.Properties()));
+            () -> new com.antaurora.apofirstlight.item.RestroomStallDoorBlockItem(AflBlocks.RESTROOM_STALL_DOOR.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> COMMERCIAL_FLUSHOMETER_TOILET = ITEMS.register("commercial_flushometer_toilet",
-            () -> new BlockItem(AflBlocks.COMMERCIAL_FLUSHOMETER_TOILET.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.COMMERCIAL_FLUSHOMETER_TOILET.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> COMMERCIAL_WALL_MOUNTED_SINK = ITEMS.register("commercial_wall_mounted_sink",
-            () -> new BlockItem(AflBlocks.COMMERCIAL_WALL_MOUNTED_SINK.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.COMMERCIAL_WALL_MOUNTED_SINK.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> LOW_FILING_CABINET = ITEMS.register("low_filing_cabinet",
-            () -> new BlockItem(AflBlocks.LOW_FILING_CABINET.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.LOW_FILING_CABINET.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> TALL_FILING_CABINET = ITEMS.register("tall_filing_cabinet",
-            () -> new BlockItem(AflBlocks.TALL_FILING_CABINET.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.TALL_FILING_CABINET.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> OFFICE_MULTIFUNCTION_PRINTER = ITEMS.register("office_multifunction_printer",
-            () -> new BlockItem(AflBlocks.OFFICE_MULTIFUNCTION_PRINTER.get(), new Item.Properties()));
+            () -> new BlockItem(AflBlocks.OFFICE_MULTIFUNCTION_PRINTER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FALLOUT_SOIL = ITEMS.register("fallout_soil",
             () -> new BlockItem(AflBlocks.FALLOUT_SOIL.get(), new Item.Properties()));
     public static final RegistryObject<Item> SCORCHED_SOIL = ITEMS.register("scorched_soil",

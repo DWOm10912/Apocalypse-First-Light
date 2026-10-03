@@ -1,0 +1,1927 @@
+{
+  "format_version": 1,
+  "items": {
+    "minecraft:bucket": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:water_bucket": {
+      "unit_mass_kg": 11,
+      "estimated": true
+    },
+    "minecraft:milk_bucket": {
+      "unit_mass_kg": 11,
+      "estimated": true
+    },
+    "minecraft:lava_bucket": {
+      "unit_mass_kg": 21,
+      "estimated": true
+    },
+    "minecraft:powder_snow_bucket": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:cod_bucket": {
+      "unit_mass_kg": 11.5,
+      "estimated": true
+    },
+    "minecraft:salmon_bucket": {
+      "unit_mass_kg": 11.5,
+      "estimated": true
+    },
+    "minecraft:pufferfish_bucket": {
+      "unit_mass_kg": 11.5,
+      "estimated": true
+    },
+    "minecraft:tropical_fish_bucket": {
+      "unit_mass_kg": 11.5,
+      "estimated": true
+    },
+    "minecraft:axolotl_bucket": {
+      "unit_mass_kg": 11.5,
+      "estimated": true
+    },
+    "minecraft:tadpole_bucket": {
+      "unit_mass_kg": 11,
+      "estimated": true
+    },
+    "minecraft:iron_trapdoor": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:leather_helmet": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:leather_chestplate": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:leather_leggings": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:leather_boots": {
+      "unit_mass_kg": 0.7,
+      "estimated": true
+    },
+    "minecraft:turtle_helmet": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:bread": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:beef": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:cooked_beef": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:porkchop": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:cooked_porkchop": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:chicken": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:cooked_chicken": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:mutton": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:cooked_mutton": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:rabbit": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "minecraft:cooked_rabbit": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "minecraft:baked_potato": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "minecraft:poisonous_potato": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "minecraft:melon_slice": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "minecraft:sweet_berries": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:glow_berries": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:cookie": {
+      "unit_mass_kg": 0.03,
+      "estimated": true
+    },
+    "minecraft:pumpkin_pie": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:cake": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:mushroom_stew": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:rabbit_stew": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "minecraft:beetroot_soup": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:suspicious_stew": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:honey_bottle": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "minecraft:golden_apple": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "minecraft:enchanted_golden_apple": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "minecraft:golden_carrot": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:dried_kelp": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:rotten_flesh": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:spider_eye": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:sugar": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:glass_bottle": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:potion": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "minecraft:splash_potion": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "minecraft:lingering_potion": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "minecraft:experience_bottle": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:paper": {
+      "unit_mass_kg": 0.005,
+      "estimated": true
+    },
+    "minecraft:book": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:writable_book": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:written_book": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:enchanted_book": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:map": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:filled_map": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:clock": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:flint": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:flint_and_steel": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "minecraft:clay_ball": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:clay": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "minecraft:snowball": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:snow_block": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "minecraft:ice": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:packed_ice": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:blue_ice": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:sugar_cane": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:bamboo": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:cactus": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:kelp": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:vine": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:lily_pad": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:hay_block": {
+      "unit_mass_kg": 0.9,
+      "estimated": true
+    },
+    "minecraft:glowstone": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:nether_bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:smooth_stone": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:tnt": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "minecraft:crafting_table": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:furnace": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
+    "minecraft:blast_furnace": {
+      "unit_mass_kg": 25,
+      "estimated": true
+    },
+    "minecraft:smoker": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
+    "minecraft:campfire": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:soul_campfire": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:hopper": {
+      "unit_mass_kg": 10.5,
+      "estimated": true
+    },
+    "minecraft:cauldron": {
+      "unit_mass_kg": 3.5,
+      "estimated": true
+    },
+    "minecraft:ladder": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:scaffolding": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:iron_bars": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:chain": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:lantern": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:soul_lantern": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:soul_torch": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:redstone_torch": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:lever": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:note_block": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:jukebox": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:loom": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:cartography_table": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:fletching_table": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:smithing_table": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:grindstone": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:stonecutter": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:lectern": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "minecraft:composter": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:armor_stand": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:item_frame": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:glow_item_frame": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:painting": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:flower_pot": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:minecart": {
+      "unit_mass_kg": 15,
+      "estimated": true
+    },
+    "minecraft:saddle": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:name_tag": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:lead": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:ender_eye": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:totem_of_undying": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:basalt": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:polished_basalt": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:smooth_basalt": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:blackstone": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:polished_blackstone": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:polished_blackstone_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:chiseled_polished_blackstone": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:cracked_polished_blackstone_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:gilded_blackstone": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:deepslate_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:deepslate_tiles": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:cracked_deepslate_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:cracked_deepslate_tiles": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:chiseled_deepslate": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:calcite": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:dripstone_block": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:pointed_dripstone": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:prismarine": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:prismarine_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:dark_prismarine": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:sea_lantern": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:quartz_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:quartz_pillar": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:chiseled_quartz_block": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:smooth_quartz": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:purpur_block": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:purpur_pillar": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:mud_bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:packed_mud": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:end_stone_bricks": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:chiseled_nether_bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:cracked_nether_bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:red_nether_bricks": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:crying_obsidian": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "minecraft:magma_block": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:soul_sand": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:soul_soil": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:snow": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:bone_block": {
+      "unit_mass_kg": 0.9,
+      "estimated": true
+    },
+    "minecraft:slime_block": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "minecraft:honey_block": {
+      "unit_mass_kg": 1.6,
+      "estimated": true
+    },
+    "minecraft:honeycomb": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:honeycomb_block": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:sponge": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:wet_sponge": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:pumpkin": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:carved_pumpkin": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:jack_o_lantern": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:melon": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:dried_kelp_block": {
+      "unit_mass_kg": 0.9,
+      "estimated": true
+    },
+    "minecraft:brown_mushroom_block": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:red_mushroom_block": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:mushroom_stem": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:nether_wart_block": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:warped_wart_block": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:shroomlight": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:ochre_froglight": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:verdant_froglight": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:pearlescent_froglight": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:mangrove_roots": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:moss_carpet": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:exposed_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:weathered_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:oxidized_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_copper_block": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_exposed_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_weathered_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_oxidized_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:exposed_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:weathered_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:oxidized_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_exposed_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_weathered_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:waxed_oxidized_cut_copper": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    "minecraft:grass": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:fern": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:tall_grass": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:large_fern": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:dead_bush": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:seagrass": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:sea_pickle": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:cobweb": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:glow_lichen": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:hanging_roots": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:small_dripleaf": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:big_dripleaf": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:spore_blossom": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:twisting_vines": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:weeping_vines": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:crimson_fungus": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:warped_fungus": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:crimson_roots": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:warped_roots": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:nether_sprouts": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:pitcher_pod": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:torchflower_seeds": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:turtle_egg": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:sniffer_egg": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:amethyst_cluster": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:large_amethyst_bud": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:medium_amethyst_bud": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:small_amethyst_bud": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:piston": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:sticky_piston": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:observer": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:dispenser": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:dropper": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:repeater": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:comparator": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:daylight_detector": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:redstone_lamp": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:target": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:tripwire_hook": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:lightning_rod": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:end_rod": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:light_weighted_pressure_plate": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:heavy_weighted_pressure_plate": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:stone_pressure_plate": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:polished_blackstone_pressure_plate": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:bell": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "minecraft:lodestone": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "minecraft:beacon": {
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    "minecraft:enchanting_table": {
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "minecraft:brewing_stand": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:conduit": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "minecraft:respawn_anchor": {
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "minecraft:bee_nest": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:beehive": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:decorated_pot": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "minecraft:chiseled_bookshelf": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    "minecraft:bone_meal": {
+      "unit_mass_kg": 0.03,
+      "estimated": true
+    },
+    "minecraft:bowl": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:ink_sac": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:glow_ink_sac": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:cocoa_beans": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:blaze_powder": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:magma_cream": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:fermented_spider_eye": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:ghast_tear": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:glistering_melon_slice": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:rabbit_foot": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:rabbit_hide": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:phantom_membrane": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:scute": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:nautilus_shell": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:heart_of_the_sea": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:netherite_scrap": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:echo_shard": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:disc_fragment_5": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:goat_horn": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:spyglass": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "minecraft:brush": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:fire_charge": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:firework_rocket": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "minecraft:firework_star": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "minecraft:carrot_on_a_stick": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "minecraft:warped_fungus_on_a_stick": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "minecraft:piglin_head": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:creeper_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:flower_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:globe_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:mojang_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:piglin_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:skull_banner_pattern": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "minecraft:leather_horse_armor": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "minecraft:iron_horse_armor": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "minecraft:golden_horse_armor": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "minecraft:diamond_horse_armor": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "minecraft:chest_minecart": {
+      "unit_mass_kg": 23,
+      "estimated": true
+    },
+    "minecraft:furnace_minecart": {
+      "unit_mass_kg": 35,
+      "estimated": true
+    },
+    "minecraft:hopper_minecart": {
+      "unit_mass_kg": 25.5,
+      "estimated": true
+    },
+    "minecraft:tnt_minecart": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
+    "minecraft:white_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:white_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:white_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:orange_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:orange_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:orange_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:magenta_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:magenta_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:magenta_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:light_blue_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:light_blue_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:light_blue_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:yellow_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:yellow_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:yellow_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:lime_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:lime_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:lime_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:pink_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:pink_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:pink_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:gray_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:gray_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:gray_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:light_gray_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:light_gray_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:light_gray_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:cyan_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:cyan_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:cyan_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:purple_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:purple_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:purple_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:blue_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:blue_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:blue_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:brown_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:brown_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:brown_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:green_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:green_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:green_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:red_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:red_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:red_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:black_concrete": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    "minecraft:black_concrete_powder": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    "minecraft:black_glazed_terracotta": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    }
+  },
+  "tag_defaults": [
+    {
+      "tag": "minecraft:slabs",
+      "priority": 5,
+      "unit_mass_kg": 1.25,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:stairs",
+      "priority": 5,
+      "unit_mass_kg": 1.875,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:walls",
+      "priority": 5,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:doors",
+      "priority": 5,
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:trapdoors",
+      "priority": 5,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:fences",
+      "priority": 5,
+      "unit_mass_kg": 0.75,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:fence_gates",
+      "priority": 5,
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:buttons",
+      "priority": 5,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:rails",
+      "priority": 5,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:signs",
+      "priority": 5,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:hanging_signs",
+      "priority": 5,
+      "unit_mass_kg": 0.75,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:beds",
+      "priority": 5,
+      "unit_mass_kg": 10,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:banners",
+      "priority": 5,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:boats",
+      "priority": 5,
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:chest_boats",
+      "priority": 25,
+      "unit_mass_kg": 28,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:candles",
+      "priority": 5,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:wool_carpets",
+      "priority": 5,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:anvil",
+      "priority": 5,
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:music_discs",
+      "priority": 5,
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:decorated_pot_sherds",
+      "priority": 5,
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:trim_templates",
+      "priority": 5,
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:compasses",
+      "priority": 5,
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:arrows",
+      "priority": 5,
+      "unit_mass_kg": 0.03,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks",
+      "priority": 5,
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:ores",
+      "priority": 5,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:chests",
+      "priority": 5,
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    {
+      "tag": "forge:barrels",
+      "priority": 5,
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    {
+      "tag": "forge:bookshelves",
+      "priority": 5,
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    {
+      "tag": "forge:heads",
+      "priority": 5,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:planks",
+      "priority": 15,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:bamboo_blocks",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:stone",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:cobblestone",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:stone_bricks",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:sandstone",
+      "priority": 15,
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:terracotta",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:end_stones",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:netherrack",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:obsidian",
+      "priority": 15,
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:dirt",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:sand",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:gravel",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:glass",
+      "priority": 15,
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    {
+      "tag": "forge:glass_panes",
+      "priority": 15,
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:wool",
+      "priority": 15,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:leaves",
+      "priority": 15,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:saplings",
+      "priority": 15,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:flowers",
+      "priority": 15,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "forge:raw_materials",
+      "priority": 15,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:nuggets",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:gems",
+      "priority": 15,
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    {
+      "tag": "forge:dusts",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:coals",
+      "priority": 15,
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    {
+      "tag": "forge:rods",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:string",
+      "priority": 15,
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    {
+      "tag": "forge:feathers",
+      "priority": 15,
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    {
+      "tag": "forge:leather",
+      "priority": 15,
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    {
+      "tag": "forge:bones",
+      "priority": 15,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "forge:slimeballs",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:gunpowder",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:ender_pearls",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:dyes",
+      "priority": 12,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "forge:seeds",
+      "priority": 15,
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    {
+      "tag": "forge:crops",
+      "priority": 15,
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    {
+      "tag": "forge:eggs",
+      "priority": 15,
+      "unit_mass_kg": 0.06,
+      "estimated": true
+    },
+    {
+      "tag": "forge:mushrooms",
+      "priority": 15,
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:fishes",
+      "priority": 15,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:swords",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:axes",
+      "priority": 15,
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:pickaxes",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:shovels",
+      "priority": 15,
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:hoes",
+      "priority": 15,
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    {
+      "tag": "forge:tools/bows",
+      "priority": 15,
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    {
+      "tag": "forge:tools/crossbows",
+      "priority": 15,
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    {
+      "tag": "forge:tools/shields",
+      "priority": 15,
+      "unit_mass_kg": 5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:tools/fishing_rods",
+      "priority": 15,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:tools/tridents",
+      "priority": 15,
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    {
+      "tag": "forge:shears",
+      "priority": 15,
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    {
+      "tag": "forge:armors/helmets",
+      "priority": 15,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:armors/chestplates",
+      "priority": 15,
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    {
+      "tag": "forge:armors/leggings",
+      "priority": 15,
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
+    {
+      "tag": "forge:armors/boots",
+      "priority": 15,
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:wooden_slabs",
+      "priority": 25,
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:wooden_stairs",
+      "priority": 25,
+      "unit_mass_kg": 0.375,
+      "estimated": true
+    },
+    {
+      "tag": "minecraft:wooden_pressure_plates",
+      "priority": 25,
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/coal",
+      "priority": 25,
+      "unit_mass_kg": 1.8,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/redstone",
+      "priority": 25,
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/diamond",
+      "priority": 25,
+      "unit_mass_kg": 0.18,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/emerald",
+      "priority": 25,
+      "unit_mass_kg": 0.18,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/lapis",
+      "priority": 25,
+      "unit_mass_kg": 0.18,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/quartz",
+      "priority": 25,
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
+    {
+      "tag": "forge:storage_blocks/amethyst",
+      "priority": 25,
+      "unit_mass_kg": 2,
+      "estimated": true
+    }
+  ]
+}

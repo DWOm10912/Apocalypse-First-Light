@@ -2,6 +2,16 @@
 
 状态：**Core 已实现，客户端启动、联机、实机计算与生命周期验收待用户测试**。唯一一次 `compileJava --offline` 的结果记录在本次交付报告；本文不把编译等同于实机通过。首批质量与容量均为测试估值，尚未完成平衡。
 
+2026-10-03 补数据（用户要求）：
+- 全部 135 个 AFL 物品都有显式质量；
+- 补了常用原版 tag 和物品；
+- 液体储罐、热能发电机、化学反应器带着的液体计重，标准容器 NBT 里的物品计重；
+- `/aflweight coverage` 把所有缺显式质量的 AFL 物品都算缺失；
+- 新增检查工具 `tools/check-item-mass.mjs`；
+- 家具堆叠上限审计。
+
+见下文“携带质量 V1”和“堆叠上限审计”。编译通过，**没有实机验证**。舒适负重（Base Comfort Capacity）保持 30 kg（用户确认）。创造 / 旁观模式只计算不受限（`penaltiesEnabled=false`，见下文）。
+
 ## Source of Truth 与边界
 
 服务端实际 ItemStack + 当前 immutable mass snapshot 是唯一质量真相。客户端接收本人负重结果和服务器预解析的质量表，不提交质量、不扫描 Inventory。物品 Tooltip 仅对当前悬停的已同步 ItemStack 使用同一计算器，展示单件/堆叠质量，不替代服务端玩家总负重。没有保存 currentWeight 的 NBT/capability，没有创建额外 Overflow inventory。
@@ -18,7 +28,8 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 |---|---|
 | `weight/ItemMassData.java` | 数据加载、校验、tag 解析、原子 snapshot/revision |
 | `weight/MassResult.java` | 整件质量、breakdown、issues/quality、饱和整数运算 |
-| `weight/StackMassCalculator.java` | 普通物品、NativeGunItem、显式 contents provider |
+| `weight/StackMassCalculator.java` | 普通物品、NativeGunItem、显式 contents provider、标准容器 NBT、液体 provider |
+| `weight/AflCarriedContents.java` | 注册 AFL 带液体物品的液体 provider（common setup，`ApocalypseFirstLight#commonSetup`） |
 | `weight/PlayerMassSources.java` | 玩家持有来源、extra equipment provider |
 | `weight/EncumbranceState.java` | ratio、连续 severity、tier、适用性 |
 | `weight/PlayerWeightRuntime.java` | 临时缓存、dirty、tick END、生命周期、同步节流 |
@@ -30,7 +41,12 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `weapon/NativeGunActions.java` | 既有射击/换弹库存同步处新增 dirty 通知 |
 | `weapon/AttachmentInteractionCore.java` | 成功提交处新增 dirty 通知 |
 
-数据：`src/main/resources/data/apocalypse_firstlight/item_mass/core_v1.json`。Tooltip中英文语言键在 `src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json` 与 `en_us.json`，前缀 `tooltip.apocalypse_firstlight.weight.`。
+数据（`src/main/resources/data/apocalypse_firstlight/item_mass/`）：
+- `core_v1.json`：policy、枪、弹药、配件、材料（codex 首批）；
+- `afl_content_v1.json`：其余 87 个 AFL 物品；
+- `vanilla_common_v1.json`：原版物品和 tag 规则。
+
+检查工具：`node tools/check-item-mass.mjs`（见“检查工具”）。Tooltip中英文语言键在 `src/main/resources/assets/apocalypse_firstlight/lang/zh_cn.json` 与 `en_us.json`，前缀 `tooltip.apocalypse_firstlight.weight.`。
 
 `StackMassCalculator.mass(stack)` 返回**整个 stack**的 `MassResult`，调用方不得再次乘 count。`PlayerWeightRuntime.state(player)` 返回已合并计算的最新状态，初始化前可能为 null。`breakdown(player)` 返回对应来源明细。未来客户端消费者可读 `ClientWeightState.state()` / `policy()`，也必须处理尚未收到状态的 null。
 
@@ -67,9 +83,19 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 普通 stack = unit grams × count；empty = 0。`EXACT` 仅表示没有估值、缺失或计算问题，不是对数据现实准确度的认证。首批所有显式质量和 tag 都设 estimated=true，所以持有这些物品通常为 ESTIMATED；issues 分别显示 `test_estimate:*`、`fallback:*`、`inactive_attachment:*` 或其它异常来源。未知物品统一 250g/件测试 fallback，不静默变成 0。默认弹匣等明确允许 0 的组件仍可定义 0。
 
-优先级：explicit item > 最高 priority 的 tag > fallback。当前 tag 为 `minecraft:logs` priority20 / 2000g 与 `forge:ingots` priority10 / 500g。同最高优先级质量冲突时警告并使用带 tag_conflict 原因的 fallback；同值时按 tag ID 确定来源，只要有一个 estimated 就仍是估值。
+优先级：explicit item > 最高 priority 的 tag > fallback。同最高优先级质量冲突时警告并使用带 tag_conflict 原因的 fallback；同值时按 tag ID 确定来源，只要有一个 estimated 就仍是估值。
 
-每次 datapack reload 从空规则重建，不做 last-good merge。每个文件原子校验；不合法文件整份拒绝并日志说明，其旧规则不会保留。同 ID 不同资源路径重复规则按文件 ID 排序，后续冲突文件拒绝；policy 也只接受一份。覆盖已有条目请使用高优先级 datapack 的**同一资源路径**覆盖文件，不能另写文件试图覆盖重复 ID。其它文件可增加新规则/tag。Native Gun 特殊结构使用 native_guns 的 definition ID；普通 item/tag 单质量不替代组装公式。
+tag 优先级分层（2026-10-03）：
+- 5：形状大类（台阶、楼梯、门、床、船、`forge:storage_blocks`、`forge:ores` 等）；
+- 10：`forge:ingots` 500 g（core_v1）；
+- 12：`forge:dyes`，比宝石低，青金石按宝石算；
+- 15：材料（石头、泥土、玻璃、羊毛、工具、盔甲等）；
+- 20：`minecraft:logs` 2000 g（core_v1）；
+- 25：具体子类（木台阶、木楼梯、运输箱船、各种储存方块）。
+
+新规则要放进不会和别的规则同层冲突的位置；`tools/check-item-mass.mjs` 会查出同层冲突。
+
+每次 datapack reload 从空规则重建，不做 last-good merge。每个文件原子校验；不合法文件整份拒绝并日志说明，其旧规则不会保留。注意：`items` 里只要有一个没注册的物品 ID（拼错、原版没有、mod 没装），**整个文件**都会被拒绝；改数据后先跑 `tools/check-item-mass.mjs`。同 ID 不同资源路径重复规则按文件 ID 排序，后续冲突文件拒绝；policy 也只接受一份。覆盖已有条目请使用高优先级 datapack 的**同一资源路径**覆盖文件，不能另写文件试图覆盖重复 ID。其它文件可增加新规则/tag。Native Gun 特殊结构使用 native_guns 的 definition ID；普通 item/tag 单质量不替代组装公式。
 
 `OnDatapackSyncEvent` 在服务端 tag 绑定后预解析各 Item 的 tag 选择，发布不可变 snapshot 并增加 revision，再使玩家缓存失效。每件物品计算不读 JSON，也不重复遍历 tags。初始未发布时使用标为估值的统一 fallback。删除独有规则后应回到剩余 tag/fallback；禁用覆盖包会恢复下层原包规则，这与 last-good 残留不同。
 
@@ -125,9 +151,91 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 
 其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
 
-合计 6 组 gun 定义 + 46 个普通 item override（42 AFL、4 Vanilla）。未在列表中的 AFL 建筑/机器/容器物品等没有显式质量，例如 industrial_locker、gun_maintenance_bench、crusher；若不匹配两个 tag 则使用 fallback。完整 live Registry 的来源、缺失关键条目与 fallback 数量通过 coverage 查看，不把静态列表宣称为运行时覆盖结果。
+以上是 core_v1.json：6 组 gun 定义 + 46 个普通 item override（42 AFL、4 Vanilla）。其余 87 个 AFL 物品见下文“携带质量 V1”（2026-10-03 之前它们没有规则，全部是 250 g fallback）。完整 live Registry 的来源与缺失数量通过 coverage 查看，不把静态列表宣称为运行时覆盖结果。
 
 BR51 无额外附件的满弹示例：默认20发 = 3200+200+20×24 = **3880g**；35发匣 = 3200+300+35×24 = **4340g**；50发鼓 = 3200+800+50×24 = **5200g**。每发消耗24g；同一玩家备用弹转入枪内，若没有掉落/获得物品且默认配置不变，总重应保持不变。
+
+## 携带质量 V1（2026-10-03，测试估值）
+
+数值由 Claude 按用户“按你觉得合理的来填”定，全部 `estimated: true`，没有实机平衡。
+
+原则：
+- 拿在手里的小东西接近真实质量。
+- 整格方块和家具不按真实质量（一格混凝土真实约 2.4 吨），而是“搬一份”的游戏质量，按舒适负重 30 kg 压缩：
+  - 搬一件大家具或机器（35–50 kg）就到 HEAVY；
+  - 中型家具 10–20 kg；
+  - 一组建材很重：石头类 2.5 kg/个，一组 64 个就是 160 kg。
+- 台阶 = 母方块的一半，楼梯 = 3/4。
+- 合成前后尽量不变重：
+  - 铅屏蔽砖 8 kg = 4 块铅砖；
+  - 钢筋混凝土 3 kg ≈ 粉碎平均产出（4 块碎混凝土 × 0.5 + 4 块废钢 × 0.25）；
+  - 原版储存方块 = 9 个材料。
+- 液体：一桶（1000 mB）按 10 L 搬，液体质量 = 满桶 − 空桶（见“携带容器内容”）。
+
+AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
+
+| 类别 | 质量 |
+|---|---|
+| 机器（不含液体） | crusher、industrial_furnace 50；alloy_furnace、chemical_reactor 45；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
+| 大件家具 | vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
+| 中型家具 | retail_shelf_single 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
+| 小件 | cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
+| 钢结构 | steel_door 15；steel_block 8（台阶 4、楼梯 6）；steel_beam 6；steel_plate 4（台阶 2、楼梯 3）；steel_brace 4；steel_grate、steel_railing 3；steel_cable 1 |
+| 建材与地形 | lead_shielding_bricks 8；reinforced_concrete 3（台阶 1.5、楼梯 2.25）；asphalt、fused_ground 2.5；fallout_soil、scorched_soil 1.5 |
+| 矿石方块 | galena_ore、wolframite_ore 3；其余 5 种 2.5 |
+| 杨木 | 原木、去皮原木、木头、去皮木头 2；木板 0.5；楼梯 0.375；台阶 0.25；门 1；活板门 1.5；树叶、树苗 0.1 |
+| 管线、灯、路面 | fluid_pipe 2；industrial_utility_light 3；power_cable 0.5；三种路面标线 0.2 |
+| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；concrete_rubble 0.5；geiger_counter 0.5 |
+
+原版（`vanilla_common_v1.json`）：
+- 92 条 tag 规则、342 个显式物品。
+- 工具统计：1238 个原版物品中，显式 346 个（含 core_v1 的 4 个），tag 覆盖 722 个，仍是 250 g 的 170 个。
+- 剩下的 170 个主要是刷怪蛋、命令方块等技术方块、末地物品、潜影盒（玩家去不了末地，用户确认不管）、珊瑚、幽匿方块。
+- 典型值（kg）：
+  - 桶：空桶 1，水桶、奶桶 11，岩浆桶 21；
+  - 方块：石头类 2.5，泥土、沙、砾石 1.5，木板 0.5，玻璃 1；
+  - 铁类储存方块 4.5；箱子、木桶 8；熔炉 20；
+  - 工具：剑 1.5，镐 2.5；
+  - 盔甲：头 2.5、胸 8、腿 6、脚 2；皮甲单独更轻。
+- 杨木的物品 tag 原来缺失（只加了方块 tag），所以 core_v1 的原木规则对它无效。2026-10-03 在 `data/minecraft/tags/items/` 补了 `logs`、`logs_that_burn`、`leaves`、`saplings`，内容和方块 tag 一样。杨木现在都有显式质量，补 tag 主要让原版配方和其它 tag 规则认得它。
+
+## 携带容器内容（2026-10-03）
+
+一件物品的质量 = 外壳 + 下面这些内容（都受深度 8 / 512 件限制）：
+
+1. **注册了 contents provider 的**：provider 给出的物品（原有接口，目前没有注册任何 provider）。
+2. **没注册 provider、但 NBT 里有标准容器列表的**：
+   - 读 `BlockEntityTag.Items`（方块物品）或 `Items`，按原版 `ContainerHelper` 格式逐个计重，breakdown 记为 `contents`；
+   - 别的格式仍只算外壳，并标 `unsupported_contents`；
+   - 目前没有 AFL 方块在拆掉后保留物品库存（拆掉时物品都掉出来），这条主要接住创造模式 Ctrl+中键复制的带内容箱子和别的 mod 的容器。潜影盒也会被算进去，但没有专门处理。
+3. **注册了液体 provider 的**：加上液体质量，breakdown 记为 `fluid`。
+   - 每 1000 mB 的质量 = 这种液体的满桶 − 空桶（`minecraft:bucket` 1 kg）。所以把几桶水倒进储罐再拆下来，总重不变。
+   - 每 1000 mB：水 10 kg，岩浆 20 kg，工业废液 12 kg。
+   - 没有桶、或桶没有定价的液体按每 1000 mB 10 kg 算，标 `fallback:fluid:<id>`。
+   - 已注册的物品（`weight/AflCarriedContents`）：
+     - fluid_tank：`BlockEntityTag.Fluid`，最多 20,000 mB（满水 200 kg）；
+     - thermal_generator：`BlockEntityTag.LiquidTank`，最多 4,000 mB 岩浆（80 kg）；
+     - chemical_reactor：`BlockEntityTag.InputTank` 和 `WasteTank`，各最多 8,000 mB。
+   - 储存的能量不计重。
+
+## 堆叠上限审计（2026-10-03）
+
+规则：
+- 多格，或 ≥ 20 kg 的家具：1；
+- 单格 5–20 kg 的家具：4；
+- 5 kg 以下的桌面小件：16；
+- 建材、门、灯、线缆、管道：保持 64；
+- 机器：原来就是 1。
+
+| 堆叠 | 物品 |
+|---|---|
+| 1（本次改） | industrial_locker、retail_shelf_single、water_dispenser、commercial_dumpster ×4、commercial_glass_double_door、beverage_cooler、vending_machine、chest_freezer、modern_office_desk、commercial_wall_mounted_sink、tall_filing_cabinet、office_multifunction_printer、lead_chest、gun_maintenance_bench、precision_fabrication_station |
+| 4（本次改） | industrial_electrical_box、cash_register、metal_trash_can、modern_office_chair、office_computer_station、office_cubicle_partition、restroom_partition、restroom_stall_door、commercial_flushometer_toilet、low_filing_cabinet |
+| 16（本次改） | modern_lcd_monitor、office_keyboard、office_mouse |
+| 1（原来就是） | 9 种机器（thermal_generator、energy_cell、charging_station、crusher、industrial_furnace、alloy_furnace、compressor、chemical_reactor、fluid_tank）；energy_battery、geiger_counter、industrial_waste_bucket；枪和配件 |
+| 64（不变） | 建材、矿石、杨木全套、steel_door、industrial_utility_light、power_cable、fluid_pipe、路面标线、材料、弹药 |
+
+改动在 `registry/AflItems.java` 的 `Item.Properties().stacksTo(n)`。旧存档里已经超过新上限的堆叠，按原版逻辑读档时不会被拆开，只是不能再往上叠（没有实测）。
 
 ## 玩家来源、Cursor 与 Crafting
 
@@ -158,7 +266,7 @@ Login、Respawn、Clone、Dimension Change、Death 标记强制；clone清旧玩
 
 Tier：ratio <0.75 LIGHT；<1 APPROACHING_COMFORT；<2 HEAVY；其余 SEVERE。tier用于未来文案，severity用于未来连续曲线。`penaltiesEnabled = !Creative && !Spectator`，只表示未来效果的适用性，**即使 true 也没有实施任何惩罚**。Creative/Spectator质量照算。
 
-复用 AflNetwork `main`，当前协议33，PLAY_TO_CLIENT 的 Policy、State、Data。Policy同步 revision 与 fallback/comfort/onset/severe 元数据。Data在登录和datapack重载同步时发送不可变的已解析item质量表、Native Gun组件质量及相同policy/revision；tag选择已在服务器解析，不要求客户端自行加载datapack或重新判断tags。fallback物品不逐条展开。State包含 carriedMassGrams、comfortCapacityGrams、encumbranceRatio、severity、tier、penaltiesEnabled、dataRevision、quality 和 server session sequence。玩家State只发本人，不广播、不按每件物品发包。
+复用 AflNetwork `main`，当前协议33，PLAY_TO_CLIENT 的 Policy、State、Data。Policy同步 revision 与 fallback/comfort/onset/severe 元数据。Data在登录和datapack重载同步时发送不可变的已解析item质量表、Native Gun组件质量及相同policy/revision；tag选择已在服务器解析，不要求客户端自行加载datapack或重新判断tags。fallback物品不逐条展开。2026-10-03 补数据后，表里约 1,200 项（估算约 70 KB），离自定义包 1 MB 上限还很远。State包含 carriedMassGrams、comfortCapacityGrams、encumbranceRatio、severity、tier、penaltiesEnabled、dataRevision、quality 和 server session sequence。玩家State只发本人，不广播、不按每件物品发包。
 
 通常变化每5ticks最多发一次，初始化/Login/模式变化/revision变化在下一次tick END强制发；respawn/换维度也强制。数据同步事件发送policy及Data，强制状态发送前再确保policy；仅这些生命周期点可能重复policy，不是每帧日志/包。Data不随每次重量变化重复发送。客户端拒绝旧revision/sequence，revision更新时清过时状态/质量表，断线清全部镜像。客户端Tooltip不会直接读取单机服务器的static质量snapshot，因此联机同样走服务器同步表。
 
@@ -184,13 +292,37 @@ Tooltip实机仍待验证：检查64发9mm、1/10个苹果、安装配件/射击
 /aflweight player <玩家名> held
 /aflweight coverage
 /aflweight coverage <页码>
+/aflweight coverage missing
+/aflweight coverage missing <页码>
 ```
 
-summary读服务器缓存，held即时只读主手整件组装明细，coverage每页20个AFL物品，报告来源、fallback总数和 critical_missing_explicit。关键分类为 NativeGunItem / NativeAttachment / `_round` / `_casing`。查询全部缺失项时翻页；日志中 `[AFL WEIGHT]` 只记录重载错误/冲突，不做每tick spam。
+summary读服务器缓存，held即时只读主手整件组装明细（含 `contents` / `fluid` 项）。
+
+coverage 每页20个AFL物品，报告来源：
+- 2026-10-03 起，**每个 AFL 物品都必须有自己的规则**（`items` 或 `native_guns`）。只靠 tag 或 fallback 的都算缺失，行尾标 `MISSING_EXPLICIT`。
+- 表头报告 `missing_explicit=<总数> (fallback=<n> tag_only=<n>)`，取代原来只算枪、配件、弹药、弹壳的 critical_missing_explicit。
+- `coverage missing` 只列缺失项。
+
+日志中 `[AFL WEIGHT]` 只记录重载错误/冲突，不做每tick spam。
+
+### 检查工具
+
+`node tools/check-item-mass.mjs` 只读，不写文件。不进游戏就能查出运行时会出的问题：
+- 有没有 AFL 物品缺显式质量（从 `registry/AflItems.java` 读注册表，枪查 `native_guns`）；
+- 哪个文件会被整份拒绝：物品 ID 不存在、不是整克、负数、和前面文件重复、第二个 policy；
+- 原版物品上同层 tag 冲突（运行时会变成 fallback）、引用了不存在的 tag。
+
+原版物品列表和原版 / Forge 的物品 tag 从 Gradle 缓存里的 `client-extra.jar` 和 Forge universal jar 读，版本取自 `gradle.properties`，也可以用 `--client-jar`、`--forge-jar` 指定。找不到 jar 时跳过原版检查并警告。
+
+选项：
+- `--list`：AFL 物品按质量从重到轻列出；
+- `--vanilla-fallback`：列出仍是 fallback 的原版物品。
+
+有错误时退出码为 1。2026-10-03 运行结果：AFL 135/135 显式，原版显式 346、tag 722、fallback 170，PASS。
 
 以下是**用户待执行**步骤，尚未取得 PASS。建议测试存档、开启命令，先用空库存隔离差值；不要求在正式存档清空物品。拿在cursor/合成格时由服务器控制台或另一个OP执行 `aflweight player 玩家名`，避免关闭GUI导致物品返回库存。
 
-1. 普通stack：`/give @s minecraft:apple 1` → +200g；再给9个 → 总+2000g。拆分/合并不改变总质量。`/give @s minecraft:feather 1` 应+250g并出现 fallback:minecraft:feather。
+1. 普通stack：`/give @s minecraft:apple 1` → +200g；再给9个 → 总+2000g。拆分/合并不改变总质量。`/give @s minecraft:feather 1` 应+10g（来源 `tag:forge:feathers`；2026-10-03 之前是 250 g fallback）；`/give @s minecraft:sculk 1` 应+250g并出现 fallback:minecraft:sculk。
 2. Overflow：Creative把10个apple放到普通库存第10格，再切Survival；或管理员 `/item replace entity @s inventory.0 with minecraft:apple 10`（原版storage第一个格，即Inventory索引9）。2000g必须继续计入，格子仍沿用锁定规则，只能取出。
 3. Armor/Offhand：`/item replace entity @s armor.chest with minecraft:iron_chestplate` → armor+8000g；`/item replace entity @s weapon.offhand with minecraft:torch 10` → offhand+1000g。主手与hotbar不重复。
 4. Cursor：从背包拿起apple堆，inventory减少量等于cursor增加量；丢掉/放入箱子才减少玩家总重。打开箱子/维护台不应自动把其内容算给玩家；拾到cursor后则计入。
@@ -203,12 +335,39 @@ summary读服务器缓存，held即时只读主手整件组装明细，coverage�
 11. 生命周期：分别用 keepInventory true/false测试死亡重生，比较实际保留/掉落物；跨维度、退出重进、重新开世界后重新推导，不出现旧缓存质量。测试联网本人同步不泄漏给其它玩家。
 12. Reload：测试datapack覆盖同路径core_v1.json，将apple改0.3kg后`/reload`，revision增加且每个apple变300g。再从覆盖文件删除apple条目，若无其它匹配规则则250g，不保留旧300g。另测试相同最高priority的冲突tag，应警告并fallback；负数/小于克精度/溢出/非法policy文件应整份拒绝，而不是客户端崩溃。
 
+2026-10-03 新增（同样待用户执行）：
+
+13. 家具和堆叠：
+    - `/give @s apocalypse_firstlight:vending_machine 2` 应得到两格各 1 台，每台 45 kg，总重约 90 kg，tier SEVERE；
+    - `office_mouse` 一格最多 16 个，`metal_trash_can` 最多 4 个；
+    - 杨木原木应是 2 kg，来源 `item:`。
+14. 液体：
+    - 放一个 fluid_tank，倒进 3 桶水，拆下拿着；
+    - `/aflweight held` 应为 shell 30000 + fluid 30000 = 60 kg；
+    - 倒水前拿着 3 个水桶（33 kg）和倒完拿着 3 个空桶（3 kg），差值正好等于储罐里的 30 kg。
+15. 容器内容：创造模式对装了东西的箱子按 Ctrl+中键，拿到的箱子物品应是 8 kg 外壳加里面物品的重量，breakdown 有 `contents`。
+16. coverage：`/aflweight coverage` 表头应为 `missing_explicit=0`；`/aflweight coverage missing` 没有行。
+
 ## 未来扩展与未覆盖
 
-`StackMassCalculator.registerContents(itemId, provider)` 只允许显式注册的、只读的单件外壳内容；外壳自重另计，depth最多8、elements最多512，达到限制标ESTIMATED。当前**没有内置 Backpack/Shulker provider**，不递归任意NBT。可识别的 Items / BlockEntityTag.Items 但无provider时标unsupported_contents，只计外壳；隐藏于其它第三方私有capability的内容无法自动识别，需要专门provider。
+`StackMassCalculator.registerContents(itemId, provider)` 只允许显式注册的、只读的单件外壳内容；外壳自重另计，depth最多8、elements最多512，达到限制标ESTIMATED。
+
+当前没有内置 Backpack provider。没有 provider 时：
+- 标准格式的 Items / BlockEntityTag.Items 按原版格式逐个计重（2026-10-03 起，见“携带容器内容”）；
+- 其它格式标 unsupported_contents，只计外壳；
+- 隐藏于第三方私有 capability 的内容无法自动识别，需要专门 provider。
+
+`registerFluidContents(itemId, provider)` 是同样规则的液体版本。
 
 `PlayerMassSources.registerExtraEquipment` 给未来独立装备槽使用，必须只返回与36格/盔甲/副手等不重复的真实stack；不能再次计量同一物品。provider异常标估算问题，不让未知物品使核心崩溃。当前不占胸甲槽、不提供背包或负重支撑效果。
 
 未来Backpack可分别贡献 StorageCapacity（9/18/27/36为总格数）、自身质量、可选comfort/support modifier；这三项不是一个数字。Traits/Training将改变角色comfort/效率，不改钢坯/枪/弹的物理质量。Stamina仅消费EncumbranceState，Handling可同时读整枪mass与玩家state，均留后续独立任务。
 
-当前未覆盖：第三方菜单其它临时输入所有权、通用嵌套容器内容、未知capability装备、正式平衡、性能benchmark、正式HUD、实际惩罚。不可把ESTIMATED数值描述为已精确称重。
+当前未覆盖：
+- 第三方菜单其它临时输入所有权；
+- 非标准格式的嵌套容器内容；
+- 通过 capability 装液体的第三方物品（只算显式注册的 3 种 AFL 物品，不读通用 fluid handler，避免和桶自身质量重复计）；
+- 未知capability装备；
+- 正式平衡、性能benchmark、正式HUD、实际惩罚。
+
+不可把ESTIMATED数值描述为已精确称重。
