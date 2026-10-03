@@ -1,0 +1,57 @@
+{
+  "max": 100,
+  "regen": 15,
+  "regen_in_water": 0.5,
+  "regen_low_food": 0.5,
+  "low_food_level": 6,
+  "delay_seconds": 1.0,
+  "exhausted_delay_seconds": 2.0,
+  "winded_resume": 30,
+  "costs": {
+    "walk": 1.5,
+    "sneak": 1.0,
+    "sprint": 8,
+    "jump": 5,
+    "sprint_jump": 7,
+    "swim": 7,
+    "water": 2.5,
+    "climb": 3,
+    "mining": 2,
+    "melee_empty_hand": 3,
+    "melee": 5,
+    "melee_items": {
+      "apocalypse_firstlight:crowbar": 8
+    },
+    "shot": 0.6,
+    "shots_by_ammo": {
+      "apocalypse_firstlight:9x19mm_round": 0.4,
+      "apocalypse_firstlight:762x51mm_round": 0.6,
+      "apocalypse_firstlight:50_ae_round": 1.2,
+      "apocalypse_firstlight:12_gauge_round": 1.5,
+      "apocalypse_firstlight:12_7x55mm_round": 2.5
+    },
+    "reload": 1,
+    "reloads_by_gun": {
+      "apocalypse_firstlight:hr55": 2
+    }
+  },
+  "weight": [
+    { "load_ratio": 0.5, "move": 1.0, "action": 1.0, "regen": 1.0 },
+    { "load_ratio": 1.0, "move": 1.3, "action": 1.15, "regen": 1.0 },
+    { "load_ratio": 1.3333, "move": 1.6, "action": 1.3, "regen": 0.8 },
+    { "load_ratio": 1.6667, "move": 2.0, "action": 1.5, "regen": 0.6 },
+    { "load_ratio": 2.0, "move": 2.5, "action": 1.75, "regen": 0.4 }
+  ],
+  "winded": {
+    "melee_damage": 0.6,
+    "dig_speed": 0.8
+  },
+  "fatigue": {
+    "start": 50,
+    "sway_extra": 1.5,
+    "spread_extra": 0.4
+  },
+  "breath": {
+    "light_below": 20
+  }
+}

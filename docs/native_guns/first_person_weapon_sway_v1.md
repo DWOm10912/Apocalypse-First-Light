@@ -8,6 +8,8 @@ HIP 1.0; ADS 0.30; crouch ADS 0.20, interpolated with existing ADS progress. Wal
 
 Composition: shared visual sway → existing viewmodel recoil → existing ADS correction → existing weapon pose/animation/hand anchors. Recoil and ADS math are not reordered relative to each other. The scope does not alter actual aiming; sight graphics can drift slightly by design. Future per-gun profiles can select another WeaponSwayProfile without modifying Native Gun JSON.
 
+Stamina V1 (2026-10-03): the target amplitude is also multiplied by `ClientStamina.swayScale()`, 1 + 1.5 × fatigue (fatigue 0 at 50 stamina and above, 1 at 0), so up to 2.5× when exhausted; the periods are unchanged. See `docs/gameplay/stamina_system_v1.md`. Not verified in game.
+
 Current files: `weapon/client/WeaponSwayProfile.java`, `NativeWeaponSway.java`, `NativeGunAds.java`, `ConfiguredGunFirstPerson.java` under `src/main/java/com/antaurora/apofirstlight/`. The earlier P9-only `P901FirstPerson.java` was retired when P9 moved to the configured path.
 
 Verification: compile/build log `build/gun-name-sway-build.log`. Code inspection confirms shared gun/arm transform and no gameplay writes. P9/BR51 graphical sway, ADS/red-dot alignment, reload and subjective amplitude have NOT been runtime-verified this round; do not interpret build success as visual acceptance.

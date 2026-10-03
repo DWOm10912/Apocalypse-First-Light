@@ -24,7 +24,7 @@
 
 `PlayerStorageCapacity` 只管理插入容量，Weight 独立计算实际所有权。全部 Inventory.items 0–35 都计重，包括生存/冒险锁定的 9–35 格；主手已在其中，不重复加入。超出 comfort 不阻止拾取、插入或使用物品。
 
-本轮不改变 Locked Inventory、伤害/RPM、换弹结算、附件交易、Dynamic Ammo、Mesh/动画/PBR、搜刮、Loot、Radiation、世界生成。武器侧仅在既有 `NativeGunActions.syncInventory` 与 `AttachmentInteractionCore.commit` 成功发布后 mark dirty。移动、疾跑、跳跃惩罚见“负重惩罚 V1”（2026-10-03）；没有 Stamina、ADS、Recoil、Sway 或正式 HUD 接入。
+本轮不改变 Locked Inventory、伤害/RPM、换弹结算、附件交易、Dynamic Ammo、Mesh/动画/PBR、搜刮、Loot、Radiation、世界生成。武器侧仅在既有 `NativeGunActions.syncInventory` 与 `AttachmentInteractionCore.commit` 成功发布后 mark dirty。移动、疾跑、跳跃惩罚见“负重惩罚 V1”（2026-10-03）；负重条 HUD 见“负重条 HUD”（2026-10-03）；没有 Stamina、ADS、Recoil、Sway 接入。
 
 ## 文件与 API
 
@@ -45,8 +45,9 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `weight/WeightCommands.java` | `/aflweight` 运维/实机诊断 |
 | `weight/WeightPenalties.java` | 服务端：移速属性修饰、疾跑标记；跳跃缩放的公共方法 |
 | `weight/ClientWeightPenalties.java` | 客户端：本人跳跃、疾跑判断、抵消移速带来的视野缩小 |
-| `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重时禁止疾跑（和饿肚子同一个检查点） |
-| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34 |
+| `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重时禁止疾跑（和饿肚子同一个检查点）；2026-10-03 起也拦耐力力竭（`stamina_system_v1.md`） |
+| `weight/ClientWeightHud.java` | 负重条 HUD（原版经验条的位置） |
+| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34；耐力 V1 加了两种包后为 35 |
 | `weapon/NativeGunActions.java` | 既有射击/换弹库存同步处新增 dirty 通知 |
 | `weapon/AttachmentInteractionCore.java` | 成功提交处新增 dirty 通知 |
 
@@ -95,7 +96,7 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
     }
   },
   "tag_defaults": [
-    { "tag": "minecraft:logs", "priority": 20, "unit_mass_kg": 2, "estimated": true }
+    { "tag": "minecraft:logs", "priority": 20, "unit_mass_kg": 0.4, "estimated": true }
   ]
 }
 ```
@@ -111,8 +112,8 @@ tag 优先级分层（2026-10-03）：
 - 10：`forge:ingots` 500 g（core_v1）；
 - 12：`forge:dyes`，比宝石低，青金石按宝石算；
 - 15：材料（石头、泥土、玻璃、羊毛、工具、盔甲等）；
-- 20：`minecraft:logs` 2000 g（core_v1）；
-- 25：具体子类（木台阶、木楼梯、运输箱船、各种储存方块）。
+- 20：`minecraft:logs` 400 g（core_v1；第一版是 2000 g）；
+- 25：具体子类（木台阶、木楼梯、运输箱船、黏土砖和下界砖、各种储存方块）。
 
 新规则要放进不会和别的规则同层冲突的位置；`tools/check-item-mass.mjs` 会查出同层冲突。
 
@@ -168,7 +169,7 @@ SIGHT/MUZZLE 按 stored ItemStack 实际持有质量；不兼容但仍存于枪�
 | br51_extended_magazine_35 / br51_drum_magazine_50 | 0.300 / 0.800 |
 | pistol_suppressor_01 / rifle_suppressor_01 / heavy_suppressor_01 | 0.250 / 0.450 / 0.700 |
 
-21 种新材料：steel_billet 1；lead_brick 2；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
+21 种新材料：steel_billet 1；lead_brick 0.75（第一版 2，2026-10-03 改）；tungsten_filament 0.05；silver_scrap、cemented_carbide_blank、steel_scrap 各 0.25；plastic_scrap、plastic_pellets 各 0.1；bauxite、alumina、galena、sphalerite、cassiterite、pentlandite、electrolytic_nickel、wolframite、tungsten_oxide、tungsten_powder、spodumene_concentrate、lithium_carbonate、tungsten_carbide_powder 各 0.5。
 
 其它 AFL 代表物品：simple_hearing_protection 0.3、crowbar 1.2、energy_battery 1。Vanilla 代表物品：minecraft:apple 0.2、iron_ingot 0.5、iron_chestplate 8、torch 0.1。
 
@@ -180,17 +181,22 @@ BR51 无额外附件的满弹示例：默认20发 = 3200+200+20×24 = **3880g**�
 
 数值由 Claude 按用户“按你觉得合理的来填”定，全部 `estimated: true`，没有实机平衡。
 
+2026-10-03 第二版：用户实测发现 6 块泥土就 9 kg。第一版的整格方块太重（泥土 1.5 kg、石头 2.5 kg、原木 2 kg，一组石头 160 kg，挖一会儿就超重），所以把方块整体改轻；物品、家具、机器不变。
+
 原则：
-- 拿在手里的小东西接近真实质量。
-- 整格方块和家具不按真实质量（一格混凝土真实约 2.4 吨），而是“搬一份”的游戏质量，按舒适负重 30 kg 压缩：
-  - 搬一件大家具或机器（35–50 kg）就到 HEAVY；
-  - 中型家具 10–20 kg；
-  - 一组建材很重：石头类 2.5 kg/个，一组 64 个就是 160 kg。
-- 台阶 = 母方块的一半，楼梯 = 3/4。
-- 合成前后尽量不变重：
-  - 铅屏蔽砖 8 kg = 4 块铅砖；
-  - 钢筋混凝土 3 kg ≈ 粉碎平均产出（4 块碎混凝土 × 0.5 + 4 块废钢 × 0.25）；
-  - 原版储存方块 = 9 个材料。
+- **拿在手里的小东西**（工具、材料、弹药、食物）：接近真实质量。
+- **整格方块**是一小份搬运单位，不按真实体积（一格混凝土真实约 2.4 吨）。常见方块一组 64 个大约 10–16 kg：
+  - 泥土、沙、砾石 0.15（一组 9.6 kg）；
+  - 石头类（石头、圆石、砖、混凝土、深板岩等）0.25（一组 16 kg，大约半个舒适负重）；
+  - 木板 0.1，原木 0.4（= 4 块木板）；
+  - 玻璃 0.15，羊毛 0.05，树叶、树苗、花 0.05。
+- **家具和机器**按“搬一件”的质量：搬一件大家具或机器（35–50 kg）就到 HEAVY；中型家具 10–20 kg。
+- 台阶 = 母方块的一半，楼梯 ≈ 3/4。
+- **能来回合成的保持质量不变**，免得靠合成减重：原版储存方块 = 9 个材料（铁块 4.5 kg = 9 个铁锭）、干草块、粘液块、骨块等。只能单向合成的，产物可以比材料重（比如门、箱子、熔炉），不会被利用。
+- 机器加工（粉碎、熔炼）不要求守恒，因为没法在野外靠它减重。但数值尽量接近：
+  - 钢筋混凝土 1.5 ≈ 粉碎平均产出（4 块碎混凝土 × 0.1 + 4 块废钢 × 0.25 = 1.4）；
+  - 矿石方块 1.0–1.2 ≈ 粉碎平均产出（1–3 个矿石 × 0.5）。
+- 铅屏蔽砖 3 kg = 4 块铅砖 × 0.75（core_v1 的铅砖原来 2 kg，改成 0.75）。
 - 液体：一桶（1000 mB）按 10 L 搬，液体质量 = 满桶 − 空桶（见“携带容器内容”）。
 
 AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
@@ -201,21 +207,23 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 大件家具 | vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
 | 中型家具 | retail_shelf_single 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
-| 钢结构 | steel_door 15；steel_block 8（台阶 4、楼梯 6）；steel_beam 6；steel_plate 4（台阶 2、楼梯 3）；steel_brace 4；steel_grate、steel_railing 3；steel_cable 1 |
-| 建材与地形 | lead_shielding_bricks 8；reinforced_concrete 3（台阶 1.5、楼梯 2.25）；asphalt、fused_ground 2.5；fallout_soil、scorched_soil 1.5 |
-| 矿石方块 | galena_ore、wolframite_ore 3；其余 5 种 2.5 |
-| 杨木 | 原木、去皮原木、木头、去皮木头 2；木板 0.5；楼梯 0.375；台阶 0.25；门 1；活板门 1.5；树叶、树苗 0.1 |
-| 管线、灯、路面 | fluid_pipe 2；industrial_utility_light 3；power_cable 0.5；三种路面标线 0.2 |
-| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；concrete_rubble 0.5；geiger_counter 0.5 |
+| 钢结构 | steel_door 3；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
+| 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
+| 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
+| 杨木 | 原木、去皮原木、木头、去皮木头 0.4；木板 0.1；楼梯 0.075；台阶 0.05；门 1；活板门 0.5；树叶、树苗 0.05 |
+| 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
+| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；geiger_counter 0.5；concrete_rubble 0.1 |
 
 原版（`vanilla_common_v1.json`）：
-- 92 条 tag 规则、342 个显式物品。
+- 94 条 tag 规则、342 个显式物品。
 - 工具统计：1238 个原版物品中，显式 346 个（含 core_v1 的 4 个），tag 覆盖 722 个，仍是 250 g 的 170 个。
 - 剩下的 170 个主要是刷怪蛋、命令方块等技术方块、末地物品、潜影盒（玩家去不了末地，用户确认不管）、珊瑚、幽匿方块。
 - 典型值（kg）：
   - 桶：空桶 1，水桶、奶桶 11，岩浆桶 21；
-  - 方块：石头类 2.5，泥土、沙、砾石 1.5，木板 0.5，玻璃 1；
-  - 铁类储存方块 4.5；箱子、木桶 8；熔炉 20；
+  - 方块：石头类 0.25，泥土、沙、砾石 0.15，原木 0.4，木板 0.1，玻璃 0.15，黑曜石 0.6，矿石方块 0.6；
+  - 黏土砖、下界砖（物品）0.06：它们在 `forge:ingots` 里，原来会吃到 0.5 kg 的锭规则，第二版用更高优先级单独压低；
+  - 铁类储存方块 4.5；箱子、木桶 2；熔炉 2（= 8 个圆石）；工作台 0.4；铁砧 15；船 8；床 2；
+  - 原版矿石方块 0.6。
   - 工具：剑 1.5，镐 2.5；
   - 盔甲：头 2.5、胸 8、腿 6、脚 2；皮甲单独更轻。
 - 杨木的物品 tag 原来缺失（只加了方块 tag），所以 core_v1 的原木规则对它无效。2026-10-03 在 `data/minecraft/tags/items/` 补了 `logs`、`logs_that_burn`、`leaves`、`saplings`，内容和方块 tag 一样。杨木现在都有显式质量，补 tag 主要让原版配方和其它 tag 规则认得它。
@@ -374,9 +382,36 @@ Tier（2026-10-03 改为 5 档，按 onset→severe 三等分；30 kg 舒适负�
 
 语言键：`weight.single`、`weight.stack`、`weight.assembled`、`weight.fallback`、`weight.pending`，原来的 `weight.unit`、`weight.estimated` 已删除。
 
-只计算当前悬停stack，不扫描客户端背包，不发送悬停请求。复用 `StackMassCalculator.mass(stack, ClientWeightState.data())`；枪械使用当前客户端已同步的附件/弹药NBT及NativeGun规则，随后随原库存同步更新。尚未收到服务器质量表时只提示“等待服务器数据”，不编造0重量或使用旧表。客户端没有世界时不显示该提示。没有新增正式Weight HUD。
+只计算当前悬停stack，不扫描客户端背包，不发送悬停请求。复用 `StackMassCalculator.mass(stack, ClientWeightState.data())`；枪械使用当前客户端已同步的附件/弹药NBT及NativeGun规则，随后随原库存同步更新。尚未收到服务器质量表时只提示“等待服务器数据”，不编造0重量或使用旧表。客户端没有世界时不显示该提示。主界面的负重显示见下一节“负重条 HUD”。
 
 Tooltip实机仍待验证：检查64发9mm、1/10个苹果、安装配件/射击前后枪重与`/aflweight held`一致；在远程服务器登录、`/reload`修改/删除质量规则后查看更新，重连另一世界应清旧表。确认原有弹药、辐射及Locked Overflow提示保持。
+
+## 负重条 HUD（2026-10-03）
+
+用户定：放在原版经验条的位置，一直显示。AFL 本来就隐藏了经验条（`client/AflHudEvents`），这个位置是空的。实现在 `weight/ClientWeightHud`，作为 overlay `apocalypse_firstlight:weight_bar` 注册在 `EXPERIENCE_BAR` 之上。
+
+外观：
+- 位置和大小和原版经验条一样：快捷栏正上方，182 × 5（GUI 坐标，屏幕高度 − 29）。
+- 长度：满格是 severe 倍舒适负重（60 kg），用的是负担，不是物理质量；超过 60 kg 一直是满格。
+- 圆角（2026-10-03 用户要求）：底槽和填充都是两端圆头。按真实像素画，圆头边缘做了抗锯齿，不是按 GUI 像素画的方块台阶。底槽是半透明深色，填充比底槽内缩半个 GUI 像素。
+- 刻度：30 / 40 / 50 kg（舒适负重，和 onset→severe 的三等分），宽半个 GUI 像素。没填到的部分刻度是浅色，填满的部分刻度是深色。
+- 填充颜色随档位变：轻松灰、负担黄、重载琥珀、搬运橙、极重红，都是压暗的颜色，没有亮白。
+- 条的右端一直显示负担数字，比如 `28.0 kg`，颜色和条一样。第一版 30 kg 以下不显示数字，用户要求改成一直显示。
+- 动画（2026-10-03 用户要求）：
+  - 负担变化时，填充长度、数字、颜色一起平滑过渡（按帧时间的指数缓动，时间常数 0.12 秒），和帧率无关；
+  - 颜色按动画中的当前值判断档位，填充越过刻度时才变色；
+  - 刚进世界时直接显示当前值，不从 0 涨上来。
+
+什么时候不显示：
+- 创造 / 旁观模式（和原版血条一样；那时也没有惩罚）；
+- 按 F1 隐藏界面时；
+- 骑可以跳的坐骑时（原版跳跃蓄力条占这个位置）；
+- 野外装配附件的视角（`FieldAttachmentViewState`），和其它 HUD 一起隐藏；
+- 还没收到服务器的负重状态时。
+
+位置固定在经验条那里，没有接 HUD 布局编辑器。没有实机验证。
+
+以后的生存 HUD（生命、饱食、口渴、体力等圆环）讨论中，还没做；这条负重条留在经验条的位置不动。
 
 ## Debug 与手动验收
 
@@ -413,8 +448,9 @@ coverage 每页20个AFL物品，报告来源：
 原版物品列表和原版 / Forge 的物品 tag 从 Gradle 缓存里的 `client-extra.jar` 和 Forge universal jar 读，版本取自 `gradle.properties`，也可以用 `--client-jar`、`--forge-jar` 指定。找不到 jar 时跳过原版检查并警告。
 
 选项：
-- `--list`：AFL 物品按质量从重到轻列出；
-- `--vanilla-fallback`：列出仍是 fallback 的原版物品。
+- `--list`：AFL 物品按质量从重到轻列出（带搬运系数）；
+- `--vanilla-fallback`：列出仍是 fallback 的原版物品；
+- `--item <id>`：查一个物品最后算成多重、来自哪条规则（可以写多个，原版可省略 `minecraft:`）。
 
 有错误时退出码为 1。2026-10-03 运行结果：AFL 135/135 显式，原版显式 346、tag 722、fallback 170，PASS。
 
@@ -438,7 +474,7 @@ coverage 每页20个AFL物品，报告来源：
 13. 家具和堆叠：
     - `/give @s apocalypse_firstlight:vending_machine 2` 应得到两格各 1 台，每台 45 kg，质量约 90 kg，负担 112.5 kg（×1.25），tier EXTREME；
     - `office_mouse` 一格最多 16 个，`metal_trash_can` 最多 4 个；
-    - 杨木原木应是 2 kg，来源 `item:`。
+    - 杨木原木应是 0.4 kg，来源 `item:`；6 块泥土 0.9 kg。
 14. 液体：
     - 放一个 fluid_tank，倒进 3 桶水，拆下拿着；
     - `/aflweight held` 应为 shell 30000 + fluid 30000 = 60 kg；
@@ -464,7 +500,7 @@ coverage 每页20个AFL物品，报告来源：
 未来Backpack可分别贡献 StorageCapacity（9/18/27/36为总格数）、自身质量、可选comfort/support modifier；这三项不是一个数字。Traits/Training将改变角色comfort/效率，不改钢坯/枪/弹的物理质量。Stamina仅消费EncumbranceState，Handling可同时读整枪mass与玩家state，均留后续独立任务。
 
 当前未覆盖：
-- 体力（Stamina）消耗、正式负重 HUD；
+- 体力（Stamina）消耗；背包界面里的负重详情；
 - 背包（只留了负担系数的接口）；
 - 车辆：以后的车辆货物不算进玩家负担，只算车辆自己的质量（用户 2026-10-03 定）；
 - 第三方菜单其它临时输入所有权；

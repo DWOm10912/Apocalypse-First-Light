@@ -107,6 +107,8 @@ public final class NativeGunShot {
         var stance = NativeStanceAccuracy.evaluate(shooter, d);
         double spreadDegrees = aiming && d.spreadDegrees() > 0
                 ? stance.finalDegrees() * d.adsSpreadDegrees() / d.spreadDegrees() : stance.finalDegrees();
+        // Stamina V1: a tired shooter (below the fatigue start) shoots a wider cone, up to +40% at 0.
+        spreadDegrees *= com.antaurora.apofirstlight.stamina.PlayerStamina.spreadMultiplier(shooter);
         // Sustained-fire bloom of the held stack's fire mode, once per shot (all pellets share the cone).
         var held = shooter.getMainHandItem();
         var mode = held.getItem() instanceof NativeGunItem gun && gun.definition().id().equals(d.id())

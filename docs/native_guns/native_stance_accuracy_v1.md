@@ -34,6 +34,8 @@ NativeStanceAccuracy在服务端PlayerTick END采样，取水平deltaMovement速
 玩家WeakHashMap瞬态状态，不写ItemStack或网络；死亡、退出、换维度/时间回退重置。
 没有射击bloom、ADS精度加成或技能稳定度。视觉ADS已单独接入（验收边界见native_ads_v1.md），不改变本系统公式。伤害、射程、弹药、模型、pose与recoil参数不变。
 
+耐力 V1（2026-10-03）：`NativeGunShot` 在姿态散布（含开镜换算）之后、连射扩散之前，再乘 `PlayerStamina.spreadMultiplier` = 1 + 0.4 × 疲劳度（耐力 50 以上为 0，0 时为 1），力竭时最多 +40%。见 `docs/gameplay/stamina_system_v1.md`。没有实机验证。
+
 ## 权威方向与调试
 
 NativeGunShot.execute：eyePosition + spread(lookAngle, finalDegrees)。

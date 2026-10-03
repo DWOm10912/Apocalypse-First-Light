@@ -56,6 +56,10 @@ public final class AflSounds {
     // Progressive Container Search: the one search sound for every searchable container, a seamless rustle loop
     // (tools/build-container-search-sounds-v2.mjs), looped by client/ContainerSearchSoundController while a search runs
     public static final RegistryObject<SoundEvent> CONTAINER_SEARCH_RUMMAGE = simple("container_search_rummage");
+    // Stamina V1: single nasal breaths, one random variant at a time while tired (light) or winded (heavy)
+    // (tools/build-stamina-breath-sounds-v1.mjs), scheduled by stamina/ClientStamina
+    public static final RegistryObject<SoundEvent> STAMINA_BREATH_LIGHT = simple("stamina_breath_light");
+    public static final RegistryObject<SoundEvent> STAMINA_BREATH_HEAVY = simple("stamina_breath_heavy");
     // Metal Trash Can V2 lid, on the 8-tick lid animation (tools/build-metal-trash-can-sounds-v1.mjs)
     public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_OPEN = simple("metal_trash_can_open");
     public static final RegistryObject<SoundEvent> METAL_TRASH_CAN_CLOSE = simple("metal_trash_can_close");

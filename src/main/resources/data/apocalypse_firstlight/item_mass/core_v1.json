@@ -148,7 +148,7 @@
       "estimated": true
     },
     "apocalypse_firstlight:lead_brick": {
-      "unit_mass_kg": 2,
+      "unit_mass_kg": 0.75,
       "estimated": true
     },
     "apocalypse_firstlight:pentlandite": {
@@ -260,7 +260,7 @@
     {
       "tag": "minecraft:logs",
       "priority": 20,
-      "unit_mass_kg": 2,
+      "unit_mass_kg": 0.4,
       "estimated": true
     },
     {

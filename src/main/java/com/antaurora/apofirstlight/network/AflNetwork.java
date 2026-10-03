@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "34";
+    private static final String PROTOCOL = "35";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -105,6 +105,16 @@ public final class AflNetwork {
                 ContainerSearchSoundS2CPacket::decode, ContainerSearchSoundS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.weight.WeightPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.stamina.StaminaPackets.register(channel, nextId);
+    }
+
+    /** Stamina V1: the player's own stamina state. */
+    public static void staminaState(ServerPlayer player, com.antaurora.apofirstlight.stamina.StaminaPackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    /** Stamina V1: a player's breathing level, to the players tracking them (not themselves). */
+    public static void staminaBreath(ServerPlayer player, com.antaurora.apofirstlight.stamina.StaminaPackets.Breath packet) {
+        if (channel != null) channel.send(PacketDistributor.TRACKING_ENTITY.with(() -> player), packet);
     }
 
     public static void weightPolicy(ServerPlayer player, com.antaurora.apofirstlight.weight.WeightPackets.Policy packet) {

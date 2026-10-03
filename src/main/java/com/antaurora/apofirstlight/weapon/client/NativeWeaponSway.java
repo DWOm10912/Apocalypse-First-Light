@@ -32,6 +32,8 @@ public final class NativeWeaponSway {
             if(blocked.contains("reload"))target*=.1f;
             else if(!blocked.isEmpty())target=0;
             if(mc.player.isSprinting())target=0;
+            // Stamina V1: a tired player holds the gun less steadily (up to 2.5x at 0 stamina).
+            target*=com.antaurora.apofirstlight.stamina.ClientStamina.swayScale();
         }
         // Exponential 150 ms time constant, followed by render partial-tick interpolation.
         amplitude+=(target-amplitude)*(float)(1-Math.exp(-.05/.15));

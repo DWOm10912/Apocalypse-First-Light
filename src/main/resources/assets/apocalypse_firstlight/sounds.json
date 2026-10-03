@@ -300,6 +300,25 @@
     "sounds": [{"name": "apocalypse_firstlight:weapons/blackridge_50/blackridge_50_safety_lever", "stream": false}]
   },
   "vending_machine_break": {"sounds":["apocalypse_firstlight:vending_machine_break"]},
+  "stamina_breath_light": {
+    "subtitle": "subtitles.apocalypse_firstlight.stamina_breath_light",
+    "sounds": [
+      {"name": "apocalypse_firstlight:stamina/breath_light_1", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_light_2", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_light_3", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_light_4", "attenuation_distance": 8}
+    ]
+  },
+  "stamina_breath_heavy": {
+    "subtitle": "subtitles.apocalypse_firstlight.stamina_breath_heavy",
+    "sounds": [
+      {"name": "apocalypse_firstlight:stamina/breath_heavy_1", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_heavy_2", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_heavy_3", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_heavy_4", "attenuation_distance": 8},
+      {"name": "apocalypse_firstlight:stamina/breath_heavy_5", "attenuation_distance": 8}
+    ]
+  },
   "container_search_rummage": {
     "subtitle": "subtitles.apocalypse_firstlight.container_search_rummage",
     "sounds": [{"name": "apocalypse_firstlight:container_search/rustle_loop", "attenuation_distance": 8}]

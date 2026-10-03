@@ -2,139 +2,139 @@
   "format_version": 1,
   "items": {
     "apocalypse_firstlight:reinforced_concrete": {
-      "unit_mass_kg": 3,
+      "unit_mass_kg": 1.5,
       "estimated": true
     },
     "apocalypse_firstlight:reinforced_concrete_slab": {
-      "unit_mass_kg": 1.5,
+      "unit_mass_kg": 0.75,
       "estimated": true
     },
     "apocalypse_firstlight:reinforced_concrete_stairs": {
-      "unit_mass_kg": 2.25,
+      "unit_mass_kg": 1.125,
       "estimated": true
     },
     "apocalypse_firstlight:lead_shielding_bricks": {
-      "unit_mass_kg": 8,
+      "unit_mass_kg": 3,
       "estimated": true
     },
     "apocalypse_firstlight:steel_block": {
-      "unit_mass_kg": 8,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_block_slab": {
-      "unit_mass_kg": 4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_block_stairs": {
-      "unit_mass_kg": 6,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_plate": {
-      "unit_mass_kg": 4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_plate_slab": {
-      "unit_mass_kg": 2,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_plate_stairs": {
-      "unit_mass_kg": 3,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_grate": {
-      "unit_mass_kg": 3,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_railing": {
-      "unit_mass_kg": 3,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_beam": {
-      "unit_mass_kg": 6,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_brace": {
-      "unit_mass_kg": 4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:steel_cable": {
       "unit_mass_kg": 1,
       "estimated": true
     },
-    "apocalypse_firstlight:steel_door": {
-      "unit_mass_kg": 15,
-      "estimated": true
-    },
-    "apocalypse_firstlight:asphalt": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:fallout_soil": {
-      "unit_mass_kg": 1.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:scorched_soil": {
-      "unit_mass_kg": 1.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:fused_ground": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:bauxite_ore": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:galena_ore": {
-      "unit_mass_kg": 3,
-      "estimated": true
-    },
-    "apocalypse_firstlight:sphalerite_ore": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:cassiterite_ore": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:pentlandite_ore": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:wolframite_ore": {
-      "unit_mass_kg": 3,
-      "estimated": true
-    },
-    "apocalypse_firstlight:spodumene_ore": {
-      "unit_mass_kg": 2.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_log": {
-      "unit_mass_kg": 2,
-      "estimated": true
-    },
-    "apocalypse_firstlight:stripped_poplar_log": {
-      "unit_mass_kg": 2,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_wood": {
-      "unit_mass_kg": 2,
-      "estimated": true
-    },
-    "apocalypse_firstlight:stripped_poplar_wood": {
-      "unit_mass_kg": 2,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_planks": {
+    "apocalypse_firstlight:steel_block_slab": {
       "unit_mass_kg": 0.5,
       "estimated": true
     },
+    "apocalypse_firstlight:steel_block_stairs": {
+      "unit_mass_kg": 0.75,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate_slab": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_plate_stairs": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_grate": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_railing": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_beam": {
+      "unit_mass_kg": 0.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_brace": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_cable": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_door": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:asphalt": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fallout_soil": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:scorched_soil": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fused_ground": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:bauxite_ore": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:galena_ore": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sphalerite_ore": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cassiterite_ore": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pentlandite_ore": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wolframite_ore": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:spodumene_ore": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stripped_poplar_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_wood": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stripped_poplar_wood": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:poplar_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
     "apocalypse_firstlight:poplar_stairs": {
-      "unit_mass_kg": 0.375,
+      "unit_mass_kg": 0.075,
       "estimated": true
     },
     "apocalypse_firstlight:poplar_slab": {
-      "unit_mass_kg": 0.25,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:poplar_door": {
@@ -142,43 +142,43 @@
       "estimated": true
     },
     "apocalypse_firstlight:poplar_trapdoor": {
-      "unit_mass_kg": 1.5,
+      "unit_mass_kg": 0.5,
       "estimated": true
     },
     "apocalypse_firstlight:poplar_leaves": {
-      "unit_mass_kg": 0.1,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:poplar_sapling": {
-      "unit_mass_kg": 0.1,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:edge_lane_white": {
-      "unit_mass_kg": 0.2,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:edge_lane_yellow": {
-      "unit_mass_kg": 0.2,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:white_lane_divider": {
-      "unit_mass_kg": 0.2,
+      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:power_cable": {
-      "unit_mass_kg": 0.5,
+      "unit_mass_kg": 0.2,
       "estimated": true
     },
     "apocalypse_firstlight:fluid_pipe": {
-      "unit_mass_kg": 2,
+      "unit_mass_kg": 0.5,
       "estimated": true
     },
     "apocalypse_firstlight:industrial_utility_light": {
-      "unit_mass_kg": 3,
+      "unit_mass_kg": 1.5,
       "estimated": true
     },
     "apocalypse_firstlight:concrete_rubble": {
-      "unit_mass_kg": 0.5,
+      "unit_mass_kg": 0.1,
       "estimated": true
     },
     "apocalypse_firstlight:industrial_waste_bucket": {

@@ -8,9 +8,10 @@
 // - with the vanilla/Forge jars from the Gradle cache: tag_defaults that tie (same top priority, different mass) on a
 //   vanilla item, which the runtime turns into the 250 g fallback; tags that do not exist; vanilla fallback count.
 //
-// Usage: node tools/check-item-mass.mjs [--list] [--vanilla-fallback] [--client-jar <jar>] [--forge-jar <jar>]
+// Usage: node tools/check-item-mass.mjs [--list] [--vanilla-fallback] [--item <id>]... [--client-jar <jar>] [--forge-jar <jar>]
 //   --list              AFL items with their mass (and carry factor), heaviest first
 //   --vanilla-fallback  vanilla items no rule covers (they weigh the fallback)
+//   --item <id>         what an item resolves to (explicit rule, winning tag, or fallback); repeatable
 // Exit code 1 when anything would be missing, rejected or tied.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -201,6 +202,17 @@ if (flag('--list'))
         .sort((a, b) => (b[1] ?? -1) - (a[1] ?? -1))
         .forEach(([id, g]) => console.log(`${g === undefined ? 'MISSING' : (g / 1000).toString().padStart(7) + ' kg'}  ${id}${carryOf(id) !== 1 ? `  (carry x${carryOf(id)})` : ''}`));
 if (flag('--vanilla-fallback')) fallback.forEach(id => console.log(`fallback  ${id}`));
+args.forEach((a, i) => {
+    if (a !== '--item') return;
+    const id = args[i + 1].includes(':') ? args[i + 1] : 'minecraft:' + args[i + 1];
+    const gun = afl.get(id);
+    if (gun) return console.log(`item  ${id} -> ${guns.get(gun)?.grams ?? 'MISSING'} g receiver+magazine (native_guns)`);
+    if (items.has(id)) return console.log(`item  ${id} -> ${items.get(id).grams} g (items, ${items.get(id).file})`);
+    const matches = tags.filter(rule => tagItems(rule.tag).has(id));
+    if (!matches.length) return console.log(`item  ${id} -> fallback${haveJars ? '' : ' (vanilla tags not loaded)'}`);
+    const top = Math.max(...matches.map(r => r.priority)), winners = matches.filter(r => r.priority === top);
+    console.log(`item  ${id} -> ${winners[0].grams} g (tag ${winners.map(r => r.tag).join(' / ')} at priority ${top})${new Set(winners.map(r => r.grams)).size > 1 ? ' TIE -> fallback' : ''}`);
+});
 warnings.forEach(w => console.log(`WARN  ${w}`));
 errors.forEach(e => console.log(`ERROR ${e}`));
 console.log(`item_mass files=${files.length} | AFL items=${afl.size} explicit=${afl.size - missing.length} missing=${missing.length}`

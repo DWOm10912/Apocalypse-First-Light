@@ -9,7 +9,7 @@
 | native_gun | native_gun_hud.json | global、silhouette、divider、weapon_name、ammo、fire_mode |
 | geiger_counter | geiger_hud.json | global、symbol、text、rows.radiation、rows.dose、rows.zone |
 
-当前没有额外注册的只读 HUD。下列现有显示属于 `NOT YET LAYOUT-JSON DRIVEN`：命中反馈、RadiationHeartOverlay、ExplosionTinnitusOverlay、RadiationStaticTextures、WorldInteractionHint（原 VendingMachineHint）、GunMaintenanceScreen / MaintenanceAttachmentHud。NativeGunCrosshair 的基础动态十字已使用 `gui/layout/native_crosshair.json` 视觉参数，但固定屏幕中心，不注册本编辑器、不提供拖动/保存；见 `../native_guns/native_dynamic_crosshair_v1.md`。上述心形覆盖、全屏效果和上下文界面不强行改造成布局，也不以猜测坐标注册红框。machine_layout/*.json 是机器容器界面，不是 HUD，不纳入本轮。
+当前没有额外注册的只读 HUD。下列现有显示属于 `NOT YET LAYOUT-JSON DRIVEN`：命中反馈、RadiationHeartOverlay、ExplosionTinnitusOverlay、RadiationStaticTextures、WorldInteractionHint（原 VendingMachineHint）、GunMaintenanceScreen / MaintenanceAttachmentHud、负重条（`weight/ClientWeightHud`，固定在原版经验条位置，见 `../gameplay/weight_system_v1.md`）、临时耐力环（`stamina/ClientStaminaHud`，固定在负重条左边，见 `../gameplay/stamina_system_v1.md`）。NativeGunCrosshair 的基础动态十字已使用 `gui/layout/native_crosshair.json` 视觉参数，但固定屏幕中心，不注册本编辑器、不提供拖动/保存；见 `../native_guns/native_dynamic_crosshair_v1.md`。上述心形覆盖、全屏效果和上下文界面不强行改造成布局，也不以猜测坐标注册红框。machine_layout/*.json 是机器容器界面，不是 HUD，不纳入本轮。
 
 ## 命令与操作
 

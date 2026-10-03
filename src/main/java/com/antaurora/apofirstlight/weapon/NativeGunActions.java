@@ -158,6 +158,7 @@ public final class NativeGunActions {
         if (reload && item.animationAsset() != null) state.cues.addAll(NativeGunAnimations.cues(item.animationAsset(), state.clip));
         state.dimension = player.level().dimension();
         SESSIONS.put(player, state);
+        if (reload) com.antaurora.apofirstlight.stamina.PlayerStamina.reload(player, definition.id());
         // Deliver the per-stack render identity before its animation trigger.
         syncInventory(player);
         if (!reload) {
@@ -173,6 +174,7 @@ public final class NativeGunActions {
             var hit = shot.representative();
             com.antaurora.apofirstlight.network.AflNetwork.sendNativeShot(player, slot, state.id, hit.point(),shotId,
                     definition.hitEffect().onHit(hit.entity()!=null), shot.endpoints());
+            com.antaurora.apofirstlight.stamina.PlayerStamina.shot(player, definition.ammoType());
         }
     }
 
