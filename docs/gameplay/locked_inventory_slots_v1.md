@@ -20,7 +20,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 - **LOCKED_EMPTY**：拒绝放入、合并、Shift 转入、数字键反向交换、拖拽分配和自动拾取分配。
 - **LOCKED_OCCUPIED**：保留原 ItemStack/NBT 与索引；可整组、拆分、Shift 或双击收集取出，不可向该槽追加/换入物品。取空后自然成为 LOCKED_EMPTY。
 - 切换模式不搬运、清除或抛出已有物品。读取、存档、`setItem` 状态恢复及 `replaceWith` 未被限制；管理员直接写入锁定槽可形成 Overflow。`/clear` 保持原版。
-- 死亡沿用原版掉落/keepInventory 与 Forge clone 语义，无新增复制或迁移；容量机制本身不另作死亡掉落。Overflow 仍保存在原版物品栏，未来重量统计可以读取。
+- 死亡沿用原版掉落/keepInventory 与 Forge clone 语义，无新增复制或迁移；容量机制本身不另作死亡掉落。Overflow 仍保存在原版物品栏，[Weight Core V1](weight_system_v1.md) 独立读取全部36格计重，不改变这里的容量规则。
 - `/give`、关闭容器返还与现有交易的“无空间”回退沿用原有逻辑。地面拾取在无合法目标时保留地面实体，不做拾取后立即丢出的处理。副手已有兼容堆叠仍可按原版合并。
 
 ## 共用执行路径
@@ -50,7 +50,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 | overflow | 超出当前储物容量 | Exceeds current storage capacity |
 | overflow.hint | 可以取出物品，但无法放入新的物品 | Items can be removed, but new items cannot be inserted |
 
-背包提示为已约定的后续玩法文案；**Backpack、Weight、Stamina、扩容物品及 Custom Inventory 均未实现**。后续 18/27/36 容量只应扩展同一策略入口。
+背包提示为已约定的后续玩法文案；**Backpack、Stamina、扩容物品及 Custom Inventory 均未实现**。[Weight Core V1](weight_system_v1.md) 已实现独立质量计算/同步/debug，实机待验证，尚无负重惩罚或正式HUD。后续 18/27/36 容量只应扩展同一策略入口。
 
 ## 验收结果
 
@@ -68,7 +68,7 @@ Slot 必须由 `Inventory` 容器承载，并通过 `getContainerSlot()` 取得�
 | 灰色遮罩、单斜线、中英文 Tooltip | PASS |
 | `compileJava --offline`（此前一次编译） | PASS |
 
-验收范围为 Locked Inventory Slots V1。本轮仍未实现的 Backpack / Weight / Stamina 等字段继续保持 NO，不因验收通过而变成已实现。
+该次用户验收范围仅为 Locked Inventory Slots V1。Backpack / Stamina 继续保持未实现；后来新增的 Weight Core V1 使用独立验收，不继承本表 PASS。
 
 第三方模组若直接修改 Inventory.items / setItem 或自行重写转移且绕开上述插入接口，需单独接入同一策略。本实现有意保留这些底层写入能力供存档同步、管理员写入和事务回滚，不能把任意直接写入一概视为正常玩家插入。
 

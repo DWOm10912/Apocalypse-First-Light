@@ -425,5 +425,10 @@
   "tooltip.apocalypse_firstlight.inventory.locked": "未解锁的背包栏位",
   "tooltip.apocalypse_firstlight.inventory.locked.hint": "装备背包可增加储物空间",
   "tooltip.apocalypse_firstlight.inventory.overflow": "超出当前储物容量",
-  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "可以取出物品，但无法放入新的物品"
+  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "可以取出物品，但无法放入新的物品",
+  "tooltip.apocalypse_firstlight.weight.unit": "单件重量：%s%s",
+  "tooltip.apocalypse_firstlight.weight.assembled": "整枪重量（含附件及弹药）：%s%s",
+  "tooltip.apocalypse_firstlight.weight.stack": "堆叠总重量：%s%s",
+  "tooltip.apocalypse_firstlight.weight.estimated": "（估算）",
+  "tooltip.apocalypse_firstlight.weight.pending": "重量：等待服务器数据"
 }

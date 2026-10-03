@@ -105,7 +105,7 @@
 - 问题：原版只在视线穿过方块所在格时检测它。
 - 处理：`AflMeshShapePicking`（通过 `mixin/client/AflMeshShapePickMixin`，注入 `GameRenderer.pick` 的 TAIL）额外检测视线经过格子的水平邻域，包含斜对角。半径来自已缓存 profile 的 selection 越界 bounds 向上取整；储物柜为 1，即最多 3×3 邻域，去重并排除原版已经遍历的格子。不读取未加载 chunk。只对 selection 越界的 Mesh Shape 方块做实际 shape.clip，不硬编码 locker。只有实际交点严格近于现有方块/实体交点时才替换；等距时保留原版结果。profile 在方块状态 shape 缓存初始化时加载。
 - 服务端限制：原版会拒绝命中点离方块中心超过 1 格的使用请求，所以这类命中点会被夹回本格范围内；区域仍按视线判定，不受影响。
-- **伸到本格上方的部分**（2026-10-03 加，商业垃圾箱打开的盖子）：方块实现 `meshshape/AflOverhangPickBlock`，返回世界坐标的包围盒；`AflMeshShapePicking` 对视线经过的每一格，再检测它下面 1–2 格（`MAX_CELLS_BELOW`）的这类方块，同样只在严格更近时替换、同样把命中点夹回本格。不要求方块使用 Mesh Shape profile。方块自己必须按玩家视线判断点的是什么（例如 `CommercialDumpsterBlock.aimed`）。没有实机验证。
+- **伸到本格上方的部分**（2026-10-03 加，商业垃圾箱打开的盖子）：方块实现 `meshshape/AflOverhangPickBlock`，返回世界坐标的包围盒；`AflMeshShapePicking` 对视线经过的每一格，再检测它下面 1–2 格（`MAX_CELLS_BELOW`）的这类方块，同样只在严格更近时替换、同样把命中点夹回本格。不要求方块使用 Mesh Shape profile。方块自己必须按玩家视线判断点的是什么（例如 `CommercialDumpsterBlock.aimed`）。用户 2026-10-03 在垃圾箱上实机 PASS。
 
 **提示框**：复用 `WorldInteractionHint` 和 `AttachmentHintStyle`。区域的锚点通过本帧的世界 view / projection 矩阵（`RenderLevelStageEvent` AFTER_SKY，包含视角晃动）投影到屏幕，提示框画在锚点的右上方。锚点在镜头后方时退回到准星位置。自动售货机仍以准星为锚点，行为不变。
 

@@ -425,5 +425,10 @@
   "tooltip.apocalypse_firstlight.inventory.locked": "Locked inventory slot",
   "tooltip.apocalypse_firstlight.inventory.locked.hint": "Equip a backpack to increase storage capacity",
   "tooltip.apocalypse_firstlight.inventory.overflow": "Exceeds current storage capacity",
-  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "Items can be removed, but new items cannot be inserted"
+  "tooltip.apocalypse_firstlight.inventory.overflow.hint": "Items can be removed, but new items cannot be inserted",
+  "tooltip.apocalypse_firstlight.weight.unit": "Unit weight: %s%s",
+  "tooltip.apocalypse_firstlight.weight.assembled": "Assembled weight (attachments and ammo): %s%s",
+  "tooltip.apocalypse_firstlight.weight.stack": "Stack weight: %s%s",
+  "tooltip.apocalypse_firstlight.weight.estimated": " (estimated)",
+  "tooltip.apocalypse_firstlight.weight.pending": "Weight: awaiting server data"
 }

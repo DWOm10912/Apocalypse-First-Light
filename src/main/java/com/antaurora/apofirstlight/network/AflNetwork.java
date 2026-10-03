@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "32";
+    private static final String PROTOCOL = "33";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -111,6 +111,9 @@ public final class AflNetwork {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
     public static void weightState(ServerPlayer player, com.antaurora.apofirstlight.weight.WeightPackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    public static void weightData(ServerPlayer player, com.antaurora.apofirstlight.weight.WeightPackets.Data packet) {
         if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 

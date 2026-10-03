@@ -1,0 +1,241 @@
+{
+  "format_version": 1,
+  "policy": {
+    "fallback_unit_mass_kg": 0.25,
+    "comfort_capacity_kg": 30,
+    "severity_onset_ratio": 0.75,
+    "severe_ratio": 2
+  },
+  "items": {
+    "apocalypse_firstlight:9x19mm_round": {
+      "unit_mass_kg": 0.012,
+      "estimated": true
+    },
+    "apocalypse_firstlight:762x51mm_round": {
+      "unit_mass_kg": 0.024,
+      "estimated": true
+    },
+    "apocalypse_firstlight:12_7x55mm_round": {
+      "unit_mass_kg": 0.08,
+      "estimated": true
+    },
+    "apocalypse_firstlight:12_gauge_round": {
+      "unit_mass_kg": 0.045,
+      "estimated": true
+    },
+    "apocalypse_firstlight:50_ae_round": {
+      "unit_mass_kg": 0.035,
+      "estimated": true
+    },
+    "apocalypse_firstlight:9x19mm_casing": {
+      "unit_mass_kg": 0.004,
+      "estimated": true
+    },
+    "apocalypse_firstlight:762x51mm_casing": {
+      "unit_mass_kg": 0.012,
+      "estimated": true
+    },
+    "apocalypse_firstlight:12_7x55mm_casing": {
+      "unit_mass_kg": 0.022,
+      "estimated": true
+    },
+    "apocalypse_firstlight:12_gauge_casing": {
+      "unit_mass_kg": 0.01,
+      "estimated": true
+    },
+    "apocalypse_firstlight:50_ae_casing": {
+      "unit_mass_kg": 0.012,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pistol_red_dot": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rifle_red_dot_01": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:p9_01_extended_magazine": {
+      "unit_mass_kg": 0.12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:br51_extended_magazine_35": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:br51_drum_magazine_50": {
+      "unit_mass_kg": 0.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pistol_suppressor_01": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rifle_suppressor_01": {
+      "unit_mass_kg": 0.45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:heavy_suppressor_01": {
+      "unit_mass_kg": 0.7,
+      "estimated": true
+    },
+    "apocalypse_firstlight:simple_hearing_protection": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:crowbar": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:energy_battery": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_billet": {
+      "unit_mass_kg": 1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:bauxite": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:alumina": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:galena": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sphalerite": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cassiterite": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lead_brick": {
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pentlandite": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:electrolytic_nickel": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:silver_scrap": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wolframite": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tungsten_oxide": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tungsten_powder": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:spodumene_concentrate": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:lithium_carbonate": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tungsten_filament": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:tungsten_carbide_powder": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cemented_carbide_blank": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:steel_scrap": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:plastic_scrap": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:plastic_pellets": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "minecraft:apple": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "minecraft:iron_ingot": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "minecraft:iron_chestplate": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
+    "minecraft:torch": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    }
+  },
+  "native_guns": {
+    "apocalypse_firstlight:p9_01": {
+      "receiver_mass_kg": 0.6,
+      "default_magazine_empty_mass_kg": 0.08,
+      "estimated": true
+    },
+    "apocalypse_firstlight:br51_01": {
+      "receiver_mass_kg": 3.2,
+      "default_magazine_empty_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:hr55": {
+      "receiver_mass_kg": 4,
+      "default_magazine_empty_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:silverwood_12": {
+      "receiver_mass_kg": 3,
+      "default_magazine_empty_mass_kg": 0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:blackridge_50": {
+      "receiver_mass_kg": 1.7,
+      "default_magazine_empty_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cat": {
+      "receiver_mass_kg": 2,
+      "default_magazine_empty_mass_kg": 0.15,
+      "estimated": true
+    }
+  },
+  "tag_defaults": [
+    {
+      "tag": "minecraft:logs",
+      "priority": 20,
+      "unit_mass_kg": 2,
+      "estimated": true
+    },
+    {
+      "tag": "forge:ingots",
+      "priority": 10,
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    }
+  ]
+}
