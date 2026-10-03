@@ -12,13 +12,19 @@
 
 见下文“携带质量 V1”和“堆叠上限审计”。编译通过，**没有实机验证**。舒适负重（Base Comfort Capacity）保持 30 kg（用户确认）。创造 / 旁观模式只计算不受限（`penaltiesEnabled=false`，见下文）。
 
+2026-10-03 同日加了**负重惩罚 V1**（数值由用户定）：
+- 移速、跳跃、禁止疾跑；
+- 按“负担”算：穿着的盔甲 ×0.65，大件家具和机器 ×1.10 / ×1.25。
+
+见下文“负重惩罚 V1”。编译通过，**没有实机验证**。
+
 ## Source of Truth 与边界
 
 服务端实际 ItemStack + 当前 immutable mass snapshot 是唯一质量真相。客户端接收本人负重结果和服务器预解析的质量表，不提交质量、不扫描 Inventory。物品 Tooltip 仅对当前悬停的已同步 ItemStack 使用同一计算器，展示单件/堆叠质量，不替代服务端玩家总负重。没有保存 currentWeight 的 NBT/capability，没有创建额外 Overflow inventory。
 
 `PlayerStorageCapacity` 只管理插入容量，Weight 独立计算实际所有权。全部 Inventory.items 0–35 都计重，包括生存/冒险锁定的 9–35 格；主手已在其中，不重复加入。超出 comfort 不阻止拾取、插入或使用物品。
 
-本轮不改变 Locked Inventory、伤害/RPM、换弹结算、附件交易、Dynamic Ammo、Mesh/动画/PBR、搜刮、Loot、Radiation、世界生成。武器侧仅在既有 `NativeGunActions.syncInventory` 与 `AttachmentInteractionCore.commit` 成功发布后 mark dirty。没有移动/冲刺/跳跃、Stamina、ADS、Recoil、Sway 或正式 HUD 接入。
+本轮不改变 Locked Inventory、伤害/RPM、换弹结算、附件交易、Dynamic Ammo、Mesh/动画/PBR、搜刮、Loot、Radiation、世界生成。武器侧仅在既有 `NativeGunActions.syncInventory` 与 `AttachmentInteractionCore.commit` 成功发布后 mark dirty。移动、疾跑、跳跃惩罚见“负重惩罚 V1”（2026-10-03）；没有 Stamina、ADS、Recoil、Sway 或正式 HUD 接入。
 
 ## 文件与 API
 
@@ -37,7 +43,10 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `weight/ClientWeightState.java` | 客户端只读镜像、拒绝过时结果、断线清空 |
 | `weight/ClientWeightTooltip.java` | 当前悬停物品的单件/堆叠质量展示 |
 | `weight/WeightCommands.java` | `/aflweight` 运维/实机诊断 |
-| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33 |
+| `weight/WeightPenalties.java` | 服务端：移速属性修饰、疾跑标记；跳跃缩放的公共方法 |
+| `weight/ClientWeightPenalties.java` | 客户端：本人跳跃、疾跑判断、抵消移速带来的视野缩小 |
+| `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重时禁止疾跑（和饿肚子同一个检查点） |
+| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34 |
 | `weapon/NativeGunActions.java` | 既有射击/换弹库存同步处新增 dirty 通知 |
 | `weapon/AttachmentInteractionCore.java` | 成功提交处新增 dirty 通知 |
 
@@ -60,9 +69,21 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
   "policy": {
     "fallback_unit_mass_kg": 0.25,
     "comfort_capacity_kg": 30,
-    "severity_onset_ratio": 0.75,
-    "severe_ratio": 2.0
+    "severity_onset_ratio": 1.0,
+    "severe_ratio": 2.0,
+    "penalties": {
+      "armor_load_factor": 0.65,
+      "curve": [
+        { "load_ratio": 1.0, "speed": 1.0, "jump": 1.0 },
+        { "load_ratio": 2.0, "speed": 0.3, "jump": 0.91 }
+      ],
+      "sprint_block_ratio": 1.3333,
+      "sprint_resume_ratio": 1.3
+    }
   },
+  "carry_factors": [
+    { "tag": "apocalypse_firstlight:carry/oversized", "factor": 1.25 }
+  ],
   "items": {
     "minecraft:apple": { "unit_mass_kg": 0.2, "estimated": true }
   },
@@ -237,6 +258,67 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 
 改动在 `registry/AflItems.java` 的 `Item.Properties().stacksTo(n)`。旧存档里已经超过新上限的堆叠，按原版逻辑读档时不会被拆开，只是不能再往上叠（没有实测）。
 
+## 负重惩罚 V1（2026-10-03）
+
+数值由用户定，没有实机验证。曲线、盔甲系数和疾跑阈值写在 `core_v1.json` 的 `policy.penalties` 里，`/reload` 就能调。
+
+### 负担（load）
+
+惩罚不按物理质量，而按负担算：每一堆物品的负担 = 它的质量 × 放的位置的系数 × 物品自己的搬运系数。
+
+| 位置 | 系数 |
+|---|---|
+| 背包 36 格、副手、鼠标上、合成格 | 1.00 |
+| 穿在身上的盔甲（4 个盔甲槽） | 0.65（`policy.penalties.armor_load_factor`） |
+| 以后的专业背包 | 约 0.90，注册时给（还没有背包） |
+| 车辆货物 | 不算玩家负担（还没有车辆） |
+
+物品搬运系数（`afl_content_v1.json` 的 `carry_factors`，按物品 tag，取最大的那个）：
+- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 26 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器；
+- `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 9 种；
+- 其它物品 ×1.00。
+
+Tooltip 显示的是物理质量，不乘系数。`/aflweight` 同时给出质量（mass）和负担（load）；`breakdown` 列出每个来源的负担。
+
+### 曲线
+
+ratio = 负担 / 舒适负重。点之间线性，60 kg 以上不再加重：
+
+| 负担（30 kg 舒适负重时） | ratio | 移速 | 跳跃速度 | 跳跃高度（约） | 疾跑 |
+|---|---:|---:|---:|---:|---|
+| ≤ 30 kg | 1.0 | 100% | 1.00 | 1.25 格 | 可以 |
+| 35 kg | 1.1667 | 85% | 1.00 | 1.25 格 | 可以 |
+| 40 kg | 1.3333 | 70% | 1.00 | 1.25 格 | **禁止** |
+| 50 kg | 1.6667 | 50% | 0.94 | 1.13 格（90%） | 禁止 |
+| ≥ 60 kg | 2.0 | 30% | 0.91 | 1.07 格（85%） | 禁止 |
+
+- 跳跃按用户选的方案 B：任何负担下都还能跳上一格（原版起跳速度 0.42，每 tick 先减 0.08 再乘 0.98，按这个算出的最高点）。曲线里写的是起跳速度倍率，不是高度。
+- 疾跑：负担到 40 kg 就禁止，降到 39 kg（ratio 1.3）以下才恢复，防止在 40 kg 附近捡一支箭就来回开关。
+- 移速 30% 和原版潜行一样慢；潜行会再乘一次（大约 9%）。
+- 骑乘时不禁疾跑，交给坐骑。
+
+### 实现
+
+- **移速**：服务端给 `MOVEMENT_SPEED` 加一个临时修饰（`WeightPenalties.SPEED_MODIFIER`，MULTIPLY_TOTAL，数值 = 移速倍率 − 1），随状态重算更新。它不写进存档，属性会自动同步给客户端。重生、换维度、登录时强制重算，会重新加上。
+- **视野**：原版会按移速缩小视野（和缓慢药水一样）。`ClientWeightPenalties#fov` 把这个修饰带来的那部分除掉，所以负重不会让镜头拉近；飞行、疾跑、拉弓的视野变化照旧，用望远镜时不处理。
+- **疾跑**：客户端 `LocalPlayerWeightSprintMixin` 让 `LocalPlayer#hasEnoughFoodToStartSprinting` 返回 false，和饿肚子禁疾跑走同一个检查点。原版在开始疾跑前和疾跑中每 tick 都会检查它，所以正在跑也会停下。服务端每 tick 如果还收到疾跑标记就清掉。
+- **跳跃**：玩家移动在客户端算，所以本人的跳跃在客户端 `LivingJumpEvent` 里把向上速度乘倍率，用的是服务器发来的最新状态。
+- 状态最多每 5 tick 同步一次，物品变化后大约 0.25 秒内生效。
+
+### 验收（待用户执行）
+
+用测试存档，Survival 模式，先清空库存：
+1. 用铁锭（0.5 kg / 个）调负担，看 `/aflweight`。70 个是 35 kg，80 个 40 kg，100 个 50 kg，120 个 60 kg：
+   - 35 kg 移速约 85%，40 kg 不能疾跑；
+   - 50 kg 移速约 50%，还能跳上一格；
+   - 60 kg 以上移速约 30%，跳上一格很勉强但能上去。
+2. 视野不应随负重变窄。
+3. 穿全套铁甲（18.5 kg），`/aflweight breakdown` 的 `load armor` 应为 12025 g（× 0.65）。
+4. 拿一台售货机（45 kg），负担应为 56.25 kg（× 1.25），tier HAULING。
+5. 负担在 40 kg 上下：到 40 kg 禁止疾跑，降到 39 kg 以下才恢复。
+6. 切到 Creative / Spectator 后惩罚立刻消失，能疾跑；切回 Survival 惩罚恢复。
+7. 死亡重生、换维度、退出重进后，惩罚按新状态，不残留旧的移速修饰。
+
 ## 玩家来源、Cursor 与 Crafting
 
 来源分别输出 inventory / armor / offhand / cursor / crafting / equipment:<id>：
@@ -262,11 +344,20 @@ Login、Respawn、Clone、Dimension Change、Death 标记强制；clone清旧玩
 
 ## EncumbranceState 与网络
 
-测试 comfort = 30000g，不是携带硬上限。ratio = carried / comfort。severity = clamp((ratio−0.75)/(2−0.75), 0, 1)，onset/severe 来自 policy。
+comfort = 30000g，不是携带硬上限。2026-10-03 起 ratio = **负担（load）** / comfort，不再是物理质量 / comfort（见“负重惩罚 V1”）。severity = clamp((ratio−onset)/(severe−onset), 0, 1)，onset 1.0、severe 2.0 来自 policy。onset 原来是 0.75，校验原来要求 onset < 1；现在只要求 0 ≤ onset < severe。
 
-Tier：ratio <0.75 LIGHT；<1 APPROACHING_COMFORT；<2 HEAVY；其余 SEVERE。tier用于未来文案，severity用于未来连续曲线。`penaltiesEnabled = !Creative && !Spectator`，只表示未来效果的适用性，**即使 true 也没有实施任何惩罚**。Creative/Spectator质量照算。
+Tier（2026-10-03 改为 5 档，按 onset→severe 三等分；30 kg 舒适负重时）：
+- LIGHT：≤ 30 kg；
+- BURDENED：30–40 kg；
+- HEAVY：40–50 kg；
+- HAULING：50–60 kg；
+- EXTREME：≥ 60 kg。
 
-复用 AflNetwork `main`，当前协议33，PLAY_TO_CLIENT 的 Policy、State、Data。Policy同步 revision 与 fallback/comfort/onset/severe 元数据。Data在登录和datapack重载同步时发送不可变的已解析item质量表、Native Gun组件质量及相同policy/revision；tag选择已在服务器解析，不要求客户端自行加载datapack或重新判断tags。fallback物品不逐条展开。2026-10-03 补数据后，表里约 1,200 项（估算约 70 KB），离自定义包 1 MB 上限还很远。State包含 carriedMassGrams、comfortCapacityGrams、encumbranceRatio、severity、tier、penaltiesEnabled、dataRevision、quality 和 server session sequence。玩家State只发本人，不广播、不按每件物品发包。
+原来的 LIGHT / APPROACHING_COMFORT / HEAVY / SEVERE 已删除。
+
+`penaltiesEnabled = !Creative && !Spectator`：为 false 时质量和负担照算，但移速、跳跃倍率都是 1，也不禁止疾跑。
+
+复用 AflNetwork `main`，当前协议33，PLAY_TO_CLIENT 的 Policy、State、Data。Policy同步 revision 与 fallback/comfort/onset/severe 元数据。Data在登录和datapack重载同步时发送不可变的已解析item质量表、Native Gun组件质量及相同policy/revision；tag选择已在服务器解析，不要求客户端自行加载datapack或重新判断tags。fallback物品不逐条展开。2026-10-03 补数据后，表里约 1,200 项（估算约 70 KB），离自定义包 1 MB 上限还很远。State包含 carriedMassGrams、loadGrams、comfortCapacityGrams、encumbranceRatio、severity、tier、penaltiesEnabled、speedMultiplier、jumpMultiplier、sprintBlocked、dataRevision、quality 和 server session sequence（2026-10-03 加了负担、两个倍率和 sprintBlocked，协议 34）。惩罚曲线和 carry 系数只在服务端，客户端只拿结果倍率。玩家State只发本人，不广播、不按每件物品发包。
 
 通常变化每5ticks最多发一次，初始化/Login/模式变化/revision变化在下一次tick END强制发；respawn/换维度也强制。数据同步事件发送policy及Data，强制状态发送前再确保policy；仅这些生命周期点可能重复policy，不是每帧日志/包。Data不随每次重量变化重复发送。客户端拒绝旧revision/sequence，revision更新时清过时状态/质量表，断线清全部镜像。客户端Tooltip不会直接读取单机服务器的static质量snapshot，因此联机同样走服务器同步表。
 
@@ -338,14 +429,14 @@ coverage 每页20个AFL物品，报告来源：
 7. 射击：Survival BR51每成功射击一次，枪内弹量与质量应分别−1 / −24g；不要把掉落弹壳特效加回玩家。Creative仍按真实gun ammo字段计量，不出现Integer.MAX_VALUE质量。
 8. 换弹：`/give @s apocalypse_firstlight:762x51mm_round 64`。Survival换弹begin不提前改变质量，magIn真实transfer后枪增加量等于备用弹减少量，总重保持（无丢物/换配置）。Creative补弹可增加枪内真值质量，但没有虚构无限备用弹重量。
 9. 匣/配件：给 br51_extended_magazine_35、br51_drum_magazine_50、rifle_red_dot_01、rifle_suppressor_01，用既有维护台/野外交互安装/拆除。无其它附件的20/35/50满弹枪应3880/4340/5200g；红点+250g，消音器+450g。magazine项仅一次；拆除回隐式默认匣的总量边界按上文，不误判为严格守恒。不要用动画中的辅助弹匣计量。
-10. 模式：Creative → Survival的penaltiesEnabled下一tick变true，重量仍覆盖overflow；Spectator/Creative为false。所有模式都无减速/体力处罚。
+10. 模式：Creative → Survival的penaltiesEnabled下一tick变true，重量仍覆盖overflow；Spectator/Creative为false，这时没有任何移动惩罚。
 11. 生命周期：分别用 keepInventory true/false测试死亡重生，比较实际保留/掉落物；跨维度、退出重进、重新开世界后重新推导，不出现旧缓存质量。测试联网本人同步不泄漏给其它玩家。
 12. Reload：测试datapack覆盖同路径core_v1.json，将apple改0.3kg后`/reload`，revision增加且每个apple变300g。再从覆盖文件删除apple条目，若无其它匹配规则则250g，不保留旧300g。另测试相同最高priority的冲突tag，应警告并fallback；负数/小于克精度/溢出/非法policy文件应整份拒绝，而不是客户端崩溃。
 
 2026-10-03 新增（同样待用户执行）：
 
 13. 家具和堆叠：
-    - `/give @s apocalypse_firstlight:vending_machine 2` 应得到两格各 1 台，每台 45 kg，总重约 90 kg，tier SEVERE；
+    - `/give @s apocalypse_firstlight:vending_machine 2` 应得到两格各 1 台，每台 45 kg，质量约 90 kg，负担 112.5 kg（×1.25），tier EXTREME；
     - `office_mouse` 一格最多 16 个，`metal_trash_can` 最多 4 个；
     - 杨木原木应是 2 kg，来源 `item:`。
 14. 液体：
@@ -368,13 +459,18 @@ coverage 每页20个AFL物品，报告来源：
 
 `PlayerMassSources.registerExtraEquipment` 给未来独立装备槽使用，必须只返回与36格/盔甲/副手等不重复的真实stack；不能再次计量同一物品。provider异常标估算问题，不让未知物品使核心崩溃。当前不占胸甲槽、不提供背包或负重支撑效果。
 
+2026-10-03 起可以带负担系数注册：`registerExtraEquipment(id, loadFactor, provider)`，比如以后的专业背包约 0.90。这表示负载分布更好，不是把质量变小：物理质量照算，只是负担按 0.90 算。原来不带系数的写法按 1.0 算。
+
 未来Backpack可分别贡献 StorageCapacity（9/18/27/36为总格数）、自身质量、可选comfort/support modifier；这三项不是一个数字。Traits/Training将改变角色comfort/效率，不改钢坯/枪/弹的物理质量。Stamina仅消费EncumbranceState，Handling可同时读整枪mass与玩家state，均留后续独立任务。
 
 当前未覆盖：
+- 体力（Stamina）消耗、正式负重 HUD；
+- 背包（只留了负担系数的接口）；
+- 车辆：以后的车辆货物不算进玩家负担，只算车辆自己的质量（用户 2026-10-03 定）；
 - 第三方菜单其它临时输入所有权；
 - 非标准格式的嵌套容器内容；
 - 通过 capability 装液体的第三方物品（只算显式注册的 3 种 AFL 物品，不读通用 fluid handler，避免和桶自身质量重复计）；
 - 未知capability装备；
-- 正式平衡、性能benchmark、正式HUD、实际惩罚。
+- 正式平衡、性能benchmark。
 
 不可把ESTIMATED数值描述为已精确称重。

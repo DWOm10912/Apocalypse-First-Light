@@ -3,12 +3,13 @@
 // Checks what weight/ItemMassData would do with data/*/item_mass/*.json, before the game loads it:
 // - every AFL item (registry/AflItems.java) has an explicit `items` entry, or a `native_guns` entry for guns;
 // - each file loads the way the runtime loads it: one bad entry (unknown item id, non-whole grams, negative, duplicate
-//   of an earlier file's rule, a second policy) rejects the WHOLE file, so these are errors here;
+//   of an earlier file's rule, a second policy, a bad penalty curve or carry factor) rejects the WHOLE file, so these
+//   are errors here;
 // - with the vanilla/Forge jars from the Gradle cache: tag_defaults that tie (same top priority, different mass) on a
 //   vanilla item, which the runtime turns into the 250 g fallback; tags that do not exist; vanilla fallback count.
 //
 // Usage: node tools/check-item-mass.mjs [--list] [--vanilla-fallback] [--client-jar <jar>] [--forge-jar <jar>]
-//   --list              AFL items with their mass, heaviest first
+//   --list              AFL items with their mass (and carry factor), heaviest first
 //   --vanilla-fallback  vanilla items no rule covers (they weigh the fallback)
 // Exit code 1 when anything would be missing, rejected or tied.
 import fs from 'node:fs';
@@ -118,7 +119,20 @@ const files = walk(dataRoot).map(file => {
     const m = path.relative(dataRoot, file).replaceAll('\\', '/').match(/^([a-z0-9_.-]+)\/item_mass\/(.+)\.json$/);
     return m && {file, ns: m[1], path: m[2]};
 }).filter(Boolean).sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : a.ns < b.ns ? -1 : a.ns > b.ns ? 1 : 0);
-const items = new Map(), guns = new Map(), tags = []; // id -> {grams, file}
+const items = new Map(), guns = new Map(), tags = [], carry = []; // id -> {grams, file}
+const finite = (o, key) => { const v = o?.[key]; if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`${key} must be a finite number`); return v; };
+function penalties(p) { // ItemMassData#penalties
+    const armor = finite(p, 'armor_load_factor');
+    if (!Array.isArray(p.curve) || !p.curve.length) throw new Error('penalties.curve must be a non-empty list');
+    let last = -Infinity;
+    for (const c of p.curve) {
+        const ratio = finite(c, 'load_ratio'), speed = finite(c, 'speed'), jump = finite(c, 'jump');
+        if (ratio < 0 || ratio <= last || speed <= 0 || speed > 1 || jump <= 0 || jump > 1) throw new Error(`bad penalty curve point ${JSON.stringify(c)}`);
+        last = ratio;
+    }
+    const block = finite(p, 'sprint_block_ratio'), resume = finite(p, 'sprint_resume_ratio');
+    if (armor <= 0 || resume <= 0 || resume > block) throw new Error('bad penalties');
+}
 let policyFile = null;
 for (const f of files) {
     const name = `${f.ns}:${f.path}`;
@@ -139,16 +153,28 @@ for (const f of files) {
             if (!isId(rule.tag) || !Number.isInteger(rule.priority)) throw new Error(`bad tag rule ${JSON.stringify(rule)}`);
             nextTags.push({tag: rule.tag, priority: rule.priority, grams: grams(rule.unit_mass_kg, rule.tag), file: name});
         }
+        const nextCarry = [];
+        for (const rule of json.carry_factors ?? []) {
+            if (!isId(rule.tag) || !(finite(rule, 'factor') > 0)) throw new Error(`bad carry factor ${JSON.stringify(rule)}`);
+            nextCarry.push({tag: rule.tag, factor: rule.factor, file: name});
+        }
         if (json.policy) {
             if (policyFile) throw new Error(`second policy (first in ${policyFile})`);
-            grams(json.policy.fallback_unit_mass_kg, 'fallback'); grams(json.policy.comfort_capacity_kg, 'comfort');
+            if (grams(json.policy.fallback_unit_mass_kg, 'fallback') <= 0 || grams(json.policy.comfort_capacity_kg, 'comfort') <= 0)
+                throw new Error('fallback and comfort must be positive');
+            const onset = finite(json.policy, 'severity_onset_ratio'), severe = finite(json.policy, 'severe_ratio');
+            if (onset < 0 || severe <= onset) throw new Error('invalid policy ratios');
+            if (json.policy.penalties) penalties(json.policy.penalties);
         }
-        nextItems.forEach((v, k) => items.set(k, v)); nextGuns.forEach((v, k) => guns.set(k, v)); tags.push(...nextTags);
+        nextItems.forEach((v, k) => items.set(k, v)); nextGuns.forEach((v, k) => guns.set(k, v)); tags.push(...nextTags); carry.push(...nextCarry);
         if (json.policy) policyFile = name;
     } catch (e) {
         errors.push(`${name}: the runtime would reject this whole file: ${e.message}`);
     }
 }
+
+for (const rule of carry) if (!tagFiles.has(rule.tag)) warnings.push(`carry tag ${rule.tag} (${rule.file}) does not exist; the factor never applies`);
+const carryOf = id => Math.max(1, ...carry.filter(rule => tagItems(rule.tag).has(id)).map(rule => rule.factor));
 
 // ---- AFL coverage
 const missing = [...afl].filter(([id, gun]) => gun ? !guns.has(gun) : !items.has(id)).map(([id]) => id);
@@ -173,7 +199,7 @@ if (haveJars) {
 if (flag('--list'))
     [...afl].map(([id, gun]) => [id, gun ? guns.get(gun)?.grams : items.get(id)?.grams])
         .sort((a, b) => (b[1] ?? -1) - (a[1] ?? -1))
-        .forEach(([id, g]) => console.log(`${g === undefined ? 'MISSING' : (g / 1000).toString().padStart(7) + ' kg'}  ${id}`));
+        .forEach(([id, g]) => console.log(`${g === undefined ? 'MISSING' : (g / 1000).toString().padStart(7) + ' kg'}  ${id}${carryOf(id) !== 1 ? `  (carry x${carryOf(id)})` : ''}`));
 if (flag('--vanilla-fallback')) fallback.forEach(id => console.log(`fallback  ${id}`));
 warnings.forEach(w => console.log(`WARN  ${w}`));
 errors.forEach(e => console.log(`ERROR ${e}`));

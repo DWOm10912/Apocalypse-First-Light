@@ -349,5 +349,15 @@
       "unit_mass_kg": 20,
       "estimated": true
     }
-  }
+  },
+  "carry_factors": [
+    {
+      "tag": "apocalypse_firstlight:carry/oversized",
+      "factor": 1.25
+    },
+    {
+      "tag": "apocalypse_firstlight:carry/bulky",
+      "factor": 1.1
+    }
+  ]
 }

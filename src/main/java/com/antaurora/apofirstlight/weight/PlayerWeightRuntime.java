@@ -14,7 +14,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import java.util.*;
 
-/** Server-thread transient cache. Mutations only invalidate; computation happens once at tick END. */
+/**
+ * Server-thread transient cache. Mutations only invalidate; computation happens once at tick END, and the movement
+ * penalties follow each new state (WeightPenalties).
+ */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class PlayerWeightRuntime {
     public static final int VERIFY_INTERVAL = 10, SYNC_INTERVAL = 5;
@@ -27,7 +30,7 @@ public final class PlayerWeightRuntime {
         AbstractContainerMenu menu;
         ContainerListener listener;
         ItemStack cursor = ItemStack.EMPTY;
-        MassResult mass;
+        PlayerMassSources.Carried carried;
         EncumbranceState state, lastSent;
     }
     private PlayerWeightRuntime() {}
@@ -40,7 +43,10 @@ public final class PlayerWeightRuntime {
         var c = CACHES.get(player); return c == null ? null : c.state;
     }
     public static MassResult breakdown(ServerPlayer player) {
-        var c = CACHES.get(player); return c == null ? null : c.mass;
+        var c = CACHES.get(player); return c == null || c.carried == null ? null : c.carried.mass();
+    }
+    public static PlayerMassSources.Carried carried(ServerPlayer player) {
+        var c = CACHES.get(player); return c == null ? null : c.carried;
     }
     private static void remove(ServerPlayer player) {
         var c = CACHES.remove(player);
@@ -79,10 +85,13 @@ public final class PlayerWeightRuntime {
                 c.dirty = true; c.forceSync = true;
             }
             if ((c.dirty || tick - c.lastVerification >= VERIFY_INTERVAL) && c.lastVerification != tick) {
-                c.mass = PlayerMassSources.calculate(player, data);
-                c.state = EncumbranceState.calculate(c.mass, data, enabled);
+                c.carried = PlayerMassSources.calculate(player, data);
+                c.state = EncumbranceState.calculate(c.carried.mass(), c.carried.loadGrams(), data, enabled,
+                        c.state != null && c.state.sprintBlocked());
+                WeightPenalties.apply(player, c.state);
                 c.lastVerification = tick; c.dirty = false;
             }
+            if (c.state != null) WeightPenalties.enforceSprint(player, c.state);
             if (c.state != null && (c.forceSync || (!c.state.equals(c.lastSent) && tick - c.lastSync >= SYNC_INTERVAL))) {
                 if (c.forceSync) WeightPackets.sendPolicy(player, data);
                 WeightPackets.sendState(player, c.state, ++sequence);

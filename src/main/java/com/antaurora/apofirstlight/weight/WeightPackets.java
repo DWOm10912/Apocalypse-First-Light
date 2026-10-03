@@ -78,13 +78,15 @@ public final class WeightPackets {
         return new Policy(b.readLong(), new ItemMassData.Policy(b.readLong(), b.readLong(), b.readDouble(), b.readDouble()));
     }
     private static void encodeState(State p, FriendlyByteBuf b) {
-        var s = p.state(); b.writeLong(p.sequence()); b.writeLong(s.carriedMassGrams()); b.writeLong(s.comfortCapacityGrams());
-        b.writeDouble(s.encumbranceRatio()); b.writeDouble(s.severity()); b.writeEnum(s.tier());
-        b.writeBoolean(s.penaltiesEnabled()); b.writeLong(s.dataRevision()); b.writeUtf(s.quality());
+        var s = p.state(); b.writeLong(p.sequence()); b.writeLong(s.carriedMassGrams()); b.writeLong(s.loadGrams());
+        b.writeLong(s.comfortCapacityGrams()); b.writeDouble(s.encumbranceRatio()); b.writeDouble(s.severity()); b.writeEnum(s.tier());
+        b.writeBoolean(s.penaltiesEnabled()); b.writeDouble(s.speedMultiplier()); b.writeDouble(s.jumpMultiplier());
+        b.writeBoolean(s.sprintBlocked()); b.writeLong(s.dataRevision()); b.writeUtf(s.quality());
     }
     private static State decodeState(FriendlyByteBuf b) {
-        return new State(b.readLong(), new EncumbranceState(b.readLong(), b.readLong(), b.readDouble(), b.readDouble(),
-                b.readEnum(EncumbranceState.Tier.class), b.readBoolean(), b.readLong(), b.readUtf(32)));
+        return new State(b.readLong(), new EncumbranceState(b.readLong(), b.readLong(), b.readLong(), b.readDouble(), b.readDouble(),
+                b.readEnum(EncumbranceState.Tier.class), b.readBoolean(), b.readDouble(), b.readDouble(), b.readBoolean(),
+                b.readLong(), b.readUtf(32)));
     }
     private static void handlePolicy(Policy p, Supplier<NetworkEvent.Context> supplier) {
         var c = supplier.get(); c.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,

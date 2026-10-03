@@ -40,10 +40,17 @@ public final class WeightCommands {
         var s = PlayerWeightRuntime.state(player);
         if (s == null) { say(source, "Weight pending: wait for server tick END."); return 0; }
         say(source, String.format(Locale.ROOT,
-                "%s: %d g / comfort %d g | ratio %.4f | severity %.4f | %s | %s | penaltiesEnabled=%s | revision=%d (cached, fallback check <=10 ticks)",
-                player.getGameProfile().getName(), s.carriedMassGrams(), s.comfortCapacityGrams(), s.encumbranceRatio(),
-                s.severity(), s.tier(), s.quality(), s.penaltiesEnabled(), s.dataRevision()));
-        if (detail) dump(source, PlayerWeightRuntime.breakdown(player));
+                "%s: mass %d g, load %d g / comfort %d g | ratio %.4f | severity %.4f | %s | speed x%.3f jump x%.3f sprintBlocked=%s"
+                        + " | %s | penaltiesEnabled=%s | revision=%d (cached, fallback check <=10 ticks)",
+                player.getGameProfile().getName(), s.carriedMassGrams(), s.loadGrams(), s.comfortCapacityGrams(), s.encumbranceRatio(),
+                s.severity(), s.tier(), s.speedMultiplier(), s.jumpMultiplier(), s.sprintBlocked(), s.quality(),
+                s.penaltiesEnabled(), s.dataRevision()));
+        if (detail) {
+            dump(source, PlayerWeightRuntime.breakdown(player));
+            var carried = PlayerWeightRuntime.carried(player);
+            // load = mass x source factor (armor) x item carry factor (bulky furniture)
+            if (carried != null) carried.loadBySource().forEach((key, grams) -> say(source, "load " + key + " = " + grams + " g"));
+        }
         return 1;
     }
     private static int held(CommandSourceStack source, ServerPlayer player) {
