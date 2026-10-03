@@ -2,9 +2,11 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.meshshape.AflMeshShapeBlock;
 import com.antaurora.apofirstlight.meshshape.AflMeshShapes;
+import com.antaurora.apofirstlight.meshshape.AflOverhangPickBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -15,9 +17,10 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Crosshair picking for Mesh Shape blocks whose selection leaves their own cell (an open locker door). Vanilla only tests
- * a block while the view ray passes through that block's cell; this adds the horizontal neighbours of the cells the ray
- * crosses, and keeps the nearer of the two results (so walls and entities in front still win). Same approach as the
+ * Crosshair picking for Mesh Shape blocks whose selection leaves their own cell (an open locker door), and for blocks with
+ * parts standing above their cell (AflOverhangPickBlock: an open dumpster lid). Vanilla only tests a block while the view
+ * ray passes through that block's cell; this adds the horizontal neighbours of the cells the ray crosses, and the cells
+ * below them, and keeps the nearer of the two results (so walls and entities in front still win). Same approach as the
  * restroom stall door's supplemental pick, driven by the shape profile instead of a hard-coded leaf.
  */
 public final class AflMeshShapePicking {
@@ -45,6 +48,22 @@ public final class AflMeshShapePicking {
             var shape = block.meshShape(state);
             if (!shape.selectionOutOfCell()) continue;
             var hit = shape.selection().clip(eye, end, pos);
+            if (hit != null && eye.distanceToSqr(hit.getLocation()) < best) {
+                best = eye.distanceToSqr(hit.getLocation());
+                found = hit;
+            }
+        }
+        // parts standing above their block's cell (AflOverhangPickBlock, e.g. an open dumpster lid): the blocks below the
+        // cells the ray crosses
+        Set<BlockPos> below = new HashSet<>();
+        for (BlockPos cell : path) for (int dy = 1; dy <= AflOverhangPickBlock.MAX_CELLS_BELOW; dy++) {
+            BlockPos pos = cell.below(dy);
+            if (!below.add(pos) || !mc.level.hasChunkAt(pos)) continue;
+            var state = mc.level.getBlockState(pos);
+            if (!(state.getBlock() instanceof AflOverhangPickBlock block)) continue;
+            List<AABB> boxes = block.overhangPickBoxes(mc.level, state, pos).stream().map(b -> b.move(-pos.getX(), -pos.getY(), -pos.getZ())).toList();
+            if (boxes.isEmpty()) continue;
+            BlockHitResult hit = AABB.clip(boxes, eye, end, pos);
             if (hit != null && eye.distanceToSqr(hit.getLocation()) < best) {
                 best = eye.distanceToSqr(hit.getLocation());
                 found = hit;

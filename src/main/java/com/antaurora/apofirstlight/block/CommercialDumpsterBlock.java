@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.block;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.CommercialDumpsterBlockEntity;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
+import com.antaurora.apofirstlight.meshshape.AflOverhangPickBlock;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -36,6 +37,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -56,15 +58,19 @@ import java.util.concurrent.ConcurrentHashMap;
  * also draws the whole dumpster). One class for every body colour (one block each, see {@link #colour()}). The MASTER is
  * the viewer's right half and owns the item drop; the SECONDARY (to the master's clockwise side, the viewer's left)
  * forwards everything to it. {@link #LEFT_OPEN} / {@link #RIGHT_OPEN} on both cells drive the lid animations, the shapes
- * and screen validity. Aiming at a half: shut, it opens that lid; open, its mouth searches and its walls shut the lid.
+ * and screen validity. Aiming at a half: shut, it opens that lid; open, the half searches; an open lid standing above the
+ * cells (picked through AflOverhangPickBlock) shuts it.
  */
-public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock implements EntityBlock, AflOverhangPickBlock {
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final BooleanProperty LEFT_OPEN = BooleanProperty.create("left_open");
     public static final BooleanProperty RIGHT_OPEN = BooleanProperty.create("right_open");
     /** tools/build-commercial-dumpster-v2.mjs, source px (master cell's bottom centre, +x the viewer's left, -z the front). */
     private static final double BODY_Z0 = -6.5, BODY_Z1 = 7.4, RIM_FRONT = 17.2, RIM_BACK = 20.8, LID_ABOVE_RIM = 0.95, LID_RIB = 0.45;
     private static final double LEFT_X = 15.5, RIGHT_X = 0.5;
+    /** An open lid's box (tools/build-commercial-dumpster-v2.mjs stats.lidOpen, source px): y, z; x is its half's. */
+    private static final double OPEN_LID_Y0 = 21.49, OPEN_LID_Y1 = 36.06, OPEN_LID_Z0 = 2.29, OPEN_LID_Z1 = 6.75;
+    private static final double RAIL_Z0 = 6.43, RAIL_TOP = 21.49;
     /** The inner faces of the walls and the floor's top (source px). */
     private static final double INNER_X0 = -6.4, INNER_X1 = 22.4, INNER_Z0 = -5.9, INNER_Z1 = 6.8, FLOOR_TOP = 2.2;
 
@@ -226,7 +232,8 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
         public String hintKey() { return hintKey; }
     }
 
-    public record Target(Side side, Action action) {}
+    /** onLid: aimed at an open lid standing above the cells. */
+    public record Target(Side side, Action action, boolean onLid) {}
 
     public static BooleanProperty lid(Side side) {
         return side == Side.LEFT ? LEFT_OPEN : RIGHT_OPEN;
@@ -239,15 +246,59 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
     }
 
     /**
-     * What a hit does (use() and the prompt): on a half whose lid is shut, open it; on an open half (a hollow shape, see
-     * {@link #cell}), the inside (floor, inner walls) or the top of the rim searches or views, the outer walls shut the lid.
+     * What a hit on the dumpster's own shapes does: a half whose lid is shut opens it; an open half (a hollow shape, see
+     * {@link #cell}) searches or views, anywhere on it. Shutting is on the open lid itself ({@link #aimed}).
      */
     public static Target target(BlockState masterState, double[] local, CommercialDumpsterBlockEntity dumpster) {
         Side side = local[0] >= 8.0 ? Side.LEFT : Side.RIGHT;
-        if (!masterState.getValue(lid(side))) return new Target(side, Action.OPEN);
-        boolean inside = local[0] > INNER_X0 - 0.05 && local[0] < INNER_X1 + 0.05 && local[2] > INNER_Z0 - 0.05 && local[2] < INNER_Z1 + 0.05;
-        if (inside || local[1] >= rim(local[2]) - 0.3) return new Target(side, dumpster.isSearchCompleteForPrompt() ? Action.VIEW : Action.SEARCH);
-        return new Target(side, Action.CLOSE);
+        if (!masterState.getValue(lid(side))) return new Target(side, Action.OPEN, false);
+        return new Target(side, dumpster.isSearchCompleteForPrompt() ? Action.VIEW : Action.SEARCH, false);
+    }
+
+    /**
+     * What the player aims at, from their own view ray (use() and the prompt; the client's pick pulls a hit on an open lid
+     * back into the cell, so the hit point alone cannot tell): the nearest of the open lids (shut that one) and the
+     * dumpster's own shapes ({@link #target}). Null: the ray meets neither.
+     */
+    @Nullable
+    public static Target aimed(BlockGetter level, BlockPos master, BlockState masterState, Player player, CommercialDumpsterBlockEntity dumpster) {
+        Direction facing = masterState.getValue(FACING);
+        Vec3 eye = player.getEyePosition(), end = eye.add(player.getViewVector(1.0F).scale(player.getBlockReach() + 1.0));
+        double best = Double.MAX_VALUE;
+        Target result = null;
+        for (Side side : Side.values()) {
+            if (!masterState.getValue(lid(side))) continue;
+            var hit = openLidBox(master, facing, side).clip(eye, end);
+            if (hit.isPresent() && eye.distanceToSqr(hit.get()) < best) {
+                best = eye.distanceToSqr(hit.get());
+                result = new Target(side, Action.CLOSE, true);
+            }
+        }
+        for (Part part : Part.values()) {
+            BlockPos pos = partPosition(master, facing, part);
+            BlockState cell = level.getBlockState(pos);
+            if (!(cell.getBlock() instanceof CommercialDumpsterBlock)) continue;
+            BlockHitResult hit = shape(cell).clip(eye, end, pos);
+            if (hit != null && eye.distanceToSqr(hit.getLocation()) < best) {
+                best = eye.distanceToSqr(hit.getLocation());
+                result = target(masterState, local(hit.getLocation(), master, facing), dumpster);
+            }
+        }
+        return result;
+    }
+
+    /** An open lid's box in the world, standing above its half. */
+    private static AABB openLidBox(BlockPos master, Direction facing, Side side) {
+        double x0 = side == Side.LEFT ? 8.15 : -6.9, x1 = side == Side.LEFT ? 22.9 : 7.85;
+        return new AABB(world(master, facing, x0, OPEN_LID_Y0, OPEN_LID_Z0), world(master, facing, x1, OPEN_LID_Y1, OPEN_LID_Z1));
+    }
+
+    /** The crosshair picks this cell through its own half's lid while that lid stands open (client/AflMeshShapePicking). */
+    @Override
+    public List<AABB> overhangPickBoxes(BlockGetter level, BlockState state, BlockPos pos) {
+        Side side = state.getValue(PART) == Part.MASTER ? Side.RIGHT : Side.LEFT;
+        if (!state.getValue(lid(side))) return List.of();
+        return List.of(openLidBox(rootPosition(pos, state), state.getValue(FACING), side));
     }
 
     @Override
@@ -257,7 +308,8 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
         BlockState masterState = level.getBlockState(master);
         if (!matches(masterState, state.getValue(FACING), Part.MASTER)
                 || !(level.getBlockEntity(master) instanceof CommercialDumpsterBlockEntity dumpster)) return InteractionResult.PASS;
-        Target target = target(masterState, local(hit.getLocation(), master, state.getValue(FACING)), dumpster);
+        Target target = aimed(level, master, masterState, player, dumpster);
+        if (target == null) target = target(masterState, local(hit.getLocation(), master, state.getValue(FACING)), dumpster);
         if (level.isClientSide) return InteractionResult.SUCCESS;
         switch (target.action()) {
             case OPEN -> setLid(level, master, masterState, target.side(), true, player);
@@ -289,21 +341,22 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
         level.gameEvent(player, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, master);
     }
 
-    /** What a click at this hit would do (WorldInteractionHint), and where to draw it: the lid's grip, its rim, or the mouth. */
+    /** What a click would do (WorldInteractionHint), and where to draw it: the shut lid's grip, the open lid, or the mouth. */
     public record Prompt(String key, Vec3 anchor) {}
 
     @Nullable
-    public static Prompt prompt(BlockGetter level, BlockPos position, BlockState state, Vec3 hitLocation) {
+    public static Prompt prompt(BlockGetter level, BlockPos position, BlockState state, Vec3 hitLocation, Player player) {
         BlockPos master = rootPosition(position, state);
         BlockState masterState = level.getBlockState(master);
         if (!(masterState.getBlock() instanceof CommercialDumpsterBlock) || masterState.getValue(PART) != Part.MASTER
                 || !(level.getBlockEntity(master) instanceof CommercialDumpsterBlockEntity dumpster)) return null;
         Direction facing = masterState.getValue(FACING);
-        Target target = target(masterState, local(hitLocation, master, facing), dumpster);
+        Target target = aimed(level, master, masterState, player, dumpster);
+        if (target == null) target = target(masterState, local(hitLocation, master, facing), dumpster);
         double x = target.side() == Side.LEFT ? LEFT_X : RIGHT_X;
         Vec3 anchor = switch (target.action()) {
             case OPEN -> world(master, facing, x, RIM_FRONT + 0.4, BODY_Z0 - 1.0);
-            case CLOSE -> world(master, facing, x, RIM_FRONT - 2.5, BODY_Z0 - 0.4);
+            case CLOSE -> world(master, facing, x, (OPEN_LID_Y0 + OPEN_LID_Y1) / 2, OPEN_LID_Z0);
             default -> world(master, facing, x, rim(-2.0) + 0.3, -2.0);
         };
         return new Prompt(target.action().hintKey(), anchor);
@@ -427,8 +480,8 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
      * its outer side at x 16), plus the side fork pocket.
      * Shut: the body in four steps under the slanted rim (each step as high as the rim at its back) with the lid and its
      * grip on top. Open: the hollow box as modelled (user 2026-10-03: a solid open half did not match the open box):
-     * floor, front and back walls with their rim bars, the outer side wall in four steps under the slant; the open lid
-     * stands above the cells and has no shape.
+     * floor, front and back walls with their rim bars and the rear rail, the outer side wall in four steps under the
+     * slant; the open lid stands above the cells and has no shape (it is picked through {@link #overhangPickBoxes}).
      */
     private static VoxelShape cell(Part part, boolean open) {
         boolean master = part == Part.MASTER;
@@ -438,7 +491,8 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
         if (open) {
             double fz0 = INNER_Z0 + 8, bz1 = INNER_Z1 + 8, wall0 = master ? 0.6 : INNER_X1 - 8, wall1 = master ? INNER_X0 + 8 : 15.4;
             shape = Shapes.or(shape, Block.box(master ? 1.0 : 0.0, 0, 1.5, master ? 16.0 : 15.0, FLOOR_TOP, 15.4),
-                    Block.box(x0, 0, 1.1, x1, RIM_FRONT, fz0), Block.box(x0, 0, bz1, x1, RIM_BACK, 15.8));
+                    Block.box(x0, 0, 1.1, x1, RIM_FRONT, fz0), Block.box(x0, 0, bz1, x1, RIM_BACK, 15.8),
+                    Block.box(master ? 1.0 : 0.0, rim(RAIL_Z0), RAIL_Z0 + 8, master ? 16.0 : 15.0, RAIL_TOP, 15.8));
             double[] side = {fz0, 5.25, 8.45, 11.65, bz1};
             for (int i = 0; i + 1 < side.length; i++)
                 shape = Shapes.or(shape, Block.box(wall0, 0, side[i], wall1, rim(side[i + 1] - 8), side[i + 1]));

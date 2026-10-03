@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "31";
+    private static final String PROTOCOL = "32";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -104,6 +104,14 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, ContainerSearchSoundS2CPacket.class, ContainerSearchSoundS2CPacket::encode,
                 ContainerSearchSoundS2CPacket::decode, ContainerSearchSoundS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        nextId = com.antaurora.apofirstlight.weight.WeightPackets.register(channel, nextId);
+    }
+
+    public static void weightPolicy(ServerPlayer player, com.antaurora.apofirstlight.weight.WeightPackets.Policy packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+    public static void weightState(ServerPlayer player, com.antaurora.apofirstlight.weight.WeightPackets.State packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Progressive Container Search: a container's search sound running (its id, repeated as a keep-alive) or stopped (null), to everyone tracking its chunk. */

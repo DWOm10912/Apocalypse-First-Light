@@ -268,6 +268,7 @@ public final class NativeGunActions {
     }
 
     private static void syncInventory(ServerPlayer player) {
+        com.antaurora.apofirstlight.weight.PlayerWeightRuntime.dirty(player);
         player.getInventory().setChanged();
         player.inventoryMenu.broadcastChanges();
         if (player.containerMenu != player.inventoryMenu) player.containerMenu.broadcastChanges();

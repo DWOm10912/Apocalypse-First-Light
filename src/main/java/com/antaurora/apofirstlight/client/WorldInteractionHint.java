@@ -158,14 +158,14 @@ public final class WorldInteractionHint {
     }
 
     /**
-     * Commercial dumpster, resolved like CommercialDumpsterBlock#use: open the hit half's lid (drawn at its grip); on an open
-     * half, search / view from its mouth or shut it from its walls.
+     * Commercial dumpster, resolved like CommercialDumpsterBlock#use (from the player's view ray): open the aimed half's lid
+     * (drawn at its grip); on an open half, search / view (drawn over its mouth); on an open lid, shut it (drawn on the lid).
      */
     private static Target dumpsterLid(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var s=mc.level.getBlockState(hit.getBlockPos());
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CommercialDumpsterBlock)) return null;
-        var prompt=com.antaurora.apofirstlight.block.CommercialDumpsterBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation());
+        var prompt=com.antaurora.apofirstlight.block.CommercialDumpsterBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation(),mc.player);
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.dumpster."+prompt.key()),prompt.anchor());
     }
 

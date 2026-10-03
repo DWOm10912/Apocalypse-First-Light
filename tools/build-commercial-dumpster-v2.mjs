@@ -51,7 +51,10 @@ function latheY(part, cx, cz, profile, seg, rf = () => 1) {
 export const BODY = {x0: -7.0, x1: 23.0, z0: -6.5, z1: 7.4, floor: 1.6, wall: 0.6};
 export const RIM = {front: 17.2, back: 20.8};                            // rim height at the front and back walls
 export const rim = z => RIM.front + (z - BODY.z0) / (BODY.z1 - BODY.z0) * (RIM.back - RIM.front);
-export const LID = {thick: 0.9, rib: 0.45, z0: BODY.z0 - 0.72, z1: BODY.z1 - 0.1};
+// the lids stop 1 px short of the back: a fixed rear rail carries on to the back, flush with the shut lids, and an open
+// lid stands on its top front edge (first version: the lids ran to the back and hinged there, so an open lid's foot
+// hung 0.9 px above the rim, user 2026-10-03)
+export const LID = {thick: 0.9, rib: 0.45, z0: BODY.z0 - 0.72, z1: BODY.z1 - 1.0};
 export const HALVES = {right: {x0: -6.9, x1: 7.85, c: 0.5}, left: {x0: 8.15, x1: 22.9, c: 15.5}};   // lids; right = master cell
 export const OPEN_DEGREES = 95;
 export const POCKET = {y0: 6.0, y1: 9.6, z0: -5.4, z1: 5.4};
@@ -83,10 +86,14 @@ export const hingeOf = side => [HALVES[side].c, lidTop(LID.z1), LID.z1];   // th
     void inLo; void inHi;
   }
   for (const [z0, z1] of [[-6.2, -5.0], [-0.6, 0.6], [5.0, 6.2]]) slab(steel, 'x', [BODY.x0 + 0.3, 0, z0], [BODY.x1 - 0.3, BODY.floor, z1], 0.06);
-  // hinge plates on the back rim, two per lid
+  // rear rail along the back top behind the lids, its bottom on the slanted rim, its top flush with the shut lids; hinge
+  // plates on its back, two per lid
+  const rz = LID.z1 + 0.03, railTop = lidTop(LID.z1);
+  profileX(P('rear_rail', 'body', 'steel'), [[rz, rim(rz) + 0.05], [BODY.z1, RIM.back + 0.05], [BODY.z1 + 0.4, RIM.back + 0.05], [BODY.z1 + 0.4, railTop], [rz, railTop]],
+    BODY.x0, BODY.x1, 0.06);
   for (const side of Object.keys(HALVES)) for (const d of [-4.5, 4.5]) {
     const c = HALVES[side].c + d;
-    slab(steel, 'z', [c - 0.7, RIM.back - 0.7, BODY.z1 + 0.4], [c + 0.7, RIM.back + 0.3, BODY.z1 + 0.5], 0);
+    slab(steel, 'z', [c - 0.7, RIM.back - 0.3, BODY.z1 + 0.4], [c + 0.7, railTop - 0.1, BODY.z1 + 0.5], 0);
   }
 }
 // lids: panel along the slant with a lip over the front rim, three ribs, a front grip on two standoffs

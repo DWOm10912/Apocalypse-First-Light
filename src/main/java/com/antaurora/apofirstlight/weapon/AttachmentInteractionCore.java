@@ -64,6 +64,7 @@ public final class AttachmentInteractionCore {
         }
         publish.accept(updated);
         inv.setChanged();player.inventoryMenu.broadcastChanges();
+        com.antaurora.apofirstlight.weight.PlayerWeightRuntime.dirty(player);
         return true;
     }
     private AttachmentInteractionCore() {}
