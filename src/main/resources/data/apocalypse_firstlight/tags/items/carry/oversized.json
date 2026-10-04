@@ -26,6 +26,7 @@
     "apocalypse_firstlight:compressor",
     "apocalypse_firstlight:thermal_generator",
     "apocalypse_firstlight:energy_cell",
-    "apocalypse_firstlight:fluid_tank"
+    "apocalypse_firstlight:fluid_tank",
+    "apocalypse_firstlight:back_bar_shelf"
   ]
 }

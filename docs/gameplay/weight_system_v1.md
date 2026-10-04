@@ -205,7 +205,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 |---|---|
 | 机器（不含液体） | crusher、industrial_furnace 50；alloy_furnace、chemical_reactor 45；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
 | 大件家具 | vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
-| 中型家具 | retail_shelf_single 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
+| 中型家具 | back_bar_shelf 28；checkout_counter_display 24；checkout_counter 22；retail_shelf_single 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink、checkout_counter_gate 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
 | 钢结构 | steel_door 3；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
 | 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
@@ -282,8 +282,8 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 车辆货物 | 不算玩家负担（还没有车辆） |
 
 物品搬运系数（`afl_content_v1.json` 的 `carry_factors`，按物品 tag，取最大的那个）：
-- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 26 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器；
-- `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 9 种；
+- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 27 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf（堆叠 1）；
+- `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 12 种（2026-10-04 加了 checkout_counter、checkout_counter_display、checkout_counter_gate，三者堆叠 16）；
 - 其它物品 ×1.00。
 
 Tooltip 显示的是物理质量，不乘系数。`/aflweight` 同时给出质量（mass）和负担（load）；`breakdown` 列出每个来源的负担。

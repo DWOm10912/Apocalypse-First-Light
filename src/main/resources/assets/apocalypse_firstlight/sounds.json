@@ -339,6 +339,14 @@
     "subtitle": "subtitles.apocalypse_firstlight.commercial_dumpster_close",
     "sounds": [{"name": "apocalypse_firstlight:commercial_dumpster/close", "attenuation_distance": 16}]
   },
+  "checkout_counter_gate_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.checkout_counter_gate_open",
+    "sounds": [{"name": "apocalypse_firstlight:checkout_counter_gate/open", "attenuation_distance": 12}]
+  },
+  "checkout_counter_gate_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.checkout_counter_gate_close",
+    "sounds": [{"name": "apocalypse_firstlight:checkout_counter_gate/close", "attenuation_distance": 12}]
+  },
   "industrial_locker_open": {
     "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_open",
     "sounds": [{"name": "apocalypse_firstlight:industrial_locker/open", "attenuation_distance": 12}]

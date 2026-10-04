@@ -1,0 +1,31 @@
+{
+  "variants": {
+    "facing=north,half=lower": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/lower"
+    },
+    "facing=north,half=upper": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/upper"
+    },
+    "facing=east,half=lower": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/lower",
+      "y": 90
+    },
+    "facing=east,half=upper": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/upper"
+    },
+    "facing=south,half=lower": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/lower",
+      "y": 180
+    },
+    "facing=south,half=upper": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/upper"
+    },
+    "facing=west,half=lower": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/lower",
+      "y": 270
+    },
+    "facing=west,half=upper": {
+      "model": "apocalypse_firstlight:block/back_bar_shelf/upper"
+    }
+  }
+}

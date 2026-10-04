@@ -69,6 +69,9 @@ public final class AflSounds {
     // Commercial Dumpster V2 lids (every colour), on the 10-tick lid animation (tools/build-commercial-dumpster-sounds-v1.mjs)
     public static final RegistryObject<SoundEvent> COMMERCIAL_DUMPSTER_OPEN = simple("commercial_dumpster_open");
     public static final RegistryObject<SoundEvent> COMMERCIAL_DUMPSTER_CLOSE = simple("commercial_dumpster_close");
+    // Checkout Counter V1 gate: on the flap (0.8 s) and door (0.4 s) animation (tools/build-checkout-counter-gate-sounds-v1.mjs)
+    public static final RegistryObject<SoundEvent> CHECKOUT_COUNTER_GATE_OPEN = simple("checkout_counter_gate_open");
+    public static final RegistryObject<SoundEvent> CHECKOUT_COUNTER_GATE_CLOSE = simple("checkout_counter_gate_close");
     // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
     public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");

@@ -265,6 +265,22 @@
       "unit_mass_kg": 20,
       "estimated": true
     },
+    "apocalypse_firstlight:back_bar_shelf": {
+      "unit_mass_kg": 28,
+      "estimated": true
+    },
+    "apocalypse_firstlight:checkout_counter": {
+      "unit_mass_kg": 22,
+      "estimated": true
+    },
+    "apocalypse_firstlight:checkout_counter_display": {
+      "unit_mass_kg": 24,
+      "estimated": true
+    },
+    "apocalypse_firstlight:checkout_counter_gate": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
     "apocalypse_firstlight:commercial_flushometer_toilet": {
       "unit_mass_kg": 18,
       "estimated": true

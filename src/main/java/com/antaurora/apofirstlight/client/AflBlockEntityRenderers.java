@@ -16,6 +16,12 @@ public final class AflBlockEntityRenderers {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(AflBlockEntities.RETAIL_SHELF_SINGLE.get(),
                 RetailShelfSingleBlockEntityRenderer::new);
+        // Checkout Counter V1: the goods in the cubbies / on the trays and on the back bar's shelves (the furniture is baked)
+        event.registerBlockEntityRenderer(AflBlockEntities.CHECKOUT_COUNTER.get(), CheckoutCounterRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.BACK_BAR_SHELF.get(), BackBarShelfRenderer::new);
+        // Checkout Counter V1 gate: the flap and the door animate (generic AFL Animated Block Mesh Runtime)
+        event.registerBlockEntityRenderer(AflBlockEntities.CHECKOUT_COUNTER_GATE.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 EnergyCellBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(),

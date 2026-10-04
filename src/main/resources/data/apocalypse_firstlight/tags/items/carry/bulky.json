@@ -9,6 +9,9 @@
     "apocalypse_firstlight:restroom_partition",
     "apocalypse_firstlight:metal_trash_can",
     "apocalypse_firstlight:office_cubicle_partition",
-    "apocalypse_firstlight:restroom_stall_door"
+    "apocalypse_firstlight:restroom_stall_door",
+    "apocalypse_firstlight:checkout_counter",
+    "apocalypse_firstlight:checkout_counter_display",
+    "apocalypse_firstlight:checkout_counter_gate"
   ]
 }

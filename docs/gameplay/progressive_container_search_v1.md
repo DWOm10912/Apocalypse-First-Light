@@ -1,6 +1,6 @@
 # AFL Progressive Container Search V1（逐格搜索）
 
-状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`metal_trash_can` V2（2026-10-02，9 格 / 3×3，40 ticks/格；开盖后搜索），见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)；`commercial_dumpster` V2（2026-10-02，四种颜色，18 格 / 6×3，40 ticks/格；两块盖子分开开，任一边开着都能搜），见 [commercial_dumpster_v2.md](../models/commercial_dumpster_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)。
+状态（2026-09-29）：**通用框架已实现**。正式接入：`industrial_locker` V2（27 格 / 3 行，40 ticks/格，±15%），见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)；`lead_chest`（2026-09-30 起 V2 交互，同日外观换成 V3；同样 27 格 / 40 ticks），见 [lead_chest_v3.md](../models/lead_chest_v3.md)；`industrial_electrical_box` V2（2026-09-30，9 格 / 3×3 发射器式布局，40 ticks/格），见 [industrial_electrical_box_v2.md](../models/industrial_electrical_box_v2.md)；`metal_trash_can` V2（2026-10-02，9 格 / 3×3，40 ticks/格；开盖后搜索），见 [metal_trash_can_v2.md](../models/metal_trash_can_v2.md)；`commercial_dumpster` V2（2026-10-02，四种颜色，18 格 / 6×3，40 ticks/格；两块盖子分开开，任一边开着都能搜），见 [commercial_dumpster_v2.md](../models/commercial_dumpster_v2.md)；`cash_register` V2（2026-09-30，钱箱 9 格 / 3×3，40 ticks/格），见 [cash_register_v2.md](../models/cash_register_v2.md)；`chest_freezer` V2（2026-10-01，18 格 / AFL 自己的 6×3 布局，40 ticks/格），见 [chest_freezer_v2.md](../models/chest_freezer_v2.md)；2026-10-01 起货架、饮料冷柜、售货机也接入（不再实时摆放，每格 20 ticks），见下面第 2 节和 [container_goods_v1.md](container_goods_v1.md)；2026-10-04 收银柜台（两款，9 格 / 3×3，20 ticks/格）和收银背柜（12 格 / AFL 自己的 3×4 布局，20 ticks/格）接入，见 [checkout_counter_v1.md](../models/checkout_counter_v1.md)。
 - **V1 实机验收：用户确认全部 PASS**（2026-09-29，用户测试，不是代理执行的测试）。
 - 验收之后按用户要求做了一次小改动：搜索图标改为转圈放大镜，默认每格时长由 20 改为 40 ticks。改动后 `compileJava --offline` 一次 PASS，改动本身未经实机复测。
 - 另有开发演示方块（见第 21 节）。
@@ -41,14 +41,14 @@ AFL 的储物分为两类：
 | `AflContainerSearchView` | 服务端遮罩视图，菜单只能看到它 |
 | `AflContainerSearchSlot` | 隐藏时完全惰性的格子 |
 | `AflContainerSearchMenu` | 搜索菜单，两端共用；按 `AflContainerSearchLayout` 摆放格子（9×1–9×6 箱子网格，或 3×3 发射器网格） |
-| `AflContainerSearchLayout` | 菜单布局：箱子网格的格子与背包坐标照原版 `ChestMenu`，3×3 照原版 `DispenserMenu`（2026-09-30 新增） |
+| `AflContainerSearchLayout` | 菜单布局：箱子网格的格子与背包坐标照原版 `ChestMenu`，3×3 照原版 `DispenserMenu`（2026-09-30 新增）；AFL 自己的 6×3（2026-10-01）和 3×4（2026-10-04） |
 | `AflContainerSearchItemHandler` | Forge 自动化看到的遮罩视图 |
 
 其它文件：
 - 菜单类型注册：`registry/AflMenus.java` 的 `SEARCHABLE_CONTAINERS`。
 - 客户端：`client/AflContainerSearchScreen.java`（开发占位遮罩），在 `client/AflMenuScreens.java` 注册。
 
-新增 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`，以及 `apocalypse_firstlight:searchable_container_3x3`（2026-09-30）、`apocalypse_firstlight:searchable_container_6x3`（2026-10-01，冷冻冰柜）。和原版 `GENERIC_9xN` / `GENERIC_3x3` 一样按布局各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
+新增 Registry ID：菜单类型 `apocalypse_firstlight:searchable_container_9x1` 到 `apocalypse_firstlight:searchable_container_9x6`，以及 `apocalypse_firstlight:searchable_container_3x3`（2026-09-30）、`apocalypse_firstlight:searchable_container_6x3`（2026-10-01，冷冻冰柜）、`apocalypse_firstlight:searchable_container_3x4`（2026-10-04，收银背柜）。和原版 `GENERIC_9xN` / `GENERIC_3x3` 一样按布局各注册一个类型，打开时不附带额外数据。这样原版 `player.openMenu(be)` 和 Forge `NetworkHooks.openScreen` 两种打开方式都能正常使用，客户端不会因为缺少附加数据而崩溃。
 
 ## 4. 接入 contract
 
@@ -75,7 +75,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 - `getLevel()`、`getBlockPos()`、`getBlockState()`、`isRemoved()`、`setChanged()` 由 BlockEntity 自带实现，不需要额外代码。
 - 方块被移除时（玩家破坏、爆炸、失去支撑），改用 `AflContainerSearch.dropContentsOnBreak(level, pos, be)` 代替原来的 `Containers.dropContents`。
 - `getUpdateTag()` / `getUpdatePacket()` **不能包含物品**。框架无法强制这一点，接入时必须检查；RandomizableContainerBlockEntity 的默认实现不含物品。
-- 容器格数必须是 9、18、27、36、45 或 54，才能用通用的箱子网格菜单。3×3、6×3 等其它布局见第 22 节。
+- 容器格数必须是 9、18、27、36、45 或 54，才能用通用的箱子网格菜单。3×3、6×3、3×4 等其它布局见第 22 节。
 
 完整参考实现：`src/dev/java/com/antaurora/apofirstlight/dev/containersearch/DevSearchCrateBlockEntity.java`。
 
@@ -216,7 +216,7 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 | 物品自定义堆叠覆写、Forge `onItemStackedOn` | 在 `clicked` 前置拦截下都不会执行；即使绕过，写入也会被遮罩视图拒绝 |
 | 伪造点击包 | 服务端同样执行以上检查，客户端声称的格子内容会被下一次同步纠正 |
 
-已揭示的格子恢复原版规则。玩家之后放进去的物品永远可见，因为揭示状态属于格子，不属于原来的战利品。搜索完成后再次打开，直接使用原版菜单：箱子网格用 `ChestMenu`（`GENERIC_9xN`），3×3 用 `DispenserMenu`（`GENERIC_3x3`）。6×3 没有对应的原版菜单，搜完后仍用搜索菜单（所有格子已揭示，和普通容器一样拿放）。
+已揭示的格子恢复原版规则。玩家之后放进去的物品永远可见，因为揭示状态属于格子，不属于原来的战利品。搜索完成后再次打开，直接使用原版菜单：箱子网格用 `ChestMenu`（`GENERIC_9xN`），3×3 用 `DispenserMenu`（`GENERIC_3x3`）。6×3、3×4 没有对应的原版菜单，搜完后仍用搜索菜单（所有格子已揭示，和普通容器一样拿放）。
 
 ## 13. 漏斗、Forge ItemHandler 与自动化
 
@@ -368,10 +368,11 @@ public class XxxBlockEntity extends RandomizableContainerBlockEntity implements 
 
 ## 22. V1 明确不支持 / 已知限制
 
-- 只提供三种布局：9×1–9×6 的箱子网格，3×3 的发射器网格（2026-09-30），以及 AFL 自己的 6×3 网格（2026-10-01，冷冻冰柜）。
+- 只提供四种布局：9×1–9×6 的箱子网格，3×3 的发射器网格（2026-09-30），以及 AFL 自己的 6×3 网格（2026-10-01，冷冻冰柜）和 3×4 网格（2026-10-04，收银背柜）。
   - 默认按格数推出箱子网格：`AflSearchableContainer.aflSearchLayout()` 默认对 9、18……54 格返回对应行数，其它格数返回 null，菜单不会打开。
   - 9 格的容器想用 3×3，就覆写 `aflSearchLayout()`，返回 `AflContainerSearchLayout.GRID_3X3`。
   - 6×3（`GRID_6X3`）：6 列 3 行，摆在原版 3 行箱子面板的正中（格子从 x 35 开始），背包位置和 3 行箱子相同。原版没有这种界面：先画 3 行箱子背景，把原来那排 9 格涂成面板灰（0xC6C6C6），再用箱子贴图里的格框逐格画上。搜完后仍用搜索菜单，不换原版菜单。
+  - 3×4（`GRID_3X4`）：3 列 4 行，摆在原版 4 行箱子面板的正中（格子从 x 62 开始），背包位置和 4 行箱子相同。画法同 6×3：先画 4 行箱子背景，把原来的格子行涂成面板灰，再逐格画格框。搜完后仍用搜索菜单。
   - 其它布局（例如 5 格工具箱）仍需在 `AflContainerSearchLayout` 里补一种，并配上背景。
 - 2026-09-30 为支持 3×3，`AflContainerSearchMenu` 从继承 `ChestMenu` 改为继承 `AbstractContainerMenu`，自己按布局摆格子。箱子网格的格子坐标、Shift 点击转移、`stillValid`、关闭时的 `stopOpen` 都与原版 `ChestMenu` 逐行一致，搜索同步逻辑没有改动；菜单注册名不变。界面（`AflContainerSearchScreen`）对 3×3 使用原版 `dispenser.png` 背景，标题居中，和原版发射器界面相同。
 - 半格进度不持久化；没有按玩家分别记录的搜索；没有重新布防。

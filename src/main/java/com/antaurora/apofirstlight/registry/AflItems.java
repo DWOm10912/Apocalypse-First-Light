@@ -206,6 +206,14 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",
             () -> new BlockItem(AflBlocks.RETAIL_SHELF_SINGLE.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CHECKOUT_COUNTER = ITEMS.register("checkout_counter",
+            () -> new BlockItem(AflBlocks.CHECKOUT_COUNTER.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> CHECKOUT_COUNTER_DISPLAY = ITEMS.register("checkout_counter_display",
+            () -> new BlockItem(AflBlocks.CHECKOUT_COUNTER_DISPLAY.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> CHECKOUT_COUNTER_GATE = ITEMS.register("checkout_counter_gate",
+            () -> new BlockItem(AflBlocks.CHECKOUT_COUNTER_GATE.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> BACK_BAR_SHELF = ITEMS.register("back_bar_shelf",
+            () -> new BlockItem(AflBlocks.BACK_BAR_SHELF.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CASH_REGISTER = ITEMS.register("cash_register",
             () -> new BlockItem(AflBlocks.CASH_REGISTER.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> WATER_DISPENSER = ITEMS.register("water_dispenser",

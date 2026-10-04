@@ -1,0 +1,68 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/checkout_counter_gate_right.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/checkout_counter.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.016451,
+    0.059375,
+    0.11875,
+    2.015625,
+    2.016451,
+    1.178125
+  ],
+  "parts": {
+    "flap": {
+      "pivot": [
+        0.5,
+        1,
+        0
+      ]
+    },
+    "door": {
+      "pivot": [
+        0.475,
+        0,
+        -0.2875
+      ]
+    }
+  },
+  "animations": {
+    "flap": {
+      "duration_ticks": 16,
+      "easing": "ease_in_out",
+      "transforms": {
+        "flap": {
+          "rotation": [
+            0,
+            0,
+            -180
+          ]
+        }
+      }
+    },
+    "door": {
+      "duration_ticks": 8,
+      "easing": "ease_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

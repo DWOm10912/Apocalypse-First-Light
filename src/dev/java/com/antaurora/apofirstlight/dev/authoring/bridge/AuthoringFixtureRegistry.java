@@ -101,6 +101,14 @@ final class AuthoringFixtureRegistry {
                     .notes("2 wide x 1 tall. Anchor = left master (BlockEntity); right part at facing.getCounterClockWise(). Lid starts closed."),
             new Def(A+"vending_machine",storage,"retail").facing(H4).multi(TWO_TALL).fixed("broken","false").inventory().support(Support.FLOOR)
                     .notes("Intact source state only (broken=false). Display slots start empty; damage belongs to the later world pass."),
+            new Def(A+"checkout_counter",storage,"retail").facing(H4).connect("shape","north","east","south","west").inventory().support(Support.NONE)
+                    .notes("Checkout Counter V1; facing = the customer side. shape (straight / outer / inner corners) and the side flags are computed from neighbours like stairs: place the line, the corners follow. 9-slot searchable container, starts empty."),
+            new Def(A+"checkout_counter_display",storage,"retail").facing(H4).connect("shape","north","east","south","west").inventory().support(Support.NONE)
+                    .notes("As checkout_counter, with impulse trays on the customer face of straight pieces."),
+            new Def(A+"checkout_counter_gate",safe,"retail").facing(H4).variant("hinge","left","right").fixed("open","false").support(Support.NONE)
+                    .notes("Pass-through gate in a counter line; facing = the customer side, hinge left = facing.getCounterClockWise(), where the flap folds onto the neighbouring counter. Starts closed."),
+            new Def(A+"back_bar_shelf",storage,"retail").facing(H4).multi(TWO_TALL).inventory().support(Support.NONE)
+                    .notes("Two-tall wall unit behind a checkout; facing = the front. The lower half owns the 12-slot searchable container, starts empty."),
             new Def(A+"cash_register",storage,"retail").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
                     .notes("Countertop POS (V2); facing = the operator side. 9-slot cash drawer, starts closed and empty; it slides 0.5 block out toward the operator when opened."),
             new Def(A+"commercial_glass_double_door",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
@@ -182,7 +190,8 @@ final class AuthoringFixtureRegistry {
     static boolean shapeSafe(BlockState s){
         var b=s.getBlock();
         return b instanceof CrossCollisionBlock||b instanceof WallBlock||b instanceof StairBlock||b instanceof FenceGateBlock
-                ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock;
+                ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock
+                ||b instanceof CheckoutCounterBlock;
     }
 
     @SuppressWarnings({"rawtypes","unchecked"})

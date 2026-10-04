@@ -1,0 +1,4 @@
+# AFL Checkout Counter V1 item
+newmtl counter
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/checkout_counter

@@ -1,0 +1,629 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "shape": "straight"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/straight"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "straight",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "straight",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_right",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_right",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_left",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "outer_left",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_left",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_left",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_right",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "shape": "inner_right",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "straight"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/straight",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "straight",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "straight",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_right",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_right",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_left",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "outer_left",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_left",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_left",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_right",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "shape": "inner_right",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "straight"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/straight",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "straight",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "straight",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_right",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_right",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_left",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "outer_left",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_left",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_left",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_right",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "shape": "inner_right",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "straight"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/straight",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "straight",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "straight",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_right",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_right",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/outer",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_left",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "outer_left",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_left"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_left",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_left",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_right"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/inner"
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_right",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "shape": "inner_right",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/checkout_counter/cap_right",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -59,8 +59,8 @@ public final class AflContainerSearch {
 
     /**
      * For the asset's {@code createMenu(int, Inventory)}: a search menu while anything is hidden, afterwards the
-     * ordinary vanilla menu of the same layout (chest grid 9 x 1..6, or the 3 x 3 dispenser grid; the 6 x 3 grid has no
-     * vanilla menu and keeps the search menu, every slot revealed). The layout comes
+     * ordinary vanilla menu of the same layout (chest grid 9 x 1..6, or the 3 x 3 dispenser grid; the 6 x 3 and 3 x 4
+     * grids have no vanilla menu and keep the search menu, every slot revealed). The layout comes
      * from {@link AflSearchableContainer#aflSearchLayout()}; returns null (menu not opened) when it does not match the
      * container size.
      */
@@ -71,7 +71,7 @@ public final class AflContainerSearch {
         AflContainerSearchLayout layout = container.aflSearchLayout();
         if (layout == null || layout.size() != size) {
             ApocalypseFirstLight.LOGGER.error("Searchable container at {} has {} slots and layout {}; a search menu "
-                    + "needs a 9 x 1..6 chest grid, the 3 x 3 or the 6 x 3 grid of the same size", container.getBlockPos(), size, layout);
+                    + "needs a 9 x 1..6 chest grid, the 3 x 3, 6 x 3 or 3 x 4 grid of the same size", container.getBlockPos(), size, layout);
             return null;
         }
         if (isComplete(container) && layout.isChest()) {

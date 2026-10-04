@@ -78,6 +78,19 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("retail_shelf_single", () ->
                     BlockEntityType.Builder.of(RetailShelfSingleBlockEntity::new,
                             AflBlocks.RETAIL_SHELF_SINGLE.get()).build(null));
+    /** Checkout Counter V1: one type for the plain and the display counter. */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.CheckoutCounterBlockEntity>> CHECKOUT_COUNTER =
+            BLOCK_ENTITIES.register("checkout_counter", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.CheckoutCounterBlockEntity::new,
+                            AflBlocks.CHECKOUT_COUNTER.get(), AflBlocks.CHECKOUT_COUNTER_DISPLAY.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.CheckoutCounterGateBlockEntity>> CHECKOUT_COUNTER_GATE =
+            BLOCK_ENTITIES.register("checkout_counter_gate", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.CheckoutCounterGateBlockEntity::new,
+                            AflBlocks.CHECKOUT_COUNTER_GATE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity>> BACK_BAR_SHELF =
+            BLOCK_ENTITIES.register("back_bar_shelf", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity::new,
+                            AflBlocks.BACK_BAR_SHELF.get()).build(null));
     public static final RegistryObject<BlockEntityType<ThermalGeneratorBlockEntity>> THERMAL_GENERATOR =
             BLOCK_ENTITIES.register("thermal_generator", () ->
                     BlockEntityType.Builder.of(ThermalGeneratorBlockEntity::new,

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/01 - 设计/生存/生存状态.md",
+                "file": "docs/项目内容/02 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "生存状态"
+              "title": "02 - 制作清单"
             }
           }
         ]
@@ -190,6 +190,7 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
+    "docs/项目内容/01 - 设计/生存/生存状态.md",
     "run/saves/新的世界 (1)/level10716563114481730004.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
@@ -200,7 +201,6 @@
     "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-1648512813258477716.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc",
     "run/afl_authoring_bridge/session.json",
-    "run/saves/新的世界 (1)/level13950025938427924344.dat",
     "docs/ui/survival_hud_v1.md",
     "docs/项目内容/01 - 设计/生存/食物.md",
     "docs/项目内容/01 - 设计/生存/耐力.md",
@@ -223,7 +223,6 @@
     "docs/gameplay/thirst_system_v1.md",
     "docs/项目内容/02 - 制作清单.md",
     "docs/gameplay/stamina_system_v1.md",
-    "docs/项目内容/01 - 设计/生存/生存状态.md",
     "docs/项目内容/01 - 设计/世界与环境/空气污染.md",
     "docs/项目内容/01 - 设计/感染者/声音与感染者听觉.md",
     "docs/models/water_dispenser_v2.md",

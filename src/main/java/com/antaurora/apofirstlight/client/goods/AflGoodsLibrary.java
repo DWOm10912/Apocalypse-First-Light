@@ -61,10 +61,45 @@ public final class AflGoodsLibrary {
         }
     }
 
+    /**
+     * Each shown cell with its own placement (checkout counter, back bar): the product's front-centre on its deck, the way
+     * its front faces (yaw, degrees; 0 = toward -z, 180 = toward +z) and a scale per axis (1 = the nominal cell in px), so
+     * a shallow tray can take a squat, shallow product; cells the placement returns null for are skipped.
+     */
+    public static void drawPlaced(List<AflGoodsState.Spot> spots, CellPlacement placement, PoseStack pose, MultiBufferSource buffers,
+                                  int light, int overlay) {
+        if (spots.isEmpty()) return;
+        var mesh = AflMeshCache.snapshot().get(GEO);
+        if (mesh == null) return;
+        VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
+        for (AflGoodsState.Spot spot : spots) {
+            float[] at = placement.at(spot.cell());
+            if (at == null) continue;
+            pose.pushPose();
+            pose.translate(at[0], at[1], at[2]);
+            pose.mulPose(Axis.YP.rotationDegrees(at[3]));
+            pose.translate(0.0F, 0.0F, CELL_D / 2.0F * at[6] / 16.0F);
+            pose.mulPose(Axis.YP.rotationDegrees(spot.yaw()));
+            pose.scale(at[4], at[5], at[6]);
+            float[] tint = TINTS[Math.floorMod(spot.tint(), TINTS.length)];
+            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product(), AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+                    1.0F, 1.0F, 1.0F, 1.0F, null);
+            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product() + "_tint", AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+                    tint[0], tint[1], tint[2], 1.0F, null);
+            pose.popPose();
+        }
+    }
+
     /** A container's cell positions in its renderer's frame. */
     @FunctionalInterface
     public interface CellPosition {
         /** x, y (deck top), z (front edge of the usable deck) of a cell, blocks. */
         double[] at(int cell);
+    }
+
+    /** Per-cell placement for {@link #drawPlaced}: {x, y, z (blocks), yaw (degrees), scale x, y, z}, or null to skip. */
+    @FunctionalInterface
+    public interface CellPlacement {
+        float[] at(int cell);
     }
 }

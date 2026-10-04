@@ -9,6 +9,9 @@ import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.CashRegisterBlock;
+import com.antaurora.apofirstlight.block.CheckoutCounterBlock;
+import com.antaurora.apofirstlight.block.CheckoutCounterGateBlock;
+import com.antaurora.apofirstlight.block.BackBarShelfBlock;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
 import com.antaurora.apofirstlight.block.MetalTrashCanBlock;
 import com.antaurora.apofirstlight.block.CommercialDumpsterBlock;
@@ -189,6 +192,31 @@ public final class AflBlocks {
             () -> new CashRegisterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5F, 4.0F)
                     .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    // Checkout Counter V1 (docs/models/checkout_counter_v1.md): laminate-on-steel retail furniture, iron-tier pickaxe
+    public static final RegistryObject<Block> CHECKOUT_COUNTER = BLOCKS.register("checkout_counter",
+            () -> new CheckoutCounterBlock(BlockBehaviour.Properties.of()
+                    .strength(2.0F, 4.0F)
+                    .sound(SoundType.WOOD)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), false));
+    public static final RegistryObject<Block> CHECKOUT_COUNTER_DISPLAY = BLOCKS.register("checkout_counter_display",
+            () -> new CheckoutCounterBlock(BlockBehaviour.Properties.of()
+                    .strength(2.0F, 4.0F)
+                    .sound(SoundType.WOOD)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), true));
+    public static final RegistryObject<Block> CHECKOUT_COUNTER_GATE = BLOCKS.register("checkout_counter_gate",
+            () -> new CheckoutCounterGateBlock(BlockBehaviour.Properties.of()
+                    .strength(2.0F, 4.0F)
+                    .sound(SoundType.WOOD)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> BACK_BAR_SHELF = BLOCKS.register("back_bar_shelf",
+            () -> new BackBarShelfBlock(BlockBehaviour.Properties.of()
+                    .strength(1.5F, 4.0F)
+                    .sound(SoundType.WOOD)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
     public static final RegistryObject<Block> WATER_DISPENSER = BLOCKS.register("water_dispenser",

@@ -1,0 +1,4 @@
+# AFL Back Bar Shelf V1
+newmtl back_bar
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/back_bar_shelf

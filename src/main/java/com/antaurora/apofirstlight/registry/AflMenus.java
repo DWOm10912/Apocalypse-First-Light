@@ -40,19 +40,21 @@ public final class AflMenus {
             MENUS.register("chemical_reactor", () -> IForgeMenuType.create(ChemicalReactorMenu::new));
     /**
      * Progressive Container Search menus, one type per layout like vanilla GENERIC_9xN / GENERIC_3x3: the six chest
-     * grids, then the 3 x 3 grid, then AFL's 6 x 3 grid. No extra open data.
+     * grids, then the 3 x 3 grid, then AFL's 6 x 3 and 3 x 4 grids. No extra open data.
      */
     public static final List<RegistryObject<MenuType<AflContainerSearchMenu>>> SEARCHABLE_CONTAINERS = List.of(
             searchableContainerType("9x1", AflContainerSearchLayout.chest(1)), searchableContainerType("9x2", AflContainerSearchLayout.chest(2)),
             searchableContainerType("9x3", AflContainerSearchLayout.chest(3)), searchableContainerType("9x4", AflContainerSearchLayout.chest(4)),
             searchableContainerType("9x5", AflContainerSearchLayout.chest(5)), searchableContainerType("9x6", AflContainerSearchLayout.chest(6)),
-            searchableContainerType("3x3", AflContainerSearchLayout.GRID_3X3), searchableContainerType("6x3", AflContainerSearchLayout.GRID_6X3));
+            searchableContainerType("3x3", AflContainerSearchLayout.GRID_3X3), searchableContainerType("6x3", AflContainerSearchLayout.GRID_6X3),
+            searchableContainerType("3x4", AflContainerSearchLayout.GRID_3X4));
 
     private AflMenus() {
     }
 
     public static MenuType<AflContainerSearchMenu> searchableContainer(AflContainerSearchLayout layout) {
-        return SEARCHABLE_CONTAINERS.get(layout.isChest() ? layout.rows() - 1 : layout == AflContainerSearchLayout.GRID_3X3 ? 6 : 7).get();
+        return SEARCHABLE_CONTAINERS.get(layout.isChest() ? layout.rows() - 1 : layout == AflContainerSearchLayout.GRID_3X3 ? 6
+                : layout == AflContainerSearchLayout.GRID_6X3 ? 7 : 8).get();
     }
 
     private static RegistryObject<MenuType<AflContainerSearchMenu>> searchableContainerType(String name, AflContainerSearchLayout layout) {

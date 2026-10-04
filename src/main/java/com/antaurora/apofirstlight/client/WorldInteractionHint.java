@@ -67,6 +67,7 @@ public final class WorldInteractionHint {
             if(target==null) target=freezerLid(mc,hit);
             if(target==null) target=dumpsterLid(mc,hit);
             if(target==null) target=retailContents(mc,hit);
+            if(target==null) target=counterGate(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
@@ -136,12 +137,27 @@ public final class WorldInteractionHint {
                     &&mc.level.getBlockEntity(master) instanceof BeverageCoolerBlockEntity cooler) {
                 key="beverage_cooler";complete=cooler.isSearchCompleteForPrompt();
             }
+        } else if(s.getBlock() instanceof com.antaurora.apofirstlight.block.CheckoutCounterBlock counter&&counter.opensFrom(s,hit.getDirection())
+                &&mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.CheckoutCounterBlockEntity box) {
+            key="checkout_counter";complete=box.isSearchCompleteForPrompt();
+        } else if(s.getBlock() instanceof com.antaurora.apofirstlight.block.BackBarShelfBlock&&hit.getDirection()==s.getValue(com.antaurora.apofirstlight.block.BackBarShelfBlock.FACING)
+                &&mc.level.getBlockEntity(com.antaurora.apofirstlight.block.BackBarShelfBlock.lower(s,pos)) instanceof com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity bar) {
+            key="back_bar_shelf";complete=bar.isSearchCompleteForPrompt();
         } else if(s.getBlock() instanceof VendingMachineBlock&&s.getValue(VendingMachineBlock.BROKEN)
                 &&VendingMachineBlock.frontPoint(s,pos,eye,hit)!=null
                 &&mc.level.getBlockEntity(VendingMachineBlock.lower(s,pos)) instanceof VendingMachineBlockEntity machine) {
             key="vending_machine";complete=machine.isSearchCompleteForPrompt();
         }
         return key==null?null:new Target(Component.translatable("hint.apocalypse_firstlight."+key+"."+(complete?"view":"search")),null);
+    }
+
+    /** Checkout counter gate (any face, as CheckoutCounterGateBlock#use): open / close, at the crosshair. */
+    private static Target counterGate(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CheckoutCounterGateBlock)) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.checkout_counter_gate."
+                +(s.getValue(com.antaurora.apofirstlight.block.CheckoutCounterGateBlock.OPEN)?"close":"open")),null);
     }
 
     /**
