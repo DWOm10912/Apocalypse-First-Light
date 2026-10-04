@@ -115,6 +115,14 @@
       "unit_mass_kg": 0.3,
       "estimated": true
     },
+    "apocalypse_firstlight:clinical_thermometer": {
+      "unit_mass_kg": 0.02,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wrist_thermometer": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
     "apocalypse_firstlight:crowbar": {
       "unit_mass_kg": 1.2,
       "estimated": true

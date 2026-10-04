@@ -12,7 +12,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
-import {Part, extrude, area2, unwrap, paint, png, zFightLevels, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
+import {Part, extrude, area2, unwrap, paint, png, readPng, zFightLevels, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BB = path.join(ROOT, 'src/main/blockbench'), ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -232,9 +232,11 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
  * vanilla block icons), each pixel takes the face that covers most of it (no anti-aliasing), a darker seam where one part
  * passes in front of another, then a vanilla rim (darker silhouette pixels at the bottom / right).
  * icon: {mat: {name: other material name or [r, g, b]}} (icon-only colours: pixel art wants more contrast between pieces
- * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less).
+ * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less),
+ * xray: material names drawn only where nothing else is behind them (glass: what is inside shows through it),
+ * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross).
  */
-function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5} = {}) {
+function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = []} = {}) {
   // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
   const N = 16, SS = 6, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation, tris = [];
   const colourOf = m => { const o = iconMat[m]; return Array.isArray(o) ? o : MATS[o ?? m].c; };
@@ -243,19 +245,21 @@ function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5
     const n3 = norm(newell(f.ids.map(i => rot(p.v[i]))));
     if (n3[2] <= 0) continue;                                            // faces turned away are always behind others
     const tone = 0.66 + 0.33 * Math.max(0, n3[1]) - 0.12 * n3[0], c = colourOf(f.mat).map(v => v * tone);
-    for (let q = 1; q + 1 < P.length; q++) tris.push({P: [P[0], P[q], P[q + 1]], c, part: p});
+    for (let q = 1; q + 1 < P.length; q++) tris.push({P: [P[0], P[q], P[q + 1]], c, part: p, glass: xray.includes(f.mat)});
   }
   const px = new Array(N * N).fill(null);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const votes = new Map();
     for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
-      const X = x + (sx + 0.5) / SS, Y = y + (sy + 0.5) / SS; let best = null, bz = -Infinity;
+      const X = x + (sx + 0.5) / SS, Y = y + (sy + 0.5) / SS; let best = null, bz = -Infinity, glass = null, gz = -Infinity;
       for (const tri of tris) {
         const [A, B, C] = tri.P, den = (B[1] - C[1]) * (A[0] - C[0]) + (C[0] - B[0]) * (A[1] - C[1]); if (Math.abs(den) < 1e-12) continue;
         const l1 = ((B[1] - C[1]) * (X - C[0]) + (C[0] - B[0]) * (Y - C[1])) / den, l2 = ((C[1] - A[1]) * (X - C[0]) + (A[0] - C[0]) * (Y - C[1])) / den, l3 = 1 - l1 - l2;
         if (l1 < 0 || l2 < 0 || l3 < 0) continue;
-        const z = l1 * A[2] + l2 * B[2] + l3 * C[2]; if (z > bz) { bz = z; best = {tri, z}; }
+        const z = l1 * A[2] + l2 * B[2] + l3 * C[2];
+        if (tri.glass) { if (z > gz) { gz = z; glass = {tri, z}; } } else if (z > bz) { bz = z; best = {tri, z}; }
       }
+      if (!best) best = glass;
       if (best) { const v = votes.get(best.tri.c) || {n: 0, part: best.tri.part, z: 0}; v.n++; v.z += best.z; votes.set(best.tri.c, v); }
     }
     let win = null, total = 0; for (const [c, v] of votes) { total += v.n; if (!win || v.n > win.v.n) win = {c, v}; }
@@ -266,7 +270,7 @@ function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5
     const p = at(x, y); if (!p) continue;
     let c = p.c;
     if (!at(x + 1, y) || !at(x, y + 1)) c = c.map(v => v * 0.62); else if (!at(x - 1, y) || !at(x, y - 1)) c = c.map(v => v * 0.86);
-    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part && q.z > p.z; })) c = c.map(v => v * 0.74);
+    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part && q.z > p.z && !seamless.includes(q.part.name); })) c = c.map(v => v * 0.74);
     out.set([...c.map(v => Math.max(0, Math.min(255, Math.round(v)))), 255], (y * N + x) * 4);
   }
   return png(out, N, N);
@@ -275,7 +279,12 @@ function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5
 // inventory icon view: vanilla block-item angle, no roll; an item may pick its own (icon.view), still without roll
 const GUI = [30, 225, 0];
 
-export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
+/**
+ * display: per-context ItemTransforms replacing the size rule below (a long thin tool is held like a vanilla handheld).
+ * A material with alpha (0..255) is glass: its islands get that Base Color alpha and every part made only of such
+ * materials goes to the mesh's translucent layer (AflHybridMeshRendering); the icon draws it through iconOpts.xray.
+ */
+export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: displayOverrides = {}}) {
   const gui = iconOpts.view ?? GUI;
   // centre on X / Z, rest on y = 0
   const all = PARTS.flatMap(p => p.v), lo = [0, 1, 2].map(k => Math.min(...all.map(q => q[k]))), hi = [0, 1, 2].map(k => Math.max(...all.map(q => q[k])));
@@ -289,6 +298,16 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
   const painted = paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas: ATLAS, pad: PAD, MATS, ZONED: new Set(), groupInfo: new Map(),
     sourceGroups: () => [], refTexture: {source: DUMMY}, refUvWidth: 1, background: {c: [...main.c, 255], s: [main.sm, main.f0, 0, 255], n: [128, 128, 255, 255]}});
 
+  const glassMats = new Set(Object.keys(MATS).filter(m => MATS[m].alpha !== undefined));
+  let PNGS = painted.PNG;
+  if (glassMats.size) {
+    const base = readPng(painted.PNG[0]);
+    assert(base.bpp === 4 && base.w === ATLAS, 'atlas format');
+    for (const is of UV.islands) { const m = is.faces[0].f.mat; if (!glassMats.has(m)) continue;
+      for (let y = is.py - PAD; y < is.py + is.H + PAD; y++) for (let x = is.px - PAD; x < is.px + is.W + PAD; x++) base.px[(y * ATLAS + x) * 4 + 3] = MATS[m].alpha; }
+    PNGS = [png(base.px, ATLAS, ATLAS), painted.PNG[1], painted.PNG[2]];
+  }
+  const LAYERS = Object.fromEntries(PARTS.filter(p => p.f.length && p.f.every(f => glassMats.has(f.mat))).map(p => [p.name, 'translucent']));
   const uuid = s => { const h = createHash('sha256').update(`afl-material-mesh-${id}:` + s).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
   const elements = PARTS.map(p => {
     const key = i => i.toString(36).padStart(4, '0'), vertices = {}, faces = {}, uvs = UV.faceUV.get(p);
@@ -308,11 +327,11 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
       width: ATLAS, height: ATLAS, uv_width: ATLAS, uv_height: ATLAS, particle: false, use_as_default: false, layers_enabled: false, sync_to_project: '',
       file_format: 'png', render_mode: 'default', render_sides: 'auto', wrap_mode: 'limited', pbr_channel: 'color', fps: 7, frame_time: 1,
       frame_order_type: 'loop', frame_order: '', frame_interpolate: false, visible: true, internal: true, saved: true, uuid: uuid('texture'),
-      source: 'data:image/png;base64,' + painted.PNG[0].toString('base64')}],
+      source: 'data:image/png;base64,' + PNGS[0].toString('base64')}],
     animations: []};
   const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.' + id, texture_width: ATLAS, texture_height: ATLAS,
     visible_bounds_width: 2, visible_bounds_height: 2, visible_bounds_offset: [0, 0.5, 0]}, bones: [{name: id, pivot: [0, 0, 0]}]}]};
-  const sidecar = convert(source, geo, {}, id + '.bbmodel', 2);
+  const sidecar = Object.keys(LAYERS).length ? convert(source, geo, {}, id + '.bbmodel', 2, null, LAYERS) : convert(source, geo, {}, id + '.bbmodel', 2);
 
   // inventory view fitted to 14 of 16 slot pixels from the projected mesh (used to draw the 2D icon); the world views share
   // one size rule (longest side normalised to 12 px) so every material is held at the same apparent size
@@ -326,6 +345,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
     firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1, 0], scale: S3(0.5 * k)},
     ground: {rotation: [0, 0, 0], translation: [0, 3, 0], scale: S3(0.4 * k)},
     fixed: {rotation: [0, 0, 0], translation: [0, 0, 0], scale: S3(0.7 * k)},
+    ...displayOverrides,
   };
   const iconView = {rotation: gui, translation: [r3(-s * cx), r3(-s * cy), 0], scale: S3(s)};
   // inventory: the flat 2D icon; hand, ground and item frame: the mesh (forge:separate_transforms, base = builtin/entity)
@@ -341,7 +361,7 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}}) {
     [path.join(ASSETS, `meshes/${id}.aflmesh.json`), serializeCompact(sidecar)],
     [path.join(ASSETS, `models/item/${id}.json`), JSON.stringify(itemModel, null, 2) + '\n'],
     [path.join(ASSETS, `textures/item/${id}.png`), drawIcon(PARTS, MATS, iconView, size[1] / 2, iconOpts)],
-    ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), painted.PNG[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), painted.PNG[i]]]),
+    ...['', '_s', '_n'].flatMap((x, i) => [[path.join(BB, `textures/${atlasName}${x}.png`), PNGS[i]], [path.join(ASSETS, `textures/item/${atlasName}${x}.png`), PNGS[i]]]),
   ];
   const zf = zFightLevels(PARTS, new Map());
   const stats = {id, triangles: sidecar.parts.flatMap(p => p.faces).reduce((t, q) => t + q.length - 2, 0), size: size.map(r3), texelsPerPx: r3(UV.S),

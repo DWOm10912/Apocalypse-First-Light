@@ -178,7 +178,9 @@ public final class AflCreativeTabs {
             AflItems.PURIFIED_WATER_BOTTLE,
             AflItems.DIRTY_WATER_BOTTLE,
             AflItems.BOILED_WATER_BOTTLE,
-            AflItems.PURIFIED_WATER_BOTTLE);
+            AflItems.PURIFIED_WATER_BOTTLE,
+            AflItems.CLINICAL_THERMOMETER,
+            AflItems.WRIST_THERMOMETER);
 
     /** Title key itemGroup.apocalypse_firstlight.&lt;id&gt;; placed after {@code after} when given. */
     @SafeVarargs

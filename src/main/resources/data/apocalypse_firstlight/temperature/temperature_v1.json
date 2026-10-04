@@ -32,6 +32,7 @@
   "source_stacking": 0.5,
   "source_cap_heat": 80,
   "source_cap_cold": -10,
+  "thermometer_source_limit": 400,
   "scan": { "horizontal": 6, "below": 2, "above": 3 },
   "sources": [
     { "block": "minecraft:campfire", "strength": 20, "radius": 6, "lit": true },

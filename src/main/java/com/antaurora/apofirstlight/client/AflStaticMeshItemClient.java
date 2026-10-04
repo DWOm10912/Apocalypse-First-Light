@@ -46,6 +46,10 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.STEEL_SCRAP.get(), "steel_scrap", "steel_scrap_mesh", 0.446402);
             // Energy Battery V1 (tools/build-energy-battery-v1.mjs): 0.5 - height 4.66 / 32
             bind(AflItems.ENERGY_BATTERY.get(), "energy_battery", "energy_battery_mesh", 0.354375);
+            // Equipment Meshes V1 (tools/build-equipment-meshes-v1.mjs): 0.5 - height / 32 (1.22 / 3.5 px)
+            bind(AflItems.CLINICAL_THERMOMETER.get(), () -> new AflStaticMeshItemRenderer("clinical_thermometer", "clinical_thermometer_mesh", 0.46189),
+                    "clinical_thermometer", com.antaurora.apofirstlight.temperature.ClientThermometerHands.INSTANCE);
+            bind(AflItems.WRIST_THERMOMETER.get(), "wrist_thermometer", "wrist_thermometer_mesh", 0.390625);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(
@@ -93,6 +97,11 @@ public final class AflStaticMeshItemClient {
     }
 
     private static void bind(Item item, java.util.function.Supplier<AflStaticMeshItemRenderer> factory, String model) {
+        bind(item, factory, model, new IClientItemExtensions() {});
+    }
+
+    /** hands: the item's own arm pose and first-person hand transform (null / false: vanilla). */
+    private static void bind(Item item, java.util.function.Supplier<AflStaticMeshItemRenderer> factory, String model, IClientItemExtensions hands) {
         try {
             // Forge 1.20.1 has no separate ordinary-Item extension registration event.
             Field field = Item.class.getDeclaredField("renderProperties");
@@ -104,6 +113,19 @@ public final class AflStaticMeshItemClient {
                 public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
                     if (renderer == null) renderer = factory.get();
                     return renderer;
+                }
+
+                @Override
+                public net.minecraft.client.model.HumanoidModel.ArmPose getArmPose(net.minecraft.world.entity.LivingEntity entity,
+                        net.minecraft.world.InteractionHand hand, net.minecraft.world.item.ItemStack stack) {
+                    return hands.getArmPose(entity, hand, stack);
+                }
+
+                @Override
+                public boolean applyForgeHandTransform(com.mojang.blaze3d.vertex.PoseStack pose, net.minecraft.client.player.LocalPlayer player,
+                        net.minecraft.world.entity.HumanoidArm arm, net.minecraft.world.item.ItemStack stack, float partialTick,
+                        float equipProcess, float swingProcess) {
+                    return hands.applyForgeHandTransform(pose, player, arm, stack, partialTick, equipProcess, swingProcess);
                 }
             });
         } catch (ReflectiveOperationException e) {

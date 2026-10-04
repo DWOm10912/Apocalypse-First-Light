@@ -316,8 +316,6 @@
   "death.attack.apocalypse_firstlight.hypothermia.player": "%1$s 在与 %2$s 战斗时冻死了",
   "death.attack.apocalypse_firstlight.heatstroke": "%1$s 死于热射病",
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s 在与 %2$s 战斗时死于热射病",
-  "hud.apocalypse_firstlight.temperature.core": "体温 %s",
-  "hud.apocalypse_firstlight.temperature.ambient": "环境 %s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "沉降荒原",
 
@@ -453,5 +451,9 @@
   "message.apocalypse_firstlight.temperature.hot1": "你热得满身是汗",
   "message.apocalypse_firstlight.temperature.hot2": "你头晕乏力",
   "message.apocalypse_firstlight.temperature.hot3": "你快中暑倒下了",
-  "curios.identifier.ears": "耳部"
+  "curios.identifier.ears": "耳部",
+  "item.apocalypse_firstlight.clinical_thermometer": "体温计",
+  "item.apocalypse_firstlight.wrist_thermometer": "腕式温度计",
+  "tooltip.apocalypse_firstlight.clinical_thermometer.description": "按住右键约 3 秒测量体温，读数在体温表盘中显示 10 秒",
+  "tooltip.apocalypse_firstlight.wrist_thermometer.description": "戴在手腕上，持续显示环境温度"
 }

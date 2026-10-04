@@ -46,7 +46,7 @@ import java.util.UUID;
  * target = 37 − 0.15·max(0, (14 − insulation) − felt) + 0.15·max(0, felt − 24), within [25, 55]
  * core  += (target − core)·(1 − e^(−1/τ)), within [33, 41]       τ 300 s worsening (→ 100 s submerged), 120 s recovering
  * </pre>
- * T_env is the "ambient" a future thermometer shows; only the core decides the stages. Cold stages (36 / 35 / 34) and
+ * The wrist thermometer shows T_env with the sources uncapped; only the core decides the stages. Cold stages (36 / 35 / 34) and
  * heat stages (38 / 39 / 40) slow stamina, speed up thirst, slow the player and stop natural healing before the last
  * one also hurts (can kill on any difficulty but Peaceful, like dehydration). Creative / Spectator: the core stays at 37, no effects.
  * Saved as {core, wet, exertion} in the player's persistent data; a death starts at 37, dry.
@@ -65,7 +65,7 @@ public final class PlayerTemperature {
 
     /** One update's numbers, for /afltemp. */
     record Reading(String climate, double mean, double amp, double water, double precipitation, double day, double outdoor,
-                   double sheltered, double cover, double sources, double env, double submersion, double exertionHeat,
+                   double sheltered, double cover, double sources, double env, double shown, double submersion, double exertionHeat,
                    double insulation, double felt, double target) {}
 
     private static final class State {
@@ -182,7 +182,11 @@ public final class PlayerTemperature {
         double factor = c.outdoorSourceFactor + (1 - c.outdoorSourceFactor) * cover;
         double heat = q[0] * factor, cold = q[1] * factor;
         double submersion = submersion(player);
-        double env = Mth.lerp(submersion, Mth.lerp(cover, outdoor, sheltered), waterTemperature) + heat + cold;
+        double air = Mth.lerp(submersion, Mth.lerp(cover, outdoor, sheltered), waterTemperature), env = air + heat + cold;
+        // what the wrist thermometer shows: the same air with the sources uncapped, only softly limited (right by a lava pool
+        // it reads well over 100 °C, a large lava lake does not run into thousands);
+        // the body keeps the capped value, so the heat stages stay as tuned
+        double limit = c.thermometerSourceLimit, shown = air + (limit * (1 - Math.exp(-q[2] / limit)) - limit * (1 - Math.exp(q[3] / limit))) * factor;
 
         // wet: the water soaks the body up to a level set by the depth (fast), rain adds slowly; dries back down to that level
         var w = c.wetness;
@@ -205,9 +209,9 @@ public final class PlayerTemperature {
         boolean recovering = s.core != c.normal && Math.signum(target - s.core) == Math.signum(c.normal - s.core);
         double tau = recovering ? c.tauRecover : Mth.lerp(submersion, c.tauWorsen, c.tauWorsenImmersed);
         s.core = Mth.clamp(s.core + (target - s.core) * (1 - Math.exp(-dt / tau)), c.coreMin, c.coreMax);
-        s.ambient = env;
+        s.ambient = shown;
         s.target = target;
-        s.reading = new Reading(climate, mean, amp, water, precipitation, day, outdoor, sheltered, cover, heat + cold, env,
+        s.reading = new Reading(climate, mean, amp, water, precipitation, day, outdoor, sheltered, cover, heat + cold, env, shown,
                 submersion, exertionHeat, insulation, felt, target);
     }
 
@@ -242,10 +246,13 @@ public final class PlayerTemperature {
         return sum;
     }
 
-    /** {heat, cold} of the listed source blocks around the player: per side the strongest + stacking × the rest, capped. */
+    /**
+     * {heat, cold, heat uncapped, cold uncapped} of the listed source blocks around the player: per side the strongest +
+     * stacking × the rest; the first two capped for the body, the last two not (what a thermometer reads).
+     */
     private static double[] sources(ServerLevel level, ServerPlayer player, TemperatureConfig c) {
         var map = c.sourceMap;
-        if (map.isEmpty()) return new double[2];
+        if (map.isEmpty()) return new double[4];
         double px = player.getX(), py = player.getY() + 1.0, pz = player.getZ();
         int bx = Mth.floor(px), by = Mth.floor(player.getY()), bz = Mth.floor(pz);
         int x0 = bx - c.scan.horizontal, x1 = bx + c.scan.horizontal, z0 = bz - c.scan.horizontal, z1 = bz + c.scan.horizontal;
@@ -275,7 +282,7 @@ public final class PlayerTemperature {
         }
         heat = maxHeat + c.sourceStacking * (heat - maxHeat);
         cold = maxCold + c.sourceStacking * (cold - maxCold);
-        return new double[]{Math.min(c.sourceCapHeat, heat), Math.max(c.sourceCapCold, cold)};
+        return new double[]{Math.min(c.sourceCapHeat, heat), Math.max(c.sourceCapCold, cold), heat, cold};
     }
 
     /**
@@ -400,9 +407,9 @@ public final class PlayerTemperature {
         var s = state(player);
         var r = s.reading;
         String model = r == null ? "no update yet" : String.format(Locale.ROOT,
-                "%s mean %.1f amp %.1f water %.1f precip %.2f | D %.2f | out %.1f in %.1f S %.2f | sources %+.1f | env %.1f%s | wet %.2f | exertion +%.1f | insulation %.1f | felt %.1f | target %.2f",
+                "%s mean %.1f amp %.1f water %.1f precip %.2f | D %.2f | out %.1f in %.1f S %.2f | sources %+.1f | env %.1f (thermometer %.1f)%s | wet %.2f | exertion +%.1f | insulation %.1f | felt %.1f | target %.2f",
                 r.climate(), r.mean(), r.amp(), r.water(), r.precipitation(), r.day(), r.outdoor(), r.sheltered(), r.cover(),
-                r.sources(), r.env(), r.submersion() > 0 ? String.format(Locale.ROOT, " (in water %.2f)", r.submersion()) : "", s.wet, r.exertionHeat(), r.insulation(), r.felt(), r.target());
+                r.sources(), r.env(), r.shown(), r.submersion() > 0 ? String.format(Locale.ROOT, " (in water %.2f)", r.submersion()) : "", s.wet, r.exertionHeat(), r.insulation(), r.felt(), r.target());
         return String.format(Locale.ROOT, "%s: core %.2f °C | stage cold %d heat %d | stamina regen x%.2f cost x%.2f | thirst x%.2f | natural regen %s | enabled=%s\n%s",
                 player.getGameProfile().getName(), s.core, s.coldStage, s.heatStage, staminaRegenMultiplier(player),
                 staminaCostMultiplier(player), thirstMultiplier(player), blocksNaturalRegen(player) ? "blocked" : "normal",

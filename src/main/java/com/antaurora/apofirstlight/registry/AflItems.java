@@ -348,6 +348,12 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.thirst.ThirstWaterItem(false, new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> PURIFIED_WATER_BOTTLE = ITEMS.register("purified_water_bottle",
             () -> new com.antaurora.apofirstlight.thirst.ThirstWaterItem(false, new Item.Properties().stacksTo(16)));
+    // Temperature V1 thermometers (docs/gameplay/temperature_system_v1.md; meshes: tools/build-equipment-meshes-v1.mjs):
+    // held to the mouth for a body temperature reading / worn on the wrist for the air temperature
+    public static final RegistryObject<Item> CLINICAL_THERMOMETER = ITEMS.register("clinical_thermometer",
+            () -> new com.antaurora.apofirstlight.temperature.ClinicalThermometerItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> WRIST_THERMOMETER = ITEMS.register("wrist_thermometer",
+            () -> new com.antaurora.apofirstlight.temperature.WristThermometerItem(new Item.Properties().stacksTo(1)));
 
     private AflItems() {
     }

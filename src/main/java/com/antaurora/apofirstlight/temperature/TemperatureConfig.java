@@ -79,6 +79,8 @@ public final class TemperatureConfig {
     public Cave cave = new Cave();
     /** Per side: the strongest source + source_stacking × the others, then capped; × (outdoor factor .. 1) by the cover. */
     public double outdoorSourceFactor = 0.6, sourceStacking = 0.5, sourceCapHeat = 80, sourceCapCold = -10;
+    /** The thermometer reads the sources without the caps, softly limited toward this (°C): limit × (1 − e^(−sum / limit)). */
+    public double thermometerSourceLimit = 400;
     public Scan scan = new Scan();
     public List<Source> sources = List.of();
     public Wetness wetness = new Wetness();
@@ -106,7 +108,7 @@ public final class TemperatureConfig {
         if (heatStages == null) heatStages = List.of();
         if (!(comfortLow < comfortHigh) || coldSlope < 0 || heatSlope < 0 || !(coreMin < normal && normal < coreMax)
                 || !(tauWorsen > 0) || !(tauWorsenImmersed > 0) || !(tauRecover > 0) || !(targetMin <= coreMin) || !(targetMax >= coreMax)
-                || sourceStacking < 0 || sourceStacking > 1 || biomeBlend < 0 || fallback == null
+                || sourceStacking < 0 || sourceStacking > 1 || !(thermometerSourceLimit > 0) || biomeBlend < 0 || fallback == null
                 || weather == null || altitude == null || cave == null || !(cave.depthFull > 0) || scan == null
                 || scan.horizontal < 0 || scan.below < 0 || scan.above < 0 || wetness == null || !(wetness.drySeconds > 0)
                 || exertion == null || !(exertion.tauSeconds > 0) || hysteresis < 0 || !(damageIntervalSeconds > 0)

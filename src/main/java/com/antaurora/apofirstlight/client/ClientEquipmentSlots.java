@@ -31,7 +31,8 @@ import top.theillusivec4.curios.api.type.ISlotType;
 /**
  * The client side of AFL's equipment slots: their slot frames on the inventory page (the vanilla background has none
  * in that column), Curios' own panel button hidden while every slot the player has lives on AFL's page, and the
- * hearing protection drawn on the head from the ears slot (like vanilla's head item layer).
+ * hearing protection drawn on the head from the ears slot (like vanilla's head item layer), the wrist thermometer on the
+ * left wrist.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientEquipmentSlots {
@@ -42,7 +43,10 @@ public final class ClientEquipmentSlots {
     public static void setup(FMLClientSetupEvent event) {
         MinecraftForge.EVENT_BUS.addListener(ClientEquipmentSlots::frames);
         MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, ClientEquipmentSlots::hideCuriosButton);
-        event.enqueueWork(() -> CuriosRendererRegistry.register(AflItems.SIMPLE_HEARING_PROTECTION.get(), HeadItemRenderer::new));
+        event.enqueueWork(() -> {
+            CuriosRendererRegistry.register(AflItems.SIMPLE_HEARING_PROTECTION.get(), HeadItemRenderer::new);
+            CuriosRendererRegistry.register(AflItems.WRIST_THERMOMETER.get(), WristItemRenderer::new);
+        });
     }
 
     /** Vanilla-style slot frames (18 × 18: dark top / left, white bottom / right, slot grey inside). */
@@ -68,6 +72,32 @@ public final class ClientEquipmentSlots {
         if (player == null || CuriosApi.getPlayerSlots(player).values().stream().anyMatch(ISlotType::useNativeGui)) return;
         for (var listener : java.util.List.copyOf(event.getListenersList()))
             if (listener.getClass().getName().equals(CURIOS_BUTTON)) event.removeListener(listener);
+    }
+
+    /**
+     * Draws a strap-on curio around the left wrist: its mesh (tools/build-equipment-meshes-v1.mjs) is authored around a
+     * 4 x 4 px arm along +Y with the face to +X; the item is drawn with an unused display context (HEAD: no transform)
+     * so it keeps its native size, centred on the mesh, then moved so the strap's arm axis sits on the arm.
+     */
+    private static final class WristItemRenderer implements ICurioRenderer {
+        /** The arm axis in the baked mesh (px, from the build's wornAnchor), and where the strap sits along the arm. */
+        private static final float MESH_ARM_X = -0.575F, WRIST_Y = 8.5F;
+        @Override
+        public <T extends LivingEntity, M extends EntityModel<T>> void render(ItemStack stack, SlotContext slotContext, PoseStack poseStack,
+                RenderLayerParent<T, M> parent, MultiBufferSource buffer, int light, float limbSwing, float limbSwingAmount,
+                float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+            if (!(parent.getModel() instanceof net.minecraft.client.model.HumanoidModel<?> humanoid)) return;
+            var entity = slotContext.entity();
+            boolean slim = entity instanceof net.minecraft.client.player.AbstractClientPlayer p && "slim".equals(p.getModelName());
+            float armCentre = slim ? 0.5F : 1.0F, sx = slim ? 0.8F : 1.0F;   // left arm box: x -1..3 (slim -1..2) from its pivot
+            poseStack.pushPose();
+            humanoid.leftArm.translateAndRotate(poseStack);
+            poseStack.translate((armCentre - MESH_ARM_X * sx) / 16F, WRIST_Y / 16F, 0);
+            poseStack.scale(sx, -1F, -1F);                                       // mesh +Y up -> model +Y down; +X stays outward
+            Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer()
+                    .renderItem(entity, stack, ItemDisplayContext.HEAD, false, poseStack, buffer, light);
+            poseStack.popPose();
+        }
     }
 
     /** Draws a worn curio on the head the way vanilla draws a non-armour head item (CustomHeadLayer). */

@@ -21,11 +21,19 @@ import net.minecraft.resources.ResourceLocation;
  *   faster the stronger the trend;
  * - normal: the glyph breathes very slightly; off normal: a soft halo; extremes: a stronger, wider halo that pulses
  *   slowly, a thin ripple ring spreading out and fading once per pulse, and the glyph pulsing a little.
+ * - air temperature (while a wrist thermometer is worn, TemperatureReadout): a thin arc over the top, -20 °C on the left to
+ *   +40 °C on the right (10 °C straight up), tinted ice blue .. neutral .. orange, with a small light triangle outside it
+ *   pointing in at the temperature; the number above it is drawn by ClientTemperatureHud;
+ * - while a core reading shows (clinical thermometer), the glyph steps aside for the number (ClientTemperatureHud).
  * Colours blend in OKLab. Drawn per pixel into one texture per GUI scale and blitted once a frame.
  */
 final class TemperatureDial {
     /** GUI pixels: face radius, gauge band, halo reach. */
     static final double RADIUS = 9.5, BAND = 1.5, HALO = 2.5;
+    /** Air temperature arc (GUI pixels / degrees): radius, band, half span, the marker's tip and base radii. */
+    static final double AMBIENT_RADIUS = 12.5, AMBIENT_BAND = 1.0, AMBIENT_TIP = 13.4, AMBIENT_BASE = 15.8;
+    private static final double AMBIENT_SPAN = Math.toRadians(60);
+    private static final double[] AMBIENT_MARK = rgb(0xF0EEE6);
     private static final double SPAN = Math.PI * 0.75, TAU = Math.PI * 2;
     private static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/temperature_dial");
     private static final int NEUTRAL = 0xC8C6BE, ICE = 0x8ECAF0, HEAT = 0xE8843F;
@@ -40,21 +48,22 @@ final class TemperatureDial {
 
     /**
      * cold / heat / danger 0..1, trend −1 (cooling) .. +1 (warming) and target −1 .. +1 (the core's target on the same
-     * scale as heat − cold), all eased by the caller; phase: the chevrons'
+     * scale as heat − cold), all eased by the caller; ambient: the air temperature in °C for the arc, NaN for none;
+     * hideGlyph: the dial's centre is left free for the core reading; phase: the chevrons'
      * running position (cycles); seconds: breathing and pulse.
      */
     static void render(GuiGraphics graphics, double guiCx, double guiCy, double cold, double heat, double danger, double trend,
-                       double target, double phase, double seconds) {
+                       double target, double ambient, boolean hideGlyph, double phase, double seconds) {
         int s = (int)Math.max(1, Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
         if (texture == null || textureScale != s) {
-            size = (int)Math.ceil(2 * (RADIUS + HALO + 4) * s) + 2;
+            size = (int)Math.ceil(2 * (AMBIENT_BASE + 1.5) * s) + 2;
             image = new NativeImage(NativeImage.Format.RGBA, size, size, true);
             texture = new DynamicTexture(image);
             Minecraft.getInstance().getTextureManager().register(TEXTURE, texture); // closes the previous one
             textureScale = s;
         }
         int x0 = (int)Math.round(guiCx * s - size / 2.0), y0 = (int)Math.round(guiCy * s - size / 2.0);
-        fill(s, guiCx * s - x0, guiCy * s - y0, cold, heat, danger, trend, target, phase, seconds);
+        fill(s, guiCx * s - x0, guiCy * s - y0, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
         texture.upload();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -65,7 +74,7 @@ final class TemperatureDial {
     }
 
     private static void fill(int s, double cx, double cy, double cold, double heat, double danger, double trend, double target,
-                             double phase, double seconds) {
+                             double ambient, boolean hideGlyph, double phase, double seconds) {
         double r0 = RADIUS * s, band = BAND * s, rIn = r0 - band, halo = HALO * s;
         double dev = Math.max(cold, heat), bias = heat - cold;
         boolean coldSide = cold > heat;
@@ -99,6 +108,10 @@ final class TemperatureDial {
         boolean warming = trend > 0;
         double[] chevronColour = warming ? HEAT_RGB : ICE_RGB;
         double yA = 5.3 * s, yB = 12.2 * s, hw = 1.45 * s, hh = 0.8 * s, stroke = 0.4 * s;
+        // air temperature arc and its marker
+        boolean showAmbient = !Double.isNaN(ambient);
+        double ar = AMBIENT_RADIUS * s, aband = AMBIENT_BAND * s, aTip = AMBIENT_TIP * s, aBase = AMBIENT_BASE * s;
+        double aAngle = showAmbient ? ambientAngle(ambient) : 0, ax = Math.sin(aAngle), ay = -Math.cos(aAngle);
         double[] p = new double[4];
         for (int py = 0; py < size; py++) for (int px = 0; px < size; px++) {
             double x = px + 0.5 - cx, y = py + 0.5 - cy, r = Math.hypot(x, y), ang = Math.atan2(x, -y); // 0 at the top, clockwise +
@@ -108,6 +121,15 @@ final class TemperatureDial {
                 over(p, haloColour, haloAlpha * Math.pow(g, 1.6));
             }
             if (rippleAlpha > 0.003) over(p, haloColour, rippleAlpha * clamp(0.5 - (Math.abs(r - rippleR) - 0.3 * s)));
+            if (showAmbient && r > ar - aband - 1 && r < aBase + 2) {
+                double onArc = clamp(0.5 - (Math.abs(r - ar) - aband / 2)) * clamp(0.5 + (AMBIENT_SPAN - Math.abs(ang)) * r);
+                if (onArc > 0) over(p, ambientColour(10 + ang / AMBIENT_SPAN * 30), 0.6 * onArc);
+                double along = x * ax + y * ay, across = x * ay - y * ax;
+                if (along > aTip - 1 && along < aBase + 1) {
+                    double half = Math.max(0, (along - aTip) / (aBase - aTip)) * 1.5 * s;
+                    over(p, AMBIENT_MARK, clamp(0.5 - (Math.abs(across) - half)) * clamp(0.5 - (aTip - along)) * clamp(0.5 - (along - aBase)));
+                }
+            }
             double face = clamp(0.5 - (r - r0));
             if (face > 0) over(p, FACE, 0.56 * face);
             double onBand = clamp(0.5 - (Math.abs(r - (r0 + rIn) / 2) - band / 2 + 0.35 * s));
@@ -125,7 +147,7 @@ final class TemperatureDial {
             double along = x * mx + y * my, across = Math.abs(x * my - y * mx);
             double m = clamp(0.5 - (across - 0.55 * s)) * clamp(0.5 - Math.abs(along - (r0 + rIn) / 2) + band / 2 + 0.45 * s);
             if (m > 0) over(p, markerColour, m);
-            if (r < rIn - 0.5 * s) {
+            if (!hideGlyph && r < rIn - 0.5 * s) {
                 double u = (px + 0.5 - gx) / box, v = (py + 0.5 - gy) / box;
                 double d = Math.hypot(u - 0.5, v - 0.5) - 0.17 * (1 - grow);
                 if (grow >= 0.02) {
@@ -150,6 +172,12 @@ final class TemperatureDial {
                     bb = (int)Math.round(clamp(p[2] / p[3]) * 255);
             image.setPixelRGBA(px, py, a << 24 | bb << 16 | gg << 8 | rr); // NativeImage packs ABGR
         }
+    }
+
+    /** -20 °C .. +40 °C over the arc's span, 10 °C at the top (clockwise positive). */
+    static double ambientAngle(double celsius) { return Math.max(-1, Math.min(1, (celsius - 10) / 30)) * AMBIENT_SPAN; }
+    private static double[] ambientColour(double celsius) {
+        return celsius < 10 ? mix(LAB_ICE, LAB_NEUTRAL, clamp((celsius + 20) / 30)) : mix(LAB_NEUTRAL, LAB_HEAT, clamp((celsius - 10) / 30));
     }
 
     /** Six arms with a pair of side branches each (unit box, y down; signed distance). */

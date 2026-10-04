@@ -14,7 +14,7 @@
 | 栏位 | Curios 类型 id | 物品栏位置（GUI 坐标） | 现在能放什么 | 以后 |
 |---|---|---|---|---|
 | 背部 | `back`（Curios 预设） | x 77, y 8 | 带 `curios:back` 标签的物品（AFL 暂时没有；其它模组的背包可以） | AFL 背包：解锁储物格 |
-| 手腕 | `bracelet`（Curios 预设） | x 77, y 26 | 带 `curios:bracelet` 标签的物品（AFL 暂时没有） | 生存监测仪 |
+| 手腕 | `bracelet`（Curios 预设） | x 77, y 26 | 带 `curios:bracelet` 标签的物品：腕式温度计（2026-10-03） | 生存监测仪 |
 | 耳部 | `ears`（AFL 自定义） | x 77, y 44 | 简易隔音耳罩（`curios:ears` 标签） | 其它听力防护 |
 
 - 只装 Curios 本身不会给玩家任何栏位；这 3 个栏位由 AFL 的数据文件分配给玩家（`data/apocalypse_firstlight/curios/entities/afl_player.json`）。背部、手腕用 Curios 的预设类型，这样其它模组的背包、手镯也能放进来；耳部是 AFL 自己的类型。
@@ -54,7 +54,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 资源和数据：
 - `data/apocalypse_firstlight/curios/slots/{back,bracelet,ears}.json`、`data/apocalypse_firstlight/curios/entities/afl_player.json`；
-- `data/curios/tags/items/ears.json`；
+- `data/curios/tags/items/ears.json`、`bracelet.json`（腕式温度计）；
 - 语言：`curios.identifier.ears`（“耳部” / “Ears”）。
 
 依赖：`build.gradle` 加了 Illusive Soulworks 的 Maven 仓库，编译只用 Curios 的 API（`curios-forge:5.14.1+1.20.1:api`），开发环境运行时加载完整的 Curios；`mods.toml` 声明 `curios` 为必需前置（`[5.14.1,)`）。

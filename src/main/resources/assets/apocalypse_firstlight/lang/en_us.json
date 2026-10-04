@@ -316,8 +316,6 @@
   "death.attack.apocalypse_firstlight.hypothermia.player": "%1$s froze to death whilst fighting %2$s",
   "death.attack.apocalypse_firstlight.heatstroke": "%1$s died of heatstroke",
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s died of heatstroke whilst fighting %2$s",
-  "hud.apocalypse_firstlight.temperature.core": "Core %s",
-  "hud.apocalypse_firstlight.temperature.ambient": "Air %s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
 
@@ -453,5 +451,9 @@
   "message.apocalypse_firstlight.temperature.hot1": "You are drenched in sweat",
   "message.apocalypse_firstlight.temperature.hot2": "You feel dizzy and weak",
   "message.apocalypse_firstlight.temperature.hot3": "You are about to collapse from the heat",
-  "curios.identifier.ears": "Ears"
+  "curios.identifier.ears": "Ears",
+  "item.apocalypse_firstlight.clinical_thermometer": "Clinical Thermometer",
+  "item.apocalypse_firstlight.wrist_thermometer": "Wrist Thermometer",
+  "tooltip.apocalypse_firstlight.clinical_thermometer.description": "Hold right-click for about 3 s to take your body temperature; the reading shows in the temperature dial for 10 s",
+  "tooltip.apocalypse_firstlight.wrist_thermometer.description": "Worn on the wrist; shows the air temperature"
 }
