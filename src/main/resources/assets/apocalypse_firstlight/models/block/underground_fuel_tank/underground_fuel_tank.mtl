@@ -1,0 +1,4 @@
+# AFL Underground Fuel Tank V1
+newmtl underground_fuel_tank
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/underground_fuel_tank

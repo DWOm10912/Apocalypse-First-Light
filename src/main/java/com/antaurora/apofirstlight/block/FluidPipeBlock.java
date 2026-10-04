@@ -238,8 +238,13 @@ public final class FluidPipeBlock extends PipeBlock {
         return isFluidPort(neighborState, directionToNeighbor);
     }
 
-    /** A fluid port on the neighbour's face toward a pipe that lies {@code directionToNeighbor} from it. */
+    /**
+     * A fluid port on the neighbour's face toward a pipe that lies {@code directionToNeighbor} from it: an AFL fluid port
+     * (fluid/AflFluidPortBlock, the standard for every new fluid device), or one of the older devices' fluid faces.
+     */
     public static boolean isFluidPort(BlockState neighborState, Direction directionToNeighbor) {
+        if (neighborState.getBlock() instanceof com.antaurora.apofirstlight.fluid.AflFluidPortBlock port)
+            return port.hasFluidPort(neighborState, directionToNeighbor.getOpposite());
         return canConnectToTank(neighborState, directionToNeighbor) || canConnectToSidedMachine(neighborState, directionToNeighbor);
     }
 

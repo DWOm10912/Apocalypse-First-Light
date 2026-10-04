@@ -20,6 +20,10 @@ public final class AflBlockRenderTypes {
         event.enqueueWork(() -> {
             ItemBlockRenderTypes.setRenderLayer(AflFluids.INDUSTRIAL_WASTE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflFluids.FLOWING_INDUSTRIAL_WASTE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.GASOLINE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.FLOWING_GASOLINE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.DIESEL.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflFluids.FLOWING_DIESEL.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_RAILING.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());

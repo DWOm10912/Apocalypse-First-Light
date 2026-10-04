@@ -76,6 +76,8 @@
     "apocalypse_firstlight:fuel_canopy_ceiling",
     "apocalypse_firstlight:fuel_canopy_light",
     "apocalypse_firstlight:fuel_canopy_fascia",
+    "apocalypse_firstlight:underground_fuel_tank_gasoline",
+    "apocalypse_firstlight:underground_fuel_tank_diesel",
     "apocalypse_firstlight:lead_shielding_bricks"
   ]
 }

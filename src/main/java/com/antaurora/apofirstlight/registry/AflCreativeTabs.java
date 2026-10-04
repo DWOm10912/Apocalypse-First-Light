@@ -112,6 +112,8 @@ public final class AflCreativeTabs {
             AflItems.FUEL_CANOPY_CEILING,
             AflItems.FUEL_CANOPY_LIGHT,
             AflItems.FUEL_CANOPY_FASCIA,
+            AflItems.UNDERGROUND_FUEL_TANK_GASOLINE,
+            AflItems.UNDERGROUND_FUEL_TANK_DIESEL,
             AflItems.MODERN_OFFICE_DESK,
             AflItems.MODERN_OFFICE_CHAIR,
             AflItems.MODERN_LCD_MONITOR,

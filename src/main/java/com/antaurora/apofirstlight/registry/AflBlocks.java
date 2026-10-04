@@ -66,6 +66,10 @@ public final class AflBlocks {
 
     public static final RegistryObject<LiquidBlock> INDUSTRIAL_WASTE = BLOCKS.register("industrial_waste",
             () -> new LiquidBlock(AflFluids.INDUSTRIAL_WASTE, BlockBehaviour.Properties.copy(Blocks.WATER)));
+    public static final RegistryObject<LiquidBlock> GASOLINE = BLOCKS.register("gasoline",
+            () -> new LiquidBlock(AflFluids.GASOLINE, BlockBehaviour.Properties.copy(Blocks.WATER)));
+    public static final RegistryObject<LiquidBlock> DIESEL = BLOCKS.register("diesel",
+            () -> new LiquidBlock(AflFluids.DIESEL, BlockBehaviour.Properties.copy(Blocks.WATER)));
 
     public static final RegistryObject<Block> REINFORCED_CONCRETE = BLOCKS.register("reinforced_concrete",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE)
@@ -275,6 +279,15 @@ public final class AflBlocks {
     public static final RegistryObject<Block> FUEL_CANOPY_FASCIA = BLOCKS.register("fuel_canopy_fascia",
             () -> new com.antaurora.apofirstlight.block.FuelCanopyFasciaBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> UNDERGROUND_FUEL_TANK_GASOLINE = BLOCKS.register("underground_fuel_tank_gasoline",
+            () -> new com.antaurora.apofirstlight.block.UndergroundFuelTankBlock(AflFluids.GASOLINE, tankProperties()));
+    public static final RegistryObject<Block> UNDERGROUND_FUEL_TANK_DIESEL = BLOCKS.register("underground_fuel_tank_diesel",
+            () -> new com.antaurora.apofirstlight.block.UndergroundFuelTankBlock(AflFluids.DIESEL, tankProperties()));
+
+    private static BlockBehaviour.Properties tankProperties() {
+        return BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(5.0F, 8.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion();
+    }
+
     private static CommercialDumpsterBlock dumpster(String colour) {
         return new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                 .strength(3.5F, 6.0F)

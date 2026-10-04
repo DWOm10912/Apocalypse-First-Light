@@ -66,6 +66,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("fuel_dispenser", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity::new,
                             AflBlocks.FUEL_DISPENSER.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity>> UNDERGROUND_FUEL_TANK =
+            BLOCK_ENTITIES.register("underground_fuel_tank", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity::new,
+                            AflBlocks.UNDERGROUND_FUEL_TANK_GASOLINE.get(), AflBlocks.UNDERGROUND_FUEL_TANK_DIESEL.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelCanopyColumnBlockEntity>> FUEL_CANOPY_COLUMN =
             BLOCK_ENTITIES.register("fuel_canopy_column", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelCanopyColumnBlockEntity::new,

@@ -261,6 +261,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUEL_CANOPY_LIGHT.get(), new Item.Properties()));
     public static final RegistryObject<Item> FUEL_CANOPY_FASCIA = ITEMS.register("fuel_canopy_fascia",
             () -> new BlockItem(AflBlocks.FUEL_CANOPY_FASCIA.get(), new Item.Properties()));
+    public static final RegistryObject<Item> UNDERGROUND_FUEL_TANK_GASOLINE = ITEMS.register("underground_fuel_tank_gasoline",
+            () -> new com.antaurora.apofirstlight.item.UndergroundFuelTankItem(
+                    (com.antaurora.apofirstlight.block.UndergroundFuelTankBlock) AflBlocks.UNDERGROUND_FUEL_TANK_GASOLINE.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> UNDERGROUND_FUEL_TANK_DIESEL = ITEMS.register("underground_fuel_tank_diesel",
+            () -> new com.antaurora.apofirstlight.item.UndergroundFuelTankItem(
+                    (com.antaurora.apofirstlight.block.UndergroundFuelTankBlock) AflBlocks.UNDERGROUND_FUEL_TANK_DIESEL.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

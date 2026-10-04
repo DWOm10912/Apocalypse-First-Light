@@ -1,0 +1,32 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apocalypse_firstlight:block/underground_fuel_tank/cell"
+      }
+    },
+    {
+      "when": {
+        "axis": "z",
+        "along": "3",
+        "across": "1",
+        "level": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/underground_fuel_tank/gasoline"
+      }
+    },
+    {
+      "when": {
+        "axis": "x",
+        "along": "3",
+        "across": "1",
+        "level": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/underground_fuel_tank/gasoline",
+        "y": 90
+      }
+    }
+  ]
+}

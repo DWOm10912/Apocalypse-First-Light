@@ -237,6 +237,14 @@
       "unit_mass_kg": 1.2,
       "estimated": true
     },
+    "apocalypse_firstlight:underground_fuel_tank_gasoline": {
+      "unit_mass_kg": 150,
+      "estimated": true
+    },
+    "apocalypse_firstlight:underground_fuel_tank_diesel": {
+      "unit_mass_kg": 150,
+      "estimated": true
+    },
     "apocalypse_firstlight:fuel_nozzle_gasoline": {
       "unit_mass_kg": 1.2,
       "estimated": true

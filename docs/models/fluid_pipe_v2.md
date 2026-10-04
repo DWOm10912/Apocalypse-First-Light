@@ -10,7 +10,7 @@
 - 零件名；
 - 液体渲染，删掉了 `FluidRenderHelper.renderPrism`。
 
-方截面版的连接规则、潜行切换和提示、管卡没有单独的检查记录，GameTest 按规则没有运行。
+玻璃改用冷柜配方、钢件压暗之后，用户实机 **PASS**（2026-10-04）。方截面版的连接规则、潜行切换和提示、管卡没有单独的检查记录，GameTest 按规则没有运行。
 
 ## 是什么
 
@@ -78,6 +78,22 @@
 | 液体显示 | `client/FluidPipeRenderer` 画的液体是方块，范围从 V1 的 6..10 px 改为 4.5..11.5 px，在玻璃里面 |
 | 可编辑源 | `src/main/blockbench/fluid_pipe_v2.bbmodel`（标准件，每件一组，默认只显示 `item`），贴图 `src/main/blockbench/textures/fluid_pipe_v2{,_s,_n}.png` |
 | 删除 | V1 的 `models/block/fluid_pipe_{core,arm,straight}.json`、`textures/block/fluid_pipe_{arm,core}.png`；圆版试做时生成的 `fluid_pipe/window_*` |
+
+## 流体接口规格（2026-10-04 起，以后所有流体设备照此做）
+
+用户 2026-10-04 定下：流体接口和电缆的电源接口一样，做成通用标准，以后所有需要流体的设备都复用。第一个按这个规格做的是地下油罐，接口在罐顶正中，见 [underground_fuel_tank_v1.md](underground_fuel_tank_v1.md)。
+
+- **位置**：方块某个面的正中心，接口板的对接面落在方块边界上。设备外形没到边界时，做一个凸台把接口伸到边界。
+- **设备侧外形**（`tools/afl-fluid-port.mjs` 的 `addFluidPort`，尺寸只在那里定义）：
+  - 方钢接口板 ±5.5 px，深 0.6 px；
+  - 中间是 ±4.0 的流体口，和管道内孔一样大，后面是一个深色喉管；
+  - 四个角 (±4.65, ±4.65) 各一颗螺柱，伸出板面 0.32 px，正好对上管道接口法兰的四颗螺母；接上管道时螺柱藏在法兰里。
+- **管道侧**：管道 V2 的接口法兰（±5.4，从 7.2 px 到方块边界，螺母朝管子一侧），见上面"外形"。
+- **代码**：
+  - 设备方块实现 `fluid/AflFluidPortBlock`，用 `hasFluidPort(state, face)` 返回哪些面是流体口；
+  - 那一格的方块实体在这个面上提供 `FLUID_HANDLER` 能力；
+  - `FluidPipeBlock.isFluidPort` 先问这个接口，管道才会连上并往里灌。
+- **还没换成新标准的老设备**：立式储罐（顶面、底面）、热能发电机、化学反应釜，仍由 `FluidPipeBlock` 直接判断，外观也还是原来的。以后重做它们的模型时再换。
 
 ## 已知问题 / 以后
 

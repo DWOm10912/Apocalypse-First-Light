@@ -70,6 +70,8 @@
   "block.apocalypse_firstlight.fuel_canopy_ceiling": "Fuel Canopy Ceiling",
   "block.apocalypse_firstlight.fuel_canopy_light": "Fuel Canopy Light",
   "block.apocalypse_firstlight.fuel_canopy_fascia": "Fuel Canopy Fascia",
+  "block.apocalypse_firstlight.underground_fuel_tank_gasoline": "Underground Gasoline Tank",
+  "block.apocalypse_firstlight.underground_fuel_tank_diesel": "Underground Diesel Tank",
   "item.apocalypse_firstlight.fuel_nozzle_gasoline": "Gasoline Nozzle",
   "item.apocalypse_firstlight.fuel_nozzle_diesel": "Diesel Nozzle",
   "block.apocalypse_firstlight.metal_trash_can": "Metal Trash Can",
@@ -106,6 +108,8 @@
   "block.apocalypse_firstlight.fluid_pipe": "Fluid Pipe",
   "block.apocalypse_firstlight.fluid_tank": "Fluid Tank",
   "block.apocalypse_firstlight.industrial_waste": "Industrial Waste",
+  "block.apocalypse_firstlight.gasoline": "Gasoline",
+  "block.apocalypse_firstlight.diesel": "Diesel",
 
   "block.apocalypse_firstlight.fallout_soil": "Fallout Soil",
   "block.apocalypse_firstlight.scorched_soil": "Scorched Soil",
@@ -345,6 +349,8 @@
   "effect.apocalypse_firstlight.gastroenteritis": "Stomach Bug",
 
   "fluid.apocalypse_firstlight.industrial_waste": "Industrial Waste",
+  "fluid.apocalypse_firstlight.gasoline": "Gasoline",
+  "fluid.apocalypse_firstlight.diesel": "Diesel",
 
   "contamination_level.apocalypse_firstlight.clean": "Clean",
   "contamination_level.apocalypse_firstlight.trace": "Trace",
