@@ -452,5 +452,6 @@
   "message.apocalypse_firstlight.temperature.cold3": "你快冻僵了",
   "message.apocalypse_firstlight.temperature.hot1": "你热得满身是汗",
   "message.apocalypse_firstlight.temperature.hot2": "你头晕乏力",
-  "message.apocalypse_firstlight.temperature.hot3": "你快中暑倒下了"
+  "message.apocalypse_firstlight.temperature.hot3": "你快中暑倒下了",
+  "curios.identifier.ears": "耳部"
 }

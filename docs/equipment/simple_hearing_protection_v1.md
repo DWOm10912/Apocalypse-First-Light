@@ -1,13 +1,17 @@
 # 简易隔音耳罩 V1 / Simple Hearing Protection
 
-状态：已接入代码与资源；用户已验收 HEAD 装备/渲染及世界声音衰减。耳鸣 severity 衰减和本轮新增的播放音量减半尚未实机听感验收；不运行客户端、GameTest 或截图。
+状态：已接入代码与资源；用户已验收 HEAD 装备/渲染及世界声音衰减。
+
+**2026-10-03 改为耳部栏（用户要求，见 `../gameplay/equipment_slots_v1.md`）**：耳罩不再戴在头盔栏，改戴在 Curios 的耳部栏（`ears`，显示在原版物品栏人物模型右边），所以可以和头盔一起戴。右键戴到耳部栏（耳部栏原来有东西就交换），装备音不变。人物身上的画法和以前一样（头部姿态 + `ItemDisplayContext.HEAD`），只是改由耳部栏的 Curios 渲染器来画。下文提到的“HEAD 防护”现在指“戴着的防护”：先看耳部栏，没有再看头盔栏（旧存档里戴在头上的耳罩仍然有效，也可以从头盔栏取下）。耳部栏的改动没有实机验证。
+
+耳鸣 severity 衰减和本轮新增的播放音量减半尚未实机听感验收；不运行客户端、GameTest 或截图。
 
 ## 物品与装备
 
 - Registry ID：`apocalypse_firstlight:simple_hearing_protection`。
-- `item/SimpleHearingProtectionItem.java` 是 `Item implements Equipable, HearingProtection`，不是 `ArmorItem`。
-- 原版 `EquipmentSlot.HEAD`，堆叠 1，无耐久、护甲、韧性、击退抗性。与头盔互斥，不使用 Curios。
-- 右键调用 1.20.1 `Equipable.swapWithEquipmentSlot`，遵循原版交换与绑定诅咒规则；可从头部装备栏取下。装备音为 `minecraft:item.armor.equip_leather`。
+- `item/SimpleHearingProtectionItem.java` 是 `Item implements ICurioItem, HearingProtection`（Curios），不是 `ArmorItem`。（2026-10-03 前是 `Equipable`。）
+- 戴在耳部栏（Curios `ears`，物品标签 `curios:ears`），堆叠 1，无耐久、护甲、韧性、击退抗性。可以和头盔同时戴。
+- 右键戴到耳部栏，耳部栏原来有东西就交换；可从物品栏的耳部栏取下。装备音为 `minecraft:item.armor.equip_leather`。
 - Tooltip 仅显示灰色、非斜体介绍；中英文介绍均写明缓解耳鸣和降低外界声音，不再重复追加功能行。不公开精确百分比，不更改武器属性颜色。
 
 ## 已验收资产与运行时模型
@@ -20,12 +24,12 @@
 - 126 个元素、坐标、旋转、UV 和全部导出 display 数值原样保留。`display.head.translation = [0, 8.5, 0]`；不额外缩放或量化角度。
 - Forge loader `apocalypse_firstlight:hearing_protection` 在 client-only `client/model/HearingProtectionModelLoader.java` 注册。Runtime 将原 `elements` 放入 `afl_elements`，避免 Forge 调用自定义 loader **之前**的 Vanilla element 角度白名单校验。
 - Loader 同时读 `angle/axis` 和 Blockbench 单轴 `x/y/z` 旋转；复用原版坐标/UV 校验，再将原始角度放回 `BlockElementRotation`。由 Forge `ElementsModel` → `FaceBakery` 烘焙普通 baked quads，完整保留 ±32.27564°、±62.44719°、±90°。不采用 22.5°/45°近似。当前只支持此资产使用的单轴、无 rescale 元素，多轴/rescale 明确报错而非错误显示。
-- `CustomHeadLayer` → head pose → `ItemDisplayContext.HEAD` → 标准 ItemRenderer/baked model。没有 BEWLR、自定义 Player RenderLayer 或第一人称佩戴 overlay。
+- 耳部栏的 Curios 渲染器（`client/ClientEquipmentSlots` 的 HeadItemRenderer，照搬 `CustomHeadLayer` 的非头颅分支）→ head pose → `ItemDisplayContext.HEAD` → 标准 ItemRenderer/baked model。旧存档戴在头盔栏的仍由原版 `CustomHeadLayer` 画。没有 BEWLR 或第一人称佩戴 overlay。
 - Loader 仅由 `Dist.CLIENT` MOD subscriber 注册，common Item/manager 不引用客户端类。
 
 ## 听觉防护入口
 
-`equipment/HearingProtection.java` 分离两种倍率，`HearingProtectionManager` 只读 HEAD stack：
+`equipment/HearingProtection.java` 分离两种倍率，`HearingProtectionManager` 先读耳部栏，没有再读 HEAD stack：
 
 | 状态 | worldSoundMultiplier | impulseProtectionMultiplier |
 | --- | --- | --- |

@@ -87,6 +87,14 @@ mixinConfigs=["apocalypse_firstlight.mixins.json"]
     ordering="AFTER"
     side="BOTH"
 
+# Curios: the extra equipment slots (back, wrist, ears) on the inventory page
+[[dependencies.${mod_id}]]
+    modId="curios"
+    mandatory=true
+    versionRange="[5.14.1,)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="jei"
     mandatory=false

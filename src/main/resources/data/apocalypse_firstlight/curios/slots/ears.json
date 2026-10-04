@@ -1,0 +1,6 @@
+{
+  "order": 15,
+  "icon": "apocalypse_firstlight:item/empty_slot_ears",
+  "use_native_gui": false,
+  "validators": ["curios:tag"]
+}

@@ -172,6 +172,8 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 
 另外：海龟壳 1，简易隔音耳罩（`simple_hearing_protection`，头部）1。
 
+装备栏（2026-10-03，`equipment_slots_v1.md`）：所有 Curios 栏位里的物品也按同一份数据计入保暖，所以耳罩戴在耳部栏仍然 +1。
+
 以后的服装系统：调用 `ThermalInsulation.register(Source)`，`Source.warmth(player)` 返回的值会加到护甲的保暖上。
 
 ### 核心体温

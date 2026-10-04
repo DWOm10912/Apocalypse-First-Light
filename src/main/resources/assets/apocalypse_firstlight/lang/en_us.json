@@ -452,5 +452,6 @@
   "message.apocalypse_firstlight.temperature.cold3": "You are freezing",
   "message.apocalypse_firstlight.temperature.hot1": "You are drenched in sweat",
   "message.apocalypse_firstlight.temperature.hot2": "You feel dizzy and weak",
-  "message.apocalypse_firstlight.temperature.hot3": "You are about to collapse from the heat"
+  "message.apocalypse_firstlight.temperature.hot3": "You are about to collapse from the heat",
+  "curios.identifier.ears": "Ears"
 }

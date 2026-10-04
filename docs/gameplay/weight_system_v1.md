@@ -510,3 +510,7 @@ coverage 每页20个AFL物品，报告来源：
 - 正式平衡、性能benchmark。
 
 不可把ESTIMATED数值描述为已精确称重。
+
+## 装备栏（2026-10-03）
+
+玩家所有 Curios 栏位（背部、手腕、耳部，以及其它模组加的栏位）里的物品都计入携带质量，来源 `equipment:apocalypse_firstlight:curios`，负担系数 1.0（`equipment/AflEquipmentSlots` 在启动时用 `PlayerMassSources.registerExtraEquipment` 注册）。见 `equipment_slots_v1.md`。以后的背包对物品栏内容的负担分摊（约 0.90）还没做。

@@ -171,6 +171,15 @@ repositories {
     }
 
     maven {
+        name = 'Illusive Soulworks maven'
+        url = 'https://maven.theillusivec4.top/'
+
+        content {
+            includeGroup 'top.theillusivec4.curios'
+        }
+    }
+
+    maven {
         name = 'Curse Maven'
         url = 'https://www.cursemaven.com'
 
@@ -242,6 +251,15 @@ dependencies {
     )
 
     implementation "com.eliotlash.mclib:mclib:20"
+
+    // Curios (required): extra equipment slots. AFL compiles against the API only; the full mod runs in dev.
+    compileOnly fg.deobf(
+            "top.theillusivec4.curios:curios-forge:5.14.1+1.20.1:api"
+    )
+
+    runtimeOnly fg.deobf(
+            "top.theillusivec4.curios:curios-forge:5.14.1+1.20.1"
+    )
 
     implementation fg.deobf(
             "curse.maven:terrablender-563928:${terrablender_file_id}"

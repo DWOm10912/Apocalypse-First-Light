@@ -4,6 +4,8 @@
 
 ## 唯一容量策略
 
+2026-10-03 更新：生存 / 冒险模式的容量改为“快捷栏 9 格 + 背部栏物品提供的格数”，最多 36（`inventory/StorageExpander`，见 `equipment_slots_v1.md`）。V1 还没有提供格数的背包，所以下表的 9 格仍然是当前实际值。
+
 `src/main/java/com/antaurora/apofirstlight/inventory/PlayerStorageCapacity.java` 的 `getUnlockedInventorySlots(Player)` 是 Player Storage Capacity Policy 的唯一入口。
 
 | 模式 | 普通储物容量 | 锁定行为 |
