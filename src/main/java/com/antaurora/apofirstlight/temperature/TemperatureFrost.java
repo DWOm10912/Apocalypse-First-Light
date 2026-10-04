@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * The cold screen effect's frost, vanilla pixel style: pixel snowflakes (8 arms with V branches, 6 sizes, 2 variants)
@@ -14,7 +15,7 @@ import java.util.List;
  * dusting of rime right on the frame. Every flake has a birth (outer and corner flakes first), so as the cold deepens
  * the frost grows inward flake by flake instead of fading in. 3 flat tones of pale ice cyan. One texel is about 5 real
  * pixels; the layout is deterministic for a screen size and rebuilt only when the size or the (quantised) intensity
- * changes. Procedural, no image asset.
+ * changes. Procedural, no image asset. The shown flakes' centres are kept for the glints (ClientTemperatureScreenEffects).
  */
 final class TemperatureFrost {
     static final ResourceLocation TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "dynamic/temperature_frost");
@@ -31,6 +32,13 @@ final class TemperatureFrost {
     }
     private static List<Flake> flakes = List.of();
     private static int gw, gh, builtStep = -1;
+    /** Repaint resolution: 1/STEPS of the intensity (every repaint redraws the whole grid). */
+    private static final int STEPS = 100;
+    /** Per texel: the intensity from which the rime dusting covers it (infinite: never), fixed for the grid. */
+    private static float[] rimFrom = new float[0];
+    /** Centres (x | y << 16) of the flakes in the current picture, away from the border so a glint's arms fit. */
+    private static int[] spots = new int[0];
+    private static int spotCount;
     private static DynamicTexture texture;
     private static NativeImage image;
     private TemperatureFrost() {}
@@ -40,7 +48,7 @@ final class TemperatureFrost {
 
     /** Make sure the frost texture fits a texel grid of w × h and shows the given intensity 0..1; false if nothing to draw. */
     static boolean prepare(int w, int h, double intensity) {
-        int step = (int)Math.round(Math.max(0, Math.min(1, intensity)) * 200);
+        int step = (int)Math.round(Math.max(0, Math.min(1, intensity)) * STEPS);
         if (w != gw || h != gh || texture == null) {
             gw = w; gh = h;
             layout();
@@ -49,9 +57,12 @@ final class TemperatureFrost {
             Minecraft.getInstance().getTextureManager().register(TEXTURE, texture); // closes the previous one
             builtStep = -1;
         }
-        if (step != builtStep) { paint(step / 200.0); texture.upload(); builtStep = step; }
+        if (step != builtStep) { paint(step / (double)STEPS); texture.upload(); builtStep = step; }
         return step > 0;
     }
+
+    /** A random shown flake's centre (x | y << 16) for a glint: its bright core is the four texels around it; −1 if none. */
+    static int glintSpot(Random random) { return spotCount == 0 ? -1 : spots[random.nextInt(spotCount)]; }
 
     private static void layout() {
         List<Flake> list = new ArrayList<>();
@@ -67,13 +78,21 @@ final class TemperatureFrost {
             list.add(new Flake(x, y, SPRITES[size][hash(n, 5) < 0.5 ? 0 : 1], birth));
         }
         flakes = list;
+        spots = new int[list.size()];
+        spotCount = 0;
+        // rime dusting right on the frame, wider in the corners: from which intensity each texel is dusted
+        rimFrom = new float[gw * gh];
+        for (int y = 0; y < gh; y++) for (int x = 0; x < gw; x++)
+            rimFrom[y * gw + x] = hash(x * 977 + y, 7) < 0.55 ? (float)(edgeDistance(x, y) / (1 + 3 * corner(x, y))) : Float.POSITIVE_INFINITY;
     }
 
     private static void paint(double intensity) {
         byte[] tone = new byte[gw * gh];
+        spotCount = 0;
         if (intensity > 0) {
             for (var f : flakes) {
                 if (f.birth > intensity) continue;
+                if (f.x >= 2 && f.y >= 2 && f.x < gw - 2 && f.y < gh - 2) spots[spotCount++] = f.x | f.y << 16;
                 var s = f.sprite;
                 for (int j = 0; j < s.n; j++) for (int i = 0; i < s.n; i++) {
                     byte v = s.g[j * s.n + i];
@@ -83,10 +102,8 @@ final class TemperatureFrost {
                     if (v > tone[y * gw + x]) tone[y * gw + x] = v;
                 }
             }
-            // rime dusting right on the frame, wider in the corners
-            for (int y = 0; y < gh; y++) for (int x = 0; x < gw; x++)
-                if (tone[y * gw + x] == 0 && edgeDistance(x, y) < (1 + 3 * corner(x, y)) * intensity && hash(x * 977 + y, 7) < 0.55)
-                    tone[y * gw + x] = 1;
+            // rime dusting right on the frame, wider in the corners (thresholds from layout())
+            for (int i = 0; i < tone.length; i++) if (tone[i] == 0 && rimFrom[i] < intensity) tone[i] = 1;
         }
         for (int y = 0; y < gh; y++) for (int x = 0; x < gw; x++) image.setPixelRGBA(x, y, TONES[tone[y * gw + x]]);
     }

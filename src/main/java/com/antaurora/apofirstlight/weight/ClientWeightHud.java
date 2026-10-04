@@ -17,16 +17,21 @@ import java.util.Locale;
  * hotbar, a rounded track with a rounded fill, full at the severe ratio (60 kg), ticks at the comfort and the tier
  * thresholds (30 / 40 / 50 kg), filled in the tier's colour, the load in kg at its right end. The fill, the number and
  * the colour follow the load smoothly. Drawn in real pixels (anti-aliased ends), not GUI pixels.
- * Survival / Adventure only, like the other survival bars; hidden while a jumping mount's bar takes the spot and in the
- * field attachment view.
+ * Passive: hidden normally, it fades in when the load changes (by at least half the shown 0.1 kg step, or into another
+ * tier), stays HOLD_SECONDS after the last change and fades out; the first state after joining is the baseline, not a
+ * change. Survival / Adventure only, like the other survival bars; hidden while a jumping mount's bar takes the spot and
+ * in the field attachment view.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientWeightHud {
     private static final int WIDTH = 182, HEIGHT = 5;
     /** Time constant of the bar's ease toward the load (s). */
     private static final double EASE_SECONDS = 0.12;
-    private static double shownRatio = Double.NaN;
-    private static long lastNanos;
+    /** Passive display: fade in / out times and how long it stays after the last change (s); the change that wakes it (g). */
+    private static final double FADE_IN = 0.25, FADE_OUT = 0.6, HOLD_SECONDS = 3.0, WAKE_GRAMS = 50;
+    private static double shownRatio = Double.NaN, visibility, lastChange = Double.NEGATIVE_INFINITY;
+    private static long lastNanos, settledGrams = Long.MIN_VALUE;
+    private static EncumbranceState.Tier settledTier;
     private ClientWeightHud() {}
 
     @SubscribeEvent
@@ -54,32 +59,44 @@ public final class ClientWeightHud {
     }
 
     /** Exponential ease toward the load ratio, frame-rate independent; the first frame starts at the load. */
-    private static double ease(double target) {
-        long now = System.nanoTime();
+    private static double ease(double target, double dt) {
         if (Double.isNaN(shownRatio)) shownRatio = target;
         else {
-            double dt = Math.min(0.25, (now - lastNanos) / 1e9);
             shownRatio += (target - shownRatio) * (1 - Math.exp(-dt / EASE_SECONDS));
             if (Math.abs(target - shownRatio) < 1e-4) shownRatio = target;
         }
-        lastNanos = now;
         return shownRatio;
     }
+
+    /** Wakes the bar on a load change; fades it in while awake, out after HOLD_SECONDS without a change. */
+    private static void track(EncumbranceState state, double seconds, double dt) {
+        if (settledGrams == Long.MIN_VALUE) { settledGrams = state.loadGrams(); settledTier = state.tier(); }
+        else if (Math.abs(state.loadGrams() - settledGrams) >= WAKE_GRAMS || state.tier() != settledTier) {
+            settledGrams = state.loadGrams(); settledTier = state.tier(); lastChange = seconds;
+        }
+        visibility = seconds - lastChange < HOLD_SECONDS ? Math.min(1, visibility + dt / FADE_IN) : Math.max(0, visibility - dt / FADE_OUT);
+    }
+    private static int fade(int argb, double alpha) { return (int)Math.round((argb >>> 24) * alpha) << 24 | argb & 0xFFFFFF; }
 
     static final IGuiOverlay OVERLAY = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
         var mc = Minecraft.getInstance();
         var player = mc.player;
         var state = ClientWeightState.state();
         if (state == null || !state.penaltiesEnabled() || state.comfortCapacityGrams() <= 0) {
-            shownRatio = Double.NaN;
+            shownRatio = Double.NaN; settledGrams = Long.MIN_VALUE; visibility = 0; lastChange = Double.NEGATIVE_INFINITY;
             return;
         }
-        if (player == null || mc.options.hideGui || !gui.shouldDrawSurvivalElements() || player.jumpableVehicle() != null
-                || FieldAttachmentViewState.isActive()) return;
+        long now = System.nanoTime();
+        double dt = lastNanos == 0 ? 0 : Math.min(0.25, (now - lastNanos) / 1e9);
+        lastNanos = now;
+        track(state, now / 1e9, dt);
+        double ratio = ease(state.encumbranceRatio(), dt);
+        if (visibility <= 0 || player == null || mc.options.hideGui || !gui.shouldDrawSurvivalElements()
+                || player.jumpableVehicle() != null || FieldAttachmentViewState.isActive()) return;
+        double alpha = visibility * visibility * (3 - 2 * visibility);
         var policy = ClientWeightState.policy();
         double onset = policy == null ? 1.0 : policy.policy().onset(), severe = policy == null ? 2.0 : policy.policy().severe();
         double fullRatio = Math.max(severe, 0.01);
-        double ratio = ease(state.encumbranceRatio());
         int colour = colour(tier(ratio, onset, severe));
 
         int guiX = screenWidth / 2 - WIDTH / 2, guiY = screenHeight - 29; // vanilla experience bar
@@ -93,21 +110,24 @@ public final class ClientWeightHud {
         graphics.pose().pushPose();
         graphics.pose().scale(1.0f / s, 1.0f / s, 1.0f);
         graphics.drawManaged(() -> {
-            roundedRect(graphics, x, y, w, h, h / 2.0, 0x90101010);
-            roundedRect(graphics, x + inset, y + inset, fillW, innerH, innerH / 2.0, colour);
+            roundedRect(graphics, x, y, w, h, h / 2.0, fade(0x90101010, alpha));
+            roundedRect(graphics, x + inset, y + inset, fillW, innerH, innerH / 2.0, fade(colour, alpha));
             for (int i = 0; i < 3; i++) {
                 double tickRatio = onset + (severe - onset) * i / 3.0;
                 if (tickRatio <= 0 || tickRatio >= fullRatio) continue;
                 int tick = x + inset + (int)Math.round(tickRatio / fullRatio * innerW) - tickWidth / 2;
                 // dark over the fill, light over the empty track
                 graphics.fill(tick, y + inset, tick + tickWidth, y + h - inset,
-                        tick + tickWidth / 2.0 < x + inset + fillW ? 0xB0000000 : 0x90D8D8D0);
+                        fade(tick + tickWidth / 2.0 < x + inset + fillW ? 0xB0000000 : 0x90D8D8D0, alpha));
             }
         });
         graphics.pose().popPose();
 
+        // the font draws an alpha under 4 as opaque, so the number leaves a little before the bar
+        int textColour = fade(colour, alpha);
+        if (textColour >>> 24 < 8) return;
         String text = String.format(Locale.ROOT, "%.1f kg", ratio * state.comfortCapacityGrams() / 1000.0);
-        graphics.drawString(mc.font, text, guiX + WIDTH + 4, guiY - 2, colour, true);
+        graphics.drawString(mc.font, text, guiX + WIDTH + 4, guiY - 2, textColour, true);
     };
 
     /**

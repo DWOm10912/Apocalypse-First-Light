@@ -23,6 +23,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Temperature screen effects V1: what the body feels, on the screen edges only (the centre and the crosshair stay
@@ -30,7 +33,9 @@ import org.lwjgl.opengl.GL30;
  * the air, so standing next to lava shows nothing until the body has actually heated up; eased (about 1 s in, 2 s out)
  * so frost recedes a little slower than it grows.
  * - Cold: a cold tint at the edges (multiplied toward ice blue), then vanilla-style pixel frost (TemperatureFrost)
- *   growing in from the corners and sides as the cold deepens; extremes pulse slowly.
+ *   growing in from the corners and sides as the cold deepens, an icy glare (the heat glare's wash in pale ice blue) and
+ *   frost glints (pixel pluses flashing on the shown flakes' bright cores); extremes pulse slowly. Shivering is a camera
+ *   effect (ClientShiver).
  * - Heat: a warm tint at the edges, a sun-glare wash (screen-blended pale amber, no darkening, no red) and, when hot,
  *   heat haze: the screen edges ripple (a copy of the frame drawn through a displaced mesh); extremes pulse slowly.
  * Layers in separate passes, so each can be tuned on its own.
@@ -38,7 +43,16 @@ import org.lwjgl.opengl.GL30;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientTemperatureScreenEffects {
     private static final double EASE_IN = 1.0, EASE_OUT = 2.0, PULSE_PERIOD = 4.5;
-    private static final float[] COLD_TINT = {0.72f, 0.86f, 1.0f}, HEAT_TINT = {1.0f, 0.90f, 0.74f}, GLARE = {1.0f, 0.76f, 0.48f};
+    private static final float[] COLD_TINT = {0.72f, 0.86f, 1.0f}, HEAT_TINT = {1.0f, 0.90f, 0.74f},
+            HEAT_GLARE = {1.0f, 0.76f, 0.48f}, ICE_GLARE = {0.72f, 0.86f, 1.0f};
+    /** Frost glints: about this many at once at full frost, each lasting GLINT_MIN..GLINT_MAX seconds. */
+    private static final double GLINTS = 5, GLINT_MIN = 0.45, GLINT_MAX = 0.7;
+    private static final int[][] ARMS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    private record Glint(int x, int y, double start, double life) {}
+    private static final List<Glint> glints = new ArrayList<>();
+    private static final Random RANDOM = new Random();
+    private static double nextGlint = Double.NEGATIVE_INFINITY;
+    private static int glintGrid;
     /** Heat haze: displacement at the edges in real pixels per 2000 px of screen width, and the mesh resolution. */
     private static final double HAZE_PIXELS = 4.0;
     private static final int HAZE_COLUMNS = 48;
@@ -73,11 +87,14 @@ public final class ClientTemperatureScreenEffects {
         RenderSystem.enableBlend();
         if (cold > 0.003) {
             multiply(graphics, EDGE_MASK, COLD_TINT, (float)(0.65 * cold) * p, screenWidth, screenHeight);
-            frost(graphics, mc, clamp((cold - 0.3) / 0.7), p);
+            double frostLevel = clamp((cold - 0.3) / 0.7);
+            int texel = frost(graphics, mc, frostLevel, p);
+            glare(graphics, ICE_GLARE, (float)(0.45 * smooth(0.3, 1, cold)) * p, screenWidth, screenHeight);
+            if (texel > 0) glints(graphics, mc, frostLevel, texel, Math.min(1, p), seconds);
         }
         if (heat > 0.003) {
             multiply(graphics, EDGE_MASK, HEAT_TINT, (float)(0.55 * smooth(0, 0.7, heat)), screenWidth, screenHeight);
-            glare(graphics, (float)(0.55 * smooth(0.3, 1, heat)) * p, screenWidth, screenHeight);
+            glare(graphics, HEAT_GLARE, (float)(0.55 * smooth(0.3, 1, heat)) * p, screenWidth, screenHeight);
             double amp = HAZE_PIXELS * smooth(0.35, 1, heat);
             if (amp > 0.05 && !hazeFailed) haze(graphics, mc, amp, seconds);
         }
@@ -99,21 +116,21 @@ public final class ClientTemperatureScreenEffects {
         graphics.setColor(alpha * (1 - tint[0]), alpha * (1 - tint[1]), alpha * (1 - tint[2]), 1);
         graphics.blit(mask, 0, 0, w, h, 0, 0, MASK_W, MASK_H, MASK_W, MASK_H);
     }
-    /** Screen blend toward pale amber: brighter and paler at the edges, never darker. */
-    private static void glare(GuiGraphics graphics, float alpha, int w, int h) {
+    /** Screen blend toward a pale colour (amber for heat, ice blue for cold): brighter and paler at the edges, never darker. */
+    private static void glare(GuiGraphics graphics, float[] rgb, float alpha, int w, int h) {
         if (alpha <= 0.002f) return;
         RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.ONE_MINUS_DST_COLOR, GlStateManager.DestFactor.ONE,
                 GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
-        graphics.setColor(GLARE[0] * alpha, GLARE[1] * alpha, GLARE[2] * alpha, 1);
+        graphics.setColor(rgb[0] * alpha, rgb[1] * alpha, rgb[2] * alpha, 1);
         graphics.blit(GLARE_MASK, 0, 0, w, h, 0, 0, MASK_W, MASK_H, MASK_W, MASK_H);
     }
-    /** The pixel frost, about 5 real pixels per texel, drawn in real pixels. */
-    private static void frost(GuiGraphics graphics, Minecraft mc, double intensity, float p) {
-        if (intensity <= 0.003) return;
+    /** The pixel frost, about 5 real pixels per texel, drawn in real pixels; returns the texel size (0: nothing drawn). */
+    private static int frost(GuiGraphics graphics, Minecraft mc, double intensity, float p) {
+        if (intensity <= 0.003) return 0;
         var window = mc.getWindow();
         int pw = window.getWidth(), ph = window.getHeight(), texel = Math.max(2, (int)Math.round(pw / 400.0));
         int gw = (pw + texel - 1) / texel, gh = (ph + texel - 1) / texel;
-        if (!TemperatureFrost.prepare(gw, gh, intensity)) return;
+        if (!TemperatureFrost.prepare(gw, gh, intensity)) return 0;
         float scale = (float)window.getGuiScale();
         RenderSystem.defaultBlendFunc();
         graphics.setColor(1, 1, 1, Math.min(1, p));
@@ -121,6 +138,43 @@ public final class ClientTemperatureScreenEffects {
         graphics.pose().scale(1 / scale, 1 / scale, 1);
         graphics.blit(TemperatureFrost.TEXTURE, 0, 0, gw * texel, gh * texel, 0, 0, gw, gh, gw, gh);
         graphics.pose().popPose();
+        return texel;
+    }
+
+    /**
+     * Frost glints: pixel pluses on the frost's texel grid, each centred on a shown flake (white centre, arms over the
+     * flake's bright core at 0.55, outer arms only near the peak), flashing in and out over 0.45..0.7 s; new ones arrive
+     * at random (Poisson), about GLINTS at once at full frost, fewer as the frost thins.
+     */
+    private static void glints(GuiGraphics graphics, Minecraft mc, double intensity, int texel, float alpha, double seconds) {
+        int grid = TemperatureFrost.width() << 16 | TemperatureFrost.height();
+        if (grid != glintGrid) { glints.clear(); glintGrid = grid; }
+        glints.removeIf(g -> seconds >= g.start + g.life);
+        double rate = GLINTS * intensity / ((GLINT_MIN + GLINT_MAX) / 2);   // new glints per second
+        if (nextGlint < seconds - 1) nextGlint = seconds;                     // no catch-up after a frost-free spell
+        while (nextGlint <= seconds) {
+            int spot = TemperatureFrost.glintSpot(RANDOM);
+            if (spot >= 0) glints.add(new Glint(spot & 0xFFFF, spot >>> 16, nextGlint, GLINT_MIN + (GLINT_MAX - GLINT_MIN) * RANDOM.nextDouble()));
+            nextGlint += -Math.log(1 - RANDOM.nextDouble()) / rate;
+        }
+        if (glints.isEmpty()) return;
+        float scale = (float)mc.getWindow().getGuiScale();
+        graphics.setColor(1, 1, 1, 1);
+        graphics.pose().pushPose();
+        graphics.pose().scale(1 / scale, 1 / scale, 1);
+        for (var g : glints) {
+            double a = Math.sin(Math.PI * clamp((seconds - g.start) / g.life)) * alpha;
+            if (a <= 0.004) continue;
+            glintCell(graphics, g.x, g.y, texel, a);
+            for (int[] d : ARMS) glintCell(graphics, g.x + d[0], g.y + d[1], texel, 0.55 * a);
+            if (a > 0.7) for (int[] d : ARMS) glintCell(graphics, g.x + 2 * d[0], g.y + 2 * d[1], texel, a - 0.7);
+        }
+        graphics.flush();
+        graphics.pose().popPose();
+        RenderSystem.enableBlend();   // the GUI render type turns blending off after its batch
+    }
+    private static void glintCell(GuiGraphics graphics, int x, int y, int texel, double alpha) {
+        graphics.fill(x * texel, y * texel, (x + 1) * texel, (y + 1) * texel, (int)Math.round(alpha * 255) << 24 | 0xFFFFFF);
     }
 
     /** Heat haze: copy the frame, draw the edge cells of a grid back with rippling texture coordinates. */

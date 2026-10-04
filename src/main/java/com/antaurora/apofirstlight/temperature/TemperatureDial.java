@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.temperature;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.client.SurvivalHudLayout;
 import com.antaurora.apofirstlight.client.AflRingIcon;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -28,8 +29,12 @@ import net.minecraft.resources.ResourceLocation;
  * Colours blend in OKLab. Drawn per pixel into one texture per GUI scale and blitted once a frame.
  */
 final class TemperatureDial {
-    /** GUI pixels: face radius, gauge band, halo reach. */
+    /** GUI pixels before SurvivalHudLayout.SCALE: face radius, gauge band, halo reach. */
     static final double RADIUS = 9.5, BAND = 1.5, HALO = 2.5;
+    /** Survival HUD V1: the dark metal bezel round the face (GUI px before SurvivalHudLayout.SCALE), lit from above. */
+    static final double BEZEL = 1.15;
+    private static final double[] BEZEL_TOP = rgb(0x5A5E64), BEZEL_BOTTOM = rgb(0x2A2C2F), BEZEL_RIM = rgb(0x1A1B1D),
+            OUTLINE = rgb(SurvivalHudLayout.OUTLINE);
     /** Air temperature arc (GUI pixels / degrees): radius, band, half span, the marker's tip and base radii. */
     static final double AMBIENT_RADIUS = 12.5, AMBIENT_BAND = 1.0, AMBIENT_TIP = 13.4, AMBIENT_BASE = 15.8;
     private static final double AMBIENT_SPAN = Math.toRadians(60);
@@ -44,6 +49,17 @@ final class TemperatureDial {
     private static DynamicTexture texture;
     private static NativeImage image;
     private static int textureScale = -1, size;
+    /** Redrawn at most this often (the dial's motion is slow: breathing, flowing chevrons, eased values). */
+    private static final long REDRAW_NANOS = 1_000_000_000L / 30;
+    private static long lastRedraw;
+    private static boolean dirty = true;
+    // per-pixel geometry, fixed for a texture size and centre: offsets, radius, angle (0 at the top, clockwise), bezel light
+    private static float[] gx, gy, gr, gang, glit;
+    private static double geoCx = Double.NaN, geoCy = Double.NaN;
+    private static int geoSize = -1;
+    // glyph coverage (dot / snowflake / flame), fixed while its shape holds
+    private static float[] glyphCover;
+    private static long glyphKey = Long.MIN_VALUE;
     private TemperatureDial() {}
 
     /**
@@ -55,16 +71,23 @@ final class TemperatureDial {
     static void render(GuiGraphics graphics, double guiCx, double guiCy, double cold, double heat, double danger, double trend,
                        double target, double ambient, boolean hideGlyph, double phase, double seconds) {
         int s = (int)Math.max(1, Math.round(Minecraft.getInstance().getWindow().getGuiScale()));
+        double k = s * SurvivalHudLayout.SCALE;   // the cluster's size factor: geometry in real pixels
         if (texture == null || textureScale != s) {
-            size = (int)Math.ceil(2 * (AMBIENT_BASE + 1.5) * s) + 2;
+            size = (int)Math.ceil(2 * (AMBIENT_BASE + 1.5) * k) + 2;
             image = new NativeImage(NativeImage.Format.RGBA, size, size, true);
             texture = new DynamicTexture(image);
             Minecraft.getInstance().getTextureManager().register(TEXTURE, texture); // closes the previous one
             textureScale = s;
+            dirty = true;
         }
         int x0 = (int)Math.round(guiCx * s - size / 2.0), y0 = (int)Math.round(guiCy * s - size / 2.0);
-        fill(s, guiCx * s - x0, guiCy * s - y0, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
-        texture.upload();
+        long now = System.nanoTime();
+        if (dirty || now - lastRedraw >= REDRAW_NANOS) {   // capped: the picture changes every frame while anything moves
+            fill(k, guiCx * s - x0, guiCy * s - y0, cold, heat, danger, trend, target, ambient, hideGlyph, phase, seconds);
+            texture.upload();
+            lastRedraw = now;
+            dirty = false;
+        }
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         graphics.pose().pushPose();
@@ -73,7 +96,7 @@ final class TemperatureDial {
         graphics.pose().popPose();
     }
 
-    private static void fill(int s, double cx, double cy, double cold, double heat, double danger, double trend, double target,
+    private static void fill(double s, double cx, double cy, double cold, double heat, double danger, double trend, double target,
                              double ambient, boolean hideGlyph, double phase, double seconds) {
         double r0 = RADIUS * s, band = BAND * s, rIn = r0 - band, halo = HALO * s;
         double dev = Math.max(cold, heat), bias = heat - cold;
@@ -102,7 +125,7 @@ final class TemperatureDial {
         double lo = Math.min(0, marker), hi = Math.max(0, marker);
         // glyph: the dot shrinks away while the snowflake / flame grows in
         double grow = smooth(0.08, 0.45, dev), glyphScale = 0.6 + 0.4 * grow, box = rIn * 2 * 0.62;
-        double gx = cx - box / 2, gy = cy - box / 2 - 0.3 * s;
+        double boxX = cx - box / 2, boxY = cy - box / 2 - 0.3 * s;
         // trend chevrons
         double trendWeight = smooth(0.05, 0.35, Math.abs(trend));
         boolean warming = trend > 0;
@@ -112,15 +135,29 @@ final class TemperatureDial {
         boolean showAmbient = !Double.isNaN(ambient);
         double ar = AMBIENT_RADIUS * s, aband = AMBIENT_BAND * s, aTip = AMBIENT_TIP * s, aBase = AMBIENT_BASE * s;
         double aAngle = showAmbient ? ambientAngle(ambient) : 0, ax = Math.sin(aAngle), ay = -Math.cos(aAngle);
+        double bezelIn = r0 + 0.15 * s, bezelOut = r0 + BEZEL * s, rim = 0.22 * s, outline = SurvivalHudLayout.OUTLINE_WIDTH * s;
+        geometry(cx, cy);
+        if (!hideGlyph) glyph(s, rIn, grow, glyphScale, coldSide, box, boxX, boxY);
         double[] p = new double[4];
-        for (int py = 0; py < size; py++) for (int px = 0; px < size; px++) {
-            double x = px + 0.5 - cx, y = py + 0.5 - cy, r = Math.hypot(x, y), ang = Math.atan2(x, -y); // 0 at the top, clockwise +
+        for (int py = 0, pi = 0; py < size; py++) for (int px = 0; px < size; px++, pi++) {
+            double x = gx[pi], y = gy[pi], r = gr[pi], ang = gang[pi]; // ang: 0 at the top, clockwise +
             p[0] = p[1] = p[2] = p[3] = 0;
             if (r > r0 - 0.5 && haloAlpha > 0.003) {
                 double g = clamp(1 - (r - r0) / haloReach);
-                over(p, haloColour, haloAlpha * Math.pow(g, 1.6));
+                if (g > 0) over(p, haloColour, haloAlpha * Math.pow(g, 1.6));
             }
             if (rippleAlpha > 0.003) over(p, haloColour, rippleAlpha * clamp(0.5 - (Math.abs(r - rippleR) - 0.3 * s)));
+            if (r > bezelIn - 1 && r < bezelOut + outline + 1) {
+                double bez = clamp(0.5 - (Math.abs(r - (bezelIn + bezelOut) / 2) - (bezelOut - bezelIn) / 2));
+                if (bez > 0) {
+                    double lit = glit[pi];
+                    double[] metal = {BEZEL_BOTTOM[0] + (BEZEL_TOP[0] - BEZEL_BOTTOM[0]) * lit, BEZEL_BOTTOM[1] + (BEZEL_TOP[1] - BEZEL_BOTTOM[1]) * lit,
+                            BEZEL_BOTTOM[2] + (BEZEL_TOP[2] - BEZEL_BOTTOM[2]) * lit};
+                    over(p, metal, bez);
+                    over(p, BEZEL_RIM, clamp(0.5 - (Math.abs(r - (bezelOut - rim / 2)) - rim / 2)));
+                }
+                over(p, OUTLINE, SurvivalHudLayout.OUTLINE_ALPHA * clamp(0.5 - (Math.abs(r - (bezelOut + outline / 2)) - outline / 2)));
+            }
             if (showAmbient && r > ar - aband - 1 && r < aBase + 2) {
                 double onArc = clamp(0.5 - (Math.abs(r - ar) - aband / 2)) * clamp(0.5 + (AMBIENT_SPAN - Math.abs(ang)) * r);
                 if (onArc > 0) over(p, ambientColour(10 + ang / AMBIENT_SPAN * 30), 0.6 * onArc);
@@ -147,15 +184,7 @@ final class TemperatureDial {
             double along = x * mx + y * my, across = Math.abs(x * my - y * mx);
             double m = clamp(0.5 - (across - 0.55 * s)) * clamp(0.5 - Math.abs(along - (r0 + rIn) / 2) + band / 2 + 0.45 * s);
             if (m > 0) over(p, markerColour, m);
-            if (!hideGlyph && r < rIn - 0.5 * s) {
-                double u = (px + 0.5 - gx) / box, v = (py + 0.5 - gy) / box;
-                double d = Math.hypot(u - 0.5, v - 0.5) - 0.17 * (1 - grow);
-                if (grow >= 0.02) {
-                    double su = 0.5 + (u - 0.5) / glyphScale, sv = 0.5 + (v - 0.5) / glyphScale;
-                    d = Math.min(d, (coldSide ? snowflake(su, sv) : flame(su, sv)) * glyphScale);
-                }
-                over(p, glyphColour, clamp(0.5 - d * box));
-            }
+            if (!hideGlyph && glyphCover[pi] > 0) over(p, glyphColour, glyphCover[pi]);
             if (trendWeight > 0.002 && Math.abs(x) < 2.4 * s && y > 4.6 * s) {
                 double cover = 0;
                 for (int i = 0; i < 3; i++) {
@@ -181,16 +210,60 @@ final class TemperatureDial {
     }
 
     /** Six arms with a pair of side branches each (unit box, y down; signed distance). */
+    /** Per-pixel offsets, radius, angle and bezel light for this texture size and centre (recomputed only when they change). */
+    private static void geometry(double cx, double cy) {
+        if (geoSize == size && cx == geoCx && cy == geoCy) return;
+        int n = size * size;
+        gx = new float[n]; gy = new float[n]; gr = new float[n]; gang = new float[n]; glit = new float[n];
+        for (int py = 0, i = 0; py < size; py++) for (int px = 0; px < size; px++, i++) {
+            double x = px + 0.5 - cx, y = py + 0.5 - cy, r = Math.hypot(x, y);
+            gx[i] = (float)x; gy[i] = (float)y; gr[i] = (float)r; gang[i] = (float)Math.atan2(x, -y);
+            glit[i] = (float)Math.pow(clamp(0.5 - 0.5 * y / Math.max(r, 1e-3)), 1.3);
+        }
+        geoSize = size; geoCx = cx; geoCy = cy;
+        glyphKey = Long.MIN_VALUE;
+    }
+
+    /** Coverage of the centre glyph (the dot shrinking while the snowflake / flame grows in), recomputed only when its
+     *  shape changes (growth in 1/64 steps, cold or hot side, size). */
+    private static void glyph(double s, double rIn, double grow, double glyphScale, boolean coldSide, double box, double boxX, double boxY) {
+        long key = Math.round(grow * 64) * 4 + (coldSide ? 1 : 0) + 2L * Math.round(s * 100) * 1000;
+        if (key == glyphKey && glyphCover != null) return;
+        double g = Math.round(grow * 64) / 64.0, scale = 0.6 + 0.4 * g;
+        glyphCover = new float[size * size];
+        for (int py = 0, i = 0; py < size; py++) for (int px = 0; px < size; px++, i++) {
+            if (gr[i] >= rIn - 0.5 * s) continue;
+            double u = (px + 0.5 - boxX) / box, v = (py + 0.5 - boxY) / box;
+            double d = Math.hypot(u - 0.5, v - 0.5) - 0.17 * (1 - g);
+            if (g >= 0.02) {
+                double su = 0.5 + (u - 0.5) / scale, sv = 0.5 + (v - 0.5) / scale;
+                d = Math.min(d, (coldSide ? snowflake(su, sv) : flame(su, sv)) * scale);
+            }
+            glyphCover[i] = (float)clamp(0.5 - d * box);
+        }
+        glyphKey = key;
+    }
+
+    /** Snowflake arms: 6 directions (from straight up), each with a pair of side branches at 45 degrees. */
+    private static final double[] ARM_X = new double[6], ARM_Y = new double[6], BRANCH_X = new double[12], BRANCH_Y = new double[12];
+    static {
+        for (int k = 0; k < 6; k++) {
+            double a = k * Math.PI / 3 - Math.PI / 2;
+            ARM_X[k] = Math.cos(a); ARM_Y[k] = Math.sin(a);
+            for (int side = 0; side < 2; side++) {
+                double b = a + (side * 2 - 1) * Math.PI / 4;
+                BRANCH_X[k * 2 + side] = Math.cos(b); BRANCH_Y[k * 2 + side] = Math.sin(b);
+            }
+        }
+    }
     private static double snowflake(double x, double y) {
         double d = Double.MAX_VALUE;
         for (int k = 0; k < 6; k++) {
-            double a = k * Math.PI / 3 - Math.PI / 2, ux = Math.cos(a), uy = Math.sin(a);
+            double ux = ARM_X[k], uy = ARM_Y[k];
             d = Math.min(d, AflRingIcon.segment(x, y, 0.5, 0.5, 0.5 + ux * 0.40, 0.5 + uy * 0.40) - 0.048);
             double bx = 0.5 + ux * 0.25, by = 0.5 + uy * 0.25;
-            for (int side = -1; side <= 1; side += 2) {
-                double b = a + side * Math.PI / 4;
-                d = Math.min(d, AflRingIcon.segment(x, y, bx, by, bx + Math.cos(b) * 0.13, by + Math.sin(b) * 0.13) - 0.042);
-            }
+            for (int side = 0; side < 2; side++)
+                d = Math.min(d, AflRingIcon.segment(x, y, bx, by, bx + BRANCH_X[k * 2 + side] * 0.13, by + BRANCH_Y[k * 2 + side] * 0.13) - 0.042);
         }
         return d;
     }

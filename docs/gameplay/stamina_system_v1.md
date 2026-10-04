@@ -102,15 +102,16 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
   - 文件：`assets/apocalypse_firstlight/sounds/stamina/breath_{light_1..4,heavy_1..5}.ogg`。
 - 字幕：呼吸 / 喘气。
 
-## HUD（临时）
+## HUD
 
-`ClientStaminaHud`，overlay `apocalypse_firstlight:stamina_ring`。正式生存 HUD 以后再做，见 `耐力.md` 第 12 节。
+`ClientStaminaHud`，overlay `apocalypse_firstlight:stamina_ring`，属于生存 HUD V1 的一排仪表（`docs/ui/survival_hud_v1.md`）。
 
-- 位置：生存指标组里体温表盘的左边（`client/SurvivalHudLayout`：圆心在屏幕中线左边 19 GUI 像素、屏幕底边上方 55 像素，外半径 5.5、环宽 1.5），在护甲值那一行之上，不挡护甲图标。2026-10-03 体温 V1 把耐力环、体温表盘、水滴环拼成一组（之前在负重条左端左边 22 像素）。绘制用共用的 `client/AflRingIcon`。
-- 环从顶上开始顺时针随耐力填充，中间一个跑步小人。
+- 位置：整组最左端的半环 "("（`client/SurvivalHudLayout.crescent`：圆心在屏幕中线左边 34.16 GUI 像素、屏幕底边上方 48 像素，外半径 7.015、环宽 1.78），开口朝向右边的生命环，两端延伸到生命环上，跑步小人在开口里，垫一个淡色深底。历史：2026-10-03 体温 V1 把它挪到体温表盘左边（之前在负重条左端左边 22 像素）；生存 HUD V1 先是一排五环里的整圆小环，2026-10-04 改成嵌套排版的半环（`docs/ui/survival_hud_v1.md`）。绘制用 `client/AflGauge`。
+- 外面：水下或氧气不满时出现的氧气弧，由 `client/SurvivalVitalsHud` 绘制。
+- 半环从下端开始往上随耐力填充。
 - 颜色：正常浅灰，< 30 琥珀，力竭红。
 - 填充和负重条一样平滑过渡（时间常数 0.12 秒）。
-- 耐力掉下去时淡入；回满 2 秒后淡出（0.25 秒）。
+- 一直显示（用户 2026-10-03：生命和饥饿都一直显示，耐力也要，不然会缺东西；以前是掉下去时淡入、回满 2 秒后淡出）。
 - 按真实像素逐点画，环、填充两端、小人都做了抗锯齿。
 - 创造 / 旁观、F1、装配件视角时不显示。
 
