@@ -144,8 +144,12 @@ public final class PlayerStamina {
                     if (player.isSprinting()) { drain = c.costs.sprint; effort = true; }
                     else drain = player.isCrouching() ? c.costs.sneak : c.costs.walk;
                 }
+                drain *= w[0];
+            } else if (player.getVehicle() instanceof com.antaurora.apofirstlight.entity.OfficeChairEntity && horizontal > 0.01) {
+                // rolling on an office chair (pushing with the feet): light work, a little more under load, no delay;
+                // sitting still on it costs nothing (other mounts do the work themselves: no cost)
+                drain = c.costs.officeChair * (1 + (w[0] - 1) * c.costs.officeChairLoad);
             }
-            drain *= w[0];
             if (s.mined) { drain += c.costs.mining * w[1]; effort = true; s.mined = false; }
             drain *= PlayerTemperature.staminaCostMultiplier(player); // heat stages
             s.value -= drain / 20;

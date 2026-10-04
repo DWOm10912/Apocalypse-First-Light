@@ -21,20 +21,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-/** Desktop monitor that lowers by 2.5 model units when supported by the 13.5-unit office desk. */
+/**
+ * Desktop monitor that lowers by 2.5 model units when supported by the 13.5-unit office desk. Office Props V2: one box
+ * around the whole monitor (panel width x base depth), for outline and collision alike.
+ */
 public final class ModernLcdMonitorBlock extends HorizontalDirectionalBlock {
     public static final BooleanProperty LOWERED = BooleanProperty.create("lowered");
 
-    private static final VoxelShape NORMAL_NORTH = Shapes.or(
-            Block.box(4.3, 0.0, 5.55, 11.7, 0.7, 10.45),
-            Block.box(6.6, 0.55, 7.85, 9.4, 6.8, 9.4),
-            Block.box(0.0, 3.0, 6.85, 16.0, 12.8, 9.2)
-    ).optimize();
-    private static final VoxelShape LOWERED_NORTH = Shapes.or(
-            Block.box(4.3, -2.5, 5.55, 11.7, -1.8, 10.45),
-            Block.box(6.6, -1.95, 7.85, 9.4, 4.3, 9.4),
-            Block.box(0.0, 0.5, 6.85, 16.0, 10.3, 9.2)
-    ).optimize();
+    private static final VoxelShape NORMAL_NORTH = Block.box(0.0, 0.0, 5.6, 16.0, 12.75, 10.4);
+    private static final VoxelShape LOWERED_NORTH = Block.box(0.0, -2.5, 5.6, 16.0, 10.25, 10.4);
     private static final Map<Direction, VoxelShape> NORMAL_SHAPES = HorizontalShapeUtils.rotations(NORMAL_NORTH);
     private static final Map<Direction, VoxelShape> LOWERED_SHAPES = HorizontalShapeUtils.rotations(LOWERED_NORTH);
 

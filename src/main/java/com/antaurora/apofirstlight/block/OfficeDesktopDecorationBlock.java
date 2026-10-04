@@ -23,7 +23,8 @@ import java.util.Map;
 
 /**
  * Small static desktop prop with four-way facing and the office desk's 2.5-unit visual sink.
- * It does not attach itself to the desk or create any companion blocks.
+ * It does not attach itself to the desk or create any companion blocks. Office Props V2: the outline is one box around
+ * the whole prop (no stepped outline); collision may follow the mesh more closely (the computer station).
  */
 public final class OfficeDesktopDecorationBlock extends HorizontalDirectionalBlock {
     public static final BooleanProperty LOWERED = BooleanProperty.create("lowered");
@@ -31,31 +32,39 @@ public final class OfficeDesktopDecorationBlock extends HorizontalDirectionalBlo
 
     private final Map<Direction, VoxelShape> normalShapes;
     private final Map<Direction, VoxelShape> loweredShapes;
+    private final Map<Direction, VoxelShape> normalCollision;
+    private final Map<Direction, VoxelShape> loweredCollision;
 
     public OfficeDesktopDecorationBlock(Properties properties, VoxelShape northShape) {
+        this(properties, northShape, northShape);
+    }
+
+    public OfficeDesktopDecorationBlock(Properties properties, VoxelShape northShape, VoxelShape northCollision) {
         super(properties);
         normalShapes = HorizontalShapeUtils.rotations(northShape);
         loweredShapes = HorizontalShapeUtils.rotations(northShape.move(0.0D, DESK_SINK, 0.0D));
+        normalCollision = HorizontalShapeUtils.rotations(northCollision);
+        loweredCollision = HorizontalShapeUtils.rotations(northCollision.move(0.0D, DESK_SINK, 0.0D));
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(LOWERED, false));
     }
 
+    /** Outline: one box around monitor, keyboard and mouse. */
     public static VoxelShape computerStationShape() {
+        return Block.box(0.0D, 0.0D, 4.3D, 16.0D, 12.75D, 13.6D);
+    }
+
+    /** Collision: keyboard + mouse (front, mouse on the NORTH user's right) and the monitor behind them. */
+    public static VoxelShape computerStationCollision() {
         return Shapes.or(
-                // Keyboard.
-                Block.box(2.9D, 0.0D, 4.3D, 15.5D, 0.94D, 7.8D),
-                // Mouse, kept inside the same BlockPos and on the NORTH user's right.
-                Block.box(0.25D, 0.0D, 4.55D, 2.35D, 1.0D, 7.95D),
-                // Monitor base, stand and screen after the approved rearward layout offset.
-                Block.box(4.3D, 0.0D, 8.75D, 11.7D, 0.7D, 13.65D),
-                Block.box(6.6D, 0.55D, 11.05D, 9.4D, 6.8D, 12.6D),
-                Block.box(0.0D, 3.0D, 10.05D, 16.0D, 12.8D, 12.4D)
+                Block.box(0.25D, 0.0D, 4.3D, 15.4D, 0.95D, 8.0D),
+                Block.box(0.0D, 0.0D, 8.8D, 16.0D, 12.75D, 13.6D)
         ).optimize();
     }
 
     public static VoxelShape keyboardShape() {
-        return Block.box(1.7D, 0.0D, 6.2D, 14.3D, 0.94D, 9.7D);
+        return Block.box(1.8D, 0.0D, 6.2D, 14.2D, 0.95D, 9.75D);
     }
 
     public static VoxelShape mouseShape() {
@@ -100,7 +109,7 @@ public final class OfficeDesktopDecorationBlock extends HorizontalDirectionalBlo
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
                                         CollisionContext context) {
-        return getShape(state, level, position, context);
+        return (state.getValue(LOWERED) ? loweredCollision : normalCollision).get(state.getValue(FACING));
     }
 
     @Override

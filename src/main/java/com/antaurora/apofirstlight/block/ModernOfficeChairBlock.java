@@ -1,9 +1,14 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.entity.OfficeChairEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -13,6 +18,7 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -20,10 +26,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-/** Directional office chair with a deliberately simple interaction outline. */
+/**
+ * Directional office chair as placed (a static baked model, tools/build-office-props-v2.mjs). Right-clicking it turns it into
+ * an {@link OfficeChairEntity} at the same spot and seats the player: from then on it is that entity (rolls with W / S / A /
+ * D, the seat follows the view, stays where it was left, hit to pick it up). Placing the chair item puts a block back.
+ * <p>Outline: the mesh's bounding box (one clean box, no stepped outline); collision: seat with the column, backrest, arms.
+ */
 public final class ModernOfficeChairBlock extends HorizontalDirectionalBlock {
-    private static final VoxelShape NORTH = chairShape();
-    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(NORTH);
+    private static final Map<Direction, VoxelShape> SHAPES =
+            HorizontalShapeUtils.rotations(Block.box(1.35, 0.0, 2.8, 14.65, 18.75, 14.2));
+    private static final Map<Direction, VoxelShape> COLLISION = HorizontalShapeUtils.rotations(chairCollision());
 
     public ModernOfficeChairBlock(Properties properties) {
         super(properties);
@@ -51,6 +63,20 @@ public final class ModernOfficeChairBlock extends HorizontalDirectionalBlock {
                 : super.updateShape(state, direction, neighbor, level, position, neighborPosition);
     }
 
+    /** Sit down: the block becomes the chair entity (not while sneaking or riding, nor where the player may not build). */
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos position, Player player, InteractionHand hand,
+                                 BlockHitResult hit) {
+        if (player.isSecondaryUseActive() || player.isPassenger()) return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+        if (!player.mayBuild() || !level.mayInteract(player, position)) return InteractionResult.PASS;
+        var chair = OfficeChairEntity.fromBlock(level, position, state.getValue(FACING));
+        level.removeBlock(position, false);
+        if (!level.addFreshEntity(chair)) return InteractionResult.CONSUME;
+        player.startRiding(chair);
+        return InteractionResult.CONSUME;
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
         return SHAPES.get(state.getValue(FACING));
@@ -59,7 +85,7 @@ public final class ModernOfficeChairBlock extends HorizontalDirectionalBlock {
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
                                         CollisionContext context) {
-        return getShape(state, level, position, context);
+        return COLLISION.get(state.getValue(FACING));
     }
 
     @Override
@@ -82,15 +108,13 @@ public final class ModernOfficeChairBlock extends HorizontalDirectionalBlock {
         builder.add(FACING);
     }
 
-    private static VoxelShape chairShape() {
+    /** Base + seat up to the cushion top, the tilted backrest's envelope, the two T-arms (facing north, sitter faces -Z). */
+    private static VoxelShape chairCollision() {
         return Shapes.or(
-                Block.box(2.9, 7.1, 2.8, 13.1, 8.75, 12.4),
-                Block.box(3.3, 8.7, 11.45, 12.7, 19.2, 14.25),
-                Block.box(1.25, 7.0, 3.7, 2.8, 10.9, 11.4),
-                Block.box(13.2, 7.0, 3.7, 14.75, 10.9, 11.4),
-                Block.box(7.0, 1.4, 7.0, 9.0, 7.2, 9.0),
-                Block.box(1.5, 0.0, 7.1, 14.5, 1.8, 8.9),
-                Block.box(7.1, 0.0, 1.5, 8.9, 1.8, 14.5)
+                Block.box(2.95, 0.0, 2.85, 13.05, 8.75, 12.35),
+                Block.box(3.4, 8.75, 11.5, 12.6, 18.75, 14.2),
+                Block.box(1.35, 6.5, 4.0, 2.75, 10.85, 10.4),
+                Block.box(13.25, 6.5, 4.0, 14.65, 10.85, 10.4)
         ).optimize();
     }
 }

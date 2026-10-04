@@ -10,6 +10,8 @@
   "costs": {
     "walk": 1.5,
     "sneak": 1.0,
+    "office_chair": 0.5,
+    "office_chair_load": 0.6667,
     "sprint": 8,
     "jump": 5,
     "sprint_jump": 7,

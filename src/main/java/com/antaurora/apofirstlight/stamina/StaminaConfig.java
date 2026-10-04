@@ -23,6 +23,8 @@ import java.util.*;
 public final class StaminaConfig {
     public static final class Costs {
         public double walk = 1.5, sneak = 1.0, sprint = 8, jump = 5, sprintJump = 7, swim = 7, water = 2.5, climb = 3, mining = 2;
+        /** Rolling on an office chair, per second; the load's movement multiplier applies at this share of its excess over 1. */
+        public double officeChair = 0.5, officeChairLoad = 2.0 / 3.0;
         public double meleeEmptyHand = 3, melee = 5, shot = 0.6, reload = 1;
         /** item id → cost per swing */
         public Map<String, Double> meleeItems = Map.of("apocalypse_firstlight:crowbar", 8.0);

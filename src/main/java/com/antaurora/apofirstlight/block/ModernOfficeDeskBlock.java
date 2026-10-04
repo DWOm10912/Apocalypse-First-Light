@@ -34,7 +34,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Three-cell office desk. The center cell owns the item drop and each cell has local collision. */
+/**
+ * Three-cell office desk. The center cell owns the item drop and each cell has local collision. Office Props V2
+ * (tools/build-office-props-v2.mjs): the center cell's model draws the whole desk, the outline is one clean box per cell
+ * (the desk's full height, no stepped outline) and collision is the top plus the end cells' square legs.
+ */
 public final class ModernOfficeDeskBlock extends HorizontalDirectionalBlock {
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
 
@@ -43,35 +47,22 @@ public final class ModernOfficeDeskBlock extends HorizontalDirectionalBlock {
 
     private static final Set<Mutation> MUTATIONS = ConcurrentHashMap.newKeySet();
 
-    private static final VoxelShape LEFT_NORTH = Shapes.or(
-            Block.box(0.0, 12.4, 0.0, 16.0, 13.5, 16.0),
-            Block.box(1.0, 0.0, 1.0, 2.8, 12.4, 2.8),
-            Block.box(1.0, 0.0, 13.2, 2.8, 12.4, 15.0),
-            Block.box(1.2, 0.7, 2.6, 2.6, 1.8, 13.4),
-            Block.box(1.2, 11.3, 2.6, 2.6, 12.5, 13.4),
-            Block.box(0.0, 11.2, 2.4, 16.0, 12.4, 3.6),
-            Block.box(0.0, 11.2, 12.4, 16.0, 12.4, 13.6)
+    /** Outline and picking: the cell's full desk height (the same for every part and facing). */
+    private static final VoxelShape OUTLINE = Block.box(0.0, 0.0, 0.0, 16.0, 13.5, 16.0);
+    // collision: the top (y 12.45..13.5) and the 1.7-unit square legs of the end frames (mesh: x +-22.1, z +-6.1)
+    private static final VoxelShape TOP = Block.box(0.0, 12.45, 0.0, 16.0, 13.5, 16.0);
+    private static final VoxelShape LEFT_NORTH = Shapes.or(TOP,
+            Block.box(1.05, 0.0, 1.05, 2.75, 12.45, 2.75),
+            Block.box(1.05, 0.0, 13.25, 2.75, 12.45, 14.95)
     ).optimize();
-    private static final VoxelShape CENTER_NORTH = Shapes.or(
-            Block.box(0.0, 12.4, 0.0, 16.0, 13.5, 16.0),
-            Block.box(0.0, 11.2, 2.4, 16.0, 12.4, 3.6),
-            Block.box(0.0, 11.2, 12.4, 16.0, 12.4, 13.6),
-            Block.box(0.0, 6.2, 12.55, 16.0, 11.0, 13.35),
-            Block.box(0.0, 10.35, 13.55, 16.0, 11.35, 15.2)
-    ).optimize();
-    private static final VoxelShape RIGHT_NORTH = Shapes.or(
-            Block.box(0.0, 12.4, 0.0, 16.0, 13.5, 16.0),
-            Block.box(13.2, 0.0, 1.0, 15.0, 12.4, 2.8),
-            Block.box(13.2, 0.0, 13.2, 15.0, 12.4, 15.0),
-            Block.box(13.4, 0.7, 2.6, 14.8, 1.8, 13.4),
-            Block.box(13.4, 11.3, 2.6, 14.8, 12.5, 13.4),
-            Block.box(0.0, 11.2, 2.4, 16.0, 12.4, 3.6),
-            Block.box(0.0, 11.2, 12.4, 16.0, 12.4, 13.6)
+    private static final VoxelShape RIGHT_NORTH = Shapes.or(TOP,
+            Block.box(13.25, 0.0, 1.05, 14.95, 12.45, 2.75),
+            Block.box(13.25, 0.0, 13.25, 14.95, 12.45, 14.95)
     ).optimize();
 
-    private static final Map<Part, Map<Direction, VoxelShape>> SHAPES = Map.of(
+    private static final Map<Part, Map<Direction, VoxelShape>> COLLISION = Map.of(
             Part.LEFT, HorizontalShapeUtils.rotations(LEFT_NORTH),
-            Part.CENTER, HorizontalShapeUtils.rotations(CENTER_NORTH),
+            Part.CENTER, HorizontalShapeUtils.rotations(TOP),
             Part.RIGHT, HorizontalShapeUtils.rotations(RIGHT_NORTH)
     );
 
@@ -246,13 +237,13 @@ public final class ModernOfficeDeskBlock extends HorizontalDirectionalBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return SHAPES.get(state.getValue(PART)).get(state.getValue(FACING));
+        return OUTLINE;
     }
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position,
                                         CollisionContext context) {
-        return getShape(state, level, position, context);
+        return COLLISION.get(state.getValue(PART)).get(state.getValue(FACING));
     }
 
     @Override

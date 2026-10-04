@@ -1,25 +1,76 @@
 # Modern Office Desk — 建模资产
 
-状态：模型、贴图与静态装饰方块接入完成；等待游戏内视觉、摆放和生存采掘验证。
+状态：**V2（2026-10-03）已接入**。Pure Mesh + LabPBR，静态 OBJ 方块模型；选中轮廓和碰撞同时改了。生成脚本 `--check` 通过，`compileJava --offline` 通过；**没有实机验证**（外观、光影、轮廓、碰撞、四个朝向都待验）。
+
+V1 是 145 个 cube 的 Blockbench 方块模型（128 色块贴图），2026-10-03 被 V2 替换。方块逻辑、注册 ID、方块状态（`facing`、`part`）、掉落、挖掘规则都没变。
 
 | 项目 | 当前值 |
 |---|---|
-| 编辑源 | `src/main/blockbench/modern_office_desk.bbmodel` |
-| 贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/block/modern_office_desk.png` |
-| 尺寸 X/Y/Z | 48 / 13.5 / 16 model units（3 × 0.84375 × 1 blocks） |
-| 边界 | X -16–32；Y 0–13.5；Z 0–16 |
-| Cube / Group | 145 / 11 |
-| 贴图分辨率 | 128 × 128 |
-| 风格 | 浅灰整面桌板、炭灰钢架、低频克制明暗，无随机噪声 |
 | 注册 ID | `apocalypse_firstlight:modern_office_desk` |
-| 方块结构 | 三格宽；`left / center / right` 联动放置与拆除，中心格负责掉落 |
-| 采掘 | 镐；铁镐或更高等级；错误工具不掉落 |
-| VoxelShape | 按三格分别覆盖抬高后的桌板、加长桌腿、横梁、挡板与走线槽，并随水平朝向旋转 |
+| 生成脚本 | `tools/build-office-props-v2.mjs`（和椅子、显示器、键盘、鼠标共用，见下） |
+| 可编辑源 | `src/main/blockbench/modern_office_desk_v2.bbmodel`（Free Model 网格），贴图副本 `src/main/blockbench/textures/modern_office_desk_v2{,_s,_n}.png` |
+| 运行时模型 | `models/block/modern_office_desk/center.{json,obj,mtl}`；`left.json` / `right.json` 只有粒子贴图，不画东西 |
+| 贴图 | `textures/block/modern_office_desk{,_s,_n}.png`，512 LabPBR 贴图集，约 6 texel/px |
+| 尺寸 | 48 × 13.5 × 16 px（3 × 0.84375 × 1 格），中心格坐标 x -24..24、z -8..8；走线孔盖高出桌面 0.06 px |
+| 三角面 | 752 |
+| 方块结构 | 三格宽；`left / center / right` 联动放置与拆除，中心格负责掉落；`left` 在 facing 的逆时针一侧 |
+| 采掘 | 镐；铁镐或更高等级（`mineable/pickaxe` + `needs_iron_tool`，`requiresCorrectToolForDrops`），错误工具不掉落。未改 |
 
-根组 `modern_office_desk_root` 下分为 `tabletop_assembly`、左右 `frame_assembly`、`center_underframe`、`modesty_panel`、`cable_management`。四个桌腿另有子组。桌面完全留空，后侧设挡板和走线托槽；没有设备、抽屉或动画。
+## 外观
 
-已通过 Blockbench MCP 实际预览检查，以及导出脚本的尺寸、非退化 cube、纹理绑定、UV 范围、PNG 分辨率和保存回读验证。桌板封边与顶面分开，避免外表面共面重叠。共享材质 UV 区域为有意复用。
+- 桌板：48 × 16 px，厚 1.05 px（y 12.45–13.5），浅暖灰三聚氰胺 `[178,177,170]`，缎面，边缘倒圆。
+- 钢架：炭灰涂层钢 `[54,56,60]`（F0 22）。
+  - 两端各一个框：两根 1.7 px 方管腿（x ±22.1，z ±6.1），上横杆、近地横脚；
+  - 前后两根长横梁；
+  - 腿下有黑色脚垫。
+- 背面：一整块挡板（下沿折边）；一条 U 形走线槽，用两根吊带挂在桌板下。
+- 桌面靠后有两个黑色圆形走线孔盖（x ±14）。
+- 没有贴字、Logo 或磨损。
 
-桌面与上部框架由 12 units 提高至 13.5 units：桌板厚度不变，落地桌腿向上延长，上横梁、挡板和走线槽整体上移 1.5 units，近地横脚保持原高度。运行时资源由 `tools/export-office-props-runtime.mjs` 从编辑源生成，按 X=-16–0、0–16、16–32 切分为三格模型并保持 UV 连续。方块已加入方块注册、物品注册、创造模式方块页、双语名称与战利品表；没有加入城市生成池。游戏内最终比例与三格边界仍以实机验收为准。
+## 渲染
 
-生成脚本：`tools/modern-office-desk.blockbench.js`；完成修正：`tools/modern-office-desk-finish.blockbench.js`；高度迁移与校验：`tools/raise-modern-office-desk.mjs`；源资产校验：`tools/export-modern-office-desk.mjs`；运行时同步：`tools/export-office-props-runtime.mjs`。
+- 静态道具走烘焙模型（见 `docs/rendering/animated_block_mesh_runtime_v1.md` 的 STATIC PROP 规则），和 Retail Shelf V3 一样用 Forge OBJ：`forge:obj`、`flip_v`、`shade_quads`、`automatic_culling: false`、`ambientocclusion: false`。没有方块实体，不会每帧重画。
+- 整张桌子画在中心格的模型里（OBJ 跨 x -1.5..1.5 格），所以桌面是一整块，没有三格接缝。
+- OBJ 的法线：相邻面夹角小于 36° 的地方做了平滑，开光影时曲面不显棱面。原版着色仍按面方向。
+- 已知限制：
+  - 左右两格模型是空的，挖它们时看不到裂纹；
+  - 中心格所在的区块分段被剔除时，伸到相邻分段的桌面也会跟着不画（只在区块分段边上才会出现）。
+
+## 选中轮廓与碰撞（2026-10-03）
+
+旧形状由很多盒子拼成，轮廓是台阶状的。V2 改成：
+- **选中轮廓**（`getShape`，也用于准星拾取）：每格一个整盒 `0,0,0 → 16,13.5,16`。
+- **碰撞**（`getCollisionShape`）：
+  - 三格都有桌板 `y 12.45–13.5`；
+  - 左格另加两根桌腿 `x 1.05–2.75`，`z 1.05–2.75` 和 `13.25–14.95`；
+  - 右格另加两根桌腿 `x 13.25–14.95`，z 同左格；
+  - 随朝向旋转（`HorizontalShapeUtils`）。
+
+代码在 `block/ModernOfficeDeskBlock.java`。生成脚本里的 `SELECTION` 记了同样的数值，网格超出时构建失败。
+
+## 物品
+
+`models/item/modern_office_desk.json` 的父模型是 `block/modern_office_desk/center`。各场合的变换照旧，只有 GUI 的平移按新网格重新居中：rotation `[30,135,0]`、translation `[0,0.176,0]`、scale 0.28。
+
+## 生成脚本
+
+```text
+node tools/build-office-props-v2.mjs [desk chair monitor keyboard mouse]           写出源文件、OBJ / MTL / 方块和物品模型、贴图
+node tools/build-office-props-v2.mjs --check                                       检查所有输出是否最新
+node tools/build-office-props-v2.mjs --preview DIR                                 只把 OBJ 和贴图写到 DIR（离线查看）
+```
+
+## 旧工具（已过时）
+
+- V1 的 Blockbench cube 源 `src/main/blockbench/modern_office_desk.bbmodel` 保留作参考。几个旧预览脚本（`build-office-workstation-preview.mjs`、`build-office-desk-input-preview.mjs`、`preview-monitor-desk.mjs` 等）还在读它；它已经不是运行时的来源。
+- 运行时导出脚本 `tools/export-office-props-runtime.mjs` 已删除。
+- **不要再运行** `tools/export-modern-office-desk.mjs`：它会把 V1 色块贴图写回 `textures/block/modern_office_desk.png`，盖掉 V2 贴图集。
+- `tools/modern-office-desk*.blockbench.js`、`tools/raise-modern-office-desk.mjs` 只对 V1 源有意义。
+
+## 需要实机验证
+
+- 外观：浅灰桌板在 Sundial 下是否偏白，钢架和背板的观感；
+- 四个朝向下三格是否对齐；
+- 新轮廓、碰撞（站上桌面、走到桌边）；
+- 显示器、键盘、鼠标、工位放在桌上时下沉 2.5 px 后是否贴合桌面；
+- 生存挖掘和掉落。

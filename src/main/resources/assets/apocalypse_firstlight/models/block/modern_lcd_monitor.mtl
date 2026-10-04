@@ -1,0 +1,4 @@
+# AFL Office Props V2 monitor
+newmtl monitor
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/modern_lcd_monitor

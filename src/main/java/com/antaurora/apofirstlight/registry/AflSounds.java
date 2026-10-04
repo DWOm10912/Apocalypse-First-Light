@@ -56,6 +56,9 @@ public final class AflSounds {
     // Progressive Container Search: the one search sound for every searchable container, a seamless rustle loop
     // (tools/build-container-search-sounds-v2.mjs), looped by client/ContainerSearchSoundController while a search runs
     public static final RegistryObject<SoundEvent> CONTAINER_SEARCH_RUMMAGE = simple("container_search_rummage");
+    // Office chair (entity) rolling: a seamless loop (tools/build-office-chair-sounds-v1.mjs), looped by
+    // client/OfficeChairRollSound while a chair moves, volume and pitch following its speed
+    public static final RegistryObject<SoundEvent> OFFICE_CHAIR_ROLL = simple("office_chair_roll");
     // Stamina V1: single nasal breaths, one random variant at a time while tired (light) or winded (heavy)
     // (tools/build-stamina-breath-sounds-v1.mjs), scheduled by stamina/ClientStamina
     public static final RegistryObject<SoundEvent> STAMINA_BREATH_LIGHT = simple("stamina_breath_light");

@@ -256,7 +256,8 @@ public final class AflBlocks {
             () -> new OfficeDesktopDecorationBlock(BlockBehaviour.Properties.of()
                     .strength(0.7F, 1.5F)
                     .sound(SoundType.METAL)
-                    .noOcclusion(), OfficeDesktopDecorationBlock.computerStationShape()));
+                    .noOcclusion(), OfficeDesktopDecorationBlock.computerStationShape(),
+                    OfficeDesktopDecorationBlock.computerStationCollision()));
     public static final RegistryObject<Block> OFFICE_KEYBOARD = BLOCKS.register("office_keyboard",
             () -> new OfficeDesktopDecorationBlock(BlockBehaviour.Properties.of()
                     .strength(0.3F, 0.8F)

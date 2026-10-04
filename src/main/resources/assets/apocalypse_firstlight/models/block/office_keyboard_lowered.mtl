@@ -1,0 +1,4 @@
+# AFL Office Props V2 keyboard (on desk)
+newmtl keyboard
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/office_keyboard

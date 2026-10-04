@@ -1,0 +1,10 @@
+# AFL Office Props V2 computer station (on desk)
+newmtl monitor
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/modern_lcd_monitor
+newmtl keyboard
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/office_keyboard
+newmtl mouse
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/office_mouse

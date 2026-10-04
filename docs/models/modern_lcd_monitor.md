@@ -1,24 +1,53 @@
 # 现代液晶显示器
 
-状态：模型、贴图与静态装饰方块接入完成；等待游戏内视觉与生存采掘验证。
+状态：**V2（2026-10-03）已接入**。Pure Mesh + LabPBR，静态 OBJ 方块模型；选中轮廓和碰撞同时改了。生成脚本 `--check` 通过，`compileJava --offline` 通过；**没有实机验证**。
+
+V1 是 110 个 cube 的 Blockbench 模型，2026-10-03 被 V2 替换。以下都没变：
+- 注册 ID、方块状态（`facing`、`lowered`）、掉落、挖掘规则；
+- 放在办公桌上自动下沉 2.5 px 的逻辑。
 
 | 项目 | 内容 |
 |---|---|
-| 源模型 | `src/main/blockbench/modern_lcd_monitor.bbmodel` |
-| 贴图 | `src/main/resources/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor.png` |
-| 数量 | 110 cubes，21 groups |
-| 尺寸 | 宽16、深4.8、高12.8 units，即1×0.3×0.8 blocks |
-| 贴图 | 128×128，屏幕独占 UV [0,0,112,63] |
-| 屏幕 | 14.6×8.2125 units，16:9，黑屏、不发光 |
-| 组合预览 | `src/main/blockbench/previews/office_desk_monitor_preview.bbmodel` |
 | 注册 ID | `apocalypse_firstlight:modern_lcd_monitor` |
-| 采掘 | 镐；铁镐或更高等级；错误工具不掉落 |
-| VoxelShape | 覆盖底座、支架和屏幕，并随水平朝向旋转 |
+| 生成脚本 | `tools/build-office-props-v2.mjs monitor`（命令见 [modern_office_desk.md](modern_office_desk.md)） |
+| 可编辑源 | `src/main/blockbench/modern_lcd_monitor_v2.bbmodel`，贴图副本 `src/main/blockbench/textures/modern_lcd_monitor_v2{,_s,_n}.png` |
+| 运行时模型 | `models/block/modern_lcd_monitor.{json,obj,mtl}`，桌上下沉版 `modern_lcd_monitor_lowered.{json,obj,mtl}`（y -2.5 px） |
+| 贴图 | `textures/block/modern_lcd_monitor{,_s,_n}.png`，512 LabPBR，约 12 texel/px；电脑工位也用这张 |
+| 尺寸 | 宽 16、高 12.75、底座深 4.8 px；屏幕面朝 -Z（facing=north） |
+| 屏幕 | 15.2 × 8.55 px（16:9），深色玻璃 `[12,14,17]`（光滑度 214），黑屏，不发光 |
+| 三角面 | 620 |
+| 采掘 | 镐；铁镐或更高等级（`mineable/pickaxe` + `needs_iron_tool`，`requiresCorrectToolForDrops`）。未改 |
 
-屏幕、边框、状态点、背壳、支架、底座分别分组。背壳位于 display_assembly 内，显示总成轴心 (8,6.5,8.1)，便于后续整体调整屏幕倾角；支架轴心 (8,0.6,8.5)，底座底面 Y=0。
+## 外观
 
-初版底座、外框和背壳边缘存在重叠。已通过切除重复体积保留外部形状，校验110个cube无正体积交叠。已查看正面、侧面、背面、顶部、三分之四及办公桌组合截图；UV绑定、16:9比例及保存回读已检查。移动视角是否完全无闪烁仍待用户复核；未进行游戏运行验证。
+- 窄边框：上、左、右各 0.4 px，下边框 0.75 px。
+- 背壳：圆滑收窄的背壳，用放样做出圆角。
+- 支架：转接块、扁立柱、圆角底座。
+- 材质：缎面黑塑料 `[33,34,37]`，石墨色支架 `[44,45,49]`。不印字，没有指示灯（没通电）。
+- 法线平滑同办公桌。
 
-方块已加入方块注册、物品注册、创造模式方块页、双语名称与战利品表。显示器放在完整支撑方块上时使用正常高度；检测到下方为 13.5 units 高的现代办公桌时，模型与 VoxelShape 自动下沉 2.5 model units，底座落在桌面 Y=13.5，避免悬空。无通电、动画或屏幕 UI；游戏内显示和支撑切换仍待实机验证。
+## 选中轮廓与碰撞（2026-10-03）
 
-工具：`tools/modern-lcd-monitor.blockbench.js`、`tools/monitor-refine.blockbench.js`、`tools/monitor-remove-overlaps.blockbench.js`、`tools/monitor-delivery.mjs`、`tools/preview-monitor-desk.mjs`、`tools/export-office-props-runtime.mjs`。
+旧形状是底座、立柱、屏幕三个盒子，轮廓是台阶状的。V2 的轮廓和碰撞都是一个盒子（facing=north，随朝向旋转）：
+- 正常：`0,0,5.6 → 16,12.75,10.4`；
+- 桌上：`0,-2.5,5.6 → 16,10.25,10.4`。
+
+代码在 `block/ModernLcdMonitorBlock.java`。
+
+## 物品
+
+父模型是 `block/modern_lcd_monitor`。GUI 平移重新居中：rotation `[25,135,0]`、translation `[0.445,0.847,0]`、scale 0.72。其他场合照旧。
+
+## 旧工具（已过时）
+
+- V1 cube 源 `src/main/blockbench/modern_lcd_monitor.bbmodel` 和预览 `previews/office_desk_monitor_preview.bbmodel` 保留作参考。
+- **不要再运行** `tools/monitor-delivery.mjs`：它会把 V1 贴图写回 `textures/block/modern_lcd_monitor.png`。
+- `modern-lcd-monitor.blockbench.js`、`monitor-refine.blockbench.js`、`monitor-remove-overlaps.blockbench.js`、`preview-monitor-desk.mjs` 只对 V1 源有意义。
+- 运行时导出脚本 `tools/export-office-props-runtime.mjs` 已删除。
+
+## 需要实机验证
+
+- 黑屏玻璃在 Sundial 下的反光；
+- 放在桌上和地上的高度；
+- 新的轮廓和碰撞；
+- 四个朝向。

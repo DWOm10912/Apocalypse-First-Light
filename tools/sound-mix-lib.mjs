@@ -116,9 +116,11 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
  * mirror (with crossfade 0): for steady noise with no period to keep in phase (a rustle). The levelled window plays
  * forward, then backward without its two end samples, so both joins repeat a sample's neighbour: no crossfade dip, no
  * seam, and the loop is twice the window. Reversed noise sounds the same; keep the window free of anything with a
- * direction (an attack, a word). Returns a report.
+ * direction (an attack, a word). equalPower (with a crossfade): sine / cosine crossfade weights instead of linear ones, for
+ * noise with ticks in it (a rolling wheel): the two sides are uncorrelated, so a linear crossfade dips about 3 dB in the
+ * middle while equal power keeps the level; mirroring would turn the ticks around. Returns a report.
  */
-export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick, mirror = false}) {
+export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick, mirror = false, equalPower = false}) {
   const wav = path.join(srcDir, source.name + '.wav');
   const h = createHash('sha256').update(fs.readFileSync(wav)).digest('hex').slice(0, 16);
   if (h !== source.sha) throw new Error(`${source.name}.wav changed (sha ${h}, expected ${source.sha})`);
@@ -135,7 +137,8 @@ export function buildLoop({srcDir, soundsDir, source, file, from, period, period
   if (declick !== undefined) levelled = declickHighs(levelled, declick);
   if (mirror && C) throw new Error(`${source.name}: a mirrored loop takes no crossfade`);
   let loop = levelled.slice(0, L);
-  for (let i = 0; i < C; i++) { const w = i / C; loop[i] = levelled[i] * w + levelled[L + i] * (1 - w); }
+  for (let i = 0; i < C; i++) { const w = i / C, a = equalPower ? Math.sin(w * Math.PI / 2) : w, b = equalPower ? Math.cos(w * Math.PI / 2) : 1 - w;
+    loop[i] = levelled[i] * a + levelled[L + i] * b; }
   if (mirror) { const m = new Float64Array(2 * L - 2); m.set(loop); for (let i = 1; i < L - 1; i++) m[L - 1 + i] = loop[L - 1 - i]; loop = m; }
   const N = loop.length;
   const ref = maxLoudness(decode(path.join(soundsDir, reference)), 0.4) + offset;
