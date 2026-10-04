@@ -23,7 +23,8 @@ import net.minecraftforge.fml.common.Mod;
 public final class ClientThirst {
     private static final int SIP_COOLDOWN = 10;
     private static ThirstPackets.State state;
-    private static long lastSip = Long.MIN_VALUE;
+    /** Game time of the last sip sent; starts far enough back that the first click always goes out. */
+    private static long lastSip = -SIP_COOLDOWN;
     private ClientThirst() {}
 
     public static ThirstPackets.State state() { return state; }
@@ -36,6 +37,7 @@ public final class ClientThirst {
     @SubscribeEvent public static void disconnect(ClientPlayerNetworkEvent.LoggingOut event) {
         state = null;
         PlayerThirst.clientValue = Float.NaN;
+        lastSip = -SIP_COOLDOWN;
     }
 
     /** Every drink (water bottles, the thirst "foods"): a water-drop icon and the amount, right under the item name. */
@@ -52,7 +54,7 @@ public final class ClientThirst {
                 || PlayerThirst.waterSourceInView(player) == null) return false;
         if (!PlayerThirst.canDrink(player)) return false; // full: the click does whatever it would do
         long now = player.level().getGameTime();
-        if (now - lastSip >= SIP_COOLDOWN) {
+        if (now - lastSip >= SIP_COOLDOWN || now < lastSip) { // (now < lastSip: another world with an earlier clock)
             lastSip = now;
             AflNetwork.thirstSip(); // the server swings the arm and plays the sound
         }

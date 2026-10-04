@@ -48,7 +48,7 @@ import java.util.UUID;
  * </pre>
  * T_env is the "ambient" a future thermometer shows; only the core decides the stages. Cold stages (36 / 35 / 34) and
  * heat stages (38 / 39 / 40) slow stamina, speed up thirst, slow the player and stop natural healing before the last
- * one also hurts (vanilla starvation limits; none in Peaceful). Creative / Spectator: the core stays at 37, no effects.
+ * one also hurts (can kill on any difficulty but Peaceful, like dehydration). Creative / Spectator: the core stays at 37, no effects.
  * Saved as {core, wet, exertion} in the player's persistent data; a death starts at 37, dry.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
@@ -325,13 +325,10 @@ public final class PlayerTemperature {
                 "AFL body temperature", amount, AttributeModifier.Operation.MULTIPLY_TOTAL));
     }
 
-    /** Same limits as vanilla starvation: Easy stops at 10 health, Normal at 1, Hard can kill. */
+    /** Kills on every difficulty but Peaceful (unlike vanilla starvation; the caller skips Peaceful), like dehydration. */
     private static void hurt(ServerPlayer player, ResourceKey<DamageType> key) {
-        var difficulty = player.level().getDifficulty();
-        if (player.getHealth() > 10.0F || difficulty == Difficulty.HARD || player.getHealth() > 1.0F && difficulty == Difficulty.NORMAL) {
-            var type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(key);
-            player.hurt(new DamageSource(type), 1.0F);
-        }
+        var type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(key);
+        player.hurt(new DamageSource(type), 1.0F);
     }
 
     // ---- client state

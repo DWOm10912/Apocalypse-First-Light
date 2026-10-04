@@ -50,7 +50,7 @@ import java.util.Map;
  * Thirst V1, server side (docs/项目内容/01 - 设计/生存/口渴.md; numbers in ThirstConfig). Thirst falls by a base rate and
  * with the stamina spent (PlayerStamina#consumeSpent); drinks raise it. Raw water may give the stomach bug
  * (GastroenteritisEffect), radioactive water adds cumulative dose. Low thirst slows stamina regeneration and, dehydrated,
- * stops natural healing (FoodDataThirstMixin); at 0 it hurts like starvation. Glass bottles filled from a water source
+ * stops natural healing (FoodDataThirstMixin); at 0 it hurts every 10 s and can kill on any difficulty but Peaceful. Glass bottles filled from a water source
  * become dirty water bottles carrying the place's contamination level. Creative / Spectator: frozen, no effects;
  * Peaceful: does not fall and does not hurt. The value is kept across logins; a death starts full.
  */
@@ -219,13 +219,10 @@ public final class PlayerThirst {
         player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.thirst.gastro_symptom"), true);
         s.forceSync = true;
     }
-    /** Same limits as vanilla starvation: Easy stops at 10 health, Normal at 1, Hard can kill. */
+    /** Dehydration kills on every difficulty but Peaceful (unlike vanilla starvation), so thirst can never be ignored. */
     private static void dehydrationDamage(ServerPlayer player) {
-        var difficulty = player.level().getDifficulty();
-        if (player.getHealth() > 10.0F || difficulty == Difficulty.HARD || player.getHealth() > 1.0F && difficulty == Difficulty.NORMAL) {
-            var type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DEHYDRATION);
-            player.hurt(new DamageSource(type), 1.0F);
-        }
+        var type = player.level().registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(DEHYDRATION);
+        player.hurt(new DamageSource(type), 1.0F);
     }
     private static void sync(ServerPlayer player, State s, ThirstConfig c) {
         int now = player.server.getTickCount();
