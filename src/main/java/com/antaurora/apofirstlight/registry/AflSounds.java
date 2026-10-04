@@ -72,7 +72,7 @@ public final class AflSounds {
     // Checkout Counter V1 gate: on the flap (0.8 s) and door (0.4 s) animation (tools/build-checkout-counter-gate-sounds-v1.mjs)
     public static final RegistryObject<SoundEvent> CHECKOUT_COUNTER_GATE_OPEN = simple("checkout_counter_gate_open");
     public static final RegistryObject<SoundEvent> CHECKOUT_COUNTER_GATE_CLOSE = simple("checkout_counter_gate_close");
-    // Fuel Dispenser V1 nozzle: AFL events over vanilla clips (sounds.json), until it gets its own recordings
+    // Fuel Dispenser V1 nozzle: cut and loudness-matched by tools/build-fuel-nozzle-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> FUEL_NOZZLE_TAKE = simple("fuel_nozzle_take");
     public static final RegistryObject<SoundEvent> FUEL_NOZZLE_HANG = simple("fuel_nozzle_hang");
     public static final RegistryObject<SoundEvent> FUEL_NOZZLE_BREAKAWAY = simple("fuel_nozzle_breakaway");

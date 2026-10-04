@@ -349,15 +349,15 @@
   },
   "fuel_nozzle_take": {
     "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_take",
-    "sounds": [{"name":"minecraft:item/armor/equip_iron1","volume":0.8,"attenuation_distance":12},{"name":"minecraft:item/armor/equip_iron2","volume":0.8,"attenuation_distance":12},{"name":"minecraft:item/armor/equip_iron3","volume":0.8,"attenuation_distance":12},{"name":"minecraft:item/armor/equip_iron4","volume":0.8,"attenuation_distance":12}]
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/take", "attenuation_distance": 12}]
   },
   "fuel_nozzle_hang": {
     "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_hang",
-    "sounds": [{"name":"minecraft:block/chain/break1","volume":0.9,"attenuation_distance":12},{"name":"minecraft:block/chain/break2","volume":0.9,"attenuation_distance":12},{"name":"minecraft:block/chain/break3","volume":0.9,"attenuation_distance":12},{"name":"minecraft:block/chain/break4","volume":0.9,"attenuation_distance":12}]
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/hang", "attenuation_distance": 12}]
   },
   "fuel_nozzle_breakaway": {
     "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_breakaway",
-    "sounds": [{"name":"minecraft:block/iron_trapdoor/close1","pitch":1.2,"attenuation_distance":16},{"name":"minecraft:block/iron_trapdoor/close2","pitch":1.2,"attenuation_distance":16},{"name":"minecraft:block/iron_trapdoor/close3","pitch":1.2,"attenuation_distance":16},{"name":"minecraft:block/iron_trapdoor/close4","pitch":1.2,"attenuation_distance":16}]
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/breakaway", "attenuation_distance": 16}]
   },
   "industrial_locker_open": {
     "subtitle": "subtitles.apocalypse_firstlight.industrial_locker_open",
