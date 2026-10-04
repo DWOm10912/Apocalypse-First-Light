@@ -95,6 +95,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("back_bar_shelf", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity::new,
                             AflBlocks.BACK_BAR_SHELF.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.StorageRackBlockEntity>> STORAGE_RACK =
+            BLOCK_ENTITIES.register("storage_rack", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.StorageRackBlockEntity::new,
+                            AflBlocks.STORAGE_RACK.get()).build(null));
     public static final RegistryObject<BlockEntityType<ThermalGeneratorBlockEntity>> THERMAL_GENERATOR =
             BLOCK_ENTITIES.register("thermal_generator", () ->
                     BlockEntityType.Builder.of(ThermalGeneratorBlockEntity::new,

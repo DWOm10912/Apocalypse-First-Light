@@ -214,6 +214,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.CHECKOUT_COUNTER_GATE.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> BACK_BAR_SHELF = ITEMS.register("back_bar_shelf",
             () -> new BlockItem(AflBlocks.BACK_BAR_SHELF.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> STORAGE_RACK = ITEMS.register("storage_rack",
+            () -> new BlockItem(AflBlocks.STORAGE_RACK.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CASH_REGISTER = ITEMS.register("cash_register",
             () -> new BlockItem(AflBlocks.CASH_REGISTER.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> WATER_DISPENSER = ITEMS.register("water_dispenser",

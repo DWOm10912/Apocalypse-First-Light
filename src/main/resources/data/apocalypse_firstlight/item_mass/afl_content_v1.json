@@ -289,6 +289,10 @@
       "unit_mass_kg": 20,
       "estimated": true
     },
+    "apocalypse_firstlight:storage_rack": {
+      "unit_mass_kg": 20,
+      "estimated": true
+    },
     "apocalypse_firstlight:back_bar_shelf": {
       "unit_mass_kg": 28,
       "estimated": true

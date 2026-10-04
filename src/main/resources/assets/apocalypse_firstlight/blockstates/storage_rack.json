@@ -1,0 +1,426 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "half": "lower"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_lower"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "lower",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_lower"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "lower",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_lower"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "lower",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_lower"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "lower",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_lower"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "upper"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_upper"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "upper",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_upper"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "upper",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_upper"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "upper",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_upper"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "half": "upper",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_upper"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "lower"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "lower",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "lower",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "lower",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "lower",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_lower",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "upper"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "upper",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "upper",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "upper",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "half": "upper",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_upper",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "lower"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "lower",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "lower",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "lower",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "lower",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_lower",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "upper"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "upper",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "upper",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "upper",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "half": "upper",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_upper",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "lower"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "lower",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "lower",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "lower",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "lower",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_lower",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "upper"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/core_upper",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "upper",
+        "left": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_left_upper",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "upper",
+        "left": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_left_upper",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "upper",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/end_right_upper",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "half": "upper",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storage_rack/joint_right_upper",
+        "y": 270
+      }
+    }
+  ]
+}

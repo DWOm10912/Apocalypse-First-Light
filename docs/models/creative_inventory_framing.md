@@ -8,6 +8,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | --- | --- |
 | `retail_shelf_single` | `[-0.75,-2.9,0]` |
 | `cash_register` | 2026-09-30 起由 `tools/build-cash-register-v2.mjs` 生成：rotation `[30,225,0]`、translation `[-0.038,1.482,0]`、scale 0.711（V2 Mesh，见 [cash_register_v2.md](cash_register_v2.md)） |
+| `storage_rack` | 2026-10-04 起由 `tools/build-storage-rack-v1.mjs` 生成：rotation `[30,225,0]`，translation 按网格包围盒居中 `[0.99,-3.786,0]`，scale 0.5。物品模型是单独一个货架（中段加两端立柱），见 [storage_rack_v1.md](storage_rack_v1.md) |
 | `fuel_dispenser` | 2026-10-04 起由 `tools/build-fuel-dispenser-v1.mjs` 生成：rotation `[30,225,0]`，translation 按网格包围盒居中 `[1.527,-2.177,0]`，scale 0.27。物品模型是整台加油机（含四把挂着的枪和路缘），见 [fuel_dispenser_v1.md](fuel_dispenser_v1.md) |
 | `fuel_island_curb`、`fuel_island_end`、`fuel_island_bollard` | 2026-10-04 起由 `tools/build-fuel-island-v1.mjs` 生成：rotation `[30,225,0]`，translation 按网格包围盒居中（路缘 `[0,3.458,0]`、端头 `[-1.013,2.945,0]`、防撞柱 `[0,0.163,0]`），scale 0.62（防撞柱 0.55），见 [fuel_island_kit_v1.md](fuel_island_kit_v1.md) |
 | `fuel_nozzle_gasoline`、`fuel_nozzle_diesel` | 同一生成器：油枪侧面朝外，rotation `[20,120,0]`，translation `[-0.166,-0.041,0]`，scale 1.55；手上的显示参数 2026-10-04 按原版手持变换离线拟合，见 [fuel_dispenser_v1.md](fuel_dispenser_v1.md) |

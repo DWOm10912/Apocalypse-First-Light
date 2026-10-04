@@ -219,6 +219,12 @@ public final class AflBlocks {
                     .sound(SoundType.WOOD)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    public static final RegistryObject<Block> STORAGE_RACK = BLOCKS.register("storage_rack",
+            () -> new com.antaurora.apofirstlight.block.StorageRackBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(4.0F, 6.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()));
     public static final RegistryObject<Block> WATER_DISPENSER = BLOCKS.register("water_dispenser",
             () -> new WaterDispenserBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)

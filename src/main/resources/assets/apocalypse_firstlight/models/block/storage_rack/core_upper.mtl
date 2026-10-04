@@ -1,0 +1,4 @@
+# AFL Storage Rack V1 core_upper
+newmtl storage_rack
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/storage_rack

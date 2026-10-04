@@ -93,6 +93,7 @@ public final class AflCreativeTabs {
             AflItems.CHECKOUT_COUNTER_DISPLAY,
             AflItems.CHECKOUT_COUNTER_GATE,
             AflItems.BACK_BAR_SHELF,
+            AflItems.STORAGE_RACK,
             AflItems.CASH_REGISTER,
             AflItems.BEVERAGE_COOLER,
             AflItems.CHEST_FREEZER,

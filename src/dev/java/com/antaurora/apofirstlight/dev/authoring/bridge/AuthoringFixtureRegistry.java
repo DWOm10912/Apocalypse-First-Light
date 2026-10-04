@@ -111,6 +111,8 @@ final class AuthoringFixtureRegistry {
                     .notes("Pass-through gate in a counter line; facing = the customer side, hinge left = facing.getCounterClockWise(), where the flap folds onto the neighbouring counter. Starts closed."),
             new Def(A+"back_bar_shelf",storage,"retail").facing(H4).multi(TWO_TALL).inventory().support(Support.NONE)
                     .notes("Two-tall wall unit behind a checkout; facing = the front. The lower half owns the 12-slot searchable container, starts empty."),
+            new Def(A+"storage_rack",storage,"retail").facing(H4).multi(TWO_TALL).connect("left","right").inventory().support(Support.NONE)
+                    .notes("Two-tall boltless steel rack; facing = the front. left/right are computed from same-facing neighbours (shared uprights). The lower half owns the 12-slot searchable container, starts empty."),
             new Def(A+"cash_register",storage,"retail").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
                     .notes("Countertop POS (V2); facing = the operator side. 9-slot cash drawer, starts closed and empty; it slides 0.5 block out toward the operator when opened."),
             new Def(A+"commercial_glass_double_door",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)

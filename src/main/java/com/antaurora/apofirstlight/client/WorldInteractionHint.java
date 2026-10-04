@@ -144,6 +144,9 @@ public final class WorldInteractionHint {
         } else if(s.getBlock() instanceof com.antaurora.apofirstlight.block.BackBarShelfBlock&&hit.getDirection()==s.getValue(com.antaurora.apofirstlight.block.BackBarShelfBlock.FACING)
                 &&mc.level.getBlockEntity(com.antaurora.apofirstlight.block.BackBarShelfBlock.lower(s,pos)) instanceof com.antaurora.apofirstlight.blockentity.BackBarShelfBlockEntity bar) {
             key="back_bar_shelf";complete=bar.isSearchCompleteForPrompt();
+        } else if(s.getBlock() instanceof com.antaurora.apofirstlight.block.StorageRackBlock&&hit.getDirection()==s.getValue(com.antaurora.apofirstlight.block.StorageRackBlock.FACING)
+                &&mc.level.getBlockEntity(com.antaurora.apofirstlight.block.StorageRackBlock.lower(s,pos)) instanceof com.antaurora.apofirstlight.blockentity.StorageRackBlockEntity rack) {
+            key="storage_rack";complete=rack.isSearchCompleteForPrompt();
         } else if(s.getBlock() instanceof VendingMachineBlock&&s.getValue(VendingMachineBlock.BROKEN)
                 &&VendingMachineBlock.frontPoint(s,pos,eye,hit)!=null
                 &&mc.level.getBlockEntity(VendingMachineBlock.lower(s,pos)) instanceof VendingMachineBlockEntity machine) {

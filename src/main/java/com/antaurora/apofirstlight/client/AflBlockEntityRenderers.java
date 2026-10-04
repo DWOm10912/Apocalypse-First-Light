@@ -19,6 +19,7 @@ public final class AflBlockEntityRenderers {
         // Checkout Counter V1: the goods in the cubbies / on the trays and on the back bar's shelves (the furniture is baked)
         event.registerBlockEntityRenderer(AflBlockEntities.CHECKOUT_COUNTER.get(), CheckoutCounterRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.BACK_BAR_SHELF.get(), BackBarShelfRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.STORAGE_RACK.get(), StorageRackRenderer::new);
         // Fuel Dispenser V1: the live hoses of nozzles that are out (the dispenser and its holstered nozzles are baked)
         event.registerBlockEntityRenderer(AflBlockEntities.FUEL_DISPENSER.get(), FuelDispenserRenderer::new);
         // Checkout Counter V1 gate: the flap and the door animate (generic AFL Animated Block Mesh Runtime)
