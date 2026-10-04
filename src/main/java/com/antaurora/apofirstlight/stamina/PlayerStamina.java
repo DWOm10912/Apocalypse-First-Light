@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.stamina;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
+import com.antaurora.apofirstlight.temperature.PlayerTemperature;
 import com.antaurora.apofirstlight.weight.PlayerWeightRuntime;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,7 +35,7 @@ public final class PlayerStamina {
     private static final Map<ServerPlayer, State> STATES = new HashMap<>();
 
     private static final class State {
-        double value = Double.NaN, lastX, lastY, lastZ, spent;
+        double value = Double.NaN, lastX, lastY, lastZ, spent, spentForTemperature;
         boolean winded, mined, hasLast, forceSync = true;
         int delay, lastSyncTick = Integer.MIN_VALUE, breathTick = Integer.MIN_VALUE;
         float sentValue = Float.NaN, sentSway = Float.NaN;
@@ -75,9 +76,10 @@ public final class PlayerStamina {
     public static void spend(ServerPlayer player, double amount, boolean movement) {
         if (!enabled(player) || amount <= 0) return;
         var s = state(player);
-        double cost = amount * weight(player)[movement ? 0 : 1];
+        double cost = amount * weight(player)[movement ? 0 : 1] * PlayerTemperature.staminaCostMultiplier(player);
         s.value -= cost;
         s.spent += cost;
+        s.spentForTemperature += cost;
         s.delay = Math.max(s.delay, (int)Math.round(StaminaConfig.get().delaySeconds * 20));
         settle(s);
     }
@@ -98,6 +100,15 @@ public final class PlayerStamina {
         if (s == null) return 0;
         double spent = s.spent;
         s.spent = 0;
+        return spent;
+    }
+
+    /** Temperature V1 (exertion heat): the same, with its own running total, so thirst and temperature both see it all. */
+    public static double consumeSpentForTemperature(ServerPlayer player) {
+        var s = STATES.get(player);
+        if (s == null) return 0;
+        double spent = s.spentForTemperature;
+        s.spentForTemperature = 0;
         return spent;
     }
 
@@ -136,8 +147,10 @@ public final class PlayerStamina {
             }
             drain *= w[0];
             if (s.mined) { drain += c.costs.mining * w[1]; effort = true; s.mined = false; }
+            drain *= PlayerTemperature.staminaCostMultiplier(player); // heat stages
             s.value -= drain / 20;
             s.spent += drain / 20;
+            s.spentForTemperature += drain / 20;
             if (effort) s.delay = Math.max(s.delay, (int)Math.round(c.delaySeconds * 20));
             if (s.delay > 0) s.delay--;
             else {
@@ -145,6 +158,7 @@ public final class PlayerStamina {
                 if (player.isInWater()) regen *= c.regenInWater;
                 if (player.getFoodData().getFoodLevel() <= c.lowFoodLevel) regen *= c.regenLowFood;
                 regen *= com.antaurora.apofirstlight.thirst.PlayerThirst.staminaRegenMultiplier(player); // thirsty, sick
+                regen *= PlayerTemperature.staminaRegenMultiplier(player); // cold / heat stages
                 s.value += regen / 20;
             }
             settle(s);

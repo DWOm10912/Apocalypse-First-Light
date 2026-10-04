@@ -31,18 +31,27 @@ public final class ClientWeightPenalties {
         if (state != null) WeightPenalties.scaleJump(player, state.jumpMultiplier());
     }
 
+    /** AFL's own slowdowns (MULTIPLY_TOTAL): the load and the body temperature stages. */
+    private static final java.util.UUID[] SLOWDOWNS = {WeightPenalties.SPEED_MODIFIER,
+            com.antaurora.apofirstlight.temperature.PlayerTemperature.SPEED_MODIFIER};
+
     /**
-     * Vanilla narrows the FOV with movement speed (× (speed / walking speed + 1) / 2, like Slowness). A heavy load should
-     * not zoom the view, so the encumbrance modifier's share of that term is divided out; flying, sprinting and the bow
-     * draw stay. Not while scoping (vanilla's fixed spyglass value).
+     * Vanilla narrows the FOV with movement speed (× (speed / walking speed + 1) / 2, like Slowness). A heavy load or the
+     * cold should not zoom the view, so AFL's slowdown modifiers' share of that term is divided out; flying, sprinting
+     * and the bow draw stay. Not while scoping (vanilla's fixed spyglass value).
      */
     @SubscribeEvent public static void fov(ComputeFovModifierEvent event) {
         var player = event.getPlayer();
         var speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
-        var modifier = speed == null ? null : speed.getModifier(WeightPenalties.SPEED_MODIFIER);
         float walking = player.getAbilities().getWalkingSpeed();
-        if (modifier == null || walking <= 0 || player.isScoping() || modifier.getAmount() <= -1) return;
-        double with = speed.getValue(), without = with / (1 + modifier.getAmount());
+        if (speed == null || walking <= 0 || player.isScoping()) return;
+        double factor = 1;
+        for (var id : SLOWDOWNS) {
+            var modifier = speed.getModifier(id);
+            if (modifier != null) factor *= 1 + modifier.getAmount();
+        }
+        if (factor == 1 || factor <= 0) return;
+        double with = speed.getValue(), without = with / factor;
         double scale = (without / walking + 1) / (with / walking + 1);
         if (Double.isFinite(scale)) event.setNewFovModifier((float)(event.getNewFovModifier() * scale));
     }

@@ -12,20 +12,21 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `stamina/PlayerStamina.java` | 服务端：每 tick 的消耗和恢复、各动作事件、力竭、同步、保存 |
 | `stamina/StaminaPackets.java` | 两种 S2C 包：本人状态、别人的呼吸等级 |
 | `stamina/ClientStamina.java` | 客户端：本人状态、喘息声调度、力竭挖掘变慢 |
-| `stamina/ClientStaminaHud.java` | 临时耐力环 HUD |
+| `stamina/ClientStaminaHud.java` | 耐力环 HUD（生存指标组左边） |
 | `stamina/StaminaCommands.java` | `/aflstamina` 调试命令 |
 | `stamina/PlayerStamina#consumeSpent` | 口渴 V1：把实际花掉的耐力交给口渴（每 100 点口渴 −3） |
+| `stamina/PlayerStamina#consumeSpentForTemperature` | 体温 V1：同样的数，独立累加，用来算出力产热 |
 | `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重或力竭时禁止疾跑（和负重共用） |
 | `weapon/NativeGunActions.java` | 开枪、换弹时扣耐力 |
 | `weapon/NativeGunShot.java` | 疲劳时散布变大 |
 | `weapon/client/NativeWeaponSway.java` | 疲劳时持枪晃动变大 |
-| `network/AflNetwork.java` | 注册两种包，协议 35 |
+| `network/AflNetwork.java` | 注册两种包，协议 35（之后口渴 36、体温 37） |
 | `tools/build-stamina-breath-sounds-v1.mjs` | 生成喘息音效 |
 
 ## 数值（`stamina_v1.json`）
 
 - 最大 100。
-- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5；口渴时再乘口渴倍率（口渴 < 30 ×0.75、< 15 ×0.5，肠胃感染 ×0.75，见 `thirst_system_v1.md`）。
+- 恢复每秒 15；在水里 ×0.5；饱食度 ≤ 6 时 ×0.5；口渴时再乘口渴倍率（口渴 < 30 ×0.75、< 15 ×0.5，肠胃感染 ×0.75，见 `thirst_system_v1.md`）；再乘体温倍率（C1 ×0.8，C2 起 ×0.6，H2 起 ×0.75，见 `temperature_system_v1.md`）。
 - 恢复延迟：费力动作后 1.0 秒；降到 0 后 2.0 秒。
 - 力竭解除：耐力回到 30。
 
@@ -99,7 +100,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 `ClientStaminaHud`，overlay `apocalypse_firstlight:stamina_ring`。正式生存 HUD 以后再做，见 `耐力.md` 第 12 节。
 
-- 位置：负重条左边的圆环（GUI 坐标，圆心在负重条左端左边 22 像素、屏幕高度 − 29.5，外半径 5.5、环宽 1.5），在副手格上方，不挡副手格。2026-10-03 口渴 V1 把水滴环放在负重条旁边（左 9 像素），耐力环往左挪了一格；绘制改用共用的 `client/AflRingIcon`。
+- 位置：生存指标组里体温表盘的左边（`client/SurvivalHudLayout`：圆心在屏幕中线左边 19 GUI 像素、屏幕底边上方 55 像素，外半径 5.5、环宽 1.5），在护甲值那一行之上，不挡护甲图标。2026-10-03 体温 V1 把耐力环、体温表盘、水滴环拼成一组（之前在负重条左端左边 22 像素）。绘制用共用的 `client/AflRingIcon`。
 - 环从顶上开始顺时针随耐力填充，中间一个跑步小人。
 - 颜色：正常浅灰，< 30 琥珀，力竭红。
 - 填充和负重条一样平滑过渡（时间常数 0.12 秒）。
@@ -129,7 +130,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - 挥空的近战不扣耐力。
 - 呼吸节奏随疲劳变快。
 - 感染者能不能听到喘息声，留给感染者听觉系统。
-- 口渴、体温、受伤对耐力的影响（`耐力.md` 第 13 节预留）。
+- 受伤对耐力的影响（`耐力.md` 第 13 节预留）。口渴和体温已接入。
 
 ## 验收（2026-10-03 用户测试 PASS）
 

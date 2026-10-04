@@ -1,0 +1,31 @@
+{
+  "items": {
+    "minecraft:leather_helmet": 2,
+    "minecraft:leather_chestplate": 5,
+    "minecraft:leather_leggings": 3,
+    "minecraft:leather_boots": 2,
+    "minecraft:chainmail_helmet": 1,
+    "minecraft:chainmail_chestplate": 2,
+    "minecraft:chainmail_leggings": 1,
+    "minecraft:chainmail_boots": 1,
+    "minecraft:iron_helmet": 1,
+    "minecraft:iron_chestplate": 2,
+    "minecraft:iron_leggings": 2,
+    "minecraft:iron_boots": 1,
+    "minecraft:golden_helmet": 1,
+    "minecraft:golden_chestplate": 2,
+    "minecraft:golden_leggings": 2,
+    "minecraft:golden_boots": 1,
+    "minecraft:diamond_helmet": 1,
+    "minecraft:diamond_chestplate": 3,
+    "minecraft:diamond_leggings": 2,
+    "minecraft:diamond_boots": 1,
+    "minecraft:netherite_helmet": 2,
+    "minecraft:netherite_chestplate": 4,
+    "minecraft:netherite_leggings": 3,
+    "minecraft:netherite_boots": 2,
+    "minecraft:turtle_helmet": 1,
+    "apocalypse_firstlight:simple_hearing_protection": 1
+  },
+  "tags": []
+}

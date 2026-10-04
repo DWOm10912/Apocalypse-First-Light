@@ -446,5 +446,11 @@
   "tooltip.apocalypse_firstlight.weight.stack": "Weight: %s × %s = %s",
   "tooltip.apocalypse_firstlight.weight.fallback": "No mass data; default value used",
   "tooltip.apocalypse_firstlight.weight.pending": "Weight: awaiting server data",
-  "message.apocalypse_firstlight.thirst.gastro_symptom": "Your stomach cramps"
+  "message.apocalypse_firstlight.thirst.gastro_symptom": "Your stomach cramps",
+  "message.apocalypse_firstlight.temperature.cold1": "You are shivering",
+  "message.apocalypse_firstlight.temperature.cold2": "Your hands and feet are going numb",
+  "message.apocalypse_firstlight.temperature.cold3": "You are freezing",
+  "message.apocalypse_firstlight.temperature.hot1": "You are drenched in sweat",
+  "message.apocalypse_firstlight.temperature.hot2": "You feel dizzy and weak",
+  "message.apocalypse_firstlight.temperature.hot3": "You are about to collapse from the heat"
 }

@@ -195,6 +195,7 @@ public final class PlayerThirst {
             if (!peaceful) {
                 double drain = c.basePerHour / 72000.0 + spent * c.exertionPer100Stamina / 100.0;
                 if (sick) drain *= c.sickness.thirstMultiplier;
+                drain *= com.antaurora.apofirstlight.temperature.PlayerTemperature.thirstMultiplier(player); // heat stages
                 s.value = Math.max(0, s.value - drain);
             }
             if (sick) {

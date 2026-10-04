@@ -29,10 +29,10 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `thirst/GastroenteritisEffect.java` | 肠胃感染效果（只做标记，症状由 PlayerThirst 施加；牛奶治不好） |
 | `thirst/ThirstPackets.java` | 本人口渴值（S2C）、空手喝一口（C2S） |
 | `thirst/ClientThirst.java` | 客户端：本人口渴值、空手喝水的输入、往饮品提示里插水滴行 |
-| `thirst/ClientThirstHud.java` | 临时水滴环 HUD、三种水瓶的液体颜色、水滴图形（环和提示共用）、注册提示组件 |
+| `thirst/ClientThirstHud.java` | 水滴环 HUD（生存指标组右边）、三种水瓶的液体颜色、水滴图形（环和提示共用）、注册提示组件 |
 | `thirst/ThirstCommands.java` | `/aflthirst` 调试命令 |
 | `client/AflRingIcon.java` | 耐力环、水滴环共用的圆环绘制，以及单独画一个图形（提示里的水滴） |
-| `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血 |
+| `mixin/FoodDataThirstMixin.java` | 脱水时不自然回血（体温 V1 也复用它：C2 / H2 起不自然回血） |
 | `stamina/PlayerStamina.java` | 把花掉的耐力交给口渴（`consumeSpent`），恢复速度乘口渴倍率 |
 | `registry/AflItems`、`AflMobEffects`、`AflRecipes`、`AflCreativeTabs` | 注册 |
 | `network/AflNetwork.java` | 注册两种包，协议 36 |
@@ -88,6 +88,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - 基础：每小时（现实时间）100 点。
 - 出力：每花掉 100 点耐力（负重倍率之后的实际消耗），口渴再掉 3 点。
 - 肠胃感染时以上全部 ×2。
+- 体温：炎热（H1）×1.5，中暑起（H2）×2，和肠胃感染相乘，最高 ×4（见 `temperature_system_v1.md`）。
 - 和平难度不下降，也不会因为脱水受伤。
 - 创造 / 旁观模式：数值冻结，喝东西不加、不生病、不加剂量。
 
@@ -129,9 +130,9 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 ## HUD（临时）
 
-- 水滴环：负重条左端旁边（GUI 坐标，圆心在负重条左端左边 9 像素、屏幕高度 − 29.5，外半径 5.5、环宽 1.5），生存 / 冒险模式一直显示。
+- 水滴环：生存指标组里体温表盘的右边（`client/SurvivalHudLayout`：圆心在屏幕中线右边 19 GUI 像素、屏幕底边上方 55 像素，外半径 5.5、环宽 1.5），在氧气泡那一行之上，生存 / 冒险模式一直显示。2026-10-03 体温 V1 从负重条左端旁边挪到这里。
 - 环随口渴值从顶上顺时针填充，中间是水滴。颜色：正常是暗水蓝，< 30 琥珀，< 15 红。变化时平滑过渡。
-- 耐力环因此往左挪到负重条左端左边 22 像素（`stamina_system_v1.md`）。
+- 耐力环在体温表盘左边（`stamina_system_v1.md`），三者组成一组，体温表盘在中间（`temperature_system_v1.md`）。
 - 正式的生存 HUD 以后统一设计。
 
 ## 调试
@@ -147,7 +148,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 
 ## 没做的
 
-饮水机出水、售货机和饮料冷柜出饮料、净水器（去辐射）、净水片、雨水收集、治肠胃感染的药、体温对口渴的影响、症状音效。见 `口渴.md` 第 9 节。
+饮水机出水、售货机和饮料冷柜出饮料、净水器（去辐射）、净水片、雨水收集、治肠胃感染的药、症状音效。体温对口渴的影响已在体温 V1 接入。见 `口渴.md` 第 9 节。
 
 ## 验收（待用户执行）
 

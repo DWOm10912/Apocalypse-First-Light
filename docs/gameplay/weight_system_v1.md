@@ -47,7 +47,7 @@ Java 路径统一前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `weight/ClientWeightPenalties.java` | 客户端：本人跳跃、疾跑判断、抵消移速带来的视野缩小 |
 | `mixin/client/LocalPlayerWeightSprintMixin.java` | 超重时禁止疾跑（和饿肚子同一个检查点）；2026-10-03 起也拦耐力力竭（`stamina_system_v1.md`） |
 | `weight/ClientWeightHud.java` | 负重条 HUD（原版经验条的位置） |
-| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34；耐力 V1 加了两种包后为 35 |
+| `network/AflNetwork.java` | 原频道注册与发送，Core 协议32；Tooltip同步扩展后为33；惩罚 V1 的 State 加字段后为 34；耐力 V1 加了两种包后为 35；口渴 V1 为 36；体温 V1 为 37 |
 | `weapon/NativeGunActions.java` | 既有射击/换弹库存同步处新增 dirty 通知 |
 | `weapon/AttachmentInteractionCore.java` | 成功提交处新增 dirty 通知 |
 
@@ -308,7 +308,7 @@ ratio = 负担 / 舒适负重。点之间线性，60 kg 以上不再加重：
 ### 实现
 
 - **移速**：服务端给 `MOVEMENT_SPEED` 加一个临时修饰（`WeightPenalties.SPEED_MODIFIER`，MULTIPLY_TOTAL，数值 = 移速倍率 − 1），随状态重算更新。它不写进存档，属性会自动同步给客户端。重生、换维度、登录时强制重算，会重新加上。
-- **视野**：原版会按移速缩小视野（和缓慢药水一样）。`ClientWeightPenalties#fov` 把这个修饰带来的那部分除掉，所以负重不会让镜头拉近；飞行、疾跑、拉弓的视野变化照旧，用望远镜时不处理。
+- **视野**：原版会按移速缩小视野（和缓慢药水一样）。`ClientWeightPenalties#fov` 把这个修饰带来的那部分除掉，所以负重不会让镜头拉近（体温 V1 的减速修饰器也一起除掉）；飞行、疾跑、拉弓的视野变化照旧，用望远镜时不处理。
 - **疾跑**：客户端 `LocalPlayerWeightSprintMixin` 让 `LocalPlayer#hasEnoughFoodToStartSprinting` 返回 false，和饿肚子禁疾跑走同一个检查点。原版在开始疾跑前和疾跑中每 tick 都会检查它，所以正在跑也会停下。服务端每 tick 如果还收到疾跑标记就清掉。
 - **跳跃**：玩家移动在客户端算，所以本人的跳跃在客户端 `LivingJumpEvent` 里把向上速度乘倍率，用的是服务器发来的最新状态。
 - 状态最多每 5 tick 同步一次，物品变化后大约 0.25 秒内生效。

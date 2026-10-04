@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.stamina;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.AflRingIcon;
+import com.antaurora.apofirstlight.client.SurvivalHudLayout;
 import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
@@ -12,15 +13,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Temporary Stamina V1 HUD until the survival HUD is designed (耐力.md §12): a ring left of the thirst ring, which sits
- * left of the load bar (the vanilla experience bar's place), filling clockwise from the top with the stamina, a running
- * figure in it (client/AflRingIcon). Muted light while fine, amber below 30, red while winded. It fades in when stamina
+ * Stamina V1 HUD (耐力.md §12): a ring left of the temperature dial in the survival cluster (client/SurvivalHudLayout),
+ * filling clockwise from the top with the stamina, a running figure in it (client/AflRingIcon). Muted light while fine, amber below 30, red while winded. It fades in when stamina
  * drops and out 2 s after it is full again; the fill eases like the load bar. Survival / Adventure only.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientStaminaHud {
-    /** Ring in GUI pixels: outer radius, band width; centre 22 left of the load bar, clear of the off-hand slot below. */
-    private static final double RADIUS = 5.5, BAND = 1.5, OFFSET_X = 22;
+    /** Ring in GUI pixels: outer radius, band width. */
+    private static final double RADIUS = 5.5, BAND = 1.5;
     private static final int LOW = 30;
     private static final double EASE_SECONDS = 0.12, FADE_SECONDS = 0.25, HOLD_FULL_SECONDS = 2.0;
     private static double shown = Double.NaN, alpha;
@@ -61,7 +61,8 @@ public final class ClientStaminaHud {
         alpha += ((visible ? 1 : 0) - alpha) * (1 - Math.exp(-dt / FADE_SECONDS));
         if (alpha < 0.01) return;
         int colour = state.winded() ? 0xBE443A : state.value() < LOW ? 0xD6983A : 0xC8C6BE;
-        AflRingIcon.draw(graphics, screenWidth / 2.0 - 91 - OFFSET_X, screenHeight - 29.5, RADIUS, BAND, shown, colour, alpha,
+        AflRingIcon.draw(graphics, screenWidth / 2.0 - SurvivalHudLayout.RING_OFFSET_X, screenHeight - SurvivalHudLayout.CENTRE_Y,
+                RADIUS, BAND, shown, colour, alpha,
                 ClientStaminaHud::runner);
     };
 }

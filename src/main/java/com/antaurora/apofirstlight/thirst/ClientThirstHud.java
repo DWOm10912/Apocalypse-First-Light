@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.thirst;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.client.AflRingIcon;
+import com.antaurora.apofirstlight.client.SurvivalHudLayout;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.weapon.client.FieldAttachmentViewState;
 import net.minecraft.client.Minecraft;
@@ -15,15 +16,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Temporary Thirst V1 HUD until the survival HUD is designed (口渴.md §10): a ring right next to the load bar's left end
- * (the stamina ring sits further left), always shown in Survival / Adventure, filling clockwise from the top with the
- * thirst, a water drop in it (client/AflRingIcon). Muted water blue, amber below 30, red below 15; eased like the load
+ * Thirst V1 HUD (口渴.md §10): a ring right of the temperature dial in the survival cluster (client/SurvivalHudLayout),
+ * always shown in Survival / Adventure, filling clockwise from the top with the thirst, a water drop in it
+ * (client/AflRingIcon). Muted water blue, amber below 30, red below 15; eased like the load
  * bar. Also the water bottles' liquid colours (the vanilla potion layers, tinted): dirty murky olive, boiled pale
  * blue-green with yellow-green radioactive specks (an untinted third layer), purified clear blue.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientThirstHud {
-    private static final double RADIUS = 5.5, BAND = 1.5, OFFSET_X = 9;
+    private static final double RADIUS = 5.5, BAND = 1.5;
     private static final double EASE_SECONDS = 0.12;
     /** Liquid tints: dirty murky olive; boiled close to purified, a little greener (its specks layer shows the radiation). */
     public static final int DIRTY_WATER = 0x76703E, BOILED_WATER = 0x98D4DC, PURIFIED_WATER = 0x8FD3F0;
@@ -67,7 +68,8 @@ public final class ClientThirstHud {
         var c = ThirstConfig.get();
         double value = shown * state.max();
         int colour = value < c.dehydratedBelow ? 0xBE443A : value < c.thirstyBelow ? 0xD6983A : WATER_BLUE;
-        AflRingIcon.draw(graphics, screenWidth / 2.0 - 91 - OFFSET_X, screenHeight - 29.5, RADIUS, BAND, shown, colour, 1.0,
+        AflRingIcon.draw(graphics, screenWidth / 2.0 + SurvivalHudLayout.RING_OFFSET_X, screenHeight - SurvivalHudLayout.CENTRE_Y,
+                RADIUS, BAND, shown, colour, 1.0,
                 WATER_DROP);
     };
 }

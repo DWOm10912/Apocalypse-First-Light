@@ -446,5 +446,11 @@
   "tooltip.apocalypse_firstlight.weight.stack": "重量：%s × %s = %s",
   "tooltip.apocalypse_firstlight.weight.fallback": "没有质量数据，按默认值计算",
   "tooltip.apocalypse_firstlight.weight.pending": "重量：等待服务器数据",
-  "message.apocalypse_firstlight.thirst.gastro_symptom": "肚子一阵绞痛"
+  "message.apocalypse_firstlight.thirst.gastro_symptom": "肚子一阵绞痛",
+  "message.apocalypse_firstlight.temperature.cold1": "你冷得发抖",
+  "message.apocalypse_firstlight.temperature.cold2": "手脚冻得发麻",
+  "message.apocalypse_firstlight.temperature.cold3": "你快冻僵了",
+  "message.apocalypse_firstlight.temperature.hot1": "你热得满身是汗",
+  "message.apocalypse_firstlight.temperature.hot2": "你头晕乏力",
+  "message.apocalypse_firstlight.temperature.hot3": "你快中暑倒下了"
 }
