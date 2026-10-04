@@ -72,6 +72,10 @@
     "apocalypse_firstlight:fuel_island_curb",
     "apocalypse_firstlight:fuel_island_end",
     "apocalypse_firstlight:fuel_island_bollard",
+    "apocalypse_firstlight:fuel_canopy_column",
+    "apocalypse_firstlight:fuel_canopy_ceiling",
+    "apocalypse_firstlight:fuel_canopy_light",
+    "apocalypse_firstlight:fuel_canopy_fascia",
     "apocalypse_firstlight:lead_shielding_bricks"
   ]
 }

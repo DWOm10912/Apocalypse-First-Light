@@ -1,0 +1,106 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "segment": "base",
+        "island": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "segment": "base",
+        "island": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base_curb"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "segment": "base",
+        "island": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "segment": "base",
+        "island": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base_curb",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "segment": "base",
+        "island": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "segment": "base",
+        "island": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base_curb",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "segment": "base",
+        "island": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "segment": "base",
+        "island": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_base_curb",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "segment": "shaft"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_shaft"
+      }
+    },
+    {
+      "when": {
+        "top": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/column_head"
+      }
+    }
+  ]
+}

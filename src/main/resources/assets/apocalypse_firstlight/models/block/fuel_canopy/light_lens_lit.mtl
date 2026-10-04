@@ -1,0 +1,5 @@
+# AFL Fuel Canopy V1 ceiling light lens (lit)
+newmtl fuel_canopy
+Kd 1 1 1
+Ka 1 1 1
+map_Kd apocalypse_firstlight:block/fuel_canopy

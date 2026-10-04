@@ -260,6 +260,21 @@ public final class AflBlocks {
     public static final RegistryObject<Block> FUEL_ISLAND_BOLLARD = BLOCKS.register("fuel_island_bollard",
             () -> new com.antaurora.apofirstlight.block.FuelIslandBollardBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_CANOPY_COLUMN = BLOCKS.register("fuel_canopy_column",
+            () -> new com.antaurora.apofirstlight.block.FuelCanopyColumnBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_CANOPY_CEILING = BLOCKS.register("fuel_canopy_ceiling",
+            () -> new com.antaurora.apofirstlight.block.FuelCanopyCeilingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_CANOPY_LIGHT = BLOCKS.register("fuel_canopy_light",
+            () -> new com.antaurora.apofirstlight.block.FuelCanopyLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.FuelCanopyLightBlock.LIT)
+                            ? com.antaurora.apofirstlight.block.FuelCanopyLightBlock.LIGHT_LEVEL : 0)
+                    .requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_CANOPY_FASCIA = BLOCKS.register("fuel_canopy_fascia",
+            () -> new com.antaurora.apofirstlight.block.FuelCanopyFasciaBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     private static CommercialDumpsterBlock dumpster(String colour) {
         return new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                 .strength(3.5F, 6.0F)

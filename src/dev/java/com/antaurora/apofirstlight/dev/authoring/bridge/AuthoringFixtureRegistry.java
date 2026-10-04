@@ -156,6 +156,14 @@ final class AuthoringFixtureRegistry {
                     .notes("Half-round island end; joining side facing.getCounterClockWise(), the round side facing.getClockWise()."),
             new Def(A+"fuel_island_bollard",safe,"utility").fixed("on_curb","false").support(Support.FLOOR)
                     .notes("Steel bollard. Set on a curb / end it goes in the cell above and on_curb (set from the block below) sinks it onto the curb top."),
+            new Def(A+"fuel_canopy_column",safe,"utility").facing(H4).connect("segment","top").fixed("island","false").support(Support.FLOOR)
+                    .notes("Canopy column segment; stack 5 from the ground (the canopy's soffit is 5 blocks up). segment (base: the lowest, power port on its bottom face) and top (head plate under a canopy piece) are computed. island=true only by placing it on a straight curb (it takes that curb's cell)."),
+            new Def(A+"fuel_canopy_ceiling",safe,"utility").support(Support.NONE)
+                    .notes("Plain canopy block (flat soffit below, roof above), one block thick. Carries the canopy wiring."),
+            new Def(A+"fuel_canopy_light",safe,"utility").fixed("lit","false").support(Support.NONE)
+                    .notes("Canopy block with a flush square LED light; lit is set by its network's powered column base."),
+            new Def(A+"fuel_canopy_fascia",safe,"utility").facing(H4).connect("shape").support(Support.NONE)
+                    .notes("Canopy edge, faded red; facing = outward. shape (straight / outer_left / outer_right) is computed like stairs: an outer corner when the fascia behind it faces one of its sides."),
             new Def(A+"fuel_dispenser",safe,"utility").facing(H4).multi(FUEL_DISPENSER)
                     .fixed("front_gasoline","true","front_diesel","true","back_gasoline","true","back_diesel","true","island","false","lit","false").support(Support.FLOOR)
                     .notes("2 wide x 3 tall, with its own island curb segment. Anchor = a0 (master, bottom); b column at facing.getClockWise(). Facing = the front customer face; both long faces have two nozzles."),

@@ -221,6 +221,22 @@
       "unit_mass_kg": 8,
       "estimated": true
     },
+    "apocalypse_firstlight:fuel_canopy_column": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_canopy_ceiling": {
+      "unit_mass_kg": 1.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_canopy_light": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_canopy_fascia": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
     "apocalypse_firstlight:fuel_nozzle_gasoline": {
       "unit_mass_kg": 1.2,
       "estimated": true

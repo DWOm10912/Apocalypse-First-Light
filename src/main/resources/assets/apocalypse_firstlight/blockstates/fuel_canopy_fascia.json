@@ -1,0 +1,40 @@
+{
+  "variants": {
+    "facing=north,shape=straight": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_north"
+    },
+    "facing=north,shape=outer_left": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_north"
+    },
+    "facing=north,shape=outer_right": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_east"
+    },
+    "facing=east,shape=straight": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_east"
+    },
+    "facing=east,shape=outer_left": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_east"
+    },
+    "facing=east,shape=outer_right": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_south"
+    },
+    "facing=south,shape=straight": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_south"
+    },
+    "facing=south,shape=outer_left": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_south"
+    },
+    "facing=south,shape=outer_right": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_west"
+    },
+    "facing=west,shape=straight": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_west"
+    },
+    "facing=west,shape=outer_left": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_west"
+    },
+    "facing=west,shape=outer_right": {
+      "model": "apocalypse_firstlight:block/fuel_canopy/fascia_corner_north"
+    }
+  }
+}

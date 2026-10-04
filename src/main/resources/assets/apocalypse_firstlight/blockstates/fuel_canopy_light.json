@@ -1,0 +1,25 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/light"
+      }
+    },
+    {
+      "when": {
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/light_lens"
+      }
+    },
+    {
+      "when": {
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_canopy/light_lens_lit"
+      }
+    }
+  ]
+}

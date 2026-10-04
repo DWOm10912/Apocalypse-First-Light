@@ -27,9 +27,10 @@ public class FuelIslandCurbBlock extends HorizontalDirectionalBlock {
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
-    /** Island pieces: the curb, the end and the fuel dispenser's bottom cells (its own segment). */
+    /** Island pieces: the curb, the end, the fuel dispenser's bottom cells (its own segment) and a canopy column set into the island. */
     public static boolean isIslandPiece(BlockState state) {
         if (state.getBlock() instanceof FuelIslandCurbBlock) return true;
+        if (state.getBlock() instanceof FuelCanopyColumnBlock) return state.getValue(FuelCanopyColumnBlock.ISLAND);
         if (state.getBlock() instanceof FuelDispenserBlock) {
             FuelDispenserBlock.Cell cell = state.getValue(FuelDispenserBlock.CELL);
             return cell == FuelDispenserBlock.Cell.A0 || cell == FuelDispenserBlock.Cell.B0;
