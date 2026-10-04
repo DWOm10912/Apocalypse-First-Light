@@ -25,8 +25,9 @@ import java.util.Map;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT,
         bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class FluidPipeRenderer {
-    private static final float INNER_MIN = 6.0F / 16.0F;
-    private static final float INNER_MAX = 10.0F / 16.0F;
+    // the fluid inside Fluid Pipe V2's glass (tools/build-fluid-pipe-v2.mjs PIPE.fluid: 3.5 px from the axis)
+    private static final float INNER_MIN = 4.5F / 16.0F;
+    private static final float INNER_MAX = 11.5F / 16.0F;
 
     private FluidPipeRenderer() {
     }

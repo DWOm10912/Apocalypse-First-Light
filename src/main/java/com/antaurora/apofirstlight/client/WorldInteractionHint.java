@@ -71,6 +71,7 @@ public final class WorldInteractionHint {
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
+            if(target==null) target=fluidPipe(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
@@ -225,6 +226,21 @@ public final class WorldInteractionHint {
         boolean connected=s.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(side));
         Vec3 anchor=Vec3.atCenterOf(hit.getBlockPos()).add(side.getStepX()*.3,side.getStepY()*.3,side.getStepZ()*.3);
         return new Target(Component.translatable("hint.apocalypse_firstlight.power_cable."+(connected?"cut":"join")),anchor);
+    }
+
+    /**
+     * Fluid pipe, as the power cable: while sneaking with an empty main hand, the pipe-to-pipe side a click would cut or
+     * join (FluidPipeBlock#toggleSide), drawn on that side of the pipe.
+     */
+    private static Target fluidPipe(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!PowerCableBlock.canToggle(mc.player,InteractionHand.MAIN_HAND)) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.FluidPipeBlock)) return null;
+        Direction side=com.antaurora.apofirstlight.block.FluidPipeBlock.promptToggleSide(mc.level,hit.getBlockPos(),s,hit.getLocation(),hit.getDirection());
+        if(side==null) return null;
+        boolean connected=s.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(side));
+        Vec3 anchor=Vec3.atCenterOf(hit.getBlockPos()).add(side.getStepX()*.35,side.getStepY()*.35,side.getStepZ()*.35);
+        return new Target(Component.translatable("hint.apocalypse_firstlight.fluid_pipe."+(connected?"cut":"join")),anchor);
     }
 
     /**

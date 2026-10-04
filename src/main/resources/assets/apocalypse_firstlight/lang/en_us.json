@@ -466,6 +466,8 @@
   "hint.apocalypse_firstlight.charging_station.take": "Take (%s / %s FE)",
   "hint.apocalypse_firstlight.power_cable.cut": "Disconnect this side",
   "hint.apocalypse_firstlight.power_cable.join": "Connect this side",
+  "hint.apocalypse_firstlight.fluid_pipe.cut": "Disconnect this side",
+  "hint.apocalypse_firstlight.fluid_pipe.join": "Connect this side",
   "item.apocalypse_firstlight.cat": "C.A.T",
   "tooltip.apocalypse_firstlight.cat.description": "Please do not ask how it works....",
   "tooltip.apocalypse_firstlight.inventory.locked": "Locked inventory slot",
