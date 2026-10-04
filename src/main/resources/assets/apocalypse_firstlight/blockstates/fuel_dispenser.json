@@ -13,6 +13,26 @@
       "when": {
         "facing": "north",
         "cell": "a0",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp_lit"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
         "front_gasoline": "true"
       },
       "apply": {
@@ -56,6 +76,28 @@
       },
       "apply": {
         "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp_lit",
         "y": 90
       }
     },
@@ -110,6 +152,28 @@
       },
       "apply": {
         "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp_lit",
         "y": 180
       }
     },
@@ -164,6 +228,28 @@
       },
       "apply": {
         "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/lamp_lit",
         "y": 270
       }
     },

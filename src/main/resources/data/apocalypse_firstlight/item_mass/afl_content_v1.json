@@ -209,6 +209,18 @@
       "unit_mass_kg": 60,
       "estimated": true
     },
+    "apocalypse_firstlight:fuel_island_curb": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_island_end": {
+      "unit_mass_kg": 1.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_island_bollard": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
     "apocalypse_firstlight:fuel_nozzle_gasoline": {
       "unit_mass_kg": 1.2,
       "estimated": true

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/fuel_island/straight"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/fuel_island/straight",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/fuel_island/straight",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/fuel_island/straight",
+      "y": 270
+    }
+  }
+}

@@ -42,6 +42,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "vending_machine");
     private static final ResourceLocation WATER_DISPENSER_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "water_dispenser");
+    private static final ResourceLocation FUEL_DISPENSER_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fuel_dispenser");
     private static final ResourceLocation CHARGING_STATION_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "charging_station");
     private static final ResourceLocation CRUSHER_ID =
@@ -63,6 +65,7 @@ public final class MachineBalanceManager {
     private static volatile ApplianceBalance chestFreezer = fallbackChestFreezer();
     private static volatile ApplianceBalance vendingMachine = fallbackVendingMachine();
     private static volatile ApplianceBalance waterDispenser = fallbackWaterDispenser();
+    private static volatile ApplianceBalance fuelDispenser = fallbackFuelDispenser();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -110,6 +113,11 @@ public final class MachineBalanceManager {
     /** Lights only (the indicator LEDs): the compressor fields are 0. */
     public static ApplianceBalance waterDispenser() {
         return waterDispenser;
+    }
+
+    /** Lights only (the lamp under the header): the compressor fields are 0. */
+    public static ApplianceBalance fuelDispenser() {
+        return fuelDispenser;
     }
 
     public static CrusherBalance crusher() {
@@ -235,6 +243,8 @@ public final class MachineBalanceManager {
                     fallbackVendingMachine());
             ApplianceBalance loadedDispenser = loadLightsOnly(resources.get(WATER_DISPENSER_ID), "water_dispenser.json",
                     fallbackWaterDispenser());
+            ApplianceBalance loadedFuelDispenser = loadLightsOnly(resources.get(FUEL_DISPENSER_ID), "fuel_dispenser.json",
+                    fallbackFuelDispenser());
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -250,6 +260,7 @@ public final class MachineBalanceManager {
             chestFreezer = loadedFreezer;
             vendingMachine = loadedVending;
             waterDispenser = loadedDispenser;
+            fuelDispenser = loadedFuelDispenser;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -544,6 +555,11 @@ public final class MachineBalanceManager {
     /** Same values as machine_balance/water_dispenser.json (lights only). */
     private static ApplianceBalance fallbackWaterDispenser() {
         return new ApplianceBalance(20, 32, 1, 0, 0, 0);
+    }
+
+    /** Same values as machine_balance/fuel_dispenser.json (lights only). */
+    private static ApplianceBalance fallbackFuelDispenser() {
+        return new ApplianceBalance(40, 32, 2, 0, 0, 0);
     }
 
     private static CrusherBalance fallbackCrusher() {

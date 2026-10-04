@@ -152,6 +152,9 @@ export const MATS = {   // Base Color (sRGB or a function of the model position 
   gas:      {c: p => tone([150, 54, 46], 1 + mott(p, 0.6, 0.04)), hl: 5, sm: 88, se: 104, f0: 20},     // gasoline nozzle cover
   diesel:   {c: p => tone([58, 98, 68], 1 + mott(p, 0.6, 0.04)), hl: 5, sm: 88, se: 104, f0: 20},     // diesel nozzle cover
   lens:     {c: [164, 166, 162], hl: 4, sm: 140, se: 150, f0: 16},
+  // the lamp lens while powered: warm white; its _s alpha marks it LabPBR emissive (LIT_TEXELS) and its MTL's Ka makes
+  // Forge bake it full bright (emissive_ambient)
+  lensLit:  {c: [255, 244, 222], hl: 0, sm: 160, se: 160, f0: 16},
   concrete: {c: p => tone([146, 144, 138], 1 + mott(p, 0.22, 0.08) + 0.04 * (vn(p[0] * 0.9, p[1] * 0.9, p[2] * 0.9) - 0.5)), hl: 5, sm: 40, se: 52, f0: 20},
   nosing:   {c: [126, 130, 132], hl: 8, sm: 112, se: 140, f0: 255},
   // the standard power port (tools/afl-power-port.mjs): steel plate, dark socket cup, contact pin
@@ -247,7 +250,9 @@ function build() {
   slab(P('head', 'body', 'head'), 'y', [-7.9, 22.2, -4.12], [7.9, 29.4, 4.12], 0.14);
   planY(P('header', 'body', 'red'), rrect(-11.6, -6.0, 11.6, 6.0, 0.9), 40.6, 44.2, 0.35);
   slab(P('lamp', 'body', 'paint'), 'y', [-4.6, 38.4, -2.2], [4.6, 40.65, 2.2], 0.1);
-  slab(P('lens', 'body', 'lens'), 'y', [-4.2, 38.15, -1.8], [4.2, 38.45, 1.8], 0);
+  // the lamp lens: its own models, unlit / lit (FuelDispenserBlock.LIT, powered through the port)
+  slab(P('lens', 'lamp', 'lens'), 'y', [-4.2, 38.15, -1.8], [4.2, 38.45, 1.8], 0);
+  slab(P('lens_lit', 'lamp_lit', 'lensLit'), 'y', [-4.2, 38.15, -1.8], [4.2, 38.45, 1.8], 0);
   // the two customer faces (the back is the front turned 180 deg)
   for (const faceName of ['front', 'back']) {
     const start = PARTS.length;
@@ -353,11 +358,13 @@ function bake() {
     const img = readPng(buf), px = Buffer.alloc(img.w * img.h * 4), fill = [RUBBER.c.concat(255), RUBBER.s, RUBBER.n][i];
     for (let k = 0; k < img.w * img.h; k++) for (let c = 0; c < 4; c++) px[k * 4 + c] = img.bpp === 4 ? img.px[k * 4 + c] : (c < 3 ? img.px[k * 3 + c] : 255);
     for (let y = spot[1]; y < spot[1] + HOSE_TEXELS; y++) for (let x = spot[0]; x < spot[0] + HOSE_TEXELS; x++) px.set(fill, (y * img.w + x) * 4);
+    if (i === 1) for (const is of UV.islands.filter(is => is.part.mat === 'lensLit'))   // LabPBR emission: _s alpha 254 = full
+      for (let y = is.py - 2; y < is.py + is.H + 2; y++) for (let x = is.px - 2; x < is.px + is.W + 2; x++) px[(y * img.w + x) * 4 + 3] = 254;
     return png(px, img.w, img.h);
   });
   const hoseUV = [spot[0] + 4, spot[1] + 4, spot[0] + HOSE_TEXELS - 4, spot[1] + HOSE_TEXELS - 4].map(v => +(v / atlas).toFixed(6));
   // coplanar overlaps only matter inside one model (the body and each nozzle are separate models; base joins body)
-  const groups = [['base', 'body'], ...NOZZLES.map(n => ['nozzle_' + n.id]), ['item_gasoline'], ['item_diesel']];
+  const groups = [['base', 'body', 'lamp'], ['lamp_lit'], ...NOZZLES.map(n => ['nozzle_' + n.id]), ['item_gasoline'], ['item_diesel']];
   const coplanar = groups.flatMap(g => zFightLevels(PARTS.filter(p => g.includes(p.bone)), new Map()).unresolved);
   return {id: 'fuel_dispenser', PARTS, atlas, UV, maps, coplanar, hoseUV};
 }
@@ -423,7 +430,7 @@ function objOf(b, title, file, bones, frame) {
   }
   return out.join('\n') + '\n';
 }
-const mtlOf = (b, title) => `# AFL ${title}\nnewmtl ${b.id}\nKd 1 1 1\nmap_Kd apocalypse_firstlight:block/${b.id}\n`;
+const mtlOf = (b, title, glow = false) => `# AFL ${title}\nnewmtl ${b.id}\nKd 1 1 1\n${glow ? 'Ka 1 1 1\n' : ''}map_Kd apocalypse_firstlight:block/${b.id}\n`;
 const objModel = file => ({loader: 'forge:obj', model: `apocalypse_firstlight:models/block/${file}.obj`, automatic_culling: false,
   flip_v: true, shade_quads: true, ambientocclusion: false, textures: {particle: 'apocalypse_firstlight:block/fuel_dispenser'}});
 const r3 = v => +v.toFixed(3) || 0;
@@ -460,6 +467,8 @@ function blockstate() {
   const parts = [];
   for (const F of DIRS) {
     parts.push({when: {facing: F, cell: 'a0'}, apply: ref('fuel_dispenser/body', F)});
+    parts.push({when: {facing: F, cell: 'a0', lit: 'false'}, apply: ref('fuel_dispenser/lamp', F)});
+    parts.push({when: {facing: F, cell: 'a0', lit: 'true'}, apply: ref('fuel_dispenser/lamp_lit', F)});
     for (const n of NOZZLES) parts.push({when: {facing: F, cell: 'a0', [n.id]: 'true'}, apply: ref('fuel_dispenser/nozzle_' + n.id, F)});
   }
   parts.push({when: {cell: CELLS.slice(1).join('|')}, apply: {model: 'apocalypse_firstlight:block/fuel_dispenser/cell'}});
@@ -472,16 +481,18 @@ const bbDir = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, '
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
 const T = 'Fuel Dispenser V1';
-const model = (file, title, bones, frame = 'cell') => {
+const model = (file, title, bones, frame = 'cell', glow = false) => {
   const obj = objOf(B, title, file, bones, frame);
-  outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, title)],
+  outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, title, glow)],
     [path.join(assets, `models/block/${file}.json`), json(objModel(file))]);
   objs.push([file, obj]);
 };
 outputs.push([path.join(bbDir, 'fuel_dispenser_v1.bbmodel'), JSON.stringify(sourceOf(B))],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/fuel_dispenser_v1${k}.png`), B.maps[i]], [path.join(assets, `textures/block/fuel_dispenser${k}.png`), B.maps[i]]]));
-const only = (...bones) => new Set(bones), DISPENSER = only('base', 'body', ...NOZZLES.map(n => 'nozzle_' + n.id));
+const only = (...bones) => new Set(bones), DISPENSER = only('base', 'body', 'lamp', ...NOZZLES.map(n => 'nozzle_' + n.id));
 model('fuel_dispenser/body', T + ' body', only('base', 'body'));
+model('fuel_dispenser/lamp', T + ' lamp lens (unlit)', only('lamp'));
+model('fuel_dispenser/lamp_lit', T + ' lamp lens (lit)', only('lamp_lit'), 'cell', true);
 for (const n of NOZZLES) model('fuel_dispenser/nozzle_' + n.id, `${T} ${n.face} ${n.grade} nozzle and parked hose`, only('nozzle_' + n.id));
 model('fuel_dispenser/item', T + ' item', DISPENSER);
 for (const g of ['gasoline', 'diesel']) model('fuel_dispenser/held_' + g, `${T} ${g} nozzle (held)`, only('item_' + g), 'item');

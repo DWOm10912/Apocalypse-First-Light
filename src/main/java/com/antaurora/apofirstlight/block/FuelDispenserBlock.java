@@ -1,11 +1,14 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity;
+import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.TickTask;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
@@ -31,6 +34,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.PushReaction;
@@ -55,7 +59,9 @@ import java.util.function.Supplier;
  * high-hose dispenser on its own island curb segment, two cells along the island and three tall. FACING points at the
  * "front" customer face; the "back" face is the front turned 180 degrees. The MASTER cell (A0: the bottom of the column on
  * the facing's counter-clockwise side) carries the whole static model, the block entity (who holds which nozzle) and the
- * drop; the second column (B) stands on the master's clockwise side; the other five cells only hold shapes.
+ * drop; the second column (B) stands on the master's clockwise side; the other five cells only hold shapes. Its bottom
+ * cells carry the dispenser's own island segment; aimed at the top of a built island's straight curbs, it takes the place
+ * of two of them ({@link #ISLAND}) and gives them back when broken (2026-10-04).
  * <p>
  * Each face has two holstered nozzles, gasoline at the customer's left and diesel at the right ({@link Nozzle}). A nozzle's
  * property is true while it hangs in its holster: the blockstate then shows its model (the nozzle and its parked hose).
@@ -64,8 +70,17 @@ import java.util.function.Supplier;
  * with that nozzle hangs it back; letting go of it any other way returns it too (FuelDispenserBlockEntity). There is no
  * fuel and no power in V1.
  */
-public final class FuelDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public final class FuelDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
     public static final EnumProperty<Cell> CELL = EnumProperty.create("cell", Cell.class);
+    /** Set into an island (placed onto two straight curbs, which it replaces): breaking it puts the curbs back. */
+    public static final BooleanProperty ISLAND = BooleanProperty.create("island");
+    /**
+     * The lamp under the header is on (all cells; the top cells give the block light): powered through the port on the
+     * master's bottom face, lights only (CompressorAppliance, machine_balance/fuel_dispenser.json).
+     */
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+    /** Block light of the top cells while lit. */
+    public static final int LIGHT_LEVEL = 12;
 
     /**
      * Model frame boxes (source px: the footprint centre at x 0, z 0; x along the island, y up, the front face toward -z)
@@ -92,7 +107,7 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
 
     public FuelDispenserBlock(Properties properties) {
         super(properties);
-        BlockState state = stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(CELL, Cell.A0);
+        BlockState state = stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(CELL, Cell.A0).setValue(ISLAND, false).setValue(LIT, false);
         for (Nozzle nozzle : Nozzle.values()) state = state.setValue(nozzle.property, true);
         registerDefaultState(state);
     }
@@ -108,52 +123,82 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
         return position.relative(state.getValue(FACING).getCounterClockWise(), cell.dx).below(cell.dy);
     }
 
-    private BlockState stateFor(Direction facing, Cell cell) {
-        return defaultBlockState().setValue(FACING, facing).setValue(CELL, cell);
+    private BlockState stateFor(Direction facing, Cell cell, boolean island) {
+        return defaultBlockState().setValue(FACING, facing).setValue(CELL, cell).setValue(ISLAND, island);
     }
 
     private boolean matches(BlockState state, Direction facing, Cell cell) {
         return state.is(this) && state.getValue(FACING) == facing && state.getValue(CELL) == cell;
     }
 
-    private static boolean supported(LevelReader level, BlockPos root, Direction facing) {
-        for (Cell cell : new Cell[]{Cell.A0, Cell.B0}) {
-            BlockPos floor = cellPosition(root, facing, cell).below();
-            if (!level.getBlockState(floor).isFaceSturdy(level, floor, Direction.UP)) return false;
-        }
-        return true;
+    /** A straight island curb (not an end) running along the dispenser's island axis for this facing. */
+    private static boolean curbAlong(BlockState state, Direction facing) {
+        return state.is(AflBlocks.FUEL_ISLAND_CURB.get())
+                && state.getValue(FACING).getClockWise().getAxis() == facing.getClockWise().getAxis();
     }
 
-    public boolean canPlaceStructure(BlockPlaceContext context, Direction facing) {
+    /**
+     * Where the dispenser goes: root (cell A0), facing, and whether it is set into an island. Aimed at the top of a straight
+     * curb, it takes the place of that curb and its neighbour along the island (the clicked curb as A0, else as B0), facing
+     * the player's side of the island; elsewhere it stands at the clicked cell facing the player.
+     */
+    private record Placement(BlockPos root, Direction facing, boolean island) {}
+
+    @Nullable
+    private Placement placement(BlockPlaceContext context) {
         Level level = context.getLevel();
-        BlockPos root = context.getClickedPos();
+        Direction facing = context.getHorizontalDirection().getOpposite();
+        BlockPos clicked = context.getClickedPos(), below = clicked.below();
+        BlockState under = level.getBlockState(below);
+        if (!under.is(AflBlocks.FUEL_ISLAND_CURB.get())) return new Placement(clicked, facing, false);
+        Direction curb = under.getValue(FACING), f = facing.getAxis() == curb.getAxis() ? facing : curb;
+        for (BlockPos root : new BlockPos[]{below, below.relative(f.getCounterClockWise())}) {
+            if (curbAlong(level.getBlockState(root), f) && curbAlong(level.getBlockState(root.relative(f.getClockWise())), f)) {
+                return new Placement(root.immutable(), f, true);
+            }
+        }
+        return null;
+    }
+
+    private boolean canPlaceStructure(BlockPlaceContext context, Placement p) {
+        Level level = context.getLevel();
+        BlockPos root = p.root();
         if (root.getY() < level.getMinBuildHeight() || root.getY() + 2 >= level.getMaxBuildHeight()) return false;
+        Player player = context.getPlayer();
         for (Cell cell : Cell.values()) {
-            BlockPos position = cellPosition(root, facing, cell);
+            BlockPos position = cellPosition(root, p.facing(), cell);
             if (!level.hasChunkAt(position) || !level.getWorldBorder().isWithinBounds(position)) return false;
-            BlockPlaceContext localContext = BlockPlaceContext.at(context, position, Direction.UP);
-            if (!level.getBlockState(position).canBeReplaced(localContext) || !level.getFluidState(position).isEmpty()) return false;
-            Player player = context.getPlayer();
             if (player != null && (!level.mayInteract(player, position)
                     || !player.mayUseItemAt(position, Direction.UP, context.getItemInHand()))) return false;
-            if (!level.isUnobstructed(stateFor(facing, cell), position, CollisionContext.empty())) return false;
+            if (p.island() && cell.dy == 0) {
+                if (!curbAlong(level.getBlockState(position), p.facing())) return false;
+                continue;
+            }
+            BlockPlaceContext localContext = BlockPlaceContext.at(context, position, Direction.UP);
+            if (!level.getBlockState(position).canBeReplaced(localContext) || !level.getFluidState(position).isEmpty()) return false;
+            if (!level.isUnobstructed(stateFor(p.facing(), cell, p.island()), position, CollisionContext.empty())) return false;
         }
-        return supported(level, root, facing);
+        return true;
     }
 
     @Override
     @Nullable
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction facing = context.getHorizontalDirection().getOpposite();
-        return canPlaceStructure(context, facing) ? stateFor(facing, Cell.A0) : null;
+        Placement p = placement(context);
+        if (p == null || !canPlaceStructure(context, p)) return null;
+        for (Cell cell : Cell.values()) {
+            if (cellPosition(p.root(), p.facing(), cell).equals(context.getClickedPos())) return stateFor(p.facing(), cell, p.island());
+        }
+        return null;
     }
 
     /** Runs inside BlockItem's placement (FuelDispenserBlockItem); a failed write restores every cell. */
     public boolean placeStructure(BlockPlaceContext context, BlockState masterState) {
-        Direction facing = masterState.getValue(FACING);
-        if (!canPlaceStructure(context, facing)) return false;
+        Placement p = placement(context);
+        if (p == null || !canPlaceStructure(context, p)) return false;
         Level level = context.getLevel();
-        BlockPos root = context.getClickedPos().immutable();
+        BlockPos root = p.root();
+        Direction facing = p.facing();
         Mutation mutation = new Mutation(level, root);
         if (!MUTATIONS.add(mutation)) return false;
         Map<BlockPos, BlockState> previous = new LinkedHashMap<>();
@@ -162,10 +207,15 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
             for (Cell cell : Cell.values()) {
                 BlockPos position = cellPosition(root, facing, cell);
                 previous.put(position, level.getBlockState(position));
-                if (!level.setBlock(position, stateFor(facing, cell), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE)) return false;
+                if (!level.setBlock(position, stateFor(facing, cell, p.island()), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE)) return false;
             }
             success = true;
-            for (Cell cell : Cell.values()) level.updateNeighborsAt(cellPosition(root, facing, cell), this);
+            for (Cell cell : Cell.values()) {
+                BlockPos position = cellPosition(root, facing, cell);
+                level.updateNeighborsAt(position, this);
+                // cells were set with UPDATE_KNOWN_SHAPE: let a cable already under the port connect
+                level.getBlockState(position).updateNeighbourShapes(level, position, UPDATE_ALL);
+            }
             return true;
         } finally {
             if (!success) previous.forEach((position, oldState) -> {
@@ -174,11 +224,6 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
             MUTATIONS.remove(mutation);
             if (success && !level.isClientSide) level.scheduleTick(root, this, 1);
         }
-    }
-
-    @Override
-    public boolean canSurvive(BlockState state, LevelReader level, BlockPos position) {
-        return supported(level, rootPosition(position, state), state.getValue(FACING));
     }
 
     @Override
@@ -193,7 +238,7 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
         if (!level.isClientSide) level.scheduleTick(position, this, 1);
     }
 
-    /** A cell whose structure is incomplete removes itself; an unsupported dispenser breaks (and drops) from the master. */
+    /** A cell whose structure is incomplete removes itself. Needs no floor: it may stand on the cable to its port. */
     @Override
     public void tick(BlockState state, ServerLevel level, BlockPos position, RandomSource random) {
         BlockPos root = rootPosition(position, state);
@@ -212,7 +257,6 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
                 return;
             }
         }
-        if (!supported(level, root, facing)) level.destroyBlock(root, true);
     }
 
     // ---- nozzles ----
@@ -331,6 +375,26 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
         return new Prompt(nozzle.grade == Grade.DIESEL ? "take_diesel" : "take_gasoline", nozzle.hood(master, facing));
     }
 
+    // ---- power, lamp ----
+
+    /** The one power port: the bottom face of the master cell, where an underground cable comes up (docs/models/power_cable_v2.md). */
+    @Override
+    public boolean hasPowerPort(BlockState state, Direction face) {
+        return face == Direction.DOWN && state.getValue(CELL) == Cell.A0;
+    }
+
+    /** Lamp on / off: LIT on every cell (the master's baked lamp model follows it, the top cells give the light). */
+    public void setLit(Level level, BlockPos master, boolean lit) {
+        BlockState state = level.getBlockState(master);
+        if (!state.is(this) || state.getValue(CELL) != Cell.A0 || state.getValue(LIT) == lit) return;
+        Direction facing = state.getValue(FACING);
+        for (Cell cell : Cell.values()) {
+            BlockPos position = cellPosition(master, facing, cell);
+            BlockState other = level.getBlockState(position);
+            if (matches(other, facing, cell)) level.setBlock(position, other.setValue(LIT, lit), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        }
+    }
+
     // ---- removal, drops ----
 
     @Override
@@ -354,9 +418,24 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
         if (!state.is(replacement.getBlock())) {
             // nozzles out of a dispenser that is going away leave their holders' hands
             if (level.getBlockEntity(position) instanceof FuelDispenserBlockEntity dispenser) dispenser.releaseAll();
-            removeOthers(level, rootPosition(position, state), state.getValue(FACING), position);
+            BlockPos root = rootPosition(position, state);
+            removeOthers(level, root, state.getValue(FACING), position);
+            if (state.getValue(ISLAND)) restoreCurbs(level, root, state.getValue(FACING));
         }
         super.onRemove(state, level, position, replacement, movedByPiston);
+    }
+
+    /**
+     * A dispenser set into an island gives its two curbs back when it goes. Queued for after the removal: putting a block
+     * into the cell being removed from inside its own removal would make that removal fail, and its drop with it.
+     */
+    private static void restoreCurbs(Level level, BlockPos root, Direction facing) {
+        if (!(level instanceof ServerLevel server)) return;
+        BlockState curb = AflBlocks.FUEL_ISLAND_CURB.get().defaultBlockState().setValue(FACING, facing);
+        BlockPos a = cellPosition(root, facing, Cell.A0).immutable(), b = cellPosition(root, facing, Cell.B0).immutable();
+        server.getServer().tell(new TickTask(server.getServer().getTickCount(), () -> {
+            for (BlockPos pos : new BlockPos[]{a, b}) if (server.isLoaded(pos) && server.getBlockState(pos).isAir()) server.setBlock(pos, curb, UPDATE_ALL);
+        }));
     }
 
     private void removeOthers(LevelAccessor level, BlockPos root, Direction facing, @Nullable BlockPos keep) {
@@ -444,7 +523,7 @@ public final class FuelDispenserBlock extends HorizontalDirectionalBlock impleme
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, CELL);
+        builder.add(FACING, CELL, ISLAND, LIT);
         for (Nozzle nozzle : Nozzle.values()) builder.add(nozzle.property);
     }
 

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "on_curb=false": {
+      "model": "apocalypse_firstlight:block/fuel_island/bollard"
+    },
+    "on_curb=true": {
+      "model": "apocalypse_firstlight:block/fuel_island/bollard_on_curb"
+    }
+  }
+}

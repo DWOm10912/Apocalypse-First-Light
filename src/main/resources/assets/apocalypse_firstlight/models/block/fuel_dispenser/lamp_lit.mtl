@@ -1,0 +1,5 @@
+# AFL Fuel Dispenser V1 lamp lens (lit)
+newmtl fuel_dispenser
+Kd 1 1 1
+Ka 1 1 1
+map_Kd apocalypse_firstlight:block/fuel_dispenser

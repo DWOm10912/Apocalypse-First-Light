@@ -244,6 +244,12 @@ public final class AflItems {
             com.antaurora.apofirstlight.item.FuelNozzleItem::new);
     public static final RegistryObject<Item> FUEL_NOZZLE_DIESEL = ITEMS.register("fuel_nozzle_diesel",
             com.antaurora.apofirstlight.item.FuelNozzleItem::new);
+    public static final RegistryObject<Item> FUEL_ISLAND_CURB = ITEMS.register("fuel_island_curb",
+            () -> new BlockItem(AflBlocks.FUEL_ISLAND_CURB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FUEL_ISLAND_END = ITEMS.register("fuel_island_end",
+            () -> new BlockItem(AflBlocks.FUEL_ISLAND_END.get(), new Item.Properties()));
+    public static final RegistryObject<Item> FUEL_ISLAND_BOLLARD = ITEMS.register("fuel_island_bollard",
+            () -> new BlockItem(AflBlocks.FUEL_ISLAND_BOLLARD.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

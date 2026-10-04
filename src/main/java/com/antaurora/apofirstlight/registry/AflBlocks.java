@@ -239,6 +239,20 @@ public final class AflBlocks {
     // Fuel Dispenser V1 (tools/build-fuel-dispenser-v1.mjs): industrial infrastructure, diamond-tier pickaxe
     public static final RegistryObject<Block> FUEL_DISPENSER = BLOCKS.register("fuel_dispenser",
             () -> new com.antaurora.apofirstlight.block.FuelDispenserBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL)
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.FuelDispenserBlock.LIT)
+                            && state.getValue(com.antaurora.apofirstlight.block.FuelDispenserBlock.CELL).dy == 2
+                            ? com.antaurora.apofirstlight.block.FuelDispenserBlock.LIGHT_LEVEL : 0)
+                    .requiresCorrectToolForDrops().noOcclusion()));
+    // Fuel Island Kit V1 (tools/build-fuel-island-v1.mjs): concrete curb pieces (any pickaxe), the steel bollard (diamond tier)
+    public static final RegistryObject<Block> FUEL_ISLAND_CURB = BLOCKS.register("fuel_island_curb",
+            () -> new com.antaurora.apofirstlight.block.FuelIslandCurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .strength(1.8F, 6.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_ISLAND_END = BLOCKS.register("fuel_island_end",
+            () -> new com.antaurora.apofirstlight.block.FuelIslandEndBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .strength(1.8F, 6.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> FUEL_ISLAND_BOLLARD = BLOCKS.register("fuel_island_bollard",
+            () -> new com.antaurora.apofirstlight.block.FuelIslandBollardBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     private static CommercialDumpsterBlock dumpster(String colour) {
         return new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

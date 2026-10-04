@@ -148,8 +148,14 @@ final class AuthoringFixtureRegistry {
             dumpster("commercial_dumpster_blue"),
             dumpster("commercial_dumpster_brown"),
             dumpster("commercial_dumpster_gray"),
+            new Def(A+"fuel_island_curb",safe,"utility").facing(H4).support(Support.FLOOR)
+                    .notes("Fuel island straight curb, 3 px high. Facing as the fuel dispenser's: the island runs along facing.getClockWise()."),
+            new Def(A+"fuel_island_end",safe,"utility").facing(H4).support(Support.FLOOR)
+                    .notes("Half-round island end; joining side facing.getCounterClockWise(), the round side facing.getClockWise()."),
+            new Def(A+"fuel_island_bollard",safe,"utility").fixed("on_curb","false").support(Support.FLOOR)
+                    .notes("Steel bollard. Set on a curb / end it goes in the cell above and on_curb (set from the block below) sinks it onto the curb top."),
             new Def(A+"fuel_dispenser",safe,"utility").facing(H4).multi(FUEL_DISPENSER)
-                    .fixed("front_gasoline","true","front_diesel","true","back_gasoline","true","back_diesel","true").support(Support.FLOOR)
+                    .fixed("front_gasoline","true","front_diesel","true","back_gasoline","true","back_diesel","true","island","false","lit","false").support(Support.FLOOR)
                     .notes("2 wide x 3 tall, with its own island curb segment. Anchor = a0 (master, bottom); b column at facing.getClockWise(). Facing = the front customer face; both long faces have two nozzles."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
             new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),

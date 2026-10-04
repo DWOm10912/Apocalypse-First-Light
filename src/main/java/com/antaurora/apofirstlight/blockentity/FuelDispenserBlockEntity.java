@@ -2,6 +2,8 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.FuelDispenserBlock;
 import com.antaurora.apofirstlight.block.FuelDispenserBlock.Nozzle;
+import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -23,6 +25,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -37,7 +43,7 @@ import java.util.UUID;
  * its holster: the holder let go (switched slots, dropped it, put it away, died, left), or walked off and the breakaway
  * coupling let go. Any copies of it in the holder's inventory are removed.
  */
-public class FuelDispenserBlockEntity extends BlockEntity {
+public class FuelDispenserBlockEntity extends BlockEntity implements CompressorAppliance.Host {
     /** Hose the outlet's retractor can pay out (blocks, outlet to hand); the live hose is drawn up to it, then goes taut. */
     public static final double HOSE_LENGTH = 4.5;
     /** Past this distance from the outlet to the hand the breakaway coupling lets go. */
@@ -45,6 +51,8 @@ public class FuelDispenserBlockEntity extends BlockEntity {
 
     private enum Release { HUNG, LOST, BREAKAWAY }
 
+    /** The lamp's power: lights only, fed through the port on the master's bottom face (machine_balance/fuel_dispenser.json). */
+    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::fuelDispenser);
     private final UUID[] holders = new UUID[Nozzle.values().length];
     private final int[] sessions = new int[Nozzle.values().length];
 
@@ -82,6 +90,7 @@ public class FuelDispenserBlockEntity extends BlockEntity {
 
     public void serverTick() {
         if (level == null || level.isClientSide || level.getServer() == null) return;
+        power.serverTick();
         for (Nozzle nozzle : Nozzle.values()) {
             int i = nozzle.ordinal();
             if (holders[i] == null) continue;
@@ -178,11 +187,54 @@ public class FuelDispenserBlockEntity extends BlockEntity {
         }
     }
 
+    // ---- power: the lamp only ----
+
+    @Override
+    public boolean lit() {
+        return getBlockState().getValue(FuelDispenserBlock.LIT);
+    }
+
+    @Override
+    public void setLit(boolean lit) {
+        if (level != null && getBlockState().getBlock() instanceof FuelDispenserBlock block) block.setLit(level, worldPosition, lit);
+    }
+
+    /** No compressor: never used. */
+    @Override
+    public Vec3 compressorPosition() {
+        return Vec3.atCenterOf(worldPosition);
+    }
+
+    @Override
+    public void syncAppliance() {
+        setChanged();
+    }
+
+    @Override
+    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
+        if (capability == ForgeCapabilities.ENERGY && side != null && getBlockState().getBlock() instanceof FuelDispenserBlock block
+                && block.hasPowerPort(getBlockState(), side)) return power.capability().cast();
+        return super.getCapability(capability, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        power.invalidateCaps();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        power.reviveCaps();
+    }
+
     // ---- persistence and client sync (clients only need the holders) ----
 
     @Override
     public void load(CompoundTag tag) {
         super.load(tag);
+        power.load(tag);
         int[] saved = tag.getIntArray("Sessions");
         for (int i = 0; i < holders.length; i++) {
             holders[i] = tag.hasUUID("Holder" + i) ? tag.getUUID("Holder" + i) : null;
@@ -193,6 +245,7 @@ public class FuelDispenserBlockEntity extends BlockEntity {
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
+        power.save(tag);
         writeHolders(tag);
         tag.putIntArray("Sessions", sessions.clone());
     }
