@@ -62,6 +62,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_dumpster", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.CommercialDumpsterBlockEntity::new,
                             AflBlocks.COMMERCIAL_DUMPSTER.get(), AflBlocks.COMMERCIAL_DUMPSTER_BLUE.get(), AflBlocks.COMMERCIAL_DUMPSTER_BROWN.get(), AflBlocks.COMMERCIAL_DUMPSTER_GRAY.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity>> FUEL_DISPENSER =
+            BLOCK_ENTITIES.register("fuel_dispenser", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity::new,
+                            AflBlocks.FUEL_DISPENSER.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.MetalTrashCanBlockEntity>> METAL_TRASH_CAN =
             BLOCK_ENTITIES.register("metal_trash_can", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.MetalTrashCanBlockEntity::new,

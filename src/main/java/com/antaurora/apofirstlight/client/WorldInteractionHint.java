@@ -68,6 +68,7 @@ public final class WorldInteractionHint {
             if(target==null) target=dumpsterLid(mc,hit);
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
+            if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
@@ -221,6 +222,17 @@ public final class WorldInteractionHint {
         boolean connected=s.getValue(PipeBlock.PROPERTY_BY_DIRECTION.get(side));
         Vec3 anchor=Vec3.atCenterOf(hit.getBlockPos()).add(side.getStepX()*.3,side.getStepY()*.3,side.getStepZ()*.3);
         return new Target(Component.translatable("hint.apocalypse_firstlight.power_cable."+(connected?"cut":"join")),anchor);
+    }
+
+    /**
+     * Fuel dispenser, as FuelDispenserBlock#use: with an empty main hand, take the aimed holstered nozzle (gasoline / diesel);
+     * holding one of its nozzles, hang it back. Drawn at the nozzle's hood.
+     */
+    private static Target fuelDispenser(Minecraft mc,BlockHitResult hit) {
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.FuelDispenserBlock)) return null;
+        var prompt=com.antaurora.apofirstlight.block.FuelDispenserBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation(),mc.player);
+        return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.fuel_dispenser."+prompt.key()),prompt.anchor());
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

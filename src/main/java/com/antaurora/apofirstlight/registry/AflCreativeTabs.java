@@ -103,6 +103,7 @@ public final class AflCreativeTabs {
             AflItems.COMMERCIAL_DUMPSTER_BLUE,
             AflItems.COMMERCIAL_DUMPSTER_BROWN,
             AflItems.COMMERCIAL_DUMPSTER_GRAY,
+            AflItems.FUEL_DISPENSER,
             AflItems.MODERN_OFFICE_DESK,
             AflItems.MODERN_OFFICE_CHAIR,
             AflItems.MODERN_LCD_MONITOR,

@@ -1,0 +1,223 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/body"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
+        "front_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_gasoline"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
+        "front_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_diesel"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
+        "back_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_gasoline"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "cell": "a0",
+        "back_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_diesel"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "front_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_gasoline",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "front_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_diesel",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "back_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_gasoline",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "cell": "a0",
+        "back_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_diesel",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "front_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_gasoline",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "front_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_diesel",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "back_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_gasoline",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "cell": "a0",
+        "back_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_diesel",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/body",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "front_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_gasoline",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "front_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_front_diesel",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "back_gasoline": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_gasoline",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "cell": "a0",
+        "back_diesel": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/nozzle_back_diesel",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cell": "b0|a1|b1|a2|b2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_dispenser/cell"
+      }
+    }
+  ]
+}

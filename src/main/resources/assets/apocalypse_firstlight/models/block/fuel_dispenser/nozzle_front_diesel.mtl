@@ -1,0 +1,4 @@
+# AFL Fuel Dispenser V1 front diesel nozzle and parked hose
+newmtl fuel_dispenser
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/fuel_dispenser

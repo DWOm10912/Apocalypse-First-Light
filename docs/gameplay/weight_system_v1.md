@@ -204,7 +204,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 类别 | 质量 |
 |---|---|
 | 机器（不含液体） | crusher、industrial_furnace 50；alloy_furnace、chemical_reactor 45；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
-| 大件家具 | vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
+| 大件家具 | fuel_dispenser 60；vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
 | 中型家具 | back_bar_shelf 28；checkout_counter_display 24；checkout_counter 22；retail_shelf_single 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink、checkout_counter_gate 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
 | 钢结构 | steel_door 3；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
@@ -212,7 +212,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
 | 杨木 | 原木、去皮原木、木头、去皮木头 0.4；木板 0.1；楼梯 0.075；台阶 0.05；门 1；活板门 0.5；树叶、树苗 0.05 |
 | 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
-| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；dirty_water_bottle、boiled_water_bottle、purified_water_bottle 0.5（玻璃瓶 0.2 + 0.3 升水）；geiger_counter 0.5；concrete_rubble 0.1 |
+| 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；fuel_nozzle_gasoline、fuel_nozzle_diesel 1.2（加油机的油枪，只在手上）；dirty_water_bottle、boiled_water_bottle、purified_water_bottle 0.5（玻璃瓶 0.2 + 0.3 升水）；geiger_counter 0.5；concrete_rubble 0.1 |
 
 原版（`vanilla_common_v1.json`）：
 - 94 条 tag 规则、342 个显式物品。
@@ -282,7 +282,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 车辆货物 | 不算玩家负担（还没有车辆） |
 
 物品搬运系数（`afl_content_v1.json` 的 `carry_factors`，按物品 tag，取最大的那个）：
-- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 27 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf（堆叠 1）；
+- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 28 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf 和 fuel_dispenser（都堆叠 1）；
 - `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 12 种（2026-10-04 加了 checkout_counter、checkout_counter_display、checkout_counter_gate，三者堆叠 16）；
 - 其它物品 ×1.00。
 

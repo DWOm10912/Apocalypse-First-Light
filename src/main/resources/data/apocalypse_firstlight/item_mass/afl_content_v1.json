@@ -205,6 +205,18 @@
       "unit_mass_kg": 45,
       "estimated": true
     },
+    "apocalypse_firstlight:fuel_dispenser": {
+      "unit_mass_kg": 60,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_nozzle_gasoline": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_nozzle_diesel": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
     "apocalypse_firstlight:commercial_dumpster": {
       "unit_mass_kg": 40,
       "estimated": true

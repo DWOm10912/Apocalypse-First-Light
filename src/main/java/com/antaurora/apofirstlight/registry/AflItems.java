@@ -236,6 +236,14 @@ public final class AflItems {
             () -> new CommercialDumpsterBlockItem(
                     (com.antaurora.apofirstlight.block.CommercialDumpsterBlock) AflBlocks.COMMERCIAL_DUMPSTER_GRAY.get(),
                     new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> FUEL_DISPENSER = ITEMS.register("fuel_dispenser",
+            () -> new com.antaurora.apofirstlight.item.FuelDispenserBlockItem(
+                    (com.antaurora.apofirstlight.block.FuelDispenserBlock) AflBlocks.FUEL_DISPENSER.get(), new Item.Properties().stacksTo(1)));
+    // Fuel Dispenser V1 nozzles: only ever made by the dispenser, tethered to it (not in any creative tab)
+    public static final RegistryObject<Item> FUEL_NOZZLE_GASOLINE = ITEMS.register("fuel_nozzle_gasoline",
+            com.antaurora.apofirstlight.item.FuelNozzleItem::new);
+    public static final RegistryObject<Item> FUEL_NOZZLE_DIESEL = ITEMS.register("fuel_nozzle_diesel",
+            com.antaurora.apofirstlight.item.FuelNozzleItem::new);
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

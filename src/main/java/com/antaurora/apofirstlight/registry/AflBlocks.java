@@ -236,6 +236,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_BLUE = BLOCKS.register("commercial_dumpster_blue", () -> dumpster("blue"));
     public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_BROWN = BLOCKS.register("commercial_dumpster_brown", () -> dumpster("brown"));
     public static final RegistryObject<Block> COMMERCIAL_DUMPSTER_GRAY = BLOCKS.register("commercial_dumpster_gray", () -> dumpster("gray"));
+    // Fuel Dispenser V1 (tools/build-fuel-dispenser-v1.mjs): industrial infrastructure, diamond-tier pickaxe
+    public static final RegistryObject<Block> FUEL_DISPENSER = BLOCKS.register("fuel_dispenser",
+            () -> new com.antaurora.apofirstlight.block.FuelDispenserBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     private static CommercialDumpsterBlock dumpster(String colour) {
         return new CommercialDumpsterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                 .strength(3.5F, 6.0F)

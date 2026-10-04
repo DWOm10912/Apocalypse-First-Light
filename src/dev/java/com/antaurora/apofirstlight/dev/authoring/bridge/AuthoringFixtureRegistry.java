@@ -61,6 +61,8 @@ final class AuthoringFixtureRegistry {
             (a,f,p)->{BlockPos column=p.endsWith("right")?a.relative(f.getClockWise()):a;return p.startsWith("upper")?column.above():column;});
     private static final Multiblock DUMPSTER=new Multiblock("part",List.of("master","secondary"),
             (a,f,p)->CommercialDumpsterBlock.partPosition(a,f,CommercialDumpsterBlock.Part.valueOf(constant(p))));
+    private static final Multiblock FUEL_DISPENSER=new Multiblock("cell",List.of("a0","b0","a1","b1","a2","b2"),
+            (a,f,p)->com.antaurora.apofirstlight.block.FuelDispenserBlock.cellPosition(a,f,com.antaurora.apofirstlight.block.FuelDispenserBlock.Cell.valueOf(constant(p))));
     private static final Multiblock DESK=new Multiblock("part",List.of("center","left","right"),
             (a,f,p)->ModernOfficeDeskBlock.partPosition(a,f,ModernOfficeDeskBlock.Part.valueOf(constant(p))));
     private static final Multiblock WORKSTATION=new Multiblock("part",List.of("base","side","upper","upper_side"),
@@ -146,6 +148,9 @@ final class AuthoringFixtureRegistry {
             dumpster("commercial_dumpster_blue"),
             dumpster("commercial_dumpster_brown"),
             dumpster("commercial_dumpster_gray"),
+            new Def(A+"fuel_dispenser",safe,"utility").facing(H4).multi(FUEL_DISPENSER)
+                    .fixed("front_gasoline","true","front_diesel","true","back_gasoline","true","back_diesel","true").support(Support.FLOOR)
+                    .notes("2 wide x 3 tall, with its own island curb segment. Anchor = a0 (master, bottom); b column at facing.getClockWise(). Facing = the front customer face; both long faces have two nozzles."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
             new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
             new Def(A+"industrial_electrical_box",storage,"utility").facing(H4).fixed("open","false","locked","true").inventory().support(Support.ATTACHED_OPPOSITE_FACING)
