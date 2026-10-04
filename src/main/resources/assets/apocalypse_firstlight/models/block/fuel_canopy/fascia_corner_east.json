@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/fuel_canopy/fascia_corner_east.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": true,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/fuel_canopy"
+  }
+}
