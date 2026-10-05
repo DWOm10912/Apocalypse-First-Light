@@ -104,6 +104,12 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> SHEET_METAL_HIT = simple("sheet_metal_hit");
     public static final RegistryObject<SoundEvent> SHEET_METAL_FALL = simple("sheet_metal_fall");
 
+    // Intake Pump (tools/build-intake-pump-sounds-v1.mjs)
+    public static final RegistryObject<SoundEvent> INTAKE_PUMP_SWITCH = simple("intake_pump_switch");
+    public static final RegistryObject<SoundEvent> INTAKE_PUMP_START = simple("intake_pump_start");
+    public static final RegistryObject<SoundEvent> INTAKE_PUMP_STOP = simple("intake_pump_stop");
+    public static final RegistryObject<SoundEvent> INTAKE_PUMP_LOOP = simple("intake_pump_loop");
+
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
     }

@@ -214,8 +214,22 @@ public class IntakePumpBlockEntity extends BlockEntity {
             IntakePumpBlock.Lamp lamp = !state.getValue(IntakePumpBlock.ON) || status == Status.OFF || status == Status.NO_POWER && !pumpedThisPeriod
                     ? IntakePumpBlock.Lamp.OFF : pumpedThisPeriod ? IntakePumpBlock.Lamp.RUN : IntakePumpBlock.Lamp.IDLE;
             pumpedThisPeriod = false;
-            if (state.getValue(IntakePumpBlock.LAMP) != lamp) server.setBlock(worldPosition, state.setValue(IntakePumpBlock.LAMP, lamp), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+            IntakePumpBlock.Lamp was = state.getValue(IntakePumpBlock.LAMP);
+            if ((lamp == IntakePumpBlock.Lamp.RUN) != (was == IntakePumpBlock.Lamp.RUN)) playMotor(server, worldPosition, facing(), lamp == IntakePumpBlock.Lamp.RUN);
+            if (was != lamp) server.setBlock(worldPosition, state.setValue(IntakePumpBlock.LAMP, lamp), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
         }
+    }
+
+    /** Model px of the motor (the start / stop sounds and the client's loop come from there). */
+    public static final double[] MOTOR = {0.0, -1.6, 4.5};
+    /** The client's loop waits this many ticks after the lamp turns green, then fades in over the second number (the start sound's tail fades out over it; tools/build-intake-pump-sounds-v1.mjs). */
+    public static final int[] LOOP_FADE_IN = {26, 12};
+
+    /** Server: the motor starting (contactor and wind-up) or stopping (winding down). */
+    public static void playMotor(net.minecraft.world.level.Level level, BlockPos bank, Direction facing, boolean start) {
+        net.minecraft.world.phys.Vec3 at = IntakePumpBlock.world(bank, facing, MOTOR[0], MOTOR[1], MOTOR[2]);
+        level.playSound(null, at.x, at.y, at.z, (start ? com.antaurora.apofirstlight.registry.AflSounds.INTAKE_PUMP_START
+                : com.antaurora.apofirstlight.registry.AflSounds.INTAKE_PUMP_STOP).get(), net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 
     private Status pump(ServerLevel server, BlockState state, MachineBalanceManager.IntakePumpBalance values, BlockPos source,

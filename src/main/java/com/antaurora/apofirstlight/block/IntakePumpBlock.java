@@ -6,7 +6,6 @@ import com.antaurora.apofirstlight.fluid.AflFluidPortBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
@@ -273,9 +272,10 @@ public final class IntakePumpBlock extends HorizontalDirectionalBlock implements
         boolean on = !bankState.getValue(ON);
         BlockState next = bankState.setValue(ON, on);
         if (!on) next = next.setValue(LAMP, Lamp.OFF);
+        if (!on && bankState.getValue(LAMP) == Lamp.RUN) IntakePumpBlockEntity.playMotor(level, bank, bankState.getValue(FACING), false);
         level.setBlock(bank, next, UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
         Vec3 at = world(bank, bankState.getValue(FACING), SWITCH[0], SWITCH[1], SWITCH[2]);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.4F, on ? 0.65F : 0.55F);
+        level.playSound(null, at.x, at.y, at.z, com.antaurora.apofirstlight.registry.AflSounds.INTAKE_PUMP_SWITCH.get(), SoundSource.BLOCKS, 1.0F, on ? 1.0F : 0.92F);
         return InteractionResult.CONSUME;
     }
 

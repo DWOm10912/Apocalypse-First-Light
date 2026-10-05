@@ -1,5 +1,5 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
-// Used by tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
+// Used by tools/build-intake-pump-sounds-v1.mjs, tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
 // tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs,
 // tools/build-charging-station-sounds-v1.mjs, tools/build-beverage-cooler-compressor-sounds-v1.mjs,
 // tools/build-container-search-sounds-v2.mjs (a mirrored loop) and tools/build-metal-trash-can-sounds-v1.mjs (needs ffmpeg).
@@ -118,14 +118,15 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
  * seam, and the loop is twice the window. Reversed noise sounds the same; keep the window free of anything with a
  * direction (an attack, a word). equalPower (with a crossfade): sine / cosine crossfade weights instead of linear ones, for
  * noise with ticks in it (a rolling wheel): the two sides are uncorrelated, so a linear crossfade dips about 3 dB in the
- * middle while equal power keeps the level; mirroring would turn the ticks around. Returns a report.
+ * middle while equal power keeps the level; mirroring would turn the ticks around. prepare (optional): a function applied
+ * to the whole decoded source before the window is cut (a filter, so it settles before the window). Returns a report.
  */
-export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick, mirror = false, equalPower = false}) {
+export function buildLoop({srcDir, soundsDir, source, file, from, period, periods, crossfade, smooth = 5, reference, offset = 0, declick, mirror = false, equalPower = false, prepare}) {
   const wav = path.join(srcDir, source.name + '.wav');
   const h = createHash('sha256').update(fs.readFileSync(wav)).digest('hex').slice(0, 16);
   if (h !== source.sha) throw new Error(`${source.name}.wav changed (sha ${h}, expected ${source.sha})`);
   const P = Math.round(period * SR), L = periods * P, C = crossfade * P, start = Math.round(from * SR);
-  const x = decode(wav).slice(start, start + L + C);
+  const decoded = decode(wav), x = (prepare ? prepare(decoded) : decoded).slice(start, start + L + C);
   if (x.length < L + C) throw new Error(`${source.name}: window runs past the end of the source`);
   const rms = Array.from({length: periods + crossfade}, (_, k) => { let e = 0; for (let i = k * P; i < (k + 1) * P; i++) e += x[i] * x[i]; return Math.sqrt(e / P); });
   const smoothRms = rms.map((_, k) => { let s = 0, n = 0; for (let j = Math.max(0, k - smooth); j <= Math.min(rms.length - 1, k + smooth); j++) { s += rms[j]; n++; } return s / n; });

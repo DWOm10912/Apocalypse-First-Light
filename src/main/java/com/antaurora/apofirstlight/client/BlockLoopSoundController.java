@@ -36,7 +36,7 @@ import java.util.function.Supplier;
 /**
  * Quiet block loops driven by a block entity's synced state (seamless loops from tools/sound-mix-lib.mjs buildLoop; their
  * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's and
- * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (the same loop, higher). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
+ * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (its own loop; it waits for the start sound's wind-up and fades in). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
  * sound stops itself when its condition ends, the block entity is gone, or the player leaves the range.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -46,7 +46,11 @@ public final class BlockLoopSoundController {
     private static final int SCAN_INTERVAL_TICKS = 5;
 
     private record Source<T extends BlockEntity>(Class<T> type, Predicate<T> active, Function<T, Vec3> position,
-                                                 Supplier<SoundEvent> sound, float pitch) {
+                                                 Supplier<SoundEvent> sound, float pitch, int delayTicks, int fadeTicks) {
+        Source(Class<T> type, Predicate<T> active, Function<T, Vec3> position, Supplier<SoundEvent> sound, float pitch) {
+            this(type, active, position, sound, pitch, 0, 0);
+        }
+
         boolean activeOn(BlockEntity entity) {
             return type.isInstance(entity) && active.test(type.cast(entity));
         }
@@ -73,8 +77,9 @@ public final class BlockLoopSoundController {
             new Source<>(IntakePumpBlockEntity.class,
                     pump -> pump.getBlockState().getBlock() instanceof IntakePumpBlock
                             && pump.getBlockState().getValue(IntakePumpBlock.LAMP) == IntakePumpBlock.Lamp.RUN,
-                    pump -> IntakePumpBlock.world(pump.getBlockPos(), pump.getBlockState().getValue(IntakePumpBlock.FACING), 0.0, -1.6, 4.5),
-                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, 1.35F));
+                    pump -> IntakePumpBlock.world(pump.getBlockPos(), pump.getBlockState().getValue(IntakePumpBlock.FACING),
+                            IntakePumpBlockEntity.MOTOR[0], IntakePumpBlockEntity.MOTOR[1], IntakePumpBlockEntity.MOTOR[2]),
+                    AflSounds.INTAKE_PUMP_LOOP, 1.0F, IntakePumpBlockEntity.LOOP_FADE_IN[0], IntakePumpBlockEntity.LOOP_FADE_IN[1]));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;
@@ -124,6 +129,7 @@ public final class BlockLoopSoundController {
         private final ClientLevel level;
         private final BlockPos position;
         private final Source<?> source;
+        private int age;
 
         private LoopSound(ClientLevel level, BlockPos position, Source<?> source, Vec3 at) {
             super(source.sound().get(), SoundSource.BLOCKS, SoundInstance.createUnseededRandom());
@@ -134,7 +140,7 @@ public final class BlockLoopSoundController {
             this.delay = 0;
             this.attenuation = SoundInstance.Attenuation.LINEAR;
             this.relative = false;
-            this.volume = 1.0F;
+            this.volume = source.fadeTicks() > 0 ? 0.0F : 1.0F;
             this.pitch = source.pitch();
             this.x = at.x;
             this.y = at.y;
@@ -142,7 +148,13 @@ public final class BlockLoopSoundController {
         }
 
         @Override
+        public boolean canStartSilent() {
+            return true;
+        }
+
+        @Override
         public void tick() {
+            if (source.fadeTicks() > 0) volume = Math.max(0.0F, Math.min(1.0F, (float) (++age - source.delayTicks()) / source.fadeTicks()));
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.level != level || minecraft.player == null || !level.isLoaded(position)
                     || !source.activeOn(level.getBlockEntity(position))
