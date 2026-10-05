@@ -70,6 +70,14 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("underground_fuel_tank", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity::new,
                             AflBlocks.UNDERGROUND_FUEL_TANK_GASOLINE.get(), AflBlocks.UNDERGROUND_FUEL_TANK_DIESEL.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.SubmersibleFuelPumpBlockEntity>> SUBMERSIBLE_FUEL_PUMP =
+            BLOCK_ENTITIES.register("submersible_fuel_pump", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.SubmersibleFuelPumpBlockEntity::new,
+                            AflBlocks.SUBMERSIBLE_FUEL_PUMP.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelDispenserSumpBlockEntity>> FUEL_DISPENSER_SUMP =
+            BLOCK_ENTITIES.register("fuel_dispenser_sump", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelDispenserSumpBlockEntity::new,
+                            AflBlocks.FUEL_DISPENSER_SUMP.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity>> INTAKE_PUMP =
             BLOCK_ENTITIES.register("intake_pump", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity::new,

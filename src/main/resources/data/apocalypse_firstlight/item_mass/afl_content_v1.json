@@ -245,6 +245,26 @@
       "unit_mass_kg": 150,
       "estimated": true
     },
+    "apocalypse_firstlight:submersible_fuel_pump": {
+      "unit_mass_kg": 35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pump_manhole_cover": {
+      "unit_mass_kg": 12,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_fill_cover_gasoline": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_fill_cover_diesel": {
+      "unit_mass_kg": 4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_dispenser_sump": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
     "apocalypse_firstlight:intake_pump": {
       "unit_mass_kg": 45,
       "estimated": true

@@ -52,6 +52,8 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     public static final IntegerProperty ACROSS = IntegerProperty.create("across", 0, 2);
     public static final IntegerProperty LEVEL = IntegerProperty.create("level", 0, 2);
     public static final int PORT_ALONG = 3, PORT_ACROSS = 1, PORT_LEVEL = 2, ROOT_LEVEL = 0;
+    /** The fill port (2026-10-05): the end cell's top face, a second AFL port into the same tank (the fill riser). */
+    public static final int FILL_ALONG = 6;
     // cross-section (px, the structure's x across, y up): the tank's axis at (24, 20), radius 19 plus the ribs
     private static final double CENTRE_X = 24, CENTRE_Y = 20, RADIUS = 19.6;
     private static final VoxelShape[][][] SHAPES_Z = new VoxelShape[7][3][3], SHAPES_X = new VoxelShape[7][3][3];
@@ -72,6 +74,11 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
                 VoxelShape manway = Shapes.or(Block.box(1, 5.5, 1, 15, 11.2, 15), Block.box(2.5, 11.2, 2.5, 13.5, 16, 13.5));
                 z = Shapes.or(z, manway);
                 x = Shapes.or(x, manway);
+            }
+            if (a == FILL_ALONG && c == PORT_ACROSS && l == PORT_LEVEL) {   // the fill riser and its port
+                VoxelShape fill = Shapes.or(Block.box(5.4, 5.4, 5.4, 10.6, 15.4, 10.6), Block.box(2.5, 15.4, 2.5, 13.5, 16, 13.5));
+                z = Shapes.or(z, fill);
+                x = Shapes.or(x, fill);
             }
             SHAPES_Z[a][c][l] = z.optimize();
             SHAPES_X[a][c][l] = x.optimize();
@@ -119,6 +126,11 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     /** The port cell (master) of the tank {@code position} belongs to. */
     public static BlockPos masterPosition(BlockPos position, BlockState state) {
         return cellPosition(rootPosition(position, state), state.getValue(AXIS), PORT_ALONG, PORT_ACROSS, PORT_LEVEL);
+    }
+
+    /** The fill port cell (FILL_ALONG, 1, 2): its block entity hands the master's tank to a pipe on its top face. */
+    public static boolean isFill(BlockState state) {
+        return state.getValue(ALONG) == FILL_ALONG && state.getValue(ACROSS) == PORT_ACROSS && state.getValue(LEVEL) == PORT_LEVEL;
     }
 
     public static boolean isMaster(BlockState state) {
@@ -274,16 +286,16 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
 
     // ---- port, block entity ----
 
-    /** The one fluid port: the top face of the port cell (docs/models/fluid_pipe_v2.md, "流体接口规格"). */
+    /** The fluid ports: the top face of the port cell and of the fill cell (docs/models/fluid_pipe_v2.md, "流体接口规格"). */
     @Override
     public boolean hasFluidPort(BlockState state, Direction face) {
-        return face == Direction.UP && isMaster(state);
+        return face == Direction.UP && (isMaster(state) || isFill(state));
     }
 
     @Override
     @Nullable
     public BlockEntity newBlockEntity(BlockPos position, BlockState state) {
-        return isMaster(state) ? new UndergroundFuelTankBlockEntity(position, state) : null;
+        return isMaster(state) || isFill(state) ? new UndergroundFuelTankBlockEntity(position, state) : null;
     }
 
     // ---- shape, render ----

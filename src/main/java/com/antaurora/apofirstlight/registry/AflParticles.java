@@ -29,4 +29,9 @@ public final class AflParticles {
             PARTICLE_TYPES.register("hit_blue_star", () -> new SimpleParticleType(false));
     public static final RegistryObject<SimpleParticleType> HIT_DIZZY =
             PARTICLE_TYPES.register("hit_dizzy", () -> new SimpleParticleType(false));
+    /** A drop of fuel falling off a fuel-soaked body (fluid/FuelSoakedEffect): client/LiquidDroplet in that fuel's look. */
+    public static final RegistryObject<SimpleParticleType> GASOLINE_DRIP =
+            PARTICLE_TYPES.register("gasoline_drip", () -> new SimpleParticleType(false));
+    public static final RegistryObject<SimpleParticleType> DIESEL_DRIP =
+            PARTICLE_TYPES.register("diesel_drip", () -> new SimpleParticleType(false));
 }

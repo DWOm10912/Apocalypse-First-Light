@@ -57,24 +57,43 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
     @Override
     public void render(FuelDispenserBlockEntity dispenser, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
         Level level = dispenser.getLevel();
-        if (level == null || !dispenser.anyOut()) return;
+        if (level == null) return;
         BlockPos origin = dispenser.getBlockPos();
-        VertexConsumer out = null;
         for (Nozzle nozzle : Nozzle.values()) {
             UUID id = dispenser.holder(nozzle);
             Player holder = id == null ? null : level.getPlayerByUUID(id);
-            if (holder == null || !(holder.getMainHandItem().getItem() instanceof FuelNozzleItem)) continue;
-            if (out == null) out = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
-            double floor = Math.min(origin.getY() + 3.0 / 16, holder.getPosition(partialTick).y) + RADIUS;
-            hose(pose, out, level, origin, dispenser.outlet(nozzle), hand(holder, partialTick), floor);
+            HeldFrame frame = null;
+            if (holder != null && holder.getMainHandItem().getItem() instanceof FuelNozzleItem) {
+                double floor = Math.min(origin.getY() + 3.0 / 16, holder.getPosition(partialTick).y) + RADIUS;
+                frame = held(holder, partialTick);
+                hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), level, origin, dispenser.outlet(nozzle),
+                        new HoseEnd(frame.point(SWIVEL_X, SWIVEL_Y, SWIVEL_Z), frame.direction(0, 0, 1)), floor);
+            }
+            FuelNozzleJets.Jet jet = FuelNozzleJets.get(origin, nozzle);
+            if (jet != null) jet(pose, buffers, level, origin, jet, frame != null && jet.flowing ? frame.point(SPOUT_X, SPOUT_Y, SPOUT_Z) : null, partialTick);
         }
+    }
+
+    /** The held nozzle's spout tip in the world (FuelNozzleJets emits the jet from it). */
+    static Vec3 spout(Player player, float partialTick) {
+        return held(player, partialTick).point(SPOUT_X, SPOUT_Y, SPOUT_Z);
     }
 
     /** The held nozzle's swivel (where its hose goes in), in the item model's block units (tools/build-fuel-dispenser-v1.mjs heldSwivel). */
     private static final float SWIVEL_X = 0.5F, SWIVEL_Y = 0.5F, SWIVEL_Z = 0.704F;
 
+    /** The held nozzle's spout tip, item model block units (the generator's spout end (0, -0.2, 6.2) px in the nozzle frame). */
+    private static final float SPOUT_X = 0.5F, SPOUT_Y = 0.4875F, SPOUT_Z = 0.291F;
+
     /** Where the hose meets the held nozzle (world), and the direction it leaves the swivel. */
     private record HoseEnd(Vec3 point, Vec3 out) {}
+
+    /** The held nozzle's item model space in the world: points and directions in the model's block units. */
+    private interface HeldFrame {
+        Vec3 point(float x, float y, float z);
+
+        Vec3 direction(float x, float y, float z);
+    }
 
     /**
      * The held nozzle's swivel, through the same transforms vanilla uses to draw the held item, with the item model's
@@ -82,7 +101,23 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
      * field of view, so the point is moved to the same place on screen at the world's field of view); otherwise
      * ItemInHandLayer's on the player model's arm (body yaw, walking swing, the holding-an-item pose, idle sway, crouch).
      */
-    private static HoseEnd hand(Player player, float partialTick) {
+    private static java.lang.reflect.Field mainHandHeight, oMainHandHeight;
+
+    /** ItemInHandRenderer's main hand equip progress (0 raised .. 1 lowered), as it draws the held nozzle; 0 if unreadable. */
+    private static float equipProgress(float partialTick) {
+        try {
+            if (mainHandHeight == null) {
+                mainHandHeight = net.minecraftforge.fml.util.ObfuscationReflectionHelper.findField(net.minecraft.client.renderer.ItemInHandRenderer.class, "f_109302_");
+                oMainHandHeight = net.minecraftforge.fml.util.ObfuscationReflectionHelper.findField(net.minecraft.client.renderer.ItemInHandRenderer.class, "f_109303_");
+            }
+            Object renderer = Minecraft.getInstance().gameRenderer.itemInHandRenderer;
+            return 1.0F - Mth.lerp(partialTick, oMainHandHeight.getFloat(renderer), mainHandHeight.getFloat(renderer));
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            return 0.0F;
+        }
+    }
+
+    private static HeldFrame held(Player player, float partialTick) {
         Minecraft mc = Minecraft.getInstance();
         boolean left = player.getMainArm() == HumanoidArm.LEFT;
         int side = left ? -1 : 1;
@@ -95,17 +130,27 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
                 pose.mulPose(Axis.XP.rotationDegrees((player.getViewXRot(partialTick) - xBob) * 0.1F));
                 pose.mulPose(Axis.YP.rotationDegrees((player.getViewYRot(partialTick) - yBob) * 0.1F));
             }
-            pose.translate(side * 0.56F, -0.52F, -0.72F);
+            pose.translate(side * 0.56F, -0.52F - 0.6F * equipProgress(partialTick), -0.72F);
             model.applyTransform(left ? ItemDisplayContext.FIRST_PERSON_LEFT_HAND : ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, pose, left);
             pose.translate(-0.5F, -0.5F, -0.5F);
-            Vector4f p = new Vector4f(SWIVEL_X, SWIVEL_Y, SWIVEL_Z, 1).mul(pose.last().pose());
-            Vector4f d = new Vector4f(0, 0, 1, 0).mul(pose.last().pose());
+            Matrix4f m = new Matrix4f(pose.last().pose());
             double k = Math.tan(Math.toRadians(mc.options.fov().get()) / 2) / Math.tan(Math.toRadians(70) / 2);
             Camera camera = mc.gameRenderer.getMainCamera();
+            Vec3 eye = camera.getPosition();
             Vec3 right = new Vec3(camera.getLeftVector()).scale(-1), up = new Vec3(camera.getUpVector()), ahead = new Vec3(camera.getLookVector());
-            Vec3 point = camera.getPosition().add(right.scale(p.x() * k)).add(up.scale(p.y() * k)).add(ahead.scale(-p.z()));
-            Vec3 out = right.scale(d.x()).add(up.scale(d.y())).add(ahead.scale(-d.z())).normalize();
-            return new HoseEnd(point, out);
+            return new HeldFrame() {
+                @Override
+                public Vec3 point(float x, float y, float z) {
+                    Vector4f p = new Vector4f(x, y, z, 1).mul(m);
+                    return eye.add(right.scale(p.x() * k)).add(up.scale(p.y() * k)).add(ahead.scale(-p.z()));
+                }
+
+                @Override
+                public Vec3 direction(float x, float y, float z) {
+                    Vector4f d = new Vector4f(x, y, z, 0).mul(m);
+                    return right.scale(d.x()).add(up.scale(d.y())).add(ahead.scale(-d.z())).normalize();
+                }
+            };
         }
         // LivingEntityRenderer: body yaw, the model's flip and scale (PlayerRenderer 0.9375), the model origin
         pose.mulPose(Axis.YP.rotationDegrees(180.0F - Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot)));
@@ -128,10 +173,21 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
         pose.translate(side / 16.0F, 0.125F, -0.625F);
         model.applyTransform(left ? ItemDisplayContext.THIRD_PERSON_LEFT_HAND : ItemDisplayContext.THIRD_PERSON_RIGHT_HAND, pose, left);
         pose.translate(-0.5F, -0.5F, -0.5F);
-        Vector4f p = new Vector4f(SWIVEL_X, SWIVEL_Y, SWIVEL_Z, 1).mul(pose.last().pose());
-        Vector4f d = new Vector4f(0, 0, 1, 0).mul(pose.last().pose());
+        Matrix4f m = new Matrix4f(pose.last().pose());
         Vec3 base = player.getPosition(partialTick).add(0, player.isCrouching() ? -0.125 : 0, 0);
-        return new HoseEnd(base.add(p.x(), p.y(), p.z()), new Vec3(d.x(), d.y(), d.z()).normalize());
+        return new HeldFrame() {
+            @Override
+            public Vec3 point(float x, float y, float z) {
+                Vector4f p = new Vector4f(x, y, z, 1).mul(m);
+                return base.add(p.x(), p.y(), p.z());
+            }
+
+            @Override
+            public Vec3 direction(float x, float y, float z) {
+                Vector4f d = new Vector4f(x, y, z, 0).mul(m);
+                return new Vec3(d.x(), d.y(), d.z()).normalize();
+            }
+        };
     }
 
     private static void hose(PoseStack pose, VertexConsumer out, Level level, BlockPos origin, Vec3 a, HoseEnd end, double floor) {
@@ -149,23 +205,7 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
             Vec3 q = a.scale(u * u * u).add(p1.scale(3 * u * u * t)).add(p2.scale(3 * u * t * t)).add(b.scale(t * t * t));
             points[i] = q.y < floor ? new Vec3(q.x, floor, q.z) : q;
         }
-        // rotation-minimising frames (parallel transport) for the round section
-        Vec3[][] ring = new Vec3[SEGMENTS + 1][SIDES];
-        Vec3 previous = points[1].subtract(points[0]).normalize();
-        Vec3 normal = Math.abs(previous.y) < 0.9 ? previous.cross(new Vec3(0, 1, 0)).normalize() : previous.cross(new Vec3(1, 0, 0)).normalize();
-        for (int i = 0; i <= SEGMENTS; i++) {
-            Vec3 tangent = points[Math.min(SEGMENTS, i + 1)].subtract(points[Math.max(0, i - 1)]).normalize();
-            Vec3 axis = previous.cross(tangent);
-            double sin = axis.length();
-            if (sin > 1e-9) normal = rotate(normal, axis.scale(1 / sin), Math.atan2(sin, previous.dot(tangent)));
-            normal = normal.subtract(tangent.scale(normal.dot(tangent))).normalize();
-            Vec3 binormal = tangent.cross(normal);
-            for (int k = 0; k < SIDES; k++) {
-                double angle = 2 * Math.PI * (k + 0.5) / SIDES;
-                ring[i][k] = normal.scale(Math.cos(angle)).add(binormal.scale(Math.sin(angle)));
-            }
-            previous = tangent;
-        }
+        Vec3[][] ring = LiquidJetRenderer.rings(points, SIDES);
         int lightA = LevelRenderer.getLightColor(level, BlockPos.containing(a)), lightB = LevelRenderer.getLightColor(level, BlockPos.containing(b));
         Matrix4f matrix = pose.last().pose();
         Matrix3f normals = pose.last().normal();
@@ -182,9 +222,23 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
         }
     }
 
-    private static Vec3 rotate(Vec3 v, Vec3 axis, double angle) {
-        double cos = Math.cos(angle), sin = Math.sin(angle);
-        return v.scale(cos).add(axis.cross(v).scale(sin)).add(axis.scale(axis.dot(v) * (1 - cos)));
+    /** The fuel stream's radius (blocks), sides and opacity (of 255). */
+    private static final double STREAM_RADIUS = 0.016;
+    private static final int STREAM_SIDES = 8, STREAM_ALPHA = 165;
+
+    /**
+     * A nozzle's jet (2026-10-05, FuelNozzleJets): the parcel chain as a thin translucent tube in the fuel's still texture
+     * and tint (LiquidJetRenderer), attached to the held spout while it runs. The stains are drawn by ClientFuelStains.
+     */
+    private static void jet(PoseStack pose, MultiBufferSource buffers, Level level, BlockPos origin, FuelNozzleJets.Jet jet,
+                            @org.jetbrains.annotations.Nullable Vec3 spout, float partialTick) {
+        net.minecraftforge.fluids.FluidStack stack = new net.minecraftforge.fluids.FluidStack(jet.fluid(), 1000);
+        net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions fluidClient = net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions.of(jet.fluid());
+        net.minecraft.client.renderer.texture.TextureAtlasSprite sprite = Minecraft.getInstance()
+                .getTextureAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).apply(fluidClient.getStillTexture(stack));
+        int rgb = fluidClient.getTintColor(stack) & 0xFFFFFF;
+        LiquidJetRenderer.render(pose, buffers, level, origin, jet.jet, spout, partialTick, sprite, rgb, STREAM_ALPHA, STREAM_RADIUS,
+                FuelDispenserBlockEntity.NOZZLE_SPEED, STREAM_SIDES);
     }
 
     private static int lerpLight(int a, int b, double t) {
@@ -202,7 +256,7 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
 
     @Override
     public boolean shouldRenderOffScreen(FuelDispenserBlockEntity dispenser) {
-        return dispenser.anyOut();
+        return dispenser.anyOut() || FuelNozzleJets.any(dispenser.getBlockPos());
     }
 
     @Override

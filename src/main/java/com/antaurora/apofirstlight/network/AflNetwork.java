@@ -56,6 +56,11 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, FluidPipeVisualS2CPacket.class,
                 FluidPipeVisualS2CPacket::encode, FluidPipeVisualS2CPacket::decode,
                 FluidPipeVisualS2CPacket::handle);
+        channel.registerMessage(nextId++, FuelStainS2CPacket.class,
+                FuelStainS2CPacket::encode, FuelStainS2CPacket::decode, FuelStainS2CPacket::handle);
+        channel.registerMessage(nextId++, FuelSprayHitsC2SPacket.class,
+                FuelSprayHitsC2SPacket::encode, FuelSprayHitsC2SPacket::decode, FuelSprayHitsC2SPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, ExplosionTinnitusS2CPacket.class,
                 ExplosionTinnitusS2CPacket::encode, ExplosionTinnitusS2CPacket::decode,
                 ExplosionTinnitusS2CPacket::handle,
@@ -524,6 +529,30 @@ public final class AflNetwork {
                 player.connection.connection, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
     }
 
+    /** The local player's fuel stream of a dispenser nozzle landed at these points (client/FuelNozzleJets). */
+    public static void sendFuelSprayHits(BlockPos dispenser, int nozzle, List<net.minecraft.world.phys.Vec3> points, List<net.minecraft.core.Direction> faces) {
+        if (channel != null) channel.sendToServer(new FuelSprayHitsC2SPacket(dispenser, nozzle, List.copyOf(points), List.copyOf(faces)));
+    }
+
+    /** Fuel stains changed in one chunk (fluid/FuelSpills): to the players tracking it. */
+    public static void sendFuelStains(ServerLevel level, ChunkPos chunk, Collection<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> upserts,
+                                      Collection<Long> removed) {
+        if (channel == null || !level.getChunkSource().hasChunk(chunk.x, chunk.z)) return;
+        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), FuelStainS2CPacket.of(upserts, removed));
+    }
+
+    /** Fuel stains gone wherever they were (over the cap): to everyone in the level. */
+    public static void sendFuelStainsRemovedEverywhere(ServerLevel level, Collection<Long> removed) {
+        if (channel == null) return;
+        channel.send(PacketDistributor.DIMENSION.with(level::dimension), FuelStainS2CPacket.of(List.of(), removed));
+    }
+
+    /** A chunk's fuel stains to a player who starts tracking it. */
+    public static void sendFuelStainsTo(ServerPlayer player, Collection<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> stains) {
+        if (channel == null) return;
+        channel.sendTo(FuelStainS2CPacket.of(stains, List.of()), player.connection.connection, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
     public static void sendFluidPipeVisuals(ServerLevel level,
                                             Collection<FluidPipeVisualUpdate> updates) {
         if (channel == null) {
@@ -707,6 +736,101 @@ public final class AflNetwork {
 
         public static FluidPipeVisualUpdate clear(BlockPos position) {
             return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, -1, false, false);
+        }
+    }
+
+    /** Where a player's fuel stream landed (FuelDispenserBlockEntity#landed checks it). */
+    public record FuelSprayHitsC2SPacket(BlockPos dispenser, int nozzle, List<net.minecraft.world.phys.Vec3> points, List<net.minecraft.core.Direction> faces) {
+        private static final int MAX = 16;
+
+        public static void encode(FuelSprayHitsC2SPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeBlockPos(packet.dispenser);
+            buffer.writeByte(packet.nozzle);
+            int n = Math.min(MAX, Math.min(packet.points.size(), packet.faces.size()));
+            buffer.writeByte(n);
+            for (int i = 0; i < n; i++) {
+                buffer.writeDouble(packet.points.get(i).x);
+                buffer.writeDouble(packet.points.get(i).y);
+                buffer.writeDouble(packet.points.get(i).z);
+                buffer.writeByte(packet.faces.get(i).get3DDataValue());
+            }
+        }
+
+        public static FuelSprayHitsC2SPacket decode(FriendlyByteBuf buffer) {
+            BlockPos dispenser = buffer.readBlockPos();
+            int nozzle = buffer.readByte();
+            int n = Math.min(MAX, buffer.readUnsignedByte());
+            List<net.minecraft.world.phys.Vec3> points = new ArrayList<>(n);
+            List<net.minecraft.core.Direction> faces = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                points.add(new net.minecraft.world.phys.Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()));
+                faces.add(net.minecraft.core.Direction.from3DDataValue(buffer.readByte()));
+            }
+            return new FuelSprayHitsC2SPacket(dispenser, nozzle, points, faces);
+        }
+
+        public static void handle(FuelSprayHitsC2SPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> {
+                ServerPlayer player = context.getSender();
+                if (player == null || packet.nozzle < 0 || packet.nozzle >= com.antaurora.apofirstlight.block.FuelDispenserBlock.Nozzle.values().length) return;
+                if (!player.serverLevel().isLoaded(packet.dispenser)) return;
+                if (player.serverLevel().getBlockEntity(packet.dispenser) instanceof com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity dispenser) {
+                    dispenser.landed(player, com.antaurora.apofirstlight.block.FuelDispenserBlock.Nozzle.values()[packet.nozzle], packet.points, packet.faces);
+                }
+            });
+            context.setPacketHandled(true);
+        }
+    }
+
+    /** Fuel stains added or changed (whole state) and removed (ids); see fluid/FuelStainIndex. */
+    public record FuelStainS2CPacket(List<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> upserts, long[] removed) {
+        static FuelStainS2CPacket of(Collection<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> upserts, Collection<Long> removed) {
+            return new FuelStainS2CPacket(List.copyOf(upserts), removed.stream().mapToLong(Long::longValue).toArray());
+        }
+
+        public static void encode(FuelStainS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeVarInt(packet.upserts.size());
+            for (com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain s : packet.upserts) {
+                buffer.writeVarLong(s.id);
+                buffer.writeDouble(s.pos.x);
+                buffer.writeDouble(s.pos.y);
+                buffer.writeDouble(s.pos.z);
+                buffer.writeByte(s.face.get3DDataValue());
+                buffer.writeBoolean(s.diesel);
+                buffer.writeFloat(s.size);
+                buffer.writeLong(s.wet);
+                buffer.writeLong(s.born);
+                buffer.writeFloat(s.u0);
+                buffer.writeFloat(s.u1);
+                buffer.writeFloat(s.v0);
+                buffer.writeFloat(s.v1);
+            }
+            buffer.writeLongArray(packet.removed);
+        }
+
+        public static FuelStainS2CPacket decode(FriendlyByteBuf buffer) {
+            int size = buffer.readVarInt();
+            List<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> upserts = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain stain = new com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain(buffer.readVarLong(),
+                        new net.minecraft.world.phys.Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()),
+                        net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), buffer.readBoolean(), buffer.readFloat(), buffer.readLong());
+                stain.born = buffer.readLong();
+                stain.u0 = buffer.readFloat();
+                stain.u1 = buffer.readFloat();
+                stain.v0 = buffer.readFloat();
+                stain.v1 = buffer.readFloat();
+                upserts.add(stain);
+            }
+            return new FuelStainS2CPacket(upserts, buffer.readLongArray());
+        }
+
+        public static void handle(FuelStainS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientFuelStains.apply(packet.upserts, packet.removed)));
+            context.setPacketHandled(true);
         }
     }
 

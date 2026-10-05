@@ -1,0 +1,117 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/frame_diesel"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "open": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_closed"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "open": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_open"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/frame_diesel",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "open": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_closed",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "open": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_open",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/frame_diesel",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "open": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_closed",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "open": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_open",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/frame_diesel",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "open": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_closed",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "open": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/fuel_fill_cover/lid_open",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -48,6 +48,13 @@ public class UndergroundFuelTankBlockEntity extends BlockEntity {
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> type, @Nullable Direction side) {
+        BlockState state = getBlockState();
+        if (type == ForgeCapabilities.FLUID_HANDLER && (side == null || side == Direction.UP) && level != null
+                && state.getBlock() instanceof UndergroundFuelTankBlock && UndergroundFuelTankBlock.isFill(state)) {
+            // the fill port cell holds nothing itself: the master's tank
+            BlockEntity master = level.getBlockEntity(UndergroundFuelTankBlock.masterPosition(worldPosition, state));
+            return master instanceof UndergroundFuelTankBlockEntity tank && tank != this ? tank.getCapability(type, Direction.UP) : LazyOptional.empty();
+        }
         if (type == ForgeCapabilities.FLUID_HANDLER && (side == null || side == Direction.UP)) return capability.cast();
         return super.getCapability(type, side);
     }

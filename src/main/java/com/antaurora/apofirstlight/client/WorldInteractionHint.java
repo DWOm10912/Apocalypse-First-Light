@@ -70,6 +70,7 @@ public final class WorldInteractionHint {
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
+            if(target==null) target=fuelSumpCover(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
@@ -261,6 +262,16 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.IntakePumpBlock)) return null;
         var prompt=com.antaurora.apofirstlight.block.IntakePumpBlock.prompt(mc.level,hit.getBlockPos(),s,mc.player);
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.intake_pump."+prompt.key()),prompt.anchor());
+    }
+
+    /**
+     * Pump manhole cover / fuel fill cover, as FuelSumpCoverBlock#use: the manhole lid opens and shuts with the crowbar (an
+     * empty hand is told it needs one), the fill cover's lid by hand. Drawn over the lid.
+     */
+    private static Target fuelSumpCover(Minecraft mc,BlockHitResult hit) {
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        var prompt=com.antaurora.apofirstlight.block.FuelSumpCoverBlock.prompt(hit.getBlockPos(),s,mc.player);
+        return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight."+prompt.key()),prompt.anchor());
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

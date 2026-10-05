@@ -28,6 +28,10 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +46,17 @@ import java.util.UUID;
  * {@link #BREAKAWAY} of the nozzle's outlet and still hold that very nozzle in the main hand. Otherwise the nozzle returns to
  * its holster: the holder let go (switched slots, dropped it, put it away, died, left), or walked off and the breakaway
  * coupling let go. Any copies of it in the holder's inventory are removed.
+ * <p>
+ * Fuel (2026-10-05): two small line buffers, gasoline and diesel ({@link #LINE_MB} each), filled from the pipes at the
+ * Fuel Dispenser Sump under it (FuelDispenserSumpBlockEntity hands its ports {@link #fuelInput}). Fill only; the nozzles do
+ * not dispense yet. The sump's power port feeds the same lamp buffer as the master's own bottom port ({@link #energyInput}).
+ * <p>
+ * Spraying (2026-10-05): a nozzle held in use draws {@link #SPRAY_MB} a tick from its grade's line (only while the dispenser
+ * has power, the lamp lit) and marks the nozzle running ({@link #flowing}, synced). The stream is each client's
+ * (client/FuelNozzleJets: a LiquidJet from the held spout along the holder's view at {@link #NOZZLE_SPEED}); the sprayer's
+ * own client reports where its stream lands ({@link #landed}, AflNetwork.FuelSprayHitsC2SPacket), so the stains lie exactly
+ * under the stream that player sees (2026-10-05: a server-side jet from an estimated spout put them off). The server
+ * checks the report and lays the fuel as stains (fluid/FuelSpills: saved, synced, slippery, soaking). No containers yet.
  */
 public class FuelDispenserBlockEntity extends BlockEntity implements CompressorAppliance.Host {
     /** Hose the outlet's retractor can pay out (blocks, outlet to hand); the live hose is drawn up to it, then goes taut. */
@@ -54,7 +69,91 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     /** The lamp's power: lights only, fed through the port on the master's bottom face (machine_balance/fuel_dispenser.json). */
     private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::fuelDispenser);
     private final UUID[] holders = new UUID[Nozzle.values().length];
+
+    /** Each grade's line buffer (mB): fuel that has reached the dispenser from its underground tank. */
+    public static final int LINE_MB = 200;
+    private final FluidTank gasolineLine = line(com.antaurora.apofirstlight.registry.AflFluids.GASOLINE);
+    private final FluidTank dieselLine = line(com.antaurora.apofirstlight.registry.AflFluids.DIESEL);
+    private LazyOptional<IFluidHandler> gasolineInput = LazyOptional.of(() -> fillOnly(gasolineLine));
+    private LazyOptional<IFluidHandler> dieselInput = LazyOptional.of(() -> fillOnly(dieselLine));
+
+    private FluidTank line(java.util.function.Supplier<? extends net.minecraft.world.level.material.Fluid> fuel) {
+        return new FluidTank(LINE_MB, stack -> stack.getFluid().isSame(fuel.get())) {
+            @Override
+            protected void onContentsChanged() {
+                setChanged();
+            }
+        };
+    }
+
+    /** A line as a pipe sees it: it takes fuel in, never gives any back (so it is never a pipe's source). */
+    private static IFluidHandler fillOnly(FluidTank tank) {
+        return new IFluidHandler() {
+            @Override
+            public int getTanks() {
+                return 1;
+            }
+
+            @Override
+            public @NotNull FluidStack getFluidInTank(int index) {
+                return tank.getFluid();
+            }
+
+            @Override
+            public int getTankCapacity(int index) {
+                return tank.getCapacity();
+            }
+
+            @Override
+            public boolean isFluidValid(int index, @NotNull FluidStack stack) {
+                return tank.isFluidValid(stack);
+            }
+
+            @Override
+            public int fill(FluidStack resource, FluidAction action) {
+                return tank.fill(resource, action);
+            }
+
+            @Override
+            public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
+                return FluidStack.EMPTY;
+            }
+
+            @Override
+            public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
+                return FluidStack.EMPTY;
+            }
+        };
+    }
+
+    public FluidTank line(FuelDispenserBlock.Grade grade) {
+        return grade == FuelDispenserBlock.Grade.GASOLINE ? gasolineLine : dieselLine;
+    }
+
+    /** The fill-only handler of a grade's line (the sump's fluid ports). */
+    public LazyOptional<IFluidHandler> fuelInput(FuelDispenserBlock.Grade grade) {
+        return grade == FuelDispenserBlock.Grade.GASOLINE ? gasolineInput : dieselInput;
+    }
+
+    /** The lamp buffer's input (the sump's power port; the master's own bottom port is the same storage). */
+    public LazyOptional<IEnergyStorage> energyInput() {
+        return power.capability();
+    }
     private final int[] sessions = new int[Nozzle.values().length];
+
+    /** Spraying: mB a tick out of the nozzle. */
+    public static final int SPRAY_MB = 10;
+    /** Blocks a second out of the spout (client/FuelNozzleJets, under Earth gravity): held level, the stream lands ~3.5 blocks away. */
+    public static final double NOZZLE_SPEED = 7.0;
+
+    /** The fuel a grade's line and nozzles carry. */
+    public static net.minecraft.world.level.material.Fluid fuel(FuelDispenserBlock.Grade grade) {
+        return (grade == FuelDispenserBlock.Grade.GASOLINE ? com.antaurora.apofirstlight.registry.AflFluids.GASOLINE
+                : com.antaurora.apofirstlight.registry.AflFluids.DIESEL).get();
+    }
+    /** Nozzles whose stream runs (bit per nozzle, synced to clients), and the tick each last ran. */
+    private int flowing;
+    private final long[] lastFlow = new long[Nozzle.values().length];
 
     public FuelDispenserBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.FUEL_DISPENSER.get(), pos, state);
@@ -91,6 +190,13 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     public void serverTick() {
         if (level == null || level.isClientSide || level.getServer() == null) return;
         power.serverTick();
+        for (Nozzle nozzle : Nozzle.values()) {   // a stream stops two ticks after its last use tick
+            int i = nozzle.ordinal();
+            if ((flowing & 1 << i) != 0 && level.getGameTime() - lastFlow[i] > 2) {
+                flowing &= ~(1 << i);
+                sync();
+            }
+        }
         for (Nozzle nozzle : Nozzle.values()) {
             int i = nozzle.ordinal();
             if (holders[i] == null) continue;
@@ -102,6 +208,60 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
                 release(nozzle, player, Release.BREAKAWAY);
             }
         }
+    }
+
+    /** One use tick of a held nozzle (FuelNozzleItem#onUseTick): fuel from its line along the stream, wherever it lands. */
+    public void spray(ServerPlayer player, Nozzle nozzle) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel server)) return;
+        int i = nozzle.ordinal();
+        boolean tell = server.getGameTime() % 10 == 0;
+        if (!lit()) {
+            if (tell) say(player, "no_power");
+            return;
+        }
+        FluidStack drawn = line(nozzle.grade).drain(SPRAY_MB, IFluidHandler.FluidAction.EXECUTE);
+        if (drawn.isEmpty()) {
+            if (tell) say(player, "no_fuel");
+            return;
+        }
+        lastFlow[i] = server.getGameTime();
+        if ((flowing & 1 << i) == 0) {
+            flowing |= 1 << i;
+            sync();
+        }
+    }
+
+    /** A report reaches this far from the sprayer's eyes at most; the stream flies up to 3 s after the nozzle stops. */
+    private static final double HIT_REACH = 16.0;
+    private static final int HIT_LATE_TICKS = 70, HITS_PER_REPORT = 8;
+
+    /**
+     * The sprayer's client: these are the points where its stream of this nozzle landed this tick (positions, the face hit).
+     * Accepted only from the player holding that nozzle, while it runs or shortly after, near the player, in loaded chunks
+     * and not in another liquid; each wets a stain of the nozzle's fuel (FuelSpills; the fuel is the server's choice).
+     */
+    public void landed(ServerPlayer player, Nozzle nozzle, java.util.List<Vec3> points, java.util.List<Direction> faces) {
+        if (!(level instanceof net.minecraft.server.level.ServerLevel server)) return;
+        int i = nozzle.ordinal();
+        if (!player.getUUID().equals(holders[i]) || server.getGameTime() - lastFlow[i] > HIT_LATE_TICKS) return;
+        com.antaurora.apofirstlight.fluid.FuelSpills spills = com.antaurora.apofirstlight.fluid.FuelSpills.get(server);
+        boolean diesel = nozzle.grade == FuelDispenserBlock.Grade.DIESEL;
+        Vec3 eye = player.getEyePosition();
+        for (int k = 0; k < Math.min(HITS_PER_REPORT, Math.min(points.size(), faces.size())); k++) {
+            Vec3 at = points.get(k);
+            BlockPos cell = BlockPos.containing(at.add(Vec3.atLowerCornerOf(faces.get(k).getNormal()).scale(0.01)));
+            if (at.distanceToSqr(eye) > HIT_REACH * HIT_REACH || !server.isLoaded(cell) || !server.getFluidState(cell).isEmpty()) continue;
+            spills.wet(server, at, faces.get(k), diesel);
+        }
+    }
+
+    /** True while this nozzle's stream runs (synced; FuelDispenserRenderer draws it). */
+    public boolean flowing(Nozzle nozzle) {
+        return (flowing & 1 << nozzle.ordinal()) != 0;
+    }
+
+    private static void say(ServerPlayer player, String key) {
+        player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.apocalypse_firstlight.fuel_nozzle." + key), true);
     }
 
     /** Takes a holstered nozzle into the player's empty main hand. */
@@ -221,12 +381,16 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     public void invalidateCaps() {
         super.invalidateCaps();
         power.invalidateCaps();
+        gasolineInput.invalidate();
+        dieselInput.invalidate();
     }
 
     @Override
     public void reviveCaps() {
         super.reviveCaps();
         power.reviveCaps();
+        gasolineInput = LazyOptional.of(() -> fillOnly(gasolineLine));
+        dieselInput = LazyOptional.of(() -> fillOnly(dieselLine));
     }
 
     // ---- persistence and client sync (clients only need the holders) ----
@@ -235,6 +399,9 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     public void load(CompoundTag tag) {
         super.load(tag);
         power.load(tag);
+        gasolineLine.readFromNBT(tag.getCompound("GasolineLine"));
+        flowing = tag.getByte("Flow");
+        dieselLine.readFromNBT(tag.getCompound("DieselLine"));
         int[] saved = tag.getIntArray("Sessions");
         for (int i = 0; i < holders.length; i++) {
             holders[i] = tag.hasUUID("Holder" + i) ? tag.getUUID("Holder" + i) : null;
@@ -246,6 +413,8 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         power.save(tag);
+        tag.put("GasolineLine", gasolineLine.writeToNBT(new CompoundTag()));
+        tag.put("DieselLine", dieselLine.writeToNBT(new CompoundTag()));
         writeHolders(tag);
         tag.putIntArray("Sessions", sessions.clone());
     }
@@ -265,6 +434,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         int out = 0;
         for (int i = 0; i < holders.length; i++) if (holders[i] != null) out |= 1 << i;
         tag.putByte("Out", (byte) out);
+        tag.putByte("Flow", (byte) flowing);
         return tag;
     }
 

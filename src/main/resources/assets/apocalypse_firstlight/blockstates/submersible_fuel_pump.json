@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/submersible_fuel_pump/body"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/submersible_fuel_pump/body",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/submersible_fuel_pump/body",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/submersible_fuel_pump/body",
+      "y": 270
+    }
+  }
+}

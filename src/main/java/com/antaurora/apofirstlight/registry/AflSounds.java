@@ -109,6 +109,7 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_START = simple("intake_pump_start");
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_STOP = simple("intake_pump_stop");
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_LOOP = simple("intake_pump_loop");
+    public static final RegistryObject<SoundEvent> FUEL_NOZZLE_SPRAY = simple("fuel_nozzle_spray");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

@@ -177,6 +177,8 @@ final class AuthoringFixtureRegistry {
             new Def(A+"crusher",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"industrial_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"thermal_generator",machine,"machine").notes("Energy producer with fuel/fluid state; not an authoring fixture."),
+            new Def(A+"submersible_fuel_pump",machine,"machine").notes("Fuel pump with FE and a fluid buffer; build fuel stations with /dev fuel station."),
+            new Def(A+"fuel_dispenser_sump",machine,"machine").notes("2 x 2 sump under a fuel dispenser, hands fuel and power up; build fuel stations with /dev fuel station."),
             new Def(A+"gun_maintenance_bench",machine,"workstation").facing(H4).multi(WORKSTATION).notes("Gameplay workstation holding a weapon slot."),
             new Def(A+"precision_fabrication_station",machine,"workstation").facing(H4).multi(WORKSTATION).notes("Gameplay crafting workstation."),
             new Def(A+"energy_cell",unsafe,"machine").notes("Energy-network storage."),

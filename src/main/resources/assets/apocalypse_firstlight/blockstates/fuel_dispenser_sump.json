@@ -1,0 +1,55 @@
+{
+  "variants": {
+    "cell=a0,facing=north": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/body"
+    },
+    "cell=b0,facing=north": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a1,facing=north": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=b1,facing=north": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a0,facing=east": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/body",
+      "y": 90
+    },
+    "cell=b0,facing=east": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a1,facing=east": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=b1,facing=east": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a0,facing=south": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/body",
+      "y": 180
+    },
+    "cell=b0,facing=south": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a1,facing=south": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=b1,facing=south": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a0,facing=west": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/body",
+      "y": 270
+    },
+    "cell=b0,facing=west": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=a1,facing=west": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    },
+    "cell=b1,facing=west": {
+      "model": "apocalypse_firstlight:block/fuel_dispenser_sump/cell"
+    }
+  }
+}

@@ -79,6 +79,9 @@ export const MATS = {
 
 // ---------------- dimensions (px) ----------------
 export const TANK = {cy: -20, r: 19, straight: 47, end: 55.9, seg: 32, ribs: [11, 22, 33, 44], rib: [1.5, 1.3]};   // rib: half width, height
+// the fill port (2026-10-05): a second AFL port on the top face of the end cell (along 6, z +48 px), where the fill riser
+// comes up; a fluid pipe takes it up to the fill cover at the forecourt (tools/build-fuel-station-sump-v1.mjs)
+export const FILL = {z: 48, collar: [3.4, -2.6, 0.6], riser: [2.6, 0.6, 7.4], band: [3.6, 5.2]};
 export const MANWAY = {collar: [8, -2.5, 2.0], lid: [9.6, 2.0, 3.2], bolts: [8.8, 12], flange: [5.8, 3.2, 3.9], riser: [4.2, 3.9, 7.4], band: [0.2, 1.2]};
 export const LABEL = {z: [24.2, 30.8], half: 14};   // between the ribs at 22 and 33, +-14 degrees round the side
 export const CAPACITY_MB = 30000;   // UndergroundFuelTankBlockEntity: about the tank's volume (2.4 m x ~6.4 m)
@@ -109,10 +112,19 @@ function tank(P) {
   const port = {plate: P('port_plate', 'portPlate'), throat: P('port_throat', 'portThroat'), studs: P('port_studs', 'portStud')};
   addFluidPort(port, 0, 0, M.riser[2] - 8, 0);   // built facing +Z with the mating face at z 0, turned to face up at y 8
   for (const p of Object.values(port)) p.v = p.v.map(([x, y, z]) => [x, z + 8, -y]);
+  // the fill riser and its port on the end cell's top face
+  const F = FILL;
+  lathe(P('fill_collar', 'frp'), 'y', [0, F.z], [[F.collar[1], F.collar[0]], [F.collar[2], F.collar[0]]], 20, [false, true]);
+  lathe(P('fill_riser', 'lid'), 'y', [0, F.z], [[F.riser[1], F.riser[0]], [F.riser[2], F.riser[0]]], 16, [false, false]);
+  planY(P('fill_neck', 'riser'), rect(-4.2, F.z - 4.2, 4.2, F.z + 4.2), M.riser[2] - 0.6, M.riser[2], 0.06);
+  const fill = {plate: P('fill_plate', 'portPlate'), throat: P('fill_throat', 'portThroat'), studs: P('fill_studs', 'portStud')};
+  addFluidPort(fill, 0, -F.z, M.riser[2] - 8, 0);
+  for (const p of Object.values(fill)) p.v = p.v.map(([x, y, z]) => [x, z + 8, -y]);
 }
 function labels(P, fuel) {   // colour label plates on both sides between two ribs, a colour band round the collar
   const T = TANK, L = LABEL, part = P('label', fuel);
   for (const side of [0, 180]) for (const s of [-1, 1]) arcPlate(part, T.cy, T.r - 0.05, T.r + 0.3, side - L.half, side + L.half, s > 0 ? L.z[0] : -L.z[1], s > 0 ? L.z[1] : -L.z[0], 4);
+  lathe(P('fill_band', fuel), 'y', [0, FILL.z], [[FILL.band[0], FILL.riser[0]], [FILL.band[0], FILL.riser[0] + 0.25], [FILL.band[1], FILL.riser[0] + 0.25], [FILL.band[1], FILL.riser[0]]], 16);
   lathe(P('band', fuel), 'y', [0, 0], [[MANWAY.band[0], MANWAY.collar[0]], [MANWAY.band[0], MANWAY.collar[0] + 0.25], [MANWAY.band[1], MANWAY.collar[0] + 0.25], [MANWAY.band[1], MANWAY.collar[0]]], 24);
 }
 export const FUELS = ['gasoline', 'diesel'];
@@ -237,7 +249,7 @@ for (const fuel of FUELS) {
   outputs.push([path.join(assets, `blockstates/underground_fuel_tank_${fuel}.json`), json({multipart: [
     {apply: {model: 'apocalypse_firstlight:block/underground_fuel_tank/cell'}},
     {when: {axis: 'z', along: '3', across: '1', level: '2'}, apply: {model: `apocalypse_firstlight:block/${file}`}},
-    {when: {axis: 'x', along: '3', across: '1', level: '2'}, apply: {model: `apocalypse_firstlight:block/${file}`, y: 90}}]})]);
+    {when: {axis: 'x', along: '3', across: '1', level: '2'}, apply: {model: `apocalypse_firstlight:block/${file}`, y: 270}}]})]);
 }
 const tris = bone => B.PARTS.filter(p => p.bone === bone).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {triangles: Object.fromEntries(Object.keys(PIECES).map(k => [k, tris(k)])), texelsPerPx: B.UV.S, islands: B.UV.islands.length,

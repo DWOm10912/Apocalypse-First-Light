@@ -25,7 +25,7 @@
       },
       "apply": {
         "model": "apocalypse_firstlight:block/underground_fuel_tank/diesel",
-        "y": 90
+        "y": 270
       }
     }
   ]

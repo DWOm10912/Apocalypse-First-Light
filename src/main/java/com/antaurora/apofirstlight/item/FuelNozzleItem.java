@@ -6,7 +6,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -19,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
  * exists while its holder keeps it in the main hand. Anywhere else (another slot, the off hand, another inventory once a
  * player holds it there, the ground) it removes itself; the dispenser then hangs the nozzle back in its holster. V1 holds
  * no fuel.
+ * <p>
+ * Spraying (2026-10-05, docs/models/fuel_dispenser_v1.md "滋油"): holding right click (use) runs the nozzle; every use tick
+ * the dispenser draws fuel from that grade's line onto the ground in view (FuelDispenserBlockEntity#spray). No containers yet.
  */
 public final class FuelNozzleItem extends Item {
     private static final String TAG = "FuelDispenser";
@@ -53,10 +61,58 @@ public final class FuelNozzleItem extends Item {
         return index >= 0 && index < Nozzle.values().length ? Nozzle.values()[index] : null;
     }
 
+    /** The dispenser a nozzle stack belongs to (any side, no session check), or null. */
+    @Nullable
+    public static BlockPos dispenserOf(ItemStack stack) {
+        CompoundTag tag = stack.getItem() instanceof FuelNozzleItem ? stack.getTagElement(TAG) : null;
+        return tag == null ? null : BlockPos.of(tag.getLong("Pos"));
+    }
+
+    /** The nozzle index (Nozzle ordinal) a nozzle stack is, or -1. */
+    public static int nozzleIndexOf(ItemStack stack) {
+        CompoundTag tag = stack.getItem() instanceof FuelNozzleItem ? stack.getTagElement(TAG) : null;
+        return tag == null ? -1 : tag.getInt("Nozzle");
+    }
+
     /** True for this dispenser's nozzle under this session. */
     public static boolean matches(ItemStack stack, @Nullable Level level, BlockPos dispenser, int nozzle, int session) {
         CompoundTag tag = binding(stack, level, dispenser);
         return tag != null && tag.getInt("Nozzle") == nozzle && tag.getInt("Session") == session && session != 0;
+    }
+
+    /**
+     * Hold right click in the main hand: the nozzle runs while it is held (onUseTick). Returns PASS although it starts
+     * using: any consuming result makes the client replay the held item's equip bob (ItemInHandRenderer#itemUsed), which
+     * dropped the nozzle away from its hose for a moment (user, 2026-10-05).
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (hand == InteractionHand.MAIN_HAND) player.startUsingItem(hand);
+        return InteractionResultHolder.pass(stack);
+    }
+
+    @Override
+    public int getUseDuration(ItemStack stack) {
+        return 72000;
+    }
+
+    @Override
+    public UseAnim getUseAnimation(ItemStack stack) {
+        return UseAnim.NONE;
+    }
+
+    @Override
+    public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int remaining) {
+        if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
+        CompoundTag tag = stack.getTagElement(TAG);
+        if (tag == null || !tethered(stack, level, player)) {
+            player.stopUsingItem();
+            return;
+        }
+        if (level.getBlockEntity(BlockPos.of(tag.getLong("Pos"))) instanceof FuelDispenserBlockEntity dispenser) {
+            dispenser.spray(player, Nozzle.values()[tag.getInt("Nozzle")]);
+        }
     }
 
     @Override

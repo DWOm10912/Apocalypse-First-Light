@@ -1,0 +1,4 @@
+# AFL submersible_fuel_pump/body
+newmtl fuel_station_sump
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/fuel_station_sump

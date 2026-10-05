@@ -31,6 +31,7 @@ import java.util.function.Supplier;
  * view when it can be replaced). {@code /setblock ... apocalypse_firstlight:gasoline} works as well.</li>
  * <li>{@code /dev fuel fill [mB]}: fills the underground fuel tank in view with its own fuel (default: full).</li>
  * <li>{@code /dev fuel info}: the underground fuel tank in view: fuel and amount.</li>
+ * <li>{@code /dev fuel station}: a cut-open demo fuel station east of the player (DevFuelStation).</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -49,7 +50,8 @@ public final class DevFuelCommands {
                         .then(Commands.literal("fill").executes(context -> fill(context, Integer.MAX_VALUE))
                                 .then(Commands.argument("mB", IntegerArgumentType.integer(1))
                                         .executes(context -> fill(context, IntegerArgumentType.getInteger(context, "mB")))))
-                        .then(Commands.literal("info").executes(DevFuelCommands::info))));
+                        .then(Commands.literal("info").executes(DevFuelCommands::info))
+                        .then(Commands.literal("station").executes(DevFuelStation::build))));
     }
 
     private static int source(CommandContext<CommandSourceStack> context, Supplier<? extends Block> liquid) throws CommandSyntaxException {

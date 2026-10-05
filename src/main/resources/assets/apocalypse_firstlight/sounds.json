@@ -419,6 +419,10 @@
     "subtitle": "subtitles.apocalypse_firstlight.intake_pump_loop",
     "sounds": [{"name": "apocalypse_firstlight:intake_pump/loop", "attenuation_distance": 8}]
   },
+  "fuel_nozzle_spray": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_spray",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/spray", "attenuation_distance": 10}]
+  },
   "beverage_cooler_compressor_start": {
     "subtitle": "subtitles.apocalypse_firstlight.beverage_cooler_compressor_start",
     "sounds": [{"name": "apocalypse_firstlight:beverage_cooler/compressor_start", "attenuation_distance": 10}]
