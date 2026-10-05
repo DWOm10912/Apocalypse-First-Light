@@ -80,6 +80,7 @@ public final class AflCreativeTabs {
             AflItems.CHEMICAL_REACTOR,
             AflItems.FLUID_PIPE,
             AflItems.FLUID_TANK,
+            AflItems.INTAKE_PUMP,
             AflItems.INDUSTRIAL_WASTE_BUCKET,
             AflItems.GUN_MAINTENANCE_BENCH,
             AflItems.PRECISION_FABRICATION_STATION);

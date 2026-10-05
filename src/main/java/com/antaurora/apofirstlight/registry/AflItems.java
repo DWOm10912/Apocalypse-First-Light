@@ -267,6 +267,9 @@ public final class AflItems {
     public static final RegistryObject<Item> UNDERGROUND_FUEL_TANK_DIESEL = ITEMS.register("underground_fuel_tank_diesel",
             () -> new com.antaurora.apofirstlight.item.UndergroundFuelTankItem(
                     (com.antaurora.apofirstlight.block.UndergroundFuelTankBlock) AflBlocks.UNDERGROUND_FUEL_TANK_DIESEL.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> INTAKE_PUMP = ITEMS.register("intake_pump",
+            () -> new com.antaurora.apofirstlight.item.IntakePumpItem(
+                    (com.antaurora.apofirstlight.block.IntakePumpBlock) AflBlocks.INTAKE_PUMP.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

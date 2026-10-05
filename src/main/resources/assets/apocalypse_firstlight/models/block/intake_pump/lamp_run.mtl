@@ -1,0 +1,5 @@
+# AFL Intake Pump V1 status lamp (green: pumping)
+newmtl intake_pump
+Kd 1 1 1
+Ka 1 1 1
+map_Kd apocalypse_firstlight:block/intake_pump

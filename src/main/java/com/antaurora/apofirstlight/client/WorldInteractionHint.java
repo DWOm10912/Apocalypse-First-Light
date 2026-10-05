@@ -69,6 +69,7 @@ public final class WorldInteractionHint {
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
+            if(target==null) target=intakePump(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
@@ -252,6 +253,14 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.FuelDispenserBlock)) return null;
         var prompt=com.antaurora.apofirstlight.block.FuelDispenserBlock.prompt(mc.level,hit.getBlockPos(),s,hit.getLocation(),mc.player);
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.fuel_dispenser."+prompt.key()),prompt.anchor());
+    }
+
+    /** Intake pump, as IntakePumpBlock#use: with an empty main hand, turn the isolator on / off; drawn at its handle. */
+    private static Target intakePump(Minecraft mc,BlockHitResult hit) {
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.IntakePumpBlock)) return null;
+        var prompt=com.antaurora.apofirstlight.block.IntakePumpBlock.prompt(mc.level,hit.getBlockPos(),s,mc.player);
+        return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight.intake_pump."+prompt.key()),prompt.anchor());
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

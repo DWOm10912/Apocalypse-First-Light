@@ -245,6 +245,10 @@
       "unit_mass_kg": 150,
       "estimated": true
     },
+    "apocalypse_firstlight:intake_pump": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
     "apocalypse_firstlight:fuel_nozzle_gasoline": {
       "unit_mass_kg": 1.2,
       "estimated": true

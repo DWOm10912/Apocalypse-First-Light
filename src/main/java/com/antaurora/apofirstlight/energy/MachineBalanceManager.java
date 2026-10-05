@@ -58,6 +58,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "alloy_furnace");
     private static final ResourceLocation CHEMICAL_REACTOR_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "chemical_reactor");
+    private static final ResourceLocation INTAKE_PUMP_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "intake_pump");
 
     private static volatile ThermalGeneratorBalance thermalGenerator = fallbackThermalGenerator();
     private static volatile EnergyCellBalance energyCell = fallbackEnergyCell();
@@ -74,6 +76,7 @@ public final class MachineBalanceManager {
     private static volatile CompressorBalance compressor = fallbackCompressor();
     private static volatile AlloyFurnaceBalance alloyFurnace = fallbackAlloyFurnace();
     private static volatile ChemicalReactorBalance chemicalReactor = fallbackChemicalReactor();
+    private static volatile IntakePumpBalance intakePump = fallbackIntakePump();
     private static volatile int revision;
 
     private MachineBalanceManager() {
@@ -149,6 +152,11 @@ public final class MachineBalanceManager {
 
     public static ChemicalReactorBalance chemicalReactor() {
         return chemicalReactor;
+    }
+
+    /** Intake Pump (IntakePumpBlockEntity): buffer, cable input limit, the draw while pumping and the pumping rate. */
+    public static IntakePumpBalance intakePump() {
+        return intakePump;
     }
 
     public static int revision() {
@@ -234,6 +242,10 @@ public final class MachineBalanceManager {
     public record ChemicalReactorBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick) {
     }
 
+    /** work_fe_per_tick is paid only on ticks it pumps; pump_mb_per_tick is the liquid drawn on such a tick (1 mB = 1 L). */
+    public record IntakePumpBalance(int capacityFe, int maxReceiveFePerTick, int workFePerTick, int pumpMbPerTick) {
+    }
+
     private static final class BalanceReloadListener extends SimpleJsonResourceReloadListener {
         private BalanceReloadListener() {
             super(GSON, "machine_balance");
@@ -265,6 +277,7 @@ public final class MachineBalanceManager {
             AlloyFurnaceBalance loadedAlloyFurnace = loadAlloyFurnace(resources.get(ALLOY_FURNACE_ID));
             ChemicalReactorBalance loadedChemicalReactor =
                     loadChemicalReactor(resources.get(CHEMICAL_REACTOR_ID));
+            IntakePumpBalance loadedIntakePump = loadIntakePump(resources.get(INTAKE_PUMP_ID));
             thermalGenerator = loadedThermal;
             energyCell = loadedCell;
             energyBattery = loadedBattery;
@@ -280,6 +293,7 @@ public final class MachineBalanceManager {
             compressor = loadedCompressor;
             alloyFurnace = loadedAlloyFurnace;
             chemicalReactor = loadedChemicalReactor;
+            intakePump = loadedIntakePump;
             revision++;
 
             ApocalypseFirstLight.LOGGER.info(
@@ -330,6 +344,10 @@ public final class MachineBalanceManager {
                     "[AFL ELECTRICITY] Chemical Reactor balance: capacity={} FE, receive={} FE/t, work={} FE/t",
                     loadedChemicalReactor.capacityFe(), loadedChemicalReactor.maxReceiveFePerTick(),
                     loadedChemicalReactor.workFePerTick());
+            ApocalypseFirstLight.LOGGER.info(
+                    "[AFL ELECTRICITY] Intake Pump balance: capacity={} FE, receive={} FE/t, work={} FE/t, pump={} mB/t",
+                    loadedIntakePump.capacityFe(), loadedIntakePump.maxReceiveFePerTick(),
+                    loadedIntakePump.workFePerTick(), loadedIntakePump.pumpMbPerTick());
 
         }
     }
@@ -484,6 +502,22 @@ public final class MachineBalanceManager {
         }
     }
 
+    private static IntakePumpBalance loadIntakePump(@Nullable JsonElement element) {
+        try {
+            JsonObject root = requireObject(element, "intake_pump.json");
+            return new IntakePumpBalance(
+                    requirePositiveInt(root, "capacity_fe", "intake_pump.json"),
+                    requirePositiveInt(root, "max_receive_fe_per_tick", "intake_pump.json"),
+                    requirePositiveInt(root, "work_fe_per_tick", "intake_pump.json"),
+                    requirePositiveInt(root, "pump_mb_per_tick", "intake_pump.json"));
+        } catch (RuntimeException exception) {
+            ApocalypseFirstLight.LOGGER.error(
+                    "[AFL ELECTRICITY] Invalid or missing machine_balance/intake_pump.json; using safe fallback: {}",
+                    exception.getMessage());
+            return fallbackIntakePump();
+        }
+    }
+
     private static CompressorBalance loadCompressor(@Nullable JsonElement element) {
         try {
             JsonObject root = requireObject(element, "compressor.json");
@@ -587,6 +621,11 @@ public final class MachineBalanceManager {
 
     private static IndustrialFurnaceBalance fallbackIndustrialFurnace() {
         return new IndustrialFurnaceBalance(60_000, 128, 24, 0.5D);
+    }
+
+    /** Same values as machine_balance/intake_pump.json. */
+    private static IntakePumpBalance fallbackIntakePump() {
+        return new IntakePumpBalance(2000, 32, 8, 5);
     }
 
     private static CompressorBalance fallbackCompressor() {

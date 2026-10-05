@@ -54,7 +54,7 @@ public enum MachineJadeComponentProvider implements IBlockComponentProvider {
         }
     }
 
-    private static void addEnergy(ITooltip tooltip, CompoundTag data) {
+    static void addEnergy(ITooltip tooltip, CompoundTag data) {
         int stored = Math.max(0, data.getInt(MachineJadeServerDataProvider.ENERGY_STORED));
         int capacity = Math.max(0, data.getInt(MachineJadeServerDataProvider.ENERGY_CAPACITY));
         float ratio = capacity <= 0 ? 0.0F : Math.min(1.0F, (float) stored / capacity);

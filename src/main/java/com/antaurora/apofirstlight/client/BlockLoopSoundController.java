@@ -4,9 +4,11 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.BeverageCoolerBlock;
 import com.antaurora.apofirstlight.block.ChargingStationBlock;
 import com.antaurora.apofirstlight.block.ChestFreezerBlock;
+import com.antaurora.apofirstlight.block.IntakePumpBlock;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
+import com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -34,7 +36,7 @@ import java.util.function.Supplier;
 /**
  * Quiet block loops driven by a block entity's synced state (seamless loops from tools/sound-mix-lib.mjs buildLoop; their
  * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's and
- * the chest freezer's compressor while it runs (the freezer's the same loop, deeper). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
+ * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (the same loop, higher). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
  * sound stops itself when its condition ends, the block entity is gone, or the player leaves the range.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -66,7 +68,13 @@ public final class BlockLoopSoundController {
             new Source<>(ChestFreezerBlockEntity.class, ChestFreezerBlockEntity::compressorRunning,
                     freezer -> ChestFreezerBlock.compressorPosition(freezer.getBlockPos(),
                             freezer.getBlockState().getValue(ChestFreezerBlock.FACING)),
-                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, ChestFreezerBlockEntity.COMPRESSOR_PITCH));
+                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, ChestFreezerBlockEntity.COMPRESSOR_PITCH),
+            // the intake pump's motor while it pumps (the status lamp green): the cooler compressor loop, higher, until it has its own
+            new Source<>(IntakePumpBlockEntity.class,
+                    pump -> pump.getBlockState().getBlock() instanceof IntakePumpBlock
+                            && pump.getBlockState().getValue(IntakePumpBlock.LAMP) == IntakePumpBlock.Lamp.RUN,
+                    pump -> IntakePumpBlock.world(pump.getBlockPos(), pump.getBlockState().getValue(IntakePumpBlock.FACING), 0.0, -1.6, 4.5),
+                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, 1.35F));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;

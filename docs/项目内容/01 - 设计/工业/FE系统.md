@@ -61,6 +61,7 @@ AFL 使用 Forge Energy 构建发电端、用电端与公平分配网络；机�
 - Beverage Cooler（灯 1 FE/t + 压缩机运行时 4 FE/t，运行 20 秒、停 40 秒，平均约 2.3 FE/t；缓冲 20 FE，断电约 1 秒内熄灯，最大输入 32 FE/t）
 - Water Dispenser（2026-10-01，V2：只有两颗指示灯 1 FE/t，不发方块光；缓冲 20 FE，最大输入 32 FE/t；同样是只有灯模式，见 [Water Dispenser V2](../../../models/water_dispenser_v2.md)）
 - Vending Machine（2026-10-01，V2：只有灯 1 FE/t，没有压缩机；缓冲 20 FE，最大输入 32 FE/t；`energy/CompressorAppliance` 的只有灯模式，见 [Vending Machine V2](../../../models/vending_machine_v2.md)）
+- Intake Pump（2026-10-05：抽液时 8 FE/t，待机不耗电；缓冲 2,000 FE，最大输入 32 FE/t；电源接口在岸上那格的右面，见 [Intake Pump V1](../../../models/intake_pump_v1.md)）
 - Chest Freezer（2026-10-01：状态灯 1 FE/t + 压缩机运行时 6 FE/t，运行 30 秒、停 30 秒，平均约 4 FE/t；缓冲 20 FE，最大输入 32 FE/t；和饮料冷柜共用 `energy/CompressorAppliance`，见 [Chest Freezer V2](../../../models/chest_freezer_v2.md)）
 
 单台设备仍然受到自己的：
@@ -125,7 +126,7 @@ Cable 本身不限制总吞吐。
 - 无单段吞吐限制
 - 不强制加载区块
 
-外观（2026-10-01 起 V2）：三根黑色导线的集束线缆，按连接形状显示直线、转弯、接线盒、封头；连向机器电源接口的一端是插头。机器的电源接口由方块自己声明（`AflPowerPortBlock`），原有七台机器都是背面一个，充电站两格背面各一个，饮料冷柜、冷冻冰柜都是主格背面一个，自动售货机、饮水机是下半格背面一个。以后的用电设备都按同一规格开接口，多格设备只在背面底部某一格开一个。详见 [Power Cable V2](../../../models/power_cable_v2.md)，包括以后 Mesh 机器要遵守的电源接口规格。
+外观（2026-10-01 起 V2）：三根黑色导线的集束线缆，按连接形状显示直线、转弯、接线盒、封头；连向机器电源接口的一端是插头。机器的电源接口由方块自己声明（`AflPowerPortBlock`），原有七台机器都是背面一个，充电站两格背面各一个，饮料冷柜、冷冻冰柜都是主格背面一个，自动售货机、饮水机是下半格背面一个，取液泵（2026-10-05）是岸上那格的右面一个（背面是电机风扇罩）。以后的用电设备都按同一规格开接口，多格设备只在背面底部某一格开一个。详见 [Power Cable V2](../../../models/power_cable_v2.md)，包括以后 Mesh 机器要遵守的电源接口规格。
 
 ---
 

@@ -284,6 +284,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> UNDERGROUND_FUEL_TANK_DIESEL = BLOCKS.register("underground_fuel_tank_diesel",
             () -> new com.antaurora.apofirstlight.block.UndergroundFuelTankBlock(AflFluids.DIESEL, tankProperties()));
 
+    public static final RegistryObject<Block> INTAKE_PUMP = BLOCKS.register("intake_pump",
+            () -> new com.antaurora.apofirstlight.block.IntakePumpBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+
     private static BlockBehaviour.Properties tankProperties() {
         return BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(5.0F, 8.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion();
     }

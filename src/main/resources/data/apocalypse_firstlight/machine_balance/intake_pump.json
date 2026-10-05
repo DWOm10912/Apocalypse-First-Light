@@ -1,0 +1,6 @@
+{
+  "capacity_fe": 2000,
+  "max_receive_fe_per_tick": 32,
+  "work_fe_per_tick": 8,
+  "pump_mb_per_tick": 5
+}
