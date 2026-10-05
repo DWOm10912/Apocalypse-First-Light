@@ -65,8 +65,9 @@ public final class FluidPipeVisualManager {
             active.put(key, new VisualState(fluidId, directionMask, inflow, visualFlow, gameTime, lastFlow));
             int emission = FluidLighting.emission(fluid, 5);
             FluidLighting.update(level, key, emission);
-            if (emission > 0 && !level.getBlockTicks().hasScheduledTick(key, AflBlocks.FLUID_PIPE.get())) {
-                level.scheduleTick(key, AflBlocks.FLUID_PIPE.get(), VISUAL_HOLD_TICKS);
+            net.minecraft.world.level.block.Block pipeBlock = level.getBlockState(key).getBlock();
+            if (emission > 0 && !level.getBlockTicks().hasScheduledTick(key, pipeBlock)) {
+                level.scheduleTick(key, pipeBlock, VISUAL_HOLD_TICKS);
             }
             if (oldState == null || !oldState.fluidId().equals(fluidId) || oldState.directionMask() != directionMask
                     || oldState.inflow() != inflow || oldState.isFlowing() != visualFlow) {
@@ -106,7 +107,7 @@ public final class FluidPipeVisualManager {
         active.entrySet().removeIf(entry -> {
             boolean expired = gameTime - entry.getValue().lastTransferGameTime() >= VISUAL_HOLD_TICKS;
             boolean missingPipe = !level.hasChunkAt(entry.getKey())
-                    || !level.getBlockState(entry.getKey()).is(AflBlocks.FLUID_PIPE.get());
+                    || !com.antaurora.apofirstlight.block.FluidPipeBlock.isPipe(level.getBlockState(entry.getKey()));
             if (expired || missingPipe) {
                 FluidLighting.update(level, entry.getKey(), 0);
                 cleared.add(AflNetwork.FluidPipeVisualUpdate.clear(entry.getKey()));
@@ -135,7 +136,7 @@ public final class FluidPipeVisualManager {
         if (state == null || level.getGameTime() - state.lastTransferGameTime() >= VISUAL_HOLD_TICKS) {
             FluidLighting.update(level, pos, 0);
         } else {
-            level.scheduleTick(pos, AflBlocks.FLUID_PIPE.get(), VISUAL_HOLD_TICKS);
+            level.scheduleTick(pos, level.getBlockState(pos).getBlock(), VISUAL_HOLD_TICKS);
         }
     }
 

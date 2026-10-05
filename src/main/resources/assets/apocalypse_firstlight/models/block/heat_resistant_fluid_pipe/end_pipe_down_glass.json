@@ -1,0 +1,12 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/heat_resistant_fluid_pipe/end_pipe_down_glass.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/heat_resistant_fluid_pipe"
+  }
+}

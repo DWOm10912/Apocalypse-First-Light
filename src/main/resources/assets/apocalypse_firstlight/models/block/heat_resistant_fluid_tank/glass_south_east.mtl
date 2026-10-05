@@ -1,0 +1,4 @@
+# AFL Heat-Resistant Fluid Tank glass_south_east
+newmtl heat_resistant_fluid_tank
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/heat_resistant_fluid_tank

@@ -21,6 +21,11 @@ import {fileURLToPath} from 'node:url';
 import {Part, extrude, add, sub, dot, cross, norm, newell, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
 import {FLUID_PORT} from './afl-fluid-port.mjs';
 
+// --heat-resistant: the Heat-Resistant Fluid Tank (2026-10-05, docs/models/heat_resistant_fluid_set_v1.md): the same tank in
+// quartz glass, a refractory ceramic lining ring round every deck bore, an orange high-temperature band under the top deck
+const HEAT = process.argv.includes('--heat-resistant');
+const ID = HEAT ? 'heat_resistant_fluid_tank' : 'fluid_tank';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
 const D2R = Math.PI / 180;
@@ -61,8 +66,14 @@ export const MATS = {
   throat: {c: [24, 25, 27], hl: 0, sm: 60, se: 60, f0: 20},
   stud:   {c: [124, 128, 133], hl: 7, sm: 124, se: 140, f0: 30},
   glass:  {c: [150, 186, 204], hl: 0, sm: 235, se: 235, f0: 10},   // alpha GLASS_ALPHA
+  ...(HEAT ? {
+    glass:   {c: [205, 226, 232], hl: 0, sm: 240, se: 240, f0: 10},                                      // fused quartz
+    ceramic: {c: [194, 183, 160], hl: 6, sm: 46, se: 70, f0: 20},                                        // refractory lining
+    band:    {c: p => tone([196, 108, 32], 1 + mott(p, 0.35, 0.04)), hl: 8, sm: 112, se: 136, f0: 24},   // high-temperature band
+  } : {}),
 };
-const GLASS_ALPHA = 56;
+const GLASS_ALPHA = HEAT ? 40 : 56;
+export const LINING = 4.9;   // heat-resistant: the ceramic ring round each bore, out to this
 
 // ---------------- dimensions (px) ----------------
 export const TANK = {glass: [5.9, 6.1], post: [6.3, 1.55], deck: 7.4, throat: 0.5};
@@ -93,7 +104,9 @@ function postPiece(P, corner, span) {   // span: 'mid' (between the decks), 'up'
 function deckPiece(P, top) {   // the port deck: the whole cell's plate with the AFL bore, its throat and the four studs
   const s = top ? 1 : -1, name = top ? 'deck_top' : 'deck_bottom', b = FLUID_PORT.bore;
   const [p0, p1] = top ? [TANK.deck, 8] : [-8, -TANK.deck];
-  planY(P(name + '_plate', 'deck'), rect(-8, -8, 8, 8), p0, p1, 0, [rect(-b, -b, b, b)]);
+  const lb = HEAT ? LINING : b;
+  planY(P(name + '_plate', 'deck'), rect(-8, -8, 8, 8), p0, p1, 0, [rect(-lb, -lb, lb, lb)]);
+  if (HEAT) planY(P(name + '_lining', 'ceramic'), rect(-lb, -lb, lb, lb), p0, p1, 0, [rect(-b, -b, b, b)]);
   const [t0, t1] = top ? [TANK.deck - TANK.throat, TANK.deck + 0.02] : [-TANK.deck - 0.02, -TANK.deck + TANK.throat];
   planY(P(name + '_throat', 'throat'), rect(-b, -b, b, b), t0, t1, 0);
   const studs = P(name + '_studs', 'stud');
@@ -116,8 +129,14 @@ for (const [corner, [ns, ew]] of Object.entries(CORNERS)) {
   PIECES[`post_${corner}_down`] = {build: P => postPiece(P, corner, 'down'), when: {[ns]: 'false', [ew]: 'false', down: 'true'}};
 }
 PIECES.deck_top = {build: P => deckPiece(P, true), when: {up: 'false'}};
+if (HEAT) for (const face of Object.keys(FACES)) PIECES['band_' + face] = {build: P => {
+  const F = FACES[face], ew = F.axis === 0 ? 0.05 : 0, a = [0, 6.5 + ew, 0], b2 = [0, 7.3 - ew, 0], u = F.axis === 2 ? 0 : 2;   // east / west a hair thinner: no coplanar faces where two bands cross at a corner
+  a[F.axis] = F.s * 6.12; b2[F.axis] = F.s * 6.42; a[u] = -8; b2[u] = 8;
+  planY(P('band_' + face, 'band'), F.axis === 2 ? rect(a[0], Math.min(a[2], b2[2]), b2[0], Math.max(a[2], b2[2])) : rect(Math.min(a[0], b2[0]), a[2], Math.max(a[0], b2[0]), b2[2]), a[1], b2[1], 0);
+}, when: {[face]: 'false', up: 'false'}};
 PIECES.deck_bottom = {build: P => deckPiece(P, false), when: {down: 'false'}};
-const ITEM = ['glass_north', 'glass_south', 'glass_west', 'glass_east', 'post_ne', 'post_nw', 'post_se', 'post_sw', 'deck_top', 'deck_bottom'];
+const ITEM = ['glass_north', 'glass_south', 'glass_west', 'glass_east', 'post_ne', 'post_nw', 'post_se', 'post_sw', 'deck_top', 'deck_bottom',
+  ...(HEAT ? ['band_north', 'band_south', 'band_west', 'band_east'] : [])];
 
 // ---------------- bake: UV, LabPBR maps (glass alpha) ----------------
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
@@ -151,13 +170,13 @@ function bake() {
   // a full single cell and a joined pair's pieces must not overlap
   const coplanar = [Object.keys(PIECES).filter(k => !k.includes('_up') && !k.includes('_down') || k.startsWith('deck'))]
     .flatMap(g => zFightLevels(live.filter(p => g.includes(p.bone) && ITEM.includes(p.bone)), new Map()).unresolved);
-  return {id: 'fluid_tank', PARTS: live, atlas, UV, maps, coplanar};
+  return {id: ID, PARTS: live, atlas, UV, maps, coplanar};
 }
 
-const uuidOf = (ns, s) => { const h = createHash('sha256').update(`afl-fluid-tank-v2:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
+const uuidOf = (ns, s) => { const h = createHash('sha256').update(`${HEAT ? 'afl-heat-resistant-fluid-tank' : 'afl-fluid-tank-v2'}:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const r12 = v => +v.toFixed(12) || 0;
 function sourceOf(b) {   // editable Free Model source (frame as the header, px): one group per piece, the single tank shown
-  const uuid = s => uuidOf(b.id, s), name = b.id + '_v2', bones = [...new Set(b.PARTS.map(p => p.bone))];
+  const uuid = s => uuidOf(b.id, s), name = b.id + (HEAT ? '_v1' : '_v2'), bones = [...new Set(b.PARTS.map(p => p.bone))];
   const elements = b.PARTS.map(p => {
     const key = i => i.toString(36).padStart(4, '0'), vertices = {}, faces = {}, uvs = b.UV.faceUV.get(p);
     p.v.forEach((q, i) => { vertices[key(i)] = q.map(r12); });
@@ -213,31 +232,31 @@ function objOf(b, title, file, bones) {
 const mtlOf = (b, title) => `# AFL ${title}\nnewmtl ${b.id}\nKd 1 1 1\nmap_Kd apocalypse_firstlight:block/${b.id}\n`;
 const objModel = (file, glass) => ({loader: 'forge:obj', model: `apocalypse_firstlight:models/block/${file}.obj`, automatic_culling: false,
   flip_v: true, shade_quads: true, ambientocclusion: false, render_type: glass ? 'minecraft:translucent' : 'minecraft:solid',
-  textures: {particle: 'apocalypse_firstlight:block/fluid_tank'}});
+  textures: {particle: `apocalypse_firstlight:block/${ID}`}});
 
 // ---------------- write ----------------
 const B = bake();
 const bbDir = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
-const T = 'Fluid Tank V2';
-outputs.push([path.join(bbDir, 'fluid_tank_v2.bbmodel'), JSON.stringify(sourceOf(B))],
-  ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/fluid_tank_v2${k}.png`), B.maps[i]], [path.join(assets, `textures/block/fluid_tank${k}.png`), B.maps[i]]]));
+const T = HEAT ? 'Heat-Resistant Fluid Tank' : 'Fluid Tank V2';
+outputs.push([path.join(bbDir, `${ID}${HEAT ? '_v1' : '_v2'}.bbmodel`), JSON.stringify(sourceOf(B))],
+  ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/${ID}${HEAT ? '_v1' : '_v2'}${k}.png`), B.maps[i]], [path.join(assets, `textures/block/${ID}${k}.png`), B.maps[i]]]));
 for (const [name, def] of Object.entries(PIECES)) {
-  const file = `fluid_tank/${name}`, obj = objOf(B, `${T} ${name}`, file, [name]);
+  const file = `${ID}/${name}`, obj = objOf(B, `${T} ${name}`, file, [name]);
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, `${T} ${name}`)],
     [path.join(assets, `models/block/${file}.json`), json(objModel(file, def.glass))]);
   objs.push([file, obj]);
 }
 { // the item's shell (FluidTankItemRenderer draws the default state; this model is its particle / preview only)
-  const file = 'fluid_tank/item', obj = objOf(B, `${T} single tank`, file, ITEM);
+  const file = `${ID}/item`, obj = objOf(B, `${T} single tank`, file, ITEM);
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, `${T} single tank`)],
     [path.join(assets, `models/block/${file}.json`), json(objModel(file, true))]);
   objs.push([file, obj]);
 }
 // FluidTankBlock: north / east / south / west / up / down = joined to that neighbour in one structure
-outputs.push([path.join(assets, 'blockstates/fluid_tank.json'), json({multipart: Object.entries(PIECES).map(([name, def]) =>
-  ({when: def.when, apply: {model: `apocalypse_firstlight:block/fluid_tank/${name}`}}))})]);
+outputs.push([path.join(assets, `blockstates/${ID}.json`), json({multipart: Object.entries(PIECES).map(([name, def]) =>
+  ({when: def.when, apply: {model: `apocalypse_firstlight:block/${ID}/${name}`}}))})]);
 
 const tris = bones => B.PARTS.filter(p => bones.includes(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {pieces: Object.keys(PIECES).length, singleTankTriangles: tris(ITEM), atlas: {size: B.atlas, texelsPerPx: B.UV.S, islands: B.UV.islands.length, coplanar: B.coplanar.length}};

@@ -1,0 +1,508 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_west"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_east"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_up"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_west_up"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_east_up"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_west_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_north_east_down"
+      }
+    },
+    {
+      "when": {
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_west"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_east"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_up"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_down"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_west_up"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_east_up"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_west_down"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_south_east_down"
+      }
+    },
+    {
+      "when": {
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_north"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_south"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_up"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_down"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "north": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_north_up"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "south": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_south_up"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "north": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_north_down"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "south": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_west_south_down"
+      }
+    },
+    {
+      "when": {
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "north": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_north"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "south": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_south"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_up"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_down"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "north": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_north_up"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "south": "true",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_south_up"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "north": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_north_down"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "south": "true",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/glass_east_south_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_ne"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_ne_up"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "east": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_ne_down"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_nw"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_nw_up"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "west": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_nw_down"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_se"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_se_up"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "east": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_se_down"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_sw"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "false",
+        "up": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_sw_up"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "west": "false",
+        "down": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/post_sw_down"
+      }
+    },
+    {
+      "when": {
+        "up": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/deck_top"
+      }
+    },
+    {
+      "when": {
+        "north": "false",
+        "up": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/band_north"
+      }
+    },
+    {
+      "when": {
+        "south": "false",
+        "up": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/band_south"
+      }
+    },
+    {
+      "when": {
+        "west": "false",
+        "up": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/band_west"
+      }
+    },
+    {
+      "when": {
+        "east": "false",
+        "up": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/band_east"
+      }
+    },
+    {
+      "when": {
+        "down": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_fluid_tank/deck_bottom"
+      }
+    }
+  ]
+}

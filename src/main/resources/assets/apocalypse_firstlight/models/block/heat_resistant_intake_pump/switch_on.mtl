@@ -1,0 +1,4 @@
+# AFL Heat-Resistant Intake Pump isolator handle (on)
+newmtl heat_resistant_intake_pump
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/heat_resistant_intake_pump

@@ -87,10 +87,22 @@ public final class IntakePumpBlock extends HorizontalDirectionalBlock implements
     private static final Set<Mutation> MUTATIONS = ConcurrentHashMap.newKeySet();
     private static final Map<ShapeKey, VoxelShape> SHAPES = buildShapes();
 
+    /** The Heat-Resistant Intake Pump (silver paint, ceramic suction): draws hot liquids; the ordinary pump melts (FluidHeat). */
+    private final boolean heatResistant;
+
     public IntakePumpBlock(Properties properties) {
+        this(properties, false);
+    }
+
+    public IntakePumpBlock(Properties properties, boolean heatResistant) {
         super(properties);
+        this.heatResistant = heatResistant;
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(PART, Part.BANK)
                 .setValue(ON, false).setValue(LAMP, Lamp.OFF));
+    }
+
+    public boolean heatResistant() {
+        return heatResistant;
     }
 
     // ---- cells ----

@@ -38,6 +38,7 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.FLUID_PIPE.get(), RenderType.translucent());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.HEAT_RESISTANT_FLUID_PIPE.get(), RenderType.translucent());
             // FLUID_TANK: per piece (Fluid Tank V2 models: glass translucent, steel solid)
         });
     }

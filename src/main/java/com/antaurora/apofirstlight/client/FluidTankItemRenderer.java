@@ -29,7 +29,8 @@ public final class FluidTankItemRenderer extends BlockEntityWithoutLevelRenderer
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack,
                              MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        BlockState shellState = AflBlocks.FLUID_TANK.get().defaultBlockState();
+        BlockState shellState = stack.getItem() instanceof net.minecraft.world.item.BlockItem item ? item.getBlock().defaultBlockState()
+                : AflBlocks.FLUID_TANK.get().defaultBlockState();   // the ordinary or the heat-resistant tank
         blockRenderer.renderSingleBlock(shellState, poseStack, bufferSource, packedLight, packedOverlay,
                 ModelData.EMPTY, RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS));
 

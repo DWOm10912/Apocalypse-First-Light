@@ -57,7 +57,7 @@ public final class FluidPipeTransfer {
             return 0;
         }
         BlockState firstPipeState = level.getBlockState(firstPipePosition);
-        if (!firstPipeState.is(AflBlocks.FLUID_PIPE.get())
+        if (!FluidPipeBlock.isPipe(firstPipeState)
                 || !FluidPipeBlock.canPipeEdgeConnect(level, firstPipePosition,
                 sourcePosition, sourceFace.getOpposite())) {
             return 0;
@@ -121,6 +121,7 @@ public final class FluidPipeTransfer {
             }
             if (filled > 0) {
                 markRouteVisual(level, route, sourcePosition, drained, true);
+                if (FluidHeat.isHot(drained)) meltOrdinaryPipes(level, route.pipePath());
                 return filled;
             }
             if (blockedFallback == null) {
@@ -159,7 +160,7 @@ public final class FluidPipeTransfer {
                 continue;
             }
             BlockState pipeState = level.getBlockState(pipePosition);
-            if (!pipeState.is(AflBlocks.FLUID_PIPE.get())) {
+            if (!FluidPipeBlock.isPipe(pipeState)) {
                 continue;
             }
 
@@ -173,7 +174,7 @@ public final class FluidPipeTransfer {
                     continue;
                 }
                 BlockState neighborState = level.getBlockState(neighborPosition);
-                if (neighborState.is(AflBlocks.FLUID_PIPE.get())) {
+                if (FluidPipeBlock.isPipe(neighborState)) {
                     if (!visited.contains(neighborPosition)
                             && !distance.containsKey(neighborPosition)) {
                         BlockPos immutableNeighbor = neighborPosition.immutable();
@@ -234,6 +235,13 @@ public final class FluidPipeTransfer {
             }
         }
         return new TargetAssessment(TargetStatus.INVALID, 0);
+    }
+
+    /** A hot liquid went through: the ordinary pipes on its way melt (FluidHeat); heat-resistant ones carry it. */
+    private static void meltOrdinaryPipes(ServerLevel level, List<BlockPos> path) {
+        for (BlockPos pipe : path) {
+            if (level.getBlockState(pipe).getBlock() instanceof FluidPipeBlock block && !block.heatResistant()) FluidHeat.melt(level, pipe);
+        }
     }
 
     private static void markRouteVisual(ServerLevel level, SinkRoute route,

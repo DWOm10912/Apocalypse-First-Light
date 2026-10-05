@@ -41,6 +41,11 @@ public final class ClientFluidPipeVisuals {
         }
     }
 
+    /** The pipe at {@code position}'s visual state, or null (no copy: for per-frame lookups). */
+    public static VisualState get(BlockPos position) {
+        return ACTIVE.get(position);
+    }
+
     public static Map<BlockPos, VisualState> snapshot() {
         return Map.copyOf(ACTIVE);
     }

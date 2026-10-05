@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.IntakePumpBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
+import com.antaurora.apofirstlight.fluid.FluidHeat;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
 import com.antaurora.apofirstlight.fluid.PumpSourceRules;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Intake Pump V1 (docs/models/intake_pump_v1.md), on the bank cell. While its isolator is on and its FE buffer pays for
  * the tick ({@code work_fe_per_tick}), it draws {@code pump_mb_per_tick} of the source liquid in the block under the front
- * cell (only there; only a source block; any fluid up to {@link #MAX_TEMPERATURE_K}, so not lava) into a small
+ * cell (only there; only a source block) into a small
  * {@link #BUFFER_MB} buffer, and pushes the buffer out through the fluid port on the bank cell's top face into a Fluid
  * Pipe V2 network (FluidPipeTransfer, 25 mB a tick at most). Water (and lava, for the later high-temperature pump) comes
  * only from a pool of at least 3 x 3 x 1 sources and is never used up; any other liquid uses its source block up after
@@ -44,8 +45,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IntakePumpBlockEntity extends BlockEntity {
     public static final int BUFFER_MB = 250;
-    /** Hotter liquids (lava, 1300 K) need the high-temperature pump and pipe (not yet in the game). */
-    public static final int MAX_TEMPERATURE_K = 400;
     public static final int LAMP_PERIOD = 10;
     private static final String ENERGY_KEY = "EnergyStored";
     private static final String BUFFER_KEY = "Buffer";
@@ -207,6 +206,12 @@ public class IntakePumpBlockEntity extends BlockEntity {
         Fluid fluid = liquid.isSource() ? liquid.getType() : Fluids.EMPTY;
         FluidStack seen = fluid == Fluids.EMPTY ? FluidStack.EMPTY : new FluidStack(fluid, 1);
         if (!seen.isFluidEqual(sourceFluid)) sourceFluid = seen;
+        // an ordinary pump that starts on a hot liquid (lava) melts (FluidHeat); the heat-resistant pump draws it
+        if (!((IntakePumpBlock) state.getBlock()).heatResistant() && FluidHeat.isHot(fluid) && state.getValue(IntakePumpBlock.ON)
+                && energyStored >= values.workFePerTick()) {
+            FluidHeat.melt(server, worldPosition);
+            return;
+        }
 
         status = pump(server, state, values, source, fluid);
         if (status == Status.RUNNING) pumpedThisPeriod = true;
@@ -234,10 +239,9 @@ public class IntakePumpBlockEntity extends BlockEntity {
 
     private Status pump(ServerLevel server, BlockState state, MachineBalanceManager.IntakePumpBalance values, BlockPos source,
                         Fluid fluid) {
-        if (!state.getValue(IntakePumpBlock.ON)) return Status.OFF;
+        if (!state.getValue(IntakePumpBlock.ON)) return !((IntakePumpBlock) state.getBlock()).heatResistant() && FluidHeat.isHot(fluid) ? Status.TOO_HOT : Status.OFF;
         if (energyStored < values.workFePerTick()) return Status.NO_POWER;
         if (fluid == Fluids.EMPTY) return Status.NO_LIQUID;
-        if (fluid.getFluidType().getTemperature() > MAX_TEMPERATURE_K) return Status.TOO_HOT;
         boolean pool = PumpSourceRules.isPoolFluid(fluid);
         if (pool && !PumpSourceRules.inPool(server, source, fluid)) return Status.POOL_TOO_SMALL;
         int amount = values.pumpMbPerTick();

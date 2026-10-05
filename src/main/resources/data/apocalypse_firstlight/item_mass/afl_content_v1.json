@@ -249,6 +249,18 @@
       "unit_mass_kg": 45,
       "estimated": true
     },
+    "apocalypse_firstlight:heat_resistant_fluid_pipe": {
+      "unit_mass_kg": 0.63,
+      "estimated": true
+    },
+    "apocalypse_firstlight:heat_resistant_fluid_tank": {
+      "unit_mass_kg": 37.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:heat_resistant_intake_pump": {
+      "unit_mass_kg": 56.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:fuel_nozzle_gasoline": {
       "unit_mass_kg": 1.2,
       "estimated": true

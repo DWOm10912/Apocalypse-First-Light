@@ -1,0 +1,266 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/body"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank",
+        "on": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank",
+        "on": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank",
+        "lamp": "off"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank",
+        "lamp": "idle"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_idle"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "part": "bank",
+        "lamp": "run"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_run"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/body",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank",
+        "on": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank",
+        "on": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank",
+        "lamp": "off"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank",
+        "lamp": "idle"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_idle",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "part": "bank",
+        "lamp": "run"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_run",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/body",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank",
+        "on": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank",
+        "on": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank",
+        "lamp": "off"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank",
+        "lamp": "idle"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_idle",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "part": "bank",
+        "lamp": "run"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_run",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/body",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank",
+        "on": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank",
+        "on": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/switch_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank",
+        "lamp": "off"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank",
+        "lamp": "idle"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_idle",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "part": "bank",
+        "lamp": "run"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/lamp_run",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "part": "front"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/heat_resistant_intake_pump/cell"
+      }
+    }
+  ]
+}

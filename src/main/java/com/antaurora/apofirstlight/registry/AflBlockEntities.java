@@ -73,7 +73,7 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity>> INTAKE_PUMP =
             BLOCK_ENTITIES.register("intake_pump", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity::new,
-                            AflBlocks.INTAKE_PUMP.get()).build(null));
+                            AflBlocks.INTAKE_PUMP.get(), AflBlocks.HEAT_RESISTANT_INTAKE_PUMP.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelCanopyColumnBlockEntity>> FUEL_CANOPY_COLUMN =
             BLOCK_ENTITIES.register("fuel_canopy_column", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelCanopyColumnBlockEntity::new,
@@ -138,7 +138,7 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<FluidTankBlockEntity>> FLUID_TANK =
             BLOCK_ENTITIES.register("fluid_tank", () ->
                     BlockEntityType.Builder.of(FluidTankBlockEntity::new,
-                            AflBlocks.FLUID_TANK.get()).build(null));
+                            AflBlocks.FLUID_TANK.get(), AflBlocks.HEAT_RESISTANT_FLUID_TANK.get()).build(null));
     public static final RegistryObject<BlockEntityType<ChemicalReactorBlockEntity>> CHEMICAL_REACTOR =
             BLOCK_ENTITIES.register("chemical_reactor", () ->
                     BlockEntityType.Builder.of(ChemicalReactorBlockEntity::new,

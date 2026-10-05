@@ -344,6 +344,13 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FLUID_PIPE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_TANK = ITEMS.register("fluid_tank",
             () -> new FluidTankBlockItem(AflBlocks.FLUID_TANK.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> HEAT_RESISTANT_FLUID_PIPE = ITEMS.register("heat_resistant_fluid_pipe",
+            () -> new BlockItem(AflBlocks.HEAT_RESISTANT_FLUID_PIPE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> HEAT_RESISTANT_FLUID_TANK = ITEMS.register("heat_resistant_fluid_tank",
+            () -> new FluidTankBlockItem(AflBlocks.HEAT_RESISTANT_FLUID_TANK.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> HEAT_RESISTANT_INTAKE_PUMP = ITEMS.register("heat_resistant_intake_pump",
+            () -> new com.antaurora.apofirstlight.item.IntakePumpItem(
+                    (com.antaurora.apofirstlight.block.IntakePumpBlock) AflBlocks.HEAT_RESISTANT_INTAKE_PUMP.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> EDGE_LANE_WHITE = ITEMS.register("edge_lane_white",
             () -> new BlockItem(AflBlocks.EDGE_LANE_WHITE.get(), new Item.Properties()));
     public static final RegistryObject<Item> EDGE_LANE_YELLOW = ITEMS.register("edge_lane_yellow",

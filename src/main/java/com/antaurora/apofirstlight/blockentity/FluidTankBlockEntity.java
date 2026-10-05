@@ -61,6 +61,11 @@ public final class FluidTankBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos position, BlockState state, FluidTankBlockEntity tank) {
         if (!(level instanceof ServerLevel server)) return;
+        // a hot liquid (lava) in an ordinary tank melts it, cell by cell (FluidHeat); the heat-resistant tank holds it
+        if (state.getBlock() instanceof FluidTankBlock block && !block.heatResistant() && com.antaurora.apofirstlight.fluid.FluidHeat.isHot(tank.getFluid())) {
+            com.antaurora.apofirstlight.fluid.FluidHeat.melt(server, position);
+            return;
+        }
         com.antaurora.apofirstlight.fluid.FluidLighting.update(server, position,
                 com.antaurora.apofirstlight.fluid.FluidLighting.emission(tank.getMemberFluidSlice(), 9));
         FluidPipeTransfer.transferFrom(server, tank);
@@ -82,6 +87,14 @@ public final class FluidTankBlockEntity extends BlockEntity {
         if (level == null) return this;
         BlockPos master = shape().master();
         return master.equals(worldPosition) ? this : level.getBlockEntity(master) instanceof FluidTankBlockEntity m ? m : this;
+    }
+
+    /** The falling stream (FluidTankRenderer) reaches down through the cells below. */
+    @Override
+    public net.minecraft.world.phys.AABB getRenderBoundingBox() {
+        int below = level == null ? 0 : shape().layerOf(worldPosition);
+        return new net.minecraft.world.phys.AABB(worldPosition.getX(), worldPosition.getY() - below, worldPosition.getZ(),
+                worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
     }
 
     public FluidStack getFluid() {

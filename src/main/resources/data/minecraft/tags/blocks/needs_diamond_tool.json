@@ -51,6 +51,9 @@
     "apocalypse_firstlight:underground_fuel_tank_gasoline",
     "apocalypse_firstlight:underground_fuel_tank_diesel",
     "apocalypse_firstlight:intake_pump",
+    "apocalypse_firstlight:heat_resistant_fluid_pipe",
+    "apocalypse_firstlight:heat_resistant_fluid_tank",
+    "apocalypse_firstlight:heat_resistant_intake_pump",
     "apocalypse_firstlight:lead_shielding_bricks"
   ]
 }

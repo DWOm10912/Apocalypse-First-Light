@@ -1,0 +1,12 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/heat_resistant_fluid_tank/post_sw_down.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "render_type": "minecraft:solid",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/heat_resistant_fluid_tank"
+  }
+}

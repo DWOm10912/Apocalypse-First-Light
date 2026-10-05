@@ -77,6 +77,7 @@
 | 其它 | 不用环境光遮蔽（`ambientocclusion: false`）。方块状态文件只有一个 `""` 变体指向 `fluid_pipe/box`，由拼装模型替换。物品 `models/item/fluid_pipe.json` 的父模型是 `block/fluid_pipe/item`：一格直管，两头盲板，中间一道箍带，半透明渲染 |
 | 液体显示 | `client/FluidPipeRenderer` 画的液体是方块，范围从 V1 的 6..10 px 改为 4.5..11.5 px，在玻璃里面 |
 | 流动方向（2026-10-05） | 用户实机发现管内液体不管往哪流，流动贴图都朝下滚（取液泵往上推的竖管看起来在往下流，横管里也是往下淌）。原因是服务端只记了路线经过的两个面（`directionMask`），没记从哪边流进来，渲染器按原版方块侧面的习惯把贴图的 +V 朝下。现在：<br>• `FluidPipeVisualManager.markRoute` 给每格管子记下进液面（`inflow`，`Direction.get3DDataValue()`），随 `AflNetwork.FluidPipeVisualUpdate` 发给客户端，包里多一个字节；<br>• `FluidRenderHelper.renderFlowBox` 按每个面的流向把流动贴图的 +V 放在流动方向上（原版和 AFL 的流动贴图都是往 +V 滚）；<br>• 直管沿管子流；弯头的进液臂朝中心流，出液臂朝外流；中心块的露出面，出液方向在面内就沿出液方向，否则沿进液方向；<br>• 流向正对着面的（液体流进 / 流出这个面）和停流时，用静止贴图。<br>不知道进液面时（只有旧数据）仍按原来的画法。没有实机验证 |
+| 耐热版本（2026-10-05） | 同一个生成器加 `--heat-resistant` 生成耐热流体管道，见 [heat_resistant_fluid_set_v1.md](heat_resistant_fluid_set_v1.md)。普通管道和耐热管道互不相连（`FluidPipeBlock.samePipe`）；高温液体（超过 400 K）经过普通管道时，路线上的普通管道会被烧毁（`FluidPipeTransfer`、`fluid/FluidHeat`）。没有实机验证 |
 | 可编辑源 | `src/main/blockbench/fluid_pipe_v2.bbmodel`（标准件，每件一组，默认只显示 `item`），贴图 `src/main/blockbench/textures/fluid_pipe_v2{,_s,_n}.png` |
 | 删除 | V1 的 `models/block/fluid_pipe_{core,arm,straight}.json`、`textures/block/fluid_pipe_{arm,core}.png`；圆版试做时生成的 `fluid_pipe/window_*` |
 

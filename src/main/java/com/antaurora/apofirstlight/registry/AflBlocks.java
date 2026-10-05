@@ -439,6 +439,19 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    // Heat-resistant fluid set (2026-10-05, docs/models/heat_resistant_fluid_set_v1.md): hot liquids (lava) without melting
+    public static final RegistryObject<Block> HEAT_RESISTANT_FLUID_PIPE = BLOCKS.register("heat_resistant_fluid_pipe",
+            () -> new FluidPipeBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops().noOcclusion(), true));
+    public static final RegistryObject<Block> HEAT_RESISTANT_FLUID_TANK = BLOCKS.register("heat_resistant_fluid_tank",
+            () -> new FluidTankBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F)
+                    .sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion(), true));
+    public static final RegistryObject<Block> HEAT_RESISTANT_INTAKE_PUMP = BLOCKS.register("heat_resistant_intake_pump",
+            () -> new com.antaurora.apofirstlight.block.IntakePumpBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion(), true));
     public static final RegistryObject<Block> EDGE_LANE_WHITE = BLOCKS.register("edge_lane_white",
             () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
                     .strength(0.1F)

@@ -37,7 +37,14 @@ public final class FluidPipeBlock extends PipeBlock {
     private static final double BOX = 4.6;       // fitting half size (FIT.h)
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
 
+    /** The Heat-Resistant Fluid Pipe (quartz glass, ceramic lining): carries hot liquids; the ordinary pipe melts (FluidHeat). */
+    private final boolean heatResistant;
+
     public FluidPipeBlock(Properties properties) {
+        this(properties, false);
+    }
+
+    public FluidPipeBlock(Properties properties, boolean heatResistant) {
         super(4.0F / 16.0F, properties.lightLevel(state -> state.getValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT)));
         registerDefaultState(stateDefinition.any()
                 .setValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT, 0)
@@ -47,6 +54,11 @@ public final class FluidPipeBlock extends PipeBlock {
                 .setValue(WEST, false)
                 .setValue(UP, false)
                 .setValue(DOWN, false));
+        this.heatResistant = heatResistant;
+    }
+
+    public boolean heatResistant() {
+        return heatResistant;
     }
 
     // ---- placement and links (as PowerCableBlock) ----
@@ -71,14 +83,16 @@ public final class FluidPipeBlock extends PipeBlock {
             BlockPos neighborPos = pos.relative(direction);
             BlockState neighborState = level.getBlockState(neighborPos);
             boolean connect;
-            if (!isPipe(neighborState)) {
+            if (isPipe(neighborState) && !neighborState.is(state.getBlock())) {
+                connect = false;   // the other kind of pipe: the ordinary and the heat-resistant pipe never join
+            } else if (!isPipe(neighborState)) {
                 connect = isFluidPort(neighborState, direction);
             } else {
                 int links = links(neighborState);
                 Direction only = links == 1 ? firstLink(neighborState) : null;
                 connect = neighborPos.equals(against) || links == 0 || only == direction;
                 pipeLinked |= connect;
-                if (!connect && only != null && isPipe(level.getBlockState(neighborPos.relative(only)))) corners |= 1 << direction.ordinal();
+                if (!connect && only != null && samePipe(state, level.getBlockState(neighborPos.relative(only)))) corners |= 1 << direction.ordinal();
             }
             state = state.setValue(PROPERTY_BY_DIRECTION.get(direction), connect);
         }
@@ -99,7 +113,7 @@ public final class FluidPipeBlock extends PipeBlock {
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         boolean connect = isPipe(neighborState)
-                ? neighborState.getValue(PROPERTY_BY_DIRECTION.get(direction.getOpposite()))
+                ? neighborState.is(state.getBlock()) && neighborState.getValue(PROPERTY_BY_DIRECTION.get(direction.getOpposite()))
                 : isFluidPort(neighborState, direction);
         return state.setValue(PROPERTY_BY_DIRECTION.get(direction), connect);
     }
@@ -111,7 +125,7 @@ public final class FluidPipeBlock extends PipeBlock {
                                  BlockHitResult hit) {
         if (!PowerCableBlock.canToggle(player, hand)) return InteractionResult.PASS;
         Direction side = toggleSide(state, pos, hit.getLocation(), hit.getDirection());
-        if (!isPipe(level.getBlockState(pos.relative(side)))) return InteractionResult.PASS;
+        if (!samePipe(state, level.getBlockState(pos.relative(side)))) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
         // the neighbour follows through updateShape
         level.setBlock(pos, state.setValue(PROPERTY_BY_DIRECTION.get(side), !state.getValue(PROPERTY_BY_DIRECTION.get(side))), UPDATE_ALL);
@@ -138,7 +152,7 @@ public final class FluidPipeBlock extends PipeBlock {
     @Nullable
     public static Direction promptToggleSide(BlockGetter level, BlockPos pos, BlockState state, Vec3 hit, Direction face) {
         Direction side = toggleSide(state, pos, hit, face);
-        return isPipe(level.getBlockState(pos.relative(side))) ? side : null;
+        return samePipe(state, level.getBlockState(pos.relative(side))) ? side : null;
     }
 
     @Override
@@ -204,8 +218,14 @@ public final class FluidPipeBlock extends PipeBlock {
         return isPipe(level.getBlockState(pos.relative(direction))) ? Link.PIPE : Link.PORT;
     }
 
-    private static boolean isPipe(BlockState state) {
-        return state.is(AflBlocks.FLUID_PIPE.get());
+    /** Any fluid pipe, ordinary or heat-resistant. */
+    public static boolean isPipe(BlockState state) {
+        return state.getBlock() instanceof FluidPipeBlock;
+    }
+
+    /** A pipe of the same kind as {@code pipe}: the only pipes it links to. */
+    public static boolean samePipe(BlockState pipe, BlockState other) {
+        return isPipe(other) && other.is(pipe.getBlock());
     }
 
     private static int links(BlockState state) {
@@ -234,7 +254,7 @@ public final class FluidPipeBlock extends PipeBlock {
         if (!neighborPosition.equals(pipePosition.relative(directionToNeighbor))) return false;
         BlockState pipeState = level.getBlockState(pipePosition);
         BlockState neighborState = level.getBlockState(neighborPosition);
-        if (isPipe(neighborState)) return isPipe(pipeState) && pipeState.getValue(PROPERTY_BY_DIRECTION.get(directionToNeighbor));
+        if (isPipe(neighborState)) return samePipe(pipeState, neighborState) && pipeState.getValue(PROPERTY_BY_DIRECTION.get(directionToNeighbor));
         return isFluidPort(neighborState, directionToNeighbor);
     }
 

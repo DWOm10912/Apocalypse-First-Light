@@ -22,6 +22,11 @@ import {Part, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, p
 import {addFluidPort} from './afl-fluid-port.mjs';
 import {addPowerPort} from './afl-power-port.mjs';
 
+// --heat-resistant: the Heat-Resistant Intake Pump (2026-10-05, docs/models/heat_resistant_fluid_set_v1.md): the same pump in
+// heat-resistant silver paint, its suction drop and strainer of refractory ceramic
+const HEAT = process.argv.includes('--heat-resistant');
+const ID = HEAT ? 'heat_resistant_intake_pump' : 'intake_pump';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
 const D2R = Math.PI / 180;
@@ -100,6 +105,11 @@ export const MATS = {   // Base Color (sRGB or a function of the model position)
   pportPlate:  {c: [150, 154, 160], hl: 12, sm: 150, se: 168, f0: 255},
   pportSocket: {c: [26, 27, 29], hl: 2, sm: 60, se: 70, f0: 20},
   pportPin:    {c: [96, 100, 104], hl: 6, sm: 130, se: 140, f0: 255},
+  ...(HEAT ? {
+    paint:   {c: p => tone([168, 170, 172], 1 + mott(p, 0.25, 0.04)), hl: 8, sm: 120, se: 142, f0: 40},  // heat-resistant silver (aluminium) paint
+    paintD:  {c: p => tone([146, 148, 151], 1 + mott(p, 0.3, 0.04)), hl: 7, sm: 114, se: 138, f0: 40},
+    ceramic: {c: [194, 183, 160], hl: 6, sm: 46, se: 70, f0: 20},                                        // refractory ceramic (refractory_ceramic)
+  } : {}),
 };
 const GLOW = new Set(['lensRun', 'lensIdle']);
 
@@ -185,11 +195,11 @@ function suction(P) {
   const pz = ez - R, py = Y - R;
   lathe(P('drop_flange', 'body', 'paintD'), 'y', [0, pz], [[py - 0.5, 2.65], [py - 0.38, 2.8], [py - 0.12, 2.8], [py, 2.65]], 32);
   for (let k = 0; k < 4; k++) { const a = (45 + 90 * k) * D2R; boltY(sb, 2.4 * Math.cos(a), pz + 2.4 * Math.sin(a), 0.3, py, py + 0.25); }
-  cyl(pipe, 'y', [0, pz], S.drop, py - 0.5, S.r, 24, [false, false]);
+  cyl(HEAT ? P('suction_drop', 'body', 'ceramic') : pipe, 'y', [0, pz], S.drop, py - 0.5, HEAT ? S.r + 0.1 : S.r, 24, [false, false]);
   // strainer: a flange, a dark perforated basket with steel bands, a bottom cap
   const [b0, b1, br] = S.strainer;
   lathe(P('strainer_flange', 'body', 'paintD'), 'y', [0, pz], [[b1, 2.65], [b1 + 0.12, 2.8], [S.drop - 0.12, 2.8], [S.drop, 2.65]], 32);
-  cyl(P('strainer', 'body', 'grille'), 'y', [0, pz], b0 + 0.3, b1, br - 0.12, 24, [false, false]);
+  cyl(P('strainer', 'body', HEAT ? 'ceramic' : 'grille'), 'y', [0, pz], b0 + 0.3, b1, br - 0.12, 24, [false, false]);
   const bands = P('strainer_bands', 'body', 'pipe');
   for (let y = b0 + 0.3; y < b1 - 0.2; y += 0.75) lathe(bands, 'y', [0, pz], [[y, br - 0.1], [y, br], [y + 0.32, br], [y + 0.32, br - 0.1]], 24, [false, false]);
   for (let k = 0; k < 8; k++) { const a = (k * 45 + 22.5) * D2R; slab(bands, 'y', [br * 0.97 * Math.cos(a) - 0.16, b0 + 0.3, pz + br * 0.97 * Math.sin(a) - 0.16], [br * 0.97 * Math.cos(a) + 0.16, b1, pz + br * 0.97 * Math.sin(a) + 0.16], 0); }
@@ -297,10 +307,10 @@ function bake() {
   });
   const groups = [['body', 'switch_on', 'lamp_off'], ['body', 'switch_off', 'lamp_run']];
   const coplanar = groups.flatMap(g => zFightLevels(live.filter(p => g.includes(p.bone)), new Map()).unresolved);
-  return {id: 'intake_pump', PARTS: live, atlas, UV, maps, coplanar};
+  return {id: ID, PARTS: live, atlas, UV, maps, coplanar};
 }
 
-const uuidOf = (ns, s) => { const h = createHash('sha256').update(`afl-intake-pump-v1:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
+const uuidOf = (ns, s) => { const h = createHash('sha256').update(`${HEAT ? 'afl-heat-resistant-intake-pump' : 'afl-intake-pump-v1'}:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
 const r12 = v => +v.toFixed(12) || 0;
 const HIDDEN = new Set(['switch_on', 'lamp_idle', 'lamp_run']);   // the source shows the item's state: off, lamp dark
 function sourceOf(b) {   // editable Free Model source (frame as the header, px): one group per piece
@@ -359,7 +369,7 @@ function objOf(b, title, file, bones) {
 }
 const mtlOf = (b, title, glow) => `# AFL ${title}\nnewmtl ${b.id}\nKd 1 1 1\n${glow ? 'Ka 1 1 1\n' : ''}map_Kd apocalypse_firstlight:block/${b.id}\n`;
 const objModel = file => ({loader: 'forge:obj', model: `apocalypse_firstlight:models/block/${file}.obj`, automatic_culling: false,
-  flip_v: true, shade_quads: true, ambientocclusion: false, textures: {particle: 'apocalypse_firstlight:block/intake_pump'}});
+  flip_v: true, shade_quads: true, ambientocclusion: false, textures: {particle: `apocalypse_firstlight:block/${ID}`}});
 const r3 = v => +v.toFixed(3) || 0;
 const S3 = v => [v, v, v];
 // GUI framing: centre the model's projection under the GUI rotation, scaled to fit 15 px (block-model space)
@@ -381,7 +391,7 @@ function itemDisplay(b, bones) {
 
 // ---------------- blockstate ----------------
 const DIRS = ['north', 'east', 'south', 'west'], ROT = {north: 0, east: 90, south: 180, west: 270};
-const ref = (model, facing) => ({model: `apocalypse_firstlight:block/intake_pump/${model}`, ...(ROT[facing] ? {y: ROT[facing]} : {})});
+const ref = (model, facing) => ({model: `apocalypse_firstlight:block/${ID}/${model}`, ...(ROT[facing] ? {y: ROT[facing]} : {})});
 function blockstate() {   // IntakePumpBlock: facing, part (bank | front), on, lamp (off | idle | run); the bank cell draws it all
   const parts = [];
   for (const F of DIRS) {
@@ -389,7 +399,7 @@ function blockstate() {   // IntakePumpBlock: facing, part (bank | front), on, l
     for (const on of ['true', 'false']) parts.push({when: {facing: F, part: 'bank', on}, apply: ref(on === 'true' ? 'switch_on' : 'switch_off', F)});
     for (const lamp of ['off', 'idle', 'run']) parts.push({when: {facing: F, part: 'bank', lamp}, apply: ref('lamp_' + lamp, F)});
   }
-  parts.push({when: {part: 'front'}, apply: {model: 'apocalypse_firstlight:block/intake_pump/cell'}});
+  parts.push({when: {part: 'front'}, apply: {model: `apocalypse_firstlight:block/${ID}/cell`}});
   return {multipart: parts};
 }
 
@@ -398,7 +408,7 @@ const B = bake();
 const bbDir = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
-const T = 'Intake Pump V1';
+const T = HEAT ? 'Heat-Resistant Intake Pump' : 'Intake Pump V1';
 const only = (...bones) => new Set(bones), ITEM = only('body', 'switch_off', 'lamp_off');
 const model = (file, title, bones, glow = false) => {
   const obj = objOf(B, title, file, bones);
@@ -406,18 +416,18 @@ const model = (file, title, bones, glow = false) => {
     [path.join(assets, `models/block/${file}.json`), json(objModel(file))]);
   objs.push([file, obj]);
 };
-outputs.push([path.join(bbDir, 'intake_pump_v1.bbmodel'), JSON.stringify(sourceOf(B))],
-  ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/intake_pump_v1${k}.png`), B.maps[i]], [path.join(assets, `textures/block/intake_pump${k}.png`), B.maps[i]]]));
-model('intake_pump/body', T + ' body', only('body'));
-model('intake_pump/switch_on', T + ' isolator handle (on)', only('switch_on'));
-model('intake_pump/switch_off', T + ' isolator handle (off)', only('switch_off'));
-model('intake_pump/lamp_off', T + ' status lamp (dark)', only('lamp_off'));
-model('intake_pump/lamp_idle', T + ' status lamp (amber: on, not pumping)', only('lamp_idle'), true);
-model('intake_pump/lamp_run', T + ' status lamp (green: pumping)', only('lamp_run'), true);
-model('intake_pump/item', T + ' item', ITEM);
-outputs.push([path.join(assets, 'models/block/intake_pump/cell.json'), json({textures: {particle: 'apocalypse_firstlight:block/intake_pump'}})]);
-outputs.push([path.join(assets, 'models/item/intake_pump.json'), json({parent: 'apocalypse_firstlight:block/intake_pump/item', gui_light: 'side', display: itemDisplay(B, ITEM)})]);
-outputs.push([path.join(assets, 'blockstates/intake_pump.json'), json(blockstate())]);
+outputs.push([path.join(bbDir, `${ID}_v1.bbmodel`), JSON.stringify(sourceOf(B))],
+  ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/${ID}_v1${k}.png`), B.maps[i]], [path.join(assets, `textures/block/${ID}${k}.png`), B.maps[i]]]));
+model(`${ID}/body`, T + ' body', only('body'));
+model(`${ID}/switch_on`, T + ' isolator handle (on)', only('switch_on'));
+model(`${ID}/switch_off`, T + ' isolator handle (off)', only('switch_off'));
+model(`${ID}/lamp_off`, T + ' status lamp (dark)', only('lamp_off'));
+model(`${ID}/lamp_idle`, T + ' status lamp (amber: on, not pumping)', only('lamp_idle'), true);
+model(`${ID}/lamp_run`, T + ' status lamp (green: pumping)', only('lamp_run'), true);
+model(`${ID}/item`, T + ' item', ITEM);
+outputs.push([path.join(assets, `models/block/${ID}/cell.json`), json({textures: {particle: `apocalypse_firstlight:block/${ID}`}})]);
+outputs.push([path.join(assets, `models/item/${ID}.json`), json({parent: `apocalypse_firstlight:block/${ID}/item`, gui_light: 'side', display: itemDisplay(B, ITEM)})]);
+outputs.push([path.join(assets, `blockstates/${ID}.json`), json(blockstate())]);
 
 const tris = bones => B.PARTS.filter(p => bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 const boundsOf = bones => { const all = B.PARTS.filter(p => bones.has(p.bone)).flatMap(p => p.v); return [0, 1, 2].map(k => [r3(Math.min(...all.map(q => q[k]))), r3(Math.max(...all.map(q => q[k])))]); };

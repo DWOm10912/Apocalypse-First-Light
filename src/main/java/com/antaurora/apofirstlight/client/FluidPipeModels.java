@@ -50,28 +50,34 @@ public final class FluidPipeModels {
         return List.copyOf(names);
     }
 
-    private static ResourceLocation location(String piece) {
-        return new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/fluid_pipe/" + piece);
+    /** The pipe blocks and their pieces' folders (the heat-resistant pipe: tools/build-fluid-pipe-v2.mjs --heat-resistant). */
+    private static final List<String> FOLDERS = List.of("fluid_pipe", "heat_resistant_fluid_pipe");
+
+    private static ResourceLocation location(String folder, String piece) {
+        return new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/" + folder + "/" + piece);
     }
 
     @SubscribeEvent
     public static void registerPieces(ModelEvent.RegisterAdditional event) {
-        for (String piece : PIECES) event.register(location(piece));
+        for (String folder : FOLDERS) for (String piece : PIECES) event.register(location(folder, piece));
     }
 
     @SubscribeEvent
     public static void replacePipeModel(ModelEvent.ModifyBakingResult event) {
         Map<ResourceLocation, BakedModel> models = event.getModels();
-        Map<String, BakedModel> pieces = new HashMap<>();
-        for (String piece : PIECES) {
-            BakedModel model = models.get(location(piece));
-            if (model != null) pieces.put(piece, model);
-            else ApocalypseFirstLight.LOGGER.error("[AFL FLUID PIPE] missing model piece {}", piece);
-        }
-        if (!pieces.containsKey("box")) return;
-        FluidPipeBakedModel pipe = new FluidPipeBakedModel(Map.copyOf(pieces));
-        for (BlockState state : AflBlocks.FLUID_PIPE.get().getStateDefinition().getPossibleStates()) {
-            models.put(BlockModelShaper.stateToModelLocation(state), pipe);
+        List<net.minecraft.world.level.block.Block> blocks = List.of(AflBlocks.FLUID_PIPE.get(), AflBlocks.HEAT_RESISTANT_FLUID_PIPE.get());
+        for (int k = 0; k < FOLDERS.size(); k++) {
+            Map<String, BakedModel> pieces = new HashMap<>();
+            for (String piece : PIECES) {
+                BakedModel model = models.get(location(FOLDERS.get(k), piece));
+                if (model != null) pieces.put(piece, model);
+                else ApocalypseFirstLight.LOGGER.error("[AFL FLUID PIPE] missing model piece {}/{}", FOLDERS.get(k), piece);
+            }
+            if (!pieces.containsKey("box")) continue;
+            FluidPipeBakedModel pipe = new FluidPipeBakedModel(Map.copyOf(pieces));
+            for (BlockState state : blocks.get(k).getStateDefinition().getPossibleStates()) {
+                models.put(BlockModelShaper.stateToModelLocation(state), pipe);
+            }
         }
     }
 }

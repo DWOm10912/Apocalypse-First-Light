@@ -53,7 +53,7 @@ public final class FluidPipeRenderer {
         for (Map.Entry<BlockPos, ClientFluidPipeVisuals.VisualState> entry : active.entrySet()) {
             BlockPos position = entry.getKey();
             if (!minecraft.level.hasChunkAt(position)
-                    || !minecraft.level.getBlockState(position).is(AflBlocks.FLUID_PIPE.get())) {
+                    || !com.antaurora.apofirstlight.block.FluidPipeBlock.isPipe(minecraft.level.getBlockState(position))) {
                 continue;
             }
             poseStack.pushPose();

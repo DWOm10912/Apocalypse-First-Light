@@ -203,7 +203,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 
 | 类别 | 质量 |
 |---|---|
-| 机器（不含液体） | crusher、industrial_furnace 50；alloy_furnace、chemical_reactor、intake_pump 45；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
+| 机器（不含液体） | crusher、industrial_furnace 50；heat_resistant_intake_pump 56.25；alloy_furnace、chemical_reactor、intake_pump 45；heat_resistant_fluid_tank 37.5；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
 | 大件家具 | underground_fuel_tank_gasoline、underground_fuel_tank_diesel 150；fuel_dispenser 60；vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
 | 中型家具 | back_bar_shelf 28；checkout_counter_display 24；checkout_counter 22；retail_shelf_single、storage_rack 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink、checkout_counter_gate 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | fuel_island_bollard 8；cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
@@ -281,7 +281,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 车辆货物 | 不算玩家负担（还没有车辆） |
 
 物品搬运系数（`afl_content_v1.json` 的 `carry_factors`，按物品 tag，取最大的那个）：
-- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 32 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf、fuel_dispenser、storage_rack 和两种地下油罐（都堆叠 1），2026-10-05 的 intake_pump（堆叠 1）；
+- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 34 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf、fuel_dispenser、storage_rack 和两种地下油罐（都堆叠 1），2026-10-05 的 intake_pump、heat_resistant_intake_pump、heat_resistant_fluid_tank（堆叠 1）；
 - `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 12 种（2026-10-04 加了 checkout_counter、checkout_counter_display、checkout_counter_gate，三者堆叠 16）；
 - 其它物品 ×1.00。
 

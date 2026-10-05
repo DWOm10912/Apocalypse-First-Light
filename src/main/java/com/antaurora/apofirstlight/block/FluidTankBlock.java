@@ -50,11 +50,23 @@ import java.util.Map;
 public final class FluidTankBlock extends BaseEntityBlock implements AflFluidPortBlock {
     public static final Map<Direction, BooleanProperty> JOINED = PipeBlock.PROPERTY_BY_DIRECTION;
 
+    /** The Heat-Resistant Fluid Tank (quartz glass, ceramic lining): holds hot liquids; the ordinary tank melts (FluidHeat). */
+    private final boolean heatResistant;
+
     public FluidTankBlock(Properties properties) {
+        this(properties, false);
+    }
+
+    public FluidTankBlock(Properties properties, boolean heatResistant) {
         super(properties.lightLevel(state -> state.getValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT)));
         BlockState state = stateDefinition.any().setValue(com.antaurora.apofirstlight.fluid.FluidLighting.LIGHT, 0);
         for (BooleanProperty property : JOINED.values()) state = state.setValue(property, false);
         registerDefaultState(state);
+        this.heatResistant = heatResistant;
+    }
+
+    public boolean heatResistant() {
+        return heatResistant;
     }
 
     @Override

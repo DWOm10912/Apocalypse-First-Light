@@ -21,7 +21,7 @@ public final class PowerCableToggleEvents {
     public static void allowSneakToggle(PlayerInteractEvent.RightClickBlock event) {
         if (PowerCableBlock.canToggle(event.getEntity(), event.getHand())
                 && (event.getLevel().getBlockState(event.getPos()).is(AflBlocks.POWER_CABLE.get())
-                || event.getLevel().getBlockState(event.getPos()).is(AflBlocks.FLUID_PIPE.get())))
+                || event.getLevel().getBlockState(event.getPos()).getBlock() instanceof FluidPipeBlock))
             event.setUseBlock(Event.Result.ALLOW);
     }
 }

@@ -81,6 +81,9 @@ public final class AflCreativeTabs {
             AflItems.FLUID_PIPE,
             AflItems.FLUID_TANK,
             AflItems.INTAKE_PUMP,
+            AflItems.HEAT_RESISTANT_FLUID_PIPE,
+            AflItems.HEAT_RESISTANT_FLUID_TANK,
+            AflItems.HEAT_RESISTANT_INTAKE_PUMP,
             AflItems.INDUSTRIAL_WASTE_BUCKET,
             AflItems.GUN_MAINTENANCE_BENCH,
             AflItems.PRECISION_FABRICATION_STATION);

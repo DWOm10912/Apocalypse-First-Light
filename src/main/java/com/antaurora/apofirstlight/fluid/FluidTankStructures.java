@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Fluid Tank V2 structures (docs/models/fluid_tank_v2.md, user 2026-10-05). Connected tank blocks join into one tank
+ * Fluid Tank V2 structures (docs/models/fluid_tank_v2.md, user 2026-10-05). Connected tank blocks of one kind (ordinary or
+ * heat-resistant: they never join each other) join into one tank
  * only when together they fill a complete cuboid (a x b x h, at most {@link #MAX_SIDE} x {@link #MAX_SIDE} x
  * {@link #MAX_HEIGHT}) and hold at most one kind of fluid; otherwise every block is its own one-cell tank. A joined tank
  * keeps all its fluid in its master cell (the cuboid's lowest north-west cell, capacity cells x 800 mB); its shape lives
@@ -75,7 +76,7 @@ public final class FluidTankStructures {
         BlockPos master = position;
         for (Direction step : new Direction[]{Direction.WEST, Direction.DOWN, Direction.NORTH}) {
             for (int n = 0; n < MAX_HEIGHT && joined(stateAt(level, master, position, state), step)
-                    && stateAt(level, master.relative(step), position, state).getBlock() instanceof FluidTankBlock; n++) {
+                    && stateAt(level, master.relative(step), position, state).is(state.getBlock()); n++) {
                 master = master.relative(step);
             }
         }
@@ -85,7 +86,7 @@ public final class FluidTankStructures {
             BlockPos cursor = master;
             size[k] = 1;
             while (size[k] < (k == 1 ? MAX_HEIGHT : MAX_SIDE) && joined(stateAt(level, cursor, position, state), grow[k])
-                    && stateAt(level, cursor.relative(grow[k]), position, state).getBlock() instanceof FluidTankBlock) {
+                    && stateAt(level, cursor.relative(grow[k]), position, state).is(state.getBlock())) {
                 cursor = cursor.relative(grow[k]);
                 size[k]++;
             }
@@ -119,6 +120,7 @@ public final class FluidTankStructures {
     /** Re-forms the tanks of {@code origin}'s connected group (see the class comment). */
     public static void rebuild(ServerLevel level, BlockPos origin) {
         if (!isTank(level, origin)) return;
+        Block kind = level.getBlockState(origin).getBlock();   // only tanks of one kind join (ordinary / heat-resistant)
         Set<BlockPos> cells = new LinkedHashSet<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
         cells.add(origin.immutable());
@@ -131,7 +133,7 @@ public final class FluidTankStructures {
                     level.scheduleTick(origin, level.getBlockState(origin).getBlock(), 20);
                     return;
                 }
-                if (!cells.contains(next) && isTank(level, next)) {
+                if (!cells.contains(next) && isTank(level, next) && level.getBlockState(next).is(kind)) {
                     if (cells.size() >= SCAN_LIMIT) {
                         if (!scanLimitWarned) {
                             scanLimitWarned = true;
