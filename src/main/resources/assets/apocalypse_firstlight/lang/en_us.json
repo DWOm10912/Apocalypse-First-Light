@@ -384,6 +384,7 @@
   "jade.apocalypse_firstlight.intake_pump.status.no_power": "No power",
   "jade.apocalypse_firstlight.intake_pump.status.no_liquid": "No liquid source below",
   "jade.apocalypse_firstlight.intake_pump.status.too_hot": "Liquid too hot: needs a high-temperature pump",
+  "jade.apocalypse_firstlight.intake_pump.status.pool_too_small": "Pool too small (needs at least 3 × 3 sources)",
   "jade.apocalypse_firstlight.intake_pump.status.blocked": "Outlet not piped or full",
   "jade.apocalypse_firstlight.intake_pump.status.running": "Pumping",
   "jade.apocalypse_firstlight.intake_pump.source": "Drawing: %s",

@@ -49,26 +49,28 @@ public final class FluidPipeVisualManager {
             BlockPos nextPosition = index + 1 == pipePath.size()
                     ? sinkTankPosition
                     : pipePath.get(index + 1);
-            int directionMask = directionBit(directionFrom(pipePosition, previousPosition))
-                    | directionBit(directionFrom(pipePosition, nextPosition));
+            Direction inflowSide = directionFrom(pipePosition, previousPosition);
+            int directionMask = directionBit(inflowSide) | directionBit(directionFrom(pipePosition, nextPosition));
+            // the side the fluid comes in from: the client turns the flowing texture along the route with it
+            int inflow = inflowSide.get3DDataValue();
             BlockPos key = pipePosition.immutable();
             VisualState oldState = active.get(key);
             boolean sameRoute = oldState != null && oldState.fluidId().equals(fluidId)
-                    && oldState.directionMask() == directionMask;
+                    && oldState.directionMask() == directionMask && oldState.inflow() == inflow;
             long lastFlow = isFlowing ? gameTime
                     : sameRoute ? oldState.lastFlowGameTime() : Long.MIN_VALUE;
             // Blocked attempts refresh presence, never the actual-flow timestamp.
             boolean visualFlow = isFlowing || (sameRoute && oldState.isFlowing()
                     && gameTime - lastFlow < FLOW_HOLD_TICKS);
-            active.put(key, new VisualState(fluidId, directionMask, visualFlow, gameTime, lastFlow));
+            active.put(key, new VisualState(fluidId, directionMask, inflow, visualFlow, gameTime, lastFlow));
             int emission = FluidLighting.emission(fluid, 5);
             FluidLighting.update(level, key, emission);
             if (emission > 0 && !level.getBlockTicks().hasScheduledTick(key, AflBlocks.FLUID_PIPE.get())) {
                 level.scheduleTick(key, AflBlocks.FLUID_PIPE.get(), VISUAL_HOLD_TICKS);
             }
-            if (oldState == null || !oldState.fluidId().equals(fluidId)
-                    || oldState.directionMask() != directionMask || oldState.isFlowing() != visualFlow) {
-                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, true, visualFlow));
+            if (oldState == null || !oldState.fluidId().equals(fluidId) || oldState.directionMask() != directionMask
+                    || oldState.inflow() != inflow || oldState.isFlowing() != visualFlow) {
+                changed.add(new AflNetwork.FluidPipeVisualUpdate(key, fluidId, directionMask, inflow, true, visualFlow));
             }
         }
         if (!changed.isEmpty()) {
@@ -112,10 +114,10 @@ public final class FluidPipeVisualManager {
             }
             VisualState state = entry.getValue();
             if (state.isFlowing() && gameTime - state.lastFlowGameTime() >= FLOW_HOLD_TICKS) {
-                entry.setValue(new VisualState(state.fluidId(), state.directionMask(), false,
+                entry.setValue(new VisualState(state.fluidId(), state.directionMask(), state.inflow(), false,
                         state.lastTransferGameTime(), state.lastFlowGameTime()));
                 cleared.add(new AflNetwork.FluidPipeVisualUpdate(entry.getKey(), state.fluidId(),
-                        state.directionMask(), true, false));
+                        state.directionMask(), state.inflow(), true, false));
             }
             return false;
         });
@@ -155,7 +157,7 @@ public final class FluidPipeVisualManager {
         return 1 << direction.get3DDataValue();
     }
 
-    private record VisualState(ResourceLocation fluidId, int directionMask, boolean isFlowing,
+    private record VisualState(ResourceLocation fluidId, int directionMask, int inflow, boolean isFlowing,
                                long lastTransferGameTime, long lastFlowGameTime) {
     }
 }

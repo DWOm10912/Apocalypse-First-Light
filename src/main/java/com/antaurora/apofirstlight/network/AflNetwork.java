@@ -696,8 +696,9 @@ public final class AflNetwork {
         }
     }
 
+    /** inflow: Direction.get3DDataValue() of the pipe side the fluid comes in from (one of directionMask's two), -1 if none. */
     public record FluidPipeVisualUpdate(BlockPos position, ResourceLocation fluidId,
-                                        int directionMask, boolean active, boolean isFlowing) {
+                                        int directionMask, int inflow, boolean active, boolean isFlowing) {
         private static final ResourceLocation EMPTY_FLUID_ID = new ResourceLocation("minecraft", "empty");
 
         public FluidPipeVisualUpdate {
@@ -705,7 +706,7 @@ public final class AflNetwork {
         }
 
         public static FluidPipeVisualUpdate clear(BlockPos position) {
-            return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, false, false);
+            return new FluidPipeVisualUpdate(position, EMPTY_FLUID_ID, 0, -1, false, false);
         }
     }
 
@@ -722,6 +723,7 @@ public final class AflNetwork {
                 if (update.active()) {
                     buffer.writeResourceLocation(update.fluidId());
                     buffer.writeVarInt(update.directionMask());
+                    buffer.writeByte(update.inflow());
                     buffer.writeBoolean(update.isFlowing());
                 }
             }
@@ -735,7 +737,7 @@ public final class AflNetwork {
                 boolean active = buffer.readBoolean();
                 updates.add(active
                         ? new FluidPipeVisualUpdate(position, buffer.readResourceLocation(),
-                        buffer.readVarInt(), true, buffer.readBoolean())
+                        buffer.readVarInt(), buffer.readByte(), true, buffer.readBoolean())
                         : FluidPipeVisualUpdate.clear(position));
             }
             return new FluidPipeVisualS2CPacket(updates);

@@ -384,6 +384,7 @@
   "jade.apocalypse_firstlight.intake_pump.status.no_power": "无电力",
   "jade.apocalypse_firstlight.intake_pump.status.no_liquid": "下方没有液体源",
   "jade.apocalypse_firstlight.intake_pump.status.too_hot": "液体温度过高，需要高温泵",
+  "jade.apocalypse_firstlight.intake_pump.status.pool_too_small": "液池太小（至少 3×3 格同种液体源）",
   "jade.apocalypse_firstlight.intake_pump.status.blocked": "出口未接管道或已满",
   "jade.apocalypse_firstlight.intake_pump.status.running": "运行中",
   "jade.apocalypse_firstlight.intake_pump.source": "取液：%s",

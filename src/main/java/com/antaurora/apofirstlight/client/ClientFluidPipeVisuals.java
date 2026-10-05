@@ -37,7 +37,7 @@ public final class ClientFluidPipeVisuals {
                 continue;
             }
             ACTIVE.put(update.position().immutable(),
-                    new VisualState(new FluidStack(fluid, 1), update.directionMask(), update.isFlowing()));
+                    new VisualState(new FluidStack(fluid, 1), update.directionMask(), update.inflow(), update.isFlowing()));
         }
     }
 
@@ -66,9 +66,16 @@ public final class ClientFluidPipeVisuals {
         ACTIVE.keySet().removeIf(position -> new ChunkPos(position).equals(chunkPosition));
     }
 
-    public record VisualState(FluidStack fluid, int directionMask, boolean isFlowing) {
+    /** inflow: the 3D data value of the side the fluid comes in from, -1 if not known. */
+    public record VisualState(FluidStack fluid, int directionMask, int inflow, boolean isFlowing) {
         public VisualState {
             fluid = fluid.copy();
+        }
+
+        /** The side the fluid comes in from, or null. */
+        @org.jetbrains.annotations.Nullable
+        public net.minecraft.core.Direction inflowSide() {
+            return inflow >= 0 && inflow < 6 && (directionMask & (1 << inflow)) != 0 ? net.minecraft.core.Direction.from3DDataValue(inflow) : null;
         }
 
         public boolean uses(DirectionBit direction) {

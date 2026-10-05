@@ -129,6 +129,68 @@ public final class FluidRenderHelper {
         }
     }
 
+    /**
+     * A fluid box whose flowing texture runs a given way on each face (the pipes): flowOnFace gives, per face, the
+     * direction the fluid moves across it, or null. The flowing sprite's animation runs toward +V (vanilla's flowing
+     * water runs down a block's side), so +V is laid along that direction. A face with no direction across it (null, or
+     * the fluid moving into / out of it), and every face while not flowing, takes the still sprite.
+     */
+    public static void renderFlowBox(FluidStack fluid, boolean flowingTexture,
+                                     PoseStack poseStack, MultiBufferSource buffer,
+                                     int packedLight, int packedOverlay,
+                                     float minX, float minY, float minZ,
+                                     float maxX, float maxY, float maxZ,
+                                     int faceMask, java.util.function.Function<Direction, Direction> flowOnFace) {
+        if (fluid.isEmpty() || maxX <= minX || maxY <= minY || maxZ <= minZ || faceMask == 0) {
+            return;
+        }
+        IClientFluidTypeExtensions properties = IClientFluidTypeExtensions.of(fluid.getFluid());
+        if (com.antaurora.apofirstlight.fluid.FluidLighting.intrinsic(fluid) > 0) {
+            packedLight = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+        }
+        ResourceLocation stillTexture = properties.getStillTexture(fluid);
+        ResourceLocation flowTexture = flowingTexture ? properties.getFlowingTexture(fluid) : null;
+        if (stillTexture == null) stillTexture = flowTexture;
+        if (stillTexture == null) {
+            return;
+        }
+        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
+        TextureAtlasSprite still = atlas.apply(stillTexture), flow = flowTexture == null ? null : atlas.apply(flowTexture);
+        int tint = properties.getTintColor(fluid);
+        int alpha = tint >>> 24 & 0xFF, red = tint >>> 16 & 0xFF, green = tint >>> 8 & 0xFF, blue = tint & 0xFF;
+        VertexConsumer vertices = buffer.getBuffer(RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS));
+        PoseStack.Pose pose = poseStack.last();
+        float[] min = {minX, minY, minZ}, max = {maxX, maxY, maxZ};
+        for (Direction face : Direction.values()) {
+            if (!hasFace(faceMask, face)) continue;
+            Direction across = flow == null ? null : flowOnFace.apply(face);
+            if (across != null && across.getAxis() == face.getAxis()) across = null;
+            TextureAtlasSprite sprite = across == null ? still : flow;
+            // V along the flow (or down a side face / along Z on a top or bottom face), U along the face's other axis
+            int vAxis = across != null ? across.getAxis().ordinal() : face.getAxis() == Direction.Axis.Y ? 2 : 1;
+            boolean vPositive = across != null ? across.getAxisDirection() == Direction.AxisDirection.POSITIVE : vAxis == 2;
+            int uAxis = 3 - face.getAxis().ordinal() - vAxis;
+            for (float[] c : corners(face, minX, minY, minZ, maxX, maxY, maxZ)) {
+                float u = 16.0F * (c[uAxis] - min[uAxis]);
+                float v = 16.0F * (vPositive ? c[vAxis] - min[vAxis] : max[vAxis] - c[vAxis]);
+                vertex(vertices, pose, c[0], c[1], c[2], sprite.getU(u), sprite.getV(v), red, green, blue, alpha,
+                        packedLight, packedOverlay, face.getStepX(), face.getStepY(), face.getStepZ());
+            }
+        }
+    }
+
+    /** A box face's four corners, in the same order as {@link #renderBox}'s quads. */
+    private static float[][] corners(Direction face, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+        return switch (face) {
+            case NORTH -> new float[][]{{minX, minY, minZ}, {minX, maxY, minZ}, {maxX, maxY, minZ}, {maxX, minY, minZ}};
+            case SOUTH -> new float[][]{{maxX, minY, maxZ}, {maxX, maxY, maxZ}, {minX, maxY, maxZ}, {minX, minY, maxZ}};
+            case WEST -> new float[][]{{minX, minY, maxZ}, {minX, maxY, maxZ}, {minX, maxY, minZ}, {minX, minY, minZ}};
+            case EAST -> new float[][]{{maxX, minY, minZ}, {maxX, maxY, minZ}, {maxX, maxY, maxZ}, {maxX, minY, maxZ}};
+            case UP -> new float[][]{{minX, maxY, minZ}, {minX, maxY, maxZ}, {maxX, maxY, maxZ}, {maxX, maxY, minZ}};
+            case DOWN -> new float[][]{{minX, minY, maxZ}, {minX, minY, minZ}, {maxX, minY, minZ}, {maxX, minY, maxZ}};
+        };
+    }
+
     private static boolean hasFace(int faceMask, Direction direction) {
         return (faceMask & faceBit(direction)) != 0;
     }

@@ -70,6 +70,11 @@ public final class FluidPipeRenderer {
     private static void renderPipe(ClientFluidPipeVisuals.VisualState state, PoseStack poseStack,
                                    MultiBufferSource buffer, int packedLight) {
         List<Direction> directions = activeDirections(state.directionMask());
+        Direction in = state.inflowSide();
+        if (in != null) {
+            renderDirected(state, directions, in, poseStack, buffer, packedLight);
+            return;
+        }
         if (directions.size() == 2 && directions.get(0).getOpposite() == directions.get(1)) {
             renderStraight(state, directions.get(0).getAxis(), poseStack, buffer, packedLight,
                     directions.get(0), directions.get(1));
@@ -86,6 +91,40 @@ public final class FluidPipeRenderer {
 
         for (Direction direction : directions) {
             renderArm(state, direction, poseStack, buffer, packedLight);
+        }
+    }
+
+    /**
+     * The route through this pipe enters on {@code in} and leaves on the other side: the flowing texture runs that way.
+     * Straight: along the pipe. Elbow: in along the inflow arm toward the centre, out along the outflow arm; on the
+     * centre's open faces along the outflow where it lies across the face, else along the inflow.
+     */
+    private static void renderDirected(ClientFluidPipeVisuals.VisualState state, List<Direction> directions, Direction in,
+                                       PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+        Direction out = null;
+        for (Direction direction : directions) if (direction != in) out = direction;
+        Direction inward = in.getOpposite(), outward = out;
+        if (out == inward) {
+            Direction.Axis axis = in.getAxis();
+            int faces = FluidRenderHelper.ALL_FACES & ~FluidRenderHelper.faceBit(in) & ~FluidRenderHelper.faceBit(out);
+            FluidRenderHelper.renderFlowBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY,
+                    axis == Direction.Axis.X ? 0.0F : INNER_MIN, axis == Direction.Axis.Y ? 0.0F : INNER_MIN, axis == Direction.Axis.Z ? 0.0F : INNER_MIN,
+                    axis == Direction.Axis.X ? 1.0F : INNER_MAX, axis == Direction.Axis.Y ? 1.0F : INNER_MAX, axis == Direction.Axis.Z ? 1.0F : INNER_MAX,
+                    faces, face -> inward);
+            return;
+        }
+        int centerFaces = FluidRenderHelper.ALL_FACES;
+        for (Direction direction : directions) centerFaces &= ~FluidRenderHelper.faceBit(direction);
+        FluidRenderHelper.renderFlowBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY,
+                INNER_MIN, INNER_MIN, INNER_MIN, INNER_MAX, INNER_MAX, INNER_MAX, centerFaces,
+                face -> outward != null && outward.getAxis() != face.getAxis() ? outward : inward);
+        for (Direction direction : directions) {
+            Direction along = direction == in ? inward : direction;
+            FluidRenderHelper.renderFlowBox(state.fluid(), state.isFlowing(), poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY,
+                    direction == Direction.WEST ? 0.0F : INNER_MIN, direction == Direction.DOWN ? 0.0F : INNER_MIN, direction == Direction.NORTH ? 0.0F : INNER_MIN,
+                    direction == Direction.EAST ? 1.0F : INNER_MAX, direction == Direction.UP ? 1.0F : INNER_MAX, direction == Direction.SOUTH ? 1.0F : INNER_MAX,
+                    FluidRenderHelper.ALL_FACES & ~FluidRenderHelper.faceBit(direction) & ~FluidRenderHelper.faceBit(direction.getOpposite()),
+                    face -> along);
         }
     }
 

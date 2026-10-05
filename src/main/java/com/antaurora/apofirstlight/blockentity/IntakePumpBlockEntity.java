@@ -3,6 +3,7 @@ package com.antaurora.apofirstlight.blockentity;
 import com.antaurora.apofirstlight.block.IntakePumpBlock;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
+import com.antaurora.apofirstlight.fluid.PumpSourceRules;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,16 +34,16 @@ import org.jetbrains.annotations.Nullable;
  * the tick ({@code work_fe_per_tick}), it draws {@code pump_mb_per_tick} of the source liquid in the block under the front
  * cell (only there; only a source block; any fluid up to {@link #MAX_TEMPERATURE_K}, so not lava) into a small
  * {@link #BUFFER_MB} buffer, and pushes the buffer out through the fluid port on the bank cell's top face into a Fluid
- * Pipe V2 network (FluidPipeTransfer, 25 mB a tick at most). Every {@link #SOURCE_MB} drawn from one block uses that source
- * up (a liquid block becomes air, a waterlogged block gives its water up), except water with at least two water sources
- * beside it where water may form new sources (vanilla's infinite water). The buffer never takes fluid in from a pipe.
+ * Pipe V2 network (FluidPipeTransfer, 25 mB a tick at most). Water (and lava, for the later high-temperature pump) comes
+ * only from a pool of at least 3 x 3 x 1 sources and is never used up; any other liquid uses its source block up after
+ * {@link PumpSourceRules#SOURCE_MB} (a liquid block becomes air, a waterlogged block gives its fluid up). See
+ * fluid/PumpSourceRules (user, 2026-10-05). The buffer never takes fluid in from a pipe.
  * Values: machine_balance/intake_pump.json (MachineBalanceManager.intakePump()). The status lamp (IntakePumpBlock.LAMP) is
  * set every {@link #LAMP_PERIOD} ticks: green if it pumped in that period, amber if it is on and powered but cannot pump,
  * dark when off or without power. Jade shows {@link #status()}.
  */
 public class IntakePumpBlockEntity extends BlockEntity {
     public static final int BUFFER_MB = 250;
-    public static final int SOURCE_MB = 1000;
     /** Hotter liquids (lava, 1300 K) need the high-temperature pump and pipe (not yet in the game). */
     public static final int MAX_TEMPERATURE_K = 400;
     public static final int LAMP_PERIOD = 10;
@@ -53,7 +54,7 @@ public class IntakePumpBlockEntity extends BlockEntity {
 
     /** Why the pump is or is not pumping (Jade). */
     public enum Status {
-        OFF, NO_POWER, NO_LIQUID, TOO_HOT, BLOCKED, RUNNING;
+        OFF, NO_POWER, NO_LIQUID, TOO_HOT, POOL_TOO_SMALL, BLOCKED, RUNNING;
 
         public String key() {
             return name().toLowerCase(java.util.Locale.ROOT);
@@ -63,7 +64,7 @@ public class IntakePumpBlockEntity extends BlockEntity {
     private int energyStored;
     private long receiveBudgetTick = Long.MIN_VALUE;
     private int receivedThisTick;
-    /** mB drawn from the current source block since it last gave a source up, and which fluid that was. */
+    /** mB of a finite liquid drawn since its last source block was used up, and which fluid that was. */
     private int drawn;
     @Nullable
     private Fluid drawnFluid;
@@ -207,7 +208,7 @@ public class IntakePumpBlockEntity extends BlockEntity {
         FluidStack seen = fluid == Fluids.EMPTY ? FluidStack.EMPTY : new FluidStack(fluid, 1);
         if (!seen.isFluidEqual(sourceFluid)) sourceFluid = seen;
 
-        status = pump(server, state, values, source, liquid, fluid);
+        status = pump(server, state, values, source, fluid);
         if (status == Status.RUNNING) pumpedThisPeriod = true;
         if (server.getGameTime() % LAMP_PERIOD == 0) {
             IntakePumpBlock.Lamp lamp = !state.getValue(IntakePumpBlock.ON) || status == Status.OFF || status == Status.NO_POWER && !pumpedThisPeriod
@@ -218,38 +219,31 @@ public class IntakePumpBlockEntity extends BlockEntity {
     }
 
     private Status pump(ServerLevel server, BlockState state, MachineBalanceManager.IntakePumpBalance values, BlockPos source,
-                        FluidState liquid, Fluid fluid) {
+                        Fluid fluid) {
         if (!state.getValue(IntakePumpBlock.ON)) return Status.OFF;
         if (energyStored < values.workFePerTick()) return Status.NO_POWER;
         if (fluid == Fluids.EMPTY) return Status.NO_LIQUID;
         if (fluid.getFluidType().getTemperature() > MAX_TEMPERATURE_K) return Status.TOO_HOT;
+        boolean pool = PumpSourceRules.isPoolFluid(fluid);
+        if (pool && !PumpSourceRules.inPool(server, source, fluid)) return Status.POOL_TOO_SMALL;
         int amount = values.pumpMbPerTick();
         FluidStack intake = new FluidStack(fluid, amount);
         if (buffer.fill(intake, IFluidHandler.FluidAction.SIMULATE) < amount) return Status.BLOCKED;
         buffer.fill(intake, IFluidHandler.FluidAction.EXECUTE);
         energyStored -= values.workFePerTick();
-        if (drawnFluid != fluid) {
-            drawnFluid = fluid;
-            drawn = 0;
-        }
-        drawn += amount;
-        if (drawn >= SOURCE_MB) {
-            drawn -= SOURCE_MB;
-            if (!renews(server, source, liquid)) useUp(server, source);
+        if (!pool) {   // a finite liquid: every SOURCE_MB uses a source block up
+            if (drawnFluid != fluid) {
+                drawnFluid = fluid;
+                drawn = 0;
+            }
+            drawn += amount;
+            if (drawn >= PumpSourceRules.SOURCE_MB) {
+                drawn -= PumpSourceRules.SOURCE_MB;
+                useUp(server, source);
+            }
         }
         setChanged();
         return Status.RUNNING;
-    }
-
-    /** Vanilla's infinite water: a source that can form again (water, with two or more of its kind beside it). */
-    private static boolean renews(ServerLevel level, BlockPos source, FluidState liquid) {
-        if (!liquid.canConvertToSource(level, source)) return false;
-        int beside = 0;
-        for (Direction direction : Direction.Plane.HORIZONTAL) {
-            FluidState other = level.getFluidState(source.relative(direction));
-            if (other.isSource() && other.getType().isSame(liquid.getType())) beside++;
-        }
-        return beside >= 2;
     }
 
     private static void useUp(ServerLevel level, BlockPos source) {
