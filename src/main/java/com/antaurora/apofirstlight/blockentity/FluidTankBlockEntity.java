@@ -3,8 +3,8 @@ package com.antaurora.apofirstlight.blockentity;
 import com.antaurora.apofirstlight.block.FluidTankBlock;
 import com.antaurora.apofirstlight.fluid.FluidPipeTransfer;
 import com.antaurora.apofirstlight.fluid.FluidPortTransferBudget;
-import com.antaurora.apofirstlight.fluid.FluidTankStacks;
 import com.antaurora.apofirstlight.fluid.FluidTankStoredFluid;
+import com.antaurora.apofirstlight.fluid.FluidTankStructures;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -28,23 +28,30 @@ import net.minecraftforge.fluids.capability.templates.FluidTank;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Fluid Tank V2 cell (docs/models/fluid_tank_v2.md). A single tank holds its own fluid; in a joined tank
+ * (fluid/FluidTankStructures) the master cell holds all of it (capacity cells x {@link #CAPACITY_MB}) and the other cells
+ * hold none. Every cell with a top face not joined upward fills the tank through its AFL fluid port, every cell with a
+ * bottom face not joined downward drains it, each port at most 25 mB a tick (FluidPortTransferBudget); a bottom port
+ * with a Fluid Pipe V2 under it pushes into the pipe network every tick. A cell glows by its own share of the fluid.
+ */
 public final class FluidTankBlockEntity extends BlockEntity {
-    /** Per tank block, AFL's fluid scale (1 mB = 1 L): a round tank in a 1 m cube holds about 0.8 m3 (was 20,000 until 2026-10-04). */
+    /** Per tank block, AFL's fluid scale (1 mB = 1 L): about 0.8 m3 inside the glass (was 20,000 until 2026-10-04). */
     public static final int CAPACITY_MB = 800;
     private static final String VISUAL_CAPACITY_KEY = "VisualCapacity";
     private boolean rebuildingTopology;
-    private boolean playerBreakPrepared;
+    private boolean preserveOnBreak;
     private FluidStack preparedDropFluid = FluidStack.EMPTY;
-    private final FluidPortTransferBudget automaticInputBudget = new FluidPortTransferBudget();
-    private final FluidPortTransferBudget automaticOutputBudget = new FluidPortTransferBudget();
+    private final FluidPortTransferBudget inputBudget = new FluidPortTransferBudget();
+    private final FluidPortTransferBudget outputBudget = new FluidPortTransferBudget();
     private final FluidTank localTank = new FluidTank(CAPACITY_MB) {
         @Override
         protected void onContentsChanged() {
             FluidTankBlockEntity.this.onFluidChanged();
         }
     };
-    private final IFluidHandler topFillHandler = new StackSidedFluidHandler(this, true, false);
-    private final IFluidHandler bottomDrainHandler = new StackSidedFluidHandler(this, false, true);
+    private final IFluidHandler topFillHandler = new PortHandler(true);
+    private final IFluidHandler bottomDrainHandler = new PortHandler(false);
     private LazyOptional<IFluidHandler> topCapability = LazyOptional.of(() -> topFillHandler);
     private LazyOptional<IFluidHandler> bottomCapability = LazyOptional.of(() -> bottomDrainHandler);
 
@@ -52,142 +59,95 @@ public final class FluidTankBlockEntity extends BlockEntity {
         super(AflBlockEntities.FLUID_TANK.get(), position, state);
     }
 
-    public static void serverTick(Level level, BlockPos position, BlockState state,
-                                  FluidTankBlockEntity tank) {
-        if (level instanceof ServerLevel server) {
-            com.antaurora.apofirstlight.fluid.FluidLighting.update(server, position,
-                    com.antaurora.apofirstlight.fluid.FluidLighting.emission(tank.getMemberFluidSlice(), 9));
-        }
-        if (level instanceof ServerLevel serverLevel && tank.isController()) {
-            FluidPipeTransfer.transferFrom(serverLevel, tank);
-        }
+    public static void serverTick(Level level, BlockPos position, BlockState state, FluidTankBlockEntity tank) {
+        if (!(level instanceof ServerLevel server)) return;
+        com.antaurora.apofirstlight.fluid.FluidLighting.update(server, position,
+                com.antaurora.apofirstlight.fluid.FluidLighting.emission(tank.getMemberFluidSlice(), 9));
+        FluidPipeTransfer.transferFrom(server, tank);
     }
 
     @Override
     public void onLoad() {
         super.onLoad();
-        if (level instanceof ServerLevel serverLevel) {
-            serverLevel.scheduleTick(worldPosition, getBlockState().getBlock(), 1);
-        }
+        if (level instanceof ServerLevel serverLevel) serverLevel.scheduleTick(worldPosition, getBlockState().getBlock(), 1);
+    }
+
+    // ---- the tank this cell belongs to
+
+    public FluidTankStructures.Shape shape() {
+        return level == null ? new FluidTankStructures.Shape(worldPosition, 1, 1, 1) : FluidTankStructures.shapeOf(level, worldPosition, getBlockState());
+    }
+
+    private FluidTankBlockEntity master() {
+        if (level == null) return this;
+        BlockPos master = shape().master();
+        return master.equals(worldPosition) ? this : level.getBlockEntity(master) instanceof FluidTankBlockEntity m ? m : this;
     }
 
     public FluidStack getFluid() {
-        FluidTankBlockEntity controller = resolveController();
-        FluidStack fluid = controller.localTank.getFluid();
+        FluidStack fluid = master().localTank.getFluid();
         return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
     }
 
     public int getFluidAmount() {
-        return resolveController().localTank.getFluidAmount();
+        return master().localTank.getFluidAmount();
     }
 
     public int getCapacity() {
-        return resolveController().localTank.getCapacity();
+        return master().localTank.getCapacity();
     }
 
-    public boolean isController() {
-        BlockState state = getBlockState();
-        return state.hasProperty(FluidTankBlock.HAS_TANK_BELOW)
-                && !state.getValue(FluidTankBlock.HAS_TANK_BELOW);
-    }
-
-    public boolean isTopmost() {
-        BlockState state = getBlockState();
-        return state.hasProperty(FluidTankBlock.HAS_TANK_ABOVE)
-                && !state.getValue(FluidTankBlock.HAS_TANK_ABOVE);
-    }
-
-    public int getStackIndex() {
-        return Math.max(0, worldPosition.getY() - findControllerPosition().getY());
-    }
-
-    public int getStackSize() {
-        if (level == null) {
-            return 1;
-        }
-        BlockPos cursor = findControllerPosition();
-        int size = 1;
-        while (size < FluidTankStacks.MAX_TANK_STACK_HEIGHT) {
-            BlockState state = level.getBlockState(cursor);
-            if (!state.hasProperty(FluidTankBlock.HAS_TANK_ABOVE)
-                    || !state.getValue(FluidTankBlock.HAS_TANK_ABOVE)) {
-                break;
-            }
-            cursor = cursor.above();
-            size++;
-        }
-        return size;
+    public boolean hasBottomPort() {
+        return !getBlockState().getValue(FluidTankBlock.JOINED.get(Direction.DOWN));
     }
 
     public boolean sharesFluidStorageWith(FluidTankBlockEntity other) {
-        return findControllerPosition().equals(other.findControllerPosition());
+        return shape().master().equals(other.shape().master());
     }
 
-    public FluidStack getLocalFluidForTopology() {
+    /** This cell's share of its tank's fluid (filled from the bottom layer up): its light and its drop. */
+    public FluidStack getMemberFluidSlice() {
+        FluidStack fluid = master().localTank.getFluid();
+        if (fluid.isEmpty()) return FluidStack.EMPTY;
+        int amount = FluidTankStructures.shareAt(fluid.getAmount(), shape(), worldPosition);
+        if (amount <= 0) return FluidStack.EMPTY;
+        FluidStack slice = fluid.copy();
+        slice.setAmount(amount);
+        return slice;
+    }
+
+    /** Fills the tank (a pipe transfer's rollback, tests); returns the amount taken. */
+    public int restoreControllerFluid(FluidStack fluid) {
+        return fluid.isEmpty() ? 0 : master().localTank.fill(fluid, IFluidHandler.FluidAction.EXECUTE);
+    }
+
+    public boolean interactWithFluidContainer(Player player, InteractionHand hand) {
+        return FluidUtil.interactWithFluidHandler(player, hand, master().localTank);
+    }
+
+    // ---- structure changes (FluidTankStructures)
+
+    /** This cell's own contents (not its tank's). */
+    public FluidStack ownContents() {
         FluidStack fluid = localTank.getFluid();
         return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
     }
 
-    public FluidStack getMemberFluidSlice() {
-        FluidTankBlockEntity controller = resolveController();
-        FluidStack fluid = controller.localTank.getFluid();
-        int localAmount = FluidTankStacks.localAmountForMember(fluid.getAmount(), getStackIndex());
-        if (fluid.isEmpty() || localAmount <= 0) {
-            return FluidStack.EMPTY;
-        }
-        FluidStack slice = fluid.copy();
-        slice.setAmount(localAmount);
-        return slice;
+    /** Takes this cell's own contents out (left empty, capacity one cell). */
+    public FluidStack takeContents() {
+        FluidStack fluid = ownContents();
+        setContents(CAPACITY_MB, FluidStack.EMPTY);
+        return fluid;
     }
 
-    public void preparePlayerBreakDrop(boolean preserveInDrop) {
-        if (playerBreakPrepared) {
-            return;
-        }
-        playerBreakPrepared = true;
-
-        FluidTankBlockEntity controller = resolveController();
-        int localAmount = FluidTankStacks.localAmountForMember(
-                controller.localTank.getFluidAmount(), getStackIndex());
-        if (localAmount <= 0) {
-            return;
-        }
-
-        FluidStack extracted = controller.localTank.drain(localAmount, IFluidHandler.FluidAction.EXECUTE);
-        if (preserveInDrop && !extracted.isEmpty()) {
-            preparedDropFluid = extracted.copy();
-        }
-    }
-
-    public FluidStack getPreparedDropFluid() {
-        return preparedDropFluid.isEmpty() ? FluidStack.EMPTY : preparedDropFluid.copy();
-    }
-
-    public void clearLocalFluidForTopology() {
+    /** Sets this cell's own capacity and contents (a single tank that held more keeps it: the capacity grows to fit). */
+    public void setContents(int capacity, FluidStack fluid) {
         rebuildingTopology = true;
-        localTank.setCapacity(CAPACITY_MB);
-        localTank.setFluid(FluidStack.EMPTY);
-        rebuildingTopology = false;
-    }
-
-    public void applyTopologyRole(boolean controller, int stackSize, FluidStack fluid) {
-        rebuildingTopology = true;
-        localTank.setCapacity(controller ? CAPACITY_MB * stackSize : CAPACITY_MB);
-        localTank.setFluid(controller && !fluid.isEmpty() ? fluid.copy() : FluidStack.EMPTY);
+        localTank.setCapacity(Math.max(capacity, fluid.isEmpty() ? 0 : fluid.getAmount()));
+        localTank.setFluid(fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy());
         rebuildingTopology = false;
         refreshCapabilities();
         setChanged();
-    }
-
-    public int restoreControllerFluid(FluidStack fluid) {
-        if (!isController() || fluid.isEmpty()) {
-            return 0;
-        }
-        return localTank.fill(fluid, IFluidHandler.FluidAction.EXECUTE);
-    }
-
-    public boolean interactWithFluidContainer(Player player, InteractionHand hand) {
-        return FluidUtil.interactWithFluidHandler(player, hand, resolveController().localTank);
     }
 
     public void syncAfterTopologyChange() {
@@ -198,42 +158,22 @@ public final class FluidTankBlockEntity extends BlockEntity {
         }
     }
 
-    private BlockPos findControllerPosition() {
-        if (level == null) {
-            return worldPosition;
-        }
-        BlockPos cursor = worldPosition;
-        for (int offset = 1; offset < FluidTankStacks.MAX_TANK_STACK_HEIGHT; offset++) {
-            BlockState state = level.getBlockState(cursor);
-            if (!state.hasProperty(FluidTankBlock.HAS_TANK_BELOW)
-                    || !state.getValue(FluidTankBlock.HAS_TANK_BELOW)) {
-                break;
-            }
-            cursor = cursor.below();
-        }
-        return cursor;
+    /** A player is breaking this cell: a survival player gets its share of the fluid in the dropped tank. */
+    public void preparePlayerBreakDrop(boolean preserveInDrop) {
+        preserveOnBreak = preserveInDrop;
     }
 
-    private FluidTankBlockEntity resolveController() {
-        if (level == null || isController()) {
-            return this;
-        }
-        BlockEntity blockEntity = level.getBlockEntity(findControllerPosition());
-        return blockEntity instanceof FluidTankBlockEntity controller ? controller : this;
+    /** FluidTankStructures, as this cell goes: its share, kept for the drop when a survival player broke it. */
+    public void keepForDrop(FluidStack share) {
+        preparedDropFluid = preserveOnBreak && !share.isEmpty() ? share.copy() : FluidStack.EMPTY;
     }
 
-    private boolean canFillFromTop() {
-        return !isRemoved() && isTopmost();
-    }
-
-    private boolean canDrainFromBottom() {
-        return !isRemoved() && isController();
+    public FluidStack getPreparedDropFluid() {
+        return preparedDropFluid.isEmpty() ? FluidStack.EMPTY : preparedDropFluid.copy();
     }
 
     private void onFluidChanged() {
-        if (rebuildingTopology) {
-            return;
-        }
+        if (rebuildingTopology) return;
         setChanged();
         if (level instanceof ServerLevel serverLevel) {
             BlockState state = getBlockState();
@@ -259,15 +199,11 @@ public final class FluidTankBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         rebuildingTopology = true;
-        int capacity = tag.contains(VISUAL_CAPACITY_KEY, Tag.TAG_INT)
-                ? Math.max(CAPACITY_MB, tag.getInt(VISUAL_CAPACITY_KEY))
-                : CAPACITY_MB;
+        int capacity = tag.contains(VISUAL_CAPACITY_KEY, Tag.TAG_INT) ? Math.max(CAPACITY_MB, tag.getInt(VISUAL_CAPACITY_KEY)) : CAPACITY_MB;
         localTank.setCapacity(capacity);
         if (tag.contains(FluidTankStoredFluid.FLUID_KEY, Tag.TAG_COMPOUND)) {
             localTank.readFromNBT(tag.getCompound(FluidTankStoredFluid.FLUID_KEY));
-            if (localTank.getFluidAmount() > capacity) {
-                localTank.getFluid().setAmount(capacity);
-            }
+            if (localTank.getFluidAmount() > capacity) localTank.getFluid().setAmount(capacity);
         } else {
             localTank.setFluid(FluidStack.EMPTY);
         }
@@ -289,15 +225,10 @@ public final class FluidTankBlockEntity extends BlockEntity {
     }
 
     @Override
-    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability,
-                                                       @Nullable Direction side) {
-        if (capability == ForgeCapabilities.FLUID_HANDLER) {
-            if (side == Direction.UP && canFillFromTop()) {
-                return topCapability.cast();
-            }
-            if (side == Direction.DOWN && canDrainFromBottom()) {
-                return bottomCapability.cast();
-            }
+    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
+        if (capability == ForgeCapabilities.FLUID_HANDLER && side != null && !isRemoved()
+                && getBlockState().getBlock() instanceof FluidTankBlock block && block.hasFluidPort(getBlockState(), side)) {
+            return side == Direction.UP ? topCapability.cast() : bottomCapability.cast();
         }
         return super.getCapability(capability, side);
     }
@@ -316,27 +247,16 @@ public final class FluidTankBlockEntity extends BlockEntity {
         bottomCapability = LazyOptional.of(() -> bottomDrainHandler);
     }
 
-    private static final class StackSidedFluidHandler implements IFluidHandler {
-        private final FluidTankBlockEntity owner;
-        private final boolean allowFill;
-        private final boolean allowDrain;
+    /** One port: fills (top) or drains (bottom) the whole tank, at most 25 mB a tick through this port. */
+    private final class PortHandler implements IFluidHandler {
+        private final boolean fill;
 
-        private StackSidedFluidHandler(FluidTankBlockEntity owner, boolean allowFill, boolean allowDrain) {
-            this.owner = owner;
-            this.allowFill = allowFill;
-            this.allowDrain = allowDrain;
+        private PortHandler(boolean fill) {
+            this.fill = fill;
         }
 
-        private FluidTankBlockEntity controller() {
-            return owner.resolveController();
-        }
-
-        private boolean fillAllowed() {
-            return allowFill && owner.canFillFromTop();
-        }
-
-        private boolean drainAllowed() {
-            return allowDrain && owner.canDrainFromBottom();
+        private FluidTank tank() {
+            return master().localTank;
         }
 
         @Override
@@ -346,74 +266,51 @@ public final class FluidTankBlockEntity extends BlockEntity {
 
         @Override
         public @NotNull FluidStack getFluidInTank(int tankIndex) {
-            FluidStack fluid = controller().localTank.getFluid();
+            FluidStack fluid = tank().getFluid();
             return fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
         }
 
         @Override
         public int getTankCapacity(int tankIndex) {
-            return controller().localTank.getCapacity();
+            return tank().getCapacity();
         }
 
         @Override
         public boolean isFluidValid(int tankIndex, @NotNull FluidStack stack) {
-            return fillAllowed() && controller().localTank.isFluidValid(tankIndex, stack);
+            return fill && tank().isFluidValid(tankIndex, stack);
         }
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
-            if (!fillAllowed() || resource.isEmpty()) {
-                return 0;
-            }
-            FluidTankBlockEntity controller = controller();
-            int limitedAmount = controller.automaticInputBudget.limit(
-                    controller.level, resource.getAmount());
-            if (limitedAmount <= 0) {
-                return 0;
-            }
-            FluidStack limitedResource = resource.copy();
-            limitedResource.setAmount(limitedAmount);
-            int filled = controller.localTank.fill(limitedResource, action);
-            if (action == FluidAction.EXECUTE && filled > 0) {
-                controller.automaticInputBudget.record(controller.level, filled);
-            }
+            if (!fill || resource.isEmpty()) return 0;
+            int limited = inputBudget.limit(level, resource.getAmount());
+            if (limited <= 0) return 0;
+            FluidStack part = resource.copy();
+            part.setAmount(limited);
+            int filled = tank().fill(part, action);
+            if (action == FluidAction.EXECUTE && filled > 0) inputBudget.record(level, filled);
             return filled;
         }
 
         @Override
         public @NotNull FluidStack drain(FluidStack resource, FluidAction action) {
-            if (!drainAllowed() || resource.isEmpty()) {
-                return FluidStack.EMPTY;
-            }
-            FluidTankBlockEntity controller = controller();
-            int limitedAmount = controller.automaticOutputBudget.limit(
-                    controller.level, resource.getAmount());
-            if (limitedAmount <= 0) {
-                return FluidStack.EMPTY;
-            }
-            FluidStack limitedResource = resource.copy();
-            limitedResource.setAmount(limitedAmount);
-            FluidStack drained = controller.localTank.drain(limitedResource, action);
-            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
-                controller.automaticOutputBudget.record(controller.level, drained.getAmount());
-            }
+            if (fill || resource.isEmpty()) return FluidStack.EMPTY;
+            int limited = outputBudget.limit(level, resource.getAmount());
+            if (limited <= 0) return FluidStack.EMPTY;
+            FluidStack part = resource.copy();
+            part.setAmount(limited);
+            FluidStack drained = tank().drain(part, action);
+            if (action == FluidAction.EXECUTE && !drained.isEmpty()) outputBudget.record(level, drained.getAmount());
             return drained;
         }
 
         @Override
         public @NotNull FluidStack drain(int maxDrain, FluidAction action) {
-            if (!drainAllowed()) {
-                return FluidStack.EMPTY;
-            }
-            FluidTankBlockEntity controller = controller();
-            int limitedAmount = controller.automaticOutputBudget.limit(controller.level, maxDrain);
-            if (limitedAmount <= 0) {
-                return FluidStack.EMPTY;
-            }
-            FluidStack drained = controller.localTank.drain(limitedAmount, action);
-            if (action == FluidAction.EXECUTE && !drained.isEmpty()) {
-                controller.automaticOutputBudget.record(controller.level, drained.getAmount());
-            }
+            if (fill) return FluidStack.EMPTY;
+            int limited = outputBudget.limit(level, maxDrain);
+            if (limited <= 0) return FluidStack.EMPTY;
+            FluidStack drained = tank().drain(limited, action);
+            if (action == FluidAction.EXECUTE && !drained.isEmpty()) outputBudget.record(level, drained.getAmount());
             return drained;
         }
     }

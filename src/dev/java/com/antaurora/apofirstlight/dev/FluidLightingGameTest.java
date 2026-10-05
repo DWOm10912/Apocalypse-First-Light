@@ -30,7 +30,7 @@ public final class FluidLightingGameTest {
             h.assertTrue(tank.getBlockState().getLightEmission()==9,"tank lava emission");
             h.assertTrue(h.getLevel().getBrightness(LightLayer.BLOCK,tank.getBlockPos())==9,"tank propagated light");
             h.assertTrue(h.getLevel().getBlockState(pipe).getLightEmission()==5,"pipe held light");
-            tank.clearLocalFluidForTopology();
+            tank.takeContents();
             FluidTankBlockEntity.serverTick(h.getLevel(),tank.getBlockPos(),tank.getBlockState(),tank);
         });
         h.runAfterDelay(33,()->{

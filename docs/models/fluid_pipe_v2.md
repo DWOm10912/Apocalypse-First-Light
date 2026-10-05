@@ -94,7 +94,7 @@
   - 设备方块实现 `fluid/AflFluidPortBlock`，用 `hasFluidPort(state, face)` 返回哪些面是流体口；
   - 那一格的方块实体在这个面上提供 `FLUID_HANDLER` 能力；
   - `FluidPipeBlock.isFluidPort` 先问这个接口，管道才会连上并往里灌。
-- **还没换成新标准的老设备**：立式储罐（顶面、底面）、热能发电机、化学反应釜，仍由 `FluidPipeBlock` 直接判断，外观也还是原来的。以后重做它们的模型时再换。
+- **还没换成新标准的老设备**：热能发电机、化学反应釜，仍由 `FluidPipeBlock` 直接判断，外观也还是原来的。以后重做它们的模型时再换。立式储罐 2026-10-05 已换成新标准（V2：每格顶面进液、底面出液，见 [fluid_tank_v2.md](fluid_tank_v2.md)）。
 
 ## 已知问题 / 以后
 

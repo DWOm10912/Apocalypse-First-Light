@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.fluid;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.FluidPipeBlock;
-import com.antaurora.apofirstlight.block.FluidTankBlock;
 import com.antaurora.apofirstlight.blockentity.FluidTankBlockEntity;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import net.minecraft.core.BlockPos;
@@ -34,13 +33,10 @@ public final class FluidPipeTransfer {
     }
 
     public static int transferFrom(ServerLevel level, FluidTankBlockEntity sourceTank) {
-        BlockState sourceState = sourceTank.getBlockState();
-        if (!sourceTank.isController()
-                || !sourceState.getValue(FluidTankBlock.BOTTOM_CONNECTED)
-                || sourceTank.getFluidAmount() <= 0) {
+        // every tank cell with a bottom port (Fluid Tank V2: not joined downward) pushes from its tank into a pipe under it
+        if (!sourceTank.hasBottomPort() || sourceTank.getFluidAmount() <= 0) {
             return 0;
         }
-
         return transferFrom(level, sourceTank, Direction.DOWN, sourceTank::restoreControllerFluid);
     }
 

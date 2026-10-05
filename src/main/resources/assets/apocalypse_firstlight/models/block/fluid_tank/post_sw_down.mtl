@@ -1,0 +1,4 @@
+# AFL Fluid Tank V2 post_sw_down
+newmtl fluid_tank
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/fluid_tank

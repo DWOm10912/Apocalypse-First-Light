@@ -3,13 +3,14 @@ package com.antaurora.apofirstlight.client;
 import net.minecraft.util.Mth;
 
 public final class FluidTankRenderGeometry {
-    public static final float TANK_FLUID_EPSILON_MODEL = 0.125F;
-    public static final float INNER_MIN_X_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
-    public static final float INNER_MAX_X_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
-    public static final float INNER_MIN_Y_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
-    public static final float INNER_MAX_Y_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
-    public static final float INNER_MIN_Z_PIXELS = 1.0F + TANK_FLUID_EPSILON_MODEL;
-    public static final float INNER_MAX_Z_PIXELS = 15.0F - TANK_FLUID_EPSILON_MODEL;
+    // Fluid Tank V2 (tools/build-fluid-tank-v2.mjs FLUID): inside the glass (5.8 px from the centre) and between the
+    // port decks (7.4 px from the centre)
+    public static final float INNER_MIN_X_PIXELS = 2.2F;
+    public static final float INNER_MAX_X_PIXELS = 13.8F;
+    public static final float INNER_MIN_Y_PIXELS = 0.6F;
+    public static final float INNER_MAX_Y_PIXELS = 15.4F;
+    public static final float INNER_MIN_Z_PIXELS = 2.2F;
+    public static final float INNER_MAX_Z_PIXELS = 13.8F;
 
     public static final float MIN_X = INNER_MIN_X_PIXELS / 16.0F;
     public static final float MAX_X = INNER_MAX_X_PIXELS / 16.0F;

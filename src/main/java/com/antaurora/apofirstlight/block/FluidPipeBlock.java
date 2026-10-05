@@ -245,16 +245,7 @@ public final class FluidPipeBlock extends PipeBlock {
     public static boolean isFluidPort(BlockState neighborState, Direction directionToNeighbor) {
         if (neighborState.getBlock() instanceof com.antaurora.apofirstlight.fluid.AflFluidPortBlock port)
             return port.hasFluidPort(neighborState, directionToNeighbor.getOpposite());
-        return canConnectToTank(neighborState, directionToNeighbor) || canConnectToSidedMachine(neighborState, directionToNeighbor);
-    }
-
-    private static boolean canConnectToTank(BlockState neighborState, Direction directionToNeighbor) {
-        if (!neighborState.is(AflBlocks.FLUID_TANK.get()) || !directionToNeighbor.getAxis().isVertical()) {
-            return false;
-        }
-        return directionToNeighbor == Direction.DOWN
-                ? !neighborState.getValue(FluidTankBlock.HAS_TANK_ABOVE)
-                : !neighborState.getValue(FluidTankBlock.HAS_TANK_BELOW);
+        return canConnectToSidedMachine(neighborState, directionToNeighbor);
     }
 
     private static boolean canConnectToSidedMachine(BlockState neighborState, Direction directionToNeighbor) {
