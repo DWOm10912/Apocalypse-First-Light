@@ -9,7 +9,8 @@ import java.util.Map;
 
 /** Liquid identities map to existing canonical item-fuel energies, never a second FE table. */
 public final class ThermalFuelDefinitions {
-    public static final int TANK_CAPACITY_MB = 4000;
+    /** The liquid fuel tank, 1 mB = 1 L (was 4,000 until 2026-10-04). Energy stays per mB: lava 20 FE/mB (a 1,000 mB source = 20,000 FE). */
+    public static final int TANK_CAPACITY_MB = 200;
     public static final int DISPLAY_VOLUME_MB = 1000;
     private static final Map<Fluid, ResourceLocation> LIQUID_SOURCES = Map.of(
             Fluids.LAVA, new ResourceLocation("minecraft", "lava_bucket"));

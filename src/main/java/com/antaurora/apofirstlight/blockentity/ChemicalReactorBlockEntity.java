@@ -42,7 +42,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class ChemicalReactorBlockEntity extends BaseContainerBlockEntity {
-    public static final int TANK_CAPACITY_MB = 8_000;
+    /** Input and waste tanks each, 1 mB = 1 L (was 8,000 until 2026-10-04); a reaction takes 20 L of water and leaves 20 L of waste. */
+    public static final int TANK_CAPACITY_MB = 200;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     public static final int CONTAINER_SIZE = 2;

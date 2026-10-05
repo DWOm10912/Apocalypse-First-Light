@@ -43,17 +43,30 @@ function sprite(fuel, W, flow) {
     const nx = -dx * F.ripple * W, ny = -dy * F.ripple * W, len = Math.hypot(nx, ny, 1);
     nrm.set([Math.round(128 + 127 * nx / len), Math.round(128 + 127 * ny / len), 255, 255], k);
   }
-  return {W, H, maps: [png(base, W, H), png(spec, W, H), png(nrm, W, H)], first: base.subarray(0, W * W * 4)};
+  return {W, H, base, spec, nrm, first: Buffer.from(base.subarray(0, W * W * 4))};
 }
 
 const dir = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/fluid');
+// The colour lives in the fluid's tint (FuelFluidType, AflFluids) and the textures hold colour / tint: the tint is the
+// per-channel maximum of both sprites, the textures are divided by it, so texture x tint gives the colours above. Vanilla
+// water works this way, and so Sundial Lite's "mod water detection" (MOD_WATER_DETECTION: an unlisted translucent block
+// with a non-white vertex colour is water, coloured by that colour) can draw the fuels; it treats a white-tinted
+// translucent as stained glass, and the fuels did not show in it (2026-10-04, user).
+export const TINTS = {};
 const outputs = [], sheet = [];
-for (const fuel of Object.keys(FUELS)) for (const [kind, W] of [['still', 16], ['flow', 32]]) {
-  const s = sprite(fuel, W, kind === 'flow'), name = `${fuel}_${kind}`;
-  ['', '_s', '_n'].forEach((k, i) => outputs.push([path.join(dir, `${name}${k}.png`), s.maps[i]]));
-  outputs.push([path.join(dir, `${name}.png.mcmeta`), JSON.stringify({animation: {frametime: FUELS[fuel].frametime, interpolate: false}}, null, 2) + '\n']);
-  sheet.push(s);
+for (const fuel of Object.keys(FUELS)) {
+  const sprites = [['still', 16], ['flow', 32]].map(([kind, W]) => [kind, sprite(fuel, W, kind === 'flow')]);
+  const tint = [0, 1, 2].map(c => Math.max(...sprites.flatMap(([, sp]) => Array.from({length: sp.W * sp.H}, (_, i) => sp.base[i * 4 + c]))));
+  TINTS[fuel] = tint;
+  for (const [kind, sp] of sprites) {
+    const name = fuel + '_' + kind, scaled = Buffer.from(sp.base);
+    for (let i = 0; i < sp.W * sp.H; i++) for (let c = 0; c < 3; c++) scaled[i * 4 + c] = Math.min(255, Math.round(255 * sp.base[i * 4 + c] / tint[c]));
+    [png(scaled, sp.W, sp.H), png(sp.spec, sp.W, sp.H), png(sp.nrm, sp.W, sp.H)].forEach((m, i) => outputs.push([path.join(dir, name + ['', '_s', '_n'][i] + '.png'), m]));
+    outputs.push([path.join(dir, name + '.png.mcmeta'), JSON.stringify({animation: {frametime: FUELS[fuel].frametime, interpolate: false}}, null, 2) + '\n']);
+    sheet.push(sp);
+  }
 }
+const tintHex = fuel => '0xFF' + TINTS[fuel].map(v => v.toString(16).padStart(2, '0').toUpperCase()).join('');
 // the liquid blocks (LiquidBlock: the fluid renderer draws them; the model only names the breaking particle)
 const assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 for (const fuel of Object.keys(FUELS)) outputs.push(
@@ -72,11 +85,13 @@ if (isMain) {
     fs.writeFileSync(path.join(process.argv[pi + 1], 'fuel_fluids.png'), png(img, W, H));
     console.log('preview written');
   } else if (process.argv.includes('--check')) {
+    const fluids = fs.readFileSync(path.join(ROOT, 'src/main/java/com/antaurora/apofirstlight/registry/AflFluids.java'), 'utf8');
+    for (const fuel of Object.keys(FUELS)) if (!fluids.includes(tintHex(fuel))) throw new Error('AflFluids lacks the ' + fuel + ' tint ' + tintHex(fuel));
     for (const [file, data] of outputs) { const cur = fs.existsSync(file) ? fs.readFileSync(file) : null; if (!cur || !cur.equals(Buffer.isBuffer(data) ? data : Buffer.from(data))) throw new Error('stale ' + path.relative(ROOT, file)); }
     console.log('CHECK OK');
   } else {
     for (const [file] of outputs) fs.mkdirSync(path.dirname(file), {recursive: true});
     for (const [file, data] of outputs) fs.writeFileSync(file, data);
-    console.log('wrote ' + outputs.length + ' files');
+    console.log('wrote ' + outputs.length + ' files; tints ' + Object.keys(FUELS).map(k => k + ' ' + tintHex(k)).join(', '));
   }
 }

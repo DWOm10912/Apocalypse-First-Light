@@ -42,6 +42,8 @@ public final class AflJadePlugin implements IWailaPlugin {
                 AlloyFurnaceBlockEntity.class);
         registration.registerBlockDataProvider(FluidTankJadeServerDataProvider.INSTANCE,
                 FluidTankBlockEntity.class);
+        registration.registerBlockDataProvider(UndergroundFuelTankJadeProvider.INSTANCE,
+                com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity.class);
     }
 
     @Override
@@ -62,5 +64,8 @@ public final class AflJadePlugin implements IWailaPlugin {
                 AlloyFurnaceBlock.class);
         registration.registerBlockComponent(FluidTankJadeComponentProvider.INSTANCE,
                 FluidTankBlock.class);
+        registration.registerBlockComponent(UndergroundFuelTankJadeProvider.INSTANCE,
+                com.antaurora.apofirstlight.block.UndergroundFuelTankBlock.class);
+        UndergroundFuelTankJadeProvider.registerRedirect(registration);
     }
 }

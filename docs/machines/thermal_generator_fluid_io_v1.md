@@ -3,7 +3,7 @@
 | 项目 | 当前行为 |
 |---|---|
 | 方块 | `apocalypse_firstlight:thermal_generator`；沿用原 BlockEntity、GUI、配方与静态模型 |
-| Tank | 4000 mB；V1 仅 `minecraft:lava` |
+| Tank | 200 mB（2026-10-04 起，AFL 统一 1 mB = 1 升；原 4000）；V1 仅 `minecraft:lava` |
 | 输入 | 面向正面左侧，仅 fill，25 mB/t |
 | 输出 | 面向正面右侧，仅 drain，25 mB/t；排出未消耗燃料，无副产物 |
 | 其他面 | 正面、背面、顶底及 null 不暴露 fluid capability；背面仍输出 FE |
@@ -15,7 +15,7 @@
 | Jade | 非空时显示名称、mB/容量及现有流体条；空槽完全隐藏流体信息，保留 FE 与燃料物品信息 |
 | JEI | `apocalypse_firstlight:thermal_generation` 单一分类；催化剂为热力发电机；枚举当前四种物品燃料及 1000 mB 熔岩 |
 | 桶 | 保留燃料槽熔岩桶及空桶返还；未新增手持桶灌注交互 |
-| GUI 流体条 | 左侧与化学反应器同款 12×54 外框、8×48 填充；显示真实 4000 mB 槽，悬停显示液体燃料、名称及数量/容量；右侧 FE 条和槽位不变 |
+| GUI 流体条 | 左侧与化学反应器同款 12×54 外框、8×48 填充；显示真实槽（200 mB，原 4000），悬停显示液体燃料、名称及数量/容量；右侧 FE 条和槽位不变 |
 
 ## 四向映射
 

@@ -22,7 +22,8 @@ public final class IndustrialWasteFluidType extends FluidType {
     public IndustrialWasteFluidType() {
         // Forge 47.4.22 WATER_TYPE uses these overrides on Properties.create().
         // Retain its shared defaults (movement, swimming, drowning, density, viscosity, temperature).
-        super(Properties.create().descriptionId("fluid.apocalypse_firstlight.industrial_waste")
+        // density 1,100 kg/m3: a little heavier than water (the weight system weighs fluids by density, 1 mB = 1 L)
+        super(Properties.create().descriptionId("fluid.apocalypse_firstlight.industrial_waste").density(1100)
                 .fallDistanceModifier(0.0F).canExtinguish(true).canConvertToSource(false)
                 .supportsBoating(true).canHydrate(true)
                 .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
@@ -47,6 +48,10 @@ public final class IndustrialWasteFluidType extends FluidType {
         return ForgeMod.WATER_TYPE.get().isVaporizedOnPlacement(level, pos, stack);
     }
 
+    /**
+     * The colour is the tint 0x9B936B (the textures hold colour / tint since 2026-10-04): Sundial Lite draws an unlisted
+     * translucent liquid as water only when it has a vertex colour (its mod water detection option), else as stained glass.
+     */
     @Override
     public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
         consumer.accept(new IClientFluidTypeExtensions() {
@@ -67,7 +72,7 @@ public final class IndustrialWasteFluidType extends FluidType {
 
             @Override
             public int getTintColor() {
-                return 0xFFFFFFFF;
+                return 0xFF9B936B;
             }
         });
     }

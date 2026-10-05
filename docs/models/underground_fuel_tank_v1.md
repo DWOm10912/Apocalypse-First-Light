@@ -37,9 +37,10 @@
 
 ## 储存和接口
 
-- **容量**：方块实体里一个 30,000 mB 的罐（2.4 m 直径、约 6.4 m 长，约 30 m³），只收这个罐自己的油（`FluidStack.getFluid().isSame(fuel)`）。
+- **容量**（AFL 统一 1 mB = 1 升，见 [流体系统](../项目内容/01%20-%20设计/工业/流体系统.md) 第 0 节）：方块实体里一个 30,000 mB 的罐（2.4 m 直径、约 6.4 m 长，约 30 m³），只收这个罐自己的油（`FluidStack.getFluid().isSame(fuel)`）。
 - **接口**：只在主格顶面（`hasFluidPort(state, UP)`）。管道 V2 从上面一格接下来，在 `FluidPipeBlock.isFluidPort` 里通过 `AflFluidPortBlock` 认出。流体能力也只开在这一面（以及无方向的查询）。
 - **被动储存**：别的设备（比如立式储罐）通过管道往里推，能灌进去。罐子自己不往外送；往外抽油是下一步的潜油泵。
+- **Jade**（`compat/jade/UndergroundFuelTankJadeProvider`，2026-10-04）：对着罐的任何一格，都显示整罐的油品、存量 / 容量和液体条，样式同立式储罐（`FluidTankJadeComponentProvider.appendFluid` 共用）。只有接口格有方块实体，所以用 Jade 的射线回调把目标换成接口格；Jade 设置里单独一个开关"AFL 地下油罐"，并去掉 Jade 自带的通用液体行以免重复。没有实机验证。
 - **开发指令**（`src/dev`，OP 2）：
   - `/dev fuel fill [mB]`：给看着的地下罐灌它自己的油，默认灌满；
   - `/dev fuel info`：查看罐里的油和量。
@@ -67,4 +68,4 @@
 - 原版没有平滑法线光照，圆柱会看出棱面；光影下是圆的。
 - 下一步：潜油泵（装在人孔上，有电时把油送到加油机）、地面卸油口井盖、加油机真正出油。
 - 罐坏了油直接丢失，不会洒出来。
-- 没有 Jade 提示，也没有放进作者工具（`AuthoringFixtureRegistry`）。
+- 没有放进作者工具（`AuthoringFixtureRegistry`）。

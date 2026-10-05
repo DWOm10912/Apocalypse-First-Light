@@ -28,13 +28,13 @@ public final class AflFluids {
     // Fuel fluids V1 (docs/gameplay/fuel_fluids_v1.md): no bucket, source blocks by command only. Gasoline: lighter and
     // thinner than water, spreads a little further and faster; diesel: heavier and oilier, spreads less and slower.
     public static final RegistryObject<FluidType> GASOLINE_TYPE = FLUID_TYPES.register("gasoline",
-            () -> new FuelFluidType("gasoline", 740, 600, 0.016D, 0xC9A64A, 5.0F));
+            () -> new FuelFluidType("gasoline", 740, 600, 0.016D, 0xC9A64A, 5.0F, 0xFFFAE4A2));
     public static final RegistryObject<FuelFluid.Source> GASOLINE = FLUIDS.register("gasoline",
             () -> new FuelFluid.Source(gasoline()));
     public static final RegistryObject<FuelFluid.Flowing> FLOWING_GASOLINE = FLUIDS.register("flowing_gasoline",
             () -> new FuelFluid.Flowing(gasoline()));
     public static final RegistryObject<FluidType> DIESEL_TYPE = FLUID_TYPES.register("diesel",
-            () -> new FuelFluidType("diesel", 840, 2400, 0.010D, 0x8A5E1C, 3.0F));
+            () -> new FuelFluidType("diesel", 840, 2400, 0.010D, 0x8A5E1C, 3.0F, 0xFFD29F44));
     public static final RegistryObject<FuelFluid.Source> DIESEL = FLUIDS.register("diesel",
             () -> new FuelFluid.Source(diesel()));
     public static final RegistryObject<FuelFluid.Flowing> FLOWING_DIESEL = FLUIDS.register("flowing_diesel",

@@ -26,9 +26,14 @@ public final class FuelFluidType extends FluidType {
     private final String name;
     private final Vector3f fogColor;
     private final float fogEnd;
+    private final int tint;
 
-    /** density kg/m3, viscosity (water 1000), fog colour 0xRRGGBB, fog end in blocks. */
-    public FuelFluidType(String name, int density, int viscosity, double motionScale, int fogColor, float fogEnd) {
+    /**
+     * density kg/m3, viscosity (water 1000), fog colour 0xRRGGBB, fog end in blocks; tint 0xAARRGGBB: the fluid's colour.
+     * The textures hold colour / tint (tools/build-fuel-fluids-v1.mjs TINTS), as vanilla water's do, so a pack that colours
+     * liquids by their tint (Sundial Lite's mod water detection) can draw them.
+     */
+    public FuelFluidType(String name, int density, int viscosity, double motionScale, int fogColor, float fogEnd, int tint) {
         super(Properties.create().descriptionId("fluid.apocalypse_firstlight." + name)
                 .fallDistanceModifier(0.0F).canExtinguish(false).canConvertToSource(false).supportsBoating(true).canHydrate(false)
                 .canPushEntity(true).canSwim(true).canDrown(true).density(density).viscosity(viscosity).motionScale(motionScale)
@@ -38,6 +43,7 @@ public final class FuelFluidType extends FluidType {
         this.name = name;
         this.fogColor = new Vector3f((fogColor >> 16 & 0xFF) / 255.0F, (fogColor >> 8 & 0xFF) / 255.0F, (fogColor & 0xFF) / 255.0F);
         this.fogEnd = fogEnd;
+        this.tint = tint;
     }
 
     /**
@@ -60,7 +66,7 @@ public final class FuelFluidType extends FluidType {
 
             @Override
             public int getTintColor() {
-                return 0xFFFFFFFF;
+                return tint;
             }
 
             @Override

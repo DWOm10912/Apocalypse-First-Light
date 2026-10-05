@@ -400,6 +400,7 @@
 
   "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL 机器状态",
   "config.jade.plugin_apocalypse_firstlight.fluid_tank": "AFL 流体储罐",
+  "config.jade.plugin_apocalypse_firstlight.underground_fuel_tank": "AFL 地下油罐",
 
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",

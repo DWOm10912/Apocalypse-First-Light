@@ -6,7 +6,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import java.util.*;
@@ -21,9 +20,6 @@ public final class StackMassCalculator {
     private static final Map<ResourceLocation, Function<ItemStack, Iterable<ItemStack>>> CONTENTS = new HashMap<>();
     private static final Map<ResourceLocation, Function<ItemStack, Iterable<FluidStack>>> FLUIDS = new HashMap<>();
     private static final int MAX_DEPTH = 8, MAX_ELEMENTS = 512;
-    private static final ResourceLocation EMPTY_BUCKET = new ResourceLocation("minecraft", "bucket");
-    /** Per 1000 mB of a fluid without a priced bucket: water's (a bucket carries 10 L). */
-    private static final long FALLBACK_GRAMS_PER_BUCKET = 10_000;
     private StackMassCalculator() {}
 
     /** Register during common setup. Contents are for ONE outer item; must be read-only and exclude its own shell. */
@@ -45,24 +41,14 @@ public final class StackMassCalculator {
     }
 
     /**
-     * 1000 mB of a fluid weighs its filled bucket minus the empty bucket (both from the mass table), so pouring buckets
-     * into a tank and breaking it keeps the total. No bucket, or an unpriced one: {@link #FALLBACK_GRAMS_PER_BUCKET}.
+     * A fluid weighs its density: AFL's fluid scale is 1 mB = 1 litre (2026-10-04), and FluidType#getDensity is kg/m3,
+     * i.e. grams per litre (water 1,000 g per mB, lava 3,000, industrial waste 1,100, gasoline 740, diesel 840). A gas
+     * (density 0 or below) weighs nothing. Until 2026-10-04 1,000 mB weighed a filled bucket minus an empty one (10 L).
      */
     static void fluid(MassResult.Builder out, FluidStack fluid, ItemMassData.Snapshot data) {
         if (fluid.isEmpty() || fluid.getAmount() <= 0) return;
-        var fluidId = ForgeRegistries.FLUIDS.getKey(fluid.getFluid());
-        var bucket = fluid.getFluid().getBucket();
-        var full = bucket == Items.AIR ? null : data.unit(ForgeRegistries.ITEMS.getKey(bucket));
-        var empty = data.unit(EMPTY_BUCKET);
-        long perBucket;
-        if (full == null || full.source().startsWith("fallback:") || empty.source().startsWith("fallback:") || full.grams() < empty.grams()) {
-            perBucket = FALLBACK_GRAMS_PER_BUCKET;
-            out.issue("fallback:fluid:" + fluidId);
-        } else {
-            perBucket = full.grams() - empty.grams();
-            if (full.estimated() || empty.estimated()) out.issue("test_estimate:fluid:" + fluidId);
-        }
-        out.add("fluid", MassResult.multiply(perBucket, fluid.getAmount()) / 1000);
+        int gramsPerMb = Math.max(0, fluid.getFluid().getFluidType().getDensity(fluid));
+        out.add("fluid", MassResult.multiply(gramsPerMb, fluid.getAmount()));
     }
 
     /** The standard container list (BlockEntityTag.Items for a block item, else Items), or null in any other format. */

@@ -1,6 +1,6 @@
 # 热力发电机动态燃料视觉预留 V1
 
-状态：**静态 3D 外观、动态燃料、液体视觉和转子已由 [Dynamic Renderer V1](thermal_generator_dynamic_renderer_v1.md) 接入；锚点粒子见 [Particles V1](thermal_generator_particles_v1.md)。** 真实 4000 mB 熔岩槽与左进右出已接入，见 [Fluid IO V1](thermal_generator_fluid_io_v1.md)。原注册、GUI、FE 输出、燃料定标、声音及挖掘规则保留；旧烟雾占位由客户端持续排烟替代。
+状态：**静态 3D 外观、动态燃料、液体视觉和转子已由 [Dynamic Renderer V1](thermal_generator_dynamic_renderer_v1.md) 接入；锚点粒子见 [Particles V1](thermal_generator_particles_v1.md)。** 真实熔岩槽（2026-10-04 起 200 mB，原 4000）与左进右出已接入，见 [Fluid IO V1](thermal_generator_fluid_io_v1.md)。原注册、GUI、FE 输出、燃料定标、声音及挖掘规则保留；旧烟雾占位由客户端持续排烟替代。
 
 ## 结构
 

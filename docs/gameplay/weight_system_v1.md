@@ -238,13 +238,12 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
    - 别的格式仍只算外壳，并标 `unsupported_contents`；
    - 目前没有 AFL 方块在拆掉后保留物品库存（拆掉时物品都掉出来），这条主要接住创造模式 Ctrl+中键复制的带内容箱子和别的 mod 的容器。潜影盒也会被算进去，但没有专门处理。
 3. **注册了液体 provider 的**：加上液体质量，breakdown 记为 `fluid`。
-   - 每 1000 mB 的质量 = 这种液体的满桶 − 空桶（`minecraft:bucket` 1 kg）。所以把几桶水倒进储罐再拆下来，总重不变。
-   - 每 1000 mB：水 10 kg，岩浆 20 kg，工业废液 12 kg。
-   - 没有桶、或桶没有定价的液体按每 1000 mB 10 kg 算，标 `fallback:fluid:<id>`。
+   - 2026-10-04 起按密度算：AFL 统一 1 mB = 1 升，每 mB 的克数 = 液体的 `FluidType#getDensity`（kg/m³ 正好是 g/L）。水 1,000 g，岩浆 3,000 g，工业废液 1,100 g（`IndustrialWasteFluidType` 设了密度 1100），汽油 740 g，柴油 840 g；密度 ≤ 0 的气体不计重。
+   - 原来按"满桶 − 空桶"算（每 1000 mB 水 10 kg），已删除。桶物品本身的质量表不变（原版桶在淘汰中）。
    - 已注册的物品（`weight/AflCarriedContents`）：
-     - fluid_tank：`BlockEntityTag.Fluid`，最多 20,000 mB（满水 200 kg）；
-     - thermal_generator：`BlockEntityTag.LiquidTank`，最多 4,000 mB 岩浆（80 kg）；
-     - chemical_reactor：`BlockEntityTag.InputTank` 和 `WasteTank`，各最多 8,000 mB。
+     - fluid_tank：`BlockEntityTag.Fluid`，每格最多 800 mB（满水 800 kg）；
+     - thermal_generator：`BlockEntityTag.LiquidTank`，最多 200 mB 岩浆（600 kg）；
+     - chemical_reactor：`BlockEntityTag.InputTank` 和 `WasteTank`，各最多 200 mB。
    - 储存的能量不计重。
 
 ## 堆叠上限审计（2026-10-03）

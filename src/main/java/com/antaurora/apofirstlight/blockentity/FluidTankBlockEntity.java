@@ -29,7 +29,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public final class FluidTankBlockEntity extends BlockEntity {
-    public static final int CAPACITY_MB = 20_000;
+    /** Per tank block, AFL's fluid scale (1 mB = 1 L): a round tank in a 1 m cube holds about 0.8 m3 (was 20,000 until 2026-10-04). */
+    public static final int CAPACITY_MB = 800;
     private static final String VISUAL_CAPACITY_KEY = "VisualCapacity";
     private boolean rebuildingTopology;
     private boolean playerBreakPrepared;

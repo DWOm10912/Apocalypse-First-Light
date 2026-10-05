@@ -6,7 +6,6 @@
   "sip": 5,
   "sip_cooldown_ticks": 10,
   "foods": {
-    "minecraft:milk_bucket": 30,
     "minecraft:melon_slice": 6,
     "minecraft:apple": 2,
     "minecraft:mushroom_stew": 10,

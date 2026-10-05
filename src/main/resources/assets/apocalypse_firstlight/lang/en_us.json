@@ -400,6 +400,7 @@
 
   "config.jade.plugin_apocalypse_firstlight.machine_status": "AFL Machine Status",
   "config.jade.plugin_apocalypse_firstlight.fluid_tank": "AFL Fluid Tank",
+  "config.jade.plugin_apocalypse_firstlight.underground_fuel_tank": "AFL Underground Fuel Tank",
 
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",

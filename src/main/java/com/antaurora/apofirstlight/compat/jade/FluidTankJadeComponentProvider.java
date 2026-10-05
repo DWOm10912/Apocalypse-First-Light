@@ -27,7 +27,11 @@ public enum FluidTankJadeComponentProvider implements IBlockComponentProvider {
 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-        CompoundTag data = accessor.getServerData();
+        appendFluid(tooltip, accessor.getServerData());
+    }
+
+    /** The fluid line and bar from FluidTankJadeServerDataProvider's keys (also the underground fuel tank's). */
+    static void appendFluid(ITooltip tooltip, CompoundTag data) {
         if (!data.contains(FluidTankJadeServerDataProvider.FLUID_CAPACITY, Tag.TAG_INT)) {
             return;
         }
