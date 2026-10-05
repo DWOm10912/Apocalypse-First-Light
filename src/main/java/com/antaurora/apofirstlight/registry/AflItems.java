@@ -372,6 +372,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.POPLAR_LEAVES.get(), new Item.Properties()));
     public static final RegistryObject<Item> POPLAR_SAPLING = ITEMS.register("poplar_sapling",
             () -> new BlockItem(AflBlocks.POPLAR_SAPLING.get(), new Item.Properties()));
+    public static final RegistryObject<Item> REFRACTORY_CERAMIC = ITEMS.register("refractory_ceramic",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> HIGH_PURITY_QUARTZ_SAND = ITEMS.register("high_purity_quartz_sand",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> QUARTZ_GLASS = ITEMS.register("quartz_glass",
+            () -> new BlockItem(AflBlocks.QUARTZ_GLASS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_SCRAP = ITEMS.register("steel_scrap",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> CONCRETE_RUBBLE = ITEMS.register("concrete_rubble",

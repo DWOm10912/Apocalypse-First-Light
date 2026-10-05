@@ -44,6 +44,8 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.TUNGSTEN_FILAMENT.get(), "tungsten_filament", "tungsten_filament_mesh", 0.263462);
             bind(AflItems.CEMENTED_CARBIDE_BLANK.get(), "cemented_carbide_blank", "cemented_carbide_blank_mesh", 0.388885);
             bind(AflItems.STEEL_SCRAP.get(), "steel_scrap", "steel_scrap_mesh", 0.446402);
+            bind(AflItems.REFRACTORY_CERAMIC.get(), "refractory_ceramic", "refractory_ceramic_mesh", 0.4);
+            bind(AflItems.HIGH_PURITY_QUARTZ_SAND.get(), "high_purity_quartz_sand", "high_purity_quartz_sand_mesh", 0.40625);
             // Energy Battery V1 (tools/build-energy-battery-v1.mjs): 0.5 - height 4.66 / 32
             bind(AflItems.ENERGY_BATTERY.get(), "energy_battery", "energy_battery_mesh", 0.354375);
             // Equipment Meshes V1 (tools/build-equipment-meshes-v1.mjs): 0.5 - height / 32 (1.22 / 3.5 px)

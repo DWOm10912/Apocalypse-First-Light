@@ -83,6 +83,9 @@ public final class AflBlocks {
             () -> new StairBlock(REINFORCED_CONCRETE.get().defaultBlockState(),
                     BlockBehaviour.Properties.copy(REINFORCED_CONCRETE.get()).requiresCorrectToolForDrops()));
     /** Interlocking cast lead bricks: the dense radiation shielding block (RadiationShielding.LEAD_TRANSMISSION). */
+    /** Quartz Glass V1 (tools/build-quartz-glass-v1.mjs): a fused quartz glass block, a little tougher than glass; drops itself. */
+    public static final RegistryObject<Block> QUARTZ_GLASS = BLOCKS.register("quartz_glass",
+            () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.copy(Blocks.GLASS).strength(0.6F, 1.5F)));
     public static final RegistryObject<Block> LEAD_SHIELDING_BRICKS = BLOCKS.register("lead_shielding_bricks",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(4.0F, 12.0F)

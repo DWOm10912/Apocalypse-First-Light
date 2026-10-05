@@ -203,6 +203,18 @@
       "unit_mass_kg": 0.25,
       "estimated": true
     },
+    "apocalypse_firstlight:refractory_ceramic": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:high_purity_quartz_sand": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:quartz_glass": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
     "apocalypse_firstlight:steel_scrap": {
       "unit_mass_kg": 0.25,
       "estimated": true

@@ -1,4 +1,4 @@
-// AFL Material Meshes V1: six Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in the world views
+// AFL Material Meshes V1: eight Material System V1 items as Pure Mesh, drawn by AflStaticMeshItemRenderer in the world views
 // (hand, ground, item frame); the inventory shows a 16x16 2D icon drawn from the same mesh in the same view, so the
 // materials tab stays pixel art. One bone, one 256 LabPBR atlas (Base Color / _s / _n) per item.
 //   node tools/build-material-meshes-v1.mjs            -> writes sources, atlases, geo, AFL mesh sidecars, icons and item models
@@ -369,6 +369,31 @@ export function bake(id, {PARTS, MATS, uv, bg, icon: iconOpts = {}, display: dis
   return {outputs, stats};
 }
 
+/** Refractory ceramic (2026-10-05): one straight high-alumina firebrick, warm off-white, matte, chamfered edges. */
+function refractoryCeramic() {
+  const brick = new Part('brick', 'refractory_ceramic', 'ceramic');
+  extrude(brick, 'y', {outer: orient([[-2.7, -5.5], [2.7, -5.5], [2.7, 5.5], [-2.7, 5.5]], true), holes: []}, 0, 3.2, 0.3);
+  return {PARTS: [brick], MATS: {
+    ceramic: {c: [194, 183, 160], hl: 6, sm: 46, se: 70, f0: 20},     // fired high-alumina refractory: dielectric, matte
+  }};
+}
+
+/** High-purity quartz sand (2026-10-05): a small, slightly uneven heap of washed white sand. */
+function highPurityQuartzSand() {
+  const pile = new Part('pile', 'high_purity_quartz_sand', 'sand');
+  const A = 24, R = 5.4, H = 3.0, wob = a => 1 + 0.07 * Math.sin(3 * a + 0.6) + 0.04 * Math.sin(5 * a + 2.1);
+  const rings = [0, 0.2, 0.4, 0.6, 0.8].map(t => Array.from({length: A}, (_, i) => { const a = 2 * Math.PI * i / A, r = R * (1 - t) * wob(a);
+    return pile.vtx([r * Math.cos(a), H * (1 - Math.pow(1 - t, 1.6)), r * Math.sin(a)]); }));
+  const out = id => { const q = pile.v[id]; return [q[0], 0.6, q[2]]; };
+  for (let k = 0; k + 1 < rings.length; k++) for (let i = 0; i < A; i++) { const j = (i + 1) % A;
+    pile.face([rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]], out(rings[k][i])); }
+  const apex = pile.vtx([0, H, 0]), last = rings[rings.length - 1], base = pile.vtx([0, 0, 0]);
+  for (let i = 0; i < A; i++) { pile.face([last[i], last[(i + 1) % A], apex], [0, 1, 0]); pile.face([rings[0][i], rings[0][(i + 1) % A], base], [0, -1, 0], 'cap'); }
+  return {PARTS: [pile], MATS: {
+    sand: {c: [208, 204, 192], hl: 4, sm: 40, se: 60, f0: 20},        // washed quartz sand: dielectric, matte
+  }};
+}
+
 export const ITEMS = {
   steel_billet: steelBillet,
   lead_brick: leadBrick,
@@ -376,6 +401,8 @@ export const ITEMS = {
   tungsten_filament: tungstenFilament,
   cemented_carbide_blank: cementedCarbideBlank,
   steel_scrap: steelScrap,
+  refractory_ceramic: refractoryCeramic,
+  high_purity_quartz_sand: highPurityQuartzSand,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
