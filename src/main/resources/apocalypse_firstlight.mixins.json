@@ -4,7 +4,8 @@
   "package": "com.antaurora.apofirstlight.mixin",
   "compatibilityLevel": "JAVA_17",
   "refmap": "apocalypse_firstlight.refmap.json",
-  "client": ["client.MaintenanceCameraMixin", "client.MaintenanceGameRendererMixin", "client.RestroomDoorPickMixin", "client.HearingProtectionSoundEngineMixin", "client.LockedInventoryTooltipMixin", "client.AflMeshShapePickMixin", "client.LocalPlayerWeightSprintMixin", "client.HumanoidModelThermometerMixin", "client.EntityRenderDispatcherFireMixin", "client.LevelRendererFireTrackMixin", "client.BaseFireBlockSmokeMixin"],
+  "client": ["client.MaintenanceCameraMixin", "client.MaintenanceGameRendererMixin", "client.RestroomDoorPickMixin", "client.HearingProtectionSoundEngineMixin", "client.LockedInventoryTooltipMixin", "client.AflMeshShapePickMixin", "client.LocalPlayerWeightSprintMixin", "client.HumanoidModelThermometerMixin", "client.EntityRenderDispatcherFireMixin", "client.LevelRendererFireTrackMixin", "client.BaseFireBlockSmokeMixin",
+    "client.TerrainParticleSampleMixin"],
   "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkMacroWaterMixin", "RandomStateSeedMixin", "SurfaceSystemStartupBiomeMixin", "BiomeManagerStartupSurfaceMixin", "ZombieSunlightMixin", "EntityIndustrialWasteSoundMixin", "ExplosionAccessor", "LockedInventoryMixin", "LockedInventorySlotMixin", "LockedInventoryMenuMixin", "LockedInventoryWrapperMixin", "LockedInventoryRecipeMixin", "FoodDataThirstMixin", "InventoryMenuEquipmentMixin", "LivingEntityFuelSlipMixin"],
   "injectors": {"defaultRequire": 1}
 }
