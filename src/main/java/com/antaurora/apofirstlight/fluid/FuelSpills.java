@@ -14,6 +14,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.BlockHitResult;
@@ -46,6 +47,8 @@ public final class FuelSpills extends SavedData {
 
     final FuelStainIndex index = new FuelStainIndex();
     private long nextId;
+    /** Cells where a fire put a light block (saved: a fire that was burning when the level was saved still cleans up). */
+    private final java.util.Set<Long> lights = new java.util.HashSet<>();
 
     public static FuelSpills get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(FuelSpills::load, FuelSpills::new, NAME);
@@ -65,9 +68,9 @@ public final class FuelSpills extends SavedData {
      * floor, a drop sometimes splatters beside it, and a stain already at its full size spreads into a new one just past
      * its edge (a pool grows while the stream stays on it). On a wall whose run has reached the lower edge of its surface,
      * and on a ceiling, the fuel sometimes drips down onto whatever floor is below (up to 4 blocks). Spread stains only go on a real
-     * floor at the same height and not on top of another stain.
+     * floor at the same height and not on top of another stain. Returns the stain wetted where it landed.
      */
-    public void wet(ServerLevel level, Vec3 at, Direction face, boolean diesel) {
+    public FuelStainIndex.Stain wet(ServerLevel level, Vec3 at, Direction face, boolean diesel) {
         RandomSource random = level.random;
         FuelStainIndex.Stain stain = wetOne(level, at, face, diesel, FuelStainIndex.FIRST * (0.8F + 0.4F * random.nextFloat()));
         if (face == Direction.UP) {
@@ -89,6 +92,12 @@ public final class FuelSpills extends SavedData {
                         && level.getFluidState(below.getBlockPos()).isEmpty()) wetOne(level, below.getLocation(), Direction.UP, diesel, FuelStainIndex.FIRST * 0.8F);
             }
         }
+        return stain;
+    }
+
+    /** A stain of {@code size} at {@code at} (or the one there grown): fuel thrown out by a burst container (FuelLeaks). */
+    public FuelStainIndex.Stain spill(ServerLevel level, Vec3 at, Direction face, boolean diesel, float size) {
+        return wetOne(level, at, face, diesel, size);
     }
 
     /** How far the stain's surface reaches round it, in its face plane (FuelStainIndex.axisU / axisV). */
@@ -158,6 +167,147 @@ public final class FuelSpills extends SavedData {
         return stain;
     }
 
+    // ---- fire (docs/gameplay/fuel_fire_v1.md) ----
+
+    /** Flame sources that set fuel alight: fire, a lit campfire, a torch, lava (the stain's cell and the six round it). */
+    static boolean flameAt(ServerLevel level, BlockPos p) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(p);
+        if (state.is(net.minecraft.tags.BlockTags.FIRE)) return true;
+        if (state.is(net.minecraft.tags.BlockTags.CAMPFIRES) && state.hasProperty(net.minecraft.world.level.block.CampfireBlock.LIT)
+                && state.getValue(net.minecraft.world.level.block.CampfireBlock.LIT)) return true;
+        if (state.is(net.minecraft.world.level.block.Blocks.TORCH) || state.is(net.minecraft.world.level.block.Blocks.WALL_TORCH)
+                || state.is(net.minecraft.world.level.block.Blocks.SOUL_TORCH) || state.is(net.minecraft.world.level.block.Blocks.SOUL_WALL_TORCH)) return true;
+        return level.getFluidState(p).is(net.minecraft.tags.FluidTags.LAVA);
+    }
+
+    private static boolean flameNear(ServerLevel level, FuelStainIndex.Stain stain) {
+        BlockPos cell = BlockPos.of(stain.cell());
+        if (!level.isLoaded(cell) || flameAt(level, cell)) return level.isLoaded(cell);
+        for (Direction d : Direction.values()) if (flameAt(level, cell.relative(d))) return true;
+        return false;
+    }
+
+    /**
+     * A flame on this stain for {@code ticks}: gasoline catches at once; diesel only once it has had DIESEL_HEAT ticks of
+     * flame (it gives off too little vapour at ordinary temperatures). A spark is a flame of 0 ticks: gasoline only.
+     */
+    public void expose(ServerLevel level, FuelStainIndex.Stain stain, int ticks) {
+        if (stain.burning()) return;
+        if (!stain.diesel) ignite(level, stain);
+        else if ((stain.heat += ticks) >= FuelStainIndex.DIESEL_HEAT) ignite(level, stain);
+    }
+
+    public void ignite(ServerLevel level, FuelStainIndex.Stain stain) {
+        if (stain.burning()) return;
+        long now = level.getGameTime();
+        stain.ignite = now;
+        stain.igniteAt = Long.MAX_VALUE;
+        BlockPos cell = BlockPos.of(stain.cell());
+        if (level.getBlockState(cell).isAir()) {
+            level.setBlock(cell, net.minecraft.world.level.block.Blocks.LIGHT.defaultBlockState()
+                    .setValue(net.minecraft.world.level.block.LightBlock.LEVEL, stain.diesel ? 12 : 14), Block.UPDATE_ALL);
+            lights.add(cell.asLong());
+        }
+        if (stain.size >= 0.2F || level.random.nextFloat() < 0.25F) {
+            level.playSound(null, stain.pos.x, stain.pos.y, stain.pos.z, net.minecraft.sounds.SoundEvents.FIRECHARGE_USE,
+                    net.minecraft.sounds.SoundSource.BLOCKS, stain.diesel ? 0.35F : 0.6F, stain.diesel ? 0.8F : 1.1F);
+        }
+        sync(level, stain, now);
+        setDirty();
+    }
+
+    private void sync(ServerLevel level, FuelStainIndex.Stain stain, long now) {
+        stain.syncedSize = stain.size;
+        stain.syncedWet = now;
+        AflNetwork.sendFuelStains(level, new ChunkPos(stain.chunk()), List.of(stain), List.of());
+    }
+
+    /** The light a fire set in this cell goes when nothing burns there any more. */
+    private void releaseLight(ServerLevel level, long cell) {
+        if (!lights.contains(cell)) return;
+        for (FuelStainIndex.Stain s : index.inCell(cell)) if (s.burning()) return;
+        lights.remove(cell);
+        BlockPos p = BlockPos.of(cell);
+        if (level.isLoaded(p) && level.getBlockState(p).is(net.minecraft.world.level.block.Blocks.LIGHT)) level.setBlock(p, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    }
+
+    /**
+     * Every other tick: pending ignitions come due; every fourth tick unburnt stains are checked for flame sources round
+     * them; burning stains burn their fuel down (gone below BURNT_OUT), reach their neighbours (gasoline after the time the
+     * fire takes to run the distance, diesel after enough heat) and now and then set flammable blocks next to them alight
+     * (vanilla fire, when fire spreads in this world: doFireTick).
+     */
+    private void fireTick(ServerLevel level) {
+        long now = level.getGameTime();
+        boolean sources = now % 4 == 0, blocks = now % 10 == 0 && level.getGameRules().getBoolean(net.minecraft.world.level.GameRules.RULE_DOFIRETICK);
+        List<FuelStainIndex.Stain> catching = new ArrayList<>(), burnt = new ArrayList<>(), burning = new ArrayList<>();
+        for (FuelStainIndex.Stain s : index.all()) {
+            if (s.burning()) burning.add(s);
+            else if (s.igniteAt <= now) catching.add(s);
+            else if (sources && flameNear(level, s)) {
+                if (!s.diesel || (s.heat += 4) >= FuelStainIndex.DIESEL_HEAT) catching.add(s);
+            }
+        }
+        for (FuelStainIndex.Stain s : burning) {
+            s.size -= s.burnRate() * 2;
+            if (s.size < FuelStainIndex.BURNT_OUT) {
+                burnt.add(s);
+                continue;
+            }
+            for (FuelStainIndex.Stain o : index.around(s)) {
+                if (o.burning()) continue;
+                double d = s.pos.distanceTo(o.pos);
+                if (d > s.size / 2 + o.size / 2 + FuelStainIndex.FIRE_GAP) continue;
+                if (o.diesel) {
+                    if ((o.heat += 2) >= FuelStainIndex.DIESEL_HEAT) catching.add(o);
+                } else o.igniteAt = Math.min(o.igniteAt, now + 1 + (long) (d / FuelStainIndex.GASOLINE_SPREAD));
+            }
+            if (blocks && level.random.nextFloat() < 0.25F) igniteFlammable(level, s);
+            if (s.syncedSize - s.size >= 0.04F) sync(level, s, now);
+        }
+        for (FuelStainIndex.Stain s : catching) ignite(level, s);
+        if (!burnt.isEmpty()) {
+            Map<Long, List<Long>> removed = new HashMap<>();
+            for (FuelStainIndex.Stain s : burnt) {
+                index.remove(s.id);
+                removed.computeIfAbsent(s.chunk(), k -> new ArrayList<>()).add(s.id);
+            }
+            for (FuelStainIndex.Stain s : burnt) releaseLight(level, s.cell());
+            removed.forEach((chunk, ids) -> AflNetwork.sendFuelStains(level, new ChunkPos(chunk), List.of(), ids));
+        }
+        if (!burning.isEmpty() || !catching.isEmpty()) setDirty();
+    }
+
+    /** A flammable block next to a burning stain catches: vanilla fire in the stain's cell (where it can stand). */
+    private void igniteFlammable(ServerLevel level, FuelStainIndex.Stain stain) {
+        BlockPos cell = BlockPos.of(stain.cell());
+        net.minecraft.world.level.block.state.BlockState here = level.getBlockState(cell);
+        if (!here.isAir() && !here.is(net.minecraft.world.level.block.Blocks.LIGHT)) return;
+        for (Direction d : Direction.values()) {
+            BlockPos p = cell.relative(d);
+            if (!level.getBlockState(p).isFlammable(level, p, d.getOpposite())) continue;
+            net.minecraft.world.level.block.state.BlockState fire = net.minecraft.world.level.block.BaseFireBlock.getState(level, cell);
+            if (fire.canSurvive(level, cell)) {
+                level.setBlock(cell, fire, Block.UPDATE_ALL);
+                lights.remove(cell.asLong());   // the fire's own light took its place
+            }
+            return;
+        }
+    }
+
+    @SubscribeEvent
+    public static void onExplosion(net.minecraftforge.event.level.ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        FuelSpills spills = get(level);
+        if (spills.index.isEmpty()) return;
+        Vec3 centre = event.getExplosion().getPosition();
+        ChunkPos at = new ChunkPos(BlockPos.containing(centre));
+        List<FuelStainIndex.Stain> near = new ArrayList<>();
+        for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++)
+            for (FuelStainIndex.Stain s : spills.index.inChunk(ChunkPos.asLong(at.x + dx, at.z + dz))) if (s.pos.distanceToSqr(centre) < 25) near.add(s);
+        for (FuelStainIndex.Stain s : near) spills.expose(level, s, 80);   // a blast is a big flame: diesel too
+    }
+
     private void tick(ServerLevel level) {
         if (index.isEmpty()) return;
         Map<Long, List<Long>> removed = new HashMap<>();
@@ -171,7 +321,10 @@ public final class FuelSpills extends SavedData {
 
     @SubscribeEvent
     public static void onLevelTick(TickEvent.LevelTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && event.level instanceof ServerLevel level && level.getGameTime() % 20 == 0) get(level).tick(level);
+        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel level)) return;
+        FuelSpills spills = get(level);
+        if (level.getGameTime() % 20 == 0) spills.tick(level);
+        if (level.getGameTime() % 2 == 0 && !spills.index.isEmpty()) spills.fireTick(level);
     }
 
     /** A player starting to see a chunk gets its stains. */
@@ -187,8 +340,17 @@ public final class FuelSpills extends SavedData {
         LivingEntity entity = event.getEntity();
         if (!(entity.level() instanceof ServerLevel level) || entity.tickCount % 5 != 0 || entity.isSpectator()) return;
         if (entity instanceof ServerPlayer player && player.isSpectator()) return;
-        FuelStainIndex.Stain stain = get(level).index.under(entity);
+        FuelSpills spills = get(level);
+        boolean soaked = entity.hasEffect(AflMobEffects.GASOLINE_SOAKED.get()) || entity.hasEffect(AflMobEffects.DIESEL_SOAKED.get());
+        // fire: a burning stain sets things alight (soaked ones longer); soaked and burning hurts twice as much
+        if (spills.index.burningNear(entity.getBoundingBox()) != null) entity.setSecondsOnFire(soaked ? 10 : 5);
+        if (soaked && entity.isOnFire()) {
+            entity.setRemainingFireTicks(Math.max(entity.getRemainingFireTicks(), 100));
+            if (entity.tickCount % 20 == 0) entity.hurt(level.damageSources().onFire(), 1.0F);
+        }
+        FuelStainIndex.Stain stain = spills.index.under(entity);
         if (stain == null) return;
+        if (entity.isOnFire()) spills.expose(level, stain, 5);   // a burning thing walking into fuel
         entity.addEffect(new MobEffectInstance((stain.diesel ? AflMobEffects.DIESEL_SOAKED : AflMobEffects.GASOLINE_SOAKED).get(),
                 stain.diesel ? DIESEL_SOAK : GASOLINE_SOAK, 0, false, false, true));
     }
@@ -198,6 +360,7 @@ public final class FuelSpills extends SavedData {
     private static FuelSpills load(CompoundTag tag) {
         FuelSpills spills = new FuelSpills();
         spills.nextId = tag.getLong("NextId");
+        for (long cell : tag.getLongArray("Lights")) spills.lights.add(cell);
         ListTag list = tag.getList("Stains", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             CompoundTag s = list.getCompound(i);
@@ -206,6 +369,7 @@ public final class FuelSpills extends SavedData {
             stain.syncedSize = stain.size;
             stain.syncedWet = stain.wet;
             if (s.contains("Born")) stain.born = s.getLong("Born");
+            if (s.contains("Ignite")) stain.ignite = s.getLong("Ignite");
             if (s.contains("U0")) {
                 stain.u0 = s.getFloat("U0");
                 stain.u1 = s.getFloat("U1");
@@ -221,6 +385,7 @@ public final class FuelSpills extends SavedData {
     @Override
     public CompoundTag save(CompoundTag tag) {
         tag.putLong("NextId", nextId);
+        tag.putLongArray("Lights", lights.stream().mapToLong(Long::longValue).toArray());
         ListTag list = new ListTag();
         for (FuelStainIndex.Stain stain : index.all()) {
             CompoundTag s = new CompoundTag();
@@ -233,6 +398,7 @@ public final class FuelSpills extends SavedData {
             s.putFloat("Size", stain.size);
             s.putLong("Wet", stain.wet);
             s.putLong("Born", stain.born);
+            if (stain.burning()) s.putLong("Ignite", stain.ignite);
             s.putFloat("U0", stain.u0);
             s.putFloat("U1", stain.u1);
             s.putFloat("V0", stain.v0);

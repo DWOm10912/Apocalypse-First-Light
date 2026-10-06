@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/01 - 设计/方块/机器.md",
+                "file": "docs/项目内容/02 - 制作清单.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "机器"
+              "title": "02 - 制作清单"
             }
           }
         ]
@@ -190,6 +190,7 @@
   },
   "active": "7991be752347a25e",
   "lastOpenFiles": [
+    "docs/项目内容/01 - 设计/方块/机器.md",
     "run/saves/新的世界 (1)/level6508170006280645086.dat",
     "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_-1.xwmc.outdated",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
@@ -200,7 +201,6 @@
     "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_-1.xwmc",
     "run/saves/新的世界 (1)/level17719972361565631004.dat",
     "run/config/xaero/world-map/server_profiles/default.cfg.temp.backup0",
-    "run/config/xaero/world-map/common.cfg.temp.backup0",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/liquid_film_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/liquid_film.png",
     "src/main/resources/assets/apocalypse_firstlight/textures/block/liquid_film_s.png",
@@ -233,7 +233,6 @@
     "docs/gameplay/container_goods_v1.md",
     "docs/models/chest_freezer_v2.md",
     "docs/项目内容/01 - 设计/感染者/感染者基础规则.md",
-    "docs/项目内容/01 - 设计/方块/机器.md",
     "docs/项目内容/01 - 设计/辐射/辐射系统.md",
     "docs/models/charging_station_v1.md"
   ]

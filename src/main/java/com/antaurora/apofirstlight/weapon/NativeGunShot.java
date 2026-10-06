@@ -80,7 +80,11 @@ public final class NativeGunShot {
         var pos = block.getBlockPos();
         if (!level.hasChunkAt(pos) || broken >= MAX_PASS_THROUGH_BREAKABLE_BLOCKS
                 || BulletBlockInteraction.resolve(level.getBlockState(pos)) != BulletBlockInteraction.BREAK_AND_PASS
-                || !BulletBlockInteraction.breakGlass(shooter, pos)) return new Hit(null, point, false);
+                || !BulletBlockInteraction.breakGlass(shooter, pos)) {
+            // the bullet hole and dust; fuel containers: a hole that leaks; steel: sometimes a spark
+            BulletImpacts.onBlock(shooter, block);
+            return new Hit(null, point, false);
+        }
         broken++;
         // Fixed endpoint preserves original range including the epsilon step.
         double remaining = point.distanceTo(end);

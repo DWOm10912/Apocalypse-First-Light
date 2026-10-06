@@ -40,6 +40,15 @@ public final class FuelStainIndex {
     /** How fast fuel runs down a wall (blocks a tick: gasoline 0.6, diesel 0.15 a second), and how long it keeps flowing (dripping) after a wetting. */
     public static final float GASOLINE_RUN_SPEED = 0.03F, DIESEL_RUN_SPEED = 0.0075F;
     public static final int GASOLINE_FLOW_TICKS = 60, DIESEL_FLOW_TICKS = 160;
+    /**
+     * Fire (docs/gameplay/fuel_fire_v1.md, 2026-10-05): stain size burnt a tick (gasoline burns hot and fast, diesel low
+     * and long); below BURNT_OUT a burning stain is gone. Fire runs across gasoline at GASOLINE_SPREAD blocks a tick and
+     * jumps gaps up to FIRE_GAP between stains; diesel only catches after DIESEL_HEAT ticks of flame on it.
+     */
+    public static final float GASOLINE_BURN = 0.0025F, DIESEL_BURN = 0.0009F, BURNT_OUT = 0.04F, GASOLINE_SPREAD = 0.075F;
+    public static final double FIRE_GAP = 0.35;
+    public static final int DIESEL_HEAT = 60;
+
     /** Surface extents before they are probed (old saves): unbounded enough. */
     public static final float UNPROBED = 2.0F;
     private static final int MAX = 4096;
@@ -58,6 +67,11 @@ public final class FuelStainIndex {
         public long born;
         /** How far the surface reaches from the hit along axisU (u0 .. u1) and axisV (v0 .. v1), blocks. */
         public float u0 = -UNPROBED, u1 = UNPROBED, v0 = -UNPROBED, v1 = UNPROBED;
+        /** The tick it caught fire, or -1 (not burning). Synced. */
+        public long ignite = -1;
+        /** Server: when the fire of a burning neighbour reaches it (Long.MAX_VALUE: none); diesel's flame exposure so far. */
+        long igniteAt = Long.MAX_VALUE;
+        int heat;
         /** Server: what the clients last heard (sync throttling). */
         float syncedSize;
         long syncedWet;
@@ -70,6 +84,14 @@ public final class FuelStainIndex {
             this.size = size;
             this.wet = wet;
             this.born = wet;
+        }
+
+        public boolean burning() {
+            return ignite >= 0;
+        }
+
+        public float burnRate() {
+            return diesel ? DIESEL_BURN : GASOLINE_BURN;
         }
 
         public boolean wall() {
@@ -224,7 +246,7 @@ public final class FuelStainIndex {
     /** Removes stains dry for longer than their life; each removed one goes to {@code removed}. */
     public void expire(long now, Consumer<Stain> removed) {
         List<Stain> dry = new ArrayList<>();
-        for (Stain s : byId.values()) if (now - s.wet > s.life()) dry.add(s);
+        for (Stain s : byId.values()) if (!s.burning() && now - s.wet > s.life()) dry.add(s);   // a fire burns its stain out instead
         for (Stain s : dry) {
             remove(s.id);
             removed.accept(s);
@@ -240,6 +262,41 @@ public final class FuelStainIndex {
             remove(oldest.id);
             removed.accept(oldest);
         }
+    }
+
+    /** A burning stain within reach of this box (its blob, a little beyond), or null: what sets a thing alight. */
+    @Nullable
+    public Stain burningNear(net.minecraft.world.phys.AABB box) {
+        if (byId.isEmpty()) return null;
+        net.minecraft.world.phys.AABB reach = box.inflate(0.35);
+        for (int x = (int) Math.floor(reach.minX); x <= (int) Math.floor(reach.maxX); x++)
+            for (int y = (int) Math.floor(reach.minY); y <= (int) Math.floor(reach.maxY); y++)
+                for (int z = (int) Math.floor(reach.minZ); z <= (int) Math.floor(reach.maxZ); z++) {
+                    for (Stain s : byCell.getOrDefault(BlockPos.asLong(x, y, z), List.of())) {
+                        if (s.burning() && reach.inflate(s.size / 2).contains(s.pos)) return s;
+                    }
+                }
+        return null;
+    }
+
+    /** The stains whose blob comes within {@code r} of {@code p}: what a spark there reaches. */
+    public List<Stain> within(Vec3 p, double r) {
+        List<Stain> out = new ArrayList<>();
+        if (byId.isEmpty()) return out;
+        for (int x = (int) Math.floor(p.x - r - 0.5); x <= (int) Math.floor(p.x + r + 0.5); x++)
+            for (int y = (int) Math.floor(p.y - r - 0.5); y <= (int) Math.floor(p.y + r + 0.5); y++)
+                for (int z = (int) Math.floor(p.z - r - 0.5); z <= (int) Math.floor(p.z + r + 0.5); z++)
+                    for (Stain s : byCell.getOrDefault(BlockPos.asLong(x, y, z), List.of())) if (s.pos.distanceTo(p) <= r + s.size / 2) out.add(s);
+        return out;
+    }
+
+    /** The stains in the cells round this one (3 x 3 x 3): neighbours a fire can reach. */
+    public List<Stain> around(Stain stain) {
+        List<Stain> out = new ArrayList<>();
+        BlockPos cell = BlockPos.of(stain.cell());
+        for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+            for (Stain s : byCell.getOrDefault(cell.offset(dx, dy, dz).asLong(), List.of())) if (s != stain) out.add(s);
+        return out;
     }
 
     /**

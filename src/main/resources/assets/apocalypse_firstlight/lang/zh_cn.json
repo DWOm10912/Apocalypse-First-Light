@@ -417,6 +417,8 @@
   "jade.apocalypse_firstlight.fuel_dispenser.diesel": "柴油管线：%s / %s mB",
   "jade.apocalypse_firstlight.fuel_dispenser_sump.connected": "已连接加油机",
   "jade.apocalypse_firstlight.fuel_dispenser_sump.none": "上方没有加油机",
+  "jade.apocalypse_firstlight.fuel_hazard.holes": "弹孔：%s 个（%s 个在漏油）",
+  "jade.apocalypse_firstlight.fuel_hazard.burning": "着火了！",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "主手为空。",
   "command.apocalypse_firstlight.contamination.get": "物品：%1$s | 污染等级：%2$s（%3$s）",
@@ -444,6 +446,7 @@
   "config.jade.plugin_apocalypse_firstlight.submersible_fuel_pump": "AFL 潜油泵",
   "config.jade.plugin_apocalypse_firstlight.fuel_dispenser": "AFL 加油机",
   "config.jade.plugin_apocalypse_firstlight.fuel_dispenser_sump": "AFL 加油机底槽",
+  "config.jade.plugin_apocalypse_firstlight.fuel_hazard": "AFL 油容器弹孔与着火",
 
   "hud.apocalypse_firstlight.geiger.rate": "当前辐射",
   "hud.apocalypse_firstlight.geiger.ambient": "当前环境辐射",

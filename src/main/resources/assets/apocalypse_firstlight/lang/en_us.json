@@ -417,6 +417,8 @@
   "jade.apocalypse_firstlight.fuel_dispenser.diesel": "Diesel line: %s / %s mB",
   "jade.apocalypse_firstlight.fuel_dispenser_sump.connected": "Dispenser connected",
   "jade.apocalypse_firstlight.fuel_dispenser_sump.none": "No dispenser above",
+  "jade.apocalypse_firstlight.fuel_hazard.holes": "Bullet holes: %s (%s leaking)",
+  "jade.apocalypse_firstlight.fuel_hazard.burning": "On fire!",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "The main hand is empty.",
   "command.apocalypse_firstlight.contamination.get": "Item: %1$s | Contamination Level: %2$s (%3$s)",
@@ -444,6 +446,7 @@
   "config.jade.plugin_apocalypse_firstlight.submersible_fuel_pump": "AFL Submersible Fuel Pump",
   "config.jade.plugin_apocalypse_firstlight.fuel_dispenser": "AFL Fuel Dispenser",
   "config.jade.plugin_apocalypse_firstlight.fuel_dispenser_sump": "AFL Dispenser Sump",
+  "config.jade.plugin_apocalypse_firstlight.fuel_hazard": "AFL Fuel Container Holes and Fire",
 
   "hud.apocalypse_firstlight.geiger.rate": "Radiation",
   "hud.apocalypse_firstlight.geiger.ambient": "Ambient Radiation",

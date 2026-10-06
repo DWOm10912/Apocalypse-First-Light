@@ -72,6 +72,7 @@ public final class ClientFuelStains {
         if (now % FuelPuddleMesher.FADE_REBUILD == 0) FuelPuddleMesher.refreshDrying(now);
         var player = Minecraft.getInstance().player;
         if (player == null || Minecraft.getInstance().isPaused()) return;
+        FuelFlames.tick(level, player.position(), now);
         for (FuelStainIndex.Stain stain : FuelStainIndex.CLIENT.all()) {   // drips off wall edges and ceilings
             if (stain.floor() || !stain.flowing(now) || stain.pos.distanceToSqr(player.position()) > DRIP_RANGE * DRIP_RANGE) continue;
             float left = 1.0F - (float) (now - stain.wet) / stain.flowTicks();   // most just after a wetting
@@ -89,7 +90,8 @@ public final class ClientFuelStains {
 
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES || FuelStainIndex.CLIENT.isEmpty()) return;
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES
+                || FuelStainIndex.CLIENT.isEmpty() && ClientFuelLeaks.isEmpty() && BulletHoles.isEmpty()) return;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) return;
@@ -98,6 +100,8 @@ public final class ClientFuelStains {
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         int gasoline = tint(AflFluids.GASOLINE.get()), diesel = tint(AflFluids.DIESEL.get());
         double now = level.getGameTime() + event.getPartialTick();
+        BulletHoles.render(pose, buffers, level, camera, now);   // first: fuel running down a holed wall lies over the holes
+        buffers.endBatch(LiquidRenderTypes.HOLE);
         // floors: pools (one field per cell, no overlaps); walls, ceilings and floors without a full top: decals, oldest first
         FuelPuddleMesher.rebuild(level, now);
         FuelPuddleMesher.render(pose, buffers, level, camera, RANGE, now, gasoline, diesel, ALPHA);
@@ -116,6 +120,11 @@ public final class ClientFuelStains {
                     stain.diesel ? diesel : gasoline, Math.round(ALPHA * fade));
         }
         buffers.endBatch(LiquidRenderTypes.DECAL);
+        ClientFuelLeaks.renderStreams(pose, buffers, level, camera, event.getPartialTick());   // fuel leaking out of bullet holes
+        buffers.endBatch(net.minecraft.client.renderer.RenderType.entityTranslucent(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS));
+        FuelFlames.render(pose, buffers, camera, now);   // last: they add light onto everything behind them
+        ClientFuelLeaks.renderFlames(buffers.getBuffer(LiquidRenderTypes.FLAME), pose, camera, now);
+        buffers.endBatch(LiquidRenderTypes.FLAME);
     }
 
     /**

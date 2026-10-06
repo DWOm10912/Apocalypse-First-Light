@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -58,6 +59,10 @@ public final class AflNetwork {
                 FluidPipeVisualS2CPacket::handle);
         channel.registerMessage(nextId++, FuelStainS2CPacket.class,
                 FuelStainS2CPacket::encode, FuelStainS2CPacket::decode, FuelStainS2CPacket::handle);
+        channel.registerMessage(nextId++, FuelLeakS2CPacket.class,
+                FuelLeakS2CPacket::encode, FuelLeakS2CPacket::decode, FuelLeakS2CPacket::handle);
+        channel.registerMessage(nextId++, BulletImpactS2CPacket.class,
+                BulletImpactS2CPacket::encode, BulletImpactS2CPacket::decode, BulletImpactS2CPacket::handle);
         channel.registerMessage(nextId++, FuelSprayHitsC2SPacket.class,
                 FuelSprayHitsC2SPacket::encode, FuelSprayHitsC2SPacket::decode, FuelSprayHitsC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
@@ -547,6 +552,26 @@ public final class AflNetwork {
         channel.send(PacketDistributor.DIMENSION.with(level::dimension), FuelStainS2CPacket.of(List.of(), removed));
     }
 
+    /** A bullet struck a block (weapon/BulletImpacts): to the players watching it, for the hole decal and the dust. */
+    public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed) {
+        if (channel == null) return;
+        ChunkPos chunk = new ChunkPos(block);
+        if (!level.getChunkSource().hasChunk(chunk.x, chunk.z)) return;
+        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new BulletImpactS2CPacket(at, face, block, holed));
+    }
+
+    /** Bullet holes in fuel containers changed or gone (fluid/FuelLeaks): to everyone in the level (there are few). */
+    public static void sendFuelLeaks(ServerLevel level, Collection<com.antaurora.apofirstlight.fluid.FuelLeaks.Hole> upserts, Collection<Long> removed) {
+        if (channel == null) return;
+        channel.send(PacketDistributor.DIMENSION.with(level::dimension), FuelLeakS2CPacket.of(upserts, removed, false));
+    }
+
+    /** All of a level's holes to a player who arrives in it (replacing what the client had). */
+    public static void sendFuelLeaksTo(ServerPlayer player, Collection<com.antaurora.apofirstlight.fluid.FuelLeaks.Hole> holes) {
+        if (channel == null) return;
+        channel.sendTo(FuelLeakS2CPacket.of(holes, List.of(), true), player.connection.connection, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+    }
+
     /** A chunk's fuel stains to a player who starts tracking it. */
     public static void sendFuelStainsTo(ServerPlayer player, Collection<com.antaurora.apofirstlight.fluid.FuelStainIndex.Stain> stains) {
         if (channel == null) return;
@@ -805,6 +830,7 @@ public final class AflNetwork {
                 buffer.writeFloat(s.u1);
                 buffer.writeFloat(s.v0);
                 buffer.writeFloat(s.v1);
+                buffer.writeLong(s.ignite);
             }
             buffer.writeLongArray(packet.removed);
         }
@@ -821,6 +847,7 @@ public final class AflNetwork {
                 stain.u1 = buffer.readFloat();
                 stain.v0 = buffer.readFloat();
                 stain.v1 = buffer.readFloat();
+                stain.ignite = buffer.readLong();
                 upserts.add(stain);
             }
             return new FuelStainS2CPacket(upserts, buffer.readLongArray());
@@ -830,6 +857,77 @@ public final class AflNetwork {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientFuelStains.apply(packet.upserts, packet.removed)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    /** Where a bullet struck a block; {@code holed}: it made (or hit) a fuel container's hole, drawn from the leak. */
+    public record BulletImpactS2CPacket(Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed) {
+        public static void encode(BulletImpactS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeDouble(packet.at.x);
+            buffer.writeDouble(packet.at.y);
+            buffer.writeDouble(packet.at.z);
+            buffer.writeByte(packet.face.get3DDataValue());
+            buffer.writeBlockPos(packet.block);
+            buffer.writeBoolean(packet.holed);
+        }
+
+        public static BulletImpactS2CPacket decode(FriendlyByteBuf buffer) {
+            return new BulletImpactS2CPacket(new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()),
+                    net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), buffer.readBlockPos(), buffer.readBoolean());
+        }
+
+        public static void handle(BulletImpactS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.BulletHoles.impact(packet.at, packet.face, packet.block, packet.holed)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    /** Bullet holes in fuel containers: where, which way, leaking how fast, burning. {@code reset}: the whole level's list. */
+    public record FuelLeakS2CPacket(List<Leak> upserts, long[] removed, boolean reset) {
+        public record Leak(long id, Vec3 at, net.minecraft.core.Direction face, boolean diesel, boolean flowing, boolean burning, float speed) {}
+
+        static FuelLeakS2CPacket of(Collection<com.antaurora.apofirstlight.fluid.FuelLeaks.Hole> holes, Collection<Long> removed, boolean reset) {
+            List<Leak> leaks = new ArrayList<>(holes.size());
+            for (com.antaurora.apofirstlight.fluid.FuelLeaks.Hole h : holes) leaks.add(new Leak(h.id, h.at, h.face, h.diesel, h.flowing, h.burning, h.speed));
+            return new FuelLeakS2CPacket(leaks, removed.stream().mapToLong(Long::longValue).toArray(), reset);
+        }
+
+        public static void encode(FuelLeakS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeBoolean(packet.reset);
+            buffer.writeVarInt(packet.upserts.size());
+            for (Leak l : packet.upserts) {
+                buffer.writeVarLong(l.id);
+                buffer.writeDouble(l.at.x);
+                buffer.writeDouble(l.at.y);
+                buffer.writeDouble(l.at.z);
+                buffer.writeByte(l.face.get3DDataValue());
+                buffer.writeByte((l.diesel ? 1 : 0) | (l.flowing ? 2 : 0) | (l.burning ? 4 : 0));
+                buffer.writeFloat(l.speed);
+            }
+            buffer.writeLongArray(packet.removed);
+        }
+
+        public static FuelLeakS2CPacket decode(FriendlyByteBuf buffer) {
+            boolean reset = buffer.readBoolean();
+            int size = buffer.readVarInt();
+            List<Leak> leaks = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                long id = buffer.readVarLong();
+                Vec3 at = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+                net.minecraft.core.Direction face = net.minecraft.core.Direction.from3DDataValue(buffer.readByte());
+                int flags = buffer.readByte();
+                leaks.add(new Leak(id, at, face, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, buffer.readFloat()));
+            }
+            return new FuelLeakS2CPacket(leaks, buffer.readLongArray(), reset);
+        }
+
+        public static void handle(FuelLeakS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.ClientFuelLeaks.apply(packet.upserts, packet.removed, packet.reset)));
             context.setPacketHandled(true);
         }
     }

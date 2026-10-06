@@ -110,6 +110,11 @@ public final class FluidTankBlockEntity extends BlockEntity {
         return master().localTank.getCapacity();
     }
 
+    /** Fuel leaking out of a bullet hole or gone up in a burst (fluid/FuelLeaks): taken from the shared tank. */
+    public int drainShared(int mb) {
+        return master().localTank.drain(mb, IFluidHandler.FluidAction.EXECUTE).getAmount();
+    }
+
     public boolean hasBottomPort() {
         return !getBlockState().getValue(FluidTankBlock.JOINED.get(Direction.DOWN));
     }

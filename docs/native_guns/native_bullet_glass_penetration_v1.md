@@ -12,6 +12,7 @@
 - 无玻璃额外减伤、射程损耗、散布、偏折或后坐力变更；原距离伤害衰减与爆头逻辑保留。服务器实际扣弹、伤害、shotId 和网络包不变。
 - 既有射击同步收到最终 `Hit.point`，连续 tracer 从客户端冻结枪口指向最终停止点，不截在已击碎的玻璃处。未新增 projectile entity。
 - 木头、金属、实体穿透、跳弹和材料能量模型均未实现；后续仅扩展块交互策略，不把 V2 描述为当前功能。
+- 弹孔和燃油（2026-10-05）：子弹停在方块上时，`trace` 调用 `weapon/BulletImpacts.onBlock`：所有方块留下弹孔、崩出碎屑（见 [native_bullet_holes_v1.md](native_bullet_holes_v1.md)）；再由 `fluid/FuelLeaks.bullet` 处理燃油：打中装油的容器留下会漏油的弹孔，打在钢面上偶尔溅出火花点着汽油。只在最终停下的那一格上判断，击碎的玻璃不算。见 [fuel_fire_v1.md](../gameplay/fuel_fire_v1.md) 第二阶段。未实机验证，没有对应的 GameTest。
 
 ## 验证
 
