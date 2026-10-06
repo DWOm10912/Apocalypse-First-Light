@@ -11,12 +11,22 @@ public final class AflMeshPart {
     private final int[] faceOffsets;
     private final int quadCount, triangleCount;
     private final Bounds bounds;
+    /**
+     * A closed, outward-facing solid (every edge, welded by position, has its opposite; positive volume): its back faces
+     * can never be seen, so a perspective pass may skip them (AflMeshRenderer#cullBackFaces).
+     */
+    private final boolean closed;
 
     AflMeshPart(String name, float[] corners, int[] faceOffsets, Bounds bounds) {
-        this(name, corners, faceOffsets, bounds, Layer.CUTOUT);
+        this(name, corners, faceOffsets, bounds, Layer.CUTOUT, false);
     }
 
     AflMeshPart(String name, float[] corners, int[] faceOffsets, Bounds bounds, Layer layer) {
+        this(name, corners, faceOffsets, bounds, layer, false);
+    }
+
+    AflMeshPart(String name, float[] corners, int[] faceOffsets, Bounds bounds, Layer layer, boolean closed) {
+        this.closed = closed;
         this.layer = layer;
         this.name = name;
         this.corners = corners.clone();
@@ -40,4 +50,5 @@ public final class AflMeshPart {
     public int triangleCount() { return triangleCount; }
     public int triangleEquivalent() { return triangleCount + 2 * quadCount; }
     public Bounds bounds() { return bounds; }
+    public boolean closed() { return closed; }
 }

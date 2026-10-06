@@ -9,6 +9,21 @@ import java.util.List;
 
 /** CPU backend: consumes the current traversal pose and existing QUADS buffer, never changes render state. */
 public final class AflMeshRenderer {
+    /**
+     * Skip the back faces of closed parts (2026-10-05): set by a caller whose pose is a perspective view with the eye at
+     * the origin (the first-person hand), never in a shadow or GUI pass. A face is back-facing when its normal points away
+     * from the eye (n . p >= 0 for a corner p); a closed part's back faces are always hidden behind its front ones. Opaque
+     * (CUTOUT) parts only: through glass the far side shows.
+     */
+    private static boolean cullBack;
+
+    /** Turns the back face skip on or off; returns the previous setting (restore it after). */
+    public static boolean cullBackFaces(boolean on) {
+        boolean previous = cullBack;
+        cullBack = on;
+        return previous;
+    }
+
     /** Optional per-invocation counters for the gated render probe. Null leaves the normal path untouched. */
     public static final class Metrics {
         public int parts, triangles, vertices, quadFaces, triangleFaces;
@@ -72,13 +87,18 @@ public final class AflMeshRenderer {
         }
         for (int p = 0; p < parts.size(); p++) {
             var part = parts.get(p);
-            boolean submittedPart = false;
+            boolean submittedPart = false, cull = cullBack && part.closed() && part.layer() == AflMeshPart.Layer.CUTOUT;
             for (int face = 0; face < part.faceCount(); face++) {
             int start = part.faceStart(face), size = part.faceSize(face);
             float nx = part.value(start, 5), ny = part.value(start, 6), nz = part.value(start, 7);
             float x = n00*nx + n10*ny + n20*nz;
             float y = n01*nx + n11*ny + n21*nz;
             float z = n02*nx + n12*ny + n22*nz;
+            if (cull) {   // facing away from the eye at the origin: hidden behind the part's front faces
+                float cx = part.value(start, 0), cy = part.value(start, 1), cz = part.value(start, 2);
+                float qx = m00*cx+m10*cy+m20*cz+m30, qy = m01*cx+m11*cy+m21*cz+m31, qz = m02*cx+m12*cy+m22*cz+m32;
+                if (x*qx + y*qy + z*qz >= 0) continue;
+            }
             float length = (float)Math.sqrt(x*x + y*y + z*z);
             if (!Float.isFinite(length) || length < 1e-12f) {
                 if (metrics != null) metrics.invalidNormalTriangles += size - 2;

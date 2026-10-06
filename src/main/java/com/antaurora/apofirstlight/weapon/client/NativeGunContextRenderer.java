@@ -35,6 +35,10 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         boolean previousSkip = skipMeshShadow;
         mesh = AflMeshCache.snapshot().get(getGeoModel().getModelResource(item));
         skipMeshShadow = mesh != null && NativeGunShadowSkip.shouldSkip(currentItemStack, renderPerspective, item);
+        // first person: the eye sits at the pose origin, so the closed parts' back faces (and those of the rounds and
+        // attachments drawn in this traversal) can be skipped on the CPU (docs/native_guns/hybrid_mesh_runtime_v1.md)
+        boolean firstPerson = renderPerspective == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || renderPerspective == ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
+        boolean previousCull = com.antaurora.apofirstlight.client.mesh.AflMeshRenderer.cullBackFaces(firstPerson && !AflShaderCompat.activeShadowPass());
         try {
             boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
@@ -52,6 +56,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         } finally {
             mesh = previousMesh;
             skipMeshShadow = previousSkip;
+            com.antaurora.apofirstlight.client.mesh.AflMeshRenderer.cullBackFaces(previousCull);
         }
     }
 

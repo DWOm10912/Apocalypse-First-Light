@@ -18,7 +18,7 @@
 
 ## 已审查和复用的基础
 
-- `AflMeshLoader`：继续唯一负责 V1/V2 `.aflmesh.json` 解码、骨骼绑定校验、Quad/Triangle 检查、法线及不可变顶点数组。文件格式和容量上限不变。
+- `AflMeshLoader`：继续唯一负责 V1/V2 `.aflmesh.json` 解码、骨骼绑定校验、Quad/Triangle 检查、法线及不可变顶点数组。文件格式和容量上限不变。2026-10-05 起 loader 会把能安全合并的三角形对合成 Quad（见 [Hybrid Mesh Runtime](../native_guns/hybrid_mesh_runtime_v1.md#加载时三角面配对与第一人称背面跳过2026-10-05)），方块也走这一步。现有方块 sidecar 本来就是 Quad，基本不受影响（办公椅合并 53 次）。只给第一人称枪用的背面跳过不对方块开。
 - `AflMeshCache`：沿用一个 prepare/apply reload listener；先载 mesh，随后解析 `block_mesh_profiles/*.json`。没有新增另一套 reload listener。
 - `AflMeshModel` / `AflMeshPart`：继续按 bone / cutout / translucent 缓存 parts、corners、face offsets。只新增只读 `boneNames()`，用于校验 profile 不遗漏 mesh。
 - `AflMeshRenderer`：把原顶点循环抽成 `renderPartsAtCurrentPose`。旧 GeoBone API 仍先平移到 pivot 再调用同一循环；hidden/zero-scale、镜像法线、Quad/退化 Quad、UV、light/overlay、metrics 语义保留。

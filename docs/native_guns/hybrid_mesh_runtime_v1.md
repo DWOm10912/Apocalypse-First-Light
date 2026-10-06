@@ -4,6 +4,8 @@
 
 2026-09-27 新增 [Transparent Hybrid Mesh Runtime V1](transparent_hybrid_mesh_runtime_v1.md)：V1/V2 part 可选 `render_layer`，缺省 CUTOUT，透明层使用标准 `entityNoOutline`。Mixed attachment/static presentation 先提交 cutout，再提交透明 parts；shadow pass 跳过透明层。首个正式资产为 pistol_red_dot，保持源几何/UV/贴图 alpha 24 不变。Shader OFF 路径就绪；Oculus 默认透明 shader 的 0.1 alpha test 仍可能裁掉镜片，透明 PBR 尚未实机通过。原低层单 VertexConsumer API 仍默认 CUTOUT，不自动分配第二个 buffer；新 mixed 调用者应使用高层双层入口。见专文的排序与 GPU 验证限制。
 
+2026-10-05 起 loader 在加载时把能安全合并的三角形对合成 Quad，第一人称手持枪跳过封闭 part 的背面，减少 CPU 提交的顶点。sidecar 格式和导出器不变。已编译，未实测 FPS，详见下文 [加载时三角面配对与第一人称背面跳过](#加载时三角面配对与第一人称背面跳过2026-10-05)。
+
 2026-09-27。V2.1 工具链已实现保守的量化感知 Quad 恢复，存储格式仍为 V2。用户反馈此前 V2 实机通过；V2.1 的离线检查通过，新一轮图形/PBR/CPU 验收仍待用户执行。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
 
 ## 范围与 opt-in
@@ -176,10 +178,10 @@ node tools/export-afl-mesh.mjs --input src/main/blockbench/blackridge_50.bbmodel
 
 源码位于 `src/main/java/com/antaurora/apofirstlight/client/mesh/`：
 
-- `AflMeshLoader`：纯解析/验证，一次性展开 V1 triangles / V2 faces 的 corners，烘焙 flat normals 和 local AABB；Quad 仅存四个 corners。
+- `AflMeshLoader`：纯解析/验证，一次性展开 V1 triangles / V2 faces 的 corners，烘焙 flat normals 和 local AABB；Quad 仅存四个 corners。2026-10-05 起还会把能安全合并的三角形对合成 Quad，并标记封闭 part（见下文）。
 - `AflMeshModel` / `AflMeshPart`：不可变 CPU 数据，不保存 live GeoBone 或 instance pose。
 - `AflMeshCache`：client reload listener 的 prepare 阶段扫描 sidecar，并从同一 ResourceManager 读取对应 geometry 验证；apply 原子替换不可变 snapshot，递增 generation。无需依赖 Gecko cache 的 apply 顺序。坏 sidecar 单独记录错误并省略，其他资源继续；移除或损坏的 sidecar 不保留上代 Mesh。无 GPU 资源生命周期。
-- `AflMeshRenderer`：每帧只根据当前 pose 提交已烘焙 corners；不解析 JSON、不三角化、不生成逐 face 对象。使用原 texture、VertexConsumer、RenderType、color、packedLight、overlay；entity buffer 为 QUADS，native Quad 提交 `A,B,C,D`，Triangle 提交 `A,B,C,C`。未直接操作 OpenGL。
+- `AflMeshRenderer`：每帧只根据当前 pose 提交已烘焙 corners；不解析 JSON、不三角化、不生成逐 face 对象。使用原 texture、VertexConsumer、RenderType、color、packedLight、overlay；entity buffer 为 QUADS，native Quad 提交 `A,B,C,D`，Triangle 提交 `A,B,C,C`。未直接操作 OpenGL。2026-10-05 起调用者可打开背面跳过（`cullBackFaces`），目前只有第一人称手持枪打开。
 
 `NativeGunContextRenderer.renderCubesOfBone` 先沿用 Cube 绘制，再追加 Mesh；本地玩家第一人称相机的 Shader shadow pass 例外，详见下节。当前枪械由 `NativeAnimatedWeaponRenderer` 继承该薄适配；其递归入口的临时弹匣替换、subtree 省略、shell 显隐仍控制是否进入 hook。P9 的旧 `P901Renderer` 已在通用 Runtime 迁移时退役。Mesh 检查 own hidden；hidden child 遵循 Gecko 的原遍历。hook 也在 `reRender` 执行，避免使用会在 reRender 跳过的 layer callback。第三人称传入的是该路径真实的 frozen/static-idle bone 副本，未改变第三人称动画语义。没有 sidecar 时不提交 Mesh。
 
@@ -196,6 +198,59 @@ Shader 启用与 shadow pass 由共享 `AflShaderCompat` 通过 Oculus/Iris 公�
 `MaintenanceGunRendering` 仍使用自己的静态 bind-pose 副本。Mesh 同步参与 draw 和 bounds；替换弹匣的 Mesh 与 Cube 同样省略。每个 part 的缓存 AABB 八角用同一 bone/pivot 矩阵变换，得到保守包围盒；纵向居中使用 Cube+Mesh 合并范围。Mesh resource generation 变化时清理 bounds/纵向中心缓存，避免仅 sidecar 改变而沿用旧边界。附件仍不参与重心重算；原静态副本的 subtree 省略规则保留。
 
 **Anchor contract changed = NO**。right/left hand、muzzle、shell、sight、maintenance/attachment anchors 与 hotspot semantics 均未改；没有 triangle picking。CPU 数据、cache 与 backend 分离，未来可替换提交 backend；当前没有实现或承诺 VBO。
+
+### 加载时三角面配对与第一人称背面跳过（2026-10-05）
+
+**起因**：用户 2026-10-05 的录屏（Sundial 光影，加油站着火冒烟的场景）里，空手约 115–139 FPS，掏出 P9 后约 65–90 FPS，GPU 占用反而更低。据此判断瓶颈在 CPU 逐顶点提交：Oculus 的扩展顶点格式还要给每个 Quad 算 tangent 和 mid-UV。没有改 sidecar 格式、导出器、贴图或动画。
+
+**1. 加载时三角面配对**（`AflMeshLoader#pairTriangles`，对所有 AFL Mesh 生效）
+- 合并条件：
+  - 两个三角形共用一条边：同两个顶点索引，所以位置和 UV 相同；两边方向相反，绕序一致。
+  - 面法线点积 > 1 − 1e-6。
+  - UV 导数 dP/du、dP/dv 相差不超过自身长度的 1e-3，而且 handedness 相同（`sameUvFrame`）。
+  - UV seam 两边的顶点索引不同，永远不会合并。
+- 合成的 Quad 是 `(a,b,c,d)`，共用边 a–c 当对角线。QUADS 绘制按 (0,1,2)(2,3,0) 拆分，正好还原原来那两个三角形；镜像提交保持同一条对角线。每合并一次，提交的顶点从 8 个变成 4 个（省掉两个退化的第四角）。按 face 顺序贪心合并。
+- 光栅化的几何、UV、绕序都不变。Oculus 下有三处附加数据会变：
+  - 后一个三角形改用前一个的面法线，两者差 < 1e-6。
+  - Quad 的 tangent 由前三个角算出，后一个三角形沿用它。两者的 UV 导数差 ≤ 1e-3，而 tangent 本身按每轴 1 字节打包，精度远粗于 1e-3。
+  - mid-UV 改成整个面四个角的平均。
+- 和 V2.1 导出器的关系：
+  - 导出器要求差异能被量化误差解释（UV 导数相对误差 1e-5，严格等价），而且不跨源 face 合并，所以 P9 有 927 对 UV_UNSAFE、1296 对 NON_PLANAR 留成了三角形。
+  - 运行时用的是视觉容差。在已经量化过的数据上，1e-5 一对都过不了，因为量化噪声约 1e-4。1e-3 以内的差异在打包后的 tangent 里看不出来；共面容差 1e-6（约 0.08°）同样远小于字节法线的精度。
+  - 两个不同源 face 的三角形，只要共用顶点、共面、UV 走向一致，也可能被合并，画出来一样。
+  - 导出器、sidecar、`verify-afl-mesh-v21.mjs` 都不变。离线校验检查的是文件，不包括运行时配对。
+
+**2. 封闭体标记**（`AflMeshPart#closed`）
+
+加载时按精确位置焊接顶点，然后检查三件事：没有同向重复的边；每条边都有反向边；每个独立壳体的有向体积都 > 0（法线朝外）。有一个壳体是翻面的，整个 part 就不算封闭。
+
+**3. 第一人称背面跳过**（`AflMeshRenderer.cullBackFaces`）
+- 只有 `NativeGunContextRenderer` 在第一人称手持（左手或右手）、且不在 shadow pass 时打开，结束后恢复原值。第三人称、F5、GUI、维护台、掉落物、方块和 shadow pass 都不跳。
+- 只跳封闭的 CUTOUT 层 part。透明层（例如红点镜片）照常提交，因为透过玻璃要能看到背面。
+- 判断方法：face 的法线背向眼睛（眼睛在原点，n·p ≥ 0）就不提交。手持路径的视角晃动在 PoseStack 里，所以眼睛正好在原点。
+- 原来用的 `entityCutoutNoCull` 也会提交背面，只是被正面挡住。已检查 P9、Blackridge、BR51、HR55、Silverwood、弹匣和消音器的贴图，都没有透明像素，跳过背面不会从镂空处露出差别。红点贴图有半透明像素，但镜片在透明层，不跳。
+
+**离线估算（未实测）**
+
+下表是第一人称每帧提交的 vertices，按与 loader 相同逻辑的离线脚本算出：
+- 不含隐藏的换弹辅助骨骼；
+- 背面跳过按封闭 part 的 face 数一半估算，实际值随视角变化。
+
+| 枪 | 原来 | 配对后 | 再加第一人称背面跳过（估） |
+|---|---|---|---|
+| P9 | 23,360 | 17,392（−26%） | ≈12,300（−47%） |
+| Blackridge | 14,620 | 11,660（−20%） | ≈10,000（−32%） |
+| BR51 | 22,020 | 21,628（−2%） | ≈14,000（−36%） |
+| HR55 | 21,440 | 20,976（−2%） | ≈11,200（−48%） |
+| Silverwood | 18,992 | 17,608（−7%） | ≈8,800（−54%） |
+
+方块 Mesh 的情况：
+- 饮料柜、冰柜、售货机、收银台、货架商品库的 sidecar 本来就是 Quad，配对 0 次；办公椅 53 次（−2%）。
+- 背面跳过不对方块开：世界相机的视角晃动加在投影矩阵里，眼睛不严格在原点，贴边的角度会判错。
+
+验证方法：用 `-Dafl.debug.renderProfile=true`，对比 `vertices_per_frame`、`quad_faces_per_frame`、`triangle_faces_per_frame` 和 `cpu_ms_per_frame`。Probe 只统计 P9 和 Blackridge 的主枪。
+
+尚未完成的验证：没有实测 FPS；没有在实机 Sundial 下核对 normal map 和高光是否与之前一致。没有做 VBO 缓存，在 Oculus 扩展格式下风险较高。
 
 ## 离线 fixture 与已完成检查
 

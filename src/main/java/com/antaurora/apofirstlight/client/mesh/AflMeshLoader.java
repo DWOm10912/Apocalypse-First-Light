@@ -100,10 +100,8 @@ public final class AflMeshLoader {
                     offsets[f + 1] = offsets[f] + size;
                 }
                 require(totalTriangles <= MAX_TRIANGLES, "excessive triangle-equivalent count");
-                float[] baked = new float[offsets[faces.size()] * AflMeshPart.STRIDE];
-                double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
-                double maxX = -minX, maxY = -minX, maxZ = -minX;
-                int at = 0;
+                int[][] faceIds = new int[faces.size()][];
+                double[][] faceNormals = new double[faces.size()][];
                 for (int t = 0; t < faces.size(); t++) {
                     var indices = faces.get(t).getAsJsonArray();
                     int[] ids = new int[indices.size()];
@@ -118,6 +116,31 @@ public final class AflMeshLoader {
                     double length = Math.sqrt(nx * nx + ny * ny + nz * nz);
                     require(Double.isFinite(length) && length > 1e-10, "triangle[" + t + "] zero-area/degenerate triangle");
                     if (ids.length == 4) validateQuad(data, ids, nx / length, ny / length, nz / length, t);
+                    faceIds[t] = ids;
+                    faceNormals[t] = new double[]{nx / length, ny / length, nz / length};
+                }
+                boolean closed = closedSolid(data, faceIds);
+                // fewer submitted corners for the same picture (2026-10-05): coplanar triangle pairs as quads
+                pairTriangles(data, faceIds, faceNormals);
+                int kept = 0;
+                for (int[] ids : faceIds) if (ids != null) kept++;
+                offsets = new int[kept + 1];
+                int[][] outIds = new int[kept][];
+                double[][] outNormals = new double[kept][];
+                for (int t = 0, k = 0; t < faceIds.length; t++) {
+                    if (faceIds[t] == null) continue;
+                    outIds[k] = faceIds[t];
+                    outNormals[k] = faceNormals[t];
+                    offsets[k + 1] = offsets[k] + faceIds[t].length;
+                    k++;
+                }
+                float[] baked = new float[offsets[kept] * AflMeshPart.STRIDE];
+                double minX = Double.POSITIVE_INFINITY, minY = minX, minZ = minX;
+                double maxX = -minX, maxY = -minX, maxZ = -minX;
+                int at = 0;
+                for (int t = 0; t < kept; t++) {
+                    int[] ids = outIds[t];
+                    double nx = outNormals[t][0], ny = outNormals[t][1], nz = outNormals[t][2], length = 1.0;
                     for (int id : ids) {
                         var v = data[id];
                         for (float value : v) baked[at++] = value;
@@ -127,12 +150,137 @@ public final class AflMeshLoader {
                     }
                 }
                 result.computeIfAbsent(bone, ignored -> new ArrayList<>()).add(new AflMeshPart(name, baked, offsets,
-                        new AflMeshPart.Bounds(minX, minY, minZ, maxX, maxY, maxZ), layer));
+                        new AflMeshPart.Bounds(minX, minY, minZ, maxX, maxY, maxZ), layer, closed));
             } catch (IllegalArgumentException | IllegalStateException e) {
                 throw new IllegalArgumentException(context + ": " + e.getMessage(), e);
             }
         }
         return new AflMeshModel(version, result);
+    }
+
+    /**
+     * Merges pairs of triangles into quads where that draws exactly the same: the two share an edge (the same two vertex
+     * indices, so the same positions and UVs, met in opposite directions: consistent winding) and are coplanar (face
+     * normals equal to 1e-6). The quad is (a, b, c, d) with the shared edge a-c as its diagonal, which is where a QUADS
+     * draw splits it ((0,1,2) and (2,3,0)), so the GPU draws the two original triangles; mirrored submission keeps the
+     * same diagonal. Each merge saves the degenerate fourth corner of both triangles: 8 corners become 4. Greedy, in face
+     * order; the second triangle of a pair is set to null. Returns the number of merges.
+     * <p>
+     * A shader pack (Oculus) gives a quad one tangent, worked out from its first three corners, so the partner triangle
+     * gets the first one's: merged only when the texture runs the same way across both (UV derivatives dP/du and dP/dv
+     * equal to 1e-3 of their size, same handedness). That is an affine UV mapping across the quad; the tangent is packed
+     * into a byte per axis, far coarser than 1e-3. A UV seam never merges (different vertex indices).
+     */
+    private static int pairTriangles(float[][] data, int[][] faces, double[][] normals) {
+        var byEdge = new java.util.HashMap<Long, java.util.List<Integer>>();
+        for (int t = 0; t < faces.length; t++) {
+            int[] f = faces[t];
+            if (f.length != 3) continue;
+            for (int k = 0; k < 3; k++) byEdge.computeIfAbsent(edge(f[k], f[(k + 1) % 3]), e -> new ArrayList<>()).add(t);
+        }
+        int merges = 0;
+        boolean[] used = new boolean[faces.length];
+        for (int t = 0; t < faces.length; t++) {
+            int[] f = faces[t];
+            if (used[t] || f == null || f.length != 3) continue;
+            used[t] = true;
+            for (int k = 0; k < 3; k++) {
+                int x = f[k], y = f[(k + 1) % 3];
+                var candidates = byEdge.get(edge(y, x));
+                if (candidates == null) continue;
+                int partner = -1;
+                for (int u : candidates) {
+                    if (used[u] || faces[u] == null) continue;
+                    double[] n = normals[t], m = normals[u];
+                    if (n[0] * m[0] + n[1] * m[1] + n[2] * m[2] > 1 - 1e-6 && sameUvFrame(data, f, faces[u])) { partner = u; break; }
+                }
+                if (partner < 0) continue;
+                // t = (x, y, z): rotate so the shared edge is c -> a, i.e. a = y, b = z, c = x; d = the partner's third corner
+                int z = f[(k + 2) % 3], d = -1;
+                for (int corner : faces[partner]) if (corner != x && corner != y) d = corner;
+                if (d < 0) continue;
+                faces[t] = new int[]{y, z, x, d};
+                used[partner] = true;
+                faces[partner] = null;
+                merges++;
+                break;
+            }
+        }
+        return merges;
+    }
+
+    /** The two triangles' UV derivatives (dP/du, dP/dv) agree to 1e-3 of their size, with the same handedness. */
+    private static boolean sameUvFrame(float[][] data, int[] t, int[] u) {
+        double[] a = uvFrame(data, t), b = uvFrame(data, u);
+        if (a == null || b == null || a[6] != b[6]) return false;
+        return near(a, b, 0) && near(a, b, 3);
+    }
+
+    private static boolean near(double[] a, double[] b, int at) {
+        double dx = a[at] - b[at], dy = a[at + 1] - b[at + 1], dz = a[at + 2] - b[at + 2];
+        double size = Math.max(Math.sqrt(a[at] * a[at] + a[at + 1] * a[at + 1] + a[at + 2] * a[at + 2]),
+                Math.sqrt(b[at] * b[at] + b[at + 1] * b[at + 1] + b[at + 2] * b[at + 2]));
+        return Math.sqrt(dx * dx + dy * dy + dz * dz) <= 1e-3 * size;
+    }
+
+    /** {dP/du, dP/dv, sign of the UV area}, or null for a triangle whose UVs are degenerate. */
+    private static double[] uvFrame(float[][] data, int[] f) {
+        float[] a = data[f[0]], b = data[f[1]], c = data[f[2]];
+        double e1x = b[0] - a[0], e1y = b[1] - a[1], e1z = b[2] - a[2], e2x = c[0] - a[0], e2y = c[1] - a[1], e2z = c[2] - a[2];
+        double du1 = b[3] - a[3], dv1 = b[4] - a[4], du2 = c[3] - a[3], dv2 = c[4] - a[4], det = du1 * dv2 - du2 * dv1;
+        if (det == 0) return null;
+        double[] frame = {(e1x * dv2 - e2x * dv1) / det, (e1y * dv2 - e2y * dv1) / det, (e1z * dv2 - e2z * dv1) / det,
+                (e2x * du1 - e1x * du2) / det, (e2y * du1 - e1y * du2) / det, (e2z * du1 - e1z * du2) / det, Math.signum(det)};
+        for (double value : frame) if (!Double.isFinite(value)) return null;
+        return frame;
+    }
+
+    private static long edge(int from, int to) {
+        return ((long) from << 32) | (to & 0xFFFFFFFFL);
+    }
+
+    /**
+     * True for a closed, consistently wound, outward-facing solid: AflMeshPart#closed. Every separate shell must enclose
+     * a positive volume on its own, so one inside-out shell next to a good one does not pass.
+     */
+    private static boolean closedSolid(float[][] data, int[][] faces) {
+        var weld = new java.util.HashMap<Long, Integer>();
+        int[] id = new int[data.length];
+        for (int i = 0; i < data.length; i++) {
+            long key = (Math.round(data[i][0] * 1e5) * 73856093L) ^ (Math.round(data[i][1] * 1e5) * 19349663L) ^ (Math.round(data[i][2] * 1e5) * 83492791L);
+            Integer existing = weld.get(key);
+            if (existing != null && data[existing][0] == data[i][0] && data[existing][1] == data[i][1] && data[existing][2] == data[i][2]) id[i] = existing;
+            else {
+                if (existing == null) weld.put(key, i);
+                id[i] = i;
+            }
+        }
+        var directed = new java.util.HashSet<Long>();
+        int[] shell = new int[data.length];
+        for (int i = 0; i < shell.length; i++) shell[i] = i;
+        for (int[] f : faces) {
+            for (int k = 0; k < f.length; k++) {
+                if (!directed.add(edge(id[f[k]], id[f[(k + 1) % f.length]]))) return false;   // the same edge twice the same way
+                int p = root(shell, id[f[0]]), q = root(shell, id[f[k]]);
+                if (p != q) shell[q] = p;
+            }
+        }
+        for (long e : directed) if (!directed.contains(((e & 0xFFFFFFFFL) << 32) | (e >>> 32))) return false;   // an open edge
+        double[] volume = new double[data.length];
+        for (int[] f : faces) {
+            int s = root(shell, id[f[0]]);
+            for (int k = 1; k + 1 < f.length; k++) {
+                float[] a = data[f[0]], b = data[f[k]], c = data[f[k + 1]];
+                volume[s] += a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+            }
+        }
+        for (int[] f : faces) if (!(volume[root(shell, id[f[0]])] > 0)) return false;
+        return true;
+    }
+
+    private static int root(int[] shell, int i) {
+        while (shell[i] != i) i = shell[i] = shell[shell[i]];
+        return i;
     }
 
     private static void validateQuad(float[][] data, int[] ids, double nx, double ny, double nz, int face) {
