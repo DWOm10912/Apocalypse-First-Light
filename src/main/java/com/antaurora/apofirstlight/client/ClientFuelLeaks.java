@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.Vec3;
@@ -126,9 +125,10 @@ public final class ClientFuelLeaks {
                 });
             }
             if (leak.burning && near && random.nextFloat() < 0.15F) {
-                Vec3 p = leak.at.add(n.scale(0.15)).add(0, 0.4, 0);
-                level.addParticle(leak.diesel ? ParticleTypes.CAMPFIRE_COSY_SMOKE : ParticleTypes.LARGE_SMOKE, p.x, p.y, p.z, 0, leak.diesel ? 0.03 : 0.05, 0);
+                Vec3 p = leak.at.add(n.scale(0.15)).add(0, 0.45, 0);
+                FireFx.smoke(level, p.x, p.y, p.z, 0.18F, leak.diesel ? FireFx.DIESEL_SMOKE : FireFx.GASOLINE_SMOKE, 0.65F, 80, 0.05);
             }
+            if (leak.burning && near && random.nextFloat() < 0.1F) FireFx.ember(level, leak.at.x + n.x * 0.15, leak.at.y + 0.2, leak.at.z + n.z * 0.15);
         }
     }
 
@@ -156,7 +156,7 @@ public final class ClientFuelLeaks {
             if (!leak.burning || leak.at.distanceToSqr(camera) > RANGE * RANGE) continue;
             Vec3 base = leak.at.add(Vec3.atLowerCornerOf(leak.face.getNormal()).scale(0.12)).add(0, -0.08, 0);
             double width = leak.diesel ? 0.3 : 0.36, height = leak.diesel ? 0.42 : 0.6;
-            FuelFlames.flame(out, pose.last().pose(), pose.last().normal(), camera, base, width, height, now * 1.2 + (leak.id * 17 % 48), leak.diesel);
+            FuelFlames.flame(out, pose.last().pose(), pose.last().normal(), camera, base, (leak.id * 0.618) % Math.PI, width, height, now * 1.2 + (leak.id * 17 % 48), leak.diesel);
         }
     }
 }

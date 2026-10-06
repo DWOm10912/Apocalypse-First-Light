@@ -266,6 +266,7 @@ public final class FuelLeaks extends SavedData {
         if (!gone.isEmpty()) AflNetwork.sendFuelLeaks(level, List.of(), gone);
         for (FuelContainers.Container one : all) FuelContainers.destroy(level, one);
         level.explode(null, centre.x, centre.y, centre.z, power, true, Level.ExplosionInteraction.BLOCK);
+        AflNetwork.sendFuelBlast(level, centre, power, c.diesel());   // the smoke burst and column (client/FireFx)
         FuelSpills spills = FuelSpills.get(level);
         for (FuelContainers.Container one : all) {
             int stains = rupture || one != c ? Mth.clamp(one.amount() / 25, one.amount() > 0 ? 3 : 0, 40) : Mth.clamp(one.amount() / 25, 0, 12);

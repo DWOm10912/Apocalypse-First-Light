@@ -63,6 +63,8 @@ public final class AflNetwork {
                 FuelLeakS2CPacket::encode, FuelLeakS2CPacket::decode, FuelLeakS2CPacket::handle);
         channel.registerMessage(nextId++, BulletImpactS2CPacket.class,
                 BulletImpactS2CPacket::encode, BulletImpactS2CPacket::decode, BulletImpactS2CPacket::handle);
+        channel.registerMessage(nextId++, FuelBlastS2CPacket.class,
+                FuelBlastS2CPacket::encode, FuelBlastS2CPacket::decode, FuelBlastS2CPacket::handle);
         channel.registerMessage(nextId++, FuelSprayHitsC2SPacket.class,
                 FuelSprayHitsC2SPacket::encode, FuelSprayHitsC2SPacket::decode, FuelSprayHitsC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
@@ -552,6 +554,14 @@ public final class AflNetwork {
         channel.send(PacketDistributor.DIMENSION.with(level::dimension), FuelStainS2CPacket.of(List.of(), removed));
     }
 
+    /** A fuel container went up (fluid/FuelLeaks): to the players watching it, for the smoke burst and column. */
+    public static void sendFuelBlast(ServerLevel level, Vec3 at, float power, boolean diesel) {
+        if (channel == null) return;
+        ChunkPos chunk = new ChunkPos(BlockPos.containing(at));
+        if (!level.getChunkSource().hasChunk(chunk.x, chunk.z)) return;
+        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new FuelBlastS2CPacket(at, power, diesel));
+    }
+
     /** A bullet struck a block (weapon/BulletImpacts): to the players watching it, for the hole decal and the dust. */
     public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed) {
         if (channel == null) return;
@@ -857,6 +867,28 @@ public final class AflNetwork {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
                     () -> () -> com.antaurora.apofirstlight.client.ClientFuelStains.apply(packet.upserts, packet.removed)));
+            context.setPacketHandled(true);
+        }
+    }
+
+    /** A fuel container's blast: where, how strong, which fuel (client/FireFx#blast). */
+    public record FuelBlastS2CPacket(Vec3 at, float power, boolean diesel) {
+        public static void encode(FuelBlastS2CPacket packet, FriendlyByteBuf buffer) {
+            buffer.writeDouble(packet.at.x);
+            buffer.writeDouble(packet.at.y);
+            buffer.writeDouble(packet.at.z);
+            buffer.writeFloat(packet.power);
+            buffer.writeBoolean(packet.diesel);
+        }
+
+        public static FuelBlastS2CPacket decode(FriendlyByteBuf buffer) {
+            return new FuelBlastS2CPacket(new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()), buffer.readFloat(), buffer.readBoolean());
+        }
+
+        public static void handle(FuelBlastS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
+            NetworkEvent.Context context = supplier.get();
+            context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
+                    () -> () -> com.antaurora.apofirstlight.client.FireFx.blast(packet.at, packet.power, packet.diesel)));
             context.setPacketHandled(true);
         }
     }

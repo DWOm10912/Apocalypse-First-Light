@@ -54,6 +54,60 @@ public final class LiquidRenderTypes extends RenderType {
                     .setWriteMaskState(COLOR_WRITE)
                     .createCompositeState(false));
 
+    /**
+     * Embers glowing in burnt ground (Scorches): block atlas sprites (scorch_embers_*), the emissive entity shader, added
+     * onto what is behind them like the flames, no depth writes.
+     */
+    public static final RenderType EMBER = RenderType.create("apocalypse_firstlight_scorch_ember", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(TextureAtlas.LOCATION_BLOCKS, false, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
+    /** The glow of a fire on the floor under it (FuelFlames#glow): textures/effect/fire_glow, emissive, added, no depth writes. */
+    public static final RenderType GLOW = RenderType.create("apocalypse_firstlight_fire_glow", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/fire_glow.png"), false, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
+    /** Burning things (EntityFlames): the burning-body flame sheet, otherwise as FLAME. */
+    public static final RenderType BODY_FLAME = RenderType.create("apocalypse_firstlight_body_flame", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/body_flame.png"), false, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
+    /**
+     * Fire smoke (FireFx): the smoke sheet (textures/effect/fire_smoke), the entity-translucent shader (lit by the world),
+     * alpha blended, sorted back to front when drawn, no depth writes (overlapping puffs blend, never cut into each other).
+     */
+    public static final RenderType SMOKE = RenderType.create("apocalypse_firstlight_fire_smoke", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/fire_smoke.png"), false, false))
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
     private LiquidRenderTypes(String name, VertexFormat format, VertexFormat.Mode mode, int size, boolean crumbling, boolean sort,
                               Runnable setup, Runnable clear) {
         super(name, format, mode, size, crumbling, sort, setup, clear);

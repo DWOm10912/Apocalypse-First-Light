@@ -94,7 +94,9 @@ final class FuelPuddleMesher {
                 List<FuelStainIndex.Stain> mine = new ArrayList<>();
                 for (FuelStainIndex.Stain s : near) if (s.diesel == diesel && Math.abs(s.pos.y - floorY) < 0.05) mine.add(s);
                 if (mine.isEmpty()) continue;
-                float[] quads = mesh(air, mine, now);
+                List<double[]> balls = new ArrayList<>();
+                for (FuelStainIndex.Stain s : mine) blob(balls, air, s.pos, s.size * (0.35 + 0.65 * fade(s, now)), s.id);
+                float[] quads = mesh(air, balls, RIM);
                 if (quads.length > 0) pools.add(new Pool(diesel, quads, mine));
             }
             if (!pools.isEmpty()) CELLS.put(key, new Cell(air, floorY, pools));
@@ -114,25 +116,30 @@ final class FuelPuddleMesher {
     }
 
     /** A full block top under open air: the pool can cover the whole cell and stop at its edges. */
-    private static boolean fullFloor(Level level, BlockPos air) {
+    static boolean fullFloor(Level level, BlockPos air) {
         BlockPos below = air.below();
         BlockState under = level.getBlockState(below), here = level.getBlockState(air);
         return here.getCollisionShape(level, air).isEmpty() && level.getFluidState(air).isEmpty()
                 && under.isFaceSturdy(level, below, Direction.UP) && under.getCollisionShape(level, below).max(Direction.Axis.Y) >= 0.999;
     }
 
-    private static float[] mesh(BlockPos air, List<FuelStainIndex.Stain> stains, double now) {
-        // the blobs: per stain a main ball and three seeded lobes (centre x, z relative to the cell, radius)
-        List<double[]> balls = new ArrayList<>();
-        for (FuelStainIndex.Stain s : stains) {
-            double scale = s.size * (0.35 + 0.65 * fade(s, now)), cx = s.pos.x - air.getX(), cz = s.pos.z - air.getZ();
-            long h = s.id * 0x9E3779B97F4A7C15L;
-            balls.add(new double[]{cx, cz, scale * 0.36});
-            for (int k = 0; k < 3; k++) {
-                double angle = ((h >>> (12 * k + 3)) & 255) / 256.0 * 2 * Math.PI, r = scale * (0.13 + ((h >>> (12 * k + 11)) & 15) / 16.0 * 0.09);
-                balls.add(new double[]{cx + Math.cos(angle) * scale * 0.3, cz + Math.sin(angle) * scale * 0.3, r});
-            }
+    /** A blob of {@code scale} at {@code pos} (seeded by {@code seed}): a main ball and three lobes, as x, z (cell relative), radius. */
+    static void blob(List<double[]> balls, BlockPos air, Vec3 pos, double scale, long seed) {
+        double cx = pos.x - air.getX(), cz = pos.z - air.getZ();
+        long h = seed * 0x9E3779B97F4A7C15L;
+        balls.add(new double[]{cx, cz, scale * 0.36});
+        for (int k = 0; k < 3; k++) {
+            double angle = ((h >>> (12 * k + 3)) & 255) / 256.0 * 2 * Math.PI, r = scale * (0.13 + ((h >>> (12 * k + 11)) & 15) / 16.0 * 0.09);
+            balls.add(new double[]{cx + Math.cos(angle) * scale * 0.3, cz + Math.sin(angle) * scale * 0.3, r});
         }
+    }
+
+    /**
+     * The part of a cell where the blobs field is over 1 (marching squares on the 1/16 grid), as quads: x, y, z (cell
+     * relative), u, v (0..16 sprite px of a texture that tiles every 2 blocks, world aligned), alpha factor ({@code rim} at
+     * the edge and just inside it, 1 deep inside).
+     */
+    static float[] mesh(BlockPos air, List<double[]> balls, float rim) {
         float[][] f = new float[GRID + 1][GRID + 1];
         for (int i = 0; i <= GRID; i++) for (int j = 0; j <= GRID; j++) {
             double x = (double) i / GRID, z = (double) j / GRID, sum = 0;
@@ -150,10 +157,10 @@ final class FuelPuddleMesher {
             for (int k = 0; k < 4; k++) {
                 int ai = i + (int) corner[k][0], aj = j + (int) corner[k][1], bi = i + (int) corner[(k + 1) % 4][0], bj = j + (int) corner[(k + 1) % 4][1];
                 float fa = f[ai][aj], fb = f[bi][bj];
-                if (fa >= 1.0F) poly.add(new double[]{(double) ai / GRID, (double) aj / GRID, fa >= 1.6F ? 1.0 : RIM});
+                if (fa >= 1.0F) poly.add(new double[]{(double) ai / GRID, (double) aj / GRID, fa >= 1.6F ? 1.0 : rim});
                 if ((fa >= 1.0F) != (fb >= 1.0F)) {
                     double t = (1.0 - fa) / (fb - fa);
-                    poly.add(new double[]{(ai + (bi - ai) * t) / GRID, (aj + (bj - aj) * t) / GRID, RIM});
+                    poly.add(new double[]{(ai + (bi - ai) * t) / GRID, (aj + (bj - aj) * t) / GRID, rim});
                 }
             }
             for (int k = 1; k + 1 < poly.size(); k++) {   // a fan of quads (the last corner doubled)

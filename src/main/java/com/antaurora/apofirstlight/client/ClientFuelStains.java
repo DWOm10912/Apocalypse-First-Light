@@ -47,13 +47,18 @@ public final class ClientFuelStains {
     }
 
     public static void apply(List<FuelStainIndex.Stain> upserts, long[] removed) {
+        ClientLevel level = Minecraft.getInstance().level;
+        long now = level == null ? 0 : level.getGameTime();
         for (long id : removed) {
             FuelStainIndex.Stain gone = FuelStainIndex.CLIENT.remove(id);
-            if (gone != null) FuelPuddleMesher.touched(gone);
+            if (gone == null) continue;
+            FuelPuddleMesher.touched(gone);
+            if (gone.burning()) Scorches.burntOut(gone, now);   // burnt out: the ground under it is scorched, embers cooling
         }
         for (FuelStainIndex.Stain stain : upserts) {
             FuelStainIndex.CLIENT.put(stain);
             FuelPuddleMesher.touched(stain);
+            if (stain.burning()) Scorches.burning(stain);   // remembers how large it burnt
         }
     }
 
@@ -64,10 +69,12 @@ public final class ClientFuelStains {
         if (level != trackedLevel) {
             FuelStainIndex.CLIENT.clear();
             FuelPuddleMesher.clear();
+            Scorches.clear();
             trackedLevel = level;
         }
         if (level == null) return;
         long now = level.getGameTime();
+        Scorches.tick(now);
         if (now % 20 == 0) FuelStainIndex.CLIENT.expire(now, FuelPuddleMesher::touched);
         if (now % FuelPuddleMesher.FADE_REBUILD == 0) FuelPuddleMesher.refreshDrying(now);
         var player = Minecraft.getInstance().player;
@@ -91,7 +98,7 @@ public final class ClientFuelStains {
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES
-                || FuelStainIndex.CLIENT.isEmpty() && ClientFuelLeaks.isEmpty() && BulletHoles.isEmpty()) return;
+                || FuelStainIndex.CLIENT.isEmpty() && BulletHoles.isEmpty() && Scorches.isEmpty() && FireBlockFlames.isEmpty() && FireFx.isEmpty()) return;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) return;
@@ -103,6 +110,7 @@ public final class ClientFuelStains {
         BulletHoles.render(pose, buffers, level, camera, now);   // first: fuel running down a holed wall lies over the holes
         buffers.endBatch(LiquidRenderTypes.HOLE);
         // floors: pools (one field per cell, no overlaps); walls, ceilings and floors without a full top: decals, oldest first
+        Scorches.renderChar(pose, buffers, level, camera, RANGE, now);   // burnt ground under what fuel is left
         FuelPuddleMesher.rebuild(level, now);
         FuelPuddleMesher.render(pose, buffers, level, camera, RANGE, now, gasoline, diesel, ALPHA);
         java.util.List<FuelStainIndex.Stain> decals = new java.util.ArrayList<>();
@@ -120,11 +128,20 @@ public final class ClientFuelStains {
                     stain.diesel ? diesel : gasoline, Math.round(ALPHA * fade));
         }
         buffers.endBatch(LiquidRenderTypes.DECAL);
+        Scorches.renderEmbers(pose, buffers, camera, RANGE, now);
+        buffers.endBatch(LiquidRenderTypes.EMBER);
         ClientFuelLeaks.renderStreams(pose, buffers, level, camera, event.getPartialTick());   // fuel leaking out of bullet holes
         buffers.endBatch(net.minecraft.client.renderer.RenderType.entityTranslucent(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS));
+        FireFx.renderSmoke(pose, buffers, level, event.getCamera(), event.getPartialTick());   // smoke, then the flames' light over it
+        buffers.endBatch(LiquidRenderTypes.SMOKE);
         FuelFlames.render(pose, buffers, camera, now);   // last: they add light onto everything behind them
         ClientFuelLeaks.renderFlames(buffers.getBuffer(LiquidRenderTypes.FLAME), pose, camera, now);
+        FireBlockFlames.render(pose, buffers, level, camera, now);   // vanilla fire blocks, in the same flames
         buffers.endBatch(LiquidRenderTypes.FLAME);
+        FuelFlames.renderGlows(pose, buffers, camera, now);   // their glow on the floor
+        FireBlockFlames.renderGlows(pose, buffers, level, camera, now);
+        FireFx.renderSparks(pose, buffers, event.getCamera(), event.getPartialTick());
+        buffers.endBatch(LiquidRenderTypes.GLOW);
     }
 
     /**
