@@ -59,7 +59,8 @@ public final class NativeGunShot {
         };
         int broken = 0;
         while (true) {
-        var block = loaded.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
+        // AFL blocks with a hit mesh stop it on their model's surface (docs/rendering/mesh_hit_runtime_v1.md)
+        var block = com.antaurora.apofirstlight.meshhit.MeshHitClip.clip(loaded, new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, shooter));
         double closest = start.distanceToSqr(block.getLocation());
         Entity target = null;
         boolean head = false;

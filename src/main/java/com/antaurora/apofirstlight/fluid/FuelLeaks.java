@@ -75,6 +75,8 @@ public final class FuelLeaks extends SavedData {
         final BlockPos block;
         public final Vec3 at;
         public final Direction face;
+        /** The surface's normal at the hole (a hit mesh's, docs/rendering/mesh_hit_runtime_v1.md; else the face's): the stream leaves along it. */
+        public final Vec3 normal;
         public final boolean diesel;
         final LiquidJet jet = new LiquidJet(LiquidJet.EARTH_GRAVITY, 3.0);
         double carry;
@@ -83,11 +85,12 @@ public final class FuelLeaks extends SavedData {
         public boolean flowing, burning;
         public float speed;
 
-        public Hole(long id, BlockPos block, Vec3 at, Direction face, boolean diesel) {
+        public Hole(long id, BlockPos block, Vec3 at, Direction face, Vec3 normal, boolean diesel) {
             this.id = id;
             this.block = block;
             this.at = at;
             this.face = face;
+            this.normal = normal;
             this.diesel = diesel;
         }
     }
@@ -143,7 +146,7 @@ public final class FuelLeaks extends SavedData {
         FuelLeaks leaks = get(level);
         FuelContainers.Container c = FuelContainers.at(level, pos);
         return c != null && c.amount() > 0 && c.box().inflate(0.02).contains(hit.getLocation())
-                && leaks.puncture(level, c, pos, hit.getLocation(), hit.getDirection());
+                && leaks.puncture(level, c, pos, hit.getLocation(), hit.getDirection(), com.antaurora.apofirstlight.meshhit.MeshBlockHitResult.normalOf(hit));
     }
 
     /** Steel and the like (by sound type): a bullet off it can strike sparks. */
@@ -164,7 +167,7 @@ public final class FuelLeaks extends SavedData {
     }
 
     /** A hole in {@code c} at {@code at} on {@code face} of block {@code pos}; true if there is one there now. */
-    public boolean puncture(ServerLevel level, FuelContainers.Container c, BlockPos pos, Vec3 at, Direction face) {
+    public boolean puncture(ServerLevel level, FuelContainers.Container c, BlockPos pos, Vec3 at, Direction face, Vec3 normal) {
         int count = 0;
         for (Hole h : holes.values()) {
             if (h.at.distanceToSqr(at) < 0.0025) return true;   // the same hole again
@@ -172,7 +175,7 @@ public final class FuelLeaks extends SavedData {
             if (other != null && other.key().equals(c.key())) count++;
         }
         if (holes.size() >= MAX_HOLES || count >= MAX_HOLES_PER_CONTAINER) return false;
-        Hole hole = new Hole(nextId++, pos.immutable(), at, face, c.diesel());
+        Hole hole = new Hole(nextId++, pos.immutable(), at, face, normal, c.diesel());
         holes.put(hole.id, hole);
         Heat heat = heats.get(c.key());
         hole.burning = heat != null && heat.burning >= 0;
@@ -207,11 +210,11 @@ public final class FuelLeaks extends SavedData {
      * first; earth or a wall between shields it): holed where that line strikes it, and set alight, diesel too.
      */
     private void blast(ServerLevel level, FuelContainers.Container c, Vec3 centre) {
-        BlockHitResult line = level.clip(new ClipContext(centre, c.centre(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));
+        BlockHitResult line = com.antaurora.apofirstlight.meshhit.MeshHitClip.clip(level, new ClipContext(centre, c.centre(), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, null));   // on the container's surface (its hit mesh)
         if (line.getType() == HitResult.Type.BLOCK) {
             FuelContainers.Container hit = FuelContainers.at(level, line.getBlockPos());
             if (hit == null || !hit.master().equals(c.master())) return;
-            if (!line.isInside() && hit.amount() > 0) puncture(level, hit, line.getBlockPos(), line.getLocation(), line.getDirection());
+            if (!line.isInside() && hit.amount() > 0) puncture(level, hit, line.getBlockPos(), line.getLocation(), line.getDirection(), com.antaurora.apofirstlight.meshhit.MeshBlockHitResult.normalOf(line));
         }
         Heat heat = heats.computeIfAbsent(c.key(), k -> new Heat());
         heat.touched = level.getGameTime();
@@ -302,7 +305,7 @@ public final class FuelLeaks extends SavedData {
             double head = c.surface() - h.at.y;
             boolean flowing = c.amount() > 0 && head > 0.02;
             float speed = flowing ? (float) Math.sqrt(2 * LiquidJet.EARTH_GRAVITY * head) : 0.0F;
-            Vec3 n = Vec3.atLowerCornerOf(h.face.getNormal());
+            Vec3 n = h.normal;
             if (flowing) {
                 h.carry += DISCHARGE * HOLE_AREA * speed * 1000.0 / 20.0;   // litres (mB) a tick
                 if (h.carry >= 1.0) {
@@ -429,6 +432,9 @@ public final class FuelLeaks extends SavedData {
             t.putDouble("Y", h.at.y);
             t.putDouble("Z", h.at.z);
             t.putByte("Face", (byte) h.face.get3DDataValue());
+            t.putDouble("NX", h.normal.x);
+            t.putDouble("NY", h.normal.y);
+            t.putDouble("NZ", h.normal.z);
             t.putBoolean("Diesel", h.diesel);
             list.add(t);
         }
@@ -453,8 +459,10 @@ public final class FuelLeaks extends SavedData {
         FuelLeaks leaks = new FuelLeaks();
         for (Tag raw : tag.getList("Holes", Tag.TAG_COMPOUND)) {
             CompoundTag t = (CompoundTag) raw;
+            Direction face = Direction.from3DDataValue(t.getByte("Face"));
+            Vec3 normal = t.contains("NX") ? new Vec3(t.getDouble("NX"), t.getDouble("NY"), t.getDouble("NZ")) : Vec3.atLowerCornerOf(face.getNormal());
             Hole h = new Hole(t.getLong("Id"), BlockPos.of(t.getLong("Block")), new Vec3(t.getDouble("X"), t.getDouble("Y"), t.getDouble("Z")),
-                    Direction.from3DDataValue(t.getByte("Face")), t.getBoolean("Diesel"));
+                    face, normal, t.getBoolean("Diesel"));
             leaks.holes.put(h.id, h);
         }
         for (Tag raw : tag.getList("Heats", Tag.TAG_COMPOUND)) {

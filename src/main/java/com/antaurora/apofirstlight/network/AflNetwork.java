@@ -563,11 +563,11 @@ public final class AflNetwork {
     }
 
     /** A bullet struck a block (weapon/BulletImpacts): to the players watching it, for the hole decal and the dust. */
-    public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed, boolean spark) {
+    public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, Vec3 normal, BlockPos block, boolean holed, boolean spark) {
         if (channel == null) return;
         ChunkPos chunk = new ChunkPos(block);
         if (!level.getChunkSource().hasChunk(chunk.x, chunk.z)) return;
-        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new BulletImpactS2CPacket(at, face, block, holed, spark));
+        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new BulletImpactS2CPacket(at, face, normal, block, holed, spark));
     }
 
     /** Bullet holes in fuel containers changed or gone (fluid/FuelLeaks): to everyone in the level (there are few). */
@@ -894,12 +894,15 @@ public final class AflNetwork {
     }
 
     /** Where a bullet struck a block; {@code holed}: it made (or hit) a fuel container's hole, drawn from the leak. */
-    public record BulletImpactS2CPacket(Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed, boolean spark) {
+    public record BulletImpactS2CPacket(Vec3 at, net.minecraft.core.Direction face, Vec3 normal, BlockPos block, boolean holed, boolean spark) {
         public static void encode(BulletImpactS2CPacket packet, FriendlyByteBuf buffer) {
             buffer.writeDouble(packet.at.x);
             buffer.writeDouble(packet.at.y);
             buffer.writeDouble(packet.at.z);
             buffer.writeByte(packet.face.get3DDataValue());
+            buffer.writeFloat((float) packet.normal.x);
+            buffer.writeFloat((float) packet.normal.y);
+            buffer.writeFloat((float) packet.normal.z);
             buffer.writeBlockPos(packet.block);
             buffer.writeBoolean(packet.holed);
             buffer.writeBoolean(packet.spark);
@@ -907,24 +910,25 @@ public final class AflNetwork {
 
         public static BulletImpactS2CPacket decode(FriendlyByteBuf buffer) {
             return new BulletImpactS2CPacket(new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()),
-                    net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), buffer.readBlockPos(), buffer.readBoolean(), buffer.readBoolean());
+                    net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), new Vec3(buffer.readFloat(), buffer.readFloat(), buffer.readFloat()),
+                    buffer.readBlockPos(), buffer.readBoolean(), buffer.readBoolean());
         }
 
         public static void handle(BulletImpactS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                    () -> () -> com.antaurora.apofirstlight.client.BulletHoles.impact(packet.at, packet.face, packet.block, packet.holed, packet.spark)));
+                    () -> () -> com.antaurora.apofirstlight.client.BulletHoles.impact(packet.at, packet.face, packet.normal, packet.block, packet.holed, packet.spark)));
             context.setPacketHandled(true);
         }
     }
 
     /** Bullet holes in fuel containers: where, which way, leaking how fast, burning. {@code reset}: the whole level's list. */
     public record FuelLeakS2CPacket(List<Leak> upserts, long[] removed, boolean reset) {
-        public record Leak(long id, Vec3 at, net.minecraft.core.Direction face, boolean diesel, boolean flowing, boolean burning, float speed) {}
+        public record Leak(long id, Vec3 at, net.minecraft.core.Direction face, Vec3 normal, boolean diesel, boolean flowing, boolean burning, float speed) {}
 
         static FuelLeakS2CPacket of(Collection<com.antaurora.apofirstlight.fluid.FuelLeaks.Hole> holes, Collection<Long> removed, boolean reset) {
             List<Leak> leaks = new ArrayList<>(holes.size());
-            for (com.antaurora.apofirstlight.fluid.FuelLeaks.Hole h : holes) leaks.add(new Leak(h.id, h.at, h.face, h.diesel, h.flowing, h.burning, h.speed));
+            for (com.antaurora.apofirstlight.fluid.FuelLeaks.Hole h : holes) leaks.add(new Leak(h.id, h.at, h.face, h.normal, h.diesel, h.flowing, h.burning, h.speed));
             return new FuelLeakS2CPacket(leaks, removed.stream().mapToLong(Long::longValue).toArray(), reset);
         }
 
@@ -937,6 +941,9 @@ public final class AflNetwork {
                 buffer.writeDouble(l.at.y);
                 buffer.writeDouble(l.at.z);
                 buffer.writeByte(l.face.get3DDataValue());
+                buffer.writeFloat((float) l.normal.x);
+                buffer.writeFloat((float) l.normal.y);
+                buffer.writeFloat((float) l.normal.z);
                 buffer.writeByte((l.diesel ? 1 : 0) | (l.flowing ? 2 : 0) | (l.burning ? 4 : 0));
                 buffer.writeFloat(l.speed);
             }
@@ -951,8 +958,9 @@ public final class AflNetwork {
                 long id = buffer.readVarLong();
                 Vec3 at = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
                 net.minecraft.core.Direction face = net.minecraft.core.Direction.from3DDataValue(buffer.readByte());
+                Vec3 normal = new Vec3(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
                 int flags = buffer.readByte();
-                leaks.add(new Leak(id, at, face, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, buffer.readFloat()));
+                leaks.add(new Leak(id, at, face, normal, (flags & 1) != 0, (flags & 2) != 0, (flags & 4) != 0, buffer.readFloat()));
             }
             return new FuelLeakS2CPacket(leaks, buffer.readLongArray(), reset);
         }

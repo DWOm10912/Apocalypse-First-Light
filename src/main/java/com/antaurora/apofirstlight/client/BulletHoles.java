@@ -48,7 +48,7 @@ public final class BulletHoles {
     /** Decal size (blocks) by material: the hole and its marks fill a little over half of it. */
     private static final float[] SIZE = {0.16F, 0.18F, 0.18F};
 
-    private record Hole(Vec3 at, Direction face, BlockPos block, BlockState state, int material, int variant, float angle, long born) {}
+    private record Hole(Vec3 at, Direction face, Vec3 normal, BlockPos block, BlockState state, int material, int variant, float angle, long born) {}
 
     private static final Deque<Hole> HOLES = new ArrayDeque<>();
     private static final net.minecraft.resources.ResourceLocation SHEET = new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/bullet_holes");
@@ -63,14 +63,14 @@ public final class BulletHoles {
         return HOLES.isEmpty() && ClientFuelLeaks.isEmpty();
     }
 
-    /** A bullet struck {@code block} at {@code at} on {@code face}. */
-    public static void impact(Vec3 at, Direction face, BlockPos block, boolean holed, boolean spark) {
+    /** A bullet struck {@code block} at {@code at} on {@code face}; {@code normal}: the surface's (a hit mesh's own, else the face's). */
+    public static void impact(Vec3 at, Direction face, Vec3 normal, BlockPos block, boolean holed, boolean spark) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return;
         BlockState state = level.getBlockState(block);
         if (state.isAir()) return;
         RandomSource random = level.random;
-        Vec3 n = Vec3.atLowerCornerOf(face.getNormal());
+        Vec3 n = normal;
         if (spark) FireFx.metalSparks(level, at.add(n.scale(0.02)), n);
         // a few small bits of the block knocked out of the hole (vanilla block particles shrunk to about a third: at full
         // size, five a shot filled the view with big squares under automatic fire, user 2026-10-05); off steel just one
@@ -84,7 +84,7 @@ public final class BulletHoles {
         if (holed) return;   // a fuel container's hole: drawn from its leak
         int material = material(state);
         float angle = material == WOOD ? (random.nextBoolean() ? 0.0F : Mth.PI) : random.nextFloat() * Mth.TWO_PI;
-        HOLES.addLast(new Hole(at, face, block.immutable(), state, material, random.nextInt(3), angle, level.getGameTime()));
+        HOLES.addLast(new Hole(at, face, normal, block.immutable(), state, material, random.nextInt(3), angle, level.getGameTime()));
         while (HOLES.size() > MAX) HOLES.removeFirst();
     }
 
@@ -125,32 +125,45 @@ public final class BulletHoles {
             if (h.at.distanceToSqr(camera) > RANGE * RANGE) continue;
             double age = now - h.born;
             int alpha = age < LIFE - FADE ? 255 : (int) Math.max(0, 255 * (LIFE - age) / FADE);
-            if (alpha > 0) quad(out, matrix, normals, level, camera, h.at, h.face, h.block, h.material, h.variant, h.angle, alpha);
+            if (alpha > 0) quad(out, matrix, normals, level, camera, h.at, h.normal, h.block, h.material, h.variant, h.angle, alpha);
         }
-        ClientFuelLeaks.forEachHole((at, face) -> {   // fuel container holes: steel or the container's own material
+        ClientFuelLeaks.forEachHole((at, normal) -> {   // fuel container holes: steel or the container's own material
             if (at.distanceToSqr(camera) > RANGE * RANGE) return;
-            BlockPos block = BlockPos.containing(at.subtract(Vec3.atLowerCornerOf(face.getNormal()).scale(0.01)));
+            BlockPos block = BlockPos.containing(at.subtract(normal.scale(0.01)));
             long seed = Double.doubleToLongBits(at.x * 31 + at.y * 17 + at.z);
             int material = material(level.getBlockState(block));
             float angle = material == WOOD ? 0.0F : (seed & 1023) / 1023.0F * Mth.TWO_PI;
-            quad(out, matrix, normals, level, camera, at, face, block, material, (int) Math.floorMod(seed >> 10, 3), angle, 255);
+            quad(out, matrix, normals, level, camera, at, normal, block, material, (int) Math.floorMod(seed >> 10, 3), angle, 255);
         });
     }
 
-    private static void quad(VertexConsumer out, Matrix4f matrix, Matrix3f normals, ClientLevel level, Vec3 camera, Vec3 at, Direction face,
+    private static void quad(VertexConsumer out, Matrix4f matrix, Matrix3f normals, ClientLevel level, Vec3 camera, Vec3 at, Vec3 n,
                              BlockPos block, int material, int variant, float angle, int alpha) {
-        Vec3 n = Vec3.atLowerCornerOf(face.getNormal()), u = FuelStainIndex.axisU(face), v = FuelStainIndex.axisV(face);
         double half = SIZE[material] / 2;
-        // kept on its block's face (a hole near an edge would hang over it), lifted off it a little more far away
-        Vec3 local = at.subtract(Vec3.atLowerCornerOf(block));
-        Vec3 su = u.scale(Math.signum(u.x + u.y + u.z)), sv = v.scale(Math.signum(v.x + v.y + v.z));   // the face's axes, positive
-        double lu = local.dot(su), lv = local.dot(sv), margin = half * 0.6;
-        Vec3 centre = at.add(su.scale(Mth.clamp(lu, margin, 1 - margin) - lu)).add(sv.scale(Mth.clamp(lv, margin, 1 - margin) - lv));
+        Direction face = Direction.getNearest(n.x, n.y, n.z);
+        Vec3 u, v, centre;
+        if (Math.abs(n.dot(Vec3.atLowerCornerOf(face.getNormal()))) > 0.999) {
+            // on a block's face: its own axes (wood's grain along u), kept on the face (a hole near an edge would hang over it)
+            n = Vec3.atLowerCornerOf(face.getNormal());
+            u = FuelStainIndex.axisU(face);
+            v = FuelStainIndex.axisV(face);
+            Vec3 local = at.subtract(Vec3.atLowerCornerOf(block));
+            Vec3 su = u.scale(Math.signum(u.x + u.y + u.z)), sv = v.scale(Math.signum(v.x + v.y + v.z));   // the face's axes, positive
+            double lu = local.dot(su), lv = local.dot(sv), margin = half * 0.6;
+            centre = at.add(su.scale(Mth.clamp(lu, margin, 1 - margin) - lu)).add(sv.scale(Mth.clamp(lv, margin, 1 - margin) - lv));
+        } else {
+            // on a model's surface at any slope (a hit mesh, docs/rendering/mesh_hit_runtime_v1.md): its tangent plane, the
+            // u axis level where it can be; lifted a little more, a flat decal on a curved face lifts at its ends
+            u = Math.abs(n.y) < 0.95 ? new Vec3(0, 1, 0).cross(n).normalize() : new Vec3(1, 0, 0).cross(n).normalize();
+            v = n.cross(u);
+            centre = at.add(n.scale(0.006));
+        }
+        // lifted off it a little more far away
         centre = centre.add(n.scale(0.002 + 0.0001 * Math.sqrt(centre.distanceToSqr(camera))));
         double cos = Math.cos(angle), sin = Math.sin(angle);
         Vec3 a = u.scale(cos * half).add(v.scale(sin * half)), b = u.scale(-sin * half).add(v.scale(cos * half));
         float u0 = sheet.getU(variant * 16.0 / 3), u1 = sheet.getU((variant + 1) * 16.0 / 3), v0 = sheet.getV(material * 16.0 / 3), v1 = sheet.getV((material + 1) * 16.0 / 3);
-        int light = LevelRenderer.getLightColor(level, block.relative(face));
+        int light = LevelRenderer.getLightColor(level, BlockPos.containing(at.add(n.scale(0.1))));
         vertex(out, matrix, normals, centre.subtract(a).subtract(b), camera, u0, v1, light, n, alpha);
         vertex(out, matrix, normals, centre.add(a).subtract(b), camera, u1, v1, light, n, alpha);
         vertex(out, matrix, normals, centre.add(a).add(b), camera, u1, v0, light, n, alpha);

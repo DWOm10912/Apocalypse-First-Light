@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * mirrors that neighbour's side; sneaking with an empty main hand, a right click cuts or joins one pipe-to-pipe side.
  * Ports always connect. V1 states carried {@code show_core}; it is dropped on load (the old run-axis rules are gone).
  */
-public final class FluidPipeBlock extends PipeBlock {
+public final class FluidPipeBlock extends PipeBlock implements com.antaurora.apofirstlight.meshhit.MeshHitProvider {
     private static final double ARM = 4.0;       // half width of a run (tools/build-fluid-pipe-v2.mjs PIPE.h)
     private static final double BOX = 4.6;       // fitting half size (FIT.h)
     private static final VoxelShape[] SHAPES = new VoxelShape[64];
@@ -280,5 +280,20 @@ public final class FluidPipeBlock extends PipeBlock {
         Direction machineFace = directionToNeighbor.getOpposite();
         return ChemicalReactorBlock.isInputFluidFace(neighborState, machineFace)
                 || ChemicalReactorBlock.isWasteFluidFace(neighborState, machineFace);
+    }
+
+    /**
+     * Bullets stop on the pipe's own pieces (docs/rendering/mesh_hit_runtime_v1.md): the same ones its client model
+     * assembles (FluidPipePieces), steel and glass, from models/block/<this pipe>/.
+     */
+    @Override
+    public java.util.List<net.minecraft.resources.ResourceLocation> meshHitModels(BlockGetter level, BlockPos pos, BlockState state) {
+        net.minecraft.resources.ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this);
+        java.util.List<net.minecraft.resources.ResourceLocation> models = new java.util.ArrayList<>();
+        for (String piece : FluidPipePieces.pieceNames(FluidPipePieces.key(level, pos, state))) {
+            models.add(new net.minecraft.resources.ResourceLocation(id.getNamespace(), "block/" + id.getPath() + "/" + piece));
+            models.add(new net.minecraft.resources.ResourceLocation(id.getNamespace(), "block/" + id.getPath() + "/" + piece + "_glass"));
+        }
+        return models;
     }
 }

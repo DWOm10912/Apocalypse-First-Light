@@ -44,15 +44,17 @@ public final class ClientFuelLeaks {
         final long id;
         final Vec3 at;
         final Direction face;
+        final Vec3 normal;
         final boolean diesel;
         final LiquidJet jet = new LiquidJet(LiquidJet.EARTH_GRAVITY, 3.0);
         boolean flowing, burning, emitting;
         float speed;
 
-        Leak(long id, Vec3 at, Direction face, boolean diesel) {
+        Leak(long id, Vec3 at, Direction face, Vec3 normal, boolean diesel) {
             this.id = id;
             this.at = at;
             this.face = face;
+            this.normal = normal;
             this.diesel = diesel;
         }
 
@@ -75,7 +77,7 @@ public final class ClientFuelLeaks {
         }
         for (long id : removed) LEAKS.remove(id);
         for (AflNetwork.FuelLeakS2CPacket.Leak l : upserts) {
-            Leak leak = LEAKS.computeIfAbsent(l.id(), id -> new Leak(id, l.at(), l.face(), l.diesel()));
+            Leak leak = LEAKS.computeIfAbsent(l.id(), id -> new Leak(id, l.at(), l.face(), l.normal(), l.diesel()));
             leak.flowing = l.flowing();
             leak.burning = l.burning();
             leak.speed = l.speed();
@@ -86,9 +88,9 @@ public final class ClientFuelLeaks {
         return LEAKS.isEmpty();
     }
 
-    /** Every hole (where, which face): BulletHoles draws them as long as they last. */
-    static void forEachHole(java.util.function.BiConsumer<Vec3, Direction> out) {
-        for (Leak leak : LEAKS.values()) out.accept(leak.at, leak.face);
+    /** Every hole (where, the surface's normal there): BulletHoles draws them as long as they last. */
+    static void forEachHole(java.util.function.BiConsumer<Vec3, Vec3> out) {
+        for (Leak leak : LEAKS.values()) out.accept(leak.at, leak.normal);
     }
 
     @SubscribeEvent
@@ -105,7 +107,7 @@ public final class ClientFuelLeaks {
         Vec3 viewer = minecraft.player.position();
         for (Leak leak : LEAKS.values()) {
             boolean near = leak.at.distanceToSqr(viewer) < RANGE * RANGE;
-            Vec3 n = Vec3.atLowerCornerOf(leak.face.getNormal());
+            Vec3 n = leak.normal;
             if (leak.flowing && near) {
                 for (int k = 0; k < 2; k++) {
                     double t = TURBULENCE * leak.speed;
@@ -154,7 +156,7 @@ public final class ClientFuelLeaks {
     static void renderFlames(VertexConsumer out, PoseStack pose, Vec3 camera, double now) {
         for (Leak leak : LEAKS.values()) {
             if (!leak.burning || leak.at.distanceToSqr(camera) > RANGE * RANGE) continue;
-            Vec3 base = leak.at.add(Vec3.atLowerCornerOf(leak.face.getNormal()).scale(0.12)).add(0, -0.08, 0);
+            Vec3 base = leak.at.add(leak.normal.scale(0.12)).add(0, -0.08, 0);
             double width = leak.diesel ? 0.3 : 0.36, height = leak.diesel ? 0.42 : 0.6;
             FuelFlames.flame(out, pose.last().pose(), pose.last().normal(), camera, base, (leak.id * 0.618) % Math.PI, width, height, now * 1.2 + (leak.id * 17 % 48), leak.diesel);
         }
