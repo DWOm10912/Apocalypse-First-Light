@@ -226,8 +226,13 @@ public final class MetalTrashCanBlockEntity extends RandomizableContainerBlockEn
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation,
-                channel -> "open".equals(channel) && getBlockState().getValue(MetalTrashCanBlock.OPEN));
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return "open".equals(channel) && getBlockState().getValue(MetalTrashCanBlock.OPEN);
     }
 
     /** Bags: the first {@link #bags}, bottom up, and none under a shut lid (drawn while it is open or still moving). */

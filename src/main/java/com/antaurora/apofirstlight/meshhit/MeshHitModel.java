@@ -31,6 +31,13 @@ public final class MeshHitModel {
     private final int[] left, right, start, count;
     private final int[] order;
     private int nodes;
+    /** Feature edges (6 floats each), made on first use (the selection outline, client/MeshHitOutline). */
+    private volatile float[] edges;
+
+    /** An edge is drawn where its faces fold more than this (cosine), or where it bounds one face only. */
+    private static final double FOLD = Math.cos(Math.toRadians(35));
+    /** Shorter edges are left out of the outline (bolt heads and the like would clutter it). */
+    private static final double SHORTEST = 0.015;
 
     private MeshHitModel(float[] tri) {
         this.tri = tri;
@@ -47,6 +54,69 @@ public final class MeshHitModel {
 
     public int triangles() {
         return tri.length / 9;
+    }
+
+    /**
+     * The model's feature edges in block units, 6 floats each (two ends): corners shared by coincident faces are welded
+     * (to 1e-4), then an edge stays if it bounds one face only, is shared by more than two, or its two faces fold by more
+     * than 35 degrees (either winding: a double-sided face is flat); edges shorter than {@link #SHORTEST} go.
+     */
+    public float[] edges() {
+        float[] e = edges;
+        if (e == null) edges = e = featureEdges();
+        return e;
+    }
+
+    private float[] featureEdges() {
+        int n = tri.length / 9;
+        java.util.Map<Long, Integer> weld = new java.util.HashMap<>();
+        int[] corner = new int[n * 3];
+        java.util.List<float[]> points = new ArrayList<>();
+        for (int i = 0; i < n * 3; i++) {
+            float x = tri[i * 3], y = tri[i * 3 + 1], z = tri[i * 3 + 2];
+            long key = (Math.round(x * 1e4) & 0x1FFFFFL) << 42 | (Math.round(y * 1e4) & 0x1FFFFFL) << 21 | (Math.round(z * 1e4) & 0x1FFFFFL);
+            Integer at = weld.get(key);
+            if (at == null) {
+                weld.put(key, at = points.size());
+                points.add(new float[]{x, y, z});
+            }
+            corner[i] = at;
+        }
+        double[] normal = new double[n * 3];
+        for (int t = 0; t < n; t++) {
+            int b = t * 9;
+            double ux = tri[b + 3] - tri[b], uy = tri[b + 4] - tri[b + 1], uz = tri[b + 5] - tri[b + 2];
+            double vx = tri[b + 6] - tri[b], vy = tri[b + 7] - tri[b + 1], vz = tri[b + 8] - tri[b + 2];
+            double nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            normal[t * 3] = nx / len;
+            normal[t * 3 + 1] = ny / len;
+            normal[t * 3 + 2] = nz / len;
+        }
+        java.util.Map<Long, java.util.List<Integer>> faces = new java.util.LinkedHashMap<>();
+        for (int t = 0; t < n; t++) for (int k = 0; k < 3; k++) {
+            int a = corner[t * 3 + k], c = corner[t * 3 + (k + 1) % 3];
+            if (a == c) continue;
+            long key = (long) Math.min(a, c) << 32 | Math.max(a, c);
+            faces.computeIfAbsent(key, x -> new ArrayList<>()).add(t);
+        }
+        java.util.List<Float> out = new ArrayList<>();
+        for (java.util.Map.Entry<Long, java.util.List<Integer>> entry : faces.entrySet()) {
+            java.util.List<Integer> by = entry.getValue();
+            boolean keep = by.size() != 2;
+            if (!keep) {
+                int p = by.get(0) * 3, q = by.get(1) * 3;
+                keep = Math.abs(normal[p] * normal[q] + normal[p + 1] * normal[q + 1] + normal[p + 2] * normal[q + 2]) < FOLD;
+            }
+            if (!keep) continue;
+            float[] a = points.get((int) (entry.getKey() >>> 32)), c = points.get((int) (entry.getKey() & 0xFFFFFFFFL));
+            double dx = c[0] - a[0], dy = c[1] - a[1], dz = c[2] - a[2];
+            if (dx * dx + dy * dy + dz * dz < SHORTEST * SHORTEST) continue;
+            for (float f : a) out.add(f);
+            for (float f : c) out.add(f);
+        }
+        float[] e = new float[out.size()];
+        for (int i = 0; i < e.length; i++) e[i] = out.get(i);
+        return e;
     }
 
     /** The model's bounds in block units {minX, minY, minZ, maxX, maxY, maxZ}. */
@@ -173,6 +243,12 @@ public final class MeshHitModel {
         left[node] = build(from, mid);
         right[node] = build(mid, to);
         return node;
+    }
+
+    /** A model of these triangles (9 floats each, block units), or null for none (AnimatedMeshHits' posed parts). */
+    @Nullable
+    static MeshHitModel of(float[] tri) {
+        return tri.length < 9 ? null : new MeshHitModel(tri);
     }
 
     /** Loads {@code model} (e.g. apocalypse_firstlight:block/fuel_drum/body) from the jar, or null (not an OBJ model, missing). */

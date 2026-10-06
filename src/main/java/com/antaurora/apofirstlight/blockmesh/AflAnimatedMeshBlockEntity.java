@@ -23,6 +23,7 @@ public abstract class AflAnimatedMeshBlockEntity extends BlockEntity implements 
     public final ResourceLocation meshProfile() { return meshProfile; }
     public final AflBlockMeshAnimationState meshAnimation() { return meshAnimation; }
     protected abstract boolean meshAnimationTarget(String channel);
+    @Override public final boolean meshChannelTarget(String channel) { return meshAnimationTarget(channel); }
 
     public Direction meshFacing() {
         var state = getBlockState();
@@ -42,7 +43,7 @@ public abstract class AflAnimatedMeshBlockEntity extends BlockEntity implements 
 
     /** NBT-driven targets must also call this after applying update tag / BE packet data. */
     public final void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, meshProfile, meshAnimation, this::meshAnimationTarget);
+        AflAnimatedMeshHost.refreshTargets(level, meshProfile, meshAnimation, this::meshChannelTarget);
     }
 
     @Override public AABB getRenderBoundingBox() {

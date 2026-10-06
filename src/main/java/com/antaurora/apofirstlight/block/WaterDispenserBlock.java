@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.WaterDispenserBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -45,7 +46,13 @@ import java.util.Map;
  * {@link #LIT} on both halves: the indicator LEDs' lit set (no block light, the LEDs are tiny), fed through the standard
  * power port on the lower half's back. No water, drinking or storage yet.
  */
-public final class WaterDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
+public final class WaterDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower half (its block entity draws the dispenser). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+    }
+
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 

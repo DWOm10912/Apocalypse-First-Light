@@ -407,8 +407,13 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation,
-                channel -> "left_open".equals(channel) ? doorTarget(true) : "right_open".equals(channel) && doorTarget(false));
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return "left_open".equals(channel) ? doorTarget(true) : "right_open".equals(channel) && doorTarget(false);
     }
 
     /** The lit light set (LabPBR emissive, full brightness) while LIT, else the unlit one. */

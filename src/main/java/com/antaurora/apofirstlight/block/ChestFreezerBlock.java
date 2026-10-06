@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
@@ -54,7 +55,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * the compressor runs in cycles. Contents: the master's 18-slot searchable container, opened from the well of the open
  * half; the goods drawn inside follow how much it holds.
  */
-public final class ChestFreezerBlock extends Block implements EntityBlock, AflPowerPortBlock {
+public final class ChestFreezerBlock extends Block implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the left cell (its block entity draws the freezer). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return masterPosition(pos, state);
+    }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final EnumProperty<LidState> LID = EnumProperty.create("lid", LidState.class);

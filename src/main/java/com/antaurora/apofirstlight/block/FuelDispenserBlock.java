@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.FuelDispenserBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
@@ -70,7 +71,13 @@ import java.util.function.Supplier;
  * with that nozzle hangs it back; letting go of it any other way returns it too (FuelDispenserBlockEntity). There is no
  * fuel and no power in V1.
  */
-public final class FuelDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
+public final class FuelDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the a0 cell (its multipart applies the body). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return rootPosition(pos, state);
+    }
+
     public static final EnumProperty<Cell> CELL = EnumProperty.create("cell", Cell.class);
     /** Set into an island (placed onto two straight curbs, which it replaces): breaking it puts the curbs back. */
     public static final BooleanProperty ISLAND = BooleanProperty.create("island");

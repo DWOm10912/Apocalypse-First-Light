@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.item.VendingMachineBlockItem;
@@ -28,7 +29,13 @@ import net.minecraft.world.phys.shapes.*;
  * (no cooling), fed through the standard power port on the lower half's back: LIT gives block light {@link #LIGHT_LEVEL}
  * and the mesh's lit light set (VendingMachineBlockEntity, energy/CompressorAppliance in lights-only mode).
  */
-public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
+public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower half (its block entity draws the machine). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return lower(state, pos);
+    }
+
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     public static final BooleanProperty BROKEN = BooleanProperty.create("broken");
     public static final BooleanProperty LIT = BlockStateProperties.LIT;

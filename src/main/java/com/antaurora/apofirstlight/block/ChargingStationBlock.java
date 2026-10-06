@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -55,7 +56,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * feeding the master's buffer (ChargingStationBlockEntity). Drawn by the master's block entity renderer; the baked model is
  * particle only.
  */
-public final class ChargingStationBlock extends Block implements EntityBlock, AflPowerPortBlock {
+public final class ChargingStationBlock extends Block implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the left cell (its block entity draws the station). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return masterPosition(pos, state);
+    }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     /** Tray item resting point and prompt anchor, source px (tools/build-charging-station-v1.mjs ITEM, TRAY). */

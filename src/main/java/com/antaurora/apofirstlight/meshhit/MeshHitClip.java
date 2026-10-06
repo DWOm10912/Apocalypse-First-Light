@@ -29,7 +29,11 @@ public final class MeshHitClip {
             BlockHitResult block = null;
             if (!shape.isEmpty()) {
                 MeshHitModels.Shape mesh = MeshHitModels.shape(level, pos, state);
-                block = mesh != null ? mesh.clip(from, to, pos) : level.clipWithInteractionOverride(from, to, pos, shape, state);
+                if (mesh == null) block = level.clipWithInteractionOverride(from, to, pos, shape, state);
+                else {
+                    MeshBlockHitResult hit = mesh.clip(from, to, pos);
+                    block = hit == null ? null : MeshHitModels.inCell(level, hit, state);
+                }
             }
             BlockHitResult liquid = ctx.getFluidShape(fluid, level, pos).clip(from, to, pos);
             double a = block == null ? Double.MAX_VALUE : from.distanceToSqr(block.getLocation());

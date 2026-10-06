@@ -25,6 +25,13 @@ public interface AflAnimatedMeshHost {
     void refreshMeshAnimationTargets();
 
     /**
+     * The concrete block's authority for one animation channel: true = the channel's target pose (open door, raised lid).
+     * Both sides: refreshMeshAnimationTargets feeds it to the animation on the client, and the hit mesh
+     * (meshhit/AnimatedMeshHits, docs/rendering/mesh_hit_runtime_v1.md) poses the model by it on either side.
+     */
+    boolean meshChannelTarget(String channel);
+
+    /**
      * Profile part visibility, read every frame. A hidden part skips its geometry and its children. Used for alternative
      * part sets, e.g. a lamp's unlit and lit lenses (the lit set carries LabPBR emission in the atlas).
      */

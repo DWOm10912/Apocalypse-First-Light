@@ -358,7 +358,12 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     /** No animation channels. */
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, channel -> false);
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return false;
     }
 
     /**

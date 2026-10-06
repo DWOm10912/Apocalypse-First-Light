@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -55,7 +56,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link #LIT} on all four cells, block light {@link #LIGHT_LEVEL}, the lit light set of the mesh; and the compressor runs
  * in cycles. No gameplay effect on the goods yet.
  */
-public final class BeverageCoolerBlock extends Block implements EntityBlock, AflPowerPortBlock {
+public final class BeverageCoolerBlock extends Block implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower left cell (its block entity draws the cooler). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return masterPosition(pos, state);
+    }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final BooleanProperty LEFT_OPEN = BooleanProperty.create("left_open");

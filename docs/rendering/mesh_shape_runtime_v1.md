@@ -101,7 +101,7 @@
 2. 只接受位于完整资产 selection 表面之上或之前（误差 0.03 格）的区域。遮挡使用简化 selection，不是三角面；完整形状避免跨上下格的斜视线受半格裁切影响。
 3. 客户端提示和服务端 `use()` 使用同一判定。
 
-**伸出本格的选中**：
+**伸出本格的选中**（2026-10-06 起，原版选中那一步先经过命中网格 `client/MeshHitPicking`，本节的补充检测在它之后运行，见 [mesh_hit_runtime_v1.md](mesh_hit_runtime_v1.md) 0.5 节）：
 - 问题：原版只在视线穿过方块所在格时检测它。
 - 处理：`AflMeshShapePicking`（通过 `mixin/client/AflMeshShapePickMixin`，注入 `GameRenderer.pick` 的 TAIL）额外检测视线经过格子的水平邻域，包含斜对角。半径来自已缓存 profile 的 selection 越界 bounds 向上取整；储物柜为 1，即最多 3×3 邻域，去重并排除原版已经遍历的格子。不读取未加载 chunk。只对 selection 越界的 Mesh Shape 方块做实际 shape.clip，不硬编码 locker。只有实际交点严格近于现有方块/实体交点时才替换；等距时保留原版结果。profile 在方块状态 shape 缓存初始化时加载。
 - 服务端限制：原版会拒绝命中点离方块中心超过 1 格的使用请求，所以这类命中点会被夹回本格范围内；区域仍按视线判定，不受影响。

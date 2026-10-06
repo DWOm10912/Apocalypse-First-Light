@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.CommercialDumpsterBlockEntity;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
@@ -61,7 +62,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * and screen validity. Aiming at a half: shut, it opens that lid; open, the half searches; an open lid standing above the
  * cells (picked through AflOverhangPickBlock) shuts it.
  */
-public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock implements EntityBlock, AflOverhangPickBlock {
+public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock implements EntityBlock, AflOverhangPickBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the master cell (its block entity draws the dumpster). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return rootPosition(pos, state);
+    }
+
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     public static final BooleanProperty LEFT_OPEN = BooleanProperty.create("left_open");
     public static final BooleanProperty RIGHT_OPEN = BooleanProperty.create("right_open");

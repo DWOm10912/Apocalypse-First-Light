@@ -426,11 +426,17 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, channel -> switch (channel) {
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return switch (channel) {
             case "left_open" -> lidTarget() == ChestFreezerBlock.LidState.LEFT_OPEN;
             case "right_open" -> lidTarget() == ChestFreezerBlock.LidState.RIGHT_OPEN;
             default -> false;
-        });
+        };
     }
 
     /** The lit light set (LabPBR emissive, full brightness) while powered, else the unlit one; the shown goods only. */

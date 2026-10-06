@@ -251,11 +251,17 @@ public final class CommercialDumpsterBlockEntity extends RandomizableContainerBl
 
     @Override
     public void refreshMeshAnimationTargets() {
+        if (!(getBlockState().getBlock() instanceof CommercialDumpsterBlock)) return;
+        AflAnimatedMeshHost.refreshTargets(level, meshProfile(), meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
         BlockState state = getBlockState();
-        if (!(state.getBlock() instanceof CommercialDumpsterBlock)) return;
-        AflAnimatedMeshHost.refreshTargets(level, meshProfile(), meshAnimation,
-                channel -> "left_open".equals(channel) ? state.getValue(CommercialDumpsterBlock.LEFT_OPEN)
-                        : "right_open".equals(channel) && state.getValue(CommercialDumpsterBlock.RIGHT_OPEN));
+        if (!(state.getBlock() instanceof CommercialDumpsterBlock)) return false;
+        return "left_open".equals(channel) ? state.getValue(CommercialDumpsterBlock.LEFT_OPEN)
+                : "right_open".equals(channel) && state.getValue(CommercialDumpsterBlock.RIGHT_OPEN);
     }
 
     /** Goods: the first {@link #goods} of the fill order, each only while its half's lid is open or still moving. */

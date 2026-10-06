@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.fluid.AflFluidPortBlock;
@@ -61,7 +62,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * A click with an empty main hand on either cell turns the rotary isolator on or off ({@link #ON}: the handle model);
  * {@link #LAMP} is the status lamp, set by the block entity. No redstone.
  */
-public final class IntakePumpBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, AflFluidPortBlock {
+public final class IntakePumpBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, AflFluidPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the bank cell (its multipart applies the body). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return bankPosition(pos, state);
+    }
+
     public static final EnumProperty<Part> PART = EnumProperty.create("part", Part.class);
     /** The rotary isolator (bank cell): handle vertical when on. */
     public static final BooleanProperty ON = BooleanProperty.create("on");

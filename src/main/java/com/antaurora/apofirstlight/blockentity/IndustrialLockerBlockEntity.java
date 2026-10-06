@@ -307,8 +307,13 @@ public class IndustrialLockerBlockEntity extends RandomizableContainerBlockEntit
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation,
-                channel -> "open".equals(channel) && getBlockState().getValue(IndustrialLockerBlock.OPEN));
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return "open".equals(channel) && getBlockState().getValue(IndustrialLockerBlock.OPEN);
     }
 
     /** Goods: only the shown ones, and nothing behind a shut door (drawn while it is open or still swinging). */

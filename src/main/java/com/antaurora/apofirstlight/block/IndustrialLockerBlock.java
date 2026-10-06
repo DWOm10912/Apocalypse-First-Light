@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.meshshape.AflMeshInteractionBlock;
@@ -43,7 +44,13 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class IndustrialLockerBlock extends Block implements EntityBlock, AflMeshInteractionBlock {
+public class IndustrialLockerBlock extends Block implements EntityBlock, AflMeshInteractionBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower half (its block entity draws the locker). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? pos.below() : pos;
+    }
+
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final net.minecraft.world.level.block.state.properties.EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
     /** Door state on both halves: drives the animated door, the shape state (closed / open) and screen validity. */

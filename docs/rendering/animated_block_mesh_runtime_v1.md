@@ -102,6 +102,8 @@ profile 最多 128 parts、32 channels、32 层深度；拒绝未知字段、非
 
 renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）与 `packedOverlay`。位置/法线经过同一 PoseStack；低层保留逆转置、归一化及奇异矩阵保护。V1 是 **BER 采样点世界光照**，不是 baked terrain 的逐顶点邻接 AO，也不是大门每个移动端点独立取光。AO 可用材质表达。
 
+**channel 权威状态（2026-10-06，命中网格加入）**：`AflAnimatedMeshHost` 新增必须实现的 `meshChannelTarget(channel)`：这个 channel 现在应该在开（目标姿势）还是关。原来各方块实体在 `refreshMeshAnimationTargets` 里传给 `refreshTargets` 的 lambda 挪成了这个方法（`AflAnimatedMeshBlockEntity` 转给已有的 `meshAnimationTarget`），动画行为不变。它两端都能调用：命中网格（[mesh_hit_runtime_v1.md](mesh_hit_runtime_v1.md) 0.6 节，`meshhit/AnimatedMeshHits`）在服务端也要按它摆出开 / 关姿势。新接入的方块实体必须让它只读两端都有的状态（方块状态、同步过的字段）。
+
 **部件显示与自发光（2026-10-01，充电站加入）**：`AflAnimatedMeshHost` 新增两个默认方法，renderer 每帧逐 part 询问：
 
 - `meshPartVisible(part)`（默认 true）：返回 false 时跳过这个 part 的几何体和它的子 part。用于同一位置的两套部件互相替换，例如指示灯的暗灯 / 亮灯两套镜片（亮灯那套在贴图 `_s` 的 alpha 里带 LabPBR 自发光，这样光影下只有亮着的灯发光）。

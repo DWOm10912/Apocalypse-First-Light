@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity;
 import com.antaurora.apofirstlight.fluid.AflFluidPortBlock;
 import net.minecraft.core.BlockPos;
@@ -46,7 +47,13 @@ import java.util.function.Supplier;
  * clicked position, the tank running away from the player. Breaking any cell removes the tank (one drop); the fuel in it
  * is lost.
  */
-public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflFluidPortBlock {
+public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflFluidPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the port cell (its multipart applies the tank body). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return masterPosition(pos, state);
+    }
+
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public static final IntegerProperty ALONG = IntegerProperty.create("along", 0, 6);
     public static final IntegerProperty ACROSS = IntegerProperty.create("across", 0, 2);

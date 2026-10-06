@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
+import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.FuelDispenserSumpBlockEntity;
 import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.fluid.AflFluidPortBlock;
@@ -52,7 +53,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * cell at the clicked position, facing the player; when a dispenser stands two cells above the clicked position it lines up
  * with that dispenser instead (same facing, under its A and B columns).
  */
-public final class FuelDispenserSumpBlock extends HorizontalDirectionalBlock implements EntityBlock, AflFluidPortBlock, AflPowerPortBlock {
+public final class FuelDispenserSumpBlock extends HorizontalDirectionalBlock implements EntityBlock, AflFluidPortBlock, AflPowerPortBlock, MeshHitMultiCell {
+    /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the a0 cell (its variant is the body). */
+    @Override
+    public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
+        return rootPosition(pos, state);
+    }
+
     public static final EnumProperty<Cell> CELL = EnumProperty.create("cell", Cell.class);
 
     private record Mutation(LevelAccessor level, BlockPos root) {}

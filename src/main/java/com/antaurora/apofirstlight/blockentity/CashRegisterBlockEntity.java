@@ -202,8 +202,13 @@ public class CashRegisterBlockEntity extends RandomizableContainerBlockEntity im
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation,
-                channel -> "open".equals(channel) && getBlockState().getValue(CashRegisterBlock.OPEN));
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    /** Channel targets from the block state (both sides: also the hit mesh's pose, meshhit/AnimatedMeshHits). */
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return "open".equals(channel) && getBlockState().getValue(CashRegisterBlock.OPEN);
     }
 
     @Override

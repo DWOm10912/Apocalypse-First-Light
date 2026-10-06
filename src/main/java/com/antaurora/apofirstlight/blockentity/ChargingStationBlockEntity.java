@@ -314,7 +314,12 @@ public final class ChargingStationBlockEntity extends BlockEntity implements Afl
 
     @Override
     public void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, channel -> false);
+        AflAnimatedMeshHost.refreshTargets(level, MESH_PROFILE, meshAnimation, this::meshChannelTarget);
+    }
+
+    @Override
+    public boolean meshChannelTarget(String channel) {
+        return false;
     }
 
     @Override
