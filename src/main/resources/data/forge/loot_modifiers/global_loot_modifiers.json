@@ -1,6 +1,7 @@
 {
   "replace": false,
   "entries": [
-    "apocalypse_firstlight:environment_contamination"
+    "apocalypse_firstlight:environment_contamination",
+    "apocalypse_firstlight:remove_buckets"
   ]
 }

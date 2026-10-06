@@ -70,6 +70,7 @@ public final class WorldInteractionHint {
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
+            if(target==null) target=fuelContainer(mc,hit);
             if(target==null) target=fuelSumpCover(mc,hit);
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
@@ -272,6 +273,20 @@ public final class WorldInteractionHint {
         var s=mc.level.getBlockState(hit.getBlockPos());
         var prompt=com.antaurora.apofirstlight.block.FuelSumpCoverBlock.prompt(hit.getBlockPos(),s,mc.player);
         return prompt==null?null:new Target(Component.translatable("hint.apocalypse_firstlight."+prompt.key()),prompt.anchor());
+    }
+
+    /**
+     * Fuel containers and the hand pump (docs/models/fuel_containers_v1.md), as FuelCanBlock / HandFuelPumpBlock / the held
+     * nozzle, can and pump: fill with the nozzle, pour with a can, set a pump on a drum or an open fill cover, crank it or
+     * take it off, pick a can up. Drawn over the block.
+     */
+    private static Target fuelContainer(Minecraft mc,BlockHitResult hit) {
+        var key=com.antaurora.apofirstlight.block.FuelCanBlock.hint(mc.level,hit.getBlockPos(),mc.player);
+        if(key==null) return null;
+        // at the middle of what is aimed at (2026-10-05: 0.6 over the cell's centre put the label far up by the Jade box, user)
+        var shape=mc.level.getBlockState(hit.getBlockPos()).getShape(mc.level,hit.getBlockPos());
+        Vec3 at=shape.isEmpty()?hit.getLocation():shape.bounds().getCenter().add(Vec3.atLowerCornerOf(hit.getBlockPos()));
+        return new Target(Component.translatable("hint.apocalypse_firstlight.fuel_container."+key),at);
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */

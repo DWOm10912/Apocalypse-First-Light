@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.FuelDispenserBlock;
 import com.antaurora.apofirstlight.block.FuelDispenserBlock.Nozzle;
+import com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
@@ -219,6 +220,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             if (tell) say(player, "no_power");
             return;
         }
+        if (fill(server, player, nozzle, tell)) return;
         FluidStack drawn = line(nozzle.grade).drain(SPRAY_MB, IFluidHandler.FluidAction.EXECUTE);
         if (drawn.isEmpty()) {
             if (tell) say(player, "no_fuel");
@@ -229,6 +231,42 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             flowing |= 1 << i;
             sync();
         }
+    }
+
+    /** How far the nozzle reaches into a container (blocks from the eyes); litres a tick it fills at, every other tick. */
+    private static final double FILL_REACH = 2.5;
+
+    /**
+     * Fuel Containers V1 (2026-10-05, docs/models/fuel_containers_v1.md): the nozzle pointed at a fuel container standing in
+     * reach (a jerry can, a drum) fills it, 10 L a second, instead of spraying: no stream. A full one stops it (the
+     * automatic shut-off), one holding the other fuel takes none. True when the nozzle is on a container.
+     */
+    private boolean fill(net.minecraft.server.level.ServerLevel server, ServerPlayer player, Nozzle nozzle, boolean tell) {
+        Vec3 eye = player.getEyePosition();
+        net.minecraft.world.phys.BlockHitResult aim = server.clip(new net.minecraft.world.level.ClipContext(eye, eye.add(player.getLookAngle().scale(FILL_REACH)),
+                net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, player));
+        if (aim.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK
+                || !(server.getBlockEntity(aim.getBlockPos()) instanceof FuelCanBlockEntity can)) return false;
+        int i = nozzle.ordinal();
+        if ((flowing & 1 << i) != 0) {   // no stream while it fills
+            flowing &= ~(1 << i);
+            sync();
+        }
+        if (server.getGameTime() % 2 != 0) return true;
+        FluidStack one = line(nozzle.grade).drain(1, IFluidHandler.FluidAction.SIMULATE);
+        if (one.isEmpty()) {
+            if (tell) say(player, "no_fuel");
+            return true;
+        }
+        if (can.tank().fill(one, IFluidHandler.FluidAction.SIMULATE) <= 0) {
+            if (tell) say(player, !can.tank().isEmpty() && !can.tank().getFluid().isFluidEqual(one) ? "other_fuel" : "full");
+            return true;
+        }
+        can.tank().fill(line(nozzle.grade).drain(1, IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
+        if (server.getGameTime() % 16 == 0) {   // placeholder sound
+            server.playSound(null, aim.getBlockPos(), net.minecraft.sounds.SoundEvents.BUCKET_FILL, net.minecraft.sounds.SoundSource.BLOCKS, 0.35F, 1.3F);
+        }
+        return true;
     }
 
     /** A report reaches this far from the sprayer's eyes at most; the stream flies up to 3 s after the nozzle stops. */

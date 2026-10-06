@@ -32,11 +32,12 @@ import java.util.List;
  *   (the hydraulics cabinet). Steel.</li>
  *   <li>a fluid tank (V2 or heat-resistant) holding gasoline or diesel: its whole cuboid. Steel.</li>
  *   <li>an underground fuel tank: its 7 x 3 x 3 cells. Fibreglass: no sparks.</li>
+ *   <li>a fuel container (2026-10-05: jerry can, 60 L and 200 L drums, block/FuelCanBlock) holding fuel: its body. Steel.</li>
  * </ul>
  * A container is looked up from any of its blocks; {@link Key} names it (its {@code probe} is a block that resolves to it).
  */
 public final class FuelContainers {
-    public enum Kind { DISPENSER, TANK, UNDERGROUND }
+    public enum Kind { DISPENSER, TANK, UNDERGROUND, CAN }
 
     /** A container's name: a block that resolves to it (a dispenser line: its cabinet cell; a tank: its master). */
     public record Key(BlockPos probe) {}
@@ -85,6 +86,13 @@ public final class FuelContainers {
             AABB box = new AABB(m.getX(), m.getY(), m.getZ(), m.getX() + shape.sx(), m.getY() + shape.sy(), m.getZ() + shape.sz());
             return new Container(Kind.TANK, new Key(m), m, diesel, tank.getFluidAmount(), tank.getCapacity(), box, true);
         }
+        if (state.getBlock() instanceof com.antaurora.apofirstlight.block.FuelCanBlock
+                && level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity can) {
+            Boolean diesel = fuel(can.tank().getFluid());
+            if (diesel == null) return null;
+            return new Container(Kind.CAN, new Key(pos.immutable()), pos.immutable(), diesel, can.tank().getFluidAmount(), can.tank().getCapacity(),
+                    com.antaurora.apofirstlight.block.FuelCanBlock.fuelBox(pos, state), true);
+        }
         if (state.getBlock() instanceof UndergroundFuelTankBlock block) {
             BlockPos master = UndergroundFuelTankBlock.masterPosition(pos, state);
             if (!(level.getBlockEntity(master) instanceof UndergroundFuelTankBlockEntity tank)) return null;
@@ -124,6 +132,8 @@ public final class FuelContainers {
             case TANK -> level.getBlockEntity(c.master()) instanceof FluidTankBlockEntity t ? t.drainShared(mb) : 0;
             case UNDERGROUND -> level.getBlockEntity(c.master()) instanceof UndergroundFuelTankBlockEntity t
                     ? t.tank().drain(mb, IFluidHandler.FluidAction.EXECUTE).getAmount() : 0;
+            case CAN -> level.getBlockEntity(c.master()) instanceof com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity t
+                    ? t.tank().drain(mb, IFluidHandler.FluidAction.EXECUTE).getAmount() : 0;
         };
     }
 
@@ -143,7 +153,7 @@ public final class FuelContainers {
     public static void destroy(ServerLevel level, Container c) {
         drain(level, c, Integer.MAX_VALUE);
         switch (c.kind()) {
-            case DISPENSER, UNDERGROUND -> level.removeBlock(c.master(), false);   // their removal takes every other cell along
+            case DISPENSER, UNDERGROUND, CAN -> level.removeBlock(c.master(), false);   // their removal takes every other cell along
             case TANK -> {
                 for (int x = (int) c.box().minX; x < (int) c.box().maxX; x++)
                     for (int y = (int) c.box().minY; y < (int) c.box().maxY; y++)
@@ -173,6 +183,8 @@ public final class FuelContainers {
                 } else if (entity instanceof FluidTankBlockEntity tank && tank.shape().master().equals(entity.getBlockPos())) {
                     probes.add(entity.getBlockPos());
                 } else if (entity instanceof UndergroundFuelTankBlockEntity && UndergroundFuelTankBlock.isMaster(entity.getBlockState())) {
+                    probes.add(entity.getBlockPos());
+                } else if (entity instanceof com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity) {
                     probes.add(entity.getBlockPos());
                 }
                 for (BlockPos probe : probes) {

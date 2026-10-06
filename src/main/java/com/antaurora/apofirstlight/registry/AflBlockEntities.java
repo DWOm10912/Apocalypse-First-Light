@@ -74,6 +74,14 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("submersible_fuel_pump", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.SubmersibleFuelPumpBlockEntity::new,
                             AflBlocks.SUBMERSIBLE_FUEL_PUMP.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity>> FUEL_CAN =
+            BLOCK_ENTITIES.register("fuel_can", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity::new,
+                            AflBlocks.JERRY_CAN.get(), AflBlocks.SMALL_FUEL_DRUM.get(), AflBlocks.FUEL_DRUM.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.HandFuelPumpBlockEntity>> HAND_FUEL_PUMP =
+            BLOCK_ENTITIES.register("hand_fuel_pump", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.HandFuelPumpBlockEntity::new,
+                            AflBlocks.HAND_FUEL_PUMP.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.FuelDispenserSumpBlockEntity>> FUEL_DISPENSER_SUMP =
             BLOCK_ENTITIES.register("fuel_dispenser_sump", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelDispenserSumpBlockEntity::new,

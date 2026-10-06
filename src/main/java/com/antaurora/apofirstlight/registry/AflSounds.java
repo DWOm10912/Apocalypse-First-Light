@@ -114,6 +114,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> FUEL_IGNITE = simple("fuel_ignite");
     public static final RegistryObject<SoundEvent> FUEL_FIRE_LOOP = simple("fuel_fire_loop");
     public static final RegistryObject<SoundEvent> FUEL_EXPLODE = simple("fuel_explode");
+    /** Jerry can pour (docs/models/fuel_containers_v1.md "声音", tools/build-jerry-can-pour-sounds-v1.mjs; client/JerryCanPourSounds). */
+    public static final RegistryObject<SoundEvent> JERRY_CAN_OPEN = simple("jerry_can_open");
+    public static final RegistryObject<SoundEvent> JERRY_CAN_POUR = simple("jerry_can_pour");
+    public static final RegistryObject<SoundEvent> JERRY_CAN_CLOSE = simple("jerry_can_close");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

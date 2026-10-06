@@ -55,6 +55,9 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(FuelHazardJadeProvider.INSTANCE, FluidTankBlockEntity.class);
         registration.registerBlockDataProvider(FuelHazardJadeProvider.INSTANCE,
                 com.antaurora.apofirstlight.blockentity.UndergroundFuelTankBlockEntity.class);
+        registration.registerBlockDataProvider(FuelCanJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity.class);
+        registration.registerBlockDataProvider(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity.class);
+        registration.registerBlockDataProvider(FuelCanJadeProvider.Pump.INSTANCE, com.antaurora.apofirstlight.blockentity.HandFuelPumpBlockEntity.class);
     }
 
     @Override
@@ -91,5 +94,8 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelDispenserBlock.class);
         registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, FluidTankBlock.class);
         registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.UndergroundFuelTankBlock.class);
+        registration.registerBlockComponent(FuelCanJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelCanBlock.class);
+        registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelCanBlock.class);
+        registration.registerBlockComponent(FuelCanJadeProvider.Pump.INSTANCE, com.antaurora.apofirstlight.block.HandFuelPumpBlock.class);
     }
 }

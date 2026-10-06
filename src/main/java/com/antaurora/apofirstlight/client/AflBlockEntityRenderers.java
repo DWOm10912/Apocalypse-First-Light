@@ -22,6 +22,8 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(AflBlockEntities.STORAGE_RACK.get(), StorageRackRenderer::new);
         // Fuel Dispenser V1: the live hoses of nozzles that are out (the dispenser and its holstered nozzles are baked)
         event.registerBlockEntityRenderer(AflBlockEntities.FUEL_DISPENSER.get(), FuelDispenserRenderer::new);
+        // Fuel containers V1: the hand pump's crank and hose (its body is baked per mount)
+        event.registerBlockEntityRenderer(AflBlockEntities.HAND_FUEL_PUMP.get(), HandFuelPumpRenderer::new);
         // Checkout Counter V1 gate: the flap and the door animate (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.CHECKOUT_COUNTER_GATE.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);

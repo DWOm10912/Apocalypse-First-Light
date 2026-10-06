@@ -239,6 +239,9 @@ public final class FuelLeaks extends SavedData {
         List<FuelContainers.Container> all = FuelContainers.together(level, c);
         double vapour = Math.max(0, c.capacity() - c.amount()) / 1000.0, fuel = c.amount() / 1000.0;   // m^3 (1 mB = 1 L)
         float power = rupture ? (float) Mth.clamp(1.5 + 1.2 * Math.cbrt(fuel), 1.5, 6.0) : (float) Mth.clamp(2.0 + 1.6 * Math.cbrt(vapour), 2.0, 7.0);
+        if (c.kind() == FuelContainers.Kind.CAN) {   // a can or drum: a small blast (20 L of vapour about 1.2, an empty 200 L drum 2)
+            power = rupture ? (float) Mth.clamp(0.5 + 1.8 * Math.cbrt(fuel), 0.8, 2.5) : (float) Mth.clamp(0.6 + 2.4 * Math.cbrt(vapour), 1.0, 3.0);
+        }
         if (c.diesel()) power *= 0.75F;
         Vec3 centre = c.centre();
         // the containers go first: nothing of them is left to find, so the blast does not set them off again

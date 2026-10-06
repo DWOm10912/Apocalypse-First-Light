@@ -301,6 +301,20 @@ public final class AflBlocks {
             () -> new com.antaurora.apofirstlight.block.FuelSumpCoverBlock(com.antaurora.apofirstlight.block.FuelSumpCoverBlock.Kind.FILL,
                     BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(5.0F, 8.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
 
+    // fuel containers and the hand pump (docs/models/fuel_containers_v1.md): low-tier steel, any pickaxe or by hand
+    public static final RegistryObject<Block> JERRY_CAN = BLOCKS.register("jerry_can",
+            () -> new com.antaurora.apofirstlight.block.FuelCanBlock(com.antaurora.apofirstlight.block.FuelCanBlock.Size.JERRY_CAN,
+                    BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(1.0F, 2.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> SMALL_FUEL_DRUM = BLOCKS.register("small_fuel_drum",
+            () -> new com.antaurora.apofirstlight.block.FuelCanBlock(com.antaurora.apofirstlight.block.FuelCanBlock.Size.SMALL_DRUM,
+                    BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(1.5F, 3.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> FUEL_DRUM = BLOCKS.register("fuel_drum",
+            () -> new com.antaurora.apofirstlight.block.FuelCanBlock(com.antaurora.apofirstlight.block.FuelCanBlock.Size.DRUM,
+                    BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(2.0F, 3.0F).sound(SoundType.METAL).noOcclusion()));
+    public static final RegistryObject<Block> HAND_FUEL_PUMP = BLOCKS.register("hand_fuel_pump",
+            () -> new com.antaurora.apofirstlight.block.HandFuelPumpBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(1.0F, 2.0F).sound(SoundType.METAL).noOcclusion().noCollission()));
+
     public static final RegistryObject<Block> FUEL_DISPENSER_SUMP = BLOCKS.register("fuel_dispenser_sump",
             () -> new com.antaurora.apofirstlight.block.FuelDispenserSumpBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));

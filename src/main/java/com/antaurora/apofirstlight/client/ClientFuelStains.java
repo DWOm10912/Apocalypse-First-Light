@@ -98,7 +98,7 @@ public final class ClientFuelStains {
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES
-                || FuelStainIndex.CLIENT.isEmpty() && BulletHoles.isEmpty() && Scorches.isEmpty() && FireBlockFlames.isEmpty() && FireFx.isEmpty()) return;
+                || FuelStainIndex.CLIENT.isEmpty() && BulletHoles.isEmpty() && Scorches.isEmpty() && FireBlockFlames.isEmpty() && FireFx.isEmpty() && FuelCanPourJets.isEmpty()) return;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) return;
@@ -134,6 +134,7 @@ public final class ClientFuelStains {
         buffers.endBatch(LiquidRenderTypes.EMBER);
         FireStats.lap(FireStats.GROUND);
         ClientFuelLeaks.renderStreams(pose, buffers, level, camera, event.getPartialTick());   // fuel leaking out of bullet holes
+        FuelCanPourJets.render(pose, buffers, level, camera, event.getPartialTick());   // and poured from jerry cans
         buffers.endBatch(net.minecraft.client.renderer.RenderType.entityTranslucent(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS));
         FireStats.lap(FireStats.STREAMS);
         FireFx.renderSmoke(pose, buffers, level, event.getCamera(), event.getPartialTick());   // smoke, then the flames' light over it

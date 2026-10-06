@@ -1,0 +1,11 @@
+{
+  "type": "apocalypse_firstlight:remove_items",
+  "conditions": [],
+  "items": [
+    "minecraft:bucket",
+    "minecraft:water_bucket",
+    "minecraft:lava_bucket",
+    "minecraft:milk_bucket",
+    "minecraft:powder_snow_bucket"
+  ]
+}

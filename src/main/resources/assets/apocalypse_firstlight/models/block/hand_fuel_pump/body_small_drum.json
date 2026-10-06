@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/hand_fuel_pump/body_small_drum.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/fuel_containers"
+  }
+}

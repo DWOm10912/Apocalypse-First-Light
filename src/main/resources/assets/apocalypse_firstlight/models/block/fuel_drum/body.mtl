@@ -1,0 +1,4 @@
+# AFL fuel_drum/body
+newmtl fuel_containers
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/fuel_containers

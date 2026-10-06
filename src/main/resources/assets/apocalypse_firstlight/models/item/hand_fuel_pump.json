@@ -1,0 +1,120 @@
+{
+  "parent": "apocalypse_firstlight:block/hand_fuel_pump/item",
+  "gui_light": "side",
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0.775,
+        2.907,
+        1.218
+      ],
+      "scale": [
+        0.922,
+        0.922,
+        0.922
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.663,
+        2.5,
+        -0.213
+      ],
+      "scale": [
+        0.737,
+        0.737,
+        0.737
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        -1
+      ],
+      "scale": [
+        0.544,
+        0.544,
+        0.544
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        2.5,
+        -1
+      ],
+      "scale": [
+        0.544,
+        0.544,
+        0.544
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        200,
+        0
+      ],
+      "translation": [
+        2,
+        3,
+        0
+      ],
+      "scale": [
+        0.544,
+        0.544,
+        0.544
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        160,
+        0
+      ],
+      "translation": [
+        -2,
+        3,
+        0
+      ],
+      "scale": [
+        0.544,
+        0.544,
+        0.544
+      ]
+    }
+  }
+}

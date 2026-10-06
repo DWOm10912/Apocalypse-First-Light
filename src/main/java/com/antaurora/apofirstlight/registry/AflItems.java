@@ -275,6 +275,14 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUEL_FILL_COVER_GASOLINE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FUEL_FILL_COVER_DIESEL = ITEMS.register("fuel_fill_cover_diesel",
             () -> new BlockItem(AflBlocks.FUEL_FILL_COVER_DIESEL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> JERRY_CAN = ITEMS.register("jerry_can",
+            () -> new com.antaurora.apofirstlight.item.FuelCanItem((com.antaurora.apofirstlight.block.FuelCanBlock) AflBlocks.JERRY_CAN.get(), true, new Item.Properties()));
+    public static final RegistryObject<Item> SMALL_FUEL_DRUM = ITEMS.register("small_fuel_drum",
+            () -> new com.antaurora.apofirstlight.item.FuelCanItem((com.antaurora.apofirstlight.block.FuelCanBlock) AflBlocks.SMALL_FUEL_DRUM.get(), false, new Item.Properties()));
+    public static final RegistryObject<Item> FUEL_DRUM = ITEMS.register("fuel_drum",
+            () -> new com.antaurora.apofirstlight.item.FuelCanItem((com.antaurora.apofirstlight.block.FuelCanBlock) AflBlocks.FUEL_DRUM.get(), false, new Item.Properties()));
+    public static final RegistryObject<Item> HAND_FUEL_PUMP = ITEMS.register("hand_fuel_pump",
+            () -> new BlockItem(AflBlocks.HAND_FUEL_PUMP.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FUEL_DISPENSER_SUMP = ITEMS.register("fuel_dispenser_sump",
             () -> new com.antaurora.apofirstlight.item.FuelDispenserSumpItem(
                     (com.antaurora.apofirstlight.block.FuelDispenserSumpBlock) AflBlocks.FUEL_DISPENSER_SUMP.get(), new Item.Properties().stacksTo(1)));

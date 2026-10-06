@@ -265,6 +265,22 @@
       "unit_mass_kg": 30,
       "estimated": true
     },
+    "apocalypse_firstlight:jerry_can": {
+      "unit_mass_kg": 4.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:small_fuel_drum": {
+      "unit_mass_kg": 7,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fuel_drum": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:hand_fuel_pump": {
+      "unit_mass_kg": 4.5,
+      "estimated": true
+    },
     "apocalypse_firstlight:intake_pump": {
       "unit_mass_kg": 45,
       "estimated": true

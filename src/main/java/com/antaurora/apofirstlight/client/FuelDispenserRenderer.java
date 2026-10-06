@@ -134,10 +134,15 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
             model.applyTransform(left ? ItemDisplayContext.FIRST_PERSON_LEFT_HAND : ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, pose, left);
             pose.translate(-0.5F, -0.5F, -0.5F);
             Matrix4f m = new Matrix4f(pose.last().pose());
-            double k = Math.tan(Math.toRadians(mc.options.fov().get()) / 2) / Math.tan(Math.toRadians(70) / 2);
-            Camera camera = mc.gameRenderer.getMainCamera();
-            Vec3 eye = camera.getPosition();
-            Vec3 right = new Vec3(camera.getLeftVector()).scale(-1), up = new Vec3(camera.getUpVector()), ahead = new Vec3(camera.getLookVector());
+            // the hand is drawn at its own field of view, the world at the configured one times the dynamic factor (flying,
+            // sprinting, speed): both as last computed (ViewFov). 2026-10-05: with the settings' value alone the stream left
+            // the nozzle off its tip whenever the player flew or sprinted (user)
+            double k = Math.tan(Math.toRadians(ViewFov.world()) / 2) / Math.tan(Math.toRadians(ViewFov.hand()) / 2);
+            // the eye and the view at this partial tick (not the camera's last frame: the jet emits at tick time)
+            Vec3 eye = player.getEyePosition(partialTick);
+            Quaternionf view = new Quaternionf().rotationYXZ(-player.getViewYRot(partialTick) * Mth.DEG_TO_RAD, player.getViewXRot(partialTick) * Mth.DEG_TO_RAD, 0.0F);
+            Vec3 right = new Vec3(new org.joml.Vector3f(-1, 0, 0).rotate(view)), up = new Vec3(new org.joml.Vector3f(0, 1, 0).rotate(view)),
+                    ahead = new Vec3(new org.joml.Vector3f(0, 0, 1).rotate(view));
             return new HeldFrame() {
                 @Override
                 public Vec3 point(float x, float y, float z) {

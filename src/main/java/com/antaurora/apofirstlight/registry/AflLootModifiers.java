@@ -17,6 +17,9 @@ public final class AflLootModifiers {
             SERIALIZERS.register("environment_contamination",
                     () -> EnvironmentContaminationLootModifier.CODEC);
 
+    public static final RegistryObject<Codec<? extends IGlobalLootModifier>> REMOVE_ITEMS =
+            SERIALIZERS.register("remove_items", () -> com.antaurora.apofirstlight.fluid.RemoveItemsLootModifier.CODEC);
+
     private AflLootModifiers() {
     }
 }

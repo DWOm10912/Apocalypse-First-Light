@@ -29,7 +29,8 @@ import java.util.function.Supplier;
  * <ul>
  * <li>{@code /dev fuel source <gasoline|diesel>}: a source block in the cell in front of the face in view (or the cell in
  * view when it can be replaced). {@code /setblock ... apocalypse_firstlight:gasoline} works as well.</li>
- * <li>{@code /dev fuel fill [mB]}: fills the underground fuel tank in view with its own fuel (default: full).</li>
+ * <li>{@code /dev fuel fill [mB]}: fills the underground fuel tank in view with its own fuel (default: full); a fuel container
+ * in view (jerry can, drum) with what it holds, gasoline when empty.</li>
  * <li>{@code /dev fuel info}: the underground fuel tank in view: fuel and amount.</li>
  * <li>{@code /dev fuel station}: a cut-open demo fuel station east of the player (DevFuelStation).</li>
  * </ul>
@@ -80,6 +81,15 @@ public final class DevFuelCommands {
     }
 
     private static int fill(CommandContext<CommandSourceStack> context, int amount) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
+        if (player.pick(12.0D, 0.0F, false) instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK
+                && player.level().getBlockEntity(hit.getBlockPos()) instanceof com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity can) {
+            var held = can.tank().getFluid();
+            var fuel = held.isEmpty() ? com.antaurora.apofirstlight.registry.AflFluids.GASOLINE.get() : held.getFluid();
+            int filled = can.tank().fill(new FluidStack(fuel, Math.min(amount, can.tank().getCapacity())), IFluidHandler.FluidAction.EXECUTE);
+            context.getSource().sendSuccess(() -> Component.literal("Filled " + filled + " mB; now " + can.tank().getFluidAmount() + " / " + can.tank().getCapacity() + " mB"), false);
+            return filled > 0 ? 1 : 0;
+        }
         UndergroundFuelTankBlockEntity tank = tankInView(context);
         if (tank == null) return 0;
         UndergroundFuelTankBlock block = (UndergroundFuelTankBlock) tank.getBlockState().getBlock();

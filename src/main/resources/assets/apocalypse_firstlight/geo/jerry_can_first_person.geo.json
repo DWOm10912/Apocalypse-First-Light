@@ -1,0 +1,134 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.jerry_can_first_person",
+        "texture_width": 1024,
+        "texture_height": 1024,
+        "visible_bounds_width": 4,
+        "visible_bounds_height": 4,
+        "visible_bounds_offset": [
+          0,
+          0,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "camera",
+          "parent": "root",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "can",
+          "parent": "root",
+          "pivot": [
+            -4.4,
+            -5,
+            -10.5
+          ]
+        },
+        {
+          "name": "cap",
+          "parent": "can",
+          "pivot": [
+            -1.8261,
+            -5.56,
+            -13.0739
+          ]
+        },
+        {
+          "name": "spout",
+          "parent": "can",
+          "pivot": [
+            -1.8261,
+            -4.79,
+            -13.0739
+          ]
+        },
+        {
+          "name": "right_hand_anchor",
+          "parent": "can",
+          "pivot": [
+            -4.4,
+            -5,
+            -10.5
+          ]
+        },
+        {
+          "name": "right_hand",
+          "parent": "right_hand_anchor",
+          "pivot": [
+            -4.4,
+            -5,
+            -10.5
+          ],
+          "rotation": [
+            74.0712,
+            8.2551,
+            -175.9847
+          ]
+        },
+        {
+          "name": "left_hand_anchor",
+          "parent": "can",
+          "pivot": [
+            -1.8261,
+            -4.79,
+            -13.0739
+          ]
+        },
+        {
+          "name": "left_hand",
+          "parent": "left_hand_anchor",
+          "pivot": [
+            -1.8261,
+            -4.79,
+            -13.0739
+          ],
+          "rotation": [
+            4.2354,
+            -35.7864,
+            -97.5412
+          ]
+        },
+        {
+          "name": "left_under_anchor",
+          "parent": "can",
+          "pivot": [
+            -0.8263,
+            -10.53,
+            -14.0737
+          ]
+        },
+        {
+          "name": "left_under_hand",
+          "parent": "left_under_anchor",
+          "pivot": [
+            -0.8263,
+            -10.53,
+            -14.0737
+          ],
+          "rotation": [
+            34.6074,
+            -1.267,
+            -88.2661
+          ]
+        }
+      ]
+    }
+  ]
+}

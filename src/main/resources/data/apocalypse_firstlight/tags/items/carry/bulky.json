@@ -12,6 +12,8 @@
     "apocalypse_firstlight:restroom_stall_door",
     "apocalypse_firstlight:checkout_counter",
     "apocalypse_firstlight:checkout_counter_display",
-    "apocalypse_firstlight:checkout_counter_gate"
+    "apocalypse_firstlight:checkout_counter_gate",
+    "apocalypse_firstlight:small_fuel_drum",
+    "apocalypse_firstlight:fuel_drum"
   ]
 }

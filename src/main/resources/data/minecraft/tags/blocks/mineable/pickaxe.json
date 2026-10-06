@@ -87,6 +87,10 @@
     "apocalypse_firstlight:heat_resistant_fluid_pipe",
     "apocalypse_firstlight:heat_resistant_fluid_tank",
     "apocalypse_firstlight:heat_resistant_intake_pump",
-    "apocalypse_firstlight:lead_shielding_bricks"
+    "apocalypse_firstlight:lead_shielding_bricks",
+    "apocalypse_firstlight:jerry_can",
+    "apocalypse_firstlight:small_fuel_drum",
+    "apocalypse_firstlight:fuel_drum",
+    "apocalypse_firstlight:hand_fuel_pump"
   ]
 }

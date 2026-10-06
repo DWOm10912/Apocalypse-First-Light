@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,mount=fill": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_fill"
+    },
+    "facing=north,mount=drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_drum"
+    },
+    "facing=north,mount=small_drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_small_drum"
+    },
+    "facing=east,mount=fill": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_fill",
+      "y": 90
+    },
+    "facing=east,mount=drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_drum",
+      "y": 90
+    },
+    "facing=east,mount=small_drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_small_drum",
+      "y": 90
+    },
+    "facing=south,mount=fill": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_fill",
+      "y": 180
+    },
+    "facing=south,mount=drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_drum",
+      "y": 180
+    },
+    "facing=south,mount=small_drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_small_drum",
+      "y": 180
+    },
+    "facing=west,mount=fill": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_fill",
+      "y": 270
+    },
+    "facing=west,mount=drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_drum",
+      "y": 270
+    },
+    "facing=west,mount=small_drum": {
+      "model": "apocalypse_firstlight:block/hand_fuel_pump/body_small_drum",
+      "y": 270
+    }
+  }
+}

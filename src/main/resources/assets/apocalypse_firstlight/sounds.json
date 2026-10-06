@@ -467,5 +467,17 @@
   "sheet_metal_step": {"subtitle": "subtitles.block.generic.footsteps", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 0.95}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.05}]},
   "sheet_metal_place": {"subtitle": "subtitles.block.generic.place", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.188}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.25}, {"name": "apocalypse_firstlight:sheet_metal/place", "pitch": 1.313}]},
   "sheet_metal_hit": {"subtitle": "subtitles.block.generic.hit", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 1.9}, {"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 2}, {"name": "apocalypse_firstlight:sheet_metal/hit", "pitch": 2.1}]},
-  "sheet_metal_fall": {"subtitle": "subtitles.block.generic.fall", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.267}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.333}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.4}]}
+  "sheet_metal_fall": {"subtitle": "subtitles.block.generic.fall", "sounds": [{"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.267}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.333}, {"name": "apocalypse_firstlight:sheet_metal/step", "pitch": 1.4}]},
+  "jerry_can_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.jerry_can_open",
+    "sounds": [{"name": "apocalypse_firstlight:jerry_can/open", "attenuation_distance": 10}]
+  },
+  "jerry_can_pour": {
+    "subtitle": "subtitles.apocalypse_firstlight.jerry_can_pour",
+    "sounds": [{"name": "apocalypse_firstlight:jerry_can/pour", "attenuation_distance": 10}]
+  },
+  "jerry_can_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.jerry_can_close",
+    "sounds": [{"name": "apocalypse_firstlight:jerry_can/close", "attenuation_distance": 10}]
+  }
 }
