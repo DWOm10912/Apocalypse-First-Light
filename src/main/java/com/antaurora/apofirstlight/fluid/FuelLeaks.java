@@ -9,7 +9,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
@@ -227,7 +226,7 @@ public final class FuelLeaks extends SavedData {
         } else {
             heat.burning = now;
             Vec3 p = c.centre();
-            level.playSound(null, p.x, p.y, p.z, SoundEvents.FIRECHARGE_USE, SoundSource.BLOCKS, 1.0F, c.diesel() ? 0.7F : 0.9F);
+            level.playSound(null, p.x, p.y, p.z, com.antaurora.apofirstlight.registry.AflSounds.FUEL_IGNITE.get(), SoundSource.BLOCKS, 1.0F, c.diesel() ? 0.7F : 0.9F);
         }
         setDirty();
     }
@@ -258,6 +257,8 @@ public final class FuelLeaks extends SavedData {
         for (FuelContainers.Container one : all) FuelContainers.destroy(level, one);
         level.explode(null, centre.x, centre.y, centre.z, power, true, Level.ExplosionInteraction.BLOCK);
         AflNetwork.sendFuelBlast(level, centre, power, c.diesel());   // the smoke burst and column (client/FireFx)
+        level.playSound(null, centre.x, centre.y, centre.z, com.antaurora.apofirstlight.registry.AflSounds.FUEL_EXPLODE.get(), SoundSource.BLOCKS,
+                3.0F, (c.diesel() ? 0.85F : 1.0F) * (0.92F + 0.16F * level.random.nextFloat()));   // over vanilla's blast: heard to about 96 blocks
         FuelSpills spills = FuelSpills.get(level);
         for (FuelContainers.Container one : all) {
             int stains = rupture || one != c ? Mth.clamp(one.amount() / 25, one.amount() > 0 ? 3 : 0, 40) : Mth.clamp(one.amount() / 25, 0, 12);

@@ -209,7 +209,7 @@ public final class FuelSpills extends SavedData {
             lights.add(cell.asLong());
         }
         if (stain.size >= 0.2F || level.random.nextFloat() < 0.25F) {
-            level.playSound(null, stain.pos.x, stain.pos.y, stain.pos.z, net.minecraft.sounds.SoundEvents.FIRECHARGE_USE,
+            level.playSound(null, stain.pos.x, stain.pos.y, stain.pos.z, com.antaurora.apofirstlight.registry.AflSounds.FUEL_IGNITE.get(),
                     net.minecraft.sounds.SoundSource.BLOCKS, stain.diesel ? 0.35F : 0.6F, stain.diesel ? 0.8F : 1.1F);
         }
         sync(level, stain, now);
@@ -312,6 +312,17 @@ public final class FuelSpills extends SavedData {
         if (index.isEmpty()) return;
         Map<Long, List<Long>> removed = new HashMap<>();
         index.expire(level.getGameTime(), s -> removed.computeIfAbsent(s.chunk(), k -> new ArrayList<>()).add(s.id));
+        // a stain whose block was dug out or blown away goes with it (2026-10-05: they were left hanging in the air)
+        List<FuelStainIndex.Stain> unsupported = new ArrayList<>();
+        for (FuelStainIndex.Stain s : index.all()) {
+            BlockPos under = BlockPos.containing(s.pos.subtract(Vec3.atLowerCornerOf(s.face.getNormal()).scale(0.01)));
+            if (level.isLoaded(under) && level.getBlockState(under).getCollisionShape(level, under).isEmpty()) unsupported.add(s);
+        }
+        for (FuelStainIndex.Stain s : unsupported) {
+            index.remove(s.id);
+            removed.computeIfAbsent(s.chunk(), k -> new ArrayList<>()).add(s.id);
+            releaseLight(level, s.cell());
+        }
         if (removed.isEmpty()) return;
         removed.forEach((chunk, ids) -> AflNetwork.sendFuelStains(level, new ChunkPos(chunk), List.of(), ids));
         setDirty();

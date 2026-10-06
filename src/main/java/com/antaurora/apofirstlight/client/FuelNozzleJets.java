@@ -42,7 +42,8 @@ import java.util.UUID;
 public final class FuelNozzleJets {
     /** Seconds a parcel flies at most. */
     private static final double MAX_AGE = 3.0;
-    private static final double TURBULENCE = 0.025;
+    /** The nozzle's wobble: a slow random drift (a share of the speed) plus a little jitter per parcel. */
+    private static final double WOBBLE = 0.03, JITTER = 0.003;
     private static final double SHED_AGE = 0.2, SHED_CHANCE = 0.12;
     private static final int DRIPS = 3, DRIP_EVERY = 6;
 
@@ -57,6 +58,7 @@ public final class FuelNozzleJets {
         private UUID holder;
         @Nullable
         private Vec3 lastSpout;
+        private Vec3 drift = Vec3.ZERO;
         private int drips, dripTimer;
 
         private Jet(FuelDispenserBlock.Grade grade) {
@@ -130,11 +132,13 @@ public final class FuelNozzleJets {
             running.add(key);
             Vec3 spout = FuelDispenserRenderer.spout(player, 1.0F), direction = player.getViewVector(1.0F);
             Vec3 from = jet.lastSpout == null ? spout : jet.lastSpout;
+            // the wobble drifts (a damped random walk), so neighbouring parcels fly nearly the same path: a smooth stream,
+            // not the zigzag independent kicks made of its falling end (user video, 2026-10-05)
+            jet.drift = jet.drift.scale(0.85).add(random.triangle(0, 0.35), random.triangle(0, 0.35), random.triangle(0, 0.35));
             for (int k = 0; k < 2; k++) {   // two a tick: the later one at the spout now, the earlier half a tick on its way
-                Vec3 velocity = direction.scale(FuelDispenserBlockEntity.NOZZLE_SPEED).add(
-                        random.triangle(0, TURBULENCE * FuelDispenserBlockEntity.NOZZLE_SPEED),
-                        random.triangle(0, TURBULENCE * FuelDispenserBlockEntity.NOZZLE_SPEED),
-                        random.triangle(0, TURBULENCE * FuelDispenserBlockEntity.NOZZLE_SPEED));
+                double s = FuelDispenserBlockEntity.NOZZLE_SPEED;
+                Vec3 velocity = direction.scale(s).add(jet.drift.scale(WOBBLE * s))
+                        .add(random.triangle(0, JITTER * s), random.triangle(0, JITTER * s), random.triangle(0, JITTER * s));
                 jet.jet.emit(k == 0 ? from.lerp(spout, 0.5) : spout, velocity, k == 0 ? LiquidJet.STEP : 0.0);
             }
             jet.flowing = true;

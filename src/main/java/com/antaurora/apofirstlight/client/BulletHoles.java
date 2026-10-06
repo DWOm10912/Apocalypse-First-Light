@@ -97,6 +97,11 @@ public final class BulletHoles {
         return STONE;
     }
 
+    /** A block changed on this client (LevelRendererFireTrackMixin): the holes in it go at once. */
+    public static void blockChanged(BlockPos pos, BlockState now) {
+        if (!HOLES.isEmpty()) HOLES.removeIf(h -> h.block.equals(pos) && h.state != now);
+    }
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;

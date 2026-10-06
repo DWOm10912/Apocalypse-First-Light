@@ -82,8 +82,8 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
     /** The held nozzle's swivel (where its hose goes in), in the item model's block units (tools/build-fuel-dispenser-v1.mjs heldSwivel). */
     private static final float SWIVEL_X = 0.5F, SWIVEL_Y = 0.5F, SWIVEL_Z = 0.704F;
 
-    /** The held nozzle's spout tip, item model block units (the generator's spout end (0, -0.2, 6.2) px in the nozzle frame). */
-    private static final float SPOUT_X = 0.5F, SPOUT_Y = 0.4875F, SPOUT_Z = 0.291F;
+    /** The held nozzle's spout tip, item model block units (the generator's straight spout's end (0, 1.0, 6.25) px in the nozzle frame). */
+    private static final float SPOUT_X = 0.5F, SPOUT_Y = 0.5625F, SPOUT_Z = 0.288F;
 
     /** Where the hose meets the held nozzle (world), and the direction it leaves the swivel. */
     private record HoseEnd(Vec3 point, Vec3 out) {}
@@ -223,7 +223,9 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
     }
 
     /** The fuel stream's radius (blocks), sides and opacity (of 255). */
-    private static final double STREAM_RADIUS = 0.016;
+    private static final double STREAM_RADIUS = 0.009;
+    /** Seconds of flight after which the stream breaks up into elongated drops (LiquidJetRenderer). */
+    private static final double STREAM_BREAKUP = 0.45;
     private static final int STREAM_SIDES = 8, STREAM_ALPHA = 165;
 
     /**
@@ -238,7 +240,7 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
                 .getTextureAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).apply(fluidClient.getStillTexture(stack));
         int rgb = fluidClient.getTintColor(stack) & 0xFFFFFF;
         LiquidJetRenderer.render(pose, buffers, level, origin, jet.jet, spout, partialTick, sprite, rgb, STREAM_ALPHA, STREAM_RADIUS,
-                FuelDispenserBlockEntity.NOZZLE_SPEED, STREAM_SIDES);
+                FuelDispenserBlockEntity.NOZZLE_SPEED, STREAM_SIDES, STREAM_BREAKUP);
     }
 
     private static int lerpLight(int a, int b, double t) {

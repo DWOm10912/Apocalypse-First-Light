@@ -419,6 +419,18 @@
     "subtitle": "subtitles.apocalypse_firstlight.intake_pump_loop",
     "sounds": [{"name": "apocalypse_firstlight:intake_pump/loop", "attenuation_distance": 8}]
   },
+  "fuel_ignite": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_ignite",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_fire/ignite", "attenuation_distance": 24}]
+  },
+  "fuel_fire_loop": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_fire_loop",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_fire/burn_loop", "attenuation_distance": 20}]
+  },
+  "fuel_explode": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_explode",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_fire/explode", "attenuation_distance": 32}]
+  },
   "fuel_nozzle_spray": {
     "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_spray",
     "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/spray", "attenuation_distance": 10}]

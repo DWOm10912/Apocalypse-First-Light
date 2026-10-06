@@ -10,11 +10,13 @@ import net.minecraft.world.phys.Vec3;
 /**
  * A droplet of liquid (2026-10-05; first user: the fuel nozzle's jet, FuelNozzleJets): splashed off where a jet lands, shed
  * from a jet's falling end, or dripping from a nozzle. A small square of the liquid's own sprite (block atlas, like a
- * block-breaking particle) in the liquid's tint, a little translucent, falling under gravity; gone when it lands.
+ * block-breaking particle) in the liquid's tint, a little translucent, falling under gravity; gone when it lands. 2026-10-05:
+ * a round drop sprite (textures/block/liquid_drop, tools/build-liquid-decals-v1.mjs) in the liquid's tint instead of a
+ * quarter of the liquid's square sprite, which showed as little squares under shaders (user).
  * Velocities in blocks a second. Spawned directly (no particle type: client-only effect).
  */
 public final class LiquidDroplet extends TextureSheetParticle {
-    private final float uo, vo;
+    private static final net.minecraft.resources.ResourceLocation DROP = new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "block/liquid_drop");
 
     private LiquidDroplet(ClientLevel level, Vec3 at, Vec3 velocity, TextureAtlasSprite sprite, int rgb, float size) {
         super(level, at.x, at.y, at.z);
@@ -31,16 +33,13 @@ public final class LiquidDroplet extends TextureSheetParticle {
         gCol = (rgb >> 8 & 255) / 255.0F;
         bCol = (rgb & 255) / 255.0F;
         alpha = 0.8F;
-        uo = random.nextFloat() * 3.0F;
-        vo = random.nextFloat() * 3.0F;
     }
 
     /** A droplet of {@code fluid}: its still sprite and tint (the particle providers of the fuel drips). */
     public static LiquidDroplet of(ClientLevel level, Vec3 at, Vec3 velocity, net.minecraft.world.level.material.Fluid fluid, float size) {
         net.minecraftforge.fluids.FluidStack stack = new net.minecraftforge.fluids.FluidStack(fluid, 1000);
         net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions client = net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions.of(fluid);
-        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).apply(client.getStillTexture(stack));
-        return new LiquidDroplet(level, at, velocity, sprite, client.getTintColor(stack) & 0xFFFFFF, size);
+        return new LiquidDroplet(level, at, velocity, drop(), client.getTintColor(stack) & 0xFFFFFF, size);
     }
 
     /** Spawns a droplet of {@code fluid} ({@link #of}). */
@@ -48,8 +47,13 @@ public final class LiquidDroplet extends TextureSheetParticle {
         Minecraft.getInstance().particleEngine.add(of(level, at, velocity, fluid, size));
     }
 
+    /** A droplet in {@code rgb} (the sprite argument is no longer used: every droplet is the round drop). */
     public static void spawn(ClientLevel level, Vec3 at, Vec3 velocity, TextureAtlasSprite sprite, int rgb, float size) {
-        Minecraft.getInstance().particleEngine.add(new LiquidDroplet(level, at, velocity, sprite, rgb, size));
+        Minecraft.getInstance().particleEngine.add(new LiquidDroplet(level, at, velocity, drop(), rgb, size));
+    }
+
+    private static TextureAtlasSprite drop() {
+        return Minecraft.getInstance().getTextureAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).apply(DROP);
     }
 
     @Override
@@ -61,26 +65,5 @@ public final class LiquidDroplet extends TextureSheetParticle {
     @Override
     public ParticleRenderType getRenderType() {
         return ParticleRenderType.TERRAIN_SHEET;
-    }
-
-    // a quarter of the sprite, as a block-breaking particle takes
-    @Override
-    protected float getU0() {
-        return sprite.getU((uo + 1.0F) / 4.0F * 16.0F);
-    }
-
-    @Override
-    protected float getU1() {
-        return sprite.getU(uo / 4.0F * 16.0F);
-    }
-
-    @Override
-    protected float getV0() {
-        return sprite.getV(vo / 4.0F * 16.0F);
-    }
-
-    @Override
-    protected float getV1() {
-        return sprite.getV((vo + 1.0F) / 4.0F * 16.0F);
     }
 }

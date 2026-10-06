@@ -97,7 +97,25 @@ function film(seed) {   // tileable: the lattice wraps
   return [png(base, N, N), png(spec, N, N)];
 }
 
+// liquid_drop (16 x 16, client/LiquidDroplet, 2026-10-05): a round drop, pale grey (tinted with the liquid's colour), a
+// slightly darker rim and a small bright highlight up and to the left; hard-edged (opaque particles cut out at alpha 0.1)
+// with one anti-aliased pixel. Replaces a quarter of the liquid's own square sprite, which showed as small squares under
+// shaders (user). _s wet and smooth like the stains.
+function drop() {
+  const D = 16, base = Buffer.alloc(D * D * 4), spec = Buffer.alloc(D * D * 4);
+  for (let y = 0; y < D; y++) for (let x = 0; x < D; x++) {
+    let cover = 0;
+    for (let sy = 0; sy < 4; sy++) for (let sx = 0; sx < 4; sx++) cover += Math.hypot(x + (sx + 0.5) / 4 - 8, y + (sy + 0.5) / 4 - 8) < 6.6 ? 1 / 16 : 0;
+    const d = Math.hypot(x + 0.5 - 8, y + 0.5 - 8) / 6.6, hl = Math.max(0, 1 - Math.hypot(x + 0.5 - 5.6, y + 0.5 - 5.4) / 2.2);
+    const v = Math.round(Math.min(255, 214 - 34 * smooth(0.55, 1, d) + 60 * hl)), k = (y * D + x) * 4;
+    base[k] = base[k + 1] = base[k + 2] = v; base[k + 3] = Math.round(255 * cover);
+    spec[k] = 215; spec[k + 1] = 12; spec[k + 2] = 0; spec[k + 3] = 255;
+  }
+  return [png(base, D, D), png(spec, D, D)];
+}
+
 const outputs = [];
+{ const [b, s] = drop(); outputs.push(['liquid_drop.png', b], ['liquid_drop_s.png', s]); }
 { const [b, s] = film(3000); outputs.push(['liquid_film.png', b], ['liquid_film_s.png', s]); }
 for (let i = 0; i < 3; i++) { const [b, s] = splat(1000 + i * 37); outputs.push([`liquid_splat_${i}.png`, b], [`liquid_splat_${i}_s.png`, s]); }
 for (let i = 0; i < 2; i++) { const [b, s] = sheet(2000 + i * 53); outputs.push([`liquid_sheet_${i}.png`, b], [`liquid_sheet_${i}_s.png`, s]); }

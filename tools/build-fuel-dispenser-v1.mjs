@@ -175,7 +175,9 @@ export const NOZZLE = {
   lever: [[0.6, -0.96], [1.85, -0.64], [1.92, -0.4], [0.55, -0.72]], leverW: 0.3,
   // the D-shaped hand guard: from under the hood down, back, and up to the swivel end
   guard: [[2.3, -0.5], [2.2, -1.36], [1.2, -1.62], [0.45, -1.46], [0.04, -0.52]], guardT: 0.22, guardW: 0.36,
-  spout: [[0, 1.0, 3.55], [0, 0.8, 4.6], [0, 0.36, 5.6], [0, -0.2, 6.2]], spoutBefore: [0, 1.2, 2.5], spoutAfter: [0, -0.9, 6.6], spoutR: 0.22,
+  // a straight spout on the hood's axis (2026-10-05, user: the bent one sent the stream off at an angle to it; the jet
+  // leaves along the view, which the held spout now points along)
+  spout: [[0, 1.0, 3.55], [0, 1.0, 4.9], [0, 1.0, 6.25]], spoutBefore: [0, 1.0, 2.5], spoutAfter: [0, 1.0, 7.3], spoutR: 0.22,
   collar: [1.0, 0.32, 3.45, 3.95],           // spout collar: y, r, z0, z1
   swivel: [0.42, -0.7, 0.3],                 // r, z0, z1
 };

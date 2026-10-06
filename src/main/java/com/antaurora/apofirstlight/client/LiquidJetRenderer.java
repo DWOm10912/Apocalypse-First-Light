@@ -40,6 +40,15 @@ public final class LiquidJetRenderer {
      */
     public static void render(PoseStack pose, MultiBufferSource buffers, Level level, BlockPos origin, LiquidJet jet, @Nullable Vec3 head,
                               float partialTick, TextureAtlasSprite sprite, int rgb, int alpha, double radius, double speed, int sides) {
+        render(pose, buffers, level, origin, jet, head, partialTick, sprite, rgb, alpha, radius, speed, sides, Double.MAX_VALUE);
+    }
+
+    /**
+     * As above; after {@code breakup} seconds of flight the stream comes apart (2026-10-05): every third parcel the tube
+     * breaks, so the falling end shows as a run of elongated drops, and it thins to about half.
+     */
+    public static void render(PoseStack pose, MultiBufferSource buffers, Level level, BlockPos origin, LiquidJet jet, @Nullable Vec3 head,
+                              float partialTick, TextureAtlasSprite sprite, int rgb, int alpha, double radius, double speed, int sides, double breakup) {
         if (jet.isEmpty()) return;
         List<Vec3> points = new ArrayList<>();
         List<Double> radii = new ArrayList<>();
@@ -52,7 +61,8 @@ public final class LiquidJetRenderer {
         }
         for (Iterator<LiquidJet.Parcel> it = jet.parcels().descendingIterator(); it.hasNext(); ) {
             LiquidJet.Parcel p = it.next();
-            if (p.id != previous - 1 && !points.isEmpty()) {   // the chain breaks here
+            boolean apart = p.age > breakup && Math.floorMod(p.id, 3) == 0;
+            if ((p.id != previous - 1 || apart) && !points.isEmpty()) {   // the chain breaks here
                 tube(pose, buffers, level, origin, points, radii, ids, sprite, rgb, alpha, sides);
                 points.clear();
                 radii.clear();
@@ -60,7 +70,7 @@ public final class LiquidJetRenderer {
             }
             points.add(p.prev.lerp(p.pos, partialTick));
             double v = Math.max(1e-3, p.vel.length());
-            radii.add(radius * Mth.clamp(Math.sqrt(speed / v), 0.45, 1.0));
+            radii.add(radius * Mth.clamp(Math.sqrt(speed / v), 0.45, 1.0) * Mth.clamp(1.0 - (p.age - breakup) * 0.8, 0.5, 1.0));
             ids.add(p.id);
             previous = p.id;
         }

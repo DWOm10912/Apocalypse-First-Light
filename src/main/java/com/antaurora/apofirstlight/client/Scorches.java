@@ -44,7 +44,7 @@ import java.util.Set;
  *   This client's own, not saved.</li>
  * </ul>
  */
-final class Scorches {
+public final class Scorches {
     static final int LIFE = 12000, FADE = 2400, MAX = 512, GASOLINE_EMBERS = 600, DIESEL_EMBERS = 1200;
     private static final float SCALE = 1.0F, RIM = 0.45F;
     private static final int CHAR_ALPHA = 225, SOOT = 0x161311, SOOT_ALPHA = 190;
@@ -62,6 +62,9 @@ final class Scorches {
         final boolean diesel;
         final long born;
         final float u0, u1, v0, v1;
+        /** The block it is burnt into, and what that block was. */
+        final BlockPos support;
+        final net.minecraft.world.level.block.state.BlockState supportState;
         float size;
         long cool = Long.MAX_VALUE;
 
@@ -77,6 +80,9 @@ final class Scorches {
             u1 = s.u1;
             v0 = s.v0;
             v1 = s.v1;
+            support = BlockPos.containing(s.pos.subtract(Vec3.atLowerCornerOf(s.face.getNormal()).scale(0.01)));
+            Level level = Minecraft.getInstance().level;
+            supportState = level == null ? null : level.getBlockState(support);
         }
 
         boolean floor() {
@@ -149,16 +155,35 @@ final class Scorches {
         for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) DIRTY.add(cell.offset(dx, 0, dz).asLong());
     }
 
-    /** Once a second: the old ones go. */
+    /** Once a second: the old ones go, and any whose block changed (a missed change). */
     static void tick(long now) {
         if (now % 20 != 0 || BY_ID.isEmpty()) return;
+        Level level = Minecraft.getInstance().level;
         for (Iterator<Scorch> it = BY_ID.values().iterator(); it.hasNext(); ) {
             Scorch s = it.next();
-            if (now - s.born > LIFE) {
+            if (now - s.born > LIFE || level != null && level.isLoaded(s.support) && level.getBlockState(s.support) != s.supportState) {
                 it.remove();
                 touched(s);
             }
         }
+    }
+
+    /**
+     * A block changed on this client (LevelRendererFireTrackMixin): scorches burnt into it go at once (2026-10-05: dug-out
+     * ground left its scorch hanging in the air, user), and the char meshes of the cell over it are rebuilt (a scorch
+     * reaching over from a neighbour stops at a hole).
+     */
+    public static void blockChanged(BlockPos pos, net.minecraft.world.level.block.state.BlockState now) {
+        if (BY_ID.isEmpty()) return;
+        for (Iterator<Scorch> it = BY_ID.values().iterator(); it.hasNext(); ) {
+            Scorch s = it.next();
+            if (s.support.equals(pos) && now != s.supportState) {
+                it.remove();
+                touched(s);
+            }
+        }
+        long above = pos.above().asLong();
+        if (CELLS.containsKey(above) || FALLBACK.contains(above)) DIRTY.add(above);
     }
 
     private static void rebuild(Level level) {

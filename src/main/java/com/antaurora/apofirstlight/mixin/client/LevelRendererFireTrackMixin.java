@@ -12,12 +12,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Every block change on this client goes through here (ClientLevel#sendBlockUpdated): fire blocks appearing or going
- * are followed by client/FireBlockFlames, which draws them with the fuel flames (docs/gameplay/fuel_fire_v1.md).
+ * are followed by client/FireBlockFlames, which draws them with the fuel flames (docs/gameplay/fuel_fire_v1.md); scorches
+ * (client/Scorches) and bullet holes (client/BulletHoles) on a block that changed go with it.
  */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererFireTrackMixin {
     @Inject(method = "blockChanged", at = @At("HEAD"))
     private void afl$followFire(BlockGetter level, BlockPos pos, BlockState oldState, BlockState newState, int flags, CallbackInfo ci) {
         FireBlockFlames.changed(pos, oldState, newState);
+        com.antaurora.apofirstlight.client.Scorches.blockChanged(pos, newState);   // burnt ground and bullet holes go with their block
+        com.antaurora.apofirstlight.client.BulletHoles.blockChanged(pos, newState);
     }
 }

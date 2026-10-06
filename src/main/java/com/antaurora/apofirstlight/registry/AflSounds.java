@@ -110,6 +110,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_STOP = simple("intake_pump_stop");
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_LOOP = simple("intake_pump_loop");
     public static final RegistryObject<SoundEvent> FUEL_NOZZLE_SPRAY = simple("fuel_nozzle_spray");
+    /** Fuel fire (docs/gameplay/fuel_fire_v1.md "声音", tools/build-fuel-fire-sounds-v1.mjs): catching, burning, a tank going up. */
+    public static final RegistryObject<SoundEvent> FUEL_IGNITE = simple("fuel_ignite");
+    public static final RegistryObject<SoundEvent> FUEL_FIRE_LOOP = simple("fuel_fire_loop");
+    public static final RegistryObject<SoundEvent> FUEL_EXPLODE = simple("fuel_explode");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));
