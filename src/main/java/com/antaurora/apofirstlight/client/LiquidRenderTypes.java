@@ -40,13 +40,14 @@ public final class LiquidRenderTypes extends RenderType {
                     .createCompositeState(false));
 
     /**
-     * Bullet holes (BulletHoles): the hole sheet (textures/effect/bullet_holes), the entity-translucent shader, lit like
-     * the cell in front, colour only like the stains (lying on a surface, they must not fight it over depth).
+     * Bullet holes (BulletHoles): the hole sheet, a block atlas sprite (textures/block/bullet_holes: mipmapped, with LabPBR
+     * _s / _n), the entity-translucent shader, lit like the cell in front, colour only like the stains (lying on a surface,
+     * they must not fight it over depth).
      */
     public static final RenderType HOLE = RenderType.create("apocalypse_firstlight_bullet_hole", DefaultVertexFormat.NEW_ENTITY,
             VertexFormat.Mode.QUADS, 256, true, true, CompositeState.builder()
                     .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
-                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/bullet_holes.png"), false, false))
+                    .setTextureState(new TextureStateShard(TextureAtlas.LOCATION_BLOCKS, false, true))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
                     .setCullState(NO_CULL)
                     .setLightmapState(LIGHTMAP)
@@ -102,6 +103,18 @@ public final class LiquidRenderTypes extends RenderType {
                     .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_SHADER)
                     .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/fire_smoke.png"), false, false))
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .setLightmapState(LIGHTMAP)
+                    .setOverlayState(OVERLAY)
+                    .setWriteMaskState(COLOR_WRITE)
+                    .createCompositeState(false));
+
+    /** Sparks off steel (FireFx): streaks along their flight (textures/effect/spark), emissive, added, no depth writes. */
+    public static final RenderType SPARK = RenderType.create("apocalypse_firstlight_metal_spark", DefaultVertexFormat.NEW_ENTITY,
+            VertexFormat.Mode.QUADS, 256, false, true, CompositeState.builder()
+                    .setShaderState(RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                    .setTextureState(new TextureStateShard(new net.minecraft.resources.ResourceLocation("apocalypse_firstlight", "textures/effect/spark.png"), false, false))
+                    .setTransparencyState(LIGHTNING_TRANSPARENCY)
                     .setCullState(NO_CULL)
                     .setLightmapState(LIGHTMAP)
                     .setOverlayState(OVERLAY)

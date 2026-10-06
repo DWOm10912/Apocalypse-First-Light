@@ -6,6 +6,9 @@
 //   instead of particle sprites (Sundial showed no translucent particles).
 // - textures/effect/fire_glow (64 x 64, FuelFlames#glow, FireFx sparks): a soft round glow, white (tinted fire orange), laid
 //   on the floor under flames, so a fire seen from high above (where its upright planes thin out) still lights the ground.
+//   _s: emissive (LabPBR alpha 254) where it shows.
+// - textures/effect/spark (16 x 64, FireFx metal sparks, 2026-10-05): a hot streak drawn along a spark's flight, bright
+//   at its head (v = 0) and fading to the tail (v = 1); a white core in an orange halo across it. _s emissive.
 // - textures/block/scorch_char (32 x 32, tiles every 2 blocks, 16 px a block like the world's own textures): burnt ground
 //   in pixel style, charcoal blacks with a few lighter ash pixels; drawn world aligned under burnt-out fuel (client/Scorches,
 //   the shape from the burnt stains' blobs, a soft edge). _s rough, dielectric.
@@ -25,6 +28,12 @@ const SMOKES = 8, S = 128;
 
 function rng(seed) { let s = seed >>> 0; return () => { s = Math.imul(s ^ (s >>> 15), 2246822519) + 0x9e3779b9 >>> 0; s ^= s >>> 13; return (s >>> 0) / 4294967296; }; }
 const out = {};
+// LabPBR _s of a glowing texture: emissive (alpha 254) wherever it shows, rough, dielectric
+function emissive(rgba, w, h) {
+  const s = Buffer.alloc(w * h * 4);
+  for (let i = 0; i < w * h; i++) { s[i * 4] = 0; s[i * 4 + 1] = 0; s[i * 4 + 2] = 0; s[i * 4 + 3] = rgba[i * 4 + 3] > 4 ? 254 : 255; }
+  return s;
+}
 
 // ---- smoke puffs: one sheet ----
 {
@@ -57,6 +66,20 @@ const out = {};
     buf[o + 3] = Math.round(255 * Math.exp(-6 * d * d) * Math.sqrt(Math.max(0, 1 - d)));   // bright under the flame, no visible rim
   }
   out["textures/effect/fire_glow.png"] = png(buf, N, N);
+  out["textures/effect/fire_glow_s.png"] = png(emissive(buf, N, N), N, N);
+}
+
+// ---- metal spark streak ----
+{
+  const SW = 16, SH = 64, buf = Buffer.alloc(SW * SH * 4);
+  for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+    const across = Math.exp(-(((x + 0.5 - SW / 2) / 2.6) ** 2)), v = (y + 0.5) / SH;
+    const along = Math.min(1, v / 0.1) * (1 - v) ** 1.6, core = across ** 3, o = (y * SW + x) * 4;
+    buf[o] = 255; buf[o + 1] = Math.round(165 + 90 * core); buf[o + 2] = Math.round(70 + 185 * core);
+    buf[o + 3] = Math.round(255 * Math.min(1, across * along * 1.3));
+  }
+  out["textures/effect/spark.png"] = png(buf, SW, SH);
+  out["textures/effect/spark_s.png"] = png(emissive(buf, SW, SH), SW, SH);
 }
 
 // ---- scorch: charcoal tile (pixel style) ----

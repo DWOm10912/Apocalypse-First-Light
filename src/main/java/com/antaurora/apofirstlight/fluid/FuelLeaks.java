@@ -4,7 +4,6 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -16,7 +15,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -136,8 +134,8 @@ public final class FuelLeaks extends SavedData {
     // ---- bullets ----
 
     /**
-     * A bullet stopped by a block (weapon/BulletImpacts): a hole if it is a fuel container; a spark off steel. True when
-     * a hole of a fuel container is there now (the client draws it from the synced leak, not as a passing decal).
+     * A bullet stopped by a block (weapon/BulletImpacts): a hole if it is a fuel container. True when a hole of a fuel
+     * container is there now (the client draws it from the synced leak, not as a passing decal). Sparks: BulletImpacts.
      */
     public static boolean bullet(ServerPlayer shooter, BlockHitResult hit) {
         ServerLevel level = shooter.serverLevel();
@@ -145,19 +143,12 @@ public final class FuelLeaks extends SavedData {
         if (!level.isLoaded(pos)) return false;
         FuelLeaks leaks = get(level);
         FuelContainers.Container c = FuelContainers.at(level, pos);
-        boolean holed = c != null && c.amount() > 0 && c.box().inflate(0.02).contains(hit.getLocation())
+        return c != null && c.amount() > 0 && c.box().inflate(0.02).contains(hit.getLocation())
                 && leaks.puncture(level, c, pos, hit.getLocation(), hit.getDirection());
-        BlockState state = level.getBlockState(pos);
-        if (metal(state.getSoundType(level, pos, shooter)) && level.random.nextFloat() < SPARK_CHANCE) {
-            Vec3 p = hit.getLocation().add(Vec3.atLowerCornerOf(hit.getDirection().getNormal()).scale(0.05));
-            level.sendParticles(ParticleTypes.LAVA, p.x, p.y, p.z, 2, 0.02, 0.02, 0.02, 0.0);
-            level.sendParticles(ParticleTypes.SMALL_FLAME, p.x, p.y, p.z, 3, 0.03, 0.03, 0.03, 0.02);
-            if (level.random.nextFloat() < SPARK_IGNITES) leaks.spark(level, p);
-        }
-        return holed;
     }
 
-    private static boolean metal(SoundType sound) {
+    /** Steel and the like (by sound type): a bullet off it can strike sparks. */
+    public static boolean metal(SoundType sound) {
         return sound == SoundType.METAL || sound == SoundType.NETHERITE_BLOCK || sound == SoundType.ANVIL || sound == SoundType.COPPER
                 || sound == SoundType.CHAIN || sound == SoundType.LANTERN;
     }

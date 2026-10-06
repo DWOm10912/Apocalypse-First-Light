@@ -31,9 +31,11 @@ import java.util.Deque;
 
 /**
  * Bullet holes on this client (2026-10-05, docs/native_guns/native_bullet_holes_v1.md). Where a bullet stops on a block
- * (AflNetwork.BulletImpactS2CPacket) a hole decal goes on the face it struck and a few bits of the block fly off. The
- * decal is one of three holes of the block's material (steel, stone, wood: by its sound type) from the hole sheet
- * (tools/build-bullet-holes-v1.mjs), turned at random (wood only end for end: the grain stays along the face's u axis),
+ * (AflNetwork.BulletImpactS2CPacket) a hole decal goes on the face it struck and two or three small bits of the block
+ * fly off (one off steel); off steel
+ * the server sometimes strikes sparks (FireFx#metalSparks). The decal is one of three holes of the block's material
+ * (steel, stone, wood: by its sound type) from the hole sheet (textures/block/bullet_holes, 128 px a hole with LabPBR
+ * _s / _n, tools/build-bullet-holes-v1.mjs), turned at random (wood only end for end: the grain stays along the face's u axis),
  * drawn colour-only just off the face (LiquidRenderTypes.HOLE). Holes are this client's only: at most {@link #MAX}, the
  * oldest going first; each lasts {@link #LIFE} ticks, fading over the last {@link #FADE}; one whose block changed goes
  * at once. Holes in fuel containers come from the synced leaks (ClientFuelLeaks) and last as long as the leak does.
@@ -49,6 +51,8 @@ public final class BulletHoles {
     private record Hole(Vec3 at, Direction face, BlockPos block, BlockState state, int material, int variant, float angle, long born) {}
 
     private static final Deque<Hole> HOLES = new ArrayDeque<>();
+    private static final net.minecraft.resources.ResourceLocation SHEET = new net.minecraft.resources.ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/bullet_holes");
+    private static net.minecraft.client.renderer.texture.TextureAtlasSprite sheet;
     @Nullable
     private static ClientLevel trackedLevel;
 
@@ -60,16 +64,22 @@ public final class BulletHoles {
     }
 
     /** A bullet struck {@code block} at {@code at} on {@code face}. */
-    public static void impact(Vec3 at, Direction face, BlockPos block, boolean holed) {
+    public static void impact(Vec3 at, Direction face, BlockPos block, boolean holed, boolean spark) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null) return;
         BlockState state = level.getBlockState(block);
         if (state.isAir()) return;
         RandomSource random = level.random;
         Vec3 n = Vec3.atLowerCornerOf(face.getNormal());
-        for (int i = 0; i < 5; i++) {   // bits of the block knocked out of the hole
-            Vec3 v = n.scale(0.08 + random.nextDouble() * 0.12).add(random.triangle(0, 0.08), random.nextDouble() * 0.06, random.triangle(0, 0.08));
-            level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, state), at.x + n.x * 0.05, at.y + n.y * 0.05, at.z + n.z * 0.05, v.x, v.y, v.z);
+        if (spark) FireFx.metalSparks(level, at.add(n.scale(0.02)), n);
+        // a few small bits of the block knocked out of the hole (vanilla block particles shrunk to about a third: at full
+        // size, five a shot filled the view with big squares under automatic fire, user 2026-10-05); off steel just one
+        int bits = material(state) == STEEL ? 1 : 2 + random.nextInt(2);
+        for (int i = 0; i < bits; i++) {
+            Vec3 v = n.scale(0.06 + random.nextDouble() * 0.1).add(random.triangle(0, 0.06), random.nextDouble() * 0.05, random.triangle(0, 0.06));
+            net.minecraft.client.particle.Particle bit = Minecraft.getInstance().particleEngine.createParticle(new BlockParticleOption(ParticleTypes.BLOCK, state),
+                    at.x + n.x * 0.03, at.y + n.y * 0.03, at.z + n.z * 0.03, v.x, v.y, v.z);
+            if (bit != null) bit.scale(0.3F + 0.15F * random.nextFloat());
         }
         if (holed) return;   // a fuel container's hole: drawn from its leak
         int material = material(state);
@@ -103,6 +113,7 @@ public final class BulletHoles {
     static void render(PoseStack pose, MultiBufferSource buffers, ClientLevel level, Vec3 camera, double now) {
         if (isEmpty()) return;
         VertexConsumer out = buffers.getBuffer(LiquidRenderTypes.HOLE);
+        sheet = Minecraft.getInstance().getTextureAtlas(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS).apply(SHEET);
         Matrix4f matrix = pose.last().pose();
         Matrix3f normals = pose.last().normal();
         for (Hole h : HOLES) {
@@ -133,7 +144,7 @@ public final class BulletHoles {
         centre = centre.add(n.scale(0.002 + 0.0001 * Math.sqrt(centre.distanceToSqr(camera))));
         double cos = Math.cos(angle), sin = Math.sin(angle);
         Vec3 a = u.scale(cos * half).add(v.scale(sin * half)), b = u.scale(-sin * half).add(v.scale(cos * half));
-        float u0 = variant / 3.0F, u1 = u0 + 1 / 3.0F, v0 = material / 3.0F, v1 = v0 + 1 / 3.0F;
+        float u0 = sheet.getU(variant * 16.0 / 3), u1 = sheet.getU((variant + 1) * 16.0 / 3), v0 = sheet.getV(material * 16.0 / 3), v1 = sheet.getV((material + 1) * 16.0 / 3);
         int light = LevelRenderer.getLightColor(level, block.relative(face));
         vertex(out, matrix, normals, centre.subtract(a).subtract(b), camera, u0, v1, light, n, alpha);
         vertex(out, matrix, normals, centre.add(a).subtract(b), camera, u1, v1, light, n, alpha);

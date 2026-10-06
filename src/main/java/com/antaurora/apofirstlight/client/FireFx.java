@@ -39,6 +39,9 @@ import java.util.List;
  *   <li>Sparks: small soft glows (textures/effect/fire_glow), full bright and added, white-yellow cooling to red as they
  *   flutter up (a blast's fly out and fall).</li>
  *   <li>A fuel blast ({@link #blast}): a burst of black smoke and sparks, then a column of smoke for a few seconds.</li>
+ *   <li>Sparks off steel ({@link #metalSparks}, 2026-10-05: in place of vanilla's lava pops): hot streaks
+ *   (textures/effect/spark, emissive) drawn along their flight, thrown out of the struck face, falling and bouncing,
+ *   white cooling to orange, gone in under a second; a short flash where the bullet struck.</li>
  * </ul>
  * V2.3 (2026-10-05): drawn here, in the fuel stains' world pass (ClientFuelStains), not as particles: Sundial drew no
  * translucent particles at all, and the number is capped ({@link #MAX_PUFFS}, {@link #MAX_SPARKS}; spawns over the cap are
@@ -65,10 +68,24 @@ public final class FireFx {
         int life, age;
     }
 
+    /** A spark struck off steel: a hot streak along its flight, falling, bouncing off what it meets. */
+    private static final class Streak {
+        double x, y, z, ox, oy, oz, vx, vy, vz;
+        float width;
+        int life, age;
+    }
+
+    /** The flash where a bullet struck sparks. */
+    private record Flash(Vec3 at, float size, long born) {}
+
     private record Plume(Vec3 at, float power, long end) {}
 
+    static final int MAX_STREAKS = 200;
+    private static final int FLASH_TICKS = 3;
     private static final List<Puff> PUFFS = new ArrayList<>();
     private static final List<Spark> SPARKS = new ArrayList<>();
+    private static final List<Streak> STREAKS = new ArrayList<>();
+    private static final List<Flash> FLASHES = new ArrayList<>();
     private static final List<Plume> PLUMES = new ArrayList<>();
     @Nullable
     private static ClientLevel trackedLevel;
@@ -77,7 +94,7 @@ public final class FireFx {
     }
 
     static boolean isEmpty() {
-        return PUFFS.isEmpty() && SPARKS.isEmpty();
+        return PUFFS.isEmpty() && SPARKS.isEmpty() && STREAKS.isEmpty() && FLASHES.isEmpty();
     }
 
     /** False now and then at reduced particle settings (decreased: half, minimal: one in five). */
@@ -138,6 +155,30 @@ public final class FireFx {
         ember(level, x, y, z, (r.nextDouble() - 0.5) * 0.04, 0.05 + r.nextDouble() * 0.08, (r.nextDouble() - 0.5) * 0.04, -0.006F, 20);
     }
 
+    /**
+     * Sparks struck off steel by a bullet at {@code at} on a face with normal {@code n} (client/BulletHoles#impact, when the
+     * server says it sparked): 6 to 12 streaks thrown out of the face, a flash where it struck.
+     */
+    public static void metalSparks(ClientLevel level, Vec3 at, Vec3 n) {
+        RandomSource r = level.random;
+        int count = 6 + r.nextInt(7);
+        for (int i = 0; i < count && STREAKS.size() < MAX_STREAKS; i++) {
+            Vec3 d = n.scale(0.5 + 0.5 * r.nextDouble()).add(r.nextGaussian() * 0.55, r.nextGaussian() * 0.55 + 0.25, r.nextGaussian() * 0.55)
+                    .normalize().scale(0.2 + r.nextDouble() * 0.35);
+            Streak s = new Streak();
+            s.x = s.ox = at.x;
+            s.y = s.oy = at.y;
+            s.z = s.oz = at.z;
+            s.vx = d.x;
+            s.vy = d.y;
+            s.vz = d.z;
+            s.width = 0.008F + 0.008F * r.nextFloat();
+            s.life = 5 + r.nextInt(10);
+            STREAKS.add(s);
+        }
+        FLASHES.add(new Flash(at, 0.1F + 0.05F * r.nextFloat(), level.getGameTime()));
+    }
+
     /** A fuel container went up (AflNetwork.FuelBlastS2CPacket): a burst of black smoke and sparks, then a column of smoke. */
     public static void blast(Vec3 at, float power, boolean diesel) {
         ClientLevel level = Minecraft.getInstance().level;
@@ -167,6 +208,8 @@ public final class FireFx {
         if (level != trackedLevel) {
             PUFFS.clear();
             SPARKS.clear();
+            STREAKS.clear();
+            FLASHES.clear();
             PLUMES.clear();
             trackedLevel = level;
         }
@@ -210,6 +253,27 @@ public final class FireFx {
             s.z += s.vz;
         }
         SPARKS.removeIf(s -> s.age >= s.life);
+        for (Streak s : STREAKS) {   // falling, dragged, bouncing off blocks
+            s.ox = s.x;
+            s.oy = s.y;
+            s.oz = s.z;
+            s.age++;
+            s.vx *= 0.92;
+            s.vz *= 0.92;
+            s.vy = s.vy * 0.92 - 0.03;
+            if (!level.getBlockState(above.set(s.x + s.vx, s.y + s.vy, s.z + s.vz)).getCollisionShape(level, above).isEmpty()) {
+                s.vy = Math.abs(s.vy) * 0.35;
+                s.vx *= 0.6;
+                s.vz *= 0.6;
+                continue;
+            }
+            s.x += s.vx;
+            s.y += s.vy;
+            s.z += s.vz;
+        }
+        STREAKS.removeIf(s -> s.age >= s.life);
+        long tick = level.getGameTime();
+        FLASHES.removeIf(f -> tick - f.born >= FLASH_TICKS || tick < f.born);
         if (!PLUMES.isEmpty()) {
             long now = level.getGameTime();
             PLUMES.removeIf(p -> now >= p.end);
@@ -250,7 +314,7 @@ public final class FireFx {
 
     /** The sparks (the GLOW batch: added, full bright), relative to the camera. */
     static void renderSparks(PoseStack pose, MultiBufferSource buffers, Camera camera, float partialTick) {
-        if (SPARKS.isEmpty()) return;
+        if (SPARKS.isEmpty() && FLASHES.isEmpty()) return;
         Vec3 cam = camera.getPosition();
         Quaternionf view = camera.rotation();
         VertexConsumer out = buffers.getBuffer(LiquidRenderTypes.GLOW);
@@ -267,6 +331,49 @@ public final class FireFx {
             sparkCorner(out, matrix, normals, view, corner, 1, 1, size, x, y, z, 1.0F, 0.0F, green, blue, alpha);
             sparkCorner(out, matrix, normals, view, corner, 1, -1, size, x, y, z, 1.0F, 1.0F, green, blue, alpha);
         }
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) return;
+        for (Flash f : FLASHES) {   // where sparks were struck: a bright flash for a few ticks
+            float age = (level.getGameTime() - f.born + partialTick) / FLASH_TICKS;
+            if (age >= 1.0F) continue;
+            float size = f.size * (1.0F - 0.5F * age);
+            int alpha = Math.round((1.0F - age) * 255);
+            double x = f.at.x - cam.x, y = f.at.y - cam.y, z = f.at.z - cam.z;
+            sparkCorner(out, matrix, normals, view, corner, -1, -1, size, x, y, z, 0.0F, 1.0F, 225, 160, alpha);
+            sparkCorner(out, matrix, normals, view, corner, -1, 1, size, x, y, z, 0.0F, 0.0F, 225, 160, alpha);
+            sparkCorner(out, matrix, normals, view, corner, 1, 1, size, x, y, z, 1.0F, 0.0F, 225, 160, alpha);
+            sparkCorner(out, matrix, normals, view, corner, 1, -1, size, x, y, z, 1.0F, 1.0F, 225, 160, alpha);
+        }
+    }
+
+    /** The streaks of sparks off steel (LiquidRenderTypes.SPARK), each a quad from its head back along its flight, facing the camera. */
+    static void renderStreaks(PoseStack pose, MultiBufferSource buffers, Camera camera, float partialTick) {
+        if (STREAKS.isEmpty()) return;
+        Vec3 cam = camera.getPosition();
+        VertexConsumer out = buffers.getBuffer(LiquidRenderTypes.SPARK);
+        Matrix4f matrix = pose.last().pose();
+        Matrix3f normals = pose.last().normal();
+        for (Streak s : STREAKS) {
+            Vec3 head = new Vec3(Mth.lerp(partialTick, s.ox, s.x) - cam.x, Mth.lerp(partialTick, s.oy, s.y) - cam.y, Mth.lerp(partialTick, s.oz, s.z) - cam.z);
+            Vec3 v = new Vec3(s.vx, s.vy, s.vz);
+            double speed = v.length();
+            if (speed < 1e-4 || head.lengthSqr() > RANGE * RANGE) continue;
+            Vec3 tail = head.subtract(v.scale(Math.max(1.4, 0.03 / speed)));
+            Vec3 side = head.subtract(tail).cross(head);
+            if (side.lengthSqr() < 1e-10) continue;
+            side = side.normalize().scale(s.width);
+            float t = Mth.clamp((s.age + partialTick) / s.life, 0.0F, 1.0F);
+            int green = Math.round((0.9F - 0.4F * t) * 255), blue = Math.round((0.8F - 0.65F * t) * 255), alpha = Math.round((1.0F - t * t) * 255);
+            streakVertex(out, matrix, normals, head.add(side), 1.0F, 0.0F, green, blue, alpha);
+            streakVertex(out, matrix, normals, head.subtract(side), 0.0F, 0.0F, green, blue, alpha);
+            streakVertex(out, matrix, normals, tail.subtract(side), 0.0F, 1.0F, green, blue, alpha);
+            streakVertex(out, matrix, normals, tail.add(side), 1.0F, 1.0F, green, blue, alpha);
+        }
+    }
+
+    private static void streakVertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Vec3 p, float u, float v, int green, int blue, int alpha) {
+        out.vertex(matrix, (float) p.x, (float) p.y, (float) p.z).color(255, green, blue, alpha).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(0xF000F0).normal(normals, 0, 1, 0).endVertex();
     }
 
     private static void corner(VertexConsumer out, Matrix4f matrix, Matrix3f normals, Quaternionf turn, Vector3f v, float cx, float cy, float size,

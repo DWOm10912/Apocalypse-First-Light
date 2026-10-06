@@ -2,22 +2,34 @@ package com.antaurora.apofirstlight.weapon;
 
 import com.antaurora.apofirstlight.fluid.FuelLeaks;
 import com.antaurora.apofirstlight.network.AflNetwork;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A bullet stopped by a block (NativeGunShot#trace, 2026-10-05, docs/native_guns/native_bullet_holes_v1.md): a fuel
- * container gets a hole that may leak, steel sometimes sparks (fluid/FuelLeaks, docs/gameplay/fuel_fire_v1.md); every
- * client watching the block is told where it struck, for the bullet hole decal and the dust (client/BulletHoles). A hole
- * in a fuel container is drawn from the synced leak instead (it lasts as long as the hole does).
+ * container gets a hole that may leak (fluid/FuelLeaks, docs/gameplay/fuel_fire_v1.md); off steel, sparks fly now and
+ * then (FuelLeaks.SPARK_CHANCE), and a spark sometimes sets gasoline alight (SPARK_IGNITES). Every client watching the
+ * block is told where it struck and whether it sparked, for the bullet hole decal, the dust and the sparks
+ * (client/BulletHoles, client/FireFx). A hole in a fuel container is drawn from the synced leak instead (it lasts as long
+ * as the hole does).
  */
 public final class BulletImpacts {
     private BulletImpacts() {
     }
 
     public static void onBlock(ServerPlayer shooter, BlockHitResult hit) {
-        if (!shooter.serverLevel().isLoaded(hit.getBlockPos())) return;
+        ServerLevel level = shooter.serverLevel();
+        BlockPos pos = hit.getBlockPos();
+        if (!level.isLoaded(pos)) return;
         boolean holed = FuelLeaks.bullet(shooter, hit);
-        AflNetwork.sendBulletImpact(shooter.serverLevel(), hit.getLocation(), hit.getDirection(), hit.getBlockPos(), holed);
+        boolean spark = FuelLeaks.metal(level.getBlockState(pos).getSoundType(level, pos, shooter)) && level.random.nextFloat() < FuelLeaks.SPARK_CHANCE;
+        if (spark && level.random.nextFloat() < FuelLeaks.SPARK_IGNITES) {
+            Vec3 p = hit.getLocation().add(Vec3.atLowerCornerOf(hit.getDirection().getNormal()).scale(0.05));
+            FuelLeaks.get(level).spark(level, p);
+        }
+        AflNetwork.sendBulletImpact(level, hit.getLocation(), hit.getDirection(), pos, holed, spark);
     }
 }

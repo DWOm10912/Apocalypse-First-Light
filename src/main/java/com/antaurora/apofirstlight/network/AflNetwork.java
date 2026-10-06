@@ -563,11 +563,11 @@ public final class AflNetwork {
     }
 
     /** A bullet struck a block (weapon/BulletImpacts): to the players watching it, for the hole decal and the dust. */
-    public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed) {
+    public static void sendBulletImpact(ServerLevel level, Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed, boolean spark) {
         if (channel == null) return;
         ChunkPos chunk = new ChunkPos(block);
         if (!level.getChunkSource().hasChunk(chunk.x, chunk.z)) return;
-        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new BulletImpactS2CPacket(at, face, block, holed));
+        channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunk(chunk.x, chunk.z)), new BulletImpactS2CPacket(at, face, block, holed, spark));
     }
 
     /** Bullet holes in fuel containers changed or gone (fluid/FuelLeaks): to everyone in the level (there are few). */
@@ -894,7 +894,7 @@ public final class AflNetwork {
     }
 
     /** Where a bullet struck a block; {@code holed}: it made (or hit) a fuel container's hole, drawn from the leak. */
-    public record BulletImpactS2CPacket(Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed) {
+    public record BulletImpactS2CPacket(Vec3 at, net.minecraft.core.Direction face, BlockPos block, boolean holed, boolean spark) {
         public static void encode(BulletImpactS2CPacket packet, FriendlyByteBuf buffer) {
             buffer.writeDouble(packet.at.x);
             buffer.writeDouble(packet.at.y);
@@ -902,17 +902,18 @@ public final class AflNetwork {
             buffer.writeByte(packet.face.get3DDataValue());
             buffer.writeBlockPos(packet.block);
             buffer.writeBoolean(packet.holed);
+            buffer.writeBoolean(packet.spark);
         }
 
         public static BulletImpactS2CPacket decode(FriendlyByteBuf buffer) {
             return new BulletImpactS2CPacket(new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble()),
-                    net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), buffer.readBlockPos(), buffer.readBoolean());
+                    net.minecraft.core.Direction.from3DDataValue(buffer.readByte()), buffer.readBlockPos(), buffer.readBoolean(), buffer.readBoolean());
         }
 
         public static void handle(BulletImpactS2CPacket packet, Supplier<NetworkEvent.Context> supplier) {
             NetworkEvent.Context context = supplier.get();
             context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(net.minecraftforge.api.distmarker.Dist.CLIENT,
-                    () -> () -> com.antaurora.apofirstlight.client.BulletHoles.impact(packet.at, packet.face, packet.block, packet.holed)));
+                    () -> () -> com.antaurora.apofirstlight.client.BulletHoles.impact(packet.at, packet.face, packet.block, packet.holed, packet.spark)));
             context.setPacketHandled(true);
         }
     }

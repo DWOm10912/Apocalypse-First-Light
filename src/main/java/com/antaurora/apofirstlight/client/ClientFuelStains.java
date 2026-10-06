@@ -142,6 +142,8 @@ public final class ClientFuelStains {
         FireBlockFlames.renderGlows(pose, buffers, level, camera, now);
         FireFx.renderSparks(pose, buffers, event.getCamera(), event.getPartialTick());
         buffers.endBatch(LiquidRenderTypes.GLOW);
+        FireFx.renderStreaks(pose, buffers, event.getCamera(), event.getPartialTick());   // sparks off steel
+        buffers.endBatch(LiquidRenderTypes.SPARK);
     }
 
     /**
