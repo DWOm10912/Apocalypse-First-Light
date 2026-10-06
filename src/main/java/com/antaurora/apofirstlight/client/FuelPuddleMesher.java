@@ -34,10 +34,13 @@ import java.util.Set;
  * nothing overlaps, and a pool stops at the cell's edge (the field is only drawn on cells with a full top face under open
  * air; elsewhere ClientFuelStains falls back to decals). The pool's rim is a little denser than its middle. A tileable film
  * texture (textures/block/liquid_film) in the fuel's tint, world aligned. Meshes are cached per cell and rebuilt when a
- * stain there changes, and every {@link #FADE_REBUILD} ticks while one is drying.
+ * stain there changes, and every {@link #FADE_REBUILD} ticks while one is drying. The scorches (client/Scorches) use the
+ * same mesh.
  */
 final class FuelPuddleMesher {
     private static final int GRID = 16;
+    /** The field at and over which a corner is deep inside (full alpha; between 1 and this: the rim's alpha). */
+    private static final float DEEP = 1.6F;
     private static final float RIM = 1.25F;
     static final int FADE_REBUILD = 40;
     private static final ResourceLocation FILM = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/liquid_film");
@@ -66,6 +69,17 @@ final class FuelPuddleMesher {
         if (!stain.floor()) return;
         BlockPos cell = BlockPos.of(stain.cell());
         for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) DIRTY.add(cell.offset(dx, 0, dz).asLong());
+    }
+
+    static int cellCount() {
+        return CELLS.size();
+    }
+
+    /** The vertices of every cached pool (FireStats). */
+    static int vertexCount() {
+        int count = 0;
+        for (Cell cell : CELLS.values()) for (Pool pool : cell.pools) count += pool.quads.length / 6;
+        return count;
     }
 
     /** True if this floor stain's cell is drawn as a pool (else it is a decal). */
@@ -138,6 +152,13 @@ final class FuelPuddleMesher {
      * The part of a cell where the blobs field is over 1 (marching squares on the 1/16 grid), as quads: x, y, z (cell
      * relative), u, v (0..16 sprite px of a texture that tiles every 2 blocks, world aligned), alpha factor ({@code rim} at
      * the edge and just inside it, 1 deep inside).
+     * <p>
+     * Few vertices for the same picture (2026-10-05: every square had been two quads, 2048 vertices for a covered cell and
+     * four times that under a scorch with its ember layers; a burning fuel station cost a lot of frame time, user):
+     * squares wholly inside with one alpha at all four corners are merged into rectangles, each drawn as a fan round its
+     * middle through every grid point on its edge, so whatever lies next to it has its corners there too (no T-junctions,
+     * no pinholes along the seams); every other square is its polygon (convex: its points lie on the square's edge, in
+     * order) as a fan, two triangles to a quad. Texture and alpha are linear across a merged rectangle, so nothing changes.
      */
     static float[] mesh(BlockPos air, List<double[]> balls, float rim) {
         float[][] f = new float[GRID + 1][GRID + 1];
@@ -149,35 +170,118 @@ final class FuelPuddleMesher {
             }
             f[i][j] = (float) sum;
         }
-        List<Float> out = new ArrayList<>();
-        int ox = Math.floorMod(air.getX(), 2) * GRID, oz = Math.floorMod(air.getZ(), 2) * GRID;
-        double[][] corner = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
+        Quads out = new Quads(Math.floorMod(air.getX(), 2) * GRID, Math.floorMod(air.getZ(), 2) * GRID);
+        // squares wholly inside, by the alpha of their corners: 2 all deep (1), 1 all rim; 0 the rest
+        int[][] kind = new int[GRID][GRID];
+        boolean[][] done = new boolean[GRID][GRID];
         for (int i = 0; i < GRID; i++) for (int j = 0; j < GRID; j++) {
-            List<double[]> poly = new ArrayList<>();   // x, z (cell 0..1), alpha factor
+            float a = f[i][j], b = f[i + 1][j], c = f[i + 1][j + 1], d = f[i][j + 1];
+            kind[i][j] = a >= DEEP && b >= DEEP && c >= DEEP && d >= DEEP ? 2
+                    : Math.min(Math.min(a, b), Math.min(c, d)) >= 1.0F && Math.max(Math.max(a, b), Math.max(c, d)) < DEEP ? 1 : 0;
+        }
+        for (int j = 0; j < GRID; j++) for (int i = 0; i < GRID; i++) {
+            int k = kind[i][j];
+            if (k == 0 || done[i][j]) continue;
+            int w = 1, h = 1;
+            while (i + w < GRID && kind[i + w][j] == k && !done[i + w][j]) w++;
+            grow:
+            while (j + h < GRID) {
+                for (int x = i; x < i + w; x++) if (kind[x][j + h] != k || done[x][j + h]) break grow;
+                h++;
+            }
+            for (int x = i; x < i + w; x++) for (int z = j; z < j + h; z++) done[x][z] = true;
+            out.rectangle(i, j, w, h, k == 2 ? 1.0 : rim);
+        }
+        double[] px = new double[8], pz = new double[8], pa = new double[8];   // a square's polygon: grid x, z, alpha factor
+        int[][] corner = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
+        for (int i = 0; i < GRID; i++) for (int j = 0; j < GRID; j++) {
+            if (done[i][j]) continue;
+            int n = 0;
             for (int k = 0; k < 4; k++) {
-                int ai = i + (int) corner[k][0], aj = j + (int) corner[k][1], bi = i + (int) corner[(k + 1) % 4][0], bj = j + (int) corner[(k + 1) % 4][1];
+                int ai = i + corner[k][0], aj = j + corner[k][1], bi = i + corner[(k + 1) % 4][0], bj = j + corner[(k + 1) % 4][1];
                 float fa = f[ai][aj], fb = f[bi][bj];
-                if (fa >= 1.0F) poly.add(new double[]{(double) ai / GRID, (double) aj / GRID, fa >= 1.6F ? 1.0 : rim});
+                if (fa >= 1.0F) {
+                    px[n] = ai;
+                    pz[n] = aj;
+                    pa[n++] = fa >= DEEP ? 1.0 : rim;
+                }
                 if ((fa >= 1.0F) != (fb >= 1.0F)) {
                     double t = (1.0 - fa) / (fb - fa);
-                    poly.add(new double[]{(ai + (bi - ai) * t) / GRID, (aj + (bj - aj) * t) / GRID, rim});
+                    px[n] = ai + (bi - ai) * t;
+                    pz[n] = aj + (bj - aj) * t;
+                    pa[n++] = rim;
                 }
             }
-            for (int k = 1; k + 1 < poly.size(); k++) {   // a fan of quads (the last corner doubled)
-                double[][] q = {poly.get(0), poly.get(k), poly.get(k + 1), poly.get(k + 1)};
-                for (double[] p : q) {
-                    out.add((float) p[0]);
-                    out.add(0.0F);
-                    out.add((float) p[1]);
-                    out.add((float) ((ox + p[0] * GRID) / 2.0));
-                    out.add((float) ((oz + p[1] * GRID) / 2.0));
-                    out.add((float) p[2]);
-                }
+            for (int k = 1; k + 1 < n; k += 2) {   // two triangles of the fan to a quad (a last one alone: its corner doubled)
+                int d = Math.min(k + 2, n - 1);
+                out.corner(px[0], pz[0], pa[0]);
+                out.corner(px[k], pz[k], pa[k]);
+                out.corner(px[k + 1], pz[k + 1], pa[k + 1]);
+                out.corner(px[d], pz[d], pa[d]);
             }
         }
-        float[] quads = new float[out.size()];
-        for (int k = 0; k < quads.length; k++) quads[k] = out.get(k);
-        return quads;
+        return out.array();
+    }
+
+    /** A growing quad list in the cell mesh layout; corners given on the grid (0..GRID). */
+    private static final class Quads {
+        private final int ox, oz;
+        private float[] data = new float[6 * 256];
+        private int size;
+
+        Quads(int ox, int oz) {
+            this.ox = ox;
+            this.oz = oz;
+        }
+
+        void corner(double gx, double gz, double alpha) {
+            if (size + 6 > data.length) data = java.util.Arrays.copyOf(data, data.length * 2);
+            data[size++] = (float) (gx / GRID);
+            data[size++] = 0.0F;
+            data[size++] = (float) (gz / GRID);
+            data[size++] = (float) ((ox + gx) / 2.0);
+            data[size++] = (float) ((oz + gz) / 2.0);
+            data[size++] = (float) alpha;
+        }
+
+        /**
+         * The squares (i, j) to (i + w, j + h), one alpha: one quad for a single square, else a fan round the middle
+         * through the 2 (w + h) grid points round its edge, two to a quad.
+         */
+        void rectangle(int i, int j, int w, int h, double alpha) {
+            if (w == 1 && h == 1) {
+                corner(i, j, alpha);
+                corner(i + 1, j, alpha);
+                corner(i + 1, j + 1, alpha);
+                corner(i, j + 1, alpha);
+                return;
+            }
+            int n = 2 * (w + h);
+            int[] ex = new int[n], ez = new int[n];
+            for (int k = 0; k < n; k++) {   // round the edge from (i, j), the way a square's corners go
+                int e = k;
+                if (e < w) { ex[k] = i + e; ez[k] = j; continue; }
+                e -= w;
+                if (e < h) { ex[k] = i + w; ez[k] = j + e; continue; }
+                e -= h;
+                if (e < w) { ex[k] = i + w - e; ez[k] = j + h; continue; }
+                e -= w;
+                ex[k] = i;
+                ez[k] = j + h - e;
+            }
+            double cx = i + w / 2.0, cz = j + h / 2.0;
+            for (int k = 0; k < n; k += 2) {
+                int b = (k + 2) % n;
+                corner(cx, cz, alpha);
+                corner(ex[k], ez[k], alpha);
+                corner(ex[k + 1], ez[k + 1], alpha);
+                corner(ex[b], ez[b], alpha);
+            }
+        }
+
+        float[] array() {
+            return java.util.Arrays.copyOf(data, size);
+        }
     }
 
     /** Every cached pool within range, its alpha the freshest of its stains' fades; vertices relative to the camera. */

@@ -165,6 +165,7 @@
 
 - 烟和火星：`client/FireFx`（自己模拟、自己画），渲染类型 `LiquidRenderTypes.SMOKE`（烟）和 `GLOW`（火星）；贴图 `textures/effect/fire_smoke.png`。
 - 焦痕：`client/Scorches`；`client/FuelPuddleMesher` 拆出了 `blob` / `mesh` / `fullFloor` 给它复用；渲染类型 `LiquidRenderTypes.EMBER`。
+- F3 火场统计：`client/FireStats`（计时点在 `ClientFuelStains#render`，光源方块计数在 `LevelRendererFireTrackMixin`）。
 - 生物：`client/EntityFlames`、`mixin/client/EntityRenderDispatcherFireMixin`。
 - 火方块：`client/FireBlockFlames`、`mixin/client/LevelRendererFireTrackMixin`、`mixin/client/BaseFireBlockSmokeMixin`、`assets/minecraft/blockstates/fire.json`、`models/block/fire_hidden.json`。
 - `client/FuelFlames#flame`：三片交叉的火焰，可以指定原点、视点（只用来算淡出）、转角和颜色（生物、火方块、弹孔都用它）；`FuelFlames#glow`：地面火光。
@@ -174,7 +175,20 @@
 
 - 没有实机验证，烟和火星在光影下的样子也没看过。
 - 烟团没有软边（碰到地面或墙会被切出直边）。
-- 性能：火方块离镜头 20 格外只画 2 团火、40 格外 1 团（大一点）；油斑的火 32 格外最多 2 团。烟和火星有上限（见上）。没有实测帧数。
+- 性能：
+  - 火方块离镜头 20 格外只画 2 团火、40 格外 1 团（大一点）；油斑的火 32 格外最多 2 团。烟和火星有上限（见上）。
+  - 地面网格（2026-10-05）：油池和焦痕共用 `FuelPuddleMesher#mesh`。
+    - 原来每个 1/16 小方格画两个四边形，铺满的一格就是 2048 个顶点；焦痕上还要再叠三层余烬，一格最多 8192 个顶点。用户反馈加油站点着以后掉帧明显。
+    - 现在内部四角透明度相同的小方格合并成矩形。每个矩形从中心向边上每个网格点画扇形，相邻网格的角点在这里也都是角点，所以接缝处没有 T 形接头，不会出针孔。
+    - 其余小方格各画成自己的凸多边形，每两个三角形合成一个四边形。
+    - 画面不变（贴图坐标和透明度在合并的矩形里本来就是线性的）。离线模拟的覆盖面积完全一致，顶点数少一半到 2.7 倍：铺满的一格 2016 → 1056，一大片油池 1592 → 600。
+    - 网格数据改用定长数组，不再一个个装箱成 `Float`。
+  - F3 统计（`client/FireStats`）：打开 F3 时，左侧多三行 `[AFL 火场]`：
+    - 油斑那一遍渲染每帧的 CPU 时间（按弹孔、地面、漏油、烟、火焰、火光/火星分开，每部分包括它自己那批的提交，取一秒平均）；
+    - 油斑数（其中燃烧的），油池和焦痕的格数和顶点数；
+    - 烟团、火星、火方块的数量，以及火的光源方块每秒出现或消失几次（每次都会让周围的方块重新算光照、重建区块，这部分不在上面的时间里）。
+    - 只在 F3 打开时计时；不测 GPU 时间。
+  - 没有实测帧数。
 - 焦痕不存档；客户端没看到的火不会留下焦痕。
 - 原版爆炸本身的像素粒子还在；油罐爆炸的火球没做。
 - 火方块的跟踪依赖 Forge 在客户端发 `ChunkEvent.Load`；万一没收到，要等原版给它生成外观粒子时才登记上（一般 2 到 3 秒内）。

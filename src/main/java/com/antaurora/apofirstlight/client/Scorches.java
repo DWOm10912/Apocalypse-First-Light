@@ -118,6 +118,17 @@ public final class Scorches {
         return BY_ID.isEmpty();
     }
 
+    static int cellCount() {
+        return CELLS.size();
+    }
+
+    /** The vertices of every cached char mesh (FireStats); the embers draw them again, up to three times. */
+    static int vertexCount() {
+        int count = 0;
+        for (Cell cell : CELLS.values()) count += cell.quads.length / 6;
+        return count;
+    }
+
     static void clear() {
         BY_ID.clear();
         PEAK.clear();

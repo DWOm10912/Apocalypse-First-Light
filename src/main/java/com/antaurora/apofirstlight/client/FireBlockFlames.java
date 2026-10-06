@@ -60,6 +60,13 @@ public final class FireBlockFlames {
         return BY_CHUNK.isEmpty();
     }
 
+    /** The fire blocks followed (FireStats). */
+    static int count() {
+        int count = 0;
+        for (Set<Long> set : BY_CHUNK.values()) count += set.size();
+        return count;
+    }
+
     /** A block changed on this client (LevelRendererFireTrackMixin). */
     public static void changed(BlockPos pos, BlockState old, BlockState now) {
         boolean was = old.is(Blocks.FIRE), is = now.is(Blocks.FIRE);

@@ -107,8 +107,10 @@ public final class ClientFuelStains {
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         int gasoline = tint(AflFluids.GASOLINE.get()), diesel = tint(AflFluids.DIESEL.get());
         double now = level.getGameTime() + event.getPartialTick();
+        FireStats.begin();   // timed while F3 is open
         BulletHoles.render(pose, buffers, level, camera, now);   // first: fuel running down a holed wall lies over the holes
         buffers.endBatch(LiquidRenderTypes.HOLE);
+        FireStats.lap(FireStats.HOLES);
         // floors: pools (one field per cell, no overlaps); walls, ceilings and floors without a full top: decals, oldest first
         Scorches.renderChar(pose, buffers, level, camera, RANGE, now);   // burnt ground under what fuel is left
         FuelPuddleMesher.rebuild(level, now);
@@ -130,20 +132,26 @@ public final class ClientFuelStains {
         buffers.endBatch(LiquidRenderTypes.DECAL);
         Scorches.renderEmbers(pose, buffers, camera, RANGE, now);
         buffers.endBatch(LiquidRenderTypes.EMBER);
+        FireStats.lap(FireStats.GROUND);
         ClientFuelLeaks.renderStreams(pose, buffers, level, camera, event.getPartialTick());   // fuel leaking out of bullet holes
         buffers.endBatch(net.minecraft.client.renderer.RenderType.entityTranslucent(net.minecraft.client.renderer.texture.TextureAtlas.LOCATION_BLOCKS));
+        FireStats.lap(FireStats.STREAMS);
         FireFx.renderSmoke(pose, buffers, level, event.getCamera(), event.getPartialTick());   // smoke, then the flames' light over it
         buffers.endBatch(LiquidRenderTypes.SMOKE);
+        FireStats.lap(FireStats.SMOKE);
         FuelFlames.render(pose, buffers, camera, now);   // last: they add light onto everything behind them
         ClientFuelLeaks.renderFlames(buffers.getBuffer(LiquidRenderTypes.FLAME), pose, camera, now);
         FireBlockFlames.render(pose, buffers, level, camera, now);   // vanilla fire blocks, in the same flames
         buffers.endBatch(LiquidRenderTypes.FLAME);
+        FireStats.lap(FireStats.FLAMES);
         FuelFlames.renderGlows(pose, buffers, camera, now);   // their glow on the floor
         FireBlockFlames.renderGlows(pose, buffers, level, camera, now);
         FireFx.renderSparks(pose, buffers, event.getCamera(), event.getPartialTick());
         buffers.endBatch(LiquidRenderTypes.GLOW);
         FireFx.renderStreaks(pose, buffers, event.getCamera(), event.getPartialTick());   // sparks off steel
         buffers.endBatch(LiquidRenderTypes.SPARK);
+        FireStats.lap(FireStats.GLOWS);
+        FireStats.end();
     }
 
     /**

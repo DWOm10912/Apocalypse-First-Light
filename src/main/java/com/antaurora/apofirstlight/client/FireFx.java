@@ -97,6 +97,14 @@ public final class FireFx {
         return PUFFS.isEmpty() && SPARKS.isEmpty() && STREAKS.isEmpty() && FLASHES.isEmpty();
     }
 
+    static int puffCount() {
+        return PUFFS.size();
+    }
+
+    static int sparkCount() {
+        return SPARKS.size() + STREAKS.size();
+    }
+
     /** False now and then at reduced particle settings (decreased: half, minimal: one in five). */
     private static boolean allowed(RandomSource random) {
         ParticleStatus status = Minecraft.getInstance().options.particles().get();
