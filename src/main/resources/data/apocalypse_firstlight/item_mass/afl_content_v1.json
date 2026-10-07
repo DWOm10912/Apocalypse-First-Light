@@ -349,6 +349,14 @@
       "unit_mass_kg": 1.2,
       "estimated": true
     },
+    "apocalypse_firstlight:metal_wall_panel": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:metal_panel_jamb": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
     "apocalypse_firstlight:beverage_cooler": {
       "unit_mass_kg": 35,
       "estimated": true

@@ -1,0 +1,58 @@
+{
+  "textures": {
+    "particle": "apocalypse_firstlight:block/facade_cornice/aluminum_cornice",
+    "alu": "apocalypse_firstlight:block/facade_cornice/aluminum_cornice"
+  },
+  "elements": [
+    {
+      "from": [
+        -0.75,
+        14.4,
+        -0.75
+      ],
+      "to": [
+        0,
+        16,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.5999999999999996
+          ],
+          "texture": "#alu"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            1.5999999999999996
+          ],
+          "texture": "#alu"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.75
+          ],
+          "texture": "#alu"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.75,
+            0.75
+          ],
+          "texture": "#alu"
+        }
+      }
+    }
+  ]
+}

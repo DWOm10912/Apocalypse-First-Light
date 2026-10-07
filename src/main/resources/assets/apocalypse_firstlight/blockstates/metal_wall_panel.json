@@ -1,0 +1,102 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "cap": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel"
+      }
+    },
+    {
+      "when": {
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel_capped"
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "north": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_lip"
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_lip",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_lip",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_lip",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "north": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_corner"
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "north": "false",
+        "east": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_corner",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "east": "false",
+        "south": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_corner",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cap": "true",
+        "south": "false",
+        "west": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_metal_panel/coping_corner",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -174,7 +174,7 @@ A1 图纸里的 **±0.00 = G**（便利店室内地面 = 人行道顶 = 入口�
 
 | 范围 | u | k | v |
 |---|---|---|---|
-| 店（含门框、雨篷、檐口外挑） | 17..45 | 0..7（门框压顶到 G + 7.1） | 7..24 |
+| 店（含门框、雨篷、檐口外挑） | 17..45 | 0..7（门框压顶到 G + 7.1；2026-10-07 起压顶做在顶层墙板格子里，顶面就是 G + 7.0，外沿凸出约 5 cm） | 7..24 |
 | 店模块 | 16..46 | −2..7 | 7..26 |
 | 顶棚模块 | 12..50 | −2..6 | 40..50 |
 | 油罐（地下） | 24..26、30..32、36..38 | −5..−3 | 52..58 |
@@ -295,7 +295,7 @@ front NORTH 写法下的局部坐标：main (24, 2, 0) NORTH；secondary (6, 2, 
 2. 外墙砖：暖灰、深灰两种——2026-10-06 选了大规格砖（每格 10 层），已做成 `face_brick_warm_gray` / `face_brick_charcoal`，见 [facade_brick_v1.md](../models/facade_brick_v1.md)，用户 2026-10-07 实机 PASS；
 3. 磨面砌块勒脚（带窗台压顶）——2026-10-07 已做成 `ground_face_block`，见 [facade_masonry_base_v1.md](../models/facade_masonry_base_v1.md)，用户实机 PASS；
 4. 女儿墙铝檐口 / 压顶——2026-10-07 已做成 `aluminum_cornice`，见 [aluminum_cornice_v1.md](../models/aluminum_cornice_v1.md)，用户实机 PASS；
-5. 深灰金属墙板和入口门框薄侧板；
+5. 深灰金属墙板和入口门框薄侧板——2026-10-07 已做成 `metal_wall_panel` / `metal_panel_jamb`，见 [metal_wall_panel_v1.md](../models/metal_wall_panel_v1.md)，用户实机 PASS；
 6. 金属雨篷（出挑 1 m，带封檐板）。
 
 同时要做的非资产 P0：

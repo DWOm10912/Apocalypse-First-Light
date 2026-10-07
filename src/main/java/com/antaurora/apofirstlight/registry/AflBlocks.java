@@ -357,6 +357,13 @@ public final class AflBlocks {
     public static final RegistryObject<Block> ALUMINUM_CORNICE = BLOCKS.register("aluminum_cornice",
             () -> new com.antaurora.apofirstlight.block.AluminumCorniceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+    // Metal Wall Panel V1 (docs/models/metal_wall_panel_v1.md): coated aluminium cladding and its jamb plate, Diamond-tier like the cornice
+    public static final RegistryObject<Block> METAL_WALL_PANEL = BLOCKS.register("metal_wall_panel",
+            () -> new com.antaurora.apofirstlight.block.MetalWallPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> METAL_PANEL_JAMB = BLOCKS.register("metal_panel_jamb",
+            () -> new com.antaurora.apofirstlight.block.MetalPanelJambBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STOREFRONT_GLAZING = BLOCKS.register("storefront_glazing",
             () -> new com.antaurora.apofirstlight.block.StorefrontGlazingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.GLASS)

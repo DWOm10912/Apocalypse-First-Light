@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/facade_metal_panel/metal_panel_jamb"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/facade_metal_panel/metal_panel_jamb",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/facade_metal_panel/metal_panel_jamb",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/facade_metal_panel/metal_panel_jamb",
+      "y": 270
+    }
+  }
+}

@@ -44,6 +44,8 @@ public final class AflCreativeTabs {
             AflItems.FACE_BRICK_CHARCOAL,
             AflItems.GROUND_FACE_BLOCK,
             AflItems.ALUMINUM_CORNICE,
+            AflItems.METAL_WALL_PANEL,
+            AflItems.METAL_PANEL_JAMB,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
             AflItems.ASPHALT,
             AflItems.ROAD_ASPHALT_SURFACE,

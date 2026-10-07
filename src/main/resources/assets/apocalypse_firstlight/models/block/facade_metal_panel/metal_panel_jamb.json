@@ -1,0 +1,80 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel",
+    "panel": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        16,
+        5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#panel",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#panel"
+        },
+        "west": {
+          "uv": [
+            11,
+            0,
+            16,
+            16
+          ],
+          "texture": "#panel"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            5,
+            16
+          ],
+          "texture": "#panel"
+        },
+        "up": {
+          "uv": [
+            0,
+            1,
+            16,
+            3.5
+          ],
+          "texture": "#panel",
+          "cullface": "up"
+        },
+        "down": {
+          "uv": [
+            0,
+            1,
+            16,
+            3.5
+          ],
+          "texture": "#panel",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}
