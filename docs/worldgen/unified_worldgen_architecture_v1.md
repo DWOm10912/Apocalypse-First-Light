@@ -1,8 +1,16 @@
 # AFL Unified Worldgen Architecture V1
 
+## 2026-10-06 当前实现：普通道路 V1-A 规划层
+
+断面修正版使用 `north_american_roads_v1a_2`：R12/C14/I12的沥青/完整ROW分别为12/22、14/26、12/24。旧正式规格与首版代码曾共同误将12/14/12作为完整走廊，已同步纠正；路段、路口分带、地块、入口和claims随完整ROW重算，旧JSON不再是施工依据。新增合成T字预设，2026-10-07用户明确确认V1-A通过（阶段验收，未附逐项新版输出，不涵盖V1-B施工或性能专项）；第一版用户的7节点/8边/21地块结果不能直接沿用。具体数据与版本边界见V1-A实施记录。
+
+按 [北美道路与建筑地块统一规格 V1](north_american_roads_and_lots_spec_v1.md)，已增加独立 `worldgen/roads` 规划代码：有界确定性道路图、统一路口、数据驱动完整地块、建筑占位与入口、真实基础地形适配及只读 Highway/已知保护占地消费。现有 StructureTransform/StructureSocket、TerrainQuery/TerrainSample、SpatialClaim 继续复用；没有重建统一 Generator 或恢复旧 Rural。具体代码、目录和诊断入口见 [V1-A 实施记录](north_american_roads_v1a_implementation.md)。
+
+这是**无方块写入的开发规划入口**，尚未注册自然生成、道路施工、正式建筑池、跨候选网络拼接或世界级版本/profile 激活；噪声样本无法证明玩家内容无冲突。下文旧“City 尚无规划器”或“先实体占位 NBT”应以上述 V1-A 范围为准，其他历史生命周期/持久化设计仍不是生产接入承诺。
+
 ## 2026-10-06 生效修订：旧 Rural 退役
 
-旧 Rural 独立自然生成、八栋旧建筑、配方、目录及专用开发命令已经退出正式路径，见 [Rural Retirement V1](rural_retirement_v1.md)。以下 WG-06/07 状态、旧 StructureSet/Piece 生命周期、旧资产兼容迁移和 backlog 均为历史设计基线，不再要求继续实现或维持旧 Rural。`rural` 未来仅表示场地类型、建筑用途或布局策略，与小镇、中大型城市共享聚落规划、地块、NBT 和入口契约；该新框架本轮尚未实现。
+旧 Rural 独立自然生成、八栋旧建筑、配方、目录及专用开发命令已经退出正式路径，见 [Rural Retirement V1](rural_retirement_v1.md)。以下 WG-06/07 状态、旧 StructureSet/Piece 生命周期、旧资产兼容迁移和 backlog 均为历史设计基线，不再要求继续实现或维持旧 Rural。`rural` 未来仅表示场地类型、建筑用途或布局策略，与小镇、中大型城市共享聚落规划、地块、NBT 和入口契约；退役时尚无新框架，后续 V1-A 当前状态见上方修订。
 
 继续保留 MINIMAL_SHARED_CORE、独立 Highway、通用 TerrainQuery/SpatialClaim/StructureDefinition/StructureSocket/StructureTransform/NBT 与区块写入契约。保留的 Rural 算法无正式候选调度入口，不给新城市预留旧 Rural 候选占地。R12/C14/I12、1/16 道路高程、3/16 路缘高差及整数 NBT 地面锚点不因退役改变；新道路任务另行实施。旧开发存档中的 Rural StructureStart/Piece 不再承诺兼容，不将此例外扩展为可修改 Highway 或地堡。
 

@@ -93,9 +93,11 @@ public final class AflDevCommands {
             afl.addChild(dev.build());
             afl.addChild(MacroGeographyExportCommand.build().build());
             afl.addChild(HighwayDebugCommand.build().build());
+            afl.addChild(RoadPlanningCommand.build().build());
         } else {
             event.getDispatcher().register(Commands.literal("afl").then(dev)
                     .then(MacroGeographyExportCommand.build())
+                    .then(RoadPlanningCommand.build())
                     .then(HighwayDebugCommand.build()));
         }
     }

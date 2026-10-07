@@ -1,5 +1,11 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-06 V1-A 决策补充：先交付规划数据，不放置占位 NBT
+
+[北美道路 V1-A](north_american_roads_v1a_implementation.md) 已实现有界道路图、路口、地块和建筑占位数据；固定接口遵循 [统一规格](north_american_roads_and_lots_spec_v1.md)。本阶段覆盖 ADR-08 中“必须先制作实体 dev NBT”的次序：占位先用有尺寸、朝向、G/S、StructureSocket/StructureTransform 兼容的规划记录，不为本轮新增或放置占位 NBT。正式 NBT 到货后仍须验证真实边界、入口、旋转和地下/外挑范围，不能将当前合成 socket 当成资产校验通过。
+
+实际道路默认预算是512×512候选、384×384道路范围、4次尝试、64边、64地块、8192地形列；没有新增常驻计划缓存、自然生成入口或生产 profile 接线。Highway 为只读占地来源，旧 Rural 不再是候选障碍；现有玩家/外部结构保护尚不完整，因此规划成功不等于施工授权。编译与用户实机验收分开记录。
+
 ## 2026-10-06 决策覆盖：退役旧 Rural 独立系统
 
 [Rural Retirement V1](rural_retirement_v1.md) 已取代下文继续迁移/维护旧 Rural 的计划。ADR-01 的 Site/Infrastructure 分层仍有效，但 Site 不再指旧 Rural 注册链；未来乡村、小镇和城市共享统一聚落框架。ADR-07 不再要求旧八建筑或 legacy digest 回归，通用几何/入口/占地测试仍保留。ADR-11 对旧 Rural 开发存档的兼容要求在本次 Early Alpha 清理中明确放弃；其他系统的版本、资源快照和旧世界约束不因此取消。Highway 独立保留；地堡保持独立启动事件和 NBT 模板放置路径。下文为 Phase 0 历史决策记录，不代表旧 Rural 仍在正式运行。
