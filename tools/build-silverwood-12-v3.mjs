@@ -7,7 +7,7 @@
 // boxlock SxS the user supplied in Blender. Real scale, 1 unit ~ 22 mm: overall ~46 (1.0 m), 22" barrels (25.5), 12-bore
 // (bore 0.84 = 18.5 mm), barrels converging toward the muzzle, flat matte top rib with a brass bead, splinter forend with a
 // forend iron cupping the action knuckle, half-pistol-grip walnut stock with a ribbed rubber pad, top lever with a
-// right-hand thumb piece, tang safety, twin triggers (front = right barrel), extractor between the chambers.
+// right-hand thumb piece, tang safety, a single selective trigger (right barrel, then left), extractor between the chambers.
 // Frame (Blockbench source): muzzle -Z, up +Y, +X = the shooter's right. The bead top (y 9.885) sits on the existing ADS
 // aim line [0, 9.88, 3.5], so the gun's ADS / hip data keeps working unchanged.
 // Materials follow the reference split: blued steel (barrels, monoblock, action, trigger guard), polished steel (top lever,
@@ -232,10 +232,11 @@ loft(P('forend_wood', 'forend', 'wood'), FOREND.slice().reverse().map(([z, yb, h
     [10.92, 0.86], [10.72, 0.72], [10.35, 0.40], [9.85, 0.26]], [], 9.53, 9.69, 0.02);
   for (const q of part.v) q[1] += -0.075 * Math.max(0, q[2] - 9.3) - 0.10 * Math.max(0, (q[0] - 0.25) / 0.6) ** 2;
 }
-// twin triggers (front = right barrel, rear = left barrel)
+// single selective trigger (2026-10-06, was twin triggers): the gun fires one barrel per pull, right then left (SEMI), so one
+// blade, centred in the guard bow (between the old front and rear blades); the bone pivot stays put
 {
   const part = P('triggers', 'triggers', 'polished'), blade = [[6.95, 6.95], [6.92, 6.60], [7.02, 6.30], [7.25, 6.10], [7.38, 6.14], [7.18, 6.34], [7.12, 6.62], [7.20, 6.95]];
-  for (const dz of [0, 1.05]) ext(part, 'x', blade.map(([z, y]) => [z + dz, y]), [], -0.09, 0.09, 0);
+  ext(part, 'x', blade.map(([z, y]) => [z + 0.52, y]), [], -0.09, 0.09, 0);
 }
 
 // ---------------- stock (walnut) + butt pad ----------------
@@ -251,7 +252,7 @@ loft(P('stock', 'stock', 'wood'), STOCK.map(s => stockRing(s)), {caps: [HIDDEN, 
   loft(P('butt_pad', 'stock', 'rubber'), [at(24.18, 1.012), at(24.36, 1.012), at(24.40, 0.985), at(24.48, 0.985), at(24.52, 1.012), at(24.64, 1.012), at(24.68, 0.985),
     at(24.76, 0.985), at(24.80, 1.0), at(24.88, 0.97)], {caps: [HIDDEN, 1]});
 }
-// trigger guard: bow from the action floor round both triggers, tang along the wrist
+// trigger guard: bow from the action floor round the trigger, tang along the wrist
 sweep(P('trigger_guard', 'receiver', 'silver'), [[5.95, 6.95], [6.15, 6.55], [6.5, 6.08], [7.1, 5.80], [7.8, 5.74], [8.5, 5.82], [9.1, 6.06], [9.55, 6.45], [9.85, 6.85],
   ...[10.2, 10.8, 11.4, 12.0, 12.5].map(z => [z, lerpTable(STOCK, z, 2) + 0.02])], 0.40, 0.13);
 

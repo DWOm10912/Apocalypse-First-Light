@@ -1,5 +1,21 @@
 
 
+## 项目简介 Summary（2026-10-06，Alpha 占位版用）
+
+为什么写：用户准备先在 CurseForge 发一个 Alpha 版本占住名字（2026-10-06 查过，CurseForge、Modrinth 上 "Apocalypse First Light" 都还没人用），发布页的 Summary 栏要一段简介。只写已经实现的内容，城市生成、国家系统等还没做的不写。
+
+英文（Summary 栏，较短）：
+
+> A grounded post-apocalyptic survival overhaul for Forge 1.20.1: realistic guns, temperature, thirst, stamina and weight, radiation and the infected, searchable loot containers, and working fuel stations, power and fluid pipes.
+
+英文（较长，可放描述开头）：
+
+> Apocalypse: First Light is a grounded post-apocalyptic survival mod for Forge 1.20.1. Survive with realistic firearms and ammo, body temperature, thirst, stamina and carry weight, while radiation and the infected wait outside. Search abandoned lockers, dumpsters and vending machines for supplies, and get the old world running again: fuel stations, generators, batteries, cables and fluid pipes. Early Alpha: expect missing content and breaking changes.
+
+中文：
+
+> 一个偏写实的末日生存模组（Forge 1.20.1）：真实手感的枪械与弹药、体温、口渴、耐力与负重、辐射与感染者；搜刮废弃的储物柜、垃圾箱和售货机，让加油站、电力和管道重新运转。当前为早期 Alpha，内容不完整，版本之间可能不兼容。
+
 ---
 
 **本模组采用代码与资产分离的许可方式。**

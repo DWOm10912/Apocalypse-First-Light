@@ -4,7 +4,7 @@
 
 2026-09-27 新增 [Transparent Hybrid Mesh Runtime V1](transparent_hybrid_mesh_runtime_v1.md)：V1/V2 part 可选 `render_layer`，缺省 CUTOUT，透明层使用标准 `entityNoOutline`。Mixed attachment/static presentation 先提交 cutout，再提交透明 parts；shadow pass 跳过透明层。首个正式资产为 pistol_red_dot，保持源几何/UV/贴图 alpha 24 不变。Shader OFF 路径就绪；Oculus 默认透明 shader 的 0.1 alpha test 仍可能裁掉镜片，透明 PBR 尚未实机通过。原低层单 VertexConsumer API 仍默认 CUTOUT，不自动分配第二个 buffer；新 mixed 调用者应使用高层双层入口。见专文的排序与 GPU 验证限制。
 
-2026-10-05 起 loader 在加载时把能安全合并的三角形对合成 Quad，第一人称手持枪跳过封闭 part 的背面，减少 CPU 提交的顶点。sidecar 格式和导出器不变。已编译，未实测 FPS，详见下文 [加载时三角面配对与第一人称背面跳过](#加载时三角面配对与第一人称背面跳过2026-10-05)。
+2026-10-05 起 loader 在加载时把能安全合并的三角形对合成 Quad，第一人称手持枪跳过封闭 part 的背面，减少 CPU 提交的顶点。sidecar 格式和导出器不变。已编译；用户 2026-10-06 实机截图对比见下文"实机结果"，详见下文 [加载时三角面配对与第一人称背面跳过](#加载时三角面配对与第一人称背面跳过2026-10-05)。
 
 2026-09-27。V2.1 工具链已实现保守的量化感知 Quad 恢复，存储格式仍为 V2。用户反馈此前 V2 实机通过；V2.1 的离线检查通过，新一轮图形/PBR/CPU 验收仍待用户执行。基线：Minecraft 1.20.1、Forge 47.4.22、Java 17、GeckoLib 4.7.4。
 
@@ -250,7 +250,19 @@ Shader 启用与 shadow pass 由共享 `AflShaderCompat` 通过 Oculus/Iris 公�
 
 验证方法：用 `-Dafl.debug.renderProfile=true`，对比 `vertices_per_frame`、`quad_faces_per_frame`、`triangle_faces_per_frame` 和 `cpu_ms_per_frame`。Probe 只统计 P9 和 Blackridge 的主枪。
 
-尚未完成的验证：没有实测 FPS；没有在实机 Sundial 下核对 normal map 和高光是否与之前一致。没有做 VBO 缓存，在 Oculus 扩展格式下风险较高。
+**实机结果（用户 2026-10-06，截图对比，同一场景：加油站着火冒烟，Sundial 光影，RTX 3080 Ti + i7-12700K）**
+
+| | 优化前（10-05 录屏） | 优化后 |
+|---|---|---|
+| 空手 | 约 115–139 FPS | 113 FPS，GPU 占用 100% |
+| 掏出 P9 | 约 65–90 FPS | 85 FPS，GPU 占用 84% |
+
+- 掏枪的代价按帧时间算：优化前约 5 ms（127 → 77 FPS 取中值），优化后约 2.9 ms（1/85 − 1/113）。少了约 45%，和上面离线估算的 P9 −47% 吻合。
+- 不开光影时掏不掏枪帧数没区别（用户 2026-10-06）。说明这部分开销来自光影下 Oculus 的扩展顶点格式（每个顶点额外算 tangent、mid-UV），和上面"瓶颈在 CPU 逐顶点提交"的判断一致。
+- 掏枪后 GPU 占用仍从 100% 降到 84%，说明开光影时第一人称枪仍是 CPU 侧的瓶颈。按 P9 约 12,300 个提交顶点对应约 2.9 ms 粗算，光影下每多 1,000 个顶点约多 0.24 ms；以后给枪加几何细节时按这个估预算。
+- 这是两张截图的读数，不是 `renderProfile` 的统计；场景里有火和烟，帧数本身会波动。
+
+尚未完成的验证：没有用 `renderProfile` 统计每帧顶点数和 CPU 时间；没有在实机 Sundial 下核对 normal map 和高光是否与之前一致。没有做 VBO 缓存，在 Oculus 扩展格式下风险较高。
 
 ## 离线 fixture 与已完成检查
 
