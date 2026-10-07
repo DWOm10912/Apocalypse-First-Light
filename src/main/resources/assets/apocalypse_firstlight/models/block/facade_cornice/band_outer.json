@@ -1,0 +1,119 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": true,
+  "textures": {
+    "band": "apocalypse_firstlight:block/facade_cornice/cornice_band",
+    "particle": "apocalypse_firstlight:block/facade_cornice/cornice_band"
+  },
+  "elements": [
+    {
+      "from": [
+        -1.05,
+        0.6,
+        -1.05
+      ],
+      "to": [
+        16,
+        2.2,
+        -1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            13.8,
+            16,
+            15.4
+          ],
+          "texture": "#band"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.05
+          ],
+          "texture": "#band"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.05
+          ],
+          "texture": "#band"
+        },
+        "east": {
+          "uv": [
+            0,
+            13.8,
+            0.05,
+            15.4
+          ],
+          "texture": "#band"
+        },
+        "west": {
+          "uv": [
+            0,
+            13.8,
+            0.05,
+            15.4
+          ],
+          "texture": "#band"
+        }
+      }
+    },
+    {
+      "from": [
+        -1.05,
+        0.6,
+        -1
+      ],
+      "to": [
+        -1,
+        2.2,
+        16
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            0,
+            13.8,
+            16,
+            15.4
+          ],
+          "texture": "#band"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.05,
+            16
+          ],
+          "texture": "#band"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.05,
+            16
+          ],
+          "texture": "#band"
+        },
+        "south": {
+          "uv": [
+            0,
+            13.8,
+            0.05,
+            15.4
+          ],
+          "texture": "#band"
+        }
+      }
+    }
+  ]
+}

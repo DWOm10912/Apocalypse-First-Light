@@ -1,0 +1,271 @@
+{
+  "parent": "minecraft:block/block",
+  "ambientocclusion": true,
+  "textures": {
+    "alu": "apocalypse_firstlight:block/facade_cornice/aluminum_cornice",
+    "membrane": "apocalypse_firstlight:block/facade_cornice/cornice_membrane",
+    "reveal": "apocalypse_firstlight:block/facade_cornice/cornice_reveal",
+    "particle": "apocalypse_firstlight:block/facade_cornice/aluminum_cornice"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        15.5,
+        16
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            0,
+            0.5,
+            16,
+            16
+          ],
+          "texture": "#membrane"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        15.5,
+        16
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0.5,
+            16,
+            16
+          ],
+          "texture": "#reveal"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        15.5,
+        16
+      ],
+      "faces": {
+        "east": {
+          "uv": [
+            0,
+            0.5,
+            16,
+            16
+          ],
+          "texture": "#alu",
+          "cullface": "east"
+        },
+        "west": {
+          "uv": [
+            0,
+            0.5,
+            16,
+            16
+          ],
+          "texture": "#alu",
+          "cullface": "west"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#alu",
+          "cullface": "down"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0.5,
+        -1
+      ],
+      "to": [
+        16,
+        15.5,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0.5,
+            16,
+            15.5
+          ],
+          "texture": "#alu"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            1
+          ],
+          "texture": "#alu"
+        },
+        "east": {
+          "uv": [
+            0,
+            0.5,
+            1,
+            15.5
+          ],
+          "texture": "#alu"
+        },
+        "west": {
+          "uv": [
+            0,
+            0.5,
+            1,
+            15.5
+          ],
+          "texture": "#alu"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        -0.25
+      ],
+      "to": [
+        16,
+        0.5,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            15.5,
+            16,
+            16
+          ],
+          "texture": "#reveal"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.25
+          ],
+          "texture": "#reveal"
+        },
+        "east": {
+          "uv": [
+            0,
+            15.5,
+            0.25,
+            16
+          ],
+          "texture": "#reveal"
+        },
+        "west": {
+          "uv": [
+            0,
+            15.5,
+            0.25,
+            16
+          ],
+          "texture": "#reveal"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        15.5,
+        -1.6
+      ],
+      "to": [
+        16,
+        16,
+        16
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#alu",
+          "cullface": "up"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#alu"
+        },
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.5
+          ],
+          "texture": "#alu"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.5
+          ],
+          "texture": "#alu"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.5
+          ],
+          "texture": "#alu"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            0.5
+          ],
+          "texture": "#alu"
+        }
+      }
+    }
+  ]
+}

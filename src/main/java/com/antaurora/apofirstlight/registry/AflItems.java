@@ -299,6 +299,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FACE_BRICK_CHARCOAL.get(), new Item.Properties()));
     public static final RegistryObject<Item> GROUND_FACE_BLOCK = ITEMS.register("ground_face_block",
             () -> new BlockItem(AflBlocks.GROUND_FACE_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ALUMINUM_CORNICE = ITEMS.register("aluminum_cornice",
+            () -> new BlockItem(AflBlocks.ALUMINUM_CORNICE.get(), new Item.Properties()));
     public static final RegistryObject<Item> STOREFRONT_GLAZING = ITEMS.register("storefront_glazing",
             () -> new BlockItem(AflBlocks.STOREFRONT_GLAZING.get(), new Item.Properties()));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

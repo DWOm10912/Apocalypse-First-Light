@@ -43,6 +43,7 @@ public final class AflCreativeTabs {
             AflItems.FACE_BRICK_WARM_GRAY,
             AflItems.FACE_BRICK_CHARCOAL,
             AflItems.GROUND_FACE_BLOCK,
+            AflItems.ALUMINUM_CORNICE,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
             AflItems.ASPHALT,
             AflItems.EDGE_LANE_WHITE,

@@ -351,6 +351,10 @@ public final class AflBlocks {
     // Facade Masonry Base V1 (docs/models/facade_masonry_base_v1.md): ground-face block base course with a cast-stone cap
     public static final RegistryObject<Block> GROUND_FACE_BLOCK = BLOCKS.register("ground_face_block",
             () -> new com.antaurora.apofirstlight.block.MasonryBaseBlock(BlockBehaviour.Properties.copy(Blocks.BRICKS)));
+    // Aluminum Cornice V1 (docs/models/aluminum_cornice_v1.md): aluminium commercial structure, Diamond-tier like the glazing
+    public static final RegistryObject<Block> ALUMINUM_CORNICE = BLOCKS.register("aluminum_cornice",
+            () -> new com.antaurora.apofirstlight.block.AluminumCorniceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STOREFRONT_GLAZING = BLOCKS.register("storefront_glazing",
             () -> new com.antaurora.apofirstlight.block.StorefrontGlazingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.GLASS)

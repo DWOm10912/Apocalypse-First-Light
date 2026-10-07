@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
+    "apocalypse_firstlight:aluminum_cornice",
     "minecraft:iron_block",
     "minecraft:gold_block",
     "minecraft:raw_iron_block",
