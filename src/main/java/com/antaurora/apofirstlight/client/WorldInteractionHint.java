@@ -69,6 +69,7 @@ public final class WorldInteractionHint {
             if(target==null) target=dumpsterLid(mc,hit);
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
+            if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
             if(target==null) target=fuelContainer(mc,hit);
@@ -95,7 +96,7 @@ public final class WorldInteractionHint {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
-        if(key.endsWith("fuel_container.pick_up")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
 
@@ -174,6 +175,15 @@ public final class WorldInteractionHint {
     }
 
     /** Checkout counter gate (any face, as CheckoutCounterGateBlock#use): open / close, at the crosshair. */
+    /** Storefront glazing, only while sneaking with an empty hand (as StorefrontGlazingBlock#use): mullion, or transom on the top quarter. */
+    private static Target storefrontGlazing(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!mc.player.isShiftKeyDown()||!mc.player.getMainHandItem().isEmpty()) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.StorefrontGlazingBlock)) return null;
+        boolean transom=com.antaurora.apofirstlight.block.StorefrontGlazingBlock.inTransomZone(hit.getBlockPos(),hit.getLocation().y);
+        return new Target(Component.translatable("hint.apocalypse_firstlight.storefront_glazing."+(transom?"transom":"mullion")),null);
+    }
+
     private static Target counterGate(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var s=mc.level.getBlockState(hit.getBlockPos());

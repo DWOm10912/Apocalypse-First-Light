@@ -338,6 +338,17 @@ public final class AflBlocks {
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5F, 6.0F).sound(SoundType.METAL)
                     .requiresCorrectToolForDrops().noOcclusion()));
+    /** The same door in a black anodized frame, to go with Storefront Glazing (docs/models/storefront_glazing_v1.md). */
+    public static final RegistryObject<Block> COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK = BLOCKS.register("commercial_glass_double_door_black",
+            () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.5F, 6.0F).sound(SoundType.METAL)
+                    .requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> STOREFRONT_GLAZING = BLOCKS.register("storefront_glazing",
+            () -> new com.antaurora.apofirstlight.block.StorefrontGlazingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.GLASS)
+                    .requiresCorrectToolForDrops().noOcclusion()
+                    .isViewBlocking((state, level, pos) -> false).isSuffocating((state, level, pos) -> false)
+                    .isRedstoneConductor((state, level, pos) -> false)));
     public static final RegistryObject<Block> BEVERAGE_COOLER = BLOCKS.register("beverage_cooler",
             () -> new BeverageCoolerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F).sound(SoundType.METAL)

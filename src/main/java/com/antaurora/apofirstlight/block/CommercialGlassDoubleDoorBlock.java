@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
-import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -136,7 +135,7 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
             if (SUPPORT_REMOVING.add(anchor.immutable())) {
                 try {
                     if (level instanceof Level serverLevel && !serverLevel.isClientSide()) {
-                        Block.popResource(serverLevel, anchor, new ItemStack(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get()));
+                        Block.popResource(serverLevel, anchor, new ItemStack(this));
                     }
                     removeParts(level, anchor, state.getValue(FACING), null);
                 } finally {
@@ -195,7 +194,7 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
         BlockPos anchor = anchorPosition(position, state);
         if (!level.isClientSide() && !player.isCreative() && !state.getValue(PART).isLowerLeft()
                 && player.getMainHandItem().isCorrectToolForDrops(state)) {
-            Block.popResource(level, anchor, new ItemStack(AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR.get()));
+            Block.popResource(level, anchor, new ItemStack(this));
         }
         removeParts(level, anchor, state.getValue(FACING), position);
         super.playerWillDestroy(level, position, state, player);

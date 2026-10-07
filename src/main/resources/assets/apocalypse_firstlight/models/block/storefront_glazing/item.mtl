@@ -1,0 +1,4 @@
+# AFL Storefront Glazing V1 (item)
+newmtl storefront_glazing
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/storefront_glazing

@@ -38,6 +38,8 @@ public final class AflCreativeTabs {
             AflItems.STEEL_RAILING,
             AflItems.STEEL_DOOR,
             AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR,
+            AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK,
+            AflItems.STOREFRONT_GLAZING,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
             AflItems.ASPHALT,
             AflItems.EDGE_LANE_WHITE,

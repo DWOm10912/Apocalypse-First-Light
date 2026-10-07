@@ -21,7 +21,7 @@ public class CommercialGlassDoubleDoorBlockItem extends BlockItem {
 
             @Override
             public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                if (renderer == null) renderer = new CommercialGlassDoubleDoorItemRenderer();
+                if (renderer == null) renderer = new CommercialGlassDoubleDoorItemRenderer(getBlock());
                 return renderer;
             }
         });

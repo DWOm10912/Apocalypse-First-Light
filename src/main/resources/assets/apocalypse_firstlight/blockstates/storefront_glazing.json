@@ -1,0 +1,298 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/glass"
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "north",
+            "left": "false"
+          },
+          {
+            "facing": "north",
+            "mullion": "edge"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_left"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_right"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "mullion": "center"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/mullion_center"
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "north",
+            "up": "false"
+          },
+          {
+            "facing": "north",
+            "transom": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/rail_top"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "down": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/sill"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/glass",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "east",
+            "left": "false"
+          },
+          {
+            "facing": "east",
+            "mullion": "edge"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_left",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_right",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "mullion": "center"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/mullion_center",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "east",
+            "up": "false"
+          },
+          {
+            "facing": "east",
+            "transom": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/rail_top",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "down": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/sill",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/glass",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "south",
+            "left": "false"
+          },
+          {
+            "facing": "south",
+            "mullion": "edge"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_left",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_right",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "mullion": "center"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/mullion_center",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "south",
+            "up": "false"
+          },
+          {
+            "facing": "south",
+            "transom": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/rail_top",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "down": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/sill",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/glass",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "west",
+            "left": "false"
+          },
+          {
+            "facing": "west",
+            "mullion": "edge"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_left",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/frame_right",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "mullion": "center"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/mullion_center",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "OR": [
+          {
+            "facing": "west",
+            "up": "false"
+          },
+          {
+            "facing": "west",
+            "transom": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/rail_top",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "down": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/storefront_glazing/sill",
+        "y": 270
+      }
+    }
+  ]
+}

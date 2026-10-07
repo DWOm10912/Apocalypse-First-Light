@@ -291,6 +291,10 @@ public final class AflItems {
                     (com.antaurora.apofirstlight.block.IntakePumpBlock) AflBlocks.INTAKE_PUMP.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR = ITEMS.register("commercial_glass_double_door",
             () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK = ITEMS.register("commercial_glass_double_door_black",
+            () -> new CommercialGlassDoubleDoorBlockItem(AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> STOREFRONT_GLAZING = ITEMS.register("storefront_glazing",
+            () -> new BlockItem(AflBlocks.STOREFRONT_GLAZING.get(), new Item.Properties()));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",
             () -> new BeverageCoolerBlockItem((com.antaurora.apofirstlight.block.BeverageCoolerBlock)
                     AflBlocks.BEVERAGE_COOLER.get(), new Item.Properties().stacksTo(1)));

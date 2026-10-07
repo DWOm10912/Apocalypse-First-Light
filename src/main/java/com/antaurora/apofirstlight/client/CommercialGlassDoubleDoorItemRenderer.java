@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.blockentity.CommercialGlassDoubleDoorBlockEntity;
-import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
@@ -9,13 +8,15 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 public class CommercialGlassDoubleDoorItemRenderer extends BlockEntityWithoutLevelRenderer {
-    private final CommercialGlassDoubleDoorBlockEntity door = new CommercialGlassDoubleDoorBlockEntity(
-            BlockPos.ZERO, AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get().defaultBlockState());
+    private final CommercialGlassDoubleDoorBlockEntity door;
 
-    public CommercialGlassDoubleDoorItemRenderer() {
+    /** block: the silver or the black door; the model picks the texture from the block entity's state. */
+    public CommercialGlassDoubleDoorItemRenderer(Block block) {
         super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+        door = new CommercialGlassDoubleDoorBlockEntity(BlockPos.ZERO, block.defaultBlockState());
     }
 
     @Override

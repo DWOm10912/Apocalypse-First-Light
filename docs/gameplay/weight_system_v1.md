@@ -204,11 +204,11 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 类别 | 质量 |
 |---|---|
 | 机器（不含液体） | crusher、industrial_furnace 50；heat_resistant_intake_pump 56.25；alloy_furnace、chemical_reactor、intake_pump 45；heat_resistant_fluid_tank 37.5；compressor、thermal_generator 40；energy_cell 35；fluid_tank 30；charging_station 20 |
-| 大件家具 | underground_fuel_tank_gasoline、underground_fuel_tank_diesel 150；submersible_fuel_pump 35、fuel_dispenser_sump 30（2026-10-05）；pump_manhole_cover 12、fuel_fill_cover_gasoline / fuel_fill_cover_diesel 4（2026-10-05，不算 oversized）；fuel_drum 18、small_fuel_drum 7、hand_fuel_pump 4.5、jerry_can 4.1（2026-10-05，空重，油按密度另算）；fuel_dispenser 60；vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
+| 大件家具 | underground_fuel_tank_gasoline、underground_fuel_tank_diesel 150；submersible_fuel_pump 35、fuel_dispenser_sump 30（2026-10-05）；pump_manhole_cover 12、fuel_fill_cover_gasoline / fuel_fill_cover_diesel 4（2026-10-05，不算 oversized）；fuel_drum 18、small_fuel_drum 7、hand_fuel_pump 4.5、jerry_can 4.1（2026-10-05，空重，油按密度另算）；fuel_dispenser 60；vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、commercial_glass_double_door_black（2026-10-06）、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
 | 中型家具 | back_bar_shelf 28；checkout_counter_display 24；checkout_counter 22；retail_shelf_single、storage_rack 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink、checkout_counter_gate 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | fuel_island_bollard 8；cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
 | 钢结构 | steel_door 3；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
-| 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；fuel_canopy_column 4；fuel_island_curb、fuel_canopy_light、fuel_canopy_fascia 1.2；fuel_island_end、fuel_canopy_ceiling 1.0；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
+| 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；fuel_canopy_column 4；storefront_glazing 2.0（2026-10-06）；fuel_island_curb、fuel_canopy_light、fuel_canopy_fascia 1.2；fuel_island_end、fuel_canopy_ceiling 1.0；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
 | 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
 | 杨木 | 原木、去皮原木、木头、去皮木头 0.4；木板 0.1；楼梯 0.075；台阶 0.05；门 1；活板门 0.5；树叶、树苗 0.05 |
 | 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
@@ -281,7 +281,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 车辆货物 | 不算玩家负担（还没有车辆） |
 
 物品搬运系数（`afl_content_v1.json` 的 `carry_factors`，按物品 tag，取最大的那个）：
-- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 36 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf、fuel_dispenser、storage_rack 和两种地下油罐（都堆叠 1），2026-10-05 的 intake_pump、heat_resistant_intake_pump、heat_resistant_fluid_tank、submersible_fuel_pump、fuel_dispenser_sump（堆叠 1）；
+- `apocalypse_firstlight:carry/oversized` ×1.25：多格或很重的家具和机器，共 36 种：堆叠改为 1 的 18 种大件家具（含 lead_chest），加上除 charging_station 以外的 8 种机器，再加 2026-10-04 的 back_bar_shelf、fuel_dispenser、storage_rack 和两种地下油罐（都堆叠 1），2026-10-05 的 intake_pump、heat_resistant_intake_pump、heat_resistant_fluid_tank、submersible_fuel_pump、fuel_dispenser_sump（堆叠 1），2026-10-06 的 commercial_glass_double_door_black（堆叠 1，不计入上面的 36 种）；
 - `apocalypse_firstlight:carry/bulky` ×1.10：单格中型家具和 charging_station，共 14 种（2026-10-04 加了 checkout_counter、checkout_counter_display、checkout_counter_gate，三者堆叠 16；2026-10-05 加了 small_fuel_drum、fuel_drum，堆叠 1）；
 - 其它物品 ×1.00。
 
