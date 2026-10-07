@@ -1,0 +1,738 @@
+<title>AFL Fuel Stop A1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Layout: a set of numbered drawing sheets (A0 -> A4), each with a title-block header, like a permit set. */
+:root{
+  --bg:#e9ecec; --panel:#f6f7f6; --fg:#1c2124; --mute:#5b6569; --line:#c5cccd;
+  --accent:#8e3a32; --accent2:#2c6174; --ok:#2e7448; --no:#9a3a2f;
+  --sheet:#fbfbf8; --sheet-ink:#23282b; --sheet-mute:#6b7376;
+  --f-display:"IBM Plex Sans Condensed","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --f-body:"Noto Sans SC","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131618; --panel:#1b1f22; --fg:#e1e5e5; --mute:#97a1a4; --line:#2f3639;
+  --accent:#d27b6d; --accent2:#80b4c6; --ok:#6cc08b; --no:#e2826f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131618; --panel:#1b1f22; --fg:#e1e5e5; --mute:#97a1a4; --line:#2f3639;
+  --accent:#d27b6d; --accent2:#80b4c6; --ok:#6cc08b; --no:#e2826f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 var(--f-body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;gap:28px}
+header.tb{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:end;border-bottom:2px solid var(--fg);padding-bottom:14px}
+.tb .code{font:700 13px/1 var(--f-mono);letter-spacing:.08em;border:2px solid var(--fg);padding:8px 10px}
+.tb h1{font:700 clamp(28px,4vw,44px)/1.05 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance}
+.tb .meta{font:12px/1.5 var(--f-mono);color:var(--mute);text-align:right}
+nav.idx{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px 14px;padding-block:8px;border-bottom:1px solid var(--line);font:500 12.5px/1.4 var(--f-mono)}
+nav.idx a{color:var(--mute);text-decoration:none}
+nav.idx a:hover,nav.idx a:focus-visible{color:var(--accent);outline:none}
+nav.idx b{color:var(--fg);font-weight:500}
+section.s{display:grid;gap:14px;min-width:0}
+.sh{display:grid;grid-template-columns:76px 1fr;align-items:baseline;gap:14px;border-top:1px solid var(--fg);padding-top:10px}
+.sh .no{font:700 18px/1 var(--f-mono);color:var(--accent)}
+.sh h2{font:700 22px/1.25 var(--f-display);margin:0;text-wrap:balance}
+.sh p.sub{grid-column:2;margin:2px 0 0;color:var(--mute);font-size:13.5px}
+p{margin:0;max-width:72ch}
+.lede{font-size:16.5px;max-width:70ch}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--line);background:var(--panel)}
+.spec div{padding:10px 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.spec dt{font:500 11.5px/1.3 var(--f-mono);letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.spec dd{margin:4px 0 0;font:600 17px/1.3 var(--f-display);font-variant-numeric:tabular-nums}
+.spec dd small{display:block;font:400 12px/1.4 var(--f-mono);color:var(--mute)}
+.status{font-size:13.5px;color:var(--mute);border-left:3px solid var(--accent);padding:4px 0 4px 12px}
+.tw{overflow-x:auto;border:1px solid var(--line);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font:600 12px/1.35 var(--f-mono);letter-spacing:.04em;color:var(--mute);background:var(--bg);white-space:nowrap}
+td.n,th.n{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.grp td{font:700 13px/1.3 var(--f-display);background:var(--bg);color:var(--accent);letter-spacing:.03em}
+.y{color:var(--ok);font-weight:700}.x{color:var(--no);font-weight:700}.p{color:var(--accent2);font-weight:700}
+.note{font-size:13px;color:var(--mute)}
+ul.plain{margin:0;padding-left:1.1em;display:grid;gap:4px;max-width:78ch}
+.sheet{background:var(--sheet);color:var(--sheet-ink);border:1px solid var(--line);overflow-x:auto}
+.sheet svg{display:block;width:100%;min-width:660px;height:auto}
+.sheet svg text{font-family:var(--f-body)}
+.sheet svg .m{font-family:var(--f-mono)}
+.cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font:12px/1.4 var(--f-mono);color:var(--mute)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:12px;border:1px solid rgba(0,0,0,.25);display:inline-block}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:18px}
+.two>*{min-width:0}
+#view3d{position:relative;background:#9fb6c2;border:1px solid var(--line);height:min(72vh,620px);min-height:360px}
+#view3d canvas{display:block;width:100%;height:100%;touch-action:none}
+#view3d .msg{position:absolute;inset:auto 10px 10px auto;font:12px var(--f-mono);color:#1f2a30;background:rgba(255,255,255,.75);padding:3px 8px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl button{font:500 13px/1 var(--f-body);padding:8px 12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.ctl button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--bg)}
+.ctl button:focus-visible{outline:2px solid var(--accent2);outline-offset:1px}
+.ctl .sep{width:1px;height:22px;background:var(--line)}
+.mat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
+.mat div{border:1px solid var(--line);background:var(--panel);padding:10px 12px;min-width:0}
+.mat h3{font:700 14px/1.3 var(--f-display);margin:0 0 4px}
+.mat p{font-size:13px;color:var(--mute)}
+.tag{font:600 11px/1 var(--f-mono);padding:3px 6px;border:1px solid currentColor;margin-right:6px;vertical-align:1px}
+.tag.p0{color:var(--accent)}.tag.p1{color:var(--accent2)}.tag.p2{color:var(--mute)}
+@media (max-width:640px){.sh{grid-template-columns:1fr}.sh p.sub{grid-column:1}header.tb{grid-template-columns:1fr}.tb .meta{text-align:left}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+<header class="tb">
+  <div class="code">AFL · FS-A1</div>
+  <h1>AFL Fuel Stop A1<br><span style="font-size:.55em;font-weight:600;color:var(--mute)">原创现代北美加油站 + 便利店 · 设计稿</span></h1>
+  <div class="meta">比例 1 格 = 1 m<br>2026-10-06 · 第 1 轮<br>未施工 · 未改 MCP</div>
+</header>
+<nav class="idx" aria-label="图纸目录">
+  <a href="#a0"><b>A0</b> 概要</a><a href="#a01"><b>A0.1</b> 参考核验</a><a href="#a02"><b>A0.2</b> 尺寸提取</a><a href="#a03"><b>A0.3</b> 尺寸与换算</a>
+  <a href="#a10"><b>A1.0</b> 总平面</a><a href="#a11"><b>A1.1</b> 平面图</a><a href="#a2"><b>A2</b> 立面</a><a href="#a3"><b>A3</b> 三维预览</a><a href="#a4"><b>A4</b> 材料缺口</a>
+</nav>
+
+<section class="s" id="a0">
+  <div class="sh"><span class="no">A0</span><h2>概要</h2></div>
+  <p class="lede">体量和高度取 QuikTrip G3SE 原型（平屋顶、1 m 女儿墙、拉丝铝檐口），后场房间按美国能源部 ORNL 便利店原型排布，前立面是两个外凸的入口门框夹一整面店面玻璃。顶棚沿用 AFL 现有的顶棚、加油岛和加油机套件。地块 64 × 64 m，正好 4 × 4 区块。</p>
+  <dl class="spec">
+    <div><dt>地块</dt><dd>64 × 64 m<small>4 × 4 区块 · 1.01 ac</small></dd></div>
+    <div><dt>便利店</dt><dd>27 × 16 m<small>432 m² · 4,650 SF</small></dd></div>
+    <div><dt>高度</dt><dd>女儿墙 6 m · 门框 7 m<small>19'-8" · 23'-0"</small></dd></div>
+    <div><dt>顶棚</dt><dd>39 × 11 m · 净高 5 m<small>128' × 36' · 16'-5"</small></dd></div>
+    <div><dt>加油</dt><dd>4 岛 · 8 台加油机<small>16 个加油位</small></dd></div>
+    <div><dt>停车</dt><dd>21 位<small>含 2 个无障碍位</small></dd></div>
+  </dl>
+  <p class="status">这一轮只做设计：参考分析、尺寸、换算、平面、立面、三维示意。没有进 Minecraft 施工，也没有改建造 MCP。三维预览是网页里的示意模型，不是游戏内画面。</p>
+</section>
+
+<section class="s" id="a01">
+  <div class="sh"><span class="no">A0.1</span><h2>参考资料核验</h2><p class="sub">每份文件都逐页渲染看过，下表按实际页面内容判断，不按文件标题。</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>文件</th><th>日期</th><th>总平面</th><th>平面图</th><th>立面</th><th>顶棚</th><th>用到的内容</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="7">主参考</td></tr>
+      <tr><td>Chandler, AZ — QuikTrip #1523（Ray Rd &amp; Dobson Rd）规划审批包，27 页</td><td class="n">2023-03 / 2023-11</td><td><span class="y">✓</span> SP1，第 10 页</td><td><span class="x">✗</span></td><td><span class="y">✓</span> 四面，第 16 页；材料板第 22 页</td><td><span class="y">✓</span> 尺寸齐全，第 17 页</td><td>体量、砌体与檐口标高、顶棚柱距和高度、车位与车道、垃圾围栏</td></tr>
+      <tr><td>Estero, FL — Wawa（Corkscrew Rd），规划与分区委员会汇报，20 页</td><td class="n">2023-08-22</td><td><span class="y">✓</span> 动线图，第 6 页</td><td><span class="x">✗</span></td><td><span class="y">✓</span> 四面带标高，第 9–12 页</td><td><span class="y">✓</span> 端立面 + 透视，第 16 页</td><td>窗台、雨篷、女儿墙标高；侧面和后面的服务设施（冰柜、液化气笼、后门）</td></tr>
+      <tr><td>ORNL/TM-2022/2822「Defining the Prototype Convenience Store Building Characteristics」，美国能源部橡树岭国家实验室，24 页</td><td class="n">2022</td><td><span class="p">示意</span> 第 20 页</td><td><span class="y">✓</span> 典型布局 + 面积表，第 19 页</td><td><span class="x">✗</span></td><td><span class="p">示意</span> 90 × 18 ft，15 ft 高</td><td>后场房间尺寸和面积比例、前立面玻璃 + 7 ft 双开门、长宽比统计、建筑到加油岛的距离</td></tr>
+      <tr class="grp"><td colspan="7">佐证</td></tr>
+      <tr><td>Casa Grande, AZ — QuikTrip #1506 规划开发申请，23 页</td><td class="n">2025-04</td><td><span class="y">✓</span> 第 15–17 页</td><td><span class="x">✗</span></td><td><span class="y">✓</span> G3SE 砖墙版四面，第 20 页</td><td><span class="y">✓</span> Double Stack 8，第 21 页</td><td>核对 QuikTrip 原型：92'-4" × 53'-8"、柱距 32'、两排柱相距 40'，与 Chandler 一致</td></tr>
+      <tr class="grp"><td colspan="7">看过但没用（不含所需图纸）</td></tr>
+      <tr><td>Westminster, MD — Sheetz，卡罗尔县规划报告，12 页</td><td class="n">2023–2025</td><td colspan="4"><span class="x">✗</span> 只有文字报告和会议纪要。立面写在"第 26–27 张图"，但没有附进 PDF</td><td>只取文字：主屋顶 21'-3"、转角塔 29'-6"、价格牌 12'-6" × 13'-3"、灯杆 ≤ 20'</td></tr>
+      <tr><td>McFarland, WI — Kwik Trip #1210 申请包，10 页</td><td class="n">2021-09</td><td colspan="4"><span class="x">✗</span> 只有申请信和表格，图纸是另外交的纸质套图</td><td>只取文字：店外放两台冰柜和一个液化气笼</td></tr>
+      <tr><td colspan="7" class="note">下载失败：Mesa QuikTrip（404）、Plantation Wawa（拒绝访问，没有绕过）、Lee's Summit QuikTrip 两份和 Sussex Kwik Trip（返回的是网页不是 PDF）、Zebulon 和 Bethlehem 的 Sheetz（404）。</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">市政规划审批包一般不含室内平面，平面图要到建筑许可阶段才交，所以四份审批包都没有。平面图改用 ORNL 原型：它是按便利店设计指南和样板图综合出来的典型布局，带房间尺寸和面积表。</p>
+</section>
+
+<section class="s" id="a02">
+  <div class="sh"><span class="no">A0.2</span><h2>从图纸里提取的尺寸</h2><p class="sub">英制原值照抄图纸；括号里是米。</p></div>
+  <div class="tw"><table>
+    <thead><tr><th>项目</th><th>QuikTrip（Chandler / Casa Grande）</th><th>Wawa（Estero）</th><th>ORNL 原型 / 其他</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">便利店体量</td></tr>
+      <tr><td>外轮廓</td><td class="n">92'-4" × 53'-8"，入口外凸 8'-3½"（28.1 × 16.4 m）</td><td class="n">约 109' × 57'（33.3 × 17.4 m）</td><td class="n">77'-6" × 39'-9"（23.6 × 12.1 m）</td></tr>
+      <tr><td>面积</td><td class="n">5,312 SF（494 m²）</td><td class="n">5,537 SF（514 m²）</td><td class="n">3,003 SF（279 m²）</td></tr>
+      <tr><td>长宽比</td><td class="n">1.72</td><td class="n">1.91</td><td class="n">1.95；CBECS 1,001–5,000 SF 平均 1.78</td></tr>
+      <tr><td>窗台 / 勒脚</td><td class="n">—</td><td class="n">3'-0"（0.91 m）</td><td>—</td></tr>
+      <tr><td>入口雨篷底</td><td class="n">10'-0"（3.05 m）</td><td class="n">9'-0"（2.74 m）</td><td>—</td></tr>
+      <tr><td>砌体顶</td><td class="n">16'-0"（4.88 m）</td><td>—</td><td>—</td></tr>
+      <tr><td>檐口 / 女儿墙顶</td><td class="n">20'-0"（6.10 m）</td><td class="n">20'-4" / 23'-10"（6.20 / 7.26 m）</td><td class="n">Sheetz 主屋顶 21'-3"（6.48 m）</td></tr>
+      <tr><td>最高点</td><td class="n">入口檐口 20'-0"</td><td class="n">塔 26'-10" 檐 / 32'-0" 尖</td><td class="n">Sheetz 转角塔 29'-6"（8.99 m）</td></tr>
+      <tr><td>入口</td><td>前立面两端各一个玻璃入口，侧面一个</td><td>正中塔下一个</td><td>ORNL：前立面整面玻璃，7' 双开门，无门斗</td></tr>
+      <tr><td>材料</td><td>砖（Bronzestone / Midnight）、拉丝铝檐口、红色立缝雨篷、红色发光带、EIFS</td><td>灰泥、文化石勒脚和柱、金属雨篷、筒瓦塔顶</td><td>ORNL：砖墙、金属屋面、双层玻璃；Sheetz：砖 + 石 + 红色雨篷</td></tr>
+      <tr class="grp"><td colspan="4">后场（ORNL 图 12、表 4）</td></tr>
+      <tr><td>房间</td><td colspan="3">办公 11' × 11'（121 SF）· 库房 24'-6" × 11'（270）· 步入式冷库 + 冷冻 21' × 11'（165 + 66）· 设备间 7' × 11'（77）· 卫生间 14' × 11'（154）· 营业区 77'-6" × 28'-9"（2,150，71.6%）</td></tr>
+      <tr><td>关系</td><td colspan="3">办公、设备、卫生间、库房都在后墙一侧，从店内进；库房另有对外的门；冷库挨着库房，玻璃门冷柜朝营业区</td></tr>
+      <tr class="grp"><td colspan="4">顶棚</td></tr>
+      <tr><td>平面</td><td class="n">124'-2" × 58'-8"（37.9 × 17.9 m），7,287 SF</td><td>两排柱，6 台双面机</td><td class="n">ORNL 90' × 18'（27.4 × 5.5 m）</td></tr>
+      <tr><td>柱距</td><td class="n">32'-0" × 3，两端悬挑 14'-1"；两排柱相距 40'-0"，外挑 9'-4"</td><td>—</td><td class="n">ORNL 4 个岛，中距 22'</td></tr>
+      <tr><td>底标高</td><td class="n">靠店侧 ≥ 15'，正对店 ≥ 17'（最大 20' / 22'）</td><td class="n">桁架底 14'-0"，檐底 14'-9½"</td><td class="n">ORNL 15'</td></tr>
+      <tr><td>顶标高</td><td class="n">18'-6" 至 22'-6"（Chandler）</td><td class="n">20'-8"（坡顶）</td><td>—</td></tr>
+      <tr><td>加油机</td><td class="n">高 8'-3"（2.51 m）</td><td>—</td><td>—</td></tr>
+      <tr class="grp"><td colspan="4">总平面</td></tr>
+      <tr><td>地块与停车</td><td class="n">净地 2.51 ac；50 位（要求 30）；车位 9.5' × 18'；车道 35'；消防通道 30'</td><td class="n">12 个加油位</td><td class="n">Westminster Sheetz 36 位（要求 25）</td></tr>
+      <tr><td>距离</td><td class="n">店前到加油岛约 56'–65'</td><td>—</td><td class="n">ORNL 建筑到岛 35'（停车 15' + 通道 20'），岛到地界 35'</td></tr>
+      <tr><td>附属</td><td class="n">垃圾围栏 12.67' × 16.67'，墙高 8'；打气站；地下油罐在顶棚和街道之间</td><td>冰柜、液化气亭在侧面</td><td class="n">Sheetz 价格牌 12'-6" 高 × 13'-3" 宽；灯杆 ≤ 20'</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="s" id="a03">
+  <div class="sh"><span class="no">A0.3</span><h2>采用尺寸与 Minecraft 换算</h2><p class="sub">1 格 = 1 m，1 ft = 0.3048 格。结构取整到整格；小于 1 格的细节（竖梃、压顶、分缝）放进自定义方块的模型里，1 px = 6.25 cm ≈ 2½"。</p></div>
+  <div class="tw"><table id="convTable">
+    <thead><tr><th>项目</th><th>参考值</th><th class="n">采用（m）</th><th class="n">英制</th><th class="n">方块</th><th>说明</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="note">为什么不压缩比例：玩家身高 1.8 m、眼高 1.62 m；AFL 已有的玻璃双开门 2 格高、顶棚净高 5 格、加油机 3 格，都是按 1:1 做的。压缩比例会让这些现成件显得过大。</p>
+</section>
+
+<section class="s" id="a10">
+  <div class="sh"><span class="no">A1.0</span><h2>总平面</h2><p class="sub">北向上。店在后，顶棚夹在店和主干道之间（QuikTrip、Wawa 都是这样），地下油罐在顶棚和街道之间，油罐车停在前车道卸油。</p></div>
+  <div class="sheet" id="sitePlan"></div>
+  <div class="cap"><span>A1.0 总平面 · 1 格 = 1 m · 网格 4 m</span><span>车道围着店一圈，兼作消防通道</span></div>
+</section>
+
+<section class="s" id="a11">
+  <div class="sh"><span class="no">A1.1</span><h2>便利店平面图</h2><p class="sub">按方块网格画，墙和隔墙各占 1 格。后场 4 m 深一条，营业区 9 m 深；收银台在正中，收银员面朝店面玻璃，看得到加油岛。</p></div>
+  <div class="sheet" id="floorPlan"></div>
+  <div class="two">
+    <div class="tw"><table id="roomTable"><thead><tr><th>房间</th><th class="n">格</th><th class="n">m²</th><th class="n">SF</th><th>ORNL 对应</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:grid;gap:8px;align-content:start">
+      <p class="note">家具全部用 AFL 现有方块：饮料冷柜（2 × 2 格）、货架（1 格宽、2 格高）、收银柜台和通道门、收银背柜、冰柜、仓储货架、马桶和挂墙洗手盆、办公桌椅、配电箱。咖啡吧、热食柜还没有对应方块，图上先占位。</p>
+      <p class="note">隔墙按 1 格算，比真实隔墙（约 13 cm）厚很多，所以房间比 ORNL 原型略小。以后有了薄隔墙方块能多出约 8 m²。</p>
+    </div>
+  </div>
+</section>
+
+<section class="s" id="a2">
+  <div class="sh"><span class="no">A2</span><h2>立面</h2><p class="sub">四面按同一个三维模型正投影生成，标高在右侧。材料是暂定方向，等这轮方案确认后再定要补哪些方块。</p></div>
+  <div class="legend" id="matLegend"></div>
+  <div class="sheet" id="elevS"></div><div class="cap"><span>A2.1 南立面（正面，朝顶棚）</span><span>玻璃约占正面一半</span></div>
+  <div class="sheet" id="elevE"></div><div class="cap"><span>A2.2 东立面（办公、库房一侧，朝支路）</span><span>前角玻璃转角 4 m，办公室一扇窗</span></div>
+  <div class="sheet" id="elevN"></div><div class="cap"><span>A2.3 北立面（后面，送货）</span><span>设备间门、库房双开门、电力引入、壁灯、雨水口</span></div>
+  <div class="sheet" id="elevW"></div><div class="cap"><span>A2.4 西立面（卫生间一侧）</span><span>店外冰柜、液化气笼，卫生间高窗</span></div>
+  <div class="two">
+    <div><div class="sheet" id="elevCS"></div><div class="cap"><span>A2.5 顶棚正立面（从主干道看）</span></div></div>
+    <div><div class="sheet" id="elevCE"></div><div class="cap"><span>A2.6 顶棚端立面</span></div></div>
+  </div>
+</section>
+
+<section class="s" id="a3">
+  <div class="sh"><span class="no">A3</span><h2>三维预览</h2><p class="sub">拖动旋转，滚轮缩放，右键平移。"剖开屋顶"可以看室内布置；"方块网格"叠 1 m 网格，用来核对换算。</p></div>
+  <div class="ctl" role="toolbar" aria-label="三维视图">
+    <button id="v-aerial" aria-pressed="true">鸟瞰</button>
+    <button id="v-street" aria-pressed="false">主干道人视</button>
+    <button id="v-front" aria-pressed="false">店前人视</button>
+    <button id="v-rear" aria-pressed="false">背面</button>
+    <button id="v-top" aria-pressed="false">俯视</button>
+    <span class="sep"></span>
+    <button id="t-cut" aria-pressed="false">剖开屋顶</button>
+    <button id="t-grid" aria-pressed="false">方块网格</button>
+    <button id="t-canopy" aria-pressed="true">顶棚</button>
+  </div>
+  <div id="view3d"><canvas id="c3d" aria-label="加油站三维示意模型"></canvas><div class="msg" id="msg3d">加载三维引擎…</div></div>
+  <p class="note">示意模型用纯色和程序贴图，只为看比例、体量和立面关系。玻璃按半透明画，看得到店内货架和冷柜。人（1.8 m）和车（4.8 m）用来对照尺度。</p>
+</section>
+
+<section class="s" id="a4">
+  <div class="sh"><span class="no">A4</span><h2>外墙材料缺口（待定）</h2><p class="sub">先确认设计，再决定补哪些方块。下面是按这版立面列出的需求。</p></div>
+  <div class="mat">
+    <div><h3><span class="tag p0">P0</span>店面玻璃幕墙</h3><p>黑色铝框 + 中空玻璃，占墙格里一个薄面。需要竖梃在格边、格中两种，上下横梃，转角件。前立面分格 1.5 m（真实店面约 5'），所以竖梃会落在格子中间。</p></div>
+    <div><h3><span class="tag p0">P0</span>外墙砖（暖灰）和深灰砖</h3><p>真实标准砖一层 6.7 cm，1 格里有 15 层，16 px 贴图画不出砖缝。要么用高分辨率贴图（AFL 现有材质的做法），要么改用大规格砌块：20 cm 一层，每格 5 层。</p></div>
+    <div><h3><span class="tag p0">P0</span>磨面砌块勒脚</h3><p>1 m 高的深灰勒脚，顶上带窗台压顶，绕建筑一圈。</p></div>
+    <div><h3><span class="tag p0">P0</span>女儿墙压顶 / 铝檐口</h3><p>墙顶 0.6 m 的拉丝铝檐口，向外挑几像素，转角自动接。</p></div>
+    <div><h3><span class="tag p0">P0</span>深灰金属墙板 + 门框侧板</h3><p>入口门框用。门框侧边只有 0.3 m 厚，不能占满一格，需要贴格边的薄件。</p></div>
+    <div><h3><span class="tag p0">P0</span>金属雨篷</h3><p>出挑 1 m，底面 3 m 高，前沿有封檐板，能连成一长条。</p></div>
+    <div><h3><span class="tag p1">P1</span>发光带与招牌字</h3><p>褪色红发光带（和顶棚边檐同色）、白色发光字。招牌文字先用无品牌占位。</p></div>
+    <div><h3><span class="tag p1">P1</span>平屋面与空调机组</h3><p>TPO 屋面、屋面检修口、三台空调机组，藏在女儿墙后。</p></div>
+    <div><h3><span class="tag p1">P1</span>人行道与薄路缘</h3><p>带分格缝的混凝土人行道，加 3 px 高的路缘边（像加油岛的路缘），代替整格高差。上次试搭的问题之一就是整片沥青高出一格。</p></div>
+    <div><h3><span class="tag p1">P1</span>标线、壁灯、后门</h3><p>车位线、无障碍车位、壁灯。后门可以先用现有的工业门。</p></div>
+    <div><h3><span class="tag p2">P2</span>店外设施</h3><p>冰柜（可借冰柜改外观）、液化气笼、垃圾围栏（砌块墙 + 钢门）、价格牌、停车场灯杆、打气站。</p></div>
+    <div><h3><span class="tag p2">P2</span>室内薄隔墙</h3><p>现在隔墙按 1 格算，薄墙能把房间还原到 ORNL 的尺寸。</p></div>
+  </div>
+  <div class="two">
+    <div style="display:grid;gap:8px;align-content:start">
+      <h3 style="font:700 15px/1.3 var(--f-display);margin:0">现成能用的 AFL 方块</h3>
+      <p class="note">玻璃双开门、顶棚套件（立柱 / 吊顶 / 灯板 / 边檐）、加油岛路缘和端头、防撞柱、加油机、地下油罐和井盖、收银柜台、通道门、收银背柜、货架、饮料冷柜、冰柜、仓储货架、马桶、挂墙洗手盆、卫生间隔断、办公桌椅、文件柜、配电箱、垃圾桶、垃圾箱。</p>
+      <p class="note">不做外墙用：<code>reinforced_concrete</code> 是结构材料，上次试搭外墙用它被否了。</p>
+    </div>
+    <div style="display:grid;gap:8px;align-content:start">
+      <h3 style="font:700 15px/1.3 var(--f-display);margin:0">避免 Minecraft 味的几条规则</h3>
+      <ul class="plain note">
+        <li>一面墙一种主材，靠壁柱、勒脚、檐口三条线分层，不做一格一换的棋盘拼色。</li>
+        <li>标高照真实建筑：勒脚 1 m、雨篷 3 m、女儿墙 6 m，不用 2–3 格的"小房子"层高。</li>
+        <li>竖梃、压顶、门框侧板做成格子里的薄件，不用整格方块冒充。</li>
+        <li>人行道和车道同一格高，高差用薄路缘表现。</li>
+        <li>屋顶是平屋面 + 女儿墙，不做坡屋顶或阶梯屋顶。</li>
+        <li>玻璃按分格成片出现，不做一格一个小窗。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------------- units ---------------- */
+function ftin(m){let t=m/0.0254,f=Math.floor(t/12),i=Math.round(t-f*12);if(i===12){f++;i=0;}return f+"'-"+i+'"';}
+const SF=a=>Math.round(a*10.7639).toLocaleString('en-US');
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ---------------- materials ---------------- */
+const MAT={
+  brick:{c:'#9c8c7d',n:'外墙砖（暖灰）',h:'brick'}, brickDk:{c:'#4c4e51',n:'深灰砖（壁柱、转角）',h:'brick'},
+  cmu:{c:'#75716b',n:'磨面砌块勒脚',h:'cmu'}, panel:{c:'#34383c',n:'深灰金属板（门框、雨篷）',h:'panel'},
+  alu:{c:'#b9bdc0',n:'拉丝铝檐口 / 压顶'}, eyebrow:{c:'#34383c'}, red:{c:'#8e3a32',n:'褪色红发光带'},
+  glass:{c:'#7d9ba5',n:'店面玻璃',h:'glass'}, frame:{c:'#26292b',n:'黑色铝框'},
+  door:{c:'#8d8073',n:'钢门（同墙色）'}, roof:{c:'#cfd1cf'}, rtu:{c:'#a4a8aa'}, util:{c:'#8f9497'}, lightfix:{c:'#2d3033'},
+  soffit:{c:'#8c8e8c'}, canRoof:{c:'#5c5e5f'}, column:{c:'#767a7e'}, canAlu:{c:'#76797b'}, canRed:{c:'#8e3a32'}, lamp:{c:'#fff3dc'},
+  curb:{c:'#a9a69f'}, disp:{c:'#c9c9c4'}, dispTop:{c:'#8e3a32'}, dispScreen:{c:'#1d2124'}, bollard:{c:'#8d9194'}, bollardY:{c:'#c9a233'},
+  grass:{c:'#6b7a4c'}, asphalt:{c:'#3d3f41'}, concrete:{c:'#bcb9b1'}, stripe:{c:'#e9e7e0'}, ada:{c:'#2f5fa0'}, street:{c:'#353739'}, yline:{c:'#d1a73b'},
+  floorInt:{c:'#d4d0c7'}, partition:{c:'#e2ded6'}, ceiling:{c:'#eceae5'}, doorInt:{c:'#9a8f83'}, cooler:{c:'#2b2e32'}, rack:{c:'#55595d'},
+  shelf:{c:'#e6e6e1'}, counter:{c:'#3b3e42'}, counterGate:{c:'#4a4e52'}, machine:{c:'#1f2225'}, freezer:{c:'#ececE8'.toLowerCase()}, warmer:{c:'#6a4636'},
+  porcelain:{c:'#f2f2ef'}, desk:{c:'#6b5b4b'}, chair:{c:'#2a2a2a'}, cabinet:{c:'#8a8f93'}, sinkM:{c:'#b5b9bb'},
+  can:{c:'#5b6166'}, table:{c:'#2f3336'}, ice:{c:'#e9eef0'}, cage:{c:'#9aa0a3'}, air:{c:'#b33a2e'}, pole:{c:'#4d5154'},
+  trunk:{c:'#5a4634'}, leaf:{c:'#55693d'}, car:{c:'#5d6b79'}, car2:{c:'#8b8f92'}, car3:{c:'#7a3a33'}, carGlass:{c:'#26303a'}, tire:{c:'#1b1c1d'}, person:{c:'#c56b3e'}, dumpster:{c:'#3f6b4c'}, sign:{c:'#f4f1ea'}
+};
+
+/* ---------------- model ---------------- */
+const P=[];
+function box(x0,y0,z0,x1,y1,z1,m,g){P.push({x0:Math.min(x0,x1),y0:Math.min(y0,y1),z0:Math.min(z0,z1),x1:Math.max(x0,x1),y1:Math.max(y0,y1),z1:Math.max(z0,z1),m:m,g:g});}
+const SX=18,SZ=8,CP=0.08;
+function S(x0,y0,z0,x1,y1,z1,m,g){box(SX+x0,y0,SZ+z0,SX+x1,y1,SZ+z1,m,g||'store');}
+
+// front wall (local Z = 15)
+for(let X=0;X<=26;X++){
+  if([0,5,21,26].includes(X)){S(X,0,15,X+1,5.4,16,'brickDk');S(X-(X===0?CP:0),5.4,15,X+1+(X===26?CP:0),6,16+CP,'alu');}
+  else if((X>=1&&X<=4)||(X>=22&&X<=25)){}
+  else{S(X,0,15,X+1,1,16,'cmu');S(X,4,15,X+1,5.25,16,'brick');S(X,5.25,15,X+1,5.4,16.04,'red');S(X,5.4,15,X+1,6,16+CP,'alu');}
+}
+function portal(a){
+  S(a,5,15,a+4,7,17,'panel'); S(a-0.04,7,15,a+4.04,7.1,17.06,'alu');
+  S(a,0,16,a+0.3,5,17,'panel'); S(a+3.7,0,16,a+4,5,17,'panel');
+  S(a,0,15.45,a+4,5,15.55,'glass');
+  [a+0.035,a+1,a+3,a+3.965].forEach(x=>S(x-0.035,0,15.38,x+0.035,5,15.62,'frame'));
+  S(a+1.97,0,15.4,a+2.03,2,15.6,'frame');
+  [2.0,3.0,4.965].forEach(y=>S(a,y-0.035,15.38,a+4,y+0.035,15.62,'frame'));
+  S(a,0,15.38,a+1,0.1,15.62,'frame'); S(a+3,0,15.38,a+4,0.1,15.62,'frame');
+  S(a+1.15,0.98,15.55,a+1.85,1.03,15.66,'alu'); S(a+2.15,0.98,15.55,a+2.85,1.03,15.66,'alu');
+}
+portal(1); portal(22);
+S(6,1,15.45,21,4,15.55,'glass');
+for(let k=0;k<=10;k++){const x=6+1.5*k;S(Math.max(6,x-0.035),1,15.38,Math.min(21,x+0.035),4,15.62,'frame');}
+[1.0,3.0,4.0].forEach(y=>S(6,y-0.035,15.38,21,y+0.035,15.62,'frame'));
+[[1.3,4.7],[5,22],[22.3,25.7]].forEach(([a,b])=>{S(a,3.0,16,b,3.14,17,'eyebrow');S(a,2.93,16.94,b,3.24,17,'eyebrow');});
+const SIGNS=[{x0:SX+10.6,x1:SX+16.4,y0:4.22,y1:4.92,z:SZ+16.02,t:'MARKET'}];
+
+// side walls (local X = 0 west, 26 east), Z = 1..14
+function side(west){
+  const xa=west?0:26,xb=xa+1;
+  const corn=Z=>S(xa-(west?CP:0),5.4,Z,xb+(west?0:CP),6,Z+1,'alu');
+  for(let Z=1;Z<=14;Z++){
+    if(Z===5){S(xa,0,Z,xb,5.4,Z+1,'brickDk');corn(Z);continue;}
+    S(xa,0,Z,xb,1,Z+1,'cmu');
+    if(Z>=11)S(xa,4,Z,xb,5.4,Z+1,'brick');
+    else if(!west&&(Z===2||Z===3))S(xa,3,Z,xb,5.4,Z+1,'brick');
+    else if(west&&Z<=4){S(xa,1,Z,xb,3.3,Z+1,'brick');S(xa,3.9,Z,xb,5.4,Z+1,'brick');}
+    else S(xa,1,Z,xb,5.4,Z+1,'brick');
+    corn(Z);
+  }
+  const gx=xa+0.45, f0=gx-0.07, f1=gx+0.17;
+  S(gx,1,11,gx+0.1,4,15,'glass');
+  [11.035,12.333,13.667,14.965].forEach(z=>S(f0,1,z-0.035,f1,4,z+0.035,'frame'));
+  [1,3,4].forEach(y=>S(f0,y-0.035,11,f1,y+0.035,15,'frame'));
+  const e0=west?-1:27;
+  S(e0,3.0,11,e0+1,3.14,15,'eyebrow'); S(west?-1:27.94,2.93,11,west?-0.94:28,3.24,15,'eyebrow');
+  if(!west){S(gx,1,2,gx+0.1,3,4,'glass');[2.035,3,3.965].forEach(z=>S(f0,1,z-0.035,f1,3,z+0.035,'frame'));[1,3].forEach(y=>S(f0,y-0.035,2,f1,y+0.035,4,'frame'));S(xb,0.94,1.95,xb+0.07,1.0,4.05,'alu');}
+  else{S(gx,3.3,1,gx+0.1,3.9,5,'glass');[1.035,3,4.965].forEach(z=>S(f0,3.3,z-0.035,f1,3.9,z+0.035,'frame'));[3.3,3.9].forEach(y=>S(f0,y-0.035,1,f1,y+0.035,5,'frame'));}
+}
+side(true); side(false);
+// rear wall (local Z = 0)
+for(let X=0;X<=26;X++){
+  const corn=()=>S(X-(X===0?CP:0),5.4,-CP,X+1+(X===26?CP:0),6,1,'alu');
+  if([0,9,17,26].includes(X)){S(X,0,0,X+1,5.4,1,'brickDk');corn();continue;}
+  if(X===7||X===19||X===20){S(X,2.12,0,X+1,5.4,1,'brick');corn();continue;}
+  S(X,0,0,X+1,1,1,'cmu');S(X,1,0,X+1,5.4,1,'brick');corn();
+}
+S(7.07,0,-0.03,7.93,2.05,0.15,'door'); S(7,2.05,-0.05,8,2.12,0.15,'frame'); S(7,0,-0.05,7.07,2.05,0.15,'frame'); S(7.93,0,-0.05,8,2.05,0.15,'frame');
+S(19.07,0,-0.03,20.93,2.05,0.15,'door'); S(19,2.05,-0.05,21,2.12,0.15,'frame'); S(19,0,-0.05,19.07,2.05,0.15,'frame'); S(20.93,0,-0.05,21,2.05,0.15,'frame'); S(19.97,0,-0.04,20.03,2.05,0.15,'frame');
+S(18.6,2.5,-1.3,21.4,2.64,0,'eyebrow');
+S(5.15,1.1,-0.22,5.55,1.75,0,'util'); S(5.75,0.9,-0.3,6.6,1.95,0,'util'); S(5.3,1.95,-0.12,5.42,4.9,-0.02,'util');
+[4.5,13.5,22.5].forEach(x=>S(x-0.18,3.2,-0.22,x+0.18,3.45,0,'lightfix'));
+[2.5,24.5].forEach(x=>{S(x-0.2,4.6,-0.22,x+0.2,4.85,0,'alu');S(x-0.07,0,-0.18,x+0.07,4.6,-0.04,'alu');});
+// roof, ceiling, floor
+S(1,4.8,1,26,5.0,15,'roof','roof');
+[[4,3],[12.2,3],[20.5,3]].forEach(([x,z])=>S(x,5,z,x+2.5,6.1,z+1.5,'rtu','roof'));
+S(15,5,8,16,5.3,9,'rtu','roof');
+S(1,3.97,1,26,4.0,15,'ceiling','roof');
+S(0,-0.04,0,27,0.01,16,'floorInt','interior');
+
+/* interior: cell types for plan + partitions for 3D */
+const CELL={}; const ck=(X,Z)=>X+','+Z;
+for(let X=0;X<=26;X++){CELL[ck(X,0)]='wall';CELL[ck(X,15)]='wall';}
+for(let Z=0;Z<=15;Z++){CELL[ck(0,Z)]='wall';CELL[ck(26,Z)]='wall';}
+for(let X=1;X<=4;X++)CELL[ck(X,15)]=(X===2||X===3)?'doorE':'glass';
+for(let X=22;X<=25;X++)CELL[ck(X,15)]=(X===23||X===24)?'doorE':'glass';
+for(let X=6;X<=20;X++)CELL[ck(X,15)]='glass';
+for(let Z=11;Z<=14;Z++){CELL[ck(0,Z)]='glass';CELL[ck(26,Z)]='glass';}
+CELL[ck(26,2)]='glass';CELL[ck(26,3)]='glass';
+for(let Z=1;Z<=4;Z++)CELL[ck(0,Z)]='wallHi';
+CELL[ck(7,0)]='doorE';CELL[ck(19,0)]='doorE';CELL[ck(20,0)]='doorE';
+for(let X=1;X<=25;X++){CELL[ck(X,5)]=[2,4,22].includes(X)?'doorI':(X>=10&&X<=15)?'coolerLine':'part';}
+[3,6,9,16,23].forEach(X=>{for(let Z=1;Z<=4;Z++)CELL[ck(X,Z)]='part';});
+CELL[ck(16,2)]='doorI';CELL[ck(23,3)]='doorI';
+Object.keys(CELL).forEach(k=>{const [X,Z]=k.split(',').map(Number),t=CELL[k];
+  if(t==='part')S(X,0,Z,X+1,3.97,Z+1,'partition','interior');
+  if(t==='doorI'){const alongX=(Z===5);
+    if(alongX){S(X+0.05,0,Z+0.42,X+0.95,2.05,Z+0.58,'doorInt','interior');}else{S(X+0.42,0,Z+0.05,X+0.58,2.05,Z+0.95,'doorInt','interior');}
+    S(X,2.1,Z,X+1,3.97,Z+1,'partition','interior');}
+  if(t==='coolerLine')S(X,2.0,Z,X+1,3.97,Z+1,'partition','interior');
+});
+const FIX=[
+  {x0:1.2,z0:1.05,x1:1.8,z1:1.75,h:0.8,m:'porcelain',l:'WC'},{x0:2.15,z0:1.05,x1:2.85,z1:1.5,y0:0.75,h:0.95,m:'porcelain',l:''},
+  {x0:5.2,z0:1.05,x1:5.8,z1:1.75,h:0.8,m:'porcelain',l:'WC'},{x0:4.15,z0:1.05,x1:4.85,z1:1.5,y0:0.75,h:0.95,m:'porcelain',l:''},
+  {x0:7.05,z0:1.0,x1:7.95,z1:1.25,y0:0.8,h:2.2,m:'util',l:'配电'},{x0:8.1,z0:1.1,x1:8.9,z1:1.9,h:1.6,m:'util',l:'热水'},{x0:7.1,z0:3.3,x1:7.9,z1:4.0,h:0.5,m:'sinkM',l:'池'},
+  {x0:10,z0:1,x1:16,z1:1.6,h:2,m:'rack',l:'冷库货架'},
+  {x0:10,z0:5,x1:16,z1:6,h:2,m:'cooler',l:'饮料冷柜 ×3',cool:true},
+  {x0:17,z0:4.4,x1:22,z1:5,h:2,m:'rack',l:'仓储货架'},{x0:22,z0:1,x1:23,z1:3,h:2,m:'rack',l:''},
+  {x0:24,z0:1,x1:26,z1:1.8,h:0.75,m:'desk',l:'办公桌'},{x0:24.6,z0:2.1,x1:25.2,z1:2.6,h:1.0,m:'chair',l:''},{x0:25.4,z0:3,x1:26,z1:4,h:1.3,m:'cabinet',l:''},
+  {x0:1,z0:9,x1:1.9,z1:14,h:0.95,m:'counter',l:'咖啡吧'},
+  {x0:1.1,z0:9.3,x1:1.6,z1:10.1,y0:0.95,h:1.55,m:'machine',l:''},{x0:1.1,z0:11,x1:1.6,z1:11.8,y0:0.95,h:1.6,m:'machine',l:''},{x0:1.1,z0:12.6,x1:1.6,z1:13.5,y0:0.95,h:1.45,m:'machine',l:''},
+  {x0:4,z0:8,x1:6,z1:13,h:1.9,m:'shelf',l:'货架'},{x0:8,z0:8,x1:9,z1:13,h:1.9,m:'shelf',l:'货架'},
+  {x0:12,z0:8,x1:14,z1:9,h:0.9,m:'freezer',l:'冰柜'},
+  {x0:11,z0:10,x1:16,z1:10.6,h:2,m:'counter',l:'收银背柜'},
+  {x0:11,z0:12,x1:15,z1:13,h:1.0,m:'counter',l:'收银台'},{x0:15,z0:12,x1:16,z1:13,h:1.0,m:'counterGate',l:''},
+  {x0:11.6,z0:12.2,x1:12.2,z1:12.7,y0:1.0,h:1.3,m:'machine',l:''},{x0:13.8,z0:12.2,x1:14.4,z1:12.7,y0:1.0,h:1.3,m:'machine',l:''},
+  {x0:18,z0:8,x1:19,z1:13,h:1.9,m:'shelf',l:'货架'},{x0:21,z0:8,x1:23,z1:13,h:1.9,m:'shelf',l:'货架'},
+  {x0:25.1,z0:9,x1:26,z1:14,h:1.3,m:'warmer',l:'热食柜'}
+];
+FIX.forEach(f=>S(f.x0,f.y0||0,f.z0,f.x1,f.h,f.z1,f.m,'interior'));
+
+// exterior props around the store
+[24,26.5,29,31.5,34,36.5,39].forEach(x=>{box(x-0.09,0,26.41,x+0.09,1.0,26.59,'bollard','storeprop');box(x-0.095,0.72,26.405,x+0.095,0.8,26.595,'bollardY','storeprop');});
+[18.3,44.1].forEach(x=>box(x,0,24.3,x+0.6,1.0,24.9,'can','storeprop'));
+[26.5,36.5].forEach(x=>{box(x-0.4,0.72,24.9,x+0.4,0.76,25.7,'table','storeprop');box(x-0.05,0,25.25,x+0.05,0.72,25.35,'table','storeprop');});
+box(16.85,0,13,17.95,1.75,15.3,'ice','storeprop'); box(16.9,0,16,17.95,1.9,17.6,'cage','storeprop');
+
+/* canopy (AFL kit) */
+const ISL=[16,26,36,46];
+box(12,5.0,40,51,5.55,51,'soffit','canopy'); box(12.15,5.55,40.15,50.85,5.95,50.85,'canRoof','canopy');
+[[12,40,51,40.15],[12,50.85,51,51]].forEach(([a,b,c,d])=>box(a,4.97,b,c,5.93,d,'canRed','canopy'));
+[[12,40,12.15,51],[50.85,40,51,51]].forEach(([a,b,c,d])=>box(a,4.97,b,c,5.93,d,'canRed','canopy'));
+box(11.98,5.93,39.98,51.02,6.05,40.33,'canAlu','canopy'); box(11.98,5.93,50.67,51.02,6.05,51.02,'canAlu','canopy');
+box(11.98,5.93,40.33,12.33,6.05,50.67,'canAlu','canopy'); box(50.67,5.93,40.33,51.02,6.05,50.67,'canAlu','canopy');
+const LIGHTX=[13,19,23,29,33,39,43,49],LIGHTZ=[41,45,49];
+LIGHTX.forEach(x=>LIGHTZ.forEach(z=>box(x+0.15,4.96,z+0.15,x+0.85,5.0,z+0.85,'lamp','canopy')));
+ISL.forEach(c=>{
+  box(c+0.22,0.19,45.22,c+0.78,5.0,45.78,'column','canopy'); box(c+0.1,0.19,45.1,c+0.9,0.6,45.9,'concrete','canopy');
+  box(c+0.19,4.6,45.19,c+0.81,4.97,45.81,'column','canopy');
+  box(c,0,42.25,c+1,0.19,48.75,'curb','island'); box(c+0.08,0,42.0,c+0.92,0.19,42.25,'curb','island'); box(c+0.08,0,48.75,c+0.92,0.19,49,'curb','island');
+  [43,46].forEach(z=>{box(c+0.12,0.19,z+0.08,c+0.88,2.55,z+1.92,'disp','island');box(c+0.1,2.55,z+0.05,c+0.9,3.0,z+1.95,'dispTop','island');
+    box(c+0.07,1.3,z+0.35,c+0.93,1.9,z+1.65,'dispScreen','island');});
+  [42.5,48.5].forEach(z=>{box(c+0.41,0.19,z-0.09,c+0.59,1.2,z+0.09,'bollard','island');box(c+0.405,0.9,z-0.095,c+0.595,0.98,z+0.095,'bollardY','island');});
+});
+
+/* site */
+const GROUND=[
+  ['grass',-30,-30,110,110],
+  ['street',-30,66,110,82],['street',66,-30,82,110],['concrete',-30,64,66,66],['concrete',64,-30,66,66],
+  ['asphalt',3,1,60,60],
+  ['asphalt',8,60,17,66],['asphalt',60,1,66,7],['asphalt',60,51,66,59],
+  ['concrete',16,7,47,27],['concrete',12,40,51,51],['concrete',23,51,40,60],['concrete',55,7,60,14],
+  ['grass',18,27,19,33],['grass',44,27,45,33],['grass',3,7,9,9],['grass',3,33,9,51],['grass',54,13,60,14],['grass',54,32,60,51]
+];
+const STRIPES=[];
+[19,22,24,27,30,33,36,39,41,44].forEach(x=>STRIPES.push([x-0.05,27,x+0.05,32.4,(x===19||x===22||x===41||x===44)?'ada':'stripe']));
+for(let z=9;z<=33;z+=3)STRIPES.push([3.6,z-0.05,9,z+0.05,'stripe']);
+for(let z=14;z<=32;z+=3)STRIPES.push([54,z-0.05,59.4,z+0.05,'stripe']);
+[[22,24],[39,41]].forEach(([a,b])=>{for(let t=27.3;t<32.4;t+=0.7)STRIPES.push([a+0.1,t,b-0.1,t+0.1,'ada']);});
+for(let x=-28;x<108;x+=6)STRIPES.push([x,73.9,x+3,74.1,'yline']);
+for(let z=-28;z<108;z+=6)STRIPES.push([73.9,z,74.1,z+3,'yline']);
+const GY={grass:-0.06,street:-0.05,asphalt:-0.03,concrete:0.0};
+// trash enclosure, signs, poles, trees, cars, people
+box(56,0,8,60,2.5,8.2,'cmu','site'); box(56,0,12.8,60,2.5,13,'cmu','site'); box(59.8,0,8.2,60,2.5,12.8,'cmu','site');
+box(56,0,8.2,56.08,2.2,12.8,'panel','site'); box(57.3,0,9,59.6,1.3,10.2,'dumpster','site');
+box(56.3,0,32.3,56.8,1.4,32.7,'air','site');
+box(56,0,61,60,0.8,61.6,'cmu','site'); box(56.15,0.8,61.05,59.85,3.8,61.55,'panel','site'); box(56.15,3.45,61.0,59.85,3.8,61.6,'red','site');
+[1.6,2.4].forEach(y=>box(56.5,y,60.98,59.5,y+0.55,61.04,'lightfix','site'));
+const POLES=[[6,34.5],[57,34.5],[1.5,20],[62.5,20],[31.5,0.5],[19.5,61.5],[52,61.5]];
+POLES.forEach(([x,z])=>{box(x-0.08,0,z-0.08,x+0.08,6,z+0.08,'pole','site');box(x-0.35,5.8,z-0.2,x+0.35,6.0,z+0.2,'pole','site');});
+const TREES=[[1.5,6],[1.5,30],[1.5,44],[1.5,56],[24,62],[36,62],[46,62],[62,12],[62,30],[62,42],[6,39],[6,47],[57,40],[57,47],[21,0.5],[42,0.5]];
+function car(xc,zc,alongZ,m){const L=4.8,W=1.85;const hx=alongZ?W/2:L/2,hz=alongZ?L/2:W/2;
+  box(xc-hx,0.3,zc-hz,xc+hx,0.95,zc+hz,m,'ctx');
+  const cx=alongZ?W/2-0.12:1.3,cz=alongZ?1.3:W/2-0.12;box(xc-cx,0.95,zc-cz,xc+cx,1.45,zc+cz,'carGlass','ctx');
+  const wx=alongZ?W/2:1.5,wz=alongZ?1.5:W/2;[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b])=>box(xc+a*wx-0.12,0,zc+b*wz-0.33,xc+a*wx+0.12,0.62,zc+b*wz+0.33,'tire','ctx'));}
+car(18.6,44.6,true,'car'); car(34.4,47.4,true,'car2'); car(28.5,29.9,true,'car3'); car(6,13.5,false,'car2');
+function person(x,z){box(x-0.18,0,z-0.12,x+0.18,0.85,z+0.12,'carGlass','ctx');box(x-0.24,0.85,z-0.14,x+0.24,1.5,z+0.14,'person','ctx');box(x-0.12,1.52,z-0.12,x+0.12,1.8,z+0.12,'person','ctx');}
+person(31.5,25.9); person(20.2,43.4);
+
+/* ---------------- conversion table ---------------- */
+const CONV=[
+  ['地块','QT 2.51 ac',64,'64 × 64','4 × 4 区块，以后好放进城市网格','64 × 64 m'],
+  ['便利店外轮廓','QT 28.1 × 16.4 m',27,'27 × 16','432 m² / 4,650 SF，介于 ORNL 和 QT 之间；长宽比 1.69','27 × 16 m'],
+  ['入口门框外凸','QT 8\'-3½"',1,'1','门框深 1 m，侧板 0.3 m'],
+  ['勒脚 / 窗台','Wawa 3\'-0"',1,'1',''],
+  ['玻璃门','ORNL 7\' 宽',2,'2 × 2','AFL 玻璃双开门'],
+  ['雨篷底','QT 10\'-0"，Wawa 9\'-0"',3,'3','雨篷出挑 1 m'],
+  ['吊顶','常见 10\'–12\'',4,'4','窗顶、高窗顶同一条线'],
+  ['屋面','—',5,'5','屋面以下 1 格是结构'],
+  ['女儿墙 / 檐口顶','QT 20\'-0"',6,'6','屋面以上 1 m，挡住空调机组'],
+  ['入口门框顶','Wawa 塔 26\'-10"',7,'7','平顶门框，不做坡顶塔'],
+  ['店面玻璃分格','约 5\'',1.5,'1.5','竖梃落在格中，需要带中梃的玻璃方块'],
+  ['顶棚平面','QT 124\' × 58\'-8"（两排柱）',39,'39 × 11','一排柱、柱两侧各一台加油机','39 × 11 m'],
+  ['柱距','QT 32\'-0"',10,'10',''],
+  ['柱中到顶棚边','QT 14\'-1"',4.5,'4 + 半柱',''],
+  ['顶棚净高','QT ≥ 15\'，ORNL 15\'',5,'5','AFL 顶棚套件吊顶在第 5 格'],
+  ['顶棚顶','QT 18\'-6"–22\'-6"',6,'6','和店的女儿墙同高'],
+  ['加油机','QT 8\'-3"',3,'3','AFL 加油机含顶部灯箱'],
+  ['店前到顶棚边','ORNL 35\'（到岛）',16,'16','人行道 3 + 车位 6 + 通道 7'],
+  ['车位','9.5\' × 18\'',3,'3 × 6','3 × 6 m','3 × 6 m'],
+  ['车道','24\'–35\'',7,'6–7','围店一圈，兼消防通道','6–7 m'],
+  ['油岛','约 20\'',7,'7','端头 + 加油机 2 + 立柱 + 加油机 2 + 端头'],
+  ['垃圾围栏','12.67\' × 16.67\'，高 8\'',2.5,'4 × 5 × 2.5','墙 2 格 + 半格压顶','4 × 5 × 2.5 m'],
+  ['价格牌','Sheetz 12\'-6" 高 × 13\'-3" 宽',3.8,'4 × 4','','4 × 3.8 m']
+];
+document.querySelector('#convTable tbody').innerHTML=CONV.map(r=>{
+  const m=r[5]||(r[2]+' m');
+  const imp=r[5]?r[5].replace(/[\d.]+/g,v=>ftin(+v)).replace(' m',''):ftin(r[2]);
+  return `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="n">${esc(m)}</td><td class="n">${esc(imp)}</td><td class="n">${esc(r[3])}</td><td>${esc(r[4])}</td></tr>`;}).join('');
+
+/* ---------------- SVG helpers ---------------- */
+const INK='#23282b',MUTE='#6b7376';
+function patDefs(id,k){
+  return `<defs>
+  <pattern id="${id}-brick" patternUnits="userSpaceOnUse" width="${0.4*k}" height="${0.2*k}"><path d="M0 ${0.2*k-0.4}H${0.4*k}" stroke="rgba(0,0,0,.22)" stroke-width="0.7"/></pattern>
+  <pattern id="${id}-cmu" patternUnits="userSpaceOnUse" width="${0.8*k}" height="${0.4*k}"><path d="M0 ${0.2*k}H${0.8*k}M0 ${0.4*k-0.3}H${0.8*k}M${0.4*k} 0V${0.2*k}M0 ${0.2*k}V${0.4*k}M${0.8*k} ${0.2*k}V${0.4*k}" stroke="rgba(0,0,0,.25)" stroke-width="0.7"/></pattern>
+  <pattern id="${id}-panel" patternUnits="userSpaceOnUse" width="${0.6*k}" height="${k}"><path d="M0.5 0V${k}" stroke="rgba(255,255,255,.14)" stroke-width="0.8"/></pattern>
+  <pattern id="${id}-glass" patternUnits="userSpaceOnUse" width="${3*k}" height="${3*k}" patternTransform="rotate(-38)"><rect width="${3*k}" height="${0.35*k}" fill="rgba(255,255,255,.22)"/><rect y="${0.55*k}" width="${3*k}" height="${0.1*k}" fill="rgba(255,255,255,.18)"/></pattern>
+  <pattern id="${id}-hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)"><path d="M0 0V6" stroke="#2f5fa0" stroke-width="1.4"/></pattern>
+  </defs>`;
+}
+function svgWrap(w,h,inner){return `<svg viewBox="0 0 ${w.toFixed(1)} ${h.toFixed(1)}" xmlns="http://www.w3.org/2000/svg" role="img">${inner}</svg>`;}
+function txt(x,y,s,o){o=o||{};return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.fs||11}" fill="${o.fill||INK}" text-anchor="${o.a||'start'}"${o.w?` font-weight="${o.w}"`:''}${o.cls?` class="${o.cls}"`:''}${o.rot?` transform="rotate(${o.rot} ${x.toFixed(1)} ${y.toFixed(1)})"`:''}>${esc(s)}</text>`;}
+function dimLine(x0,y0,x1,y1,label,o){o=o||{};const vert=Math.abs(x1-x0)<0.01;let s=`<g stroke="${INK}" stroke-width="0.8" fill="none"><path d="M${x0} ${y0}L${x1} ${y1}"/>`;
+  const t=4;if(vert){s+=`<path d="M${x0-t} ${y0+t}L${x0+t} ${y0-t}M${x1-t} ${y1+t}L${x1+t} ${y1-t}"/>`;}else{s+=`<path d="M${x0-t} ${y0+t}L${x0+t} ${y0-t}M${x1-t} ${y1+t}L${x1+t} ${y1-t}"/>`;}
+  s+='</g>';
+  if(vert)s+=txt(x0-5,(y0+y1)/2,label,{a:'middle',rot:-90,fs:o.fs||10,cls:'m'});else s+=txt((x0+x1)/2,y0-4,label,{a:'middle',fs:o.fs||10,cls:'m'});
+  return s;}
+
+/* ---------------- elevations ---------------- */
+function proj(p,v){switch(v){case'S':return{a0:p.x0,a1:p.x1,d:p.z1,c:(p.z0+p.z1)/2};case'N':return{a0:-p.x1,a1:-p.x0,d:-p.z0,c:-(p.z0+p.z1)/2};case'E':return{a0:-p.z1,a1:-p.z0,d:p.x1,c:(p.x0+p.x1)/2};case'W':return{a0:p.z0,a1:p.z1,d:-p.x0,c:-(p.x0+p.x1)/2};}}
+const NOSTROKE=['brick','brickDk','cmu','alu','red','glass','roof','canRoof','soffit','canRed','canAlu','eyebrow'];
+function elevation(host,view,groups,o){
+  const k=o.k||26,id='e'+host;
+  const items=P.filter(p=>groups.includes(p.g)).map(p=>Object.assign(proj(p,view),{p:p})).sort((a,b)=>a.d-b.d||a.c-b.c);
+  let amin=Infinity,amax=-Infinity,ymax=0;items.forEach(i=>{amin=Math.min(amin,i.a0);amax=Math.max(amax,i.a1);ymax=Math.max(ymax,i.p.y1);});
+  amin=Math.min(amin,o.amin!=null?o.amin:amin);amax=Math.max(amax,o.amax!=null?o.amax:amax);
+  const ML=o.ml||40,MR=o.mr||190,MT=34,MB=78,top=Math.max(ymax,o.ytop||0)+0.6;
+  const W=(amax-amin)*k+ML+MR,H=top*k+MT+MB;
+  const X=a=>ML+(a-amin)*k,Y=y=>MT+(top-y)*k;
+  let s=patDefs(id,k);
+  s+=`<rect width="${W}" height="${H}" fill="#fbfbf8"/>`;
+  items.forEach(i=>{const p=i.p,m=MAT[p.m]||{c:'#888'};const x=X(i.a0),y=Y(p.y1),w=(i.a1-i.a0)*k,h=(p.y1-p.y0)*k;if(w<0.05||h<0.05)return;
+    s+=`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="${m.c}" stroke="rgba(0,0,0,.35)" stroke-width="${(!NOSTROKE.includes(p.m)&&w>3&&h>3)?0.5:0}"/>`;
+    if(m.h&&w>4&&h>4)s+=`<rect x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" fill="url(#${id}-${m.h})"/>`;});
+  if(view==='S'&&groups.includes('store')){SIGNS.forEach(sg=>{const a=view==='S'?(sg.x0+sg.x1)/2:-(sg.x0+sg.x1)/2;if(view==='S')s+=txt(X(a),Y(sg.y0)-3,sg.t,{a:'middle',fs:0.62*k,fill:'#f6f2e8',w:700});});}
+  // ground
+  s+=`<path d="M${X(amin)-20} ${Y(0)}H${X(amax)+40}" stroke="${INK}" stroke-width="2"/>`;
+  // scale figure
+  if(o.fig!=null){const fx=X(o.fig);s+=`<g fill="#5c6366"><rect x="${fx-0.2*k}" y="${Y(1.5)}" width="${0.4*k}" height="${0.65*k}" rx="2"/><rect x="${fx-0.16*k}" y="${Y(0.85)}" width="${0.32*k}" height="${0.85*k}"/><circle cx="${fx}" cy="${Y(1.66)}" r="${0.13*k}"/></g>`+txt(fx,Y(0)+13,'1.8 m',{a:'middle',fs:9,fill:MUTE,cls:'m'});}
+  // levels
+  const lx=X(amax)+14;
+  (o.levels||[]).forEach(([y,l])=>{const yy=Y(y);s+=`<path d="M${X(amax)+4} ${yy}H${lx+150}" stroke="${MUTE}" stroke-width="0.6" stroke-dasharray="3 3"/><circle cx="${lx}" cy="${yy}" r="4.5" fill="#fbfbf8" stroke="${INK}"/><path d="M${lx} ${yy-4.5}A4.5 4.5 0 0 1 ${lx+4.5} ${yy}L${lx} ${yy}Z" fill="${INK}"/>`;
+    s+=`<text x="${lx+10}" y="${yy-4}" font-size="10.5" fill="${INK}">${esc(l)}<tspan class="m" font-size="9.5" fill="${MUTE}" dx="6">${y===0?'±0.00 m':('+'+y.toFixed(2)+' m')} · ${y===0?'0\'-0"':ftin(y)}</tspan></text>`;});
+  // dimension string(s)
+  const dy=Y(0)+30;
+  if(o.dims){let pts=o.dims;for(let i=0;i<pts.length-1;i++){const a=pts[i],b=pts[i+1];s+=dimLine(X(a),dy,X(b),dy,String(+(b-a).toFixed(2)));}
+    s+=`<g stroke="${INK}" stroke-width="0.5">`+pts.map(a=>`<path d="M${X(a)} ${Y(0)+6}V${dy+5}"/>`).join('')+'</g>';
+    const a0=pts[0],a1=pts[pts.length-1];s+=dimLine(X(a0),dy+26,X(a1),dy+26,`${+(a1-a0).toFixed(2)} m（${ftin(a1-a0)}）`,{fs:11});}
+  (o.tags||[]).forEach(([a,y,n])=>{s+=`<circle cx="${X(a)}" cy="${Y(y)}" r="8" fill="#fbfbf8" stroke="${INK}" stroke-width="0.8"/>`+txt(X(a),Y(y)+3.5,n,{a:'middle',fs:9.5,w:600,cls:'m'});});
+  s+=txt(ML,20,o.title,{fs:13,w:700});
+  document.getElementById(host).innerHTML=svgWrap(W,H,s);
+}
+const LV=[[0,'地坪'],[1,'勒脚顶 / 窗台'],[3,'雨篷底'],[4,'窗顶 / 吊顶'],[5,'屋面'],[6,'女儿墙 / 檐口顶'],[7,'入口门框顶']];
+const SG=['store','storeprop','roof'];
+elevation('elevS','S',SG,{title:'南立面 SOUTH — 正面',levels:LV,dims:[18,19,23,24,39,40,44,45],fig:16.6,amin:15.5,tags:[[20,6.4,'4'],[21,1.6,'5'],[31.5,0.5,'3'],[29,4.5,'1'],[23.5,2.5,'2'],[31.5,5.7,'6'],[34,3.1,'4']]});
+elevation('elevE','E',SG,{title:'东立面 EAST',levels:LV,dims:[-25,-24,-23,-19,-14,-13,-9,-8],fig:-6.6,amax:-5.5,tags:[[-17,2.5,'1'],[-21,2.0,'5'],[-13.5,2.5,'2']]});
+elevation('elevN','N',SG,{title:'北立面 NORTH — 后面（送货）',levels:LV.filter(l=>l[0]!==7),dims:[-45,-44,-36,-35,-28,-27,-19,-18],fig:-46.7,amin:-47.5,tags:[[-23.8,1.5,'7'],[-38.5,2.5,'2'],[-31.5,3.8,'1']]});
+elevation('elevW','W',SG,{title:'西立面 WEST',levels:LV,dims:[8,9,13,14,19,23,24,25],fig:11.2,amin:10.2,tags:[[17.4,2.3,'8'],[11,3.6,'5'],[21,2.5,'5']]});
+const CL=[[0,'地坪'],[3,'加油机顶'],[5,'顶棚底（净高）'],[6,'顶棚顶']];
+elevation('elevCS','S',['canopy','island'],{title:'顶棚正立面',k:16,levels:CL,dims:[12,16.5,26.5,36.5,46.5,51],mr:215});
+elevation('elevCE','E',['canopy','island'],{title:'顶棚端立面',k:20,levels:CL,dims:[-51,-49,-45.5,-42,-40],mr:215,fig:-52,amin:-53});
+document.getElementById('matLegend').innerHTML=[['1','brick'],['2','brickDk'],['3','cmu'],['4','panel'],['5','glass'],['6','alu'],['','red'],['','frame'],['7','door'],['8','ice']].map(([n,m])=>`<span><i style="background:${MAT[m].c}"></i>${n?`<b class="m" style="font-family:var(--f-mono)">${n}</b> `:''}${MAT[m].n||({ice:'店外冰柜 / 液化气笼'})[m]}</span>`).join('');
+
+/* ---------------- site plan ---------------- */
+(function(){
+  const k=10.5,o0=-4,ext=78,ML=24,MT=30;
+  const X=x=>ML+(x-o0)*k,Z=z=>MT+(z-o0)*k,W=ext*k+ML+40,H=ext*k+MT+40;
+  let s=patDefs('sp',k)+`<defs><clipPath id="sp-clip"><rect x="${X(o0)}" y="${Z(o0)}" width="${ext*k}" height="${ext*k}"/></clipPath></defs><rect width="${W}" height="${H}" fill="#fbfbf8"/><g clip-path="url(#sp-clip)">`;
+  const R=(x0,z0,x1,z1,fill,ex)=>`<rect x="${X(x0).toFixed(1)}" y="${Z(z0).toFixed(1)}" width="${((x1-x0)*k).toFixed(1)}" height="${((z1-z0)*k).toFixed(1)}" fill="${fill}" ${ex||''}/>`;
+  GROUND.forEach(([m,a,b,c,d])=>{s+=R(a,b,c,d,MAT[m].c);});
+  STRIPES.forEach(([a,b,c,d,m])=>{s+=R(a,b,c,d,MAT[m].c);});
+  // 4 m grid
+  s+=`<g stroke="rgba(0,0,0,.08)" stroke-width="0.6">`;for(let v=0;v<=64;v+=4){s+=`<path d="M${X(v)} ${Z(0)}V${Z(64)}M${X(0)} ${Z(v)}H${X(64)}"/>`;}s+='</g>';
+  // UST (dashed, below grade)
+  [24,30,36].forEach(x=>{s+=R(x,52,x+3,59,'none',`stroke="${INK}" stroke-dasharray="4 3" stroke-width="0.9"`);s+=R(x+1,52.2,x+2,53.2,'#55595d');s+=`<circle cx="${X(x+1.5)}" cy="${Z(58.3)}" r="${0.32*k}" fill="#c9a233" stroke="${INK}" stroke-width=".6"/>`;});
+  // store footprint
+  s+=R(SX,SZ,SX+27,SZ+16,'#cfd1cf',`stroke="${INK}" stroke-width="1.6"`);
+  s+=R(SX+1,SZ+1,SX+26,SZ+15,'none',`stroke="${INK}" stroke-width="0.6"`);
+  [[1,5],[22,26]].forEach(([a,b])=>{s+=R(SX+a,SZ+15,SX+b,SZ+17,MAT.panel.c,`stroke="${INK}" stroke-width="1"`);});
+  s+=R(SX+5,SZ+16,SX+22,SZ+17,'none',`stroke="${INK}" stroke-width="0.7" stroke-dasharray="3 2"`);
+  [[4,3],[12.2,3],[20.5,3]].forEach(([x,z])=>{s+=R(SX+x,SZ+z,SX+x+2.5,SZ+z+1.5,'#a4a8aa',`stroke="${INK}" stroke-width=".6"`);});
+  // canopy
+  s+=R(12,40,51,51,'rgba(142,58,50,.08)',`stroke="${MAT.canRed.c}" stroke-width="2" stroke-dasharray="9 4"`);
+  ISL.forEach(c=>{s+=R(c,42,c+1,49,MAT.curb.c,`stroke="${INK}" stroke-width=".7"`);[43,46].forEach(z=>{s+=R(c+0.12,z+0.08,c+0.88,z+1.92,'#c9c9c4',`stroke="${INK}" stroke-width=".6"`);});s+=R(c+0.22,45.22,c+0.78,45.78,INK);});
+  // enclosure, sign, air, ice
+  s+=R(56,8,60,13,'none',`stroke="${INK}" stroke-width="2"`)+R(57.3,9,59.6,10.2,MAT.dumpster.c);
+  s+=R(56,61,60,61.6,INK)+R(56.3,32.3,56.8,32.7,MAT.air.c)+R(16.85,13,17.95,15.3,'#e9eef0',`stroke="${INK}" stroke-width=".6"`)+R(16.9,16,17.95,17.6,'#9aa0a3');
+  // poles + trees
+  POLES.forEach(([x,z])=>{s+=`<circle cx="${X(x)}" cy="${Z(z)}" r="3" fill="#fbfbf8" stroke="${INK}" stroke-width="1.2"/>`;});
+  TREES.forEach(([x,z])=>{s+=`<circle cx="${X(x)}" cy="${Z(z)}" r="${2.1*k}" fill="rgba(70,95,50,.35)" stroke="rgba(50,70,35,.6)" stroke-width=".8"/>`;});
+  // ADA symbol
+  [[20.5,30],[42.5,30]].forEach(([x,z])=>{s+=`<circle cx="${X(x)}" cy="${Z(z)}" r="7" fill="#2f5fa0"/>`+txt(X(x),Z(z)+3.5,'♿',{a:'middle',fs:9,fill:'#fff'});});
+  // arrows
+  const arrow=(x,z,ang)=>`<path d="M-6 -2.5H2V-6L8 0L2 6V2.5H-6Z" fill="#e9e7e0" transform="translate(${X(x)} ${Z(z)}) rotate(${ang})"/>`;
+  s+=arrow(12.5,20,-90)+arrow(50.5,20,90)+arrow(42,4,180)+arrow(31.5,36.5,0)+arrow(18,55.5,180);
+  s+='</g>';
+  // lot line
+  s+=R(0,0,64,64,'none',`stroke="${INK}" stroke-width="1.4" stroke-dasharray="14 4 3 4"`);
+  // labels
+  const L=(x,z,t,o)=>txt(X(x),Z(z),t,Object.assign({a:'middle',fs:11},o||{}));
+  s+=L(31.5,15.5,'便利店 27 × 16 m',{fs:13,w:700})+L(31.5,17.4,'432 m² · 屋面 +5.00 · 女儿墙 +6.00',{fs:10,fill:MUTE});
+  s+=L(31.5,41.7,'顶棚 39 × 11 m · 净高 5 m · 4 岛 8 台加油机',{fs:11,w:600,fill:'#5d2520'});
+  s+=L(31.5,29.6,'前排车位（含 2 个无障碍）',{fs:10,fill:'#e9e7e0'})+L(31.5,38,'双向车道 7 m',{fs:10,fill:'#e9e7e0'});
+  s+=L(47.5,55,'地下油罐 ×3',{fs:10,fill:'#e9e7e0',w:600})+L(47.5,56.5,'汽油 2 · 柴油 1',{fs:9.5,fill:'#e9e7e0'})+L(47.5,58,'油罐车在此卸油',{fs:9.5,fill:'#e9e7e0'});
+  s+=L(31.5,4.7,'后车道 6 m · 送货 / 消防',{fs:10,fill:'#e9e7e0'});
+  s+=L(6,22,'车位 ×8',{fs:10,fill:'#e9e7e0',rot:-90})+L(57,24,'车位 ×6',{fs:10,fill:'#e9e7e0',rot:-90});
+  s+=L(58,7.4,'垃圾围栏',{fs:9.5})+L(58,63.4,'价格牌',{fs:9.5})+L(57.6,32.0,'打气',{fs:9,a:'end'})+L(15.6,12.6,'冰柜 / 液化气',{fs:9,a:'end'});
+  s+=L(12.5,63.3,'S1 入口',{fs:10,w:600})+L(63,4.6,'E1',{fs:10,w:600})+L(63,55.6,'E2',{fs:10,w:600});
+  s+=L(31.5,70.2,'主干道（南）',{fs:12,w:600,fill:'#e9e7e0'})+L(70.2,31.5,'支路（东）',{fs:12,w:600,fill:'#e9e7e0',rot:90});
+  // dims
+  s+=dimLine(X(0),Z(-2),X(64),Z(-2),'64 m（地块，4 区块）',{fs:11});
+  s+=dimLine(X(-2),Z(0),X(-2),Z(64),'64 m',{fs:11});
+  s+=dimLine(X(47.6),Z(24),X(47.6),Z(40),'16');
+  s+=dimLine(X(52),Z(51),X(52),Z(64),'13');
+  // north arrow
+  const nx=W-30,ny=40;s+=`<g transform="translate(${nx} ${ny})"><circle r="14" fill="none" stroke="${INK}"/><path d="M0 -12L6 8L0 4L-6 8Z" fill="${INK}"/></g>`+txt(nx,ny-18,'N',{a:'middle',fs:12,w:700});
+  s+=txt(ML,18,'A1.0 总平面  1 格 = 1 m',{fs:13,w:700});
+  document.getElementById('sitePlan').innerHTML=svgWrap(W,H,s);
+})();
+
+/* ---------------- floor plan ---------------- */
+(function(){
+  const k=30,ox=-2.2,oz=-2.6,ML=10,MT=34,ext=[31.2,21.6];
+  const X=x=>ML+(x-ox)*k,Z=z=>MT+(z-oz)*k,W=ext[0]*k+ML+20,H=ext[1]*k+MT+10;
+  let s=`<rect width="${W}" height="${H}" fill="#fbfbf8"/>`;
+  const R=(x0,z0,x1,z1,fill,ex)=>`<rect x="${X(x0).toFixed(1)}" y="${Z(z0).toFixed(1)}" width="${((x1-x0)*k).toFixed(1)}" height="${((z1-z0)*k).toFixed(1)}" fill="${fill}" ${ex||''}/>`;
+  // floor
+  s+=R(0,0,27,16,'#efede8');
+  // grid
+  s+=`<g stroke="rgba(0,0,0,.07)" stroke-width=".6">`;for(let x=0;x<=27;x++)s+=`<path d="M${X(x)} ${Z(0)}V${Z(16)}"/>`;for(let z=0;z<=16;z++)s+=`<path d="M${X(0)} ${Z(z)}H${X(27)}"/>`;s+='</g>';
+  // fixtures
+  const FCOL={porcelain:'#ffffff',util:'#d7dadb',sinkM:'#d7dadb',rack:'#c7cbce',cooler:'#9fc7d4',desk:'#d9cbbb',chair:'#bdbdbd',cabinet:'#d0d3d5',counter:'#b9bcbf',counterGate:'#d4d6d8',machine:'#7a7f83',shelf:'#e0e0da',freezer:'#d9eef3',warmer:'#e2c7b9'};
+  FIX.filter(f=>!(f.m==='machine'&&f.x0<2)).forEach(f=>{s+=R(f.x0,f.z0,f.x1,f.z1,FCOL[f.m]||'#ddd',`stroke="${INK}" stroke-width="0.8"`);
+    if(f.cool){for(let i=0;i<3;i++){const a=f.x0+i*2;s+=`<path d="M${X(a+1)} ${Z(f.z1)}V${Z(f.z0+0.5)}" stroke="${INK}" stroke-width=".5"/>`+R(a,f.z1-0.12,a+2,f.z1,'#5f99ab');}}
+    if(f.m==='shelf'&&f.x1-f.x0>1.5)s+=`<path d="M${X((f.x0+f.x1)/2)} ${Z(f.z0)}V${Z(f.z1)}" stroke="${INK}" stroke-width=".5"/>`;
+    if(f.l){const vert=(f.z1-f.z0)>(f.x1-f.x0)*1.6&&(f.x1-f.x0)<1.6;s+=txt(X((f.x0+f.x1)/2)+(vert?3.5:0),Z((f.z0+f.z1)/2)+(vert?0:3.5),f.l,{a:'middle',fs:9.5,rot:vert?-90:0});}});
+  // cells: walls / glass / doors
+  Object.keys(CELL).forEach(key=>{const [x,z]=key.split(',').map(Number),t=CELL[key];
+    if(t==='wall')s+=R(x,z,x+1,z+1,'#33383b');
+    else if(t==='wallHi')s+=R(x,z,x+1,z+1,'#33383b')+`<path d="M${X(x+0.5)} ${Z(z)}V${Z(z+1)}" stroke="#fbfbf8" stroke-width="1" stroke-dasharray="3 2"/>`;
+    else if(t==='part')s+=R(x,z,x+1,z+1,'#8b9195');
+    else if(t==='coolerLine'){}
+    else if(t==='glass'){s+=R(x,z,x+1,z+1,'#fbfbf8',`stroke="${INK}" stroke-width=".7"`);const v=(x===0||x===26);s+=v?`<path d="M${X(x+0.5)} ${Z(z)}V${Z(z+1)}" stroke="#2f7d95" stroke-width="2"/>`:`<path d="M${X(x)} ${Z(z+0.5)}H${X(x+1)}" stroke="#2f7d95" stroke-width="2"/>`;}
+    else if(t==='doorE'||t==='doorI'){s+=R(x,z,x+1,z+1,'#fbfbf8');}
+  });
+  // jamb/head lines of portals
+  [[1,5],[22,26]].forEach(([a,b])=>{s+=R(a,16,a+0.3,17,'#33383b')+R(b-0.3,16,b,17,'#33383b')+R(a+0.3,16,b-0.3,17,'none',`stroke="${INK}" stroke-width=".6" stroke-dasharray="4 3"`);});
+  s+=R(5,16,22,17,'none',`stroke="${INK}" stroke-width=".6" stroke-dasharray="4 3"`);
+  // doors (leaf + swing)
+  const swing=(hx,hz,len,a0,a1)=>{const r=len*k,cx=X(hx),cy=Z(hz),p=(a)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];const [x0,y0]=p(a0),[x1,y1]=p(a1);
+    return `<path d="M${cx} ${cy}L${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${INK}" stroke-width="1.6"/><path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 ${a1>a0?1:0} ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${INK}" stroke-width=".6" stroke-dasharray="3 2"/>`;};
+  const D=Math.PI/2;
+  [[2,4],[23,25]].forEach(([a,b])=>{s+=swing(a,16,1,0,D)+swing(b,16,1,Math.PI,D);});
+  s+=swing(7,0,1,0,-D)+swing(19,0,1,0,-D)+swing(21,0,1,Math.PI,-D);
+  s+=swing(2,5,1,Math.PI,Math.PI+D)+swing(4,5,1,0,-D)+swing(22,5,1,0,-D)+swing(16.5,2,1,D,0)+swing(23.5,3,1,-D,0);
+  // room labels
+  const ROOMS=[[1,1,3,5,'卫生间 1','RR'],[4,1,6,5,'卫生间 2','RR'],[7,1,9,5,'设备 / 配电','UTIL'],[10,1,16,5,'步入式冷库','WALK-IN'],[17,1,23,5,'库房','STOCK'],[24,1,26,5,'办公','OFFICE'],[1,6,26,15,'营业区','SALES']];
+  ROOMS.forEach(([a,b,c,d,n,e])=>{const ar=(c-a)*(d-b);const cx=e==='OFFICE'?24.6:(a+c)/2,cz=e==='SALES'?7.2:e==='OFFICE'?3.55:(b+d)/2-((e==='WALK-IN'||e==='STOCK')?-0.6:0.2);
+    s+=txt(X(cx),Z(cz),n,{a:'middle',fs:e==='SALES'?14:10.5,w:700})+txt(X(cx),Z(cz)+12,ar+' m²',{a:'middle',fs:9,fill:MUTE,cls:'m'});});
+  s+=txt(X(13.5),Z(14.45),'前通道 2 m',{a:'middle',fs:9,fill:MUTE});
+  s+=txt(X(2.5),Z(17.7),'入口',{a:'middle',fs:10,w:600})+txt(X(24.5),Z(17.7),'入口',{a:'middle',fs:10,w:600})+txt(X(7.5),Z(-1.25),'设备间门',{a:'middle',fs:9.5})+txt(X(20),Z(-1.25),'送货双开门',{a:'middle',fs:9.5});
+  s+=txt(X(13.5),Z(16.75),'雨篷 1 m（虚线）',{a:'middle',fs:9,fill:MUTE});
+  // dims
+  s+=dimLine(X(0),Z(-2.0),X(27),Z(-2.0),'27 m（88\'-7"）',{fs:11});
+  s+=dimLine(X(-1.4),Z(0),X(-1.4),Z(16),'16 m（52\'-6"）',{fs:11});
+  s+=dimLine(X(27.8),Z(1),X(27.8),Z(5),'4')+dimLine(X(27.8),Z(6),X(27.8),Z(15),'9')+dimLine(X(27.8),Z(15),X(27.8),Z(17),'1+1');
+  const nx=W-34,ny=Z(-1.2);s+=`<g transform="translate(${nx} ${ny})"><circle r="13" fill="none" stroke="${INK}"/><path d="M0 -11L5.5 7L0 3.5L-5.5 7Z" fill="${INK}"/></g>`+txt(nx,ny-17,'N',{a:'middle',fs:11,w:700});
+  s+=txt(ML+4,20,'A1.1 平面图  网格 1 m = 1 格  墙 / 隔墙按整格',{fs:13,w:700});
+  document.getElementById('floorPlan').innerHTML=svgWrap(W,H,s);
+  const RT=[['营业区','25 × 9',225,'2,150 SF（71.6%）'],['步入式冷库','6 × 4',24,'165 + 66 SF'],['库房','6 × 4',24,'270 SF'],['卫生间 ×2','2 × 4 ×2',16,'154 SF'],['设备 / 配电','2 × 4',8,'77 SF'],['办公','2 × 4',8,'121 SF'],['合计（净）','',305,'3,003 SF（含墙）'],['建筑面积','27 × 16',432,'']];
+  document.querySelector('#roomTable tbody').innerHTML=RT.map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td><td class="n">${SF(r[2])}</td><td>${r[3]}</td></tr>`).join('');
+})();
+
+/* ---------------- 3D ---------------- */
+const msg=document.getElementById('msg3d');
+if(typeof THREE==='undefined'){msg.textContent='三维引擎没有加载成功（需要访问 cdnjs）';return;}
+const canvas=document.getElementById('c3d'),host=document.getElementById('view3d');
+let renderer;try{renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});}catch(e){msg.textContent='浏览器不支持 WebGL';return;}
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
+const LIN0=h=>new THREE.Color(h).convertSRGBToLinear();
+const scene=new THREE.Scene();scene.background=LIN0('#c3d3dc');scene.fog=new THREE.Fog(scene.background.getHex(),160,340);
+const camera=new THREE.PerspectiveCamera(38,1,0.3,800);
+const controls=new THREE.OrbitControls(camera,canvas);controls.maxPolarAngle=Math.PI*0.495;controls.minDistance=2;controls.maxDistance=260;
+scene.add(new THREE.HemisphereLight(LIN0('#dfe9f0'),LIN0('#6a6656'),0.6));
+const sun=new THREE.DirectionalLight(LIN0('#fff1df'),1.9);sun.position.set(32+55,85,32+70);sun.target.position.set(32,0,32);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sc=sun.shadow.camera;sc.left=-62;sc.right=62;sc.top=62;sc.bottom=-62;sc.near=10;sc.far=260;sun.shadow.bias=-0.0006;sun.shadow.normalBias=0.03;
+scene.add(sun);scene.add(sun.target);
+
+function tex(size,draw,rep){const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');draw(g,size);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return t;}
+function rnd(i){const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x);}
+function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;r=Math.max(0,Math.min(255,r*f));g=Math.max(0,Math.min(255,g*f));b=Math.max(0,Math.min(255,b*f));return `rgb(${r|0},${g|0},${b|0})`;}
+function brickTex(col,mortar){return tex(512,(g,s)=>{g.fillStyle=mortar;g.fillRect(0,0,s,s);const rows=12,rh=s/rows,bw=s/4,j=s*0.0125;let n=0;
+  for(let r=0;r<rows;r++){const off=(r%2)*bw/2;for(let i=-1;i<5;i++){g.fillStyle=shade(col,0.88+rnd(n++)*0.22);g.fillRect(off+i*bw+j/2,r*rh+j/2,bw-j,rh-j);}}});}
+function cmuTex(col){return tex(512,(g,s)=>{g.fillStyle=shade(col,0.8);g.fillRect(0,0,s,s);const rows=4,rh=s/rows,bw=s/2,j=s*0.0125;let n=0;
+  for(let r=0;r<rows;r++){const off=(r%2)*bw/2;for(let i=-1;i<3;i++){g.fillStyle=shade(col,0.93+rnd(n++)*0.12);g.fillRect(off+i*bw+j/2,r*rh+j/2,bw-j,rh-j);}}
+  for(let i=0;i<5000;i++){g.fillStyle=`rgba(255,255,255,${rnd(i)*0.12})`;g.fillRect(rnd(i+9)*s,rnd(i+77)*s,1.5,1.5);}});}
+function panelTex(col){return tex(256,(g,s)=>{g.fillStyle=col;g.fillRect(0,0,s,s);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,0,3,s);g.fillRect(s/2,0,3,s);g.fillStyle='rgba(255,255,255,.06)';g.fillRect(3,0,s/2-3,s);});}
+function noiseTex(col,amt,lines){return tex(512,(g,s)=>{g.fillStyle=col;g.fillRect(0,0,s,s);for(let i=0;i<14000;i++){const v=rnd(i)*2-1;g.fillStyle=v>0?`rgba(255,255,255,${v*amt})`:`rgba(0,0,0,${-v*amt})`;g.fillRect(rnd(i+3)*s,rnd(i+11)*s,2,2);}
+  if(lines){g.strokeStyle='rgba(0,0,0,.28)';g.lineWidth=2;lines.forEach(f=>{g.beginPath();g.moveTo(f*s,0);g.lineTo(f*s,s);g.moveTo(0,f*s);g.lineTo(s,f*s);g.stroke();});}});}
+const TEXT={brick:[brickTex(MAT.brick.c,'#b5aea4'),0.8],brickDk:[brickTex(MAT.brickDk.c,'#6a6b6c'),0.8],cmu:[cmuTex(MAT.cmu.c),0.8],panel:[panelTex(MAT.panel.c),1.2],
+  concrete:[noiseTex(MAT.concrete.c,0.06,[0,0.5]),3],asphalt:[noiseTex(MAT.asphalt.c,0.08),4],street:[noiseTex(MAT.street.c,0.08),4],grass:[noiseTex(MAT.grass.c,0.14),4],roof:[noiseTex(MAT.roof.c,0.04,[0]),3],floorInt:[noiseTex(MAT.floorInt.c,0.03,[0]),0.6]};
+const LIN=h=>new THREE.Color(h).convertSRGBToLinear();
+function matFor(key){const m=MAT[key]||{c:'#888'},t=TEXT[key];const o={color:LIN(t?'#ffffff':m.c),roughness:0.85,metalness:0.0};if(t)o.map=t[0];
+  if(key==='glass'){Object.assign(o,{color:LIN('#4f6d78'),roughness:0.06,metalness:0.1,transparent:true,opacity:0.42,depthWrite:false});}
+  if(key==='alu'||key==='canAlu'){o.roughness=0.35;o.metalness=0.35;}
+  if(key==='frame'){o.roughness=0.4;o.metalness=0.3;}
+  if(key==='lamp'||key==='sign'){o.emissive=LIN(m.c);o.emissiveIntensity=0.9;}
+  if(key==='cooler'){o.emissive=LIN('#2a4a55');}
+  return new THREE.MeshStandardMaterial(o);}
+const MCACHE={};const getMat=k=>MCACHE[k]||(MCACHE[k]=matFor(k));
+function geoFrom(list,tile){const pos=[],nor=[],uv=[],idx=[];
+  list.forEach(b=>{const {x0,y0,z0,x1,y1,z1}=b;const F=[
+    [[1,0,0],[[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1]],p=>[-p[2],p[1]]],[[-1,0,0],[[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0]],p=>[p[2],p[1]]],
+    [[0,1,0],[[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0]],p=>[p[0],-p[2]]],[[0,-1,0],[[x0,y0,z0],[x1,y0,z0],[x1,y0,z1],[x0,y0,z1]],p=>[p[0],p[2]]],
+    [[0,0,1],[[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]],p=>[p[0],p[1]]],[[0,0,-1],[[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0]],p=>[-p[0],p[1]]]];
+    F.forEach(([n,vs,u])=>{const base=pos.length/3;vs.forEach(p=>{pos.push(p[0],p[1],p[2]);nor.push(n[0],n[1],n[2]);const t=u(p);uv.push(t[0]/tile,t[1]/tile);});idx.push(base,base+1,base+2,base,base+2,base+3);});});
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);return g;}
+const GROUPS={};
+function addMeshes(list,grp){const by={};list.forEach(b=>{(by[b.m]=by[b.m]||[]).push(b);});
+  Object.keys(by).forEach(k=>{const tile=TEXT[k]?TEXT[k][1]:1;const mesh=new THREE.Mesh(geoFrom(by[k],tile),getMat(k));mesh.castShadow=!['glass','lamp'].includes(k)&&grp!=='ground';mesh.receiveShadow=true;
+    (GROUPS[grp]=GROUPS[grp]||[]).push(mesh);scene.add(mesh);});}
+const byGroup={};P.forEach(p=>{(byGroup[p.g]=byGroup[p.g]||[]).push(p);});
+Object.keys(byGroup).forEach(g=>addMeshes(byGroup[g],g));
+// ground plates
+addMeshes(GROUND.map(([m,a,b,c,d],i)=>({x0:a,x1:c,z0:b,z1:d,y0:(GY[m]||0)-0.3-i*0.0004,y1:(GY[m]||0)+i*0.0004,m:m})),'ground');
+addMeshes(STRIPES.map(([a,b,c,d,m])=>({x0:a,x1:c,z0:b,z1:d,y0:-0.03,y1:-0.018,m:m})),'ground');
+// trees
+const leafM=new THREE.MeshStandardMaterial({color:LIN(MAT.leaf.c),roughness:0.95,flatShading:true}),trunkM=getMat('trunk');
+TREES.forEach(([x,z],i)=>{const t=new THREE.Mesh(new THREE.BoxGeometry(0.3,3,0.3),trunkM);t.position.set(x,1.5,z);t.castShadow=true;scene.add(t);
+  const l=new THREE.Mesh(new THREE.IcosahedronGeometry(1.8+rnd(i)*0.5,1),leafM);l.position.set(x,4.2,z);l.castShadow=true;l.receiveShadow=true;scene.add(l);});
+// sign text
+SIGNS.forEach(sg=>{const c=document.createElement('canvas');c.width=1024;c.height=128;const g=c.getContext('2d');g.fillStyle='#f6f1e4';g.font='700 104px "IBM Plex Sans Condensed", Arial, sans-serif';g.textAlign='center';g.textBaseline='middle';
+  if(g.letterSpacing!==undefined)g.letterSpacing='18px';g.fillText(sg.t,512,68);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(sg.x1-sg.x0,sg.y1-sg.y0),new THREE.MeshStandardMaterial({map:t,transparent:true,emissive:new THREE.Color('#fff6e6'),emissiveMap:t,emissiveIntensity:0.8,roughness:0.6}));
+  m.position.set((sg.x0+sg.x1)/2,(sg.y0+sg.y1)/2,sg.z+0.01);scene.add(m);});
+// block grid
+const grid=new THREE.GridHelper(144,144,0x101418,0x101418);grid.position.set(32,0.035,32);grid.material.transparent=true;grid.material.opacity=0.22;grid.visible=false;scene.add(grid);
+
+function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();render();}
+function render(){renderer.render(scene,camera);}
+controls.addEventListener('change',render);
+new ResizeObserver(resize).observe(host);
+const VIEWS={aerial:[[92,50,108],[31.5,2,30]],street:[[30,1.62,70],[33,4,30]],front:[[38.5,1.62,36],[31.5,3.2,22]],rear:[[-18,34,-26],[31.5,2,18]],top:[[31.5,118,32.2],[31.5,0,32]]};
+function setView(name){const v=VIEWS[name];camera.position.set(...v[0]);controls.target.set(...v[1]);controls.update();
+  Object.keys(VIEWS).forEach(n=>document.getElementById('v-'+n).setAttribute('aria-pressed',String(n===name)));render();}
+Object.keys(VIEWS).forEach(n=>document.getElementById('v-'+n).addEventListener('click',()=>setView(n)));
+function toggle(id,fn){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',String(on));fn(on);render();});}
+toggle('t-cut',on=>{(GROUPS.roof||[]).forEach(m=>m.visible=!on);});
+toggle('t-grid',on=>{grid.visible=on;});
+toggle('t-canopy',on=>{(GROUPS.canopy||[]).forEach(m=>m.visible=on);});
+setView('aerial');resize();msg.textContent='1 格 = 1 m · 拖动旋转';
+})();
+</script>

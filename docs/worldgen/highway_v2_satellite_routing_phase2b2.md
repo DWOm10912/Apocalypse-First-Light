@@ -1,5 +1,7 @@
 # Highway V2 Phase 2B-2 — Satellite Island Routing
 
+> **2026-10-06 Rural consumer 退役说明：** 下文涉及 Rural 自然候选及其 12 格安全距的内容仅为历史；旧 Rural 不再生成或参与占地裁决。Highway 的注册、Feature、路线、工程、同源 HighwaySpatialClaimProvider 和通用 SpatialClaim 保留原状；本次没有新增城市协调或为旧 Rural 预留区域。详见 [Rural Retirement V1](rural_retirement_v1.md)。
+
 2026-09-22 政策更新：[Fixed Three Satellite Metadata V3](satellite_facility_islands_v3.md) 固定三个slot，三个metadata均为`BRIDGE_REQUIRED`。曾加入的generator初始化Campus/bridge-compatible筛选及required fail-closed异常因游戏崩溃已撤回；routing恢复原入口和失败diagnostic语义。下列旧seed数量/坐标/通过计数仍是version 2历史记录，固定三岛未运行seed测试。
 
 Sea Bridge V1 后续更新：下文 reservation 不产生海桥/claim 的描述是旧阶段边界。现有 Connection 由 [Sea Bridge V1](highway_v2_sea_bridge_v1.md) 消费，生成轴向桥面、桥台与桥墩并提供窄条形 claim。info 当前输出 `seaBridge=SEA_BRIDGE_V1 generationStatus=ENGINEERING_NOT_SAMPLED`（替代 RESERVATION_ONLY），diagnose 增加海桥 dry replay；未改变本文件对应的 routing/bridgehead 算法。

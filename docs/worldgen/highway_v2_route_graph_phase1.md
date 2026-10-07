@@ -1,5 +1,7 @@
 # Highway V2 — Route Graph Phase 1
 
+> **2026-10-06 Rural consumer 退役说明：** 下文涉及 Rural 自然候选及其 12 格安全距的内容仅为历史；旧 Rural 不再生成或参与占地裁决。Highway 的注册、Feature、路线、工程、同源 HighwaySpatialClaimProvider 和通用 SpatialClaim 保留原状；本次没有新增城市协调或为旧 Rural 预留区域。详见 [Rural Retirement V1](rural_retirement_v1.md)。
+
 当前规则见 [Orthogonal Routing V1](highway_v2_orthogonal_routing_v1.md)。当前卫星支线拆为多个轴向edge并发布TURN/junction reservation；原两主干冻结。下方“两岸两个edge/POLYLINE”及Phase1默认仅两edge均为历史阶段描述。
 
 现行覆盖说明：[Phase 2B-2 Satellite Routing](highway_v2_satellite_routing_phase2b2.md) 已在build/forSeed发布卫星连接，仍只有2条NATIONAL_TRUNK；新增STRATEGIC_BRANCH每route包含大陆/岛侧两个edge，海峡仅metadata。下文“默认仅两edge/无支线”为历史阶段状态，原trunk端点/交点/ID/终止算法保持。

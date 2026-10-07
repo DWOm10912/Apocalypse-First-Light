@@ -1,5 +1,11 @@
 # AFL Unified Worldgen Architecture V1
 
+## 2026-10-06 生效修订：旧 Rural 退役
+
+旧 Rural 独立自然生成、八栋旧建筑、配方、目录及专用开发命令已经退出正式路径，见 [Rural Retirement V1](rural_retirement_v1.md)。以下 WG-06/07 状态、旧 StructureSet/Piece 生命周期、旧资产兼容迁移和 backlog 均为历史设计基线，不再要求继续实现或维持旧 Rural。`rural` 未来仅表示场地类型、建筑用途或布局策略，与小镇、中大型城市共享聚落规划、地块、NBT 和入口契约；该新框架本轮尚未实现。
+
+继续保留 MINIMAL_SHARED_CORE、独立 Highway、通用 TerrainQuery/SpatialClaim/StructureDefinition/StructureSocket/StructureTransform/NBT 与区块写入契约。保留的 Rural 算法无正式候选调度入口，不给新城市预留旧 Rural 候选占地。R12/C14/I12、1/16 道路高程、3/16 路缘高差及整数 NBT 地面锚点不因退役改变；新道路任务另行实施。旧开发存档中的 Rural StructureStart/Piece 不再承诺兼容，不将此例外扩展为可修改 Highway 或地堡。
+
 WG-05.1 更新：claim 的 `generationVersion` 为 owner-local；跨系统候选先由 profile 层逐条校验冻结版本，再进入空间裁决，不要求各系统版本字符串相同。已实现的资格入口、UNKNOWN/重复 ID 边界及合成联合回归见 [WG-05.1 实现说明](cross_system_claim_version_arbitration_wg05_1.md)。[Phase 1 Gate 复审](worldgen_phase1_gate_rereview_v1_1.md) 为 `PASS_WITH_NON_BLOCKING_FINDINGS`。WG-06 已冻结 Rural legacy 计划；WG-07/07.1 已发布八资产打包 metadata、保留旧六配方和 24 digest；两份 `_02` 来自用户人工视觉确认，四向游戏 QA 未执行，见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。生产生成器仍未启用跨系统协调。
 
 日期：2026-09-13。状态：**架构设计基线；Phase 1 WG-01～05.1、WG-06 Rural legacy 基线及 WG-07/07.1 八资产 metadata/旧六 recipe 兼容迁移已完成；跨系统协调未启用**。适用基线为 Minecraft 1.20.1 / Forge 47.4.22 / Java 17，包名前缀 `com.antaurora.apofirstlight`。当前有限索引、版本冻结与激活门的实际接口、限制及纯测试见 [WG-05 实现说明](claim_index_profile_gate_wg05.md)。下文保留 Phase 0 原始设计语境，目标接口/迁移计划不代表生产系统已启用；本轮仅做无图形机械/计划测试，客户端四向/in-world 验证未进行。

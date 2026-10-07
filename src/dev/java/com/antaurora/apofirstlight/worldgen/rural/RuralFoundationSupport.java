@@ -36,26 +36,26 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Shared template-derived foundation contract for Natural Rural lots.
+ * Reusable template-derived foundation contract; callers supply the template and anchor.
  *
  * <p>The expensive palette/block scan is deliberately a template-metadata operation. It is
- * performed once per Rural template resource lifecycle and never from the candidate or chunk
+ * performed on demand per template resource lifecycle and never from the candidate or chunk
  * validation hot path. Candidate evaluation only rotates and translates immutable local columns.
- * The cache is bounded by the fixed Rural structure pool and is cleared by server resource reload.
+ * The cache is bounded independently of asset catalogs and cleared by server resource reload.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class RuralFoundationSupport {
-    private static final Set<ResourceLocation> MANAGED_TEMPLATE_IDS = RuralStructurePool.naturalDefinitions().stream()
-            .map(RuralStructurePool.Definition::id)
-            .collect(java.util.stream.Collectors.toUnmodifiableSet());
-    private static final ConcurrentMap<ResourceLocation, TemplateSupportMetadata> TEMPLATE_METADATA =
-            new ConcurrentHashMap<>();
+    private static final int MAX_CACHED_TEMPLATES = 128;
+    private static final Map<ResourceLocation, TemplateSupportMetadata> TEMPLATE_METADATA =
+            new LinkedHashMap<>(16, 0.75F, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<ResourceLocation, TemplateSupportMetadata> eldest) {
+                    return size() > MAX_CACHED_TEMPLATES;
+                }
+            };
 
     private static final AtomicLong SUPPORT_MASK_BUILD_COUNT = new AtomicLong();
     private static final AtomicLong SUPPORT_MASK_BUILD_TOTAL_NANOS = new AtomicLong();
@@ -69,17 +69,14 @@ public final class RuralFoundationSupport {
     private RuralFoundationSupport() {
     }
 
-    /** Returns the cached immutable template-local support metadata for one Rural definition. */
+    /** Returns cached immutable template-local support metadata for a caller-supplied definition. */
     public static TemplateSupportMetadata metadata(RuralStructurePool.Definition definition,
                                                    StructureTemplate template) {
         return metadata(definition.id(), template, definition.groundAnchorOffsetY());
     }
 
-    private static TemplateSupportMetadata metadata(ResourceLocation id, StructureTemplate template,
+    public static synchronized TemplateSupportMetadata metadata(ResourceLocation id, StructureTemplate template,
                                                     int groundAnchorOffsetY) {
-        if (!MANAGED_TEMPLATE_IDS.contains(id)) {
-            throw new IllegalArgumentException("Unsupported Rural foundation template: " + id);
-        }
         TemplateSupportMetadata cached = TEMPLATE_METADATA.get(id);
         if (cached != null) {
             if (cached.groundAnchorOffsetY() != groundAnchorOffsetY) {
@@ -133,8 +130,8 @@ public final class RuralFoundationSupport {
                 result = new Evaluation(mask, false, "FOUNDATION_SUPPORT_INVALID_GROUND", minSurface, maxSurface,
                         maxFill, maxCut, fillBlocks, cutBlocks, invalidColumns);
             } else {
-                boolean withinBudget = maxFill <= RuralGenerator.MAX_LOT_CORRECTION
-                        && maxCut <= RuralGenerator.MAX_LOT_CORRECTION;
+                boolean withinBudget = maxFill <= RuralTerrainAdapter.MAX_LOT_CORRECTION
+                        && maxCut <= RuralTerrainAdapter.MAX_LOT_CORRECTION;
                 result = new Evaluation(mask, withinBudget,
                         withinBudget ? "OK" : "FOUNDATION_SUPPORT_EXCEEDS_BUDGET",
                         minSurface, maxSurface, maxFill, maxCut, fillBlocks, cutBlocks, 0);
@@ -225,9 +222,9 @@ public final class RuralFoundationSupport {
 
             @Override
             protected void apply(Void ignored, ResourceManager resourceManager, ProfilerFiller profiler) {
-                TEMPLATE_METADATA.clear();
-                ApocalypseFirstLight.LOGGER.debug("[AFL RURAL NATURAL][FOUNDATION_SUPPORT_CACHE_CLEAR] templates={}",
-                        MANAGED_TEMPLATE_IDS.size());
+                synchronized (RuralFoundationSupport.class) {
+                    TEMPLATE_METADATA.clear();
+                }
             }
         });
     }

@@ -14,6 +14,10 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 
 /** Small per-lot terrain preparation. It never flattens the reservation envelope. */
 public final class RuralTerrainAdapter {
+    public static final int MAX_LOT_CORRECTION = 3;
+    private static final int MAX_LOT_FILL_DEPTH = 3;
+    private static final int CLEARANCE_MARGIN = 1;
+    private static final int CLEARANCE_TOP_MARGIN = 1;
     private RuralTerrainAdapter() {
     }
 
@@ -29,7 +33,7 @@ public final class RuralTerrainAdapter {
                 if (!sample.valid() || sample.water()) continue;
                 int surfaceY = sample.surfaceY();
                 int fillDepth = lot.baseY() - surfaceY;
-                if (fillDepth > 0 && fillDepth <= RuralGenerator.MAX_LOT_FILL_DEPTH) {
+                if (fillDepth > 0 && fillDepth <= MAX_LOT_FILL_DEPTH) {
                     for (int y = surfaceY; y < lot.baseY(); y++) {
                         level.setBlock(new BlockPos(x, y, z), Blocks.DIRT.defaultBlockState(), 3);
                         changed++;
@@ -38,11 +42,11 @@ public final class RuralTerrainAdapter {
             }
         }
 
-        BoundingBox clearance = new BoundingBox(box.minX() - RuralGenerator.CLEARANCE_MARGIN,
-                lot.baseY(), box.minZ() - RuralGenerator.CLEARANCE_MARGIN,
-                box.maxX() + RuralGenerator.CLEARANCE_MARGIN,
-                box.maxY() + RuralGenerator.CLEARANCE_TOP_MARGIN,
-                box.maxZ() + RuralGenerator.CLEARANCE_MARGIN);
+        BoundingBox clearance = new BoundingBox(box.minX() - CLEARANCE_MARGIN,
+                lot.baseY(), box.minZ() - CLEARANCE_MARGIN,
+                box.maxX() + CLEARANCE_MARGIN,
+                box.maxY() + CLEARANCE_TOP_MARGIN,
+                box.maxZ() + CLEARANCE_MARGIN);
         for (int x = clearance.minX(); x <= clearance.maxX(); x++) {
             for (int z = clearance.minZ(); z <= clearance.maxZ(); z++) {
                 for (int y = clearance.minY(); y <= clearance.maxY(); y++) {
@@ -62,7 +66,7 @@ public final class RuralTerrainAdapter {
     }
 
     /**
-     * Chunk-safe variant used by the native StructurePiece path. Every read and write is
+     * Retained chunk-safe variant for an explicitly supplied structure plan. Every read and write is
      * bounded by the current generation chunk box; it never requests another chunk.
      */
     public static PreparationResult prepare(WorldGenLevel level, RuralPlan.Lot lot, BoundingBox chunkBox) {
@@ -80,11 +84,11 @@ public final class RuralTerrainAdapter {
 
         applyBlendRing(level, lot, chunkBox, stats);
 
-        BoundingBox clearance = new BoundingBox(box.minX() - RuralGenerator.CLEARANCE_MARGIN,
-                lot.baseY(), box.minZ() - RuralGenerator.CLEARANCE_MARGIN,
-                box.maxX() + RuralGenerator.CLEARANCE_MARGIN,
-                box.maxY() + RuralGenerator.CLEARANCE_TOP_MARGIN,
-                box.maxZ() + RuralGenerator.CLEARANCE_MARGIN);
+        BoundingBox clearance = new BoundingBox(box.minX() - CLEARANCE_MARGIN,
+                lot.baseY(), box.minZ() - CLEARANCE_MARGIN,
+                box.maxX() + CLEARANCE_MARGIN,
+                box.maxY() + CLEARANCE_TOP_MARGIN,
+                box.maxZ() + CLEARANCE_MARGIN);
         for (int x = clearance.minX(); x <= clearance.maxX(); x++) {
             for (int z = clearance.minZ(); z <= clearance.maxZ(); z++) {
                 for (int y = clearance.minY(); y <= clearance.maxY(); y++) {
@@ -104,7 +108,7 @@ public final class RuralTerrainAdapter {
     }
 
     /**
-     * Natural StructurePiece entry point. Ordinary lot preparation remains the
+     * Retained template-support overload. Ordinary lot preparation remains the
      * bounded superset operation; this overload applies only the template-derived
      * support columns that fall inside the current generation chunk.
      */
@@ -139,7 +143,7 @@ public final class RuralTerrainAdapter {
         }
         if (excessiveColumns > 0) {
             ApocalypseFirstLight.LOGGER.warn(
-                    "[AFL RURAL NATURAL][FOUNDATION_SUPPORT_EXTENSION_EXCEEDED] structure={} origin={} columns={} maxDepth={}",
+                    "[AFL FOUNDATION][FOUNDATION_SUPPORT_EXTENSION_EXCEEDED] structure={} origin={} columns={} maxDepth={}",
                     lot.structure().id(), lot.origin(), excessiveColumns, 6);
         }
         return result;
@@ -163,7 +167,7 @@ public final class RuralTerrainAdapter {
                 RuralTerrainSampler.Sample sample = RuralTerrainSampler.sample(level, x, z);
                 if (!sample.valid() || sample.water()) continue;
                 int difference = sample.surfaceY() - lot.baseY();
-                if (Math.abs(difference) > RuralGenerator.MAX_LOT_CORRECTION) continue;
+                if (Math.abs(difference) > MAX_LOT_CORRECTION) continue;
                 int targetY = lot.baseY() + Math.round(difference * (distance / 3.0F));
                 adjustColumn(level, x, z, sample.surfaceY(), targetY, chunkBox, true, stats);
             }
@@ -179,8 +183,8 @@ public final class RuralTerrainAdapter {
     private static void adjustColumn(WorldGenLevel level, int x, int z, int surfaceY, int targetY,
                                      BoundingBox chunkBox, boolean blend, PreparationStats stats) {
         int difference = targetY - surfaceY;
-        if (difference > RuralGenerator.MAX_LOT_CORRECTION
-                || difference < -RuralGenerator.MAX_LOT_CORRECTION) return;
+        if (difference > MAX_LOT_CORRECTION
+                || difference < -MAX_LOT_CORRECTION) return;
         if (difference > 0) {
             stats.fillBlocks += difference;
             stats.maxFillDepth = Math.max(stats.maxFillDepth, difference);

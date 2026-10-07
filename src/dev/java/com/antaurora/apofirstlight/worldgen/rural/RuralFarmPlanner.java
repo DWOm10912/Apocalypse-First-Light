@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Deterministic, optional farm-plot planner. It never mutates the world. */
+/** Inactive, explicitly invoked farm-plot algorithm using caller-supplied roles, never retired assets. */
 public final class RuralFarmPlanner {
+    public static final int MAX_CANDIDATES = 32;
     public static final int MIN_PLOTS = 1;
     public static final int MAX_PLOTS = 3;
     public static final int MAX_RELIEF = 3;
@@ -61,10 +62,10 @@ public final class RuralFarmPlanner {
         int target = minPlots + (int) Math.floorMod(seed ^ center.asLong() ^ FARM_SALT,
                 (long) (maxPlots - minPlots + 1));
         List<RuralPlan.Lot> owners = new ArrayList<>(lots.stream()
-                .filter(lot -> lot.structure() == RuralStructurePool.FARMHOUSE
-                        || lot.structure() == RuralStructurePool.BARN)
+                .filter(lot -> lot.structure().role() == RuralStructurePool.Role.FARMHOUSE
+                        || lot.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE)
                 .toList());
-        owners.sort(Comparator.comparingInt(lot -> lot.structure() == RuralStructurePool.FARMHOUSE ? 0 : 1));
+        owners.sort(Comparator.comparingInt(lot -> lot.structure().role() == RuralStructurePool.Role.FARMHOUSE ? 0 : 1));
 
         List<RuralFarmPlot> plots = new ArrayList<>();
         List<String> rejections = new ArrayList<>();
@@ -77,7 +78,7 @@ public final class RuralFarmPlanner {
                     ^ (long) (plots.size() + 1) * 0x9E3779B97F4A7C15L);
             for (Candidate candidate : (bounded
                     ? ownerCandidatesBounded(owner, reservation, random) : ownerCandidates(owner, reservation, random))) {
-                if (bounded && attempt >= RuralGenerator.MAX_NATURAL_FARM_CANDIDATES) break;
+                if (bounded && attempt >= MAX_CANDIDATES) break;
                 Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
                         owner, candidate, plots.size(), random, bounded);
                 attempt++;
@@ -99,7 +100,7 @@ public final class RuralFarmPlanner {
             for (Candidate candidate : (bounded
                     ? fallbackCandidatesBounded(reservation, fallbackRandom) : fallbackCandidates(reservation, fallbackRandom))) {
                 if (plots.size() >= target) break;
-                if (bounded && attempt >= RuralGenerator.MAX_NATURAL_FARM_CANDIDATES) break;
+                if (bounded && attempt >= MAX_CANDIDATES) break;
                 RuralPlan.Lot owner = nearestOwner(fallbackOwners, candidate);
                     Validation validation = validate(terrain, center, reservation, roads, lots, occupiedPlotCells,
                             owner, candidate, plots.size(), fallbackRandom, bounded);
@@ -121,10 +122,10 @@ public final class RuralFarmPlanner {
         List<Candidate> result = new ArrayList<>();
         Direction back = owner.roadFacing().getOpposite();
         Direction side = back.getClockWise();
-        int minWidth = owner.structure() == RuralStructurePool.BARN ? 12 : 7;
-        int maxWidth = owner.structure() == RuralStructurePool.BARN ? 19 : 11;
-        int minDepth = owner.structure() == RuralStructurePool.BARN ? 14 : 8;
-        int maxDepth = owner.structure() == RuralStructurePool.BARN ? 22 : 13;
+        int minWidth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 12 : 7;
+        int maxWidth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 19 : 11;
+        int minDepth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 14 : 8;
+        int maxDepth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 22 : 13;
         for (Direction direction : new Direction[]{back, side, side.getOpposite()}) {
             for (int distance : new int[]{7, 15, 23, 31}) {
                 int width = between(random, minWidth, maxWidth);
@@ -137,7 +138,7 @@ public final class RuralFarmPlanner {
                 int x = owner.bounds().getCenter().getX() + direction.getStepX() * distance;
                 int z = owner.bounds().getCenter().getZ() + direction.getStepZ() * distance;
                 result.add(new Candidate(x - width / 2, z - depth / 2, width, depth,
-                        shape(random, owner.structure() == RuralStructurePool.BARN), owner.structure().id().toString()));
+                        shape(random, owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE), owner.structure().id().toString()));
             }
         }
         return result;
@@ -150,10 +151,10 @@ public final class RuralFarmPlanner {
         Direction sideA = back.getClockWise();
         Direction sideB = back.getCounterClockWise();
         Direction[] directions = {back, sideA, sideB};
-        int minWidth = owner.structure() == RuralStructurePool.BARN ? 12 : 7;
-        int maxWidth = owner.structure() == RuralStructurePool.BARN ? 19 : 11;
-        int minDepth = owner.structure() == RuralStructurePool.BARN ? 14 : 8;
-        int maxDepth = owner.structure() == RuralStructurePool.BARN ? 22 : 13;
+        int minWidth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 12 : 7;
+        int maxWidth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 19 : 11;
+        int minDepth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 14 : 8;
+        int maxDepth = owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE ? 22 : 13;
         for (int directionIndex = 0; directionIndex < directions.length; directionIndex++) {
             Direction direction = directions[directionIndex];
             Direction lateral = direction.getClockWise();
@@ -171,7 +172,7 @@ public final class RuralFarmPlanner {
                     int z = owner.bounds().getCenter().getZ() + direction.getStepZ() * distance
                             + lateral.getStepZ() * offset;
                     result.add(new Candidate(x - width / 2, z - depth / 2, width, depth,
-                            shape(random, owner.structure() == RuralStructurePool.BARN),
+                            shape(random, owner.structure().role() == RuralStructurePool.Role.AGRICULTURAL_LARGE),
                             owner.structure().id().toString()));
                 }
             }

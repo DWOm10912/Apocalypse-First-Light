@@ -1,5 +1,7 @@
 # Highway ↔ Rural Spatial Conflict V1
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 现行覆盖说明：[Phase 2B-2 Satellite Routing](highway_v2_satellite_routing_phase2b2.md) 的真实两岸STRATEGIC_BRANCH已进入同源claim consumer，分别使用有限geometry bounds。海峡reservation不进入edge列表，不建立海上道路claim；优先级、Rural12格安全距及裁决算法不变。下文“默认无支线/只有两edge”为历史记录。
 
 Phase 2B-1补充：可选POLYLINE edge的query使用有限patch包络，claim仍是edge.bounds(32)保守整体AABB，可能覆盖转弯内侧空地；实际施工只消费ribbon，不清除整个claim。默认两条主干及Rural冲突算法/优先级/安全距不变。详见[Diagonal Geometry V1](highway_v2_diagonal_geometry_v1.md)。

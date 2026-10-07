@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.worldgen.rural;
 
 import com.antaurora.apofirstlight.worldgen.structure.StructureTransform;
+import com.antaurora.apofirstlight.worldgen.structure.StructureSocket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Rotation;
@@ -10,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** Road-derived candidate geometry only; terrain acceptance remains with the natural planner. */
+/** Inactive road-derived candidate algorithm with explicit asset inputs and no bundled catalog. */
 public final class RuralFrontagePlanner {
     private static final int FRONTAGE_STEP = 6;
     private static final int MIN_SETBACK = 3;
@@ -40,7 +41,7 @@ public final class RuralFrontagePlanner {
     }
 
     public static List<Placement> placements(List<Frontage> frontages, StructureTemplate template,
-            RuralStructurePool.Definition definition, BoundingBox reservation) {
+            RuralStructurePool.Definition definition, List<StructureSocket> sockets, BoundingBox reservation) {
         List<Placement> result = new ArrayList<>();
         var ordered = new ArrayList<>(frontages);
         ordered.sort(Comparator.comparingInt(f -> preference(definition.role(), f.road().type())));
@@ -58,7 +59,7 @@ public final class RuralFrontagePlanner {
             BlockPos origin = front.subtract(localFront);
             BoundingBox bounds = RuralLayoutPlanner.boundsAt(template, rotation, origin);
             if (!RuralAccessPlanner.inside(bounds, reservation) || !fitsFrontage(bounds, f.road())) continue;
-            Entry entry = entry(template, definition, rotation, origin, bounds, f.facing());
+            Entry entry = entry(template, sockets, rotation, origin, bounds, f.facing());
             BlockPos accessStart = entry.position().relative(entry.facing(), RuralRoadType.FARM_TRACK.radius() + 1);
             BlockPos connection = f.road().nearest(accessStart.getX(), accessStart.getZ())
                     .relative(outward, f.road().type().width / 2 + f.road().type().shoulder);
@@ -78,10 +79,9 @@ public final class RuralFrontagePlanner {
     }
 
     private record Entry(BlockPos position, Direction facing) {}
-    private static Entry entry(StructureTemplate template, RuralStructurePool.Definition definition,
+    private static Entry entry(StructureTemplate template, List<StructureSocket> sockets,
             Rotation rotation, BlockPos origin, BoundingBox bounds, Direction fallbackFacing) {
-        var metadata = RuralStructurePool.catalog().metadata(definition.id());
-        if (metadata != null) for (var socket : metadata.sockets()) {
+        for (var socket : sockets) {
             BlockPos p = socket.localPosition();
             var size = template.getSize();
             if (p.getX() < 0 || p.getX() >= size.getX() || p.getY() < 0 || p.getY() >= size.getY()

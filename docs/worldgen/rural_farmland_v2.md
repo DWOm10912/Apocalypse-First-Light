@@ -1,5 +1,7 @@
 # Rural Farmland V2 / Agricultural Lot V1
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 状态：新自然生成计划已接入，`compileJava --offline --console=plain` 成功。无资源修改，未运行 processResources。未运行客户端、GameTest、多 seed worldgen、性能测试或视觉测试；自然接受率、入口通行、围栏跨 chunk 外观和保存重进由用户验收。
 
 ## 入口和职责

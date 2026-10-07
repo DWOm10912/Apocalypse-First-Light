@@ -1,5 +1,7 @@
 # Rural Structure Asset Scan — WG-03
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 日期：2026-09-13。**WG-03 时点的只读机械扫描事实清单**；此页表格保留当时“无生成器迁移、无正式 metadata、无游戏 QA”的快照。WG-07/07.1 随后发布八资产 metadata 与七个 socket；`_02` 来自用户人工视觉确认，四向游戏 QA 尚未执行，见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。
 
 当前 `RuralAssetScanTest` 会从已发布 metadata 报告八份的 front/anchor，同时独立标明 Legacy pool 身份；下表的 `_02` `UNDEFINED_PENDING_METADATA` 是 WG-03 原始时点的审查快照，不是当前测试输出。

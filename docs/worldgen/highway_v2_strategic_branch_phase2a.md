@@ -1,5 +1,7 @@
 # Highway V2 Phase 2A — Strategic Branch Framework
 
+> **2026-10-06 Rural consumer 退役说明：** 下文涉及 Rural 自然候选及其 12 格安全距的内容仅为历史；旧 Rural 不再生成或参与占地裁决。Highway 的注册、Feature、路线、工程、同源 HighwaySpatialClaimProvider 和通用 SpatialClaim 保留原状；本次没有新增城市协调或为旧 Rural 预留区域。详见 [Rural Retirement V1](rural_retirement_v1.md)。
+
 当前正式路由见 [Orthogonal Strategic Branch Routing V1](highway_v2_orthogonal_routing_v1.md)：默认卫星支线发布多个 N/E/S/W edge，显式 TURN，以及硬基础设施 TURN_RESERVED_ZONE / JUNCTION_RAMP_ZONE claims。预留区不铺转角或匝道模块；原两条 National Trunk 不变。下文旧阶段的默认图数量、无实际支线和几何 defer 状态仅为历史记录。
 
 现行覆盖说明：[Phase 2B-2 Satellite Routing](highway_v2_satellite_routing_phase2b2.md) 已成为第一个真实consumer；默认图发布合法卫星支线和两岸edge，route现在按routeId分组，允许多edge。下文“无实际支线/未接Satellite/每route一edge”为旧阶段历史状态。ParentAttachment语义、原两主干不变，Sea Bridge仍仅预留metadata。

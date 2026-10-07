@@ -43,6 +43,6 @@ MultiNoise 保留候选表过滤，移除用于正确性的 trace set/read/clear
 | PCL packaged jar / 2145963260012717079 | PASS | PASS | 01:17:30 六核心audit PASS，第1候选成功；首登传送至(27,69,-9)，用户确认正常；该次 Shader OFF 状态未由日志单独确认 |
 | 同存档退出重进 | 进行中 | 进行中 | 自动测试覆盖持久化 roundtrip、幂等 ensure 和安全落点存在，正常服务器重启补测见 restart.log |
 
-日志 `build/startup-regression-repro.log`；fixture `src/dev/StartupRegressionProbe` 实际位于 `src/dev/java/com/antaurora/apofirstlight/dev/StartupRegressionProbe.java`，由 `src/dev/startup-regression-server.init.gradle` 启动真实 normal-world server，不是 flat GameTest。复现日志可见 Rural natural generation 仍执行，但未完成全部聚落重复/选址及 aquifer A/B 验收。
+日志 `build/startup-regression-repro.log`；fixture `src/dev/StartupRegressionProbe` 实际位于 `src/dev/java/com/antaurora/apofirstlight/dev/StartupRegressionProbe.java`，由 `src/dev/startup-regression-server.init.gradle` 启动真实 normal-world server，不是 flat GameTest。该历史复现日志曾显示 Rural natural generation 执行，但未完成全部聚落重复/选址及 aquifer A/B 验收。2026-10-06 [Rural 退役](rural_retirement_v1.md) 后不再执行旧 Rural；地堡 `apocalypse_firstlight:bunker` 模板、启动事件、SavedData 与玩家出生路径保留原状，本次未重跑地堡实机验收。
 
 边界：开发环境验证用真实 normal-world dedicated server，而非 runClient；启动器 packaged jar 已有2个随机新世界通过，不能把另3个 dev server随机seed算作3个启动器seed。fallback在正常样本中未触发，未完成强制故障注入验收。完整水体/聚落回归、明确 Shader OFF 对照和第三个启动器随机seed仍未独立验收。

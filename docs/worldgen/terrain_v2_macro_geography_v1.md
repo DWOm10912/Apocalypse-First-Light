@@ -164,11 +164,11 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 - Deep Dark从候选过滤，最终resolver回退Fallout，关闭自然Deep Dark/sculk来源；Ancient City仍禁用。Lush/Dripstone保留原地下判据：水域海床深度>12，陆地上方12格initial density>0.390625。
 - Scorched biome/key/JSON/surface rule删除。两个方块scorched_soil/fused_ground完整保留，未来用于灾害外围与爆心/弹坑，Damage系统未实现。
 - Scorched→EXTREME和Scorched→WHITE_ASH的biome绑定删除；Fallout/Plains当前辐射规则保持，海洋/Beach仍为UNKNOWN而非自动SAFE；WHITE_ASH能力保留。
-- Rural原允许Plains/Fallout，原Scorched土地转Fallout而扩大资格是允许变化。
+- 历史 Rural 曾允许 Plains/Fallout；2026-10-06 旧 Rural 独立自然生成与其 biome tag 已退役，旧资格扩大的说明不再对应现行候选。
 
 ### Worldgen Hygiene Fix：结构权限与地表熔岩湖
 
-data/minecraft/tags/worldgen/biome/has_structure中shipwreck、shipwreck_beached、ocean_ruin_cold、ocean_ruin_warm、buried_treasure继续由空tag禁用；既有Ocean Monument、Ancient City及stronghold禁用保持。AFL Rural自有tag不变。
+data/minecraft/tags/worldgen/biome/has_structure中shipwreck、shipwreck_beached、ocean_ruin_cold、ocean_ruin_warm、buried_treasure继续由空tag禁用；既有Ocean Monument、Ancient City及stronghold禁用保持。AFL Rural 自有 tag 已在 2026-10-06 退役任务中删除；原版结构 tag 未随该清理改变。
 
 data/apocalypse_firstlight/tags/worldgen/biome/surface_lava_suppression.json现在列Plains、Beach、Ocean、Deep Ocean、Fallout，删除Scorched项。forge/biome_modifier/remove_surface_lava_lakes.json仍仅移除lakes步骤的minecraft:lake_lava_surface；地下熔岩湖、spring_lava、lava aquifer及其他规则保持。
 
@@ -184,7 +184,7 @@ compileJava、processResources通过；单seed -4332662446239654818的401项小�
 
 ## Rural / Highway边界
 
-只在 `RuralNaturalStructure.findGenerationPoint` 的入口，对既有完整reservation做16格间距的有界解析探针；要求MAINLAND并且coastDistance至少128格。没有修改Rural planner、道路、building/lot、农业地块、模板或阈值。已有Piece与开发命令不回溯执行此新gate；第三方将Rural移植到别的noise settings不启用这个macro gate。
+2026-10-06：旧 `RuralNaturalStructure` 和自然候选入口已退役，详见 [Rural Retirement V1](rural_retirement_v1.md)。历史 MAINLAND/离岸 128 格/16 格间距 reservation 检查不再参与任何旧 Rural 自然生成。`MacroGeography.allowsRural` 仍作为冻结 MacroGeography 源码的一部分保留，但已无旧 Rural 候选调用者；它不是活跃注册、占地 provider 或新城市依赖。Highway、主岛/卫星岛、地形噪声和群系规则均未因本次退役改变。
 
 历史边界：Terrain V2 本轮未改 Highway。后续 [Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 已替换旧无限走廊/整列预留：renderer 与 claim 共用两条有限主干，在宏观海岸前终止，不再批准 OPEN_OCEAN 路线。Sea Bridge/附属岛支线仍未实现；此次仅 Highway 路由更新，Macro Geography topology 未改。
 

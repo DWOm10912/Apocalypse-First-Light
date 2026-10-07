@@ -114,16 +114,6 @@ minecraft {
         // This run config launches GameTestServer and runs all registered gametests, then exits.
         gameTestServer {
             property 'forge.enabledGameTestNamespaces', mod_id
-
-            if (project.hasProperty('wg06Capture') || project.hasProperty('wg06Verify')) {
-                property 'forge.enabledGameTestNamespaces', 'wg06_rural_baseline'
-                property 'wg06.fixture',
-                        project.file('src/test/resources/worldgen/rural/legacy_regression_v1.tsv').absolutePath
-
-                if (project.hasProperty('wg06Capture')) {
-                    property 'wg06.capture', 'true'
-                }
-            }
         }
 
         data {
@@ -409,14 +399,4 @@ tasks.register('terrainContractTest', JavaExec) {
 
 tasks.named('check') {
     dependsOn tasks.named('terrainContractTest')
-}
-
-tasks.register('ruralMetadataTest', JavaExec) {
-    dependsOn tasks.named('testClasses')
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'com.antaurora.apofirstlight.worldgen.structure.RuralMetadataMigrationTest'
-}
-
-tasks.named('check') {
-    dependsOn tasks.named('ruralMetadataTest')
 }

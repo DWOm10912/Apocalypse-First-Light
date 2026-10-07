@@ -1,5 +1,9 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-06 决策覆盖：退役旧 Rural 独立系统
+
+[Rural Retirement V1](rural_retirement_v1.md) 已取代下文继续迁移/维护旧 Rural 的计划。ADR-01 的 Site/Infrastructure 分层仍有效，但 Site 不再指旧 Rural 注册链；未来乡村、小镇和城市共享统一聚落框架。ADR-07 不再要求旧八建筑或 legacy digest 回归，通用几何/入口/占地测试仍保留。ADR-11 对旧 Rural 开发存档的兼容要求在本次 Early Alpha 清理中明确放弃；其他系统的版本、资源快照和旧世界约束不因此取消。Highway 独立保留；地堡保持独立启动事件和 NBT 模板放置路径。下文为 Phase 0 历史决策记录，不代表旧 Rural 仍在正式运行。
+
 日期：2026-09-13。ADR 正文保留 **Phase 0 原始设计基线**；目前 Phase 1 WG-01～05.1 已完成无接入基础实现，WG-06 已冻结 Rural legacy 计划，WG-07/07.1 已发布八资产打包 metadata、旧六配方仍不变；跨系统协调及四向游戏 QA 未启用/未执行。事实来源：[Rural Audit](rural_generator_audit_v1.md)、[Highway Audit](highway_generator_audit_v1.md)；规范细节与阶段见 [Architecture V1](unified_worldgen_architecture_v1.md)，当前迁移边界见 [WG-07 说明](rural_metadata_recipe_migration_wg07.md)。以下目标不能解读为已有生产 provider、SavedData 或旧世界迁移。
 
 ## ADR-01 — 保留双生命周期

@@ -1,5 +1,7 @@
 # WG-07 Rural Metadata / Socket / Legacy Recipe Migration V1
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 后续现行行为：见 [Rural Road Framework V1 Core](rural_road_framework_v1.md) 与 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。自然八资产（原六资产加 `rural_farmhouse_02`、`rural_house_small_02`）按 frontage 放置并优先消费合法 metadata socket（缺失时 midpoint fallback）。Legacy 配方仍只有六资产，开发命令仍走旧六资产/midpoint 路径。本页以下 WG-07/07.1 的迁移状态、构建结果和验收结论均为历史记录，不代表当前自然池边界；两栋 `_02` 的自然生成实机与四向入口通行尚未验收。
 
 日期：2026-09-13。WG-07.1 收尾状态：**八资产 metadata 已完成，Legacy 六资产配方不变**。两份 `_02` 的 front/anchor/socket 来自用户人工视觉 QA 确认，本轮完成机械验证；八资产四向游戏内摆放 QA 仍未执行。WG-07.1 不是 Rural V2。

@@ -1,5 +1,7 @@
 # Rural Generator Audit V1（2026-09-13，静态只读）
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 现行档位更新：见 [Scale / Tier Tuning V1](rural_scale_tier_tuning_v1.md)。本历史审计中的40/30/22/8权重、Cluster 4–6和Full 6–8目标、Full必须达到随机目标及旧9次锚点预算，均不代表当前自然路径；现为25/30/30/15、目标6–8/9–12、Full有效最低8、Cluster/Full每规格18次。StructureSet频率未改，实机接受率待验。
 
 建筑现行更新：自然八资产（原六资产加 `rural_farmhouse_02`、`rural_house_small_02`）已接入 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)。下文六资产、固定中心 offset、midpoint-only、自然无 frontage 驱动的结论为历史快照；自然入口优先合法 socket，联合检查 building/access 并保存 V2 anchor。开发命令仍沿用旧六资产规划，农田仍 Legacy，tier/spacing/biome 未改。新变体接入仅编译通过，实机待验。

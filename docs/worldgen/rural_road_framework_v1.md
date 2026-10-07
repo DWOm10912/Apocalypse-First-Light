@@ -1,5 +1,7 @@
 # Rural Road Framework V1 Core
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 自然候选更新：已接入 [Highway ↔ Rural Spatial Conflict V1](highway_rural_spatial_conflict_v1.md)。完整 reservation 在地形/建筑规划前避让 Highway ±32 格硬包络及 12 格安全间距，冲突即拒绝。道路几何、tier/spacing/biome、建筑农田不变；旧 Piece/已生成区域不回溯。仅编译通过，实机待验。
 
 状态：道路已接入自然生成与 `/afl rural` 开发命令。自然建筑已迁移到 [Building / Lot Planning V2](rural_building_lot_planning_v2.md)，新自然农田已接入 [Farmland V2 / Agricultural Lot V1](rural_farmland_v2.md)，优先消费 FARM_TRACK、其次 SIDE frontage；开发命令和旧 Piece 农田仍为 Legacy。Farmland V2 仅完成 compileJava，实机生成、接受率、存档往返和视觉验收待用户测试。

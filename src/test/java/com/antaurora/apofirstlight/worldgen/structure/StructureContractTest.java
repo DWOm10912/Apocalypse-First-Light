@@ -284,6 +284,5 @@ public final class StructureContractTest {
         } catch(java.io.IOException error) { throw new AssertionError(error); }
         values(); sockets(); transforms(); loader(); nbt(); legacyMapping();
         System.out.println("PASS WG-03 structure checks="+checks+"; GAME_QA=NOT_PERFORMED");
-        RuralAssetScanTest.main(args);
     }
 }

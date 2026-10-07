@@ -3,29 +3,14 @@ package com.antaurora.apofirstlight.worldgen.rural;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.List;
-
-/** Compatibility identity view of the ordered bundled Legacy V1 recipe and WG-03 metadata. */
+/**
+ * Asset-independent input types retained for the inactive frontage and terrain algorithms.
+ * There is no bundled pool, recipe, static resource load, or natural-generation entry point.
+ * Future callers must supply their own definitions explicitly.
+ */
 public final class RuralStructurePool {
-    private static final RuralStructureCatalog CATALOG = RuralStructureCatalog.loadBundled();
-    public static final Definition FARMHOUSE = CATALOG.legacyDefinitions().get(0);
-    public static final Definition BARN = CATALOG.legacyDefinitions().get(1);
-
     private RuralStructurePool() {
     }
-
-    public static List<Definition> definitions() {
-        return CATALOG.legacyDefinitions();
-    }
-
-    /** Eight natural assets; definitions() retains the six-entry development-command recipe. */
-    public static List<Definition> naturalDefinitions() { return CATALOG.naturalDefinitions(); }
-
-    public static Definition definition(ResourceLocation id) {
-        return CATALOG.legacyDefinition(id);
-    }
-
-    public static RuralStructureCatalog catalog() { return CATALOG; }
 
     public enum Role {
         RESIDENTIAL,
@@ -36,7 +21,7 @@ public final class RuralStructurePool {
         FLEX
     }
 
-    public record Definition(ResourceLocation id, int weight, int maxCount, Direction frontDirection,
+    public record Definition(ResourceLocation id, Direction frontDirection,
                              Role role, int groundAnchorOffsetY) {
     }
 }

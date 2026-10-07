@@ -1,5 +1,7 @@
 # Rural Scale / Tier Tuning V1
 
+> **2026-10-06：旧 Rural 已退役，本文仅为历史记录。** 自然生成注册/候选入口、八栋旧 Rural NBT 与 metadata、legacy 配方及专用开发命令已退出正式路径；本文中的资产清单、spacing/权重、命令、旧编译/测试结果和下一阶段建议均不代表当前行为，不应继续执行旧验收命令。通用 NBT/旋转/socket/claim 能力及可复用算法保留，当前边界见 [Rural Retirement V1](rural_retirement_v1.md)。本次退役未做实机验证。
+
 状态：自然生成档位参数与小范围搜索预算已实现；`compileJava` 离线通过。尚未运行世界生成、客户端、GameTest、接受率或视觉验收。
 
 ## 档位与有效规模

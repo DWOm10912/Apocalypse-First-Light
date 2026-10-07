@@ -9,7 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-/** Bounded, read-only road-frontage planner for new natural Agricultural Lot V1 plans. */
+/** Inactive, bounded agricultural frontage algorithm; it has no natural-generation entry point. */
 public final class RuralFarmlandPlanner {
     private static final int[][] SIZES = {{10, 14}, {12, 16}, {14, 18}, {16, 22}, {18, 24}, {20, 28}};
     private RuralFarmlandPlanner() { }
@@ -46,7 +46,7 @@ public final class RuralFarmlandPlanner {
                         .relative(outward, frontage.road().type().radius());
                 List<BlockPos> access = access(gate, connection, frontage.facing(), 0, 0);
                 if (!free(bounds, access, frontage.road(), reservation, roads, buildings, accepted)) continue;
-                if (attempts >= RuralGenerator.MAX_NATURAL_FARM_CANDIDATES) break search;
+                if (attempts >= RuralFarmPlanner.MAX_CANDIDATES) break search;
                 attempts++;
                 Integer baseY = ground(terrain, bounds, gate);
                 var roadGround = terrain.sample(connection.getX(), connection.getZ());
