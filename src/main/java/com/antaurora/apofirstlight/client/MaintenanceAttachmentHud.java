@@ -6,8 +6,17 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import com.antaurora.apofirstlight.client.ui.AflItemStrip;
+import com.antaurora.apofirstlight.client.ui.AflUiDraw;
+import com.antaurora.apofirstlight.client.ui.AflUiStyle;
+import com.antaurora.apofirstlight.client.ui.AflUiTween;
 
-/** Small overlay state machine; no container slots or local attachment mutations. */
+/**
+ * Small overlay state machine; no container slots or local attachment mutations. Drawn in the overlay style
+ * (docs/ui/afl_overlay_ui_style_v1.md): hover labels (AttachmentHintStyle), the slot's context panel (fades in and rises
+ * 3 GUI px over 120 ms), rounded buttons, and the candidate row as an AflItemStrip (cells stagger in, the hovered
+ * candidate lifts, the amber pill follows it).
+ */
 public final class MaintenanceAttachmentHud {
     private final net.minecraft.client.gui.screens.Screen screen;
     private final AttachmentHudHost host;
@@ -15,7 +24,11 @@ public final class MaintenanceAttachmentHud {
     private NativeAttachment.Slot locked,hovered;
     private ItemStack expected=ItemStack.EMPTY;
     private long revision,last=System.nanoTime(),noticeUntil;
-    private float fade,pageFade;
+    private float fade;
+    private final AflItemStrip candidates=new AflItemStrip();
+    private NativeAttachment.Slot panelFor;
+    private long panelAt;
+    private boolean wasSelecting;
     private boolean selection,pending;
     private int hx,hy;
     private int pressed=-1;
@@ -43,6 +56,10 @@ public final class MaintenanceAttachmentHud {
     private Component title(NativeAttachment.Slot slot){return text(switch(slot){case SIGHT->"sight";case MUZZLE->"muzzle";case MAGAZINE->"magazine";});}
     private Component installed(NativeAttachment.Slot slot){var item=NativeAttachments.stored(gun(),slot);return item.isEmpty()?text("none"):item.getHoverName();}
     public boolean selecting(){return selection;}
+    /** The attachment slot hotspot under the mouse, or null (key hints). */
+    public NativeAttachment.Slot hotspotAt(double x,double y){return hit(x,y);}
+    /** Candidates on more than one page (key hints show paging). */
+    public boolean paged(){return page.candidates.size()>AttachmentCandidatePage.PAGE_SIZE;}
     /** Maintenance viewport input must yield to modal candidates, transactions and context panels. */
     public boolean blocksInspection(double x,double y){
         return inspectionModal()||(locked!=null&&inside(x,y,hx,hy,140,65))||hit(x,y)!=null;
@@ -67,7 +84,6 @@ public final class MaintenanceAttachmentHud {
         var current=hit(mx,my);
         if(current!=null&&current!=hovered){hovered=current;fade=0;}
         fade=Math.max(0,Math.min(1,fade+(current!=null?step:-step)));
-        pageFade=Math.max(0,Math.min(1,pageFade+(selection?step:-step)));
         if(locked==null&&hovered!=null&&fade>.03){
             var point=host.project(hovered);
             if(point!=null){var label=NativeAttachments.stored(gun(),hovered).isEmpty()?Component.literal("+ ").append(title(hovered)):installed(hovered);
@@ -76,41 +92,42 @@ public final class MaintenanceAttachmentHud {
         }
         if(locked!=null&&!selection){
             var point=host.project(locked);
+            if(locked!=panelFor){panelFor=locked;panelAt=now;}
             if(point!=null){hx=contextX(point.x(),screen.width);hy=Math.max(4,Math.min(screen.height-106,(int)point.y()-24));
-                g.fill(hx,hy,hx+140,hy+65,0xdd65686b);g.fill(hx+1,hy+1,hx+139,hy+64,0xeb272b2e);
-                g.drawString(mc().font,title(locked),hx+7,hy+6,0xffdddddd,false);
-                g.drawString(mc().font,installed(locked),hx+7,hy+20,0xffb8babc,false);
-                drawButton(g,0,hx+6,hy+38,62,20,text(NativeAttachments.stored(gun(),locked).isEmpty()?"modify":"replace"),mx,my);
-                if(!NativeAttachments.stored(gun(),locked).isEmpty())drawButton(g,1,hx+74,hy+38,60,20,text("remove"),mx,my);
+                // the panel fades in and rises 3 GUI px; clicks use its resting place
+                float shown=AflUiTween.Ease.OUT.apply(AflUiTween.clamp01((now-panelAt)/120_000_000f)),dy=AflUiTween.snap((1-shown)*3);
+                g.pose().pushPose();g.pose().translate(0,dy,0);
+                AflUiDraw.panel(g,hx,hy,140,65,shown);
+                AflUiDraw.text(g,mc().font,title(locked),hx+7,hy+6,AflUiStyle.TEXT,shown);
+                AflUiDraw.text(g,mc().font,installed(locked),hx+7,hy+20,AflUiStyle.TEXT_DIM,shown);
+                drawButton(g,0,hx+6,hy+38,62,20,text(NativeAttachments.stored(gun(),locked).isEmpty()?"modify":"replace"),mx,my,shown);
+                if(!NativeAttachments.stored(gun(),locked).isEmpty())drawButton(g,1,hx+74,hy+38,60,20,text("remove"),mx,my,shown);
+                g.pose().popPose();
             }
-        }
+        }else panelFor=null;
+        if(selection&&!wasSelecting)candidates.appear();
+        wasSelecting=selection;
         if(selection){
-            int y=hotbarY();
-            for(int i=0;i<9;i++){
-                int x=hotbarX()+i*20;var entry=page.at(i);
-                buttonPlate(g,2+i,x,y,20,20,entry!=null&&inside(mx,my,x,y,20,20),entry!=null&&!pending);
-                if(entry!=null){g.renderItem(entry.source(),x+2,y+2);g.renderItemDecorations(mc().font,entry.source(),x+2,y+2,String.valueOf(entry.totalCount()));
-                    if(inside(mx,my,x,y,20,20))g.renderTooltip(mc().font,entry.source().getHoverName(),mx,my);
-                }
-            }
-            g.drawCenteredString(mc().font,page.candidates.isEmpty()?text("no_compatible_attachment"):title(locked),screen.width/2,y-14,0xffcccccc);
-            if(page.candidates.size()>9)g.drawCenteredString(mc().font,Component.translatable("gui.apocalypse_firstlight.gun_maintenance.page",page.page+1,(page.candidates.size()+8)/9),screen.width/2,y-27,0xffcccccc);
-            if(pageFade<1){g.pose().pushPose();g.pose().translate(0,0,400);g.fill(hotbarX(),y,hotbarX()+180,y+20,((int)((1-pageFade)*200)<<24)|0x202426);g.pose().popPose();}
+            int y=hotbarY(),hoveredCell=inside(mx,my,hotbarX(),y,180,20)?(mx-hotbarX())/20:-1;
+            if(hoveredCell>=0&&page.at(hoveredCell)==null)hoveredCell=-1;
+            candidates.render(g,hotbarX(),y,9,hoveredCell,hoveredCell,false,pending?0.6F:1,(graphics,i,x,cy)->{
+                var entry=page.at(i);
+                if(entry==null)return;
+                graphics.renderItem(entry.source(),x,cy);
+                graphics.renderItemDecorations(mc().font,entry.source(),x,cy,String.valueOf(entry.totalCount()));
+            });
+            var hoveredEntry=hoveredCell<0?null:page.at(hoveredCell);
+            if(hoveredEntry!=null)g.renderTooltip(mc().font,hoveredEntry.source().getHoverName(),mx,my);
+            AflUiDraw.centred(g,mc().font,page.candidates.isEmpty()?text("no_compatible_attachment"):title(locked),screen.width/2f,y-14,AflUiStyle.TEXT,1);
+            if(paged())AflUiDraw.centred(g,mc().font,Component.translatable("gui.apocalypse_firstlight.gun_maintenance.page",page.page+1,(page.candidates.size()+8)/9),screen.width/2f,y-27,AflUiStyle.TEXT_DIM,1);
         }
-        if(System.currentTimeMillis()<noticeUntil)g.drawCenteredString(mc().font,text("state_changed"),screen.width/2,hotbarY()-40,0xffcccccc);
-        if(pending)g.drawCenteredString(mc().font,text("processing"),screen.width/2,hotbarY()-40,0xffdddddd);
+        if(System.currentTimeMillis()<noticeUntil)AflUiDraw.centred(g,mc().font,text("state_changed"),screen.width/2f,hotbarY()-40,AflUiStyle.TEXT,1);
+        if(pending)AflUiDraw.centred(g,mc().font,text("processing"),screen.width/2f,hotbarY()-40,AflUiStyle.TEXT,1);
     }
-    private void buttonPlate(GuiGraphics g,int id,int x,int y,int w,int h,boolean hover,boolean enabled){
+    private void drawButton(GuiGraphics g,int id,int x,int y,int w,int h,Component label,int mx,int my,float alpha){
         boolean down=pressed==id&&System.nanoTime()<pressedUntil;
-        int border=down?0xff686d70:!enabled?0xff505456:hover?0xffc1c6c9:0xff858b8f;
-        int top=down?0xff292e31:!enabled?0xff303437:hover?0xff5b6267:0xff42494e;
-        g.fill(x,y,x+w,y+h,border);g.fillGradient(x+1,y+1,x+w-1,y+h-1,top,down?0xff25292c:0xff30363a);
-        if(hover&&enabled&&!down)g.fill(x+2,y+1,x+w-2,y+2,0xff91999e);
-    }
-    private void drawButton(GuiGraphics g,int id,int x,int y,int w,int h,Component label,int mx,int my){
-        buttonPlate(g,id,x,y,w,h,inside(mx,my,x,y,w,h),!pending);
-        boolean down=pressed==id&&System.nanoTime()<pressedUntil;
-        g.drawCenteredString(mc().font,label,x+w/2,y+6+(down?1:0),pending?0xff969a9d:0xfff0f1f2);
+        float sink=AflUiDraw.button(g,x,y,w,h,inside(mx,my,x,y,w,h),down,!pending,alpha);
+        AflUiDraw.centred(g,mc().font,label,x+w/2f,y+6+sink,pending?AflUiStyle.TEXT_DISABLED:AflUiStyle.TEXT,alpha);
     }
     private void clickSound(){mc().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK.value(),1f,.35f));}
     private void press(int id,Runnable action){

@@ -17,9 +17,9 @@ import java.util.Locale;
  * hotbar, a rounded track with a rounded fill, full at the severe ratio (60 kg), ticks at the comfort and the tier
  * thresholds (30 / 40 / 50 kg), filled in the tier's colour, the load in kg at its right end. The fill, the number and
  * the colour follow the load smoothly. Drawn in real pixels (anti-aliased ends), not GUI pixels.
- * Passive: hidden normally, it fades in when the load changes (by at least half the shown 0.1 kg step, or into another
- * tier), stays HOLD_SECONDS after the last change and fades out; the first state after joining is the baseline, not a
- * change. Survival / Adventure only, like the other survival bars; hidden while a jumping mount's bar takes the spot and
+ * The bar always shows (user 2026-10-06; it used to hide with the number). The number is passive: hidden normally, it
+ * fades in when the load changes (by at least half the shown 0.1 kg step, or into another tier), stays HOLD_SECONDS
+ * after the last change and fades out; the first state after joining is the baseline, not a change. Survival / Adventure only, like the other survival bars; hidden while a jumping mount's bar takes the spot and
  * in the field attachment view.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -68,7 +68,7 @@ public final class ClientWeightHud {
         return shownRatio;
     }
 
-    /** Wakes the bar on a load change; fades it in while awake, out after HOLD_SECONDS without a change. */
+    /** Wakes the number on a load change; fades it in while awake, out after HOLD_SECONDS without a change. */
     private static void track(EncumbranceState state, double seconds, double dt) {
         if (settledGrams == Long.MIN_VALUE) { settledGrams = state.loadGrams(); settledTier = state.tier(); }
         else if (Math.abs(state.loadGrams() - settledGrams) >= WAKE_GRAMS || state.tier() != settledTier) {
@@ -91,9 +91,9 @@ public final class ClientWeightHud {
         lastNanos = now;
         track(state, now / 1e9, dt);
         double ratio = ease(state.encumbranceRatio(), dt);
-        if (visibility <= 0 || player == null || mc.options.hideGui || !gui.shouldDrawSurvivalElements()
+        if (player == null || mc.options.hideGui || !gui.shouldDrawSurvivalElements()
                 || player.jumpableVehicle() != null || FieldAttachmentViewState.isActive()) return;
-        double alpha = visibility * visibility * (3 - 2 * visibility);
+        double alpha = 1, numberAlpha = visibility * visibility * (3 - 2 * visibility);
         var policy = ClientWeightState.policy();
         double onset = policy == null ? 1.0 : policy.policy().onset(), severe = policy == null ? 2.0 : policy.policy().severe();
         double fullRatio = Math.max(severe, 0.01);
@@ -124,7 +124,7 @@ public final class ClientWeightHud {
         graphics.pose().popPose();
 
         // the font draws an alpha under 4 as opaque, so the number leaves a little before the bar
-        int textColour = fade(colour, alpha);
+        int textColour = fade(colour, numberAlpha);
         if (textColour >>> 24 < 8) return;
         String text = String.format(Locale.ROOT, "%.1f kg", ratio * state.comfortCapacityGrams() / 1000.0);
         graphics.drawString(mc.font, text, guiX + WIDTH + 4, guiY - 2, textColour, true);

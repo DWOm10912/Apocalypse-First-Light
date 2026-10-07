@@ -45,6 +45,7 @@ public final class WorldInteractionHint {
     private static float fade;
     private static long last=System.nanoTime();
     private static Component label;
+    private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keys=java.util.List.of();
     private static Vec3 anchor;
     private static final Matrix4f VIEW=new Matrix4f(), PROJECTION=new Matrix4f();
     private static Vec3 camera=Vec3.ZERO;
@@ -77,12 +78,25 @@ public final class WorldInteractionHint {
             if(target==null) target=fluidPipe(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
-        if(target!=null) {label=target.label();anchor=target.anchor();}   // keep the last label while fading out
+        if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;
         int w=event.getWindow().getGuiScaledWidth(),h=event.getWindow().getGuiScaledHeight();
         float[] at=anchor==null?null:project(anchor,w,h);
-        AttachmentHintStyle.draw(event.getGuiGraphics(),label,at==null?w/2:Math.round(at[0]),at==null?h/2:Math.round(at[1]),w,fade);
+        AttachmentHintStyle.draw(event.getGuiGraphics(),keys,label,at==null?w/2:Math.round(at[0]),at==null?h/2:Math.round(at[1]),w,fade);
+    }
+
+    /**
+     * The key caps in front of a prompt (docs/ui/afl_overlay_ui_style_v1.md 6), following the player's bindings: the use key
+     * for every action, sneak + use to pick a container up, none for prompts that only tell (cannot charge, needs a crowbar,
+     * needs a container).
+     */
+    private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keysFor(Minecraft mc,Component label) {
+        String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
+        var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
+        if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
+        if(key.endsWith("fuel_container.pick_up")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        return java.util.List.of(use);
     }
 
     private static float[] project(Vec3 world,int width,int height) {

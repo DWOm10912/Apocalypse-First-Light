@@ -9,8 +9,20 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import com.antaurora.apofirstlight.client.ui.AflItemStrip;
+import com.antaurora.apofirstlight.client.ui.AflKeyHint;
+import com.antaurora.apofirstlight.client.ui.AflKeyHintPanel;
+import com.antaurora.apofirstlight.client.ui.AflUiDraw;
+import com.antaurora.apofirstlight.client.ui.AflUiShapes;
+import com.antaurora.apofirstlight.client.ui.AflUiStyle;
+import com.antaurora.apofirstlight.weapon.client.NativeGunInput;
+import java.util.List;
 
-/** Transparent mouse owner, not a container preview. All central geometry is the real world. */
+/**
+ * Transparent mouse owner, not a container preview. All central geometry is the real world. The player's hotbar row is
+ * an AflItemStrip (the hovered gun lifts), the take button a rounded button, and the key hint panel sits top right
+ * (docs/ui/afl_overlay_ui_style_v1.md).
+ */
 public final class GunMaintenanceScreen extends Screen implements MenuAccess<GunMaintenanceMenu> {
     private final GunMaintenanceMenu menu;
     private int ticks;
@@ -18,6 +30,8 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     private Component refusalReason;
     private final MaintenanceAttachmentHud attachments=new MaintenanceAttachmentHud(this);
     private final GunInspectionController inspection=new GunInspectionController(false);
+    private final AflItemStrip hotbar=new AflItemStrip();
+    private final AflKeyHintPanel keyHints=new AflKeyHintPanel();
     public GunInspectionController inspection(){return inspection;}
     public void inspectionFrame(){inspection.frame(menu.synchronizedBench().getItem(0),System.nanoTime());}
     public void attachmentResult(int phase){attachments.result(phase);}
@@ -59,6 +73,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     private static boolean inside(double x,double y,int left,int top){return x>=left&&x<left+20&&y>=top&&y<top+20;}
     @Override public void render(GuiGraphics g,int mouseX,int mouseY,float partial){
         var state=MaintenanceModeClientState.INSTANCE;state.hoveredGun=false;state.hoveredHotbarSlot=-1;
+        keyHints.render(g,width,keyRows(mouseX,mouseY),state.ready()&&!state.leaving());
         if(!state.ready())return;
         int x0=hotbarX(),y=hotbarY();
         var stored=menu.synchronizedBench().getItem(0);
@@ -75,33 +90,47 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
             }
         }
         if(attachments.selecting()){attachments.render(g,mouseX,mouseY);return;}
-        for(int i=0;i<9;i++){
-            int x=x0+i*20;var stack=menu.slots.get(i).getItem();boolean hover=mouseX>=x&&mouseX<x+20&&mouseY>=y&&mouseY<y+20;
-            if(hover)state.hoveredHotbarSlot=i;
-            g.fill(x,y,x+20,y+20,hover?0xff718279:0xcc52565a);g.fill(x+1,y+1,x+19,y+19,0xc0202426);
+        int hovered=mouseY>=y&&mouseY<y+20&&mouseX>=x0&&mouseX<x0+180?(mouseX-x0)/20:-1;
+        state.hoveredHotbarSlot=hovered;
+        hotbar.render(g,x0,y,9,hovered,hovered,false,1,(graphics,i,x,cy)->{
+            var stack=menu.slots.get(i).getItem();
             if(i==placeholderSlot()){
                 // Drawing only: never create a slot, assign an Inventory stack, or expose it to item use.
-                g.renderItem(menu.synchronizedBench().getItem(0),x+2,y+2);g.flush();
-                // Item render types do not consistently respect global alpha. Composite 58% slot
-                // background over the icon, yielding a reliable 42% visual contribution for all guns.
-                g.pose().pushPose();g.pose().translate(0,0,300);
-                g.fill(x+1,y+1,x+19,y+19,0x94202426);
-                g.pose().popPose();
-            }else{g.renderItem(stack,x+2,y+2);g.renderItemDecorations(font,stack,x+2,y+2);}
-        }
+                graphics.renderItem(menu.synchronizedBench().getItem(0),x,cy);graphics.flush();
+                // Item render types do not consistently respect global alpha: a 58% veil of the tile backing over the
+                // icon leaves a reliable 42% ghost for every gun.
+                graphics.pose().pushPose();graphics.pose().translate(0,0,300);
+                AflUiShapes.fill(graphics,x-1,cy-1,18,18,AflUiStyle.RADIUS_TILE,AflUiStyle.BACK,0.58F);
+                graphics.pose().popPose();
+            }else{graphics.renderItem(stack,x,cy);graphics.renderItemDecorations(font,stack,x,cy);}
+        });
         if(takeButtonVisible()){
-            int x=takeButtonX();g.fill(x,y,x+20,y+20,0xcc52565a);g.fill(x+1,y+1,x+19,y+19,0xc0202426);
-            g.drawCenteredString(font,"<",x+10,y+6,0xffc0cbc5);
+            int x=takeButtonX();boolean hover=inside(mouseX,mouseY,x,y);
+            AflUiDraw.button(g,x+1,y+1,18,18,hover,false,true,1);
+            AflUiDraw.centred(g,font,Component.literal("<"),x+10,y+6,AflUiStyle.TEXT,1);
         }
         var tooltip=returnTooltip(mouseX,mouseY);
         if(tooltip!=null)g.renderTooltip(font,tooltip,mouseX,mouseY);
-        else if(refusalTicks>0&&refusalReason!=null)g.drawCenteredString(font,refusalReason,width/2,y-14,0xffffdddd);
-        else if(menu.bench.isEmpty())g.drawCenteredString(font,Component.translatable("screen.apocalypse_firstlight.maintenance_select"),width/2,y-14,0xffcccccc);
+        else if(refusalTicks>0&&refusalReason!=null)AflUiDraw.centred(g,font,refusalReason,width/2f,y-14,0xFFDDDD,1);
+        else if(menu.bench.isEmpty())AflUiDraw.centred(g,font,Component.translatable("screen.apocalypse_firstlight.maintenance_select"),width/2f,y-14,AflUiStyle.TEXT,1);
         attachments.render(g,mouseX,mouseY);
+    }
+    /** What each input does right now (docs/ui/afl_overlay_ui_style_v1.md 8); the bench view zooms but does not turn. */
+    private List<AflKeyHintPanel.Row> keyRows(double x,double y){
+        var exit=FieldAttachmentScreen.row(AflKeyHint.of(minecraft.options.keyInventory),"exit");
+        if(attachments.pending())return List.of(exit);
+        if(attachments.selecting())return attachments.paged()
+                ?List.of(FieldAttachmentScreen.row(AflKeyHint.MOUSE_LEFT,"install"),FieldAttachmentScreen.row(AflKeyHint.MOUSE_SCROLL,"page"),FieldAttachmentScreen.row(AflKeyHint.MOUSE_RIGHT,"back"))
+                :List.of(FieldAttachmentScreen.row(AflKeyHint.MOUSE_LEFT,"install"),FieldAttachmentScreen.row(AflKeyHint.MOUSE_RIGHT,"back"));
+        if(attachments.selectedSlot()!=null)return List.of(FieldAttachmentScreen.row(AflKeyHint.MOUSE_LEFT,"confirm"),FieldAttachmentScreen.row(AflKeyHint.MOUSE_RIGHT,"back"),exit);
+        boolean onHotbar=y>=hotbarY()&&y<hotbarY()+20&&x>=hotbarX()&&x<hotbarX()+180;
+        return List.of(FieldAttachmentScreen.row(AflKeyHint.MOUSE_LEFT,onHotbar?"place_gun":"select_slot"),FieldAttachmentScreen.row(AflKeyHint.MOUSE_SCROLL,"zoom"),
+                FieldAttachmentScreen.row(AflKeyHint.of(NativeGunInput.RESET_INSPECTION),"reset"),exit);
     }
     @Override public boolean mouseClicked(double x,double y,int button){
         inspection.cancelDrag();
         if(!MaintenanceModeClientState.INSTANCE.ready())return true;
+        if(NativeGunInput.RESET_INSPECTION.matchesMouse(button)&&!attachments.inspectionModal()){inspection.reset(System.nanoTime());return true;}
         if(attachments.click(x,y,button))return true;
         if(inspection.inViewport(x,y)&&!attachments.blocksInspection(x,y)){
             inspection.beginDrag(x,y,button);return true;
@@ -124,7 +153,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     }
     @Override public boolean keyPressed(int key,int scan,int mods){
         if(key==256||minecraft.options.keyInventory.matches(key,scan)){inspection.cancelDrag();if(!attachments.back())onClose();}
-        else if(key==org.lwjgl.glfw.GLFW.GLFW_KEY_R&&MaintenanceModeClientState.INSTANCE.ready()&&!attachments.inspectionModal())inspection.reset(System.nanoTime());
+        else if(NativeGunInput.RESET_INSPECTION.matches(key,scan)&&MaintenanceModeClientState.INSTANCE.ready()&&!attachments.inspectionModal())inspection.reset(System.nanoTime());
         return true;
     }
     @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){
@@ -135,6 +164,7 @@ public final class GunMaintenanceScreen extends Screen implements MenuAccess<Gun
     @Override public boolean mouseReleased(double x,double y,int button){inspection.cancelDrag();return true;}
     @Override public boolean mouseScrolled(double x,double y,double delta){
         if(!MaintenanceModeClientState.INSTANCE.ready())return true;
+        AflKeyHint.scrolled();
         if(attachments.candidateListHit(x,y))attachments.scroll(delta);
         else if(inspection.inViewport(x,y)&&!attachments.blocksInspection(x,y))inspection.scroll(delta);
         return true;

@@ -20,6 +20,10 @@ public final class NativeGunInput {
     public static final KeyMapping FIELD_ATTACHMENT = new KeyMapping("key.apocalypse_firstlight.field_attachment",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Z,
             "key.categories.apocalypse_firstlight");
+    /** Resets the field attachment / maintenance bench view (was a hard-coded R); GUI context, so it never clashes with reload. */
+    public static final KeyMapping RESET_INSPECTION = new KeyMapping("key.apocalypse_firstlight.reset_inspection",
+            KeyConflictContext.GUI, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
+            "key.categories.apocalypse_firstlight");
     public static boolean firing(){return triggerSent||attackHeld;}
     private static final KeyMapping RELOAD = new KeyMapping("key.apocalypse_firstlight.reload",
             KeyConflictContext.IN_GAME, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R,
@@ -42,7 +46,7 @@ public final class NativeGunInput {
     @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class Registration {
         @SubscribeEvent
-        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); event.register(FIRE_MODE); event.register(FIELD_ATTACHMENT); }
+        public static void keys(RegisterKeyMappingsEvent event) { event.register(RELOAD); event.register(INSPECT); event.register(FIRE_MODE); event.register(FIELD_ATTACHMENT); event.register(RESET_INSPECTION); }
     }
 
     private static boolean ready(Minecraft mc) {

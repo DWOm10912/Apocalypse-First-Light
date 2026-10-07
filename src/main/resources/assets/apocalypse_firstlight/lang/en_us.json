@@ -586,7 +586,7 @@
   "hint.apocalypse_firstlight.fuel_container.mount_pump": "Fit the hand pump",
   "hint.apocalypse_firstlight.fuel_container.crank": "Hold to crank the pump",
   "hint.apocalypse_firstlight.fuel_container.take_pump": "Take the pump off",
-  "hint.apocalypse_firstlight.fuel_container.pick_up": "Sneak + use to pick up",
+  "hint.apocalypse_firstlight.fuel_container.pick_up": "Pick up",
   "jade.apocalypse_firstlight.fuel_can.pump": "Hand pump fitted",
   "jade.apocalypse_firstlight.hand_fuel_pump.from": "Draws: %s %s / %s L",
   "jade.apocalypse_firstlight.hand_fuel_pump.from.none": "Draws: nothing below",
@@ -595,5 +595,17 @@
   "config.jade.plugin_apocalypse_firstlight.fuel_can": "AFL Fuel Containers",
   "config.jade.plugin_apocalypse_firstlight.hand_fuel_pump": "AFL Hand Fuel Pump",
   "message.apocalypse_firstlight.fuel_can.wont_take": "Fuel will not go in here",
-  "hint.apocalypse_firstlight.fuel_container.needs_container": "Set a can or drum next to the pump"
+  "hint.apocalypse_firstlight.fuel_container.needs_container": "Set a can or drum next to the pump",
+  "key.apocalypse_firstlight.reset_inspection": "Reset Inspection View",
+  "gui.apocalypse_firstlight.key_hint.rotate": "Drag to rotate",
+  "gui.apocalypse_firstlight.key_hint.pan": "Drag to pan",
+  "gui.apocalypse_firstlight.key_hint.zoom": "Zoom",
+  "gui.apocalypse_firstlight.key_hint.reset": "Reset view",
+  "gui.apocalypse_firstlight.key_hint.exit": "Exit",
+  "gui.apocalypse_firstlight.key_hint.select_slot": "Select attachment slot",
+  "gui.apocalypse_firstlight.key_hint.confirm": "Confirm",
+  "gui.apocalypse_firstlight.key_hint.back": "Back",
+  "gui.apocalypse_firstlight.key_hint.install": "Install",
+  "gui.apocalypse_firstlight.key_hint.page": "Next page",
+  "gui.apocalypse_firstlight.key_hint.place_gun": "Place / take back gun"
 }
