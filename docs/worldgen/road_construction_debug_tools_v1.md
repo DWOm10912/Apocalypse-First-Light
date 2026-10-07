@@ -2,7 +2,7 @@
 
 日期：2026-10-07。Minecraft 1.20.1 / Forge 47.4.22 / Java 17。
 
-状态：**单路段适配器、只读Survey及命令/报告代码已实现；此前单次离线 compileJava 已通过。Survey / Preview 一致性仍需调查，真实道路施工尚未通过实机验收，本文不登记施工、性能、碰撞或恢复PASS。** 道路 V1-C 暂停；后续地形 V2 可能改变候选成功率，完成后须重新验证 V1-B。本次 Git 检查点不重新编译或启动游戏。
+状态：**单路段适配器、只读Survey及命令/报告代码已实现；此前单次离线 compileJava 已通过。当前用户实机验收失败（V1-B = FAIL），Survey / Preview 一致性与具体拒绝原因仍需调查，本文不登记施工、性能、碰撞或恢复PASS。** 用户已测试，并因此启动[Terrain V2 审计](columbian_federation_terrain_v2_research.md)，不是尚未开始验收。道路 V1-C 暂停；新地形目前仅有设计，实施后须重新验证 V1-B。本次文档同步不编译或启动游戏。
 
 依赖[统一规格](north_american_roads_and_lots_spec_v1.md)、[V1-A](north_american_roads_v1a_implementation.md)、[正式V1-B施工核心](north_american_roads_v1b_implementation.md)和[静态资产契约](road_surface_assets_v1.md)。本轮不增加方块、美术或自然生成入口。
 

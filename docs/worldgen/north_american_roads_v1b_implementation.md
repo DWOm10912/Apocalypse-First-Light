@@ -2,21 +2,23 @@
 
 日期：2026-10-07。环境：Minecraft 1.20.1 / Forge 47.4.22 / Java 17。
 
-状态：**V1-B 代码、静态道路资产、持久化及 Segment / Survey 开发工具已实现，此前离线 compileJava 已通过；真实道路施工尚未通过实机验收。** 没有注册自然生成入口；道路 V1-C 暂停开发。
+状态：**V1-B 代码、静态道路资产、持久化及 Segment / Survey 开发工具已实现，此前离线 compileJava 已通过；当前用户实机验收失败（FAIL）。** 不是尚未开始验收；这正是启动 Terrain V2 审计的原因。没有注册自然生成入口；道路 V1-C 暂停开发。
+
+2026-10-07 地形研究补充：[哥伦比亚联邦 Terrain V2](columbian_federation_terrain_v2_research.md)与[迁移计划](terrain_v2_migration_plan.md)目前仅为研究设计，未改道路或地形代码。用户反馈当前大量候选因浅层空洞、坡度及削填预算拒绝、缺乏连续可建设地形。审查确认正式预检默认检查地面下6层，任一空气格即可触发 `UNSAFE_SUBSURFACE_VOID`；未加载区 Survey 的噪声估算不能验证真实地下支撑。后续须分别验证地形改善和 Survey/Preview 来源一致性，不能认为前者自动修好后者。横断面、G/S、1/16纵坡及3格削填预算保持。当前验收失败状态不变，地形实施后必须重新验收。
 
 ## Git 检查点验收记录（2026-10-07）
 
 - V1-A 保留已通过的规划层实现；V1-B 施工器及全部开发测试命令保留。
 - Segment 和 Survey 已完成代码实现，不代表道路施工或调查推荐结果已获实机验收。
 - **Survey / Preview 一致性仍需调查**：必须区分估算与已加载方块预检，按同一坐标、方向、长度及现场状态核对报告；当前没有确认根因或修复结论。
-- **真实道路施工尚未通过实机验收**，不能用离线编译、Survey 推荐或 Preview 状态替代施工成功。
+- **当前用户实机验收失败**（用户后续明确确认），不能用离线编译、Survey 推荐或 Preview 状态替代施工成功。
 - 后续优先开展 AFL 地形 V2；地形变化可能改变施工候选成功率，不能预先保证提高，也不能替代上述一致性调查。
 - 地形 V2 完成后必须重新验证 V1-B 的候选、Preview / Prepare、实际施工、跨区块接缝、碰撞及保存恢复。
 - 本次仅检查 Git 范围并同步文档，不修改 Java 或地形生成器，不运行 Gradle / 游戏，不启动地形 V2 或道路 V1-C。
 
 权威横断面来自[统一规格](north_american_roads_and_lots_spec_v1.md)，二维布局复用[已验收 V1-A](north_american_roads_v1a_implementation.md)的 `north_american_roads_v1a_2`。施工版本为 `north_american_roads_v1b_1`。
 
-2026-10-07开发工具扩展：已增加16～64格（默认32）的单路段Preview/Prepare适配器及只读Survey。首次实机优先小样本，不再要求先寻找整街区平地。详见[开发测试工具V1](road_construction_debug_tools_v1.md)；仍需用户实际施工验收，原工程上限和保护不变。
+2026-10-07开发工具扩展：已增加16～64格（默认32）的单路段Preview/Prepare适配器及只读Survey。复验仍优先小样本，不要求先寻找整街区平地。详见[开发测试工具V1](road_construction_debug_tools_v1.md)；当前用户实机验收失败，修复后重新验收，原工程上限和保护不变。
 
 ## 1. 已实现与边界
 

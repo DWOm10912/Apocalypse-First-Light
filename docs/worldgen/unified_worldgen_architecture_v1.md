@@ -1,10 +1,18 @@
 # AFL Unified Worldgen Architecture V1
 
+## 2026-10-07 研究补充：哥伦比亚联邦 Terrain V2（尚未实施）
+
+[地貌研究与现状审查](columbian_federation_terrain_v2_research.md)和[迁移计划](terrain_v2_migration_plan.md)建议保留现有 NoiseBasedChunkGenerator、主岛/三卫星岛 topology、Highway、Road V1-A/V1-B、StructureTransform/StructureSocket/SpatialClaim，重构连续 LAND 地貌、近地表稳定层及生态/灾难分布。本轮仅文档研究，没有切换生成代码、资源或存档；所有目标为 REFERENCE TARGET。
+
+新设计分离 Landform、Ecology、Disaster；扩展已有 TerrainQuery，明确宏观预测、noise estimate 与真实快照。现有 LAND `MacroGeography.surfaceHeight` 不是最终地表；Highway 读取 generator 高度/列。保留二维路由仍需重新验证纵断面、桥头和基础。现有 WorldgenProfile 值契约不等于已接通世界级版本锁定，正式切换前需补齐首次生成冻结与版本拒绝。
+
+建议全新世界验收；世界高度暂保持 -64～319 可放置范围（320 为上界），未来超高层另评估。下一实施阶段先建立正确基准和诊断，再分阶段接入地貌/高度/地下/生态/灾难。**V1-B 当前用户实机验收失败，是启动本次地形审计的直接原因**；Survey/Preview 一致性及具体失败归因待调查，V1-C 暂停。Terrain V2 研究不代表失败已经解决。
+
 ## 2026-10-07 当前实现：普通道路 V1-B 开发施工
 
 [V1-B实施记录](north_american_roads_v1b_implementation.md)已接通实际方块预检、节点/沿线高程、有限削填与路基、永久静态道路方块、节点优先分区施工，以及可暂停/显式恢复的开发SavedData台账。主核心位于`worldgen/roads/construction`，开发命令位于`src/dev`，没有修改已验收V1-A二维几何。施工只发生在指定plan_id显式确认后的服务端有界tick任务；无强载、无自动探索/区块加载触发施工、无正式NBT放置。
 
-Highway、启动区、地堡、authoring保留区及已加载结构引用继续保守保护；天然材料无法证明玩家来源，故仅允许开发者明确确认无人建设测试场地。当前台账不是完整公共服务器保护或自然世界profile机制，也不支持事务回滚。世界级版本锁定、跨候选拼接、自然调度仍留V1-C；实际施工、行走、跨chunk接缝、恢复及性能均待用户实机验证。以下V1-A及Phase历史章节的“无施工”仅指对应旧阶段，不覆盖本更新。
+Highway、启动区、地堡、authoring保留区及已加载结构引用继续保守保护；天然材料无法证明玩家来源，故仅允许开发者明确确认无人建设测试场地。当前台账不是完整公共服务器保护或自然世界profile机制，也不支持事务回滚。世界级版本锁定、跨候选拼接、自然调度仍留V1-C；**当前道路V1-B实机验收失败**，施工、行走、跨chunk接缝、恢复及性能专项不能据代码完成而登记PASS，修复后需复验。以下V1-A及Phase历史章节的“无施工”仅指对应旧阶段，不覆盖本更新。
 
 ## 2026-10-06 当前实现：普通道路 V1-A 规划层
 

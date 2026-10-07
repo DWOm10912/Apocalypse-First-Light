@@ -1,5 +1,7 @@
 # Terrain V2 Phase 1 / Macro Geography V1.1
 
+2026-10-07：新的[哥伦比亚联邦 Terrain V2 研究](columbian_federation_terrain_v2_research.md)及[迁移设计](terrain_v2_migration_plan.md)已文档化，尚未实施。本文仍记录现行/历史 Macro Geography 链路；新研究沿用 Terrain V2 名称不表示 topology version 3 已被替换。现行 LAND 使用完整三维密度及洞穴，LAND `surfaceHeight` 不是最终高度；新增连续低地与稳定层只是计划。新世界高度暂建议保持 -64～320，详见研究报告容量分析。
+
 状态：2026-09-22 起 `MacroGeography.VERSION = 3`，只把附属岛数量固定为3并增加稳定设施/桥梁政策metadata，详见 [Fixed Three Satellite Metadata V3](satellite_facility_islands_v3.md)。曾加入的天然Campus最终地形资格和初始化期候选重规划导致游戏崩溃，现已完整撤回；岛屿尺寸、位置、bank-fit、轮廓、缓存和terrain pipeline恢复V1.1行为。V1.1/version 2 的随机数量验收不覆盖固定三岛。Terrain密度公式未改，已有chunk不重写。
 
 ## 世界与确定性契约
@@ -97,7 +99,7 @@ TerrainProvider offset / factor / jaggedness splines
 这些是嵌套平滑门控，不是互斥格网或随机抽签。Rolling/Highland/Mountain 的门控仍读取原始 c/e，阈值、权重、目标值不变；独立 elevation bias 不参与这些门控或三套样条。ridges及folded-ridges保持原版输入；jaggedness由偏置参数下的原版样条决定，不再对其结果追加AFL振幅门控。c'总体范围仍约0.08–0.65；完整内陆 plains 基底为0.24–0.32，e基底为0.61–0.65，仍为正 erosion。这里限制的是参数空间，不是地表Y或最终密度；不保证每个谷底高于海平面，也不禁止自然局部低谷/水洼。
 
 - ≤384启动区：rolling/highland/mountain门控为0，保留原版3D小起伏，无固定Y保护。
-- 384–768：平滑进入核心区弱rolling；核心3800以内rolling权重0.65，高地/山地门控0。
+- 384–768：平滑进入核心区弱rolling；核心3800以内rolling权重0.30，高地/山地门控0。2026-10-07只读审查按现行 `LandTerrainBias` 修正旧文档中的0.65；本轮没有修改代码。
 - 主岛3800–4824：平滑恢复外主岛权重，仍以平原偏置为基底。
 - 附属岛rolling权重0.50，高地/山地门控0；不绑定岛屿用途。
 - 目标：自然平原65–75%、rolling20–30%、高地3–8%、真正山地1–3%或更低。**没有执行面积统计或实机验证，不声称已经达到目标**；未恢复vanilla原始参数分布，未以最终密度缩放或限高实现平原。
@@ -155,7 +157,7 @@ LAND洞穴入口、spaghetti、pillars、noodle重新由原版组合直接参与
 
 ## Biome、出生生态与保水 — MAIN_NATION Biome Region Planner V1
 
-当前实现见[群系策略](群系.md)。本次仅修改biome分配与Scorched相关行为，Terrain relief/elevation与Macro topology不改。
+当前实现见[群系策略](../项目内容/01%20-%20设计/世界与环境/群系.md)。该历史阶段仅修改biome分配与Scorched相关行为，Terrain relief/elevation与Macro topology不改。
 
 - MAINLAND：1个Startup Plains（核心160，边界208±32），0～3个Additional，其余LAND为Fallout。Satellite LAND全部Fallout。
 - Additional目标数量0/1/2/3概率40%/40%/15%/5%，每slot最多128候选，失败跳过。基础半径96～224、低频角度扰动24～48、最大包络间隔128；仅MAINLAND LAND，保守包围方形检查距岸≥112，不覆盖Beach。
@@ -186,9 +188,9 @@ compileJava、processResources通过；单seed -4332662446239654818的401项小�
 
 2026-10-06：旧 `RuralNaturalStructure` 和自然候选入口已退役，详见 [Rural Retirement V1](rural_retirement_v1.md)。历史 MAINLAND/离岸 128 格/16 格间距 reservation 检查不再参与任何旧 Rural 自然生成。`MacroGeography.allowsRural` 仍作为冻结 MacroGeography 源码的一部分保留，但已无旧 Rural 候选调用者；它不是活跃注册、占地 provider 或新城市依赖。Highway、主岛/卫星岛、地形噪声和群系规则均未因本次退役改变。
 
-历史边界：Terrain V2 本轮未改 Highway。后续 [Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 已替换旧无限走廊/整列预留：renderer 与 claim 共用两条有限主干，在宏观海岸前终止，不再批准 OPEN_OCEAN 路线。Sea Bridge/附属岛支线仍未实现；此次仅 Highway 路由更新，Macro Geography topology 未改。
+历史边界：当时 Terrain V2 未改 Highway。后续 [Highway V2 Route Graph Phase 1](highway_v2_route_graph_phase1.md) 已替换旧无限走廊/整列预留：renderer 与 claim 共用两条有限主干，在宏观海岸前终止，不再批准普通主干 OPEN_OCEAN 路线。该阶段的“Sea Bridge/附属岛支线未实现”仅为历史状态；后续已接入[附属岛路由](highway_v2_satellite_routing_phase2b2.md)及[海桥工程](highway_v2_sea_bridge_v1_1c.md)。2026-10-07的新地形研究保留这些系统，但变更地表高度后须重验其工程纵断面、桥头与基础，不能只根据拓扑未变宣称兼容通过。
 
-后续Highway V2必须共同修改route及claim来源：主国LAND正常通行；同一MAIN_NATION内 MAINLAND↔SATELLITE_ISLAND 的300–600格水道可作为本版海桥候选；OPEN_OCEAN必须终止/绕行，不自动跨洋，不自动连接外国。coastDistance用于approach初筛；crossingCandidates只提供拓扑，需要后续验证实际水面跨度、岸上空间、纵坡、海床和桥墩。当前没有Highway海桥参数，也未实现Sea Bridge、Bridge Damage、City或Port。
+历史 Highway V2 规划要求：route及claim同源；主国LAND通行，同一MAIN_NATION内 MAINLAND↔SATELLITE_ISLAND 水道作为海桥候选，不自动跨洋或连接外国。coastDistance用于approach初筛；crossingCandidates只提供拓扑，必须验证实际水面跨度、岸上空间、纵坡、海床和桥墩。该阶段“没有海桥参数/未实现Sea Bridge”的描述已由上方后续实现取代；Bridge Damage、完整City/Port仍不能据此视为完成。
 
 future City/Port/Foreign Land只保留ID扩展接口，均未实现；外国没有任何物理占位陆块。Bridge Destruction未实现。
 

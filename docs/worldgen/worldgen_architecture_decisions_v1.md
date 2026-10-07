@@ -1,5 +1,15 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-07 Terrain V2 研究建议（设计，未激活）
+
+详细证据见[Terrain V2 研究](columbian_federation_terrain_v2_research.md)，阶段与回退见[迁移计划](terrain_v2_migration_plan.md)。建议大幅重构 LAND 地貌与近地表/生态政策，但不替换 NoiseBasedChunkGenerator，不重写 Highway 或 Road。主岛/三卫星岛拓扑保留，地貌、生态、灾难分层；全国默认 Fallout 与“小 Plains pockets 即正常生态”的旧政策在未来生态阶段退役，本轮未改变生效行为。
+
+继续使用单一 TerrainQuery，预测地貌不能代替真实支撑/保护检查；noise caves 和后续 carvers 必须一起考虑稳定层。重构采用新世界边界，不自动升级旧 chunk 或恢复旧道路施工快照。世界高度选择 B：当前地貌及普通高层足够，未来超高层可能不足，暂不扩高。参数均为 REFERENCE TARGET；这些建议不代表 profile 生命周期、稳定层、温带群系或灾难覆盖已实现。
+
+优先实施诊断基准，再分别切换宏观地貌、高度、地下、生态与灾难，之后复验道路/Highway；每阶段独立验收。代码可回退不意味着已生成 chunk 可逆。本研究未编译、未运行客户端或世界生成测试。
+
+验收基线纠正：用户已经测试，**道路 V1-B 当前实机验收失败**，本次 Terrain V2 审计由此启动。代码实现和既往编译通过不等于道路运行可用；Survey/Preview 与具体失败原因仍需诊断，新地形实施后重新验收。
+
 ## 2026-10-07 V1-B 决策补充：精确快照与显式开发施工
 
 保留V1-A的二维道路图、断面和入口契约，由独立`worldgen/roads/construction`核心扫描真实已加载方块，再生成纵坡及逐格before/after/guard。开发命令只负责发起和确认；实际世界写入按服务端tick预算、区块分批执行。普通PLANNED不能触发施工，完整预检通过也必须用精确plan_id显式确认。

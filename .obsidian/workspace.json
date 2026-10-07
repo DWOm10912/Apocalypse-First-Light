@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "0233f3a21da483f4",
+        "id": "5c735e71d1acada5",
         "type": "tabs",
         "children": [
           {
-            "id": "7991be752347a25e",
+            "id": "b3e2c81f3cf9edad",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/02 - 制作清单.md",
+                "file": "docs/项目内容/01 - 设计/国家系统.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "02 - 制作清单"
+              "title": "国家系统"
             }
           }
         ]
@@ -188,36 +188,39 @@
       "bases:新建数据库": false
     }
   },
-  "active": "7991be752347a25e",
+  "active": "b3e2c81f3cf9edad",
   "lastOpenFiles": [
-    "docs/rendering/sedn9bYAS",
-    "run/saves/新的世界 (1)/level10923683730202741959.dat",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
+    "docs/models/metal_wall_panel_v1.md.tmp.13196.a8bd86b1c1e1",
+    "run/saves/新的世界 (1)/level15542912235837569684.dat",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-13766544928430831206.dat",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.outdated",
+    "tools/build-metal-wall-panel-v1.mjs.tmp.13196.81f771b65e92",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/1_-1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
     "run/xaero/world-map/新的世界 (1)/null/cache_1/1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
-    "run/logs/debug-1.log",
+    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_-1.xwmc.temp",
+    "run/screenshots/2026-10-07_01.35.01.png",
+    "docs/worldgen/terrain_v2_migration_plan.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel_s.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel_n.png",
+    "docs/worldgen/columbian_federation_terrain_v2_research.md",
+    "docs/models/metal_wall_panel_v1.md",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel_s.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel_n.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/facade_metal_panel/metal_wall_panel.png",
+    "docs/项目内容/02 - 制作清单.md",
     "docs/rendering/mesh_hit_runtime_v1.md",
     "docs/rendering/block_break_particles_v1.md",
     "run/screenshots/2026-10-06_01.30.45.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/fuel_containers_s.png",
     "build/resources/main/assets/apocalypse_firstlight/textures/block/fuel_containers_n.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/fuel_containers.png",
     "docs/models/fuel_containers_v1.md",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/fuel_containers_n.png",
-    "src/main/blockbench/textures/fuel_containers_v1_n.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/fuel_containers_s.png",
-    "src/main/blockbench/textures/fuel_containers_v1_s.png",
-    "src/main/resources/assets/apocalypse_firstlight/textures/block/fuel_containers.png",
-    "src/main/blockbench/textures/fuel_containers_v1.png",
     "docs/项目内容/01 - 设计/方块/机器.md",
     "docs/models/fuel_station_sump_v1.md",
     "docs/models/heat_resistant_fluid_set_v1.md",
-    "docs/项目内容/02 - 制作清单.md",
     "docs/项目内容/01 - 设计/生存/生存状态.md",
     "docs/ui/survival_hud_v1.md",
     "docs/项目内容/01 - 设计/生存/食物.md",
@@ -232,9 +235,6 @@
     "docs/gameplay/stamina_system_v1.md",
     "docs/项目内容/01 - 设计/世界与环境/空气污染.md",
     "docs/项目内容/01 - 设计/感染者/声音与感染者听觉.md",
-    "docs/models/water_dispenser_v2.md",
-    "docs/models/vending_machine_v2.md",
-    "docs/gameplay/container_goods_v1.md",
-    "docs/models/chest_freezer_v2.md"
+    "docs/models/water_dispenser_v2.md"
   ]
 }
