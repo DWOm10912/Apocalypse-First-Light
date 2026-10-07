@@ -6,15 +6,15 @@
 
 英文（Summary 栏，较短）：
 
-> A grounded post-apocalyptic survival overhaul for Forge 1.20.1: realistic guns, temperature, thirst, stamina and weight, radiation and the infected, searchable loot containers, and working fuel stations, power and fluid pipes.
+> A grounded post-apocalyptic survival overhaul for Forge 1.20.1: realistic guns, temperature, thirst, stamina and weight, radiation and the infected, searchable loot containers, and buildable fuel and power systems.
 
 英文（较长，可放描述开头）：
 
-> Apocalypse: First Light is a grounded post-apocalyptic survival mod for Forge 1.20.1. Survive with realistic firearms and ammo, body temperature, thirst, stamina and carry weight, while radiation and the infected wait outside. Search abandoned lockers, dumpsters and vending machines for supplies, and get the old world running again: fuel stations, generators, batteries, cables and fluid pipes. Early Alpha: expect missing content and breaking changes.
+> Apocalypse: First Light is a grounded post-apocalyptic survival mod for Forge 1.20.1. Survive with realistic firearms and ammo, body temperature, thirst, stamina and carry weight, while radiation and the infected wait outside. Search abandoned lockers, dumpsters and vending machines for supplies, and get the old world running again: fuel dispensers, underground tanks, generators, batteries, cables and fluid pipes. Early Alpha: expect missing content and breaking changes.
 
 中文：
 
-> 一个偏写实的末日生存模组（Forge 1.20.1）：真实手感的枪械与弹药、体温、口渴、耐力与负重、辐射与感染者；搜刮废弃的储物柜、垃圾箱和售货机，让加油站、电力和管道重新运转。当前为早期 Alpha，内容不完整，版本之间可能不兼容。
+> 一个偏写实的末日生存模组（Forge 1.20.1）：真实手感的枪械与弹药、体温、口渴、耐力与负重、辐射与感染者；搜刮废弃的储物柜、垃圾箱和售货机，让加油机、地下油罐、电力和管道重新运转。当前为早期 Alpha，内容不完整，版本之间可能不兼容。
 
 ## 发布页结构（2026-10-06 讨论，Alpha 用）
 
@@ -33,7 +33,7 @@
 - 枪械：P9、Blackridge .50、BR51、HR55、Silverwood 12 并列双管；红点、消音器、扩容弹匣、弹鼓等配件；按 Z 即时改装、枪械维护台；弹孔贴在真实的模型表面上。
 - 生存：体温、口渴、耐力、负重，新的生存仪表 HUD；冷热屏幕效果。
 - 搜刮：储物柜、垃圾箱、售货机、冷柜、冰柜、收银机、货架等，打开后逐格搜索；撬棍砸售货机玻璃。
-- 燃油：加油站（加油机、加油岛、顶棚）、地下储罐、取液泵、管道；油壶、油桶、手摇油泵、倒油动画；漏油、起火、子弹打漏和爆炸。
+- 燃油：加油机、加油岛套件、顶棚、地下储罐、取液泵、管道（都是可以放置的部件，玩家自己搭；世界里还不会生成现成的加油站，用户 2026-10-06 指出，所以介绍里不写"加油站"）；油壶、油桶、手摇油泵、倒油动画；漏油、起火、子弹打漏和爆炸。
 - 电力：电缆、电池、充电站，冷柜 / 冰柜 / 售货机 / 饮水机用电，热能发电机。
 - 辐射：盖革计数器、铅箱、辐射屏幕噪点；工业矿石和机器（合金炉、粉碎机、压缩机、化学反应器、工业熔炉）。
 - 感染者（用户 2026-10-06 确认可以写）：能听见枪声并循声走过去，会挖开一些易碎方块；目前只有这一种生物，介绍里不写"多种感染者"。
@@ -92,7 +92,7 @@
    - 露出：[GIF: 掀开垃圾箱盖，逐格搜出物品 (loot_dumpster.gif)]
    - 折叠：[GIF: 撬棍砸售货机玻璃 (loot_crowbar.gif)]
 9. `feature_fuel.png`
-   - 文字：Working fuel stations with underground tanks, pumps and pipes. Carry fuel in cans and drums. Spilled fuel burns, and a bullet through a drum starts a leak - or a fire.
+   - 文字：Fuel dispensers, underground tanks, intake pumps and pipes - build your own station. Carry fuel in cans and drums. Spilled fuel burns, and a bullet through a drum starts a leak - or a fire.
    - 露出：[GIF: 打穿油桶 → 漏油 → 点着 → 爆炸 (fuel_fire.gif)]
    - 折叠：[GIF: 加油机加油 (fuel_nozzle.gif)]、[GIF: 油壶往卸油口倒油 (fuel_pour.gif)]
 10. `feature_power.png`
@@ -111,7 +111,7 @@
 16. `notice_requirements.png`
 17. 许可（Custom License，见下）
 
-画廊（不放正文的大图）：封面图 [IMG: 黄昏加油站，开光影，手持枪 (cover.png)]，以及每个特性各 1–2 张静态截图。
+画廊（不放正文的大图）：封面图 [IMG: 黄昏，开光影，手持枪 (cover.png)：可以用加油机、加油岛、顶棚、储罐自己搭一个小加油站当背景（画面里是玩家搭的，文字里不说会生成），或者换成垃圾箱、售货机、感染者组成的街景]，以及每个特性各 1–2 张静态截图。
 
 素材规格：
 - 截图 1920×1080，界面缩放 3；风景图按 F1 隐藏界面，展示 HUD / 界面的图保留界面；封面开光影、黄昏；尽量同一个场景。

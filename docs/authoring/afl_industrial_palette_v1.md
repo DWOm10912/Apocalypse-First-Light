@@ -50,3 +50,17 @@
 ## 后续状态
 
 V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；旧无属性状态按默认竖直加载。上述钢缆细柱 shape 仅指 vertical。V1.1C 可见斜段为连续四侧面直索，碰撞仍用每格 16 个细 AABB 近似；两者相对 V1.1B 均向 facing 平移 0.5 格、下移 0.25 格，以进入桥面混凝土及塔侧钢架。斜段局部几何允许沿 facing 超出所属块 0.5 格，横向仍在 ±14 内。贴图复用原 steel_cable.png。采掘仍沿用 Diamond-tier 镐与普通自身掉落；用户确认 V1.1B 大尺度生成成立，V1.1C 近景/碰撞仍待用户验收。
+
+## 2026-10-06 加油站展示场景试搭（已叫停）
+
+为什么记：用户想要一个"小加油站 + 便利店"场景给发布页截图，用 afl_minecraft 建造工具试搭，用户看了之后叫停：便利店外墙、屋顶直接用 `reinforced_concrete`，整片 `asphalt` 高出草地一格，"现代建筑哪有外壳直接是钢筋混凝土的"。等以后做新的建造 MCP 工具再搭。
+
+这次发现的限制（给新工具和以后的建筑任务参考）：
+- **外墙材料缺口**：没有现代商业建筑的立面方块（金属外墙板、带框的店面玻璃幕墙、招牌、檐口 / 女儿墙收边）。`reinforced_concrete` 是结构 / 工业材料，不能当现代建筑的外墙。做现代建筑前先补这类方块。
+- **建造区不能低于地面**（`authoring_create` 的 `surface_offset_y` 不能为负），地下储罐、埋地管道无处可放，只能整片垫高。
+- **支撑检查**：`FLOOR` 规则要求下面是完整顶面（`isFaceSturdy`），所以 `fuel_canopy_column` 只能放第一节、叠不上去；`fuel_island_bollard` 放不到路缘上（实际游戏里可以）。代码在 `src/dev/.../authoring/bridge/AuthoringFixtureRegistry.java` 和 `FixtureAdapter.java`。
+- **白名单缺项**：`underground_fuel_tank_*`、`fuel_fill_cover_*`、`pump_manhole_cover`、`jerry_can`、`*fuel_drum`、`charging_station` 不能放。
+- 已验证可用：`fuel_dispenser`（facing=south，b 列在西侧）、`fuel_island_curb` / `fuel_island_end`（东端 facing=north 时半圆朝东）拼成的加油岛外观正确；`commercial_glass_double_door` facing=north 装在南墙上正确。
+
+试搭留在用户的超平坦世界里（建造区 `afl_fuel_station_showcase`，368..399, -51..-32, 64..89），是否清理由用户决定。
+
