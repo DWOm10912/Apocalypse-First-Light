@@ -117,7 +117,7 @@ This is development tooling only: every class is under `src/dev/java/.../dev/aut
 
 | Class | Blocks |
 | --- | --- |
-| SAFE_FIXTURE | chest_freezer (2×1), commercial_glass_double_door (2×2), restroom_stall_door, steel_door, poplar_door (two-tall), modern_office_desk (3×1), modern_office_chair, modern_lcd_monitor, office_computer_station, office_keyboard, office_mouse, low_filing_cabinet, tall_filing_cabinet, office_multifunction_printer (two-tall), office_cubicle_partition, restroom_partition, commercial_flushometer_toilet, commercial_wall_mounted_sink (two-tall), water_dispenser (two-tall), industrial_utility_light, checkout_counter_gate (2026-10-04; hinge variant, starts closed), fuel_dispenser (2026-10-04; 2×1×3 with its own island curb segment, cells a0..b2, all four nozzles holstered, island false), fuel_island_curb / fuel_island_end (2026-10-04; facing, the island along facing.getClockWise()), fuel_island_bollard (2026-10-04; on_curb set from the block below), fuel_canopy_column (2026-10-04; segment / top computed, island false), fuel_canopy_ceiling, fuel_canopy_light (lit false), fuel_canopy_fascia (facing outward, shape computed) |
+| SAFE_FIXTURE | chest_freezer (2×1), commercial_glass_double_door (2×2), commercial_glass_double_door_black (2×2, 2026-10-07; same parts and BlockEntity as the silver door), restroom_stall_door, steel_door, poplar_door (two-tall), modern_office_desk (3×1), modern_office_chair, modern_lcd_monitor, office_computer_station, office_keyboard, office_mouse, low_filing_cabinet, tall_filing_cabinet, office_multifunction_printer (two-tall), office_cubicle_partition, restroom_partition, commercial_flushometer_toilet, commercial_wall_mounted_sink (two-tall), water_dispenser (two-tall), industrial_utility_light, checkout_counter_gate (2026-10-04; hinge variant, starts closed), fuel_dispenser (2026-10-04; 2×1×3 with its own island curb segment, cells a0..b2, all four nozzles holstered, island false), fuel_island_curb / fuel_island_end (2026-10-04; facing, the island along facing.getClockWise()), fuel_island_bollard (2026-10-04; on_curb set from the block below), fuel_canopy_column (2026-10-04; segment / top computed, island false), fuel_canopy_ceiling, fuel_canopy_light (lit false), fuel_canopy_fascia (facing outward, shape computed) |
 | STORAGE_WITH_INVENTORY (must start and stay empty) | commercial_dumpster / _blue / _brown / _gray (2×1, V2 2026-10-02, lids shut), metal_trash_can (V2 2026-10-02, lid shut), retail_shelf_single (two-tall), vending_machine (two-tall), industrial_locker (two-tall), lead_chest, industrial_electrical_box (wall only, 9 slots), cash_register (9-slot cash drawer), beverage_cooler (2×2, 60-slot display), `minecraft:chest` (single only), `minecraft:barrel`, checkout_counter / checkout_counter_display (2026-10-04; 9 slots, shape and side flags computed), back_bar_shelf (2026-10-04; two-tall, 12 slots), storage_rack (2026-10-04; two-tall, 12 slots, left/right computed from neighbours) |
 | MACHINE (blocked) | alloy_furnace, chemical_reactor, compressor, crusher, industrial_furnace, thermal_generator, gun_maintenance_bench, precision_fabrication_station, submersible_fuel_pump and fuel_dispenser_sump (2026-10-05; build fuel stations with `/dev fuel station`) |
 | UNSAFE (blocked) | energy_cell, fluid_tank, every unregistered BlockEntity block |
@@ -197,7 +197,8 @@ Result fields:
 - vanilla panes, iron bars and `steel_railing` (`CrossCollisionBlock`), fences, walls, stairs, fence gates;
 - AFL office/restroom partitions, including `door_support`;
 - AFL checkout counters (`shape` and the four side flags, 2026-10-04);
-- desktop items (`lowered`).
+- desktop items (`lowered`);
+- Fuel Stop A1 facade blocks (2026-10-07, see below): `storefront_glazing` (`left/right/up/down`), `ground_face_block` (`cap`, `shape`), `aluminum_cornice` (`shape`), `metal_wall_panel` (`cap`, four sides), `metal_panel_jamb` (`eyebrow`), `metal_eyebrow_canopy` (`left`, `right`).
 
 It computes every new state before writing anything. Results that would remove a block are skipped and reported. Doors, lights, electrical boxes and most AFL fixtures are excluded on purpose, because their `updateShape` can drop items or remove blocks.
 
@@ -207,6 +208,27 @@ It computes every new state before writing anything. Results that would remove a
 - `MISSING_BLOCK_ENTITY`, `UNSAFE_BLOCK_ENTITY`.
 - `NONEMPTY_INVENTORY`, `LOOT_TABLE_PRESENT`.
 - `CONNECTION_STALE`: run `reconcile_shapes`.
+
+### Fuel Stop A1 facade support (2026-10-07)
+
+**Status: implemented in the dev bridge; `compileJava --offline` PASS; not yet run against a live client, no GameTest run.**
+
+Why: the A1 store is to be built through this bridge. Two gaps blocked it:
+- **The black glass door had no fixture entry.** `commercial_glass_double_door_black` (Storefront Glazing V1) has the door BlockEntity, so generic WorldEdit writes reject it, and without a registry entry `place_multiblock` refused it too. It is now a `SAFE_FIXTURE` entry identical to the silver door: `facing`, the `GLASS_DOOR` part locator, `open=false`, `FLOOR` support.
+- **The facade blocks' computed states were never recomputed after WorldEdit writes.** Their states (glazing joins, masonry cap / outer corner, cornice corner, panel coping, jamb canopy piece, canopy end returns) are set by the blocks themselves when a player places them, but bridge writes use `UPDATE_KNOWN_SHAPE`, so they stayed as written. The six classes are now in `AuthoringFixtureRegistry.shapeSafe`. Each one's `updateShape` only sets connection properties and never drops or breaks.
+
+Effects:
+- `reconcile_shapes` recomputes these states (one undo step);
+- `audit_support` reports them as `CONNECTION_STALE` until reconciled;
+- fixture placement reconciles them as shape-safe neighbours.
+
+Usage notes:
+- Write the facade with `we_batch_set`, giving the authored choices explicitly: `facing`, glazing `mullion` / `transom`, canopy `rod`. Then run `reconcile_shapes` over the facade. The glazing's `mullion` and `transom` are kept, because reconcile does not recompute them.
+- `reconcile_shapes` is a single Jacobi pass, computed from the world before the pass. A canopy next to a jamb reads the jamb's old `eyebrow`, so run `reconcile_shapes` a second time after a jamb + canopy run (or until it reports 0 changes).
+
+Unchanged:
+- No block class, game interaction, worldgen, road or weapon code was touched. The change is in the dev source set only (`AuthoringFixtureRegistry.java`; the `reconcile_shapes` scope text in `FixtureAdapter.java`).
+- Other BlockEntity blocks are still unclassified in `problems()` and stay blocked as `UNSAFE`: `underground_fuel_tank_*`, fuel containers, intake pumps, `charging_station`. Not needed for the A1 store.
 
 ### Implementation / verification
 

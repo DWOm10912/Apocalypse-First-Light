@@ -117,6 +117,8 @@ final class AuthoringFixtureRegistry {
                     .notes("Countertop POS (V2); facing = the operator side. 9-slot cash drawer, starts closed and empty; it slides 0.5 block out toward the operator when opened."),
             new Def(A+"commercial_glass_double_door",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
                     .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity); the second leaf is at facing.getClockWise(), the opposite side from beverage_cooler."),
+            new Def(A+"commercial_glass_double_door_black",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
+                    .notes("Black-anodised frame variant (Storefront Glazing V1); same block class, parts and BlockEntity as commercial_glass_double_door. 2 wide x 2 tall, anchor = lower_left, second leaf at facing.getClockWise()."),
             new Def(A+"restroom_stall_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false").support(Support.FLOOR)
                     .notes("Lower half owns the BlockEntity. Adjacent restroom_partition door_support bits are reconciled automatically."),
             new Def(A+"steel_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),
@@ -214,7 +216,17 @@ final class AuthoringFixtureRegistry {
         var b=s.getBlock();
         return b instanceof CrossCollisionBlock||b instanceof WallBlock||b instanceof StairBlock||b instanceof FenceGateBlock
                 ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock
-                ||b instanceof CheckoutCounterBlock;
+                ||b instanceof CheckoutCounterBlock||facade(b);
+    }
+    /**
+     * Fuel Stop A1 facade blocks (2026-10-07): their computed states only follow neighbours and never drop or break, so
+     * reconcile_shapes may recompute them after WorldEdit writes. Glazing left/right/up/down (mullion and transom are kept);
+     * masonry base cap/shape; cornice shape; wall panel cap and sides; jamb eyebrow; eyebrow canopy left/right (one pass
+     * reads the old jamb state, so a jamb + canopy run needs a second reconcile_shapes).
+     */
+    private static boolean facade(Block b){
+        return b instanceof StorefrontGlazingBlock||b instanceof MasonryBaseBlock||b instanceof AluminumCorniceBlock
+                ||b instanceof MetalWallPanelBlock||b instanceof MetalPanelJambBlock||b instanceof MetalEyebrowCanopyBlock;
     }
 
     @SuppressWarnings({"rawtypes","unchecked"})
