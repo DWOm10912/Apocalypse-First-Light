@@ -12,7 +12,8 @@ import {png, readPng} from './cube-slab-mesh-lib.mjs';
 
 const OUT = process.argv[2] || 'E:/Download/AFL_CurseForge_Cards';
 const TITLE = path.join(path.dirname(fileURLToPath(import.meta.url)), '../design/branding/afl_title.png');
-const UNIT = 4;
+/** CurseForge refuses description images 850 px or wider: 280-unit cards at 3 px per unit are 840 px. */
+const UNIT = 3, CARD_W = 280, HERO_W = 840;
 
 const hex = h => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 const P = {
@@ -244,22 +245,23 @@ for (const [name, word] of [['discord', 'DISCORD'], ['wiki', 'WIKI'], ['source',
 // section header
 {
   seed = 7;
-  const c = new Canvas(300, 36);
-  frame(c, 0, 0, 300, 36, dusk(c));
+  const c = new Canvas(CARD_W, 36);
+  frame(c, 0, 0, CARD_W, 36, dusk(c));
   const t = bigSize('FEATURES', 3);
-  big(c, 'FEATURES', Math.round((300 - t.w) / 2), Math.round((36 - t.h) / 2) + 1, 3, 'steel');
+  big(c, 'FEATURES', Math.round((CARD_W - t.w) / 2), Math.round((36 - t.h) / 2) + 1, 3, 'steel');
   made.push(c.save('header_features.png'));
 }
 
 // feature strips: icon (x2) + sun title
 for (const [name, title] of [['gun', 'GUNS & ATTACHMENTS'], ['survival', 'SURVIVAL'], ['loot', 'SCAVENGING'],
-                             ['fuel', 'FUEL & FIRE'], ['power', 'POWER'], ['radiation', 'RADIATION & INDUSTRY'], ['infected', 'THE INFECTED']]) {
+                             ['fuel', 'FUEL & FIRE'], ['power', 'POWER'], ['radiation', 'FALLOUT & INDUSTRY'], ['infected', 'THE INFECTED']]) {
   seed = title.length * 31 + 5;
-  const H = 40, c = new Canvas(300, H);
-  frame(c, 0, 0, 300, H);
+  const H = 40, c = new Canvas(CARD_W, H);
+  frame(c, 0, 0, CARD_W, H);
   const is = iconSize(name, 2);
   icon(c, name, 10 + Math.round((30 - is.w) / 2), Math.round((H - is.h) / 2), 2);
   const t = bigSize(title, 2);
+  if (10 + 30 + 8 + t.w > CARD_W - 6) throw new Error(title + ' does not fit its strip');
   big(c, title, 10 + 30 + 8, Math.round((H - t.h) / 2) + 1, 2, 'sun');
   made.push(c.save(`feature_${name}.png`));
 }
@@ -268,44 +270,47 @@ for (const [name, title] of [['gun', 'GUNS & ATTACHMENTS'], ['survival', 'SURVIV
 function notice(file, iconName, title, lines) {
   seed = title.length * 13 + lines.length;
   const h = 9 + 19 + lines.length * 10 + 8;
-  const c = new Canvas(300, h);
-  frame(c, 0, 0, 300, h);
+  const c = new Canvas(CARD_W, h);
+  frame(c, 0, 0, CARD_W, h);
   let x = 12;
   if (iconName) { const is = iconSize(iconName, 2); icon(c, iconName, 12, Math.round((h - is.h) / 2), 2); x = 12 + is.w + 10; }
   big(c, title, x, 9, 2, 'sun');
   lines.forEach((line, i) => {
-    if (x + 1 + smallWidth(line) > 300 - 10) throw new Error('line too long: ' + line);
+    if (x + 1 + smallWidth(line) > CARD_W - 10) throw new Error('line too long: ' + line);
     small(c, line, x + 1, 9 + 19 + i * 10);
   });
   made.push(c.save(file));
 }
 notice('notice_alpha.png', 'warning', 'EARLY ALPHA', [
   'EXPECT BUGS AND MISSING CONTENT.',
-  'NUMBERS AND BALANCE {o:WILL CHANGE}.',
-  'UPDATES MAY BREAK WORLDS - {o:BACK THEM UP}.',
+  'MOST ITEMS HAVE NO RECIPES YET -',
+  '{o:TRY THEM IN CREATIVE MODE}.',
+  'UPDATES MAY BREAK WORLDS -',
+  '{o:BACK THEM UP}.',
 ]);
 notice('notice_modpacks.png', 'check', 'MODPACKS WELCOME', [
-  'USE IT IN {o:ANY MODPACK}, PUBLIC OR PRIVATE.',
-  'NO NEED TO ASK. JUST LINK THE OFFICIAL PAGE -',
+  'USE IT IN {o:ANY MODPACK}, PUBLIC',
+  'OR PRIVATE. NO NEED TO ASK.',
+  'JUST LINK THE OFFICIAL PAGE -',
   '{o:PLEASE DO NOT RE-UPLOAD THE JAR}.',
 ]);
 // planned work: docs/项目内容/02 - 制作清单.md (V1, V2) less what is already in, plus the diesel generator and fuel tanks
 notice('notice_coming_next.png', null, 'COMING NEXT', [
   '{o:PLANNED - NOT IN THIS VERSION YET.}',
-  '- CITIES, CITY AND RURAL LOOT, A NEW SPAWN SYSTEM',
+  '- CITIES, LOOT AND A NEW SPAWN SYSTEM',
   '- RUNNERS AND THE FIRST SPECIAL INFECTED',
   '- BODY-PART DAMAGE, INJURIES AND BLEEDING',
-  '- FOOD SPOILAGE, MEDICINE, TOOLS AND WEAPONS',
+  '- FOOD SPOILAGE, MEDICINE AND NEW GEAR',
   '- RAD RAIN, HAZMAT SUITS, DECONTAMINATION',
   '- PROPANE TANKS AND BIGGER EXPLOSIONS',
   '- TRACER AND INCENDIARY ROUNDS',
-  '- DIESEL GENERATORS, FUEL TANKS, MORE RECIPES',
-  '- LATER: {o:PICK YOUR SPAWN REGION}, {o:SEASONS}',
+  '- DIESEL GENERATORS, FUEL TANKS, RECIPES',
+  '- LATER: {o:SPAWN REGIONS}, {o:SEASONS}',
 ]);
 notice('notice_shaders.png', null, 'SHADERS', [
   'WORKS WITH {o:OCULUS} AND {o:EMBEDDIUM}.',
-  'TESTED: {o:COMPLEMENTARY REIMAGINED}, {o:SUNDIAL}',
-  'AND {o:SUNDIAL LITE}.',
+  'TESTED: {o:COMPLEMENTARY REIMAGINED},',
+  '{o:SUNDIAL} AND {o:SUNDIAL LITE}.',
   'GUNS AND MACHINES USE {o:LABPBR} MATERIALS.',
 ]);
 notice('notice_requirements.png', null, 'REQUIREMENTS', [
@@ -332,7 +337,18 @@ if (fs.existsSync(TITLE)) {
     const o = ((y + oy) * W + x + ox) * 4;
     for (let k = 0; k < 3; k++) out[o + k] = Math.round(out[o + k] * (1 - a) + t.px[i + k] * a);
   }
-  fs.writeFileSync(path.join(OUT, 'hero.png'), png(out, W, H));
-  made.push(`hero.png ${W}x${H}`);
+  const w2 = HERO_W, h2 = Math.round(H * HERO_W / W), small = Buffer.alloc(w2 * h2 * 4), k = W / w2;
+  for (let y = 0; y < h2; y++) for (let x = 0; x < w2; x++) {
+    const x0 = x * k, x1 = x0 + k, y0 = y * k, y1 = y0 + k, acc = [0, 0, 0, 0];
+    let area = 0;
+    for (let sy = Math.floor(y0); sy < Math.ceil(y1); sy++) for (let sx = Math.floor(x0); sx < Math.ceil(x1); sx++) {
+      const a = (Math.min(x1, sx + 1) - Math.max(x0, sx)) * (Math.min(y1, sy + 1) - Math.max(y0, sy)), i = (Math.min(H - 1, sy) * W + Math.min(W - 1, sx)) * 4;
+      for (let c = 0; c < 4; c++) acc[c] += out[i + c] * a;
+      area += a;
+    }
+    for (let c = 0; c < 4; c++) small[(y * w2 + x) * 4 + c] = Math.round(acc[c] / area);
+  }
+  fs.writeFileSync(path.join(OUT, 'hero.png'), png(small, w2, h2));
+  made.push(`hero.png ${w2}x${h2}`);
 }
 console.log('wrote to ' + OUT + ':\n  ' + made.join('\n  '));

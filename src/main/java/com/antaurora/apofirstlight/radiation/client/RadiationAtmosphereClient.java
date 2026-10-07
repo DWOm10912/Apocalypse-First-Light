@@ -52,11 +52,19 @@ public final class RadiationAtmosphereClient {
         event.setBlue(lerp(event.getBlue(), 0.34F, strength));
     }
 
+    /**
+     * Pulls the fog in to 70% of its distance at full intensity. Start and end scale together: vanilla terrain fog starts
+     * near 90% of the render distance, so pulling only the end in would put the start beyond it. Forge applies RenderFog
+     * parameters only when the event is cancelled (ForgeHooksClient#onFogRender), so it is cancelled here; without the
+     * cancel (before 2026-10-06) the fog never moved. Outside radiation the event is left alone.
+     */
     @SubscribeEvent
     public static void onRenderFog(ViewportEvent.RenderFog event) {
-        if (event.getType() != FogType.NONE) return;
+        if (event.getType() != FogType.NONE || currentIntensity <= 0.001F) return;
         float multiplier = lerp(1.0F, 0.70F, currentIntensity);
-        event.setFarPlaneDistance(Math.min(event.getFarPlaneDistance(), event.getFarPlaneDistance() * multiplier));
+        event.setNearPlaneDistance(event.getNearPlaneDistance() * multiplier);
+        event.setFarPlaneDistance(event.getFarPlaneDistance() * multiplier);
+        event.setCanceled(true);
     }
 
     private static float lerp(float a, float b, float t) {

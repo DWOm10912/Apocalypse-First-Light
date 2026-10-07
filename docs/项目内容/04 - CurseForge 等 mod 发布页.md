@@ -52,10 +52,10 @@
 
 | 文件 | 尺寸 | 用途 |
 |---|---|---|
-| `hero.png` | 2400×1200 | 页首：标题图按原尺寸叠在夜空色带上 |
-| `header_features.png` | 1200×144 | "FEATURES" 分节标题 |
-| `feature_gun / survival / loot / fuel / power / radiation / infected.png` | 1200×160 | 七个特性的标题条（说明文字写在卡片下面的正文里，方便修改和翻译）；感染者那张 2026-10-06 加，用户确认感染者可以写进介绍 |
-| `link_discord / link_wiki / link_source.png` | 528×120 | 链接按钮，在 CurseForge 编辑器里给图片加链接 |
+| `hero.png` | 840×420（2026-10-06 起，原 2400×1200） | 页首：标题图按原尺寸叠在夜空色带上 |
+| `header_features.png` | 840×108 | "FEATURES" 分节标题 |
+| `feature_gun / survival / loot / fuel / power / radiation / infected.png` | 840×120 | 七个特性的标题条（说明文字写在卡片下面的正文里，方便修改和翻译）；感染者那张 2026-10-06 加，用户确认感染者可以写进介绍 |
+| `link_discord / link_wiki / link_source.png` | 396×90 | 链接按钮，在 CurseForge 编辑器里给图片加链接 |
 | `notice_alpha.png` | 1200×264 | 早期 Alpha 提示 |
 | `notice_modpacks.png` | 1200×264 | 整合包随意使用，请链接官方页面、不要重新上传 jar（按上面的许可） |
 | `notice_coming_next.png` | 1200×544 | 路线图，标题下第一行写明"计划中，不在这个版本里"，避免被当成已有内容。内容取自 `02 - 制作清单.md` 的 V1、V2 里还没做的项（2026-10-06 逐项查过代码，都还没有；流血只有通用的液体喷射和污渍底层，没接到生物上），加上待办里的柴油发电机、燃油储罐。"其他原版改动"太笼统，没写 |
@@ -65,6 +65,64 @@
 待定：Discord 邀请链接、Wiki 地址；源码仓库公开后再放源码按钮。
 
 ---
+
+## 只推荐创造模式试玩（2026-10-06 用户定）
+
+为什么：用户说这个版本不推荐生存游玩，硬要玩可以开创造摆东西，目前只推荐创造模式试玩（没有剧情、大部分物品没有配方、世界不生成战利品）。
+
+- 正文 Alpha 卡下面改成一段粗体开头的说明："This alpha is for a look around in Creative mode. Survival is not recommended yet ..."；"Good to know" 第一条也写明创造模式。
+- 用户已经在 CurseForge 编辑器里上传了图片并用 spoiler 折叠了截图；改好的完整正文（保留用户上传后的图片地址）在 `E:/Download/AFL_CurseForge_Page/description_curseforge.md`，整份粘贴即可。
+- 同时修正：用户那版的 Discord 按钮链到了 GitHub 仓库、GitHub 按钮没链接；改成 GitHub 按钮链仓库，Discord 按钮链 `DISCORD_INVITE_URL`（有邀请链接再填，没有就删掉）。感染者第三条改成 "More kinds of infected are on the way."
+- 如果 Alpha 卡是在加"没有配方"那行之前上传的，要重新上传 `cards/notice_alpha.png` 并替换地址。
+- 页面链到了 GitHub 仓库：仓库公开前要把新的 `LICENSE.txt`（2026-10-06 改的 ARR 许可）提交上去，否则仓库里还是 Forge 模板的 LGPL 说明。
+
+## 注意事项段落 "Good to know"（2026-10-06）
+
+为什么：用户问页面要不要写注意事项。玩家装上后最容易当成 bug 的是原版内容被改，所以按代码里**实际改了的**写（`docs/项目内容/01 - 设计/世界与环境/原版改动.md` 是删减目标清单，不等于都已实现，没照抄），放在前置要求卡后面：
+- 用新世界：`data/minecraft/worldgen` 改了主世界地形（macro terrain、continents），`tags/worldgen/biome/has_structure/*` 关掉了村庄、神殿、废弃矿井、沉船、林地府邸、海底神殿、远古城市、废弃传送门等，要塞 `structure_set` 频率为 0。
+- 原版 HUD 被替换（生存 HUD、负重条占经验条位置，看不到经验等级）；`data/minecraft/advancements` 112 个原版进度全部 `forge:false`，进度界面被 `AflAdvancementScreenEvents` 挡掉。
+- 桶、打火石配方关闭（`data/minecraft/recipes`），`NoMilkingEvents` 禁止挤奶，液体按升计。
+- HUD 类 mod 可能冲突；依赖进度、村庄、要塞的 mod 受影响。
+- 性能建议 Embeddium + Oculus；语言中英；bug 去 Discord。
+- **待用户确认**：多人 / 专用服务器测试情况（没测过要写明，不能默认能用）；要塞不生成导致进不了末地是否是有意的，下界是否已关闭没有核实。
+
+## 发布类型：Alpha（2026-10-06 用户定）
+
+为什么：用户说"不能挂羊头卖狗肉"——还没有剧情、大部分东西没有配方，只是想让路过感兴趣的人看看。所以 CurseForge 的 Release Type 选 **Alpha**（和版本号 `1.0.0-alpha`、"EARLY ALPHA" 卡片、更新日志一致），接受 Alpha 文件不出现在 CurseForge 桌面 App、只能从网页下载。等城市、战利品等核心内容做完再发 Beta。
+
+- 其它上传选项：审核通过后自动发布；Environment 选 Server + Client；Modloader 只选 Forge（NeoForge 没测）；Java 17；Minecraft 1.20.1；Project distribution 选允许第三方分发（和"整合包随意使用"一致）。
+- 因为大部分物品还没有配方，Alpha 提示卡加了一行 "MOST ITEMS HAVE NO RECIPES YET - TRY THEM IN CREATIVE MODE."，正文 Alpha 卡下面加一句同样意思的说明，更新日志的已知问题也写上。
+
+## CurseForge 正文图片宽度限制（2026-10-06）
+
+为什么改：用户上传 hero 时 CurseForge 报 "Image width is too big, should be less than 850px"，正文图片必须窄于 850 像素。原来的卡片 1200 宽、hero 2400 宽、截图 1920 宽都超了。
+
+- 卡片生成器改成 `UNIT = 3`、`CARD_W = 280`：卡片 280 格 × 3 = 840 像素（仍是整数倍放大，像素边缘清楚）；链接按钮 396 宽；hero 先按原尺寸合成，再按面积平均缩到 840 × 420。
+- 卡片变窄后有几行放不下（生成器会报错），所以改了：特性条 "RADIATION & INDUSTRY" → "FALLOUT & INDUSTRY"；路线图几行改短（"CITIES, LOOT AND A NEW SPAWN SYSTEM"、"FOOD SPOILAGE, MEDICINE AND NEW GEAR"、"DIESEL GENERATORS, FUEL TANKS, RECIPES"、"LATER: SPAWN REGIONS, SEASONS"）；Alpha、整合包、光影卡的长句拆成两行。特性条加了标题宽度检查。
+- `E:/Download/AFL_CurseForge_Page/images/` 的截图都缩到 840 宽（JPG 质量 92，每张 40–110 KB）。
+- 画廊没有 850 像素的限制，本应用高清图；但用户已经把原始截图从 E:/Download 挪走，这次没做高清画廊版，暂时用 840 宽的图，或者用户从原图另传。
+
+## Alpha 页面成品（2026-10-06）
+
+为什么：用户要求先用 E:/Download 里已有的截图排版，没有图的特性只写文字；视频以后自己录。
+
+- 位置：`E:/Download/AFL_CurseForge_Page/`
+  - `description.md`：可直接粘贴的英文正文（Markdown）。上传图片后把每个本地路径换成编辑器给的地址；`DISCORD_INVITE_URL` 换成邀请链接。
+  - `gallery.md`：画廊上传顺序和标题（16 张，第一张是全配件 P9）。
+  - `preview.html`：本地预览，模拟 CurseForge 的深色正文栏。
+  - `cards/`：卡片副本；`images/`：截图转成的 JPG（质量 88–90，大多 1920 宽，每张约 100–330 KB）。生存 HUD 用用户自己裁的版本放大 2 倍；起火两张是用户从旧截图里裁掉硬件监控框后的版本。
+- 每个特性：标题条卡片 + 2–4 条英文短列表（-）+ 1–2 张截图；特性之间、开头和结尾的提示卡前后用 --- 分割线隔开（用户 2026-10-06 提出：列表比整段好扫读，分割线让分界更清楚）。七个特性都有图。
+- **搜刮的说法改了**：Alpha 里世界还不会自然生成带战利品的容器（用户 2026-10-06 指出），所以正文写"可以打开、逐格搜索"，并明确说"带战利品的容器会随城市生成到来"，不写"满世界搜刮"。截图用撬棍砸售货机玻璃，不用搜索界面（没有自然生成的战利品可截）。
+- 没用的旧图：烧着的村民一类画面放在画廊（`fire_on_mobs`），不放正文；带硬件监控框、旧版快捷栏、中文提示框的旧截图不用。
+
+## 改用视频（2026-10-06，取代下面草稿里的 GIF 和折叠块）
+
+为什么改：用户决定不做 GIF，自己在 YouTube 发视频。视频有声音（枪声、盖革计数器是卖点，GIF 表现不了）、画质高、只做一次。
+
+- 预告视频 1–2 分钟，**嵌进正文**（放在简介和 Alpha 提示之后、FEATURES 之前），不只挂外链；CurseForge / Modrinth 正文能否嵌 YouTube 未核实，在编辑器里确认，不行就用链接。
+- 每个特性保留一张**静态截图**（标题条 + 两三句 + 一张图），给不点视频的人看；不再需要 GIF 和折叠块。
+- 下面草稿里的 [GIF: …] 改作视频分镜：Silverwood 换弹、按 Z 换配件、打油桶漏油起火、垃圾箱搜刮、撬棍砸售货机、雪地结霜、辐射区盖革计数器、感染者循声赶来；每段 5–10 秒，保留原声。
+- 原来草稿保留作参考，特性正文和截图建议仍然适用。
 
 ## 正文排版草稿（2026-10-06）
 
