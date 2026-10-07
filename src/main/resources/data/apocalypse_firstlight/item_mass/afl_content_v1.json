@@ -341,6 +341,10 @@
       "unit_mass_kg": 0.3,
       "estimated": true
     },
+    "apocalypse_firstlight:ground_face_block": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
     "apocalypse_firstlight:beverage_cooler": {
       "unit_mass_kg": 35,
       "estimated": true
