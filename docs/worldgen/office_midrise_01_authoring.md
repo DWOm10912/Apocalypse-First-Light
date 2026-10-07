@@ -1,5 +1,7 @@
 # office_midrise_01 — modern concrete office, formal source
 
+> **2026-10-06 资产退役：** 用户因建筑质量不符合要求，已删除正式 `office_midrise_01.nbt` 及 `small_city/buildings/office_midrise_01.json`。下文关于该建筑的正式资源、导出链接和验收记录仅为历史，不代表当前可用资产。该模板未接入自然生成池；历史开发草稿工具、备份及已放置的世界方块未在本次删除范围内。
+
 ## Current formal asset — 2026-09-12
 
 At the user's request, the current modern concrete office (including subsequent on-site adjustments after Facade Revision V2) was captured under `office_midrise_01` and **overwrote the former glass-tower source NBT and metadata**. This is a new building, not the old 86-block shell reset. Its live authoring plot is in `新的世界` / `minecraft:overworld`, inclusive bounds `(80,-33,-464)` → `(108,36,-442)`; captured NBT size is **29×70×23** (X×Y×Z), 46,690 cells, **15,747 non-air**, zero entities. The front is SOUTH, surface offset 1, category `HIGHRISE_OFFICE`, zones `CORE,MIXED`, road-facing true, damage-compatible false and loot-ready false. The authoring ID was changed from `office_concrete_01` to `office_midrise_01` before the explicit export; the world blocks were not moved or rebuilt for this rename.

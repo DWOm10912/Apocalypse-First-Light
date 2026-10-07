@@ -1,5 +1,9 @@
 # Small City Building Authoring Framework V1
 
+> **新资产接口（2026-10-06）：** [《AFL 北美道路与建筑地块统一规格 V1》](north_american_roads_and_lots_spec_v1.md)规定 NORTH/−Z、整数行走面G、S=G−3/16。本文SOUTH是旧 `/afl_author` 工具实际硬编码输出，保留用于旧流程，不是新资产标准。工具不自动旋转NBT；新NORTH NBT须独立提交经实际朝向核对的schema1 StructureDefinition metadata，不能直接采用其SOUTH sidecar。完整地块不等于建筑NBT size。
+
+> **2026-10-06 资产退役：** 用户因建筑质量不符合要求，已删除正式 `office_midrise_01.nbt` 及 `small_city/buildings/office_midrise_01.json`。下文关于该建筑的正式资源、导出链接和验收记录仅为历史，不代表当前可用资产。该模板未接入自然生成池；历史开发草稿工具、备份及已放置的世界方块未在本次删除范围内。
+
 ## Purpose / status
 
 Development asset production only: reference → build in a reserved development plot → user reviews → iterate draft → explicit user approval → validate/export standard Minecraft Structure NBT plus JSON. **Export does not register a city spawn pool.**
@@ -28,7 +32,7 @@ For an explicitly chosen development world set true (restart/reload server confi
 - Session reservations are per-player, server-memory only; logout/server stop releases the reservation but **does not erase blocks**. Record `info` coordinates; use `resume` to select the retained draft, then reconfigure its category/zones. Cancelling also leaves blocks intact.
 - Multiple sessions cannot overlap. No session enables editing beyond ordinary game/build permissions; this tool does not implement protection claims.
 
-## Coordinate convention
+## Legacy authoring tool coordinate convention
 
 | Field | Convention |
 | --- | --- |
@@ -39,9 +43,9 @@ For an explicitly chosen development world set true (restart/reload server confi
 | +Z | Toward main front/street |
 | Size order in commands | width, depth, height |
 | NBT `size` | width, height, depth (Vanilla X/Y/Z) |
-| `surface_offset_y` | Road/surface plane Y minus NBT minimum Y; default 1 |
+| `surface_offset_y` | Integer walking surface G minus NBT minimum Y; default 1; not fractional asphalt S |
 
-Local Y=0 is the embedded foundation/base; local Y=1 is the default surface/sidewalk/entrance level. Never infer surface height from the lowest occupied block. For deeper foundations explicitly provide the offset (0..height-1). A future placement uses `captureOriginY = roadSurfaceY - surface_offset_y`.
+Local Y=0 is the embedded foundation/base; local Y=1 is the default surface/sidewalk/entrance level. Never infer surface height from the lowest occupied block. For deeper foundations explicitly provide the offset (0..height-1). A future placement uses `captureOriginY = G - surface_offset_y`.
 
 Rotation of SOUTH: NONE→SOUTH, CLOCKWISE_90→WEST, CLOCKWISE_180→NORTH, COUNTERCLOCKWISE_90→EAST. Use Vanilla rotation and transformed bounds; width/depth swap for quarter turns. No new placement system is implemented here.
 

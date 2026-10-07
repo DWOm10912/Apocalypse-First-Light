@@ -185,7 +185,7 @@ Rural 的计划仍由 StructureStart/Piece NBT 保存，作为站点权威；共
 
 ## 8. NBT Building Contract V1
 
-Origin 是模板局部 (0,0,0) 对应的世界块位，不是建筑中心或门口。默认新 authoring 正面 SOUTH/+Z，既有资产允许显式水平 front；不自动旋转源 NBT。ground_anchor_offset_y 是局部“期望地面上方第一格位”的 Y；placement 使用 `originY = desiredGroundSurfaceY - offset`。允许地下部分，offset 下的所有块仍在 NBT size 范围内并纳入施工 claim，不允许模板坐标偷偷超出 size。
+Origin 是模板局部 (0,0,0) 对应的世界块位，不是建筑中心或门口。新北美资产制作正面 NORTH/−Z，以[《AFL 北美道路与建筑地块统一规格 V1》](north_american_roads_and_lots_spec_v1.md)为准；既有资产保留真实水平 front。旧 authoring 导出器仍硬编码 SOUTH，不能直接作为新标准 sidecar；不自动旋转源 NBT。ground_anchor_offset_y 是局部“期望地面上方第一格位”的 Y；placement 使用 `originY = desiredGroundSurfaceY - offset`。允许地下部分，offset 下的所有块仍在 NBT size 范围内并纳入施工 claim，不允许模板坐标偷偷超出 size。
 
 旋转使用与 `StructurePlaceSettings(Mirror.NONE, rotation)` 同一原点/pivot 和坐标变换；定义变换函数 T：worldSocket=origin+T(localSocket)，worldFacing=rotation(localFacing)。不另写一套以中心旋转的 socket 算法。四向均可声明，但 declared 不等于 verified；V1 不接受 mirror，后续若放开需单独 QA。
 
@@ -207,7 +207,7 @@ CityRecipe 定义地块/分区/密度/楼高及街道层级，可按 category/ta
 
 ## 10. City Placeholder Strategy
 
-Phase 4 才创建开发数据包，例如 `afl_dev` namespace 的四种真实有限 NBT：commercial_small（建议16×10×12）、office_small（20×24×16）、industrial_medium（24×16×24）、residential_small（16×12×16），尺寸顺序 X×Y×Z。用混凝土轮廓/门洞标记制作，拥有实际地面 offset、SOUTH front、边界 main socket 和声明四旋转；参与同一 metadata validator、claim/terrain/placement 链。
+Phase 4 才创建开发数据包，例如 `afl_dev` namespace 的四种真实有限 NBT：commercial_small（建议16×10×12）、office_small（20×24×16）、industrial_medium（24×16×24）、residential_small（16×12×16），尺寸顺序 X×Y×Z。用混凝土轮廓/门洞标记制作，拥有实际地面 offset、NORTH front、边界 main socket 和声明四旋转；参与同一 metadata validator、claim/terrain/placement 链。
 
 开发 City recipe 只引用 category/tag，不把 placeholder id 写入 generator。正式 recipe 排除 `afl_dev:placeholder`，打包检查禁止 dev namespace/placeholder tag 混入正式池。正式交付时新增正式 NBT+metadata，替换配方池引用/数据映射，生成器代码不改。若尺寸、地下部分或入口不同，必须重新适配地块与 QA；超出原 slot 预算则拒绝/重选而非硬塞。所谓可替换指**数据供应可替换**，不保证任意体积无验证互换，更不在已生成世界原地换建筑。
 

@@ -1,5 +1,7 @@
 # Modern Glass Tower 02 — live concept study
 
+> **2026-10-06 资产退役：** 用户因建筑质量不符合要求，已删除正式 `office_midrise_01.nbt` 及 `small_city/buildings/office_midrise_01.json`。下文关于该建筑的正式资源、导出链接和验收记录仅为历史，不代表当前可用资产。该模板未接入自然生成池；历史开发草稿工具、备份及已放置的世界方块未在本次删除范围内。
+
 Status: **Historical predecessor, superseded on 2026-09-12 by the modern concrete office under the same `office_midrise_01` ID.** This glass tower was previously exported/imported with explicit user approval and passed all four in-world rotation tests. Its finalization corrected 15 unsupported WC buttons and re-exported. Those tests do **not** validate the replacement concrete NBT. The old formal NBT and metadata were backed up before replacement. All 15 upper meeting rooms are open office areas with simple computer-desk placeholders; earlier meeting-room and no-export descriptions below are dated history. The older six-floor draft is preserved. No Small City pool integration. Exhaustive navigation, nighttime lighting, named-shader tests and previously deferred optional furniture/detail work are not claimed complete. See the [previous glass asset record](office_midrise_01_authoring.md#previous-formal-asset--2026-09-10-historical-superseded) and [current concrete asset](office_midrise_01_authoring.md#current-formal-asset--2026-09-12).
 
 ## Scope and dimensions

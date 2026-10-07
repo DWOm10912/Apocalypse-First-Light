@@ -203,3 +203,19 @@
 
 ---
 
+
+## 上传后"failed processing"排查（2026-10-06，只读检查，没跑 Gradle）
+
+CurseForge 对 `apocalypse_firstlight-1.0.0-alpha.jar` 报 "Your file has failed processing, this could be caused due to obfuscated code or corrupt files"。用 Python `zipfile` 逐项检查了这个 jar（21:40 构建，20,969,092 字节，4,726 个条目），**没找到损坏或混淆**：
+- ZIP 能正常读，`testzip` 没有坏条目，没有重复条目，没有 zip64，全部 deflate；1980 年时间戳的 234 条都是目录条目，属正常。
+- 没有 `docs/`、`tools/`、`.mjs`、`.bbmodel`、`.md`、嵌套 jar、jarJar 元数据。
+- `META-INF/mods.toml` 完整（modId、版本、依赖、logo、描述）；MANIFEST 带 `MixinConfigs`；mixin 配置里 32 个类全部在 jar 里，refmap 存在且是 SRG 名。类文件里是 SRG 名（`m_xxxx_`），没有 Mojang 名，说明 `reobfJar` 执行过——这是 Forge 正常的重映射，不是 CurseForge 说的"混淆"。全部类是 Java 17（major 61），魔数正确，JSON 全部能解析。
+- 没有网络、进程执行、类加载器、Unsafe 之类的可疑调用；只有光影兼容和地堡事件里用了反射（`AflShaderCompat`、`BunkerWorldEvents`），属正常。
+
+发现的问题（不是损坏，但重新上传前该处理）：
+1. **jar 过期**：它是在 22:54 "+old rural Removed" 和 23:00 "+old strcture remove" 两个提交之前构建的，里面还有已退役的旧乡村自然生成（`worldgen/structure_set/rural.json`、8 份 `rural_*` NBT 和配置）以及 `convenience_store_01` / `gas_station_01` / `office_midrise_01` / `suburban_house_01` 四份旧结构。要从当前 HEAD 重新构建。
+2. **开发源码混进了正式包**：`build.gradle` 把 `src/dev/java` 加进了 main 源码集，`jar` 只排除了 `com/antaurora/apofirstlight/dev/**`。所以 `src/dev` 里放在 `worldgen/highway`（17 个）和 `worldgen/rural`（33 个）包下的 50 个类都被打进了 jar（含 `HighwayDebugCommand`，它没有在正式包里注册，是死代码）。当前 HEAD 的 `src/dev` 里这两个包仍有 17 + 24 个文件，重新构建也会带上。建议 jar 任务按 `src/dev` 的实际文件排除，或者不再把 `src/dev` 并进 main。
+3. `mods.toml` 的许可写着 "see LICENSE.txt"，但 jar 里没有 `LICENSE.txt`，建议打进 jar 根目录。
+4. `/afl_author` 建造命令在正式包里，但配置默认关闭（`buildingAuthoringEnabled=false`），不会暴露给玩家。
+
+结论：jar 内容看不出会让 CurseForge 处理失败的原因；这条提示是通用文案，处理失败也可能出在他们那边。建议修完上面 1–3 后重新构建上传；如果还失败，带上文件 ID 联系 CurseForge 支持。

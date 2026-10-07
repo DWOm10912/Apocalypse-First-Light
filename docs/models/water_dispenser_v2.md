@@ -86,7 +86,7 @@ V2 取代 V1 文档（原 `docs/models/water_dispenser.md`，已删除，仍然�
   - 上半：机身顶部（含面板和指示灯）2.4..13.6 × 0..4.6 × 4.75..16，顶盖 2.7..13.3 × 4.6..5.2 × 5.3..15.7，纸杯筒 0.4..2.4 × 0..2.3 × 7.7..9.9，桶座和桶 3.3..12.7 × 5.2..15.6 × 5.8..15.2；
   - 其他朝向由北向旋转得到。V1 是"一个外包络做选中框 + 多个盒子做碰撞"，现在两者相同。
 - 挖掘（不变，2026-10-01 复查）：硬度 3、爆炸抗性 5，`requiresCorrectToolForDrops()`；`minecraft:mineable/pickaxe` + `minecraft:needs_iron_tool`（铁镐及以上）。它是办公家电（塑料机身），不按工业设备的钻石级算。掉落：下半按战利品表 `loot_tables/blocks/water_dispenser.json` 掉 1 个；挖上半时由方块代码移除下半，工具对才掉 1 个；创造模式不掉。
-- 没有 GUI、储物、喝水、冷热水、流体能力、动画、交互音效、配方。世界生成里有它的结构（`convenience_store_01`、`gas_station_01`、`office_midrise_01` 的 NBT）沿用原来的方块状态，`lit` 取默认值 false，放置时会创建方块实体。
+- 没有 GUI、储物、喝水、冷热水、流体能力、动画、交互音效、配方。世界生成里有它的结构（`convenience_store_01`、`gas_station_01`、已于 2026-10-06 退役的 `office_midrise_01` 历史 NBT）沿用原来的方块状态，`lit` 取默认值 false，放置时会创建方块实体。
 
 ### 已知问题：V2 之前放下的饮水机
 
