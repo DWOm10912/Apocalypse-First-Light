@@ -13,14 +13,17 @@ public record RoadPlan(String specVersion, String planId, String candidateId, La
         nodes = List.copyOf(nodes); edges = List.copyOf(edges); lots = List.copyOf(lots);
         claims = List.copyOf(claims); diagnostics = List.copyOf(diagnostics);
     }
-    public enum Layout { RESIDENTIAL, COMMERCIAL, INDUSTRIAL, MIXED, T }
+    public enum Layout { RESIDENTIAL, COMMERCIAL, INDUSTRIAL, MIXED, T, SEGMENT }
     public enum Status { PLANNED, REJECTED }
-    public enum NodeKind { END, STRAIGHT, TURN, T_JUNCTION, CROSS }
+    public enum NodeKind { END, STRAIGHT, TURN, T_JUNCTION, CROSS, DEVELOPMENT_TERMINAL }
     public record Arm(Direction direction, RoadType type, String edgeId) {}
     public record Node(String id, int x, int z, int groundY, NodeKind kind, List<Arm> arms,
                        List<BoundsXZ> footprint) {
         public Node { arms = List.copyOf(arms); footprint = List.copyOf(footprint); }
-        public RoadJunction junction() { return RoadJunction.of(x,z,arms); }
+        public RoadJunction junction() {
+            return kind == NodeKind.DEVELOPMENT_TERMINAL
+                    ? RoadJunction.developmentTerminal(x,z,arms) : RoadJunction.of(x,z,arms);
+        }
         public int surfaceH16() { return Math.subtractExact(Math.multiplyExact(groundY, 16), 3); }
     }
     /** End coordinates are shared node coordinates; station phase begins at (x1,z1). */

@@ -9,6 +9,15 @@ import java.util.TreeSet;
 public record RoadJunction(int armExtent, List<BoundsXZ> footprint, List<BoundsXZ> asphalt,
                            List<BoundsXZ> curbs, List<BoundsXZ> utilities, List<BoundsXZ> sidewalks) {
     public static final int ARM_TRANSITION = 8;
+    /** One station of the unchanged cross-section, only for isolated development segments.
+     * The normal construction core supplies foundation and the bounded external shoulder.
+     * This does not alter the established city END/intersection footprint. */
+    public static RoadJunction developmentTerminal(int x,int z,List<RoadPlan.Arm> arms) {
+        if(arms.size()!=1)throw new IllegalArgumentException("Development terminal needs one arm");
+        var arm=arms.get(0);var d=arm.direction();
+        var s=RoadCrossSection.of(x,z,x+d.getStepX(),z+d.getStepZ(),arm.type());
+        return new RoadJunction(1,List.of(s.corridorBounds()),List.of(s.asphalt()),s.curbs(),s.utilities(),s.sidewalks());
+    }
     public RoadJunction {
         footprint = List.copyOf(footprint); asphalt = List.copyOf(asphalt); curbs = List.copyOf(curbs);
         utilities = List.copyOf(utilities); sidewalks = List.copyOf(sidewalks);

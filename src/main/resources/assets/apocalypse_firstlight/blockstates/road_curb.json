@@ -1,0 +1,1284 @@
+{
+  "variants": {
+    "facing=north,layers=1,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_1",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=1,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_1",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=1,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_1",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=1,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_1",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=2,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_2",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=2,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_2",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=2,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_2",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=2,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_2",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=3,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_3",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=3,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_3",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=3,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_3",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=3,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_3",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=4,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_4",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=4,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_4",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=4,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_4",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=4,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_4",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=5,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_5",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=5,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_5",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=5,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_5",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=5,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_5",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=6,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_6",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=6,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_6",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=6,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_6",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=6,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_6",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=7,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_7",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=7,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_7",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=7,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_7",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=7,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_7",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=8,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_8",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=8,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_8",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=8,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_8",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=8,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_8",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=9,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_9",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=9,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_9",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=9,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_9",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=9,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_9",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=10,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_10",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=10,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_10",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=10,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_10",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=10,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_10",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=11,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_11",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=11,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_11",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=11,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_11",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=11,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_11",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=12,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_12",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=12,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_12",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=12,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_12",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=12,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_12",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=13,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_13",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=13,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_13",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=13,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_13",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=13,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_13",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=14,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_14",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=14,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_14",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=14,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_14",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=14,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_14",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=15,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_15",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=15,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_15",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=15,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_15",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=15,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_15",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=16,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_16",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=16,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_16",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=16,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_16",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=16,shape=straight": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_straight_16",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=1,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_1",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=1,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_1",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=1,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_1",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=1,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_1",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=2,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_2",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=2,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_2",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=2,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_2",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=2,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_2",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=3,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_3",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=3,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_3",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=3,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_3",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=3,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_3",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=4,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_4",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=4,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_4",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=4,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_4",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=4,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_4",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=5,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_5",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=5,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_5",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=5,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_5",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=5,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_5",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=6,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_6",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=6,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_6",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=6,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_6",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=6,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_6",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=7,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_7",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=7,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_7",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=7,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_7",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=7,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_7",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=8,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_8",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=8,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_8",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=8,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_8",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=8,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_8",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=9,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_9",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=9,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_9",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=9,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_9",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=9,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_9",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=10,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_10",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=10,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_10",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=10,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_10",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=10,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_10",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=11,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_11",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=11,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_11",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=11,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_11",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=11,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_11",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=12,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_12",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=12,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_12",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=12,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_12",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=12,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_12",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=13,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_13",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=13,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_13",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=13,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_13",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=13,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_13",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=14,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_14",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=14,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_14",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=14,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_14",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=14,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_14",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=15,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_15",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=15,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_15",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=15,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_15",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=15,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_15",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=16,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_16",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=16,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_16",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=16,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_16",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=16,shape=inner": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_inner_16",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=1,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_1",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=1,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_1",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=1,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_1",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=1,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_1",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=2,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_2",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=2,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_2",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=2,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_2",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=2,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_2",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=3,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_3",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=3,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_3",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=3,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_3",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=3,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_3",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=4,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_4",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=4,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_4",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=4,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_4",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=4,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_4",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=5,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_5",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=5,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_5",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=5,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_5",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=5,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_5",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=6,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_6",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=6,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_6",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=6,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_6",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=6,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_6",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=7,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_7",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=7,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_7",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=7,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_7",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=7,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_7",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=8,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_8",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=8,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_8",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=8,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_8",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=8,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_8",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=9,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_9",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=9,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_9",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=9,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_9",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=9,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_9",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=10,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_10",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=10,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_10",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=10,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_10",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=10,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_10",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=11,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_11",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=11,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_11",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=11,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_11",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=11,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_11",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=12,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_12",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=12,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_12",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=12,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_12",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=12,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_12",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=13,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_13",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=13,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_13",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=13,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_13",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=13,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_13",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=14,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_14",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=14,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_14",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=14,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_14",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=14,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_14",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=15,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_15",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=15,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_15",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=15,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_15",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=15,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_15",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=16,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_16",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=16,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_16",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=16,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_16",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=16,shape=outer": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_outer_16",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=1,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_1",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=1,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_1",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=1,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_1",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=1,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_1",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=2,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_2",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=2,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_2",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=2,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_2",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=2,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_2",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=3,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_3",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=3,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_3",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=3,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_3",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=3,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_3",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=4,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_4",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=4,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_4",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=4,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_4",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=4,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_4",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=5,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_5",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=5,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_5",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=5,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_5",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=5,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_5",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=6,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_6",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=6,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_6",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=6,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_6",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=6,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_6",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=7,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_7",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=7,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_7",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=7,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_7",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=7,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_7",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=8,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_8",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=8,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_8",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=8,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_8",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=8,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_8",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=9,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_9",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=9,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_9",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=9,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_9",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=9,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_9",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=10,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_10",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=10,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_10",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=10,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_10",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=10,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_10",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=11,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_11",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=11,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_11",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=11,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_11",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=11,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_11",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=12,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_12",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=12,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_12",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=12,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_12",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=12,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_12",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=13,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_13",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=13,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_13",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=13,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_13",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=13,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_13",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=14,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_14",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=14,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_14",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=14,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_14",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=14,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_14",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=15,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_15",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=15,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_15",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=15,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_15",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=15,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_15",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=north,layers=16,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_16",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east,layers=16,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_16",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,layers=16,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_16",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,layers=16,shape=driveway": {
+      "model": "apocalypse_firstlight:block/road_surfaces/road_curb_driveway_16",
+      "y": 270,
+      "uvlock": true
+    }
+  }
+}

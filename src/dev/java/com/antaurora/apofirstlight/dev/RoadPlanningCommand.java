@@ -66,12 +66,14 @@ public final class RoadPlanningCommand {
         var root = Commands.literal("roads").requires(source -> source.hasPermission(2));
         root.then(mode("plan", false));
         root.then(mode("synthetic", true));
+        RoadConstructionCommand.attach(root);
         return root;
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> mode(String name, boolean synthetic) {
         var mode = Commands.literal(name);
         for (RoadPlan.Layout layout : RoadPlan.Layout.values()) {
+            if (layout == RoadPlan.Layout.SEGMENT) continue;
             // T is a diagnostic topology fixture, not a real-terrain settlement layout.
             if (!synthetic && layout == RoadPlan.Layout.T) continue;
             mode.then(Commands.literal(layout.name().toLowerCase(Locale.ROOT))

@@ -1,5 +1,11 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-07 V1-B 决策补充：精确快照与显式开发施工
+
+保留V1-A的二维道路图、断面和入口契约，由独立`worldgen/roads/construction`核心扫描真实已加载方块，再生成纵坡及逐格before/after/guard。开发命令只负责发起和确认；实际世界写入按服务端tick预算、区块分批执行。普通PLANNED不能触发施工，完整预检通过也必须用精确plan_id显式确认。
+
+永久`road_*`静态方块统一1/16高度与3/16路缘接口；Claude后续更换视觉资产不改变施工算法。已实现范围/版本/状态持久化、重复/重叠拒绝、暂停和显式恢复，没有事务回滚或自然生成激活。已知保护与未知方块保守检查不能替代完整玩家/第三方占地契约，因此仅面向确认无人建设的开发测试场地。默认工程深度最多3格、纵坡最多1/16/格，地块内部整平和正式NBT另行接入。细节及尚待实机验收项见[V1-B实施记录](north_american_roads_v1b_implementation.md)。
+
 ## 2026-10-06 V1-A 决策补充：先交付规划数据，不放置占位 NBT
 
 [北美道路 V1-A](north_american_roads_v1a_implementation.md) 已实现有界道路图、路口、地块和建筑占位数据；固定接口遵循 [统一规格](north_american_roads_and_lots_spec_v1.md)。本阶段覆盖 ADR-08 中“必须先制作实体 dev NBT”的次序：占位先用有尺寸、朝向、G/S、StructureSocket/StructureTransform 兼容的规划记录，不为本轮新增或放置占位 NBT。正式 NBT 到货后仍须验证真实边界、入口、旋转和地下/外挑范围，不能将当前合成 socket 当成资产校验通过。

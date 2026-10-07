@@ -31,6 +31,7 @@ public final class RoadPlanner {
             TerrainQuery terrain,TerrainSource source,List<SpatialClaim> blockers,RoadPlanningConfig config) {
         Objects.requireNonNull(layout); Objects.requireNonNull(terrain); Objects.requireNonNull(source);
         Objects.requireNonNull(blockers); Objects.requireNonNull(config);
+        if(layout==RoadPlan.Layout.SEGMENT)throw new IllegalArgumentException("SEGMENT requires the development preset adapter");
         if (candidateId==null || !candidateId.matches("[a-zA-Z0-9_:/.,-]{1,128}"))
             throw new IllegalArgumentException("Invalid candidate ID");
         BoundsXZ area=candidateBounds(centerX,centerZ,config);

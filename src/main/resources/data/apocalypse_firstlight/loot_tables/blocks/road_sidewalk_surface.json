@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "apocalypse_firstlight:road_sidewalk_surface",
+          "functions": [
+            {
+              "function": "minecraft:copy_state",
+              "block": "apocalypse_firstlight:road_sidewalk_surface",
+              "properties": [
+                "layers"
+              ]
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

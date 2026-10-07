@@ -46,6 +46,10 @@ public final class AflCreativeTabs {
             AflItems.ALUMINUM_CORNICE,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
             AflItems.ASPHALT,
+            AflItems.ROAD_ASPHALT_SURFACE,
+            AflItems.ROAD_SIDEWALK_SURFACE,
+            AflItems.ROAD_UTILITY_SURFACE,
+            AflItems.ROAD_CURB,
             AflItems.EDGE_LANE_WHITE,
             AflItems.EDGE_LANE_YELLOW,
             AflItems.WHITE_LANE_DIVIDER);
