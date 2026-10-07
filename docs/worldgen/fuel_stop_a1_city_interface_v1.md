@@ -290,7 +290,7 @@ front NORTH 写法下的局部坐标：main (24, 2, 0) NORTH；secondary (6, 2, 
 
 下一轮需要做的 P0 资产（等用户确认后开始）：
 1. 店面玻璃幕墙（黑框，格边 / 格中竖梃、横梃）——2026-10-06 已做成 `storefront_glazing` 并新增黑框门，见 [storefront_glazing_v1.md](../models/storefront_glazing_v1.md)，未实机验证；转角件挪到以后；
-2. 外墙砖：暖灰、深灰两种——2026-10-06 选了大规格砖（每格 10 层），已做成 `face_brick_warm_gray` / `face_brick_charcoal`，见 [facade_brick_v1.md](../models/facade_brick_v1.md)，未实机验证；
+2. 外墙砖：暖灰、深灰两种——2026-10-06 选了大规格砖（每格 10 层），已做成 `face_brick_warm_gray` / `face_brick_charcoal`，见 [facade_brick_v1.md](../models/facade_brick_v1.md)，用户 2026-10-07 实机 PASS；
 3. 磨面砌块勒脚（带窗台压顶）；
 4. 女儿墙铝檐口 / 压顶；
 5. 深灰金属墙板和入口门框薄侧板；
