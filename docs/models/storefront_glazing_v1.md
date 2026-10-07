@@ -34,6 +34,7 @@
 | 创造栏 | 建筑方块，排在玻璃双开门（银框、黑框）后面 |
 | 挖掘 | `minecraft:mineable/pickaxe` + `minecraft:needs_diamond_tool`（按 AGENTS 规定，铝制商业结构默认钻石级），`requiresCorrectToolForDrops()`；硬度 / 抗性 3.0 / 6.0；玻璃音效。掉落表掉自身，带 `survives_explosion`。没有实机检查生存模式挖掘掉落 |
 | 重量 | `item_mass` 2.0 kg（估计，建材搬运单位，和顶棚套件同一档） |
+| 噪音 | 2026-10-06 加进 `noise_glass_blocks`（打碎时感染者听到的是玻璃声），第一版漏了 |
 | 光照 | `noOcclusion`；天光往下传；不挡视线、不让人窒息、不导红石；阴影亮度 1.0，相邻方块的面照常画 |
 | 碰撞 / 选中 | 只有框料那一层：离外皮 3..5 px 的 2 px 厚薄片，四个朝向各一个形状 |
 

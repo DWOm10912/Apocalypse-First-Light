@@ -40,6 +40,8 @@ public final class AflCreativeTabs {
             AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR,
             AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK,
             AflItems.STOREFRONT_GLAZING,
+            AflItems.FACE_BRICK_WARM_GRAY,
+            AflItems.FACE_BRICK_CHARCOAL,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
             AflItems.ASPHALT,
             AflItems.EDGE_LANE_WHITE,

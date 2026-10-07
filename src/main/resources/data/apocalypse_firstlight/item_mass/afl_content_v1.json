@@ -333,6 +333,14 @@
       "unit_mass_kg": 2.0,
       "estimated": true
     },
+    "apocalypse_firstlight:face_brick_warm_gray": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:face_brick_charcoal": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
     "apocalypse_firstlight:beverage_cooler": {
       "unit_mass_kg": 35,
       "estimated": true

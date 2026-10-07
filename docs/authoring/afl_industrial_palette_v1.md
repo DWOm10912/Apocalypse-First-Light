@@ -56,7 +56,7 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 为什么记：用户想要一个"小加油站 + 便利店"场景给发布页截图，用 afl_minecraft 建造工具试搭，用户看了之后叫停：便利店外墙、屋顶直接用 `reinforced_concrete`，整片 `asphalt` 高出草地一格，"现代建筑哪有外壳直接是钢筋混凝土的"。等以后做新的建造 MCP 工具再搭。
 
 这次发现的限制（给新工具和以后的建筑任务参考）：
-- **外墙材料缺口**：没有现代商业建筑的立面方块（金属外墙板、带框的店面玻璃幕墙、招牌、檐口 / 女儿墙收边）。2026-10-06 起店面玻璃幕墙有了：`apocalypse_firstlight:storefront_glazing`（状态 `facing`、`left/right/up/down`、`mullion=edge|center|none`、`transom`，见 [storefront_glazing_v1.md](../models/storefront_glazing_v1.md)），以及黑框门 `commercial_glass_double_door_black`；其余仍缺。`reinforced_concrete` 是结构 / 工业材料，不能当现代建筑的外墙。做现代建筑前先补这类方块。
+- **外墙材料缺口**：没有现代商业建筑的立面方块（金属外墙板、带框的店面玻璃幕墙、招牌、檐口 / 女儿墙收边）。2026-10-06 起店面玻璃幕墙有了：`apocalypse_firstlight:storefront_glazing`（状态 `facing`、`left/right/up/down`、`mullion=edge|center|none`、`transom`，见 [storefront_glazing_v1.md](../models/storefront_glazing_v1.md)），以及黑框门 `commercial_glass_double_door_black`；外墙砖 `face_brick_warm_gray`（主墙面）、`face_brick_charcoal`（壁柱、转角）也有了（普通整格方块，见 [facade_brick_v1.md](../models/facade_brick_v1.md)）；其余仍缺。`reinforced_concrete` 是结构 / 工业材料，不能当现代建筑的外墙。做现代建筑前先补这类方块。
 - **建造区不能低于地面**（`authoring_create` 的 `surface_offset_y` 不能为负），地下储罐、埋地管道无处可放，只能整片垫高。
 - **支撑检查**：`FLOOR` 规则要求下面是完整顶面（`isFaceSturdy`），所以 `fuel_canopy_column` 只能放第一节、叠不上去；`fuel_island_bollard` 放不到路缘上（实际游戏里可以）。代码在 `src/dev/.../authoring/bridge/AuthoringFixtureRegistry.java` 和 `FixtureAdapter.java`。
 - **白名单缺项**：`underground_fuel_tank_*`、`fuel_fill_cover_*`、`pump_manhole_cover`、`jerry_can`、`*fuel_drum`、`charging_station` 不能放。

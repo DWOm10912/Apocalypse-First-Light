@@ -1,0 +1,15 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/facade_brick/face_brick_warm_gray_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/facade_brick/face_brick_warm_gray_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/facade_brick/face_brick_warm_gray_2"
+      }
+    ]
+  }
+}

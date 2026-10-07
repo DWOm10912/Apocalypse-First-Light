@@ -343,6 +343,11 @@ public final class AflBlocks {
             () -> new CommercialGlassDoubleDoorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.5F, 6.0F).sound(SoundType.METAL)
                     .requiresCorrectToolForDrops().noOcclusion()));
+    // Facade Brick V1 (docs/models/facade_brick_v1.md): plain full blocks, mined like vanilla bricks
+    public static final RegistryObject<Block> FACE_BRICK_WARM_GRAY = BLOCKS.register("face_brick_warm_gray",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.BRICKS)));
+    public static final RegistryObject<Block> FACE_BRICK_CHARCOAL = BLOCKS.register("face_brick_charcoal",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.BRICKS)));
     public static final RegistryObject<Block> STOREFRONT_GLAZING = BLOCKS.register("storefront_glazing",
             () -> new com.antaurora.apofirstlight.block.StorefrontGlazingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.GLASS)

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "apocalypse_firstlight:block/facade_brick/face_brick_warm_gray_1"
+  }
+}
