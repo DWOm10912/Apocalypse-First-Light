@@ -1,5 +1,9 @@
 # AFL Unified Worldgen Architecture V1
 
+## 2026-10-07 当前实现：Terrain V2 Phase 0 只读诊断
+
+[Phase 0 工具](terrain_v2_phase0_diagnostics_and_baseline.md)为 IMPLEMENTED / PENDING USER VALIDATION：已增加坐标/地下/区域/道路/轻量 Highway 基准、真实与噪声来源分离、绑定图采样及失败坐标。未改变生成算法、Macro/Highway 路由、道路工程标准或世界高度，没有安装世界 profile 生命周期。Road V1-B 仍为用户实机 FAIL；Survey 地形 VERIFIED 不包含 Preview 的玩家站位门，其它运行失败需用新报告复现。后续地貌/高度/生态重构仍未实施。
+
 ## 2026-10-07 研究补充：哥伦比亚联邦 Terrain V2（尚未实施）
 
 [地貌研究与现状审查](columbian_federation_terrain_v2_research.md)和[迁移计划](terrain_v2_migration_plan.md)建议保留现有 NoiseBasedChunkGenerator、主岛/三卫星岛 topology、Highway、Road V1-A/V1-B、StructureTransform/StructureSocket/SpatialClaim，重构连续 LAND 地貌、近地表稳定层及生态/灾难分布。本轮仅文档研究，没有切换生成代码、资源或存档；所有目标为 REFERENCE TARGET。

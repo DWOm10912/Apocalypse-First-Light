@@ -94,10 +94,12 @@ public final class AflDevCommands {
             afl.addChild(MacroGeographyExportCommand.build().build());
             afl.addChild(HighwayDebugCommand.build().build());
             afl.addChild(RoadPlanningCommand.build().build());
+            afl.addChild(TerrainDiagnosticCommand.build().build());
         } else {
             event.getDispatcher().register(Commands.literal("afl").then(dev)
                     .then(MacroGeographyExportCommand.build())
                     .then(RoadPlanningCommand.build())
+                    .then(TerrainDiagnosticCommand.build())
                     .then(HighwayDebugCommand.build()));
         }
     }
@@ -218,13 +220,7 @@ public final class AflDevCommands {
     }
 
     private static int terrainCalibration(CommandContext<CommandSourceStack> context) {
-        ServerLevel level = context.getSource().getLevel();
-        BlockPos center = new BlockPos(0, 0, 0);
-        TerrainV2Diagnostics.Calibration result = TerrainV2Diagnostics.calibration(level, center);
-        String message = String.format("[AFL TERRAIN CALIBRATION] center=%s fromY=-64 toY=204 fromValue=1.000000 toValue=-1.000000 densityDelta=2.000000 heightDelta=268 densityPerBlock=%.9f baseDensityPerBlock=%.9f targetMacroHeight=%d macroDensityAmplitude=%.6f macroNoiseMin=%.4f macroNoiseMax=%.4f expectedHeightMin=%.2f expectedHeightMax=%.2f macroFunctionResolved=%s",
-                center.toShortString(), result.baseDensityPerBlock(), result.baseDensityPerBlock(), result.targetMacroHeight(), result.macroDensityAmplitude(),
-                result.macroNoiseMin(), result.macroNoiseMax(), result.expectedHeightMin(), result.expectedHeightMax(), result.macroFunctionResolved());
-        ApocalypseFirstLight.LOGGER.info(message);
+        String message = "DEPRECATED: 旧 terrain_calibration 的常量不代表当前 terrain graph。请使用 /afl terrain inspect here 读取 seed-bound 节点。";
         context.getSource().sendSuccess(() -> Component.literal(message), false);
         return 1;
     }

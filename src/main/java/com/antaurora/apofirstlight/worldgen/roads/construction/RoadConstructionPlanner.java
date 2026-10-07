@@ -27,8 +27,12 @@ public final class RoadConstructionPlanner {
     public static final String VERSION="north_american_roads_v1b_1";
     private RoadConstructionPlanner() {}
     public static Job begin(ServerLevel level,RoadPlan layout,RoadConstructionConfig config,List<SpatialClaim> claims) {
+        return begin(level,layout,config,claims,false);
+    }
+    /** Optional read-only failure evidence. Does not participate in plan identity or engineering decisions. */
+    public static Job begin(ServerLevel level,RoadPlan layout,RoadConstructionConfig config,List<SpatialClaim> claims,boolean diagnostics) {
         if(!level.getServer().isSameThread())throw new IllegalStateException("SERVER_THREAD_REQUIRED");
-        return new Job(level,layout,config,claims);
+        return new Job(level,layout,config,claims,diagnostics);
     }
     private enum Kind { ASPHALT, CURB, UTILITY, SIDEWALK, ENTRY, SHOULDER, LOT_GUARD }
     private record Cell(int x,int z,Kind kind,String owner,boolean node,long shoulderSource,int distance) {}
@@ -56,8 +60,14 @@ public final class RoadConstructionPlanner {
         private int phase,index,maxCut,maxFill,cutCount,fillCount;
         private RoadConstructionPlan.Status status=RoadConstructionPlan.Status.PREVIEW_READY;
         private RoadConstructionPlan result;
+        private final boolean diagnostics;
+        private Cell observedCell;
+        private Integer observedY,observedGround,observedH16;
+        private final List<Map<String,Object>> failureDetails=new ArrayList<>();
+        private long blockChecks;
 
-        private Job(ServerLevel level,RoadPlan layout,RoadConstructionConfig cfg,List<SpatialClaim> claims) {
+        private Job(ServerLevel level,RoadPlan layout,RoadConstructionConfig cfg,List<SpatialClaim> claims,boolean diagnostics) {
+            this.diagnostics=diagnostics;
             this.level=Objects.requireNonNull(level);this.layout=Objects.requireNonNull(layout);
             this.cfg=Objects.requireNonNull(cfg);this.claims=List.copyOf(claims);bounds=layout.candidateBounds();
             if(!layout.successful()||!layout.connected()||!RoadPlanner.VERSION.equals(layout.specVersion())) {
@@ -68,6 +78,9 @@ public final class RoadConstructionPlanner {
         public boolean done() { return result!=null; }
         public int processedColumns() { return terrain.size(); }
         public int totalColumns() { return cells.size(); }
+        public List<Map<String,Object>> failureDetails() { return List.copyOf(failureDetails); }
+        public long blockChecks() { return blockChecks; }
+        public Set<Long> loadedChunksUsed() { return Set.copyOf(checkedChunks); }
         public String phase() { return done()?"COMPLETE":phase==0?"ACTUAL_WORLD_PREFLIGHT":phase==1?"PROFILE":"EDIT_SNAPSHOT"; }
         public RoadConstructionPlan result() {
             if(!done())throw new IllegalStateException("Construction preparation is unfinished");return result;
@@ -83,11 +96,11 @@ public final class RoadConstructionPlanner {
                     if(index==ordered.size()) { phase=1;index=0; }
                     return;
                 }
-                if(phase==1) { planProfiles();phase=2;return; }
+                if(phase==1) { observedCell=null;observedY=null;observedGround=null;observedH16=null;planProfiles();phase=2;return; }
                 for(int n=0;n<budget&&index<ordered.size();n++,index++) planColumn(ordered.get(index));
                 if(index==ordered.size())finish();
             } catch(PlanFailure failure) { finish(); }
-            catch(RuntimeException failure) { unknown("PREPARATION_EXCEPTION:"+failure.getClass().getSimpleName());finish(); }
+            catch(RuntimeException failure) { recordFailure("PREPARATION_EXCEPTION:"+failure.getClass().getSimpleName());unknown("PREPARATION_EXCEPTION:"+failure.getClass().getSimpleName());finish(); }
         }
 
         private void rasterize() {
@@ -182,6 +195,7 @@ public final class RoadConstructionPlanner {
         private boolean insideLot(int x,int z) { return layout.lots().stream().anyMatch(l->l.fullBounds().contains(x,z)); }
 
         private void sample(Cell cell) {
+            observe(cell);
             int x=cell.x(),z=cell.z();
             var chunk=level.getChunkSource().getChunkNow(x>>4,z>>4);
             if(chunk==null)failUnknown("UNLOADED_CHUNK:"+(x>>4)+","+(z>>4));
@@ -205,6 +219,7 @@ public final class RoadConstructionPlanner {
                 break;
             }
             BlockState topState=read(x,ground-1,z);
+            if(diagnostics)observedGround=ground;
             if(!natural(topState))failUnknown("GROUND_NOT_IDENTIFIED");
             if(top-ground>8)fail("VEGETATION_CLEARANCE_EXCEEDED");
             // Sparse base-noise comparison is a discrepancy alarm, never proof that natural-looking blocks are unmodified.
@@ -227,6 +242,7 @@ public final class RoadConstructionPlanner {
             terrain.put(key(x,z),new Column(ground,topState));
         }
         private BlockState read(int x,int y,int z) {
+            if(diagnostics) {observedY=y;blockChecks++;}
             if(level.getChunkSource().getChunkNow(x>>4,z>>4)==null)failUnknown("CHUNK_UNLOADED_DURING_PREPARATION");
             BlockPos pos=new BlockPos(x,y,z);BlockState state=level.getBlockState(pos);
             if(state.hasBlockEntity()||level.getBlockEntity(pos)!=null)fail("BLOCK_ENTITY_CONFLICT");
@@ -265,7 +281,9 @@ public final class RoadConstructionPlanner {
                 int[] p=new int[length+1];int left=0;p[0]=fixed[0];
                 while(left<length) {
                     int right=left+1;while(right<length&&fixed[right]==Integer.MIN_VALUE)right++;
-                    if(Math.abs(fixed[right]-fixed[left])>(right-left)*grade)fail("SLOPE_TOO_STEEP:"+edge.id());
+                    if(Math.abs(fixed[right]-fixed[left])>(right-left)*grade) {
+                        observeProfile(edge,right,fixed[right]);fail("SLOPE_TOO_STEEP:"+edge.id());
+                    }
                     for(int s=left+1;s<right;s++) {
                         int x=edge.x1()+Integer.signum(edge.x2()-edge.x1())*s;
                         int z=edge.z1()+Integer.signum(edge.z2()-edge.z1())*s;
@@ -274,7 +292,7 @@ public final class RoadConstructionPlanner {
                         int desired=column.groundY()*16-3;
                         int lower=Math.max(p[s-1]-grade,fixed[right]-(right-s)*grade);
                         int upper=Math.min(p[s-1]+grade,fixed[right]+(right-s)*grade);
-                        if(lower>upper)fail("SLOPE_TOO_STEEP:"+edge.id());
+                        if(lower>upper) {observeProfile(edge,s,desired);fail("SLOPE_TOO_STEEP:"+edge.id());}
                         p[s]=Math.max(lower,Math.min(upper,desired));
                     }
                     p[right]=fixed[right];left=right;
@@ -331,8 +349,10 @@ public final class RoadConstructionPlanner {
         }
 
         private void planColumn(Cell cell) {
+            observe(cell);
             if(cell.kind()==Kind.LOT_GUARD)return;
             Column column=terrain.get(key(cell.x(),cell.z()));int h16=topH16(cell);
+            if(diagnostics) {observedGround=column.groundY();observedH16=h16;observedY=Math.floorDiv(h16-1,16);}
             int y=Math.floorDiv(h16-1,16),layers=Math.floorMod(h16-1,16)+1;
             int cut=Math.max(0,column.groundY()-1-y),fill=Math.max(0,y-(column.groundY()-1));
             maxCut=Math.max(maxCut,cut);maxFill=Math.max(maxFill,fill);
@@ -438,8 +458,59 @@ public final class RoadConstructionPlanner {
         }
         private void reject(String reason) { status=RoadConstructionPlan.Status.REJECTED;issues.add(reason); }
         private void unknown(String reason) { if(status!=RoadConstructionPlan.Status.REJECTED)status=RoadConstructionPlan.Status.UNKNOWN;issues.add(reason); }
-        private void fail(String reason) { reject(reason);throw new PlanFailure(); }
-        private void failUnknown(String reason) { unknown(reason);throw new PlanFailure(); }
+        private void observe(Cell cell) {
+            if(!diagnostics)return;
+            observedCell=cell;observedY=null;observedGround=null;observedH16=null;
+        }
+        private void observeProfile(RoadPlan.Edge edge,int station,int targetH16) {
+            if(!diagnostics)return;
+            int x=edge.x1()+Integer.signum(edge.x2()-edge.x1())*station;
+            int z=edge.z1()+Integer.signum(edge.z2()-edge.z1())*station;
+            observe(cells.get(key(x,z)));var c=terrain.get(key(x,z));
+            if(c!=null){observedGround=c.groundY();observedY=c.groundY()-1;}observedH16=targetH16;
+        }
+        private void recordFailure(String reason) {
+            if(!diagnostics||failureDetails.size()>=8)return;
+            try { collectFailure(reason); }
+            catch(RuntimeException observationFailure) {
+                failureDetails.add(Map.of("reason",reason,"diagnostic_error",observationFailure.getClass().getSimpleName()));
+            }
+        }
+        private void collectFailure(String reason) {
+            Map<String,Object> d=new LinkedHashMap<>();d.put("reason",reason);d.put("phase",phase());
+            d.put("bounds",bounds);d.put("support_depth",cfg.supportDepth());
+            d.put("scan_below_G",cfg.maxCutDepth()+cfg.supportDepth()+1);
+            d.put("surface_y",observedGround==null?"NOT_AVAILABLE":observedGround);
+            d.put("surface_block_y",observedGround==null?"NOT_AVAILABLE":observedGround-1);
+            d.put("expected_column_top_h16",observedH16==null?"NOT_AVAILABLE_BEFORE_PROFILE":observedH16);
+            d.put("expected_profile_h16","NOT_AVAILABLE_BEFORE_PROFILE");d.put("expected_G","NOT_AVAILABLE_BEFORE_PROFILE");
+            if(observedCell!=null) {
+                Cell c=observedCell;d.put("x",c.x());d.put("z",c.z());d.put("region",c.kind().name());
+                d.put("y",observedY==null?"NOT_AVAILABLE":observedY);
+                var edge=edges.get(c.owner());
+                if(edge==null&&layout.edges().size()==1)edge=layout.edges().get(0);
+                if(edge!=null) {
+                    d.put("road_station",station(edge,c.x(),c.z()));
+                    d.put("cross_offset",-(c.x()-edge.x1())*Integer.signum(edge.z2()-edge.z1())
+                            +(c.z()-edge.z1())*Integer.signum(edge.x2()-edge.x1()));
+                    int s=Math.max(0,Math.min(edge.length(),station(edge,c.x(),c.z())));
+                    Integer roadH16=null;
+                    if(profiles.containsKey(edge.id()))roadH16=profiles.get(edge.id())[s];
+                    else if(phase==1)roadH16=observedH16;
+                    if(roadH16!=null) {d.put("expected_profile_h16",roadH16);d.put("expected_G",(roadH16+3)/16.0);}
+                }
+                if(observedGround!=null&&observedY!=null)d.put("depth_below_surface_block",observedGround-1-observedY);
+                var chunk=level.getChunkSource().getChunkNow(c.x()>>4,c.z()>>4);
+                if(chunk!=null&&observedY!=null) {
+                    blockChecks+=2;
+                    d.put("block_found",chunk.getBlockState(new BlockPos(c.x(),observedY,c.z())).toString());
+                    d.put("block_below",chunk.getBlockState(new BlockPos(c.x(),observedY-1,c.z())).toString());
+                }
+            } else d.put("coordinate_status","NOT_AVAILABLE_FOR_LAYOUT_OR_PROFILE_CONSTRAINT");
+            failureDetails.add(Collections.unmodifiableMap(d));
+        }
+        private void fail(String reason) { recordFailure(reason);reject(reason);throw new PlanFailure(); }
+        private void failUnknown(String reason) { recordFailure(reason);unknown(reason);throw new PlanFailure(); }
     }
     private static final class PlanFailure extends RuntimeException {
         private PlanFailure() {super(null,null,false,false);}

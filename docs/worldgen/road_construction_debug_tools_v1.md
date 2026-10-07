@@ -4,6 +4,8 @@
 
 状态：**单路段适配器、只读Survey及命令/报告代码已实现；此前单次离线 compileJava 已通过。当前用户实机验收失败（V1-B = FAIL），Survey / Preview 一致性与具体拒绝原因仍需调查，本文不登记施工、性能、碰撞或恢复PASS。** 用户已测试，并因此启动[Terrain V2 审计](columbian_federation_terrain_v2_research.md)，不是尚未开始验收。道路 V1-C 暂停；新地形目前仅有设计，实施后须重新验证 V1-B。本次文档同步不编译或启动游戏。
 
+Phase 0 后续实现：[Terrain 诊断与基准](terrain_v2_phase0_diagnostics_and_baseline.md)增加只读失败坐标、玩家位置门证据和区域/道路基准，待用户验证；上方“不编译”仅指之前研究文档同步。本轮没有改工程标准，V1-B FAIL 保持。
+
 依赖[统一规格](north_american_roads_and_lots_spec_v1.md)、[V1-A](north_american_roads_v1a_implementation.md)、[正式V1-B施工核心](north_american_roads_v1b_implementation.md)和[静态资产契约](road_surface_assets_v1.md)。本轮不增加方块、美术或自然生成入口。
 
 ## 1. 单路段范围与实际命令
@@ -74,7 +76,7 @@ Preview不登记可执行计划；Prepare必须confirm_unbuilt且完整通过，
 | 状态 | 含义 |
 |---|---|
 | SUITABLE_ESTIMATED | 基础噪声稀疏初筛通过，未执行完整实际方块检查，不是安全或施工许可 |
-| SUITABLE_VERIFIED | 本次正式V1-B实际方块预检通过；不证明所有玩家/模组保护风险均已排除，也未登记施工 |
+| SUITABLE_VERIFIED | 本次正式V1-B实际方块预检通过，validation_level=ROAD_PREFLIGHT_VERIFIED；不包含玩家站位门、Prepare授权或台账，也不证明所有玩家/模组保护风险均已排除 |
 | REJECTED | 已检查项明确失败；查看terrain_rejections |
 | UNKNOWN | 卸载、查询异常或实际检查未完成等，不能视为通过 |
 
@@ -90,10 +92,12 @@ Preview不登记可执行计划；Prepare必须confirm_unbuilt且完整通过，
 
 Survey和Preview的`construction_authorized=false`；Prepare报告也维持该值，因为仍需Build确认，另用`can_confirm=true`表示台账已接受、允许下一步显式确认，不表示已经开工。报告不能替代当前台账状态。
 
+Phase 0 审查未发现 Survey/Preview 的起点语义、几何、肩部、正式支撑/高程预检分叉；两者复用相同 preset/planner。Survey 初筛并不代替正式 preflight，但不检查玩家站位和距离。因此 331,-762 曾出现的 STEP_OUTSIDE_SEGMENT_AND_SHOULDERS 不构成地形预检矛盾，其它失败仍须实机证据。新的 `player_position_gate` 与 `verified_scope` 明确区别；位置拒绝写 `afl_debug/terrain/road_preview_position_gate.json`，附实际玩家 X/Z、station/lateral、走廊及排除包络。预检后玩家入场另记录 actual_exclusion_bounds。正式预检报告的 `failure_details` 给出可获得的失败 XYZ、G/表面方块 Y、深度、block/below、bounds；不能获得的 profile/布局级坐标明确 NOT_AVAILABLE。
+
 ## 5. 性能预算与生命周期
 
 - 不创建chunk、不使用票据、不传送加载地形；未加载处复用基础生成器地形查询，单次Survey噪声缓存上限480列，用完释放。
-- 每维度一个只读诊断任务：Survey与Preview/Prepare互斥，不叠加两个预检预算。旧施工台账执行预算不变。
+- 每维度一个只读诊断任务：Survey、Preview/Prepare 与新 Terrain Phase 0 工具互斥，不叠加两个预检预算。旧施工台账执行预算不变。
 - Survey上限32候选、每候选15粗样本，最多480粗样本；一tick最多2个粗采样单元，单元之间检查4ms时间预算。**单次生成器调用不可抢占，4ms不是硬实时帧保证。**
 - 完整实际预检一tick最多推进32柱（还受原columnsPerTick更小值约束），随后也分批生成原施工快照；始终只保留一个候选的大快照。单候选32×22，加最大4格肩部的矩形包络不超过40×30＝1200柱；32候选最多38400实际采样柱，每柱垂直读取仍由原工程配置界定。
 - 每次Survey最长12000世界tick；达到上限输出已完成候选的部分报告，timed_out=true，不把未完成项标为通过。冷却200tick；预检沿用100tick冷却。

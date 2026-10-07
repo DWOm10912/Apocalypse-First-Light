@@ -6,11 +6,19 @@
 
 2026-10-07 地形研究补充：[哥伦比亚联邦 Terrain V2](columbian_federation_terrain_v2_research.md)与[迁移计划](terrain_v2_migration_plan.md)目前仅为研究设计，未改道路或地形代码。用户反馈当前大量候选因浅层空洞、坡度及削填预算拒绝、缺乏连续可建设地形。审查确认正式预检默认检查地面下6层，任一空气格即可触发 `UNSAFE_SUBSURFACE_VOID`；未加载区 Survey 的噪声估算不能验证真实地下支撑。后续须分别验证地形改善和 Survey/Preview 来源一致性，不能认为前者自动修好后者。横断面、G/S、1/16纵坡及3格削填预算保持。当前验收失败状态不变，地形实施后必须重新验收。
 
-## Git 检查点验收记录（2026-10-07）
+## Terrain Phase 0 诊断补充（2026-10-07）
+
+[坐标诊断与基准](terrain_v2_phase0_diagnostics_and_baseline.md)已实现，待用户验证。RoadConstructionPlanner 增加可选只读失败上下文，包含 XYZ、表面 G/方块 Y、station/lateral、支撑深度、block/below、bounds；profile 尚未求解时 expected G/H16 为 NOT_AVAILABLE。默认 begin 不启用观察；不改变工程规则、计划身份、生成结果或施工状态。
+
+Survey/Preview 同用 RoadSegmentPreset 与正式 planner，静态审查未发现几何/起点/肩部/支撑算法分叉。Survey VERIFIED 仅指地形预检；Preview 额外要求玩家处于包络外且靠近，Prepare 还需要台账批准。新增 player gate 报告和统一 `ROAD_PREFLIGHT_VERIFIED` 标签。331,-762 曾见的 STEP_OUTSIDE 可由站位门解释，不能据此认定地形失败；其它实机不一致仍待复现。322,-812 的浅层空气具体位置由 `/afl terrain benchmark samples` 重新读取，不凭历史状态猜测。
+
+V1-B 实机 FAIL 保持，未实施地形修复、未放宽 void/cut/fill/grade/肩部检查。
+
+## Git 检查点验收记录（2026-10-07，历史检查点）
 
 - V1-A 保留已通过的规划层实现；V1-B 施工器及全部开发测试命令保留。
 - Segment 和 Survey 已完成代码实现，不代表道路施工或调查推荐结果已获实机验收。
-- **Survey / Preview 一致性仍需调查**：必须区分估算与已加载方块预检，按同一坐标、方向、长度及现场状态核对报告；当前没有确认根因或修复结论。
+- **Survey / Preview 运行一致性仍待复现**：Phase 0 已定位“地形 VERIFIED 与独立玩家站位门”的语义差别，但没有发现并修复工程几何分叉；必须按同一坐标、方向、长度及现场状态对照新报告。
 - **当前用户实机验收失败**（用户后续明确确认），不能用离线编译、Survey 推荐或 Preview 状态替代施工成功。
 - 后续优先开展 AFL 地形 V2；地形变化可能改变施工候选成功率，不能预先保证提高，也不能替代上述一致性调查。
 - 地形 V2 完成后必须重新验证 V1-B 的候选、Preview / Prepare、实际施工、跨区块接缝、碰撞及保存恢复。

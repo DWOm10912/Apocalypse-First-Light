@@ -52,7 +52,7 @@ public final class RoadSurveyCommand {
         try {
             if(!RoadConstructionCommand.allowed(source))throw new IllegalArgumentException("DEV_CREATIVE_OP_REQUIRED");
             var level=source.getLevel();
-            if(busy(level)||RoadConstructionCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
+            if(busy(level)||RoadConstructionCommand.busy(level)||TerrainDiagnosticCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
             long now=level.getGameTime();
             if(now-LAST.getOrDefault(level,Long.MIN_VALUE/2)<200)throw new IllegalArgumentException("WAIT_10_SECONDS");
             var s=new Survey(source.getPlayerOrException(),radius,RoadConstructionCommand.config());
@@ -99,14 +99,7 @@ public final class RoadSurveyCommand {
             noise=new RoadTerrainQuery(player.serverLevel(),MAX_CANDIDATES*SAMPLES);
             originX=player.blockPosition().getX();originZ=player.blockPosition().getZ();
             started=player.serverLevel().getGameTime();expires=started+12000;
-            int[][] offsets={{0,-1},{1,0},{0,1},{-1,0},{1,-1},{1,1},{-1,1},{-1,-1}};
-            for(int ring:new int[]{radius/2,radius})for(int[] offset:offsets) {
-                int step=(offset[0]!=0&&offset[1]!=0)?(int)Math.floor(ring/Math.sqrt(2)):ring;
-                int cx=originX+offset[0]*step,cz=originZ+offset[1]*step;
-                for(Direction d:List.of(Direction.NORTH,Direction.EAST)) {
-                    requests.add(new RoadSegmentPreset.Request(RoadType.R12,32,d,cx-d.getStepX()*16,cz-d.getStepZ()*16));
-                }
-            }
+            requests.addAll(TerrainRoadBenchmark.candidates(originX,originZ,radius));
             if(requests.size()>MAX_CANDIDATES)throw new IllegalStateException("SURVEY_CANDIDATE_BUDGET");
         }
         void advance(ServerLevel level) {
@@ -124,6 +117,7 @@ public final class RoadSurveyCommand {
                     current.addProperty("expected_max_cut",plan.summary().maxCutDepth());
                     current.addProperty("expected_max_fill",plan.summary().maxFillHeight());
                     current.add("terrain_rejections",new Gson().toJsonTree(plan.issues()));
+                    current.add("failure_details",new Gson().toJsonTree(preflight.failureDetails()));
                     int max=0,count=0;long sum=0;
                     for(var profile:plan.profiles())if(!profile.edgeId().startsWith("node:")) {
                         for(int i=1;i<profile.surfaceH16().size();i++) {
@@ -134,7 +128,7 @@ public final class RoadSurveyCommand {
                     current.addProperty("planned_max_grade",max/16.0);
                     current.addProperty("planned_mean_grade",count==0?0:sum/(16.0*count));
                     boolean ready=plan.status()==RoadConstructionPlan.Status.PREVIEW_READY;
-                    current.addProperty("validation_level",ready?"FULL_ACTUAL_V1B_PREFLIGHT":"ACTUAL_PREFLIGHT_INCOMPLETE_OR_REJECTED");
+                    current.addProperty("validation_level",ready?"ROAD_PREFLIGHT_VERIFIED":"ACTUAL_PREFLIGHT_INCOMPLETE_OR_REJECTED");
                     end(ready?"SUITABLE_VERIFIED":plan.status().name().equals("REJECTED")?"REJECTED":"UNKNOWN");
                 }
                 return;
@@ -153,7 +147,7 @@ public final class RoadSurveyCommand {
             }
             if(loaded) {
                 var claims=RoadConstructionProtection.query(level,layout.candidateBounds());
-                preflight=RoadConstructionPlanner.begin(level,layout,config,claims);
+                preflight=RoadConstructionPlanner.begin(level,layout,config,claims,true);
             } else {
                 List<Integer> sorted=new ArrayList<>(heights);Collections.sort(sorted);int g=sorted.get(sorted.size()/2);
                 int cut=sorted.get(sorted.size()-1)-g,fill=g-sorted.get(0);
@@ -176,6 +170,9 @@ public final class RoadSurveyCommand {
                     "center_z",(request.z()+request.endZ())/2,"start_x",request.x(),"start_z",request.z())));
             current.add("bounds",new Gson().toJsonTree(layout.candidateBounds()));
             current.addProperty("construction_authorized",false);current.addProperty("prepare_required",true);
+            current.addProperty("verified_scope","TERRAIN_PREFLIGHT_ONLY;NOT_PLAYER_POSITION_OR_PREPARE_AUTHORIZATION");
+            var player=level.getServer().getPlayerList().getPlayer(owner);
+            if(player!=null)current.add("player_position_gate",TerrainRoadBenchmark.playerGate(request,player.blockPosition()));
             current.addProperty("preview_command",request.command("preview"));current.addProperty("prepare_command",request.command("prepare"));
             current.add("terrain_rejections",new JsonArray());
             for(String field:List.of("sampled_min_height","sampled_max_height","sampled_relief",

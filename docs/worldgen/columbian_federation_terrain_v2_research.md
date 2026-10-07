@@ -361,6 +361,6 @@ Embeddium/Oculus 属客户端渲染能力，不决定服务器 heightfield 或 c
 
 `src/dev/.../TerrainV2Diagnostics.java` 仍含旧 `terrain/macro_relief`、0.06/0.075 振幅及 2/268 梯度假设，不能代表当前 LandTerrainRelief。`TerrainSuitabilitySampler` 的旧局部起伏阈值也不等于道路 1/16 工程判定。应保留工具思路、先修正基准身份和统计口径，不复用过时“PASS”。本轮没有运行或修改这些工具。
 
-下一轮首先实施 **Phase 0：基准与身份诊断**：记录实际资源链、seed、profile、坐标、noise 与真实表面、每个 void 的深度/大小、道路拒绝所在 raster 区域。建立固定代表样本后，才进入 LandformPlan。完整阶段、回退与用户验收见 [Terrain V2 迁移计划](terrain_v2_migration_plan.md)。
+原研究建议首先实施 **Phase 0：基准与身份诊断**。后续[Phase 0 代码已实现，待用户实机验证](terrain_v2_phase0_diagnostics_and_baseline.md)：记录 seed、坐标、选定资源/代码指纹、真实与噪声表面、柱内 void 深度及正式道路失败位置；不安装世界 profile 锁，不伪称已获得 void 连通体积或生成阶段来源。用户建立固定代表样本后，才考虑 LandformPlan。完整阶段、回退与用户验收见 [Terrain V2 迁移计划](terrain_v2_migration_plan.md)。
 
 本轮验收：源码审查和外部研究已完成；目标与边界已记录。**DEM 数值分析未执行；生成参数未改；编译未执行；本轮未运行客户端/新世界/多 seed/性能/道路施工复验。** V1-A 已有用户阶段验收；V1-B 代码/既往离线编译完成，但用户实机验收已失败，是本次地形审计的直接原因。失败根因需要分项诊断，Terrain V2 尚未实施，V1-C 继续暂停。

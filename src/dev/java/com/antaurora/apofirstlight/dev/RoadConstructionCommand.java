@@ -116,7 +116,7 @@ public final class RoadConstructionCommand {
         try {
             if(!allowed(source))throw new IllegalArgumentException("DEV_CREATIVE_OP_REQUIRED");
             ServerLevel level=source.getLevel();
-            if(busy(level)||RoadSurveyCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
+            if(busy(level)||RoadSurveyCommand.busy(level)||TerrainDiagnosticCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
             long now=level.getGameTime();
             if(now-LAST_PREVIEW.getOrDefault(level,Long.MIN_VALUE/2)<100)throw new IllegalArgumentException("WAIT_5_SECONDS");
             var player=source.getPlayerOrException();var position=player.blockPosition();
@@ -124,11 +124,16 @@ public final class RoadConstructionCommand {
                     x==null?position.getX()+direction.getStepX()*12:x,
                     z==null?position.getZ()+direction.getStepZ()*12:z);
             var area=request.corridor().expand(4);
-            if(area.expand(2).contains(position.getX(),position.getZ()))throw new IllegalArgumentException("STEP_OUTSIDE_SEGMENT_AND_SHOULDERS");
-            if(!area.expand(32).contains(position.getX(),position.getZ()))throw new IllegalArgumentException("MOVE_NEAR_REQUESTED_SITE");
+            var gate=TerrainRoadBenchmark.playerGate(request,position);
+            if(!gate.get("status").getAsString().equals("POSITION_GATE_PASSED_ONLY")) {
+                var report=TerrainDiagnosticIO.identity(level,request.x(),request.z());report.add("player_gate",gate);
+                report.addProperty("road_preflight","NOT_STARTED");report.addProperty("preview_command",request.command("preview"));
+                var file=TerrainDiagnosticIO.write("road_preview_position_gate",report);
+                throw new IllegalArgumentException(gate.get("status").getAsString()+"; evidence="+file);
+            }
             var config=config();var blockers=RoadConstructionProtection.query(level,area);
             var layout=RoadSegmentPreset.plan(level,request);
-            var job=RoadConstructionPlanner.begin(level,layout,config,blockers);
+            var job=RoadConstructionPlanner.begin(level,layout,config,blockers,true);
             LAST_PREVIEW.put(level,now);
             PENDING.put(level,new Pending(player.getUUID(),layout,config,job,prepare,now+12000,request));
             say(source,"单路段预检已排队；固定坐标命令："+request.command("preview"));
@@ -140,7 +145,7 @@ public final class RoadConstructionCommand {
         try {
             if(!allowed(source))throw new IllegalArgumentException("DEV_CREATIVE_OP_REQUIRED");
             ServerLevel level=source.getLevel();
-            if(PENDING.containsKey(level)||RoadSurveyCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
+            if(PENDING.containsKey(level)||RoadSurveyCommand.busy(level)||TerrainDiagnosticCommand.busy(level))throw new IllegalArgumentException("ROAD_DIAGNOSTIC_ALREADY_RUNNING");
             long now=level.getGameTime();
             if(now-LAST_PREVIEW.getOrDefault(level,Long.MIN_VALUE/2)<100)
                 throw new IllegalArgumentException("WAIT_5_SECONDS");
@@ -161,7 +166,7 @@ public final class RoadConstructionCommand {
             RoadPlan plan=RoadPlanner.plan(level.getSeed(),candidate,x,z,layout,flat,
                     TerrainSource.STRUCTURE_PLANNING,blockers);
             if(!plan.successful())throw new IllegalArgumentException("LAYOUT_REJECTED:"+String.join(";",plan.diagnostics()));
-            var job=RoadConstructionPlanner.begin(level,plan,config,blockers);
+            var job=RoadConstructionPlanner.begin(level,plan,config,blockers,true);
             PENDING.put(level,new Pending(source.getPlayerOrException().getUUID(),plan,config,job,prepare,now+12000,null));
             say(source,"V1-B 实际方块预检已排队，分 tick 读取；不会强载区块，也不会施工。/afl roads status 查询。");
             if(prepare) say(source,"已记录你对无人建设开发区域的声明；该声明不会绕过未知方块、结构、流体或保护检查。施工前请备份存档。");
@@ -180,8 +185,15 @@ public final class RoadConstructionCommand {
             if(!p.job().done())return;
             PENDING.remove(level);
             RoadConstructionPlan plan=p.job().result();
-            if(p.segment()!=null && plan.bounds().expand(2).contains(player.blockPosition().getX(),player.blockPosition().getZ()))
-                throw new IllegalArgumentException("PLAYER_ENTERED_SEGMENT;MOVE_OUTSIDE_AND_REPEAT_PREVIEW");
+            if(p.segment()!=null && plan.bounds().expand(2).contains(player.blockPosition().getX(),player.blockPosition().getZ())) {
+                var report=TerrainDiagnosticIO.identity(level,p.segment().x(),p.segment().z());
+                report.add("player_gate",TerrainRoadBenchmark.playerGate(p.segment(),player.blockPosition()));
+                report.addProperty("status","PLAYER_ENTERED_SEGMENT");report.addProperty("terrain_status",plan.status().name());
+                report.add("actual_exclusion_bounds",TerrainDiagnosticIO.GSON.toJsonTree(plan.bounds().expand(2)));
+                report.add("failure_details",TerrainDiagnosticIO.GSON.toJsonTree(p.job().failureDetails()));
+                var file=TerrainDiagnosticIO.write("road_preview_position_gate",report);
+                throw new IllegalArgumentException("PLAYER_ENTERED_SEGMENT;MOVE_OUTSIDE_AND_REPEAT_PREVIEW; evidence="+file);
+            }
             // Reports may say can_confirm only after the ledger accepted the exact snapshot.
             // Preparing saves metadata only; a later explicit build command is still mandatory.
             if(p.prepare() && plan.status()==RoadConstructionPlan.Status.PREVIEW_READY)
@@ -246,9 +258,14 @@ public final class RoadConstructionCommand {
         j.addProperty("spec_version",RoadPlanner.VERSION);j.addProperty("world_seed",level.getSeed());
         j.addProperty("candidate_id",p.layout().candidateId());
         j.addProperty("terrain_source","LOADED_WORLD_BLOCKS_WITH_SPARSE_NOISE_COMPARISON");
-        j.addProperty("validation_level",plan.status()==RoadConstructionPlan.Status.PREVIEW_READY?"ACTUAL_PREFLIGHT_PASSED":"INCOMPLETE_OR_REJECTED");
+        j.addProperty("validation_level",plan.status()==RoadConstructionPlan.Status.PREVIEW_READY?"ROAD_PREFLIGHT_VERIFIED":"INCOMPLETE_OR_REJECTED");
         j.addProperty("construction_authorized",false);
         j.add("terrain_rejections",gson.toJsonTree(plan.issues()));
+        j.add("failure_details",gson.toJsonTree(p.job().failureDetails()));
+        if(p.segment()!=null) {
+            var owner=level.getServer().getPlayerList().getPlayer(p.owner());
+            if(owner!=null)j.add("player_position_gate_at_completion",TerrainRoadBenchmark.playerGate(p.segment(),owner.blockPosition()));
+        }
         j.add("engineering_budget",gson.toJsonTree(p.config()));
         j.addProperty("protection_status","KNOWN_CHECKS_ONLY;UNIVERSAL_PLAYER_MOD_PROVENANCE_UNVERIFIED");
         if(p.segment()!=null) {

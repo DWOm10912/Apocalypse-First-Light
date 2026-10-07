@@ -1,6 +1,6 @@
 # 哥伦比亚联邦 Terrain V2：迁移与分阶段实施计划
 
-日期：2026-10-07。状态：**PLANNED / NOT IMPLEMENTED**。本轮只有源码审查、外部研究和文档变更；不包含任何生成实现、资源切换、编译或实机验收。
+日期：2026-10-07。状态：**Phase 0 IMPLEMENTED / PENDING USER VALIDATION；Phase 1～8 PLANNED / NOT IMPLEMENTED**。原研究阶段只有源码审查、外部研究和文档变更；后续已实现[Phase 0 只读诊断](terrain_v2_phase0_diagnostics_and_baseline.md)，没有切换生成算法或资源，没有实机验收。
 
 设计依据：[Terrain V2 研究报告](columbian_federation_terrain_v2_research.md)。参数均为 **REFERENCE TARGET**；当前生效值仍以仓库 Java/JSON 为准。研究报告中“V2”不是宣布 `MacroGeography.VERSION=3` 已升级或新世界 profile 已接通。
 
@@ -93,7 +93,7 @@ initial density 和 final density 的职责可以不同，但必须共享高程�
 
 | 阶段 | 修改范围 / 输出 | 风险与审查需求 | 用户实机验收点 | 独立回退边界 |
 | --- | --- | --- | --- | --- |
-| Phase 0 基准与身份 | 修正过时 dev diagnostics；记录活跃 density/biome 资源链、profile、seed、坐标；统一 Survey/Preview 对照口径。暂不切换生产地形 | 中；建议 Ultra/Astra 复核生成阶段与数据来源 | 现有新测试世界中固定 32 格拒绝样本、void 深度/材料、noise 与真实值；不得自动运行大规模测试 | 诊断可独立撤回；保留采样报告，不影响正式地形 |
+| Phase 0 基准与身份（IMPLEMENTED / PENDING USER VALIDATION） | inspect/subsurface/survey/benchmark、绑定 density 节点、选定资源/代码指纹、Road 失败坐标与两处 dev fixture 已实现。没有安装世界 profile 锁；未切换生产地形 | 只读；来源/分母/预算详见 Phase 0 文档。全国 stratified benchmark 未实现 | 用户在原失败世界运行固定样本、区域基准；运行数据和性能尚未验证 | 诊断可独立撤回；保留采样报告，不影响正式地形 |
 | Phase 1 宏观地貌 | LandformPlan、低地/山带/谷地权重和纯 seed 地图；组合宏观上下文及版本设计，不激活新 density | 中高；建议 Ultra/Astra 审查确定性、有界搜索、依赖环 | 先验地图和候选包络；真实世界暂不应变化 | 可独立撤回新计划/预览，无存档地形影响 |
 | Phase 2 LAND 高程 | 新 recipe + 共享 initial/final 高程基底 + 近岸接缝；接通首次生成前 profile 冻结门。保持海平面和世界高度 | 高；建议 Ultra/Astra | 全新世界检查 1024/2048 低地、32/64/256 起伏、海岸断层、卫星岛/地堡；确认非固定平台 | 代码可退，测试世界重建；不能沿用已经生成区块 |
 | Phase 3 地下稳定性 | noise caves 与 carver 双路径、少量入口区、稳定岩体与水的边界；深层功能保留 | 高；建议 Ultra/Astra | 开地面/地下剖面，检验 road void 拒绝减少的原因；深洞、矿、aquifer、山坡入口仍存在 | 与 Phase 2 的版本分开，可退到 Phase 2 新世界；不要将旧已挖空 chunk 当验证 |
@@ -141,7 +141,7 @@ Survey/Preview 同坐标、同方向、同长度、同加载状态、同版本�
 
 ## 8. 第一轮正式实施建议
 
-下一轮只做 Phase 0，并可完成 Phase 1 的接口草案；生产 density 切换另开任务。具体完成条件：
+原研究建议优先 Phase 0；现在其代码已完成，下一步为用户实机验证，Phase 1 接口和生产 density 切换须另开任务。原完成条件与当前边界如下：
 
 1. 核对并替换诊断工具过时资源假设，输出当前活跃链和来源身份。
 2. 对用户提供的失败道路样本建立一份最小可复查报告：真实 void/坡度/约束位置，分别列 estimate 与 actual。
@@ -154,7 +154,8 @@ Survey/Preview 同坐标、同方向、同长度、同加载状态、同版本�
 ## 9. 本轮交付状态
 
 - 当前代码链、官方现实参考、目标参数、世界高度容量及迁移边界：已审查并文档化。
+- Phase 0 诊断工具已实现，编译记录见[诊断实施文档](terrain_v2_phase0_diagnostics_and_baseline.md)；实际 terrain_v1_baseline.json 由用户运行命令生成，不把实现完成当成数据已采集。
 - 新 LandformPlan / 新高度 / 稳定层 / 生态 / 灾难层 / 世界 profile 生命周期：均未实施。
-- 新 DEM 样方统计、编译、客户端、新世界、世界生成测试、性能 benchmark：均未执行。
-- V1-B 当前用户实机验收失败；Survey/Preview 一致性及失败归因仍需调查；地形改造后必须重新验收，V1-C 暂停。
+- 原研究未执行 DEM 样方统计、编译或运行测试；Phase 0 仅允许离线 compileJava。客户端、新世界、世界生成测试、性能 benchmark 仍未执行。
+- V1-B 当前用户实机验收失败；静态审查确认 Survey VERIFIED 不包含 Preview 玩家站位门，未确认几何或正式预检不一致。331,-762 的 STEP_OUTSIDE 属站位拒绝；其它失败及322,-812的具体空洞来源仍需原世界证据。地形改造后必须重新验收，V1-C 暂停。
 - 后续必须用全新世界复验；本报告不授予自动施工、清理旧世界、提交或推送权限。
