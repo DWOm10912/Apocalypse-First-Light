@@ -1,0 +1,215 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "left": "true",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "left": "false",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_e"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "left": "true",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_w"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "left": "false",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_both"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "rod": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_rod"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "true",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "false",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_e",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "true",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_w",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "false",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_both",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "rod": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_rod",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "true",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "false",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_e",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "true",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_w",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "false",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_both",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "rod": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_rod",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "true",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "false",
+        "right": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_e",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "true",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_w",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "false",
+        "right": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_cap_both",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "rod": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/facade_eyebrow/canopy_rod",
+        "y": 270
+      }
+    }
+  ]
+}

@@ -36,7 +36,7 @@
 | ID | `apocalypse_firstlight:metal_wall_panel`（深灰金属墙板 / Charcoal Metal Wall Panel） | `apocalypse_firstlight:metal_panel_jamb`（深灰金属门框侧板 / Charcoal Metal Jamb Plate） |
 | 代码 | `block/MetalWallPanelBlock` | `block/MetalPanelJambBlock` |
 | 形状 | 整格 | 贴着一条格边的 5 px（0.31 m）厚板，高一整格、深一整格；碰撞和选框就是这块板 |
-| 状态 | `cap`；`north` / `east` / `south` / `west` | `facing`（贴哪条边） |
+| 状态 | `cap`；`north` / `east` / `south` / `west` | `facing`（贴哪条边）；`eyebrow`（`none` / `cw` / `ccw`，2026-10-07 加，见下面"侧板带雨篷"） |
 | 属性 | 复制铁块，硬度 / 抗性 3.0 / 6.0，金属音效 | 同左 |
 | 挖掘 | `minecraft:mineable/pickaxe` + `minecraft:needs_diamond_tool`，`requiresCorrectToolForDrops()`。AGENTS 规定铝制商业结构是钻石级。没有实机检查 | 同左 |
 | 掉落 | 掉自身，带 `survives_explosion` | 同左 |
@@ -60,6 +60,14 @@
 1. 点在另一块侧板上：沿用它的那条边，所以往上堆、往旁边接都能对齐。
 2. 点在别的方块的侧面上：贴住被点的那一面。
 3. 点在地面或顶面上：贴离准星最近的那条边。点在格子正中（±2 px）时，贴离玩家远的那条边。
+
+### 侧板带雨篷（2026-10-07，金属雨篷 V1）
+
+- 侧板内侧那一格是 [金属雨篷](metal_eyebrow_canopy_v1.md)、并且雨篷顺着侧板方向朝外时，侧板自动把自己这一格剩下的部分显示成雨篷，碰撞也包括这部分。`cw` / `ccw` 表示雨篷朝向是侧板 `facing` 的顺时针还是逆时针方向。
+- 这样雨篷能连续穿过入口门框。
+- `blockstates/metal_panel_jamb.json` 改成了 multipart，雨篷部分的模型在 `models/block/facade_eyebrow/jamb_canopy_{w,e}`。
+- 镜像时 `cw` / `ccw` 互换。
+- 用户 2026-10-07 实机 PASS（随金属雨篷一起验收）。
 
 ## 在 A1 里怎么用
 
@@ -91,7 +99,7 @@
     - `coping_corner`：西北转角；
     - `metal_panel_jamb`：贴北边的侧板。
   - `blockstates/metal_wall_panel.json`：multipart。外沿按方向旋转；转角模型是西北角，转 90° 就是东北角，依此类推。
-  - `blockstates/metal_panel_jamb.json`：按 `facing` 旋转。
+  - `blockstates/metal_panel_jamb.json`：multipart，按 `facing` 旋转；2026-10-07 起 `eyebrow` 时叠加雨篷部分。
   - `models/item/metal_wall_panel.json`、`models/item/metal_panel_jamb.json`。
 
 ## 已知问题 / 以后

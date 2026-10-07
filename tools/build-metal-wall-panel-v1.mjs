@@ -96,8 +96,19 @@ const ref = (m, y) => ({model: T + m, ...(y % 360 ? {y: y % 360} : {})});
     parts.push({when: {cap: 'true', [a]: 'false', [b]: 'false'}, apply: ref('coping_corner', y)});
   outputs.push([path.join(assets, 'blockstates/metal_wall_panel.json'), json({multipart: parts})]);
 }
-outputs.push([path.join(assets, 'blockstates/metal_panel_jamb.json'),
-  json({variants: Object.fromEntries(Object.entries(ROT).map(([F, y]) => [`facing=${F}`, ref('metal_panel_jamb', y)]))})]);
+{   // MetalPanelJambBlock: facing (the edge it hugs); eyebrow = none / cw / ccw: a Metal Eyebrow Canopy next to it on its
+    // inner side faces the facing's clockwise / counter-clockwise neighbour, and the rest of the cell shows as canopy
+    // (models from tools/build-metal-eyebrow-canopy-v1.mjs, in the canopy's frame: plate on the west or the east)
+  const CW = {north: 'east', east: 'south', south: 'west', west: 'north'}, CCW = {north: 'west', east: 'north', south: 'east', west: 'south'};
+  const EB = 'apocalypse_firstlight:block/facade_eyebrow/', eb = (m, F) => ({model: EB + m, ...(ROT[F] ? {y: ROT[F]} : {})});
+  const parts = [];
+  for (const [F, y] of Object.entries(ROT)) {
+    parts.push({when: {facing: F}, apply: ref('metal_panel_jamb', y)});
+    parts.push({when: {facing: F, eyebrow: 'cw'}, apply: eb('jamb_canopy_w', CW[F])});    // the plate is on the canopy's west (its counter-clockwise side)
+    parts.push({when: {facing: F, eyebrow: 'ccw'}, apply: eb('jamb_canopy_e', CCW[F])});
+  }
+  outputs.push([path.join(assets, 'blockstates/metal_panel_jamb.json'), json({multipart: parts})]);
+}
 outputs.push([path.join(assets, 'models/item/metal_wall_panel.json'), json({parent: `${T}metal_wall_panel`})],
   [path.join(assets, 'models/item/metal_panel_jamb.json'), json({parent: `${T}metal_panel_jamb`})]);
 

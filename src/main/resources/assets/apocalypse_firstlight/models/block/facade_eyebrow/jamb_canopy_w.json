@@ -1,0 +1,124 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/facade_eyebrow/eyebrow_coat",
+    "coat": "apocalypse_firstlight:block/facade_eyebrow/eyebrow_coat",
+    "soffit": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel"
+  },
+  "elements": [
+    {
+      "from": [
+        5,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        3.5,
+        0.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            5,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            5,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "up": {
+          "uv": [
+            5,
+            15.2,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            5,
+            15.2,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "down"
+        },
+        "east": {
+          "uv": [
+            0,
+            12.5,
+            0.8,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        5,
+        0.5,
+        0.8
+      ],
+      "to": [
+        16,
+        2.1,
+        16
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            5,
+            0,
+            16,
+            15.2
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            5,
+            0,
+            16,
+            15.2
+          ],
+          "texture": "#soffit"
+        },
+        "south": {
+          "uv": [
+            5,
+            13.9,
+            16,
+            15.5
+          ],
+          "texture": "#coat",
+          "cullface": "south"
+        },
+        "east": {
+          "uv": [
+            0.8,
+            13.9,
+            16,
+            15.5
+          ],
+          "texture": "#coat",
+          "cullface": "east"
+        }
+      }
+    }
+  ]
+}

@@ -357,6 +357,10 @@
       "unit_mass_kg": 0.4,
       "estimated": true
     },
+    "apocalypse_firstlight:metal_eyebrow_canopy": {
+      "unit_mass_kg": 1.0,
+      "estimated": true
+    },
     "apocalypse_firstlight:beverage_cooler": {
       "unit_mass_kg": 35,
       "estimated": true

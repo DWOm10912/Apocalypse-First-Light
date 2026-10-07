@@ -305,6 +305,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.METAL_WALL_PANEL.get(), new Item.Properties()));
     public static final RegistryObject<Item> METAL_PANEL_JAMB = ITEMS.register("metal_panel_jamb",
             () -> new BlockItem(AflBlocks.METAL_PANEL_JAMB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> METAL_EYEBROW_CANOPY = ITEMS.register("metal_eyebrow_canopy",
+            () -> new BlockItem(AflBlocks.METAL_EYEBROW_CANOPY.get(), new Item.Properties()));
     public static final RegistryObject<Item> STOREFRONT_GLAZING = ITEMS.register("storefront_glazing",
             () -> new BlockItem(AflBlocks.STOREFRONT_GLAZING.get(), new Item.Properties()));
     public static final RegistryObject<Item> BEVERAGE_COOLER = ITEMS.register("beverage_cooler",

@@ -1,0 +1,248 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/facade_eyebrow/eyebrow_coat",
+    "coat": "apocalypse_firstlight:block/facade_eyebrow/eyebrow_coat",
+    "soffit": "apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        3.5,
+        0.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            0,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "up": {
+          "uv": [
+            0,
+            15.2,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            0,
+            15.2,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "down"
+        },
+        "west": {
+          "uv": [
+            0,
+            12.5,
+            0.8,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "west"
+        },
+        "east": {
+          "uv": [
+            0,
+            12.5,
+            0.8,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "east"
+        }
+      }
+    },
+    {
+      "from": [
+        0.8,
+        0.5,
+        0.8
+      ],
+      "to": [
+        15.2,
+        2.1,
+        16
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            0.8,
+            0,
+            15.2,
+            15.2
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            0.8,
+            0,
+            15.2,
+            15.2
+          ],
+          "texture": "#soffit"
+        },
+        "south": {
+          "uv": [
+            0.8,
+            13.9,
+            15.2,
+            15.5
+          ],
+          "texture": "#coat",
+          "cullface": "south"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        0.8
+      ],
+      "to": [
+        0.8,
+        3.5,
+        16
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            0.8,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "west"
+        },
+        "east": {
+          "uv": [
+            0.8,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "up": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            15.2
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            0.8,
+            15.2
+          ],
+          "texture": "#coat",
+          "cullface": "down"
+        },
+        "south": {
+          "uv": [
+            0,
+            12.5,
+            0.8,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "south"
+        }
+      }
+    },
+    {
+      "from": [
+        15.2,
+        0,
+        0.8
+      ],
+      "to": [
+        16,
+        3.5,
+        16
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            0.8,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat"
+        },
+        "east": {
+          "uv": [
+            0.8,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "east"
+        },
+        "up": {
+          "uv": [
+            15.2,
+            0,
+            16,
+            15.2
+          ],
+          "texture": "#coat"
+        },
+        "down": {
+          "uv": [
+            15.2,
+            0,
+            16,
+            15.2
+          ],
+          "texture": "#coat",
+          "cullface": "down"
+        },
+        "south": {
+          "uv": [
+            15.2,
+            12.5,
+            16,
+            16
+          ],
+          "texture": "#coat",
+          "cullface": "south"
+        }
+      }
+    }
+  ]
+}

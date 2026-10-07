@@ -296,7 +296,7 @@ front NORTH 写法下的局部坐标：main (24, 2, 0) NORTH；secondary (6, 2, 
 3. 磨面砌块勒脚（带窗台压顶）——2026-10-07 已做成 `ground_face_block`，见 [facade_masonry_base_v1.md](../models/facade_masonry_base_v1.md)，用户实机 PASS；
 4. 女儿墙铝檐口 / 压顶——2026-10-07 已做成 `aluminum_cornice`，见 [aluminum_cornice_v1.md](../models/aluminum_cornice_v1.md)，用户实机 PASS；
 5. 深灰金属墙板和入口门框薄侧板——2026-10-07 已做成 `metal_wall_panel` / `metal_panel_jamb`，见 [metal_wall_panel_v1.md](../models/metal_wall_panel_v1.md)，用户实机 PASS；
-6. 金属雨篷（出挑 1 m，带封檐板）。
+6. 金属雨篷（出挑 1 m，带封檐板）——2026-10-07 已做成 `metal_eyebrow_canopy`，见 [metal_eyebrow_canopy_v1.md](../models/metal_eyebrow_canopy_v1.md)，用户实机 PASS。
 
 同时要做的非资产 P0：
 - 地下油罐 rotate 修复和 GameTest（Java，需同意）；

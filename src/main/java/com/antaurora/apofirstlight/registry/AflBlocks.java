@@ -364,6 +364,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> METAL_PANEL_JAMB = BLOCKS.register("metal_panel_jamb",
             () -> new com.antaurora.apofirstlight.block.MetalPanelJambBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+    // Metal Eyebrow Canopy V1 (docs/models/metal_eyebrow_canopy_v1.md): coated aluminium hanger-rod canopy, Diamond-tier like the panel
+    public static final RegistryObject<Block> METAL_EYEBROW_CANOPY = BLOCKS.register("metal_eyebrow_canopy",
+            () -> new com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> STOREFRONT_GLAZING = BLOCKS.register("storefront_glazing",
             () -> new com.antaurora.apofirstlight.block.StorefrontGlazingBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 6.0F).sound(SoundType.GLASS)
