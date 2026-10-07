@@ -1,5 +1,5 @@
 // CurseForge / Modrinth description cards for Apocalypse: First Light, in the style of the title art
-// (E:/Download/AFL/afl_title.png) and badge (afl_badge.png): pixel art on a unit grid, rusty steel frames with a peach top
+// (design/branding/afl_title.png) and badge (design/branding/afl_badge.png): pixel art on a unit grid, rusty steel frames with a peach top
 // edge, dusk sky bands, block letters with a dark extrusion and a black outline, in "steel" (APOCALYPSE) or "sun"
 // (FIRST LIGHT) fills. Colours are sampled from those two images. Each card is drawn at 1 px per unit, then scaled up
 // UNIT times with nearest neighbour, so edges stay crisp. See docs/项目内容/04 - CurseForge 等 mod 发布页.md.
@@ -7,10 +7,11 @@
 //   node tools/build-curseforge-cards.mjs [outDir]     (default E:/Download/AFL_CurseForge_Cards)
 import fs from 'fs';
 import path from 'path';
+import {fileURLToPath} from 'url';
 import {png, readPng} from './cube-slab-mesh-lib.mjs';
 
 const OUT = process.argv[2] || 'E:/Download/AFL_CurseForge_Cards';
-const TITLE = 'E:/Download/AFL/afl_title.png';
+const TITLE = path.join(path.dirname(fileURLToPath(import.meta.url)), '../design/branding/afl_title.png');
 const UNIT = 4;
 
 const hex = h => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
@@ -175,7 +176,7 @@ function big(c, text, x, y, s, style, depth = Math.max(1, s - 1)) {
 const bigSize = (text, s, depth = Math.max(1, s - 1)) => ({w: boldWidth(text, s) + 2, h: 7 * s + 1 + depth + 2});
 
 // ---------------- icons ----------------
-const IK = {k: P.black, d: P.skyline, s: P.steel, l: P.steelLight, p: P.peach, o: P.sun[6], y: P.sun[2], w: P.sun[0], r: P.rust[3], m: hex('e2722a'), b: P.blurple, W: P.white, c: hex('b0521d')};
+const IK = {z: hex('6f8f55'), Z: hex('4f6a3c'), e: hex('7a3212'), g: hex('8fc04a'), k: P.black, d: P.skyline, s: P.steel, l: P.steelLight, p: P.peach, o: P.sun[6], y: P.sun[2], w: P.sun[0], r: P.rust[3], m: hex('e2722a'), b: P.blurple, W: P.white, c: hex('b0521d')};
 /** The radiation trefoil on a yellow disc: three black 60-degree blades (down, up-left, up-right) and a centre dot. */
 function trefoil(n) {
   const rows = [], c = (n - 1) / 2;
@@ -197,6 +198,10 @@ const ICONS = {
     'kwpppwwkkwppppwk', 'kwwwwwwkkwwwwwwk', 'krrrrrrkkrrrrrrk', '.kkkkkkkkkkkkkk.'],
   source: ['....kk....kk....', '...kyk....kyk...', '..kyk..kk..kyk..', '.kyk..kyk...kyk.', 'kyk...kyk....kyk', '.kyk.kyk....kyk.',
     '..kyk.kyk..kyk..', '...kyk.k..kyk...', '....kk....kk....'],
+  infected: ['kkkkkkkkkkkk', 'kzZzzzzzZzzk', 'kzzzzzzzzzZk', 'kzkkkzzkkkzk', 'kzkkkzzkkkzk', 'kzzzzZzzzzzk', 'kzzkkkkkkzzk',
+    'kzzkekkekzzk', 'kZzzzzzzzzzk', 'kkkkkkkkkkkk'],
+  check: ['...........kk', '..........kgk', '.........kggk', 'kk......kggk.', 'kgk....kggk..', 'kggk..kggk...', '.kggkkggk....',
+    '..kggggk.....', '...kggk......', '....kk.......'],
   warning: ['.......k.......', '......kyk......', '.....kyyyk.....', '.....kykyk.....', '....kyykyyk....', '....kyykyyk....',
     '...kyyykyyyk...', '...kyyyyyyyk...', '..kyyyykyyyyk..', '..kyyyyyyyyyk..', '.kyyyyyyyyyyyk.', 'kkkkkkkkkkkkkkk'],
   gun: ['kkkkkkkkkkkkk.', 'kllllllllllllk', 'kssssssssssssk', 'kkkkkkssskkkkk', '.....ksssk....', '....ksssk.....',
@@ -248,7 +253,7 @@ for (const [name, word] of [['discord', 'DISCORD'], ['wiki', 'WIKI'], ['source',
 
 // feature strips: icon (x2) + sun title
 for (const [name, title] of [['gun', 'GUNS & ATTACHMENTS'], ['survival', 'SURVIVAL'], ['loot', 'SCAVENGING'],
-                             ['fuel', 'FUEL & FIRE'], ['power', 'POWER'], ['radiation', 'RADIATION & INDUSTRY']]) {
+                             ['fuel', 'FUEL & FIRE'], ['power', 'POWER'], ['radiation', 'RADIATION & INDUSTRY'], ['infected', 'THE INFECTED']]) {
   seed = title.length * 31 + 5;
   const H = 40, c = new Canvas(300, H);
   frame(c, 0, 0, 300, H);
@@ -278,6 +283,30 @@ notice('notice_alpha.png', 'warning', 'EARLY ALPHA', [
   'EXPECT BUGS AND MISSING CONTENT.',
   'NUMBERS AND BALANCE {o:WILL CHANGE}.',
   'UPDATES MAY BREAK WORLDS - {o:BACK THEM UP}.',
+]);
+notice('notice_modpacks.png', 'check', 'MODPACKS WELCOME', [
+  'USE IT IN {o:ANY MODPACK}, PUBLIC OR PRIVATE.',
+  'NO NEED TO ASK. JUST LINK THE OFFICIAL PAGE -',
+  '{o:PLEASE DO NOT RE-UPLOAD THE JAR}.',
+]);
+// planned work: docs/项目内容/02 - 制作清单.md (V1, V2) less what is already in, plus the diesel generator and fuel tanks
+notice('notice_coming_next.png', null, 'COMING NEXT', [
+  '{o:PLANNED - NOT IN THIS VERSION YET.}',
+  '- CITIES, CITY AND RURAL LOOT, A NEW SPAWN SYSTEM',
+  '- RUNNERS AND THE FIRST SPECIAL INFECTED',
+  '- BODY-PART DAMAGE, INJURIES AND BLEEDING',
+  '- FOOD SPOILAGE, MEDICINE, TOOLS AND WEAPONS',
+  '- RAD RAIN, HAZMAT SUITS, DECONTAMINATION',
+  '- PROPANE TANKS AND BIGGER EXPLOSIONS',
+  '- TRACER AND INCENDIARY ROUNDS',
+  '- DIESEL GENERATORS, FUEL TANKS, MORE RECIPES',
+  '- LATER: {o:PICK YOUR SPAWN REGION}, {o:SEASONS}',
+]);
+notice('notice_shaders.png', null, 'SHADERS', [
+  'WORKS WITH {o:OCULUS} AND {o:EMBEDDIUM}.',
+  'TESTED: {o:COMPLEMENTARY REIMAGINED}, {o:SUNDIAL}',
+  'AND {o:SUNDIAL LITE}.',
+  'GUNS AND MACHINES USE {o:LABPBR} MATERIALS.',
 ]);
 notice('notice_requirements.png', null, 'REQUIREMENTS', [
   'MINECRAFT {o:1.20.1} · FORGE',
