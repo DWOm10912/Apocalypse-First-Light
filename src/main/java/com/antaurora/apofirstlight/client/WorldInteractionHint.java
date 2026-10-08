@@ -205,7 +205,7 @@ public final class WorldInteractionHint {
         return new Target(Component.translatable("hint.apocalypse_firstlight.metal_eyebrow_canopy."+(s.getValue(com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock.ROD)?"rod_off":"rod_on")),null);
     }
 
-    /** Power Outlets V1: an outlet takes the plug in hand or gives up the one in the aimed socket; a strip says where its power stands. */
+    /** Power Outlets V1: an outlet takes the plug in hand or gives up the one in the aimed socket; a strip names what right-click does (sneaking: the plug). */
     private static Target powerOutlets(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);String k="hint.apocalypse_firstlight.";
@@ -215,21 +215,19 @@ public final class WorldInteractionHint {
             return com.antaurora.apofirstlight.block.WallOutletBlock.used(s,socket)&&mc.player.getMainHandItem().isEmpty()?new Target(Component.translatable(k+"wall_outlet.unplug"),null):null;
         }
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock)||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity strip)) return null;
-        String key=strip.carrierId()==mc.player.getId()?"carrying":strip.outlet()==null?"unplugged":!s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.ON)?"off"
-                :s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.LIT)?"live":"no_power";
+        if(!mc.player.getMainHandItem().isEmpty()) return null;
+        String key=mc.player.isShiftKeyDown()?(strip.carrierId()==mc.player.getId()?"put_back":strip.outlet()!=null?"unplug":"take_plug")
+                :s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.ON)?"switch_off":"switch_on";
         return new Target(Component.translatable(k+"power_strip."+key),null);
     }
 
-    /** Building Power V1: the panel opens its screen; the meter box shows the disconnect, where its power goes and the reading. */
+    /** Building Power V1: the panel opens its screen; the meter box names what right-click does to the disconnect. */
     private static Target buildingPower(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.DistributionPanelBlock) return new Target(Component.translatable("hint.apocalypse_firstlight.distribution_panel.open"),null);
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.ServiceMeterBoxBlock)) return null;
-        if(!s.getValue(com.antaurora.apofirstlight.block.ServiceMeterBoxBlock.ON)) return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box.off"),null);
-        long reading=mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity m?m.reading():0;
-        boolean panel=mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity m2&&m2.panel()!=null;
-        return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box."+(panel?"on":"no_panel"),String.format("%,d",reading)),null);
+        return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box."+(s.getValue(com.antaurora.apofirstlight.block.ServiceMeterBoxBlock.ON)?"turn_off":"turn_on")),null);
     }
 
     /** Commercial wood door, only while sneaking with an empty hand (as CommercialWoodDoorBlock#use): the next look. */

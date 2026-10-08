@@ -4,6 +4,7 @@
   "automatic_culling": false,
   "flip_v": true,
   "shade_quads": true,
+  "emissive_ambient": true,
   "ambientocclusion": false,
   "textures": {
     "particle": "apocalypse_firstlight:block/power_strip"

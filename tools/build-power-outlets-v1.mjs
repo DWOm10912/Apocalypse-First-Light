@@ -11,6 +11,7 @@
 // - wall outlet: front toward -Z, the wall at z = +8; plate centre 5.6 px up (0.35 m: a floor-cell outlet; in the cell
 //   above a counter it sits at 1.35 m). Ground hole down; the neutral (long) slot on the left seen from the room (+X).
 // - power strips: long axis X, switch and cord at the +X end, flat on the cell floor (lowered: on the 13.5 px office desk).
+//   A red indicator beside the reset button; it and the rocker glow at full brightness in the lit state (GLOW).
 // - plug: its face (blade side) at z = 0 with the blades toward -Z, the head toward +Z, the cord leaving along +Z; centred
 //   on the block centre in the OBJ, so the renderer turns it about (0.5, 0.5, 0.5).
 // Plain surfaces: no printed legends or logos. Dielectric materials (LabPBR F0 20), nickel-plated brass only on the blades.
@@ -107,8 +108,8 @@ function buildOutlet() {
 
 // ---------------- power strips + plug (one atlas) ----------------
 export const STRIP = {
-  3: {L: m(200), W: m(58), xs: [m(-58), m(-8), m(42)], rows: [[0, -1]], rocker: [m(72), 0], button: [m(90.5), 0]},
-  6: {L: m(236), W: m(112), xs: [m(-60), m(-6), m(48)], rows: [[-m(24), -1], [m(24), 1]], rocker: [m(90), -m(20)], button: [m(90), m(24)]},
+  3: {L: m(200), W: m(58), xs: [m(-58), m(-8), m(42)], rows: [[0, -1]], rocker: [m(72), 0], button: [m(90.5), 0], led: [m(90.5), -m(12)]},
+  6: {L: m(236), W: m(112), xs: [m(-60), m(-6), m(48)], rows: [[-m(24), -1], [m(24), 1]], rocker: [m(90), -m(20)], button: [m(90), m(24)], led: [m(90), m(12)]},
   H: m(36), r: m(12), chamfer: m(4), faceProud: m(2.2), grommetR: m(6), grommetY: m(18),
 };
 export const PLUG = {w: m(32), h: m(36), d: m(28), r: m(4), cordR: m(3.5)};
@@ -133,6 +134,9 @@ function buildStripsAndPlug() {
         rz - rd / 2, rz + rd / 2, m(0.6));
     }
     cyl(P(`strip${n}_button`, body, 'bezel'), 'y', S.button[1], S.button[0], m(4.5), H - m(1), H + m(2.2), 14);
+    // power indicator beside the reset button (user 2026-10-08): a lens in a black housing, red and glowing while the strip has power
+    cyl(P(`strip${n}_led_housing`, body, 'bezel'), 'y', S.led[1], S.led[0], m(3.4), H - m(1), H + m(0.6), 12);
+    for (const [look, mat] of [['off', 'led_off'], ['lit', 'led_lit']]) cyl(P(`strip${n}_led_${look}`, `led${n}_${look}`, mat), 'y', S.led[1], S.led[0], m(2.3), H + m(0.6), H + m(1.8), 12);
     cyl(P(`strip${n}_grommet`, body, 'grommet'), 'x', 0, STRIP.grommetY, STRIP.grommetR, S.L / 2 - m(3), S.L / 2 + m(9), 14);
   }
   // NEMA 5-15P plug: moulded head, strain relief tapering to the cord, two flat blades (neutral wider) and the ground pin.
@@ -152,6 +156,8 @@ function buildStripsAndPlug() {
     bezel:      {c: [22, 22, 24], hl: 6, sm: 104, se: 120, f0: 20},
     rocker:     {c: [118, 24, 18], hl: 8, sm: 168, se: 180, f0: 20},
     rocker_lit: {c: [246, 74, 48], hl: 6, sm: 176, se: 186, f0: 20},
+    led_off:    {c: [74, 16, 14], hl: 6, sm: 176, se: 186, f0: 20},
+    led_lit:    {c: [255, 58, 40], hl: 4, sm: 180, se: 190, f0: 20},
     grommet:    {c: [26, 26, 28], hl: 4, sm: 86, se: 96, f0: 20},
     plug:       {c: [27, 28, 30], hl: 8, sm: 98, se: 114, f0: 20},
     blade:      {c: [196, 190, 172], hl: 14, sm: 186, se: 196, f0: 255},
@@ -159,7 +165,10 @@ function buildStripsAndPlug() {
   };
   return {PARTS, MATS, atlas: 512, startS: 48};
 }
-export const EMISSION = {rocker_lit: 200};   // LabPBR _s alpha (0..254 = emission strength, 255 = none)
+export const EMISSION = {rocker_lit: 200, led_lit: 220};
+// materials drawn at full brightness (Forge OBJ emissive_ambient: their MTL material has Ka 1 1 1), so the lit rocker
+// and the indicator glow without shaders too
+export const GLOW = new Set(['rocker_lit', 'led_lit']);   // LabPBR _s alpha (0..254 = emission strength, 255 = none)
 
 // ---------------- bake ----------------
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
@@ -195,7 +204,7 @@ const B = {outlet: bake('outlet', 'wall_outlet', buildOutlet), strip: bake('stri
 // coplanar faces, checked per exported look (the strips' alternative rockers share their place on purpose)
 const LOOKS = {
   wall_outlet: [B.outlet, null],
-  ...Object.fromEntries([3, 6].flatMap(n => ['off', 'on', 'lit'].map(l => [`power_strip_${n}_${l}`, [B.strip, new Set(['body' + n, `rocker${n}_${l}`])]]))),
+  ...Object.fromEntries([3, 6].flatMap(n => ['off', 'on', 'lit'].map(l => [`power_strip_${n}_${l}`, [B.strip, new Set(['body' + n, `rocker${n}_${l}`, `led${n}_${l === 'lit' ? 'lit' : 'off'}`])]]))),
   power_plug: [B.strip, new Set(['plug'])],
 };
 const coplanar = {};
@@ -218,7 +227,7 @@ function objOf(title, file, b, bones, offset = [0, 0, 0]) {
   let vBase = 1, tBase = 1, nBase = 1;
   for (const p of b.PARTS) {
     if (bones && !bones.has(p.bone)) continue;
-    out.push(`o ${p.name}`, `usemtl ${b.key}`);
+    out.push(`o ${p.name}`, `usemtl ${b.key}${GLOW.has(p.mat) ? '_glow' : ''}`);
     for (const q of p.v) out.push(`v ${f6((q[0] + offset[0]) / 16 + 0.5)} ${f6((q[1] + offset[1]) / 16)} ${f6((q[2] + offset[2]) / 16 + 0.5)}`);
     const uvs = b.UV.faceUV.get(p), vt = [], vn = [], fl = [], cn = cornerNormals(p), nIndex = new Map();
     p.f.forEach((f, k) => {
@@ -234,9 +243,10 @@ function objOf(title, file, b, bones, offset = [0, 0, 0]) {
   }
   return out.join('\n') + '\n';
 }
-const mtlOf = (title, b) => `# AFL ${title}\nnewmtl ${b.key}\nKd 1 1 1\nmap_Kd apocalypse_firstlight:block/${b.id}\n`;
+const mtlOf = (title, b) => `# AFL ${title}\nnewmtl ${b.key}\nKd 1 1 1\nmap_Kd apocalypse_firstlight:block/${b.id}\n` +
+  (b.PARTS.some(p => GLOW.has(p.mat)) ? `newmtl ${b.key}_glow\nKa 1 1 1\nKd 1 1 1\nmap_Kd apocalypse_firstlight:block/${b.id}\n` : '');
 const objModel = (file, particle) => ({loader: 'forge:obj', model: `apocalypse_firstlight:models/block/${file}.obj`, automatic_culling: false,
-  flip_v: true, shade_quads: true, ambientocclusion: false, textures: {particle: `apocalypse_firstlight:block/${particle}`}});
+  flip_v: true, shade_quads: true, emissive_ambient: true, ambientocclusion: false, textures: {particle: `apocalypse_firstlight:block/${particle}`}});
 function guiCentred(b, bones, rotation, scale) {
   const [ax, ay] = rotation.map(v => v * D2R);
   const rot = q => { const x = q[0] * Math.cos(ay) + q[2] * Math.sin(ay), z = -q[0] * Math.sin(ay) + q[2] * Math.cos(ay); return [x, q[1] * Math.cos(ax) - z * Math.sin(ax)]; };
@@ -311,7 +321,7 @@ model('wall_outlet', 'Power Outlets V1 wall outlet', B.outlet, null);
 for (const n of [3, 6]) {
   const id = 'power_strip_' + n;
   for (const look of ['off', 'on', 'lit']) {
-    const bones = new Set(['body' + n, `rocker${n}_${look}`]);
+    const bones = new Set(['body' + n, `rocker${n}_${look}`, `led${n}_${look === 'lit' ? 'lit' : 'off'}`]);
     model(`${id}/${look}`, `Power Outlets V1 ${n}-outlet strip (${look})`, B.strip, bones);
     model(`${id}/${look}_lowered`, `Power Outlets V1 ${n}-outlet strip (${look}, on desk)`, B.strip, bones, [0, LOWERED, 0]);
   }
@@ -320,7 +330,7 @@ for (const n of [3, 6]) {
     variants[`facing=${f},lit=${lit},lowered=${low},on=${on}`] = {model: `apocalypse_firstlight:block/${id}/${on ? (lit ? 'lit' : 'on') : 'off'}${low ? '_lowered' : ''}`, ...(y ? {y} : {})};
   outputs.push([path.join(assets, `blockstates/${id}.json`), json({variants})]);
   outputs.push([path.join(assets, `models/item/${id}.json`), json({parent: `apocalypse_firstlight:block/${id}/on`, gui_light: 'side',
-    display: display(B.strip, new Set(['body' + n, `rocker${n}_on`]), [30, 135, 0], n === 3 ? 2.6 : 2.3, n === 3 ? 1.1 : 0.95)})]);
+    display: display(B.strip, new Set(['body' + n, `rocker${n}_on`, `led${n}_off`]), [30, 135, 0], n === 3 ? 2.6 : 2.3, n === 3 ? 1.1 : 0.95)})]);
 }
 // the plug, centred on the block centre (renderer turns it about (0.5, 0.5, 0.5))
 model('power_plug', 'Power Outlets V1 plug', B.strip, new Set(['plug']), [0, 8, 0]);

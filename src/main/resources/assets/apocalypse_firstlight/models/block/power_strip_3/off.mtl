@@ -2,3 +2,7 @@
 newmtl strip
 Kd 1 1 1
 map_Kd apocalypse_firstlight:block/power_strip
+newmtl strip_glow
+Ka 1 1 1
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/power_strip
