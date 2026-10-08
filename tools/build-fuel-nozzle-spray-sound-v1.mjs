@@ -19,6 +19,6 @@ function lowPass2(x, fc) { const w = 2 * Math.PI * fc / SR, c = Math.cos(w), al 
   return biquad(x, [(1 - c) / 2 / a0, (1 - c) / a0, (1 - c) / 2 / a0], [1, -2 * c / a0, (1 - al) / a0]); }
 
 const report = buildLoop({srcDir: SRC, soundsDir: SOUNDS, source: {name: '喷油循环', sha: 'a79ee64c28aefd21'}, file: 'fuel_nozzle/spray.ogg',
-  from: 0.3, period: 0.05, periods: 80, crossfade: 8, equalPower: true, reference: 'industrial_electrical_box/open.ogg', offset: -9, declick: 6,
+  from: 0.3, period: 0.05, periods: 80, crossfade: 8, equalPower: true, reference: 'distribution_panel/open.ogg', offset: -9, declick: 6,
   prepare: x => lowPass2(x, LOWPASS)});
 console.log(JSON.stringify(report, null, 1));

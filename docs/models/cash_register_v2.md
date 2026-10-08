@@ -92,10 +92,12 @@ V2 取代 V1 文档（原 `docs/cash_register_model.md`，已删除）。Registr
 | `register_drawer_close.wav` | de7a622c096e1c7e | 0.17–0.42 s 推动，0.47 s 扣上 | 0.90 |
 | `register_bell.wav` | 67cebec1225e54ae | 0.05 s 拉杆"咔"，0.11 s 铃声，余音到 0.98 s | 0.93 |
 
+响度基准"配电盘开门 / 关门"就是原来配电箱的那两段音效，2026-10-07 配电箱删除后挪到 `sounds/distribution_panel/`，文件没变。
+
 | 事件 | 文件 | 对齐 | 成品 |
 |---|---|---|---|
-| `cash_register_open` | `sounds/cash_register/open.ogg`（0.98 s） | 开钱箱素材剪掉前 0.12 s：释放的"咔"落在约 0.03 s，撞到底落在 0.30 s（动画最后一帧）。铃声的峰值在 0.10 s，比钱箱低 3 dB，余音盖在硬币声下面 | -24.8 LUFS（目标：配电箱开门 ±0） |
-| `cash_register_close` | `sounds/cash_register/close.ogg`（0.74 s） | 剪掉前 0.18 s 很轻的滑动，扣上落在 0.30 s（最后一帧） | -24.7 LUFS（目标：配电箱关门 -1 LU） |
+| `cash_register_open` | `sounds/cash_register/open.ogg`（0.98 s） | 开钱箱素材剪掉前 0.12 s：释放的"咔"落在约 0.03 s，撞到底落在 0.30 s（动画最后一帧）。铃声的峰值在 0.10 s，比钱箱低 3 dB，余音盖在硬币声下面 | -24.8 LUFS（目标：配电盘开门 ±0） |
+| `cash_register_close` | `sounds/cash_register/close.ogg`（0.74 s） | 剪掉前 0.18 s 很轻的滑动，扣上落在 0.30 s（最后一帧） | -24.7 LUFS（目标：配电盘关门 -1 LU） |
 
 - 铃声只在开钱箱时响，关钱箱时不响。
 - 播放：服务端，音量 0.8，音高 0.98–1.02（不让对好的时间点偏移）。

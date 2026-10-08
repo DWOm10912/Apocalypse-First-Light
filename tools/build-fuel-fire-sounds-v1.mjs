@@ -14,7 +14,7 @@ import {SR, decode, trimHead, peakAt, buildSounds, buildLoop} from './sound-mix-
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = process.argv[2] ?? 'E:/Download';
 const SOUNDS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/sounds');
-const REFERENCE = 'industrial_electrical_box/open.ogg';
+const REFERENCE = 'distribution_panel/open.ogg';
 const IGNITE = '点燃（短促轰燃）', LOOP = '持续燃烧（可循环）', BLAST = '油罐爆炸';
 const SHA = {[IGNITE]: 'bbde1dcbab416ce4', [LOOP]: '274f085fe8780f13', [BLAST]: '08253c806c68b4fe'};
 

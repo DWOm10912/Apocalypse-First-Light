@@ -22,7 +22,6 @@
     "apocalypse_firstlight:fluid_tank",
     "apocalypse_firstlight:fused_ground",
     "apocalypse_firstlight:galena_ore",
-    "apocalypse_firstlight:industrial_electrical_box",
     "apocalypse_firstlight:industrial_furnace",
     "apocalypse_firstlight:industrial_locker",
     "apocalypse_firstlight:industrial_utility_light",
@@ -103,6 +102,8 @@
     "apocalypse_firstlight:jerry_can",
     "apocalypse_firstlight:small_fuel_drum",
     "apocalypse_firstlight:fuel_drum",
-    "apocalypse_firstlight:hand_fuel_pump"
+    "apocalypse_firstlight:hand_fuel_pump",
+    "apocalypse_firstlight:distribution_panel",
+    "apocalypse_firstlight:service_meter_box"
   ]
 }

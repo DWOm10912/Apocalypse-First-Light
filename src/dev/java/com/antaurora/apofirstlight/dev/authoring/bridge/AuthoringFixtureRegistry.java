@@ -173,8 +173,10 @@ final class AuthoringFixtureRegistry {
                     .notes("2 wide x 3 tall, with its own island curb segment. Anchor = a0 (master, bottom); b column at facing.getClockWise(). Facing = the front customer face; both long faces have two nozzles."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
             new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
-            new Def(A+"industrial_electrical_box",storage,"utility").facing(H4).fixed("open","false","locked","true").inventory().support(Support.ATTACHED_OPPOSITE_FACING)
-                    .notes("Wall-mounted only (V2, no ceiling mount); facing = the door side. 9-slot container, door starts closed, locked and empty."),
+            new Def(A+"distribution_panel",safe,"utility").facing(H4).fixed("open","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Power V1 (2026-10-07): hangs on the wall behind it; a BlockEntity keeps the main / branch breakers (a new panel starts with the main off). Ports: bottom face in, top face out."),
+            new Def(A+"service_meter_box",safe,"utility").facing(H4).variant("on","true","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Power V1 (2026-10-07): the service entry on an outside wall; on = the disconnect. Bottom-face port; forwards to the panel of the building whose wall it hangs on."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"chemical_reactor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"compressor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),

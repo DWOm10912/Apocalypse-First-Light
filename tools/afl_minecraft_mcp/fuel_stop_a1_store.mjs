@@ -129,7 +129,7 @@ export function recipe() {
 
   // ---- back of house ----
   for (const [X, sink] of [[1, 2], [5, 4]]) { fix('place_fixture', 'commercial_flushometer_toilet', X, 0, 1, 'south'); fix('place_multiblock', 'commercial_wall_mounted_sink', sink, 0, 1, 'south'); }
-  fix('place_fixture', 'industrial_electrical_box', 8, 1, 1, 'south');
+  fix('place_fixture', 'distribution_panel', 8, 1, 1, 'south');
   for (let X = 10; X <= 15; X++) fix('place_multiblock', 'storage_rack', X, 0, 1, 'south');
   for (let X = 17; X <= 21; X++) fix('place_multiblock', 'storage_rack', X, 0, 4, 'north');
   // round 1 stopped here (the bridge history is full after 32 entries); the remaining racks and everything else: steps()
@@ -198,7 +198,7 @@ export function steps() {
   P('industrial_utility_light', 12, 3, 3, 'down'); ST([12, 3, 3], [12, 3, 3], [2, 0, 0], 1);
   P('industrial_utility_light', 19, 3, 2, 'down'); ST([19, 3, 2], [19, 3, 2], [2, 0, 0], 1);
   P('industrial_utility_light', 24, 3, 3, 'down');
-  P('industrial_electrical_box', 6, 1, -1, 'north');
+  P('service_meter_box', 6, 1, -1, 'north');
   for (const X of [0, 26]) P('metal_trash_can', X, 0, 16, 'south');
   P('fuel_island_bollard', 6, 0, 18); P('fuel_island_bollard', 8, 0, 18); ST([6, 0, 18], [8, 0, 18], [5, 0, 0], 2); P('fuel_island_bollard', 21, 0, 18);
   return S;
@@ -241,6 +241,12 @@ export function tweakSteps() {
 // the interior doors into the openings left empty by the Poplar removal (2026-10-07)
 export function doorSteps() {
   return INTERIOR_DOORS.map(([id, X, Z, facing, properties]) => ({kind: 'place_multiblock', id, at: [X, 0, Z], facing, properties}));
+}
+// Building Power V1 (2026-10-07): the Industrial Electrical Box was removed, so its two cells get the Distribution Panel
+// (utility room, back wall inside) and the Service Meter Box (back wall outside)
+export function powerSteps() {
+  return [{kind: 'place_fixture', id: 'distribution_panel', at: [8, 1, 1], facing: 'south', properties: {}},
+    {kind: 'place_fixture', id: 'service_meter_box', at: [6, 1, -1], facing: 'north', properties: {}}];
 }
 export function relayoutSteps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
@@ -348,4 +354,5 @@ else if (mode === 'furnish') await furnish();
 else if (mode === 'relayout') await relayout();
 else if (mode === 'tweak') await relayout(tweakSteps(), 'tweak_sales_v3.json');
 else if (mode === 'doors') await relayout(doorSteps(), 'interior_doors_v1.json');
+else if (mode === 'power') await relayout(powerSteps(), 'building_power_v1.json');
 else if (mode === 'check') console.log(JSON.stringify(routeCheck(), null, 1));

@@ -5,7 +5,6 @@ import com.antaurora.apofirstlight.block.AxisSteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
-import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.block.RetailShelfSingleBlock;
 import com.antaurora.apofirstlight.block.CashRegisterBlock;
@@ -179,12 +178,13 @@ public final class AflBlocks {
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
                     .lightLevel(state -> 14)));
-    public static final RegistryObject<Block> INDUSTRIAL_ELECTRICAL_BOX = BLOCKS.register("industrial_electrical_box",
-            () -> new IndustrialElectricalBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(5.0F, 8.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion()));
+    /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
+    public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
+            () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> SERVICE_METER_BOX = BLOCKS.register("service_meter_box",
+            () -> new com.antaurora.apofirstlight.block.ServiceMeterBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> INDUSTRIAL_LOCKER = BLOCKS.register("industrial_locker",
             () -> new IndustrialLockerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F)

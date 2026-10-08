@@ -26,11 +26,11 @@ const LOOP = {name: 'cooler_compressor_loop', sha: '6bc62f3fe43d435a'};
 
 // 'at' is where the source's own peak sample lands.
 const report = buildSounds({srcDir: SRC, soundsDir: SOUNDS, sources: SOURCES, outputs: {
-  start: {file: 'beverage_cooler/compressor_start.ogg', reference: 'industrial_electrical_box/open.ogg', offset: -8,
+  start: {file: 'beverage_cooler/compressor_start.ogg', reference: 'distribution_panel/open.ogg', offset: -8,
     layers: [{src: 'cooler_compressor_start', at: 0.03, gain: 0}]},
-  stop: {file: 'beverage_cooler/compressor_stop.ogg', reference: 'industrial_electrical_box/open.ogg', offset: -10,
+  stop: {file: 'beverage_cooler/compressor_stop.ogg', reference: 'distribution_panel/open.ogg', offset: -10,
     layers: [{src: 'cooler_compressor_stop', at: 0.37, gain: 0, trim: 0.30}]},
 }});
 report.loop = buildLoop({srcDir: SRC, soundsDir: SOUNDS, source: LOOP, file: 'beverage_cooler/compressor_loop.ogg', from: 0.3496,
-  period: 815 / 48000, periods: 29, crossfade: 4, reference: 'industrial_electrical_box/open.ogg', offset: -14, declick: 2.5});
+  period: 815 / 48000, periods: 29, crossfade: 4, reference: 'distribution_panel/open.ogg', offset: -14, declick: 2.5});
 console.log(JSON.stringify(report, null, 1));

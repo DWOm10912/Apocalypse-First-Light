@@ -26,6 +26,8 @@ public final class AflMenus {
 
     public static final RegistryObject<MenuType<ThermalGeneratorMenu>> THERMAL_GENERATOR =
             MENUS.register("thermal_generator", () -> IForgeMenuType.create(ThermalGeneratorMenu::new));
+    public static final RegistryObject<MenuType<com.antaurora.apofirstlight.menu.DistributionPanelMenu>> DISTRIBUTION_PANEL =
+            MENUS.register("distribution_panel", () -> IForgeMenuType.create(com.antaurora.apofirstlight.menu.DistributionPanelMenu::new));
     public static final RegistryObject<MenuType<EnergyCellMenu>> ENERGY_CELL =
             MENUS.register("energy_cell", () -> IForgeMenuType.create(EnergyCellMenu::new));
     public static final RegistryObject<MenuType<CrusherMenu>> CRUSHER =

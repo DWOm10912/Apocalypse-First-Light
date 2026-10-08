@@ -31,12 +31,15 @@ public final class AflBlockEntityRenderers {
                 EnergyCellBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Lead Chest V3
-        event.registerBlockEntityRenderer(AflBlockEntities.INDUSTRIAL_ELECTRICAL_BOX.get(),
-                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Industrial Electrical Box V2
         event.registerBlockEntityRenderer(AflBlockEntities.CASH_REGISTER.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Cash Register V2
         // Commercial Glass Double Door V2 (both finishes): generic AFL Animated Block Mesh Runtime
         event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
+        // Building Power V1 (distribution panel, service meter box): generic AFL Animated Block Mesh Runtime
+        event.registerBlockEntityRenderer(AflBlockEntities.DISTRIBUTION_PANEL.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.SERVICE_METER_BOX.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         // Steel-frame doors V1 (steel door, commercial wood door): generic AFL Animated Block Mesh Runtime
         event.registerBlockEntityRenderer(AflBlockEntities.STEEL_DOOR.get(),

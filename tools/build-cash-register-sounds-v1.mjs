@@ -21,8 +21,8 @@ const SOURCES = {register_drawer_open: '5c67df7e1f56b8d9', register_drawer_close
 // - close: the first 0.18 s of quiet slide are cut, the catch impact lands on the last frame (0.30 s).
 // 'at' is where the source's own peak sample lands.
 console.log(JSON.stringify(buildSounds({srcDir: SRC, soundsDir: SOUNDS, sources: SOURCES, outputs: {
-  open: {file: 'cash_register/open.ogg', reference: 'industrial_electrical_box/open.ogg', offset: 0,
+  open: {file: 'cash_register/open.ogg', reference: 'distribution_panel/open.ogg', offset: 0,
     layers: [{src: 'register_drawer_open', at: 0.30, gain: 0, trim: 0.12}, {src: 'register_bell', at: 0.10, gain: -3}]},
-  close: {file: 'cash_register/close.ogg', reference: 'industrial_electrical_box/close.ogg', offset: -1,
+  close: {file: 'cash_register/close.ogg', reference: 'distribution_panel/close.ogg', offset: -1,
     layers: [{src: 'register_drawer_close', at: 0.30, gain: 0, trim: 0.18}]},
 }}), null, 1));

@@ -375,17 +375,17 @@
     "subtitle": "subtitles.apocalypse_firstlight.lead_chest_close",
     "sounds": [{"name": "apocalypse_firstlight:lead_chest/close", "attenuation_distance": 12}]
   },
-  "industrial_electrical_box_latch": {
-    "subtitle": "subtitles.apocalypse_firstlight.industrial_electrical_box_latch",
-    "sounds": [{"name": "apocalypse_firstlight:industrial_electrical_box/latch", "attenuation_distance": 8}]
+  "distribution_panel_latch": {
+    "subtitle": "subtitles.apocalypse_firstlight.distribution_panel_latch",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 8}]
   },
-  "industrial_electrical_box_open": {
-    "subtitle": "subtitles.apocalypse_firstlight.industrial_electrical_box_open",
-    "sounds": [{"name": "apocalypse_firstlight:industrial_electrical_box/open", "attenuation_distance": 10}]
+  "distribution_panel_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.distribution_panel_open",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/open", "attenuation_distance": 10}]
   },
-  "industrial_electrical_box_close": {
-    "subtitle": "subtitles.apocalypse_firstlight.industrial_electrical_box_close",
-    "sounds": [{"name": "apocalypse_firstlight:industrial_electrical_box/close", "attenuation_distance": 10}]
+  "distribution_panel_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.distribution_panel_close",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/close", "attenuation_distance": 10}]
   },
   "cash_register_open": {
     "subtitle": "subtitles.apocalypse_firstlight.cash_register_open",

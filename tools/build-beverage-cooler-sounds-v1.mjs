@@ -21,8 +21,8 @@ const SOURCES = {cooler_door_open: '686d16426f3353a9', cooler_door_close: '6955d
 // - close: the door eases onto the gasket on the last frame, the seal suction lands at 0.40 s.
 // 'at' is where the source's own peak sample lands.
 console.log(JSON.stringify(buildSounds({srcDir: SRC, soundsDir: SOUNDS, sources: SOURCES, outputs: {
-  open: {file: 'beverage_cooler/door_open.ogg', reference: 'industrial_electrical_box/open.ogg', offset: -1,
+  open: {file: 'beverage_cooler/door_open.ogg', reference: 'distribution_panel/open.ogg', offset: -1,
     layers: [{src: 'cooler_door_open', at: 0.05, gain: 0, trim: 0.14}]},
-  close: {file: 'beverage_cooler/door_close.ogg', reference: 'industrial_electrical_box/close.ogg', offset: -1,
+  close: {file: 'beverage_cooler/door_close.ogg', reference: 'distribution_panel/close.ogg', offset: -1,
     layers: [{src: 'cooler_door_close', at: 0.40, gain: 0}]},
 }}), null, 1));

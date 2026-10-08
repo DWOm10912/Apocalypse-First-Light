@@ -73,6 +73,7 @@ public final class WorldInteractionHint {
             if(target==null) target=aluminumCornice(mc,hit);
             if(target==null) target=eyebrowCanopy(mc,hit);
             if(target==null) target=woodDoorStyle(mc,hit);
+            if(target==null) target=buildingPower(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
             if(target==null) target=fuelContainer(mc,hit);
@@ -201,6 +202,18 @@ public final class WorldInteractionHint {
         var s=mc.level.getBlockState(hit.getBlockPos());
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.metal_eyebrow_canopy."+(s.getValue(com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock.ROD)?"rod_off":"rod_on")),null);
+    }
+
+    /** Building Power V1: the panel opens its screen; the meter box shows the disconnect, where its power goes and the reading. */
+    private static Target buildingPower(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.DistributionPanelBlock) return new Target(Component.translatable("hint.apocalypse_firstlight.distribution_panel.open"),null);
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.ServiceMeterBoxBlock)) return null;
+        if(!s.getValue(com.antaurora.apofirstlight.block.ServiceMeterBoxBlock.ON)) return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box.off"),null);
+        long reading=mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity m?m.reading():0;
+        boolean panel=mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity m2&&m2.panel()!=null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box."+(panel?"on":"no_panel"),String.format("%,d",reading)),null);
     }
 
     /** Commercial wood door, only while sneaking with an empty hand (as CommercialWoodDoorBlock#use): the next look. */

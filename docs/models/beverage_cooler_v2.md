@@ -141,12 +141,12 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
 
 **可听半径**（2026-10-01）：在 `sounds.json` 里用 `attenuation_distance` 设定（原来是原版默认的 16 格），声音随距离线性变小，到半径处听不到；播放音量都不超过 1，所以半径就是实际范围。开门、关门 10 格。
 
-生成器：`tools/build-beverage-cooler-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音用共享库 `tools/sound-mix-lib.mjs`，方法与收银机、配电箱相同：K 加权，先把素材拉到相同的 100 ms 响度，再按关键帧对齐，峰值不超过 -1 dBFS，输出单声道 48 kHz Ogg Vorbis。左右两扇门共用。
+生成器：`tools/build-beverage-cooler-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音用共享库 `tools/sound-mix-lib.mjs`，方法与收银机、配电盘门相同：K 加权，先把素材拉到相同的 100 ms 响度，再按关键帧对齐，峰值不超过 -1 dBFS，输出单声道 48 kHz Ogg Vorbis。左右两扇门共用。
 
 | 事件 | 文件 | 源文件（SHA-256 前 16 位） | 对齐 | 成品响度 |
 |---|---|---|---|---|
-| `beverage_cooler_door_open` | `sounds/beverage_cooler/door_open.ogg`（0.50 s） | `cooler_door_open.wav` 686d16426f3353a9：0.06 s 手碰门把，0.17 s 密封条脱开的"啵"，门晃动余音到 0.34 s | 剪掉前 0.14 s（手碰门把的声音不能早于点击），"啵"落在 0.05 s，即慢慢起动的门离开密封条的时候 | -25.5 LUFS（目标：配电箱开门 -1 LU） |
-| `beverage_cooler_door_close` | `sounds/beverage_cooler/door_close.ogg`（0.87 s） | `cooler_door_close.wav` 6955d69fafa362f4：0.10 s 贴上，0.14 s 密封条吸合，0.30 s 前停稳 | 吸合落在 0.40 s，即关门动画最后一帧；前面 0.3 秒是静音 | -24.5 LUFS（目标：配电箱关门 -1 LU） |
+| `beverage_cooler_door_open` | `sounds/beverage_cooler/door_open.ogg`（0.50 s） | `cooler_door_open.wav` 686d16426f3353a9：0.06 s 手碰门把，0.17 s 密封条脱开的"啵"，门晃动余音到 0.34 s | 剪掉前 0.14 s（手碰门把的声音不能早于点击），"啵"落在 0.05 s，即慢慢起动的门离开密封条的时候 | -25.5 LUFS（目标：配电盘开门 -1 LU） |
+| `beverage_cooler_door_close` | `sounds/beverage_cooler/door_close.ogg`（0.87 s） | `cooler_door_close.wav` 6955d69fafa362f4：0.10 s 贴上，0.14 s 密封条吸合，0.30 s 前停稳 | 吸合落在 0.40 s，即关门动画最后一帧；前面 0.3 秒是静音 | -24.5 LUFS（目标：配电盘关门 -1 LU） |
 
 - 播放：服务端，点击开始转门时（`startDoor` 成功后）播放，和门动画同时开始。声音位置在被点的那扇门所在列的中间（离地 1 格）。音量 0.8，音高 0.98–1.02，不让对好的时间点偏移。
 - 字幕："饮料冷柜门打开 / 饮料冷柜门关上"（Cooler door opens / closes）。

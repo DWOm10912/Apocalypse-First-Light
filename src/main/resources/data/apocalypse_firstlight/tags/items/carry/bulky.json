@@ -3,7 +3,8 @@
   "values": [
     "apocalypse_firstlight:charging_station",
     "apocalypse_firstlight:commercial_flushometer_toilet",
-    "apocalypse_firstlight:industrial_electrical_box",
+    "apocalypse_firstlight:distribution_panel",
+    "apocalypse_firstlight:service_meter_box",
     "apocalypse_firstlight:modern_office_chair",
     "apocalypse_firstlight:low_filing_cabinet",
     "apocalypse_firstlight:restroom_partition",

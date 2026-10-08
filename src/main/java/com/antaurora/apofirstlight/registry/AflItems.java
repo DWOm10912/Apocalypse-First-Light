@@ -203,8 +203,6 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
-    public static final RegistryObject<Item> INDUSTRIAL_ELECTRICAL_BOX = ITEMS.register("industrial_electrical_box",
-            () -> new BlockItem(AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> INDUSTRIAL_LOCKER = ITEMS.register("industrial_locker",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",
@@ -386,6 +384,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.COMPRESSOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> CHEMICAL_REACTOR = ITEMS.register("chemical_reactor",
             () -> new BlockItem(AflBlocks.CHEMICAL_REACTOR.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> DISTRIBUTION_PANEL = ITEMS.register("distribution_panel",
+            () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.DISTRIBUTION_PANEL.get(), new Item.Properties().stacksTo(4), "distribution_panel"));
+    public static final RegistryObject<Item> SERVICE_METER_BOX = ITEMS.register("service_meter_box",
+            () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.SERVICE_METER_BOX.get(), new Item.Properties().stacksTo(4), "service_meter_box"));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",

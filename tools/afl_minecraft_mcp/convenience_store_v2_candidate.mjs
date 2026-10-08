@@ -78,7 +78,7 @@ fixture(29,1,22,'metal_trash_can');
 for(const z of [18,20])fixture(8,2,z,'cash_register[facing=west]');
 for(const [x,z,f]of [[9,5,'north'],[8,11,'south'],[23,11,'south']])tall(x,z,'steel_door',f,',hinge=left,open=false,powered=false');
 tall(7,6,'industrial_locker');tall(8,6,'industrial_locker');tall(11,6,'water_dispenser');
-fixture(7,2,8,'industrial_electrical_box[facing=east]');
+fixture(7,2,8,'distribution_panel[facing=east,open=false]');
 fixture(13,1,6,M+'barrel[facing=up,open=false]');fixture(14,1,6,M+'barrel[facing=up,open=false]');
 for(const [x,p]of [[19,'left'],[18,'center'],[17,'right']])fixture(x,1,6,`modern_office_desk[facing=south,part=${p}]`);
 fixture(18,2,6,'office_computer_station[facing=south,lowered=true]');
@@ -90,7 +90,7 @@ for(const [x,z]of partitions){const has=(dx,dz)=>partitions.some(p=>p[0]===x+dx&
 for(const x of [25,27]){fixture(x,1,6,'commercial_flushometer_toilet[facing=south]');tall(x,8,'restroom_stall_door','south',',hinge=left,open=false');}
 tall(29,10,'commercial_wall_mounted_sink','west');
 fixture(25,1,1,'commercial_dumpster[facing=south,part=master]');fixture(24,1,1,'commercial_dumpster[facing=south,part=secondary]');
-fixture(15,2,4,'industrial_electrical_box[facing=north]');
+fixture(15,2,4,'service_meter_box[facing=north,on=true]');
 
 // Minimal named NBT encoder, standard structure schema only.
 const i32=n=>{let b=Buffer.alloc(4);b.writeInt32BE(n);return b;};

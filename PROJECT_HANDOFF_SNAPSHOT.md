@@ -36,7 +36,7 @@ AFL is a server-authoritative Overworld apocalypse foundation: restricted vanill
 
 - Core: ApocalypseFirstLight.
 - Registry: AflBlocks, AflItems, AflBlockEntities, AflCreativeTabs, AflBlockSetTypes.
-- Blocks: SteelDoorBlock, SteelGrateBlock, IndustrialUtilityLightBlock, IndustrialElectricalBoxBlock, IndustrialLockerBlock, MetalLockerBlock, SupermarketShelfSingleBlock.
+- Blocks: SteelDoorBlock, SteelGrateBlock, IndustrialUtilityLightBlock, IndustrialLockerBlock, MetalLockerBlock, SupermarketShelfSingleBlock.
 - Block entities: IndustrialLockerBlockEntity, MetalLockerBlockEntity.
 - Noise: NoiseEvent, NoiseType, NoiseSystem, GunshotNoiseResolver, BlockBreakNoiseResolver, InteractionNoiseResolver/Events, movement noise, AcousticOcclusionResolver, TaczNoiseEvents.
 - Infected: InfectedEntityRules, InfectedEvents, hearing, vision, AI investigation, breach authorization/goal/rules/entry seeking.
@@ -55,7 +55,7 @@ Blocks:
 - steel_grate: custom waterloggable grate, 5/7, metal, no occlusion.
 - steel_door: vanilla-style 1x1x2 DoorBlock, 6/10, metal.
 - industrial_utility_light: wall/ceiling utility block, 3/5, light 14.
-- industrial_electrical_box: wall utility block, 5/8.
+- industrial_electrical_box: removed 2026-10-07 (docs/models/industrial_electrical_box_v2.md); the bunker has a distribution_panel instead.
 - industrial_locker: IndustrialLockerBlock, 1x1x2, 5/8, 54-slot BE.
 - metal_locker: MetalLockerBlock, 1x1x2, 4/6, 36-slot BE.
 - supermarket_shelf_single: custom 1x1x2 visual shelf, 3.5/6, no BE.

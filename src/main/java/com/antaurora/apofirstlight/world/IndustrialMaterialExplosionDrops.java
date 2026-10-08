@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.world;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.IndustrialUtilityLightBlock;
-import com.antaurora.apofirstlight.block.IndustrialElectricalBoxBlock;
 import com.antaurora.apofirstlight.block.IndustrialLockerBlock;
 import com.antaurora.apofirstlight.blockentity.IndustrialLockerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.RetailShelfSingleBlockEntity;
@@ -38,7 +37,6 @@ public final class IndustrialMaterialExplosionDrops {
 
         Set<BlockPos> salvagedDoors = new HashSet<>();
         Set<BlockPos> salvagedLights = new HashSet<>();
-        Set<BlockPos> salvagedBoxes = new HashSet<>();
         Set<BlockPos> salvagedLockers = new HashSet<>();
         Set<BlockPos> salvagedShelves = new HashSet<>();
         for (BlockPos position : event.getAffectedBlocks()) {
@@ -85,11 +83,6 @@ public final class IndustrialMaterialExplosionDrops {
             }
         }
         for (BlockPos position : event.getAffectedBlocks()) {
-            if (level.getBlockState(position).getBlock() == AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get()
-                    && salvagedBoxes.add(position.immutable())) {
-                IndustrialElectricalBoxBlock.markExplosion(position);
-                drop(level, position, AflItems.STEEL_SCRAP.get(), 0, 3);
-            }
             if (level.getBlockState(position).getBlock() == AflBlocks.INDUSTRIAL_LOCKER.get()
                     && salvagedLockers.add(lockerLowerPosition(level, position).immutable())) {
                 BlockPos lower = lockerLowerPosition(level, position);
@@ -109,17 +102,6 @@ public final class IndustrialMaterialExplosionDrops {
                     && salvagedLights.add(position.immutable())) {
                 IndustrialUtilityLightBlock.markExplosion(position);
                 dropChance(level, position, AflItems.STEEL_SCRAP.get(), 0.50F);
-            }
-        }
-        for (BlockPos supportPosition : event.getAffectedBlocks()) {
-            for (Direction facing : Direction.Plane.HORIZONTAL) {
-                BlockPos boxPosition = supportPosition.relative(facing);
-                if (level.getBlockState(boxPosition).getBlock() == AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get()
-                        && level.getBlockState(boxPosition).getValue(IndustrialElectricalBoxBlock.FACING) == facing
-                        && salvagedBoxes.add(boxPosition.immutable())) {
-                    IndustrialElectricalBoxBlock.markExplosion(boxPosition);
-                    drop(level, boxPosition, AflItems.STEEL_SCRAP.get(), 0, 3);
-                }
             }
         }
         for (BlockPos supportPosition : event.getAffectedBlocks()) {
@@ -146,7 +128,6 @@ public final class IndustrialMaterialExplosionDrops {
         }
         level.getServer().execute(SteelDoorBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialUtilityLightBlock::clearExplosionMarks);
-        level.getServer().execute(IndustrialElectricalBoxBlock::clearExplosionMarks);
         level.getServer().execute(IndustrialLockerBlock::clearExplosionMarks);
         level.getServer().execute(RetailShelfSingleBlock::clearExplosionMarks);
     }

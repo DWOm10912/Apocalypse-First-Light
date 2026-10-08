@@ -1,24 +1,25 @@
 {
   "parent": "builtin/entity",
+  "gui_light": "side",
   "textures": {
-    "particle": "apocalypse_firstlight:block/industrial_electrical_box"
+    "particle": "apocalypse_firstlight:block/service_meter_box"
   },
   "display": {
     "gui": {
       "rotation": [
-        30,
-        225,
+        20,
+        205,
         0
       ],
       "translation": [
-        3.376,
-        -1.802,
-        0
+        2.025,
+        1.073,
+        4.171
       ],
       "scale": [
-        0.851,
-        0.851,
-        0.851
+        0.915,
+        0.915,
+        0.915
       ]
     },
     "ground": {
@@ -28,9 +29,9 @@
         0
       ],
       "translation": [
-        0,
-        3,
-        0
+        0.123,
+        3.69,
+        -0.75
       ],
       "scale": [
         0.3,
@@ -45,9 +46,9 @@
         0
       ],
       "translation": [
-        0,
-        0,
-        0
+        -0.246,
+        1.38,
+        1.5
       ],
       "scale": [
         0.6,
@@ -58,13 +59,13 @@
     "thirdperson_righthand": {
       "rotation": [
         75,
-        315,
+        205,
         0
       ],
       "translation": [
-        0,
-        2.5,
-        0
+        0.885,
+        1.641,
+        1.354
       ],
       "scale": [
         0.4,
@@ -75,13 +76,13 @@
     "firstperson_righthand": {
       "rotation": [
         0,
-        315,
+        205,
         0
       ],
       "translation": [
-        0,
-        0,
-        0
+        0.996,
+        2.035,
+        1.276
       ],
       "scale": [
         0.45,

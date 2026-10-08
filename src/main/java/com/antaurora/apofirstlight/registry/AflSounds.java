@@ -79,10 +79,11 @@ public final class AflSounds {
     // Lead Chest lid: mixed onto the 0.7 s lid animation by tools/build-lead-chest-sounds-v1.mjs
     public static final RegistryObject<SoundEvent> LEAD_CHEST_OPEN = simple("lead_chest_open");
     public static final RegistryObject<SoundEvent> LEAD_CHEST_CLOSE = simple("lead_chest_close");
-    // Industrial Electrical Box: tools/build-industrial-electrical-box-sounds-v1.mjs (one latch click for lock and unlock)
-    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_LATCH = simple("industrial_electrical_box_latch");
-    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_OPEN = simple("industrial_electrical_box_open");
-    public static final RegistryObject<SoundEvent> INDUSTRIAL_ELECTRICAL_BOX_CLOSE = simple("industrial_electrical_box_close");
+    // Distribution Panel door: tools/build-distribution-panel-sounds-v1.mjs (made for the removed Industrial Electrical Box,
+    // whose door ran the same 10 ticks; the latch click plays as the door opens)
+    public static final RegistryObject<SoundEvent> DISTRIBUTION_PANEL_LATCH = simple("distribution_panel_latch");
+    public static final RegistryObject<SoundEvent> DISTRIBUTION_PANEL_OPEN = simple("distribution_panel_open");
+    public static final RegistryObject<SoundEvent> DISTRIBUTION_PANEL_CLOSE = simple("distribution_panel_close");
     // Cash Register: tools/build-cash-register-sounds-v1.mjs (the open sound carries the bell)
     public static final RegistryObject<SoundEvent> CASH_REGISTER_OPEN = simple("cash_register_open");
     public static final RegistryObject<SoundEvent> CASH_REGISTER_CLOSE = simple("cash_register_close");

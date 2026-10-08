@@ -26,11 +26,11 @@ const HUM = {name: 'charger_hum', sha: 'e61ccd39b5439ae3'};
 // - full: the leading tick is cut; the ding keeps its place.
 // 'at' is where the source's own peak sample lands.
 const report = buildSounds({srcDir: SRC, soundsDir: SOUNDS, sources: SOURCES, outputs: {
-  start: {file: 'charging_station/start.ogg', reference: 'industrial_electrical_box/open.ogg', offset: -8,
+  start: {file: 'charging_station/start.ogg', reference: 'distribution_panel/open.ogg', offset: -8,
     layers: [{src: 'charger_start', at: 0.12, gain: 0, rate: 0.45}, {src: 'charger_start', at: 0.30, gain: 0, rate: 0.6}]},
-  full: {file: 'charging_station/full.ogg', reference: 'industrial_electrical_box/open.ogg', offset: -2,
+  full: {file: 'charging_station/full.ogg', reference: 'distribution_panel/open.ogg', offset: -2,
     layers: [{src: 'charger_full', at: 0.49, gain: 0, trim: 0.06}]},
 }});
 report.hum = buildLoop({srcDir: SRC, soundsDir: SOUNDS, source: HUM, file: 'charging_station/hum.ogg', from: 0.02, period: 0.02,
-  periods: 30, crossfade: 4, reference: 'industrial_electrical_box/open.ogg', offset: -16});
+  periods: 30, crossfade: 4, reference: 'distribution_panel/open.ogg', offset: -16});
 console.log(JSON.stringify(report, null, 1));

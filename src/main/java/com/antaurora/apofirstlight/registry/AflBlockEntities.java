@@ -36,9 +36,6 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<LeadChestBlockEntity>> LEAD_CHEST =
             BLOCK_ENTITIES.register("lead_chest", () ->
                     BlockEntityType.Builder.of(LeadChestBlockEntity::new, AflBlocks.LEAD_CHEST.get()).build(null));
-    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.IndustrialElectricalBoxBlockEntity>> INDUSTRIAL_ELECTRICAL_BOX =
-            BLOCK_ENTITIES.register("industrial_electrical_box", () -> BlockEntityType.Builder.of(
-                    com.antaurora.apofirstlight.blockentity.IndustrialElectricalBoxBlockEntity::new, AflBlocks.INDUSTRIAL_ELECTRICAL_BOX.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.CashRegisterBlockEntity>> CASH_REGISTER =
             BLOCK_ENTITIES.register("cash_register", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.CashRegisterBlockEntity::new, AflBlocks.CASH_REGISTER.get()).build(null));
@@ -46,6 +43,13 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK.get()).build(null));
+    /** Building Power V1: the panel (breakers, circuits) and the meter box (service entry). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity>> DISTRIBUTION_PANEL =
+            BLOCK_ENTITIES.register("distribution_panel", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity::new, AflBlocks.DISTRIBUTION_PANEL.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity>> SERVICE_METER_BOX =
+            BLOCK_ENTITIES.register("service_meter_box", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity::new, AflBlocks.SERVICE_METER_BOX.get()).build(null));
     /** Steel-frame doors V1: the lower half of each door draws it (docs/models/steel_frame_doors_v1.md). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.SteelDoorBlockEntity>> STEEL_DOOR =
             BLOCK_ENTITIES.register("steel_door", () -> BlockEntityType.Builder.of(

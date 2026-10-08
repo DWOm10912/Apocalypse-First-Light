@@ -17,7 +17,7 @@ V3 只换外观：模型、贴图和 PBR，以及跟着外形调整的 Mesh Shap
 | 逐格搜索 | 接入 Progressive Container Search，40 ticks/格 |
 | 声音 | 2026-09-30 起有开合音效，方块音效改为原版下界合金块（见"音效"） |
 | 骨骼与动画 | `body`、`lid`、`latch_left`、`latch_right`，通道 `open`，14 ticks，`ease_in_out`：盖子绕后合页转 +100°，两个搭扣各绕下端转 −120° 向前翻下 |
-| 物品 | `LeadChestBlockItem` 用 `AflStaticMeshItemRenderer` 画同一份 Mesh（关盖姿态），`models/item/lead_chest.json` 的 display 沿用 V1，只有 GUI 视角在 2026-10-01 从 `[30,45,0]` 改为 `[30,225,0]`：原来物品栏里显示的是背面（用户发现），现在和配电箱、收银机一样是正面朝外 |
+| 物品 | `LeadChestBlockItem` 用 `AflStaticMeshItemRenderer` 画同一份 Mesh（关盖姿态），`models/item/lead_chest.json` 的 display 沿用 V1，只有 GUI 视角在 2026-10-01 从 `[30,45,0]` 改为 `[30,225,0]`：原来物品栏里显示的是背面（用户发现），现在和收银机一样是正面朝外 |
 
 ## 模型
 
@@ -108,7 +108,7 @@ V2 的生成器 `tools/build-lead-chest-v2.mjs` 已删除：它写的是同一�
 - 播放：`LeadChestBlock.setOpen` 在服务端播放，音量 0.8（与储物柜相同）。音高只在 0.98–1.02 之间随机，±2% 不会让对好的时间点明显漂移。
 - 字幕："铅箱打开 / 铅箱关上"（`subtitles.apocalypse_firstlight.lead_chest_*`）。
 
-生成器：`tools/build-lead-chest-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音的函数已于 2026-09-30 移到共享库 `tools/sound-mix-lib.mjs`（配电箱音效也用它），参数没变；当时源素材已不在 `E:/Download`，所以没能重新生成做逐字节比对，现有的两段成品没有改动。要重新生成，需要把六段源素材放回源目录。源素材是用户生成的六段单一事件录音（1 秒，立体声，48 kHz），生成器会按 SHA-256 前 16 位校验：
+生成器：`tools/build-lead-chest-sounds-v1.mjs [源目录]`（默认 `E:/Download`，需要 ffmpeg）。响度和混音的函数已于 2026-09-30 移到共享库 `tools/sound-mix-lib.mjs`（配电盘门的音效也用它），参数没变；当时源素材已不在 `E:/Download`，所以没能重新生成做逐字节比对，现有的两段成品没有改动。要重新生成，需要把六段源素材放回源目录。源素材是用户生成的六段单一事件录音（1 秒，立体声，48 kHz），生成器会按 SHA-256 前 16 位校验：
 
 | 源文件 | SHA-256 前 16 位 | 内容 |
 |---|---|---|

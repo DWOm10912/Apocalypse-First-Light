@@ -27,7 +27,7 @@ const SRC = process.argv[2] ?? 'E:/Download';
 const SOUNDS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/sounds');
 const SHA = {pump_switch: '7038d7e261a66d83', pump_contactor: '0ee61c6b59f7192f', pump_motor_spinup: '56408c0a672b9d6a',
   pump_motor_loop: '30d1ae1209a72276', pump_water_settle: 'e2bd9d36eaa7a75d'};
-const REFERENCE = 'industrial_electrical_box/open.ogg', SWITCH_OFFSET = -3, MOTOR_OFFSET = -11, SETTLE_UNDER = -8;
+const REFERENCE = 'distribution_panel/open.ogg', SWITCH_OFFSET = -3, MOTOR_OFFSET = -11, SETTLE_UNDER = -8;
 const LOWPASS = 6000, SETTLE_HIGHPASS = 90;
 // start: the contactor's click at 0, the wind-up from START_SPINUP_AT; its last SPIN_FADE seconds fade out. The client's
 // loop waits until the fade begins and fades in over it (IntakePumpBlockEntity.LOOP_FADE_IN, ticks).

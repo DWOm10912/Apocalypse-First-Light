@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:dirt",
+    "#minecraft:base_stone_overworld",
+    "#minecraft:sand",
+    "#minecraft:leaves",
+    "#minecraft:logs",
+    "#minecraft:replaceable",
+    "#minecraft:ice",
+    "#minecraft:flowers",
+    "#minecraft:saplings",
+    "#minecraft:crops",
+    "minecraft:gravel",
+    "minecraft:clay",
+    "minecraft:snow_block",
+    "minecraft:powder_snow",
+    "minecraft:moss_block",
+    "minecraft:bamboo",
+    "minecraft:sugar_cane",
+    "minecraft:cactus",
+    "apocalypse_firstlight:fallout_soil",
+    "apocalypse_firstlight:scorched_soil",
+    "apocalypse_firstlight:fused_ground"
+  ]
+}

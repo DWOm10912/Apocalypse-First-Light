@@ -1,5 +1,5 @@
 // Shared block-sound mixer: single-event source recordings -> loudness-normalised, keyframe-aligned mono Ogg Vorbis.
-// Used by tools/build-intake-pump-sounds-v1.mjs, tools/build-lead-chest-sounds-v1.mjs, tools/build-industrial-electrical-box-sounds-v1.mjs,
+// Used by tools/build-intake-pump-sounds-v1.mjs, tools/build-lead-chest-sounds-v1.mjs, tools/build-distribution-panel-sounds-v1.mjs,
 // tools/build-cash-register-sounds-v1.mjs, tools/build-beverage-cooler-sounds-v1.mjs,
 // tools/build-charging-station-sounds-v1.mjs, tools/build-beverage-cooler-compressor-sounds-v1.mjs,
 // tools/build-container-search-sounds-v2.mjs (a mirrored loop) and tools/build-metal-trash-can-sounds-v1.mjs (needs ffmpeg).

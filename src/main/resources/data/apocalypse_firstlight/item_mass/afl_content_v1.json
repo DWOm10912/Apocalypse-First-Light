@@ -389,8 +389,12 @@
       "unit_mass_kg": 15,
       "estimated": true
     },
-    "apocalypse_firstlight:industrial_electrical_box": {
-      "unit_mass_kg": 12,
+    "apocalypse_firstlight:distribution_panel": {
+      "unit_mass_kg": 14,
+      "estimated": true
+    },
+    "apocalypse_firstlight:service_meter_box": {
+      "unit_mass_kg": 10,
       "estimated": true
     },
     "apocalypse_firstlight:modern_office_chair": {
