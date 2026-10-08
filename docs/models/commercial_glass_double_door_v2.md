@@ -96,7 +96,7 @@
   - `textures/entity/commercial_glass_double_door.png`，atlas 里它那一行也去掉了；
   - `src/main/blockbench/commercial_glass_swing_door.bbmodel` 和 `src/main/blockbench/textures/commercial_glass_swing_door.png`；
   - `tools/export-commercial-glass-double-door.mjs`（V1 导出工具）。
-  - 还剩 `tools/commercial-storefront-door.blockbench.js`：它是在 Blockbench 里生成 V1 源模型的脚本，没在删除名单里，所以保留，已经不再使用。
+  - `tools/commercial-storefront-door.blockbench.js`（在 Blockbench 里生成 V1 源模型的脚本），用户同意后同日删除。
 
 ## 已知问题 / 以后
 

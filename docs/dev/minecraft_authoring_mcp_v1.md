@@ -231,6 +231,15 @@ Unchanged:
 - Glass double door V2 (2026-10-07, both finishes): the leaves now swing out toward `facing`, about 0.72 block into the cells in front. For a storefront give `facing` = the outside; the door frame then lines up with `storefront_glazing` of the same facing. The fixture contract (parts, anchor, `open=false`) is unchanged; only the registry notes say so.
 - Other BlockEntity blocks are still unclassified in `problems()` and stay blocked as `UNSAFE`: `underground_fuel_tank_*`, fuel containers, intake pumps, `charging_station`. Not needed for the A1 store.
 
+### Live build notes: Fuel Stop A1 store (2026-10-07)
+
+Lessons from the first full building built through the bridge (record: [fuel_stop_a1_store_build_v1.md](../worldgen/fuel_stop_a1_store_build_v1.md), script `tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs`):
+- **Plots with layers below ground.** `authoring_create` puts the plot's bottom layer at the player's feet and needs vacant air, so a module with underground layers (A1: `surface_offset_y` 2) cannot be created there. The player runs `/afl_author resume <id> <x> <y> <z> <w> <d> <h> <offset>` with an explicit origin instead (no vacancy check, no block changes).
+- **History budget.** At most 32 undo entries per reservation (`BridgeHistory.reserve`), and every `place_fixture` / `place_multiblock` / `we_*` call is one. A store interior needs about 120 fixtures, so place one and copy it with `we_stack` (whitelisted empty fixtures copy fine, whole multiblocks inside the region). `HISTORY_LIMIT` clears only with a new reservation: `authoring_cancel`, then the player re-runs `resume`.
+- **Removing fixtures.** A `we_batch_set` of `minecraft:air` over whole multiblocks removes them in one entry (inventories must be empty).
+- **Camera.** `CAMERA_CLOSE_SCREEN_FIRST` while chat is open; with mouse input during a capture the client pose drifts off the target and `client_frame_ready` never turns true, so ask the player not to touch mouse or keyboard. `camera_restore` can fail with `CAMERA_DESTINATION_OBSTRUCTED`; move the player to a free spot instead.
+- **Facings.** `place_fixture` needs `facing` for wall/ceiling fixtures (`industrial_utility_light` facing=down); `cash_register` needs its counter placed first (FLOOR support).
+
 ### Implementation / verification
 
 Java:
