@@ -31,8 +31,9 @@ import java.util.Set;
  * Steel Door (`steel_door`, zh "工业门"). Steel-frame doors V1 (2026-10-07, docs/models/steel_frame_doors_v1.md): a charcoal
  * hollow-metal frame and leaf drawn by the AFL Animated Block Mesh Runtime (SteelDoorBlockEntity on the lower half; the block
  * model is particle-only). Still a vanilla door: the states (facing / half / hinge / open / powered), placement, redstone,
- * sounds and the recovery-tool / explosion drops below are unchanged, so existing worlds and templates (bunker.nbt, the A1
- * store) keep their doors. New: the leaf hangs at the face toward the placer and swings out toward the placer (out of the
+ * sounds and the recovery-tool / explosion drops below are unchanged, so existing worlds and templates keep their doors.
+ * Doors placed before V1 have no block entity and draw nothing until the block is rewritten (opening it once does it);
+ * newly placed doors and templates placed into the live world (the bunker) get one. New: the leaf hangs at the face toward the placer and swings out toward the placer (out of the
  * cell, as an exit door placed from outside); the shapes follow the mesh (SteelFrameDoorShapes).
  */
 public class SteelDoorBlock extends DoorBlock implements EntityBlock {

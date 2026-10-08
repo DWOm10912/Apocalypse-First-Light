@@ -54,9 +54,9 @@
   - `metal_eyebrow_canopy` 雨篷：正面 3 m，每 3 m 一根拉杆；两侧转角玻璃上方；后门上方 2 m。
 - **门**：`commercial_glass_double_door_black` 两扇，往外开；后墙 `steel_door` 三扇；室内五扇原来是 `poplar_door`。
   - 2026-10-07 白杨木整套删除（[删除记录](poplar_wood_set_removed.md)）。开发存档里这五个门洞下次进游戏会变空。
-  - 同日钢门重做、新增商业木门（[Steel-frame Doors V1](../models/steel_frame_doors_v1.md)）。后墙钢门的状态不变，进游戏后直接显示新模型。
+  - 同日钢门重做、新增商业木门（[Steel-frame Doors V1](../models/steel_frame_doors_v1.md)）。后墙钢门的状态不变，但它们是以前放的，没有方块实体，进游戏是隐形的，右键开关一次就好（用户实机确认）。
   - 室内门按 `INTERIOR_DOORS` 补：两间卫生间是商业木门的卫生间样式，铰链都在中间隔墙一侧；库房门（从营业区进）是窄视窗样式；办公室门（从库房进）是普通样式；冷库门先用钢门，往外开到库房里。
-  - 还没补进开发存档：要用户开游戏、重新进入会话后运行 `doors` 模式。
+  - 2026-10-07 用 `doors` 模式补进开发存档：5 步都成功，审计 0 个问题，状态核对过（朝向、铰链、样式和 `INTERIOR_DOORS` 一致）。
 - **人行道**：`road_sidewalk_surface[layers=16]`（Codex 的道路方块，贴图是临时的）。
 - **墙基**：`reinforced_concrete`，埋在地下看不到。
 - **占位（原版方块）**：
