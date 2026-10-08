@@ -10,6 +10,7 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs build   -> writes into the active plot (must be EMPTY-sized 31 x 10 x 20)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs furnish -> the fixtures in history-sized rounds (fresh build)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs relayout -> the first build's sales floor to the revised one (furniture only)
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs tweak   -> the same-day tweak (12 lights, freezer to the east wall)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs check   -> offline route check of the revised sales floor
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
@@ -172,7 +173,7 @@ export function steps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
   const ST = (from, to, d, count) => S.push({kind: 'we_stack', from, to, d, count});
   P('storage_rack', 21, 0, 4, 'north', {}, true); for (const Z of [1, 2]) P('storage_rack', 22, 0, Z, 'west', {}, true);
-  P('industrial_utility_light', 3, 3, 7, 'down'); ST([3, 3, 7], [3, 3, 7], [4, 0, 0], 5); ST([3, 3, 7], [23, 3, 7], [0, 0, 3], 2);
+  salesLights(P, ST);
   // sales floor (2026-10-07 revision): two double-sided gondola runs, coolers, coffee / hot food on the side walls, the island
   for (const [X, f] of [[4, 'west'], [5, 'east'], [21, 'west'], [22, 'east']]) P('retail_shelf_single', X, 0, 8, f, {}, true);
   ST([4, 0, 8], [5, 1, 8], [0, 0, 1], 4); ST([21, 0, 8], [22, 1, 8], [0, 0, 1], 4);
@@ -180,6 +181,7 @@ export function steps() {
   P('checkout_counter', 1, 0, 8, 'east'); ST([1, 0, 8], [1, 0, 8], [0, 0, 1], 4);             // coffee bar (placeholder)
   P('checkout_counter_display', 25, 0, 8, 'west'); ST([25, 0, 8], [25, 0, 8], [0, 0, 1], 4); // hot food (placeholder)
   island(P, ST);
+  P('chest_freezer', 25, 0, 6, 'west', {}, true);                // east wall by the coolers; second part at facing.ccw (south): Z 7
   P('modern_office_desk', 25, 0, 2, 'west', {}, true); P('modern_office_chair', 24, 0, 2, 'east');
   P('office_computer_station', 25, 1, 2, 'west'); P('low_filing_cabinet', 25, 0, 4, 'west');
   for (const [X, Z] of [[1, 3], [4, 3], [8, 3]]) P('industrial_utility_light', X, 3, Z, 'down');
@@ -192,8 +194,14 @@ export function steps() {
   return S;
 }
 // The central checkout island (paper frame): Z 8 back-to-back shelves facing the cooler aisle, Z 9 back bar, Z 10 the 1 m
-// cashier aisle, Z 11 the 10 m counter (POS at X 10 and X 16; X 13 kept for a third POS); the ice cream freezer closes the
+// cashier aisle, Z 11 the 10 m counter (POS at X 10 and X 16; X 13 kept for a third POS); two impulse counters close the
 // west end facing the west aisle, the staff gate the east end (hinge right: its flap folds onto the counter at X 18, Z 11).
+// (The ice cream freezer stood at the west end first; it moved to the east wall the same day.)
+// sales-floor ceiling lights (2026-10-07: 12, was 18): X 3, 8, 13, 18, 23 x Z 8, 12, and two over the cashier aisle
+export function salesLights(P, ST) {
+  P('industrial_utility_light', 3, 3, 8, 'down'); ST([3, 3, 8], [3, 3, 8], [5, 0, 0], 4); ST([3, 3, 8], [23, 3, 8], [0, 0, 4], 1);
+  P('industrial_utility_light', 11, 3, 10, 'down'); ST([11, 3, 10], [11, 3, 10], [4, 0, 0], 1);
+}
 export function island(P, ST) {
   P('retail_shelf_single', 9, 0, 8, 'north', {}, true); ST([9, 0, 8], [9, 1, 8], [1, 0, 0], 9);
   P('back_bar_shelf', 9, 0, 9, 'south', {}, true); ST([9, 0, 9], [9, 1, 9], [1, 0, 0], 9);
@@ -202,13 +210,24 @@ export function island(P, ST) {
   P('checkout_counter', 16, 0, 11, 'south');
   P('checkout_counter_display', 17, 0, 11, 'south'); ST([17, 0, 11], [17, 0, 11], [1, 0, 0], 1);
   P('checkout_counter_gate', 18, 0, 10, 'east', {hinge: 'right'});
-  P('chest_freezer', 8, 0, 10, 'west', {}, true);                 // second part at facing.ccw (south): Z 11
+  P('checkout_counter_display', 8, 0, 10, 'west'); P('checkout_counter_display', 8, 0, 11, 'west');
   P('cash_register', 10, 1, 11, 'north'); P('cash_register', 16, 1, 11, 'north');
 }
 // the first build's sales-floor pieces that move (paper boxes, inclusive): freezer, back bar, counter + gate + registers,
 // the single shelf runs X 8 / X 18, and the Z 13 ends of the coffee bar and hot food
 export const OLD_SALES = [[[12, 0, 8], [13, 0, 8]], [[11, 0, 10], [15, 1, 10]], [[11, 0, 12], [15, 1, 12]], [[8, 0, 8], [8, 1, 12]], [[18, 0, 8], [18, 1, 12]],
   [[1, 0, 13], [1, 0, 13]], [[25, 0, 13], [25, 0, 13]]];
+// the tweak of the same day: the 18 sales lights and the island-end freezer out; the freezer to the east wall, the island
+// end closed with impulse counters, 12 lights
+export function tweakSteps() {
+  const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
+  const ST = (from, to, d, count) => S.push({kind: 'we_stack', from, to, d, count});
+  S.push({kind: 'clear', boxes: [[[1, 3, 6], [25, 3, 14]], [[8, 0, 10], [8, 0, 11]]]});
+  P('chest_freezer', 25, 0, 6, 'west', {}, true);
+  P('checkout_counter_display', 8, 0, 10, 'west'); P('checkout_counter_display', 8, 0, 11, 'west');
+  salesLights(P, ST);
+  return S;
+}
 export function relayoutSteps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
   const ST = (from, to, d, count) => S.push({kind: 'we_stack', from, to, d, count});
@@ -252,13 +271,13 @@ async function furnish() {
   console.log(JSON.stringify({used, remaining: all.length - prog.done.length, reconciled: rec.reconciled, audit: audit.counts, log}, null, 1));
 }
 
-async function relayout() {
+async function relayout(list = relayoutSteps(), report = 'relayout_sales_v2.json') {
   const c = new BridgeClient('./run'), dir = path.resolve('build/authoring_checks', ID);
   await c.call('minecraft_status'); const info = await c.call('authoring_info');
   if (info.id !== ID || info.width !== SIZE[0] || info.height !== SIZE[1] || info.depth !== SIZE[2]) throw Error('PLOT_MISMATCH ' + JSON.stringify(info));
   const o = info.min, world = ([x, y, z]) => [o[0] + x, o[1] + y, o[2] + z], log = [];
   const box = (p, q) => { const a = paper(...p), b = paper(...q); return [[0, 1, 2].map(k => Math.min(a[k], b[k])), [0, 1, 2].map(k => Math.max(a[k], b[k]))]; };
-  for (const st of relayoutSteps()) {
+  for (const st of list) {
     try {
       if (st.kind === 'clear') {
         await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: st.boxes.map(([p, q]) => { const [mn, mx] = box(p, q); return {min: world(mn), max: world(mx), block: 'minecraft:air'}; })});
@@ -275,7 +294,7 @@ async function relayout() {
     } catch (e) { log.push('FAIL ' + (st.id || st.kind) + ' ' + String(e.message || e)); if (String(e.message || e).startsWith('HISTORY_LIMIT') || st.kind === 'clear') break; }
   }
   const r1 = await c.call('reconcile_shapes', {target: 'AUTHORING_SESSION'}), audit = await c.call('audit_support', {target: 'AUTHORING_SESSION'});
-  await mkdir(dir, {recursive: true}); await writeFile(path.join(dir, 'relayout_sales_v2.json'), JSON.stringify({log, reconciled: r1.reconciled, audit}, null, 1));
+  await mkdir(dir, {recursive: true}); await writeFile(path.join(dir, report), JSON.stringify({log, reconciled: r1.reconciled, audit}, null, 1));
   console.log(JSON.stringify({log, reconciled: r1.reconciled, audit: audit.counts, issues: audit.issues?.slice(0, 10)}, null, 1));
 }
 
@@ -288,18 +307,19 @@ export function routeCheck() {
   for (let X = 1; X <= 25; X++) for (let Z = 1; Z <= 5; Z++) blocked.add(k(X, Z));   // back of house + partition + coolers
   const fix = (X0, Z0, X1, Z1) => { for (let X = X0; X <= X1; X++) for (let Z = Z0; Z <= Z1; Z++) blocked.add(k(X, Z)); };
   fix(4, 8, 5, 12); fix(21, 8, 22, 12); fix(1, 8, 1, 12); fix(25, 8, 25, 12);       // gondolas, coffee, hot food
-  fix(9, 8, 18, 9); fix(9, 11, 18, 11); fix(8, 10, 8, 11);                           // island: shelves + back bar, counter, freezer
+  fix(9, 8, 18, 9); fix(9, 11, 18, 11); fix(8, 10, 8, 11);                           // island: shelves + back bar, counter, west-end counters
+  fix(25, 6, 25, 7);                                                                  // ice cream freezer, east wall
   staffOnly.add(k(18, 10));                                                           // the gate
   const bfs = (from, staff, extra = new Set()) => { const d = new Map([[k(...from), 0]]), q = [from];
     while (q.length) { const [X, Z] = q.shift(); for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const n = [X + dx, Z + dz], kk = k(...n);
       if (n[0] < 0 || n[0] > 26 || n[1] < 0 || n[1] > 16 || d.has(kk) || blocked.has(kk) || extra.has(kk) || (!staff && staffOnly.has(kk))) continue; d.set(kk, d.get(k(X, Z)) + 1); q.push(n); } }
     return d; };
-  const targets = {pos_west: [10, 12], pos_east: [16, 12], coolers: [12, 6], coffee: [2, 10], hot_food: [24, 10], freezer: [7, 10], west_gondola_w: [3, 10], west_gondola_e: [6, 10],
+  const targets = {pos_west: [10, 12], pos_east: [16, 12], coolers: [12, 6], coffee: [2, 10], hot_food: [24, 10], freezer: [24, 6], island_west_end: [7, 10], west_gondola_w: [3, 10], west_gondola_e: [6, 10],
     east_gondola_w: [20, 10], east_gondola_e: [23, 10], island_back_shelves: [13, 7], restroom_doors: [3, 6], stock_door_front: [22, 6]};
   const out = {};
   for (const [door, at] of [['west_door', [2, 15]], ['east_door', [24, 15]]]) { const d = bfs(at, false); out[door] = Object.fromEntries(Object.entries(targets).map(([n, t]) => [n, d.get(k(...t)) ?? 'UNREACHABLE'])); }
   const staff = bfs([22, 6], true); out.staff_stock_door_to_cashier_aisle = {gate: staff.get(k(18, 10)) ?? 'UNREACHABLE', pos_west_operator: staff.get(k(10, 10)) ?? 'UNREACHABLE', pos_east_operator: staff.get(k(16, 10)) ?? 'UNREACHABLE'};
-  out.customer_into_cashier_aisle = bfs([2, 15], false).has(k(13, 10)) ? 'POSSIBLE (bad)' : 'blocked (gate / freezer close the ends)';
+  out.customer_into_cashier_aisle = bfs([2, 15], false).has(k(13, 10)) ? 'POSSIBLE (bad)' : 'blocked (gate / end counters close the ends)';
   // queue case: two people in each line (Z 12, Z 13 at X 10 and X 16): door to door along the front still open?
   const queue = new Set([k(10, 12), k(10, 13), k(16, 12), k(16, 13)]);
   out.door_to_door_with_queues = bfs([2, 15], false, queue).get(k(24, 15)) ?? 'UNREACHABLE';
@@ -312,4 +332,5 @@ if (mode === 'plan') { const {cells, fixtures} = recipe(); console.log(JSON.stri
 else if (mode === 'build') await build();
 else if (mode === 'furnish') await furnish();
 else if (mode === 'relayout') await relayout();
+else if (mode === 'tweak') await relayout(tweakSteps(), 'tweak_sales_v3.json');
 else if (mode === 'check') console.log(JSON.stringify(routeCheck(), null, 1));
