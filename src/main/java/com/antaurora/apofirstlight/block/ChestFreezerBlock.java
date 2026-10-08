@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.block;
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearch;
-import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
@@ -55,7 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * the compressor runs in cycles. Contents: the master's 18-slot searchable container, opened from the well of the open
  * half; the goods drawn inside follow how much it holds.
  */
-public final class ChestFreezerBlock extends Block implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+public final class ChestFreezerBlock extends Block implements EntityBlock, MeshHitMultiCell {
     /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the left cell (its block entity draws the freezer). */
     @Override
     public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
@@ -228,6 +227,11 @@ public final class ChestFreezerBlock extends Block implements EntityBlock, AflPo
                                  InteractionHand hand, BlockHitResult hit) {
         if (player.isSpectator()) return InteractionResult.PASS;
         BlockPos master = masterPosition(position, state);
+        if (hand == InteractionHand.MAIN_HAND && player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && !player.isSpectator()) {
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+            return player instanceof net.minecraft.server.level.ServerPlayer server
+                    ? com.antaurora.apofirstlight.energy.PowerPlugs.useDevice(level, master, server) : InteractionResult.PASS;
+        }
         double[] local = localHit(hit.getLocation(), master, state.getValue(FACING));
         BlockState masterState = level.getBlockState(master);
         // the well of the open half: search / view the contents (not while a lid slides)
@@ -327,12 +331,6 @@ public final class ChestFreezerBlock extends Block implements EntityBlock, AflPo
         return (BlockEntityTicker<T>) (BlockEntityTicker<ChestFreezerBlockEntity>) (l, p, s, freezer) -> freezer.serverTick();
     }
 
-    /** The power port (tools/build-chest-freezer-v2.mjs POWER_PORT): the master cell's back face only. */
-    @Override
-    public boolean hasPowerPort(BlockState state, Direction face) {
-        return state.getValue(PART) == Part.LEFT && face == state.getValue(FACING).getOpposite();
-    }
-
     /** Logical 0..32 X, 0..16 Z frame, with master in X=0..16; source Geo is centered. */
     public static double[] localHit(Vec3 hit, BlockPos master, Direction facing) {
         double dx = hit.x - master.getX() - 0.5;
@@ -373,7 +371,7 @@ public final class ChestFreezerBlock extends Block implements EntityBlock, AflPo
         if (!state.is(replacement.getBlock())) {
             removePeer(level, masterPosition(position, state), state.getValue(FACING), position);
             // the master's contents, by every removal path: revealed slots drop, never-seen loot is lost
-            if (level.getBlockEntity(position) instanceof ChestFreezerBlockEntity freezer) freezer.dropContentsOnce();
+            if (level.getBlockEntity(position) instanceof ChestFreezerBlockEntity freezer) { freezer.dropContentsOnce(); freezer.plugCord().release(); }
             level.updateNeighbourForOutputSignal(position, this);
         }
         super.onRemove(state, level, position, replacement, moved);

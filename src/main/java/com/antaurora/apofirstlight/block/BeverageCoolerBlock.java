@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
-import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
@@ -56,7 +55,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link #LIT} on all four cells, block light {@link #LIGHT_LEVEL}, the lit light set of the mesh; and the compressor runs
  * in cycles. No gameplay effect on the goods yet.
  */
-public final class BeverageCoolerBlock extends Block implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+public final class BeverageCoolerBlock extends Block implements EntityBlock, MeshHitMultiCell {
     /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower left cell (its block entity draws the cooler). */
     @Override
     public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
@@ -206,12 +205,6 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Afl
         return (BlockEntityTicker<T>) (BlockEntityTicker<BeverageCoolerBlockEntity>) (l, p, s, cooler) -> cooler.serverTick();
     }
 
-    /** The power port (tools/build-beverage-cooler-v2.mjs POWER_PORT): the master cell's back face only. */
-    @Override
-    public boolean hasPowerPort(BlockState state, Direction face) {
-        return state.getValue(PART) == Part.LOWER_LEFT && face == state.getValue(FACING).getOpposite();
-    }
-
     @Override
     public boolean canSurvive(BlockState state, LevelReader level, BlockPos position) {
         return supported(level, masterPosition(position, state), state.getValue(FACING));
@@ -275,6 +268,11 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Afl
     public InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
         BlockPos master = masterPosition(position, state);
+        if (hand == InteractionHand.MAIN_HAND && player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && !player.isSpectator()) {
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+            return player instanceof net.minecraft.server.level.ServerPlayer server
+                    ? com.antaurora.apofirstlight.energy.PowerPlugs.useDevice(level, master, server) : InteractionResult.PASS;
+        }
         Door door = hitDoor(hit.getLocation(), master, state.getValue(FACING), state);
         if (door == Door.NONE) return useContents(level, master, player, hit);
         if (level.isClientSide) return InteractionResult.SUCCESS;
@@ -416,7 +414,7 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Afl
     @Override
     public void onRemove(BlockState state, Level level, BlockPos position, BlockState replacement, boolean moved) {
         if (!state.is(replacement.getBlock()) && state.getValue(PART) == Part.LOWER_LEFT
-                && level.getBlockEntity(position) instanceof BeverageCoolerBlockEntity cooler) cooler.dropContentsOnce();
+                && level.getBlockEntity(position) instanceof BeverageCoolerBlockEntity cooler) { cooler.dropContentsOnce(); cooler.plugCord().release(); }
         if (!state.is(replacement.getBlock()))
             removePeers(level, masterPosition(position, state), state.getValue(FACING), position);
         super.onRemove(state, level, position, replacement, moved);

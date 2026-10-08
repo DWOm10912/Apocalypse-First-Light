@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
+import {iecOutline, INLET} from './afl-iec-inlet.mjs';
 import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -106,13 +107,38 @@ function buildOutlet() {
   return {PARTS, MATS, atlas: 256, startS: 64};
 }
 
+// a closed loft along z through rounded-rectangle sections [z, w, h, r] (equal ring sizes), both ends capped
+function loftSections(part, sections) {
+  const rings = sections.map(([z, w, h, r]) => rrect(0, 0, w, h, r, 3).map(([x, y]) => part.vtx([x, y, z])));
+  for (let k = 0; k + 1 < rings.length; k++) for (let i = 0; i < rings[k].length; i++) {
+    const j = (i + 1) % rings[k].length, a = part.v[rings[k][i]], b = part.v[rings[k][j]];
+    part.face([rings[k][i], rings[k][j], rings[k + 1][j], rings[k + 1][i]], [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], 'side');
+  }
+  for (const [ring, z, sgn] of [[rings[0], sections[0][0], -1], [rings[rings.length - 1], sections[sections.length - 1][0], 1]]) {
+    const c = part.vtx([0, 0, z]);
+    for (let i = 0; i < ring.length; i++) part.face([c, ring[i], ring[(i + 1) % ring.length]], [0, 0, sgn], 'cap');
+  }
+}
+
 // ---------------- power strips + plug (one atlas) ----------------
 export const STRIP = {
   3: {L: m(200), W: m(58), xs: [m(-58), m(-8), m(42)], rows: [[0, -1]], rocker: [m(72), 0], button: [m(90.5), 0], led: [m(90.5), -m(12)]},
   6: {L: m(236), W: m(112), xs: [m(-60), m(-6), m(48)], rows: [[-m(24), -1], [m(24), 1]], rocker: [m(90), -m(20)], button: [m(90), m(24)], led: [m(90), m(12)]},
   H: m(36), r: m(12), chamfer: m(4), faceProud: m(2.2), grommetR: m(6), grommetY: m(18),
 };
-export const PLUG = {w: m(32), h: m(36), d: m(28), r: m(4), cordR: m(3.5)};
+// plug (real mm, x 1.5 by m()): face 30 x 35 (fits the duplex: 35 < the 38.1 socket pitch), head 30 long, relief to 54
+export const PLUG = {w: m(30), h: m(35), r: m(5), cordR: m(4), length: m(54),
+  // lofted sections along z: [z, width, height, corner radius]; the round ones are circles (w = h = 2r)
+  sections: [[0, 30, 35, 5], [3, 30, 35, 5], [14, 27.5, 30, 6], [24, 21, 21.5, 8], [30, 15, 15, 7.49],
+    [31.5, 15, 15, 7.49], [32, 16.2, 16.2, 8.09], [34, 16.2, 16.2, 8.09], [34.5, 14.6, 14.6, 7.29], [36.5, 14.6, 14.6, 7.29],
+    [37, 15.6, 15.6, 7.79], [39, 15.6, 15.6, 7.79], [39.5, 14, 14, 6.99], [41.5, 14, 14, 6.99], [42, 15, 15, 7.49], [44, 15, 15, 7.49],
+    [50, 10.6, 10.6, 5.29], [54, 8.6, 8.6, 4.29]].map(([z, w, h, r]) => [m(z), m(w), m(h), m(r)])};
+// C13 connector (real mm): the keyed mating part (fits the C14 inlet's cavity, tools/afl-iec-inlet.mjs) 8.5 deep, a
+// larger grip body behind its shoulder, a ribbed relief into the cord; earth toward +Y. Length 50 (the cord leaves there).
+export const CONNECTOR = {mate: [24.0, 15.0, 4.0, 8.5], length: m(50),
+  sections: [[8.5, 31, 23, 3.5], [10.5, 31, 23, 3.5], [24, 28.5, 21, 5], [30, 19, 17, 8.49], [31, 15, 15, 7.49],
+    [31.5, 16.2, 16.2, 8.09], [33.5, 16.2, 16.2, 8.09], [34, 14.6, 14.6, 7.29], [36, 14.6, 14.6, 7.29], [36.5, 15.6, 15.6, 7.79],
+    [38.5, 15.6, 15.6, 7.79], [39, 14, 14, 6.99], [41, 14, 14, 6.99], [46, 10.6, 10.6, 5.29], [50, 8.6, 8.6, 4.29]].map(([z, w, h, r]) => [m(z), m(w), m(h), m(r)])};
 function buildStripsAndPlug() {
   const PARTS = [], P = (name, bone, mat) => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
   const H = STRIP.H;
@@ -121,7 +147,9 @@ function buildStripsAndPlug() {
     planY(P(`strip${n}_shell`, body, 'shell'), rrect(0, 0, S.L, S.W, STRIP.r), [], 0, H, STRIP.chamfer);
     // receptacle faces on top, turned so the ground hole points to the strip's long edge (both edges on the 2x3)
     for (const [zc, side] of S.rows) for (const [i, x] of S.xs.entries()) {
-      const tf = ([u, v]) => [x + u * side, zc - v * side];   // face up = toward the inner edge
+      // face up (slots) toward the middle, ground hole toward the long edge; not mirrored: seen from above with the slots up,
+      // the neutral (long) slot is on the left, as on the wall outlet (PowerStripBlock SOCKETS_* mirrors these places)
+      const tf = ([u, v]) => [x - u * side, zc - v * side];
       planY(P(`strip${n}_face_${side > 0 ? 'b' : 'a'}${i}`, body, 'device'), faceOutline(0, 0, m(17.2), m(14.4)).map(tf), nemaHoles(tf),
         H - m(1), H + STRIP.faceProud, m(0.5));
     }
@@ -141,13 +169,20 @@ function buildStripsAndPlug() {
   }
   // NEMA 5-15P plug: moulded head, strain relief tapering to the cord, two flat blades (neutral wider) and the ground pin.
   // Seen from its face the neutral blade is at -X, so it meets the outlet's neutral slot (+X) when turned to face the wall.
+  // the moulded body: one loft through the sections (flat face band, taper, round neck, four relief ribs, into the cord)
   const Q = PLUG;
-  extrude(P('plug_head', 'plug', 'plug'), 'z', shapeOf(rrect(0, 0, Q.w, Q.h, Q.r)), 0, Q.d, m(3));
-  cone(P('plug_relief', 'plug', 'plug'), 0, 0, m(6.5), Q.d - m(1), m(4.6), Q.d + m(9), 14);
-  cyl(P('plug_cord_stub', 'plug', 'plug'), 'z', 0, 0, Q.cordR, Q.d + m(8), Q.d + m(14), 12);
-  slab(P('plug_blade_n', 'plug', 'blade'), 'z', [-m(6.35) - m(0.75), m(3.5) - m(4), -m(16)], [-m(6.35) + m(0.75), m(3.5) + m(4), m(1)]);
-  slab(P('plug_blade_h', 'plug', 'blade'), 'z', [m(6.35) - m(0.75), m(3.5) - m(3.2), -m(16)], [m(6.35) + m(0.75), m(3.5) + m(3.2), m(1)]);
-  cyl(P('plug_pin', 'plug', 'blade'), 'z', 0, -m(7.6), m(2.4), -m(18.5), m(1), 10);
+  loftSections(P('plug_body', 'plug', 'plug'), Q.sections);
+  // blades (neutral wider) with their holes near the tip, 1.5 mm brass, standing 16 mm out of the face; the round ground pin
+  for (const [name, x, w] of [['plug_blade_n', -m(6.35), m(7.9)], ['plug_blade_h', m(6.35), m(6.35)]])
+    extrude(P(name, 'plug', 'blade'), 'x', shapeOf(rect(-m(16), m(3.5) - w / 2, m(1), m(3.5) + w / 2),
+      [Array.from({length: 10}, (_, i) => [-m(11.5) + m(1.5) * Math.cos(Math.PI * i / 5), m(3.5) + m(1.5) * Math.sin(Math.PI * i / 5)])]),
+      x - m(0.75), x + m(0.75), 0);
+  cyl(P('plug_pin', 'plug', 'blade'), 'z', 0, -m(7.6), m(2.4), -m(17), m(1), 12);
+  cone(P('plug_pin_tip', 'plug', 'blade'), 0, -m(7.6), m(1.4), -m(19), m(2.4), -m(17), 12);
+  // IEC C13 connector, the cord's appliance end (always in the appliance's C14 inlet): mating part, grip body, relief
+  const C = CONNECTOR, [mw, mh, mc, md] = C.mate;
+  extrude(P('connector_mate', 'connector', 'plug'), 'z', shapeOf(iecOutline(0, 0, m(mw), m(mh), m(mc))), 0, m(md), 0);
+  loftSections(P('connector_body', 'connector', 'plug'), C.sections);
   // the cord's colour swatch (never exported): the renderer's cord takes its UV
   slab(P('cord_swatch', 'swatch', 'cord'), 'z', [m(300), 0, 0], [m(306), m(6), m(1)]);
   const MATS = {
@@ -159,7 +194,7 @@ function buildStripsAndPlug() {
     led_off:    {c: [74, 16, 14], hl: 6, sm: 176, se: 186, f0: 20},
     led_lit:    {c: [255, 58, 40], hl: 4, sm: 180, se: 190, f0: 20},
     grommet:    {c: [26, 26, 28], hl: 4, sm: 86, se: 96, f0: 20},
-    plug:       {c: [27, 28, 30], hl: 8, sm: 98, se: 114, f0: 20},
+    plug:       {c: [24, 25, 27], hl: 10, sm: 92, se: 118, f0: 20},
     blade:      {c: [196, 190, 172], hl: 14, sm: 186, se: 196, f0: 255},
     cord:       {c: [27, 28, 30], hl: 0, sm: 92, se: 92, f0: 20},
   };
@@ -206,6 +241,7 @@ const LOOKS = {
   wall_outlet: [B.outlet, null],
   ...Object.fromEntries([3, 6].flatMap(n => ['off', 'on', 'lit'].map(l => [`power_strip_${n}_${l}`, [B.strip, new Set(['body' + n, `rocker${n}_${l}`, `led${n}_${l === 'lit' ? 'lit' : 'off'}`])]]))),
   power_plug: [B.strip, new Set(['plug'])],
+  power_connector: [B.strip, new Set(['connector'])],
 };
 const coplanar = {};
 for (const [k, [b, bones]] of Object.entries(LOOKS)) { const zf = zFightLevels(b.PARTS.filter(p => !bones || bones.has(p.bone)), new Map()); if (zf.unresolved.length) coplanar[k] = zf.unresolved.slice(0, 6); }
@@ -334,11 +370,14 @@ for (const n of [3, 6]) {
 }
 // the plug, centred on the block centre (renderer turns it about (0.5, 0.5, 0.5))
 model('power_plug', 'Power Outlets V1 plug', B.strip, new Set(['plug']), [0, 8, 0]);
+// the C13 connector, centred the same way (its mating face at the block centre, the cord leaving along +Z)
+model('power_connector', 'Power Outlets V1 C13 connector', B.strip, new Set(['connector']), [0, 8, 0]);
+assert(m(CONNECTOR.mate[3]) * PX < INLET.proud, 'the connector seats in the inlet cavity');
 
 const tris = (b, bones) => b.PARTS.filter(p => !bones || bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {
   outlet: {triangles: tris(B.outlet), texelsPerPx: B.outlet.UV.S, islands: B.outlet.UV.islands.length},
-  strip3: {triangles: tris(B.strip, new Set(['body3', 'rocker3_on'])), strip6: tris(B.strip, new Set(['body6', 'rocker6_on'])), plug: tris(B.strip, new Set(['plug'])),
+  strip3: {triangles: tris(B.strip, new Set(['body3', 'rocker3_on'])), strip6: tris(B.strip, new Set(['body6', 'rocker6_on'])), plug: tris(B.strip, new Set(['plug'])), connector: tris(B.strip, new Set(['connector'])),
     texelsPerPx: B.strip.UV.S, islands: B.strip.UV.islands.length}, cordUV: CORD_UV, coplanar};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {

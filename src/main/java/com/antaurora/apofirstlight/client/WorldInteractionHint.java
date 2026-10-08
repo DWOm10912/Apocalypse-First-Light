@@ -63,7 +63,9 @@ public final class WorldInteractionHint {
         if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
         Target target=null;
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
-            target=vendingMachine(mc,hit);
+            // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
+            if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
+            if(target==null) target=vendingMachine(mc,hit);
             if(target==null) target=coolerDoor(mc,hit);
             if(target==null) target=freezerLid(mc,hit);
             if(target==null) target=dumpsterLid(mc,hit);
@@ -205,20 +207,35 @@ public final class WorldInteractionHint {
         return new Target(Component.translatable("hint.apocalypse_firstlight.metal_eyebrow_canopy."+(s.getValue(com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock.ROD)?"rod_off":"rod_on")),null);
     }
 
-    /** Power Outlets V1: an outlet takes the plug in hand or gives up the one in the aimed socket; a strip names what right-click does (sneaking: the plug). */
+    /** Power Outlets V1: what right-click does with a plug: into a socket, out of one, or a device's own plug (sneaking); a strip's switch otherwise. */
     private static Target powerOutlets(Minecraft mc,BlockHitResult hit) {
-        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        if(hit.getType()!=HitResult.Type.BLOCK||!mc.player.getMainHandItem().isEmpty()) return null;
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);String k="hint.apocalypse_firstlight.";
+        boolean carrying=com.antaurora.apofirstlight.client.PlugCordRenderer.localCarrying();
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.WallOutletBlock){
-            if(com.antaurora.apofirstlight.client.PowerStripRenderer.localCarrying()) return new Target(Component.translatable(k+"wall_outlet.plug_in"),null);
-            int socket=com.antaurora.apofirstlight.energy.PowerPlugs.aimedSocket(pos,hit);
-            return com.antaurora.apofirstlight.block.WallOutletBlock.used(s,socket)&&mc.player.getMainHandItem().isEmpty()?new Target(Component.translatable(k+"wall_outlet.unplug"),null):null;
+            if(carrying) return new Target(Component.translatable(k+"plug.plug_in"),null);
+            int socket=com.antaurora.apofirstlight.energy.PowerPlugs.aimedSocket(mc.level,pos,hit);
+            return com.antaurora.apofirstlight.block.WallOutletBlock.used(s,socket)?new Target(Component.translatable(k+"plug.unplug"),null):null;
         }
-        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock)||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity strip)) return null;
-        if(!mc.player.getMainHandItem().isEmpty()) return null;
-        String key=mc.player.isShiftKeyDown()?(strip.carrierId()==mc.player.getId()?"put_back":strip.outlet()!=null?"unplug":"take_plug")
-                :s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.ON)?"switch_off":"switch_on";
-        return new Target(Component.translatable(k+"power_strip."+key),null);
+        net.minecraft.core.BlockPos owner=plugOwner(pos,s);
+        var cord=owner==null?null:com.antaurora.apofirstlight.energy.PowerPlugs.owner(mc.level,owner);
+        if(cord==null) return null;
+        boolean strip=s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock;
+        if(mc.player.isShiftKeyDown()) return new Target(Component.translatable(k+"plug."+(cord.carrierId()==mc.player.getId()?"put_back":cord.host()!=null?"unplug":"take")),null);
+        if(!strip) return null;
+        if(carrying&&!owner.equals(com.antaurora.apofirstlight.client.PlugCordRenderer.localCarriedOwner())) return new Target(Component.translatable(k+"plug.plug_in"),null);
+        return new Target(Component.translatable(k+"power_strip."+(s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.ON)?"switch_off":"switch_on")),null);
+    }
+
+    /** The cell of the block entity that keeps a device's power cord: a strip itself, an appliance's master / lower cell. */
+    private static net.minecraft.core.BlockPos plugOwner(net.minecraft.core.BlockPos pos,net.minecraft.world.level.block.state.BlockState s) {
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock) return pos;
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.BeverageCoolerBlock) return com.antaurora.apofirstlight.block.BeverageCoolerBlock.masterPosition(pos,s);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.ChestFreezerBlock) return com.antaurora.apofirstlight.block.ChestFreezerBlock.masterPosition(pos,s);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.VendingMachineBlock) return com.antaurora.apofirstlight.block.VendingMachineBlock.lower(s,pos);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.WaterDispenserBlock)
+            return s.getValue(com.antaurora.apofirstlight.block.WaterDispenserBlock.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER?pos.below():pos;
+        return null;
     }
 
     /** Building Power V1: the panel opens its screen; the meter box names what right-click does to the disconnect. */

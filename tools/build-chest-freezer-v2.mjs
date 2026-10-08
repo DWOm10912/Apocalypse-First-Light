@@ -19,8 +19,8 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {addIecInlet} from './afl-iec-inlet.mjs';
 import {Part, extrude, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
-import {addPowerPort, portHole} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -48,7 +48,8 @@ export const LID_TRAVEL = 14.15, LID_TICKS = 14;                          // Che
 export const PANEL = {x0: 17.4, x1: 22.8, y0: 3.0, y1: 8.6, z: -7.7};     // control panel on the front, viewer's left end
 export const DISPLAY = {x0: 18.0, x1: 21.2, y0: 6.9, y1: 8.1, z: -7.92};  // status display (text drawn by the renderer)
 export const LED = {x0: 21.6, x1: 22.1, y0: 7.3, y1: 7.8};
-export const POWER_PORT = {x: 16, y: 8};   // back face centre of the master cell; set into an opening in the back wall (z 6.3..7.7)
+// power inlet (source px): its centre on the back wall (z 7.7), low at the master's outer corner (ChestFreezerBlockEntity#cordGeometry: x - 16)
+export const CORD = {x: 21.3, y: 2.2, z: 7.7};
 
 {
   // feet, base trim and the insulated shell (outer walls, bottom), white liner inside
@@ -57,8 +58,7 @@ export const POWER_PORT = {x: 16, y: 8};   // back face centre of the master cel
   slab(P('base_trim', 'body', 'base'), 'y', [-7.8, 0.7, -7.5], [23.8, 1.3, 7.5], 0.1);
   const shell = P('cabinet', 'body', 'cabinet');
   slab(shell, 'z', [-8, 1.2, -7.7], [24, WALL_TOP, -6.3], 0.2);   // front wall
-  const hole = portHole(POWER_PORT.x, POWER_PORT.y);                // back wall, opening for the power port
-  extrude(shell, 'z', {outer: orient(rect(-8, 1.2, 24, WALL_TOP), true), holes: [orient(rect(...hole), false)]}, 6.3, 7.7, 0.2);
+  extrude(shell, 'z', {outer: orient(rect(-8, 1.2, 24, WALL_TOP), true), holes: []}, 6.3, 7.7, 0.2);   // back wall
   slab(shell, 'x', [-8, 1.2, -6.3], [-6.3, WALL_TOP, 6.3], 0);    // side walls
   slab(shell, 'x', [22.3, 1.2, -6.3], [24, WALL_TOP, 6.3], 0);
   slab(shell, 'y', [-6.3, 1.2, -6.3], [22.3, 3.3, 6.3], 0);       // insulated bottom
@@ -90,10 +90,8 @@ export const POWER_PORT = {x: 16, y: 8};   // back face centre of the master cel
   slab(P('control_panel', 'body', 'panel'), 'z', [PANEL.x0, PANEL.y0, PANEL.z - 0.15], [PANEL.x1, PANEL.y1, PANEL.z + 0.02], 0.05);
   const vent = P('panel_vents', 'body', 'vent');
   for (let i = 0; i < 5; i++) slab(vent, 'z', [18.0, 3.5 + i * 0.55, PANEL.z - 0.22], [22.2, 3.75 + i * 0.55, PANEL.z - 0.14], 0);
-  // power port on the back of the master cell: the standard plate set into the wall opening, its face on the boundary
-  // (0.3 proud of the wall)
-  addPowerPort({plate: P('port_plate', 'body', 'port'), socket: P('port_socket', 'body', 'socket'), pin: P('port_pin', 'body', 'port_pin')},
-    POWER_PORT.x, POWER_PORT.y);
+  // power inlet: IEC C14 (tools/afl-iec-inlet.mjs; Power Outlets V1, 2026-10-08), the detachable cord's C13 connector plugs in here
+  addIecInlet({housing: P('inlet_housing', 'body', 'inlet'), floor: P('inlet_floor', 'body', 'socket'), pin: P('inlet_pins', 'body', 'inlet_pin')}, CORD.x, CORD.y, CORD.z);
 }
 
 // ---------------- lids: aluminium frame, glass pane, grip at the meeting end ----------------
@@ -194,6 +192,8 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   port:       {c: [134, 138, 144], hl: 12, sm: 112, se: 130, f0: 20},   // power port plate (as the charging station's)
   socket:     {c: [24, 25, 28], hl: 0, sm: 60, se: 60, f0: 20},
   port_pin:   {c: [40, 42, 46], hl: 10, sm: 110, se: 130, f0: 20},
+  inlet:        {c: [22, 23, 25], hl: 8, sm: 112, se: 132, f0: 20},
+  inlet_pin:    {c: [176, 172, 160], hl: 10, sm: 172, se: 188, f0: 255},
   // goods: muted packaging (no print), rough paper, glossier film and plastic; nothing brighter than the cabinet
   carton_blue:  {c: [84, 108, 132], hl: 6, sm: 70, se: 84, f0: 20},
   carton_kraft: {c: [140, 112, 80], hl: 6, sm: 64, se: 78, f0: 20},

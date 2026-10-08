@@ -17,8 +17,8 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {addIecInlet} from './afl-iec-inlet.mjs';
 import {Part, extrude, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
-import {addPowerPort, portHole} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -55,14 +55,15 @@ export const COIL_BONES = Array.from({length: LANES.rows * LANES.columns}, (_, l
 export const PAY = {x0: -7.3, x1: -3.4};                                  // payment column
 export const BIN = {x0: -2.6, x1: 6.6, y0: 2.6, y1: 6.2, depth: -4.2};
 export const HEADER = {y0: 27.2, face: [-7.0, 27.7, 7.0, 30.8]};
-export const POWER_PORT = {x: 0, y: 8};
+// power inlet (px): its centre on the back panel (z 7.7), low at the viewer's left corner (VendingMachineBlockEntity#cordGeometry)
+export const CORD = {x: 6.0, y: 2.4, z: 7.7};
 
 {
-  // carcass: sides, back (with the port opening), top, floor, plinth
+  // carcass: sides, back, top, floor, plinth
   const coat = P('carcass', 'body', 'coat');
   slab(coat, 'x', [W - SKIN, PLINTH, FRONT], [W, TOP, BACK], 0.12);
   slab(coat, 'x', [-W, PLINTH, FRONT], [-W + SKIN, TOP, BACK], 0.12);
-  extrude(coat, 'z', {outer: orient(rect(-W + SKIN, PLINTH, W - SKIN, TOP - SKIN), true), holes: [orient(rect(...portHole(POWER_PORT.x, POWER_PORT.y)), false)]},
+  extrude(coat, 'z', {outer: orient(rect(-W + SKIN, PLINTH, W - SKIN, TOP - SKIN), true), holes: []},
     BACK - SKIN, BACK, 0);
   slab(coat, 'y', [-W + SKIN, TOP - SKIN, FRONT], [W - SKIN, TOP, BACK - SKIN], 0.12);
   slab(coat, 'y', [-W + SKIN, PLINTH, FRONT + SKIN], [W - SKIN, PLINTH + 0.5, BACK - SKIN], 0);
@@ -122,9 +123,8 @@ export const POWER_PORT = {x: 0, y: 8};
   slab(bin, 'y', [BIN.x0, BIN.y1, FRONT + SKIN], [BIN.x1, BIN.y1 + 0.3, BIN.depth], 0);
   slab(P('bin_flap', 'body', 'flap'), 'z', [BIN.x0 + 0.1, BIN.y0 + 0.4, FRONT + 0.75], [BIN.x1 - 0.1, BIN.y1 - 0.1, FRONT + 0.95], 0.05);
   slab(P('bin_lip', 'body', 'zinc'), 'z', [BIN.x0 + 0.8, BIN.y0 + 0.4, FRONT + 0.55], [BIN.x1 - 0.8, BIN.y0 + 0.75, FRONT + 0.75], 0);
-  // power port on the back of the lower cell, set into the back panel's opening, its face on the boundary
-  addPowerPort({plate: P('port_plate', 'body', 'port'), socket: P('port_socket', 'body', 'socket'), pin: P('port_pin', 'body', 'port_pin')},
-    POWER_PORT.x, POWER_PORT.y);
+  // power inlet: IEC C14 (tools/afl-iec-inlet.mjs; Power Outlets V1, 2026-10-08), the detachable cord's C13 connector plugs in here
+  addIecInlet({housing: P('inlet_housing', 'body', 'inlet'), floor: P('inlet_floor', 'body', 'socket'), pin: P('inlet_pins', 'body', 'inlet_pin')}, CORD.x, CORD.y, CORD.z);
 }
 // glass: one pane in the opening, its own bone (hidden when broken)
 slab(P('glass_pane', 'glass', 'glass'), 'z', [OPENING.x0 - 0.05, OPENING.y0 - 0.05, GLASS_Z[0]], [OPENING.x1 + 0.05, OPENING.y1 + 0.05, GLASS_Z[1]], 0);
@@ -160,6 +160,8 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   port:         {c: [134, 138, 144], hl: 12, sm: 112, se: 130, f0: 20},
   socket:       {c: [24, 25, 28], hl: 0, sm: 60, se: 60, f0: 20},
   port_pin:     {c: [40, 42, 46], hl: 10, sm: 110, se: 130, f0: 20},
+  inlet:          {c: [22, 23, 25], hl: 8, sm: 112, se: 132, f0: 20},
+  inlet_pin:      {c: [176, 172, 160], hl: 10, sm: 172, se: 188, f0: 255},
 };
 export const GLASS_ALPHA = 56;
 export const EMISSION = {lightbox_lit: 180, led_lit: 230, screen_lit: 140};

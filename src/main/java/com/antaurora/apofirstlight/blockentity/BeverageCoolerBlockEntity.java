@@ -14,6 +14,7 @@ import com.antaurora.apofirstlight.containersearch.AflGoodsState;
 import com.antaurora.apofirstlight.containersearch.AflGoodsThemes;
 import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.PlugCord;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -60,7 +61,7 @@ import java.util.Map;
  * cycle), fed only through the power port on the master's back. Lit = the LIT block state (BeverageCoolerBlock#setLit).
  */
 public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockEntity
-        implements AflSearchableContainer, AflAnimatedMeshHost, CompressorAppliance.Host, AflContainerGoods.Themed {
+        implements com.antaurora.apofirstlight.energy.PlugCord.Owner, AflSearchableContainer, AflAnimatedMeshHost, CompressorAppliance.Host, AflContainerGoods.Themed {
     public static final int SIZE = 18;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/beverage_cooler.json");
@@ -90,7 +91,7 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
     private Boolean announcedLeft;
     private Boolean announcedRight;
     private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::beverageCooler,
-            AflSounds.BEVERAGE_COOLER_COMPRESSOR_START, AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP, 1.0F);
+            AflSounds.BEVERAGE_COOLER_COMPRESSOR_START, AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP, 1.0F).cord(this::cordGeometry);
 
     public BeverageCoolerBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.BEVERAGE_COOLER.get(), pos, state);
@@ -98,6 +99,17 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
 
     @Override
     public AABB getRenderBoundingBox() {
+        return power.plugCord().renderBounds(meshBounds());
+    }
+
+    /** Power cord (tools/build-beverage-cooler-v2.mjs CORD, x - 16): the C14 inlet on the master's back, low at its outer corner. */
+    private PlugCord.Geometry cordGeometry() {
+        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 1.8, 8.0, -24, 8, 0);
+    }
+
+    @Override public PlugCord plugCord() { return power.plugCord(); }
+
+    private AABB meshBounds() {
         Direction right = getBlockState().getValue(BeverageCoolerBlock.FACING).getCounterClockWise();
         BlockPos other = worldPosition.relative(right);
         return new AABB(Math.min(worldPosition.getX(), other.getX()) - 1.5, worldPosition.getY(),
@@ -193,24 +205,6 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
         sync();
     }
 
-    @Override
-    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
-        if (capability == ForgeCapabilities.ENERGY && side != null && getBlockState().getBlock() instanceof BeverageCoolerBlock block
-                && block.hasPowerPort(getBlockState(), side)) return power.capability().cast();
-        return super.getCapability(capability, side);
-    }
-
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        power.invalidateCaps();
-    }
-
-    @Override
-    public void reviveCaps() {
-        super.reviveCaps();
-        power.reviveCaps();
-    }
 
     // ---- contents: Progressive Container Search ----
 
@@ -358,6 +352,7 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         power.save(tag);
+        power.plugCord().writeSync(tag);
         tag.putBoolean(SYNC_SEARCH_COMPLETE, AflContainerSearch.isComplete(this));
         goods.writeSync(tag, items, lootTable != null);
         return tag;

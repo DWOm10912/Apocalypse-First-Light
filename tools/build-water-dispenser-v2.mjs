@@ -19,8 +19,8 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {addIecInlet} from './afl-iec-inlet.mjs';
 import {Part, extrude, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
-import {addPowerPort} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -61,13 +61,14 @@ const cylY = (part, cx, cz, r, y0, y1, seg) => latheY(part, cx, cz, [[y0, 0], [y
 export const CAB = {x: 5.6, z0: -3.0, z1: 8.0, r: 1.0};                 // cabinet: half width, front, back (the block boundary), corner radius
 export const Y = {plinth: 0.8, alcove: [9.6, 17.6], top: 20.6, cap: 21.2};
 export const ALCOVE = {x: 4.0, z: CAB.z0 + 2.0};                         // the dispensing alcove cut into the front
-export const PORT_POCKET = {x: 3.6, y: [4.4, 11.6], z: CAB.z1 - 1.2};    // recessed into the back around the power port
+export const PORT_POCKET = {x: 3.6, y: [4.4, 11.6], z: CAB.z1 - 1.2};    // recessed into the back; the power cord leaves from it
 export const GRILLE_POCKET = {x: 4.4, y: [12.2, 20.0], z: CAB.z1 - 1.0}; // recessed into the back for the condenser grille
 export const TAPS = [{x: 1.9, mat: 'hot'}, {x: -1.9, mat: 'cold'}];     // viewer's left: hot, right: cold
 export const BOTTLE = {cx: 0, cz: (CAB.z0 + CAB.z1) / 2, seg: 16};
 export const CUPS = {x: -6.6, z: CAB.z0 + 3.8, r: 0.95};                 // paper cup tube on the viewer's right side
-export const POWER_PORT = {x: 0, y: 8};
-assert(PORT_POCKET.y[0] < POWER_PORT.y - 3 && PORT_POCKET.y[1] > POWER_PORT.y + 3 && PORT_POCKET.x > 3 && PORT_POCKET.y[1] < GRILLE_POCKET.y[0], 'pockets');
+// power inlet (px): its centre on the lower pocket's floor, low toward the viewer's left (WaterDispenserBlockEntity#cordGeometry)
+export const CORD = {x: 2.3, y: 5.0, z: PORT_POCKET.z};
+assert(PORT_POCKET.y[0] < CORD.y - 0.3 && PORT_POCKET.x > CORD.x + 0.4 && PORT_POCKET.y[1] < GRILLE_POCKET.y[0], 'pockets');
 
 {
   // plinth; cabinet stacked in bands along y, each with its notches (front: the alcove, back: the two pockets); top cap
@@ -108,11 +109,10 @@ assert(PORT_POCKET.y[0] < POWER_PORT.y - 3 && PORT_POCKET.y[1] > POWER_PORT.y + 
   cylY(rings, CUPS.x, CUPS.z, CUPS.r + 0.07, 17.9, 18.3, 12);
   cylY(P('cup', 'body', 'cup'), CUPS.x, CUPS.z, 0.88, 10.9, 11.5, 12);
   for (const y of [12.4, 16.6]) slab(rings, 'x', [-CAB.x - 0.2, y, CUPS.z - 0.6], [-CAB.x, y + 0.6, CUPS.z + 0.6], 0);
-  // back: the standard power port in its pocket, its face flush with the back on the boundary, on a dark mount from the
-  // pocket floor; the condenser grille inside the upper pocket (side rails, cross wires, upright tubes), below the boundary
-  addPowerPort({plate: P('port_plate', 'body', 'port'), socket: P('port_socket', 'body', 'socket'), pin: P('port_pin', 'body', 'port_pin')},
-    POWER_PORT.x, POWER_PORT.y);
-  slab(P('port_mount', 'body', 'panel'), 'z', [POWER_PORT.x - 2.4, POWER_PORT.y - 2.4, PP.z - 0.05], [POWER_PORT.x + 2.4, POWER_PORT.y + 2.4, CAB.z1 - 0.58], 0);
+  // back: the power cord's grommet in the lower pocket; the condenser grille inside the upper pocket (side rails, cross
+  // wires, upright tubes), below the boundary
+  // power inlet: IEC C14 (tools/afl-iec-inlet.mjs; Power Outlets V1, 2026-10-08), the detachable cord's C13 connector plugs in here
+  addIecInlet({housing: P('inlet_housing', 'body', 'inlet'), floor: P('inlet_floor', 'body', 'socket'), pin: P('inlet_pins', 'body', 'inlet_pin')}, CORD.x, CORD.y, CORD.z);
   const grille = P('condenser', 'body', 'grille');
   for (const s of [-1, 1]) slab(grille, 'z', [s > 0 ? GP.x - 0.3 : -GP.x, GP.y[0], GP.z], [s > 0 ? GP.x : -GP.x + 0.3, GP.y[1], GP.z + 0.8], 0);
   for (let i = 0; i < 10; i++) { const y = GP.y[0] + 0.6 + i * 0.75; slab(grille, 'z', [-GP.x + 0.3, y, GP.z + 0.25], [GP.x - 0.3, y + 0.16, GP.z + 0.43], 0); }
@@ -149,6 +149,8 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   port:         {c: [134, 138, 144], hl: 12, sm: 112, se: 130, f0: 20},
   socket:       {c: [24, 25, 28], hl: 0, sm: 60, se: 60, f0: 20},
   port_pin:     {c: [40, 42, 46], hl: 10, sm: 110, se: 130, f0: 20},
+  inlet:          {c: [22, 23, 25], hl: 8, sm: 112, se: 132, f0: 20},
+  inlet_pin:      {c: [176, 172, 160], hl: 10, sm: 172, se: 188, f0: 255},
 };
 export const BOTTLE_ALPHA = 110;
 export const EMISSION = {hot_led_lit: 210, cold_led_lit: 210};

@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.WaterDispenserBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.PlugCord;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -11,6 +12,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -23,11 +25,11 @@ import org.jetbrains.annotations.Nullable;
  * LEDs' unlit / lit sets follow LIT) and the power: {@link CompressorAppliance} in lights-only mode
  * (machine_balance/water_dispenser.json), fed only through the power port on the lower half's back.
  */
-public final class WaterDispenserBlockEntity extends AflAnimatedMeshBlockEntity implements CompressorAppliance.Host {
+public final class WaterDispenserBlockEntity extends AflAnimatedMeshBlockEntity implements CompressorAppliance.Host, PlugCord.Owner {
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/water_dispenser.json");
 
-    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::waterDispenser);
+    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::waterDispenser).cord(this::cordGeometry);
 
     public WaterDispenserBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.WATER_DISPENSER.get(), pos, state, MESH_PROFILE);
@@ -61,24 +63,21 @@ public final class WaterDispenserBlockEntity extends AflAnimatedMeshBlockEntity 
         setChanged();
     }
 
-    @Override
-    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
-        if (capability == ForgeCapabilities.ENERGY && side != null && getBlockState().getBlock() instanceof WaterDispenserBlock block
-                && block.hasPowerPort(getBlockState(), side)) return power.capability().cast();
-        return super.getCapability(capability, side);
+
+    /** Power cord (tools/build-water-dispenser-v2.mjs CORD): the C14 inlet in the pocket recessed into the back. */
+    private PlugCord.Geometry cordGeometry() {
+        return PlugCord.appliance(worldPosition, meshFacing(), 2.3, 5.0, 6.8, -5.6, 5.6, 0);
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        power.invalidateCaps();
-    }
+    @Override public PlugCord plugCord() { return power.plugCord(); }
 
     @Override
-    public void reviveCaps() {
-        super.reviveCaps();
-        power.reviveCaps();
+    public AABB getRenderBoundingBox() {
+        return power.plugCord().renderBounds(super.getRenderBoundingBox());
     }
+
+    @Override public CompoundTag getUpdateTag() { CompoundTag tag = saveWithoutMetadata(); power.plugCord().writeSync(tag); return tag; }
+    @Override public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() { return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this); }
 
     @Override
     public void load(CompoundTag tag) {

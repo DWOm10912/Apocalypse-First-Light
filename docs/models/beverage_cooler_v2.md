@@ -15,7 +15,9 @@ V2 取代 V1 文档（原 `docs/beverage_cooler_model.md`，已删除，仍然�
 - GeckoLib 动画 `animations/beverage_cooler.animation.json` 和贴图 `textures/entity/beverage_cooler.png`；
 - 渲染类 `BeverageCoolerRenderer`、`BeverageCoolerModel`、`BeverageCoolerItemRenderer`。
 
-## 电源接口（2026-10-01）
+> **2026-10-08 起改用电源线**（Power Outlets V1，用户实机 PASS）：背后的标准钢接口和它的开孔都去掉了，主格背面靠外侧的底角（正对冷柜时的左下角）换成一个 IEC C14 电源插座，可拆的电源线一头是插在上面的 C13 接头，另一头是三孔插头，4 格长，插在墙上插座或插线板上取电；电缆接不上了。取电走配电盘"插座"那一路。交互：空手潜行右键电器，拿起、拔下或放回插头。见 [Power Outlets V1](power_outlets_v1.md)"插头电器"。下文"电源接口"一节是改之前的记录。
+
+## 电源接口（2026-10-01；2026-10-08 已改成电源线，下面是历史记录）
 
 - 位置：主格（正对冷柜时的左下格）背面正中，从背后看是右下。另外三格没有接口。
 - 外形和充电站相同（`tools/afl-power-port.mjs`）：6 × 6 px 钢板、r 1.95 的插座和触点。冷柜的后壁本身就贴在方块边界上，所以不做凸台，而是在后壁上开一个 6.1 × 6.1 px 的方孔，把接口板嵌进去，板面正好在边界上，四周留 0.05 px 的细缝，后壁和接口板的面不重叠。

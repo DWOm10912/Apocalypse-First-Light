@@ -11,6 +11,8 @@ V2 取代 V1 文档（原 `docs/vending_machine_model.md` 和 `docs/vending_mach
 - 脚本 `scripts/build_vending_machine_blockbench.js`、`capture_vending_machine_previews.js`、`export_vending_machine_runtime.js`、`tune_vending_machine_liner.js`（`scripts/vending-tests.init.gradle` 保留）；
 - 运行时模型 `models/block/vending_machine_{body,intact_glass,broken_glass}.json`、贴图 `textures/entity/vending_machine.png`，以及它在 `assets/minecraft/atlases/blocks.json` 里的条目。
 
+> **2026-10-08 起改用电源线**（Power Outlets V1，用户实机 PASS）：背后的标准钢接口和它的开孔都去掉了，下半格背面靠左侧（正对售货机时的左边）的底角换成一个 IEC C14 电源插座，可拆的电源线一头是插在上面的 C13 接头，另一头是三孔插头，4 格长，插在墙上插座或插线板上取电；电缆接不上了。取电走配电盘"插座"那一路。交互：空手潜行右键电器，拿起、拔下或放回插头。见 [Power Outlets V1](power_outlets_v1.md)"插头电器"。下文"电源接口"一节是改之前的记录。
+
 ## 模型
 
 - 生成器：`tools/build-vending-machine-v2.mjs`（`--check` 检查输出是否最新，`--preview DIR` 只把 geo / sidecar / 贴图写到别处看）。
@@ -72,7 +74,7 @@ V2 取代 V1 文档（原 `docs/vending_machine_model.md` 和 `docs/vending_mach
 
 方块状态 `broken=true` 时 `glass` 骨骼不画，窗口只剩空门框，没有锯齿玻璃残片（用户 2026-10-01 要求去掉）。砸的那一下还是撬棍动作发出的 12 个玻璃粒子。
 
-## 电源接口与灯光（2026-10-01，只有灯光）
+## 电源接口与灯光（2026-10-01，只有灯光；2026-10-08 接口已改成电源线，灯光不变）
 
 - 接口：`tools/afl-power-port.mjs` 的标准接口，下半格背面中心（源 x 0、y 8）。后壁在 z 7.2..7.7，没到方块边界，所以在后壁上开 6.1 × 6.1 px 的方孔，接口板嵌在孔里、往后凸到方块边界（z 8）。上半格没有接口。
 - 代码：`VendingMachineBlock` 实现 `AflPowerPortBlock`，`hasPowerPort` 只对下半格的背面返回 true；能量能力只在这一面给（`VendingMachineBlockEntity#getCapability`），只接收不输出。

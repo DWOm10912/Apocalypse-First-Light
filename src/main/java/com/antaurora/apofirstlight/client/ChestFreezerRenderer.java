@@ -34,9 +34,15 @@ public final class ChestFreezerRenderer implements BlockEntityRenderer<ChestFree
     }
 
     @Override
+    public boolean shouldRenderOffScreen(ChestFreezerBlockEntity x) {
+        return true;
+    }
+
+    @Override
     public void render(ChestFreezerBlockEntity freezer, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {
         if (freezer.getLevel() == null) return;
+        PlugCordRenderer.render(freezer.plugCord(), freezer.getLevel(), freezer.getBlockPos(), partialTick, pose, buffers);   // Power Outlets V1: the power cord
         body.render(freezer, partialTick, pose, buffers, packedLight, packedOverlay);
         if (!freezer.powered() || AflShaderCompat.activeShadowPass()) return;
         float width = font.width(TEXT);

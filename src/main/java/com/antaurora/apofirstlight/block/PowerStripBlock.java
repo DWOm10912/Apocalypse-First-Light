@@ -41,7 +41,7 @@ import java.util.Map;
  * Power Strip (插线板, Power Outlets V1, docs/models/power_outlets_v1.md): the 3-outlet and the 2x3 (6-outlet) strip in
  * black ABS, 1.5 x real size, on the floor or on the office desk (LOWERED, as the desktop props). Its own cord ends in a
  * plug that goes into a wall outlet (sneak + empty hand: take the plug; right-click an outlet with it); the lit rocker
- * (right-click) is ON, LIT while it has power. Baked OBJ per state (tools/build-power-outlets-v1.mjs); the block entity
+ * (right-click) is ON, LIT while it has power. Its sockets take the plug-in appliances' plugs (right-click with one in hand). Baked OBJ per state (tools/build-power-outlets-v1.mjs); the block entity
  * keeps the plug's place and its renderer draws the cord. No collision; any tool or the hand breaks it, drops itself.
  */
 public class PowerStripBlock extends HorizontalDirectionalBlock implements EntityBlock {
@@ -67,6 +67,26 @@ public class PowerStripBlock extends HorizontalDirectionalBlock implements Entit
     public Vec3 cordExit(BlockPos pos, BlockState state) {
         double x = outlets == 3 ? 2.616 : 3.048, y = 0.432 + (state.getValue(LOWERED) ? DESK_SINK : 0);
         return WallOutletBlock.local(pos, state.getValue(FACING), x, y, 0);
+    }
+
+    /**
+     * Socket face centres, px in the facing-north frame (tools/build-power-outlets-v1.mjs STRIP: x, z; the faces' front at
+     * {@link #FACE_Y}), and toward their slots along Z (+1 / -1): one row on the 3-outlet strip, two rows on the 2x3
+     * (ground holes toward the long edges, slots toward the middle).
+     */
+    private static final double[][] SOCKETS_3 = {{-1.392, 0, 1}, {-0.192, 0, 1}, {1.008, 0, 1}};
+    private static final double[][] SOCKETS_6 = {{-1.44, -0.576, 1}, {-0.144, -0.576, 1}, {1.152, -0.576, 1}, {-1.44, 0.576, -1}, {-0.144, 0.576, -1}, {1.152, 0.576, -1}};
+    public static final double FACE_Y = 0.9168;
+
+    private double[] socket(int i) { return (outlets == 3 ? SOCKETS_3 : SOCKETS_6)[Math.max(0, Math.min(outlets - 1, i))]; }
+
+    public Vec3 socketPoint(BlockPos pos, BlockState state, int i) {
+        double[] s = socket(i);
+        return WallOutletBlock.local(pos, state.getValue(FACING), s[0], FACE_Y + (state.getValue(LOWERED) ? DESK_SINK : 0), s[1]);
+    }
+
+    public Vec3 socketUp(BlockState state, int i) {
+        return com.antaurora.apofirstlight.energy.PlugCord.dir(state.getValue(FACING), 0, 0, socket(i)[2]);
     }
 
     public static Vec3 cordDirection(BlockState state) {
@@ -107,18 +127,14 @@ public class PowerStripBlock extends HorizontalDirectionalBlock implements Entit
         if (player.isSpectator() || hand != InteractionHand.MAIN_HAND || !player.getMainHandItem().isEmpty()) return InteractionResult.PASS;
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (!(level.getBlockEntity(pos) instanceof PowerStripBlockEntity strip) || !(player instanceof ServerPlayer server)) return InteractionResult.PASS;
-        if (player.isShiftKeyDown()) {
-            if (pos.equals(PowerPlugs.carried(player))) PowerPlugs.dropCarried(player);   // back beside the strip
-            else {
-                if (strip.outlet() != null) strip.unplug();
-                PowerPlugs.carry(server, strip);
-            }
-            level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.4F, 0.7F);
-        } else {
-            BlockState next = state.cycle(ON);
-            level.setBlock(pos, next.setValue(LIT, next.getValue(ON) && strip.outlet() != null && PowerPlugs.outletLive(level, strip.outlet())), 3);
-            level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.4F, next.getValue(ON) ? 1.4F : 1.1F);
-        }
+        BlockPos carried = PowerPlugs.carried(player);
+        // an appliance's plug in hand: into one of the strip's sockets
+        if (!player.isShiftKeyDown() && carried != null && !carried.equals(pos)) return PowerPlugs.plugCarried(level, pos, hit, server);
+        // sneaking: the strip's own plug
+        if (player.isShiftKeyDown()) return PowerPlugs.useDevice(level, pos, server);
+        level.setBlock(pos, state.cycle(ON).setValue(LIT, false), 3);
+        strip.updateLit();
+        level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.4F, state.getValue(ON) ? 1.1F : 1.4F);
         return InteractionResult.CONSUME;
     }
 

@@ -34,9 +34,15 @@ public final class BeverageCoolerRenderer implements BlockEntityRenderer<Beverag
     }
 
     @Override
+    public boolean shouldRenderOffScreen(BeverageCoolerBlockEntity x) {
+        return true;
+    }
+
+    @Override
     public void render(BeverageCoolerBlockEntity cooler, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {
         if (cooler.getLevel() == null) return;
+        PlugCordRenderer.render(cooler.plugCord(), cooler.getLevel(), cooler.getBlockPos(), partialTick, pose, buffers);   // Power Outlets V1: the power cord
         var spots = cooler.shownGoods();
         if (!spots.isEmpty()) {
             // lit cabinet: the goods take the LED light (block light 14) whatever the room's light

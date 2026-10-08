@@ -13,6 +13,7 @@ import com.antaurora.apofirstlight.containersearch.AflGoodsState;
 import com.antaurora.apofirstlight.containersearch.AflGoodsThemes;
 import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.PlugCord;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -58,7 +59,7 @@ import java.util.Map;
  * power port on the lower half's back.
  */
 public final class VendingMachineBlockEntity extends RandomizableContainerBlockEntity
-        implements AflSearchableContainer, AflContainerGoods.Themed, AflAnimatedMeshHost, CompressorAppliance.Host {
+        implements com.antaurora.apofirstlight.energy.PlugCord.Owner, AflSearchableContainer, AflContainerGoods.Themed, AflAnimatedMeshHost, CompressorAppliance.Host {
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/vending_machine.json");
     public static final int ROWS = 4;
@@ -85,7 +86,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     /** Client, render only: the lanes the last {@link #shownGoods()} filled. */
     private int shownLanes;
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
-    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::vendingMachine);
+    private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::vendingMachine).cord(this::cordGeometry);
 
     public VendingMachineBlockEntity(BlockPos p, BlockState s) {
         super(AflBlockEntities.VENDING_MACHINE.get(), p, s);
@@ -229,24 +230,11 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     /** Energy only through the power port; items only through broken glass. */
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> capability, @Nullable Direction side) {
-        if (capability == ForgeCapabilities.ENERGY) return side != null && getBlockState().getBlock() instanceof VendingMachineBlock block
-                && block.hasPowerPort(getBlockState(), side) ? power.capability().cast() : LazyOptional.empty();
         if (capability == ForgeCapabilities.ITEM_HANDLER && !getBlockState().getValue(VendingMachineBlock.BROKEN))
             return LazyOptional.empty();
         return super.getCapability(capability, side);
     }
 
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        power.invalidateCaps();
-    }
-
-    @Override
-    public void reviveCaps() {
-        super.reviveCaps();
-        power.reviveCaps();
-    }
 
     @Override
     protected IItemHandler createUnSidedHandler() {
@@ -314,6 +302,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
         CompoundTag tag = new CompoundTag();
         tag.putBoolean(SYNC_SEARCH_COMPLETE, AflContainerSearch.isComplete(this));
         goods.writeSync(tag, items, lootTable != null);
+        power.plugCord().writeSync(tag);
         return tag;
     }
 
@@ -326,6 +315,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
     public void handleUpdateTag(CompoundTag tag) {
         clientSearchComplete = tag.getBoolean(SYNC_SEARCH_COMPLETE);
         goods.readSync(tag);
+        power.plugCord().load(tag);
     }
 
     @Override
@@ -335,8 +325,15 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
 
     @Override
     public AABB getRenderBoundingBox() {
-        return AflAnimatedMeshHost.renderBounds(worldPosition, MESH_PROFILE, meshFacing());
+        return power.plugCord().renderBounds(AflAnimatedMeshHost.renderBounds(worldPosition, MESH_PROFILE, meshFacing()));
     }
+
+    /** Power cord (tools/build-vending-machine-v2.mjs CORD): the C14 inlet on the back panel, low at the viewer's left corner. */
+    private PlugCord.Geometry cordGeometry() {
+        return PlugCord.appliance(worldPosition, meshFacing(), 6.0, 2.4, 7.7, -7.8, 7.8, 0);
+    }
+
+    @Override public PlugCord plugCord() { return power.plugCord(); }
 
     // ---- AFL Animated Block Mesh Runtime ----
 

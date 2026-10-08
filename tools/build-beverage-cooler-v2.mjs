@@ -17,8 +17,8 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {addIecInlet} from './afl-iec-inlet.mjs';
 import {Part, AX, extrude, mul, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
-import {addPowerPort, portHole} from './afl-power-port.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -31,7 +31,9 @@ export const SHIFT = -16;                                                     //
 export const SHELF_TOPS = [4.16, 9.01, 13.86, 18.71, 23.56];
 export const DECK = {x0: -6.15, x1: 22.15, z0: -4.4, z1: 4.5};               // wire deck between the rails
 export const HINGE = {right: [-6.87, 16, -7.495], left: [22.87, 16, -7.495]};
-export const POWER_PORT = {x: 16, y: 8};   // back face centre of the master (lower-left) cell; the rear wall lies on the boundary
+// power inlet (source px): its centre on the master's back, low at its outer corner, and the back plane it stands on
+// (BeverageCoolerBlockEntity#cordGeometry: x - 16)
+export const CORD = {x: 21.3, y: 1.8, z: 8};
 export const DOOR_DEGREES = {left: -95, right: 95}, DOOR_TICKS = 8;            // BeverageCoolerBlock.ANIMATION_TICKS
 
 // ---------------- primitives ----------------
@@ -69,7 +71,7 @@ function lights(bone, suffix) {
   const cab = P('cabinet', 'body', 'cabinet');
   slab(cab, 'x', [-8, 0.4, -7.35], [-6.95, 32, 8], 0.25);                    // side walls (with the front posts)
   slab(cab, 'x', [22.95, 0.4, -7.35], [24, 32, 8], 0.25);
-  frame(cab, [-6.95, 0.4, 22.95, 32], portHole(POWER_PORT.x, POWER_PORT.y), 6.8, 8, 0);   // rear wall, opening for the power port
+  slab(cab, 'z', [-6.95, 0.4, 6.8], [22.95, 32, 8], 0);                       // rear wall
   slab(cab, 'y', [-6.95, 31.7, -6.8], [22.95, 32, 6.8], 0);                  // roof over the lightbox housing
   slab(cab, 'y', [-6.95, 0.4, -6.8], [22.95, 0.7, 6.8], 0);                  // base plate
   frame(P('header_frame', 'body', 'cabinet'), [-6.95, 28.9, 22.95, 32], [-6, 29.55, 22, 31.35], -7.35, -6.8, 0.1);
@@ -81,11 +83,10 @@ function lights(bone, suffix) {
   slab(P('thermostat_display', 'body', 'display'), 'z', [20.0, 2.74, -7.55], [21.2, 3.03, -7.51], 0);
   const feet = P('feet', 'body', 'rubber');
   for (const x of [-6.55, 22.55]) for (const z of [-5.47, 6.42]) slab(feet, 'y', [x - 0.8, 0, z - 0.82], [x + 0.8, 0.4, z + 0.82], 0);
-  // back: service panel with a louvred vent (on the second column), the power port set into the rear wall beside it
-  // (tools/afl-power-port.mjs, AFL power port standard; 2026-10-01)
+  // back: service panel with a louvred vent (on the second column), the power cord's grommet at the master's corner
   slab(P('service_panel', 'body', 'trim'), 'z', [-6, 1, 8.0], [12, 8, 8.06], 0);
-  addPowerPort({plate: P('port_plate', 'body', 'port'), socket: P('port_socket', 'body', 'socket'), pin: P('port_pin', 'body', 'port_pin')},
-    POWER_PORT.x, POWER_PORT.y);
+  // power inlet: IEC C14 (tools/afl-iec-inlet.mjs; Power Outlets V1, 2026-10-08), the detachable cord's C13 connector plugs in here
+  addIecInlet({housing: P('inlet_housing', 'body', 'inlet'), floor: P('inlet_floor', 'body', 'socket'), pin: P('inlet_pins', 'body', 'inlet_pin')}, CORD.x, CORD.y, CORD.z);
   const rear = P('rear_louvers', 'body', 'grille');
   for (let i = 0; i < 6; i++) slab(rear, 'z', [-4.8, 2.25 + 0.58 * i, 8.06], [3.8, 2.5 + 0.58 * i, 8.1], 0);
   // white liner, rear air duct, shelf standards, corner LED strips, ceiling light
@@ -144,6 +145,8 @@ export const MATS = {   // Base Color, bevel highlight, smoothness open / edge, 
   port:        {c: [134, 138, 144], hl: 12, sm: 112, se: 130, f0: 20},  // power port plate (as the charging station's)
   socket:      {c: [24, 25, 28], hl: 0, sm: 60, se: 60, f0: 20},
   port_pin:    {c: [40, 42, 46], hl: 10, sm: 110, se: 130, f0: 20},
+  inlet:         {c: [22, 23, 25], hl: 8, sm: 112, se: 132, f0: 20},
+  inlet_pin:     {c: [176, 172, 160], hl: 10, sm: 172, se: 188, f0: 255},
   liner:       {c: [184, 190, 194], hl: 6, sm: 122, se: 134, f0: 20},   // white enamel liner
   fitting:     {c: [150, 156, 160], hl: 8, sm: 118, se: 132, f0: 20},
   led:         {c: [222, 226, 228], hl: 4, sm: 150, se: 150, f0: 20},   // opal diffusers (unlit)

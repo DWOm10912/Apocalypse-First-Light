@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.WaterDispenserBlockEntity;
-import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflItems;
 import net.minecraft.core.BlockPos;
@@ -46,7 +45,7 @@ import java.util.Map;
  * {@link #LIT} on both halves: the indicator LEDs' lit set (no block light, the LEDs are tiny), fed through the standard
  * power port on the lower half's back. No water, drinking or storage yet.
  */
-public final class WaterDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+public final class WaterDispenserBlock extends HorizontalDirectionalBlock implements EntityBlock, MeshHitMultiCell {
     /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower half (its block entity draws the dispenser). */
     @Override
     public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
@@ -171,10 +170,24 @@ public final class WaterDispenserBlock extends HorizontalDirectionalBlock implem
             level.setBlock(lower.above(), upper.setValue(LIT, lit), Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
     }
 
-    /** The power port (tools/build-water-dispenser-v2.mjs POWER_PORT, recessed into the back): the lower half's back face only. */
+    /** Sneak + empty hand: the power cord's plug (docs/models/power_outlets_v1.md); nothing else to use yet. */
     @Override
-    public boolean hasPowerPort(BlockState state, Direction face) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER && face == state.getValue(FACING).getOpposite();
+    public net.minecraft.world.InteractionResult use(BlockState state, Level level, BlockPos position, Player player,
+                                                     net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+        BlockPos lower = state.getValue(HALF) == DoubleBlockHalf.UPPER ? position.below() : position;
+        if (hand == net.minecraft.world.InteractionHand.MAIN_HAND && player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && !player.isSpectator()) {
+            if (level.isClientSide) return net.minecraft.world.InteractionResult.SUCCESS;
+            return player instanceof net.minecraft.server.level.ServerPlayer server
+                    ? com.antaurora.apofirstlight.energy.PowerPlugs.useDevice(level, lower, server) : net.minecraft.world.InteractionResult.PASS;
+        }
+        return net.minecraft.world.InteractionResult.PASS;
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public void onRemove(BlockState state, Level level, BlockPos position, BlockState replacement, boolean moved) {
+        if (!state.is(replacement.getBlock()) && state.getValue(HALF) == DoubleBlockHalf.LOWER) { if (level.getBlockEntity(position) instanceof com.antaurora.apofirstlight.energy.PlugCord.Owner owner) owner.plugCord().release(); }
+        super.onRemove(state, level, position, replacement, moved);
     }
 
     @Nullable

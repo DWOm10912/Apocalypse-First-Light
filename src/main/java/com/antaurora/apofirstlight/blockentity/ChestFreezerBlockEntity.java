@@ -11,6 +11,7 @@ import com.antaurora.apofirstlight.containersearch.AflContainerSearchSettings;
 import com.antaurora.apofirstlight.containersearch.AflContainerSearchState;
 import com.antaurora.apofirstlight.containersearch.AflSearchableContainer;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.energy.PlugCord;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -61,7 +62,7 @@ import java.util.Set;
  * included: the glass shows how full it is, never what). Clients get that count, never the items.
  */
 public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEntity
-        implements AflSearchableContainer, AflAnimatedMeshHost, CompressorAppliance.Host {
+        implements com.antaurora.apofirstlight.energy.PlugCord.Owner, AflSearchableContainer, AflAnimatedMeshHost, CompressorAppliance.Host {
     public static final int SIZE = 18;
     public static final ResourceLocation MESH_PROFILE =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/chest_freezer.json");
@@ -77,7 +78,7 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
 
     private final AflBlockMeshAnimationState meshAnimation = new AflBlockMeshAnimationState();
     private final CompressorAppliance power = new CompressorAppliance(this, MachineBalanceManager::chestFreezer,
-            AflSounds.BEVERAGE_COOLER_COMPRESSOR_START, AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP, COMPRESSOR_PITCH);
+            AflSounds.BEVERAGE_COOLER_COMPRESSOR_START, AflSounds.BEVERAGE_COOLER_COMPRESSOR_STOP, COMPRESSOR_PITCH).cord(this::cordGeometry);
     private final AflContainerSearchState search = new AflContainerSearchState();
     private NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
     private boolean contentsDropped;
@@ -129,6 +130,17 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
 
     @Override
     public AABB getRenderBoundingBox() {
+        return power.plugCord().renderBounds(meshBounds());
+    }
+
+    /** Power cord (tools/build-chest-freezer-v2.mjs CORD, x - 16): the C14 inlet on the master's back wall, low at its outer corner. */
+    private PlugCord.Geometry cordGeometry() {
+        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 2.2, 7.7, -24, 8, 0);
+    }
+
+    @Override public PlugCord plugCord() { return power.plugCord(); }
+
+    private AABB meshBounds() {
         Direction otherDirection = getBlockState().getValue(ChestFreezerBlock.FACING).getCounterClockWise();
         BlockPos other = worldPosition.relative(otherDirection);
         return new AABB(Math.min(worldPosition.getX(), other.getX()) - 0.5, worldPosition.getY() - 0.25,
@@ -330,24 +342,6 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
         sync();
     }
 
-    @Override
-    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction side) {
-        if (capability == ForgeCapabilities.ENERGY && side != null && getBlockState().getBlock() instanceof ChestFreezerBlock block
-                && block.hasPowerPort(getBlockState(), side)) return power.capability().cast();
-        return super.getCapability(capability, side);
-    }
-
-    @Override
-    public void invalidateCaps() {
-        super.invalidateCaps();
-        power.invalidateCaps();
-    }
-
-    @Override
-    public void reviveCaps() {
-        super.reviveCaps();
-        power.reviveCaps();
-    }
 
     // ---- persistence and client sync (power, lights, search completion, goods count; never items) ----
 
@@ -375,6 +369,7 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
     public CompoundTag getUpdateTag() {
         CompoundTag tag = new CompoundTag();
         power.save(tag);
+        power.plugCord().writeSync(tag);
         tag.putBoolean(POWERED_KEY, powered);
         tag.putBoolean(SYNC_SEARCH_COMPLETE, AflContainerSearch.isComplete(this));
         tag.putInt(SYNC_GOODS, lootTable == null ? goodsNow() : 0);

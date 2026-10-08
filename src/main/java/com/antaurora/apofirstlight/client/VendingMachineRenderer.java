@@ -32,9 +32,15 @@ public final class VendingMachineRenderer implements BlockEntityRenderer<Vending
     }
 
     @Override
+    public boolean shouldRenderOffScreen(VendingMachineBlockEntity x) {
+        return true;
+    }
+
+    @Override
     public void render(VendingMachineBlockEntity machine, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {
         if (machine.getLevel() == null) return;
+        PlugCordRenderer.render(machine.plugCord(), machine.getLevel(), machine.getBlockPos(), partialTick, pose, buffers);   // Power Outlets V1: the power cord
         var spots = machine.shownGoods();
         if (!spots.isEmpty()) {
             // lit cabinet: the goods take the LED strip's light (block light 14) whatever the room's light

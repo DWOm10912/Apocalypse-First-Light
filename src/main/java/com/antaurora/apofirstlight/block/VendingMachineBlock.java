@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.block;
 
 import com.antaurora.apofirstlight.meshhit.MeshHitMultiCell;
 import com.antaurora.apofirstlight.blockentity.VendingMachineBlockEntity;
-import com.antaurora.apofirstlight.energy.AflPowerPortBlock;
 import com.antaurora.apofirstlight.item.VendingMachineBlockItem;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.interaction.CrowbarSmashAction;
@@ -29,7 +28,7 @@ import net.minecraft.world.phys.shapes.*;
  * (no cooling), fed through the standard power port on the lower half's back: LIT gives block light {@link #LIGHT_LEVEL}
  * and the mesh's lit light set (VendingMachineBlockEntity, energy/CompressorAppliance in lights-only mode).
  */
-public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, MeshHitMultiCell {
+public final class VendingMachineBlock extends HorizontalDirectionalBlock implements EntityBlock, MeshHitMultiCell {
     /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the lower half (its block entity draws the machine). */
     @Override
     public BlockPos meshHitMaster(BlockState state, BlockPos pos) {
@@ -89,7 +88,7 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         super.playerWillDestroy(l,p,s,player);
     }
     @Override public void onRemove(BlockState s, Level l, BlockPos p, BlockState next, boolean moving) {
-        if (!s.is(next.getBlock()) && l.getBlockEntity(p) instanceof VendingMachineBlockEntity be) be.dropContentsOnce();
+        if (!s.is(next.getBlock()) && l.getBlockEntity(p) instanceof VendingMachineBlockEntity be) { be.dropContentsOnce(); be.plugCord().release(); }
         super.onRemove(s,l,p,next,moving);
     }
     /** Lights on / off: LIT on both halves (light level and the mesh's light set follow it). */
@@ -100,10 +99,6 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         BlockState upper = level.getBlockState(lower.above());
         if (upper.is(this) && upper.getValue(HALF) == DoubleBlockHalf.UPPER)
             level.setBlock(lower.above(), upper.setValue(LIT, lit), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
-    }
-    /** The power port (tools/build-vending-machine-v2.mjs POWER_PORT): the lower half's back face only. */
-    @Override public boolean hasPowerPort(BlockState state, Direction face) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER && face == state.getValue(FACING).getOpposite();
     }
     @Override public BlockEntity newBlockEntity(BlockPos p, BlockState s) {
         return s.getValue(HALF) == DoubleBlockHalf.LOWER ? new VendingMachineBlockEntity(p,s) : null;
@@ -144,6 +139,11 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         return h.x >= GLASS_X0/16 && h.x <= GLASS_X1/16 && h.y >= GLASS_Y0/16 && h.y <= GLASS_Y1/16 ? h : null;
     }
     @Override public InteractionResult use(BlockState s, Level l, BlockPos p, Player player, InteractionHand hand, BlockHitResult hit) {
+        if (hand == InteractionHand.MAIN_HAND && player.isShiftKeyDown() && player.getMainHandItem().isEmpty() && !player.isSpectator()) {
+            if (l.isClientSide) return InteractionResult.SUCCESS;
+            return player instanceof net.minecraft.server.level.ServerPlayer server
+                    ? com.antaurora.apofirstlight.energy.PowerPlugs.useDevice(l, lower(s, p), server) : InteractionResult.PASS;
+        }
         Vec3 point = frontPoint(s,p,player.getEyePosition(),hit);
         if (point == null || player.isSpectator()) return InteractionResult.PASS;
         ItemStack held = player.getItemInHand(hand);

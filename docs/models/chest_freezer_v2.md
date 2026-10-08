@@ -18,6 +18,8 @@ V2 取代 V1 文档（原 `docs/chest_freezer_model.md`，已删除，仍然有�
 - GeckoLib 动画 `animations/chest_freezer.animation.json` 和贴图 `textures/entity/chest_freezer.png`；
 - 渲染类 `ChestFreezerModel`、`ChestFreezerItemRenderer`（`ChestFreezerRenderer` 重写，不再是 GeckoLib）。
 
+> **2026-10-08 起改用电源线**（Power Outlets V1，用户实机 PASS）：背后的标准钢接口和它的开孔都去掉了，主格背面靠外侧的底角换成一个 IEC C14 电源插座，可拆的电源线一头是插在上面的 C13 接头，另一头是三孔插头，4 格长，插在墙上插座或插线板上取电；电缆接不上了。取电走配电盘"插座"那一路。交互：空手潜行右键电器，拿起、拔下或放回插头。见 [Power Outlets V1](power_outlets_v1.md)"插头电器"。下文"电源接口"一节是改之前的记录。
+
 ## 模型
 
 | 项目 | 值 |
@@ -63,7 +65,7 @@ V2 取代 V1 文档（原 `docs/chest_freezer_model.md`，已删除，仍然有�
   - 客户端记下"已宣布的目标"，动画立刻朝它播放；14 tick 后状态提交，和目标一致时清掉记录，之后跟随方块状态。
 - `startTransition` / `completeDue` / `ticksUntilCompletion` 的签名不变（GameTest 在用）。
 
-## 电源接口
+## 电源接口（2026-10-08 已改成电源线，下面是历史记录）
 
 - 位置：主格背面正中（源坐标 x 16、y 8）。副格没有接口。
 - 外形和充电站、饮料冷柜相同（`tools/afl-power-port.mjs`）：6 × 6 px 钢板、r 1.95 的插座和触点。后壁本身贴在方块边界上，所以在后壁上开 6.1 × 6.1 px 的方孔（`portHole`），接口板嵌进去，板面正好在边界上。
