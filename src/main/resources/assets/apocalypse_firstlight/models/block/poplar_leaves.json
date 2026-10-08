@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/leaves",
-  "textures": {
-    "all": "apocalypse_firstlight:block/poplar_leaves"
-  }
-}

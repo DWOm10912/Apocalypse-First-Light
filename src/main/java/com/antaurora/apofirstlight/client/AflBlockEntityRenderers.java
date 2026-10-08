@@ -38,6 +38,11 @@ public final class AflBlockEntityRenderers {
         // Commercial Glass Double Door V2 (both finishes): generic AFL Animated Block Mesh Runtime
         event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
+        // Steel-frame doors V1 (steel door, commercial wood door): generic AFL Animated Block Mesh Runtime
+        event.registerBlockEntityRenderer(AflBlockEntities.STEEL_DOOR.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_WOOD_DOOR.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.RESTROOM_STALL_DOOR.get(), RestroomStallDoorRenderer::new);
         // Beverage Cooler V2: displayed items, then the generic AFL Animated Block Mesh renderer
         event.registerBlockEntityRenderer(AflBlockEntities.BEVERAGE_COOLER.get(), BeverageCoolerRenderer::new);

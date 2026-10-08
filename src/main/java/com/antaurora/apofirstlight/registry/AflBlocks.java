@@ -44,20 +44,14 @@ import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.block.RoadCurbBlock;
-import com.antaurora.apofirstlight.block.StrippableRotatedPillarBlock;
-import com.antaurora.apofirstlight.world.PoplarTreeGrower;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.RotatedPillarBlock;
-import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.IronBarsBlock;
-import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -172,6 +166,12 @@ public final class AflBlocks {
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion(), AflBlockSetTypes.AFL_STEEL));
+    /** Steel-frame doors V1 (docs/models/steel_frame_doors_v1.md): the charcoal steel frame with a maple veneer leaf; wood rules (axe, no tier). */
+    public static final RegistryObject<Block> COMMERCIAL_WOOD_DOOR = BLOCKS.register("commercial_wood_door",
+            () -> new com.antaurora.apofirstlight.block.CommercialWoodDoorBlock(BlockBehaviour.Properties.copy(Blocks.OAK_DOOR)
+                    .strength(3.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion(), net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
     public static final RegistryObject<Block> INDUSTRIAL_UTILITY_LIGHT = BLOCKS.register("industrial_utility_light",
             () -> new IndustrialUtilityLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
@@ -572,29 +572,6 @@ public final class AflBlocks {
                     .sound(SoundType.STONE)
                     .noCollission()
                     .noOcclusion(), true));
-    public static final RegistryObject<Block> STRIPPED_POPLAR_LOG = BLOCKS.register("stripped_poplar_log",
-            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_LOG)));
-    public static final RegistryObject<Block> POPLAR_LOG = BLOCKS.register("poplar_log",
-            () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_LOG), STRIPPED_POPLAR_LOG));
-    public static final RegistryObject<Block> STRIPPED_POPLAR_WOOD = BLOCKS.register("stripped_poplar_wood",
-            () -> new RotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.STRIPPED_OAK_WOOD)));
-    public static final RegistryObject<Block> POPLAR_WOOD = BLOCKS.register("poplar_wood",
-            () -> new StrippableRotatedPillarBlock(BlockBehaviour.Properties.copy(Blocks.OAK_WOOD), STRIPPED_POPLAR_WOOD));
-    public static final RegistryObject<Block> POPLAR_PLANKS = BLOCKS.register("poplar_planks",
-            () -> new Block(BlockBehaviour.Properties.copy(Blocks.OAK_PLANKS)));
-    public static final RegistryObject<Block> POPLAR_STAIRS = BLOCKS.register("poplar_stairs",
-            () -> new StairBlock(POPLAR_PLANKS.get().defaultBlockState(), BlockBehaviour.Properties.copy(Blocks.OAK_STAIRS)));
-    public static final RegistryObject<Block> POPLAR_SLAB = BLOCKS.register("poplar_slab",
-            () -> new SlabBlock(BlockBehaviour.Properties.copy(Blocks.OAK_SLAB)));
-    public static final RegistryObject<Block> POPLAR_DOOR = BLOCKS.register("poplar_door",
-            () -> new DoorBlock(BlockBehaviour.Properties.copy(Blocks.OAK_DOOR), AflBlockSetTypes.AFL_POPLAR));
-    public static final RegistryObject<Block> POPLAR_TRAPDOOR = BLOCKS.register("poplar_trapdoor",
-            () -> new net.minecraft.world.level.block.TrapDoorBlock(BlockBehaviour.Properties.copy(Blocks.OAK_TRAPDOOR), AflBlockSetTypes.AFL_POPLAR));
-    public static final RegistryObject<Block> POPLAR_LEAVES = BLOCKS.register("poplar_leaves",
-            () -> new LeavesBlock(BlockBehaviour.Properties.copy(Blocks.BIRCH_LEAVES)));
-    public static final RegistryObject<Block> POPLAR_SAPLING = BLOCKS.register("poplar_sapling",
-            () -> new SaplingBlock(new PoplarTreeGrower(), BlockBehaviour.Properties.copy(Blocks.OAK_SAPLING)));
-
     private AflBlocks() {
     }
 }

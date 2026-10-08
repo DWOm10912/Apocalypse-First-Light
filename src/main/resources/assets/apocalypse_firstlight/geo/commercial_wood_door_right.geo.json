@@ -1,0 +1,63 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.commercial_wood_door_right",
+        "texture_width": 1024,
+        "texture_height": 1024,
+        "visible_bounds_width": 3,
+        "visible_bounds_height": 3,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "frame",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "leaf",
+          "pivot": [
+            7,
+            0,
+            -7
+          ]
+        },
+        {
+          "name": "leaf_plain",
+          "pivot": [
+            7,
+            0,
+            -7
+          ]
+        },
+        {
+          "name": "leaf_lite",
+          "pivot": [
+            7,
+            0,
+            -7
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "restroom",
+          "pivot": [
+            7,
+            0,
+            -7
+          ],
+          "neverRender": true
+        }
+      ]
+    }
+  ]
+}

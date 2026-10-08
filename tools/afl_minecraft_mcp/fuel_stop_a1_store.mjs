@@ -11,6 +11,7 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs furnish -> the fixtures in history-sized rounds (fresh build)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs relayout -> the first build's sales floor to the revised one (furniture only)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs tweak   -> the same-day tweak (12 lights, freezer to the east wall)
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs doors   -> the five interior doors (Steel-frame doors V1, 2026-10-07) into the empty openings
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs check   -> offline route check of the revised sales floor
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
@@ -19,6 +20,17 @@ import path from 'node:path';
 export const ID = 'gas_station_02_store', SIZE = [31, 10, 20];
 const A = id => 'apocalypse_firstlight:' + id, M = id => 'minecraft:' + id;
 const TURN = {north: 'south', south: 'north', east: 'west', west: 'east'};
+// interior doors (paper frame; facing = the way the placer looks, hinge as the placer sees it). Steel-frame doors V1
+// (docs/models/steel_frame_doors_v1.md): the wood door's leaf sits flush on the side it is placed from and swings into its
+// own cell; the steel door swings out toward the side it is placed from. The walk-in cooler keeps a steel door until a
+// cooler door exists (it swings out into the stock room, as a walk-in door does).
+export const INTERIOR_DOORS = [
+  ['commercial_wood_door', 2, 5, 'north', {hinge: 'right', style: 'restroom'}],   // restroom 1 from the sales floor, hinge on the shared partition (X 3)
+  ['commercial_wood_door', 4, 5, 'north', {hinge: 'left', style: 'restroom'}],    // restroom 2
+  ['commercial_wood_door', 22, 5, 'north', {hinge: 'right', style: 'vision'}],    // stock room from the sales floor, hinge on the office side
+  ['commercial_wood_door', 23, 3, 'east', {hinge: 'left', style: 'plain'}],       // office, from the stock room
+  ['steel_door', 16, 2, 'west', {hinge: 'left'}],                                // walk-in cooler, from the stock room
+];
 
 export function recipe() {
   const cells = new Map(), fixtures = [];
@@ -112,10 +124,8 @@ export function recipe() {
     if ((X === 16 && Z === 2) || (X === 23 && Z === 3)) { put(X, 2, Z, PART); put(X, 3, Z, PART); continue; }
     fill(X, 0, Z, X, 3, Z, PART);
   }
-  // interior doors
-  for (const X of [2, 4, 22]) fix('place_multiblock', 'poplar_door', X, 0, 5, 'north', {hinge: 'left'});
-  fix('place_multiblock', 'poplar_door', 16, 0, 2, 'west', {hinge: 'left'});
-  fix('place_multiblock', 'poplar_door', 23, 0, 3, 'east', {hinge: 'left'});
+  // interior doors (the poplar doors of round 1 were removed 2026-10-07)
+  for (const [id, X, Z, f, props] of INTERIOR_DOORS) fix('place_multiblock', id, X, 0, Z, f, props);
 
   // ---- back of house ----
   for (const [X, sink] of [[1, 2], [5, 4]]) { fix('place_fixture', 'commercial_flushometer_toilet', X, 0, 1, 'south'); fix('place_multiblock', 'commercial_wall_mounted_sink', sink, 0, 1, 'south'); }
@@ -228,6 +238,10 @@ export function tweakSteps() {
   salesLights(P, ST);
   return S;
 }
+// the interior doors into the openings left empty by the Poplar removal (2026-10-07)
+export function doorSteps() {
+  return INTERIOR_DOORS.map(([id, X, Z, facing, properties]) => ({kind: 'place_multiblock', id, at: [X, 0, Z], facing, properties}));
+}
 export function relayoutSteps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
   const ST = (from, to, d, count) => S.push({kind: 'we_stack', from, to, d, count});
@@ -333,4 +347,5 @@ else if (mode === 'build') await build();
 else if (mode === 'furnish') await furnish();
 else if (mode === 'relayout') await relayout();
 else if (mode === 'tweak') await relayout(tweakSteps(), 'tweak_sales_v3.json');
+else if (mode === 'doors') await relayout(doorSteps(), 'interior_doors_v1.json');
 else if (mode === 'check') console.log(JSON.stringify(routeCheck(), null, 1));

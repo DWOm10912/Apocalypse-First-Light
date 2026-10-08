@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "apocalypse_firstlight:steel_door"
+    "apocalypse_firstlight:steel_door",
+    "apocalypse_firstlight:commercial_wood_door"
   ]
 }

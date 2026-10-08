@@ -103,7 +103,7 @@ V1 没有方块实体。V2 之前已经放在存档里的饮水机（例如开�
 | `client/AflBlockEntityRenderers.java`、`client/AflStaticMeshItemClient.java` | 渲染器、物品渲染绑定 |
 | `energy/MachineBalanceManager.java` | `waterDispenser()` |
 | `data/apocalypse_firstlight/machine_balance/water_dispenser.json` | 用电数值 |
-| `src/dev/.../authoring/bridge/FixtureBridgeGameTests.java` | 现在有方块实体，`we_set` 会先拒绝成 `UNSAFE_OR_DYNAMIC_BLOCK`；测"多格要用 place_multiblock"的例子换成 `poplar_door`（没有运行） |
+| `src/dev/.../authoring/bridge/FixtureBridgeGameTests.java` | 现在有方块实体，`we_set` 会先拒绝成 `UNSAFE_OR_DYNAMIC_BLOCK`；测"多格要用 place_multiblock"的例子换成 `poplar_door`（没有运行）；2026-10-07 白杨木整套删除后换成 `steel_door`，同日钢门有了方块实体，又换成 `office_multifunction_printer` |
 
 ## 验证
 

@@ -142,7 +142,8 @@ public final class FixtureBridgeGameTests {
             probe.addProperty("block","minecraft:chest");expect(h,()->router.call("we_set",probe,p),"UNSAFE_OR_DYNAMIC_BLOCK");
             probe.addProperty("block",A+"beverage_cooler[facing=north,part=lower_left,left_open=false,right_open=false]");expect(h,()->router.call("we_set",probe,p),"UNSAFE_OR_DYNAMIC_BLOCK");
             probe.addProperty("block",A+"water_dispenser[facing=north,half=lower]");expect(h,()->router.call("we_set",probe,p),"UNSAFE_OR_DYNAMIC_BLOCK");   // V2 (2026-10-01) has a block entity
-            probe.addProperty("block",A+"poplar_door[facing=north,half=lower]");expect(h,()->router.call("we_set",probe,p),"MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK");
+            probe.addProperty("block",A+"steel_door[facing=north,half=lower]");expect(h,()->router.call("we_set",probe,p),"UNSAFE_OR_DYNAMIC_BLOCK");   // Steel-frame doors V1 (2026-10-07) have a block entity
+            probe.addProperty("block",A+"office_multifunction_printer[facing=north,half=lower]");expect(h,()->router.call("we_set",probe,p),"MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK");
             // Whitelisted empty fixtures may be copied/removed as whole multiblocks, never split.
             expect(h,()->router.call("we_set",object("min",xyz(anchor),"max",xyz(anchor.above()),"block","minecraft:air"),p),"MULTIBLOCK_SPLIT");
             router.call("we_copy",object("min",xyz(anchor),"max",xyz(anchor.east().above())),p);

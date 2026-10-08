@@ -121,8 +121,10 @@ final class AuthoringFixtureRegistry {
                     .notes("Black-anodised frame variant (Storefront Glazing V1); same block class, parts and BlockEntity as commercial_glass_double_door (V2: swings out toward facing). 2 wide x 2 tall, anchor = lower_left, second leaf at facing.getClockWise()."),
             new Def(A+"restroom_stall_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false").support(Support.FLOOR)
                     .notes("Lower half owns the BlockEntity. Adjacent restroom_partition door_support bits are reconciled automatically."),
-            new Def(A+"steel_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),
-            new Def(A+"poplar_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),
+            new Def(A+"steel_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR)
+                    .notes("Steel-frame doors V1 (2026-10-07): the lower half owns a render-only BlockEntity. facing = the way the placer looked; the leaf hangs at the face toward the placer and swings out toward the placer, about 0.9 block into the cell in front."),
+            new Def(A+"commercial_wood_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").variant("style","plain","restroom","vision").fixed("open","false","powered","false").support(Support.FLOOR)
+                    .notes("Steel-frame doors V1 (2026-10-07): steel frame, maple veneer leaf; the lower half owns a render-only BlockEntity. facing = the way the placer looked; the leaf hangs at the face toward the placer and swings away from it inside its own cell. style is appearance only (restroom: indicator and plaque; vision: a narrow lite)."),
             new Def(A+"industrial_locker",storage,"storage").facing(H4).multi(TWO_TALL).inventory().support(Support.FLOOR)
                     .notes("27-slot container on the lower half; must start and stay empty (no loot table)."),
             new Def(A+"lead_chest",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.NONE)

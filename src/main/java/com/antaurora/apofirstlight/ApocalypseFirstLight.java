@@ -23,8 +23,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.FireBlock;
 import org.slf4j.Logger;
 
 @Mod(ApocalypseFirstLight.MOD_ID)
@@ -66,19 +64,5 @@ public class ApocalypseFirstLight {
         event.enqueueWork(() -> Regions.register(new AflOverworldRegion(
                 new ResourceLocation(MOD_ID, "overworld"), AflOverworldRegion.REGION_WEIGHT)));
         event.enqueueWork(com.antaurora.apofirstlight.weight.AflCarriedContents::register);
-        event.enqueueWork(() -> {
-            FireBlock fire = (FireBlock) Blocks.FIRE;
-            fire.setFlammable(AflBlocks.POPLAR_LOG.get(), 5, 5);
-            fire.setFlammable(AflBlocks.STRIPPED_POPLAR_LOG.get(), 5, 5);
-            fire.setFlammable(AflBlocks.POPLAR_WOOD.get(), 5, 5);
-            fire.setFlammable(AflBlocks.STRIPPED_POPLAR_WOOD.get(), 5, 5);
-            fire.setFlammable(AflBlocks.POPLAR_PLANKS.get(), 5, 20);
-            fire.setFlammable(AflBlocks.POPLAR_STAIRS.get(), 5, 20);
-            fire.setFlammable(AflBlocks.POPLAR_SLAB.get(), 5, 20);
-            fire.setFlammable(AflBlocks.POPLAR_DOOR.get(), 5, 20);
-            fire.setFlammable(AflBlocks.POPLAR_TRAPDOOR.get(), 5, 20);
-            fire.setFlammable(AflBlocks.POPLAR_LEAVES.get(), 30, 60);
-            fire.setFlammable(AflBlocks.POPLAR_SAPLING.get(), 60, 80);
-        });
     }
 }

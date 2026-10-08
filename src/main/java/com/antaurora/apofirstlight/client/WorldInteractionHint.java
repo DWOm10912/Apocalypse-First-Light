@@ -72,6 +72,7 @@ public final class WorldInteractionHint {
             if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=aluminumCornice(mc,hit);
             if(target==null) target=eyebrowCanopy(mc,hit);
+            if(target==null) target=woodDoorStyle(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
             if(target==null) target=fuelContainer(mc,hit);
@@ -200,6 +201,15 @@ public final class WorldInteractionHint {
         var s=mc.level.getBlockState(hit.getBlockPos());
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.metal_eyebrow_canopy."+(s.getValue(com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock.ROD)?"rod_off":"rod_on")),null);
+    }
+
+    /** Commercial wood door, only while sneaking with an empty hand (as CommercialWoodDoorBlock#use): the next look. */
+    private static Target woodDoorStyle(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK||!mc.player.isShiftKeyDown()||!mc.player.getMainHandItem().isEmpty()) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CommercialWoodDoorBlock)) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.commercial_wood_door.to_"
+                +s.getValue(com.antaurora.apofirstlight.block.CommercialWoodDoorBlock.STYLE).next().getSerializedName()),null);
     }
 
     private static Target counterGate(Minecraft mc,BlockHitResult hit) {

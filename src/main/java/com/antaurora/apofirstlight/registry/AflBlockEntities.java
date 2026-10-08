@@ -46,6 +46,13 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK.get()).build(null));
+    /** Steel-frame doors V1: the lower half of each door draws it (docs/models/steel_frame_doors_v1.md). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.SteelDoorBlockEntity>> STEEL_DOOR =
+            BLOCK_ENTITIES.register("steel_door", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.SteelDoorBlockEntity::new, AflBlocks.STEEL_DOOR.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.CommercialWoodDoorBlockEntity>> COMMERCIAL_WOOD_DOOR =
+            BLOCK_ENTITIES.register("commercial_wood_door", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.CommercialWoodDoorBlockEntity::new, AflBlocks.COMMERCIAL_WOOD_DOOR.get()).build(null));
     /** Both cells of the Charging Station carry one (the right cell only forwards its power port to the master). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity>> CHARGING_STATION =
             BLOCK_ENTITIES.register("charging_station", () ->

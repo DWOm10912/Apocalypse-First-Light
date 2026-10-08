@@ -8,6 +8,7 @@ import com.antaurora.apofirstlight.item.CommercialGlassDoubleDoorBlockItem;
 import com.antaurora.apofirstlight.item.BeverageCoolerBlockItem;
 import com.antaurora.apofirstlight.item.ChestFreezerBlockItem;
 import com.antaurora.apofirstlight.item.ModernOfficeDeskBlockItem;
+import com.antaurora.apofirstlight.item.SteelFrameDoorBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.BucketItem;
@@ -160,7 +161,9 @@ public final class AflItems {
     public static final RegistryObject<Item> STEEL_PLATE_STAIRS = ITEMS.register("steel_plate_stairs",
             () -> new BlockItem(AflBlocks.STEEL_PLATE_STAIRS.get(), new Item.Properties()));
     public static final RegistryObject<Item> STEEL_DOOR = ITEMS.register("steel_door",
-            () -> new BlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties()));
+            () -> new SteelFrameDoorBlockItem(AflBlocks.STEEL_DOOR.get(), new Item.Properties(), "steel_door"));
+    public static final RegistryObject<Item> COMMERCIAL_WOOD_DOOR = ITEMS.register("commercial_wood_door",
+            () -> new SteelFrameDoorBlockItem(AflBlocks.COMMERCIAL_WOOD_DOOR.get(), new Item.Properties(), "commercial_wood_door"));
     // AFL V1 functional materials (docs/gameplay/material_system_v1.md): no per-metal ingot / sheet / block templates
     public static final RegistryObject<Item> STEEL_BILLET = ITEMS.register("steel_billet",
             () -> new Item(new Item.Properties()));
@@ -402,28 +405,6 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.EDGE_LANE_YELLOW.get(), new Item.Properties()));
     public static final RegistryObject<Item> WHITE_LANE_DIVIDER = ITEMS.register("white_lane_divider",
             () -> new BlockItem(AflBlocks.WHITE_LANE_DIVIDER.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_LOG = ITEMS.register("poplar_log",
-            () -> new BlockItem(AflBlocks.POPLAR_LOG.get(), new Item.Properties()));
-    public static final RegistryObject<Item> STRIPPED_POPLAR_LOG = ITEMS.register("stripped_poplar_log",
-            () -> new BlockItem(AflBlocks.STRIPPED_POPLAR_LOG.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_WOOD = ITEMS.register("poplar_wood",
-            () -> new BlockItem(AflBlocks.POPLAR_WOOD.get(), new Item.Properties()));
-    public static final RegistryObject<Item> STRIPPED_POPLAR_WOOD = ITEMS.register("stripped_poplar_wood",
-            () -> new BlockItem(AflBlocks.STRIPPED_POPLAR_WOOD.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_PLANKS = ITEMS.register("poplar_planks",
-            () -> new BlockItem(AflBlocks.POPLAR_PLANKS.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_STAIRS = ITEMS.register("poplar_stairs",
-            () -> new BlockItem(AflBlocks.POPLAR_STAIRS.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_SLAB = ITEMS.register("poplar_slab",
-            () -> new BlockItem(AflBlocks.POPLAR_SLAB.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_DOOR = ITEMS.register("poplar_door",
-            () -> new BlockItem(AflBlocks.POPLAR_DOOR.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_TRAPDOOR = ITEMS.register("poplar_trapdoor",
-            () -> new BlockItem(AflBlocks.POPLAR_TRAPDOOR.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_LEAVES = ITEMS.register("poplar_leaves",
-            () -> new BlockItem(AflBlocks.POPLAR_LEAVES.get(), new Item.Properties()));
-    public static final RegistryObject<Item> POPLAR_SAPLING = ITEMS.register("poplar_sapling",
-            () -> new BlockItem(AflBlocks.POPLAR_SAPLING.get(), new Item.Properties()));
     public static final RegistryObject<Item> REFRACTORY_CERAMIC = ITEMS.register("refractory_ceramic",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> HIGH_PURITY_QUARTZ_SAND = ITEMS.register("high_purity_quartz_sand",

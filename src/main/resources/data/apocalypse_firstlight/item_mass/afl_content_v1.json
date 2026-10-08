@@ -61,6 +61,10 @@
       "unit_mass_kg": 0.2,
       "estimated": true
     },
+    "apocalypse_firstlight:commercial_wood_door": {
+      "unit_mass_kg": 2.5,
+      "estimated": true
+    },
     "apocalypse_firstlight:steel_door": {
       "unit_mass_kg": 3,
       "estimated": true
@@ -107,50 +111,6 @@
     },
     "apocalypse_firstlight:spodumene_ore": {
       "unit_mass_kg": 1,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_log": {
-      "unit_mass_kg": 0.4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:stripped_poplar_log": {
-      "unit_mass_kg": 0.4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_wood": {
-      "unit_mass_kg": 0.4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:stripped_poplar_wood": {
-      "unit_mass_kg": 0.4,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_planks": {
-      "unit_mass_kg": 0.1,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_stairs": {
-      "unit_mass_kg": 0.075,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_slab": {
-      "unit_mass_kg": 0.05,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_door": {
-      "unit_mass_kg": 1,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_trapdoor": {
-      "unit_mass_kg": 0.5,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_leaves": {
-      "unit_mass_kg": 0.05,
-      "estimated": true
-    },
-    "apocalypse_firstlight:poplar_sapling": {
-      "unit_mass_kg": 0.05,
       "estimated": true
     },
     "apocalypse_firstlight:edge_lane_white": {

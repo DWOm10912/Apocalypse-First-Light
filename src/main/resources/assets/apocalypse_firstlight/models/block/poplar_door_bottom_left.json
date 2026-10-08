@@ -1,4 +1,0 @@
-{
-  "parent": "minecraft:block/door_bottom_left",
-  "textures": {"bottom": "apocalypse_firstlight:block/poplar_door_bottom"}
-}

@@ -1,0 +1,79 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/commercial_wood_door_left.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/commercial_wood_door.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.015625,
+    -0.015625,
+    -0.077544,
+    1.015625,
+    2.015625,
+    1.046875
+  ],
+  "parts": {
+    "frame": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "leaf": {
+      "pivot": [
+        0.4375,
+        0,
+        -0.4375
+      ]
+    },
+    "leaf_plain": {
+      "pivot": [
+        0.4375,
+        0,
+        -0.4375
+      ],
+      "parent": "leaf"
+    },
+    "leaf_lite": {
+      "pivot": [
+        0.4375,
+        0,
+        -0.4375
+      ],
+      "parent": "leaf"
+    },
+    "restroom": {
+      "pivot": [
+        0.4375,
+        0,
+        -0.4375
+      ],
+      "parent": "leaf"
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "leaf": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

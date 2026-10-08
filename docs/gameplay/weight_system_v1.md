@@ -207,10 +207,9 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 大件家具 | underground_fuel_tank_gasoline、underground_fuel_tank_diesel 150；submersible_fuel_pump 35、fuel_dispenser_sump 30（2026-10-05）；pump_manhole_cover 12、fuel_fill_cover_gasoline / fuel_fill_cover_diesel 4（2026-10-05，不算 oversized）；fuel_drum 18、small_fuel_drum 7、hand_fuel_pump 4.5、jerry_can 4.1（2026-10-05，空重，油按密度另算）；fuel_dispenser 60；vending_machine 45；commercial_dumpster（4 色）、commercial_glass_double_door、commercial_glass_double_door_black（2026-10-06）、precision_fabrication_station 40；beverage_cooler、gun_maintenance_bench 35；chest_freezer、lead_chest、office_multifunction_printer 30；industrial_locker、tall_filing_cabinet、modern_office_desk 25 |
 | 中型家具 | back_bar_shelf 28；checkout_counter_display 24；checkout_counter 22；retail_shelf_single、storage_rack 20；commercial_flushometer_toilet 18；water_dispenser 15；industrial_electrical_box、modern_office_chair、low_filing_cabinet、restroom_partition、commercial_wall_mounted_sink、checkout_counter_gate 12；metal_trash_can、office_cubicle_partition、restroom_stall_door 10 |
 | 小件 | fuel_island_bollard 8；cash_register 6；office_computer_station 5；modern_lcd_monitor 4；office_keyboard 0.8；office_mouse 0.1 |
-| 钢结构 | steel_door 3；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
+| 钢结构 | steel_door 3；commercial_wood_door 2.5（2026-10-07，同一种钢门框，木门扇）；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
 | 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；fuel_canopy_column 4；storefront_glazing 2.0（2026-10-06）；face_brick_warm_gray、face_brick_charcoal 0.3（2026-10-06）；ground_face_block 0.35（2026-10-07）；aluminum_cornice 1.2（2026-10-07）；metal_wall_panel 1.2、metal_panel_jamb 0.4（2026-10-07）；metal_eyebrow_canopy 1.0（2026-10-07）；fuel_island_curb、fuel_canopy_light、fuel_canopy_fascia 1.2；fuel_island_end、fuel_canopy_ceiling 1.0；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
 | 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
-| 杨木 | 原木、去皮原木、木头、去皮木头 0.4；木板 0.1；楼梯 0.075；台阶 0.05；门 1；活板门 0.5；树叶、树苗 0.05 |
 | 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
 | 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；fuel_nozzle_gasoline、fuel_nozzle_diesel 1.2（加油机的油枪，只在手上）；dirty_water_bottle、boiled_water_bottle、purified_water_bottle 0.5（玻璃瓶 0.2 + 0.3 升水）；geiger_counter 0.5；concrete_rubble 0.1 |
 
@@ -226,7 +225,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
   - 原版矿石方块 0.6。
   - 工具：剑 1.5，镐 2.5；
   - 盔甲：头 2.5、胸 8、腿 6、脚 2；皮甲单独更轻。
-- 杨木的物品 tag 原来缺失（只加了方块 tag），所以 core_v1 的原木规则对它无效。2026-10-03 在 `data/minecraft/tags/items/` 补了 `logs`、`logs_that_burn`、`leaves`、`saplings`，内容和方块 tag 一样。杨木现在都有显式质量，补 tag 主要让原版配方和其它 tag 规则认得它。
+- 杨木（白杨木整套）2026-10-07 删除：11 条显式质量，以及 2026-10-03 补的物品 tag（`logs`、`logs_that_burn`、`leaves`、`saplings`）都一起删了。见 [白杨木删除记录](../worldgen/poplar_wood_set_removed.md)。
 
 ## 携带容器内容（2026-10-03）
 
@@ -261,7 +260,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 4（本次改） | industrial_electrical_box、cash_register、metal_trash_can、modern_office_chair、office_computer_station、office_cubicle_partition、restroom_partition、restroom_stall_door、commercial_flushometer_toilet、low_filing_cabinet |
 | 16（本次改） | modern_lcd_monitor、office_keyboard、office_mouse |
 | 1（原来就是） | 9 种机器（thermal_generator、energy_cell、charging_station、crusher、industrial_furnace、alloy_furnace、compressor、chemical_reactor、fluid_tank）；energy_battery、geiger_counter、industrial_waste_bucket；枪和配件 |
-| 64（不变） | 建材、矿石、杨木全套、steel_door、industrial_utility_light、power_cable、fluid_pipe、路面标线、材料、弹药 |
+| 64（不变） | 建材、矿石、steel_door、commercial_wood_door（2026-10-07）、industrial_utility_light、power_cable、fluid_pipe、路面标线、材料、弹药 |
 
 改动在 `registry/AflItems.java` 的 `Item.Properties().stacksTo(n)`。旧存档里已经超过新上限的堆叠，按原版逻辑读档时不会被拆开，只是不能再往上叠（没有实测）。
 
@@ -483,7 +482,7 @@ coverage 每页20个AFL物品，报告来源：
 13. 家具和堆叠：
     - `/give @s apocalypse_firstlight:vending_machine 2` 应得到两格各 1 台，每台 45 kg，质量约 90 kg，负担 112.5 kg（×1.25），tier EXTREME；
     - `office_mouse` 一格最多 16 个，`metal_trash_can` 最多 4 个；
-    - 杨木原木应是 0.4 kg，来源 `item:`；6 块泥土 0.9 kg。
+    - 6 块泥土 0.9 kg（原来还查杨木原木，白杨木 2026-10-07 删除后去掉）。
 14. 液体：
     - 放一个 fluid_tank，倒进 3 桶水，拆下拿着；
     - `/aflweight held` 应为 shell 30000 + fluid 30000 = 60 kg；

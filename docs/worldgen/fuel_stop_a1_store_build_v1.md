@@ -38,6 +38,7 @@
 | `furnish` | 其余固定件，按步执行，每次最多 31 步，进度记在 `build/authoring_checks/gas_station_02_store/furnish_progress.json` |
 | `relayout` | 把第一次施工的营业区改成修订后的布局，只动需要换的家具 |
 | `tweak` | 同日调整：12 盏灯、冰柜挪到东墙 |
+| `doors` | 把 5 扇室内门补进白杨木删除后空出的门洞（2026-10-07） |
 | `check` | 离线检查修订后营业区的动线 |
 
 逐格数据来自方案页 `design/buildings/fuel_stop_a1/fuel_stop_a1.html`（坐标 X 0..26、Z 0..15），营业区 2026-10-07 修订过。
@@ -51,7 +52,11 @@
   - `aluminum_cornice` 檐口（店面段灯带打开）；
   - `metal_wall_panel` 门框门头、`metal_panel_jamb` 门框侧板；
   - `metal_eyebrow_canopy` 雨篷：正面 3 m，每 3 m 一根拉杆；两侧转角玻璃上方；后门上方 2 m。
-- **门**：`commercial_glass_double_door_black` 两扇，往外开；后墙 `steel_door` 三扇；室内 `poplar_door` 五扇。
+- **门**：`commercial_glass_double_door_black` 两扇，往外开；后墙 `steel_door` 三扇；室内五扇原来是 `poplar_door`。
+  - 2026-10-07 白杨木整套删除（[删除记录](poplar_wood_set_removed.md)）。开发存档里这五个门洞下次进游戏会变空。
+  - 同日钢门重做、新增商业木门（[Steel-frame Doors V1](../models/steel_frame_doors_v1.md)）。后墙钢门的状态不变，进游戏后直接显示新模型。
+  - 室内门按 `INTERIOR_DOORS` 补：两间卫生间是商业木门的卫生间样式，铰链都在中间隔墙一侧；库房门（从营业区进）是窄视窗样式；办公室门（从库房进）是普通样式；冷库门先用钢门，往外开到库房里。
+  - 还没补进开发存档：要用户开游戏、重新进入会话后运行 `doors` 模式。
 - **人行道**：`road_sidewalk_surface[layers=16]`（Codex 的道路方块，贴图是临时的）。
 - **墙基**：`reinforced_concrete`，埋在地下看不到。
 - **占位（原版方块）**：
@@ -111,4 +116,4 @@
 - 室内装修是原版方块占位：外墙只有 1 格厚，室内看到的是外墙砖。
 - 没有 MARKET 招牌字、屋顶空调机组、壁灯、落水管，也没有店外冰柜和液化气笼。
 - 货架 `retail_shelf_single` 有 2 m 高，比真实的中间货架（1.2–1.4 m）高；咖啡吧、热食柜用柜台占位。
-- **还不能当正式 NBT**（用户 2026-10-07）：店里还有几样旧的纯 cube 或原版模板的资产没重做，包括钢门、白杨木门、马桶、挂墙洗手池、卫生间隔间门和隔断、吸顶灯；室内装修、咖啡吧、热食柜也还是占位。等这些换好，再做：`/afl_author configure`；导出；另写 schema 1、朝北的 StructureDefinition 元数据（接口文档 §5.3）。
+- **还不能当正式 NBT**（用户 2026-10-07）：店里还有几样旧的纯 cube 或原版模板的资产没重做，包括马桶、挂墙洗手池、卫生间隔间门和隔断、吸顶灯；室内装修、咖啡吧、热食柜也还是占位。钢门和室内门已在 2026-10-07 重做（还没实机检查，室内门还没补进存档）。等这些换好，再做：`/afl_author configure`；导出；另写 schema 1、朝北的 StructureDefinition 元数据（接口文档 §5.3）。

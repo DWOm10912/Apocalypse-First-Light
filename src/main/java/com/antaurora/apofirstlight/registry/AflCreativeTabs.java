@@ -37,6 +37,7 @@ public final class AflCreativeTabs {
             AflItems.STEEL_GRATE,
             AflItems.STEEL_RAILING,
             AflItems.STEEL_DOOR,
+            AflItems.COMMERCIAL_WOOD_DOOR,
             AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR,
             AflItems.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK,
             AflItems.STOREFRONT_GLAZING,
@@ -67,18 +68,7 @@ public final class AflCreativeTabs {
             AflItems.SPODUMENE_ORE,
             AflItems.FALLOUT_SOIL,
             AflItems.SCORCHED_SOIL,
-            AflItems.FUSED_GROUND,
-            AflItems.POPLAR_LOG,
-            AflItems.STRIPPED_POPLAR_LOG,
-            AflItems.POPLAR_WOOD,
-            AflItems.STRIPPED_POPLAR_WOOD,
-            AflItems.POPLAR_PLANKS,
-            AflItems.POPLAR_STAIRS,
-            AflItems.POPLAR_SLAB,
-            AflItems.POPLAR_DOOR,
-            AflItems.POPLAR_TRAPDOOR,
-            AflItems.POPLAR_LEAVES,
-            AflItems.POPLAR_SAPLING);
+            AflItems.FUSED_GROUND);
 
     public static final RegistryObject<CreativeModeTab> INDUSTRY = tab("industry", NATURAL_BLOCKS, AflItems.CRUSHER,
             AflItems.THERMAL_GENERATOR,

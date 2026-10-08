@@ -1,6 +1,94 @@
 {
-  "parent": "minecraft:item/generated",
+  "parent": "builtin/entity",
+  "gui_light": "side",
   "textures": {
-    "layer0": "apocalypse_firstlight:item/steel_door"
+    "particle": "apocalypse_firstlight:block/steel_door"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        20,
+        205,
+        0
+      ],
+      "translation": [
+        -0.077,
+        -2.999,
+        -1.253
+      ],
+      "scale": [
+        0.399,
+        0.399,
+        0.399
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0.938,
+        0.106
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        -3.712,
+        -0.191
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        205,
+        0
+      ],
+      "translation": [
+        -0.054,
+        1.92,
+        -2.217
+      ],
+      "scale": [
+        0.28,
+        0.28,
+        0.28
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        205,
+        0
+      ],
+      "translation": [
+        -0.058,
+        -1.475,
+        -0.119
+      ],
+      "scale": [
+        0.3,
+        0.3,
+        0.3
+      ]
+    }
   }
 }
