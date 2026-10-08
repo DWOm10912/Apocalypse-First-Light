@@ -30,6 +30,7 @@ final class FixtureAdapter {
             case "place_fixture" -> place(a,p,s,scope,false,start);
             case "place_multiblock" -> place(a,p,s,scope,true,start);
             case "reconcile_shapes" -> reconcile(a,p,s,scope,start);
+            case "relight_region" -> relight(a,p,scope,start);
             default -> throw new IllegalArgumentException("UNKNOWN_TOOL");
         };
     }
@@ -157,6 +158,14 @@ final class FixtureAdapter {
         return changes;
     }
 
+    /** Rechecks the light of the plot (or a crop) grown by margin (default 8): no blocks change, no history entry. */
+    private JsonObject relight(JsonObject a,ServerPlayer p,BridgeBounds scope,long start){
+        var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level);
+        int margin=integer(a,"margin",8);if(margin<0||margin>BridgeLighting.MAX_MARGIN)throw new IllegalArgumentException("INVALID_MARGIN_0_TO_16");
+        int queued=BridgeLighting.recheck(level,b,margin);
+        var out=BridgeHistory.result(0,start,b,false);out.addProperty("queued",queued);out.addProperty("margin",margin);
+        out.addProperty("note","Light checks run on the light thread; read light slices a moment later.");return out;
+    }
     private JsonObject reconcile(JsonObject a,ServerPlayer p,BuildingAuthoringSession s,BridgeBounds scope,long start){
         var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level);
         var changes=new ArrayList<BridgeHistory.Change>();var skipped=new ArrayList<String>();

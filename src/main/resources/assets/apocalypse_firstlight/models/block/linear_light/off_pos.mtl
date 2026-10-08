@@ -1,0 +1,4 @@
+# AFL Building Lights V1 linear light (off, caps pos)
+newmtl linear
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/linear_light

@@ -90,7 +90,9 @@
   "item.apocalypse_firstlight.fuel_nozzle_gasoline": "汽油枪",
   "item.apocalypse_firstlight.fuel_nozzle_diesel": "柴油枪",
   "block.apocalypse_firstlight.metal_trash_can": "垃圾桶",
-  "block.apocalypse_firstlight.industrial_utility_light": "吸顶灯",
+  "block.apocalypse_firstlight.industrial_utility_light": "方形面板灯",
+  "block.apocalypse_firstlight.linear_light": "线形灯",
+  "block.apocalypse_firstlight.emergency_light": "应急灯",
   "block.apocalypse_firstlight.industrial_locker": "储物柜",
   "block.apocalypse_firstlight.modern_office_desk": "办公桌",
   "block.apocalypse_firstlight.modern_office_chair": "办公椅",
@@ -652,5 +654,7 @@
   "gui.apocalypse_firstlight.key_hint.back": "返回",
   "gui.apocalypse_firstlight.key_hint.install": "安装",
   "gui.apocalypse_firstlight.key_hint.page": "翻页",
-  "gui.apocalypse_firstlight.key_hint.place_gun": "放上 / 取回枪械"
+  "gui.apocalypse_firstlight.key_hint.place_gun": "放上 / 取回枪械",
+  "jade.apocalypse_firstlight.emergency_light.battery": "电池 %s%%",
+  "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL 应急灯"
 }

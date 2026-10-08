@@ -133,6 +133,16 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         if (!simulate) { stored -= given; slotLoadAdd(slotOf(KIND_OUTLETS), given); setChanged(); }
         return given;
     }
+    /** The lighting circuit has power: main on, the lighting branch on, something in the buffer (Building Lights V1). */
+    public boolean lightingLive() { return live() && !branchIsOff(slotOf(KIND_LIGHTING)) && stored > 0; }
+
+    /** What the building's lights and the emergency lights' chargers take, from the buffer, counted as the lighting circuit's load. */
+    public int drawLighting(int fe, boolean simulate) {
+        if (!lightingLive() || fe <= 0) return 0;
+        int given = Math.min(fe, stored);
+        if (!simulate) { stored -= given; slotLoadAdd(slotOf(KIND_LIGHTING), given); setChanged(); }
+        return given;
+    }
     private boolean branchIsOff(int slot) { return slot >= 0 && (branchOff & (1 << slot)) != 0; }
     private int slotOf(int kind) { for (int i = 0; i < SLOTS; i++) if (slotKind[i] == kind) return i; return -1; }
     private void slotLoadAdd(int slot, int fe) { if (slot >= 0) tickLoad[slot] += fe; }
@@ -152,7 +162,8 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         }
         // the top port seeds its cable network; the network pulls from outputStorage this tick (level END)
         if (live()) PowerCableTransfer.transferFrom(server, worldPosition, Direction.UP, outputStorage, MAX_OUT);
-        // hidden-wiring circuits (lights, outlets): Building Power V1 step 2 adds their devices here
+        // hidden-wiring circuits: the lights (energy/BuildingLights) and the outlets' plugs (energy/PowerPlugs) draw from the
+        // buffer themselves, through drawLighting / drawOutlets
         // averages over about 2 s; the cable circuit's load is what the network took last tick (level END)
         float supply = receiveTick == now - 1 || receiveTick == now ? receivedThisTick : 0;
         supplyAvg += (supply - supplyAvg) * 0.05F;

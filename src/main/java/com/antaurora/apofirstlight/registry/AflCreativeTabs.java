@@ -49,6 +49,8 @@ public final class AflCreativeTabs {
             AflItems.METAL_PANEL_JAMB,
             AflItems.METAL_EYEBROW_CANOPY,
             AflItems.INDUSTRIAL_UTILITY_LIGHT,
+            AflItems.LINEAR_LIGHT,
+            AflItems.EMERGENCY_LIGHT,
             AflItems.ASPHALT,
             AflItems.ROAD_ASPHALT_SURFACE,
             AflItems.ROAD_SIDEWALK_SURFACE,

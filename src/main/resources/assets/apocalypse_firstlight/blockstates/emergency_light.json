@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "facing=north,mode=off": {
+      "model": "apocalypse_firstlight:block/emergency_light/off"
+    },
+    "facing=north,mode=charging": {
+      "model": "apocalypse_firstlight:block/emergency_light/charging"
+    },
+    "facing=north,mode=on": {
+      "model": "apocalypse_firstlight:block/emergency_light/on"
+    },
+    "facing=east,mode=off": {
+      "model": "apocalypse_firstlight:block/emergency_light/off",
+      "y": 90
+    },
+    "facing=east,mode=charging": {
+      "model": "apocalypse_firstlight:block/emergency_light/charging",
+      "y": 90
+    },
+    "facing=east,mode=on": {
+      "model": "apocalypse_firstlight:block/emergency_light/on",
+      "y": 90
+    },
+    "facing=south,mode=off": {
+      "model": "apocalypse_firstlight:block/emergency_light/off",
+      "y": 180
+    },
+    "facing=south,mode=charging": {
+      "model": "apocalypse_firstlight:block/emergency_light/charging",
+      "y": 180
+    },
+    "facing=south,mode=on": {
+      "model": "apocalypse_firstlight:block/emergency_light/on",
+      "y": 180
+    },
+    "facing=west,mode=off": {
+      "model": "apocalypse_firstlight:block/emergency_light/off",
+      "y": 270
+    },
+    "facing=west,mode=charging": {
+      "model": "apocalypse_firstlight:block/emergency_light/charging",
+      "y": 270
+    },
+    "facing=west,mode=on": {
+      "model": "apocalypse_firstlight:block/emergency_light/on",
+      "y": 270
+    }
+  }
+}

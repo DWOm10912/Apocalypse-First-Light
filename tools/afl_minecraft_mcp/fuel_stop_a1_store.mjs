@@ -13,6 +13,8 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs tweak   -> the same-day tweak (12 lights, freezer to the east wall)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs doors   -> the five interior doors (Steel-frame doors V1, 2026-10-07) into the empty openings
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs check   -> offline route check of the revised sales floor
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs power   -> the building power test circuit (panel, meter box, lights, outlets; see powerSteps)
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs relight -> rechecks the plot's light (bridge relight_region) and reads back the block light
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -194,10 +196,7 @@ export function steps() {
   P('chest_freezer', 25, 0, 6, 'west', {}, true);                // east wall by the coolers; second part at facing.ccw (south): Z 7
   P('modern_office_desk', 25, 0, 2, 'west', {}, true); P('modern_office_chair', 24, 0, 2, 'east');
   P('office_computer_station', 25, 1, 2, 'west'); P('low_filing_cabinet', 25, 0, 4, 'west');
-  for (const [X, Z] of [[1, 3], [4, 3], [8, 3]]) P('industrial_utility_light', X, 3, Z, 'down');
-  P('industrial_utility_light', 12, 3, 3, 'down'); ST([12, 3, 3], [12, 3, 3], [2, 0, 0], 1);
-  P('industrial_utility_light', 19, 3, 2, 'down'); ST([19, 3, 2], [19, 3, 2], [2, 0, 0], 1);
-  P('industrial_utility_light', 24, 3, 3, 'down');
+  backLights(P);
   P('service_meter_box', 6, 1, -1, 'north');
   for (const X of [0, 26]) P('metal_trash_can', X, 0, 16, 'south');
   P('fuel_island_bollard', 6, 0, 18); P('fuel_island_bollard', 8, 0, 18); ST([6, 0, 18], [8, 0, 18], [5, 0, 0], 2); P('fuel_island_bollard', 21, 0, 18);
@@ -242,11 +241,67 @@ export function tweakSteps() {
 export function doorSteps() {
   return INTERIOR_DOORS.map(([id, X, Z, facing, properties]) => ({kind: 'place_multiblock', id, at: [X, 0, Z], facing, properties}));
 }
-// Building Power V1 (2026-10-07): the Industrial Electrical Box was removed, so its two cells get the Distribution Panel
-// (utility room, back wall inside) and the Service Meter Box (back wall outside)
+// back-of-house ceiling lights (Building Lights V1, 2026-10-08): the square panel light in the restrooms and the office,
+// single 1 m linear lights (running Z) in the utility room, the walk-in cooler and the stock room
+export const BACK_LINEAR = [[8, 3], [12, 3], [14, 3], [19, 2], [21, 2]];
+export function backLights(P) {
+  for (const [X, Z] of [[1, 3], [4, 3], [24, 3]]) P('industrial_utility_light', X, 3, Z, 'down');
+  for (const [X, Z] of BACK_LINEAR) P('linear_light', X, 3, Z, 'down', {axis: 'z'});
+}
+// Building Power V1 test circuit (2026-10-07 / 2026-10-08): everything but the source, so the user only adds an energy cell.
+// - the Distribution Panel (utility room, back wall inside) and the Service Meter Box (back wall outside);
+// - a power cable stub under the panel, linked up into its bottom port: an energy cell next to it, its back port toward
+//   the stub, feeds the building (or a cable into the meter box's bottom port, outside);
+// - all 20 ceiling lights rewritten (Building Lights V1): the square panel light on the sales floor, in the restrooms and
+//   the office, single linear lights in the utility room, the walk-in cooler and the stock room (leftover light: the
+//   relight mode);
+// - wall outlets by the appliances and along the walls: two in the walk-in cooler for the three beverage coolers (their
+//   cords run out of their backs into it), one above the ice cream freezer, two above the coffee bar and one above the hot
+//   food counter (1.35 m; the side walls are corner glass from Z 11, where an outlet has no support), two on the back
+//   partition (0.35 m);
+// - two emergency lights on the sales-floor side of the back partition, by the restroom and the stock room doors.
+// The panel starts with its main breaker off and the appliances' plugs are not in (both live in block entities the
+// bridge does not write).
+export const LIGHT_STATES = {panel: 'industrial_utility_light[facing=down,lit=false]', linear: 'linear_light[axis=z,facing=down,joined_neg=false,joined_pos=false,lit=false]'};
+/** The 20 ceiling light cells (paper frame) with their unlit states. */
+export function lightCells() {
+  const out = [];
+  for (const z of [8, 12]) for (const X of [3, 8, 13, 18, 23]) out.push([X, 3, z, LIGHT_STATES.panel]);
+  for (const X of [11, 15]) out.push([X, 3, 10, LIGHT_STATES.panel]);
+  for (const [X, Z] of [[1, 3], [4, 3], [24, 3]]) out.push([X, 3, Z, LIGHT_STATES.panel]);
+  for (const [X, Z] of BACK_LINEAR) out.push([X, 3, Z, LIGHT_STATES.linear]);
+  return out;
+}
+// Leftover block light (2026-10-08): the store stayed bright with every light dark. The light came from the ceiling lights
+// the 2026-10-07 tweak cleared (the 18-light layout, removed with a WorldEdit clear that left their light behind). The
+// bridge's relight_region rechecks every cell of the plot and 8 cells around it, which takes away light no source backs.
+// (Glowstone in the 20 current light cells, tried first, could not: the leftover light sat at the old cells.)
+async function relight() {
+  const c = new BridgeClient('./run');
+  await c.call('minecraft_status'); const info = await c.call('authoring_info');
+  if (info.id !== ID) throw Error('PLOT_MISMATCH ' + JSON.stringify(info));
+  const r = await c.call('relight_region', {target: 'AUTHORING_SESSION', margin: 8});
+  await new Promise(res => setTimeout(res, 3000));
+  // block light under the ceiling (k 3) and at standing height (k 1): every cell should be 0 while the lights are dark
+  const report = {queued: r.queued};
+  for (const k of [1, 3]) {
+    const sl = await c.call('get_horizontal_slice', {target: 'AUTHORING_SESSION', coordinate: info.min[1] + k + 2, encoding: 'block_light'});
+    report['max_block_light_k' + k] = Math.max(...sl.rows.flatMap(row => [...row].map(ch => parseInt(ch, 16))));
+  }
+  console.log(JSON.stringify(report));
+}
+export const TEST_OUTLETS = [[10, 0, 4, 'east'], [15, 0, 4, 'west'], [25, 1, 6, 'west'], [1, 1, 8, 'east'], [1, 1, 10, 'east'], [25, 1, 9, 'west'],
+  [7, 0, 6, 'south'], [18, 0, 6, 'south']];
 export function powerSteps() {
-  return [{kind: 'place_fixture', id: 'distribution_panel', at: [8, 1, 1], facing: 'south', properties: {}},
-    {kind: 'place_fixture', id: 'service_meter_box', at: [6, 1, -1], facing: 'north', properties: {}}];
+  const S = [], P = (id, X, k, Z, facing, properties = {}) => S.push({kind: 'place_fixture', id, at: [X, k, Z], facing, properties});
+  P('distribution_panel', 8, 1, 1, 'south'); P('service_meter_box', 6, 1, -1, 'north');
+  // exact states (no horizontal facing in them, so the paper-to-template turn leaves them as they are)
+  const set = lightCells();
+  set.push([8, 0, 1, 'power_cable[down=false,east=false,north=false,south=false,up=true,west=false]']);
+  S.push({kind: 'set', blocks: set});
+  for (const [X, k, Z, facing] of TEST_OUTLETS) P('wall_outlet', X, k, Z, facing);
+  P('emergency_light', 3, 2, 6, 'south'); P('emergency_light', 23, 2, 6, 'south');
+  return S;
 }
 export function relayoutSteps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
@@ -299,7 +354,11 @@ async function relayout(list = relayoutSteps(), report = 'relayout_sales_v2.json
   const box = (p, q) => { const a = paper(...p), b = paper(...q); return [[0, 1, 2].map(k => Math.min(a[k], b[k])), [0, 1, 2].map(k => Math.max(a[k], b[k]))]; };
   for (const st of list) {
     try {
-      if (st.kind === 'clear') {
+      if (st.kind === 'wait') { await new Promise(res => setTimeout(res, st.ms)); log.push('ok wait ' + st.ms); continue; }
+      if (st.kind === 'set') {
+        await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: st.blocks.map(([X, k, Z, state]) => { const p = world(paper(X, k, Z)); return {min: p, max: p, block: state.includes(':') ? state : A(state)}; })});
+        log.push('ok set ' + st.blocks.length);
+      } else if (st.kind === 'clear') {
         await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: st.boxes.map(([p, q]) => { const [mn, mx] = box(p, q); return {min: world(mn), max: world(mx), block: 'minecraft:air'}; })});
         log.push('ok clear ' + st.boxes.length);
       } else if (st.kind === 'we_stack') {
@@ -311,7 +370,7 @@ async function relayout(list = relayoutSteps(), report = 'relayout_sales_v2.json
           ...(Object.keys(st.properties).length ? {properties: st.properties} : {})});
         log.push('ok ' + st.id);
       }
-    } catch (e) { log.push('FAIL ' + (st.id || st.kind) + ' ' + String(e.message || e)); if (String(e.message || e).startsWith('HISTORY_LIMIT') || st.kind === 'clear') break; }
+    } catch (e) { log.push('FAIL ' + (st.id || st.kind) + ' ' + String(e.message || e)); if (String(e.message || e).startsWith('HISTORY_LIMIT') || st.kind === 'clear' || st.kind === 'set') break; }
   }
   const r1 = await c.call('reconcile_shapes', {target: 'AUTHORING_SESSION'}), audit = await c.call('audit_support', {target: 'AUTHORING_SESSION'});
   await mkdir(dir, {recursive: true}); await writeFile(path.join(dir, report), JSON.stringify({log, reconciled: r1.reconciled, audit}, null, 1));
@@ -355,4 +414,5 @@ else if (mode === 'relayout') await relayout();
 else if (mode === 'tweak') await relayout(tweakSteps(), 'tweak_sales_v3.json');
 else if (mode === 'doors') await relayout(doorSteps(), 'interior_doors_v1.json');
 else if (mode === 'power') await relayout(powerSteps(), 'building_power_v1.json');
+else if (mode === 'relight') await relight();
 else if (mode === 'check') console.log(JSON.stringify(routeCheck(), null, 1));

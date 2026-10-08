@@ -1,0 +1,8 @@
+# AFL Building Lights V1 linear light (lit, caps both)
+newmtl linear
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/linear_light
+newmtl linear_glow
+Ka 1 1 1
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/linear_light

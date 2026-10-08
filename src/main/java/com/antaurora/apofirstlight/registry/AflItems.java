@@ -203,6 +203,10 @@ public final class AflItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> INDUSTRIAL_UTILITY_LIGHT = ITEMS.register("industrial_utility_light",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> LINEAR_LIGHT = ITEMS.register("linear_light",
+            () -> new BlockItem(AflBlocks.LINEAR_LIGHT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> EMERGENCY_LIGHT = ITEMS.register("emergency_light",
+            () -> new BlockItem(AflBlocks.EMERGENCY_LIGHT.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> INDUSTRIAL_LOCKER = ITEMS.register("industrial_locker",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",

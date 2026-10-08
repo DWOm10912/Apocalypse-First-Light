@@ -4,6 +4,7 @@ import com.google.gson.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
 import java.util.*;
@@ -38,7 +39,7 @@ final class WorldInspector {
         return object("bounds",b.json(),"non_air",nonAir,"air_ratio",1.0-nonAir/(double)b.volume(),"unique_block_count",types.size(),"palette_count",palette.size(),"palette",entries,"palette_truncated",palette.size()>256,"block_entities",be,"entities",level.getEntities(null,b.aabb()).size(),"min_occupied_y",nonAir==0?null:minY,"max_occupied_y",nonAir==0?null:maxY,"occupied_height",nonAir==0?0:maxY-minY+1,"horizontal_density",densities,"likely_floor_bands",floors,"estimated_floor_count",Math.max(0,floors.size()-1),"estimated_floor_height",gaps.isEmpty()?null:gaps.get(gaps.size()/2),"confidence",floors.size()>2?"LOW_HEURISTIC":"INSUFFICIENT","analysis_note","Solid-density >=65% bands; roofs/foundations may be counted. Confirm with slices.");
     }
     static JsonObject slice(ServerLevel level,BridgeBounds b,JsonObject a,boolean horizontal){
-        b.check(level);String mode=string(a,"encoding","category");if(!Set.of("category","palette").contains(mode))throw new IllegalArgumentException("INVALID_ENCODING");
+        b.check(level);String mode=string(a,"encoding","category");if(!Set.of("category","palette","block_light","sky_light").contains(mode))throw new IllegalArgumentException("INVALID_ENCODING");
         int step=integer(a,"downsample",1);if(step<1||step>32)throw new IllegalArgumentException("INVALID_DOWNSAMPLE");
         String axis=horizontal?"Y":string(a,"axis","X");if(!Set.of("X","Y","Z").contains(axis))throw new IllegalArgumentException("INVALID_AXIS");
         int c=integer(a,"coordinate",horizontal?b.min().getY():b.min().getX());
@@ -50,8 +51,9 @@ final class WorldInspector {
         Map<String,Integer> palette=new LinkedHashMap<>();List<Object> rows=new ArrayList<>();
         for(int v=0;v<h;v+=step){var row=new ArrayList<Integer>();StringBuilder cats=new StringBuilder();for(int u=0;u<w;u+=step){
             var p=axis.equals("Y")?new BlockPos(b.min().getX()+u,c,b.min().getZ()+v):axis.equals("X")?new BlockPos(c,b.max().getY()-v,b.min().getZ()+u):new BlockPos(b.min().getX()+u,b.max().getY()-v,c);
+            if(mode.endsWith("_light")){cats.append(Character.forDigit(level.getBrightness(mode.equals("block_light")?LightLayer.BLOCK:LightLayer.SKY,p),16));continue;}
             var state=level.getBlockState(p);String key=state.toString();palette.computeIfAbsent(key,k->palette.size());row.add(palette.get(key));cats.append(category(state));
-        }rows.add(mode.equals("category")?cats.toString():row);}
+        }rows.add(mode.equals("palette")?row:cats.toString());}
         return object("bounds",b.json(),"axis",axis,"coordinate",c,"encoding",mode,"downsample",step,"sampling","nearest grid sample, not majority","row_order",axis.equals("Y")?"Z ascending; columns X ascending":"Y descending; columns remaining horizontal axis ascending","rows",rows,"legend",LEGEND,"palette",mode.equals("palette")?palette:Map.of());
     }
     static JsonObject facade(ServerLevel level,BridgeBounds b,JsonObject a){

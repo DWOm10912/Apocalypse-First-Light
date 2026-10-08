@@ -171,13 +171,23 @@ public final class AflBlocks {
                     .strength(3.0F)
                     .sound(SoundType.WOOD)
                     .noOcclusion(), net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+    /** Building Lights V1 (docs/models/building_lights_v1.md): the square LED panel light under its old ID; lit while the building's lighting circuit has power. */
     public static final RegistryObject<Block> INDUSTRIAL_UTILITY_LIGHT = BLOCKS.register("industrial_utility_light",
             () -> new IndustrialUtilityLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(3.0F, 5.0F)
                     .sound(SoundType.METAL)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
-                    .lightLevel(state -> 14)));
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? 15 : 0)));
+    /** Building Lights V1: an aluminium fixture (pickaxe + diamond), sections join into rows. */
+    public static final RegistryObject<Block> LINEAR_LIGHT = BLOCKS.register("linear_light",
+            () -> new com.antaurora.apofirstlight.block.LinearLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? 15 : 0)));
+    /** Building Lights V1: a small plastic battery unit, hand-breakable like the wall outlet; light 10 on its battery. */
+    public static final RegistryObject<Block> EMERGENCY_LIGHT = BLOCKS.register("emergency_light",
+            () -> new com.antaurora.apofirstlight.block.EmergencyLightBlock(BlockBehaviour.Properties.of().strength(0.5F, 1.0F).sound(SoundType.STONE).noCollission().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.EmergencyLightBlock.MODE) == com.antaurora.apofirstlight.block.EmergencyLightBlock.Mode.ON ? 10 : 0)));
     /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
     public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

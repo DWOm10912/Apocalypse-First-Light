@@ -210,7 +210,7 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 | 钢结构 | steel_door 3；commercial_wood_door 2.5（2026-10-07，同一种钢门框，木门扇）；steel_block 1（台阶 0.5、楼梯 0.75）；steel_beam 0.8；steel_plate 0.6（台阶 0.3、楼梯 0.45）；steel_brace 0.5；steel_grate、steel_railing 0.4；steel_cable 0.2 |
 | 建材与地形 | lead_shielding_bricks 3；reinforced_concrete 1.5（台阶 0.75、楼梯 1.125）；fuel_canopy_column 4；storefront_glazing 2.0（2026-10-06）；face_brick_warm_gray、face_brick_charcoal 0.3（2026-10-06）；ground_face_block 0.35（2026-10-07）；aluminum_cornice 1.2（2026-10-07）；metal_wall_panel 1.2、metal_panel_jamb 0.4（2026-10-07）；metal_eyebrow_canopy 1.0（2026-10-07）；fuel_island_curb、fuel_canopy_light、fuel_canopy_fascia 1.2；fuel_island_end、fuel_canopy_ceiling 1.0；asphalt、fused_ground 0.25；fallout_soil、scorched_soil 0.15 |
 | 矿石方块 | galena_ore、wolframite_ore 1.2；其余 5 种 1.0 |
-| 管线、灯、路面 | industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
+| 管线、灯、路面 | linear_light 2.0、emergency_light 1.5（2026-10-08）；industrial_utility_light 1.5；fluid_pipe 0.5；power_cable 0.2；三种路面标线 0.05 |
 | 其它物品 | industrial_waste_bucket 13（空桶 1 + 废液 12）；fuel_nozzle_gasoline、fuel_nozzle_diesel 1.2（加油机的油枪，只在手上）；dirty_water_bottle、boiled_water_bottle、purified_water_bottle 0.5（玻璃瓶 0.2 + 0.3 升水）；geiger_counter 0.5；concrete_rubble 0.1 |
 
 原版（`vanilla_common_v1.json`）：
@@ -258,9 +258,9 @@ AFL（`afl_content_v1.json`，kg，省略 `apocalypse_firstlight:`）：
 |---|---|
 | 1（本次改） | industrial_locker、retail_shelf_single、water_dispenser、commercial_dumpster ×4、commercial_glass_double_door、beverage_cooler、vending_machine、chest_freezer、modern_office_desk、commercial_wall_mounted_sink、tall_filing_cabinet、office_multifunction_printer、lead_chest、gun_maintenance_bench、precision_fabrication_station |
 | 4（本次改） | cash_register、metal_trash_can、modern_office_chair、office_computer_station、office_cubicle_partition、restroom_partition、restroom_stall_door、commercial_flushometer_toilet、low_filing_cabinet；2026-10-07 加了 distribution_panel、service_meter_box（原来写成 16，按本规则改为 4）；industrial_electrical_box 同日删除 |
-| 16（本次改） | modern_lcd_monitor、office_keyboard、office_mouse；2026-10-08 加了 power_strip_3、power_strip_6 |
+| 16（本次改） | modern_lcd_monitor、office_keyboard、office_mouse；2026-10-08 加了 power_strip_3、power_strip_6、emergency_light |
 | 1（原来就是） | 9 种机器（thermal_generator、energy_cell、charging_station、crusher、industrial_furnace、alloy_furnace、compressor、chemical_reactor、fluid_tank）；energy_battery、geiger_counter、industrial_waste_bucket；枪和配件 |
-| 64（不变） | 建材、矿石、steel_door、commercial_wood_door（2026-10-07）、industrial_utility_light、wall_outlet（2026-10-08）、power_cable、fluid_pipe、路面标线、材料、弹药 |
+| 64（不变） | 建材、矿石、steel_door、commercial_wood_door（2026-10-07）、industrial_utility_light、linear_light、wall_outlet（2026-10-08）、power_cable、fluid_pipe、路面标线、材料、弹药 |
 
 改动在 `registry/AflItems.java` 的 `Item.Properties().stacksTo(n)`。旧存档里已经超过新上限的堆叠，按原版逻辑读档时不会被拆开，只是不能再往上叠（没有实测）。
 

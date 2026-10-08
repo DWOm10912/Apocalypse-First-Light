@@ -3,7 +3,7 @@ const vec={type:'array',items:int,minItems:3,maxItems:3};
 const target={type:'string',enum:['REFERENCE_SELECTION','AUTHORING_SESSION','REFERENCE_AREA'],default:'REFERENCE_SELECTION'};
 const crop={min:vec,max:vec};
 const inspect={target,...crop};
-const slice={...inspect,coordinate:int,relative:bool,encoding:{type:'string',enum:['category','palette']},downsample:{type:'integer',minimum:1,maximum:32}};
+const slice={...inspect,coordinate:int,relative:bool,encoding:{type:'string',enum:['category','palette','block_light','sky_light']},downsample:{type:'integer',minimum:1,maximum:32}};
 const edit={target:{type:'string',enum:['AUTHORING_SESSION']},...crop,dry_run:bool};
 const facing={type:'string',enum:['north','south','east','west','up','down']};
 // Only named variant properties allowed by describe_block (e.g. hinge); values are plain strings, never NBT.
@@ -15,7 +15,7 @@ export const tools=[
   tool('get_player_state','Read position, direction, dimension and camera.'),
   tool('get_worldedit_selection','Read exact current CuboidRegion selection. Reference is read-only.'),
   tool('inspect_selection','Bounded palette/density/floor heuristic. Crop large selections.',inspect),
-  tool('get_horizontal_slice','Y slice. Category or exact blockstate palette; max 4096 samples.',slice,['coordinate']),
+  tool('get_horizontal_slice','Y slice. Category, exact blockstate palette, or block_light / sky_light (one hex digit per cell); max 4096 samples.',slice,['coordinate']),
   tool('get_vertical_slice','X or Z section, rows top to bottom.',{...slice,axis:{type:'string',enum:['X','Z']}},['axis','coordinate']),
   tool('inspect_facade','First occupied depth and facade sample analysis.',{...inspect,side:{type:'string',enum:['NORTH','SOUTH','EAST','WEST']},depth:{type:'integer',minimum:1,maximum:16},downsample:{type:'integer',minimum:1,maximum:32}},['side']),
   tool('capture_current_view','Capture Minecraft framebuffer on render thread. Does not move camera. Returns local PNG.'),
@@ -44,6 +44,7 @@ export const tools=[
   tool('place_fixture','Place one whitelisted single-cell fixture (BlockEntity allowed) inside the authoring plot. Java builds the state and an empty BlockEntity; raw NBT is never accepted. One undo step (we_undo).',{block_id:str,pos:vec,facing:facing,properties:variants,replace_policy:policy,dry_run:bool},['block_id','pos'],true),
   tool('place_multiblock','Place a complete whitelisted multiblock from its anchor (master part, see describe_block). All parts are validated first and placed atomically or not at all; one undo step (we_undo).',{block_id:str,anchor:vec,facing:facing,properties:variants,replace_policy:policy,dry_run:bool},['block_id','anchor','facing'],true),
   tool('reconcile_shapes','Recompute connection states (panes, bars, railings, fences, walls, stairs, AFL partitions/door_support, desktop lowered) in the plot or a crop. Pure updateShape only; one undo step.',{target:{type:'string',enum:['AUTHORING_SESSION']},...crop,dry_run:bool},[],true),
+  tool('relight_region','Recheck the light engine for every cell of the plot (or a crop) grown by margin (default 8, max 16): clears block light no source backs (e.g. left by removed lights). No block changes, no undo step; read light slices a moment later.',{target:{type:'string',enum:['AUTHORING_SESSION']},...crop,margin:{type:'integer',minimum:0,maximum:16}},[],true),
   tool('audit_support','Read-only audit: canSurvive, multiblock orphan/mismatched parts, missing/unsafe BlockEntities, nonempty inventories, stale connections. Defaults to the authoring plot.',{target:{...target,default:'AUTHORING_SESSION'},...crop}),
   tool('reference_import_status','List only explicitly allowlisted reference archives.'),
   tool('reference_map_scan','Offline scan of a launch-allowlisted source. No paste.',{source_id:int,radius:int,y_min:int,y_max:int},['source_id']),

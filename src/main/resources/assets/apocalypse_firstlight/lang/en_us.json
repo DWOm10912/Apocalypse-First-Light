@@ -90,7 +90,9 @@
   "item.apocalypse_firstlight.fuel_nozzle_gasoline": "Gasoline Nozzle",
   "item.apocalypse_firstlight.fuel_nozzle_diesel": "Diesel Nozzle",
   "block.apocalypse_firstlight.metal_trash_can": "Metal Trash Can",
-  "block.apocalypse_firstlight.industrial_utility_light": "square LED panel light",
+  "block.apocalypse_firstlight.industrial_utility_light": "Square LED Panel Light",
+  "block.apocalypse_firstlight.linear_light": "Linear LED Light",
+  "block.apocalypse_firstlight.emergency_light": "Emergency Light",
   "block.apocalypse_firstlight.industrial_locker": "Locker",
   "block.apocalypse_firstlight.modern_office_desk": "Office Desk",
   "block.apocalypse_firstlight.modern_office_chair": "Office Chair",
@@ -652,5 +654,7 @@
   "gui.apocalypse_firstlight.key_hint.back": "Back",
   "gui.apocalypse_firstlight.key_hint.install": "Install",
   "gui.apocalypse_firstlight.key_hint.page": "Next page",
-  "gui.apocalypse_firstlight.key_hint.place_gun": "Place / take back gun"
+  "gui.apocalypse_firstlight.key_hint.place_gun": "Place / take back gun",
+  "jade.apocalypse_firstlight.emergency_light.battery": "Battery %s%%",
+  "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL Emergency Light"
 }

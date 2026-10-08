@@ -58,6 +58,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(FuelCanJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity.class);
         registration.registerBlockDataProvider(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity.class);
         registration.registerBlockDataProvider(FuelCanJadeProvider.Pump.INSTANCE, com.antaurora.apofirstlight.blockentity.HandFuelPumpBlockEntity.class);
+        registration.registerBlockDataProvider(EmergencyLightJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.EmergencyLightBlockEntity.class);
     }
 
     @Override
@@ -97,5 +98,6 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(FuelCanJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelCanBlock.class);
         registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelCanBlock.class);
         registration.registerBlockComponent(FuelCanJadeProvider.Pump.INSTANCE, com.antaurora.apofirstlight.block.HandFuelPumpBlock.class);
+        registration.registerBlockComponent(EmergencyLightJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.EmergencyLightBlock.class);
     }
 }

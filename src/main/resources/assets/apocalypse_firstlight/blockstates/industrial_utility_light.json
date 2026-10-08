@@ -1,9 +1,48 @@
 {
   "variants": {
-    "facing=down": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 180},
-    "facing=north": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90},
-    "facing=south": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 270},
-    "facing=east": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90, "y": 90},
-    "facing=west": {"model": "apocalypse_firstlight:block/industrial_utility_light", "x": 90, "y": 270}
+    "facing=down,lit=false": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 180
+    },
+    "facing=down,lit=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 180
+    },
+    "facing=north,lit=false": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 90
+    },
+    "facing=north,lit=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 90
+    },
+    "facing=south,lit=false": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 270
+    },
+    "facing=south,lit=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 270
+    },
+    "facing=east,lit=false": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,lit=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west,lit=false": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,lit=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 90,
+      "y": 270
+    }
   }
 }

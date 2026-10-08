@@ -94,7 +94,7 @@ final class WorldEditAdapter {
                 case "we_move" -> edit.moveRegion(region(p,b),direction,1,false,false,null,block(p,"minecraft:air"));
                 default -> throw new IllegalArgumentException("UNKNOWN_TOOL");
             }
-            edit.close();history.push(new Recorded(edit));s.changed();return result(changed(edit),start,affected,false);
+            edit.close();BridgeLighting.recheck(p.serverLevel(),affected,0);history.push(new Recorded(edit));s.changed();return result(changed(edit),start,affected,false);
         }catch(Exception failure){
             edit.close();try(var rollback=edit(p,scope)){edit.undo(rollback);}s.changed();throw new IllegalArgumentException("EDIT_FAILED_ROLLED_BACK: "+failure.getMessage(),failure);
         }
@@ -116,7 +116,7 @@ final class WorldEditAdapter {
         var edit=edit(p,scope);
         try{
             for(int i=0;i<bounds.size();i++)edit.setBlocks(region(p,bounds.get(i)),materials.get(i));
-            edit.close();history.push(new Recorded(edit));s.changed();return result(changed(edit),start,scope,false);
+            edit.close();for(var b:bounds)BridgeLighting.recheck(p.serverLevel(),b,0);history.push(new Recorded(edit));s.changed();return result(changed(edit),start,scope,false);
         }catch(Exception failure){edit.close();try(var rollback=edit(p,scope)){edit.undo(rollback);}s.changed();throw new IllegalArgumentException("EDIT_FAILED_ROLLED_BACK: "+failure.getMessage(),failure);}
     }
     /** A WorldEdit edit inside the shared bridge history. States are compared; fixture inventories are guarded separately. */
@@ -140,6 +140,7 @@ final class WorldEditAdapter {
         }
         @Override public void apply(ServerPlayer p,BridgeBounds scope,boolean forward){
             try(var session=WorldEditAdapter.edit(p,scope)){if(forward)edit.redo(session);else edit.undo(session);}
+            BridgeLighting.recheck(p.serverLevel(),scope,0);
         }
     }
     private static JsonObject result(int count,long start,BridgeBounds b,boolean dry){return BridgeHistory.result(count,start,b,dry);}

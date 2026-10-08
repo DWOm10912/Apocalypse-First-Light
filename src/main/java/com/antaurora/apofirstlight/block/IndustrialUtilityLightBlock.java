@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
@@ -23,19 +24,28 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-public class IndustrialUtilityLightBlock extends Block {
+/**
+ * Square LED Panel Light (方形面板灯, registry ID industrial_utility_light, Building Lights V1, docs/models/building_lights_v1.md):
+ * a 600 x 600 mm flat panel in a 64 mm white surface kit, a Pure Mesh OBJ (tools/build-building-lights-v1.mjs). On the
+ * ceiling (FACING down); walls stay allowed for the buildings that already hang the old light there (the linear light is
+ * the wall light). LIT while the building's lighting circuit has power ({@link BuildingLightBlock}). Industrial salvage:
+ * pickaxe + diamond tier; it drops itself when its support goes (and in explosions, IndustrialMaterialExplosionDrops).
+ * No collision.
+ */
+public class IndustrialUtilityLightBlock extends BuildingLightBlock {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", direction -> direction != Direction.UP);
-    private static final VoxelShape CEILING_SHAPE = Shapes.box(3 / 16.0, 13 / 16.0, 3 / 16.0, 13 / 16.0, 1.0, 13 / 16.0);
-    private static final VoxelShape NORTH_SHAPE = Shapes.box(3 / 16.0, 3 / 16.0, 13 / 16.0, 13 / 16.0, 13 / 16.0, 1.0);
-    private static final VoxelShape SOUTH_SHAPE = Shapes.box(3 / 16.0, 3 / 16.0, 0.0, 13 / 16.0, 13 / 16.0, 3 / 16.0);
-    private static final VoxelShape EAST_SHAPE = Shapes.box(0.0, 3 / 16.0, 3 / 16.0, 3 / 16.0, 13 / 16.0, 13 / 16.0);
-    private static final VoxelShape WEST_SHAPE = Shapes.box(13 / 16.0, 3 / 16.0, 3 / 16.0, 1.0, 13 / 16.0, 13 / 16.0);
+    // the outline (tools/build-building-lights-v1.mjs SELECTION.panel), thickened to 1.6 px so the thin panel is easy to aim at
+    private static final VoxelShape CEILING_SHAPE = Block.box(3.2, 14.4, 3.2, 12.8, 16, 12.8);
+    private static final VoxelShape NORTH_SHAPE = Block.box(3.2, 3.2, 14.4, 12.8, 12.8, 16);
+    private static final VoxelShape SOUTH_SHAPE = Block.box(3.2, 3.2, 0, 12.8, 12.8, 1.6);
+    private static final VoxelShape EAST_SHAPE = Block.box(0, 3.2, 3.2, 1.6, 12.8, 12.8);
+    private static final VoxelShape WEST_SHAPE = Block.box(14.4, 3.2, 3.2, 16, 12.8, 12.8);
     private static final Set<BlockPos> PLAYER_DESTROYING = new HashSet<>();
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
 
     public IndustrialUtilityLightBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(LIT, false));
     }
 
     @Override
@@ -82,8 +92,7 @@ public class IndustrialUtilityLightBlock extends Block {
     }
 
     @Override
-    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position,
-                               net.minecraft.world.phys.shapes.CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
         return switch (state.getValue(FACING)) {
             case DOWN -> CEILING_SHAPE;
             case NORTH -> NORTH_SHAPE;
@@ -92,6 +101,11 @@ public class IndustrialUtilityLightBlock extends Block {
             case WEST -> WEST_SHAPE;
             default -> Shapes.empty();
         };
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
+        return Shapes.empty();
     }
 
     @Override
@@ -122,6 +136,6 @@ public class IndustrialUtilityLightBlock extends Block {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, LIT);
     }
 }

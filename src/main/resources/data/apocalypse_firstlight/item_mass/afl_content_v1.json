@@ -137,6 +137,14 @@
       "unit_mass_kg": 1.5,
       "estimated": true
     },
+    "apocalypse_firstlight:linear_light": {
+      "unit_mass_kg": 2.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:emergency_light": {
+      "unit_mass_kg": 1.5,
+      "estimated": true
+    },
     "apocalypse_firstlight:concrete_rubble": {
       "unit_mass_kg": 0.1,
       "estimated": true

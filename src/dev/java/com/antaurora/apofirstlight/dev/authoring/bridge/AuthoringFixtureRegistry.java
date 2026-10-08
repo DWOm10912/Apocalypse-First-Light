@@ -172,7 +172,12 @@ final class AuthoringFixtureRegistry {
                     .fixed("front_gasoline","true","front_diesel","true","back_gasoline","true","back_diesel","true","island","false","lit","false").support(Support.FLOOR)
                     .notes("2 wide x 3 tall, with its own island curb segment. Anchor = a0 (master, bottom); b column at facing.getClockWise(). Facing = the front customer face; both long faces have two nozzles."),
             new Def(A+"water_dispenser",safe,"utility").facing(H4).multi(TWO_TALL).support(Support.FLOOR),
-            new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).support(Support.ATTACHED_OPPOSITE_FACING),
+            new Def(A+"industrial_utility_light",safe,"utility").facing(ATTACH5).fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Lights V1 (2026-10-08): the square LED panel light; ceiling (down), walls only for old buildings. lit is runtime (the building's lighting circuit)."),
+            new Def(A+"linear_light",safe,"utility").facing(ATTACH5).variant("axis","x","z").connect("joined_neg","joined_pos").fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Lights V1 (2026-10-08): 1 m linear light; ceiling (down, the row along axis) or wall (along the wall). Neighbours of the same mounting join into a row; lit is runtime."),
+            new Def(A+"emergency_light",safe,"utility").facing(H4).fixed("mode","off").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Lights V1 (2026-10-08): two-head battery unit, wall only (facing = away from the wall), 2.45 m up in its cell; a BlockEntity keeps the battery (starts flat)."),
             new Def(A+"distribution_panel",safe,"utility").facing(H4).fixed("open","false").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Building Power V1 (2026-10-07): hangs on the wall behind it; a BlockEntity keeps the main / branch breakers (a new panel starts with the main off). Ports: bottom face in, top face out."),
             new Def(A+"service_meter_box",safe,"utility").facing(H4).variant("on","true","false").support(Support.ATTACHED_OPPOSITE_FACING)
