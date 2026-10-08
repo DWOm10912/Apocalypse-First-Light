@@ -1,5 +1,7 @@
 # Lead Chest V3（铅箱 V3，不锈钢包覆铅屏蔽箱）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-09-30）：**已实现，未实机验证**。`compileJava --offline` 一次 PASS。外观只看过离线预览（生成器的 `--preview` 输出），游戏里的效果、光影下的 PBR、四个朝向和开合动画都还没看过。
 
 V3 只换外观：模型、贴图和 PBR，以及跟着外形调整的 Mesh Shape 数值。方块、方块实体、交互、搜索和辐射规则都与 V2 相同。V2 是紫灰色铅体加深色钢框，V3 改为参考市售铅屏蔽箱的不锈钢包覆样式。

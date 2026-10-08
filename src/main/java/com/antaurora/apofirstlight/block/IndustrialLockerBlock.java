@@ -216,10 +216,10 @@ public class IndustrialLockerBlock extends Block implements EntityBlock, AflMesh
         return state.getValue(HALF) == DoubleBlockHalf.UPPER ? 1 : 0;
     }
 
-    /** Lower half: the AFL Animated Block Mesh Runtime draws the whole locker; the baked model is particle only. */
+    /** Lower half: the AFL Animated Block Mesh Runtime draws the locker's moving parts; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). The upper half's model is empty. */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return state.getValue(HALF) == DoubleBlockHalf.LOWER ? RenderShape.ENTITYBLOCK_ANIMATED : super.getRenderShape(state);
+        return RenderShape.MODEL;
     }
 
     @Override

@@ -1,5 +1,7 @@
 # Commercial Glass Double Door V2（玻璃双开门 V2：Mesh + PBR）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-07）：**已实现，未实机验证**。
 - `compileJava --offline` 通过；生成器 `--check` 通过；网格没有共面重叠（`zFightLevels` 为 0）。
 - 导出的网格和贴图在离线 three.js 预览里看过：A1 门框里的正面、拉手特写、室内一侧，以及开门状态，银框、黑框两种都看了。

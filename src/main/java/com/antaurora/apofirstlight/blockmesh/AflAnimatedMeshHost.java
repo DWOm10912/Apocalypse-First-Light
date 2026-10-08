@@ -5,6 +5,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.common.extensions.IForgeBlockEntity;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Predicate;
 
@@ -13,8 +16,11 @@ import java.util.function.Predicate;
  * for plain block entities; a block entity that must keep another superclass (containers extending
  * RandomizableContainerBlockEntity) implements it directly and forwards to the static helpers below from its own
  * {@code onLoad}, {@code setBlockState} and {@code getRenderBoundingBox}. Same behavior either way.
+ * <p>
+ * It extends Forge's block entity extension only to supply {@link #getModelData}: the parts that rest are drawn by the
+ * chunk (docs/dev/render_performance_v1.md), and the model data tells the chunk model which ones and in what pose.
  */
-public interface AflAnimatedMeshHost {
+public interface AflAnimatedMeshHost extends IForgeBlockEntity {
     ResourceLocation meshProfile();
 
     AflBlockMeshAnimationState meshAnimation();
@@ -42,6 +48,16 @@ public interface AflAnimatedMeshHost {
     /** Parts drawn at full brightness instead of the block light (lit lamps, screens), read every frame. */
     default boolean meshPartEmissive(String part) {
         return false;
+    }
+
+    /**
+     * The chunk mesh variant (which resting parts the chunk draws, and their poses), prepared on the client thread by
+     * client/blockmesh/AflMeshChunking; empty on a server. May be called on a chunk builder thread: it only returns the
+     * prepared value.
+     */
+    @Override
+    default @NotNull ModelData getModelData() {
+        return AflMeshChunkData.of(this);
     }
 
     /** Shared body of {@link #refreshMeshAnimationTargets()}: channel targets from the concrete block's authority. */

@@ -1,5 +1,7 @@
 # Steel-frame Doors V1（钢门重做 + 商业木门，Mesh + PBR）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：钢门和商用木门改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-07）：**已实现，部分实机检查**（下面"实机检查"一节），还没有用户验收。
 - `compileJava --offline` 通过。
 - 生成器 `--check` 通过；没有共面重叠：钢门一种外观，木门普通和窄视窗两种外观分别检查，`zFightLevels` 都是 0。

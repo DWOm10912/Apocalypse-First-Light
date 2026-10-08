@@ -414,7 +414,7 @@ public final class ChestFreezerBlock extends Block implements EntityBlock, MeshH
         return entity != null && entity.triggerEvent(id, param);
     }
 
-    @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.INVISIBLE; }
+    @Override public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }   // resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md)
     @Override public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return shape(state); }
     @Override public VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) { return shape(state); }
     @Override public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return shape(state); }

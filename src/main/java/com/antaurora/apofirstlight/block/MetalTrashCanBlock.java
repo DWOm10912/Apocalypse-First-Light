@@ -137,10 +137,10 @@ public final class MetalTrashCanBlock extends Block implements EntityBlock, AflM
         return state.getValue(OPEN) ? "open" : "closed";
     }
 
-    /** The AFL Animated Block Mesh Runtime draws the can; the baked model is particle only. */
+    /** The AFL Animated Block Mesh Runtime draws the can's moving parts; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.MODEL;
     }
 
     @Override

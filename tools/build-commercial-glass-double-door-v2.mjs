@@ -195,7 +195,7 @@ for (const finish of ['silver', 'black']) {
   const id = finish === 'black' ? ID + '_black' : ID;
   outputs.push([path.join(assets, `block_mesh_profiles/${id}.json`), JSON.stringify(profile(finish), null, 2) + '\n'],
     [path.join(assets, `models/item/${id}.json`), JSON.stringify({parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${id}`}, display: itemDisplay}, null, 2) + '\n'],
-    [path.join(assets, `models/block/${id}.json`), JSON.stringify({textures: {particle: `apocalypse_firstlight:block/${id}`}}, null, 2) + '\n'],
+    [path.join(assets, `models/block/${id}.json`), JSON.stringify({loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${id}`}}, null, 2) + '\n'],
     ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${id}${k}.png`), PNGS[finish][i]], [path.join(assets, `textures/block/${id}${k}.png`), PNGS[finish][i]]]));
 }
 

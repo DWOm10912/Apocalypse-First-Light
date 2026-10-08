@@ -111,7 +111,7 @@ public final class VendingMachineBlock extends HorizontalDirectionalBlock implem
         return (net.minecraft.world.level.block.entity.BlockEntityTicker<T>) (net.minecraft.world.level.block.entity.BlockEntityTicker<VendingMachineBlockEntity>)
                 (tickerLevel, tickerPos, tickerState, be) -> be.serverTick();
     }
-    @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.ENTITYBLOCK_ANIMATED; }
+    @Override public RenderShape getRenderShape(BlockState s) { return RenderShape.MODEL; }   // resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md)
     @Override public VoxelShape getShape(BlockState s, BlockGetter l, BlockPos p, CollisionContext c) {
         // Tiny symmetric inset matches the saved source. Never remove cabinet collision when glass breaks.
         return box(.18,0,.18,15.82,16,15.82);

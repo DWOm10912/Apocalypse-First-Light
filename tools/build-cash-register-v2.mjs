@@ -236,7 +236,7 @@ const itemDisplay = (() => {
     firstperson_righthand: {rotation: [0, 315, 0], translation: [0, 0, 0], scale: S3(0.45)}};
 })();
 const itemModel = {parent: 'builtin/entity', textures: {particle: `apocalypse_firstlight:block/${ID}`}, display: itemDisplay};
-const blockModel = {textures: {particle: `apocalypse_firstlight:block/${ID}`}};
+const blockModel = {loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${ID}`}};
 const blockstate = {variants: {'': {model: `apocalypse_firstlight:block/${ID}`}}};
 
 const bb = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');

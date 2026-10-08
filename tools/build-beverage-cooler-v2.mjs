@@ -263,7 +263,8 @@ const itemDisplay = (() => {
     thirdperson_righthand: view([75, 225], 0.25, [0, 2.5, 0]), firstperson_righthand: view([0, 225], 0.28, [0, 1, 0])};
 })();
 const itemModel = {parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${ID}`}, display: itemDisplay};
-const blockModel = {textures: {particle: `apocalypse_firstlight:block/${ID}`}};
+// chunk model of the resting parts (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md)
+const blockModel = {loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${ID}`}};
 
 const bb = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 const outputs = [[path.join(bb, ID + '.bbmodel'), JSON.stringify(source)], [path.join(assets, `geo/${ID}.geo.json`), JSON.stringify(geo, null, 2) + '\n'],

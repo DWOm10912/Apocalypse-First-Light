@@ -209,10 +209,10 @@ public final class CashRegisterBlock extends HorizontalDirectionalBlock implemen
         return Shapes.empty();
     }
 
-    /** The AFL Animated Block Mesh Runtime draws the register; the baked model is particle only. */
+    /** The AFL Animated Block Mesh Runtime draws the register's moving parts; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.MODEL;
     }
 
     @Override

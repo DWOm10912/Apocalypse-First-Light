@@ -1,5 +1,7 @@
 # Commercial Dumpster V2（商业垃圾箱 V2：Mesh + PBR + 可搜索 + 四种颜色）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：主格改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-02）：
 - **模型、两块盖子的开关动画、18 格可搜索容器、垃圾袋和纸箱、开关盖声音、四种颜色已实现，用户 2026-10-03 实机 PASS**（中间改过两次：打开那一半的形状、盖子悬空和点盖子关闭，见"交互"和"模型"）。
 - `compileJava --offline` PASS（包括 `src/dev`）。GameTest 按规则没有运行。

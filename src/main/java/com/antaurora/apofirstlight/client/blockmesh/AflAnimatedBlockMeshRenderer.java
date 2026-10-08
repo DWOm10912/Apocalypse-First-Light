@@ -26,7 +26,12 @@ import net.minecraft.world.phys.Vec3;
  * {@link AflAnimatedMeshHost#meshPartEmissive}).
  */
 public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnimatedMeshHost> implements BlockEntityRenderer<T> {
+    /** Blocks: past the default 64 the chunk still draws the resting parts, so glass and lit parts stay with them longer. */
+    public static final int VIEW_DISTANCE = 128;
+
     public AflAnimatedBlockMeshRenderer(BlockEntityRendererProvider.Context context) {}
+
+    @Override public int getViewDistance() { return VIEW_DISTANCE; }
 
     @Override public void render(T entity, float partialTick, PoseStack pose, MultiBufferSource buffers,
                                   int packedLight, int packedOverlay) {
@@ -37,6 +42,9 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
         if (mesh == null) return;
         entity.refreshMeshAnimationTargets(); // Handles resource-generation changes, not a gameplay update.
         double time = entity.getLevel().getGameTime() + partialTick;
+        // resting parts the chunk already draws (AflMeshChunking): their geometry is skipped here, their poses still walked
+        long[] skip = AflMeshChunking.skip(entity, entity, profile, mesh, time, AflShaderCompat.activeShadowPass());
+        var layout = AflMeshChunking.layout(profile, mesh);
         pose.pushPose();
         try {
             pose.translate(0.5, 0, 0.5);
@@ -46,14 +54,14 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             var cutout = RenderType.entityCutoutNoCull(profile.texture());
             long timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
             draw(entity, profile, mesh, time, pose, buffers.getBuffer(cutout),
-                    packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT);
+                    packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT, layout, skip);
             com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.cutout", timing);
             if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
                 timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(cutout);
                 var translucent = RenderType.entityNoOutline(profile.texture());
                 draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
-                        packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT);
+                        packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT, layout, NO_SKIP);
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(translucent);
                 // Emissive parts once more, after the glass. Packs without gbuffers_block_translucent (Sundial) draw the
                 // glass with gbuffers_block, which overwrites the material buffers behind it; the redraw writes the
@@ -64,7 +72,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                     if (!hasVisibleEmissive(entity, part)) continue;
                     if (relitVertices == null) relitVertices = buffers.getBuffer(relit);
                     drawPart(entity, part, Vec3.ZERO, mesh, time, pose, relitVertices, packedLight, packedOverlay,
-                            AflMeshPart.Layer.CUTOUT, true);
+                            AflMeshPart.Layer.CUTOUT, true, layout, NO_SKIP);
                 }
                 if (relitVertices != null && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(relit);
                 com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.glass_and_relit", timing);
@@ -79,15 +87,22 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
         return false;
     }
 
+    private static final long[] NO_SKIP = new long[2];
+
     private static void draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
-                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer) {
-        for (var part : profile.roots()) drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer, false);
+                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
+                             AflMeshChunking.Layout layout, long[] skip) {
+        for (var part : profile.roots())
+            drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer, false, layout, skip);
     }
 
-    /** emissiveOnly: only the geometry of emissive parts (the after-glass redraw); the pose still walks every part. */
+    /**
+     * emissiveOnly: only the geometry of emissive parts (the after-glass redraw); the pose still walks every part. skip:
+     * pre-order part bits whose geometry the chunk draws (their children are still walked).
+     */
     private static void drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
                                  PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
-                                 boolean emissiveOnly) {
+                                 boolean emissiveOnly, AflMeshChunking.Layout layout, long[] skip) {
         if (!host.meshPartVisible(part.bone())) return;
         AflBlockMeshAnimationState animation = host.meshAnimation();
         pose.pushPose();
@@ -104,11 +119,13 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                     (float)(rest.scale().y * (1 + (target.scale().y - 1) * t)),
                     (float)(rest.scale().z * (1 + (target.scale().z - 1) * t)));
             boolean emissive = host.meshPartEmissive(part.bone());
-            if (emissive || !emissiveOnly)
+            int index = layout.indexOf(part);
+            boolean chunk = index >= 0 && (index < 64 ? (skip[0] >>> index & 1L) != 0 : (skip[1] >>> (index - 64) & 1L) != 0);
+            if ((emissive || !emissiveOnly) && !chunk)
                 AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(part.bone(), layer), pose, vertices,
                         emissive ? LightTexture.FULL_BRIGHT : light, overlay, 1, 1, 1, 1, null);
             for (var child : part.children())
-                drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer, emissiveOnly);
+                drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer, emissiveOnly, layout, skip);
         } finally { pose.popPose(); }
     }
 

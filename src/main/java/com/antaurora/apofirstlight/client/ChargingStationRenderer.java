@@ -53,6 +53,12 @@ public final class ChargingStationRenderer implements BlockEntityRenderer<Chargi
         this.font = context.getFont();
     }
 
+    /** The chunk draws the resting parts at any distance: the glass, lit parts and goods stay with them longer. */
+    @Override
+    public int getViewDistance() {
+        return com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer.VIEW_DISTANCE;
+    }
+
     @Override
     public void render(ChargingStationBlockEntity station, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {

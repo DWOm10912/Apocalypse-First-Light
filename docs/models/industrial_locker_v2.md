@@ -1,5 +1,7 @@
 # Industrial Locker V2（工业储物柜 V2）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-09-30）：**已实现，Mesh Shape 坐标错位已修复，待用户重新实机验证**。材质观感用户已实机确认。
 - 首轮 `compileJava --offline` 跑了两次，都是 PASS：第一次之后改了 1 行（`markPlacedByPlayer` 在写入状态后复位临时标记），所以重新编译了一次。
 - Mesh Shape 接入之后又跑了一次 `compileJava --offline`，PASS。

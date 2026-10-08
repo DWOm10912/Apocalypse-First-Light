@@ -36,6 +36,12 @@ public final class VendingMachineRenderer implements BlockEntityRenderer<Vending
         return true;
     }
 
+    /** The chunk draws the resting parts at any distance: the glass, lit parts and goods stay with them longer. */
+    @Override
+    public int getViewDistance() {
+        return com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer.VIEW_DISTANCE;
+    }
+
     @Override
     public void render(VendingMachineBlockEntity machine, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {

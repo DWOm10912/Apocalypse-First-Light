@@ -44,7 +44,7 @@
 event.registerBlockEntityRenderer(MY_BLOCK_ENTITY.get(), AflAnimatedBlockMeshRenderer::new);
 ```
 
-方块返回 `RenderShape.ENTITYBLOCK_ANIMATED`，baked block model 只保留 particle texture，避免双重绘制。Block/BE 的注册、碰撞、交互、容器和挖掘规则仍由具体资产负责，不在通用 renderer 中硬编码。
+方块原来返回 `RenderShape.ENTITYBLOCK_ANIMATED`，baked block model 只保留 particle texture，避免双重绘制。2026-10-08 起改成 `RenderShape.MODEL`，方块模型用 `apocalypse_firstlight:static_mesh` 加载器，静止的零件由区块画（见下面"静止部件由区块画"）。Block/BE 的注册、碰撞、交互、容器和挖掘规则仍由具体资产负责，不在通用 renderer 中硬编码。
 
 最小 profile 格式示例（`example:hinged_panel` 是文档占位，不是已注册方块或现存资源；接入时换成实际资产）：
 
@@ -124,6 +124,49 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 
 没有半透明部件或没有可见发光部件的资产不补画，行为不变。第二版用户 2026-10-01 在 Sundial Lite 下实机 PASS（见冷柜文档）。
 
+## 静止部件由区块画（2026-10-08，用户实机 PASS）
+
+渲染性能 V1 第二步（[render_performance_v1.md](../dev/render_performance_v1.md)）。方块实体渲染器每帧都把全部顶点重新提交一遍，开光影时阴影还要再提交一遍。但一个网格方块的大部分零件大部分时间都不动：柜体、关着的门、盖、货物。
+
+- **规则**：一个零件的不透明（cutout）几何由区块画，条件是：
+  - 动画通道停稳（关或开都行）；
+  - 可见（`meshPartVisible`）；
+  - 不是全亮（`meshPartEmissive`）；
+  - 父零件也满足这几条。
+
+  玻璃（半透明层）、发光件、正在动的零件始终由渲染器画，所以"半透明层之后补画发光部件"不受影响。
+- **数据流**（`client/blockmesh/AflMeshChunking`）：
+  - 方块实体在客户端主线程算出区块该画的版本（`Variant`）：零件按先序编号的位、停稳通道的值、朝向、着色方式。
+  - 这个版本通过方块实体的模型数据交给区块模型。`AflAnimatedMeshHost` 现在继承 Forge 的 `IForgeBlockEntity`，默认的 `getModelData()` 只返回事先算好的值，因为 Forge 可能在区块构建线程上调用它。
+  - 版本变化时调 `requestModelDataUpdate()`，并把所在区块段标记为重建：
+    - 零件开始动或被隐藏，立刻请求；
+    - 零件停稳并加入区块，最快每 0.2 秒一次；
+    - 4 秒内请求 8 次以上，就 10 秒内不再往区块里加零件。
+- **确认**：区块模型每网格化一个版本就登记一次，并带上它实际画了哪些零件。渲染器只在下面两条都满足时才不画某个零件，所以零件不会缺：
+  - 登记之后已经过了 2 帧；
+  - 登记的姿势和现在一致。
+
+  零件开始动的那一刻，区块里可能还有 1–3 帧静止的那一份。
+- **看不见的方块**（0.25 秒内没在正常画面里画过）：正在动的零件按目标姿势交给区块，远处的门直接跳到开着，不会在动画期间消失。
+- **检查频率**：每个客户端 tick 检查正在动或动画目标变了的方块（`AflBlockMeshAnimationState.version()`），其他方块大约每秒检查一次。
+- **区块模型**（`client/blockmesh/AflStaticMeshModel`）：
+  - 方块模型 JSON 是 `{"loader": "apocalypse_firstlight:static_mesh", "textures": {"particle": ...}}`，方块返回 `RenderShape.MODEL`。
+  - profile、朝向和零件都来自模型数据。只有放方块实体的那一格有模型数据，所以一个加载器能服务所有资产、所有格子。
+  - 生成的面和渲染器画的一样：
+    - 变换相同：方块中心 → 朝向 → origin → scale → 零件 pivot、rest 姿势和停稳的动画姿势；
+    - UV 映射进 profile 贴图在方块图集里的 sprite，`ns:textures/block/x.png` 对应 `ns:block/x`；
+    - 不封闭的零件补一份背面，因为渲染器不剔除背面；
+    - 平面光照（不开 AO）；
+    - cutout 层。
+  - 着色：开光影时顶点色是白色，用区块自己的方向明暗；不开光影时，把渲染器的实体光照（两盏定向灯，下界用下界的那组）算进顶点色，并关掉方向明暗，这样区块画的零件和渲染器画的零件亮度一致。
+  - 一个零件的 UV 超出 0..1（图集里的 sprite 不能平铺），或者伸出所在格超过 1.1 格（Embeddium 判断区块段是否在视锥里时只多留 1.125 格），就留给渲染器画，并记一次警告。
+  - 每个版本、每个资源代际只生成一次，资源重载后作废。
+- **开关**：开发开关 `static_mesh off`，或方块模型不是这个模型时，渲染器照旧画全部。
+- **PBR**：区块路径由 Oculus 按图集 sprite 读同名 `_n` / `_s`，所以贴图必须放在 `textures/block/`。原版会自动把这个目录拼进方块图集。
+- **可见距离**：区块在任何距离都画静止零件，所以网格渲染器的可见距离从 64 格改成 128 格（`AflAnimatedBlockMeshRenderer.VIEW_DISTANCE`），玻璃、发光件和货物跟得更远一点。
+- **使用者**（2026-10-08 全部接入，生成器已同步）：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机。冷柜的第一版原型是在 profile 里手写 `baked` 列表，已删除。
+- **实机**：用户 2026-10-08 在 Sundial 下 PASS（外观、开关门、动画正常，性能"好太多"），数字见 [render_performance_v1.md](../dev/render_performance_v1.md)"结果"。仍属理论上的差异：区块的面按自己贴着的那一格取光照，渲染器只在主格取一次；开光影时区块可能被按图集 mipmap 采样；动画开始那一两帧可能有重影。
+
 ## Bounds、缓存与 reload
 
 profile `bounds` 为 NORTH 朝向、**已包含 origin/scale/全部运动行程之后的方块局部 AABB** `[minX,minY,minZ,maxX,maxY,maxZ]`，默认 `[0,0,0,1,1,1]`。作者负责覆盖整个运动范围；不是静止 mesh bounds。禁止空/反向/非有限 bounds，各坐标最大绝对值 64；不会默认无限包围盒。
@@ -150,5 +193,5 @@ industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-indu
 
 - 共享底层：`src/main/java/com/antaurora/apofirstlight/client/mesh/{AflMeshCache,AflMeshModel,AflMeshRenderer}.java`。
 - 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入，2026-10-01 加入 `meshPartVisible` / `meshPartEmissive` 默认方法）。
-- 新增客户端：`src/main/java/com/antaurora/apofirstlight/client/blockmesh/{AflBlockMeshProfileLoader,AflAnimatedBlockMeshRenderer}.java`。
+- 新增客户端：`src/main/java/com/antaurora/apofirstlight/client/blockmesh/{AflBlockMeshProfileLoader,AflAnimatedBlockMeshRenderer}.java`。2026-10-08 加入 `AflStaticMeshModel.java`、`AflMeshChunking.java`（静止部件由区块画）；`blockmesh/AflMeshChunkData.java`；`AflBlockMeshAnimationState` 加入 `version()` / `settled()` / `targetValue()`。
 - 文档：本文件及 `docs/native_guns/hybrid_mesh_runtime_v1.md` 的共享底层说明。

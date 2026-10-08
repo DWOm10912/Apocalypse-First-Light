@@ -38,6 +38,12 @@ public final class ChestFreezerRenderer implements BlockEntityRenderer<ChestFree
         return true;
     }
 
+    /** The chunk draws the resting parts at any distance: the glass, lit parts and goods stay with them longer. */
+    @Override
+    public int getViewDistance() {
+        return com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer.VIEW_DISTANCE;
+    }
+
     @Override
     public void render(ChestFreezerBlockEntity freezer, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int packedLight, int packedOverlay) {

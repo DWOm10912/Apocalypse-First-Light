@@ -265,7 +265,7 @@ for (const d of Object.values(BUILT)) {
   outputs.push([path.join(bb, `${id}_v1.bbmodel`), JSON.stringify(d.source)], [path.join(assets, `geo/${id}.geo.json`), JSON.stringify(d.geo, null, 2) + '\n'],
     [path.join(assets, `meshes/${id}.aflmesh.json`), d.meshText], [path.join(assets, `block_mesh_profiles/${id}.json`), JSON.stringify(d.profile, null, 2) + '\n'],
     [path.join(assets, `models/item/${id}.json`), JSON.stringify({parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${id}`}, display: itemDisplay(d.PARTS)}, null, 2) + '\n'],
-    [path.join(assets, `models/block/${id}.json`), JSON.stringify({textures: {particle: `apocalypse_firstlight:block/${id}`}}, null, 2) + '\n'],
+    [path.join(assets, `models/block/${id}.json`), JSON.stringify({loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${id}`}}, null, 2) + '\n'],
     [path.join(assets, `blockstates/${id}.json`), JSON.stringify({variants: {'': {model: `apocalypse_firstlight:block/${id}`}}}, null, 2) + '\n'],
     ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${id}${k}.png`), d.PNGS[i]], [path.join(assets, `textures/block/${id}${k}.png`), d.PNGS[i]]]));
 }

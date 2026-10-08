@@ -237,7 +237,7 @@ const outputs = [[path.join(bb, ID + '.bbmodel'), JSON.stringify(source)],
     [path.join(assets, `block_mesh_profiles/${ID}_${colour}.json`), JSON.stringify(profileFor(colour), null, 2) + '\n'],
     [path.join(assets, `models/item/${blockId(colour)}.json`), JSON.stringify({parent: 'builtin/entity', gui_light: 'side',
       textures: {particle: `apocalypse_firstlight:block/${ID}_${colour}`}, display: itemDisplay}, null, 2) + '\n'],
-    [path.join(assets, `models/block/${blockId(colour)}.json`), JSON.stringify({textures: {particle: `apocalypse_firstlight:block/${ID}_${colour}`}}, null, 2) + '\n'],
+    [path.join(assets, `models/block/${blockId(colour)}.json`), JSON.stringify({loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${ID}_${colour}`}}, null, 2) + '\n'],
     [path.join(assets, `blockstates/${blockId(colour)}.json`), JSON.stringify({variants: {'': {model: `apocalypse_firstlight:block/${blockId(colour)}`}}}, null, 2) + '\n'],
     ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${ID}_${colour}${k}.png`), PNGS[colour][i]], [path.join(assets, `textures/block/${ID}_${colour}${k}.png`), PNGS[colour][i]]])])];
 

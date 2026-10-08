@@ -1,5 +1,7 @@
 # Vending Machine V2（自动售货机 V2：Mesh + PBR）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-01）：
 - **模型、渲染、灯光、电源接口已重做，用户 2026-10-01 实机 PASS**。第一次看时只有商品和螺旋穿模，同一天改好（见"螺旋和商品"）后用户 PASS。
 - `compileJava --offline` PASS（包括 `src/dev`）。GameTest 按规则没有运行。

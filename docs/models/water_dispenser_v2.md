@@ -1,5 +1,7 @@
 # Water Dispenser V2（饮水机 V2：Mesh + PBR + 接电）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-01）：
 - **模型、PBR、电源接口和指示灯已重做，用户 2026-10-02 实机暂时 PASS**（桶的透明度改过之后）。
 - 用户 2026-10-02 实机看过（Sundial、Complementary、不开光影）：只提了桶在 Sundial 下太透明，已改（见"材质"），改后用户暂时 PASS。

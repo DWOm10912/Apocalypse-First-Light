@@ -442,10 +442,10 @@ public final class CommercialDumpsterBlock extends HorizontalDirectionalBlock im
 
     // ---- shapes, rendering ----
 
-    /** The master's block entity draws the whole dumpster (AFL Animated Block Mesh Runtime); the baked model is particle only. */
+    /** The master's block entity draws the dumpster's moving parts (AFL Animated Block Mesh Runtime); resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md) of the master. */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return state.getValue(PART) == Part.MASTER ? RenderShape.ENTITYBLOCK_ANIMATED : RenderShape.INVISIBLE;
+        return state.getValue(PART) == Part.MASTER ? RenderShape.MODEL : RenderShape.INVISIBLE;
     }
 
     @Override

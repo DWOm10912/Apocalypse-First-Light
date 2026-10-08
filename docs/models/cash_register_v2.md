@@ -1,5 +1,7 @@
 # Cash Register V2（收银机 V2：Mesh + 可拉出的钱箱）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-09-30）：**已实现，未实机验证**。`compileJava --offline` 一次 PASS（包括 `src/dev` 里改过的 GameTest），GameTest 按规则没有运行。外观只看过离线预览：生成器的 `--preview` 输出，用一个简单的平光渲染器渲染。游戏里的效果、四个朝向、钱箱动画、3×3 搜索界面和 PBR 都还没看过。音效（2026-09-30 后加）也没有实机试听。
 
 V2 取代 V1 文档（原 `docs/cash_register_model.md`，已删除）。Registry ID、物品、挖掘规则、方块掉落表都不变。V1 的方块源模型 `src/main/blockbench/afl_cash_register.bbmodel` 及其贴图、预览图、构建脚本 `tools/build-cash-register.bb.js` 和导出脚本 `tools/export-cash-register.mjs` 已删除，因为 V2 由新生成器从头生成。

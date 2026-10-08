@@ -176,10 +176,10 @@ public class LeadChestBlock extends Block implements EntityBlock, AflMeshInterac
         return meshPhysicalShape(state);
     }
 
-    /** The AFL Animated Block Mesh Runtime draws the cask; the baked model is particle only. */
+    /** The AFL Animated Block Mesh Runtime draws the cask's moving parts; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.MODEL;
     }
 
     @Override

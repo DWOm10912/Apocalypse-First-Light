@@ -1,5 +1,7 @@
 # Chest Freezer V2（冷冻冰柜 V2：Mesh + PBR、用电、状态灯、可搜索内容）
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-01）：
 - **模型和渲染已重做**：Pure Mesh + LabPBR，两片玻璃滑盖由 AFL Animated Block Mesh Runtime 动画。
 - **已接入**：标准电源接口（主格背面）、用电和压缩机周期、状态灯（温度显示屏 + 电源指示灯）、悬浮交互提示。

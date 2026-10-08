@@ -1,5 +1,7 @@
 # Building Power V1：配电盘和电表箱
 
+> **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：配电盘和电表箱改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
+
 状态（2026-10-07）：**第一步写完，`compileJava --offline` 通过，未实机验证**。
 - 规则见 [建筑供电规划](../gameplay/building_power_v1_plan.md) 的"V1 定案"。
 - 生成器 `--check` 通过，两个模型都没有共面重叠。

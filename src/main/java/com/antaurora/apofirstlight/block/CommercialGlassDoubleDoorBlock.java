@@ -251,9 +251,10 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
         };
     }
 
+    /** Moving leaves and glass: the AFL Animated Block Mesh Runtime renderer; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.INVISIBLE;
+        return RenderShape.MODEL;
     }
 
     @Override

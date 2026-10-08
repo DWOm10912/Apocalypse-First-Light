@@ -52,9 +52,10 @@ public class SteelDoorBlock extends DoorBlock implements EntityBlock {
         return SteelFrameDoorShapes.shape(state, false);
     }
 
+    /** Moving, glass and lit parts: the AFL Animated Block Mesh Runtime renderer; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.MODEL;
     }
 
     /** The lower half draws the whole door. */

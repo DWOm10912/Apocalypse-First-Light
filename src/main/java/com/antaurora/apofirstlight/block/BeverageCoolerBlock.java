@@ -438,9 +438,13 @@ public final class BeverageCoolerBlock extends Block implements EntityBlock, Mes
         }
     }
 
-    /** Drawn by the master's AFL Animated Block Mesh Runtime renderer; the baked model is particle only. */
+    /**
+     * The cabinet ({@code baked} in the profile) is a chunk model on the master cell (client/blockmesh/AflStaticMeshModel;
+     * docs/dev/render_performance_v1.md); the master's AFL Animated Block Mesh Runtime renderer draws the doors, the
+     * lights and the glass, and the cabinet too whenever the chunk does not.
+     */
     @Override
-    public RenderShape getRenderShape(BlockState state) { return RenderShape.INVISIBLE; }
+    public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
 
     /** Door-start block events (BeverageCoolerBlockEntity#startDoor) go to the master's block entity. */
     @Override

@@ -461,7 +461,7 @@ model('checkout_counter/inner', T + ' inner corner', [{b: C, bones: only('inner'
 model('checkout_counter/cap_left', T + ' end cap (left)', [{b: C, bones: only('cap')}], C.id);
 model('checkout_counter/cap_right', T + ' end cap (right)', [{b: C, bones: only('cap'), mirror: true}], C.id);
 model('checkout_counter/gate_item', T + ' gate (closed, item)', [{b: C, bones: only('gate_flap', 'gate_door')}], C.id);
-outputs.push([path.join(assets, 'models/block/checkout_counter/gate.json'), json({textures: {particle: `apocalypse_firstlight:block/${C.id}`}})]);
+outputs.push([path.join(assets, 'models/block/checkout_counter/gate.json'), json({loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${C.id}`}})]);
 const RIGS = ['left', 'right'].map(hinge => gateRig(C, hinge));
 for (const r of RIGS) outputs.push([path.join(assets, `geo/${r.id}.geo.json`), json(r.geo)], [path.join(assets, `meshes/${r.id}.aflmesh.json`), serializeCompact(r.sidecar)],
   [path.join(assets, `block_mesh_profiles/${r.id}.json`), json(r.profile)]);
