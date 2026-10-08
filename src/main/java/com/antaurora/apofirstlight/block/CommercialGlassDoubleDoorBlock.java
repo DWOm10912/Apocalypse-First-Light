@@ -179,8 +179,7 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
             BlockState partState = level.getBlockState(partPosition);
             level.setBlock(partPosition, partState.setValue(OPEN, open), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE);
         }
-        door.markToggled(level.getGameTime());
-        door.triggerDoorAnimation(open);
+        door.markToggled(level.getGameTime());   // the mesh animation follows the synced OPEN
         level.playSound(null, anchor.getX() + width.getStepX() * 0.5 + 0.5,
                 anchor.getY() + 1.0, anchor.getZ() + width.getStepZ() * 0.5 + 0.5,
                 open ? AflSounds.GLASS_DOOR_OPEN.get() : AflSounds.GLASS_DOOR_CLOSE.get(),
@@ -284,23 +283,26 @@ public class CommercialGlassDoubleDoorBlock extends Block implements EntityBlock
         return shapes.get(state.getValue(FACING));
     }
 
+    // V2 (docs/models/commercial_glass_double_door_v2.md; the numbers are tools/build-commercial-glass-double-door-v2.mjs's
+    // geometry): facing north, the FACING face at z 0. The 1 px jamb on each outer edge and the head stand 3..5 px behind
+    // it (the Storefront Glazing's plane); the leaves (z 3.64..4.36) fill the unit, hinged on the jambs. Open, each leaf
+    // stands 90 degrees out toward FACING, about 0.72 block into the cell in front (a large collision shape, within one block).
+    private static VoxelShape jamb(boolean right) {
+        return right ? Block.box(15, 0, 3, 16, 16, 5) : Block.box(0, 0, 3, 1, 16, 5);
+    }
+
+    private static VoxelShape leaf(boolean right, boolean open, double y0, double y1) {
+        return open
+                ? (right ? Block.box(14.06, y0, -11.53, 14.78, y1, 3.37) : Block.box(1.22, y0, -11.53, 1.94, y1, 3.37))
+                : (right ? Block.box(0.05, y0, 3.64, 14.95, y1, 4.36) : Block.box(1.05, y0, 3.64, 15.95, y1, 4.36));
+    }
+
     private static VoxelShape lower(boolean right, boolean open) {
-        double start = right ? 7.95 : 0.0, end = right ? 16.0 : 8.05;
-        VoxelShape fixed = Block.box(start, 0, 6, end, 16, 10);
-        VoxelShape leaf = open
-                ? Block.box(right ? 7.3 : 7.95, 0.26, 8, right ? 8.05 : 8.7, 16, 16)
-                : Block.box(right ? 0.05 : 8.05, 0.26, 7.2, right ? 7.95 : 15.95, 16, 8.8);
-        return Shapes.or(fixed, leaf).optimize();
+        return Shapes.or(jamb(right), leaf(right, open, 0.25, 16)).optimize();
     }
 
     private static VoxelShape upper(boolean right, boolean open) {
-        double start = right ? 7.95 : 0.0, end = right ? 16.0 : 8.05;
-        VoxelShape fixed = Shapes.or(Block.box(start, 0, 6, end, 16, 10),
-                Block.box(0, 14, 6, 16, 16, 10));
-        VoxelShape leaf = open
-                ? Block.box(right ? 7.3 : 7.95, 0, 8, right ? 8.05 : 8.7, 13.85, 16)
-                : Block.box(right ? 0.05 : 8.05, 0, 7.2, right ? 7.95 : 15.95, 13.85, 8.8);
-        return Shapes.or(fixed, leaf).optimize();
+        return Shapes.or(jamb(right), Block.box(0, 15, 3, 16, 16, 5), leaf(right, open, 0, 14.95)).optimize();
     }
 
     private static BlockPos partPosition(BlockPos anchor, Direction facing, Part part) {

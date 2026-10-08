@@ -66,6 +66,14 @@ public final class CommercialGlassDoubleDoorGameTests {
                 NAMESPACE + ":empty", 300, 0L, true, CommercialGlassDoubleDoorGameTests::run));
     }
 
+    /** A box in px given facing north, turned like the block's HorizontalShapeUtils (EAST = one clockwise turn). */
+    private static net.minecraft.world.phys.shapes.VoxelShape turned(Direction facing, double x0, double y0, double z0, double x1, double y1, double z1) {
+        int turns = switch (facing) { case EAST -> 1; case SOUTH -> 2; case WEST -> 3; default -> 0; };
+        double a0 = x0 / 16, a1 = x1 / 16, c0 = z0 / 16, c1 = z1 / 16;
+        for (int t = 0; t < turns; t++) { double n0 = 1 - c1, n1 = 1 - c0; c0 = a0; c1 = a1; a0 = n0; a1 = n1; }
+        return Shapes.box(a0, y0 / 16, c0, a1, y1 / 16, c1);
+    }
+
     private static void run(GameTestHelper helper) {
         var level = helper.getLevel();
         CommercialGlassDoubleDoorBlock door = (CommercialGlassDoubleDoorBlock) AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get();
@@ -101,23 +109,12 @@ public final class CommercialGlassDoubleDoorGameTests {
             var hit = new BlockHitResult(Vec3.atCenterOf(clicked), facing, clicked, false);
             door.use(level.getBlockState(clicked), level, clicked, player, InteractionHand.MAIN_HAND, hit);
             for (BlockPos cell : cells) helper.assertTrue(level.getBlockState(cell).getValue(CommercialGlassDoubleDoorBlock.OPEN), "all open");
-            var clearance = switch (facing) {
-                case NORTH -> Shapes.box(9.0 / 16, 0.2, 6.0 / 16, 1, 1, 10.0 / 16);
-                case EAST -> Shapes.box(6.0 / 16, 0.2, 9.0 / 16, 10.0 / 16, 1, 1);
-                case SOUTH -> Shapes.box(0, 0.2, 6.0 / 16, 7.0 / 16, 1, 10.0 / 16);
-                case WEST -> Shapes.box(6.0 / 16, 0.2, 0, 10.0 / 16, 1, 7.0 / 16);
-                default -> throw new IllegalStateException();
-            };
+            // V2: the passage through the master cell, past its jamb (px 0..1) and its open leaf (px 1.22..1.94)
+            var clearance = turned(facing, 2, 3.2, 2, 16, 16, 14);
             helper.assertTrue(!Shapes.joinIsNotEmpty(level.getBlockState(root).getCollisionShape(level, root), clearance, BooleanOp.AND), "open center clear " + facing);
-            var upperClearance = switch (facing) {
-                case NORTH -> Shapes.box(9.0 / 16, 0, 6.0 / 16, 1, 14.0 / 16, 10.0 / 16);
-                case EAST -> Shapes.box(6.0 / 16, 0, 9.0 / 16, 10.0 / 16, 14.0 / 16, 1);
-                case SOUTH -> Shapes.box(0, 0, 6.0 / 16, 7.0 / 16, 14.0 / 16, 10.0 / 16);
-                case WEST -> Shapes.box(6.0 / 16, 0, 0, 10.0 / 16, 14.0 / 16, 7.0 / 16);
-                default -> throw new IllegalStateException();
-            };
+            var upperClearance = turned(facing, 2, 0, 2, 16, 14.5, 14);
             helper.assertTrue(!Shapes.joinIsNotEmpty(level.getBlockState(root.above()).getCollisionShape(level, root.above()),
-                    upperClearance, BooleanOp.AND), "open passage clear through 1.875 blocks " + facing);
+                    upperClearance, BooleanOp.AND), "open passage clear through 1.9 blocks " + facing);
             door.use(level.getBlockState(clicked), level, clicked, player, InteractionHand.MAIN_HAND, hit);
             helper.assertTrue(level.getBlockState(root).getValue(CommercialGlassDoubleDoorBlock.OPEN), "rapid click ignored");
             ((CommercialGlassDoubleDoorBlockEntity) level.getBlockEntity(root)).markToggled(level.getGameTime() - 12);

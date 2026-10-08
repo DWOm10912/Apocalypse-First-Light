@@ -1,0 +1,69 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/commercial_glass_double_door.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/commercial_glass_double_door.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.015625,
+    -0.015625,
+    -0.73625,
+    2.015625,
+    2.015625,
+    0.365625
+  ],
+  "parts": {
+    "frame": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "leaf_a": {
+      "pivot": [
+        -0.4375,
+        0,
+        -0.28625
+      ]
+    },
+    "leaf_b": {
+      "pivot": [
+        1.4375,
+        0,
+        -0.28625
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 6,
+      "easing": "ease_in_out",
+      "transforms": {
+        "leaf_a": {
+          "rotation": [
+            0,
+            90,
+            0
+          ]
+        },
+        "leaf_b": {
+          "rotation": [
+            0,
+            -90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

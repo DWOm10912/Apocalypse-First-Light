@@ -7,8 +7,8 @@
 //   mullion_center  the mid-cell mullion of the 1.5 m rhythm
 //   rail_top        the head (nothing above) or a transom (toggled on)
 //   sill            the bottom rail, the sill flashing over the masonry below and its drip
-// Left / right are seen from outside. Also writes the black frame texture of the Commercial Glass Double Door (a recolour of
-// the silver one; the silver door stays).
+// Left / right are seen from outside. (Until 2026-10-07 it also recoloured the silver Commercial Glass Double Door texture
+// into the black door's; the door V2 has its own generator, tools/build-commercial-glass-double-door-v2.mjs.)
 // Pure Mesh + LabPBR atlas exported as Forge OBJ block models (static, chunk-baked, flat lit, blockstate y rotation).
 //   node tools/build-storefront-glazing-v1.mjs                -> writes source, OBJ / MTL / block + item models, blockstate, atlas
 //   node tools/build-storefront-glazing-v1.mjs --check        -> verifies every output is up to date
@@ -161,22 +161,6 @@ function display(b, bones) {
 const ROT = {north: 0, east: 90, south: 180, west: 270};
 const ref = (file, y) => ({model: `apocalypse_firstlight:block/${file}`, ...(y % 360 ? {y: y % 360} : {})});
 
-// ---------------- the black Commercial Glass Double Door texture ----------------
-// The silver door's 128 x 128 texture is eight 16 px colour stripes (tools/export-commercial-glass-double-door.mjs): six
-// opaque aluminium / gasket tones and the translucent glass. Every opaque tone becomes black anodized, keeping the order
-// of light and dark between the door's faces; the hardware (pulls, hinges) shares those stripes, so it is black too (the
-// usual matte black hardware on a black storefront). The glass texels are kept as they are.
-function blackDoor() {
-  const src = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/entity/commercial_glass_double_door.png');
-  const img = readPng(fs.readFileSync(src)), px = Buffer.alloc(img.w * img.h * 4);
-  for (let k = 0; k < img.w * img.h; k++) {
-    const c = [0, 1, 2].map(i => img.px[k * img.bpp + i]), a = img.bpp === 4 ? img.px[k * 4 + 3] : 255;
-    const out = a === 255 ? c.map((v, i) => Math.round(20 + v * 0.2 + (i === 2 ? 3 : i === 1 ? 1 : 0))) : c;
-    px.set([...out, a], k * 4);
-  }
-  return png(px, img.w, img.h);
-}
-
 // ---------------- write ----------------
 const B = bake();
 const bbDir = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -184,8 +168,6 @@ const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
 outputs.push([path.join(bbDir, 'storefront_glazing_v1.bbmodel'), JSON.stringify(sourceOf(B))],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/storefront_glazing_v1${k}.png`), B.maps[i]], [path.join(assets, `textures/block/storefront_glazing${k}.png`), B.maps[i]]]));
-const DOOR = blackDoor();
-outputs.push([path.join(assets, 'textures/entity/commercial_glass_double_door_black.png'), DOOR], [path.join(bbDir, 'textures/commercial_glass_swing_door_black.png'), DOOR]);
 const model = (file, title, bones, translucent = false) => {
   const obj = objOf(B, title, file, bones);
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, title)],
@@ -226,7 +208,6 @@ if (isMain) {
     const dir = process.argv[pi + 1]; fs.mkdirSync(dir, {recursive: true});
     for (const [file, obj] of objs) fs.writeFileSync(path.join(dir, file.replace('/', '_') + '.obj'), obj);
     ['', '_s', '_n'].forEach((k, i) => fs.writeFileSync(path.join(dir, `${B.id}${k}.png`), B.maps[i]));
-    fs.writeFileSync(path.join(dir, 'commercial_glass_double_door_black.png'), DOOR);
     console.log('preview written to ' + dir);
   } else if (process.argv.includes('--check')) {
     for (const [file, data] of outputs) { const cur = fs.existsSync(file) ? fs.readFileSync(file) : null; if (!cur || !cur.equals(Buffer.isBuffer(data) ? data : Buffer.from(data))) throw new Error('stale ' + path.relative(ROOT, file)); }

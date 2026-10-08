@@ -5,8 +5,6 @@
     { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/diesel_flow" },
     { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/diesel_still" },
     { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/gasoline_flow" },
-    { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/gasoline_still" },
-    { "type": "minecraft:single", "resource": "apocalypse_firstlight:entity/commercial_glass_double_door" },
-    { "type": "minecraft:single", "resource": "apocalypse_firstlight:entity/commercial_glass_double_door_black" }
+    { "type": "minecraft:single", "resource": "apocalypse_firstlight:fluid/gasoline_still" }
   ]
 }

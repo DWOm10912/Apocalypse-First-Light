@@ -35,7 +35,9 @@ public final class AflBlockEntityRenderers {
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Industrial Electrical Box V2
         event.registerBlockEntityRenderer(AflBlockEntities.CASH_REGISTER.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);   // Cash Register V2
-        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), CommercialGlassDoubleDoorRenderer::new);
+        // Commercial Glass Double Door V2 (both finishes): generic AFL Animated Block Mesh Runtime
+        event.registerBlockEntityRenderer(AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR.get(),
+                com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.RESTROOM_STALL_DOOR.get(), RestroomStallDoorRenderer::new);
         // Beverage Cooler V2: displayed items, then the generic AFL Animated Block Mesh renderer
         event.registerBlockEntityRenderer(AflBlockEntities.BEVERAGE_COOLER.get(), BeverageCoolerRenderer::new);

@@ -116,9 +116,9 @@ final class AuthoringFixtureRegistry {
             new Def(A+"cash_register",storage,"retail").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
                     .notes("Countertop POS (V2); facing = the operator side. 9-slot cash drawer, starts closed and empty; it slides 0.5 block out toward the operator when opened."),
             new Def(A+"commercial_glass_double_door",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
-                    .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity); the second leaf is at facing.getClockWise(), the opposite side from beverage_cooler."),
+                    .notes("2 wide x 2 tall. Anchor = lower_left master (BlockEntity); the second leaf is at facing.getClockWise(), the opposite side from beverage_cooler. V2 (2026-10-07): the leaves swing out toward facing, about 0.72 block into the cells in front; for a storefront give facing = the outside, the frame then lines up with storefront_glazing of the same facing."),
             new Def(A+"commercial_glass_double_door_black",safe,"doors").facing(H4).multi(GLASS_DOOR).fixed("open","false").support(Support.FLOOR)
-                    .notes("Black-anodised frame variant (Storefront Glazing V1); same block class, parts and BlockEntity as commercial_glass_double_door. 2 wide x 2 tall, anchor = lower_left, second leaf at facing.getClockWise()."),
+                    .notes("Black-anodised frame variant (Storefront Glazing V1); same block class, parts and BlockEntity as commercial_glass_double_door (V2: swings out toward facing). 2 wide x 2 tall, anchor = lower_left, second leaf at facing.getClockWise()."),
             new Def(A+"restroom_stall_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false").support(Support.FLOOR)
                     .notes("Lower half owns the BlockEntity. Adjacent restroom_partition door_support bits are reconciled automatically."),
             new Def(A+"steel_door",safe,"doors").facing(H4).multi(TWO_TALL).variant("hinge","left","right").fixed("open","false","powered","false").support(Support.FLOOR),

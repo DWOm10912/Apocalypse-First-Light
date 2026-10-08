@@ -1,11 +1,94 @@
 {
   "parent": "builtin/entity",
-  "textures": {"particle": "apocalypse_firstlight:entity/commercial_glass_double_door_black"},
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/commercial_glass_double_door_black"
+  },
   "display": {
-    "gui": {"rotation": [25, 45, 0], "translation": [0, -2.3, 0], "scale": [0.32, 0.32, 0.32]},
-    "ground": {"translation": [0, 2, 0], "scale": [0.24, 0.24, 0.24]},
-    "fixed": {"rotation": [0, 180, 0], "scale": [0.4, 0.4, 0.4]},
-    "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 1.5, 0], "scale": [0.28, 0.28, 0.28]},
-    "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 0, 0], "scale": [0.32, 0.32, 0.32]}
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        1.01,
+        -1.308,
+        -3.952
+      ],
+      "scale": [
+        0.357,
+        0.357,
+        0.357
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -1.76,
+        1.24,
+        0.88
+      ],
+      "scale": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -3.2,
+        -3.2,
+        1.6
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        0.707,
+        4.031,
+        -2.481
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0.792,
+        -1.24,
+        -2.376
+      ],
+      "scale": [
+        0.28,
+        0.28,
+        0.28
+      ]
+    }
   }
 }

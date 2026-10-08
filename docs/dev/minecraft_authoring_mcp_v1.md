@@ -228,6 +228,7 @@ Usage notes:
 
 Unchanged:
 - No block class, game interaction, worldgen, road or weapon code was touched. The change is in the dev source set only (`AuthoringFixtureRegistry.java`; the `reconcile_shapes` scope text in `FixtureAdapter.java`).
+- Glass double door V2 (2026-10-07, both finishes): the leaves now swing out toward `facing`, about 0.72 block into the cells in front. For a storefront give `facing` = the outside; the door frame then lines up with `storefront_glazing` of the same facing. The fixture contract (parts, anchor, `open=false`) is unchanged; only the registry notes say so.
 - Other BlockEntity blocks are still unclassified in `problems()` and stay blocked as `UNSAFE`: `underground_fuel_tank_*`, fuel containers, intake pumps, `charging_station`. Not needed for the A1 store.
 
 ### Implementation / verification

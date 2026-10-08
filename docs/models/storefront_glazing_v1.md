@@ -103,7 +103,7 @@
 - **代码**：和银框门用同一个类 `CommercialGlassDoubleDoorBlock`，共用同一个方块实体类型（`AflBlockEntities.COMMERCIAL_GLASS_DOUBLE_DOOR` 现在两个方块都认）、同一套 GeckoLib 模型、动画和音效。
 - **渲染**：`CommercialGlassDoubleDoorModel` 按方块选贴图。物品渲染器 `CommercialGlassDoubleDoorItemRenderer` 现在按物品对应的方块建一个方块实体来画。
 - **掉落**：门的三处掉落（拆下格、支撑消失、战利品表）原来写死掉银框门。现在 `CommercialGlassDoubleDoorBlock` 掉自己的物品，所以黑框门掉黑框门，银框门不变。
-- **贴图**：`textures/entity/commercial_glass_double_door_black.png`，由生成器从银框贴图重新上色得到，可编辑副本在 `src/main/blockbench/textures/commercial_glass_swing_door_black.png`。
+- **贴图**：`textures/entity/commercial_glass_double_door_black.png`，由生成器从银框贴图重新上色得到，可编辑副本在 `src/main/blockbench/textures/commercial_glass_swing_door_black.png`。（2026-10-07 已过时：门重置为 V2，两种颜色都用新网格和自己的 PBR 贴图，见 [commercial_glass_double_door_v2.md](commercial_glass_double_door_v2.md)。这两张重新上色的贴图已删除，本生成器不再写门的贴图。）
   - 银框贴图是八条 16 px 的色带：六条不透明的铝和密封条色调，加上半透明的玻璃。
   - 不透明色带全部换成黑色阳极氧化，保留原来面与面之间的明暗关系。
   - 把手、合页和框共用这些色带，所以也是黑色（黑框店面常配哑光黑五金）。

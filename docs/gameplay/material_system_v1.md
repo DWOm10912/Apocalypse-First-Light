@@ -143,7 +143,7 @@
 
 ## 外部引用迁移
 
-- 商用玻璃双开门：`models/block|item/commercial_glass_double_door.json` 的 `particle` 从 `block/aluminum_block` 改为门自己的 `entity/commercial_glass_double_door`，并在 `assets/minecraft/atlases/blocks.json` 里把这张贴图加入方块图集。
+- 商用玻璃双开门：`models/block|item/commercial_glass_double_door.json` 的 `particle` 从 `block/aluminum_block` 改为门自己的 `entity/commercial_glass_double_door`，并在 `assets/minecraft/atlases/blocks.json` 里把这张贴图加入方块图集。（2026-10-07 门重置为 V2：粒子改用 `block/commercial_glass_double_door`，`textures/entity` 那张贴图已删除，见 [commercial_glass_double_door_v2.md](../models/commercial_glass_double_door_v2.md)。）
 - 铅箱：`models/block|item/lead_chest.json` 的 `particle` 从 `block/lead_block` 改为 `block/lead_chest`。
 - 开发用 GameTest `TungstenProductionGameTests`：改用新 ID 和新配方 ID；删除了钨板压制的检查（没有这个配方了）；测试方法 `crusherCompressorAndAlloyCompleteTungstenRecipes` 改名为 `crusherAndAlloyFurnaceCompleteTungstenRecipes`。本轮没有运行 GameTest。
 - 结构 NBT（地堡等）只用到钢块、钢格栅、钢门和钢筋混凝土，没有用到被删除的方块。

@@ -1,5 +1,7 @@
 # 商用玻璃双开门 V1（已实现）
 
+> **2026-10-07：模型、渲染、门扇布局和开门方向已由 V2 取代，见 [commercial_glass_double_door_v2.md](models/commercial_glass_double_door_v2.md)。** 下面仍然有效的是：ID、方块状态、四格结构、放置条件、开关交互和 12 tick 防连点、音效、掉落、挖掘（铁级例外）、重量和搬运标签。已经过时的是：GeckoLib 模型和动画、正中一对窄门扇加两侧固定玻璃的布局、"往背离 facing 一侧开"的碰撞、粒子用 `textures/entity` 贴图、物品用 GeckoLib 渲染器、V1 的源文件和导出工具。下文"源与运行时资源"里列的 V1 源文件、导出工具、动画和 `textures/entity` 贴图已于 2026-10-07 删除（用户同意）。挖掘等级用户决定先保持铁级。
+
 ## 当前行为
 
 - 注册 ID：`apocalypse_firstlight:commercial_glass_double_door`。这是铝色框架的双扇铰链门，不是滑门，也没有自动感应。
