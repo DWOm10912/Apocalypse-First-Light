@@ -1,0 +1,4 @@
+# AFL Power Outlets V1 3-outlet strip (off)
+newmtl strip
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/power_strip

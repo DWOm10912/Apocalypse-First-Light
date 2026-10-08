@@ -388,6 +388,12 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.DISTRIBUTION_PANEL.get(), new Item.Properties().stacksTo(4), "distribution_panel"));
     public static final RegistryObject<Item> SERVICE_METER_BOX = ITEMS.register("service_meter_box",
             () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.SERVICE_METER_BOX.get(), new Item.Properties().stacksTo(4), "service_meter_box"));
+    public static final RegistryObject<Item> WALL_OUTLET = ITEMS.register("wall_outlet",
+            () -> new BlockItem(AflBlocks.WALL_OUTLET.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POWER_STRIP_3 = ITEMS.register("power_strip_3",
+            () -> new BlockItem(AflBlocks.POWER_STRIP_3.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> POWER_STRIP_6 = ITEMS.register("power_strip_6",
+            () -> new BlockItem(AflBlocks.POWER_STRIP_6.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",

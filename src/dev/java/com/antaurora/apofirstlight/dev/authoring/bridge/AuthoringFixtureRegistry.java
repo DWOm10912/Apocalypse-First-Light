@@ -177,6 +177,12 @@ final class AuthoringFixtureRegistry {
                     .notes("Building Power V1 (2026-10-07): hangs on the wall behind it; a BlockEntity keeps the main / branch breakers (a new panel starts with the main off). Ports: bottom face in, top face out."),
             new Def(A+"service_meter_box",safe,"utility").facing(H4).variant("on","true","false").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Building Power V1 (2026-10-07): the service entry on an outside wall; on = the disconnect. Bottom-face port; forwards to the panel of the building whose wall it hangs on."),
+            new Def(A+"wall_outlet",safe,"utility").facing(H4).fixed("upper","false","lower","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Power Outlets V1 (2026-10-08): wall only, facing = away from the wall; plate 0.35 m up in its cell (in the cell above a counter: 1.35 m). upper / lower record plugs at runtime."),
+            new Def(A+"power_strip_3",safe,"utility").facing(H4).connect("lowered").fixed("on","true","lit","false").support(Support.FLOOR_OR_DESK)
+                    .notes("Power Outlets V1 (2026-10-08): floor or office desk; a BlockEntity keeps its plug, a placed strip lies unplugged beside its cord."),
+            new Def(A+"power_strip_6",safe,"utility").facing(H4).connect("lowered").fixed("on","true","lit","false").support(Support.FLOOR_OR_DESK)
+                    .notes("Power Outlets V1 (2026-10-08): the 2x3 strip; as power_strip_3."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"chemical_reactor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"compressor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),

@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/power_strip_6/lit.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/power_strip"
+  }
+}

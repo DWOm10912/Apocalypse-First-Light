@@ -50,6 +50,10 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity>> SERVICE_METER_BOX =
             BLOCK_ENTITIES.register("service_meter_box", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity::new, AflBlocks.SERVICE_METER_BOX.get()).build(null));
+    /** Power Outlets V1: where a strip's plug is (docs/models/power_outlets_v1.md). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity>> POWER_STRIP =
+            BLOCK_ENTITIES.register("power_strip", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity::new, AflBlocks.POWER_STRIP_3.get(), AflBlocks.POWER_STRIP_6.get()).build(null));
     /** Steel-frame doors V1: the lower half of each door draws it (docs/models/steel_frame_doors_v1.md). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.SteelDoorBlockEntity>> STEEL_DOOR =
             BLOCK_ENTITIES.register("steel_door", () -> BlockEntityType.Builder.of(

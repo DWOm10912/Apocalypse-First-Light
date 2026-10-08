@@ -122,6 +122,17 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
 
     public IEnergyStorage input() { return inputStorage; }
     public boolean live() { return mainOn && !tripped; }
+
+    /** The outlet circuit has power: main on, the outlets branch on, something in the buffer (Power Outlets V1). */
+    public boolean outletsLive() { return live() && !branchIsOff(slotOf(KIND_OUTLETS)) && stored > 0; }
+
+    /** What a wall outlet's plug draws, from the buffer, counted as the outlet circuit's load. */
+    public int drawOutlets(int fe, boolean simulate) {
+        if (!outletsLive() || fe <= 0) return 0;
+        int given = Math.min(fe, stored);
+        if (!simulate) { stored -= given; slotLoadAdd(slotOf(KIND_OUTLETS), given); setChanged(); }
+        return given;
+    }
     private boolean branchIsOff(int slot) { return slot >= 0 && (branchOff & (1 << slot)) != 0; }
     private int slotOf(int kind) { for (int i = 0; i < SLOTS; i++) if (slotKind[i] == kind) return i; return -1; }
     private void slotLoadAdd(int slot, int fe) { if (slot >= 0) tickLoad[slot] += fe; }

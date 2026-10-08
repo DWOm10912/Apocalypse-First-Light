@@ -185,6 +185,13 @@ public final class AflBlocks {
     public static final RegistryObject<Block> SERVICE_METER_BOX = BLOCKS.register("service_meter_box",
             () -> new com.antaurora.apofirstlight.block.ServiceMeterBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    /** Power Outlets V1 (docs/models/power_outlets_v1.md): small plastic fittings, hand-breakable (as the office keyboard), no collision. */
+    public static final RegistryObject<Block> WALL_OUTLET = BLOCKS.register("wall_outlet",
+            () -> new com.antaurora.apofirstlight.block.WallOutletBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion()));
+    public static final RegistryObject<Block> POWER_STRIP_3 = BLOCKS.register("power_strip_3",
+            () -> new com.antaurora.apofirstlight.block.PowerStripBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion(), 3));
+    public static final RegistryObject<Block> POWER_STRIP_6 = BLOCKS.register("power_strip_6",
+            () -> new com.antaurora.apofirstlight.block.PowerStripBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion(), 6));
     public static final RegistryObject<Block> INDUSTRIAL_LOCKER = BLOCKS.register("industrial_locker",
             () -> new IndustrialLockerBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F)

@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=north,lower=false,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet"
+    },
+    "facing=north,lower=true,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet"
+    },
+    "facing=north,lower=false,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet"
+    },
+    "facing=north,lower=true,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet"
+    },
+    "facing=east,lower=false,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 90
+    },
+    "facing=east,lower=true,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 90
+    },
+    "facing=east,lower=false,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 90
+    },
+    "facing=east,lower=true,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 90
+    },
+    "facing=south,lower=false,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 180
+    },
+    "facing=south,lower=true,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 180
+    },
+    "facing=south,lower=false,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 180
+    },
+    "facing=south,lower=true,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 180
+    },
+    "facing=west,lower=false,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 270
+    },
+    "facing=west,lower=true,upper=false": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 270
+    },
+    "facing=west,lower=false,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 270
+    },
+    "facing=west,lower=true,upper=true": {
+      "model": "apocalypse_firstlight:block/wall_outlet",
+      "y": 270
+    }
+  }
+}

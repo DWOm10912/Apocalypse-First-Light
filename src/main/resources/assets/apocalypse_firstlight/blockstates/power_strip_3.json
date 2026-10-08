@@ -1,0 +1,124 @@
+{
+  "variants": {
+    "facing=north,lit=false,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off"
+    },
+    "facing=north,lit=true,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off"
+    },
+    "facing=north,lit=false,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on"
+    },
+    "facing=north,lit=true,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit"
+    },
+    "facing=north,lit=false,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered"
+    },
+    "facing=north,lit=true,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered"
+    },
+    "facing=north,lit=false,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on_lowered"
+    },
+    "facing=north,lit=true,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit_lowered"
+    },
+    "facing=east,lit=false,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 90
+    },
+    "facing=east,lit=true,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 90
+    },
+    "facing=east,lit=false,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on",
+      "y": 90
+    },
+    "facing=east,lit=true,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit",
+      "y": 90
+    },
+    "facing=east,lit=false,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 90
+    },
+    "facing=east,lit=true,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 90
+    },
+    "facing=east,lit=false,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on_lowered",
+      "y": 90
+    },
+    "facing=east,lit=true,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit_lowered",
+      "y": 90
+    },
+    "facing=south,lit=false,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 180
+    },
+    "facing=south,lit=true,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 180
+    },
+    "facing=south,lit=false,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on",
+      "y": 180
+    },
+    "facing=south,lit=true,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit",
+      "y": 180
+    },
+    "facing=south,lit=false,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 180
+    },
+    "facing=south,lit=true,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 180
+    },
+    "facing=south,lit=false,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on_lowered",
+      "y": 180
+    },
+    "facing=south,lit=true,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit_lowered",
+      "y": 180
+    },
+    "facing=west,lit=false,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 270
+    },
+    "facing=west,lit=true,lowered=false,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off",
+      "y": 270
+    },
+    "facing=west,lit=false,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on",
+      "y": 270
+    },
+    "facing=west,lit=true,lowered=false,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit",
+      "y": 270
+    },
+    "facing=west,lit=false,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 270
+    },
+    "facing=west,lit=true,lowered=true,on=false": {
+      "model": "apocalypse_firstlight:block/power_strip_3/off_lowered",
+      "y": 270
+    },
+    "facing=west,lit=false,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/on_lowered",
+      "y": 270
+    },
+    "facing=west,lit=true,lowered=true,on=true": {
+      "model": "apocalypse_firstlight:block/power_strip_3/lit_lowered",
+      "y": 270
+    }
+  }
+}

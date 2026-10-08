@@ -41,6 +41,7 @@ public final class AflBlockEntityRenderers {
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
         event.registerBlockEntityRenderer(AflBlockEntities.SERVICE_METER_BOX.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);
+        event.registerBlockEntityRenderer(AflBlockEntities.POWER_STRIP.get(), PowerStripRenderer::new);   // Power Outlets V1: cord + plug
         // Steel-frame doors V1 (steel door, commercial wood door): generic AFL Animated Block Mesh Runtime
         event.registerBlockEntityRenderer(AflBlockEntities.STEEL_DOOR.get(),
                 com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new);

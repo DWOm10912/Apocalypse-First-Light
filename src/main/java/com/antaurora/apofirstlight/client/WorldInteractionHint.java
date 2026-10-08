@@ -74,6 +74,7 @@ public final class WorldInteractionHint {
             if(target==null) target=eyebrowCanopy(mc,hit);
             if(target==null) target=woodDoorStyle(mc,hit);
             if(target==null) target=buildingPower(mc,hit);
+            if(target==null) target=powerOutlets(mc,hit);
             if(target==null) target=fuelDispenser(mc,hit);
             if(target==null) target=intakePump(mc,hit);
             if(target==null) target=fuelContainer(mc,hit);
@@ -202,6 +203,21 @@ public final class WorldInteractionHint {
         var s=mc.level.getBlockState(hit.getBlockPos());
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.metal_eyebrow_canopy."+(s.getValue(com.antaurora.apofirstlight.block.MetalEyebrowCanopyBlock.ROD)?"rod_off":"rod_on")),null);
+    }
+
+    /** Power Outlets V1: an outlet takes the plug in hand or gives up the one in the aimed socket; a strip says where its power stands. */
+    private static Target powerOutlets(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);String k="hint.apocalypse_firstlight.";
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.WallOutletBlock){
+            if(com.antaurora.apofirstlight.client.PowerStripRenderer.localCarrying()) return new Target(Component.translatable(k+"wall_outlet.plug_in"),null);
+            int socket=com.antaurora.apofirstlight.energy.PowerPlugs.aimedSocket(pos,hit);
+            return com.antaurora.apofirstlight.block.WallOutletBlock.used(s,socket)&&mc.player.getMainHandItem().isEmpty()?new Target(Component.translatable(k+"wall_outlet.unplug"),null):null;
+        }
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock)||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity strip)) return null;
+        String key=strip.carrierId()==mc.player.getId()?"carrying":strip.outlet()==null?"unplugged":!s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.ON)?"off"
+                :s.getValue(com.antaurora.apofirstlight.block.PowerStripBlock.LIT)?"live":"no_power";
+        return new Target(Component.translatable(k+"power_strip."+key),null);
     }
 
     /** Building Power V1: the panel opens its screen; the meter box shows the disconnect, where its power goes and the reading. */

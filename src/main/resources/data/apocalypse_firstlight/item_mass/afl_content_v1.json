@@ -393,6 +393,18 @@
       "unit_mass_kg": 14,
       "estimated": true
     },
+    "apocalypse_firstlight:wall_outlet": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:power_strip_3": {
+      "unit_mass_kg": 0.5,
+      "estimated": true
+    },
+    "apocalypse_firstlight:power_strip_6": {
+      "unit_mass_kg": 0.9,
+      "estimated": true
+    },
     "apocalypse_firstlight:service_meter_box": {
       "unit_mass_kg": 10,
       "estimated": true
