@@ -1,0 +1,100 @@
+{
+  "variants": {
+    "layers=1": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=2": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=3": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=4": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=5": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=6": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=7": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=8": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=9": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=10": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=11": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=12": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=13": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=14": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=15": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=16": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=17": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=18": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=19": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=20": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=21": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=22": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=23": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=24": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=25": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=26": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=27": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=28": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=29": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=30": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=31": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    },
+    "layers=32": {
+      "model": "apocalypse_firstlight:block/dev_highway_surface"
+    }
+  }
+}

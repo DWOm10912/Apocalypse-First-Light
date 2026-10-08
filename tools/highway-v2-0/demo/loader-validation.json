@@ -1,0 +1,12 @@
+{
+  "status": "PASS_REAL_JAVA_LOADER_ONLY",
+  "lines": [
+    "LOADED highway_v2_0_demo_000 triangles=1864 bakedFaces=932",
+    "LOADED highway_v2_0_demo_064 triangles=1852 bakedFaces=1769",
+    "LOADED highway_v2_0_demo_128 triangles=1852 bakedFaces=1852",
+    "LOADED highway_v2_0_demo_192 triangles=1864 bakedFaces=1315",
+    "HIGHWAY_DEMO_JAVA_LOADER_PASS"
+  ],
+  "clientRun": false,
+  "gradleRun": false
+}

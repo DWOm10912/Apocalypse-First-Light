@@ -1,0 +1,31 @@
+{
+  "recipeVersion": "highway-v2-0-demo-1",
+  "inputHashNormalization": "UTF-8 LF",
+  "inputsSha256": {
+    "tools/highway-v2-0/recipe.json": "04ba85615e6ba3051ae67eaef0458a481d9485e3b15cf26232e195673ce1a97d",
+    "tools/highway-v2-0/geometry.mjs": "b50c9e3c384f6b944d29e76b6b016151826d3fa623083cb8c58e5f1d4c04b2b7",
+    "tools/highway-v2-0/generate.mjs": "d19ae1cd9c955fc4859b66d05c411440c44c2aed0226709d42ac1515a6bf8c1a",
+    "tools/highway-v2-0/preview.mjs": "982af1ba4ad524aba74c3c71a25ca23dcc8fee46e84db3f59d24553191b4bcf5",
+    "tools/export-afl-mesh.mjs": "ee026fe36a91635be888022986e1cb156b58eeb17c83ed42fa5d60c1c4dde760",
+    "tools/cube-slab-mesh-lib.mjs": "b1b6f34086d80064d9ba776c1c772a0465f4a8cb3771a927e0b70be76c57e243"
+  },
+  "sha256": {
+    "tools/highway-v2-0/demo/placeholder.png": "e3dc40d1e4f2c52115c846fe58b777a42b5f27d4e8e901a84a75cb3f3a5f6f37",
+    "src/main/blockbench/dev/highway_v2_0/highway_v2_0_demo_000.bbmodel": "3159547a2a464bc527c38de0a16ec83a438dde727cb1d768012d5f4f64912434",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_000.geo.json": "17b4bd316c04d6ae98086160bb7f40f376669c5f1fbfea67c3d6d137c5514052",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_000.aflmesh.json": "b2a3f90ee3ebb14522036c8611c739c2162ee333f1d206de3c7738cf064a6600",
+    "src/main/blockbench/dev/highway_v2_0/highway_v2_0_demo_064.bbmodel": "dc524eee1e4360a951779a4bc483fb873f133645a69677feb8e0795f97e51ffb",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_064.geo.json": "b1de992fbd1f7697e85c37212c601a26e4d118046cb95d8400553a8dd6c0eea0",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_064.aflmesh.json": "f2e068d66a90fa805f68b23213be1de22235f235bcc01f63d64c789b93c0ddf8",
+    "src/main/blockbench/dev/highway_v2_0/highway_v2_0_demo_128.bbmodel": "8d21f50d926c50f6a030a3d2d93db1712e603539265ade7a3d01598f7a5d1f20",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_128.geo.json": "a0f289e21d0b21596e8b9b0b36d34ee4d9f2e36f2f72cf1e74af7183974edf2c",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_128.aflmesh.json": "a73951d61232902ae8fb525bdd8044f99ff939b6eefb5bd58fe6fa1a57b747cb",
+    "src/main/blockbench/dev/highway_v2_0/highway_v2_0_demo_192.bbmodel": "e018f51e678c92651000388a93bfb330afce77e395c017c5551ea06bda2847e6",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_192.geo.json": "b4361a537e1753c0da6c9e637324b93c7be1c1309a4e0464c1c3856285dfb595",
+    "tools/highway-v2-0/demo/highway_v2_0_demo_192.aflmesh.json": "8e23d033230a5e90d10b32f00ec24215fe49be74c090b025c42572540f2c6d3b",
+    "tools/highway-v2-0/demo/centerline.csv": "4bcef0432e9c46a62349a14de221f802cb08367b51fa3764b42a2a4f6d8aaf49",
+    "tools/highway-v2-0/demo/metadata.json": "080dda5bfc477e6678733826a832003da781d31e21f505d7a7a1f3855163db38",
+    "tools/highway-v2-0/demo/preview.png": "927ffc602c1109ad30f2a3d077e674211417fa74951efb0bfb5843f2dd8b2a79",
+    "tools/highway-v2-0/demo/preview.html": "c9cb8e2982197112804c663f6b6ca2a4a06ea626af80f8baeec8bf595d41454f"
+  }
+}

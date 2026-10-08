@@ -1,0 +1,50 @@
+{
+  "status": "PASS_OFFLINE_GEOMETRY",
+  "routeLength": 256,
+  "width": 38,
+  "moduleCount": 4,
+  "storedVertices": 14864,
+  "triangles": 4636,
+  "quads": 1398,
+  "triangleEquivalent": 7432,
+  "exporterSubmittedCorners": 24136,
+  "minTriangleAreaFloat32": 0.07305418290582662,
+  "minUvDetFloat32": 0.034999992698431015,
+  "minUpwardNormalY": 0.998220360151582,
+  "maxGrade": 0.05,
+  "maxCurvature": 0.0016666666666666668,
+  "minRadius": 600,
+  "maxJoinHeadingJump": 3.333333334701316e-8,
+  "seamChecks": [
+    {
+      "station": 64,
+      "maxFloat32WorldPositionGap": 0,
+      "maxFloat32SurfaceError": 1.1920928966180355e-8,
+      "realChunkPlane": true
+    },
+    {
+      "station": 128,
+      "maxFloat32WorldPositionGap": 0.0000035503747155505157,
+      "maxFloat32SurfaceError": 0.000003558334460496408,
+      "realChunkPlane": false
+    },
+    {
+      "station": 192,
+      "maxFloat32WorldPositionGap": 0.0000033320163958179233,
+      "maxFloat32SurfaceError": 0.000003368114898800315,
+      "realChunkPlane": false
+    }
+  ],
+  "repeatability": "two independent builds byte-identical; checked against all committed generated files",
+  "format": "unchanged existing exporter format_version=2",
+  "javaLoader": "Run verify-loader.mjs separately",
+  "notVerified": [
+    "Minecraft client",
+    "chunk world generation",
+    "UV appearance in Minecraft",
+    "PBR/Oculus/Embeddium",
+    "collision/vehicles",
+    "runtime frame time or draw calls",
+    "full civil-engineering design-speed compliance"
+  ]
+}

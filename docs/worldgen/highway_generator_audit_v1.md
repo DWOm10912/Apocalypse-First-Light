@@ -1,5 +1,7 @@
 # Highway Generator Audit V1（2026-09-13，静态审查）
 
+> **2026-10-07 当前源码复核：** 见 [Highway V2-0架构审查](highway_v2_0_architecture_audit.md)与[设计契约](highway_v2_0_design_contract.md)。现行自然链保留两条有限NATIONAL_TRUNK，且已接入卫星支线、局部匝道和海桥；不是只有两条边，也不是无限走廊。当前生产Highway未使用Pure Mesh；V2-0仅制作隔离离线原型，没有修改施工。下文以及各早期“尚未实现”结论按其日期作为历史记录，不能当现行状态或游戏实机PASS。
+
 > **2026-10-06 Rural consumer 退役说明：** 下文涉及 Rural 自然候选及其 12 格安全距的内容仅为历史；旧 Rural 不再生成或参与占地裁决。Highway 的注册、Feature、路线、工程、同源 HighwaySpatialClaimProvider 和通用 SpatialClaim 保留原状；本次没有新增城市协调或为旧 Rural 预留区域。详见 [Rural Retirement V1](rural_retirement_v1.md)。
 
 历史快照提示（Highway V2 Phase 1）：下文无限走廊、2200±300、旧盐与 corridor-index cache identity 均已过时，不代表现行实现。现行 Source of Truth 为 [HighwayRouteGraph](highway_v2_route_graph_phase1.md)：两条有限轴向主干、共享非原点交点、spawn 避让、海岸终止，renderer/claim 共用 edge。`PrimaryHighwayNetwork` 与 `HighwayGenerationContext` 已删除。下文保留用于追溯原审计；当前行为以 Phase 1 文档及源码为准，未声称实机验收。

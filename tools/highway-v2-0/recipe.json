@@ -1,0 +1,20 @@
+{
+  "recipeVersion": "highway-v2-0-demo-1",
+  "length": 256,
+  "stationStep": 1,
+  "moduleLength": 64,
+  "laneWidth": 3.75,
+  "lanesPerDirection": 2,
+  "outsideShoulder": 3.25,
+  "insideShoulder": 1.25,
+  "medianUnpaved": 14,
+  "normalCrossfall": 0.02,
+  "curve": {"start": 64, "transition": 32, "end": 224, "radius": 600, "bank": 0.03},
+  "vertical": {"start": 96, "transition": 40, "plateau": 40, "grade": 0.05},
+  "textureRepeat": 4,
+  "markingWidth": 0.15,
+  "dashOn": 3,
+  "dashPeriod": 12,
+  "textureSize": 128,
+  "notes": "Offline geometry demonstration; no design-speed, sight-distance, collision or live-world acceptance. Widths are AFL choices, not exact US dimensions."
+}
