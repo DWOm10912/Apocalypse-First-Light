@@ -3,3 +3,6 @@
 # are changed when only line endings change.
 src/generated/**/.cache/cache text eol=lf
 src/generated/**/*.json text eol=lf
+# M1-B deterministic offline fixtures
+tools/highway-v2-m1b/results/** text eol=lf
+src/main/blockbench/dev/highway_v2_m1b/*.bbmodel text eol=lf

@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "seed": 20261007,
+  "graphVersion": 1,
+  "routeId": "national_trunk_a",
+  "edgeId": "national_trunk_a/main",
+  "startNode": "national_trunk_a/start",
+  "endNode": "national_trunk_a/end",
+  "authorityStart": -5656.0,
+  "controls": [
+    {
+      "x": -5655.5,
+      "z": 721.5
+    },
+    {
+      "x": 5576.5,
+      "z": 721.5
+    }
+  ],
+  "corridors": [
+    {
+      "a": {
+        "x": -5655.5,
+        "z": 721.5
+      },
+      "b": {
+        "x": 5576.5,
+        "z": 721.5
+      },
+      "halfWidth": 32.0
+    }
+  ],
+  "start": 128.0,
+  "length": 768.0,
+  "from": {
+    "id": "rural4",
+    "lanes": 2,
+    "laneWidth": 3.75,
+    "innerShoulder": 1.5,
+    "outerShoulder": 3.5,
+    "median": 19.0,
+    "medianType": "grass",
+    "formationExtra": 4.0,
+    "constructionExtra": 8.0,
+    "protectionExtra": 16.0,
+    "crossfall": 0.02
+  },
+  "to": {
+    "id": "rural4",
+    "lanes": 2,
+    "laneWidth": 3.75,
+    "innerShoulder": 1.5,
+    "outerShoulder": 3.5,
+    "median": 19.0,
+    "medianType": "grass",
+    "formationExtra": 4.0,
+    "constructionExtra": 8.0,
+    "protectionExtra": 16.0,
+    "crossfall": 0.02
+  },
+  "transitionStart": 256.0,
+  "transitionLength": 256.0,
+  "profileSpan": 1024.0,
+  "grade": 0.03,
+  "limitations": [
+    "PREVIEW_ONLY_NO_WRITES_NO_COLLISION",
+    "PROTECTION_UNKNOWN_CONSTRUCTION_FORBIDDEN",
+    "DESIGN_VERTICAL_PROFILE_NOT_LEGACY_OR_TERRAIN_HEIGHT",
+    "ENGINEERING_SURFACE_VIADUCT_TUNNEL_UNKNOWN",
+    "SOURCE_NODE_KINDS\u003dTERMINUS,TERMINUS",
+    "NO_CONNECTION_ACROSS_EDGE_RESERVED_GAPS",
+    "GRAPH_RESERVED_ZONES\u003d6; JUNCTION\u003dnational_intersection"
+  ]
+}

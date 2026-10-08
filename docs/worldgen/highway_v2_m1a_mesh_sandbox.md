@@ -2,10 +2,10 @@
 
 日期：2026-10-07。基线：`65d40b0f`（原型）及 `a97e428d`（审查/设计契约）。
 
-**状态：M1-A 测试能力已集成主目录 Master；用户确认连续道路 Mesh 实际渲染正常、双向分离与弯道视觉基本正常、玩家坡面行走无明显卡脚。完整生命周期和光影兼容尚未验收。** 此文描述开发原型，不把全国 Highway、Terrain Phase 2 或 Road V1-B 标为已改造。
+**状态：M1-A 测试能力已集成主目录 Master；用户确认连续道路 Mesh 实际渲染正常、双向分离与弯道视觉基本正常、玩家坡面行走无明显卡脚，且 /afl dev highway_mesh verify 已成功执行。完整生命周期和光影兼容尚未验收。** 此文描述开发原型，不把全国 Highway、Terrain Phase 2 或 Road V1-B 标为已改造。
 集成说明（2026-10-07）：从 `master@6ad0801f` 正常合并隔离测试分支 `codex/highway-m1a-test@0dcd6025`。仅迁入 `a97e428d → 8cb341dc`、`65d40b0f → c1e9905f`、`f5c86b84 → 0dcd6025` 三个 Highway 提交，原始引用保存在 cherry-pick 记录；本合并另同步用户验收状态文档。不引入 `38e3f391`、`5dc68bbc` 的 Terrain 增量，也不删除 Master 原来已有的 Terrain Phase 0。V2-0 审查采用的原基线包含 Terrain 规划，其历史接口描述不代表此次已将规划代码带入 Master。
 
-本次实机结论来自用户确认，不扩展为保存/重进、区块卸载重载、资源重载、光影或性能全面 PASS。下文离线指标和第11节原编译记录保留原型交付时点；本次主目录编译结果以集成交付记录为准。原有正式 Highway/RouteGraph、Road V1-B、枪械/机器 Mesh、A1 建筑和 MCP 均不改变，M1-B 须另行批准。
+本次实机结论来自用户确认，不扩展为保存/重进、区块卸载重载、资源重载、光影或性能全面 PASS。下文离线指标和第11节原编译记录保留原型交付时点；本次主目录编译结果以集成交付记录为准。原有正式 Highway/RouteGraph、Road V1-B、枪械/机器 Mesh、A1 建筑和 MCP 均不改变，M1-B 已完成独立开发并获准集成 Master，见 [M1-B报告](highway_v2_m1b_route_geometry.md)；没有在Master启用新路线施工。
 
 ## 1. 复用与实现边界
 
@@ -224,4 +224,4 @@ remove 只删除 ledger 内、ID 和 layers 都仍匹配且无 BE 的测试方�
 - 没有运行build、processResources、runClient、完整测试套件或第二次实际Java编译；没有客户端截图、实机存盘回读、FPS或兼容性PASS。
 - 本轮变更：build.gradle开发资源及发布排除，9个隔离Java文件，开发资源目录，tools/highway-v2-m1a及本报告；V2-0三文档仅增加后续状态链接/历史范围说明。具体提交号由交付回复及git log给出，避免文档自引用哈希。
 
-M1-A 已完成本次批准的 Master 集成，仅提供开发测试能力。继续补充生命周期、光影兼容和性能验收；等待用户另行批准 M1-B，不自动启动全国 Highway V2 替换。
+M1-A 已完成本次批准的 Master 集成，仅提供开发测试能力。继续补充生命周期、光影兼容和性能验收；后续M1-B见 [独立路线预览报告](highway_v2_m1b_route_geometry.md)，不自动启动全国 Highway V2 替换。

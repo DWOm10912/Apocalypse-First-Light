@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "rural4": {"id":"rural4","lanes":2,"laneWidth":3.75,"innerShoulder":1.5,"outerShoulder":3.5,"median":19.0,"medianType":"grass","formationExtra":4.0,"constructionExtra":8.0,"protectionExtra":16.0,"crossfall":0.02},
+  "suburban6": {"id":"suburban6","lanes":3,"laneWidth":3.75,"innerShoulder":3.25,"outerShoulder":3.5,"median":12.0,"medianType":"reserved_barrier","formationExtra":4.0,"constructionExtra":8.0,"protectionExtra":16.0,"crossfall":0.02}
+}
