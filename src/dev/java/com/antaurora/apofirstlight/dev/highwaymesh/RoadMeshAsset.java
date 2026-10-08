@@ -58,14 +58,22 @@ public final class RoadMeshAsset {
         List<double[]> center=new ArrayList<>();for(var value:d.getAsJsonArray("centerline")){var row=value.getAsJsonArray();center.add(new double[]{row.get(0).getAsDouble(),row.get(1).getAsDouble(),row.get(2).getAsDouble(),row.get(3).getAsDouble()});}
         return new RoadMeshAsset(version,triangles,center,stored,equivalents,d.get("length").getAsDouble(),d.get("width").getAsDouble(),begin);
     }
+    /** Bounded M1-B generated ribbon; the existing M1-A asset path retains its original smaller limits. */
+    public static RoadMeshAsset generated(String version,List<Triangle> triangles,List<double[]> center,double length,double width) {
+        if(length>1024||width>56||triangles.size()>50000)throw new IllegalArgumentException("GENERATED_ROAD_BUDGET");
+        return new RoadMeshAsset(version,triangles,center,triangles.size()*3,triangles.size(),length,width,System.nanoTime(),512,65536);
+    }
     private RoadMeshAsset(String version,List<Triangle> triangles,List<double[]> center,int stored,int equivalents,double length,double width,long begin) {
+        this(version,triangles,center,stored,equivalents,length,width,begin,128,16000);
+    }
+    private RoadMeshAsset(String version,List<Triangle> triangles,List<double[]> center,int stored,int equivalents,double length,double width,long begin,int maxTiles,int maxColumns) {
         this.version=version;this.triangles=List.copyOf(triangles);this.centerline=List.copyOf(center);this.sourceStoredVertices=stored;this.sourceTriangleEquivalent=equivalents;this.length=length;this.width=width;
         this.tiles=ChunkMeshGeometry.tiles(triangles);this.collision=collision(triangles);
         var vertices=triangles.stream().flatMap(t->java.util.stream.Stream.of(t.a(),t.b(),t.c())).toList();
         minX=vertices.stream().mapToDouble(Vertex::x).min().orElseThrow();maxX=vertices.stream().mapToDouble(Vertex::x).max().orElseThrow();
         minY=vertices.stream().mapToDouble(Vertex::y).min().orElseThrow();maxY=vertices.stream().mapToDouble(Vertex::y).max().orElseThrow();
         minZ=vertices.stream().mapToDouble(Vertex::z).min().orElseThrow();maxZ=vertices.stream().mapToDouble(Vertex::z).max().orElseThrow();loadNanos=System.nanoTime()-begin;
-        if(tiles.size()>128||collision.size()>16000)throw new IllegalArgumentException("Demo exceeds bounded budget");
+        if(tiles.size()>maxTiles||collision.size()>maxColumns)throw new IllegalArgumentException("Demo exceeds bounded budget");
     }
     private static String read(Resources r,String name) throws IOException {try(Reader reader=r.open(name)){StringWriter out=new StringWriter();reader.transferTo(out);String s=out.toString().replace("\r\n","\n");if(s.length()>4*1024*1024)throw new IOException("Asset too large");return s;}}
     private static String sha(String text){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "m1b_rural4_export_fixture",
+    "length": 32,
+    "section": {
+      "id": "rural4",
+      "lanes": 2,
+      "laneWidth": 3.75,
+      "innerShoulder": 1.5,
+      "outerShoulder": 3.5,
+      "median": 19,
+      "medianType": "grass",
+      "formationExtra": 4,
+      "constructionExtra": 8,
+      "protectionExtra": 16,
+      "crossfall": 0.02
+    },
+    "quads": 0,
+    "triangles": 376,
+    "triangleEquivalent": 376,
+    "vertices": 1504,
+    "diagnostics": {
+      "SOURCE_TRIANGLE": 376
+    }
+  },
+  {
+    "id": "m1b_suburban6_export_fixture",
+    "length": 32,
+    "section": {
+      "id": "suburban6",
+      "lanes": 3,
+      "laneWidth": 3.75,
+      "innerShoulder": 3.25,
+      "outerShoulder": 3.5,
+      "median": 12,
+      "medianType": "reserved_barrier",
+      "formationExtra": 4,
+      "constructionExtra": 8,
+      "protectionExtra": 16,
+      "crossfall": 0.02
+    },
+    "quads": 0,
+    "triangles": 400,
+    "triangleEquivalent": 400,
+    "vertices": 1600,
+    "diagnostics": {
+      "SOURCE_TRIANGLE": 400
+    }
+  }
+]
