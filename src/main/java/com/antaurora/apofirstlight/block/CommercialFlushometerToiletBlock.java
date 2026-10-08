@@ -17,24 +17,21 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-/** Static, single-block commercial toilet; model front and shape front are both NORTH. */
+/**
+ * Static, single-block commercial toilet; model front and shape front are both NORTH. Restroom Fixtures V2
+ * (docs/models/restroom_fixtures_v2.md): real size, dry, exposed flushometer; the boxes are the generator's
+ * (tools/build-restroom-fixtures-v2.mjs SHAPES.toilet, which checks every vertex lies inside one).
+ */
 public final class CommercialFlushometerToiletBlock extends HorizontalDirectionalBlock {
     private static final VoxelShape NORTH = Shapes.or(
-            // Floor base, pedestal, and ceramic support below the bowl.
-            Block.box(5.25, 0, 6.65, 10.75, .65, 12.85),
-            Block.box(5.55, .6, 6.9, 10.45, 4.35, 12.55),
-            Block.box(5.45, 4.25, 4.55, 10.55, 6.35, 12.75),
-            Block.box(4.2, 5.6, 3.35, 11.8, 6.55, 12.85),
-            // Four sides around the open bowl. Do not span the mouth with a solid box.
-            Block.box(3.3, 6.35, 2.05, 5.2, 8.65, 12.85),
-            Block.box(10.8, 6.35, 2.05, 12.7, 8.65, 12.85),
-            Block.box(5.15, 6.35, 1.4, 10.85, 8.65, 3.35),
-            Block.box(5.15, 6.35, 11.1, 10.85, 8.65, 13.15),
-            // Rear ceramic connection, vertical pipe, valve, and wall-side fitting.
-            Block.box(5.8, 5, 11.9, 10.2, 7.95, 15.3),
-            Block.box(7, 7.9, 13.35, 9, 12.1, 15.1),
-            Block.box(6.65, 11.65, 12.8, 9.35, 15.75, 15.5),
-            Block.box(6.8, 12.6, 15.5, 9.2, 15, 16)
+            // pedestal, the bowl flaring out of it, the bowl with its seat
+            Block.box(6.05, 0, 7.4, 9.95, 3.4, 12.85),
+            Block.box(5.75, 3.3, 5.85, 10.25, 4.75, 12.5),
+            Block.box(5.0, 4.6, 4.4, 11.0, 7.25, 13.35),
+            // neck behind the bowl, the vacuum-breaker tube, the valve with its handle and the control stop at the wall
+            Block.box(6.5, 4.75, 12.5, 9.5, 6.95, 15.5),
+            Block.box(7.4, 6.9, 13.7, 8.6, 11.0, 14.8),
+            Block.box(4.7, 10.7, 13.5, 11.4, 13.85, 16.0)
     ).optimize();
     private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(NORTH);
 

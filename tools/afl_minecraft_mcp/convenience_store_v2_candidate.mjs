@@ -88,7 +88,7 @@ const partitions=[];
 for(const x of [24,26,28])for(let z=6;z<=8;z++)partitions.push([x,z]);
 for(const [x,z]of partitions){const has=(dx,dz)=>partitions.some(p=>p[0]===x+dx&&p[1]===z+dz);fixture(x,1,z,`restroom_partition[north=${has(0,-1)},south=${has(0,1)},east=${has(1,0)},west=${has(-1,0)},door_support=0]`);}
 for(const x of [25,27]){fixture(x,1,6,'commercial_flushometer_toilet[facing=south]');tall(x,8,'restroom_stall_door','south',',hinge=left,open=false');}
-tall(29,10,'commercial_wall_mounted_sink','west');
+fixture(29,1,10,'commercial_wall_mounted_sink[facing=west,half=lower]');fixture(29,2,10,'wall_mirror[facing=west]');   // Restroom Fixtures V2: one-cell lavatory, mirror above
 fixture(25,1,1,'commercial_dumpster[facing=south,part=master]');fixture(24,1,1,'commercial_dumpster[facing=south,part=secondary]');
 fixture(15,2,4,'service_meter_box[facing=north,on=true]');
 

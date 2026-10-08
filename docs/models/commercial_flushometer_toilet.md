@@ -1,5 +1,7 @@
 # Commercial Flushometer Toilet — closed dry ceramic cavity
 
+> **已被取代（2026-10-08）**：运行时模型、贴图、碰撞盒都换成了 [Restroom Fixtures V2](restroom_fixtures_v2.md) 的真实尺寸网格（`tools/build-restroom-fixtures-v2.mjs`）。本文描述的 V1 Blockbench 源文件和导出脚本还留在仓库里，但已经过时，重新导出会覆盖 V2。
+
 Status: V1 static decorative block registered and exported for Forge 1.20.1. Game-client visual and Survival checks remain pending. The current approved direction is DRY: no water surface, exposed drain mechanism or central raised cap.
 
 ## V1 game integration

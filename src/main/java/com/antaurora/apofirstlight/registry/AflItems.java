@@ -345,7 +345,9 @@ public final class AflItems {
     public static final RegistryObject<Item> COMMERCIAL_FLUSHOMETER_TOILET = ITEMS.register("commercial_flushometer_toilet",
             () -> new BlockItem(AflBlocks.COMMERCIAL_FLUSHOMETER_TOILET.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> COMMERCIAL_WALL_MOUNTED_SINK = ITEMS.register("commercial_wall_mounted_sink",
-            () -> new BlockItem(AflBlocks.COMMERCIAL_WALL_MOUNTED_SINK.get(), new Item.Properties().stacksTo(1)));
+            () -> new BlockItem(AflBlocks.COMMERCIAL_WALL_MOUNTED_SINK.get(), new Item.Properties().stacksTo(4)));   // one cell since Restroom Fixtures V2
+    public static final RegistryObject<Item> WALL_MIRROR = ITEMS.register("wall_mirror",
+            () -> new BlockItem(AflBlocks.WALL_MIRROR.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> LOW_FILING_CABINET = ITEMS.register("low_filing_cabinet",
             () -> new BlockItem(AflBlocks.LOW_FILING_CABINET.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> TALL_FILING_CABINET = ITEMS.register("tall_filing_cabinet",

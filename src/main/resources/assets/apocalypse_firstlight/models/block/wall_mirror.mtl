@@ -1,0 +1,4 @@
+# AFL Restroom Fixtures V2 wall mirror
+newmtl mirror
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/wall_mirror

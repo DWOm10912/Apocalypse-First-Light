@@ -54,6 +54,10 @@ public final class AflBlockEntities {
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity>> POWER_STRIP =
             BLOCK_ENTITIES.register("power_strip", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity::new, AflBlocks.POWER_STRIP_3.get(), AflBlocks.POWER_STRIP_6.get()).build(null));
+    /** Mirror Reflection V1: lists the loaded wall mirrors on the client (docs/rendering/mirror_reflection_v1.md). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.WallMirrorBlockEntity>> WALL_MIRROR =
+            BLOCK_ENTITIES.register("wall_mirror", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.WallMirrorBlockEntity::new, AflBlocks.WALL_MIRROR.get()).build(null));
     /** Building Lights V1: the emergency light's battery (docs/models/building_lights_v1.md). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.EmergencyLightBlockEntity>> EMERGENCY_LIGHT =
             BLOCK_ENTITIES.register("emergency_light", () -> BlockEntityType.Builder.of(

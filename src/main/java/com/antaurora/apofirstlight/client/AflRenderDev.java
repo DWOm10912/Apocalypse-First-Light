@@ -30,17 +30,21 @@ import java.util.Properties;
  * <li>{@code static_mesh}: on / off. On: the never-moving parts of animated meshes whose profile lists them are baked into
  * the chunk ({@code client/blockmesh/AflStaticMeshModel}); off: the old per-frame path draws everything. Switching rebuilds
  * every chunk.</li>
+ * <li>{@code mirror}: off / auto / lit / albedo (Mirror Reflection V1, {@link MirrorReflection}). Auto: albedo with a shader
+ * pack, lit without; off: every mirror shows its plain glass.</li>
  * </ul>
- * Both default to on. The user sets them with the client command {@code /afl_render <switch> <value>} (development builds
- * only); tools/afl_minecraft_mcp/render_benchmark.mjs writes {@code run/afl_render_dev.properties} (same keys), which a
+ * shadow_cull and static_mesh default to on, mirror to auto. The user sets them with the client command
+ * {@code /afl_render <switch> <value>} (development builds only); tools/afl_minecraft_mcp/render_benchmark.mjs writes {@code run/afl_render_dev.properties} (same keys), which a
  * development build reads once a second.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public final class AflRenderDev {
     public enum ShadowCull { OFF, ON, DEBUG }
+    public enum Mirror { OFF, AUTO, LIT, ALBEDO }
 
     private static volatile ShadowCull shadowCull = ShadowCull.ON;
     private static volatile boolean staticMesh = true;
+    private static volatile Mirror mirror = Mirror.AUTO;
     private static long fileStamp = Long.MIN_VALUE;
     private static int tick;
 
@@ -48,6 +52,7 @@ public final class AflRenderDev {
 
     public static ShadowCull shadowCull() { return shadowCull; }
     public static boolean staticMesh() { return staticMesh; }
+    public static Mirror mirror() { return mirror; }
     /** For the profiler line: {@code shadow_cull=on,static_mesh=on}. */
     public static String label() {
         return "shadow_cull=" + shadowCull.name().toLowerCase(Locale.ROOT) + ",static_mesh=" + (staticMesh ? "on" : "off");
@@ -67,11 +72,13 @@ public final class AflRenderDev {
             long previous = fileStamp;
             fileStamp = stamp;
             if (stamp == Long.MIN_VALUE) {   // removed: back to the defaults
-                if (previous != Long.MIN_VALUE) apply("on", "on", "control file removed");
+                if (previous != Long.MIN_VALUE) { mirror = Mirror.AUTO; apply("on", "on", "control file removed"); }
                 return;
             }
             var properties = new Properties();
             try (Reader reader = Files.newBufferedReader(file)) { properties.load(reader); }
+            String m = properties.getProperty("mirror");
+            if (m != null) mirror = Mirror.valueOf(m.trim().toUpperCase(Locale.ROOT));
             apply(properties.getProperty("shadow_cull"), properties.getProperty("static_mesh"), "control file");
         } catch (IOException | RuntimeException e) {
             ApocalypseFirstLight.LOGGER.warn("[AFL RENDER DEV] cannot read {}: {}", file, e.getMessage());
@@ -89,7 +96,7 @@ public final class AflRenderDev {
                 if (mc.levelRenderer != null) mc.levelRenderer.allChanged();
             }
         }
-        ApocalypseFirstLight.LOGGER.info("[AFL RENDER DEV] shadow_cull={} static_mesh={} ({})", shadowCull, staticMesh ? "on" : "off", source);
+        ApocalypseFirstLight.LOGGER.info("[AFL RENDER DEV] shadow_cull={} static_mesh={} mirror={} ({})", shadowCull, staticMesh ? "on" : "off", mirror, source);
     }
 
     @SubscribeEvent
@@ -108,8 +115,14 @@ public final class AflRenderDev {
                     c.getSource().sendSuccess(() -> Component.literal("static_mesh = " + (staticMesh ? "on" : "off")), false);
                     return 1;
                 })))
+                .then(Commands.literal("mirror").then(Commands.argument("value", StringArgumentType.word()).executes(c -> {
+                    try { mirror = Mirror.valueOf(StringArgumentType.getString(c, "value").toUpperCase(Locale.ROOT)); }
+                    catch (IllegalArgumentException e) { c.getSource().sendFailure(Component.literal("off / auto / lit / albedo")); return 0; }
+                    c.getSource().sendSuccess(() -> Component.literal("mirror = " + mirror), false);
+                    return 1;
+                })))
                 .then(Commands.literal("status").executes(c -> {
-                    c.getSource().sendSuccess(() -> Component.literal("shadow_cull = " + shadowCull + ", static_mesh = " + (staticMesh ? "on" : "off")), false);
+                    c.getSource().sendSuccess(() -> Component.literal("shadow_cull = " + shadowCull + ", static_mesh = " + (staticMesh ? "on" : "off") + ", mirror = " + mirror), false);
                     return 1;
                 })));
     }

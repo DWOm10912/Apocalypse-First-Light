@@ -149,7 +149,8 @@ public final class AflCreativeTabs {
             AflItems.RESTROOM_PARTITION,
             AflItems.RESTROOM_STALL_DOOR,
             AflItems.COMMERCIAL_FLUSHOMETER_TOILET,
-            AflItems.COMMERCIAL_WALL_MOUNTED_SINK);
+            AflItems.COMMERCIAL_WALL_MOUNTED_SINK,
+            AflItems.WALL_MIRROR);
 
     // By production chain (docs/gameplay/material_system_v1.md): steel, lead, nickel, tungsten, lithium, then ore
     // concentrates that still wait for a consumer, then salvage.

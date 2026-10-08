@@ -1,5 +1,7 @@
 # Commercial Wall-Mounted Sink — source asset
 
+> **已被取代（2026-10-08）**：运行时模型、贴图、碰撞盒都换成了 [Restroom Fixtures V2](restroom_fixtures_v2.md) 的真实尺寸网格（`tools/build-restroom-fixtures-v2.mjs`）。本文描述的 V1 Blockbench 源文件和导出脚本还留在仓库里，但已经过时，重新导出会覆盖 V2。V1 的两格放置、上下半格碰撞、GameTest 描述都不再是现行行为：V2 是一格，`CommercialWallMountedSinkGameTests` 已改成测一格、旧上半格清理和壁挂镜（只编译，没跑）。
+
 Status: Commercial Wall-Mounted Sink V1 is a registered, static, dry decoration block. It has no BlockEntity, animation, interaction, fluid system, or water variant.
 
 - Source: `src/main/blockbench/commercial_wall_mounted_sink.bbmodel`

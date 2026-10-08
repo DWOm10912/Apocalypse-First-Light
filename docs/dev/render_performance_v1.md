@@ -48,9 +48,10 @@
   - 客户端命令：
     - `/afl_render shadow_cull off|on|debug`；
     - `/afl_render static_mesh on|off`；
+    - `/afl_render mirror off|auto|lit|albedo`（2026-10-08，[Mirror Reflection V1](../rendering/mirror_reflection_v1.md)，默认 auto）；
     - `/afl_render status`。
   - 测量脚本写 `run/afl_render_dev.properties`（键名相同），开发版每秒读一次。
-  - 两个开关默认都是开。`static_mesh` 切换时会重建所有区块。
+  - 两个开关默认都是开（`mirror` 默认 auto）。`static_mesh` 切换时会重建所有区块。
   - 计时器的每一行都写着当时生效的开关（`switches=shadow_cull=on,static_mesh=on`）。
 - **A/B 测量**：`render_benchmark.mjs <标签> [每个视角停留秒数] [模式]`，模式用逗号分隔：
   - `current`：不动开关；

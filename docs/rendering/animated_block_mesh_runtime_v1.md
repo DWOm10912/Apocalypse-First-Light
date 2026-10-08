@@ -147,6 +147,8 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
   - 登记的姿势和现在一致。
 
   零件开始动的那一刻，区块里可能还有 1–3 帧静止的那一份。
+
+  镜子的离屏渲染也会用当前的模型数据网格化方块（[Mirror Reflection V1](mirror_reflection_v1.md)），这时不登记（`MirrorReflection.meshing()`）：它网格化的版本，真正的区块不一定已经画好。
 - **看不见的方块**（0.25 秒内没在正常画面里画过）：正在动的零件按目标姿势交给区块，远处的门直接跳到开着，不会在动画期间消失。
 - **检查频率**：每个客户端 tick 检查正在动或动画目标变了的方块（`AflBlockMeshAnimationState.version()`），其他方块大约每秒检查一次。
 - **区块模型**（`client/blockmesh/AflStaticMeshModel`）：

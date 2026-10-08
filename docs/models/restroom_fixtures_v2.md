@@ -1,0 +1,107 @@
+# Restroom Fixtures V2（马桶、挂墙洗手盆重做，新增壁挂镜）
+
+状态（2026-10-08）：**已实现，用户进游戏看过**。
+- 外观：用户在 Sundial、Complementary、不开光影下的截图里都有马桶、洗手盆和镜子，没有提出外观问题。
+- 镜子的实时反射用户 PASS（[Mirror Reflection V1](../rendering/mirror_reflection_v1.md)）。
+- 还没确认：碰撞和选中框、生存模式挖掘和掉落、旧存档里洗手池上半格的清理。
+
+用户看过概念图（马桶 T1 / T2，洗手盆 S1 / S2，见[开发顺序](../dev/development_order_v1.md)），选了**方案 A：T1 + S1，加镜子**，要求做好 PBR。
+
+V1 的马桶和洗手池是 2026-09 的 Blockbench 方块拼出来的 OBJ，128 px 贴图，没有 PBR，而且比真实大 1.4–1.7 倍（马桶 0.61 宽 × 0.98 高 × 0.91 深；洗手池 0.90 宽 × 0.64 深、最高 1.16 m，占两格）。V2 按真实尺寸重做，注册名不变。
+
+## 共同点
+
+- 生成器：`tools/build-restroom-fixtures-v2.mjs`，用和建筑灯具同一个网格库（`tools/cube-slab-mesh-lib.mjs`）。
+  - 毫米建模，换算成 px（1 mm = 0.016 px）。
+  - 模型正面朝 −Z（NORTH），墙在 z = +8 px，和 V1 一样，所以 blockstate 的转法不变。
+  - 输出：OBJ、MTL、方块模型、物品模型、blockstate，LabPBR 三张图（基础色、`_s`、`_n`），以及可编辑的 Blockbench 源文件。
+  - `--check` 检查所有输出是不是最新；`--preview DIR` 只写 OBJ 和贴图。
+  - 生成器会检查：每个顶点都在方块类的碰撞盒里；没有共面重叠。
+- 渲染：Forge OBJ，烘焙进区块（`forge:obj`，不开 AO，平滑法线 36°）。静态方块，不用方块实体。
+- **默认没水**：马桶碗里和洗手盆下水口都是干的，存水弯口是深色。
+- **以后接管道**：进水、排水接口都在洁具这一格的背面（墙面）或地面。AFL 管道以后可以藏在墙后那一格里，接到这些位置。现在没有任何流体逻辑。
+
+## 马桶（T1，`commercial_flushometer_toilet`）
+
+落地式长圆马桶，明装冲水阀。
+
+- 尺寸：坐圈 0.42–0.45 m，离墙 0.72 m，最宽 0.36 m，冲水阀顶 0.86 m。
+- 部件：
+  - 釉面陶瓷：落地底座、碗、碗后颈、两颗地脚螺栓帽；碗内一直上釉到干的存水弯口（深色）；
+  - 白色开口座圈，不带盖（商用常见），两个拉丝不锈钢铰链；
+  - 镀铬冲水阀：碗顶的进水口、真空破坏管、阀体（带帽和手柄）、墙上出来的控制阀和墙面装饰圈。
+- 冲水阀手柄朝模型的 +X 一侧。真实安装要朝马桶的开阔一侧，A1 两间卫生间互为镜像，所以总有一间方向不理想。以后如果需要，再加左右手柄两种变体。
+- 碰撞 / 选中：6 个盒子（底座、碗下部、碗、后颈、真空破坏管、阀门）。碗口做成实心，可以站上去。
+- 5,432 个三角面，512 贴图，17 texel / px。
+
+## 挂墙洗手盆（S1，`commercial_wall_mounted_sink`）
+
+- 尺寸：520 × 460 mm，台面 0.84 m（无障碍上限 0.865 m），挡水板高 100 mm，膝下净空 0.69 m。
+- 部件：
+  - 釉面陶瓷：台面和裙边（倒角）、椭圆盆、盆底外凸、挡水板；
+  - 镀铬：单把手龙头、下水口（法兰圈 + 十字格栅）、尾管、P 型存水弯和接入墙里的横管、两个角阀；墙面装饰圈；
+  - 不锈钢编织进水软管两根，从角阀接到龙头下面。
+- **从两格改成一格**：V1 的上半格只为了放高出来的龙头，新模型最高 0.95 m，一格就够，上面那格可以挂镜子。
+  - `half` 属性保留，让旧存档能正常读：`half=upper` 现在是过时的残留，看不见、没有碰撞、可以直接被替换、不掉落，下次更新或随机刻时自己消失。
+  - 新放的只会是一格。
+- 碰撞 / 选中：6 个盒子（台面裙边、盆底、挡水板、龙头、存水弯、角阀和软管）。
+- 5,616 个三角面，512 贴图，18 texel / px。
+- 堆叠上限 1 → 4，搬运系数从"超大件 ×1.25"改成"中型 ×1.10"（单格 12 kg，按[重量系统](../gameplay/weight_system_v1.md)的规则）。
+
+## 壁挂镜（`wall_mirror`，新方块）
+
+- 18 × 30 英寸（457 × 762 mm）镜子，拉丝不锈钢槽边框（边宽 16 mm，深 20 mm，正面倒角），镜面比边框内缩 5 mm。
+- 挂在墙上，从所在格子的地面往上。放在洗手盆上面那一格时，下沿离地 1.0 m（无障碍要求不超过 1015 mm），顶到 1.76 m。
+- 放置：只能放在方块侧面（朝向 = 镜面朝的方向，背对墙）。背后那一格的这一面必须结实，墙没了它就掉下来（和墙上插座、应急灯一样）。
+- 挖掘：镐，没有等级要求；空手打碎不掉落。玻璃音效。重量 6 kg（估计），堆叠 4，搬运系数 ×1.10。
+- 76 个三角面，256 贴图。
+
+### 镜面反射怎么处理
+
+**2026-10-08 起改成自己画实时反射**，见 [Mirror Reflection V1](../rendering/mirror_reflection_v1.md)：
+- 离你最近、在视野里、12 格以内的那面镜子，每帧从镜像机位把镜子前面的房间和实体（包括你自己）画到一张贴图上，再贴到玻璃上；
+- 不开光影和开光影都一样有效；
+- 还没进游戏验证。
+
+原来只靠光影的屏幕空间反射，用户实机看到：Sundial 室内的镜子里是天空，Complementary 是暗蓝灰或者和墙一个颜色，不开光影是一块浅银灰。原因是照镜子时该看到的东西在身后、不在屏幕上，这是 SSR 本身的限制。
+
+镜面材质没变：LabPBR **银**（`_s` G = 237，预设金属），光滑度 255（`_s` R），基础色是中性浅银灰，从下到上亮 3%，没有画假的倒影。没有被选中画反射的镜子（远处的、第二面）仍然显示这块银色玻璃，开光影时由光影包的 SSR 处理。
+
+## 材质（LabPBR）
+
+`_s`：R = 感知光滑度，G = F0（230–237 是预设金属：230 铁、233 铬、237 银；255 = 用基础色当 F0），B = 0，A = 255（不发光）。`_n` 是平的（法线 128 / 128），B 通道是 AO。
+
+| 材质 | 基础色 | 光滑度 | F0 |
+|---|---|---|---|
+| 釉面陶瓷 | 243 / 242 / 237 | 222（倒角 230） | 20 |
+| 存水弯口、下水口（深色） | 38 / 38 / 37 | 120 | 20 |
+| 座圈（塑料） | 238 / 237 / 232 | 150 | 20 |
+| 镀铬 | 212 / 215 / 218 | 220 | 233（铬） |
+| 墙面装饰圈 | 226 / 228 / 229 | 196 | 233（铬） |
+| 拉丝不锈钢（铰链、镜框） | 190 / 192 / 194 | 168 | 255 |
+| 编织软管 | 166 / 169 / 172 | 128 | 230（铁） |
+| 镜面 | 约 201 / 207 / 211，下到上亮 3% | 255 | 237（银） |
+
+## 文件
+
+| 用途 | 路径 |
+|---|---|
+| 生成器 | `tools/build-restroom-fixtures-v2.mjs` |
+| 可编辑源 | `src/main/blockbench/commercial_flushometer_toilet_v2.bbmodel`、`commercial_wall_mounted_sink_v2.bbmodel`、`wall_mirror_v1.bbmodel`，贴图在 `src/main/blockbench/textures/` |
+| 运行时 | `models/block/<id>.{obj,mtl,json}`、`models/item/<id>.json`、`blockstates/<id>.json`、`textures/block/<id>{,_s,_n}.png` |
+| 方块 | `block/CommercialFlushometerToiletBlock`、`block/CommercialWallMountedSinkBlock`、`block/WallMirrorBlock`（2026-10-08 起带一个不存数据的方块实体 `blockentity/WallMirrorBlockEntity`，没有方块实体渲染器，反射由 `client/MirrorReflection` 画，见 [Mirror Reflection V1](../rendering/mirror_reflection_v1.md)） |
+| 注册 | `AflBlocks.WALL_MIRROR`、`AflItems.WALL_MIRROR`、"家具与设施"创造栏、中英文名（Wall Mirror / 壁挂镜）、`loot_tables/blocks/wall_mirror.json`、`mineable/pickaxe`、`item_mass`、`carry/bulky` |
+| 建造工具 | `AuthoringFixtureRegistry`：洗手盆不再是两格；`wall_mirror` 是墙挂件（`ATTACHED_OPPOSITE_FACING`） |
+| A1 | `tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs`：两间卫生间的洗手盆改成一格，上面各挂一面镜子 |
+| GameTest | `src/dev/java/.../dev/CommercialWallMountedSinkGameTests.java`（`src/dev/commercial-wall-sink-gametest.init.gradle`）：从 V1 的两格测试改成：洗手盆四个朝向、一格、碰撞探针、墙不影响；旧上半格清理且不掉落；6 种工具的挖掘掉落；镜子四个朝向、没墙放不上、墙拆掉就掉、不能放地上、7 种工具的挖掘掉落。**只编译过，没有运行** |
+
+V1 的 Blockbench 源文件和导出脚本还在仓库里（`src/main/blockbench/` 和 `tools/` 下的 `*commercial-toilet*`、`*commercial-wall-sink*`），已经过时，运行时文件被 V2 覆盖了。要不要删由用户决定。
+
+## 等实机确认
+
+- Sundial 下：陶瓷的光泽、镀铬会不会太刺眼（[枪械材质](../native_guns/hybrid_mesh_runtime_v1.md)上整块金属 F0 出现过眩光）；
+- 镜子：只靠光影反射时 Sundial 里是天空，改成自己画实时反射后用户 2026-10-08 PASS（见 [Mirror Reflection V1](../rendering/mirror_reflection_v1.md)）；
+- 不开光影时的外观；
+- 碰撞和选中框；
+- 生存模式挖掘和掉落：马桶、洗手盆要铁镐，镜子任意镐；
+- 旧存档里洗手池的上半格会不会自己消失，A1 重新摆放后镜子能不能挂上去。

@@ -135,7 +135,7 @@ public final class AflStaticMeshModel {
             AflMeshChunking.Snapshot snapshot = data.get(AflMeshChunking.SNAPSHOT);
             if (snapshot == null || snapshot.variant().empty()) return List.of();
             Built built = built(snapshot.variant());
-            AflMeshChunking.confirm(snapshot, built.lo(), built.hi());
+            if (!com.antaurora.apofirstlight.client.MirrorReflection.meshing()) AflMeshChunking.confirm(snapshot, built.lo(), built.hi());
             return built.quads();
         }
 

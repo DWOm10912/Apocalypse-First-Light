@@ -459,6 +459,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> COMMERCIAL_WALL_MOUNTED_SINK = BLOCKS.register("commercial_wall_mounted_sink",
             () -> new CommercialWallMountedSinkBlock(BlockBehaviour.Properties.of()
                     .strength(2.5F, 4.0F).sound(SoundType.STONE).requiresCorrectToolForDrops().noOcclusion()));
+    /** Restroom Fixtures V2 wall mirror (docs/models/restroom_fixtures_v2.md): any pickaxe; by hand it breaks without dropping. */
+    public static final RegistryObject<Block> WALL_MIRROR = BLOCKS.register("wall_mirror",
+            () -> new com.antaurora.apofirstlight.block.WallMirrorBlock(BlockBehaviour.Properties.of()
+                    .strength(1.0F, 2.0F).sound(SoundType.GLASS).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> LOW_FILING_CABINET = BLOCKS.register("low_filing_cabinet",
             () -> new LowFilingCabinetBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(2.5F, 4.0F)

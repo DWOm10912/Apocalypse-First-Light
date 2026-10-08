@@ -433,6 +433,10 @@
       "unit_mass_kg": 12,
       "estimated": true
     },
+    "apocalypse_firstlight:wall_mirror": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
     "apocalypse_firstlight:metal_trash_can": {
       "unit_mass_kg": 10,
       "estimated": true

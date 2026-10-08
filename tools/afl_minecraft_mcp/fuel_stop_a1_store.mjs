@@ -130,7 +130,8 @@ export function recipe() {
   for (const [id, X, Z, f, props] of INTERIOR_DOORS) fix('place_multiblock', id, X, 0, Z, f, props);
 
   // ---- back of house ----
-  for (const [X, sink] of [[1, 2], [5, 4]]) { fix('place_fixture', 'commercial_flushometer_toilet', X, 0, 1, 'south'); fix('place_multiblock', 'commercial_wall_mounted_sink', sink, 0, 1, 'south'); }
+  // Restroom Fixtures V2 (2026-10-08): the lavatory is one cell; a wall mirror hangs in the cell above it (bottom edge 1.0 m)
+  for (const [X, sink] of [[1, 2], [5, 4]]) { fix('place_fixture', 'commercial_flushometer_toilet', X, 0, 1, 'south'); fix('place_fixture', 'commercial_wall_mounted_sink', sink, 0, 1, 'south'); fix('place_fixture', 'wall_mirror', sink, 1, 1, 'south'); }
   fix('place_fixture', 'distribution_panel', 8, 1, 1, 'south');
   for (let X = 10; X <= 15; X++) fix('place_multiblock', 'storage_rack', X, 0, 1, 'south');
   for (let X = 17; X <= 21; X++) fix('place_multiblock', 'storage_rack', X, 0, 4, 'north');

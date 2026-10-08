@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.CommercialWallMountedSinkBlock;
+import com.antaurora.apofirstlight.block.WallMirrorBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.authlib.GameProfile;
@@ -35,6 +36,10 @@ import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
+/**
+ * Restroom Fixtures V2 (docs/models/restroom_fixtures_v2.md): the one-cell lavatory, the cleanup of V1's obsolete upper
+ * halves, and the wall mirror above it. Probe points follow tools/build-restroom-fixtures-v2.mjs SHAPES.
+ */
 @GameTestHolder(ApocalypseFirstLight.MOD_ID)
 @PrefixGameTestTemplate(false)
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
@@ -75,27 +80,21 @@ public final class CommercialWallMountedSinkGameTests {
 
         for (Direction facing : Direction.Plane.HORIZONTAL) {
             clear(helper, pos);
-            helper.assertTrue(place(helper, pos, facing), "place without wall " + facing);
+            helper.assertTrue(placeSink(helper, pos, facing), "place without wall " + facing);
             BlockState state = level.getBlockState(pos);
-            helper.assertTrue(state.is(sink) && state.getValue(CommercialWallMountedSinkBlock.FACING) == facing,
-                    "facing " + facing);
-            BlockState upper = level.getBlockState(pos.above());
-            helper.assertTrue(state.getValue(CommercialWallMountedSinkBlock.HALF) == DoubleBlockHalf.LOWER
-                    && upper.is(sink) && upper.getValue(CommercialWallMountedSinkBlock.HALF) == DoubleBlockHalf.UPPER
-                    && upper.getValue(CommercialWallMountedSinkBlock.FACING) == facing, "two aligned halves " + facing);
+            helper.assertTrue(state.is(sink) && state.getValue(CommercialWallMountedSinkBlock.FACING) == facing
+                    && state.getValue(CommercialWallMountedSinkBlock.HALF) == DoubleBlockHalf.LOWER, "facing " + facing);
+            helper.assertTrue(level.getBlockState(pos.above()).isAir(), "one cell " + facing);
             var shape = state.getCollisionShape(level, pos);
-            var upperShape = upper.getCollisionShape(level, pos.above());
             helper.assertTrue(!shape.isEmpty() && !Shapes.block().equals(shape), "custom shape " + facing);
-            helper.assertTrue(shape.bounds().minY > 0 && shape.bounds().maxY <= 1.0
-                    && !upperShape.isEmpty() && upperShape.bounds().maxY < .2,
-                    "split height and small upper footprint " + facing);
+            helper.assertTrue(shape.bounds().minY > 0 && shape.bounds().maxY < 1.0, "fits the cell " + facing);
             // Rotate local probes in lockstep with the model's blockstate variant.
-            helper.assertTrue(!contains(shape, rotate(.5, .9125, .62, facing)), "open basin " + facing);
-            helper.assertTrue(!contains(shape, rotate(.38, .5125, .58, facing)), "under-sink air " + facing);
-            helper.assertTrue(contains(shape, rotate(.5, .5125, .68, facing)), "P-trap " + facing);
-            helper.assertTrue(contains(shape, rotate(.1, .8925, .62, facing)), "ceramic rim " + facing);
-            helper.assertTrue(contains(upperShape, rotate(.5, .1, .75, facing)), "upper faucet " + facing);
-            helper.assertTrue(!contains(upperShape, rotate(.25, .1, .62, facing)), "upper air " + facing);
+            helper.assertTrue(contains(shape, rotate(.5, .79, .75, facing)), "deck " + facing);
+            helper.assertTrue(!contains(shape, rotate(.5, .79, .4, facing)), "front of the deck " + facing);
+            helper.assertTrue(contains(shape, rotate(.5, .9, .88, facing)), "faucet " + facing);
+            helper.assertTrue(contains(shape, rotate(.5, .55, .85, facing)), "P-trap " + facing);
+            helper.assertTrue(!contains(shape, rotate(.3, .55, .6, facing)), "under-sink air " + facing);
+            helper.assertTrue(!contains(shape, rotate(.5, .3, .6, facing)), "knee clearance " + facing);
 
             // Rear wall is visual only: placing/removing it does not destroy the sink.
             BlockPos behind = pos.relative(facing.getOpposite());
@@ -107,33 +106,79 @@ public final class CommercialWallMountedSinkGameTests {
 
         clear(helper, pos);
         level.setBlock(pos.above(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
-        helper.assertTrue(!place(helper, pos, Direction.NORTH) && level.getBlockState(pos).isAir()
-                && level.getBlockState(pos.above()).is(Blocks.STONE), "occupied upper cell rejects placement");
+        helper.assertTrue(placeSink(helper, pos, Direction.NORTH) && level.getBlockState(pos).is(sink)
+                && level.getBlockState(pos.above()).is(Blocks.STONE), "an occupied cell above does not block placement");
+
+        // A V1 upper half left in a saved world: invisible, empty, no drop, gone on the next shape update.
+        clear(helper, pos);
+        BlockState legacy = sink.defaultBlockState().setValue(CommercialWallMountedSinkBlock.HALF, DoubleBlockHalf.UPPER);
+        level.setBlock(pos, legacy, Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE);
+        helper.assertTrue(level.getBlockState(pos).is(sink) && level.getBlockState(pos).getShape(level, pos).isEmpty()
+                && legacy.isRandomlyTicking(), "legacy upper is empty and ticks");
+        level.setBlock(pos.east(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+        helper.assertTrue(level.getBlockState(pos).isAir(), "legacy upper removes itself");
+        helper.assertTrue(drops(helper, pos, AflItems.COMMERCIAL_WALL_MOUNTED_SINK.get()) == 0, "legacy upper drops nothing");
 
         for (Item tool : List.of(Items.AIR, Items.WOODEN_PICKAXE, Items.STONE_PICKAXE,
                 Items.IRON_PICKAXE, Items.DIAMOND_PICKAXE, Items.NETHERITE_PICKAXE)) {
-            for (DoubleBlockHalf half : DoubleBlockHalf.values()) {
-                clear(helper, pos);
-                helper.assertTrue(place(helper, pos, Direction.NORTH), "place before break " + tool + half);
-                var player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "sink_mining"));
-                player.setGameMode(GameType.SURVIVAL);
-                player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(tool));
-                boolean shouldDrop = tool == Items.IRON_PICKAXE || tool == Items.DIAMOND_PICKAXE
-                        || tool == Items.NETHERITE_PICKAXE;
-                BlockPos target = half == DoubleBlockHalf.UPPER ? pos.above() : pos;
-                helper.assertTrue(player.getMainHandItem().isCorrectToolForDrops(level.getBlockState(target)) == shouldDrop,
-                        "correct tool predicate " + tool + half);
-                helper.assertTrue(player.gameMode.destroyBlock(target), "destroy " + tool + half);
-                helper.assertTrue(level.getBlockState(pos).isAir() && level.getBlockState(pos.above()).isAir(),
-                        "both halves cleared " + tool + half);
-                int drops = level.getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(3)).stream()
-                        .filter(entity -> entity.getItem().is(AflItems.COMMERCIAL_WALL_MOUNTED_SINK.get()))
-                        .mapToInt(entity -> entity.getItem().getCount()).sum();
-                helper.assertTrue(drops == (shouldDrop ? 1 : 0), "drop count " + tool + half + " = " + drops);
-            }
+            clear(helper, pos);
+            helper.assertTrue(placeSink(helper, pos, Direction.NORTH), "place before break " + tool);
+            boolean shouldDrop = tool == Items.IRON_PICKAXE || tool == Items.DIAMOND_PICKAXE
+                    || tool == Items.NETHERITE_PICKAXE;
+            breakAndCount(helper, pos, tool, shouldDrop, AflItems.COMMERCIAL_WALL_MOUNTED_SINK.get(), "sink");
         }
-        ApocalypseFirstLight.LOGGER.info("[AFL WALL SINK TEST] PASS four facings, two-cell placement/shape, wall independence, blocked upper placement, twelve survival break cases");
+
+        mirror(helper, pos);
+        ApocalypseFirstLight.LOGGER.info("[AFL WALL SINK TEST] PASS four facings, one-cell placement/shape, wall independence, legacy upper cleanup, six survival break cases; wall mirror four facings, wall support, seven survival break cases");
         helper.succeed();
+    }
+
+    private static void mirror(GameTestHelper helper, BlockPos pos) {
+        var level = helper.getLevel();
+        Block mirror = AflBlocks.WALL_MIRROR.get();
+        for (Direction facing : Direction.Plane.HORIZONTAL) {
+            clear(helper, pos);
+            BlockPos wall = pos.relative(facing.getOpposite());
+            helper.assertTrue(!placeMirror(helper, wall, facing), "no wall, no mirror " + facing);
+            level.setBlock(wall, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            helper.assertTrue(placeMirror(helper, wall, facing), "place on the wall " + facing);
+            BlockState state = level.getBlockState(pos);
+            helper.assertTrue(state.is(mirror) && state.getValue(WallMirrorBlock.FACING) == facing, "facing " + facing);
+            var shape = state.getShape(level, pos);
+            helper.assertTrue(contains(shape, rotate(.5, .4, .99, facing)), "glass against the wall " + facing);
+            helper.assertTrue(!contains(shape, rotate(.5, .4, .5, facing)), "thin " + facing);
+            level.removeBlock(wall, false);
+            helper.assertTrue(level.getBlockState(pos).isAir(), "falls off without its wall " + facing);
+        }
+        clear(helper, pos);
+        helper.assertTrue(!placeMirror(helper, pos.below(), Direction.UP), "not on a floor");
+
+        for (Item tool : List.of(Items.AIR, Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.IRON_PICKAXE,
+                Items.GOLDEN_PICKAXE, Items.DIAMOND_PICKAXE, Items.NETHERITE_PICKAXE)) {
+            clear(helper, pos);
+            level.setBlock(pos.south(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+            helper.assertTrue(placeMirror(helper, pos.south(), Direction.NORTH), "place mirror before break " + tool);
+            breakAndCount(helper, pos, tool, tool != Items.AIR, AflItems.WALL_MIRROR.get(), "mirror");
+        }
+    }
+
+    private static void breakAndCount(GameTestHelper helper, BlockPos pos, Item tool, boolean shouldDrop, Item item, String what) {
+        var level = helper.getLevel();
+        var player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "sink_mining"));
+        player.setGameMode(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(tool));
+        helper.assertTrue(player.getMainHandItem().isCorrectToolForDrops(level.getBlockState(pos)) == shouldDrop,
+                what + " correct tool predicate " + tool);
+        helper.assertTrue(player.gameMode.destroyBlock(pos), what + " destroy " + tool);
+        helper.assertTrue(level.getBlockState(pos).isAir(), what + " cleared " + tool);
+        int drops = drops(helper, pos, item);
+        helper.assertTrue(drops == (shouldDrop ? 1 : 0), what + " drop count " + tool + " = " + drops);
+    }
+
+    private static int drops(GameTestHelper helper, BlockPos pos, Item item) {
+        return helper.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(pos).inflate(3)).stream()
+                .filter(entity -> entity.getItem().is(item))
+                .mapToInt(entity -> entity.getItem().getCount()).sum();
     }
 
     private static Vec3 rotate(double x, double y, double z, Direction facing) {
@@ -146,7 +191,7 @@ public final class CommercialWallMountedSinkGameTests {
         return shape.toAabbs().stream().anyMatch(box -> box.contains(point));
     }
 
-    private static boolean place(GameTestHelper helper, BlockPos pos, Direction facing) {
+    private static boolean placeSink(GameTestHelper helper, BlockPos pos, Direction facing) {
         var level = helper.getLevel();
         var player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "sink_place"));
         player.setGameMode(GameType.SURVIVAL);
@@ -156,6 +201,18 @@ public final class CommercialWallMountedSinkGameTests {
         var context = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, player.getMainHandItem(),
                 new BlockHitResult(Vec3.atBottomCenterOf(pos), Direction.UP, pos.below(), false));
         return ((BlockItem) AflItems.COMMERCIAL_WALL_MOUNTED_SINK.get()).place(context).consumesAction();
+    }
+
+    /** Clicks {@code face} of {@code clicked}, so the mirror goes into the cell on that side, facing that way. */
+    private static boolean placeMirror(GameTestHelper helper, BlockPos clicked, Direction face) {
+        var level = helper.getLevel();
+        var player = FakePlayerFactory.get(level, new GameProfile(UUID.randomUUID(), "mirror_place"));
+        player.setGameMode(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AflItems.WALL_MIRROR.get()));
+        Vec3 hit = Vec3.atCenterOf(clicked).add(face.getStepX() * .5, face.getStepY() * .5, face.getStepZ() * .5);
+        var context = new BlockPlaceContext(player, InteractionHand.MAIN_HAND, player.getMainHandItem(),
+                new BlockHitResult(hit, face, clicked, false));
+        return ((BlockItem) AflItems.WALL_MIRROR.get()).place(context).consumesAction();
     }
 
     private static void clear(GameTestHelper helper, BlockPos pos) {

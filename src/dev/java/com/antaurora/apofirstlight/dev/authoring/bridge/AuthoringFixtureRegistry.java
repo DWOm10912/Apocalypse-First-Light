@@ -146,8 +146,10 @@ final class AuthoringFixtureRegistry {
             new Def(A+"restroom_partition",safe,"restroom").connect("north","south","east","west","door_support").support(Support.FLOOR_CLEAR_ABOVE)
                     .notes("Connections and door_support are computed from neighbours; never author them by hand."),
             new Def(A+"commercial_flushometer_toilet",safe,"restroom").facing(H4),
-            new Def(A+"commercial_wall_mounted_sink",safe,"restroom").facing(H4).multi(TWO_TALL).support(Support.NONE)
-                    .notes("Engine needs no support; place it against a wall for the intended look."),
+            new Def(A+"commercial_wall_mounted_sink",safe,"restroom").facing(H4).support(Support.NONE)
+                    .notes("Restroom Fixtures V2 (2026-10-08): one cell, rim 0.84 m. Engine needs no support; place it against a wall for the intended look."),
+            new Def(A+"wall_mirror",safe,"restroom").facing(H4).support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Restroom Fixtures V2 (2026-10-08): wall only (facing = away from the wall); hangs from its cell floor, so in the cell above a lavatory its bottom edge is 1.0 m up. Its BlockEntity holds no data (Mirror Reflection V1: it lists loaded mirrors on the client)."),
             new Def(A+"metal_trash_can",storage,"utility").facing(H4).fixed("open","false").inventory()
                     .notes("V2 (2026-10-02): 9-slot searchable container with a hinged lid; starts shut and empty."),
             dumpster("commercial_dumpster"),

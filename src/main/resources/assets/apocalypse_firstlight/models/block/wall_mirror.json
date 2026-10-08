@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/wall_mirror.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/wall_mirror"
+  }
+}

@@ -1,3 +1,4 @@
-newmtl m_e82afdd0-5c07-0893-87cc-711d4c3afcdd
+# AFL Restroom Fixtures V2 commercial toilet (dry)
+newmtl toilet
 Kd 1 1 1
 map_Kd apocalypse_firstlight:block/commercial_flushometer_toilet
