@@ -48,6 +48,11 @@ public final class AflShaderCompat {
         catch (ReflectiveOperationException | LinkageError e) { shadowFailed = true; return null; }
     }
 
+    /** A shader pack is in use (false when unknown). */
+    public static boolean shaderPackInUse() {
+        return Boolean.TRUE.equals(shaderActive());
+    }
+
     public static boolean activeShadowPass() {
         return Boolean.TRUE.equals(shaderActive()) && Boolean.TRUE.equals(shadowPass());
     }
@@ -64,6 +69,11 @@ public final class AflShaderCompat {
             var name = pack == null ? null : pack.invoke(null);
             return name == null ? "UNCONFIRMED" : name.toString();
         } catch (ReflectiveOperationException | LinkageError e) { return "UNCONFIRMED"; }
+    }
+
+    /** For profiler lines: the active shader pack's name, or "none" without one. */
+    public static String currentPackLabel() {
+        return Boolean.TRUE.equals(shaderActive()) ? packName() : "none";
     }
 
     static boolean shadowAvailable() { init(); return shadow != null && !shadowFailed; }

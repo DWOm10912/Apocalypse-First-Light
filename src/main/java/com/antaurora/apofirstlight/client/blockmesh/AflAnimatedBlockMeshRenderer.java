@@ -44,9 +44,12 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             pose.translate(profile.origin().x, profile.origin().y, profile.origin().z);
             pose.scale((float)profile.scale().x, (float)profile.scale().y, (float)profile.scale().z);
             var cutout = RenderType.entityCutoutNoCull(profile.texture());
+            long timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
             draw(entity, profile, mesh, time, pose, buffers.getBuffer(cutout),
                     packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT);
+            com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.cutout", timing);
             if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
+                timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(cutout);
                 var translucent = RenderType.entityNoOutline(profile.texture());
                 draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
@@ -64,6 +67,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                             AflMeshPart.Layer.CUTOUT, true);
                 }
                 if (relitVertices != null && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(relit);
+                com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.glass_and_relit", timing);
             }
         } finally { pose.popPose(); }
     }

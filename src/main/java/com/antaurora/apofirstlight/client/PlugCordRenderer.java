@@ -80,6 +80,15 @@ public final class PlugCordRenderer {
     }
 
     public static void render(PlugCord cord, Level level, BlockPos origin, float partialTick, PoseStack pose, MultiBufferSource buffers) {
+        long timing = AflRenderProfiler.begin();
+        try {
+            renderCord(cord, level, origin, partialTick, pose, buffers);
+        } finally {
+            AflRenderProfiler.end("plug_cord.all", timing);
+        }
+    }
+
+    private static void renderCord(PlugCord cord, Level level, BlockPos origin, float partialTick, PoseStack pose, MultiBufferSource buffers) {
         Minecraft mc = Minecraft.getInstance();
         PlugCord.Geometry geo = cord.geometry();
         BlockPos host = cord.host();
