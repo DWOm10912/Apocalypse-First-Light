@@ -330,7 +330,7 @@ public final class VendingMachineBlockEntity extends RandomizableContainerBlockE
 
     /** Power cord (tools/build-vending-machine-v2.mjs CORD): the C14 inlet on the back panel, low at the viewer's left corner. */
     private PlugCord.Geometry cordGeometry() {
-        return PlugCord.appliance(worldPosition, meshFacing(), 6.0, 2.4, 7.7, -7.8, 7.8, 0);
+        return PlugCord.appliance(worldPosition, meshFacing(), 6.0, 2.4, 7.7, -7.8, 7.8, 0, 31.8);
     }
 
     @Override public PlugCord plugCord() { return power.plugCord(); }

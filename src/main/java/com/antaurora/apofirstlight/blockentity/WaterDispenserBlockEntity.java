@@ -66,7 +66,7 @@ public final class WaterDispenserBlockEntity extends AflAnimatedMeshBlockEntity 
 
     /** Power cord (tools/build-water-dispenser-v2.mjs CORD): the C14 inlet in the pocket recessed into the back. */
     private PlugCord.Geometry cordGeometry() {
-        return PlugCord.appliance(worldPosition, meshFacing(), 2.3, 5.0, 6.8, -5.6, 5.6, 0);
+        return PlugCord.appliance(worldPosition, meshFacing(), 2.3, 5.0, 6.8, -5.6, 5.6, 0, 21.2);
     }
 
     @Override public PlugCord plugCord() { return power.plugCord(); }

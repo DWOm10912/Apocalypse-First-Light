@@ -119,8 +119,10 @@ public final class PlugCordRenderer {
         Start s = start(level, geo, tail);
         points.addAll(s.lead);
         curve(level, s.point, s.dir, tail, axis, points);
-        tube(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), level, origin, points.toArray(Vec3[]::new),
-                sprite.getU(CORD_U * 16), sprite.getV(CORD_V * 16));
+        // light from where the cord comes into view (the lead may start inside the wall behind the appliance, at light 0)
+        int lightStart = LevelRenderer.getLightColor(level, BlockPos.containing(s.point.add(0, 0.05, 0))), lightEnd = LevelRenderer.getLightColor(level, BlockPos.containing(tail));
+        tube(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), points.toArray(Vec3[]::new), s.lead.size() - 1,
+                origin, lightStart, lightEnd, sprite.getU(CORD_U * 16), sprite.getV(CORD_V * 16));
     }
 
     /** Where the free part of the cord starts, and the straight lead before it (along an appliance's back). */
@@ -133,20 +135,43 @@ public final class PlugCordRenderer {
         // whose collision box would otherwise lift the cord; the water dispenser, 2026-10-08)
         Vec3 out = geo.backExit().add(geo.out().scale(0.03));
         if (free(level, out.add(geo.out().scale(0.2)))) { lead.add(geo.exit()); lead.add(out); return new Start(out, geo.out(), lead); }
-        // blocked behind: down behind the back, along it to the nearer free corner
-        int pick = 0;
+        // blocked behind (against a wall): down to the floor just inside the back edge, then along under it to the side
+        // where the cell beside is free; in a row of appliances on past the neighbours (up to ROW_REACH blocks), hidden
+        // under their back edges too. Nothing free within reach: the nearer corner, as before.
+        int pick = 0, steps = 0;
         double best = Double.MAX_VALUE;
         for (int i = 0; i < geo.corners().length; i++) {
-            Vec3 c = geo.corners()[i];
-            double d = (target == null ? 0 : c.distanceTo(target)) + (free(level, c.add(geo.sides()[i].scale(0.3))) ? 0 : 100) + i * 1e-3;
-            if (d < best) { best = d; pick = i; }
+            for (int k = 0; k <= ROW_REACH; k++) {
+                Vec3 c = geo.corners()[i].add(geo.sides()[i].scale(k));
+                boolean open = free(level, c.add(geo.sides()[i].scale(0.3)));
+                if (!open && k < ROW_REACH) continue;
+                double d = (target == null ? 0 : c.distanceTo(target)) + k * 0.5 + (open ? 0 : 100) + i * 1e-3;
+                if (d < best) { best = d; pick = i; steps = open ? k : 0; }
+                break;
+            }
         }
-        Vec3 corner = geo.corners()[pick];
-        lead.add(geo.exit()); lead.add(geo.backExit()); lead.add(geo.backFloor());
+        Vec3 corner = geo.corners()[pick].add(geo.sides()[pick].scale(steps));
+        // a socket above the appliance (a chest freezer under its outlet): up behind the back, out over the top back edge
+        // right below the plug, when that is shorter than any way round a side
+        if (target != null && geo.top() != null) {
+            Vec3 a = geo.top()[0], b = geo.top()[1], ab = b.subtract(a);
+            double t = Math.max(0, Math.min(1, target.subtract(a).dot(ab) / Math.max(1e-9, ab.lengthSqr())));
+            Vec3 up = a.add(ab.scale(t));
+            if (target.y > up.y + 0.05 && free(level, up.add(0, 0.15, 0)) && target.distanceTo(up) < best) {
+                lead.add(geo.exit());
+                lead.add(new Vec3(up.x, up.y - 0.05, up.z).subtract(geo.out().scale(0.02)));   // inside the cabinet, under the edge
+                return new Start(up, new Vec3(0, 1, 0), lead);
+            }
+        }
+        lead.add(geo.exit()); lead.add(geo.backFloor());
         Vec3 along = corner.subtract(geo.backFloor());
-        for (int k = 1; k <= 3; k++) lead.add(geo.backFloor().add(along.scale(k / 4.0)));
+        int pieces = Math.max(4, (int) Math.ceil(along.length() * 2));   // a point every half block for the light
+        for (int k = 1; k < pieces; k++) lead.add(geo.backFloor().add(along.scale((double) k / pieces)));
         return new Start(corner, geo.sides()[pick], lead);
     }
+
+    /** Blocks a cord behind an appliance row may run past its neighbours to find a free side. */
+    private static final int ROW_REACH = 3;
 
     private static boolean free(Level level, Vec3 p) {
         BlockPos at = BlockPos.containing(p);
@@ -207,29 +232,41 @@ public final class PlugCordRenderer {
             Vec3 q = a.scale(r * r * r).add(p1.scale(3 * r * r * s)).add(p2.scale(3 * r * s * s)).add(b.scale(s * s * s));
             if (i < SEGMENTS) {   // the cord droops onto what it passes over, never through it
                 q = new Vec3(q.x, q.y - Math.sin(Math.PI * s) * Math.min(0.5, distance * 0.25), q.z);
-                at.set(q.x, q.y, q.z);
-                VoxelShape shape = level.getBlockState(at).getCollisionShape(level, at);
-                double top = shape.isEmpty() ? Double.NEGATIVE_INFINITY : at.getY() + shape.max(Direction.Axis.Y);
-                if (shape.isEmpty()) {   // nothing in this cell: rest on the one below if the cord dips into it
-                    at.set(q.x, q.y - 1, q.z);
-                    VoxelShape below = level.getBlockState(at).getCollisionShape(level, at);
-                    if (!below.isEmpty()) top = Math.max(top, at.getY() + below.max(Direction.Axis.Y));
-                }
+                double top = Math.max(surface(level, at, q, 0), surface(level, at, q, -1));
                 if (q.y < top + RADIUS) q = new Vec3(q.x, top + RADIUS, q.z);
             }
             out.add(q);
         }
     }
 
-    private static void tube(PoseStack pose, VertexConsumer out, Level level, BlockPos origin, Vec3[] points, float u, float v) {
+    /**
+     * The top of the collision boxes of the cell {@code dy} below q's that lie under q (q's x / z inside the box, the box not
+     * starting above it). Per box, not the cell's highest box: beside a narrow appliance (a water dispenser leaves 2.4 px of
+     * its cell free on each side) a cord used to be lifted onto the appliance's top, a loop up and down (2026-10-08).
+     */
+    private static double surface(Level level, BlockPos.MutableBlockPos at, Vec3 q, int dy) {
+        at.set(q.x, q.y + dy, q.z);
+        VoxelShape shape = level.getBlockState(at).getCollisionShape(level, at);
+        if (shape.isEmpty()) return Double.NEGATIVE_INFINITY;
+        double lx = q.x - at.getX(), ly = q.y - at.getY(), lz = q.z - at.getZ();
+        double top = Double.NEGATIVE_INFINITY;
+        for (var box : shape.toAabbs())
+            if (lx > box.minX - RADIUS && lx < box.maxX + RADIUS && lz > box.minZ - RADIUS && lz < box.maxZ + RADIUS && box.minY <= ly + 0.3)
+                top = Math.max(top, at.getY() + box.maxY);
+        return top;
+    }
+
+    /** The tube along the points; the lead (up to point {@code from}) takes lightA, the rest goes from lightA to lightB. */
+    private static void tube(PoseStack pose, VertexConsumer out, Vec3[] points, int from, BlockPos origin, int lightA, int lightB, float u, float v) {
         if (points.length < 2) return;
         Vec3[][] ring = LiquidJetRenderer.rings(points, SIDES);
         int n = points.length - 1;
-        int lightA = LevelRenderer.getLightColor(level, BlockPos.containing(points[0])), lightB = LevelRenderer.getLightColor(level, BlockPos.containing(points[n]));
+        from = Math.max(0, Math.min(from, n - 1));
         Matrix4f matrix = pose.last().pose();
         Matrix3f normals = pose.last().normal();
         for (int i = 0; i < n; i++) {
-            int l0 = lerpLight(lightA, lightB, (double) i / n), l1 = lerpLight(lightA, lightB, (double) (i + 1) / n);
+            double t0 = Math.max(0, (double) (i - from) / (n - from)), t1 = Math.max(0, (double) (i + 1 - from) / (n - from));
+            int l0 = lerpLight(lightA, lightB, t0), l1 = lerpLight(lightA, lightB, t1);
             for (int k = 0; k < SIDES; k++) {
                 int k2 = (k + 1) % SIDES;
                 vertex(out, matrix, normals, origin, points[i], ring[i][k], u, v, l0);

@@ -37,10 +37,12 @@ public final class PlugCord {
      * ({@code corners}) with the directions the cord then leaves in ({@code sides}). The renderer takes the way behind when
      * the cell behind the exit is solid. An appliance's cord is detachable: {@code inlet} is the face of its IEC C14 inlet,
      * where the renderer seats the cord's C13 connector (pointing along {@code out}); the exit is the connector's tail.
+     * {@code top}: the two ends of the appliance's top back edge, where a cord to a socket above a low appliance (a chest
+     * freezer under its outlet) comes up from behind it.
      */
     public record Geometry(Vec3 exit, Vec3 out, @Nullable Vec3 backExit, @Nullable Vec3 backFloor, @Nullable Vec3[] corners, @Nullable Vec3[] sides,
-                           @Nullable Vec3 inlet) {
-        public static Geometry hardWired(Vec3 exit, Vec3 out) { return new Geometry(exit, out, null, null, null, null, null); }
+                           @Nullable Vec3 inlet, @Nullable Vec3[] top) {
+        public static Geometry hardWired(Vec3 exit, Vec3 out) { return new Geometry(exit, out, null, null, null, null, null, null); }
     }
 
     /** Cord lengths, blocks (straight line from the exit to the socket). Appliances: user 2026-10-08 asked for a longer cord. */
@@ -197,15 +199,31 @@ public final class PlugCord {
     }
 
     /**
+     * How far inside the back plane an appliance standing against a wall runs its cord along the floor, px. The appliances'
+     * backs reach the cell boundary (the cooler's exactly), so the inlet's connector and tail sit in the wall behind; a run
+     * at the tail's depth was inside the wall and the whole cord vanished (2026-10-08, user screenshots). The run goes
+     * under the cabinet's back edge instead, out of sight, and the cord comes out beside the feet, as a real one does.
+     */
+    public static final double BACK_INSET = 0.6;
+
+    /**
      * An appliance's cord (px, the generator's frame): its C14 inlet centred at (x, y) on the back plane {@code backZ}, the
      * connector pointing backward, the cord leaving its tail; the footprint across {@code xMin..xMax}; the floor at
-     * {@code floorY} (the origin cell's bottom = 0). Behind a wall the cord drops at the tail and runs along the back.
+     * {@code floorY} (the origin cell's bottom = 0), the top at {@code topY}. Behind a wall the cord drops from the tail to the
+     * floor just inside the back edge ({@link #BACK_INSET}) and runs along it to a free side, or rises behind the back to the
+     * top back edge when the socket is above the appliance.
      */
-    public static Geometry appliance(BlockPos origin, Direction facing, double x, double y, double backZ, double xMin, double xMax, double floorY) {
-        double r = floorY + RADIUS_PX + 0.02, face = backZ + INLET_PROUD, z = face + CONNECTOR_LENGTH;
+    public static Geometry appliance(BlockPos origin, Direction facing, double x, double y, double backZ, double xMin, double xMax,
+                                     double floorY, double topY) {
+        double r = floorY + RADIUS_PX + 0.02, face = backZ + INLET_PROUD, z = face + CONNECTOR_LENGTH, inside = backZ - BACK_INSET;
+        double top = topY + RADIUS_PX + 0.02, edge = backZ - TOP_INSET;
         Vec3 exit = at(origin, facing, x, y, z);
-        return new Geometry(exit, dir(facing, 0, 0, 1), exit, at(origin, facing, x, r, z),
-                new Vec3[]{at(origin, facing, xMax + 0.35, r, z), at(origin, facing, xMin - 0.35, r, z)},
-                new Vec3[]{dir(facing, 1, 0, 0), dir(facing, -1, 0, 0)}, at(origin, facing, x, y, face));
+        return new Geometry(exit, dir(facing, 0, 0, 1), exit, at(origin, facing, x, r, inside),
+                new Vec3[]{at(origin, facing, xMax + 0.35, r, inside), at(origin, facing, xMin - 0.35, r, inside)},
+                new Vec3[]{dir(facing, 1, 0, 0), dir(facing, -1, 0, 0)}, at(origin, facing, x, y, face),
+                new Vec3[]{at(origin, facing, xMax - 0.5, top, edge), at(origin, facing, xMin + 0.5, top, edge)});
     }
+
+    /** How far inside the back plane a cord comes up over the top back edge, px. */
+    public static final double TOP_INSET = 0.3;
 }

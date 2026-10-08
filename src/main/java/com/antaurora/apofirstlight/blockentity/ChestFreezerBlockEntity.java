@@ -135,7 +135,7 @@ public final class ChestFreezerBlockEntity extends RandomizableContainerBlockEnt
 
     /** Power cord (tools/build-chest-freezer-v2.mjs CORD, x - 16): the C14 inlet on the master's back wall, low at its outer corner. */
     private PlugCord.Geometry cordGeometry() {
-        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 2.2, 7.7, -24, 8, 0);
+        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 2.2, 7.7, -24, 8, 0, 15.8);
     }
 
     @Override public PlugCord plugCord() { return power.plugCord(); }

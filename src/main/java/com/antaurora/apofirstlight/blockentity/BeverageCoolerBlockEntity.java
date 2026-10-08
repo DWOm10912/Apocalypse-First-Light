@@ -104,7 +104,7 @@ public final class BeverageCoolerBlockEntity extends RandomizableContainerBlockE
 
     /** Power cord (tools/build-beverage-cooler-v2.mjs CORD, x - 16): the C14 inlet on the master's back, low at its outer corner. */
     private PlugCord.Geometry cordGeometry() {
-        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 1.8, 8.0, -24, 8, 0);
+        return PlugCord.appliance(worldPosition, meshFacing(), 5.3, 1.8, 8.0, -24, 8, 0, 32.0);
     }
 
     @Override public PlugCord plugCord() { return power.plugCord(); }
