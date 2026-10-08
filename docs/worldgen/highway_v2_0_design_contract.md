@@ -1,6 +1,6 @@
 # Highway V2-0：北美州际高速设计契约与分阶段方案
 
-日期：2026-10-07。状态：**设计建议，尚未接入正式 Highway。** 当前生产行为以[源码审查](highway_v2_0_architecture_audit.md)为准；仅[离线原型](highway_v2_0_mesh_prototype.md)实现了下述部分参数化视觉几何。
+日期：2026-10-07。状态：**设计建议，尚未接入正式 Highway。** 当前生产行为以[源码审查](highway_v2_0_architecture_audit.md)为准；[离线原型](highway_v2_0_mesh_prototype.md)实现了下述部分参数化视觉几何。后续[M1-A隔离开发测试场](highway_v2_m1a_mesh_sandbox.md)已接入真实16格渲染tile及有限碰撞代码，编译/离线验证通过，尚未实机验收；这不等于完成整个M1或正式高速升级。下文“当前/本轮”工具能力结论保留V2-0审查时点，M1-A增量以新报告为准。
 
 ## 1. 现实参考的适用边界
 

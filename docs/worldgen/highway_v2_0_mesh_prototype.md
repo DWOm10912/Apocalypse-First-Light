@@ -2,6 +2,8 @@
 
 日期：2026-10-07。状态：**离线导出、数据校验、现行Java Loader加载PASS；客户端/世界/碰撞/兼容/性能未测。**
 
+后续状态：[M1-A隔离开发测试场](highway_v2_m1a_mesh_sandbox.md)已复用本页原型，新增dev资源、实际16格裁剪、世界渲染及有限碰撞；编译/离线检查通过，客户端仍待用户验收。下文“此次/本轮/没有Java改动”等均描述V2-0提交范围，不表示M1-A尚未实现。原始离线产物保持不变。
+
 [完整源码审查](highway_v2_0_architecture_audit.md) / [现实断面契约与M1–M5](highway_v2_0_design_contract.md)。当前基线`5dc68bbc`，此次不修改生产系统。实现只在`tools/highway-v2-0/`和可编辑源`src/main/blockbench/dev/highway_v2_0/`，不在任何main/dev resources目录，不触发模型、方块、worldgen或资源自动注册。
 
 ## 1. 复现命令

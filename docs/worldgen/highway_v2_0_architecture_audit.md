@@ -6,6 +6,8 @@
 
 配套：[设计契约与后续工作包](highway_v2_0_design_contract.md)、[原型及复现](highway_v2_0_mesh_prototype.md)。旧名称中已有 Highway V2 Phase 1/2A/2B，与此次 M1–M5 **不是同一阶段编号**。
 
+后续增量：[M1-A隔离开发测试场](highway_v2_m1a_mesh_sandbox.md)已新增dev Java/资源和Gradle隔离配置，编译与离线检查通过，客户端待验收。本页“未改Java/Gradle”等为V2-0的历史范围。正式RouteGraph、Highway施工、Terrain与Road V1-B仍未修改；旧审查不能充当M1-A实机结果。
+
 ## 1. 真实结构与调用链
 
 下文 `main/` 指 `src/main/java/com/antaurora/apofirstlight/`，`dev/` 指 `src/dev/java/com/antaurora/apofirstlight/`。除特别注明，Highway 类位于 `worldgen/highway/`。

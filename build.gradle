@@ -41,6 +41,8 @@ mixin {
 // Forge's automatic event-subscriber scan indexes the main ModFile output.
 // Include dev command sources there for runClient, then exclude them from the published jar.
 sourceSets.main.java.srcDir 'src/dev/java'
+// M1-A sandbox assets are visible to development runs, explicitly excluded from the release jar below.
+sourceSets.main.resources.srcDir 'src/dev/highway_mesh_resources'
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 
@@ -345,6 +347,10 @@ tasks.named('processResources', ProcessResources).configure {
 
 tasks.named('jar', Jar).configure {
     exclude 'com/antaurora/apofirstlight/dev/**'
+    exclude 'assets/afl_highway_demo/**'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_highway_surface.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_highway_surface.json'
+    exclude '.gitattributes'
 
     manifest {
         attributes([
