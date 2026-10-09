@@ -37,7 +37,12 @@ public class ServiceMeterBoxBlockEntity extends AflAnimatedMeshBlockEntity {
     private long nextLookup, nextSync;
     private long lastReadingSynced;
 
-    private final IEnergyStorage input = new IEnergyStorage() {
+    /** The bottom port: forwards into the panel's input, and passes the network's supply on to it (SupplyProbe). */
+    private final class Input implements IEnergyStorage, com.antaurora.apofirstlight.energy.SupplyProbe {
+        @Override public void networkSupply(long gameTime, int available) {
+            DistributionPanelBlockEntity target = target();
+            if (target != null) target.networkSupply(gameTime, available);
+        }
         @Override public int receiveEnergy(int max, boolean simulate) {
             DistributionPanelBlockEntity target = target();
             if (target == null) return 0;
@@ -50,7 +55,8 @@ public class ServiceMeterBoxBlockEntity extends AflAnimatedMeshBlockEntity {
         @Override public int getMaxEnergyStored() { return 0; }
         @Override public boolean canExtract() { return false; }
         @Override public boolean canReceive() { return isOn(); }
-    };
+    }
+    private final Input input = new Input();
     private LazyOptional<IEnergyStorage> inputCap = LazyOptional.of(() -> input);
 
     public ServiceMeterBoxBlockEntity(BlockPos pos, BlockState state) {

@@ -1,0 +1,180 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "cell": "c0r0|c2r0|c3r0|c0r1|c1r1|c2r1|c3r1|c0r2|c1r2|c2r2|c3r2|c0r3|c1r3|c2r3|c3r3"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/cell"
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "north"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/body"
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "north",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_off"
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "north",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_lit"
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "north",
+        "digits": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/digits"
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "east"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/body",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "east",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "east",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_lit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "east",
+        "digits": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/digits",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "south"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/body",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "south",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "south",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_lit",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "south",
+        "digits": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/digits",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "west"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/body",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "west",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "west",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/brand_lit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "cell": "c1r0",
+        "facing": "west",
+        "digits": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/price_sign/digits",
+        "y": 270
+      }
+    }
+  ]
+}

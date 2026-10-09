@@ -71,6 +71,11 @@
     "apocalypse_firstlight:light_pole",
     "apocalypse_firstlight:area_light",
     "apocalypse_firstlight:wall_pack",
-    "apocalypse_firstlight:canopy_downlight"
+    "apocalypse_firstlight:canopy_downlight",
+    "apocalypse_firstlight:channel_letter",
+    "apocalypse_firstlight:price_sign",
+    "apocalypse_firstlight:roof_tpo",
+    "apocalypse_firstlight:rooftop_unit",
+    "apocalypse_firstlight:enclosure_gate"
   ]
 }

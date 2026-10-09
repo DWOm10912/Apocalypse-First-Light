@@ -1,0 +1,784 @@
+{
+  "variants": {
+    "facing=north,letter=a,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_off"
+    },
+    "facing=north,letter=a,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_lit"
+    },
+    "facing=north,letter=b,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_off"
+    },
+    "facing=north,letter=b,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_lit"
+    },
+    "facing=north,letter=c,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_off"
+    },
+    "facing=north,letter=c,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_lit"
+    },
+    "facing=north,letter=d,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_off"
+    },
+    "facing=north,letter=d,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_lit"
+    },
+    "facing=north,letter=e,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_off"
+    },
+    "facing=north,letter=e,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_lit"
+    },
+    "facing=north,letter=f,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_off"
+    },
+    "facing=north,letter=f,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_lit"
+    },
+    "facing=north,letter=g,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_off"
+    },
+    "facing=north,letter=g,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_lit"
+    },
+    "facing=north,letter=h,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_off"
+    },
+    "facing=north,letter=h,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_lit"
+    },
+    "facing=north,letter=i,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_off"
+    },
+    "facing=north,letter=i,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_lit"
+    },
+    "facing=north,letter=j,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_off"
+    },
+    "facing=north,letter=j,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_lit"
+    },
+    "facing=north,letter=k,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_off"
+    },
+    "facing=north,letter=k,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_lit"
+    },
+    "facing=north,letter=l,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_off"
+    },
+    "facing=north,letter=l,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_lit"
+    },
+    "facing=north,letter=m,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_off"
+    },
+    "facing=north,letter=m,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_lit"
+    },
+    "facing=north,letter=n,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_off"
+    },
+    "facing=north,letter=n,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_lit"
+    },
+    "facing=north,letter=o,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_off"
+    },
+    "facing=north,letter=o,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_lit"
+    },
+    "facing=north,letter=p,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_off"
+    },
+    "facing=north,letter=p,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_lit"
+    },
+    "facing=north,letter=q,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_off"
+    },
+    "facing=north,letter=q,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_lit"
+    },
+    "facing=north,letter=r,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_off"
+    },
+    "facing=north,letter=r,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_lit"
+    },
+    "facing=north,letter=s,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_off"
+    },
+    "facing=north,letter=s,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_lit"
+    },
+    "facing=north,letter=t,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_off"
+    },
+    "facing=north,letter=t,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_lit"
+    },
+    "facing=north,letter=u,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_off"
+    },
+    "facing=north,letter=u,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_lit"
+    },
+    "facing=north,letter=v,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_off"
+    },
+    "facing=north,letter=v,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_lit"
+    },
+    "facing=north,letter=w,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_off"
+    },
+    "facing=north,letter=w,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_lit"
+    },
+    "facing=north,letter=x,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_off"
+    },
+    "facing=north,letter=x,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_lit"
+    },
+    "facing=north,letter=y,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_off"
+    },
+    "facing=north,letter=y,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_lit"
+    },
+    "facing=north,letter=z,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_off"
+    },
+    "facing=north,letter=z,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_lit"
+    },
+    "facing=east,letter=a,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_off",
+      "y": 90
+    },
+    "facing=east,letter=a,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_lit",
+      "y": 90
+    },
+    "facing=east,letter=b,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_off",
+      "y": 90
+    },
+    "facing=east,letter=b,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_lit",
+      "y": 90
+    },
+    "facing=east,letter=c,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_off",
+      "y": 90
+    },
+    "facing=east,letter=c,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_lit",
+      "y": 90
+    },
+    "facing=east,letter=d,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_off",
+      "y": 90
+    },
+    "facing=east,letter=d,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_lit",
+      "y": 90
+    },
+    "facing=east,letter=e,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_off",
+      "y": 90
+    },
+    "facing=east,letter=e,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_lit",
+      "y": 90
+    },
+    "facing=east,letter=f,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_off",
+      "y": 90
+    },
+    "facing=east,letter=f,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_lit",
+      "y": 90
+    },
+    "facing=east,letter=g,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_off",
+      "y": 90
+    },
+    "facing=east,letter=g,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_lit",
+      "y": 90
+    },
+    "facing=east,letter=h,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_off",
+      "y": 90
+    },
+    "facing=east,letter=h,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_lit",
+      "y": 90
+    },
+    "facing=east,letter=i,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_off",
+      "y": 90
+    },
+    "facing=east,letter=i,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_lit",
+      "y": 90
+    },
+    "facing=east,letter=j,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_off",
+      "y": 90
+    },
+    "facing=east,letter=j,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_lit",
+      "y": 90
+    },
+    "facing=east,letter=k,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_off",
+      "y": 90
+    },
+    "facing=east,letter=k,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_lit",
+      "y": 90
+    },
+    "facing=east,letter=l,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_off",
+      "y": 90
+    },
+    "facing=east,letter=l,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_lit",
+      "y": 90
+    },
+    "facing=east,letter=m,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_off",
+      "y": 90
+    },
+    "facing=east,letter=m,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_lit",
+      "y": 90
+    },
+    "facing=east,letter=n,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_off",
+      "y": 90
+    },
+    "facing=east,letter=n,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_lit",
+      "y": 90
+    },
+    "facing=east,letter=o,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_off",
+      "y": 90
+    },
+    "facing=east,letter=o,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_lit",
+      "y": 90
+    },
+    "facing=east,letter=p,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_off",
+      "y": 90
+    },
+    "facing=east,letter=p,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_lit",
+      "y": 90
+    },
+    "facing=east,letter=q,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_off",
+      "y": 90
+    },
+    "facing=east,letter=q,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_lit",
+      "y": 90
+    },
+    "facing=east,letter=r,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_off",
+      "y": 90
+    },
+    "facing=east,letter=r,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_lit",
+      "y": 90
+    },
+    "facing=east,letter=s,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_off",
+      "y": 90
+    },
+    "facing=east,letter=s,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_lit",
+      "y": 90
+    },
+    "facing=east,letter=t,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_off",
+      "y": 90
+    },
+    "facing=east,letter=t,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_lit",
+      "y": 90
+    },
+    "facing=east,letter=u,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_off",
+      "y": 90
+    },
+    "facing=east,letter=u,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_lit",
+      "y": 90
+    },
+    "facing=east,letter=v,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_off",
+      "y": 90
+    },
+    "facing=east,letter=v,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_lit",
+      "y": 90
+    },
+    "facing=east,letter=w,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_off",
+      "y": 90
+    },
+    "facing=east,letter=w,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_lit",
+      "y": 90
+    },
+    "facing=east,letter=x,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_off",
+      "y": 90
+    },
+    "facing=east,letter=x,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_lit",
+      "y": 90
+    },
+    "facing=east,letter=y,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_off",
+      "y": 90
+    },
+    "facing=east,letter=y,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_lit",
+      "y": 90
+    },
+    "facing=east,letter=z,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_off",
+      "y": 90
+    },
+    "facing=east,letter=z,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_lit",
+      "y": 90
+    },
+    "facing=south,letter=a,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_off",
+      "y": 180
+    },
+    "facing=south,letter=a,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_lit",
+      "y": 180
+    },
+    "facing=south,letter=b,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_off",
+      "y": 180
+    },
+    "facing=south,letter=b,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_lit",
+      "y": 180
+    },
+    "facing=south,letter=c,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_off",
+      "y": 180
+    },
+    "facing=south,letter=c,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_lit",
+      "y": 180
+    },
+    "facing=south,letter=d,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_off",
+      "y": 180
+    },
+    "facing=south,letter=d,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_lit",
+      "y": 180
+    },
+    "facing=south,letter=e,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_off",
+      "y": 180
+    },
+    "facing=south,letter=e,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_lit",
+      "y": 180
+    },
+    "facing=south,letter=f,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_off",
+      "y": 180
+    },
+    "facing=south,letter=f,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_lit",
+      "y": 180
+    },
+    "facing=south,letter=g,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_off",
+      "y": 180
+    },
+    "facing=south,letter=g,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_lit",
+      "y": 180
+    },
+    "facing=south,letter=h,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_off",
+      "y": 180
+    },
+    "facing=south,letter=h,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_lit",
+      "y": 180
+    },
+    "facing=south,letter=i,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_off",
+      "y": 180
+    },
+    "facing=south,letter=i,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_lit",
+      "y": 180
+    },
+    "facing=south,letter=j,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_off",
+      "y": 180
+    },
+    "facing=south,letter=j,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_lit",
+      "y": 180
+    },
+    "facing=south,letter=k,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_off",
+      "y": 180
+    },
+    "facing=south,letter=k,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_lit",
+      "y": 180
+    },
+    "facing=south,letter=l,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_off",
+      "y": 180
+    },
+    "facing=south,letter=l,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_lit",
+      "y": 180
+    },
+    "facing=south,letter=m,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_off",
+      "y": 180
+    },
+    "facing=south,letter=m,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_lit",
+      "y": 180
+    },
+    "facing=south,letter=n,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_off",
+      "y": 180
+    },
+    "facing=south,letter=n,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_lit",
+      "y": 180
+    },
+    "facing=south,letter=o,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_off",
+      "y": 180
+    },
+    "facing=south,letter=o,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_lit",
+      "y": 180
+    },
+    "facing=south,letter=p,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_off",
+      "y": 180
+    },
+    "facing=south,letter=p,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_lit",
+      "y": 180
+    },
+    "facing=south,letter=q,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_off",
+      "y": 180
+    },
+    "facing=south,letter=q,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_lit",
+      "y": 180
+    },
+    "facing=south,letter=r,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_off",
+      "y": 180
+    },
+    "facing=south,letter=r,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_lit",
+      "y": 180
+    },
+    "facing=south,letter=s,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_off",
+      "y": 180
+    },
+    "facing=south,letter=s,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_lit",
+      "y": 180
+    },
+    "facing=south,letter=t,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_off",
+      "y": 180
+    },
+    "facing=south,letter=t,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_lit",
+      "y": 180
+    },
+    "facing=south,letter=u,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_off",
+      "y": 180
+    },
+    "facing=south,letter=u,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_lit",
+      "y": 180
+    },
+    "facing=south,letter=v,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_off",
+      "y": 180
+    },
+    "facing=south,letter=v,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_lit",
+      "y": 180
+    },
+    "facing=south,letter=w,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_off",
+      "y": 180
+    },
+    "facing=south,letter=w,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_lit",
+      "y": 180
+    },
+    "facing=south,letter=x,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_off",
+      "y": 180
+    },
+    "facing=south,letter=x,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_lit",
+      "y": 180
+    },
+    "facing=south,letter=y,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_off",
+      "y": 180
+    },
+    "facing=south,letter=y,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_lit",
+      "y": 180
+    },
+    "facing=south,letter=z,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_off",
+      "y": 180
+    },
+    "facing=south,letter=z,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_lit",
+      "y": 180
+    },
+    "facing=west,letter=a,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_off",
+      "y": 270
+    },
+    "facing=west,letter=a,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/a_lit",
+      "y": 270
+    },
+    "facing=west,letter=b,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_off",
+      "y": 270
+    },
+    "facing=west,letter=b,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/b_lit",
+      "y": 270
+    },
+    "facing=west,letter=c,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_off",
+      "y": 270
+    },
+    "facing=west,letter=c,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/c_lit",
+      "y": 270
+    },
+    "facing=west,letter=d,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_off",
+      "y": 270
+    },
+    "facing=west,letter=d,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/d_lit",
+      "y": 270
+    },
+    "facing=west,letter=e,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_off",
+      "y": 270
+    },
+    "facing=west,letter=e,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/e_lit",
+      "y": 270
+    },
+    "facing=west,letter=f,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_off",
+      "y": 270
+    },
+    "facing=west,letter=f,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/f_lit",
+      "y": 270
+    },
+    "facing=west,letter=g,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_off",
+      "y": 270
+    },
+    "facing=west,letter=g,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/g_lit",
+      "y": 270
+    },
+    "facing=west,letter=h,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_off",
+      "y": 270
+    },
+    "facing=west,letter=h,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/h_lit",
+      "y": 270
+    },
+    "facing=west,letter=i,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_off",
+      "y": 270
+    },
+    "facing=west,letter=i,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/i_lit",
+      "y": 270
+    },
+    "facing=west,letter=j,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_off",
+      "y": 270
+    },
+    "facing=west,letter=j,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/j_lit",
+      "y": 270
+    },
+    "facing=west,letter=k,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_off",
+      "y": 270
+    },
+    "facing=west,letter=k,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/k_lit",
+      "y": 270
+    },
+    "facing=west,letter=l,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_off",
+      "y": 270
+    },
+    "facing=west,letter=l,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/l_lit",
+      "y": 270
+    },
+    "facing=west,letter=m,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_off",
+      "y": 270
+    },
+    "facing=west,letter=m,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/m_lit",
+      "y": 270
+    },
+    "facing=west,letter=n,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_off",
+      "y": 270
+    },
+    "facing=west,letter=n,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/n_lit",
+      "y": 270
+    },
+    "facing=west,letter=o,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_off",
+      "y": 270
+    },
+    "facing=west,letter=o,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/o_lit",
+      "y": 270
+    },
+    "facing=west,letter=p,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_off",
+      "y": 270
+    },
+    "facing=west,letter=p,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/p_lit",
+      "y": 270
+    },
+    "facing=west,letter=q,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_off",
+      "y": 270
+    },
+    "facing=west,letter=q,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/q_lit",
+      "y": 270
+    },
+    "facing=west,letter=r,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_off",
+      "y": 270
+    },
+    "facing=west,letter=r,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/r_lit",
+      "y": 270
+    },
+    "facing=west,letter=s,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_off",
+      "y": 270
+    },
+    "facing=west,letter=s,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/s_lit",
+      "y": 270
+    },
+    "facing=west,letter=t,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_off",
+      "y": 270
+    },
+    "facing=west,letter=t,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/t_lit",
+      "y": 270
+    },
+    "facing=west,letter=u,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_off",
+      "y": 270
+    },
+    "facing=west,letter=u,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/u_lit",
+      "y": 270
+    },
+    "facing=west,letter=v,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_off",
+      "y": 270
+    },
+    "facing=west,letter=v,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/v_lit",
+      "y": 270
+    },
+    "facing=west,letter=w,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_off",
+      "y": 270
+    },
+    "facing=west,letter=w,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/w_lit",
+      "y": 270
+    },
+    "facing=west,letter=x,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_off",
+      "y": 270
+    },
+    "facing=west,letter=x,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/x_lit",
+      "y": 270
+    },
+    "facing=west,letter=y,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_off",
+      "y": 270
+    },
+    "facing=west,letter=y,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/y_lit",
+      "y": 270
+    },
+    "facing=west,letter=z,lit=false": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_off",
+      "y": 270
+    },
+    "facing=west,letter=z,lit=true": {
+      "model": "apocalypse_firstlight:block/channel_letter/z_lit",
+      "y": 270
+    }
+  }
+}

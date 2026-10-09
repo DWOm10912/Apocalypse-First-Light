@@ -1,0 +1,12 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/channel_letter/n_lit.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "emissive_ambient": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/channel_letter_nz"
+  }
+}

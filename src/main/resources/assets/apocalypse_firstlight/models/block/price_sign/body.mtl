@@ -1,0 +1,10 @@
+# AFL PRAIRIE signage V1 price sign
+newmtl sign
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign
+newmtl sign_cabinet
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign_cabinet
+newmtl sign_face
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign_face

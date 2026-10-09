@@ -225,6 +225,30 @@
       "unit_mass_kg": 1.0,
       "estimated": true
     },
+    "apocalypse_firstlight:channel_letter": {
+      "unit_mass_kg": 2.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:cmu_screen_wall": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:enclosure_gate": {
+      "unit_mass_kg": 30,
+      "estimated": true
+    },
+    "apocalypse_firstlight:roof_tpo": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rooftop_unit": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:price_sign": {
+      "unit_mass_kg": 60,
+      "estimated": true
+    },
     "apocalypse_firstlight:concrete_rubble": {
       "unit_mass_kg": 0.1,
       "estimated": true

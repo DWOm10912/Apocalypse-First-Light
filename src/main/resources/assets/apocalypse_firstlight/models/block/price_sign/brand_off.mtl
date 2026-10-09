@@ -1,0 +1,4 @@
+# AFL PRAIRIE signage V1 price sign light box (off)
+newmtl sign_face
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign_face

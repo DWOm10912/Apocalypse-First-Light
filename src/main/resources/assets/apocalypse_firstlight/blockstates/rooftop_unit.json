@@ -1,0 +1,55 @@
+{
+  "variants": {
+    "cell=c0r0,facing=north": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/unit"
+    },
+    "cell=c1r0,facing=north": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r1,facing=north": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c1r1,facing=north": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r0,facing=east": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/unit",
+      "y": 90
+    },
+    "cell=c1r0,facing=east": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r1,facing=east": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c1r1,facing=east": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r0,facing=south": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/unit",
+      "y": 180
+    },
+    "cell=c1r0,facing=south": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r1,facing=south": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c1r1,facing=south": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r0,facing=west": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/unit",
+      "y": 270
+    },
+    "cell=c1r0,facing=west": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c0r1,facing=west": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    },
+    "cell=c1r1,facing=west": {
+      "model": "apocalypse_firstlight:block/rooftop_unit/cell"
+    }
+  }
+}

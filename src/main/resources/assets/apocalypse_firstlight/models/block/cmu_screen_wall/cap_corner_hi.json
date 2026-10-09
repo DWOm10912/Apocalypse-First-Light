@@ -1,0 +1,77 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "cap": "apocalypse_firstlight:block/facade_masonry/cast_stone_cap",
+    "particle": "apocalypse_firstlight:block/facade_masonry/cast_stone_cap"
+  },
+  "elements": [
+    {
+      "from": [
+        16,
+        14.72,
+        -0.5
+      ],
+      "to": [
+        16.5,
+        16,
+        3.7
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            0.5,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "south": {
+          "uv": [
+            15.5,
+            0,
+            16,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "east": {
+          "uv": [
+            11.8,
+            0,
+            16,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            4.2,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "up": {
+          "uv": [
+            15.5,
+            0,
+            16,
+            4.2
+          ],
+          "texture": "#cap"
+        },
+        "down": {
+          "uv": [
+            15.5,
+            11.8,
+            16,
+            16
+          ],
+          "texture": "#cap"
+        }
+      }
+    }
+  ]
+}

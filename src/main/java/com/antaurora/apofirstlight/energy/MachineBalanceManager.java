@@ -44,6 +44,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "water_dispenser");
     private static final ResourceLocation FUEL_CANOPY_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fuel_canopy");
+    private static final ResourceLocation PRICE_SIGN_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "price_sign");
     private static final ResourceLocation SITE_LIGHT_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "site_light");
     private static final ResourceLocation FUEL_DISPENSER_ID =
@@ -74,6 +76,7 @@ public final class MachineBalanceManager {
     private static volatile ApplianceBalance fuelDispenser = fallbackFuelDispenser();
     private static volatile ApplianceBalance fuelCanopy = fallbackFuelCanopy();
     private static volatile ApplianceBalance siteLight = fallbackSiteLight();
+    private static volatile ApplianceBalance priceSign = fallbackPriceSign();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -143,6 +146,14 @@ public final class MachineBalanceManager {
      */
     public static ApplianceBalance siteLight() {
         return siteLight;
+    }
+
+    /**
+     * The PRAIRIE price sign (Fuel Stop A1 details V1), lights only: its buffer and intake; light_fe_per_tick for the LED
+     * prices, twice that more for the light box at night (PriceSignBlockEntity); the compressor fields are 0.
+     */
+    public static ApplianceBalance priceSign() {
+        return priceSign;
     }
 
     public static CrusherBalance crusher() {
@@ -283,6 +294,8 @@ public final class MachineBalanceManager {
                     fallbackFuelCanopy());
             ApplianceBalance loadedSiteLight = loadLightsOnly(resources.get(SITE_LIGHT_ID), "site_light.json",
                     fallbackSiteLight());
+            ApplianceBalance loadedPriceSign = loadLightsOnly(resources.get(PRICE_SIGN_ID), "price_sign.json",
+                    fallbackPriceSign());
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -302,6 +315,7 @@ public final class MachineBalanceManager {
             fuelDispenser = loadedFuelDispenser;
             fuelCanopy = loadedFuelCanopy;
             siteLight = loadedSiteLight;
+            priceSign = loadedPriceSign;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -632,6 +646,11 @@ public final class MachineBalanceManager {
     /** Same values as machine_balance/site_light.json (lights only, light_fe_per_tick per lamp head). */
     private static ApplianceBalance fallbackSiteLight() {
         return new ApplianceBalance(800, 80, 1, 0, 0, 0);
+    }
+
+    /** Same values as machine_balance/price_sign.json (lights only). */
+    private static ApplianceBalance fallbackPriceSign() {
+        return new ApplianceBalance(600, 60, 1, 0, 0, 0);
     }
 
     private static CrusherBalance fallbackCrusher() {

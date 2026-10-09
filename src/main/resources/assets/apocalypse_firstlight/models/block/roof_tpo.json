@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/roof_tpo_top",
+    "up": "apocalypse_firstlight:block/roof_tpo_top",
+    "down": "apocalypse_firstlight:block/roof_tpo_bottom",
+    "north": "apocalypse_firstlight:block/roof_tpo_side",
+    "south": "apocalypse_firstlight:block/roof_tpo_side",
+    "east": "apocalypse_firstlight:block/roof_tpo_side",
+    "west": "apocalypse_firstlight:block/roof_tpo_side"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "ambientocclusion": true,
+  "textures": {
+    "wall": "apocalypse_firstlight:block/facade_masonry/ground_face_block_1",
+    "particle": "apocalypse_firstlight:block/facade_masonry/ground_face_block_1"
+  },
+  "elements": [
+    {
+      "from": [
+        3.2,
+        0,
+        0
+      ],
+      "to": [
+        16,
+        14.72,
+        3.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            1.28,
+            12.8,
+            16
+          ],
+          "texture": "#wall",
+          "cullface": "north"
+        },
+        "south": {
+          "uv": [
+            3.2,
+            1.28,
+            16,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "east": {
+          "uv": [
+            12.8,
+            1.28,
+            16,
+            16
+          ],
+          "texture": "#wall",
+          "cullface": "east"
+        },
+        "west": {
+          "uv": [
+            0,
+            1.28,
+            3.2,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "up": {
+          "uv": [
+            3.2,
+            0,
+            16,
+            3.2
+          ],
+          "texture": "#wall"
+        },
+        "down": {
+          "uv": [
+            3.2,
+            12.8,
+            16,
+            16
+          ],
+          "texture": "#wall",
+          "cullface": "down"
+        }
+      }
+    }
+  ]
+}

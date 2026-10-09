@@ -1,0 +1,146 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "wall": "apocalypse_firstlight:block/facade_masonry/ground_face_block_0",
+    "cap": "apocalypse_firstlight:block/facade_masonry/cast_stone_cap",
+    "particle": "apocalypse_firstlight:block/facade_masonry/ground_face_block_0"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        6.4
+      ],
+      "to": [
+        16,
+        14.72,
+        9.6
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            1.28,
+            16,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "south": {
+          "uv": [
+            0,
+            1.28,
+            16,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "east": {
+          "uv": [
+            6.4,
+            1.28,
+            9.6,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "west": {
+          "uv": [
+            6.4,
+            1.28,
+            9.6,
+            16
+          ],
+          "texture": "#wall"
+        },
+        "up": {
+          "uv": [
+            0,
+            6.4,
+            16,
+            9.6
+          ],
+          "texture": "#wall"
+        },
+        "down": {
+          "uv": [
+            0,
+            6.4,
+            16,
+            9.6
+          ],
+          "texture": "#wall"
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        14.72,
+        5.9
+      ],
+      "to": [
+        16,
+        16,
+        10.1
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "east": {
+          "uv": [
+            5.9,
+            0,
+            10.1,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "west": {
+          "uv": [
+            5.9,
+            0,
+            10.1,
+            1.28
+          ],
+          "texture": "#cap"
+        },
+        "up": {
+          "uv": [
+            0,
+            5.9,
+            16,
+            10.1
+          ],
+          "texture": "#cap"
+        },
+        "down": {
+          "uv": [
+            0,
+            5.9,
+            16,
+            10.1
+          ],
+          "texture": "#cap"
+        }
+      }
+    }
+  ]
+}

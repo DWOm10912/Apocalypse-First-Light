@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/price_sign/item",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        -0.837,
+        1.156,
+        -2.9
+      ],
+      "scale": [
+        0.148,
+        0.148,
+        0.148
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0.837,
+        2.773,
+        -3.334
+      ],
+      "scale": [
+        0.148,
+        0.148,
+        0.148
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        -0.843,
+        -3.338,
+        0.843
+      ],
+      "scale": [
+        0.149,
+        0.149,
+        0.149
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        -0.843,
+        -3.338,
+        0.843
+      ],
+      "scale": [
+        0.149,
+        0.149,
+        0.149
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.504,
+        1.589,
+        0
+      ],
+      "scale": [
+        0.063,
+        0.063,
+        0.063
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        1,
+        -2.8,
+        0
+      ],
+      "scale": [
+        0.125,
+        0.125,
+        0.125
+      ]
+    },
+    "gui": {
+      "rotation": [
+        20,
+        200,
+        0
+      ],
+      "translation": [
+        1.684,
+        -4.313,
+        0
+      ],
+      "scale": [
+        0.224,
+        0.224,
+        0.224
+      ]
+    }
+  }
+}

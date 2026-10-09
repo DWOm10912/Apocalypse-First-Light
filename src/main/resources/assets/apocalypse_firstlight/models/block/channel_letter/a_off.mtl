@@ -1,0 +1,4 @@
+# AFL PRAIRIE signage V1 channel letter A (off)
+newmtl letters_am
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/channel_letter_am

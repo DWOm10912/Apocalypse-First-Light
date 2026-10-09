@@ -71,6 +71,7 @@ public final class WorldInteractionHint {
             if(target==null) target=dumpsterLid(mc,hit);
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
+            if(target==null) target=enclosureGate(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=pavementPaint(mc,hit);
             if(target==null) target=curb(mc,hit);
@@ -284,6 +285,14 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CheckoutCounterGateBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.checkout_counter_gate."
                 +(s.getValue(com.antaurora.apofirstlight.block.CheckoutCounterGateBlock.OPEN)?"close":"open")),null);
+    }
+
+    private static Target enclosureGate(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.EnclosureGateBlock)) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.enclosure_gate."
+                +(s.getValue(com.antaurora.apofirstlight.block.EnclosureGateBlock.OPEN)?"close":"open")),null);
     }
 
     /**

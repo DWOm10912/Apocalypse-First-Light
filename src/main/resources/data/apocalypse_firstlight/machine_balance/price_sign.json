@@ -1,0 +1,5 @@
+{
+  "capacity_fe": 600,
+  "max_receive_fe_per_tick": 60,
+  "light_fe_per_tick": 1
+}

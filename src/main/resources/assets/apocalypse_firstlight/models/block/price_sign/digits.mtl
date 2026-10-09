@@ -1,0 +1,8 @@
+# AFL PRAIRIE signage V1 price sign digits
+newmtl sign_face
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign_face
+newmtl sign_face_glow
+Ka 1 1 1
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/price_sign_face

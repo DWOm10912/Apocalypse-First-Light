@@ -210,6 +210,20 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LINEAR_LIGHT.get(), new Item.Properties()));
     public static final RegistryObject<Item> EMERGENCY_LIGHT = ITEMS.register("emergency_light",
             () -> new BlockItem(AflBlocks.EMERGENCY_LIGHT.get(), new Item.Properties().stacksTo(16)));
+    /** Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): one channel-letter item, the letter in its BlockStateTag. */
+    public static final RegistryObject<Item> CHANNEL_LETTER = ITEMS.register("channel_letter",
+            () -> new com.antaurora.apofirstlight.item.ChannelLetterBlockItem(AflBlocks.CHANNEL_LETTER.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> PRICE_SIGN = ITEMS.register("price_sign",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.PriceSignBlock) AflBlocks.PRICE_SIGN.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> ROOF_TPO = ITEMS.register("roof_tpo",
+            () -> new BlockItem(AflBlocks.ROOF_TPO.get(), new Item.Properties()));
+    public static final RegistryObject<Item> ENCLOSURE_GATE = ITEMS.register("enclosure_gate",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.EnclosureGateBlock) AflBlocks.ENCLOSURE_GATE.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> ROOFTOP_UNIT = ITEMS.register("rooftop_unit",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.RooftopUnitBlock) AflBlocks.ROOFTOP_UNIT.get(), new Item.Properties().stacksTo(1)));
     /** Site Lighting V1 (docs/models/site_lighting_v1.md); the hidden light point has no item. */
     public static final RegistryObject<Item> LIGHT_POLE_BASE = ITEMS.register("light_pole_base",
             () -> new BlockItem(AflBlocks.LIGHT_POLE_BASE.get(), new Item.Properties().stacksTo(16)));
@@ -318,6 +332,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FACE_BRICK_CHARCOAL.get(), new Item.Properties()));
     public static final RegistryObject<Item> GROUND_FACE_BLOCK = ITEMS.register("ground_face_block",
             () -> new BlockItem(AflBlocks.GROUND_FACE_BLOCK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CMU_SCREEN_WALL = ITEMS.register("cmu_screen_wall",
+            () -> new BlockItem(AflBlocks.CMU_SCREEN_WALL.get(), new Item.Properties()));
     public static final RegistryObject<Item> ALUMINUM_CORNICE = ITEMS.register("aluminum_cornice",
             () -> new BlockItem(AflBlocks.ALUMINUM_CORNICE.get(), new Item.Properties()));
     public static final RegistryObject<Item> METAL_WALL_PANEL = ITEMS.register("metal_wall_panel",

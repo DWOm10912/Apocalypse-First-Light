@@ -91,5 +91,13 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 - `canopy_downlight`（`lit=false`）：`metal_eyebrow_canopy` 下面那一格，同上。
 - `lamp_glow` 是灯杆亮时自己放的隐藏光源点，不要写它（建造工具会拒绝）。
 
+加油站细节件（2026-10-09，[Fuel Stop A1 细节件 V1](../models/fuel_stop_a1_details_v1.md)；还没实机验证）：
+- `channel_letter`（`facing` 朝外、`letter=a..z`、`lit=false`）：店招发光字，一格一个字，背后要有结实的墙。走"照明"那一路，天黑才亮。拼字时从看字的人的左边往右排：A1 店面朝世界北，看字的人面朝世界南，左手是世界东（地块西），所以 P 在地块 u 28，E 在 u 34。
+- `price_sign`：4 × 4 × 1 格整体价格牌（主格 `c1r0`，列沿 `facing.getClockWise()`），用 `place_multiblock`，锚点是主格；主格底面是电力接口，下面一格接电缆。两面一样。
+- `roof_tpo`：白色 TPO 屋面整格（底面白色平顶），镐 + 钻石级。替换屋面占位用。
+- `rooftop_unit`：屋顶空调机组，2 × 1 × 2 格（主格 `c0r0`），放在屋面上，女儿墙要挡得住它（A1 离前女儿墙 8 m）。
+- `cmu_screen_wall`（`north` / `east` / `south` / `west` 哪几边有墙，`cap` 上面不是围墙时为 true）：200 mm 磨面砌块围墙，贴格子边，和勒脚同一套贴图。镐，无等级。直接写状态时把 `cap` 写对（最上面一层 true）。
+- `enclosure_gate`（`hinge=right|left`、`open=false`）：2 × 2 格钢门，自带立柱，往 `facing` 那边开；门扇在格子后边线上，围墙从门后面那排开始。一对门关 4 格宽的口子：`right` 立柱在锚点那列，`left` 在第二列。
+
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

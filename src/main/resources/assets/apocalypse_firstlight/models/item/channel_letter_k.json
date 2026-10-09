@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/channel_letter/k_off",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        -3.635,
+        5.909,
+        -0.893
+      ],
+      "scale": [
+        0.728,
+        0.728,
+        0.728
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        -3.552,
+        6.054,
+        -0.933
+      ],
+      "scale": [
+        0.732,
+        0.732,
+        0.732
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        -2.991,
+        0,
+        -2.907
+      ],
+      "scale": [
+        0.599,
+        0.599,
+        0.599
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        2.907,
+        0,
+        2.991
+      ],
+      "scale": [
+        0.599,
+        0.599,
+        0.599
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.025,
+        3,
+        -1.849
+      ],
+      "scale": [
+        0.265,
+        0.265,
+        0.265
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0.05,
+        0,
+        3.698
+      ],
+      "scale": [
+        0.53,
+        0.53,
+        0.53
+      ]
+    },
+    "gui": {
+      "rotation": [
+        10,
+        200,
+        0
+      ],
+      "translation": [
+        2.942,
+        -1.329,
+        0
+      ],
+      "scale": [
+        1.196,
+        1.196,
+        1.196
+      ]
+    }
+  }
+}

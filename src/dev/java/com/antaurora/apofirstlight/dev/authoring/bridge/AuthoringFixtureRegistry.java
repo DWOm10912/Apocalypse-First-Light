@@ -87,6 +87,15 @@ final class AuthoringFixtureRegistry {
         @Override public Direction facingOf(BlockState state){return com.antaurora.apofirstlight.block.UndergroundFuelTankBlock.alongDir(state);}
         @Override public int[] size(){return new int[]{3,3,7};}
     };
+    /** The price sign: cells c<col>r<row>, the anchor its master c1r0, columns along facing.getClockWise(). */
+    private static final Multiblock PRICE_SIGN=new Multiblock("cell",java.util.stream.Stream.concat(java.util.stream.Stream.of("c1r0"),java.util.stream.IntStream.range(0,16).mapToObj(i->"c"+(i%4)+"r"+(i/4)).filter(p->!p.equals("c1r0"))).toList(),
+            (a,f,p)->a.relative(f.getClockWise(),(p.charAt(1)-'0')-1).above(p.charAt(3)-'0'));
+    /** The rooftop unit: cells c<col>r<row>, 2 x 2, anchor c0r0, columns along facing.getClockWise(). */
+    private static final Multiblock ROOFTOP_UNIT=new Multiblock("cell",List.of("c0r0","c1r0","c0r1","c1r1"),
+            (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The enclosure gate: cells c<col>r<row>, 2 x 2, anchor c0r0, columns along facing.getClockWise(). */
+    private static final Multiblock ENCLOSURE_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c0r1","c1r1"),
+            (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
     private static final Multiblock DESK=new Multiblock("part",List.of("center","left","right"),
             (a,f,p)->ModernOfficeDeskBlock.partPosition(a,f,ModernOfficeDeskBlock.Part.valueOf(constant(p))));
     private static final Multiblock WORKSTATION=new Multiblock("part",List.of("base","side","upper","upper_side"),
@@ -223,6 +232,14 @@ final class AuthoringFixtureRegistry {
                     .notes("Site Lighting V1: the head cell on top of the pole; facing = the first head's direction (into the lot); heads = quarter turns clockwise from facing (single 0, twin 0+2, twin_corner 0+1, triple 0+1+3, quad all). The arms reach over the cell side, the heads hang in the next cell (keep it clear). lit is runtime (the base: powered and dark)."),
             new Def(A+"wall_pack",safe,"utility").facing(H4).fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Site Lighting V1: LED wall pack on an outside wall, facing = away from the wall, 0.46..0.71 m up in its cell. On the building's lighting circuit through the wall behind it, dark by day; lit is runtime."),
+            new Def(A+"channel_letter",safe,"utility").facing(H4).variant("letter","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z").fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Fuel Stop A1 details V1 (2026-10-09): one PRAIRIE channel letter per cell, on an outside wall, facing = away from the wall, 0.75 m cap height centred in the cell. Its reader faces the wall: the word runs from the reader's left to right. On the building's lighting circuit through the wall behind it, dark by day; lit is runtime."),
+            new Def(A+"price_sign",safe,"utility").facing(H4).multi(PRICE_SIGN).fixed("lit","false","digits","false").support(Support.NONE)
+                    .notes("Fuel Stop A1 details V1 (2026-10-09): the PRAIRIE roadside price sign, 4 wide x 4 high, both faces alike. Anchor = c1r0 (master: the second column's bottom cell, its underside the power port: an underground power_cable in the cell below); columns run along facing.getClockWise(). A full-cell footing pad covers the four ground cells. lit / digits are runtime (its block entity: powered; the light box only at night)."),
+            new Def(A+"rooftop_unit",safe,"utility").facing(H4).multi(ROOFTOP_UNIT).support(Support.NONE)
+                    .notes("Fuel Stop A1 details V1 (2026-10-09): a packaged rooftop unit, 2 long x 1 deep x 2 high on its roof curb; anchor c0r0, the second column at facing.getClockWise(). The rain hood sticks 0.19 m out of the west (counter-clockwise) end. Look only (no power) in V1."),
+            new Def(A+"enclosure_gate",safe,"utility").facing(H4).multi(ENCLOSURE_GATE).variant("hinge","right","left").fixed("open","false").support(Support.NONE)
+                    .notes("Trash enclosure V1 (2026-10-09): one steel gate leaf with its own hinge post, 2 wide x 2 high; facing = the outside (the leaf opens toward it), the leaf hangs at the back of its cells. hinge=right: the post in the anchor column c0; hinge=left: in c1 (facing.getClockWise()). A pair closes a 4-cell opening between cmu_screen_wall runs that start in the cells behind."),
             new Def(A+"canopy_downlight",safe,"utility").fixed("lit","false").support(Support.BLOCK_RULE)
                     .notes("Site Lighting V1: 150 mm cylinder downlight in the cell under a metal_eyebrow_canopy (or any sturdy ceiling); its top reaches 31 mm into the canopy cell. On the building's lighting circuit, dark by day; lit is runtime."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),

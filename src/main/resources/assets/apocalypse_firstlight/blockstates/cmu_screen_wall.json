@@ -1,0 +1,587 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "north": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_0"
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_1"
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_2"
+        }
+      ]
+    },
+    {
+      "when": {
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_0"
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_1"
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_2"
+        }
+      ]
+    },
+    {
+      "when": {
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_full"
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "false",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "false",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "false",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_full",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "false",
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_hi",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "false",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "false",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "false",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_lo",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_0",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_1",
+          "y": 90
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_2",
+          "y": 90
+        }
+      ]
+    },
+    {
+      "when": {
+        "east": "true",
+        "north": "true",
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_both",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_0",
+          "y": 180
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_1",
+          "y": 180
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_2",
+          "y": 180
+        }
+      ]
+    },
+    {
+      "when": {
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_0",
+          "y": 180
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_1",
+          "y": 180
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_2",
+          "y": 180
+        }
+      ]
+    },
+    {
+      "when": {
+        "south": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_full",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "false",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_full_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "false",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_full_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "false",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_full",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_hi_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_hi_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "false",
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_hi",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "false",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_lo_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "false",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_lo_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "false",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_lo",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "true",
+        "cap": "false"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_plain_both_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": [
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_0",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_1",
+          "y": 270
+        },
+        {
+          "model": "apocalypse_firstlight:block/cmu_screen_wall/wall_capped_both_2",
+          "y": 270
+        }
+      ]
+    },
+    {
+      "when": {
+        "west": "true",
+        "south": "true",
+        "north": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_both",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "west": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_corner_lo"
+      }
+    },
+    {
+      "when": {
+        "north": "true",
+        "east": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_corner_hi"
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "east": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_corner_lo",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "south": "true",
+        "west": "true",
+        "cap": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/cmu_screen_wall/cap_corner_hi",
+        "y": 180
+      }
+    }
+  ]
+}

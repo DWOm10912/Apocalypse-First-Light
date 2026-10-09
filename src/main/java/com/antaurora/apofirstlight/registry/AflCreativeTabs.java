@@ -44,6 +44,7 @@ public final class AflCreativeTabs {
             AflItems.FACE_BRICK_WARM_GRAY,
             AflItems.FACE_BRICK_CHARCOAL,
             AflItems.GROUND_FACE_BLOCK,
+            AflItems.CMU_SCREEN_WALL,
             AflItems.ALUMINUM_CORNICE,
             AflItems.METAL_WALL_PANEL,
             AflItems.METAL_PANEL_JAMB,
@@ -56,6 +57,11 @@ public final class AflCreativeTabs {
             AflItems.AREA_LIGHT,
             AflItems.WALL_PACK,
             AflItems.CANOPY_DOWNLIGHT,
+            AflItems.CHANNEL_LETTER,
+            AflItems.PRICE_SIGN,
+            AflItems.ROOF_TPO,
+            AflItems.ROOFTOP_UNIT,
+            AflItems.ENCLOSURE_GATE,
             AflItems.ASPHALT,
             AflItems.CONCRETE_SIDEWALK,
             AflItems.CONCRETE_PAVEMENT,
@@ -254,6 +260,8 @@ public final class AflCreativeTabs {
                         if (item.get() instanceof com.antaurora.apofirstlight.item.PavementPaintBlockItem paint) paint.variants().forEach(output::accept);
                         // curbs: bare, red, yellow (Curbs V1)
                         else if (item.get() instanceof com.antaurora.apofirstlight.item.CurbBlockItem curb) curb.variants().forEach(output::accept);
+                        // channel letters: A..Z (Fuel Stop A1 details V1)
+                        else if (item.get() instanceof com.antaurora.apofirstlight.item.ChannelLetterBlockItem letter) letter.variants().forEach(output::accept);
                         else output.accept(item.get());
                     }))
                     .build();

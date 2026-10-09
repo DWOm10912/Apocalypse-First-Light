@@ -1,0 +1,14 @@
+{
+  "loader": "forge:composite",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/price_sign"
+  },
+  "children": {
+    "body": {
+      "parent": "apocalypse_firstlight:block/price_sign/body"
+    },
+    "brand": {
+      "parent": "apocalypse_firstlight:block/price_sign/brand_off"
+    }
+  }
+}

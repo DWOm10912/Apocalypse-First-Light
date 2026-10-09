@@ -220,6 +220,31 @@ public final class AflBlocks {
             () -> new com.antaurora.apofirstlight.block.LampGlowBlock(BlockBehaviour.Properties.of().replaceable().noCollission()
                     .noOcclusion().noLootTable().instabreak().pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
                     .lightLevel(state -> com.antaurora.apofirstlight.block.LampGlowBlock.LIGHT_LEVEL)));
+    /**
+     * Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): the PRAIRIE channel letters (aluminium) and the
+     * roadside price sign (aluminium cabinet on a masonry base): pickaxe + diamond tier.
+     */
+    public static final RegistryObject<Block> CHANNEL_LETTER = BLOCKS.register("channel_letter",
+            () -> new com.antaurora.apofirstlight.block.ChannelLetterBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? com.antaurora.apofirstlight.block.ChannelLetterBlock.LIGHT_LEVEL : 0)));
+    public static final RegistryObject<Block> PRICE_SIGN = BLOCKS.register("price_sign",
+            () -> new com.antaurora.apofirstlight.block.PriceSignBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()
+                    .lightLevel(com.antaurora.apofirstlight.block.PriceSignBlock::lightLevel)));
+    /**
+     * Fuel Stop A1 details V1: the TPO roof (a membrane over a steel deck: a steel-based building structure, pickaxe +
+     * diamond, as the metal wall panel) and the rooftop unit (a machine casing, pickaxe + diamond).
+     */
+    public static final RegistryObject<Block> ROOF_TPO = BLOCKS.register("roof_tpo",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK).strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+    /** Trash enclosure V1: the steel gate (steel structure, pickaxe + diamond). */
+    public static final RegistryObject<Block> ENCLOSURE_GATE = BLOCKS.register("enclosure_gate",
+            () -> new com.antaurora.apofirstlight.block.EnclosureGateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> ROOFTOP_UNIT = BLOCKS.register("rooftop_unit",
+            () -> new com.antaurora.apofirstlight.block.RooftopUnitBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
     public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
@@ -402,6 +427,9 @@ public final class AflBlocks {
     // Facade Masonry Base V1 (docs/models/facade_masonry_base_v1.md): ground-face block base course with a cast-stone cap
     public static final RegistryObject<Block> GROUND_FACE_BLOCK = BLOCKS.register("ground_face_block",
             () -> new com.antaurora.apofirstlight.block.MasonryBaseBlock(BlockBehaviour.Properties.copy(Blocks.BRICKS)));
+    // Trash enclosure V1 (docs/models/fuel_stop_a1_details_v1.md): ordinary masonry as the ground face block (pickaxe, any tier)
+    public static final RegistryObject<Block> CMU_SCREEN_WALL = BLOCKS.register("cmu_screen_wall",
+            () -> new com.antaurora.apofirstlight.block.CmuScreenWallBlock(BlockBehaviour.Properties.copy(Blocks.BRICKS)));
     // Aluminum Cornice V1 (docs/models/aluminum_cornice_v1.md): aluminium commercial structure, Diamond-tier like the glazing
     public static final RegistryObject<Block> ALUMINUM_CORNICE = BLOCKS.register("aluminum_cornice",
             () -> new com.antaurora.apofirstlight.block.AluminumCorniceBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

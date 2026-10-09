@@ -1,0 +1,12 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/price_sign/brand_lit.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "emissive_ambient": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/price_sign_face"
+  }
+}

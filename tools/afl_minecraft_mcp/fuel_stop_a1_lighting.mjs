@@ -7,7 +7,9 @@
 //             crossbar along v 29 (through the feeder, under the two parking-row end poles) to a west spine (u 1) and an east
 //             spine (u 62), the north row (v 0) and the south row (v 61) off the west spine, short branches to the green-area
 //             poles; under each base a riser cell at k -1 (the base's full-cell pad hides it); the front pole (u 31, v 25)
-//             rises straight off the feeder. No loops. The two north-edge poles stand on the curb row
+//             rises straight off the feeder. No loops. The south row runs on past its last pole to the price sign (u 51,
+//             SIGN_FEED; Fuel Stop A1 details V1, 2026-10-09) and rises into the sign's master cell, whose bottom is its power
+//             port (the sign itself: fuel_stop_a1_details.mjs). The two north-edge poles stand on the curb row
 //             (v 0 is all curb): no riser, the k -2 cable links up under the curb (CURB_POLES).
 //   7 wall packs  on the store's outside walls at k 3: west and east walls (u 17 / u 45 at v 13 and 17, on brick: the west
 //             wall has windows at v 9..12, the side eyebrows take v 19..22) and the back wall (v 7 at u 24, 31, 38)
@@ -54,6 +56,8 @@ export const POLE_TOP = 8;
  * base's bottom port (energy/PowerCableTransfer, curb pass-through, 2026-10-09).
  */
 export const CURB_POLES = new Set(['22,0', '42,0']);
+/** The price sign's feed: lot u, v of the sign's master cell (c1r0); the k -1 riser under it goes up into its bottom port. */
+export const SIGN_FEED = [51, 61];
 /**
  * Wall packs: lot u, k, v, facing (lot, away from the wall). On the side walls the solid stretch is v 13..18 (the west wall has
  * a window strip at v 9..12 and both have the corner glass and side eyebrows at v 19..22): the charcoal pier at v 13 and the
@@ -87,7 +91,7 @@ export function cableTree() {
   run([1, -2, 29], [62, -2, 29]);                   // crossbar, through the feeder at u 31
   run([1, -2, 0], [1, -2, 61]);                     // west spine
   run([1, -2, 0], [42, -2, 0]);                     // north row
-  run([1, -2, 61], [46, -2, 61]);                   // south row
+  run([1, -2, 61], [SIGN_FEED[0], -2, SIGN_FEED[1]]); // south row, on past the last pole (u 46) to the price sign
   run([1, -2, 42], [6, -2, 42]);                    // west green pole
   run([62, -2, 10], [62, -2, 56]);                  // east spine
   run([62, -2, 42], [57, -2, 42]);                  // east green pole
@@ -95,13 +99,14 @@ export function cableTree() {
     if (CURB_POLES.has(u + ',' + v)) { links.get(key([u, -2, v])).add('up'); continue; }
     link([u, -2, v], [u, -1, v]); cells.set(key([u, -1, v]), [u, -1, v]); links.get(key([u, -1, v])).add('up');
   }
+  { const [u, v] = SIGN_FEED; link([u, -2, v], [u, -1, v]); cells.set(key([u, -1, v]), [u, -1, v]); links.get(key([u, -1, v])).add('up'); }
   // the feeder cells the tree joins keep their links
   const feeder = new Map(feederLinks().map(({cell, links: l}) => [key(cell), l]));
   for (const [k, l] of links) if (feeder.has(k)) for (const d of feeder.get(k)) l.add(d);
   return {cells, links, joins: [...links.keys()].filter(k => feeder.has(k))};
 }
 const props = l => ['down', 'east', 'north', 'south', 'up', 'west'].map(d => d + '=' + l.has(d)).join(',');
-const cableState = l => A(`power_cable[${props(new Set([...l].map(d => TURN[d])))}]`);
+export const cableState = l => A(`power_cable[${props(new Set([...l].map(d => TURN[d])))}]`);
 
 /** Everything written: cells (lot key -> world state), the bases to place, the cells the heads hang in. */
 export function recipe() {
@@ -112,7 +117,7 @@ export function recipe() {
   const baseCells = new Set(POLES.map(([u, v]) => key([u, 0, v]))), curbCells = new Set([...CURB_POLES].map(k => { const [u, v] = k.split(','); return key([+u, -1, +v]); }));
   for (const [k, l] of t.links) for (const d of l) {
     const c = t.cells.get(k), n = c.map((x, i) => x + STEP[d][i]), back = Object.keys(STEP).find(e => STEP[e].every((x, i) => x === -STEP[d][i]));
-    if ((baseCells.has(key(n)) || curbCells.has(key(n))) && d === 'up') continue;
+    if ((baseCells.has(key(n)) || curbCells.has(key(n)) || key(n) === key([SIGN_FEED[0], 0, SIGN_FEED[1]])) && d === 'up') continue;
     const feederEnd = !t.links.has(key(n));   // a feeder cell outside the tree (its own route continues)
     if (!feederEnd && !t.links.get(key(n)).has(back)) problems.push('DANGLING ' + k + ' ' + d);
     if (feederEnd && !t.joins.includes(k)) problems.push('OPEN_END ' + k + ' ' + d);

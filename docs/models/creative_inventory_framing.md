@@ -18,6 +18,11 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | `fuel_island_curb`、`fuel_island_end`、`fuel_island_bollard` | 2026-10-04 起由 `tools/build-fuel-island-v1.mjs` 生成：rotation `[30,225,0]`，translation 按网格包围盒居中（路缘 `[0,3.458,0]`、端头 `[-1.013,2.945,0]`、防撞柱 `[0,0.163,0]`），scale 0.62（防撞柱 0.55），见 [fuel_island_kit_v1.md](fuel_island_kit_v1.md) |
 | `fuel_nozzle_gasoline`、`fuel_nozzle_diesel` | 同一生成器：油枪侧面朝外，rotation `[20,120,0]`，translation `[-0.166,-0.041,0]`，scale 1.55；手上的显示参数 2026-10-04 按原版手持变换离线拟合，见 [fuel_dispenser_v1.md](fuel_dispenser_v1.md) |
 | `checkout_counter`、`checkout_counter_display`、`checkout_counter_gate`、`back_bar_shelf` | 2026-10-04 起由 `tools/build-checkout-counter-v1.mjs` 生成：rotation `[30,225,0]`，translation 按网格包围盒居中（柜台 `[0.332,-0.376,0]`、带货架 `[0.132,-0.376,0]`、通道门 `[0.384,-0.644,0]`、背柜 `[1.131,-4.198,0]`，2026-10-08 起背柜 scale 0.41、translation `[0.928,-3.442,0]`（0.5 时高 18.0 px，出格）；2026-10-04 台面加高到 16 px 后重新生成），scale 0.62（背柜 0.5）。物品模型是直段加两端封板（带货架款再加托盘），通道门是关着的静态模型 `checkout_counter/gate_item`，见 [checkout_counter_v1.md](checkout_counter_v1.md) |
+| `channel_letter`（26 个字母） | 2026-10-09 起由 `tools/build-prairie-signage-v1.mjs` 生成：每个字母一个物品模型 `channel_letter_<字母>`（父模型是那个字的灭灯 OBJ），`channel_letter.json` 按物品属性 `apocalypse_firstlight:letter` 切换；GUI rotation `[10,200,0]`，按投影自动缩放到 15.2 px（P：scale 1.213，translation `[2.876,-1.261,0]`）；手持、掉落、展示框用 `heldDisplay`。见 [fuel_stop_a1_details_v1.md](fuel_stop_a1_details_v1.md) |
+| `price_sign` | 同一生成器：父模型 `price_sign/item`（整块牌子，不亮），rotation `[20,200,0]`，scale 0.224，translation `[1.684,-4.313,0]`；其余视角 `heldDisplay` |
+| `roof_tpo`、`cmu_screen_wall` | 原版方块的显示参数（父模型是方块模型 / `block/block`）。围墙的物品模型是居中的一段带压顶的直墙（`cmu_screen_wall/item`，`tools/build-trash-enclosure-v1.mjs`） |
+| `rooftop_unit` | `tools/build-store-roof-v1.mjs`：父模型 `rooftop_unit/unit`，rotation `[25,200,0]`，scale 0.473，translation `[3.238,-0.89,0]`；其余视角 `heldDisplay` |
+| `enclosure_gate` | `tools/build-trash-enclosure-v1.mjs`：父模型 `enclosure_gate/item`（右合页、关着的整扇门，OBJ），rotation `[20,200,0]`，scale 0.45，translation `[4.469,-4.132,0]`；其余视角 `heldDisplay` |
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
 | `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-1.78,-3.254,0.613]`、scale 0.328（V2 Mesh，2026-10-01 修正为正面朝外，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |
 | `chest_freezer` | 2026-10-01 起由 `tools/build-chest-freezer-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-2.5,-1.063,2.138]`、scale 0.442（V2 Mesh，正面朝外，见 [chest_freezer_v2.md](chest_freezer_v2.md)） |
@@ -99,4 +104,4 @@ Verification boundary: source screenshot alignment and static resource/export ch
   - 原版本来就这样：路缘、雨篷、方形面板灯、线形灯这类扁平的东西在展示框里偏低，和原版地毯、台阶一样；钢梁、钢撑、钢索用原版方块的变换，模型比一格大；
   - 偏得不多、又是手写 JSON 或只有一个视角：隔断（第一人称 0.38）、打印机（第三人称 0.34）、取水泵（展示框 0.47）、地下油罐（展示框 0.24）、货架单元（展示框）。
   - 代码画的网格物品（冷柜、垃圾箱、门等，`builtin/entity`）：脚本不知道它们的网格原点，量不准。
-- 改完都跑了各生成器的 `--check`，被跟踪的文件里只有这些物品模型变了。还没在游戏里看（资源改动，F3+T 重载即可）。
+- 改完都跑了各生成器的 `--check`，被跟踪的文件里只有这些物品模型变了。用户 2026-10-09 实机看过，PASS（以灯具为主，其余物品没有逐个确认）。

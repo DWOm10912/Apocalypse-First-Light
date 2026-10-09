@@ -49,8 +49,20 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     public static final int SLOTS = 12, CAPACITY = 4096, MAX_IN = 512, MAX_OUT = 512, ZONE_PERIOD = 100, TRIP_TICKS = 60;
     /** Circuit kinds; the fixed ones take the first slots, devices get dedicated slots after them (step 2). */
     public static final int KIND_NONE = 0, KIND_LIGHTING = 1, KIND_OUTLETS = 2, KIND_CABLE = 3;
-    public static final int DATA_FLAGS = 0, DATA_SUPPLY = 1, DATA_LOAD = 2, DATA_STORED = 3, DATA_SLOTS = 4, DATA_COUNT = DATA_SLOTS + SLOTS * 3;
-    public static final int FLAG_MAIN = 1, FLAG_TRIPPED = 2, FLAG_ZONE_OK = 4, FLAG_ZONE_OPEN = 8, FLAG_DUPLICATE = 16;
+    /**
+     * Screen data: the supply actually received (the trip rule's), the load, each branch's load and the storage % as plain
+     * averages over the last {@link #VIEW_WINDOW} ticks (the trip rule keeps its own ~1 s averages), the capacity (what the
+     * source network could give, capped at MAX_IN; 0 = no supply), the overload ticks toward a trip.
+     */
+    public static final int DATA_FLAGS = 0, DATA_SUPPLY = 1, DATA_LOAD = 2, DATA_STORED = 3, DATA_CAPACITY = 4, DATA_OVERLOAD = 5,
+            DATA_SLOTS = 6, DATA_COUNT = DATA_SLOTS + SLOTS * 3;
+    public static final int FLAG_MAIN = 1, FLAG_TRIPPED = 2, FLAG_ZONE_OK = 4, FLAG_ZONE_OPEN = 8, FLAG_DUPLICATE = 16, FLAG_FALLING = 32;
+    /**
+     * The display window, ticks: a whole number of every device's settlement period (lamps 40, site lights, canopy lights
+     * and the price sign 20, the intake pump's lamp 10), so each period's lump of draw counts exactly once and the readings
+     * stand still (user 2026-10-09: with ~5 s exponential averages they still swung 111..117 FE/t, the storage 90..100 %).
+     */
+    public static final int VIEW_WINDOW = 120;
     private static final String MAIN_KEY = "MainOn", TRIP_KEY = "Tripped", OFF_KEY = "BranchOff", ENERGY_KEY = "EnergyStored";
 
     private boolean mainOn;
@@ -64,12 +76,22 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     private long nextZone;
     private final int[] slotKind = {KIND_LIGHTING, KIND_OUTLETS, KIND_CABLE, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     private final float[] slotLoad = new float[SLOTS];
-    private float supplyAvg, loadAvg;
+    private float supplyAvg, loadAvg, capacityAvg;
+    private long capacityTick = Long.MIN_VALUE;
+    private int capacityThisTick;
+    // the display window (live, not saved): each branch's draw and the storage per tick, and their running sums
+    private final int[][] slotRing = new int[SLOTS][VIEW_WINDOW];
+    private final long[] slotSum = new long[SLOTS];
+    private final int[] storedRing = new int[VIEW_WINDOW];
+    private long storedSum;
+    private int ringAt, ringFill;
+    private boolean falling;
     private int receivedThisTick, overloadTicks;
     private long receiveTick = Long.MIN_VALUE, outputTick = Long.MIN_VALUE;
     private int outputThisTick;
 
-    private final IEnergyStorage inputStorage = new IEnergyStorage() {
+    private final class Input implements IEnergyStorage, com.antaurora.apofirstlight.energy.SupplyProbe {
+        @Override public void networkSupply(long gameTime, int available) { DistributionPanelBlockEntity.this.networkSupply(gameTime, available); }
         @Override public int receiveEnergy(int max, boolean simulate) {
             long t = level == null ? 0 : level.getGameTime();
             if (receiveTick != t) { receiveTick = t; receivedThisTick = 0; }
@@ -82,7 +104,8 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         @Override public int getMaxEnergyStored() { return CAPACITY; }
         @Override public boolean canExtract() { return false; }
         @Override public boolean canReceive() { return true; }
-    };
+    }
+    private final Input inputStorage = new Input();
     /** The top port: the cable circuit, gated by the main breaker and its own branch breaker. */
     private final IEnergyStorage outputStorage = new IEnergyStorage() {
         @Override public int receiveEnergy(int max, boolean simulate) { return 0; }
@@ -104,13 +127,15 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
 
     private final ContainerData data = new ContainerData() {
         @Override public int get(int i) {
-            if (i == DATA_FLAGS) return (mainOn ? FLAG_MAIN : 0) | (tripped ? FLAG_TRIPPED : 0) | zoneFlags();
+            if (i == DATA_FLAGS) return (mainOn ? FLAG_MAIN : 0) | (tripped ? FLAG_TRIPPED : 0) | zoneFlags() | (falling ? FLAG_FALLING : 0);
             if (i == DATA_SUPPLY) return Math.round(supplyAvg);
-            if (i == DATA_LOAD) return Math.round(loadAvg);
-            if (i == DATA_STORED) return Math.round(100F * stored / CAPACITY);
+            if (i == DATA_LOAD) { long sum = 0; for (long v : slotSum) sum += v; return Math.round((float) sum / Math.max(1, ringFill)); }
+            if (i == DATA_STORED) return ringFill == 0 ? Math.round(100F * stored / CAPACITY) : Math.round(100F * storedSum / ringFill / CAPACITY);
+            if (i == DATA_CAPACITY) return Math.round(capacityAvg);
+            if (i == DATA_OVERLOAD) return overloadTicks;
             int s = (i - DATA_SLOTS) / 3, f = (i - DATA_SLOTS) % 3;
             if (s < 0 || s >= SLOTS) return 0;
-            return switch (f) { case 0 -> slotKind[s]; case 1 -> branchIsOff(s) ? 1 : 0; default -> Math.round(slotLoad[s]); };
+            return switch (f) { case 0 -> slotKind[s]; case 1 -> branchIsOff(s) ? 1 : 0; default -> Math.round((float) slotSum[s] / Math.max(1, ringFill)); };
         }
         @Override public void set(int i, int value) {}
         @Override public int getCount() { return DATA_COUNT; }
@@ -121,6 +146,12 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     }
 
     public IEnergyStorage input() { return inputStorage; }
+
+    /** What the feeding network's sources could give this tick (SupplyProbe; summed if several networks feed it). */
+    public void networkSupply(long gameTime, int available) {
+        if (capacityTick != gameTime) { capacityTick = gameTime; capacityThisTick = 0; }
+        capacityThisTick = (int) Math.min(Integer.MAX_VALUE, (long) capacityThisTick + Math.max(0, available));
+    }
     public boolean live() { return mainOn && !tripped; }
 
     /** The outlet circuit has power: main on, the outlets branch on, something in the buffer (Power Outlets V1). */
@@ -168,8 +199,25 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         float supply = receiveTick == now - 1 || receiveTick == now ? receivedThisTick : 0;
         supplyAvg += (supply - supplyAvg) * 0.05F;
         float load = 0;
-        for (int s = 0; s < SLOTS; s++) { slotLoad[s] += (tickLoad[s] - slotLoad[s]) * 0.05F; load += tickLoad[s]; tickLoad[s] = 0; }
+        int at = ringAt;
+        for (int s = 0; s < SLOTS; s++) {
+            slotLoad[s] += (tickLoad[s] - slotLoad[s]) * 0.05F;
+            int draw = Math.round(tickLoad[s]);
+            slotSum[s] += draw - slotRing[s][at];
+            slotRing[s][at] = draw;
+            load += tickLoad[s]; tickLoad[s] = 0;
+        }
         loadAvg += (load - loadAvg) * 0.05F;
+        // the storage a whole window ago is at the same phase of every period: their difference is the real drift
+        int before = storedRing[at];
+        falling = ringFill >= VIEW_WINDOW && stored - before < -VIEW_WINDOW;   // losing more than 1 FE a tick
+        storedSum += stored - before;
+        storedRing[at] = stored;
+        ringAt = (at + 1) % VIEW_WINDOW;
+        ringFill = Math.min(VIEW_WINDOW, ringFill + 1);
+        // the capacity: the network's supply as the cables last settled it (level END), at most what the input takes
+        float capacity = capacityTick == now - 1 || capacityTick == now ? Math.min(MAX_IN, capacityThisTick) : 0;
+        capacityAvg += (capacity - capacityAvg) * 0.05F;
         // overload: power arrives but the circuits take all of it and the buffer stays dry (the load wants more than the
         // supply can give); a dead source is no trip, the building just has no power
         if (live() && stored < CAPACITY / 20 && supplyAvg > 0.5F && loadAvg >= supplyAvg * 0.95F) {

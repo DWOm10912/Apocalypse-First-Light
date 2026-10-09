@@ -1,0 +1,155 @@
+{
+  "parent": "apocalypse_firstlight:item/channel_letter_a",
+  "overrides": [
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.02
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_b"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.06
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_c"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.1
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_d"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.14
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_e"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.18
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_f"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.22
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_g"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.26
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_h"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.3
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_i"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.34
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_j"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.38
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_k"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.42
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_l"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.46
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_m"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.5
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_n"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.54
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_o"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.58
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_p"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.62
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_q"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.66
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_r"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.7
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_s"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.74
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_t"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.78
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_u"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.82
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_v"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.86
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_w"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.9
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_x"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.94
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_y"
+    },
+    {
+      "predicate": {
+        "apocalypse_firstlight:letter": 0.98
+      },
+      "model": "apocalypse_firstlight:item/channel_letter_z"
+    }
+  ]
+}

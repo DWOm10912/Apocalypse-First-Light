@@ -146,6 +146,10 @@ public final class PowerCableTransfer {
                 receivers.add(storage);
             }
         }
+        // what the sources could give this tick, told to the endpoints that show it (a full panel takes nothing, yet has a supply)
+        for (Endpoint endpoint : endpoints) {
+            if (endpoint.storage instanceof SupplyProbe probe) probe.networkSupply(time, (int) Math.min(Integer.MAX_VALUE, available));
+        }
         if (available == 0 || receivers.isEmpty()) return;
         Collections.rotate(receivers, -Math.floorMod(time, receivers.size()));
         Collections.rotate(sources, -Math.floorMod(time, sources.size()));

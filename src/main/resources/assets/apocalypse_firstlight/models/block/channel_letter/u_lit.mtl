@@ -1,0 +1,8 @@
+# AFL PRAIRIE signage V1 channel letter U (lit)
+newmtl letters_nz
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/channel_letter_nz
+newmtl letters_nz_glow
+Ka 1 1 1
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/channel_letter_nz

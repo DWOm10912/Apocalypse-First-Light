@@ -1,0 +1,55 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/enclosure_gate_left.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/enclosure_gate.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    -0.007625,
+    -0.015625,
+    -0.953625,
+    1.985625,
+    2.023625,
+    1.015625
+  ],
+  "parts": {
+    "frame": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "leaf": {
+      "pivot": [
+        1.334,
+        0,
+        0.388
+      ]
+    }
+  },
+  "animations": {
+    "swing": {
+      "duration_ticks": 18,
+      "easing": "ease_in_out",
+      "transforms": {
+        "leaf": {
+          "rotation": [
+            0,
+            -90,
+            0
+          ]
+        }
+      }
+    }
+  }
+}
