@@ -44,12 +44,18 @@ const assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight'
 const T = 'apocalypse_firstlight:block/facade_eyebrow/', SOFFIT = 'apocalypse_firstlight:block/facade_metal_panel/metal_wall_panel';
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const c16 = v => Math.max(0, Math.min(16, v));
-// a box with the listed faces; UVs from the face's own extent (clamped to 0..16; the textures are plain), soffit on 'down'
+// a UV span [lo, hi] moved by whole 16s into 0..16, keeping its size (clamping a span that lies outside the block, like
+// the wall plate at y 17.2..19.2, collapsed it to one texel line on the sprite's edge: the face sampled the neighbouring
+// atlas sprite and flickered yellow / black, with or without shaders, 2026-10-08)
+const fit = (lo, hi) => { const s = lo < 0 ? Math.ceil(-lo / 16) * 16 : hi > 16 ? -Math.ceil((hi - 16) / 16) * 16 : 0; return [c16(lo + s), c16(hi + s)]; };
+// a box with the listed faces; UVs from the face's own extent (moved into 0..16; the textures are plain), soffit on 'down'
 function box(from, to, faces, cull = {}, tex = {}) {
   const [x0, y0, z0] = from, [x1, y1, z1] = to;
   const ext = {north: [x0, y0, x1, y1], south: [x0, y0, x1, y1], west: [z0, y0, z1, y1], east: [z0, y0, z1, y1], up: [x0, z0, x1, z1], down: [x0, z0, x1, z1]};
   return {from, to, faces: Object.fromEntries(faces.map(f => { const [a, b, c, d] = ext[f];
-    return [f, {uv: [c16(a), c16(16 - d), c16(c), c16(16 - b)], texture: tex[f] || '#coat', ...(cull[f] ? {cullface: cull[f]} : {})}]; }))};
+    const [u0, u1] = fit(a, c), [v0, v1] = fit(16 - d, 16 - b);
+    if (u1 - u0 < 1e-6 || v1 - v0 < 1e-6) throw new Error(`zero-area UV on ${f} of ${JSON.stringify([from, to])}`);
+    return [f, {uv: [u0, v0, u1, v1], texture: tex[f] || '#coat', ...(cull[f] ? {cullface: cull[f]} : {})}]; }))};
 }
 // a canopy run from x a to x b with optional returns at either end; 'open' ends are cut flat (culled against a neighbour)
 function canopy(a, b, capW, capE, openW = true, openE = true) {
