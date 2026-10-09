@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
 import com.antaurora.apofirstlight.block.JointedPavementBlock;
+import com.antaurora.apofirstlight.block.CurbBlock;
 import com.antaurora.apofirstlight.block.PavementArrowBlock;
 import com.antaurora.apofirstlight.block.PavementHatchBlock;
 import com.antaurora.apofirstlight.block.PavementMarkingBlock;
@@ -500,6 +501,13 @@ public final class AflBlocks {
             () -> new JointedPavementBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops(), 2));
     public static final RegistryObject<Block> CONCRETE_PAVEMENT = BLOCKS.register("concrete_pavement",
             () -> new JointedPavementBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops(), 4));
+    // Curbs V1 (2026-10-09, docs/models/curbs_v1.md): a sidewalk or grass ground block with a 15 cm concrete curb on every edge
+    // that meets a road surface; the shape follows the neighbours (dynamic), the block lets light through (the curb faces are
+    // lit from it). Ground material like the walk: any pickaxe.
+    public static final RegistryObject<Block> CURB_SIDEWALK = BLOCKS.register("curb_sidewalk",
+            () -> new CurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape(), CurbBlock.Back.SIDEWALK));
+    public static final RegistryObject<Block> CURB_GRASS = BLOCKS.register("curb_grass",
+            () -> new CurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape(), CurbBlock.Back.GRASS));
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",

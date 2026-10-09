@@ -77,6 +77,14 @@
       "unit_mass_kg": 0.3,
       "estimated": true
     },
+    "apocalypse_firstlight:curb_sidewalk": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:curb_grass": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
     "apocalypse_firstlight:concrete_pavement": {
       "unit_mass_kg": 0.3,
       "estimated": true

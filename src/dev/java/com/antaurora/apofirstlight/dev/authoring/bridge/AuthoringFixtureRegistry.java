@@ -274,12 +274,13 @@ final class AuthoringFixtureRegistry {
      * Storage racks (2026-10-08): left / right follow the side neighbours and the BlockEntity stays (same block); an orphan half
      * would turn to air, which the callers report instead of writing. Without this a row placed one rack at a time kept the
      * earlier rack's side open (the Fuel Stop A1 stock room: right=false all along, a post and a shelf gap at every joint).
+     * Curbs (2026-10-09): updateShape only adds an edge flag where a road surface is beside it, never removes or breaks.
      */
     static boolean shapeSafe(BlockState s){
         var b=s.getBlock();
         return b instanceof CrossCollisionBlock||b instanceof WallBlock||b instanceof StairBlock||b instanceof FenceGateBlock
                 ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock
-                ||b instanceof CheckoutCounterBlock||b instanceof StorageRackBlock||facade(b);
+                ||b instanceof CheckoutCounterBlock||b instanceof StorageRackBlock||b instanceof CurbBlock||facade(b);
     }
     /**
      * Fuel Stop A1 facade blocks (2026-10-07): their computed states only follow neighbours and never drop or break, so

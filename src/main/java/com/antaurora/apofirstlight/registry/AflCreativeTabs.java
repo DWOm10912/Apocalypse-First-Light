@@ -54,6 +54,8 @@ public final class AflCreativeTabs {
             AflItems.ASPHALT,
             AflItems.CONCRETE_SIDEWALK,
             AflItems.CONCRETE_PAVEMENT,
+            AflItems.CURB_SIDEWALK,
+            AflItems.CURB_GRASS,
             AflItems.SEALED_CONCRETE_FLOOR,
             AflItems.PORCELAIN_FLOOR_TILE,
             AflItems.RESTROOM_FLOOR_TILE,
@@ -245,6 +247,8 @@ public final class AflCreativeTabs {
                     .displayItems((parameters, output) -> contents.forEach(item -> {
                         // paint tiles list one stack per colour (Pavement Markings V1)
                         if (item.get() instanceof com.antaurora.apofirstlight.item.PavementPaintBlockItem paint) paint.variants().forEach(output::accept);
+                        // curbs: bare, red, yellow (Curbs V1)
+                        else if (item.get() instanceof com.antaurora.apofirstlight.item.CurbBlockItem curb) curb.variants().forEach(output::accept);
                         else output.accept(item.get());
                     }))
                     .build();

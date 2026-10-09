@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "minecraft:grass_block"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:curb_grass",
+    "count": 1
+  }
+}

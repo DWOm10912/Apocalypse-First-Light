@@ -73,6 +73,7 @@ public final class WorldInteractionHint {
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=pavementPaint(mc,hit);
+            if(target==null) target=curb(mc,hit);
             if(target==null) target=aluminumCornice(mc,hit);
             if(target==null) target=eyebrowCanopy(mc,hit);
             if(target==null) target=woodDoorStyle(mc,hit);
@@ -104,7 +105,7 @@ public final class WorldInteractionHint {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
-        if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".metal_eyebrow_canopy.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
 
@@ -199,6 +200,17 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PavementPaintBlock)) return null;
         return com.antaurora.apofirstlight.block.PavementPaintBlock.repaint(s,mc.player.getMainHandItem())==null?null
                 :new Target(Component.translatable("hint.apocalypse_firstlight.pavement_paint.repaint"),null);
+    }
+
+    /** A curb (as CurbBlock#use): a red / yellow / light grey dye in hand repaints it; sneaking with empty hands steps its level. */
+    private static Target curb(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.CurbBlock)) return null;
+        var paint=com.antaurora.apofirstlight.block.CurbBlock.repaint(s,mc.player.getMainHandItem());
+        if(paint!=null) return new Target(Component.translatable(paint==com.antaurora.apofirstlight.block.CurbBlock.Paint.NONE?"hint.apocalypse_firstlight.curb.unpaint":"hint.apocalypse_firstlight.pavement_paint.repaint"),null);
+        if(!mc.player.isShiftKeyDown()||!mc.player.getMainHandItem().isEmpty()||!mc.player.getOffhandItem().isEmpty()) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.curb.level."+s.getValue(com.antaurora.apofirstlight.block.CurbBlock.LEVEL).next().getSerializedName()),null);
     }
 
     /** Aluminum cornice, only while sneaking with an empty hand (as AluminumCorniceBlock#use): the red band on or off. */

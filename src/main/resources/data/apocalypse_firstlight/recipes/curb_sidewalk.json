@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "apocalypse_firstlight:concrete_sidewalk"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    },
+    {
+      "item": "apocalypse_firstlight:concrete_rubble"
+    }
+  ],
+  "result": {
+    "item": "apocalypse_firstlight:curb_sidewalk",
+    "count": 1
+  }
+}

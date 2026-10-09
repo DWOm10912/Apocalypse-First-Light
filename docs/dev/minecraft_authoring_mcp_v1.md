@@ -212,6 +212,7 @@ Result fields:
 - AFL office/restroom partitions, including `door_support`;
 - AFL checkout counters (`shape` and the four side flags, 2026-10-04);
 - AFL storage racks (`left`, `right`; 2026-10-08, see below);
+- AFL curbs (`north`, `east`, `south`, `west`; 2026-10-09): updateShape only adds an edge where a road surface is beside it, never removes one (Curbs V1, docs/models/curbs_v1.md);
 - desktop items (`lowered`);
 - Fuel Stop A1 facade blocks (2026-10-07, see below): `storefront_glazing` (`left/right/up/down`), `ground_face_block` (`cap`, `shape`), `aluminum_cornice` (`shape`), `metal_wall_panel` (`cap`, four sides), `metal_panel_jamb` (`eyebrow`), `metal_eyebrow_canopy` (`left`, `right`).
 

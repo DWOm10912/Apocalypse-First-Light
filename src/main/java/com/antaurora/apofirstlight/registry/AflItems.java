@@ -369,6 +369,10 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.CONCRETE_SIDEWALK.get(), new Item.Properties()));
     public static final RegistryObject<Item> CONCRETE_PAVEMENT = ITEMS.register("concrete_pavement",
             () -> new BlockItem(AflBlocks.CONCRETE_PAVEMENT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CURB_SIDEWALK = ITEMS.register("curb_sidewalk",
+            () -> new com.antaurora.apofirstlight.item.CurbBlockItem(AflBlocks.CURB_SIDEWALK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CURB_GRASS = ITEMS.register("curb_grass",
+            () -> new com.antaurora.apofirstlight.item.CurbBlockItem(AflBlocks.CURB_GRASS.get(), new Item.Properties()));
     public static final RegistryObject<Item> SEALED_CONCRETE_FLOOR = ITEMS.register("sealed_concrete_floor",
             () -> new BlockItem(AflBlocks.SEALED_CONCRETE_FLOOR.get(), new Item.Properties()));
     public static final RegistryObject<Item> PORCELAIN_FLOOR_TILE = ITEMS.register("porcelain_floor_tile",

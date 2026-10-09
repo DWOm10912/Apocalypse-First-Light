@@ -20,6 +20,13 @@
   - 地面文字、路缘漆（等路缘）。
 - 这些都是通用资产，以后别的停车场、城市道路、高速都能用。
 
+## Jade（2026-10-09）
+
+用户：标线这类贴在地上的东西不要 Jade 兼容层。
+- 现在 `compat/jade/PavementMarkingJadeRedirect` 把 `PavementMarkingBlock`（包括上色、斜线、箭头、轮椅标志）、`RoadMarkingBlock`、`RoadMarkingStepConnectorBlock` 的 Jade 目标转到下面那格地面。
+- 看着画了线的路，显示的是沥青 / 混凝土路面，和旁边没画线的路一样，不会一会儿有一会儿没有。
+- 用户 2026-10-09 实机 PASS。
+
 ## 方案（A1 地块坐标，同设计稿：x 向东，z 向南，1 格 = 1 m）
 
 方案图：草稿目录 `refs/marking_concept.html` 生成的 `a1_markings_concept_v1.png`（图里的漆面还带磨损，后来去掉了，见下面"漆面"）。

@@ -190,7 +190,7 @@ final class FixtureAdapter {
         var out=BridgeHistory.result(dry?0:changes.size(),start,b,dry);
         out.addProperty("reconciled",changes.size());out.add("changes",report);out.addProperty("changes_truncated",changes.size()>REPORT_LIMIT);
         out.add("skipped",GSON.toJsonTree(skipped));out.addProperty("undo_steps",dry||changes.isEmpty()?0:1);
-        out.addProperty("scope","Pure connection shapes only: panes/bars/railings/fences, walls, stairs, fence gates, AFL partitions, desktop 'lowered' state, checkout counters, storage rack left/right and the Fuel Stop A1 facade blocks (glazing, masonry base, cornice, wall panel, jamb, eyebrow canopy)");
+        out.addProperty("scope","Pure connection shapes only: panes/bars/railings/fences, walls, stairs, fence gates, AFL partitions, desktop 'lowered' state, checkout counters, storage rack left/right, curb edge flags and the Fuel Stop A1 facade blocks (glazing, masonry base, cornice, wall panel, jamb, eyebrow canopy)");
         return out;
     }
 

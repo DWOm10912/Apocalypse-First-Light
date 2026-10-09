@@ -33,6 +33,7 @@ public final class MeshHitModels {
     private static final Map<ResourceLocation, Optional<MeshHitModel>> MODELS = new ConcurrentHashMap<>();
     private static final Map<BlockState, Optional<Shape>> BY_STATE = new ConcurrentHashMap<>();
     private static final Map<List<ResourceLocation>, Optional<Shape>> BY_PIECES = new ConcurrentHashMap<>();
+    private static final Map<List<MeshHitAssembled.Piece>, Optional<Shape>> ASSEMBLED = new ConcurrentHashMap<>();
 
     private MeshHitModels() {
     }
@@ -147,6 +148,8 @@ public final class MeshHitModels {
     @Nullable
     private static Shape own(BlockGetter level, BlockPos pos, BlockState state) {
         if (state.hasBlockEntity() && level.getBlockEntity(pos) instanceof AflAnimatedMeshHost host) return AnimatedMeshHits.shape(host);
+        if (state.getBlock() instanceof MeshHitAssembled assembled)
+            return ASSEMBLED.computeIfAbsent(List.copyOf(assembled.meshHitPieces(level, pos, state)), MeshHitModels::merged).orElse(null);
         if (state.getBlock() instanceof MeshHitProvider provider) {
             List<ResourceLocation> pieces = provider.meshHitModels(level, pos, state);
             return BY_PIECES.computeIfAbsent(List.copyOf(pieces), MeshHitModels::ofPieces).orElse(null);
@@ -173,6 +176,28 @@ public final class MeshHitModels {
             if (model != null) parts.add(new Placed(model, new Quaternionf(), new Quaternionf()));
         }
         return parts.isEmpty() ? Optional.empty() : Optional.of(new Shape(parts));
+    }
+
+    /** The pieces turned about the block's centre (quarter turns, as BlockModelRotation y) and merged into one model. */
+    private static Optional<Shape> merged(List<MeshHitAssembled.Piece> pieces) {
+        List<Float> out = new ArrayList<>();
+        for (MeshHitAssembled.Piece piece : pieces) {
+            MeshHitModel model = model(piece.model());
+            if (model == null) continue;
+            float[] t = model.tri();
+            int turns = Math.floorMod(piece.y() / 90, 4);
+            for (int i = 0; i + 2 < t.length; i += 3) {
+                float x = t[i], z = t[i + 2];
+                for (int k = 0; k < turns; k++) { float w = x; x = 1.0F - z; z = w; }   // north to east: (x, z) to (1 - z, x)
+                out.add(x);
+                out.add(t[i + 1]);
+                out.add(z);
+            }
+        }
+        if (out.isEmpty()) return Optional.empty();
+        float[] tri = new float[out.size()];
+        for (int i = 0; i < tri.length; i++) tri[i] = out.get(i);
+        return Optional.of(new Shape(List.of(new Placed(MeshHitModel.of(tri), new Quaternionf(), new Quaternionf()))));
     }
 
     @Nullable

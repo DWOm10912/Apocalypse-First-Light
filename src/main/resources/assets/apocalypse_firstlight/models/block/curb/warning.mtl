@@ -1,0 +1,4 @@
+# AFL Curbs V1 warning
+newmtl warning
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/curb/curb_warning

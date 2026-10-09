@@ -1,0 +1,10 @@
+{
+  "loader": "apocalypse_firstlight:curb",
+  "base": "apocalypse_firstlight:block/ground/concrete_sidewalk",
+  "grass": false,
+  "pieces": "apocalypse_firstlight:block/curb/",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/ground/concrete_sidewalk_plain"
+  }
+}

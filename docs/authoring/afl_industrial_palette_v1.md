@@ -75,5 +75,15 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 地面标线（2026-10-08，[Pavement Markings V1](../models/pavement_markings_v1.md)；都是放在地面上面那一格的薄片）：`edge_lane_white` / `edge_lane_yellow` / `edge_lane_blue`（格边线）、`white_lane_divider`（格中线）、`pavement_hatch` / `pavement_crosshatch`（`facing`、`color` white / yellow / blue，另有 `ne` / `sw` / `nw` / `se` 由邻居自动算）/ `pavement_bar`（`facing`、`color`）、`pavement_arrow`（`facing`、`kind`、`part`，整个箭头要逐格写状态；转弯箭头没有 part 4）、`pavement_accessible_symbol`（`facing`）。
 - `reinforced_concrete` 换了贴图，留给结构（桥墩、地堡墙、挡墙），不要再当人行道；停车场、车道用 `asphalt`（也换了贴图）。
 
+路牙（2026-10-09，[Curbs V1](../models/curbs_v1.md)）：`curb_sidewalk`、`curb_grass`。
+- 替换人行道或草地边上那一格地面方块（k −1），不占上面一格。
+- 旁边是 `asphalt` 或 `concrete_pavement`（标签 `apocalypse_firstlight:curb_road_surface`）的那几边会自动长出 15 cm 路牙；角、内角、过渡段、端头也自动算。
+- 状态：
+  - `axis`：人行道走向，同 `concrete_sidewalk`；草地版写 `z`；
+  - `level`：`full` / `lowered` / `flush`。只写要降低的格，过渡段自动；人行道版 `flush` 自动带黄色提示砖，用于无障碍坡道；
+  - `paint`：`none` / `red` / `yellow`；
+  - `north` / `east` / `south` / `west`（V2）：哪几边有路牙。写方块时写上旁边是路的那几边，或者写完跑 `reconcile_shapes`。只要旁边的路还在，不写也照样显示。
+- 内角那一格（斜对角是路、两边都是路牙）也要放路牙方块，否则拐角会缺一小块。
+
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

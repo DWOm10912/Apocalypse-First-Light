@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/curb/strip_zero_ccw.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/curb/curb_concrete"
+  }
+}

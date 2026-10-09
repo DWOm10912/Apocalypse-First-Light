@@ -56,6 +56,11 @@ public final class MeshHitModel {
         return tri.length / 9;
     }
 
+    /** The triangles (9 floats each); not to be changed (MeshHitModels merges a MeshHitAssembled block's pieces from them). */
+    float[] tri() {
+        return tri;
+    }
+
     /**
      * The model's feature edges in block units, 6 floats each (two ends): corners shared by coincident faces are welded
      * (to 1e-4), then an edge stays if it bounds one face only, is shared by more than two, or its two faces fold by more

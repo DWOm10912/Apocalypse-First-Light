@@ -99,5 +99,6 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(FuelHazardJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.FuelCanBlock.class);
         registration.registerBlockComponent(FuelCanJadeProvider.Pump.INSTANCE, com.antaurora.apofirstlight.block.HandFuelPumpBlock.class);
         registration.registerBlockComponent(EmergencyLightJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.EmergencyLightBlock.class);
+        PavementMarkingJadeRedirect.register(registration);
     }
 }

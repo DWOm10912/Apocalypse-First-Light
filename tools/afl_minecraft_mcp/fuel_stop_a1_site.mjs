@@ -17,6 +17,10 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_site.mjs build  -> checks and paves the active site plot
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_site.mjs markings -> the parking-lot markings (docs/models/pavement_markings_v1.md
 //            plan; see markings()), at k 0 on the paved ground, after checking every cell is air or an earlier marking
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_site.mjs curbs  -> Curbs V1 (docs/models/curbs_v1.md): reads k -1 and turns every
+//            walk / grass cell that meets asphalt or concrete pavement (and the inner-corner cells) into curb_sidewalk /
+//            curb_grass; the four ramp cells in front of the store are flush (yellow warning). The world is read, not the
+//            design, since the user edits the lot by hand.
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -95,6 +99,37 @@ export function markings() {
   return m;
 }
 
+// ---- curbs (Curbs V1, docs/models/curbs_v1.md, 2026-10-09) ----
+const ROAD_IDS = new Set([ASPHALT, A('concrete_pavement')]);
+const RAMPS = new Set(['22,26', '23,26', '39,26', '40,26']);   // in line with the hatched access aisles and the crosswalks
+const curbKind = id => ROAD_IDS.has(id) ? 'road' : id === A('concrete_sidewalk') || id === A('curb_sidewalk') ? 'walk'
+  : id === 'minecraft:grass_block' || id === A('curb_grass') ? 'grass' : null;
+/**
+ * The curb cells (lot "u,v" -> {kind, level}) of a k -1 surface (lot "u,v" -> block id), with the block's own rule
+ * (block/CurbGeometry): a walk or grass cell with a road neighbour carries the curb; a cell with none whose road diagonal has
+ * walk / grass on both sides holds the inner-corner post. Only lot cells (the plot) change.
+ */
+export function curbPlan(surface) {
+  const at = (u, v) => curbKind(surface.get(u + ',' + v)), ped = k => k === 'walk' || k === 'grass', out = new Map();
+  for (let v = LOT.v0; v <= LOT.v1; v++) for (let u = LOT.u0; u <= LOT.u1; u++) {
+    const k = at(u, v); if (!ped(k)) continue;
+    const edge = [[0, -1], [1, 0], [0, 1], [-1, 0]].some(([du, dv]) => at(u + du, v + dv) === 'road');
+    const inner = !edge && [[1, 1], [1, -1], [-1, 1], [-1, -1]].some(([du, dv]) => at(u + du, v + dv) === 'road' && ped(at(u + du, v)) && ped(at(u, v + dv)));
+    if (edge || inner) out.set(u + ',' + v, {kind: k, edge, level: k === 'walk' && RAMPS.has(u + ',' + v) ? 'flush' : 'full'});
+  }
+  return out;
+}
+/** The surface the scripts lay (for the offline plan): this ground, the store's walk ring and floor, the fuel court, grass. */
+export function designSurface() {
+  const g = ground(), m = new Map();
+  for (let v = LOT.v0; v <= LOT.v1; v++) for (let u = LOT.u0; u <= LOT.u1; u++) {
+    const k = u + ',' + v;
+    m.set(k, (g.get(k) || '').replace(/\[.*$/, '') || (inBox(u, v, [18, 8, 44, 23]) ? A('porcelain_floor_tile') : inBox(u, v, KEEP[0]) ? A('concrete_sidewalk')
+      : inBox(u, v, KEEP[1]) ? A('concrete_pavement') : 'minecraft:grass_block'));
+  }
+  return m;
+}
+
 /** Runs of one state along world x (the plot's rows), as plot-relative cuboids, in batches of 128. */
 function batches(cells, k) {
   const rows = new Map();
@@ -116,8 +151,10 @@ export function plan() {
   const m = markings(); for (const st of m.values()) { const id = st.replace(/\[.*$/, '').replace('apocalypse_firstlight:', ''); marks[id] = (marks[id] || 0) + 1; }
   // every marking sits on paved ground (asphalt here, or the store / court concrete the other scripts lay)
   const unpaved = [...m.keys()].filter(k => { const [u, v] = k.split(',').map(Number); return !cells.has(k) && !KEEP.some(b => inBox(u, v, b)); });
+  const cp = curbPlan(designSurface()), curbs = {};
+  for (const c of cp.values()) { const k = c.kind + (c.edge ? '' : '_inner') + (c.level === 'flush' ? '_flush' : ''); curbs[k] = (curbs[k] || 0) + 1; }
   return {id: ID, size: SIZE, origin: ORIGIN, resume: RESUME, cells: cells.size, count, batches: batches(cells, -1).length,
-    markings: m.size, marks, marking_batches: batches(m, 0).length, unpaved};
+    markings: m.size, marks, marking_batches: batches(m, 0).length, unpaved, curb_cells: cp.size, curbs};
 }
 
 async function paint() {
@@ -143,6 +180,46 @@ async function paint() {
   const report = {plot: info, world: status.world, plan: plan(), log, audit};
   await mkdir(dir, {recursive: true}); await writeFile(path.join(dir, 'site_markings_v1.json'), JSON.stringify(report, null, 1));
   console.log(JSON.stringify({markings: m.size, log, audit: audit.counts ?? audit, issues: audit.issues?.slice(0, 10)}, null, 1));
+}
+
+async function curbs() {
+  const c = new BridgeClient('./run'), dir = path.resolve('build/authoring_checks', ID);
+  const status = await c.call('minecraft_status'), info = await c.call('authoring_info');
+  if (info.id !== ID || info.width !== SIZE[0] || info.height !== SIZE[1] || info.depth !== SIZE[2] || info.min.some((x, i) => x !== ORIGIN[i]))
+    throw Error('PLOT_MISMATCH ' + JSON.stringify(info) + ' run ' + RESUME);
+  const o = info.min, y = toWorld(0, -1, 0)[1];
+  const read = async () => { const sl = await c.call('get_horizontal_slice', {target: 'AUTHORING_SESSION', coordinate: y, encoding: 'palette'});
+    const names = Object.fromEntries(Object.entries(sl.palette).map(([st, i]) => [i, st])), lot = new Map();
+    sl.rows.forEach((row, z) => row.forEach((i, x) => { const wx = o[0] + x, wz = o[2] + z, u = -50 - wx, v = 474 - wz; lot.set(u + ',' + v, names[i]); }));
+    return lot; };
+  const id = st => (/^Block\{([^}]+)\}/.exec(st || '') || [])[1] || st;
+  const before = await read(), surface = new Map([...before].map(([k, st]) => [k, id(st)]));
+  const cp = curbPlan(surface), cells = new Map();
+  for (const [k, cc] of cp) {
+    const st = before.get(k) || '', prop = (name, dflt) => (new RegExp(name + '=([a-z]+)').exec(st) || [])[1] || dflt;
+    const axis = cc.kind === 'walk' ? prop('axis', 'x') : 'z', curb = /curb_(sidewalk|grass)/.test(st);
+    // V2 (2026-10-09): the edge flags (world directions; lot north = world south, lot east = world west), kept where an
+    // earlier run or the game set them; an existing curb keeps the level and paint the user gave it
+    const [u, v] = k.split(',').map(Number), road = (du, dv) => curbKind(surface.get((u + du) + ',' + (v + dv))) === 'road';
+    const flag = (world, du, dv) => road(du, dv) || prop(world, 'false') === 'true';
+    cells.set(k, `${A(cc.kind === 'walk' ? 'curb_sidewalk' : 'curb_grass')}[axis=${axis},east=${flag('east', -1, 0)},level=${curb ? prop('level', cc.level) : cc.level},`
+      + `north=${flag('north', 0, 1)},paint=${curb ? prop('paint', 'none') : 'none'},south=${flag('south', 0, -1)},west=${flag('west', 1, 0)}]`);
+  }
+  const world = p => [o[0] + p[0], o[1] + p[1], o[2] + p[2]], log = [];
+  for (const ops of batches(cells, -1)) {
+    await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: ops.map(op => ({min: world(op.min), max: world(op.max), block: op.block}))});
+    log.push('ok ' + ops.length);
+  }
+  // read back: every planned cell holds its state (properties in any order), nothing else on the layer changed
+  const after = await read(), norm = st => { const m = /^(?:Block\{([^}]+)\})?([^\[]*)(?:\[(.*)\])?$/.exec(st || ''); return (m[1] || m[2]) + (m[3] ? '[' + m[3].split(',').sort().join(',') + ']' : ''); };
+  const wrong = [], changed = [];
+  for (const [k, st] of cells) if (norm(after.get(k)) !== norm(st)) wrong.push(k + ' ' + after.get(k));
+  for (const [k, st] of after) if (!cells.has(k) && st !== before.get(k)) changed.push(k);
+  const audit = await c.call('audit_support', {target: 'AUTHORING_SESSION'}).catch(e => ({error: String(e.message || e)}));
+  const counts = {}; for (const cc of cp.values()) { const kk = cc.kind + (cc.edge ? '' : '_inner') + (cc.level === 'flush' ? '_flush' : ''); counts[kk] = (counts[kk] || 0) + 1; }
+  const report = {plot: info, world: status.world, curbs: cells.size, counts, log, readback: {wrong, changed}, audit};
+  await mkdir(dir, {recursive: true}); await writeFile(path.join(dir, 'site_curbs_v1.json'), JSON.stringify(report, null, 1));
+  console.log(JSON.stringify({curbs: cells.size, counts, log, wrong: wrong.slice(0, 10), changed: changed.slice(0, 10), audit: audit.counts ?? audit, issues: audit.issues?.slice(0, 10)}, null, 1));
 }
 
 const SAFE = new Set(['minecraft:grass_block', 'minecraft:dirt', 'minecraft:coarse_dirt', 'minecraft:air', ASPHALT, A('concrete_pavement')]);
@@ -183,3 +260,4 @@ const mode = direct ? process.argv[2] : null;
 if (mode === 'plan') console.log(JSON.stringify(plan(), null, 1));
 else if (mode === 'build') await build();
 else if (mode === 'markings') await paint();
+else if (mode === 'curbs') await curbs();

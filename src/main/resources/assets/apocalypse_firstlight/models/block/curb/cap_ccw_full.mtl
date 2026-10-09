@@ -1,0 +1,5 @@
+# AFL Curbs V1 cap_ccw_full
+newmtl curb
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/curb/curb_concrete
+forge_TintIndex 1

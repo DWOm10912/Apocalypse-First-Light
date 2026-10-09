@@ -1,0 +1,10 @@
+{
+  "loader": "apocalypse_firstlight:curb",
+  "base": "minecraft:block/grass_block",
+  "grass": true,
+  "pieces": "apocalypse_firstlight:block/curb/",
+  "gui_light": "side",
+  "textures": {
+    "particle": "minecraft:block/dirt"
+  }
+}

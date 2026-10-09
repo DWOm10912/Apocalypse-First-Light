@@ -22,7 +22,7 @@
 | 现做食品区域 | 缸砖（卫生规范要求） | 没做 |
 | 加油岛 | 镀锌钢板岛模里浇混凝土，约 15 cm 高 | 已有 `fuel_island_curb` |
 | 顶棚下、油罐盖板、垃圾围栏前的垫板 | 钢筋混凝土路面（汽油、柴油会溶沥青，油罐车重），拉毛，每 3.5–4.5 m 一道切缝 | `concrete_pavement` |
-| 人行道 | 混凝土，扫帚纹，约 1.5 m 一道压缝，比车道高一个路缘 | `concrete_sidewalk`（路缘以后做 mesh） |
+| 人行道 | 混凝土，扫帚纹，约 1.5 m 一道压缝，比车道高一个路缘 | `concrete_sidewalk`（路缘见 [Curbs V1](curbs_v1.md)） |
 | 停车场、车道 | 多数用沥青 | `asphalt` |
 | 结构（桥墩、地堡墙、挡墙） | 现浇钢筋混凝土 | `reinforced_concrete` |
 
@@ -117,4 +117,4 @@
 ## 没做
 
 - 实机：Sundial 和原版下的外观，缝的位置和扫帚纹方向，板色调，挖掘掉落。
-- 以后的：卫生间墙砖、缸砖、隔墙涂料面、吊顶板（室内装修一轮）；路缘（停车场一轮）。停车标线 2026-10-08 已做成 [Pavement Markings V1](pavement_markings_v1.md)。
+- 以后的：卫生间墙砖、缸砖、隔墙涂料面、吊顶板（室内装修一轮）；路缘 2026-10-09 已做成 [Curbs V1](curbs_v1.md)。停车标线 2026-10-08 已做成 [Pavement Markings V1](pavement_markings_v1.md)。
