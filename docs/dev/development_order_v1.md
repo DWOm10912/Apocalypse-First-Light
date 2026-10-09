@@ -31,7 +31,7 @@
   - 招牌字、屋顶空调机组等。
   - 换好以后：`/afl_author configure`、导出、写 StructureDefinition 元数据。
   - 见 [A1 施工记录](../worldgen/fuel_stop_a1_store_build_v1.md) 的"已知不足"。
-- 地面材料（2026-10-08，[Ground Materials V1](../models/ground_materials_v1.md)）：重做 `reinforced_concrete`、`asphalt` 贴图，新增人行道、路面、后场混凝土、两种地砖，已注册、只编译通过；A1 的占位地面还没换。之后是停车场（路缘、标线、灯杆等）。
+- 地面材料（2026-10-08，[Ground Materials V1](../models/ground_materials_v1.md)）：重做 `reinforced_concrete`、`asphalt` 贴图，新增人行道、路面、后场混凝土、两种地砖，已注册、只编译通过；A1 的占位地面还没换。停车场标线（[Pavement Markings V1](../models/pavement_markings_v1.md)）同日做了：现有三种标线升级到 240，加蓝线、斜线、交叉斜线、宽条、箭头、轮椅标志，只编译通过。之后是路缘、灯杆、铺 A1 停车场。2026-10-08 地块地面已铺好（[地块地面](../worldgen/fuel_stop_a1_site_build_v1.md)，沥青、垃圾围栏垫板，种植岛留草）；加油区油罐坑的配重梁已放；砾石回填被建造工具拒绝（会下落的方块），回填暂时是泥土，等用户定要不要做不会下落的碎石方块。
 - 加油区（加油岛、顶棚、地下油罐那一片）用户没说开始就不动。这一套资产用户 2026-10-08 说明之前都实机测过、没问题，卸油口也能倒油灌罐；A1 现场还没建。2026-10-08 用户让开始：修了地下油罐的旋转 bug（新属性 `flipped`），建造工具加了加油区需要的东西、放宽了步骤和地块上限，加油区已用建造脚本在开发存档里建好（审计 0 个问题），等接电、灌油和用户实机检查，用户第一次实机后：灯改成 24 盏、立柱改平滑光照（等复测）；用户定了店里电表箱通电时加油区一起工作：从配电盘的"外接电缆"一路走地下电缆到加油区总管，脚本 `fuel_stop_a1_feeder.mjs`，同日已写进世界，等通电试，见 [加油区施工记录](../worldgen/fuel_stop_a1_forecourt_build_v1.md)。
 
 ## 以后再开（从 Codex 接过来的）

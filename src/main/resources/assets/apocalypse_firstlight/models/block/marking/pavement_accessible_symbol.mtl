@@ -1,0 +1,7 @@
+# AFL Pavement Markings V1 pavement_accessible_symbol
+newmtl blue
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/edge_lane_blue
+newmtl white
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/edge_lane_white

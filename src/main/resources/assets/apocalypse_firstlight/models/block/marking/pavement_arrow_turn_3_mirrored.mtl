@@ -1,0 +1,4 @@
+# AFL Pavement Markings V1 pavement_arrow_turn_3_mirrored
+newmtl white
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/edge_lane_white

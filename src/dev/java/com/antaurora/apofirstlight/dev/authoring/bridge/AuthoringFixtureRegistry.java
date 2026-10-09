@@ -269,12 +269,17 @@ final class AuthoringFixtureRegistry {
     static boolean ownsBlockEntity(BlockState s){
         return OWNS_BLOCK_ENTITY.computeIfAbsent(s,state->state.getBlock() instanceof EntityBlock e&&e.newBlockEntity(BlockPos.ZERO,state)!=null);
     }
-    /** Only blocks whose updateShape is a pure connection function; others (doors, lights, AFL fixtures) may drop items or break. */
+    /**
+     * Only blocks whose updateShape is a pure connection function; others (doors, lights, AFL fixtures) may drop items or break.
+     * Storage racks (2026-10-08): left / right follow the side neighbours and the BlockEntity stays (same block); an orphan half
+     * would turn to air, which the callers report instead of writing. Without this a row placed one rack at a time kept the
+     * earlier rack's side open (the Fuel Stop A1 stock room: right=false all along, a post and a shelf gap at every joint).
+     */
     static boolean shapeSafe(BlockState s){
         var b=s.getBlock();
         return b instanceof CrossCollisionBlock||b instanceof WallBlock||b instanceof StairBlock||b instanceof FenceGateBlock
                 ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock
-                ||b instanceof CheckoutCounterBlock||facade(b);
+                ||b instanceof CheckoutCounterBlock||b instanceof StorageRackBlock||facade(b);
     }
     /**
      * Fuel Stop A1 facade blocks (2026-10-07): their computed states only follow neighbours and never drop or break, so

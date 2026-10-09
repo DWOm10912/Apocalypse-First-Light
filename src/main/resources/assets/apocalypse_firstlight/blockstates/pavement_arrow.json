@@ -1,0 +1,274 @@
+{
+  "variants": {
+    "facing=north,kind=straight,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_0"
+    },
+    "facing=east,kind=straight,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_0",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_0",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_0",
+      "y": 270
+    },
+    "facing=north,kind=straight,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_1"
+    },
+    "facing=east,kind=straight,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_1",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_1",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_1",
+      "y": 270
+    },
+    "facing=north,kind=straight,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2"
+    },
+    "facing=east,kind=straight,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 270
+    },
+    "facing=north,kind=straight,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2"
+    },
+    "facing=east,kind=straight,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 270
+    },
+    "facing=north,kind=straight,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2"
+    },
+    "facing=east,kind=straight,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 270
+    },
+    "facing=north,kind=straight,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2"
+    },
+    "facing=east,kind=straight,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 90
+    },
+    "facing=south,kind=straight,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 180
+    },
+    "facing=west,kind=straight,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_straight_2",
+      "y": 270
+    },
+    "facing=north,kind=left,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0"
+    },
+    "facing=east,kind=left,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0",
+      "y": 90
+    },
+    "facing=south,kind=left,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0",
+      "y": 180
+    },
+    "facing=west,kind=left,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0",
+      "y": 270
+    },
+    "facing=north,kind=left,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1"
+    },
+    "facing=east,kind=left,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1",
+      "y": 90
+    },
+    "facing=south,kind=left,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1",
+      "y": 180
+    },
+    "facing=west,kind=left,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1",
+      "y": 270
+    },
+    "facing=north,kind=left,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2"
+    },
+    "facing=east,kind=left,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2",
+      "y": 90
+    },
+    "facing=south,kind=left,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2",
+      "y": 180
+    },
+    "facing=west,kind=left,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2",
+      "y": 270
+    },
+    "facing=north,kind=left,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3"
+    },
+    "facing=east,kind=left,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3",
+      "y": 90
+    },
+    "facing=south,kind=left,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3",
+      "y": 180
+    },
+    "facing=west,kind=left,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3",
+      "y": 270
+    },
+    "facing=north,kind=left,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4"
+    },
+    "facing=east,kind=left,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4",
+      "y": 90
+    },
+    "facing=south,kind=left,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4",
+      "y": 180
+    },
+    "facing=west,kind=left,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4",
+      "y": 270
+    },
+    "facing=north,kind=left,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5"
+    },
+    "facing=east,kind=left,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5",
+      "y": 90
+    },
+    "facing=south,kind=left,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5",
+      "y": 180
+    },
+    "facing=west,kind=left,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5",
+      "y": 270
+    },
+    "facing=north,kind=right,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0_mirrored"
+    },
+    "facing=east,kind=right,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=0": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_0_mirrored",
+      "y": 270
+    },
+    "facing=north,kind=right,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1_mirrored"
+    },
+    "facing=east,kind=right,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=1": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_1_mirrored",
+      "y": 270
+    },
+    "facing=north,kind=right,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2_mirrored"
+    },
+    "facing=east,kind=right,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=2": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_2_mirrored",
+      "y": 270
+    },
+    "facing=north,kind=right,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3_mirrored"
+    },
+    "facing=east,kind=right,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=3": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_3_mirrored",
+      "y": 270
+    },
+    "facing=north,kind=right,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4_mirrored"
+    },
+    "facing=east,kind=right,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=4": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_4_mirrored",
+      "y": 270
+    },
+    "facing=north,kind=right,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5_mirrored"
+    },
+    "facing=east,kind=right,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5_mirrored",
+      "y": 90
+    },
+    "facing=south,kind=right,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5_mirrored",
+      "y": 180
+    },
+    "facing=west,kind=right,part=5": {
+      "model": "apocalypse_firstlight:block/marking/pavement_arrow_turn_5_mirrored",
+      "y": 270
+    }
+  }
+}

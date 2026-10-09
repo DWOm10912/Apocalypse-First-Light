@@ -122,8 +122,11 @@ function buildToilet() {
   // outer shell: pedestal flaring into the bowl
   const outer = [[0, 0.0, 0.6, -0.08], [0.06, 0.03, 0.56, -0.08], [0.3, 0.2, 0.55, -0.06], [0.5, 0.28, 0.72, -0.02], [0.7, 0.34, 0.9, 0], [0.86, 0.39, 0.99, 0], [1, T.rim, 1.0, 0]];
   const NT = 16;
-  loft(P('bowl_outer', 'china'), Array.from({length: NT + 1}, (_, i) => { const [y, s, dz] = prof(outer, i / NT); return ring(y, T.a * s, T.b * s, T.zc + dz); }),
-    c => { const [y] = [c[1] / 1000]; const f = axisOut(T.zc - 0.04)(c); return [f[0], y < 0.24 ? 0 : 0.25 * Math.hypot(f[0], f[2]), f[2]]; });
+  const shell = P('bowl_outer', 'china'), outerRings = Array.from({length: NT + 1}, (_, i) => { const [y, s, dz] = prof(outer, i / NT); return ring(y, T.a * s, T.b * s, T.zc + dz); });
+  loft(shell, outerRings, c => { const [y] = [c[1] / 1000]; const f = axisOut(T.zc - 0.04)(c); return [f[0], y < 0.24 ? 0 : 0.25 * Math.hypot(f[0], f[2]), f[2]]; });
+  // the foot's underside: never seen on a floor, but held, dropped or in the inventory the open shell looked hollow and the
+  // base see-through (user 2026-10-08). Every part is a closed surface now; the build fails on a new hole (OPEN_EDGES below).
+  cap(shell, outerRings[0], [0, -1, 0]);
   // rim top and the inner bowl, dry: glazed down to the dark trapway opening
   loft(P('rim', 'china'), [ring(T.rim, T.a, T.b, T.zc), ring(T.rim, T.a - T.inset, T.b - T.inset, T.zc)], () => [0, 1, 0]);
   const inner = [[0, T.rim - 0.002, 1, 0], [0.12, T.rim - 0.022, 0.97, 0], [0.4, 0.35, 0.78, -0.01], [0.7, 0.27, 0.48, -0.05], [1, 0.205, 0.2, -0.07]];
@@ -133,7 +136,7 @@ function buildToilet() {
   loft(P('bowl_inner', 'china'), innerRings, c => { const ax = cv([0, 0.5, T.zc - 0.03]); return sub(ax, c); });
   cap(P('trapway', 'trap'), innerRings[innerRings.length - 1].map(p => add(p, [0, -0.5, 0])), [0, 1, 0]);
   // two bolt caps on the foot
-  for (const s of [-1, 1]) lathe(P('bolt_cap_' + (s > 0 ? 'r' : 'l'), 'china'), s * 0.098, T.zc - 0.08, [[0.019, 0.0], [0.018, 0.006], [0.013, 0.013], [0.006, 0.016]], 12);
+  for (const s of [-1, 1]) lathe(P('bolt_cap_' + (s > 0 ? 'r' : 'l'), 'china'), s * 0.098, T.zc - 0.08, [[0.019, 0.0005], [0.018, 0.006], [0.013, 0.013], [0.006, 0.016]], 12, {capBottom: true});   // 0.5 mm up: their bottoms would share the foot cap's plane
   // neck behind the bowl up to the top spud
   rbox(P('neck', 'china'), 0, 0.125, 0.17, 0.17, 0.30, 0.424, 0.04, 0.008);
   // open-front seat, no cover: a U on the rim
@@ -151,16 +154,16 @@ function buildToilet() {
   for (const s of [-1, 1]) cyl(P('hinge_' + (s > 0 ? 'r' : 'l'), 'satin'), cv([s * 0.07 - 0.017, T.rim + 0.016, 0.205]), cv([s * 0.07 + 0.017, T.rim + 0.016, 0.205]), 11, 11, 14);
   // the flushometer: top spud, vacuum-breaker tube, valve body with cap and handle, control stop and supply from the wall
   const ch = P('flushometer', 'chrome'), VY = T.valveY, SX = T.stopX;
-  lathe(ch, 0, 0.11, [[0.03, T.rim], [0.03, T.rim + 0.008], [0.026, T.rim + 0.018], [0.026, T.rim + 0.042], [0.02, T.rim + 0.046]], 20);
+  lathe(ch, 0, 0.11, [[0.03, T.rim], [0.03, T.rim + 0.008], [0.026, T.rim + 0.018], [0.026, T.rim + 0.042], [0.02, T.rim + 0.046]], 20, {capBottom: true});
   tube(ch, [[0, T.rim + 0.04, 0.11], [0, 0.55, 0.108], [0, VY - 0.03, 0.105]], 0.017, {sub: 2});
   lathe(ch, 0, 0.107, [[0.024, 0.595], [0.024, 0.645], [0.018, 0.652]], 20, {capBottom: true});
   cyl(ch, cv([-0.075, VY, 0.105]), cv([0.075, VY, 0.105]), 30, 30, 22);
-  lathe(ch, 0, 0.105, [[0.036, VY + 0.02], [0.034, VY + 0.075], [0.03, VY + 0.088], [0.018, VY + 0.098], [0.0, VY + 0.1]], 22, {capTop: false});
+  lathe(ch, 0, 0.105, [[0.036, VY + 0.02], [0.034, VY + 0.075], [0.03, VY + 0.088], [0.018, VY + 0.098], [0.0, VY + 0.1]], 22, {capTop: false, capBottom: true});
   cyl(ch, cv([0.075, VY, 0.105]), cv([0.105, VY, 0.105]), 20, 20, 16);
   tube(ch, [[0.1, VY, 0.105], [0.2, VY - 0.025, 0.115]], 0.008, {sub: 1});
   tube(ch, [[SX, VY, 0.002], [SX, VY, 0.07], [SX + 0.05, VY, 0.105], [-0.075, VY, 0.105]], 0.013, {sub: 5});
   cyl(ch, cv([SX, VY, 0.05]), cv([SX, VY, 0.1]), 22, 22, 18);
-  lathe(ch, SX, 0.075, [[0.017, VY + 0.018], [0.017, VY + 0.05], [0.012, VY + 0.056]], 16);
+  lathe(ch, SX, 0.075, [[0.017, VY + 0.018], [0.017, VY + 0.05], [0.012, VY + 0.056]], 16, {capBottom: true});
   cyl(P('stop_escutcheon', 'wallplate'), cv([SX, VY, 0.0005]), cv([SX, VY, 0.008]), 40, 38, 24);
   return {PARTS, atlas: 512, startS: 24};
 }
@@ -183,17 +186,19 @@ function buildLav() {
   // the visible side per band: underside down / out, apron out, top up, basin in toward the axis
   const hints = [c => [radial(c)[0], -1000, radial(c)[2]], c => [radial(c)[0], -1000, radial(c)[2]], c => [0, -1, 0], () => [0, -1, 0], c => [radial(c)[0], -1000, radial(c)[2]], c => mul(radial(c), 1), radial, radial,
     c => [radial(c)[0], 1000, radial(c)[2]], () => [0, 1, 0], () => [0, 1, 0], c => [-radial(c)[0], 300, -radial(c)[2]], c => [-radial(c)[0], 300, -radial(c)[2]], c => [-radial(c)[0], 300, -radial(c)[2]], c => [-radial(c)[0], 300, -radial(c)[2]]];
-  loft(P('basin', 'china'), rings, (c, k) => hints[k](c));
+  const basin = P('basin', 'china');
+  loft(basin, rings, (c, k) => hints[k](c));
+  cap(basin, rings[0], [0, -1, 0]);   // under the bowl, around the tailpiece (open until 2026-10-08)
   cap(P('drain_throat', 'trap'), ell(0.13, T - 0.128), [0, 1, 0]);
   // backsplash
   rbox(P('backsplash', 'china'), 0, 0.02, L.w, 0.04, T - 0.002, T + L.splash, 0.012, 0.006);
   // grid strainer: a chrome flange ring and a cross
   const dy = T - 0.1265, ch = P('fittings', 'chrome');
-  loft(ch, [Array.from({length: 24}, (_, k) => { const a = 2 * Math.PI * k / 24; return cv([0.022 * Math.sin(a), dy + 0.002, L.bz + 0.022 * Math.cos(a)]); }),
+  loft(P('strainer', 'chrome'), [Array.from({length: 24}, (_, k) => { const a = 2 * Math.PI * k / 24; return cv([0.022 * Math.sin(a), dy + 0.002, L.bz + 0.022 * Math.cos(a)]); }),
     Array.from({length: 24}, (_, k) => { const a = 2 * Math.PI * k / 24; return cv([0.0165 * Math.sin(a), dy + 0.0025, L.bz + 0.0165 * Math.cos(a)]); })], () => [0, 1, 0]);
   for (const [dx, dz] of [[1, 0], [0, 1]]) cyl(ch, cv([-0.016 * dx, dy + 0.001, L.bz - 0.016 * dz]), cv([0.016 * dx, dy + 0.001, L.bz + 0.016 * dz]), 1.6, 1.6, 6);
   // single-lever faucet on the deck
-  lathe(ch, 0, 0.075, [[0.027, T - 0.002], [0.027, T + 0.004], [0.024, T + 0.01], [0.024, T + 0.085], [0.0, T + 0.088]], 20, {capTop: false});
+  lathe(ch, 0, 0.075, [[0.027, T - 0.002], [0.027, T + 0.004], [0.024, T + 0.01], [0.024, T + 0.085], [0.0, T + 0.088]], 20, {capTop: false, capBottom: true});
   tube(ch, [[0, T + 0.065, 0.075], [0, T + 0.1, 0.105], [0, T + 0.1, 0.15], [0, T + 0.072, 0.18]], 0.011, {sub: 5});
   tube(ch, [[0, T + 0.086, 0.07], [0, T + 0.106, 0.035]], 0.0055, {sub: 1});
   // below: tailpiece, P-trap and trap arm into the wall, slip nut, escutcheon
@@ -205,7 +210,7 @@ function buildLav() {
     const side = s > 0 ? 'r' : 'l', st = P('stop_' + side, 'chrome');
     cyl(P('stop_escutcheon_' + side, 'wallplate'), cv([s * 0.12, 0.54, 0.0005]), cv([s * 0.12, 0.54, 0.006]), 30, 28, 20);
     cyl(st, cv([s * 0.12, 0.54, 0.006]), cv([s * 0.12, 0.54, 0.056]), 16, 16, 16);
-    lathe(st, s * 0.12, 0.034, [[0.012, 0.546], [0.012, 0.566], [0.016, 0.57], [0.016, 0.578], [0.0, 0.58]], 14, {capTop: false});
+    lathe(st, s * 0.12, 0.034, [[0.012, 0.546], [0.012, 0.566], [0.016, 0.57], [0.016, 0.578], [0.0, 0.58]], 14, {capTop: false, capBottom: true});
     tube(P('supply_' + side, 'braid'), [[s * 0.12, 0.54, 0.056], [s * 0.12, 0.575, 0.064], [s * 0.07, 0.65, 0.072], [s * 0.025, L.bottom - 0.07, 0.076], [s * 0.02, L.bottom - 0.01, 0.076]], 0.0055, {sub: 5});
   }
   return {PARTS, atlas: 512, startS: 24};
@@ -302,6 +307,24 @@ const display = (b, gui, guiScale, s, lift = 0) => ({
   firstperson_righthand: {rotation: [0, 45, 0], translation: [0, lift, 0], scale: S3(s * 0.8)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, lift, 0], scale: S3(s * 0.8)},
   gui: guiCentred(b, gui, guiScale), ground: {translation: [0, 2, 0], scale: S3(s * 0.6)}, fixed: {rotation: [0, 180, 0], translation: [0, 0, 0], scale: S3(s)}});
 
+// closed surfaces (2026-10-08): an open edge is a hole when the item is held, dropped or drawn in the inventory. Allowed:
+// the trap / drain ring of the bowl and basin, each covered by its dark disc 0.5 mm below (trapway, drain_throat), and the
+// flat strainer flange on the basin floor (seen from above only). Everything else must be closed.
+const OPEN_EDGES = {toilet: [[['bowl_outer', 'rim', 'bowl_inner'], 48], [['trapway'], 48]], lav: [[['basin'], 64], [['drain_throat'], 64], [['strainer'], 48]], mirror: []};
+function openEdges(parts) {
+  const key = q => q.map(v => Math.round(v * 1000)).join(','), edges = new Map();
+  for (const p of parts) for (const f of p.f) for (let j = 0; j < f.ids.length; j++) {
+    const a = key(p.v[f.ids[j]]), b = key(p.v[f.ids[(j + 1) % f.ids.length]]); if (a === b) continue;
+    const k = a < b ? a + '|' + b : b + '|' + a; edges.set(k, (edges.get(k) || 0) + 1);
+  }
+  return [...edges.values()].filter(n => n === 1).length;
+}
+for (const [k, groups] of Object.entries(OPEN_EDGES)) {
+  const named = new Set(groups.flatMap(([g]) => g));
+  for (const [g, expected] of groups) { const n = openEdges(B[k].PARTS.filter(p => g.includes(p.name))); assert(n === expected, `${k}: ${g.join(' + ')} has ${n} open edges, expected ${expected}`); }
+  for (const p of B[k].PARTS.filter(p => !named.has(p.name))) { const n = openEdges([p]); assert(!n, `${k}: part ${p.name} has ${n} open edges (a hole when held, dropped or in the inventory)`); }
+}
+
 // collision / selection boxes (cell px, NORTH frame), mirrored in the block classes; every vertex must lie inside one
 export const SHAPES = {
   toilet: [[6.05, 0, 7.4, 9.95, 3.4, 12.85], [5.75, 3.3, 5.85, 10.25, 4.75, 12.5], [5.0, 4.6, 4.4, 11.0, 7.25, 13.35], [6.5, 4.75, 12.5, 9.5, 6.95, 15.5], [7.4, 6.9, 13.7, 8.6, 11.0, 14.8], [4.7, 10.7, 13.5, 11.4, 13.85, 16.0]],
@@ -361,7 +384,7 @@ outputs.push([path.join(assets, 'blockstates/wall_mirror.json'), json({variants:
 outputs.push([path.join(assets, 'blockstates/commercial_wall_mounted_sink.json'), json({variants: Object.fromEntries(Object.entries(YROT).flatMap(([f, y]) => [
   [`facing=${f},half=lower`, {model: 'apocalypse_firstlight:block/commercial_wall_mounted_sink', ...(y ? {y} : {})}],
   [`facing=${f},half=upper`, {model: 'apocalypse_firstlight:block/commercial_wall_mounted_sink_upper'}]]))})]);
-outputs.push([path.join(assets, 'models/item/commercial_flushometer_toilet.json'), json({parent: 'apocalypse_firstlight:block/commercial_flushometer_toilet', gui_light: 'side', display: display(B.toilet, [30, 225, 0], 1.25, 0.5)})]);
+outputs.push([path.join(assets, 'models/item/commercial_flushometer_toilet.json'), json({parent: 'apocalypse_firstlight:block/commercial_flushometer_toilet', gui_light: 'side', display: display(B.toilet, [30, 200, 0], 0.95, 0.5)})]);   // gui scale 0.95: at 1.25 the icon was 19.1 px tall and stuck out of the 16 px slot (user 2026-10-08); now 14.5 px
 outputs.push([path.join(assets, 'models/item/commercial_wall_mounted_sink.json'), json({parent: 'apocalypse_firstlight:block/commercial_wall_mounted_sink', gui_light: 'side', display: display(B.lav, [30, 225, 0], 1.2, 0.5, -6)})]);
 outputs.push([path.join(assets, 'models/item/wall_mirror.json'), json({parent: 'apocalypse_firstlight:block/wall_mirror', gui_light: 'side', display: display(B.mirror, [0, 180, 0], 1.25, 0.5, -2)})]);
 

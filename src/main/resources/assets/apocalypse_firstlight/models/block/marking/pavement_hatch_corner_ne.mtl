@@ -1,0 +1,5 @@
+# AFL Pavement Markings V1 pavement_hatch_corner_ne
+newmtl tinted
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/edge_lane_white
+forge_TintIndex 0

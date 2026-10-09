@@ -92,6 +92,21 @@
 - 加了区块加载时的扫描，没有方块实体的镜子也能被找到。
 - `client/WallMirrorRenderer` 已删除。
 
+## 反射整局失效（2026-10-08，已修）
+
+用户实机：前一轮 PASS 以后，Sundial、Complementary、不开光影下镜子都只剩银色玻璃，拆了再放回去也没用。
+
+日志（`run/logs/latest.log`）里只有一条 `[AFL MIRROR] reflection pass failed`，异常是 `IllegalStateException: Already building!`，在 `MirrorReflection.begin()`。出错一次后反射整局关掉（见上面"开关和计时"），所以拆装镜子不会恢复。
+
+原因：
+- 网格分帧重建以后，一次重建会跨好几帧，每种渲染层的 `BufferBuilder` 在这期间一直处在 building 状态。
+- 重建做到一半时如果换了镜子（两间卫生间的镜子背靠背，走到另一间就换了），这次重建直接丢掉，它用过的 builder 还在 building。
+- 下一次重建碰到这个 builder 时，旧代码先 `discard()` 再 `begin()`。但 1.20.1 的 `discard()` 只把写入位置归零，不清 building 标记，所以 `begin()` 抛 `Already building!`。
+
+修法（`begin()`）：碰到上一次没做完的 builder，先 `endOrDiscardIfEmpty()` 结束它，再把拿到的缓冲 `release()` 掉，然后重新 `begin()`。同一次重建里已经开始的层（`Build.begun`）照常继续写，不受影响。
+
+状态：`compileJava --offline` PASS；2026-10-08 用户重开游戏后 PASS。
+
 ## 已知限制
 
 - 每帧只有一面镜子有反射；两间卫生间的镜子背靠背，不会同时看到，问题不大。

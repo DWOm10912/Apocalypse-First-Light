@@ -59,7 +59,15 @@ public final class AflCreativeTabs {
             AflItems.RESTROOM_FLOOR_TILE,
             AflItems.EDGE_LANE_WHITE,
             AflItems.EDGE_LANE_YELLOW,
-            AflItems.WHITE_LANE_DIVIDER);
+            AflItems.WHITE_LANE_DIVIDER,
+            AflItems.EDGE_LANE_BLUE,
+            AflItems.PAVEMENT_HATCH,
+            AflItems.PAVEMENT_CROSSHATCH,
+            AflItems.PAVEMENT_BAR,
+            AflItems.PAVEMENT_ARROW_STRAIGHT,
+            AflItems.PAVEMENT_ARROW_LEFT,
+            AflItems.PAVEMENT_ARROW_RIGHT,
+            AflItems.PAVEMENT_ACCESSIBLE_SYMBOL);
 
     public static final RegistryObject<CreativeModeTab> NATURAL_BLOCKS = tab("natural_blocks", BUILDING_BLOCKS, AflItems.GALENA_ORE,
             AflItems.BAUXITE_ORE,
@@ -234,7 +242,11 @@ public final class AflCreativeTabs {
             if (after != null) builder.withTabsBefore(after.getId());
             return builder.icon(() -> new ItemStack(icon.get()))
                     .title(Component.translatable("itemGroup." + ApocalypseFirstLight.MOD_ID + "." + id))
-                    .displayItems((parameters, output) -> contents.forEach(item -> output.accept(item.get())))
+                    .displayItems((parameters, output) -> contents.forEach(item -> {
+                        // paint tiles list one stack per colour (Pavement Markings V1)
+                        if (item.get() instanceof com.antaurora.apofirstlight.item.PavementPaintBlockItem paint) paint.variants().forEach(output::accept);
+                        else output.accept(item.get());
+                    }))
                     .build();
         });
     }

@@ -1,0 +1,49 @@
+{
+  "variants": {
+    "color=white,facing=north": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar"
+    },
+    "color=yellow,facing=north": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar"
+    },
+    "color=blue,facing=north": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar"
+    },
+    "color=white,facing=east": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 90
+    },
+    "color=yellow,facing=east": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 90
+    },
+    "color=blue,facing=east": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 90
+    },
+    "color=white,facing=south": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 180
+    },
+    "color=yellow,facing=south": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 180
+    },
+    "color=blue,facing=south": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 180
+    },
+    "color=white,facing=west": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 270
+    },
+    "color=yellow,facing=west": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 270
+    },
+    "color=blue,facing=west": {
+      "model": "apocalypse_firstlight:block/marking/pavement_bar",
+      "y": 270
+    }
+  }
+}

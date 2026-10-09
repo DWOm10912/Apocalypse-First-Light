@@ -22,6 +22,7 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs canopy -> rewrites only the canopy layer (k 5): lights, ceiling, fascia
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs audit  -> audit_support of the plot
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs pavement -> the built court's placeholder slab to concrete_pavement (we_replace, k -1)
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs pit    -> the built court's tank pit: the deadmen, and the backfill once it is not dirt (see PIT)
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -49,6 +50,14 @@ const LIGHT_U = new Set(ISLANDS.flatMap(u => [u - 3, u + 3]));
 // along the islands (z); the backfill is a placeholder
 const GROUND = A('concrete_pavement[axis=z]'), SOIL = M('dirt'), OLD_GROUND = M('light_gray_concrete');
 const TANK_V = 55, FILL_V = 58;                               // tank master (along 3) and fill (along 6) rows
+// The tank pit (2026-10-08, user asked whether the tanks should be cased in concrete): North American practice is not a
+// concrete case but an excavation backfilled with pea gravel or crushed stone, reinforced-concrete deadmen beside the tank
+// bottoms (strapped over the tanks against groundwater uplift) and a reinforced-concrete slab on top (the court pavement).
+// Gravel fills the pit k -5..-2; a deadman runs 1 m out from each side of every tank at its bottom (k -5), where no line is.
+export const PIT = {u0: 22, u1: 38, k0: -5, k1: -2, v0: 51, v1: 59};
+// Backfill: gravel is a falling block, which the bridge refuses (AuthoringRegionGuard), so the pit keeps the placeholder dirt
+// until a non-falling crushed-stone block exists (2026-10-08, the user to decide).
+const BACKFILL = M('dirt'), DEADMAN = A('reinforced_concrete');
 
 /** The two dispensers of an island: [a0 row, facing]. The b column is at facing.getClockWise(). */
 export function dispensers(u) {
@@ -170,6 +179,10 @@ export function recipe() {
       claim(...c, name);
     }
   }
+  // deadmen: beside each tank's bottom row, where no line runs
+  const deadmen = [];
+  for (const [t] of TANKS) for (const u of [t - 2, t + 2]) for (let v = 52; v <= 58; v++)
+    if (!used.has(key(u, -5, v))) { put(u, -5, v, DEADMAN, 'deadman'); deadmen.push([u, -5, v]); }
   // runs of different fuels must not touch (a pipe placed later between them could join them)
   const touching = [], portsMet = {};
   for (const [kk, l] of lines) {
@@ -193,7 +206,7 @@ export function recipe() {
     const id = l.name === 'power' ? 'power_cable' : 'fluid_pipe', props = ['down', 'east', 'north', 'south', 'up', 'west'].map(d => d + '=' + l.links.has(d)).join(',');
     cells.set(kk, A(`${id}[${props}]`));
   }
-  return {fixtures, cells, voids, columns, bollards, conflicts, touching, lines, dangling, portsMet};
+  return {fixtures, cells, voids, columns, bollards, conflicts, touching, lines, dangling, portsMet, deadmen};
 }
 
 // ---- emission: lot -> plot-relative world ----
@@ -231,7 +244,7 @@ export function plan() {
     voids: r.voids.length, canopy_and_ends: canopyCells.size, line_cells: lineCells.size,
     runs: Object.fromEntries(['gasoline', 'diesel', 'power', 'fill'].map(n => [n, [...r.lines.values()].filter(l => l.name === n).length])),
     batches: {surface: cellBatches(canopyCells).length, lines: cellBatches(lineCells).length},
-    lights: [...r.cells.values()].filter(s => s.includes('fuel_canopy_light')).length,
+    lights: [...r.cells.values()].filter(s => s.includes('fuel_canopy_light')).length, deadmen: r.deadmen.length,
     conflicts: r.conflicts, different_fuels_touching: r.touching, dangling: r.dangling,
     ports_met: Object.fromEntries(Object.entries(r.portsMet).map(([k, v]) => [k, v.length])),
     energy_cell: {lot: [13, -4, 49], world: toWorld(13, -4, 49), facing_world: TURN.west, note: 'its back port (opposite its facing) on the stub at lot x 14'}};
@@ -260,7 +273,7 @@ async function build() {
   // 1. ground: backfill, slab, clear air; 2. the voids the fixtures go into
   const all = [[LOT.u0, 0, LOT.v0], [LOT.u1, 0, LOT.v1]];
   await batch('ground', [...boxOps([[[LOT.u0, LOT.k0, LOT.v0], [LOT.u1, -2, LOT.v1]]], SOIL), ...boxOps([[[LOT.u0, -1, LOT.v0], [LOT.u1, -1, LOT.v1]]], GROUND),
-    ...boxOps([[[LOT.u0, 0, LOT.v0], [LOT.u1, LOT.k1, LOT.v1]]], 'minecraft:air')]);
+    ...boxOps([[[LOT.u0, 0, LOT.v0], [LOT.u1, LOT.k1, LOT.v1]]], 'minecraft:air'), ...boxOps([[[PIT.u0, PIT.k0, PIT.v0], [PIT.u1, PIT.k1, PIT.v1]]], BACKFILL)]);
   if (report.failures.length) return finish(c, dir, report);
   await batch('voids', boxOps(r.voids, 'minecraft:air'));
   // 3. tanks, pumps, covers, sumps, dispensers
@@ -315,6 +328,19 @@ export function slabBoxes() {
   return boxes;
 }
 
+/** The court built before the tank pit detail: its backfill in the pit to gravel (tanks, pumps and lines stay), then the deadmen. */
+async function pit() {
+  const r = recipe(), c = new BridgeClient('./run');
+  await c.call('minecraft_status'); const info = await c.call('authoring_info');
+  if (info.id !== ID || info.width !== SIZE[0] || info.height !== SIZE[1] || info.depth !== SIZE[2]) throw Error('PLOT_MISMATCH ' + JSON.stringify(info) + ' run ' + RESUME);
+  const o = info.min, world = p => [o[0] + p[0], o[1] + p[1], o[2] + p[2]], [box] = boxOps([[[PIT.u0, PIT.k0, PIT.v0], [PIT.u1, PIT.k1, PIT.v1]]], BACKFILL);
+  if (BACKFILL !== SOIL) await c.call('we_replace', {target: 'AUTHORING_SESSION', min: world(box.min), max: world(box.max), from: SOIL, block: BACKFILL});
+  const ops = r.deadmen.map(cell => { const p = world(rel(...cell)); return {min: p, max: p, block: DEADMAN}; });
+  await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: ops});
+  const audit = await c.call('audit_support', {target: 'AUTHORING_SESSION'});
+  console.log(JSON.stringify({deadmen: ops.length, audit: audit.counts, issues: audit.issues?.slice(0, 8)}));
+}
+
 /** The court built before Ground Materials V1: its light gray concrete slab (k -1) to the pavement; covers, sumps and cables stay. */
 async function pavement() {
   const c = new BridgeClient('./run');
@@ -342,4 +368,5 @@ if (mode === 'plan') console.log(JSON.stringify(plan(), null, 1));
 else if (mode === 'build') await build();
 else if (mode === 'canopy') await canopyOnly();
 else if (mode === 'pavement') await pavement();
+else if (mode === 'pit') await pit();
 else if (mode === 'audit') { const c = new BridgeClient('./run'); await c.call('minecraft_status'); console.log(JSON.stringify(await c.call('audit_support', {target: 'AUTHORING_SESSION'}), null, 1)); }

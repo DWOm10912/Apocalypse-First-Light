@@ -211,6 +211,7 @@ Result fields:
 - vanilla panes, iron bars and `steel_railing` (`CrossCollisionBlock`), fences, walls, stairs, fence gates;
 - AFL office/restroom partitions, including `door_support`;
 - AFL checkout counters (`shape` and the four side flags, 2026-10-04);
+- AFL storage racks (`left`, `right`; 2026-10-08, see below);
 - desktop items (`lowered`);
 - Fuel Stop A1 facade blocks (2026-10-07, see below): `storefront_glazing` (`left/right/up/down`), `ground_face_block` (`cap`, `shape`), `aluminum_cornice` (`shape`), `metal_wall_panel` (`cap`, four sides), `metal_panel_jamb` (`eyebrow`), `metal_eyebrow_canopy` (`left`, `right`).
 
@@ -246,6 +247,23 @@ Unchanged:
 - Other BlockEntity blocks are still unclassified in `problems()` and stay blocked as `UNSAFE`: fuel containers, intake pumps, `charging_station`. (`underground_fuel_tank_*` became a fixture on 2026-10-08.)
 - **Cell-layout structures (2026-10-08).** A multiblock whose cells are not one `part` property uses `CellLayout` instead of `Multiblock`: the underground fuel tank (cells by `axis`, `flipped`, `along`, `across`, `level`). `place_multiblock` takes `anchor` = the bottom centre cell (along 3, across 1, level 0) and `facing` = toward the fill end; no properties. `describe_block` reports `cell_layout`, the size (3 × 3 × 7 for facing north) and every property as `LAYOUT_COMPUTED`. `audit_support` checks every cell of each tank; WorldEdit edits must contain whole tanks (`MULTIBLOCK_SPLIT`), and tank states are never WorldEdit materials. `problems()` checks that every cell of each facing leads back to its anchor and facing.
 - `commercial_wall_mounted_sink` keeps a `half` property only so saved worlds load (Restroom Fixtures V2): `problems()` lists it in `LEGACY_HALF` instead of reporting an unclassified multi-part block.
+
+### Storage rack rows (2026-10-08)
+
+**Status: fixed in the dev bridge; `compileJava --offline` PASS. The user repaired the in-world stock-room row by hand and passed the rack linking in game (2026-10-08); the bridge path itself (placement updating the neighbour, `reconcile_shapes` on racks) has not been exercised live; no GameTest run.**
+
+Why: the user asked whether the rack linking was wrong. It was, but only for racks placed through the bridge. Read from the save:
+- stock room, `x −85..−89, z 462`, facing south: every rack had `right=false`; `−86..−89` had `left=true`.
+- the row behind the coolers, `x −78..−83, z 465`, facing north: correct (`left`/`right` true at every joint). It was placed the same way in round 1; a later ordinary block update next to the row ran the rack's own `updateShape` along it.
+
+Cause: `place_multiblock` computes the new rack's own `left` / `right` (`SELF_AND_NEIGHBORS`), but writes with `UPDATE_KNOWN_SHAPE`, and the follow-up `neighbourShapes` only touches `shapeSafe` blocks. Racks were not in that list, so the rack placed before never learned about the new one. Placing west along a south-facing row, each new rack joined its east (left) neighbour and the earlier rack's right side stayed open. A joint is drawn by `joint_right` (the shared upright); the left rack drew `end_right` (its own post) and the right rack `joint_left` (no post), so every joint showed a post on one side and a gap in the shelves.
+
+Fix: `StorageRackBlock` is now in `AuthoringFixtureRegistry.shapeSafe`. Its `updateShape` only recomputes `left` / `right` from the side neighbours (same facing and same half). The BlockEntity stays, because the block does not change, and its `onRemove` drops contents only when the block changes. An orphan half would become air; placement and `reconcile_shapes` report that and do not write it. So:
+- placement now updates the neighbouring rack (one history entry);
+- `reconcile_shapes` repairs existing rows;
+- `audit_support` reports stale racks as `CONNECTION_STALE`.
+
+Repair of an existing row (not needed for the A1 stock room any more, the user fixed it by hand): resume the plot, then run `reconcile_shapes` (dry run first) over `x −89..−85, y −51..−50, z 462`. Expected: 8 changes (`−85..−88`, both halves, `right=true`). `−89` (the west end) is already right, and `−85` keeps `left=false` (the wall).
 
 ### Live build notes: Fuel Stop A1 store (2026-10-07)
 

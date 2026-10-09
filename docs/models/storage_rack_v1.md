@@ -47,12 +47,20 @@
 | 运行时模型 | `blockstates/storage_rack.json`（multipart：`core_<half>` 加两边的 `end_*` / `joint_*`），`models/block/storage_rack/<piece>.obj/.mtl/.json`（上半格的件整体下移 16 px），`models/item/storage_rack.json`（`core` + 两端）；`forge:obj` |
 | 贴图 | `textures/block/storage_rack{,_s,_n}.png`（LabPBR，13.75 texel/px，796 个 UV 岛） |
 | 统计 | 单个货架 1108 个三角形，共面 0 |
-| 物品栏 | rotation `[30,225,0]`，translation `[0.99,-3.786,0]`，scale 0.5 |
+| 物品栏 | rotation `[30,225,0]`，translation `[0.812,-3.104,0]`，scale 0.41（2026-10-08 从 0.5 改小：图标高 18.1 px，超出 16 px 的格子；现在 14.9 px） |
 
 ## 测试
 
 - `/dev container_search spawn apocalypse_firstlight:storage_rack fill 8`（没有实机运行过）。
-- 作者工具：`AuthoringFixtureRegistry` 的 `storage_rack`（STORAGE_WITH_INVENTORY，两格高，`left` / `right` 由邻居计算）。
+- 作者工具：`AuthoringFixtureRegistry` 的 `storage_rack`（STORAGE_WITH_INVENTORY，两格高，`left` / `right` 由邻居计算）。2026-10-08 起货架也算 `shapeSafe`：放新货架时旁边那个货架的 `left` / `right` 跟着更新，`reconcile_shapes` 能修已有的一排。
+
+## 连接问题（2026-10-08）
+
+用户问"货架的链接逻辑是不是错了"。方块本身的逻辑没错（玩家手放时，邻居收到方块更新，两边都会重算）。错的是建造工具摆的那一排：
+- 存档读出来，Fuel Stop A1 仓库那排（`x −85..−89, z 462`，朝南）每个都是 `right=false`，`−86..−89` 是 `left=true`。所以每个接缝处，左边那个画了自己往里缩的端立柱（`end_right`），右边那个按"已连接"不画立柱、隔板伸到边界（`joint_left`），居中的共用立柱没有画。看起来就是接缝偏到一边，隔板中间断开一道缝。
+- 原因：建造工具一个一个往西摆，新货架会算自己的两边，但写方块时不发邻居更新，前一个货架的右边就一直没更新。
+- 冷柜后面那排（`x −78..−83, z 465`）也是这样摆的，存档里却是对的：后来旁边有一次普通的方块更新，顺着整排重算了一遍。
+- 修复见 [作者工具文档](../dev/minecraft_authoring_mcp_v1.md)"Storage rack rows"。仓库那排后来由用户在游戏里自己修好了（没有用 `reconcile_shapes`），2026-10-08 用户 PASS。
 
 ## 已知问题 / 以后
 

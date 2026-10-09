@@ -1,0 +1,195 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_crosshatch"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "ne": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_ne"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "sw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_sw"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "nw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_nw"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "se": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_se"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_crosshatch",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "ne": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_ne",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "sw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_sw",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "nw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_nw",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "se": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_se",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_crosshatch",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "ne": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_ne",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "sw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_sw",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "nw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_nw",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "se": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_se",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_crosshatch",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "ne": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_ne",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "sw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_sw",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "nw": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_nw",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "se": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/marking/pavement_hatch_corner_se",
+        "y": 270
+      }
+    }
+  ]
+}

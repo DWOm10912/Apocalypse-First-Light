@@ -535,7 +535,13 @@ public final class MirrorReflection {
     private static BufferBuilder begin(RenderType layer, List<RenderType> begun) {
         BufferBuilder builder = BUILDERS.computeIfAbsent(layer, k -> new BufferBuilder(k.bufferSize()));
         if (!begun.contains(layer)) {
-            if (builder.building()) builder.discard();   // left over from an abandoned build
+            // left over from an abandoned build (the region changed mid-build): end it and drop what it held. discard() alone
+            // only rewinds the data and leaves the builder "building", so the next begin threw "Already building!" and the
+            // reflection pass shut itself off until restart (user 2026-10-08: mirrors plain in every pack)
+            if (builder.building()) {
+                BufferBuilder.RenderedBuffer stale = builder.endOrDiscardIfEmpty();
+                if (stale != null) stale.release();
+            }
             builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
             begun.add(layer);
         }

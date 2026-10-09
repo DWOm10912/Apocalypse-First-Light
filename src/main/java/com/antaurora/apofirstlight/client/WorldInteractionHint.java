@@ -72,6 +72,7 @@ public final class WorldInteractionHint {
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
+            if(target==null) target=pavementPaint(mc,hit);
             if(target==null) target=aluminumCornice(mc,hit);
             if(target==null) target=eyebrowCanopy(mc,hit);
             if(target==null) target=woodDoorStyle(mc,hit);
@@ -189,6 +190,15 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.StorefrontGlazingBlock)) return null;
         boolean transom=com.antaurora.apofirstlight.block.StorefrontGlazingBlock.inTransomZone(hit.getBlockPos(),hit.getLocation().y);
         return new Target(Component.translatable("hint.apocalypse_firstlight.storefront_glazing."+(transom?"transom":"mullion")),null);
+    }
+
+    /** A tinted pavement marking with a white, yellow or blue dye in hand that would change it (as PavementPaintBlock#use). */
+    private static Target pavementPaint(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PavementPaintBlock)) return null;
+        return com.antaurora.apofirstlight.block.PavementPaintBlock.repaint(s,mc.player.getMainHandItem())==null?null
+                :new Target(Component.translatable("hint.apocalypse_firstlight.pavement_paint.repaint"),null);
     }
 
     /** Aluminum cornice, only while sneaking with an empty hand (as AluminumCorniceBlock#use): the red band on or off. */

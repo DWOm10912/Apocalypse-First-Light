@@ -2,6 +2,11 @@ package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
 import com.antaurora.apofirstlight.block.JointedPavementBlock;
+import com.antaurora.apofirstlight.block.PavementArrowBlock;
+import com.antaurora.apofirstlight.block.PavementHatchBlock;
+import com.antaurora.apofirstlight.block.PavementMarkingBlock;
+import com.antaurora.apofirstlight.block.PavementPaintBlock;
+import net.minecraft.world.level.material.PushReaction;
 import com.antaurora.apofirstlight.block.AxisSteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
@@ -573,6 +578,24 @@ public final class AflBlocks {
                     .sound(SoundType.STONE)
                     .noCollission()
                     .noOcclusion(), RoadMarkingBlock.MarkingType.DIVIDER));
+    // Pavement Markings V1 (2026-10-08, docs/models/pavement_markings_v1.md): paint sheets like the road markings above:
+    // break at once, no collision, no drops (paint is not recovered), no tool or tier.
+    public static final RegistryObject<Block> EDGE_LANE_BLUE = BLOCKS.register("edge_lane_blue",
+            () -> new RoadMarkingBlock(BlockBehaviour.Properties.of()
+                    .strength(0.1F)
+                    .sound(SoundType.STONE)
+                    .noCollission()
+                    .noOcclusion(), RoadMarkingBlock.MarkingType.EDGE));
+    public static final RegistryObject<Block> PAVEMENT_HATCH = BLOCKS.register("pavement_hatch",
+            () -> new PavementHatchBlock(BlockBehaviour.Properties.of().strength(0.1F).sound(SoundType.STONE).noCollission().noOcclusion().pushReaction(PushReaction.DESTROY), false));
+    public static final RegistryObject<Block> PAVEMENT_CROSSHATCH = BLOCKS.register("pavement_crosshatch",
+            () -> new PavementHatchBlock(BlockBehaviour.Properties.of().strength(0.1F).sound(SoundType.STONE).noCollission().noOcclusion().pushReaction(PushReaction.DESTROY), true));
+    public static final RegistryObject<Block> PAVEMENT_BAR = BLOCKS.register("pavement_bar",
+            () -> new PavementPaintBlock(BlockBehaviour.Properties.of().strength(0.1F).sound(SoundType.STONE).noCollission().noOcclusion().pushReaction(PushReaction.DESTROY), PavementPaintBlock.Paint.WHITE));
+    public static final RegistryObject<Block> PAVEMENT_ARROW = BLOCKS.register("pavement_arrow",
+            () -> new PavementArrowBlock(BlockBehaviour.Properties.of().strength(0.1F).sound(SoundType.STONE).noCollission().noOcclusion().pushReaction(PushReaction.DESTROY)));
+    public static final RegistryObject<Block> PAVEMENT_ACCESSIBLE_SYMBOL = BLOCKS.register("pavement_accessible_symbol",
+            () -> new PavementMarkingBlock(BlockBehaviour.Properties.of().strength(0.1F).sound(SoundType.STONE).noCollission().noOcclusion().pushReaction(PushReaction.DESTROY)));
     public static final RegistryObject<Block> EDGE_LANE_WHITE_STEP_CONNECTOR = BLOCKS.register(
             "edge_lane_white_step_connector",
             () -> new RoadMarkingStepConnectorBlock(BlockBehaviour.Properties.of()

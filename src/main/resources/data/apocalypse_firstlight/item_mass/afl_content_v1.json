@@ -145,6 +145,38 @@
       "unit_mass_kg": 0.05,
       "estimated": true
     },
+    "apocalypse_firstlight:edge_lane_blue": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_hatch": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_crosshatch": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_bar": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_arrow_straight": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_arrow_left": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_arrow_right": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:pavement_accessible_symbol": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
     "apocalypse_firstlight:power_cable": {
       "unit_mass_kg": 0.2,
       "estimated": true

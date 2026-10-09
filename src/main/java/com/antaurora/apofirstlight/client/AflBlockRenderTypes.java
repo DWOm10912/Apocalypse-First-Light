@@ -27,12 +27,13 @@ public final class AflBlockRenderTypes {
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_GRATE.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.STEEL_RAILING.get(), RenderType.cutout());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.INDUSTRIAL_UTILITY_LIGHT.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get(), RenderType.cutout());
-            ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get(), RenderType.cutout());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE.get(), RenderType.cutoutMipped());   // 240-texel worn paint (Pavement Markings V1)
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_BLUE.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_WHITE_STEP_CONNECTOR.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.EDGE_LANE_YELLOW_STEP_CONNECTOR.get(), RenderType.cutoutMipped());
+            ItemBlockRenderTypes.setRenderLayer(AflBlocks.WHITE_LANE_DIVIDER_STEP_CONNECTOR.get(), RenderType.cutoutMipped());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.FLUID_PIPE.get(), RenderType.translucent());
             ItemBlockRenderTypes.setRenderLayer(AflBlocks.HEAT_RESISTANT_FLUID_PIPE.get(), RenderType.translucent());
             // FLUID_TANK: per piece (Fluid Tank V2 models: glass translucent, steel solid)

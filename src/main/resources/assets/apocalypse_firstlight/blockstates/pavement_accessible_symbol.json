@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/marking/pavement_accessible_symbol"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/marking/pavement_accessible_symbol",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/marking/pavement_accessible_symbol",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/marking/pavement_accessible_symbol",
+      "y": 270
+    }
+  }
+}

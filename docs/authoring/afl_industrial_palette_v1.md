@@ -72,6 +72,7 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 - `apocalypse_firstlight:sealed_concrete_floor`：店里后场。
 - `apocalypse_firstlight:porcelain_floor_tile`：营业区（0.5 m 砖）。
 - `apocalypse_firstlight:restroom_floor_tile`：卫生间（0.25 m 深灰砖）。
+地面标线（2026-10-08，[Pavement Markings V1](../models/pavement_markings_v1.md)；都是放在地面上面那一格的薄片）：`edge_lane_white` / `edge_lane_yellow` / `edge_lane_blue`（格边线）、`white_lane_divider`（格中线）、`pavement_hatch` / `pavement_crosshatch`（`facing`、`color` white / yellow / blue，另有 `ne` / `sw` / `nw` / `se` 由邻居自动算）/ `pavement_bar`（`facing`、`color`）、`pavement_arrow`（`facing`、`kind`、`part`，整个箭头要逐格写状态；转弯箭头没有 part 4）、`pavement_accessible_symbol`（`facing`）。
 - `reinforced_concrete` 换了贴图，留给结构（桥墩、地堡墙、挡墙），不要再当人行道；停车场、车道用 `asphalt`（也换了贴图）。
 
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。

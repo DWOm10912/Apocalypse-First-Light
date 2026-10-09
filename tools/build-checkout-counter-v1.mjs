@@ -324,7 +324,8 @@ function guiCentred(pieces, rotation, scale) {
 }
 const S3 = v => [v, v, v];
 function display(pieces, tall) {
-  const s = tall ? 0.36 : 0.55, g = tall ? 0.5 : 0.62;
+  // tall (the two-block back bar shelf): gui 0.41, at 0.5 it was 18.0 px tall and stuck out of the 16 px slot (user 2026-10-08)
+  const s = tall ? 0.36 : 0.55, g = tall ? 0.41 : 0.62;
   return {thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s * 0.7)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s * 0.7)},
     firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1.5, 0], scale: S3(s * 0.8)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 1.5, 0], scale: S3(s * 0.8)},
     gui: guiCentred(pieces, [30, 225, 0], g), ground: {translation: [0, 2, 0], scale: S3(s * 0.6)}, fixed: {rotation: [0, 180, 0], translation: [0, tall ? -4 : -1, 0], scale: S3(s)}};

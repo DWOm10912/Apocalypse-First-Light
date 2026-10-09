@@ -2,6 +2,9 @@ package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.item.FluidTankBlockItem;
+import com.antaurora.apofirstlight.item.PavementArrowItem;
+import com.antaurora.apofirstlight.item.PavementPaintBlockItem;
+import com.antaurora.apofirstlight.block.PavementArrowBlock;
 import com.antaurora.apofirstlight.item.LeadChestBlockItem;
 import com.antaurora.apofirstlight.item.CommercialDumpsterBlockItem;
 import com.antaurora.apofirstlight.item.CommercialGlassDoubleDoorBlockItem;
@@ -421,6 +424,23 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.EDGE_LANE_YELLOW.get(), new Item.Properties()));
     public static final RegistryObject<Item> WHITE_LANE_DIVIDER = ITEMS.register("white_lane_divider",
             () -> new BlockItem(AflBlocks.WHITE_LANE_DIVIDER.get(), new Item.Properties()));
+    public static final RegistryObject<Item> EDGE_LANE_BLUE = ITEMS.register("edge_lane_blue",
+            () -> new BlockItem(AflBlocks.EDGE_LANE_BLUE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_HATCH = ITEMS.register("pavement_hatch",
+            () -> new PavementPaintBlockItem(AflBlocks.PAVEMENT_HATCH.get(), new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_CROSSHATCH = ITEMS.register("pavement_crosshatch",
+            () -> new PavementPaintBlockItem(AflBlocks.PAVEMENT_CROSSHATCH.get(), new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_BAR = ITEMS.register("pavement_bar",
+            () -> new PavementPaintBlockItem(AflBlocks.PAVEMENT_BAR.get(), new Item.Properties()));
+    // the arrow block has no item of its own: one item per arrow places all its cells
+    public static final RegistryObject<Item> PAVEMENT_ARROW_STRAIGHT = ITEMS.register("pavement_arrow_straight",
+            () -> new PavementArrowItem(PavementArrowBlock.Kind.STRAIGHT, new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_ARROW_LEFT = ITEMS.register("pavement_arrow_left",
+            () -> new PavementArrowItem(PavementArrowBlock.Kind.LEFT, new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_ARROW_RIGHT = ITEMS.register("pavement_arrow_right",
+            () -> new PavementArrowItem(PavementArrowBlock.Kind.RIGHT, new Item.Properties()));
+    public static final RegistryObject<Item> PAVEMENT_ACCESSIBLE_SYMBOL = ITEMS.register("pavement_accessible_symbol",
+            () -> new BlockItem(AflBlocks.PAVEMENT_ACCESSIBLE_SYMBOL.get(), new Item.Properties()));
     public static final RegistryObject<Item> REFRACTORY_CERAMIC = ITEMS.register("refractory_ceramic",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> HIGH_PURITY_QUARTZ_SAND = ITEMS.register("high_purity_quartz_sand",

@@ -117,4 +117,4 @@
 ## 没做
 
 - 实机：Sundial 和原版下的外观，缝的位置和扫帚纹方向，板色调，挖掘掉落。
-- 以后的：卫生间墙砖、缸砖、隔墙涂料面、吊顶板（室内装修一轮）；路缘、停车标线（停车场一轮；高速已有的 `edge_lane_white` / `edge_lane_yellow` / `white_lane_divider` 是高速用的整格标线）。
+- 以后的：卫生间墙砖、缸砖、隔墙涂料面、吊顶板（室内装修一轮）；路缘（停车场一轮）。停车标线 2026-10-08 已做成 [Pavement Markings V1](pavement_markings_v1.md)。
