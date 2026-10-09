@@ -1,0 +1,12 @@
+{
+  "loader": "apocalypse_firstlight:ground_joints",
+  "spacing": 4,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "plain": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "edge_w": "apocalypse_firstlight:block/ground/concrete_pavement_edge_w",
+    "edge_n": "apocalypse_firstlight:block/ground/concrete_pavement_edge_n",
+    "corner": "apocalypse_firstlight:block/ground/concrete_pavement_corner",
+    "side": "apocalypse_firstlight:block/ground/concrete_pavement_plain"
+  }
+}

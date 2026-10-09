@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.registry;
 
 import com.antaurora.apofirstlight.block.SteelGrateBlock;
+import com.antaurora.apofirstlight.block.JointedPavementBlock;
 import com.antaurora.apofirstlight.block.AxisSteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelStructureBlock;
 import com.antaurora.apofirstlight.block.SteelDoorBlock;
@@ -488,6 +489,18 @@ public final class AflBlocks {
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).requiresCorrectToolForDrops()));
+    // Ground Materials V1 (2026-10-08, docs/models/ground_materials_v1.md): pavement and floor finishes. Ordinary building
+    // materials, like vanilla stone and the facade brick: any pickaxe, no salvage tier.
+    public static final RegistryObject<Block> CONCRETE_SIDEWALK = BLOCKS.register("concrete_sidewalk",
+            () -> new JointedPavementBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops(), 2));
+    public static final RegistryObject<Block> CONCRETE_PAVEMENT = BLOCKS.register("concrete_pavement",
+            () -> new JointedPavementBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops(), 4));
+    public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.5F, 6.0F).sound(SoundType.DEEPSLATE_TILES).requiresCorrectToolForDrops()));
+    public static final RegistryObject<Block> RESTROOM_FLOOR_TILE = BLOCKS.register("restroom_floor_tile",
+            () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(1.5F, 6.0F).sound(SoundType.DEEPSLATE_TILES).requiresCorrectToolForDrops()));
     // The North American roads V1-B quantized surfaces (road_asphalt_surface, road_sidewalk_surface, road_utility_surface,
     // road_curb) were removed on 2026-10-08 at the user's request: placeholder textures, unused outside V1-B construction
     // (user FAIL); road surfaces come back as proper meshes (docs/worldgen/road_surface_assets_v1.md).

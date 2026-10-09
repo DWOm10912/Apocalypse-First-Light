@@ -44,7 +44,7 @@
    原点 (−102, −56, 415)，宽 43（x）、深 22（z）、高 11，`surface_offset_y` 5：地面 G = y −51，下面 5 层放油罐。
 3. 人站到地块外面：x −102..−60、z 415..436 以外。站在里面时，脚本会拒绝开始（`PLAYER_IN_PLOT`）。
 4. `node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs build`，结果写到 `build/authoring_checks/gas_station_02_forecourt/forecourt_v1.json`，最后跑一遍 `audit_support`。
-5. 只想看审计：`… audit`；不开游戏的检查：`… plan`；只重写顶棚那一层（灯、吊顶、边檐）：`… canopy`。
+5. 只想看审计：`… audit`；不开游戏的检查：`… plan`；只重写顶棚那一层（灯、吊顶、边檐）：`… canopy`；只把地面换成混凝土路面：`… pavement`。
 6. 店里来的电缆（下面"供电"）在加油区里的 13 格也在 `build` 里，重跑不会丢。
 
 脚本会整块重写地块：
@@ -145,7 +145,7 @@
 
 - **油**：罐是空的。拿油壶对着打开的卸油口盖倒油，或者 `/dev fuel source` 放油源再用泵抽。
 - **加油区以外**：车位、车道的沥青和标线、价格牌、垃圾围栏、打气站，都不在这个地块里。
-- **占位材料**：地面是 `light_gray_concrete`，回填是 `dirt`。
+- **占位材料**：回填是 `dirt`。地面原来是 `light_gray_concrete`，2026-10-08 起脚本用 `concrete_pavement[axis=z]`（[Ground Materials V1](../models/ground_materials_v1.md)，每 4 m 一道锯缝）；已经建好的加油区用 `… pavement` 模式换：同日已运行。第一次整层一个编辑框，被建造工具拒绝（`MULTIBLOCK_SPLIT`：底槽占 k −2..−1，这一层的框会切开它），没有改动世界；改成绕开 16 格底槽的 13 个框（`slabBoxes()`）后换好。读回 k −1 层：路面 923 格，加卸油口盖 3、泵井盖 3、底槽 16、电缆 1，正好 946 格，原版浅灰混凝土一格不剩，审计 0 个问题。用户还没看。
 
 ## 用户第一次实机（2026-10-08）
 

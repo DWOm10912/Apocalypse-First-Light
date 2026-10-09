@@ -21,6 +21,7 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs build  -> writes the whole court into the active plot
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs canopy -> rewrites only the canopy layer (k 5): lights, ceiling, fascia
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs audit  -> audit_support of the plot
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_forecourt.mjs pavement -> the built court's placeholder slab to concrete_pavement (we_replace, k -1)
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -44,7 +45,9 @@ export const POWER_ISLAND = 16;
 export const TANKS = [[24, 'gasoline'], [30, 'gasoline'], [36, 'diesel']];
 export const CANOPY = {u0: 12, u1: 50, v0: 40, v1: 50, k: 5};
 const LIGHT_U = new Set(ISLANDS.flatMap(u => [u - 3, u + 3]));
-const GROUND = M('light_gray_concrete'), SOIL = M('dirt');   // placeholders: the court slab and the backfill
+// the court slab: concrete pavement (Ground Materials V1, 2026-10-08; saw cuts every 4 m by world position), the cars run
+// along the islands (z); the backfill is a placeholder
+const GROUND = A('concrete_pavement[axis=z]'), SOIL = M('dirt'), OLD_GROUND = M('light_gray_concrete');
 const TANK_V = 55, FILL_V = 58;                               // tank master (along 3) and fill (along 6) rows
 
 /** The two dispensers of an island: [a0 row, facing]. The b column is at facing.getClockWise(). */
@@ -287,6 +290,44 @@ async function canopyOnly() {
   console.log(JSON.stringify({log, lights: [...layer.values()].filter(s => s.includes('fuel_canopy_light')).length}));
 }
 
+/**
+ * The k -1 boxes that cut no multiblock: the bridge refuses an edit box splitting one (the dispenser sumps span k -2..-1),
+ * so rows holding sump cells are cut into the runs between them; equal neighbouring rows merge.
+ */
+export function slabBoxes() {
+  const r = recipe(), blocked = new Set();
+  for (const f of r.fixtures) if (f.tool === 'place_multiblock' && f.id === 'fuel_dispenser_sump') {
+    const [u, , a0] = f.at, b = a0 + (f.facing === 'east' ? 1 : -1);
+    for (const v of [a0, b]) blocked.add(u + ',' + v);
+  }
+  const runs = v => { const out = []; let start = null;
+    for (let u = LOT.u0; u <= LOT.u1 + 1; u++) {
+      const open = u <= LOT.u1 && !blocked.has(u + ',' + v);
+      if (open && start === null) start = u; else if (!open && start !== null) { out.push([start, u - 1]); start = null; }
+    }
+    return out; };
+  const boxes = [];
+  let prev = null, from = LOT.v0;
+  for (let v = LOT.v0; v <= LOT.v1 + 1; v++) {
+    const key = v <= LOT.v1 ? JSON.stringify(runs(v)) : null;
+    if (key !== prev) { if (prev !== null) for (const [u0, u1] of JSON.parse(prev)) boxes.push([[u0, -1, from], [u1, -1, v - 1]]); prev = key; from = v; }
+  }
+  return boxes;
+}
+
+/** The court built before Ground Materials V1: its light gray concrete slab (k -1) to the pavement; covers, sumps and cables stay. */
+async function pavement() {
+  const c = new BridgeClient('./run');
+  await c.call('minecraft_status'); const info = await c.call('authoring_info');
+  if (info.id !== ID || info.width !== SIZE[0] || info.height !== SIZE[1] || info.depth !== SIZE[2]) throw Error('PLOT_MISMATCH ' + JSON.stringify(info) + ' run ' + RESUME);
+  const o = info.min, world = p => [o[0] + p[0], o[1] + p[1], o[2] + p[2]], ops = boxOps(slabBoxes(), GROUND), log = [];
+  for (const op of ops) {
+    const r = await c.call('we_replace', {target: 'AUTHORING_SESSION', min: world(op.min), max: world(op.max), from: OLD_GROUND, block: GROUND});
+    log.push(r.changed_blocks ?? r.changed ?? null);
+  }
+  console.log(JSON.stringify({boxes: ops.length, reported: log}));
+}
+
 async function finish(c, dir, report) {
   const audit = await c.call('audit_support', {target: 'AUTHORING_SESSION'}).catch(e => ({error: String(e.message || e)}));
   report.audit = audit;
@@ -300,4 +341,5 @@ const mode = direct ? process.argv[2] : null;
 if (mode === 'plan') console.log(JSON.stringify(plan(), null, 1));
 else if (mode === 'build') await build();
 else if (mode === 'canopy') await canopyOnly();
+else if (mode === 'pavement') await pavement();
 else if (mode === 'audit') { const c = new BridgeClient('./run'); await c.call('minecraft_status'); console.log(JSON.stringify(await c.call('audit_support', {target: 'AUTHORING_SESSION'}), null, 1)); }

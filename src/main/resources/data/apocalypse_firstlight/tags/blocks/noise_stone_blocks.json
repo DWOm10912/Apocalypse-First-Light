@@ -179,6 +179,11 @@
     "minecraft:end_stone_brick_wall",
     "minecraft:calcite",
     "minecraft:tuff",
-    "minecraft:dripstone_block"
+    "minecraft:dripstone_block",
+    "apocalypse_firstlight:concrete_sidewalk",
+    "apocalypse_firstlight:concrete_pavement",
+    "apocalypse_firstlight:sealed_concrete_floor",
+    "apocalypse_firstlight:porcelain_floor_tile",
+    "apocalypse_firstlight:restroom_floor_tile"
   ]
 }

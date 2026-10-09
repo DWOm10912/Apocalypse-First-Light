@@ -15,6 +15,7 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs check   -> offline route check of the revised sales floor
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs power   -> the building power circuit (panel, meter box, lights, outlets, the fuel court feeder's store part; see powerSteps)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs relight -> rechecks the plot's light (bridge relight_region) and reads back the block light
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs floors  -> the placeholder floor / sidewalk to Ground Materials V1 (we_replace per zone, see FLOOR_ZONES)
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -22,6 +23,19 @@ import {fileURLToPath} from 'node:url';
 import {storeCells} from './fuel_stop_a1_feeder.mjs';
 
 export const ID = 'gas_station_02_store', SIZE = [31, 10, 20];
+// Ground Materials V1 (2026-10-08, docs/models/ground_materials_v1.md), paper boxes at k -1 (floor, sidewalk): the rooms
+// include the partitions and door cells on their side; the office takes the stock-room door cell (X 23). Sidewalk axis = the
+// way it runs (the front and the back strip along X, the side strips along Z). The footing under the walls stays.
+export const FLOOR_ZONES = [
+  [[1, 6], [25, 14], 'porcelain_floor_tile'],       // sales floor
+  [[1, 1], [5, 5], 'restroom_floor_tile'],          // the two restrooms
+  [[6, 1], [22, 5], 'sealed_concrete_floor'],       // utility room, walk-in cooler, stock room
+  [[23, 1], [25, 5], 'porcelain_floor_tile'],       // office
+];
+export const SIDEWALK_ZONES = [
+  [[-2, -1], [28, -1], 'concrete_sidewalk[axis=x]'], [[-2, 16], [28, 18], 'concrete_sidewalk[axis=x]'],
+  [[-2, 0], [-1, 15], 'concrete_sidewalk[axis=z]'], [[27, 0], [28, 15], 'concrete_sidewalk[axis=z]'],
+];
 const A = id => 'apocalypse_firstlight:' + id, M = id => 'minecraft:' + id;
 const TURN = {north: 'south', south: 'north', east: 'west', west: 'east'};
 // interior doors (paper frame; facing = the way the placer looks, hinge as the placer sees it). Steel-frame doors V1
@@ -54,15 +68,15 @@ export function recipe() {
   const PANEL = A('metal_wall_panel[cap=false,north=false,east=false,south=false,west=false]');
   const jamb = f => A(`metal_panel_jamb[facing=${f},eyebrow=none]`);
   const canopy = (f, rod = false) => A(`metal_eyebrow_canopy[facing=${f},left=false,right=false,rod=${rod}]`);
-  const SIDEWALK = A('reinforced_concrete'), FOOTING = A('reinforced_concrete');   // sidewalk: road_sidewalk_surface until it was removed 2026-10-08 (same texture)
+  const FOOTING = A('reinforced_concrete');   // the sidewalk and floors: SIDEWALK_ZONES / FLOOR_ZONES (Ground Materials V1, 2026-10-08)
   // placeholders (round 1): interior floor, partitions, ceiling / roof slab, subgrade
-  const FLOOR = M('light_gray_concrete'), PART = M('white_concrete'), SLAB = M('smooth_quartz'), FILL = M('dirt');
+  const PART = M('white_concrete'), SLAB = M('smooth_quartz'), FILL = M('dirt');
 
   // ---- ground: k -2 fill, k -1 sidewalks round the store, footing under the walls, floor inside ----
   fill(-2, -2, -1, 28, -2, 18, FILL);
-  fill(-2, -1, -1, 28, -1, 18, SIDEWALK);
+  for (const [[X0, Z0], [X1, Z1], s] of SIDEWALK_ZONES) fill(X0, -1, Z0, X1, -1, Z1, A(s));
   fill(0, -1, 0, 26, -1, 15, FOOTING);
-  fill(1, -1, 1, 25, -1, 14, FLOOR);
+  for (const [[X0, Z0], [X1, Z1], s] of FLOOR_ZONES) fill(X0, -1, Z0, X1, -1, Z1, A(s));
 
   // ---- a wall column: base course k0 (unless glass or a door stands on the floor), then the k1..4 contents, cornice k5 ----
   const column = (X, Z, f, kinds, top = cornice(f)) => {   // kinds: 5 entries for k0..4 (null = leave empty)
@@ -309,6 +323,11 @@ export function powerSteps() {
   P('emergency_light', 3, 2, 6, 'south'); P('emergency_light', 23, 2, 6, 'south');
   return S;
 }
+/** The built store's placeholders to Ground Materials V1: the vanilla floor and the reinforced-concrete sidewalk, zone by zone. */
+export function floorSteps() {
+  return [...FLOOR_ZONES.map(([[X0, Z0], [X1, Z1], s]) => ({kind: 'replace', box: [[X0, -1, Z0], [X1, -1, Z1]], from: 'minecraft:light_gray_concrete', block: A(s)})),
+    ...SIDEWALK_ZONES.map(([[X0, Z0], [X1, Z1], s]) => ({kind: 'replace', box: [[X0, -1, Z0], [X1, -1, Z1]], from: A('reinforced_concrete'), block: A(s)}))];
+}
 export function relayoutSteps() {
   const S = [], P = (id, X, k, Z, facing, properties = {}, multi = false) => S.push({kind: multi ? 'place_multiblock' : 'place_fixture', id, at: [X, k, Z], facing, properties});
   const ST = (from, to, d, count) => S.push({kind: 'we_stack', from, to, d, count});
@@ -367,6 +386,10 @@ async function relayout(list = relayoutSteps(), report = 'relayout_sales_v2.json
       } else if (st.kind === 'clear') {
         await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: st.boxes.map(([p, q]) => { const [mn, mx] = box(p, q); return {min: world(mn), max: world(mx), block: 'minecraft:air'}; })});
         log.push('ok clear ' + st.boxes.length);
+      } else if (st.kind === 'replace') {
+        const [mn, mx] = box(...st.box);
+        const r = await c.call('we_replace', {target: 'AUTHORING_SESSION', min: world(mn), max: world(mx), from: st.from, block: st.block});
+        log.push('ok replace ' + st.block + ' ' + JSON.stringify(r.changed_blocks ?? r.changed ?? r));
       } else if (st.kind === 'we_stack') {
         const [mn, mx] = box(st.from, st.to);
         await c.call('we_stack', {target: 'AUTHORING_SESSION', min: world(mn), max: world(mx), offset: [-st.d[0], st.d[1], -st.d[2]], count: st.count}); log.push('ok stack');
@@ -422,4 +445,5 @@ else if (mode === 'tweak') await relayout(tweakSteps(), 'tweak_sales_v3.json');
 else if (mode === 'doors') await relayout(doorSteps(), 'interior_doors_v1.json');
 else if (mode === 'power') await relayout(powerSteps(), 'building_power_v1.json');
 else if (mode === 'relight') await relight();
+else if (mode === 'floors') await relayout(floorSteps(), 'ground_materials_v1.json');
 else if (mode === 'check') console.log(JSON.stringify(routeCheck(), null, 1));

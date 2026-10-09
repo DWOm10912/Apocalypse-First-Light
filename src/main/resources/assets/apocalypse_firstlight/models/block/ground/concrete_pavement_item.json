@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "up": "apocalypse_firstlight:block/ground/concrete_pavement_corner",
+    "down": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "north": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "south": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "east": "apocalypse_firstlight:block/ground/concrete_pavement_plain",
+    "west": "apocalypse_firstlight:block/ground/concrete_pavement_plain"
+  }
+}

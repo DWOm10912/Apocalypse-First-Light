@@ -73,6 +73,26 @@
       "unit_mass_kg": 0.25,
       "estimated": true
     },
+    "apocalypse_firstlight:concrete_sidewalk": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:concrete_pavement": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:sealed_concrete_floor": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:porcelain_floor_tile": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:restroom_floor_tile": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:fallout_soil": {
       "unit_mass_kg": 0.15,
       "estimated": true

@@ -1,7 +1,15 @@
 {
   "variants": {
-    "": {
-      "model": "apocalypse_firstlight:block/reinforced_concrete"
-    }
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/reinforced_concrete"
+      },
+      {
+        "model": "apocalypse_firstlight:block/reinforced_concrete_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/reinforced_concrete_2"
+      }
+    ]
   }
 }

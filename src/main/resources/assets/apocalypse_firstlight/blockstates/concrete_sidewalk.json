@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "apocalypse_firstlight:block/ground/concrete_sidewalk"
+    },
+    "axis=z": {
+      "model": "apocalypse_firstlight:block/ground/concrete_sidewalk"
+    }
+  }
+}

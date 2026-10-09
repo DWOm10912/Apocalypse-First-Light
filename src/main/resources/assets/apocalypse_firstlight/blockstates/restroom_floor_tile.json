@@ -1,0 +1,15 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/ground/restroom_floor_tile_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/restroom_floor_tile_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/restroom_floor_tile_2"
+      }
+    ]
+  }
+}

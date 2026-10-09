@@ -66,5 +66,13 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 
 试搭留在用户的超平坦世界里（建造区 `afl_fuel_station_showcase`，368..399, -51..-32, 64..89），是否清理由用户决定。
 
+地面材料（2026-10-08，[Ground Materials V1](../models/ground_materials_v1.md)，每格 240 texel + LabPBR）：
+- `apocalypse_firstlight:concrete_sidewalk`：人行道。状态 `axis` = 人行道走的方向，缝每 2 m 按世界坐标自动画。
+- `apocalypse_firstlight:concrete_pavement`：加油区、油罐盖板、垃圾围栏前垫板、入口。状态 `axis` = 车走的方向，缝每 4 m。
+- `apocalypse_firstlight:sealed_concrete_floor`：店里后场。
+- `apocalypse_firstlight:porcelain_floor_tile`：营业区（0.5 m 砖）。
+- `apocalypse_firstlight:restroom_floor_tile`：卫生间（0.25 m 深灰砖）。
+- `reinforced_concrete` 换了贴图，留给结构（桥墩、地堡墙、挡墙），不要再当人行道；停车场、车道用 `asphalt`（也换了贴图）。
+
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

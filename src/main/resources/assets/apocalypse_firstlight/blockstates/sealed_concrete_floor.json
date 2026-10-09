@@ -1,0 +1,15 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/ground/sealed_concrete_floor_0"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sealed_concrete_floor_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/ground/sealed_concrete_floor_2"
+      }
+    ]
+  }
+}

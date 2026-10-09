@@ -362,6 +362,16 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUSED_GROUND.get(), new Item.Properties()));
     public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
             () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CONCRETE_SIDEWALK = ITEMS.register("concrete_sidewalk",
+            () -> new BlockItem(AflBlocks.CONCRETE_SIDEWALK.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CONCRETE_PAVEMENT = ITEMS.register("concrete_pavement",
+            () -> new BlockItem(AflBlocks.CONCRETE_PAVEMENT.get(), new Item.Properties()));
+    public static final RegistryObject<Item> SEALED_CONCRETE_FLOOR = ITEMS.register("sealed_concrete_floor",
+            () -> new BlockItem(AflBlocks.SEALED_CONCRETE_FLOOR.get(), new Item.Properties()));
+    public static final RegistryObject<Item> PORCELAIN_FLOOR_TILE = ITEMS.register("porcelain_floor_tile",
+            () -> new BlockItem(AflBlocks.PORCELAIN_FLOOR_TILE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> RESTROOM_FLOOR_TILE = ITEMS.register("restroom_floor_tile",
+            () -> new BlockItem(AflBlocks.RESTROOM_FLOOR_TILE.get(), new Item.Properties()));
     public static final RegistryObject<Item> THERMAL_GENERATOR = ITEMS.register("thermal_generator",
             () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENERGY_CELL = ITEMS.register("energy_cell",

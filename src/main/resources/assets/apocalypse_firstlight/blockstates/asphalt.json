@@ -1,7 +1,15 @@
 {
   "variants": {
-    "": {
-      "model": "apocalypse_firstlight:block/asphalt"
-    }
+    "": [
+      {
+        "model": "apocalypse_firstlight:block/asphalt"
+      },
+      {
+        "model": "apocalypse_firstlight:block/asphalt_1"
+      },
+      {
+        "model": "apocalypse_firstlight:block/asphalt_2"
+      }
+    ]
   }
 }

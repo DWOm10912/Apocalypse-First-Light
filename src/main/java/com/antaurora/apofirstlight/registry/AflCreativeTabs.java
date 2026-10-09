@@ -52,6 +52,11 @@ public final class AflCreativeTabs {
             AflItems.LINEAR_LIGHT,
             AflItems.EMERGENCY_LIGHT,
             AflItems.ASPHALT,
+            AflItems.CONCRETE_SIDEWALK,
+            AflItems.CONCRETE_PAVEMENT,
+            AflItems.SEALED_CONCRETE_FLOOR,
+            AflItems.PORCELAIN_FLOOR_TILE,
+            AflItems.RESTROOM_FLOOR_TILE,
             AflItems.EDGE_LANE_WHITE,
             AflItems.EDGE_LANE_YELLOW,
             AflItems.WHITE_LANE_DIVIDER);
