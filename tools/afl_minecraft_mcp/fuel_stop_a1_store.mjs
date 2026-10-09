@@ -13,11 +13,13 @@
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs tweak   -> the same-day tweak (12 lights, freezer to the east wall)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs doors   -> the five interior doors (Steel-frame doors V1, 2026-10-07) into the empty openings
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs check   -> offline route check of the revised sales floor
-//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs power   -> the building power test circuit (panel, meter box, lights, outlets; see powerSteps)
+//   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs power   -> the building power circuit (panel, meter box, lights, outlets, the fuel court feeder's store part; see powerSteps)
 //   node tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs relight -> rechecks the plot's light (bridge relight_region) and reads back the block light
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {storeCells} from './fuel_stop_a1_feeder.mjs';
 
 export const ID = 'gas_station_02_store', SIZE = [31, 10, 20];
 const A = id => 'apocalypse_firstlight:' + id, M = id => 'minecraft:' + id;
@@ -52,7 +54,7 @@ export function recipe() {
   const PANEL = A('metal_wall_panel[cap=false,north=false,east=false,south=false,west=false]');
   const jamb = f => A(`metal_panel_jamb[facing=${f},eyebrow=none]`);
   const canopy = (f, rod = false) => A(`metal_eyebrow_canopy[facing=${f},left=false,right=false,rod=${rod}]`);
-  const SIDEWALK = A('road_sidewalk_surface[layers=16]'), FOOTING = A('reinforced_concrete');
+  const SIDEWALK = A('reinforced_concrete'), FOOTING = A('reinforced_concrete');   // sidewalk: road_sidewalk_surface until it was removed 2026-10-08 (same texture)
   // placeholders (round 1): interior floor, partitions, ceiling / roof slab, subgrade
   const FLOOR = M('light_gray_concrete'), PART = M('white_concrete'), SLAB = M('smooth_quartz'), FILL = M('dirt');
 
@@ -260,7 +262,9 @@ export function backLights(P) {
 //   cords run out of their backs into it), one above the ice cream freezer, two above the coffee bar and one above the hot
 //   food counter (1.35 m; the side walls are corner glass from Z 11, where an outlet has no support), two on the back
 //   partition (0.35 m);
-// - two emergency lights on the sales-floor side of the back partition, by the restroom and the stock room doors.
+// - two emergency lights on the sales-floor side of the back partition, by the restroom and the stock room doors;
+// - the fuel court feeder's store part (2026-10-08, fuel_stop_a1_feeder.mjs): from the panel's top port along the
+//   utility-room ceiling, down its south-east corner through the floor, under the store to the sidewalk's south edge.
 // The panel starts with its main breaker off and the appliances' plugs are not in (both live in block entities the
 // bridge does not write).
 export const LIGHT_STATES = {panel: 'industrial_utility_light[facing=down,lit=false]', linear: 'linear_light[axis=z,facing=down,joined_neg=false,joined_pos=false,lit=false]'};
@@ -299,6 +303,7 @@ export function powerSteps() {
   // exact states (no horizontal facing in them, so the paper-to-template turn leaves them as they are)
   const set = lightCells();
   set.push([8, 0, 1, 'power_cable[down=false,east=false,north=false,south=false,up=true,west=false]']);
+  set.push(...storeCells());
   S.push({kind: 'set', blocks: set});
   for (const [X, k, Z, facing] of TEST_OUTLETS) P('wall_outlet', X, k, Z, facing);
   P('emergency_light', 3, 2, 6, 'south'); P('emergency_light', 23, 2, 6, 'south');
@@ -407,7 +412,8 @@ export function routeCheck() {
   return out;
 }
 
-const mode = process.argv[2];
+const direct = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();   // not when imported (fuel_stop_a1_feeder.mjs)
+const mode = direct ? process.argv[2] : null;
 if (mode === 'plan') { const {cells, fixtures} = recipe(); console.log(JSON.stringify({cells: cells.size, batches: batches(cells).length, ops: batches(cells).flat().length, fixtures: fixtures.length, steps: steps().length})); }
 else if (mode === 'build') await build();
 else if (mode === 'furnish') await furnish();

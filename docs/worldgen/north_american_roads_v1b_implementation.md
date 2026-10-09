@@ -113,6 +113,8 @@ V1-B 实机 FAIL 保持，未实施地形修复、未放宽 void/cut/fill/grade/
 
 所有 ID 前缀为 `apocalypse_firstlight:`。模型/贴图路径以下相对 `src/main/resources/assets/apocalypse_firstlight/`，`n=1..16`。
 
+> 2026-10-08：下表四个方块已移除（用户要求），施工改用满格占位材料，见 [Road Surface Assets V1](road_surface_assets_v1.md) 开头的说明。
+
 | Registry ID | BlockState / 默认 | 模型路径 | 当前贴图 | VoxelShape |
 |---|---|---|---|---|
 | `road_asphalt_surface` | `layers=1..16` / 13 | `models/block/road_surfaces/road_asphalt_surface_<n>.json` | `textures/block/asphalt.png` | `[0,0,0]..[16,n,16]` |

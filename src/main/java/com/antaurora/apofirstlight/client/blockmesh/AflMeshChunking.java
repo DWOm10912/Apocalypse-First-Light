@@ -37,8 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * A part that rests (its animation channels settled, open or closed), is visible and is not drawn full bright has a fixed
  * pose until the block's state changes, so the chunk can draw it ({@link AflStaticMeshModel}) instead of the block entity
- * renderer re-submitting it every frame, twice with shaders. Only cutout geometry: glass and emissive parts always stay in
- * the renderer (the Sundial after-glass redraw needs them there).
+ * renderer re-submitting it every frame, twice with shaders. Its cutout geometry goes to the chunk's cutout layer and its
+ * glass (translucent geometry) to the chunk's translucent layer (since 2026-10-08: drawn by the block entity renderer, glass
+ * goes through the pack's block entity program, which in Sundial is the opaque gbuffers_block, so the door glass missed the
+ * reflections the Storefront Glazing gets from the terrain translucent program). Emissive parts always stay in the renderer.
  * <ul>
  * <li>{@link Variant}: what the chunk should draw for one block entity, the parts by pre-order index plus the settled
  * channel values, facing and shading. Computed on the client thread from the host's state ({@link #desired}) and handed
@@ -81,7 +83,7 @@ public final class AflMeshChunking {
         final AflMeshModel mesh;
         final Part[] parts;
         final int[] parent, channel, chain;
-        final boolean[] cutout;
+        final boolean[] geometry;
         final String[] channels;
         final Map<Part, Integer> index = new IdentityHashMap<>();
 
@@ -93,7 +95,7 @@ public final class AflMeshChunking {
             for (var root : profile.roots()) collect(root, -1, list, parents);
             int n = list.size();
             parts = list.toArray(Part[]::new);
-            parent = new int[n]; channel = new int[n]; chain = new int[n]; cutout = new boolean[n];
+            parent = new int[n]; channel = new int[n]; chain = new int[n]; geometry = new boolean[n];
             for (int i = 0; i < n; i++) {
                 index.put(parts[i], i);
                 parent[i] = parents.get(i);
@@ -102,7 +104,8 @@ public final class AflMeshChunking {
                 if (motion != null) for (int j = 0; j < channels.length; j++) if (channels[j].equals(motion.channel())) c = j;
                 channel[i] = c;
                 chain[i] = (parent[i] >= 0 ? chain[parent[i]] : 0) | (c >= 0 ? 1 << c : 0);
-                cutout[i] = !mesh.parts(parts[i].bone(), AflMeshPart.Layer.CUTOUT).isEmpty();
+                geometry[i] = !mesh.parts(parts[i].bone(), AflMeshPart.Layer.CUTOUT).isEmpty()
+                        || !mesh.parts(parts[i].bone(), AflMeshPart.Layer.TRANSLUCENT).isEmpty();
             }
         }
 
@@ -239,7 +242,7 @@ public final class AflMeshChunking {
             }
             visible[i] = shown;
             settled[i] = rest;
-            if (shown && rest && layout.cutout[i] && !host.meshPartEmissive(part.bone())) {
+            if (shown && rest && layout.geometry[i] && !host.meshPartEmissive(part.bone())) {
                 if (i < 64) lo |= 1L << i; else hi |= 1L << (i - 64);
                 used |= layout.chain[i];
             }

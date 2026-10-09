@@ -135,13 +135,9 @@ final class DevFuelStation {
     }
 
     private static void tank(ServerLevel level, BlockPos root, UndergroundFuelTankBlock block) {
-        Direction.Axis axis = Direction.Axis.Z;
-        for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-            set(level, UndergroundFuelTankBlock.cellPosition(root, axis, a, c, l), block.defaultBlockState()
-                    .setValue(UndergroundFuelTankBlock.AXIS, axis).setValue(UndergroundFuelTankBlock.ALONG, a)
-                    .setValue(UndergroundFuelTankBlock.ACROSS, c).setValue(UndergroundFuelTankBlock.LEVEL, l));
-        }
-        BlockPos master = UndergroundFuelTankBlock.cellPosition(root, axis, UndergroundFuelTankBlock.PORT_ALONG,
+        Direction along = Direction.SOUTH;   // the fill end south, under the fill cover at z 9
+        block.cells(root, along).forEach((position, state) -> set(level, position, state));
+        BlockPos master = UndergroundFuelTankBlock.cellPosition(root, along, UndergroundFuelTankBlock.PORT_ALONG,
                 UndergroundFuelTankBlock.PORT_ACROSS, UndergroundFuelTankBlock.PORT_LEVEL);
         if (level.getBlockEntity(master) instanceof UndergroundFuelTankBlockEntity tank) {
             tank.tank().fill(new FluidStack(block.fuel(), FILL_MB), IFluidHandler.FluidAction.EXECUTE);

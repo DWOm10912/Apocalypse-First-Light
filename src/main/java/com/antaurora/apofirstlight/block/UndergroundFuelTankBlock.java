@@ -16,12 +16,14 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.Fluid;
@@ -46,6 +48,12 @@ import java.util.function.Supplier;
  * the block entity and has the AFL fluid port on its top face. Placed from the bottom centre cell (3, 1, 0) at the
  * clicked position, the tank running away from the player. Breaking any cell removes the tank (one drop); the fuel in it
  * is lost.
+ * <p>
+ * Orientation: +along (toward the fill end, ALONG 6) is SOUTH or EAST for AXIS z / x, the opposite way when FLIPPED
+ * (2026-10-08; saved tanks have no FLIPPED and read as false). +across is always EAST (z) or SOUTH (x): the tank is
+ * symmetric across, so the four orientations are four turns of one body. {@link #rotate} and {@link #mirror} move a cell
+ * to the cell it becomes in the turned structure, so a structure template turned 90 or 180 degrees, or mirrored, keeps
+ * every tank whole with its fill end where the turn takes it (before, only AXIS swapped and turned tanks broke apart).
  */
 public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflFluidPortBlock, MeshHitMultiCell {
     /** The hit mesh (docs/rendering/mesh_hit_runtime_v1.md): every cell hits on the port cell (its multipart applies the tank body). */
@@ -58,16 +66,21 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     public static final IntegerProperty ALONG = IntegerProperty.create("along", 0, 6);
     public static final IntegerProperty ACROSS = IntegerProperty.create("across", 0, 2);
     public static final IntegerProperty LEVEL = IntegerProperty.create("level", 0, 2);
+    /** +along points NORTH (z) / WEST (x) instead of SOUTH / EAST. */
+    public static final BooleanProperty FLIPPED = BooleanProperty.create("flipped");
     public static final int PORT_ALONG = 3, PORT_ACROSS = 1, PORT_LEVEL = 2, ROOT_LEVEL = 0;
     /** The fill port (2026-10-05): the end cell's top face, a second AFL port into the same tank (the fill riser). */
     public static final int FILL_ALONG = 6;
     // cross-section (px, the structure's x across, y up): the tank's axis at (24, 20), radius 19 plus the ribs
     private static final double CENTRE_X = 24, CENTRE_Y = 20, RADIUS = 19.6;
-    private static final VoxelShape[][][] SHAPES_Z = new VoxelShape[7][3][3], SHAPES_X = new VoxelShape[7][3][3];
+    /** [axis z ? 0 : 1][flipped ? 1 : 0][along][across][level] */
+    private static final VoxelShape[][][][][] SHAPES = new VoxelShape[2][2][7][3][3];
 
     static {
-        for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-            double z0 = a == 0 ? 2 : 0, z1 = a == 6 ? 14 : 16;   // the dished heads, roughly
+        for (int f = 0; f < 2; f++) for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
+            // the dished heads, roughly: the outer face of along 0 and 6 (toward -along / +along)
+            boolean low = f == 0 ? a == 0 : a == 6, high = f == 0 ? a == 6 : a == 0;
+            double z0 = low ? 2 : 0, z1 = high ? 14 : 16;
             VoxelShape z = Shapes.empty(), x = Shapes.empty();
             for (int k = 0; k < 4; k++) {   // 4 px columns across the cell
                 double dx = c * 16 + k * 4 + 2 - CENTRE_X;
@@ -87,8 +100,8 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
                 z = Shapes.or(z, fill);
                 x = Shapes.or(x, fill);
             }
-            SHAPES_Z[a][c][l] = z.optimize();
-            SHAPES_X[a][c][l] = x.optimize();
+            SHAPES[0][f][a][c][l] = z.optimize();
+            SHAPES[1][f][a][c][l] = x.optimize();
         }
     }
 
@@ -100,7 +113,7 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     public UndergroundFuelTankBlock(Supplier<? extends Fluid> fuel, Properties properties) {
         super(properties);
         this.fuel = fuel;
-        registerDefaultState(stateDefinition.any().setValue(AXIS, Direction.Axis.Z).setValue(ALONG, PORT_ALONG)
+        registerDefaultState(stateDefinition.any().setValue(AXIS, Direction.Axis.Z).setValue(FLIPPED, false).setValue(ALONG, PORT_ALONG)
                 .setValue(ACROSS, PORT_ACROSS).setValue(LEVEL, PORT_LEVEL));
     }
 
@@ -111,28 +124,36 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
 
     // ---- cells ----
 
-    private static Direction alongDir(Direction.Axis axis) {
-        return axis == Direction.Axis.Z ? Direction.SOUTH : Direction.EAST;
+    /** +along: toward the fill end. */
+    public static Direction alongDir(Direction.Axis axis, boolean flipped) {
+        Direction d = axis == Direction.Axis.Z ? Direction.SOUTH : Direction.EAST;
+        return flipped ? d.getOpposite() : d;
+    }
+
+    /** The tank's +along of a cell's state. */
+    public static Direction alongDir(BlockState state) {
+        return alongDir(state.getValue(AXIS), state.getValue(FLIPPED));
     }
 
     private static Direction acrossDir(Direction.Axis axis) {
         return axis == Direction.Axis.Z ? Direction.EAST : Direction.SOUTH;
     }
 
-    public static BlockPos cellPosition(BlockPos root, Direction.Axis axis, int along, int across, int level) {
-        return root.relative(alongDir(axis), along - PORT_ALONG).relative(acrossDir(axis), across - PORT_ACROSS).above(level - ROOT_LEVEL);
+    /** The cell (along, across, level) of the tank whose bottom centre is {@code root} and whose +along is {@code along}. */
+    public static BlockPos cellPosition(BlockPos root, Direction alongDirection, int along, int across, int level) {
+        return root.relative(alongDirection, along - PORT_ALONG).relative(acrossDir(alongDirection.getAxis()), across - PORT_ACROSS)
+                .above(level - ROOT_LEVEL);
     }
 
     /** The bottom centre cell (3, 1, 0). */
     public static BlockPos rootPosition(BlockPos position, BlockState state) {
-        Direction.Axis axis = state.getValue(AXIS);
-        return position.relative(alongDir(axis), PORT_ALONG - state.getValue(ALONG)).relative(acrossDir(axis), PORT_ACROSS - state.getValue(ACROSS))
+        return position.relative(alongDir(state), PORT_ALONG - state.getValue(ALONG)).relative(acrossDir(state.getValue(AXIS)), PORT_ACROSS - state.getValue(ACROSS))
                 .below(state.getValue(LEVEL) - ROOT_LEVEL);
     }
 
     /** The port cell (master) of the tank {@code position} belongs to. */
     public static BlockPos masterPosition(BlockPos position, BlockState state) {
-        return cellPosition(rootPosition(position, state), state.getValue(AXIS), PORT_ALONG, PORT_ACROSS, PORT_LEVEL);
+        return cellPosition(rootPosition(position, state), alongDir(state), PORT_ALONG, PORT_ACROSS, PORT_LEVEL);
     }
 
     /** The fill port cell (FILL_ALONG, 1, 2): its block entity hands the master's tank to a pipe on its top face. */
@@ -144,32 +165,44 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
         return state.getValue(ALONG) == PORT_ALONG && state.getValue(ACROSS) == PORT_ACROSS && state.getValue(LEVEL) == PORT_LEVEL;
     }
 
-    private BlockState stateFor(Direction.Axis axis, int along, int across, int level) {
-        return defaultBlockState().setValue(AXIS, axis).setValue(ALONG, along).setValue(ACROSS, across).setValue(LEVEL, level);
+    /** The state of cell (along, across, level) of a tank whose +along is {@code alongDirection}. */
+    public BlockState stateFor(Direction alongDirection, int along, int across, int level) {
+        Direction.Axis axis = alongDirection.getAxis();
+        return defaultBlockState().setValue(AXIS, axis).setValue(FLIPPED, alongDirection != alongDir(axis, false))
+                .setValue(ALONG, along).setValue(ACROSS, across).setValue(LEVEL, level);
     }
 
-    private boolean matches(BlockState state, Direction.Axis axis, int along, int across, int level) {
-        return state.is(this) && state.getValue(AXIS) == axis && state.getValue(ALONG) == along
+    /** Every cell of the tank with bottom centre {@code root} and +along {@code alongDirection}, in placement order. */
+    public Map<BlockPos, BlockState> cells(BlockPos root, Direction alongDirection) {
+        Map<BlockPos, BlockState> cells = new LinkedHashMap<>();
+        for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++)
+            cells.put(cellPosition(root, alongDirection, a, c, l).immutable(), stateFor(alongDirection, a, c, l));
+        return cells;
+    }
+
+    private boolean matches(BlockState state, Direction alongDirection, int along, int across, int level) {
+        return state.is(this) && alongDir(state) == alongDirection && state.getValue(ALONG) == along
                 && state.getValue(ACROSS) == across && state.getValue(LEVEL) == level;
     }
 
     // ---- placement ----
 
-    private static Direction.Axis placementAxis(BlockPlaceContext context) {
-        return context.getHorizontalDirection().getAxis();
+    /** +along: the way the player looks, so the fill end is the far end (before 2026-10-08 it was always SOUTH / EAST). */
+    private static Direction placementAlong(BlockPlaceContext context) {
+        return context.getHorizontalDirection();
     }
 
-    private boolean canPlaceStructure(BlockPlaceContext context, BlockPos root, Direction.Axis axis) {
+    private boolean canPlaceStructure(BlockPlaceContext context, BlockPos root, Direction along) {
         Level level = context.getLevel();
         if (root.getY() < level.getMinBuildHeight() || root.getY() + 2 >= level.getMaxBuildHeight()) return false;
         Player player = context.getPlayer();
         for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-            BlockPos position = cellPosition(root, axis, a, c, l);
+            BlockPos position = cellPosition(root, along, a, c, l);
             if (!level.hasChunkAt(position) || !level.getWorldBorder().isWithinBounds(position)) return false;
             if (player != null && !level.mayInteract(player, position)) return false;
             if (!level.getBlockState(position).canBeReplaced(BlockPlaceContext.at(context, position, Direction.UP))
                     || !level.getFluidState(position).isEmpty()) return false;
-            if (!level.isUnobstructed(stateFor(axis, a, c, l), position, CollisionContext.empty())) return false;
+            if (!level.isUnobstructed(stateFor(along, a, c, l), position, CollisionContext.empty())) return false;
         }
         return true;
     }
@@ -178,15 +211,15 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     @Override
     @Nullable
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction.Axis axis = placementAxis(context);
-        return canPlaceStructure(context, context.getClickedPos(), axis) ? stateFor(axis, PORT_ALONG, PORT_ACROSS, ROOT_LEVEL) : null;
+        Direction along = placementAlong(context);
+        return canPlaceStructure(context, context.getClickedPos(), along) ? stateFor(along, PORT_ALONG, PORT_ACROSS, ROOT_LEVEL) : null;
     }
 
     /** Runs inside BlockItem's placement (UndergroundFuelTankItem); a failed write restores every cell. */
     public boolean placeStructure(BlockPlaceContext context) {
-        Direction.Axis axis = placementAxis(context);
+        Direction along = placementAlong(context);
         BlockPos root = context.getClickedPos().immutable();
-        if (!canPlaceStructure(context, root, axis)) return false;
+        if (!canPlaceStructure(context, root, along)) return false;
         Level level = context.getLevel();
         Mutation mutation = new Mutation(level, root);
         if (!MUTATIONS.add(mutation)) return false;
@@ -194,9 +227,9 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
         boolean success = false;
         try {
             for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-                BlockPos position = cellPosition(root, axis, a, c, l);
+                BlockPos position = cellPosition(root, along, a, c, l);
                 previous.put(position, level.getBlockState(position));
-                if (!level.setBlock(position, stateFor(axis, a, c, l), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE)) return false;
+                if (!level.setBlock(position, stateFor(along, a, c, l), UPDATE_CLIENTS | UPDATE_KNOWN_SHAPE)) return false;
             }
             success = true;
             for (BlockPos position : previous.keySet()) {
@@ -233,10 +266,10 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     @SuppressWarnings("deprecation")
     public void tick(BlockState state, ServerLevel level, BlockPos position, RandomSource random) {
         BlockPos root = rootPosition(position, state);
-        Direction.Axis axis = state.getValue(AXIS);
+        Direction along = alongDir(state);
         if (MUTATIONS.contains(new Mutation(level, root))) return;
         List<BlockPos> cells = new ArrayList<>();
-        for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) cells.add(cellPosition(root, axis, a, c, l));
+        for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) cells.add(cellPosition(root, along, a, c, l));
         for (BlockPos cell : cells) {
             if (!level.hasChunkAt(cell)) {
                 level.scheduleTick(position, this, 100);
@@ -245,7 +278,7 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
         }
         int i = 0;
         for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-            if (!matches(level.getBlockState(cells.get(i++)), axis, a, c, l)) {
+            if (!matches(level.getBlockState(cells.get(i++)), along, a, c, l)) {
                 level.removeBlock(position, false);
                 return;
             }
@@ -259,7 +292,7 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
         if (!level.isClientSide && !player.isCreative() && !isMaster(state) && player.getMainHandItem().isCorrectToolForDrops(state)) {
             Block.popResource(level, position, new ItemStack(this));
         }
-        removeOthers(level, root, state.getValue(AXIS), position);
+        removeOthers(level, root, alongDir(state), position);
         super.playerWillDestroy(level, position, state, player);
     }
 
@@ -272,17 +305,17 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     @Override
     @SuppressWarnings("deprecation")
     public void onRemove(BlockState state, Level level, BlockPos position, BlockState replacement, boolean movedByPiston) {
-        if (!state.is(replacement.getBlock())) removeOthers(level, rootPosition(position, state), state.getValue(AXIS), position);
+        if (!state.is(replacement.getBlock())) removeOthers(level, rootPosition(position, state), alongDir(state), position);
         super.onRemove(state, level, position, replacement, movedByPiston);
     }
 
-    private void removeOthers(LevelAccessor level, BlockPos root, Direction.Axis axis, @Nullable BlockPos keep) {
+    private void removeOthers(LevelAccessor level, BlockPos root, Direction along, @Nullable BlockPos keep) {
         Mutation mutation = new Mutation(level, root.immutable());
         if (!MUTATIONS.add(mutation)) return;
         try {
             for (int a = 0; a < 7; a++) for (int c = 0; c < 3; c++) for (int l = 0; l < 3; l++) {
-                BlockPos other = cellPosition(root, axis, a, c, l);
-                if ((keep == null || !other.equals(keep)) && level.hasChunkAt(other) && matches(level.getBlockState(other), axis, a, c, l)) {
+                BlockPos other = cellPosition(root, along, a, c, l);
+                if ((keep == null || !other.equals(keep)) && level.hasChunkAt(other) && matches(level.getBlockState(other), along, a, c, l)) {
                     level.setBlock(other, Blocks.AIR.defaultBlockState(), UPDATE_ALL);
                 }
             }
@@ -316,18 +349,31 @@ public class UndergroundFuelTankBlock extends Block implements EntityBlock, AflF
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return (state.getValue(AXIS) == Direction.Axis.Z ? SHAPES_Z : SHAPES_X)[state.getValue(ALONG)][state.getValue(ACROSS)][state.getValue(LEVEL)];
+        return SHAPES[state.getValue(AXIS) == Direction.Axis.Z ? 0 : 1][state.getValue(FLIPPED) ? 1 : 0][state.getValue(ALONG)][state.getValue(ACROSS)][state.getValue(LEVEL)];
+    }
+
+    /** A turned or mirrored structure: the cell keeps its ALONG and LEVEL; ACROSS flips when +across turned to -across. */
+    private static BlockState reoriented(BlockState state, Direction along, Direction across) {
+        Direction.Axis axis = along.getAxis();
+        int c = state.getValue(ACROSS);
+        return state.setValue(AXIS, axis).setValue(FLIPPED, along != alongDir(axis, false))
+                .setValue(ACROSS, across == acrossDir(axis) ? c : 2 - c);
     }
 
     @Override
     @SuppressWarnings("deprecation")
     public BlockState rotate(BlockState state, Rotation rotation) {
-        return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
-                ? state.setValue(AXIS, state.getValue(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X) : state;
+        return reoriented(state, rotation.rotate(alongDir(state)), rotation.rotate(acrossDir(state.getValue(AXIS))));
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public BlockState mirror(BlockState state, Mirror mirror) {
+        return reoriented(state, mirror.mirror(alongDir(state)), mirror.mirror(acrossDir(state.getValue(AXIS))));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(AXIS, ALONG, ACROSS, LEVEL);
+        builder.add(AXIS, FLIPPED, ALONG, ACROSS, LEVEL);
     }
 }

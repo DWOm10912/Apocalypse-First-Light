@@ -245,11 +245,13 @@ for (const fuel of FUELS) {
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.json`), json(objModel(file))],
     [path.join(assets, `models/item/underground_fuel_tank_${fuel}.json`), json({parent: `apocalypse_firstlight:block/${file}`, gui_light: 'side', display: display(B, bones)})]);
   objs.push([file, obj]);
-  // UndergroundFuelTankBlock: axis, along 0..6, across 0..2, level 0..2; the port cell (3, 1, 2) draws the tank
+  // UndergroundFuelTankBlock: axis, flipped, along 0..6, across 0..2, level 0..2; the port cell (3, 1, 2) draws the tank.
+  // The model's fill end is +z: +along SOUTH (z) y 0, EAST (x) y 270, NORTH (z flipped) y 180, WEST (x flipped) y 90.
+  const turns = [['z', 'false', 0], ['x', 'false', 270], ['z', 'true', 180], ['x', 'true', 90]];
   outputs.push([path.join(assets, `blockstates/underground_fuel_tank_${fuel}.json`), json({multipart: [
     {apply: {model: 'apocalypse_firstlight:block/underground_fuel_tank/cell'}},
-    {when: {axis: 'z', along: '3', across: '1', level: '2'}, apply: {model: `apocalypse_firstlight:block/${file}`}},
-    {when: {axis: 'x', along: '3', across: '1', level: '2'}, apply: {model: `apocalypse_firstlight:block/${file}`, y: 270}}]})]);
+    ...turns.map(([axis, flipped, y]) => ({when: {axis, flipped, along: '3', across: '1', level: '2'},
+      apply: {model: `apocalypse_firstlight:block/${file}`, ...(y ? {y} : {})}}))]})]);
 }
 const tris = bone => B.PARTS.filter(p => p.bone === bone).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {triangles: Object.fromEntries(Object.keys(PIECES).map(k => [k, tris(k)])), texelsPerPx: B.UV.S, islands: B.UV.islands.length,

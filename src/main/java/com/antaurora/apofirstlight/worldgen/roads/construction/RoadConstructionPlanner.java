@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.worldgen.roads.construction;
 
-import com.antaurora.apofirstlight.block.RoadCurbBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.worldgen.roads.*;
 import com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ;
@@ -389,20 +388,20 @@ public final class RoadConstructionPlanner {
                 var connector=entry.connector();
                 if(connector.type()==StructureSocketType.PEDESTRIAN)return RoadConstructionMaterials.sidewalk(layers);
                 if(connector.asphaltContact().orElseThrow().contains(cell.x(),cell.z()))return RoadConstructionMaterials.asphalt(layers);
-                return RoadConstructionMaterials.curb(layers,connector.facing(),RoadCurbBlock.Shape.DRIVEWAY);
+                return RoadConstructionMaterials.curb(layers,connector.facing(),RoadConstructionMaterials.CurbShape.DRIVEWAY);
             }
             if(cell.kind()==Kind.CURB) {
                 List<Direction> asphalt=new ArrayList<>();
                 for(Direction d:Direction.Plane.HORIZONTAL)if(isAsphalt(cell.x()+d.getStepX(),cell.z()+d.getStepZ()))asphalt.add(d);
-                if(asphalt.size()==1)return RoadConstructionMaterials.curb(layers,asphalt.get(0),RoadCurbBlock.Shape.STRAIGHT);
+                if(asphalt.size()==1)return RoadConstructionMaterials.curb(layers,asphalt.get(0),RoadConstructionMaterials.CurbShape.STRAIGHT);
                 for(Direction facing:Direction.Plane.HORIZONTAL) {
                     Direction left=facing.getCounterClockWise();
                     if(asphalt.contains(facing)&&asphalt.contains(left))
-                        return RoadConstructionMaterials.curb(layers,facing,RoadCurbBlock.Shape.OUTER);
+                        return RoadConstructionMaterials.curb(layers,facing,RoadConstructionMaterials.CurbShape.OUTER);
                     if(asphalt.isEmpty()&&isAsphalt(cell.x()+facing.getStepX()+left.getStepX(),cell.z()+facing.getStepZ()+left.getStepZ()))
-                        return RoadConstructionMaterials.curb(layers,facing,RoadCurbBlock.Shape.INNER);
+                        return RoadConstructionMaterials.curb(layers,facing,RoadConstructionMaterials.CurbShape.INNER);
                 }
-                return RoadConstructionMaterials.curb(layers,Direction.NORTH,RoadCurbBlock.Shape.STRAIGHT);
+                return RoadConstructionMaterials.curb(layers,Direction.NORTH,RoadConstructionMaterials.CurbShape.STRAIGHT);
             }
             return switch(cell.kind()) {
                 case ASPHALT -> RoadConstructionMaterials.asphalt(layers);

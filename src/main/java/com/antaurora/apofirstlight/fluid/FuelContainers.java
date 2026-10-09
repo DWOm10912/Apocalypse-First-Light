@@ -96,9 +96,9 @@ public final class FuelContainers {
         if (state.getBlock() instanceof UndergroundFuelTankBlock block) {
             BlockPos master = UndergroundFuelTankBlock.masterPosition(pos, state);
             if (!(level.getBlockEntity(master) instanceof UndergroundFuelTankBlockEntity tank)) return null;
-            Direction.Axis axis = state.getValue(UndergroundFuelTankBlock.AXIS);
+            Direction along = UndergroundFuelTankBlock.alongDir(state);
             BlockPos root = UndergroundFuelTankBlock.rootPosition(pos, state);
-            BlockPos a = UndergroundFuelTankBlock.cellPosition(root, axis, 0, 0, 0), b = UndergroundFuelTankBlock.cellPosition(root, axis, 6, 2, 2);
+            BlockPos a = UndergroundFuelTankBlock.cellPosition(root, along, 0, 0, 0), b = UndergroundFuelTankBlock.cellPosition(root, along, 6, 2, 2);
             AABB box = new AABB(Math.min(a.getX(), b.getX()), Math.min(a.getY(), b.getY()), Math.min(a.getZ(), b.getZ()),
                     Math.max(a.getX(), b.getX()) + 1, Math.max(a.getY(), b.getY()) + 1, Math.max(a.getZ(), b.getZ()) + 1);
             boolean diesel = block.fuel().isSame(AflFluids.DIESEL.get());

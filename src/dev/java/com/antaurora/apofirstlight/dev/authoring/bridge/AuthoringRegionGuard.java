@@ -30,7 +30,7 @@ final class AuthoringRegionGuard {
         var hazard=hazard(s);if(hazard!=null)return hazard;
         String id=AuthoringFixtureRegistry.id(s.getBlock());
         if(s.hasBlockEntity())return "UNSAFE_OR_DYNAMIC_BLOCK: "+id+" (block entities are placed only through place_fixture/place_multiblock)";
-        if(AuthoringFixtureRegistry.multiblock(s)!=null)return "MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK: "+id;
+        if(AuthoringFixtureRegistry.structured(s))return "MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK: "+id;
         return null;
     }
     static void material(BlockState s){var problem=materialProblem(s);if(problem!=null)throw new IllegalArgumentException(problem);}
@@ -38,7 +38,7 @@ final class AuthoringRegionGuard {
     static void match(BlockState s){
         var hazard=hazard(s);if(hazard!=null)throw new IllegalArgumentException(hazard);
         String id=AuthoringFixtureRegistry.id(s.getBlock());
-        if(AuthoringFixtureRegistry.multiblock(s)!=null)throw new IllegalArgumentException("MULTIBLOCK_REQUIRES_WHOLE_REGION_EDIT: "+id);
+        if(AuthoringFixtureRegistry.structured(s))throw new IllegalArgumentException("MULTIBLOCK_REQUIRES_WHOLE_REGION_EDIT: "+id);
         var f=AuthoringFixtureRegistry.get(s.getBlock());
         if(s.hasBlockEntity()&&(f==null||!f.allowed()))throw new IllegalArgumentException("UNSAFE_OR_DYNAMIC_BLOCK: "+id);
     }
@@ -86,7 +86,7 @@ final class AuthoringRegionGuard {
             var hazard=hazard(s);if(hazard!=null)throw new IllegalArgumentException(hazard);
             var problem=blockEntityProblem(level,pos,s);
             if(problem!=null)throw new IllegalArgumentException("UNSAFE_BLOCK_ENTITY_PRESENT: "+AuthoringFixtureRegistry.id(s.getBlock())+" at "+pos.toShortString()+" reason="+problem);
-            if(wholeMultiblocks&&AuthoringFixtureRegistry.multiblock(s)!=null)
+            if(wholeMultiblocks&&AuthoringFixtureRegistry.structured(s))
                 for(var peer:AuthoringFixtureRegistry.peers(pos,s))if(!b.contains(peer))
                     throw new IllegalArgumentException("MULTIBLOCK_SPLIT: "+AuthoringFixtureRegistry.id(s.getBlock())+" at "+pos.toShortString()+" has a part at "+peer.toShortString()+" outside the edit bounds");
         }

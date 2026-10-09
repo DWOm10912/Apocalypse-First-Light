@@ -2,6 +2,10 @@
 
 > **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：方块改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
 
+> **2026-10-08 玻璃材质**：用户实机（Sundial）发现门玻璃和旁边的店面玻璃不是一种效果：店面玻璃映天空，门玻璃几乎不反射，夜里透出一片偏黄昏的亮色。贴图和 PBR 数值两者相同，差在门玻璃由方块实体渲染器画，Sundial 没有 `gbuffers_block_translucent`，退回了不透明程序。现在门关着或开着停稳时，玻璃交给区块的半透明层，和店面玻璃走同一个光影程序；开关门那半秒仍由渲染器画。见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止的玻璃也由区块画"。只编译通过，还没进游戏复看。
+>
+> 同日用户录屏：关着停稳时正常了，但一开关门，门玻璃又是那片橙色，关上后还挂几秒。门在动时玻璃仍由方块实体渲染器画。现在开光影时，这部分玻璃排到半透明地形之后、用地形半透明程序画，和区块里的玻璃一样，见运行时文档"静止的玻璃也由区块画"最后两条。只编译通过，还没复看。
+
 状态（2026-10-07）：**已实现，未实机验证**。
 - `compileJava --offline` 通过；生成器 `--check` 通过；网格没有共面重叠（`zFightLevels` 为 0）。
 - 导出的网格和贴图在离线 three.js 预览里看过：A1 门框里的正面、拉手特写、室内一侧，以及开门状态，银框、黑框两种都看了。

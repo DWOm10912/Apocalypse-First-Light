@@ -52,10 +52,6 @@ public final class AflCreativeTabs {
             AflItems.LINEAR_LIGHT,
             AflItems.EMERGENCY_LIGHT,
             AflItems.ASPHALT,
-            AflItems.ROAD_ASPHALT_SURFACE,
-            AflItems.ROAD_SIDEWALK_SURFACE,
-            AflItems.ROAD_UTILITY_SURFACE,
-            AflItems.ROAD_CURB,
             AflItems.EDGE_LANE_WHITE,
             AflItems.EDGE_LANE_YELLOW,
             AflItems.WHITE_LANE_DIVIDER);

@@ -362,14 +362,6 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.FUSED_GROUND.get(), new Item.Properties()));
     public static final RegistryObject<Item> ASPHALT = ITEMS.register("asphalt",
             () -> new BlockItem(AflBlocks.ASPHALT.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ROAD_ASPHALT_SURFACE = ITEMS.register("road_asphalt_surface",
-            () -> new BlockItem(AflBlocks.ROAD_ASPHALT_SURFACE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ROAD_SIDEWALK_SURFACE = ITEMS.register("road_sidewalk_surface",
-            () -> new BlockItem(AflBlocks.ROAD_SIDEWALK_SURFACE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ROAD_UTILITY_SURFACE = ITEMS.register("road_utility_surface",
-            () -> new BlockItem(AflBlocks.ROAD_UTILITY_SURFACE.get(), new Item.Properties()));
-    public static final RegistryObject<Item> ROAD_CURB = ITEMS.register("road_curb",
-            () -> new BlockItem(AflBlocks.ROAD_CURB.get(), new Item.Properties()));
     public static final RegistryObject<Item> THERMAL_GENERATOR = ITEMS.register("thermal_generator",
             () -> new BlockItem(AflBlocks.THERMAL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENERGY_CELL = ITEMS.register("energy_cell",

@@ -24,6 +24,7 @@ final class AuthoringFixtureRegistry {
         FLOOR("Every lowest part needs a block with a sturdy top face directly below it."),
         FLOOR_OR_DESK("Sturdy top face below, or a modern_office_desk part below (the block then reports lowered=true)."),
         FLOOR_CLEAR_ABOVE("Sturdy top face below and no collision in the cell directly above."),
+        FLOOR_OR_COLUMN("Sturdy top face below, a canopy column below (stacked segments), or a power cable below (the base's feed; 2026-10-08)."),
         ATTACHED_OPPOSITE_FACING("The block on the side opposite `facing` needs a sturdy face toward the fixture; facing=down hangs under a ceiling."),
         NONE("No engine support requirement."),
         BLOCK_RULE("Checked with the block's own canSurvive after placement; no simplified rule is published.");
@@ -33,6 +34,17 @@ final class AuthoringFixtureRegistry {
     /** SELF_AND_NEIGHBORS: the fixture's own connection properties are computed from its neighbours. */
     enum ShapePolicy { NEIGHBORS, SELF_AND_NEIGHBORS }
     interface PartLocator { BlockPos locate(BlockPos anchor, Direction facing, String part); }
+    /**
+     * A multiblock whose cells are not one 'part' property (2026-10-08: the underground fuel tank, cells by axis, flipped,
+     * along, across and level). {@code facing} is the structure's own orientation (for the tank: toward its fill end).
+     */
+    interface CellLayout {
+        LinkedHashMap<BlockPos,BlockState> cells(Block block,BlockPos anchor,Direction facing);
+        BlockPos anchorOf(BlockPos pos,BlockState state);
+        Direction facingOf(BlockState state);
+        /** Width x height x depth for facing=north. */
+        int[] size();
+    }
     /** Parts are listed in placement order; the first entry is the master/anchor part. */
     record Multiblock(String partProperty, List<String> parts, PartLocator locator) {
         String master(){return parts.get(0);}
@@ -41,9 +53,10 @@ final class AuthoringFixtureRegistry {
     }
     record Fixture(String id, AuthoringClass authoringClass, String category, String facingProperty, Set<Direction> facings,
                    Map<String,Set<String>> variants, Map<String,String> fixed, Set<String> connections, boolean hasInventory,
-                   Support support, ShapePolicy shapePolicy, Multiblock multiblock, String notes) {
+                   Support support, ShapePolicy shapePolicy, Multiblock multiblock, CellLayout layout, String notes) {
         boolean allowed(){return authoringClass==AuthoringClass.SAFE_FIXTURE||authoringClass==AuthoringClass.STORAGE_WITH_INVENTORY;}
-        String placementTool(){return !allowed()?"NONE":multiblock!=null?"place_multiblock":"place_fixture";}
+        boolean structured(){return multiblock!=null||layout!=null;}
+        String placementTool(){return !allowed()?"NONE":structured()?"place_multiblock":"place_fixture";}
     }
 
     private static final String A="apocalypse_firstlight:";
@@ -63,6 +76,17 @@ final class AuthoringFixtureRegistry {
             (a,f,p)->CommercialDumpsterBlock.partPosition(a,f,CommercialDumpsterBlock.Part.valueOf(constant(p))));
     private static final Multiblock FUEL_DISPENSER=new Multiblock("cell",List.of("a0","b0","a1","b1","a2","b2"),
             (a,f,p)->com.antaurora.apofirstlight.block.FuelDispenserBlock.cellPosition(a,f,com.antaurora.apofirstlight.block.FuelDispenserBlock.Cell.valueOf(constant(p))));
+    private static final Multiblock FUEL_SUMP=new Multiblock("cell",List.of("a0","b0","a1","b1"),
+            (a,f,p)->com.antaurora.apofirstlight.block.FuelDispenserSumpBlock.cellPosition(a,f,com.antaurora.apofirstlight.block.FuelDispenserSumpBlock.Cell.valueOf(constant(p))));
+    /** Anchor = the bottom centre cell (along 3, across 1, level 0); facing = toward the fill end (along 6). */
+    private static final CellLayout FUEL_TANK=new CellLayout(){
+        @Override public LinkedHashMap<BlockPos,BlockState> cells(Block block,BlockPos anchor,Direction facing){
+            return new LinkedHashMap<>(((com.antaurora.apofirstlight.block.UndergroundFuelTankBlock)block).cells(anchor,facing));
+        }
+        @Override public BlockPos anchorOf(BlockPos pos,BlockState state){return com.antaurora.apofirstlight.block.UndergroundFuelTankBlock.rootPosition(pos,state);}
+        @Override public Direction facingOf(BlockState state){return com.antaurora.apofirstlight.block.UndergroundFuelTankBlock.alongDir(state);}
+        @Override public int[] size(){return new int[]{3,3,7};}
+    };
     private static final Multiblock DESK=new Multiblock("part",List.of("center","left","right"),
             (a,f,p)->ModernOfficeDeskBlock.partPosition(a,f,ModernOfficeDeskBlock.Part.valueOf(constant(p))));
     private static final Multiblock WORKSTATION=new Multiblock("part",List.of("base","side","upper","upper_side"),
@@ -75,17 +99,18 @@ final class AuthoringFixtureRegistry {
         final String id;final AuthoringClass c;final String category;String facing;Set<Direction> facings=Set.of();
         final Map<String,Set<String>> variants=new LinkedHashMap<>();final Map<String,String> fixed=new LinkedHashMap<>();
         final Set<String> connections=new LinkedHashSet<>();boolean inventory;Support support=Support.BLOCK_RULE;
-        ShapePolicy shape=ShapePolicy.NEIGHBORS;Multiblock multi;String notes="";
+        ShapePolicy shape=ShapePolicy.NEIGHBORS;Multiblock multi;CellLayout layout;String notes="";
         Def(String id,AuthoringClass c,String category){this.id=id;this.c=c;this.category=category;}
         Def facing(Set<Direction> f){facing="facing";facings=f;return this;}
         Def multi(Multiblock m){multi=m;return this;}
+        Def layout(CellLayout l,Set<Direction> f){layout=l;facings=f;return this;}
         Def variant(String p,String... v){variants.put(p,Set.of(v));return this;}
         Def fixed(String... pairs){for(int i=0;i<pairs.length;i+=2)fixed.put(pairs[i],pairs[i+1]);return this;}
         Def connect(String... p){connections.addAll(List.of(p));shape=ShapePolicy.SELF_AND_NEIGHBORS;return this;}
         Def inventory(){inventory=true;return this;}
         Def support(Support s){support=s;return this;}
         Def notes(String n){notes=n;return this;}
-        Fixture build(){return new Fixture(id,c,category,facing,Set.copyOf(facings),Map.copyOf(variants),Map.copyOf(fixed),Set.copyOf(connections),inventory,support,shape,multi,notes);}
+        Fixture build(){return new Fixture(id,c,category,facing,Set.copyOf(facings),Map.copyOf(variants),Map.copyOf(fixed),Set.copyOf(connections),inventory,support,shape,multi,layout,notes);}
     }
     /** Commercial Dumpster V2, one block per colour: 18-slot searchable container, two lids, starts shut and empty. */
     private static Def dumpster(String id){
@@ -160,10 +185,10 @@ final class AuthoringFixtureRegistry {
                     .notes("Fuel island straight curb, 3 px high. Facing as the fuel dispenser's: the island runs along facing.getClockWise()."),
             new Def(A+"fuel_island_end",safe,"utility").facing(H4).support(Support.FLOOR)
                     .notes("Half-round island end; joining side facing.getCounterClockWise(), the round side facing.getClockWise()."),
-            new Def(A+"fuel_island_bollard",safe,"utility").fixed("on_curb","false").support(Support.FLOOR)
-                    .notes("Steel bollard. Set on a curb / end it goes in the cell above and on_curb (set from the block below) sinks it onto the curb top."),
-            new Def(A+"fuel_canopy_column",safe,"utility").facing(H4).connect("segment","top").fixed("island","false").support(Support.FLOOR)
-                    .notes("Canopy column segment; stack 5 from the ground (the canopy's soffit is 5 blocks up). segment (base: the lowest, power port on its bottom face) and top (head plate under a canopy piece) are computed. island=true only by placing it on a straight curb (it takes that curb's cell)."),
+            new Def(A+"fuel_island_bollard",safe,"utility").connect("on_curb").support(Support.BLOCK_RULE)
+                    .notes("Steel bollard. On the ground, or in the cell above an island curb / end: on_curb is computed from the block below (2026-10-08; it was fixed false) and sinks it onto the curb top."),
+            new Def(A+"fuel_canopy_column",safe,"utility").facing(H4).connect("segment","top").variant("island","false","true").support(Support.FLOOR_OR_COLUMN)
+                    .notes("Canopy column segment; stack 5 from the ground (the canopy's soffit is 5 blocks up): a segment may stand on another (2026-10-08). segment (base: the lowest, power port on its bottom face) and top (head plate under a canopy piece) are computed. island=true: a base set in an island line in place of a straight curb (facing as that curb; it draws the curb itself), 2026-10-08."),
             new Def(A+"fuel_canopy_ceiling",safe,"utility").support(Support.NONE)
                     .notes("Plain canopy block (flat soffit below, roof above), one block thick. Carries the canopy wiring."),
             new Def(A+"fuel_canopy_light",safe,"utility").fixed("lit","false").support(Support.NONE)
@@ -196,8 +221,20 @@ final class AuthoringFixtureRegistry {
             new Def(A+"crusher",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"industrial_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"thermal_generator",machine,"machine").notes("Energy producer with fuel/fluid state; not an authoring fixture."),
-            new Def(A+"submersible_fuel_pump",machine,"machine").notes("Fuel pump with FE and a fluid buffer; build fuel stations with /dev fuel station."),
-            new Def(A+"fuel_dispenser_sump",machine,"machine").notes("2 x 2 sump under a fuel dispenser, hands fuel and power up; build fuel stations with /dev fuel station."),
+            new Def(A+"submersible_fuel_pump",safe,"fuel").facing(H4).support(Support.NONE)
+                    .notes("Fuel court (2026-10-08; was MACHINE): on the tank's port cell top (along 3, across 1, level 2 + 1). facing = the product outlet (AFL fluid port); the power port is the opposite face. Its fluid buffer and FE start empty."),
+            new Def(A+"fuel_dispenser_sump",safe,"fuel").facing(H4).multi(FUEL_SUMP).support(Support.NONE)
+                    .notes("Fuel court (2026-10-08; was MACHINE): 2 x 2 x 1 high under a fuel dispenser: anchor a0 = the dispenser's a0 two below, facing as the dispenser, b column at facing.getClockWise(). Fluid ports on the lower cells: gasoline on a0's facing.getCounterClockWise() face, diesel on b0's facing.getClockWise() face; power port on a0's back (facing.getOpposite())."),
+            new Def(A+"underground_fuel_tank_gasoline",safe,"fuel").layout(FUEL_TANK,H4).support(Support.NONE)
+                    .notes("Fuel court (2026-10-08): 3 x 3 x 7 tank, placed whole. anchor = bottom centre cell (along 3, across 1, level 0); facing = toward the fill end (along 6). Ports on top of the master (along 3, level 2) and of the fill cell (along 6, level 2). Starts empty."),
+            new Def(A+"underground_fuel_tank_diesel",safe,"fuel").layout(FUEL_TANK,H4).support(Support.NONE)
+                    .notes("As underground_fuel_tank_gasoline, holding diesel."),
+            new Def(A+"pump_manhole_cover",safe,"fuel").facing(H4).fixed("open","false").support(Support.NONE)
+                    .notes("Fuel court (2026-10-08): the surface-layer cover over a submersible pump; facing = hinge side (it opens away from facing). Starts shut."),
+            new Def(A+"fuel_fill_cover_gasoline",safe,"fuel").facing(H4).fixed("open","false").support(Support.NONE)
+                    .notes("Fuel court (2026-10-08): the surface-layer fill cover; its AFL fluid port is the bottom face (a pipe down to the tank's fill cell). Starts shut."),
+            new Def(A+"fuel_fill_cover_diesel",safe,"fuel").facing(H4).fixed("open","false").support(Support.NONE)
+                    .notes("As fuel_fill_cover_gasoline, for diesel."),
             new Def(A+"gun_maintenance_bench",machine,"workstation").facing(H4).multi(WORKSTATION).notes("Gameplay workstation holding a weapon slot."),
             new Def(A+"precision_fabrication_station",machine,"workstation").facing(H4).multi(WORKSTATION).notes("Gameplay crafting workstation."),
             new Def(A+"energy_cell",unsafe,"machine").notes("Energy-network storage."),
@@ -218,9 +255,13 @@ final class AuthoringFixtureRegistry {
         throw new IllegalArgumentException("FIXTURE_NOT_REGISTERED: "+id+" (ordinary blocks use we_set; see describe_block)");
     }
     static Multiblock multiblock(BlockState s){var f=get(s.getBlock());return f==null?null:f.multiblock();}
+    /** A part of a multiblock or of a cell-layout structure: placed whole, never through WorldEdit materials. */
+    static boolean structured(BlockState s){var f=get(s.getBlock());return f!=null&&f.structured();}
     /** Every part position of the multiblock that the given part belongs to, according to its own state. */
     static List<BlockPos> peers(BlockPos pos,BlockState s){
-        var f=get(s.getBlock());if(f==null||f.multiblock()==null)return List.of(pos);var m=f.multiblock();
+        var f=get(s.getBlock());
+        if(f!=null&&f.layout()!=null)return List.copyOf(f.layout().cells(s.getBlock(),f.layout().anchorOf(pos,s),f.layout().facingOf(s)).keySet());
+        if(f==null||f.multiblock()==null)return List.of(pos);var m=f.multiblock();
         var facing=Direction.byName(value(s,f.facingProperty()));var part=value(s,m.partProperty());
         if(facing==null||part==null)return List.of(pos);var anchor=m.anchorOf(pos,facing,part);
         return m.parts().stream().map(p->m.locator().locate(anchor,facing,p)).toList();
@@ -263,6 +304,12 @@ final class AuthoringFixtureRegistry {
     /** Builds the exact target states from the fixture contract; no caller-supplied NBT or free properties. */
     static LinkedHashMap<BlockPos,BlockState> targets(Fixture f,BlockPos anchor,Direction facing,Map<String,String> variants){
         var block=block(f.id());var base=block.defaultBlockState();
+        if(f.layout()!=null){
+            if(facing==null)throw new IllegalArgumentException("FACING_REQUIRED: "+f.facings());
+            if(!f.facings().contains(facing))throw new IllegalArgumentException("INVALID_FACING: "+facing.getName()+" allowed="+names(f.facings()));
+            if(!variants.isEmpty())throw new IllegalArgumentException("PROPERTY_NOT_ALLOWED: "+variants.keySet()+" (cell-layout structures take only anchor and facing)");
+            return f.layout().cells(block,anchor.immutable(),facing);
+        }
         if(f.facingProperty()!=null){
             if(facing==null)throw new IllegalArgumentException("FACING_REQUIRED: "+f.facings());
             if(!f.facings().contains(facing))throw new IllegalArgumentException("INVALID_FACING: "+facing.getName()+" allowed="+names(f.facings()));
@@ -292,7 +339,8 @@ final class AuthoringFixtureRegistry {
             var o=new JsonObject();o.addProperty("name",p.getName());o.add("values",array(valueNames(p)));
             String role="FREE",value=null;Collection<String> allowed=null;
             if(f!=null){
-                if(p.getName().equals(f.facingProperty())){role="FACING";allowed=names(f.facings());}
+                if(f.layout()!=null){role="LAYOUT_COMPUTED";}
+                else if(p.getName().equals(f.facingProperty())){role="FACING";allowed=names(f.facings());}
                 else if(f.multiblock()!=null&&p.getName().equals(f.multiblock().partProperty())){role="PART";allowed=f.multiblock().parts();}
                 else if(f.variants().containsKey(p.getName())){role="VARIANT";allowed=new TreeSet<>(f.variants().get(p.getName()));}
                 else if(f.fixed().containsKey(p.getName())){role="FIXED";value=f.fixed().get(p.getName());}
@@ -318,7 +366,8 @@ final class AuthoringFixtureRegistry {
         if(f==null&&genericProblem!=null)o.addProperty("blocked_reason",genericProblem);
         o.addProperty("category",f!=null?f.category():null);
         o.add("properties",properties(block,f));
-        o.add("allowed_facing",f!=null&&f.facingProperty()!=null?array(names(f.facings())):new JsonArray());
+        o.add("allowed_facing",f!=null&&(f.facingProperty()!=null||f.layout()!=null)?array(names(f.facings())):new JsonArray());
+        if(f!=null&&f.layout()!=null){var sz=f.layout().size();o.add("size",BridgeJson.object("width",sz[0],"height",sz[1],"depth",sz[2],"frame","facing=north; width and depth swap for east/west"));o.addProperty("cell_layout",true);}
         o.addProperty("has_inventory",f!=null&&f.hasInventory());
         o.addProperty("must_start_empty",true);
         var m=f==null?null:f.multiblock();o.addProperty("multiblock",m!=null);
@@ -332,7 +381,7 @@ final class AuthoringFixtureRegistry {
             }
             o.add("parts",parts);
         }else o.add("parts",new JsonArray());
-        if(f!=null&&m==null)o.addProperty("block_entity_owner",ownsBlockEntity(f.facingProperty()==null?block.defaultBlockState():with(block.defaultBlockState(),f.facingProperty(),f.facings().iterator().next().getName())));
+        if(f!=null&&m==null&&f.layout()==null)o.addProperty("block_entity_owner",ownsBlockEntity(f.facingProperty()==null?block.defaultBlockState():with(block.defaultBlockState(),f.facingProperty(),f.facings().iterator().next().getName())));
         o.addProperty("support_requirements",f!=null?f.support().text:"Validated only by audit_support (canSurvive).");
         o.addProperty("placement_notes",f!=null?(f.notes().isEmpty()?"-":f.notes()):entity?"Unregistered BlockEntity: not placeable and blocks region edits.":"Ordinary block: exact namespaced state through WorldEdit tools.");
         o.addProperty("neighbor_update_policy",f!=null?f.shapePolicy().name():"NONE");
@@ -366,6 +415,8 @@ final class AuthoringFixtureRegistry {
         return o;
     }
 
+    /** One cell now, with a 'half' property kept only so saved worlds load (the obsolete upper half removes itself). */
+    private static final Set<String> LEGACY_HALF=Set.of("commercial_wall_mounted_sink");
     /** Contract self-check against the running registry; the GameTest requires an empty list. */
     static List<String> problems(){
         var problems=new ArrayList<String>();
@@ -388,6 +439,12 @@ final class AuthoringFixtureRegistry {
                         if(new HashSet<>(m.parts().stream().map(part->m.offset(d,part)).toList()).size()!=m.parts().size())problems.add(f.id()+": duplicate part offsets for "+d);
                     }
                 }
+                var l=f.layout();
+                if(l!=null)for(var d:f.facings()){
+                    var cells=l.cells(block,BlockPos.ZERO,d);var sz=l.size();
+                    if(cells.size()!=sz[0]*sz[1]*sz[2])problems.add(f.id()+": layout has "+cells.size()+" cells for "+d);
+                    for(var c:cells.entrySet())if(!l.anchorOf(c.getKey(),c.getValue()).equals(BlockPos.ZERO)||l.facingOf(c.getValue())!=d){problems.add(f.id()+": layout cell "+c.getKey().toShortString()+" does not lead back to its anchor for "+d);break;}
+                }
                 if(block instanceof EntityBlock e&&f.facingProperty()!=null){
                     var owner=m==null?with(s,f.facingProperty(),f.facings().iterator().next().getName()):with(with(s,f.facingProperty(),f.facings().iterator().next().getName()),m.partProperty(),m.master());
                     var be=e.newBlockEntity(BlockPos.ZERO,owner);
@@ -400,7 +457,7 @@ final class AuthoringFixtureRegistry {
             var half=block.getStateDefinition().getProperty("half");
             boolean multiblockShaped=block.getStateDefinition().getProperty("part")!=null||(half!=null&&valueNames(half).contains("lower"));
             if(block instanceof EntityBlock&&get(block)==null)problems.add(key+": unclassified BlockEntity block");
-            if(multiblockShaped&&(get(block)==null||get(block).multiblock()==null))problems.add(key+": unclassified multi-part block");
+            if(multiblockShaped&&!LEGACY_HALF.contains(key.getPath())&&(get(block)==null||get(block).multiblock()==null))problems.add(key+": unclassified multi-part block");
         }
         return problems;
     }

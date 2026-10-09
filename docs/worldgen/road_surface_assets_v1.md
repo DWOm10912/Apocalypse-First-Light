@@ -1,5 +1,14 @@
 # AFL Road Surface Assets V1 — 道路静态资产契约
 
+> **已移除（2026-10-08，用户要求）**：`road_asphalt_surface`、`road_sidewalk_surface`、`road_utility_surface`、`road_curb` 四个方块已经删掉。
+> - 删除的东西：方块类、注册、物品、方块状态、112 个面层模型、掉落表、挖掘标签、中英文名，以及生成器 `tools/generate-road-surface-assets.mjs`。
+> - 原因：贴图是临时的（人行道就是钢筋混凝土贴图），除了实机验收没通过的道路 V1-B 施工代码之外没有别的用处。以后路面、路缘做成正式的 mesh 模型。
+> - 道路 V1-B 的规划代码保留：`RoadConstructionMaterials` 改成满格占位，沥青用 `asphalt`，人行道和路缘用 `reinforced_concrete`，设施带用草方块。规划的 1/16 高度还检查，但不再建出来。
+> - A1 店铺的人行道删之前已在开发存档里换成 `reinforced_concrete`（188 格），外观相同。
+> - 开发存档里别处如果还有这四种方块（比如道路 V1-B 的测试路段），进游戏后会变成空气。
+>
+> 下面是当时的内容，留作参考，不再是现行状态。
+
 状态：**已实现代码、注册与静态资源；美术为最小可用版本，实机放置、行走、采掘掉落和视觉尚未验证。**
 
 本文服务于[北美道路 V1-B](north_american_roads_v1b_implementation.md)，服从[统一道路与地块规格 V1](north_american_roads_and_lots_spec_v1.md)。四个 Registry ID 是正式接口，后续 Claude 替换美术不更换 ID、状态名、坐标或碰撞契约。

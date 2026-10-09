@@ -1,0 +1,19 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/underground-fuel-tank-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_tank_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                if (!log.exists() || !log.getText('UTF-8').contains('[AFL TANK ROTATION TEST] PASS')) {
+                    throw new GradleException('Underground fuel tank rotation test did not execute')
+                }
+            }
+        }
+    }
+}

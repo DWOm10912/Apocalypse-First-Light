@@ -1,7 +1,6 @@
 {
   "replace": false,
   "values": [
-    "apocalypse_firstlight:road_utility_surface",
     "apocalypse_firstlight:fallout_soil",
     "apocalypse_firstlight:scorched_soil"
   ]

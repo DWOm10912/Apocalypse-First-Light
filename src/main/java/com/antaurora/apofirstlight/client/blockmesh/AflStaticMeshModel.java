@@ -62,11 +62,12 @@ import java.util.function.Function;
  * each part's pivot, rest pose and settled animation pose), the mesh UVs mapped into the profile texture's block atlas
  * sprite ({@code ns:textures/block/x.png} is sprite {@code ns:block/x}), a back face for every part that is not a closed
  * solid (the renderer draws without face culling), flat lighting (no ambient occlusion, like the renderer), cutout layer
- * (no mipmaps without shaders, like the renderer's texture). Shading: with a shader pack, white and the chunk's own
+ * (no mipmaps without shaders, like the renderer's texture) and, for glass, the translucent layer (2026-10-08: the terrain
+ * translucent program gives it the same shader-pack glass as the Storefront Glazing). Shading: with a shader pack, white and the chunk's own
  * shading (the pack lights both paths); without one, the renderer's entity diffuse lighting baked into the vertex colour
  * so the parts match those the renderer still draws.
  * <p>
- * A part is left to the renderer when its UVs leave the texture (an atlas sprite cannot repeat) or it reaches more than
+ * A part (both its layers) is left to the renderer when its UVs leave the texture (an atlas sprite cannot repeat) or it reaches more than
  * {@link #REACH} block outside its cell (Embeddium frustum-tests a chunk section with a 1.125 block margin); the chunk
  * reports the parts it really drew ({@link AflMeshChunking#confirm}). Built once per variant and resource generation and
  * cached; read on the chunk builder threads, it only touches immutable snapshots, never the level or a block entity.
@@ -74,7 +75,7 @@ import java.util.function.Function;
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class AflStaticMeshModel {
     public static final String LOADER = "static_mesh";
-    private static final ChunkRenderTypeSet LAYERS = ChunkRenderTypeSet.of(RenderType.cutout());
+    private static final ChunkRenderTypeSet LAYERS = ChunkRenderTypeSet.of(RenderType.cutout(), RenderType.translucent());
     /** UVs may sit this far outside 0..1 (exporter rounding); further out the face would need a repeating texture */
     private static final float UV_SLACK = 1e-3F;
     /** how far chunk geometry may reach outside its cell */
@@ -83,8 +84,8 @@ public final class AflStaticMeshModel {
     private static final Vector3f L0 = new Vector3f(0.2F, 1.0F, -0.7F).normalize(), L1 = new Vector3f(-0.2F, 1.0F, 0.7F).normalize(),
             NETHER_L1 = new Vector3f(-0.2F, -1.0F, 0.7F).normalize();
 
-    private record Built(List<BakedQuad> quads, long lo, long hi) {}
-    private static final Built NOTHING = new Built(List.of(), 0, 0);
+    private record Built(List<BakedQuad> cutout, List<BakedQuad> translucent, List<BakedQuad> all, long lo, long hi) {}
+    private static final Built NOTHING = new Built(List.of(), List.of(), List.of(), 0, 0);
     private static final Map<AflMeshChunking.Variant, Built> BUILT = new ConcurrentHashMap<>();
     private static volatile long builtGeneration = Long.MIN_VALUE;
     private static final Set<String> WARNED = ConcurrentHashMap.newKeySet();
@@ -131,12 +132,13 @@ public final class AflStaticMeshModel {
         public @NotNull List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @NotNull RandomSource random,
                                                  @NotNull ModelData data, @Nullable RenderType renderType) {
             if (side != null || !AflRenderDev.staticMesh()) return List.of();
-            if (renderType != null && renderType != RenderType.cutout()) return List.of();
+            if (renderType != null && renderType != RenderType.cutout() && renderType != RenderType.translucent()) return List.of();
             AflMeshChunking.Snapshot snapshot = data.get(AflMeshChunking.SNAPSHOT);
             if (snapshot == null || snapshot.variant().empty()) return List.of();
             Built built = built(snapshot.variant());
+            // asked once per layer; confirm keeps the first report of a snapshot
             if (!com.antaurora.apofirstlight.client.MirrorReflection.meshing()) AflMeshChunking.confirm(snapshot, built.lo(), built.hi());
-            return built.quads();
+            return renderType == null ? built.all() : renderType == RenderType.cutout() ? built.cutout() : built.translucent();
         }
 
         @Override
@@ -166,9 +168,8 @@ public final class AflStaticMeshModel {
         ResourceLocation texture = profile.texture();
         String path = texture.getPath();
         if (!path.startsWith("textures/") || !path.endsWith(".png")) return NOTHING;
-        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
-                .apply(new ResourceLocation(texture.getNamespace(), path.substring(9, path.length() - 4)));
-        if (sprite == null || sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation())) {
+        TextureAtlasSprite sprite = atlasSprite(texture);
+        if (sprite == null) {
             warn(profile + ":texture", "{}: texture {} is not in the block atlas; drawn by the block entity renderer", profile.geometry(), texture);
             return NOTHING;
         }
@@ -180,6 +181,7 @@ public final class AflStaticMeshModel {
         int n = layout.parts.length;
         Matrix4f[] poses = new Matrix4f[n];
         var out = new ArrayList<BakedQuad>();
+        var glass = new ArrayList<BakedQuad>();
         long lo = 0, hi = 0;
         for (int i = 0; i < n; i++) {
             Part part = layout.parts[i];
@@ -190,17 +192,30 @@ public final class AflStaticMeshModel {
             double t = c >= 0 && (v.ones() >>> c & 1) != 0 ? 1 : 0;
             poses[i] = pose(base, part, parentPivot, t);
             if (!v.has(i)) continue;
-            int start = out.size();
-            String problem = emit(mesh.parts(part.bone(), AflMeshPart.Layer.CUTOUT), poses[i], sprite, v.shading(), out);
+            int start = out.size(), glassStart = glass.size();
+            String problem = emit(mesh.parts(part.bone(), AflMeshPart.Layer.CUTOUT), poses[i], sprite, v.shading(), true, out);
+            if (problem == null) problem = emit(mesh.parts(part.bone(), AflMeshPart.Layer.TRANSLUCENT), poses[i], sprite, v.shading(), true, glass);
             if (problem != null) {
                 out.subList(start, out.size()).clear();
+                glass.subList(glassStart, glass.size()).clear();
                 warn(profile + ":" + part.bone() + ":" + v.facing(), "{} facing {}: part {} {}; drawn by the block entity renderer",
                         profile.geometry(), v.facing(), part.bone(), problem);
                 continue;
             }
             if (i < 64) lo |= 1L << i; else hi |= 1L << (i - 64);
         }
-        return new Built(List.copyOf(out), lo, hi);
+        var all = new ArrayList<BakedQuad>(out);
+        all.addAll(glass);
+        return new Built(List.copyOf(out), List.copyOf(glass), List.copyOf(all), lo, hi);
+    }
+
+    /** The block atlas sprite of a profile texture ({@code ns:textures/block/x.png} is {@code ns:block/x}); null when it is not there. */
+    static @Nullable TextureAtlasSprite atlasSprite(ResourceLocation texture) {
+        String path = texture.getPath();
+        if (!path.startsWith("textures/") || !path.endsWith(".png")) return null;
+        TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
+                .apply(new ResourceLocation(texture.getNamespace(), path.substring(9, path.length() - 4)));
+        return sprite == null || sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation()) ? null : sprite;
     }
 
     private static void warn(String key, String message, Object... args) {
@@ -230,9 +245,10 @@ public final class AflStaticMeshModel {
      * The faces of one part at pose m, as AflMeshRenderer#renderPartsAtCurrentPose writes them: ABCD for quads, ABCC for
      * triangles, the boundary reversed under a mirroring pose, the first corner's normal for the whole face. Faces of an
      * open part also get their back side (reversed boundary, reversed normal). Vertex layout: DefaultVertexFormat.BLOCK.
-     * Null, or why the part cannot be baked.
+     * Null, or why the part cannot be baked. reach: keep within {@link #REACH} of the cell (chunk geometry; off for
+     * AflMovingGlass, whose pose is view space).
      */
-    private static String emit(List<AflMeshPart> parts, Matrix4f m, TextureAtlasSprite sprite, int shading, List<BakedQuad> out) {
+    static String emit(List<AflMeshPart> parts, Matrix4f m, TextureAtlasSprite sprite, int shading, boolean reach, List<BakedQuad> out) {
         if (parts.isEmpty()) return null;
         float determinant = m.determinant3x3();
         if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12F) return null;   // zero scale: nothing to draw
@@ -262,7 +278,7 @@ public final class AflStaticMeshModel {
                     if (tu < -UV_SLACK || tu > 1 + UV_SLACK || tv < -UV_SLACK || tv > 1 + UV_SLACK) return "has UVs outside its texture";
                     position.set(part.value(index, 0), part.value(index, 1), part.value(index, 2));
                     m.transformPosition(position);
-                    if (outside(position.x) || outside(position.y) || outside(position.z))
+                    if (reach && (outside(position.x) || outside(position.y) || outside(position.z)))
                         return "reaches more than " + REACH + " block beyond its cell";
                     x[corner] = position.x; y[corner] = position.y; z[corner] = position.z;
                     u[corner] = u0 + du * Math.max(0, Math.min(1, tu));

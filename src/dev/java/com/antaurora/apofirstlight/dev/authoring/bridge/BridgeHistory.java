@@ -47,15 +47,28 @@ final class BridgeHistory {
         }
     }
 
+    /**
+     * Undo depth (2026-10-08, docs/dev/minecraft_authoring_mcp_v1.md "Shared history"): at most MAX_ENTRIES entries and
+     * MAX_CHANGES recorded changes. Reaching either no longer stops the build (it used to throw HISTORY_LIMIT after 32
+     * edits, and big builds had to cancel and resume the reservation): the oldest undo entries are dropped instead, so
+     * only the most recent edits stay undoable.
+     */
+    static final int MAX_ENTRIES=512;
+    static final long MAX_CHANGES=4_000_000;
     private BuildingAuthoringSession owner;
     private final Deque<Entry> undo=new ArrayDeque<>(),redo=new ArrayDeque<>();
+    private long dropped;
     /** A new reservation invalidates all history. */
-    void bind(BuildingAuthoringSession s){if(owner!=s){undo.clear();redo.clear();owner=s;}}
-    /** Bound memory while keeping every accepted edit undoable until session cancel/world change. */
+    void bind(BuildingAuthoringSession s){if(owner!=s){undo.clear();redo.clear();dropped=0;owner=s;}}
+    /** Makes room for an edit of {@code affected} changes: drops the redo side, then the oldest undo entries. */
     void reserve(long affected){
-        if(undo.size()+redo.size()>=32||undo.stream().mapToLong(Entry::size).sum()+affected>1_000_000)
-            throw new IllegalArgumentException("HISTORY_LIMIT: finish/review session before more edits");
+        while(!undo.isEmpty()&&(undo.size()+redo.size()>=MAX_ENTRIES||undo.stream().mapToLong(Entry::size).sum()+affected>MAX_CHANGES)){
+            if(!redo.isEmpty()){redo.clear();continue;}
+            undo.removeLast();dropped++;
+        }
     }
+    /** Undo entries dropped by {@link #reserve} since the reservation began. */
+    long dropped(){return dropped;}
     void push(Entry entry){undo.push(entry);redo.clear();}
     JsonObject step(boolean forward,boolean dry,ServerPlayer p,BridgeBounds scope,long start) throws Exception {
         var source=forward?redo:undo;var target=forward?undo:redo;

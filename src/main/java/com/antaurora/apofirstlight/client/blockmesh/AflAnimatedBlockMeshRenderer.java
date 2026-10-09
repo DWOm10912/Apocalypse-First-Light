@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
@@ -54,25 +55,30 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             var cutout = RenderType.entityCutoutNoCull(profile.texture());
             long timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
             draw(entity, profile, mesh, time, pose, buffers.getBuffer(cutout),
-                    packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT, layout, skip);
+                    packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT, layout, skip, null);
             com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.cutout", timing);
             if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
                 timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(cutout);
                 var translucent = RenderType.entityNoOutline(profile.texture());
-                draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
-                        packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT, layout, NO_SKIP);
+                // resting glass is in the chunk's translucent layer (AflMeshChunking): only moving glass is drawn here, and
+                // with a shader pack it is queued for after the translucent terrain (AflMovingGlass) so the pack draws it
+                // with the same program as the chunk glass
+                var deferred = AflShaderCompat.shaderPackInUse() ? AflStaticMeshModel.atlasSprite(profile.texture()) : null;
+                boolean glass = draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
+                        packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT, layout, skip, deferred);
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(translucent);
-                // Emissive parts once more, after the glass. Packs without gbuffers_block_translucent (Sundial) draw the
-                // glass with gbuffers_block, which overwrites the material buffers behind it; the redraw writes the
-                // emissive parts' material back (see RelitType for why it lands after the glass).
+                // Emissive parts once more, after the glass this renderer drew. Packs without gbuffers_block_translucent
+                // (Sundial) draw that glass with gbuffers_block, which overwrites the material buffers behind it; the
+                // redraw writes the emissive parts' material back (see RelitType for why it lands after the glass).
+                // Chunk glass goes through the terrain translucent program and needs no redraw.
                 var relit = RelitType.of(profile.texture());
                 VertexConsumer relitVertices = null;
-                for (var part : profile.roots()) {
+                if (glass) for (var part : profile.roots()) {
                     if (!hasVisibleEmissive(entity, part)) continue;
                     if (relitVertices == null) relitVertices = buffers.getBuffer(relit);
                     drawPart(entity, part, Vec3.ZERO, mesh, time, pose, relitVertices, packedLight, packedOverlay,
-                            AflMeshPart.Layer.CUTOUT, true, layout, NO_SKIP);
+                            AflMeshPart.Layer.CUTOUT, true, layout, NO_SKIP, null);
                 }
                 if (relitVertices != null && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(relit);
                 com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.glass_and_relit", timing);
@@ -89,22 +95,26 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
 
     private static final long[] NO_SKIP = new long[2];
 
-    private static void draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
-                             PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
-                             AflMeshChunking.Layout layout, long[] skip) {
+    /** Whether any geometry was submitted to vertices (deferred: glass queued in AflMovingGlass instead, at this sprite). */
+    private static boolean draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
+                                PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
+                                AflMeshChunking.Layout layout, long[] skip, TextureAtlasSprite deferred) {
+        boolean drew = false;
         for (var part : profile.roots())
-            drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer, false, layout, skip);
+            drew |= drawPart(host, part, Vec3.ZERO, mesh, time, pose, vertices, light, overlay, layer, false, layout, skip, deferred);
+        return drew;
     }
 
     /**
      * emissiveOnly: only the geometry of emissive parts (the after-glass redraw); the pose still walks every part. skip:
-     * pre-order part bits whose geometry the chunk draws (their children are still walked).
+     * pre-order part bits whose geometry the chunk draws (their children are still walked). Whether any geometry was submitted.
      */
-    private static void drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
+    private static boolean drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
                                  PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
-                                 boolean emissiveOnly, AflMeshChunking.Layout layout, long[] skip) {
-        if (!host.meshPartVisible(part.bone())) return;
+                                 boolean emissiveOnly, AflMeshChunking.Layout layout, long[] skip, TextureAtlasSprite deferred) {
+        if (!host.meshPartVisible(part.bone())) return false;
         AflBlockMeshAnimationState animation = host.meshAnimation();
+        boolean drew = false;
         pose.pushPose();
         try {
             Transform rest = part.rest();
@@ -121,12 +131,18 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             boolean emissive = host.meshPartEmissive(part.bone());
             int index = layout.indexOf(part);
             boolean chunk = index >= 0 && (index < 64 ? (skip[0] >>> index & 1L) != 0 : (skip[1] >>> (index - 64) & 1L) != 0);
-            if ((emissive || !emissiveOnly) && !chunk)
-                AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(part.bone(), layer), pose, vertices,
-                        emissive ? LightTexture.FULL_BRIGHT : light, overlay, 1, 1, 1, 1, null);
+            if ((emissive || !emissiveOnly) && !chunk) {
+                var geometry = mesh.parts(part.bone(), layer);
+                int partLight = emissive ? LightTexture.FULL_BRIGHT : light;
+                if (deferred == null || geometry.isEmpty() || !AflMovingGlass.queue(geometry, pose.last().pose(), deferred, partLight)) {
+                    AflMeshRenderer.renderPartsAtCurrentPose(geometry, pose, vertices, partLight, overlay, 1, 1, 1, 1, null);
+                    drew = !geometry.isEmpty();
+                }
+            }
             for (var child : part.children())
-                drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer, emissiveOnly, layout, skip);
+                drew |= drawPart(host, child, part.pivot(), mesh, time, pose, vertices, light, overlay, layer, emissiveOnly, layout, skip, deferred);
         } finally { pose.popPose(); }
+        return drew;
     }
 
     /**

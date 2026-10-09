@@ -4,7 +4,7 @@
 
 本文件是给 Codex、结构制作与 WorldEdit 建筑任务使用的方块选择入口。Registry ID、BlockState 和运行时行为仍以当前仓库源码与资源为最终真相。
 
-道路V1-B新增永久`road_asphalt_surface`、`road_sidewalk_surface`、`road_utility_surface`、`road_curb`，统一layers=1..16及G/S高度；路缘另有facing/shape。它们采用普通道路镐/铲规则，不继承工业Diamond门槛。模型、贴图、碰撞、转角及Claude后续美术替换接口见[道路V1-B](../worldgen/north_american_roads_v1b_implementation.md)与[道路静态资产](../worldgen/road_surface_assets_v1.md)，实际走行和Survival掉落仍待用户验收。
+（2026-10-08 已移除，见 [Road Surface Assets V1](../worldgen/road_surface_assets_v1.md)；下面这句是当时的说明）道路V1-B新增永久`road_asphalt_surface`、`road_sidewalk_surface`、`road_utility_surface`、`road_curb`，统一layers=1..16及G/S高度；路缘另有facing/shape。它们采用普通道路镐/铲规则，不继承工业Diamond门槛。模型、贴图、碰撞、转角及Claude后续美术替换接口见[道路V1-B](../worldgen/north_american_roads_v1b_implementation.md)与[道路静态资产](../worldgen/road_surface_assets_v1.md)，实际走行和Survival掉落仍待用户验收。
 
 ## 2026-09-21 钢结构资产状态
 

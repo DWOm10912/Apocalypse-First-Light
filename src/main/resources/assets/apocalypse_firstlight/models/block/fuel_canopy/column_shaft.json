@@ -4,7 +4,7 @@
   "automatic_culling": false,
   "flip_v": true,
   "shade_quads": true,
-  "ambientocclusion": false,
+  "ambientocclusion": true,
   "textures": {
     "particle": "apocalypse_firstlight:block/fuel_canopy"
   }

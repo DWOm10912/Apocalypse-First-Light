@@ -27,12 +27,34 @@
 ## 方块和放置
 
 - **尺寸**：3（宽）× 3（高）× 7（长）格，共 63 格。
-- **方块状态**：`axis`（x / z，罐的走向）、`along` 0..6、`across` 0..2、`level` 0..2。
+- **方块状态**：`axis`（x / z，罐的走向）、`flipped`（2026-10-08，见下面"朝向和旋转"）、`along` 0..6、`across` 0..2、`level` 0..2。
 - **主格**：接口格（3, 1, 2），在罐顶正中。它画整个罐、持有方块实体，顶面是流体接口；其它格不渲染（`RenderShape.INVISIBLE`），模型是只有粒子贴图的 `underground_fuel_tank/cell`。
 - **卸油口格**（2026-10-05）：罐尾顶上那格（6, 1, 2），`FILL_ALONG = 6`。顶面是第二个流体接口。它也有一个方块实体，但自己不存油：流体能力直接交给主格的罐（`UndergroundFuelTankBlock.isFill`）。
-- **放置**：点击的位置是罐的底层正中格（3, 1, 0），罐身朝玩家视线方向延伸。63 格必须都可替换、没有液体、没有实体挡着，否则放不下。现实里先挖一个 3×3×7 的坑，在坑底中间放。
+- **放置**：点击的位置是罐的底层正中格（3, 1, 0），罐身沿玩家视线方向，卸油口那头在远端（2026-10-08 起；以前卸油口总在南端或东端，朝北、朝西看着放时在玩家这头）。63 格必须都可替换、没有液体、没有实体挡着，否则放不下。现实里先挖一个 3×3×7 的坑，在坑底中间放。
 - **拆除**：拆任意一格，整个罐一起消失，只掉一个物品。拆主格时走掉落表；拆别的格时，生存模式玩家用对的工具才掉。罐里的油丢失。
 - **完整性检查**：缺格时剩下的格自己消失（每格在形状更新时安排一次 tick 检查）。
+## 朝向和旋转（2026-10-08）
+
+**原来的 bug**（2026-10-07 读代码查出，当时没修）：
+- `rotate` 只把 `axis` 在 x / z 之间换一下，没有重算每一格的 `along` / `across`。
+- 结构模板转 90° 或 180° 放下后，各格的编号和它们的新位置对不上，完整性检查第一 tick 就把整罐拆掉。只有不转时正常。
+- 而且只有 `axis` 一个属性，罐只能表示两种朝向：卸油口在南端（z）或东端（x）。所以转 180° 时，卸油口必然跑到罐的另一头，接在它上面的管道和卸油口盖就对不上了。
+
+**现在**：
+- 新属性 `flipped`：+along（指向卸油口那头）是南 / 东，`flipped=true` 时反过来是北 / 西。旧存档里的罐没有这个属性，读成 false，不受影响。
+- `across` 总是朝东（z）或朝南（x）增加。罐横截面左右对称，所以四个朝向就是同一个罐身转四次。
+- `rotate` / `mirror`：每一格保留 `along`、`level`，按转过去的 +along 定 `axis` 和 `flipped`；+across 转成 −across 时 `across` 改成 2 − across。转过的模板里，每一格正好是转后那个罐的对应格，卸油口跟着转到该去的位置。
+- 碰撞箱：四个朝向各一套，罐头的弧面在 along 0 和 6 的外侧。
+- 方块状态（生成器 `tools/build-underground-fuel-tank-v1.mjs`）：主格罐体按 +along 转：南 y 0、东 y 270、北 y 180、西 y 90。
+- 代码接口：`alongDir(axis, flipped)` / `alongDir(state)`，`cellPosition(root, alongDirection, along, across, level)`，`stateFor(alongDirection, …)`，`cells(root, alongDirection)`（整罐 63 格）。`fluid/FuelContainers`、`/dev fuel station`、建造工具都改用这套。
+- 验证：
+  - 离线推算 4 个朝向 × 4 种旋转 × 2 种镜像，504 格都能算回同一个罐、卸油口位置正确。
+  - GameTest `dev/UndergroundFuelTankRotationGameTests`（`src/dev/underground-fuel-tank-gametest.init.gradle`）：
+    - 纯计算部分：4 个朝向 × 3 种镜像 × 4 种旋转；
+    - 世界部分：存成模板后转 90 / 180 / 270 度和左右镜像放下，几 tick 后检查 63 格都在、主格有方块实体。
+    - **只编译，没有运行。**
+- 还没实机看过：旋转后的模型方向。A1 加油区的罐都是 `flipped=true`，世界里卸油口朝北，见 [加油区施工记录](../worldgen/fuel_stop_a1_forecourt_build_v1.md)。
+
 - **挖掘**：玻璃钢加钢件，算工业设施。`minecraft:mineable/pickaxe` + `minecraft:needs_diamond_tool`，`requiresCorrectToolForDrops()`，硬度 / 抗性 5.0 / 8.0，`SoundType.STONE`。
 - **碰撞箱**：按圆截面近似。每格按 4 px 一列取圆弧内的高度；两头的格稍短；主格加上人孔和接口；卸油口格加上立管和接口。
 - **重量**：`item_mass` 150 kg（估计），`carry/oversized`。
@@ -59,7 +81,7 @@
 | 标签 | 两侧各两块弧形色板（贴着罐身，在 22 和 33 两道肋之间，±14°），短管上一圈色带。汽油红 [166,46,38]，柴油黄 [204,158,34]，搪瓷，光滑度 150 |
 | 材质（LabPBR） | 玻璃钢 [178,150,100]（低频斑驳加一点沿轴向的缠绕纹），肋 [166,138,90]，F0 24；钢盖、底板、起吊耳 [62,66,72]；方接管 [46,49,54]；接口板 [62,66,72]；螺栓 [124,128,133] F0 30。钢件和管道 V2 用同一套深色钢；没有画上去的装饰 |
 | 模型 | `models/block/underground_fuel_tank/{gasoline,diesel}.obj/.json`（罐体 + 对应标签），`cell.json`（只有粒子贴图），共用 `underground_fuel_tank.mtl`；`forge:obj`，不用环境光遮蔽 |
-| 方块状态 | `blockstates/underground_fuel_tank_{gasoline,diesel}.json`：multipart，所有格挂 `cell`，主格（`along=3, across=1, level=2`）再挂罐体，`axis=x` 时转 y 270。2026-10-05 由 90 改成 270：加了卸油口以后模型前后不对称，转 90 会让卸油口落在罐的另一头，和卸油口格对不上 |
+| 方块状态 | `blockstates/underground_fuel_tank_{gasoline,diesel}.json`：multipart，所有格挂 `cell`，主格（`along=3, across=1, level=2`）再挂罐体，按 `axis` / `flipped` 转：z / false y 0，x / false y 270，z / true y 180，x / true y 90（后两种 2026-10-08 加）。2026-10-05 由 90 改成 270：加了卸油口以后模型前后不对称，转 90 会让卸油口落在罐的另一头，和卸油口格对不上 |
 | 贴图 | `textures/block/underground_fuel_tank{,_s,_n}.png`（2048，7.75 texel/px，1202 个 UV 岛）；可编辑源 `src/main/blockbench/underground_fuel_tank_v1.bbmodel`，贴图 `src/main/blockbench/textures/underground_fuel_tank_v1{,_s,_n}.png` |
 | 统计 | 三角形：罐体 5008，每套标签 352；共面 0 |
 | 物品栏 | 父模型是对应的方块模型，rotation `[30,225,0]`，scale 0.13，translation `[0,1.589,0]`（加了卸油口后由生成器重新居中） |
@@ -70,4 +92,4 @@
 - 原版没有平滑法线光照，圆柱会看出棱面；光影下是圆的。
 - 潜油泵、泵井盖、卸油口盖已做（2026-10-05，见 [fuel_station_sump_v1.md](fuel_station_sump_v1.md)）。罐里的油经潜油泵送到加油机，油枪能滋到地上、给地上的油壶和油桶加油；拿着油壶对着打开的卸油口倒油能灌进罐里，手摇泵能从卸油口往外抽（[Fuel Containers V1](fuel_containers_v1.md)，用户 2026-10-08 确认倒油能灌进罐）。还没做：油罐车卸油。
 - 被挖掉时油直接丢失，不会洒出来。被子弹打中会漏油（玻璃钢，不打火花）；着火后会烧或爆炸，爆炸时油烧着洒出来，见 [fuel_fire_v1.md](../gameplay/fuel_fire_v1.md) 第二阶段（2026-10-05）。地面上的爆炸隔着土碰不到它。
-- 没有放进作者工具（`AuthoringFixtureRegistry`）。
+- 2026-10-08 放进了作者工具（`AuthoringFixtureRegistry` 的格子布局 `FUEL_TANK`：`place_multiblock`，anchor 是底层正中格，facing 指向卸油口那头），见 [minecraft_authoring_mcp_v1.md](../dev/minecraft_authoring_mcp_v1.md)。

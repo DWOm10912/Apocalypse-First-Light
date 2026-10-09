@@ -39,8 +39,8 @@ final class FixtureAdapter {
         for(String key:a.keySet())if(!PLACE_ARGUMENTS.contains(key))throw new IllegalArgumentException("UNSUPPORTED_ARGUMENT: "+key+" (raw NBT/state data is never accepted)");
         var f=AuthoringFixtureRegistry.require(string(a,"block_id",""));
         if(!f.allowed())throw new IllegalArgumentException("FIXTURE_NOT_ALLOWED: "+f.id()+" is "+f.authoringClass()+" ("+f.notes()+")");
-        if(multi&&f.multiblock()==null)throw new IllegalArgumentException("NOT_A_MULTIBLOCK: use place_fixture for "+f.id());
-        if(!multi&&f.multiblock()!=null)throw new IllegalArgumentException("MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK: "+f.id());
+        if(multi&&!f.structured())throw new IllegalArgumentException("NOT_A_MULTIBLOCK: use place_fixture for "+f.id());
+        if(!multi&&f.structured())throw new IllegalArgumentException("MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK: "+f.id());
         var anchor=pos(a,multi?"anchor":"pos");
         Direction facing=null;
         if(a.has("facing")){facing=Direction.byName(string(a,"facing",""));if(facing==null)throw new IllegalArgumentException("INVALID_FACING: "+string(a,"facing",""));}
@@ -127,6 +127,9 @@ final class FixtureAdapter {
             var pos=e.getKey();var below=pos.below();
             boolean ok=switch(f.support()){
                 case FLOOR -> targets.containsKey(below)||level.getBlockState(below).isFaceSturdy(level,below,Direction.UP);
+                case FLOOR_OR_COLUMN -> targets.containsKey(below)||level.getBlockState(below).isFaceSturdy(level,below,Direction.UP)
+                        ||level.getBlockState(below).getBlock() instanceof com.antaurora.apofirstlight.block.FuelCanopyColumnBlock
+                        ||level.getBlockState(below).getBlock() instanceof com.antaurora.apofirstlight.block.PowerCableBlock;
                 case FLOOR_OR_DESK -> level.getBlockState(below).getBlock() instanceof com.antaurora.apofirstlight.block.ModernOfficeDeskBlock
                         ||level.getBlockState(below).isFaceSturdy(level,below,Direction.UP);
                 case FLOOR_CLEAR_ABOVE -> level.getBlockState(below).isFaceSturdy(level,below,Direction.UP)
@@ -160,14 +163,14 @@ final class FixtureAdapter {
 
     /** Rechecks the light of the plot (or a crop) grown by margin (default 8): no blocks change, no history entry. */
     private JsonObject relight(JsonObject a,ServerPlayer p,BridgeBounds scope,long start){
-        var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level);
+        var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level,BridgeBounds.PLOT_LIMIT);
         int margin=integer(a,"margin",8);if(margin<0||margin>BridgeLighting.MAX_MARGIN)throw new IllegalArgumentException("INVALID_MARGIN_0_TO_16");
         int queued=BridgeLighting.recheck(level,b,margin);
         var out=BridgeHistory.result(0,start,b,false);out.addProperty("queued",queued);out.addProperty("margin",margin);
         out.addProperty("note","Light checks run on the light thread; read light slices a moment later.");return out;
     }
     private JsonObject reconcile(JsonObject a,ServerPlayer p,BuildingAuthoringSession s,BridgeBounds scope,long start){
-        var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level);
+        var level=p.serverLevel();var b=a.has("min")&&a.has("max")?new BridgeBounds(pos(a,"min"),pos(a,"max")):scope;b.inside(scope);b.check(level,BridgeBounds.PLOT_LIMIT);
         var changes=new ArrayList<BridgeHistory.Change>();var skipped=new ArrayList<String>();
         // Jacobi pass: every new shape is computed from the unchanged world before anything is written.
         for(var pos:BlockPos.betweenClosed(b.min(),b.max())){
@@ -193,7 +196,7 @@ final class FixtureAdapter {
 
     /** Read-only: canSurvive, multiblock completeness, BlockEntity policy/inventory and stale connection states. */
     static JsonObject audit(ServerLevel level,BridgeBounds b){
-        b.check(level);var issues=new JsonArray();var counts=new TreeMap<String,Integer>();var anchors=new HashSet<String>();int scanned=0;
+        b.check(level,BridgeBounds.PLOT_LIMIT);var issues=new JsonArray();var counts=new TreeMap<String,Integer>();var anchors=new HashSet<String>();int scanned=0;
         for(var pos:BlockPos.betweenClosed(b.min(),b.max())){
             var s=level.getBlockState(pos);if(s.isAir())continue;scanned++;
             var f=AuthoringFixtureRegistry.get(s.getBlock());String id=AuthoringFixtureRegistry.id(s.getBlock());
@@ -204,6 +207,14 @@ final class FixtureAdapter {
                 else if(!f.allowed())issue(issues,counts,pos,id,"UNSAFE_BLOCK_ENTITY",f.authoringClass().name());
                 if(f!=null&&AuthoringFixtureRegistry.ownsBlockEntity(s)&&be==null)issue(issues,counts,pos,id,"MISSING_BLOCK_ENTITY","This part should own the fixture BlockEntity");
                 if(be!=null){var problem=AuthoringRegionGuard.inventoryProblem(be);if(problem!=null)issue(issues,counts,pos,id,problem,"Authoring sources must be empty (no items or loot tables)");}
+            }
+            if(f!=null&&f.layout()!=null){
+                var l=f.layout();var anchor=l.anchorOf(pos,s);var facing=l.facingOf(s);
+                if(anchors.add(anchor.toShortString()+"/"+facing+"/"+id))for(var e:l.cells(s.getBlock(),anchor,facing).entrySet()){
+                    if(!level.isLoaded(e.getKey()))continue;var actual=level.getBlockState(e.getKey());
+                    if(!actual.is(s.getBlock()))issue(issues,counts,e.getKey(),id,"ORPHAN_PART","Missing cell of the structure anchored at "+anchor.toShortString());
+                    else if(!actual.equals(e.getValue()))issue(issues,counts,e.getKey(),id,"PART_STATE_MISMATCH","Expected "+e.getValue());
+                }
             }
             if(f!=null&&f.multiblock()!=null){
                 var m=f.multiblock();var facing=Direction.byName(AuthoringFixtureRegistry.value(s,f.facingProperty()));var part=AuthoringFixtureRegistry.value(s,m.partProperty());

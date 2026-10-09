@@ -251,7 +251,12 @@ const FACE_INFO = {'-y': [[0, 2], [[0, 1], [0, 0], [1, 0], [1, 1]]], '+y': [[0, 
   '-z': [[0, 1], [[1, 1], [1, 0], [0, 0], [0, 1]]], '+z': [[0, 1], [[0, 1], [0, 0], [1, 0], [1, 1]]],
   '-x': [[1, 2], [[1, 0], [0, 0], [0, 1], [1, 1]]], '+x': [[1, 2], [[1, 1], [0, 1], [0, 0], [1, 0]]]};
 function faceInfoOrder(V, ids, where) {
-  const n = norm(newell(ids.map(i => V[i]))), ax = [0, 1, 2].find(k => Math.abs(n[k]) > 0.999);
+  const n = norm(newell(ids.map(i => V[i])));
+  let ax = [0, 1, 2].find(k => Math.abs(n[k]) > 0.999);
+  // a vertical bevel (the column's 45-degree chamfers, 2026-10-08): ordered as the side it is nearest, z before x as
+  // Direction.getNearest takes north / south before west / east on a tie; its corners project onto that side's rectangle,
+  // so the light still runs bottom to top the same way
+  if (ax === undefined && Math.abs(n[1]) < 1e-6) ax = Math.abs(n[2]) >= Math.abs(n[0]) - 1e-6 ? 2 : 0;
   assert(ids.length === 4 && ax !== undefined, `smooth-lit model needs axis-aligned rectangles: ${where}`);
   const [axes, corners] = FACE_INFO[(n[ax] > 0 ? '+' : '-') + 'xyz'[ax]];
   const lo = axes.map(a => Math.min(...ids.map(i => V[i][a]))), hi = axes.map(a => Math.max(...ids.map(i => V[i][a])));
@@ -270,7 +275,9 @@ function objOf(b, title, file, bones, {rot = 0, ao = false} = {}) {
     for (const q of V) out.push(`v ${f6(q[0])} ${f6(q[1])} ${f6(q[2])}`);
     const uvs = b.UV.faceUV.get(p), vt = [], vn = [], fl = [], cn = cornerNormals(V, F), nIndex = new Map();
     F.forEach((f, k) => {
-      const uv = uvs.get(f), order = ao ? faceInfoOrder(V, f.ids, p.name) : f.ids.map((id, j) => j);
+      // the column tube's end caps (triangulated, inside the stack) keep their order: no light runs across them
+      const cap = p.bone === 'column_shaft' && f.ids.length !== 4;
+      const uv = uvs.get(f), order = ao && !cap ? faceInfoOrder(V, f.ids, p.name) : f.ids.map((id, j) => j);
       fl.push('f ' + order.map(j => [f.ids[j], j]).map(([id, j]) => {
         const n = cn[k][j], key = n.map(f6).join(' ');
         if (!nIndex.has(key)) { nIndex.set(key, nBase + vn.length); vn.push('vn ' + key); }
@@ -284,7 +291,10 @@ function objOf(b, title, file, bones, {rot = 0, ao = false} = {}) {
 }
 const mtlOf = (b, title, glow) => `# AFL ${title}\nnewmtl ${b.id}\nKd 1 1 1\n${glow ? 'Ka 1 1 1\n' : ''}map_Kd apocalypse_firstlight:block/${b.id}\n`;
 // smooth lighting (ambient occlusion) on the canopy's flat runs: with flat lighting every block's soffit took one light
-// value and the canopy showed a checkerboard of steps (2026-10-04, in game); the column and the lenses stay flat
+// value and the canopy showed a checkerboard of steps (2026-10-04, in game); the lenses stay flat. The column shaft is
+// smooth-lit since 2026-10-08: under the canopy the sky light drops one level per block downward, and flat-lit segments
+// showed one shade each (user, in game); smooth light gives each segment's ends the mean of the two cells it joins.
+// The base and the head are one cell each and stay flat.
 const objModel = (file, ao = false) => ({loader: 'forge:obj', model: `apocalypse_firstlight:models/block/${file}.obj`, automatic_culling: false,
   flip_v: true, shade_quads: true, ambientocclusion: ao, textures: {particle: 'apocalypse_firstlight:block/fuel_canopy'}});
 const r3 = v => +v.toFixed(3) || 0;
@@ -321,7 +331,7 @@ const model = (file, title, bones, glow = false, ao = false, rot = 0) => {
 const T = 'Fuel Canopy V1';
 model('fuel_canopy/column_base', T + ' column, bottom segment', ['column_base']);
 model('fuel_canopy/column_base_curb', T + ' column, bottom segment set into an island curb', ['column_base_curb']);
-model('fuel_canopy/column_shaft', T + ' column segment', ['column_shaft']);
+model('fuel_canopy/column_shaft', T + ' column segment', ['column_shaft'], false, true);
 model('fuel_canopy/column_head', T + ' column head (under the canopy)', ['column_head']);
 model('fuel_canopy/ceiling', T + ' ceiling', ['ceiling'], false, true);
 model('fuel_canopy/light', T + ' ceiling light', ['light'], false, true);

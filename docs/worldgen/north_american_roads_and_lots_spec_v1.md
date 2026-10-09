@@ -55,7 +55,7 @@
 
 1/16 是道路施工高度量化单位，不是 NBT 坐标的小数精度。路段采用整数 h16 表面高度（S=h16/16）设计；V1 水平地块接入点必须满足 h16=16G−3。不同高程连接采用 1/16 递增的施工过渡，不移动整栋 NBT 来补差。
 
-局部 S→G 出入口过渡默认 3 格，表面依次 14/16、15/16、16/16（同一 G−1 方块格）。V1-B 已新增永久 `road_asphalt_surface`、`road_sidewalk_surface`、`road_utility_surface`、`road_curb`，统一支持layers=1..16；车辆横穿侧带后缓降至地块停车入口S，行人接G。其静态模型与VoxelShape同高，实机走行尚待验证。普通完整asphalt及加油岛专用3px路缘不替代这些道路接口。具体状态、模型/贴图、内外角、工具及碰撞契约见[V1-B实施记录](north_american_roads_v1b_implementation.md)。
+局部 S→G 出入口过渡默认 3 格，表面依次 14/16、15/16、16/16（同一 G−1 方块格）。（2026-10-08：下面提到的四个道路方块已移除，见 [Road Surface Assets V1](road_surface_assets_v1.md)。）V1-B 已新增永久 `road_asphalt_surface`、`road_sidewalk_surface`、`road_utility_surface`、`road_curb`，统一支持layers=1..16；车辆横穿侧带后缓降至地块停车入口S，行人接G。其静态模型与VoxelShape同高，实机走行尚待验证。普通完整asphalt及加油岛专用3px路缘不替代这些道路接口。具体状态、模型/贴图、内外角、工具及碰撞契约见[V1-B实施记录](north_american_roads_v1b_implementation.md)。
 
 V1 道路纵坡默认上限 1:16：每前进至少 1 格升降最多 1/16；路口节点内部平坦，接入建筑的入口喉部平坦。地块采用单一 G；地块采样高差默认最多 3 格，局部切/填各最多 3 格，超过预算拒绝/换址，不实施全区域削平。V1 拒绝水域、陡坡和需要桥隧的边。
 

@@ -41,8 +41,6 @@ import com.antaurora.apofirstlight.block.ChemicalReactorBlock;
 import com.antaurora.apofirstlight.block.LeadChestBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingBlock;
 import com.antaurora.apofirstlight.block.RoadMarkingStepConnectorBlock;
-import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
-import com.antaurora.apofirstlight.block.RoadCurbBlock;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -490,19 +488,9 @@ public final class AflBlocks {
                     .sound(SoundType.STONE).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> ASPHALT = BLOCKS.register("asphalt",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).requiresCorrectToolForDrops()));
-    // Permanent V1-B quantized surfaces. Ordinary road materials intentionally require no high salvage tier.
-    public static final RegistryObject<Block> ROAD_ASPHALT_SURFACE = BLOCKS.register("road_asphalt_surface",
-            () -> new RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
-                    .strength(1.5F, 6.0F).requiresCorrectToolForDrops().noOcclusion(), 13));
-    public static final RegistryObject<Block> ROAD_SIDEWALK_SURFACE = BLOCKS.register("road_sidewalk_surface",
-            () -> new RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
-                    .strength(1.5F, 6.0F).requiresCorrectToolForDrops().noOcclusion(), 16));
-    public static final RegistryObject<Block> ROAD_UTILITY_SURFACE = BLOCKS.register("road_utility_surface",
-            () -> new RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
-                    .strength(0.5F).noOcclusion(), 16));
-    public static final RegistryObject<Block> ROAD_CURB = BLOCKS.register("road_curb",
-            () -> new RoadCurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
-                    .strength(1.5F, 6.0F).requiresCorrectToolForDrops().noOcclusion()));
+    // The North American roads V1-B quantized surfaces (road_asphalt_surface, road_sidewalk_surface, road_utility_surface,
+    // road_curb) were removed on 2026-10-08 at the user's request: placeholder textures, unused outside V1-B construction
+    // (user FAIL); road surfaces come back as proper meshes (docs/worldgen/road_surface_assets_v1.md).
     public static final RegistryObject<Block> THERMAL_GENERATOR = BLOCKS.register("thermal_generator",
             () -> new ThermalGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .lightLevel(state -> state.getValue(ThermalGeneratorBlock.LIT) ? 9 : 0)

@@ -21,7 +21,7 @@ final class WorldInspector {
         return s.isSolid()?"#":"?";
     }
     static JsonObject inspect(ServerLevel level,BridgeBounds b){
-        b.check(level);Map<String,Integer> palette=new TreeMap<>();Set<String> types=new HashSet<>();List<JsonObject> densities=new ArrayList<>();List<Integer> floors=new ArrayList<>();
+        b.check(level,BridgeBounds.PLOT_LIMIT);Map<String,Integer> palette=new TreeMap<>();Set<String> types=new HashSet<>();List<JsonObject> densities=new ArrayList<>();List<Integer> floors=new ArrayList<>();
         int nonAir=0,be=0,minY=Integer.MAX_VALUE,maxY=Integer.MIN_VALUE,lastBand=-10000;
         for(int y=b.min().getY();y<=b.max().getY();y++){
             int occupied=0,solid=0;
@@ -39,7 +39,7 @@ final class WorldInspector {
         return object("bounds",b.json(),"non_air",nonAir,"air_ratio",1.0-nonAir/(double)b.volume(),"unique_block_count",types.size(),"palette_count",palette.size(),"palette",entries,"palette_truncated",palette.size()>256,"block_entities",be,"entities",level.getEntities(null,b.aabb()).size(),"min_occupied_y",nonAir==0?null:minY,"max_occupied_y",nonAir==0?null:maxY,"occupied_height",nonAir==0?0:maxY-minY+1,"horizontal_density",densities,"likely_floor_bands",floors,"estimated_floor_count",Math.max(0,floors.size()-1),"estimated_floor_height",gaps.isEmpty()?null:gaps.get(gaps.size()/2),"confidence",floors.size()>2?"LOW_HEURISTIC":"INSUFFICIENT","analysis_note","Solid-density >=65% bands; roofs/foundations may be counted. Confirm with slices.");
     }
     static JsonObject slice(ServerLevel level,BridgeBounds b,JsonObject a,boolean horizontal){
-        b.check(level);String mode=string(a,"encoding","category");if(!Set.of("category","palette","block_light","sky_light").contains(mode))throw new IllegalArgumentException("INVALID_ENCODING");
+        b.check(level,BridgeBounds.PLOT_LIMIT);String mode=string(a,"encoding","category");if(!Set.of("category","palette","block_light","sky_light").contains(mode))throw new IllegalArgumentException("INVALID_ENCODING");
         int step=integer(a,"downsample",1);if(step<1||step>32)throw new IllegalArgumentException("INVALID_DOWNSAMPLE");
         String axis=horizontal?"Y":string(a,"axis","X");if(!Set.of("X","Y","Z").contains(axis))throw new IllegalArgumentException("INVALID_AXIS");
         int c=integer(a,"coordinate",horizontal?b.min().getY():b.min().getX());
@@ -57,7 +57,7 @@ final class WorldInspector {
         return object("bounds",b.json(),"axis",axis,"coordinate",c,"encoding",mode,"downsample",step,"sampling","nearest grid sample, not majority","row_order",axis.equals("Y")?"Z ascending; columns X ascending":"Y descending; columns remaining horizontal axis ascending","rows",rows,"legend",LEGEND,"palette",mode.equals("palette")?palette:Map.of());
     }
     static JsonObject facade(ServerLevel level,BridgeBounds b,JsonObject a){
-        b.check(level);String side=string(a,"side","SOUTH");if(!Set.of("NORTH","SOUTH","EAST","WEST").contains(side))throw new IllegalArgumentException("INVALID_SIDE");
+        b.check(level,BridgeBounds.PLOT_LIMIT);String side=string(a,"side","SOUTH");if(!Set.of("NORTH","SOUTH","EAST","WEST").contains(side))throw new IllegalArgumentException("INVALID_SIDE");
         int depth=integer(a,"depth",3),step=integer(a,"downsample",1);if(depth<1||depth>16||step<1||step>32)throw new IllegalArgumentException("INVALID_DEPTH_OR_STEP");
         boolean alongX=side.equals("NORTH")||side.equals("SOUTH");int w=alongX?b.width():b.depth(),h=b.height();
         if((long)((w+step-1)/step)*((h+step-1)/step)>4096)throw new IllegalArgumentException("FACADE_TOO_LARGE");

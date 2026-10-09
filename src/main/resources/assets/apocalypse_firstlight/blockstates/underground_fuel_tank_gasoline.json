@@ -8,6 +8,7 @@
     {
       "when": {
         "axis": "z",
+        "flipped": "false",
         "along": "3",
         "across": "1",
         "level": "2"
@@ -19,6 +20,7 @@
     {
       "when": {
         "axis": "x",
+        "flipped": "false",
         "along": "3",
         "across": "1",
         "level": "2"
@@ -26,6 +28,32 @@
       "apply": {
         "model": "apocalypse_firstlight:block/underground_fuel_tank/gasoline",
         "y": 270
+      }
+    },
+    {
+      "when": {
+        "axis": "z",
+        "flipped": "true",
+        "along": "3",
+        "across": "1",
+        "level": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/underground_fuel_tank/gasoline",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "axis": "x",
+        "flipped": "true",
+        "along": "3",
+        "across": "1",
+        "level": "2"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/underground_fuel_tank/gasoline",
+        "y": 90
       }
     }
   ]
