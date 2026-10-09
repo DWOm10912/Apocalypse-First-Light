@@ -21,6 +21,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -385,8 +386,11 @@ outputs.push([path.join(assets, 'blockstates/commercial_wall_mounted_sink.json')
   [`facing=${f},half=lower`, {model: 'apocalypse_firstlight:block/commercial_wall_mounted_sink', ...(y ? {y} : {})}],
   [`facing=${f},half=upper`, {model: 'apocalypse_firstlight:block/commercial_wall_mounted_sink_upper'}]]))})]);
 outputs.push([path.join(assets, 'models/item/commercial_flushometer_toilet.json'), json({parent: 'apocalypse_firstlight:block/commercial_flushometer_toilet', gui_light: 'side', display: display(B.toilet, [30, 200, 0], 0.95, 0.5)})]);   // gui scale 0.95: at 1.25 the icon was 19.1 px tall and stuck out of the 16 px slot (user 2026-10-08); now 14.5 px
-outputs.push([path.join(assets, 'models/item/commercial_wall_mounted_sink.json'), json({parent: 'apocalypse_firstlight:block/commercial_wall_mounted_sink', gui_light: 'side', display: display(B.lav, [30, 225, 0], 1.2, 0.5, -6)})]);
-outputs.push([path.join(assets, 'models/item/wall_mirror.json'), json({parent: 'apocalypse_firstlight:block/wall_mirror', gui_light: 'side', display: display(B.mirror, [0, 180, 0], 1.25, 0.5, -2)})]);
+// held, dropped and framed fitted to the basin's bounds (tools/item-held-display.mjs, 2026-10-09: the fixed lift left it half a block low)
+outputs.push([path.join(assets, 'models/item/commercial_wall_mounted_sink.json'), json({parent: 'apocalypse_firstlight:block/commercial_wall_mounted_sink', gui_light: 'side',
+  display: {...heldDisplay(B.lav.PARTS.flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.6, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(B.lav, [30, 225, 0], 1.2)}})]);
+outputs.push([path.join(assets, 'models/item/wall_mirror.json'), json({parent: 'apocalypse_firstlight:block/wall_mirror', gui_light: 'side',
+  display: {...heldDisplay(B.mirror.PARTS.flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.6, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(B.mirror, [0, 180, 0], 1.25)}})]);   // fitted as the lavatory
 
 const tris = b => b.PARTS.reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = Object.fromEntries(Object.entries(B).map(([k, b]) => [k, {triangles: tris(b), texelsPerPx: b.UV.S, islands: b.UV.islands.length}]));

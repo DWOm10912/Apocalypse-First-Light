@@ -18,6 +18,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -323,7 +324,8 @@ for (const look of ['off', 'charging', 'on']) model(`emergency_light/${look}`, `
   for (const [f, y] of Object.entries(YROT)) for (const look of ['off', 'charging', 'on']) variants[`facing=${f},mode=${look}`] = {model: `apocalypse_firstlight:block/emergency_light/${look}`, ...(y ? {y} : {})};
   outputs.push([path.join(assets, 'blockstates/emergency_light.json'), json({variants})]);
   outputs.push([path.join(assets, 'models/item/emergency_light.json'), json({parent: 'apocalypse_firstlight:block/emergency_light/off', gui_light: 'side',
-    display: display(B.emergency, bonesOf.emergency('off'), [10, 200, 0], 1.6, 0.9)})]);
+    display: {...heldDisplay(B.emergency.PARTS.filter(p => bonesOf.emergency('off').has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.7, rotations: {fixed: [0, 180, 0]}}),
+      gui: guiCentred(B.emergency, bonesOf.emergency('off'), [10, 200, 0], 1.6)}})]);   // held, dropped and framed fitted to the model's bounds (tools/item-held-display.mjs, 2026-10-09): the fixed contexts put this off-centre model beside or above the hand
 }
 
 const tris = (b, bones) => b.PARTS.filter(p => bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);

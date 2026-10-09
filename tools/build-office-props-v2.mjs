@@ -25,6 +25,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, AX, extrude, revolve, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -424,6 +425,7 @@ function guiCentred(pieces, rotation, scale) {
   return {rotation, translation: [r3(-scale * cx), r3(-scale * cy), 0], scale: [scale, scale, scale]};
 }
 const S3 = v => [v, v, v];
+const cellPoints = pieces => pieces.flatMap(({b, offset = [0, 0, 0]}) => b.PARTS.flatMap(p => p.v.map(q => [q[0] + offset[0] + 8, q[1] + offset[1], q[2] + offset[2] + 8])));
 function display(kind, pieces) {
   const hand = (s, t) => ({
     thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, t, 0], scale: S3(s)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, t, 0], scale: S3(s)}});
@@ -437,12 +439,10 @@ function display(kind, pieces) {
     case 'monitor': case 'station': return {...hand(0.65, 2), firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 2, 0], scale: S3(0.7)},
       firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 2, 0], scale: S3(0.7)}, gui: guiCentred(pieces, [25, 135, 0], 0.72),
       ground: {translation: [0, 2, 0], scale: S3(0.65)}, fixed: {rotation: [0, 180, 0], translation: [0, 0, 0], scale: S3(0.7)}};
-    case 'keyboard': return {...hand(0.8, 2.5), firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: S3(0.9)},
-      firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: S3(0.9)}, gui: guiCentred(pieces, [30, 135, 0], 0.95),
-      ground: {translation: [0, 2, 0], scale: S3(0.8)}, fixed: {rotation: [0, 180, 0], translation: [0, 0, 0], scale: S3(0.9)}};
-    case 'mouse': return {...hand(1.4, 2.5), firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: S3(1.6)},
-      firstperson_lefthand: {rotation: [0, -135, 0], translation: [0, 2.5, 0], scale: S3(1.6)}, gui: guiCentred(pieces, [25, 152, 0], 1.8),
-      ground: {translation: [0, 2, 0], scale: S3(1.3)}, fixed: {rotation: [0, -180, 0], scale: S3(1.5)}};
+    // keyboard and mouse lie on the cell's floor: held, dropped and framed fitted to their bounds (tools/item-held-display.mjs,
+    // 2026-10-09; the fixed contexts put the mouse a block below the hand and 1.4 blocks low in a frame)
+    case 'keyboard': return {...heldDisplay(cellPoints(pieces), {size: 1.0, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(pieces, [30, 135, 0], 0.95)};
+    case 'mouse': return {...heldDisplay(cellPoints(pieces), {size: 0.5, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(pieces, [25, 152, 0], 1.8)};
   }
 }
 // Selection outlines (cell px 0..16, facing=north, before the lowered sink): one clean box per block (the desk: per cell, its

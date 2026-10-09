@@ -85,5 +85,11 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
   - `north` / `east` / `south` / `west`（V2）：哪几边有路牙。写方块时写上旁边是路的那几边，或者写完跑 `reconcile_shapes`。只要旁边的路还在，不写也照样显示。
 - 内角那一格（斜对角是路、两边都是路牙）也要放路牙方块，否则拐角会缺一小块。
 
+场地照明（2026-10-09，[Site Lighting V1](../models/site_lighting_v1.md)，镀锌灰；都是镐 + 钻石级）：
+- 停车场灯杆按格叠：`light_pole_base`（地面上一格，`facing` 朝场内；有方块实体，只能 `place_fixture`；底面是电力接口，下面那一格放地下电缆）→ `light_pole` × 7（第一节写 `handhole=<底座的 facing>`，其余 `handhole=none`）→ `area_light`（`facing` = 第一个灯头的方向，`heads=single|twin|twin_corner|triple|quad`，`lit=false`）。灯头悬在杆顶旁边那一格，那一格要留空。
+- `wall_pack`（`facing` 背离墙，`lit=false`）：建筑外墙上，走配电盘的"照明"那一路，白天灭。
+- `canopy_downlight`（`lit=false`）：`metal_eyebrow_canopy` 下面那一格，同上。
+- `lamp_glow` 是灯杆亮时自己放的隐藏光源点，不要写它（建造工具会拒绝）。
+
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

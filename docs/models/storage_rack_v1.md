@@ -66,3 +66,5 @@
 
 - 没有实机验证。
 - 一组货架只在同朝向、同高度、正左右相邻时共用立柱；背靠背或转角不合并。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

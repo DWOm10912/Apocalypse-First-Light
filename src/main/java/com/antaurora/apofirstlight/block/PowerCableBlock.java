@@ -73,7 +73,7 @@ public final class PowerCableBlock extends PipeBlock {
             BlockState neighborState = level.getBlockState(neighborPos);
             boolean connect;
             if (!neighborState.is(this)) {
-                connect = isUtilityPortFace(neighborState, direction.getOpposite());
+                connect = isUtilityPortFace(neighborState, direction.getOpposite()) || throughCurb(level, neighborPos, neighborState, direction);
             } else {
                 int links = links(neighborState);
                 Direction only = links == 1 ? firstLink(neighborState) : null;
@@ -97,13 +97,13 @@ public final class PowerCableBlock extends PipeBlock {
         return null;
     }
 
-    /** A neighbouring cable's side is mirrored (both ends always agree); power ports connect whenever present. */
+    /** A neighbouring cable's side is mirrored (both ends always agree); power ports connect whenever present (also through a curb). */
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                   LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         boolean connect = neighborState.is(this)
                 ? neighborState.getValue(PROPERTY_BY_DIRECTION.get(direction.getOpposite()))
-                : isUtilityPortFace(neighborState, direction.getOpposite());
+                : isUtilityPortFace(neighborState, direction.getOpposite()) || throughCurb(level, neighborPos, neighborState, direction);
         return state.setValue(PROPERTY_BY_DIRECTION.get(direction), connect);
     }
 
@@ -217,6 +217,17 @@ public final class PowerCableBlock extends PipeBlock {
     /** True when {@code face} of this block is an AFL power port ({@link AflPowerPortBlock}). */
     public static boolean isUtilityPortFace(BlockState machineState, Direction face) {
         return machineState.getBlock() instanceof AflPowerPortBlock port && port.hasPowerPort(machineState, face);
+    }
+
+    /**
+     * Site Lighting V1 (2026-10-09): a cable under a curb feeds the power port on top of the curb, as a conduit runs under the
+     * curb into a light pole's pier. The side up into a curb ({@code curbPos}) connects when the block standing on the curb
+     * has a port in its bottom face (a light pole base on the lot's curb row); PowerCableTransfer then takes that block as the
+     * endpoint. Only curbs: any other block between still breaks the line.
+     */
+    public static boolean throughCurb(BlockGetter level, BlockPos curbPos, BlockState curbState, Direction direction) {
+        return direction == Direction.UP && curbState.getBlock() instanceof CurbBlock
+                && isUtilityPortFace(level.getBlockState(curbPos.above()), Direction.DOWN);
     }
 
     /** Client prompt: the cable side a sneak toggle would change, if that side leads to another cable. */

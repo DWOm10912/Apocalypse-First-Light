@@ -66,6 +66,11 @@
     "apocalypse_firstlight:heat_resistant_intake_pump",
     "apocalypse_firstlight:lead_shielding_bricks",
     "apocalypse_firstlight:distribution_panel",
-    "apocalypse_firstlight:service_meter_box"
+    "apocalypse_firstlight:service_meter_box",
+    "apocalypse_firstlight:light_pole_base",
+    "apocalypse_firstlight:light_pole",
+    "apocalypse_firstlight:area_light",
+    "apocalypse_firstlight:wall_pack",
+    "apocalypse_firstlight:canopy_downlight"
   ]
 }

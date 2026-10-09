@@ -117,11 +117,13 @@ public final class PowerCableTransfer {
                     continue;
                 }
                 Direction face = direction.getOpposite();
-                if (!keys.add(new EndpointKey(neighbor, face))) continue;
-                BlockEntity be = level.getBlockEntity(neighbor);
+                // a curb between: the port on top of it (PowerCableBlock#throughCurb, Site Lighting V1)
+                BlockPos endpoint = PowerCableBlock.throughCurb(level, neighbor, neighborState, direction) ? neighbor.above() : neighbor;
+                if (!keys.add(new EndpointKey(endpoint, face))) continue;
+                BlockEntity be = level.getBlockEntity(endpoint);
                 if (be != null) {
                     be.getCapability(ForgeCapabilities.ENERGY, face).resolve().ifPresent(storage -> {
-                        if (storages.add(storage)) endpoints.add(new Endpoint(neighbor, face, storage));
+                        if (storages.add(storage)) endpoints.add(new Endpoint(endpoint, face, storage));
                     });
                 }
             }

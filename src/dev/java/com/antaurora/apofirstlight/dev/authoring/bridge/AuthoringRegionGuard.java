@@ -29,6 +29,7 @@ final class AuthoringRegionGuard {
     static String materialProblem(BlockState s){
         var hazard=hazard(s);if(hazard!=null)return hazard;
         String id=AuthoringFixtureRegistry.id(s.getBlock());
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.LampGlowBlock)return "UNSAFE_OR_DYNAMIC_BLOCK: "+id+" (a lit light pole's runtime light point; place the pole)";
         if(s.hasBlockEntity())return "UNSAFE_OR_DYNAMIC_BLOCK: "+id+" (block entities are placed only through place_fixture/place_multiblock)";
         if(AuthoringFixtureRegistry.structured(s))return "MULTIBLOCK_REQUIRES_PLACE_MULTIBLOCK: "+id;
         return null;
@@ -82,7 +83,8 @@ final class AuthoringRegionGuard {
         b.inside(scope);var level=p.serverLevel();b.check(level);
         if(!level.getEntities(null,b.aabb()).isEmpty())throw new IllegalArgumentException("ENTITY_IN_EDIT_REGION: leave the work area");
         for(var pos:BlockPos.betweenClosed(b.min(),b.max())){
-            var s=level.getBlockState(pos);if(s.isAir())continue;
+            // a lit pole's light points (Site Lighting V1) are replaceable runtime light, edited over like air
+            var s=level.getBlockState(pos);if(s.isAir()||s.getBlock() instanceof com.antaurora.apofirstlight.block.LampGlowBlock)continue;
             var hazard=hazard(s);if(hazard!=null)throw new IllegalArgumentException(hazard);
             var problem=blockEntityProblem(level,pos,s);
             if(problem!=null)throw new IllegalArgumentException("UNSAFE_BLOCK_ENTITY_PRESENT: "+AuthoringFixtureRegistry.id(s.getBlock())+" at "+pos.toShortString()+" reason="+problem);

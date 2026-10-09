@@ -21,6 +21,7 @@
     "minecraft:cactus",
     "apocalypse_firstlight:fallout_soil",
     "apocalypse_firstlight:scorched_soil",
-    "apocalypse_firstlight:fused_ground"
+    "apocalypse_firstlight:fused_ground",
+    "apocalypse_firstlight:lamp_glow"
   ]
 }

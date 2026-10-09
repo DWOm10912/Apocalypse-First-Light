@@ -44,6 +44,8 @@ public final class MachineBalanceManager {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "water_dispenser");
     private static final ResourceLocation FUEL_CANOPY_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fuel_canopy");
+    private static final ResourceLocation SITE_LIGHT_ID =
+            new ResourceLocation(ApocalypseFirstLight.MOD_ID, "site_light");
     private static final ResourceLocation FUEL_DISPENSER_ID =
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "fuel_dispenser");
     private static final ResourceLocation CHARGING_STATION_ID =
@@ -71,6 +73,7 @@ public final class MachineBalanceManager {
     private static volatile ApplianceBalance waterDispenser = fallbackWaterDispenser();
     private static volatile ApplianceBalance fuelDispenser = fallbackFuelDispenser();
     private static volatile ApplianceBalance fuelCanopy = fallbackFuelCanopy();
+    private static volatile ApplianceBalance siteLight = fallbackSiteLight();
     private static volatile CrusherBalance crusher = fallbackCrusher();
     private static volatile IndustrialFurnaceBalance industrialFurnace = fallbackIndustrialFurnace();
     private static volatile CompressorBalance compressor = fallbackCompressor();
@@ -132,6 +135,14 @@ public final class MachineBalanceManager {
      */
     public static ApplianceBalance fuelCanopy() {
         return fuelCanopy;
+    }
+
+    /**
+     * Site Lighting V1 parking-lot pole, lights only: the base's buffer and intake, and light_fe_per_tick per lamp head on
+     * the pole (LightPoleBaseBlockEntity); the compressor fields are 0.
+     */
+    public static ApplianceBalance siteLight() {
+        return siteLight;
     }
 
     public static CrusherBalance crusher() {
@@ -270,6 +281,8 @@ public final class MachineBalanceManager {
                     fallbackFuelDispenser());
             ApplianceBalance loadedFuelCanopy = loadLightsOnly(resources.get(FUEL_CANOPY_ID), "fuel_canopy.json",
                     fallbackFuelCanopy());
+            ApplianceBalance loadedSiteLight = loadLightsOnly(resources.get(SITE_LIGHT_ID), "site_light.json",
+                    fallbackSiteLight());
             CrusherBalance loadedCrusher = loadCrusher(resources.get(CRUSHER_ID));
             IndustrialFurnaceBalance loadedIndustrialFurnace =
                     loadIndustrialFurnace(resources.get(INDUSTRIAL_FURNACE_ID));
@@ -288,6 +301,7 @@ public final class MachineBalanceManager {
             waterDispenser = loadedDispenser;
             fuelDispenser = loadedFuelDispenser;
             fuelCanopy = loadedFuelCanopy;
+            siteLight = loadedSiteLight;
             crusher = loadedCrusher;
             industrialFurnace = loadedIndustrialFurnace;
             compressor = loadedCompressor;
@@ -613,6 +627,11 @@ public final class MachineBalanceManager {
     /** Same values as machine_balance/fuel_canopy.json (lights only, light_fe_per_tick per lamp). */
     private static ApplianceBalance fallbackFuelCanopy() {
         return new ApplianceBalance(2000, 200, 1, 0, 0, 0);
+    }
+
+    /** Same values as machine_balance/site_light.json (lights only, light_fe_per_tick per lamp head). */
+    private static ApplianceBalance fallbackSiteLight() {
+        return new ApplianceBalance(800, 80, 1, 0, 0, 0);
     }
 
     private static CrusherBalance fallbackCrusher() {

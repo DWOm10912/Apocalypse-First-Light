@@ -23,6 +23,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, AX, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
 import {addPowerPort, portHole} from './afl-power-port.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -447,9 +448,9 @@ function guiCentred(points, rotation, scale) {
 }
 function dispenserDisplay(b, bones) {
   const pts = b.PARTS.filter(p => bones.has(p.bone)).flatMap(p => p.v.map(q => toCell(q).map(v => v * 16)));
-  return {gui: guiCentred(pts, [30, 225, 0], 0.27), ground: {translation: [0, 2, 0], scale: S3(0.16)}, fixed: {rotation: [0, 180, 0], translation: [0, -2, 0], scale: S3(0.28)},
-    thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.18)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.18)},
-    firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1.5, 0], scale: S3(0.22)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 1.5, 0], scale: S3(0.22)}};
+  // held, dropped and framed fitted to the dispenser's bounds (tools/item-held-display.mjs, 2026-10-09: the fixed contexts
+  // showed its upper half above the hand)
+  return {...heldDisplay(pts, {size: 1.0, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(pts, [30, 225, 0], 0.27)};
 }
 // the nozzle in the hand: the spout forward (into the screen) and a little down, the hose leaving the grip's back end
 function nozzleDisplay(b, bone) {

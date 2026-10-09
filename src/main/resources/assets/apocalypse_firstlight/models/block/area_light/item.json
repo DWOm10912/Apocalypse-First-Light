@@ -1,0 +1,17 @@
+{
+  "loader": "forge:composite",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/area_light"
+  },
+  "children": {
+    "top": {
+      "parent": "apocalypse_firstlight:block/area_light/top"
+    },
+    "head": {
+      "parent": "apocalypse_firstlight:block/area_light/head_off"
+    },
+    "photocell": {
+      "parent": "apocalypse_firstlight:block/area_light/photocell"
+    }
+  }
+}

@@ -120,3 +120,5 @@ V1 的 Blockbench 源文件和导出脚本还在仓库里（`src/main/blockbench
 - 碰撞和选中框；
 - 生存模式挖掘和掉落：马桶、洗手盆要铁镐，镜子任意镐；
 - 旧存档里洗手池的上半格会不会自己消失，A1 重新摆放后镜子能不能挂上去。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

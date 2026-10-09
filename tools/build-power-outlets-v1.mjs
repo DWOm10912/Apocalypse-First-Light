@@ -21,6 +21,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {iecOutline, INLET} from './afl-iec-inlet.mjs';
 import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -291,10 +292,11 @@ function guiCentred(b, bones, rotation, scale) {
   return {rotation, translation: [r3(-scale * cx), r3(-scale * cy), 0], scale: [scale, scale, scale]};
 }
 const S3 = v => [v, v, v];
-const display = (b, bones, gui, guiScale, s) => ({
-  thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s)},
-  firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 2.5, 0], scale: S3(s * 1.1)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 2.5, 0], scale: S3(s * 1.1)},
-  gui: guiCentred(b, bones, gui, guiScale), ground: {translation: [0, 2, 0], scale: S3(s)}, fixed: {rotation: [0, 180, 0], translation: [0, 0, 0], scale: S3(s * 1.1)}});
+// held, dropped and framed fitted to the model's bounds (tools/item-held-display.mjs, 2026-10-09: with fixed contexts the
+// outlet, on the cell's wall side, was a block beside the hand and the strips, on its floor, below it); size = times a held block
+const display = (b, bones, gui, guiScale, size) => ({
+  ...heldDisplay(b.PARTS.filter(p => !bones || bones.has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size, rotations: {fixed: [0, 180, 0]}}),
+  gui: guiCentred(b, bones, gui, guiScale)});
 
 // selection boxes (cell px, facing=north, before the desk sink), mirrored in WallOutletBlock / PowerStripBlock
 export const SELECTION = {wall_outlet: [6.9, 3.4, 15.5, 9.1, 7.8, 16], power_strip_3: [5.3, 0, 7.15, 10.7, 1.25, 8.85], power_strip_6: [4.9, 0, 6.5, 11.1, 1.25, 9.5]};
@@ -351,7 +353,7 @@ model('wall_outlet', 'Power Outlets V1 wall outlet', B.outlet, null);
     variants[`facing=${f},lower=${lo},upper=${up}`] = {model: 'apocalypse_firstlight:block/wall_outlet', ...(y ? {y} : {})};
   outputs.push([path.join(assets, 'blockstates/wall_outlet.json'), json({variants})]);
   outputs.push([path.join(assets, 'models/item/wall_outlet.json'), json({parent: 'apocalypse_firstlight:block/wall_outlet', gui_light: 'side',
-    display: display(B.outlet, null, [10, 200, 0], 4.2, 1.6)})]);
+    display: display(B.outlet, null, [10, 200, 0], 4, 0.5)})]);   // 4 = vanilla's display scale limit (4.2 was drawn at 4, off-centre)
 }
 // strips: off / on (unlit) / lit (on with power), each also on the desk
 for (const n of [3, 6]) {
@@ -366,7 +368,7 @@ for (const n of [3, 6]) {
     variants[`facing=${f},lit=${lit},lowered=${low},on=${on}`] = {model: `apocalypse_firstlight:block/${id}/${on ? (lit ? 'lit' : 'on') : 'off'}${low ? '_lowered' : ''}`, ...(y ? {y} : {})};
   outputs.push([path.join(assets, `blockstates/${id}.json`), json({variants})]);
   outputs.push([path.join(assets, `models/item/${id}.json`), json({parent: `apocalypse_firstlight:block/${id}/on`, gui_light: 'side',
-    display: display(B.strip, new Set(['body' + n, `rocker${n}_on`, `led${n}_off`]), [30, 135, 0], n === 3 ? 2.6 : 2.3, n === 3 ? 1.1 : 0.95)})]);
+    display: display(B.strip, new Set(['body' + n, `rocker${n}_on`, `led${n}_off`]), [30, 135, 0], n === 3 ? 2.6 : 2.3, n === 3 ? 0.6 : 0.7)})]);
 }
 // the plug, centred on the block centre (renderer turns it about (0.5, 0.5, 0.5))
 model('power_plug', 'Power Outlets V1 plug', B.strip, new Set(['plug']), [0, 8, 0]);

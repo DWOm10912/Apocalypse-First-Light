@@ -1,0 +1,4 @@
+# AFL Site Lighting V1 area light head (off)
+newmtl head
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/area_light

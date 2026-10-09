@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "handhole=none": {
+      "model": "apocalypse_firstlight:block/light_pole/plain"
+    },
+    "handhole=north": {
+      "model": "apocalypse_firstlight:block/light_pole/handhole"
+    },
+    "handhole=east": {
+      "model": "apocalypse_firstlight:block/light_pole/handhole",
+      "y": 90
+    },
+    "handhole=south": {
+      "model": "apocalypse_firstlight:block/light_pole/handhole",
+      "y": 180
+    },
+    "handhole=west": {
+      "model": "apocalypse_firstlight:block/light_pole/handhole",
+      "y": 270
+    }
+  }
+}

@@ -60,7 +60,7 @@
 
 ## 旧资源（已过时）
 
-- **鼠标物品模型**：原来手写的 cube 几何物品模型（`models/item/office_mouse.json`）已被生成的物品模型替换，父模型是新的方块模型，各场合的变换数值保留。
+- **鼠标物品模型**：原来手写的 cube 几何物品模型（`models/item/office_mouse.json`）已被生成的物品模型替换，父模型是新的方块模型，各场合的变换数值保留（2026-10-09 起键盘、鼠标的手持、掉落、展示框改成按包围盒居中，见文末）。
 - **V1 cube 源**：`office_keyboard.bbmodel`、`office_mouse.bbmodel` 保留作参考。
 - **不要再运行** `tools/office-keyboard-delivery.mjs`、`tools/office-mouse-delivery.mjs`：它们会把 V1 贴图写回运行时贴图。
 - **运行时导出脚本**：`tools/export-office-props-runtime.mjs` 已删除，方块和物品模型现在由 `tools/build-office-props-v2.mjs` 生成。方块状态文件没变，不再由脚本生成。
@@ -72,3 +72,5 @@
 - 物品栏图标居中；
 - 键帽在远处是否闪烁；
 - 生存掉落。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

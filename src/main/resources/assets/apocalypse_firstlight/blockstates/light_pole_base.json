@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apocalypse_firstlight:block/light_pole_base/base"
+    },
+    "facing=east": {
+      "model": "apocalypse_firstlight:block/light_pole_base/base"
+    },
+    "facing=south": {
+      "model": "apocalypse_firstlight:block/light_pole_base/base"
+    },
+    "facing=west": {
+      "model": "apocalypse_firstlight:block/light_pole_base/base"
+    }
+  }
+}

@@ -93,6 +93,12 @@
   "block.apocalypse_firstlight.industrial_utility_light": "Square LED Panel Light",
   "block.apocalypse_firstlight.linear_light": "Linear LED Light",
   "block.apocalypse_firstlight.emergency_light": "Emergency Light",
+  "block.apocalypse_firstlight.light_pole_base": "Light Pole Base",
+  "block.apocalypse_firstlight.light_pole": "Light Pole",
+  "block.apocalypse_firstlight.area_light": "LED Area Light",
+  "block.apocalypse_firstlight.wall_pack": "LED Wall Pack",
+  "block.apocalypse_firstlight.canopy_downlight": "Canopy Downlight",
+  "block.apocalypse_firstlight.lamp_glow": "Lamp Light",
   "block.apocalypse_firstlight.industrial_locker": "Locker",
   "block.apocalypse_firstlight.modern_office_desk": "Office Desk",
   "block.apocalypse_firstlight.modern_office_chair": "Office Chair",
@@ -678,5 +684,7 @@
   "gui.apocalypse_firstlight.key_hint.page": "Next page",
   "gui.apocalypse_firstlight.key_hint.place_gun": "Place / take back gun",
   "jade.apocalypse_firstlight.emergency_light.battery": "Battery %s%%",
+  "jade.apocalypse_firstlight.light_pole_base.charge": "Charge %s%%",
+  "config.jade.plugin_apocalypse_firstlight.light_pole_base": "AFL Light Pole",
   "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL Emergency Light"
 }

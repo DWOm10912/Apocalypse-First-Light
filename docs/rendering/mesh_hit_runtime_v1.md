@@ -14,7 +14,7 @@
 | `BlockstateMeshResolver` | 读本 mod 的 blockstate JSON：`variants`（"" / "normal" / "a=b,c=d"；带权重的数组取第一个）、`multipart`（`when`，"a\|b"，"!" 取反，`OR` / `AND`），`x` / `y` |
 | `MeshHitModels` | 按模型 id、按方块状态、按零件列表缓存（`ConcurrentHashMap`，服务端和客户端线程共用）；旋转和原版 `BlockModelRotation` 一样：绕方块中心 `rotateYXZ(-y, -x, 0)`，射线用它的逆变换进模型坐标；排除清单 `EXCLUDED`（目前为空） |
 | `MeshHitProvider` | 动态拼装模型的方块自己给零件：`FluidPipeBlock`（流体管道、耐热管道）按 `block/FluidPipePieces`（从 `client/FluidPipeBakedModel` 挪出来的通用代码，客户端模型和命中网格共用）给出钢零件和对应的 `_glass` 零件 |
-| `MeshHitAssembled`（2026-10-09） | 零件要转向、而且要合成一个模型的方块：路牙（`CurbBlock`）给出"地面方块立方体（`block/curb/hit_base`，只用于命中和轮廓，不画）+ 这一格画的路牙零件"，每个零件带 y 转角（90° 的倍数，和 `BlockModelRotation` 一样北转东）。`MeshHitModels` 把它们转好、合成一个 `MeshHitModel`，所以选中轮廓在零件接缝处没有多余的线。零件列表来自 `block/CurbGeometry.pieces`，和客户端模型共用。原因：用户实机看到路牙过渡段的选中框是碰撞盒的 4 级台阶，没有用 mesh 轮廓 |
+| `MeshHitAssembled`（2026-10-09） | 零件要转向、而且要合成一个模型的方块：路牙（`CurbBlock`）给出"地面方块立方体（`block/curb/hit_base`，只用于命中和轮廓，不画）+ 这一格画的路牙零件"，每个零件带 y 转角（90° 的倍数，和 `BlockModelRotation` 一样北转东）。`MeshHitModels` 把它们转好、合成一个 `MeshHitModel`，所以选中轮廓在零件接缝处没有多余的线。零件列表来自 `block/CurbGeometry.pieces`，和客户端模型共用。原因：用户实机看到路牙过渡段的选中框是碰撞盒的 4 级台阶，没有用 mesh 轮廓。改后用户 2026-10-09 实机 PASS |
 | `MeshHitClip` | 和原版 `BlockGetter#clip` 一样逐格走；有命中网格的格子用三角面，没有的照旧用形状；这一格的形状对当前检测是空的（本来就挡不住）时不用网格：命中网格只会让子弹"少挡"，不会让原来打不中的方块变得能挡子弹 |
 | `MeshBlockHitResult` | 继承 `BlockHitResult`，带真实法线；`getDirection()` 是最接近法线的轴向；`normalOf(hit)` 对普通命中返回面的法线 |
 
@@ -64,6 +64,7 @@
 
 已知不足（0.6）：
 - 垃圾箱开着的盖子竖在上一格里。原版的选中、射线只检测经过的格子，射线只从上一格（空气）经过时不会检测垃圾箱，所以子弹打不到竖起来的盖子；准星仍由原来的 `AflOverhangPickBlock` 补选（方盒子）。
+- 同理（2026-10-09）：停车场区域灯 `area_light`（[Site Lighting V1](../models/site_lighting_v1.md)）的灯头悬在杆顶旁边那一格，射线只经过灯头那一格、不经过杆顶格时，选不中也打不中灯头。没做补选。
 - 动画网格方块的碰撞、选中形状（mesh shape profile 的方盒子）没变；命中网格只在射线进入这些方盒子所在的格子后才参与。
 - 动画进行中那几 tick 是方盒子，选框会跳一下。
 

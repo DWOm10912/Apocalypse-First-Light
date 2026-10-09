@@ -30,6 +30,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, AX, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -326,6 +327,10 @@ const S3 = v => [v, v, v];
 function display(pieces, tall) {
   // tall (the two-block back bar shelf): gui 0.41, at 0.5 it was 18.0 px tall and stuck out of the 16 px slot (user 2026-10-08)
   const s = tall ? 0.36 : 0.55, g = tall ? 0.41 : 0.62;
+  // the two-block shelf: held, dropped and framed fitted to its bounds (tools/item-held-display.mjs, 2026-10-09: the fixed
+  // contexts showed its upper half above the hand)
+  if (tall) return {...heldDisplay(pieces.flatMap(({b, bones}) => b.PARTS.filter(p => !bones || bones.has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8]))),
+    {size: 1.0, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(pieces, [30, 225, 0], g)};
   return {thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s * 0.7)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(s * 0.7)},
     firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1.5, 0], scale: S3(s * 0.8)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 1.5, 0], scale: S3(s * 0.8)},
     gui: guiCentred(pieces, [30, 225, 0], g), ground: {translation: [0, 2, 0], scale: S3(s * 0.6)}, fixed: {rotation: [0, 180, 0], translation: [0, tall ? -4 : -1, 0], scale: S3(s)}};

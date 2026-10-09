@@ -117,6 +117,10 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("fuel_canopy_column", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.FuelCanopyColumnBlockEntity::new,
                             AflBlocks.FUEL_CANOPY_COLUMN.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.LightPoleBaseBlockEntity>> LIGHT_POLE_BASE =
+            BLOCK_ENTITIES.register("light_pole_base", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.LightPoleBaseBlockEntity::new,
+                            AflBlocks.LIGHT_POLE_BASE.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.MetalTrashCanBlockEntity>> METAL_TRASH_CAN =
             BLOCK_ENTITIES.register("metal_trash_can", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.MetalTrashCanBlockEntity::new,

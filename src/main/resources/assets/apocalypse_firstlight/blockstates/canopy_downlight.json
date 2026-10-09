@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "apocalypse_firstlight:block/canopy_downlight/off"
+    },
+    "lit=true": {
+      "model": "apocalypse_firstlight:block/canopy_downlight/lit"
+    }
+  }
+}

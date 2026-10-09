@@ -1,0 +1,4 @@
+# AFL Site Lighting V1 wall pack (off)
+newmtl wallpack
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/wall_pack

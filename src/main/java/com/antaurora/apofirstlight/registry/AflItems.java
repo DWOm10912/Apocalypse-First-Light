@@ -210,6 +210,17 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LINEAR_LIGHT.get(), new Item.Properties()));
     public static final RegistryObject<Item> EMERGENCY_LIGHT = ITEMS.register("emergency_light",
             () -> new BlockItem(AflBlocks.EMERGENCY_LIGHT.get(), new Item.Properties().stacksTo(16)));
+    /** Site Lighting V1 (docs/models/site_lighting_v1.md); the hidden light point has no item. */
+    public static final RegistryObject<Item> LIGHT_POLE_BASE = ITEMS.register("light_pole_base",
+            () -> new BlockItem(AflBlocks.LIGHT_POLE_BASE.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> LIGHT_POLE = ITEMS.register("light_pole",
+            () -> new BlockItem(AflBlocks.LIGHT_POLE.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> AREA_LIGHT = ITEMS.register("area_light",
+            () -> new BlockItem(AflBlocks.AREA_LIGHT.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> WALL_PACK = ITEMS.register("wall_pack",
+            () -> new BlockItem(AflBlocks.WALL_PACK.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> CANOPY_DOWNLIGHT = ITEMS.register("canopy_downlight",
+            () -> new BlockItem(AflBlocks.CANOPY_DOWNLIGHT.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> INDUSTRIAL_LOCKER = ITEMS.register("industrial_locker",
             () -> new BlockItem(AflBlocks.INDUSTRIAL_LOCKER.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> RETAIL_SHELF_SINGLE = ITEMS.register("retail_shelf_single",

@@ -1,0 +1,8 @@
+# AFL Site Lighting V1 canopy downlight (lit)
+newmtl downlight
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/canopy_downlight
+newmtl downlight_glow
+Ka 1 1 1
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/canopy_downlight

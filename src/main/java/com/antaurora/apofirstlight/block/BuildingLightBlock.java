@@ -60,13 +60,27 @@ public abstract class BuildingLightBlock extends Block {
             schedule(level, pos, BuildingLights.PERIOD, ORDINARY);
             return;
         }
-        switch (BuildingLights.period(level, pos, lit)) {
+        if (photocell() && level.isDay()) next = false;   // an outdoor fixture's photocell: dark by day, drawing nothing
+        else switch (BuildingLights.period(level, wiringPosition(state, pos), lit)) {
             case LIT -> next = true;
             case DARK -> next = false;
             default -> { next = lit && phase != SECOND_LOOK; retry = next; }   // a lit light waits once for its panel
         }
         if (next != lit) level.setBlock(pos, state.setValue(LIT, next), Block.UPDATE_CLIENTS);
         schedule(level, pos, retry ? BuildingLights.GRACE : BuildingLights.PERIOD, retry ? SECOND_LOOK : ORDINARY);
+    }
+
+    /** Outdoor fixtures (Site Lighting V1: wall packs, canopy downlights) carry a photocell and stay dark by day. */
+    protected boolean photocell() {
+        return false;
+    }
+
+    /**
+     * Where the building's hidden wiring is looked up (BuildingPowerZone): the light's own cell; a fixture on an outside wall,
+     * whose cell has no roof over it, gives the wall it hangs on (as the Service Meter Box finds its panel).
+     */
+    protected BlockPos wiringPosition(BlockState state, BlockPos pos) {
+        return pos;
     }
 
     /** Schedules this light's next check about {@code delay} ticks ahead, on a game tick of the given phase (mod 4). */

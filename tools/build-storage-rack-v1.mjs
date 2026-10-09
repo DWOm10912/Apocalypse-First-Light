@@ -19,6 +19,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, extrude, add, sub, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -241,9 +242,9 @@ const itemPts = B.PARTS.filter(p => ITEM.includes(p.bone)).flatMap(p => p.v.map(
 // gui scale 0.41: at 0.5 the two-block rack was 18.1 px tall and stuck out of the 16 px slot (user 2026-10-08); now 14.9 px
 const GUI_SCALE = 0.41;
 outputs.push([path.join(assets, 'models/item/storage_rack.json'), json({parent: 'apocalypse_firstlight:block/storage_rack/item', gui_light: 'side', display: {
-  gui: guiCentred(itemPts, [30, 225, 0], GUI_SCALE), ground: {translation: [0, 2, 0], scale: S3(0.25)}, fixed: {rotation: [0, 180, 0], translation: [0, -4, 0], scale: S3(0.5)},
-  thirdperson_righthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.25)}, thirdperson_lefthand: {rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: S3(0.25)},
-  firstperson_righthand: {rotation: [0, 45, 0], translation: [0, 1.5, 0], scale: S3(0.29)}, firstperson_lefthand: {rotation: [0, 225, 0], translation: [0, 1.5, 0], scale: S3(0.29)}}})]);
+  // held, dropped and framed fitted to the rack's bounds (tools/item-held-display.mjs, 2026-10-09: the fixed contexts showed
+  // its upper half above the hand)
+  ...heldDisplay(itemPts, {size: 1.0, rotations: {fixed: [0, 180, 0]}}), gui: guiCentred(itemPts, [30, 225, 0], GUI_SCALE)}})]);
 outputs.push([path.join(assets, 'blockstates/storage_rack.json'), json(blockstate())]);
 
 const tris = bones => B.PARTS.filter(p => bones.includes(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);

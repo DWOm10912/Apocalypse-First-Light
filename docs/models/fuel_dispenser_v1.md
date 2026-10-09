@@ -366,3 +366,5 @@
   - 软管跟手：第一和第三人称都要看，多人时也要看别人拿枪；
   - 软管的光照和 PBR。
 - **手持油枪**：模型在手上、第三人称和物品栏里的位置和大小。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

@@ -93,6 +93,12 @@
   "block.apocalypse_firstlight.industrial_utility_light": "方形面板灯",
   "block.apocalypse_firstlight.linear_light": "线形灯",
   "block.apocalypse_firstlight.emergency_light": "应急灯",
+  "block.apocalypse_firstlight.light_pole_base": "灯杆底座",
+  "block.apocalypse_firstlight.light_pole": "灯杆",
+  "block.apocalypse_firstlight.area_light": "LED 区域灯",
+  "block.apocalypse_firstlight.wall_pack": "LED 壁灯",
+  "block.apocalypse_firstlight.canopy_downlight": "雨篷筒灯",
+  "block.apocalypse_firstlight.lamp_glow": "灯光",
   "block.apocalypse_firstlight.industrial_locker": "储物柜",
   "block.apocalypse_firstlight.modern_office_desk": "办公桌",
   "block.apocalypse_firstlight.modern_office_chair": "办公椅",
@@ -678,5 +684,7 @@
   "gui.apocalypse_firstlight.key_hint.page": "翻页",
   "gui.apocalypse_firstlight.key_hint.place_gun": "放上 / 取回枪械",
   "jade.apocalypse_firstlight.emergency_light.battery": "电池 %s%%",
+  "jade.apocalypse_firstlight.light_pole_base.charge": "电量 %s%%",
+  "config.jade.plugin_apocalypse_firstlight.light_pole_base": "AFL 灯杆",
   "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL 应急灯"
 }

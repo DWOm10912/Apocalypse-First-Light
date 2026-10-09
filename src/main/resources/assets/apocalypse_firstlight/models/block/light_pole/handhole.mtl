@@ -1,0 +1,4 @@
+# AFL Site Lighting V1 light pole segment with the hand hole
+newmtl pole
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/light_pole

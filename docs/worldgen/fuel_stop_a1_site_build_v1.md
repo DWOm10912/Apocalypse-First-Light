@@ -80,8 +80,18 @@
 - 先 `/afl_author resume gas_station_02_site -113 -52 411 64 64 2 1`，再 `node tools/afl_minecraft_mcp/fuel_stop_a1_site.mjs curbs`。
 - V2（2026-10-09）：脚本连路牙的边（`north` / `east` / `south` / `west`，按世界方向）一起写。已经是路牙的格子保留原来的边、`level`、`paint`，所以可以重跑。
   - 第一次写进世界的 355 格还没有这几个状态。外观不受影响：旁边的路还在，按邻居照样算得出来。
-  - 但要让"路挖掉了路牙还在"生效，要重跑一次 `curbs`（或在地块上跑 `reconcile_shapes`）。还没跑。
+  - 但要让"路挖掉了路牙还在"生效，要重跑一次 `curbs`（或在地块上跑 `reconcile_shapes`）。
+  - 2026-10-09 在照明地块（`gas_station_02_lighting`，同样覆盖整块地）上只对 k −1 跑了 `reconcile_shapes`：改了 344 个路牙（只补边状态，`level`、`paint` 不变），`audit_support` 不再报 CONNECTION_STALE。
+
+## 照明（另一个地块 `gas_station_02_lighting`，2026-10-09）
+
+停车场灯杆、店墙壁灯、店面雨篷筒灯用单独的脚本和地块，不在这个地面地块里写（灯杆高到 k 8，电缆在 k −2）。
+- 脚本 `tools/afl_minecraft_mcp/fuel_stop_a1_lighting.mjs`（`plan` / `build`），布置和读世界的检查见 [Site Lighting V1](../models/site_lighting_v1.md) 的"A1 布置"。
+- 地块：整块地 64 × 64，k −2..8：先 `/afl_author resume gas_station_02_lighting -113 -53 411 64 64 11 2`，再跑 `build`。
+- 灯杆的底座放在地面上一格（k 0），底座下面那一格地面（k −1）换成电缆，被底座的混凝土垫盖住；店前那根在人行道里面一格 (31, 25)，不压路牙。
+- 2026-10-09 已建好：16 根灯杆、280 格电缆、7 个壁灯、6 个筒灯，读回全部对得上。北边 v 0 一整排是路牙，那两根杆立在路牙上，电缆从路牙下穿上来（"路牙下穿线"已编译，还没实机测）。详细过程见 Site Lighting V1。
 
 ## 之后
 
-- 灯杆、垃圾围栏、打气站、价格牌、树（端岛等树一起做）。
+- 停车场照明：已建好（见上一节），还没看夜里的效果。
+- 垃圾围栏、打气站、价格牌、树（端岛等树一起做）。

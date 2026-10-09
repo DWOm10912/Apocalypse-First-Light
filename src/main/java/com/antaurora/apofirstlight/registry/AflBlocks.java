@@ -193,6 +193,33 @@ public final class AflBlocks {
     public static final RegistryObject<Block> EMERGENCY_LIGHT = BLOCKS.register("emergency_light",
             () -> new com.antaurora.apofirstlight.block.EmergencyLightBlock(BlockBehaviour.Properties.of().strength(0.5F, 1.0F).sound(SoundType.STONE).noCollission().noOcclusion()
                     .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.EmergencyLightBlock.MODE) == com.antaurora.apofirstlight.block.EmergencyLightBlock.Mode.ON ? 10 : 0)));
+    /**
+     * Site Lighting V1 (docs/models/site_lighting_v1.md): parking-lot poles (base, segments, head cell), the wall pack and the
+     * canopy downlight are galvanized / die-cast steel and aluminium fixtures: pickaxe + diamond tier. The hidden light point
+     * is no item and drops nothing.
+     */
+    public static final RegistryObject<Block> LIGHT_POLE_BASE = BLOCKS.register("light_pole_base",
+            () -> new com.antaurora.apofirstlight.block.LightPoleBaseBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> LIGHT_POLE = BLOCKS.register("light_pole",
+            () -> new com.antaurora.apofirstlight.block.LightPoleBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> AREA_LIGHT = BLOCKS.register("area_light",
+            () -> new com.antaurora.apofirstlight.block.AreaLightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.AreaLightBlock.LIT) ? 15 : 0)));
+    public static final RegistryObject<Block> WALL_PACK = BLOCKS.register("wall_pack",
+            () -> new com.antaurora.apofirstlight.block.WallPackBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? 15 : 0)));
+    public static final RegistryObject<Block> CANOPY_DOWNLIGHT = BLOCKS.register("canopy_downlight",
+            () -> new com.antaurora.apofirstlight.block.CanopyDownlightBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion().noCollission()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? 15 : 0)));
+    public static final RegistryObject<Block> LAMP_GLOW = BLOCKS.register("lamp_glow",
+            () -> new com.antaurora.apofirstlight.block.LampGlowBlock(BlockBehaviour.Properties.of().replaceable().noCollission()
+                    .noOcclusion().noLootTable().instabreak().pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+                    .lightLevel(state -> com.antaurora.apofirstlight.block.LampGlowBlock.LIGHT_LEVEL)));
     /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
     public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

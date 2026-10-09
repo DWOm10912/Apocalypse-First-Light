@@ -204,3 +204,5 @@
 1. ~~冷柜、冰柜、售货机、饮水机改成插头取电~~：2026-10-08 已做，见"插头电器"，未实机验证。
 2. ~~吸顶灯重做，吸顶自动亮，接配电盘的"照明"那一路~~：2026-10-08 已做，见 [Building Lights V1](building_lights_v1.md)。
 3. A1：设备间换配电盘、后墙外换电表箱，沿墙每隔约 3.6 m 布置插座，柜台上方一排，接能量单元实测。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

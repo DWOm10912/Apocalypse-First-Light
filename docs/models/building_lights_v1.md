@@ -63,6 +63,13 @@
   - 余 2：随机刻找到的灯的第一次检查。
   - 这样不需要额外的方块状态。
 
+### 室外灯：光控和取电位置（2026-10-09，Site Lighting V1）
+
+[Site Lighting V1](site_lighting_v1.md) 的壁灯 `wall_pack` 和店面筒灯 `canopy_downlight` 也是 `BuildingLightBlock`，走同一套检查。为它们加了两个可覆盖的方法，室内灯不受影响（默认值不变）：
+- `photocell()`（默认 false）：为 true 时，白天（`level.isDay()`）直接灭，不向配电盘要电；天黑后照常检查。两种室外灯都是 true。
+- `wiringPosition(state, pos)`（默认是灯自己那一格）：按哪一格找配电盘。壁灯那一格在屋顶外面，改用它背后那面墙所在的格子（同电表箱找配电盘的做法）。筒灯在雨篷下面，雨篷算建筑的顶，用自己那一格。
+- 只在代码里改了，没有实机测过。
+
 ### 旧存档里的残光
 
 用户 2026-10-08 在 A1 里把灯都拆了，店里还是亮的。原因是旧存档的光照数据：
@@ -154,7 +161,7 @@
   - 贴图：`textures/block/{industrial_utility_light,linear_light,emergency_light}{,_s,_n}.png`。
   - 方块状态 JSON，以及物品模型。
 - 代码：
-  - `block/BuildingLightBlock`（A、C 的共同逻辑）、`block/IndustrialUtilityLightBlock`、`block/LinearLightBlock`、`block/EmergencyLightBlock`；
+  - `block/BuildingLightBlock`（A、C 的共同逻辑；2026-10-09 加了 `photocell()`、`wiringPosition()`，给 Site Lighting V1 的 `WallPackBlock`、`CanopyDownlightBlock` 用）、`block/IndustrialUtilityLightBlock`、`block/LinearLightBlock`、`block/EmergencyLightBlock`；
   - `blockentity/EmergencyLightBlockEntity`；
   - `energy/BuildingLights`；
   - 配电盘新增 `lightingLive()` / `drawLighting()`；
@@ -207,3 +214,5 @@
 - 挖掘：A、C 要钻石镐才掉落；D 空手能拆，掉落自身；支撑没了会掉。
 - 地堡：墙上的 16 盏 C 位置、朝向对；天花板上的 A 正常。
 - 旧存档：已经放着的旧灯读档后变成 A，一分钟内按配电盘决定亮灭。
+
+- 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。

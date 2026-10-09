@@ -110,6 +110,11 @@
     "apocalypse_firstlight:curb_grass",
     "apocalypse_firstlight:sealed_concrete_floor",
     "apocalypse_firstlight:porcelain_floor_tile",
-    "apocalypse_firstlight:restroom_floor_tile"
+    "apocalypse_firstlight:restroom_floor_tile",
+    "apocalypse_firstlight:light_pole_base",
+    "apocalypse_firstlight:light_pole",
+    "apocalypse_firstlight:area_light",
+    "apocalypse_firstlight:wall_pack",
+    "apocalypse_firstlight:canopy_downlight"
   ]
 }

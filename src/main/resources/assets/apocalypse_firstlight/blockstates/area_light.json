@@ -1,0 +1,388 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/top"
+      }
+    },
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/photocell"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "twin|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "twin|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "heads": "triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/photocell",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "twin|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "twin|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "heads": "triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit"
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/photocell",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "twin|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "twin|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit"
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "heads": "triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/photocell",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "single|twin|twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "twin_corner|triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "twin_corner|triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit"
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "twin|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "twin|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "triple|quad",
+        "lit": "false"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "heads": "triple|quad",
+        "lit": "true"
+      },
+      "apply": {
+        "model": "apocalypse_firstlight:block/area_light/head_lit",
+        "y": 180
+      }
+    }
+  ]
+}

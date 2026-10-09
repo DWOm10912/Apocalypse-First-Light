@@ -215,6 +215,16 @@ final class AuthoringFixtureRegistry {
                     .notes("Power Outlets V1 (2026-10-08): floor or office desk; a BlockEntity keeps its plug, a placed strip lies unplugged beside its cord."),
             new Def(A+"power_strip_6",safe,"utility").facing(H4).connect("lowered").fixed("on","true","lit","false").support(Support.FLOOR_OR_DESK)
                     .notes("Power Outlets V1 (2026-10-08): the 2x3 strip; as power_strip_3."),
+            new Def(A+"light_pole_base",safe,"utility").facing(H4).support(Support.NONE)
+                    .notes("Site Lighting V1 (2026-10-09): the parking-lot pole's foot, on the ground cell's top (full-cell concrete pad, pier 0.75 m, the pole's first metre). facing = the hand hole's side (toward the lot). Power port = bottom face: an underground power_cable in the cell below. Its BlockEntity holds the power buffer (starts empty) and the hidden light points it hung (none at first)."),
+            new Def(A+"light_pole",safe,"utility").connect("handhole").support(Support.BLOCK_RULE)
+                    .notes("Site Lighting V1: one metre of 127 mm galvanized pole; stands on light_pole_base or another light_pole (7 for the standard 8 m pole). handhole is computed from the base below (none higher up); WorldEdit writes must give it (the base's facing for the first segment)."),
+            new Def(A+"area_light",safe,"utility").facing(H4).variant("heads","single","twin","twin_corner","triple","quad").fixed("lit","false").support(Support.BLOCK_RULE)
+                    .notes("Site Lighting V1: the head cell on top of the pole; facing = the first head's direction (into the lot); heads = quarter turns clockwise from facing (single 0, twin 0+2, twin_corner 0+1, triple 0+1+3, quad all). The arms reach over the cell side, the heads hang in the next cell (keep it clear). lit is runtime (the base: powered and dark)."),
+            new Def(A+"wall_pack",safe,"utility").facing(H4).fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Site Lighting V1: LED wall pack on an outside wall, facing = away from the wall, 0.46..0.71 m up in its cell. On the building's lighting circuit through the wall behind it, dark by day; lit is runtime."),
+            new Def(A+"canopy_downlight",safe,"utility").fixed("lit","false").support(Support.BLOCK_RULE)
+                    .notes("Site Lighting V1: 150 mm cylinder downlight in the cell under a metal_eyebrow_canopy (or any sturdy ceiling); its top reaches 31 mm into the canopy cell. On the building's lighting circuit, dark by day; lit is runtime."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"chemical_reactor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
             new Def(A+"compressor",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),
