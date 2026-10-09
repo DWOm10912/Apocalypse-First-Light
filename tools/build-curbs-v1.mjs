@@ -50,7 +50,8 @@ function curbConcrete() {
   const pits = []; for (let i = 0; i < 9; i++) pits.push([hash(i, 1, 91) * N, hash(i, 2, 91) * N, 0.6 + 0.6 * hash(i, 3, 91)]);
   return (x, y) => {
     const t = 1 + 0.022 * vn(x, y, 71, 48) + 0.009 * vn(x, y, 72, 16) + 0.004 * vn(x, y, 73, 6);
-    let h = 0.25 * vn(x, y, 74, 4) + 0.15 * vn(x, y, 75, 2), c = mul(base, t), s = 78 + 10 * vn(x, y, 76, 30), ao = 1;
+    // soft and shallow (2026-10-09, docs/rendering/shader_pbr_tuning_v1.md: 2..4 texel noise at 0.4 mm looked gritty under grazing light)
+    let h = 0.10 * vn(x, y, 74, 10) + 0.05 * vn(x, y, 75, 6), c = mul(base, t), s = 78 + 10 * vn(x, y, 76, 30), ao = 1;
     for (const [px, py, r] of pits) { for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) { const d = Math.hypot(x - px - dx, y - py - dy); if (d < r) { h = -1.2 * (1 - d / r); c = mul(c, 0.93); ao = 0.85; s = 55; } } }
     return {c, s, p: 40, h, ao};
   };

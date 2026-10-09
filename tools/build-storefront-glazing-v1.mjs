@@ -44,7 +44,11 @@ export const MATS = {
 // > 26 survives the shader packs' translucent alpha test (the cooler's and the pipe's glass: 56); a storefront lite is clearer
 const GLASS_ALPHA = 46;
 // px. Glass line: the frame's depth band is 3..5 px behind the outer face (z -5..-3), the lite at its middle.
-export const SF = {face: 1, frontZ: -5, backZ: -3, inset: 0.02, glass: [-4.15, -3.85], sill: {flash: 0.35, drip: [-8.25, -7.75], dripY: -0.45}};
+export const SF = {face: 1, frontZ: -5, backZ: -3, inset: 0.02, glass: [-4.15, -3.85], sill: {flash: 0.35, drip: [-8.25, -8], dripY: -0.45, dripTop: 0.2}};
+// The drip (2026-10-09): only the 0.25 px lip past the wall face, its top 0.2 px up, butting the flashing's outer end. Until
+// then it ran -8.25..-7.75 with its top at y 0, in the plane of the floor's top face: it flickered along the entry glass that
+// stands on the floor (user video; tools/audit-boundary-faces.mjs finds this class). Under the flashing it would put its ends
+// in the plane of the flashing's ends.
 
 function build() {
   const PARTS = [], P = (name, bone, mat) => { const p = new Part(`${bone}_${name}`, bone, mat); PARTS.push(p); return p; };
@@ -62,7 +66,7 @@ function build() {
   quadBox(P('member', 'rail_top', 'frame'), -8, i0, 8, j0, 16 - F.face, 16 - F.inset, true);
   quadBox(P('rail', 'sill', 'frame'), -8, i0, 8, j0, F.inset, F.face, true);
   quadBox(P('flashing', 'sill', 'frame'), -8, -8, 8, f0 - 0.01, 0, F.sill.flash);
-  quadBox(P('drip', 'sill', 'frame'), -8, F.sill.drip[0], 8, F.sill.drip[1], F.sill.dripY, 0);
+  quadBox(P('drip', 'sill', 'frame'), -8, F.sill.drip[0], 8, F.sill.drip[1], F.sill.dripY, F.sill.dripTop);
   return PARTS;
 }
 

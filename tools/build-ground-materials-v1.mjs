@@ -23,6 +23,10 @@
 // Heights are millimetres (0 = the finished surface, negative = recessed); 1 texel = 4.17 mm. _n: DirectX (red right, green
 // down) from the height slopes, B ambient occlusion, A height (1 - depth / 250 mm). _s: R smoothness, G F0 (dielectric),
 // B porosity (0..64, wets in rain), A 255 (no emission).
+// Field relief (2026-10-09, docs/rendering/shader_pbr_tuning_v1.md): the broom lines and the concrete's sand were 2..6
+// texels fine and 0.4..0.6 mm deep; under a lamp grazing the ground (Sundial at night) even those few degrees of slope
+// lit up as hard grain lines and sand ripples (user: "锐化是不是太高了"). They are now 5..16 texels wide and about a fifth
+// as deep (FIELD below); joints, bug holes, aggregate and tile grout keep their real relief.
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -42,6 +46,8 @@ function vn(x, y, seed, cx, cy = cx) {
 /** 1 in the middle of the block, 0 on its edges: variant-only detail never reaches a neighbour. */
 const win = (x, y) => (Math.sin(Math.PI * x / N) * Math.sin(Math.PI * y / N)) ** 2;
 const mul = (c, t) => c.map(v => v * t), mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+/** Field relief, mm: the broom finish of the walk and the pavement, the formed concrete's paste (see the header). */
+const FIELD = {sidewalkBroom: 0.12, pavementBroom: 0.10, concreteSand: 0.12, concreteWave: 0.10};
 
 // ---- scattered features (stones, bug holes): a jittered grid; near the edges from one shared seed, inside per variant ----
 function scatter(count, seed, sharedSeed, margin, make) {
@@ -73,9 +79,9 @@ function reinforcedConcrete(v) {
   const holes = scatter(6, 500 + v * 31, 499, 6, (x, y, r) => ({x, y, r: 0.7 + 0.9 * r(0), d: 1.5 + 1.5 * r(1), h1: 0.15 * r(2), p1: 6 * r(3), h2: 0.1 * r(4), p2: 6 * r(5), h3: 0, p3: 0}));
   return (x, y) => {
     let t = 1 + 0.025 * vn(x, y, 11, 48) + 0.010 * vn(x, y, 12, 20) + 0.02 * win(x, y) * vn(x, y, 13 + v, 60);
-    // fine sand in the cement paste: mostly relief (normal map), the colour barely moves
-    const sand = 0.6 * vn(x, y, 15, 4) + 0.4 * vn(x, y, 16, 6);
-    let c = mul(base, t * (1 + 0.008 * vn(x, y, 17, 8))), s = 70, p = 38, h = 0.08 * vn(x, y, 14, 24) + 0.6 * sand, ao = 1;
+    // the paste's texture: soft and shallow (2026-10-09: 4..6 texel sand at 0.6 mm read as ripples under grazing light)
+    const sand = 0.6 * vn(x, y, 15, 10) + 0.4 * vn(x, y, 16, 16);
+    let c = mul(base, t * (1 + 0.008 * vn(x, y, 17, 8))), s = 70, p = 38, h = FIELD.concreteWave * vn(x, y, 14, 40) + FIELD.concreteSand * sand, ao = 1;
     for (const f of blobsAt(holes, x, y)) {
       const dx = x - f.x, dy = y - f.y, d = Math.hypot(dx, dy), R = blobR(f, dx, dy);
       if (d < R) { const k = 1 - (d / R) ** 2; c = mul(c, 1 - 0.13 * Math.sqrt(k)); h -= f.d * Math.sqrt(k); s = 50; ao = Math.min(ao, 1 - 0.2 * k); }
@@ -108,10 +114,11 @@ function asphalt(v) {
     return {c: mul(mix(binder, mul(stone, near.tone), 0.45 + 0.55 * k), t), s: 58, p: 42, h: near.up * Math.sqrt(k), ao: 1};
   };
 }
-/** Broom lines along x (the texture's u): long streaks a couple of texels apart, wandering slowly. */
+/** Broom lines along x (the texture's u): long, soft streaks 5..8 texels apart, wandering slowly (2026-10-09: 2..3 texels
+ * apart they read as hard grain lines under grazing light). */
 function broom(x, y, amp) {
   const w1 = 0.45 * vn(x, 0.5, 31, 60, 240), w2 = 0.3 * vn(x, 0.5, 32, 40, 240);
-  return amp * (0.6 * vn(x, y + w1, 33, 120, 2) + 0.4 * vn(x, y + w2, 34, 60, 3));
+  return amp * (0.6 * vn(x, y + w1, 33, 120, 5) + 0.4 * vn(x, y + w2, 34, 60, 8));
 }
 /** Distance (texels) from the joint edges this texture carries (w: x = 0, n: y = 0), Infinity when none. */
 const jointDist = (x, y, j) => Math.min(j.w ? x : Infinity, j.n ? y : Infinity);
@@ -119,8 +126,8 @@ function concreteSidewalk(j) {
   const base = [174, 172, 166];
   return (x, y) => {
     const d = jointDist(x, y, j), t = 1 + 0.025 * vn(x, y, 41, 48) + 0.010 * vn(x, y, 42, 20);
-    const b = broom(x, y, 0.55), fade = d < 13 ? 0 : d < 17 ? smooth((d - 13) / 4) : 1;
-    let c = mul(base, t * (1 + 0.008 * b / 0.55 * fade) * (fade < 1 ? 1 - 0.012 * (1 - fade) : 1)), s = 48 + 37 * (1 - fade), p = 45, h = b * fade, ao = 1;
+    const b = broom(x, y, FIELD.sidewalkBroom), fade = d < 13 ? 0 : d < 17 ? smooth((d - 13) / 4) : 1;
+    let c = mul(base, t * (1 + 0.008 * b / FIELD.sidewalkBroom * fade) * (fade < 1 ? 1 - 0.012 * (1 - fade) : 1)), s = 48 + 37 * (1 - fade), p = 45, h = b * fade, ao = 1;
     if (d < 1.0) { c = mul(base, 0.5); h = -10; s = 30; ao = 0.55; }
     else if (d < 2.4) { const k = (d - 1.0) / 1.4; h = -6 * (1 - k) ** 2; c = mul(c, 1 - 0.08 * (1 - k)); ao = 1 - 0.2 * (1 - k); }
     return {c, s, p, h, ao};
@@ -129,8 +136,8 @@ function concreteSidewalk(j) {
 function concretePavement(j) {
   const base = [166, 164, 159];
   return (x, y) => {
-    const d = jointDist(x, y, j), t = 1 + 0.025 * vn(x, y, 51, 48) + 0.010 * vn(x, y, 52, 20), b = broom(x, y, 0.42);
-    let c = mul(base, t * (1 + 0.007 * b / 0.42)), s = 52, p = 45, h = b, ao = 1;
+    const d = jointDist(x, y, j), t = 1 + 0.025 * vn(x, y, 51, 48) + 0.010 * vn(x, y, 52, 20), b = broom(x, y, FIELD.pavementBroom);
+    let c = mul(base, t * (1 + 0.007 * b / FIELD.pavementBroom)), s = 52, p = 45, h = b, ao = 1;
     if (d < 0.8) { c = mul(base, 0.42); h = -8; s = 30; ao = 0.5; }
     else if (d < 1.6) { const k = (d - 0.8) / 0.8; c = mul(c, 1 - 0.05 * (1 - k)); h = Math.min(h, -0.6 * (1 - k)); }
     return {c, s, p, h, ao};
