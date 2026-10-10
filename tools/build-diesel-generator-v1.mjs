@@ -630,15 +630,18 @@ export const CHANNELS = {
   doors: {ticks: D.ticks, easing: 'ease_in_out', transforms: {door_r: {rotation: [0, D.degrees, 0]}, door_l: {rotation: [0, -D.degrees, 0]}}},
   fill: {ticks: F.ticks, easing: 'ease_in_out', transforms: {fill_lid: {rotation: [F.degrees, 0, 0]}}},
   flap: {ticks: G.stack.ticks, easing: 'ease_out', transforms: {flap: {rotation: [G.stack.flapDegrees, 0, 0]}}},
-  load: {ticks: 20, easing: 'ease_in_out', transforms: {needle_load: {rotation: [0, 0, SWEEP]}}},
-  fuel: {ticks: 40, easing: 'ease_in_out', transforms: {needle_fuel: {rotation: [0, 0, SWEEP]}, tank_needle: {rotation: [0, 0, 180]}}},
+  // the needles follow their readings as damped gauge movements (time constant 5 ticks, 2026-10-09, user: "仪表盘指针还是有点
+  // 卡卡的"): an eased transition per sync (every 10 ticks) lasted ticks x a 1-2 % change, under a tick, so they stepped
+  load: {ticks: 20, easing: 'ease_in_out', follow: 5, transforms: {needle_load: {rotation: [0, 0, SWEEP]}}},
+  fuel: {ticks: 40, easing: 'ease_in_out', follow: 5, transforms: {needle_fuel: {rotation: [0, 0, SWEEP]}, tank_needle: {rotation: [0, 0, 180]}}},
   // a loop channel (2026-10-09): one turn every 8 ticks at speed (2.5 a second: reads as turning, a true 1800 rpm would strobe),
   // 1.5 s to spin up / down
   fan: {ticks: 30, easing: 'linear', loop: 8, transforms: {fan: {rotation: [360, 0, 0]}}},
-  temp: {ticks: 40, easing: 'ease_in_out', transforms: {needle_temp: {rotation: [0, 0, SWEEP]}}},
-  oil: {ticks: 16, easing: 'ease_in_out', transforms: {needle_oil: {rotation: [0, 0, SWEEP]}}},
+  temp: {ticks: 40, easing: 'ease_in_out', follow: 5, transforms: {needle_temp: {rotation: [0, 0, SWEEP]}}},
+  oil: {ticks: 16, easing: 'ease_in_out', follow: 5, transforms: {needle_oil: {rotation: [0, 0, SWEEP]}}},
   key: {ticks: 6, easing: 'ease_in_out', transforms: {key: {rotation: [0, 0, PANEL.key.positions.START - PANEL.key.positions.OFF]}}},
-  ...Object.fromEntries(Array.from({length: PANEL.hours.drums.n}, (_, i) => [`h${i}`, {ticks: 4, easing: 'ease_in_out', transforms: {[`drum_${i}`]: {rotation: [360, 0, 0]}}}])),
+  // the drums wrap (0 and 1 are the same face): 9 -> 0 rolls on a tenth instead of spinning back through every digit
+  ...Object.fromEntries(Array.from({length: PANEL.hours.drums.n}, (_, i) => [`h${i}`, {ticks: 4, easing: 'ease_in_out', wrap: true, transforms: {[`drum_${i}`]: {rotation: [360, 0, 0]}}}])),
 };
 export const KEY_RUN = (PANEL.key.positions.RUN - PANEL.key.positions.OFF) / (PANEL.key.positions.START - PANEL.key.positions.OFF);
 
@@ -857,7 +860,7 @@ const bounds = [(SW[0] - MG + 8) / 16, (SW[1] - MG) / 16, (SW[2] - MG + 8) / 16,
 const profile = {format_version: 1, geometry: `apocalypse_firstlight:geo/${ID}.geo.json`, texture: `apocalypse_firstlight:textures/block/${ID}.png`,
   origin: [0, 0, 0], scale: [1, 1, 1], facing: 'horizontal', bounds,
   parts: Object.fromEntries(BONES.map(([b, parent, o]) => [b, {...(parent ? {parent} : {}), pivot: o.map(v => r6(v / 16))}])),
-  animations: Object.fromEntries(Object.entries(CHANNELS).map(([ch, d]) => [ch, {duration_ticks: d.ticks, easing: d.easing, ...(d.loop ? {loop_ticks: d.loop} : {}),
+  animations: Object.fromEntries(Object.entries(CHANNELS).map(([ch, d]) => [ch, {duration_ticks: d.ticks, easing: d.easing, ...(d.loop ? {loop_ticks: d.loop} : {}), ...(d.follow ? {follow_ticks: d.follow} : {}), ...(d.wrap ? {wrap: true} : {}),
     transforms: Object.fromEntries(Object.entries(d.transforms).map(([b, tr]) => [b, {rotation: tr.rotation.map(r6)}]))}]))};
 
 // =============================== the item (OBJ, closed, unlit, no glass) ===============================

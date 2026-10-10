@@ -459,17 +459,21 @@
     "subtitle": "subtitles.apocalypse_firstlight.charging_station_hum",
     "sounds": [{"name": "apocalypse_firstlight:charging_station/hum", "attenuation_distance": 8}]
   },
+  "diesel_generator_crank": {
+    "subtitle": "subtitles.apocalypse_firstlight.diesel_generator_crank",
+    "sounds": [{"name": "apocalypse_firstlight:diesel_generator/crank", "attenuation_distance": 16}]
+  },
   "diesel_generator_start": {
     "subtitle": "subtitles.apocalypse_firstlight.diesel_generator_start",
-    "sounds": []
+    "sounds": [{"name": "apocalypse_firstlight:diesel_generator/start", "attenuation_distance": 24}]
   },
   "diesel_generator_run": {
     "subtitle": "subtitles.apocalypse_firstlight.diesel_generator_run",
-    "sounds": []
+    "sounds": [{"name": "apocalypse_firstlight:diesel_generator/run_loop", "attenuation_distance": 24}]
   },
   "diesel_generator_stop": {
     "subtitle": "subtitles.apocalypse_firstlight.diesel_generator_stop",
-    "sounds": []
+    "sounds": [{"name": "apocalypse_firstlight:diesel_generator/stop", "attenuation_distance": 24}]
   },
   "office_chair_roll": {
     "subtitle": "subtitles.apocalypse_firstlight.office_chair_roll",

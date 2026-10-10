@@ -99,6 +99,7 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> CHARGING_STATION_FULL = simple("charging_station_full");
     public static final RegistryObject<SoundEvent> CHARGING_STATION_HUM = simple("charging_station_hum");
     // Diesel standby generator V1: registered silent (sounds.json lists no files) until the user's recordings are mixed in
+    public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_CRANK = simple("diesel_generator_crank");
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_START = simple("diesel_generator_start");
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_RUN = simple("diesel_generator_run");
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_STOP = simple("diesel_generator_stop");

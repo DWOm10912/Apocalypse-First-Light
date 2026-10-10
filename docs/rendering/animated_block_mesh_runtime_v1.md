@@ -112,6 +112,13 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 - 区块：停在两端之间的数值通道算"在动"，它的零件和子零件留给渲染器画（区块只会摆 0 或 1 的姿势）；停在 0 或 1 时照常进区块。
 - 命中网格：`meshChannelAffectsHits(channel)`（默认 true）返回 false 的通道不参与命中网格的姿势，也不等它停稳（指针、鼓轮这类小零件按 0 摆）。
 
+**跟随通道（2026-10-09，柴油发电机组的仪表指针）**：动画写 `follow_ticks`（0 < 值 ≤ 1200）的数值通道不再每次新目标都缓动一段，而是像带阻尼的表头一样一直追目标：临界阻尼，时间常数 `follow_ticks`，x(t) = 目标 + (a + b·t)·e^(−t/τ)（a = 起点 − 目标，b = 起始速度 + a/τ），新目标到来时把当时的位置和速度带过去，所以不会每次从静止重新起步；结果夹在 0..1（顶到头就从静止开始）。`duration_ticks`、`easing` 不用。
+
+- 为什么：指针每 10 tick 同步一次读数，每次只变 1–2%；普通数值通道的缓动时长是 `duration_ticks` × 变化量，不到 1 tick，指针等于每半秒跳一小格（用户："仪表盘指针还是有点卡卡的"）。按真实节奏模拟 60 fps：原来只有 6% 的帧在动，每帧最大位移是现在的 9 倍、速度突变是现在的 50 倍；跟随以后每帧都在动，代价是读数变化时大约晚 2τ（τ = 5 tick 时约 0.5 秒）跟上。
+- 停稳：离目标小于 1e-4、速度小于 1e-4 每时间常数时算停在目标（可以回到区块）。
+
+**环绕通道（同日，小时计鼓轮）**：动画写 `wrap: true` 的通道，0 和 1 是同一个姿势（转一整圈）；新目标走短的那一边，0.9 → 0 往前滚一格，不会倒着转过所有数字。`loop_ticks`、`follow_ticks`、`wrap` 三者互斥。
+
 **循环通道（2026-10-09，柴油发电机组的散热风扇）**：profile 的动画写 `loop_ticks`（0 < 值 ≤ 72000）就是循环通道，零件一直转下去，不在两端之间走。
 
 - 目标值是**转速**（0..1，1 = 每 `loop_ticks` 转完一整个变换，比如 `rotation [360, 0, 0]` 就是一整圈）；转速从当前值线性变到目标值，用时 `duration_ticks` × 变化量（`easing` 不用）。方块实体照常用 `meshChannelValue` 给目标（风扇：运行时 1）。
@@ -217,7 +224,7 @@ mesh、分层列表、profile 树、变换定义、bounds 均在 reload 时缓�
 
 ## V1 边界与后续接入
 
-支持刚性 part 层级、一个 atlas、独立 boolean channels 和数值通道（2026-10-09，见上文）、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning（连续循环的转子 2026-10-09 起用循环通道支持，见上文）、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO；自发光只有上面的逐 part 全亮度开关，没有更细的光照策略。
+支持刚性 part 层级、一个 atlas、独立 boolean channels 和数值通道（2026-10-09，含跟随 / 环绕 / 循环三种，见上文）、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning（连续循环的转子 2026-10-09 起用循环通道支持，见上文）、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO；自发光只有上面的逐 part 全亮度开关，没有更细的光照策略。
 
 industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-industrial-locker-v2.mjs`，bones `body` / `door`，通道 `open`，-100°，10 ticks），详见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 

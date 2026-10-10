@@ -36,19 +36,27 @@ import java.util.function.Supplier;
 /**
  * Quiet block loops driven by a block entity's synced state (seamless loops from tools/sound-mix-lib.mjs buildLoop; their
  * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's and
- * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (its own loop; it waits for the start sound's wind-up and fades in). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
+ * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (its own loop; it waits for the start sound's wind-up and fades in), the diesel generator's engine while it runs (heard to 24). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
  * sound stops itself when its condition ends, the block entity is gone, or the player leaves the range.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class BlockLoopSoundController {
     private static final double AUDIBLE_RADIUS = 8.0D;
-    private static final int SCAN_RADIUS_CHUNKS = 1;
+    /** The diesel generator's engine is heard further (its loop's attenuation distance in sounds.json is 24 too). */
+    private static final double GENERATOR_RADIUS = 24.0D;
+    private static final int SCAN_RADIUS_CHUNKS = 2;   // covers the longest radius (24) from anywhere in the player's chunk
     private static final int SCAN_INTERVAL_TICKS = 5;
 
     private record Source<T extends BlockEntity>(Class<T> type, Predicate<T> active, Function<T, Vec3> position,
-                                                 Supplier<SoundEvent> sound, float pitch, int delayTicks, int fadeTicks) {
+                                                 Supplier<SoundEvent> sound, float pitch, int delayTicks, int fadeTicks,
+                                                 double radius) {
         Source(Class<T> type, Predicate<T> active, Function<T, Vec3> position, Supplier<SoundEvent> sound, float pitch) {
-            this(type, active, position, sound, pitch, 0, 0);
+            this(type, active, position, sound, pitch, 0, 0, AUDIBLE_RADIUS);
+        }
+
+        Source(Class<T> type, Predicate<T> active, Function<T, Vec3> position, Supplier<SoundEvent> sound, float pitch,
+               int delayTicks, int fadeTicks) {
+            this(type, active, position, sound, pitch, delayTicks, fadeTicks, AUDIBLE_RADIUS);
         }
 
         boolean activeOn(BlockEntity entity) {
@@ -80,11 +88,13 @@ public final class BlockLoopSoundController {
                     pump -> IntakePumpBlock.world(pump.getBlockPos(), pump.getBlockState().getValue(IntakePumpBlock.FACING),
                             IntakePumpBlockEntity.MOTOR[0], IntakePumpBlockEntity.MOTOR[1], IntakePumpBlockEntity.MOTOR[2]),
                     AflSounds.INTAKE_PUMP_LOOP, 1.0F, IntakePumpBlockEntity.LOOP_FADE_IN[0], IntakePumpBlockEntity.LOOP_FADE_IN[1]),
-            // the diesel generator's engine while it runs (silent until its recording; then it will want a longer range than 8)
+            // the diesel generator's engine while it runs, heard to 24 blocks; it waits for the start sound's flare to settle
+            // and fades in under its fade-out (all cut from one take: tools/build-diesel-generator-sounds-v1.mjs)
             new Source<>(com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.class,
                     com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::running,
                     com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::engineWorld,
-                    AflSounds.DIESEL_GENERATOR_RUN, 1.0F));
+                    AflSounds.DIESEL_GENERATOR_RUN, 1.0F, com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.LOOP_FADE_IN[0],
+                    com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.LOOP_FADE_IN[1], GENERATOR_RADIUS));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;
@@ -112,7 +122,7 @@ public final class BlockLoopSoundController {
                     for (Source<?> source : SOURCES) {
                         if (!source.activeOn(blockEntity)) continue;
                         Vec3 at = source.positionOf(blockEntity);
-                        if (minecraft.player.distanceToSqr(at) > AUDIBLE_RADIUS * AUDIBLE_RADIUS) return;
+                        if (minecraft.player.distanceToSqr(at) > source.radius() * source.radius()) return;
                         LoopSound sound = new LoopSound(level, position.immutable(), source, at);
                         minecraft.getSoundManager().play(sound);
                         ACTIVE_SOUNDS.put(position.immutable(), sound);
@@ -163,7 +173,7 @@ public final class BlockLoopSoundController {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.level != level || minecraft.player == null || !level.isLoaded(position)
                     || !source.activeOn(level.getBlockEntity(position))
-                    || minecraft.player.distanceToSqr(x, y, z) > (AUDIBLE_RADIUS + 1.0D) * (AUDIBLE_RADIUS + 1.0D)) stop();
+                    || minecraft.player.distanceToSqr(x, y, z) > (source.radius() + 1.0D) * (source.radius() + 1.0D)) stop();
         }
 
         private void stopNow() {

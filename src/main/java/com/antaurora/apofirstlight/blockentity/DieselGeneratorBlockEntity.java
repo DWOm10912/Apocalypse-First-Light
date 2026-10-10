@@ -4,6 +4,10 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.DieselGeneratorBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.PowerCableTransfer;
+import com.antaurora.apofirstlight.noise.NoiseEvent;
+import com.antaurora.apofirstlight.noise.NoiseSystem;
+import com.antaurora.apofirstlight.noise.NoiseType;
+import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflFluids;
 import com.antaurora.apofirstlight.registry.AflSounds;
@@ -41,7 +45,8 @@ import org.jetbrains.annotations.Nullable;
  *   or by pipe through the standard fluid port on the step end ({@link #pipeInlet}, fill only);</li>
  *   <li>fuel {@link #IDLE_L} + {@link #L_PER_KW} x kW litres a game hour (1000 ticks): about 1.5 L/h idling, 29.5 L/h at
  *   full load, as a real 100 kW set;</li>
- *   <li>start: {@link #CRANK_TICKS} ticks of cranking (the key at START), then it runs; with no fuel it cranks and fails
+ *   <li>start: {@link #CRANK_TICKS} ticks of cranking (the key at START), then it runs (7 ticks: the engine in the start
+ *   recording fires 0.35 s after the starter engages, tools/build-diesel-generator-sounds-v1.mjs); with no fuel it cranks and fails
  *   (fault lamp). Running out of fuel stops it with the fault lamp; the next start clears the fault. No overload trip of
  *   its own: the panel downstream trips on overload; past full load the load needle stays at 100 %.</li>
  * </ul>
@@ -54,7 +59,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
     public static final ResourceLocation PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/diesel_generator.json");
-    public static final int RATED = 400, TANK = 600, LOW_FUEL = TANK / 8, CRANK_TICKS = 60, HOUR_TICKS = 1000;
+    public static final int RATED = 400, TANK = 600, LOW_FUEL = TANK / 8, CRANK_TICKS = 7, HOUR_TICKS = 1000;
+    /** The run loop, once running: waits 12 ticks (the start sound's flare settles), fades in over 16 under its fade-out. */
+    public static final int[] LOOP_FADE_IN = {12, 16};
+    /**
+     * Infected hearing (noise/NoiseSystem, MACHINE, from the engine): the starter 12 blocks, the engine catching and then
+     * running every NOISE_INTERVAL ticks 24, the range the player hears it in (sounds.json attenuation 24). Over 10, so
+     * infected may break through to it (infected/breach); a running set is a lure. Stopping makes none.
+     */
+    public static final double CRANK_NOISE = 12, RUN_NOISE = 24;
+    public static final int NOISE_INTERVAL = 40;
     public static final double IDLE_L = 1.5, L_PER_KW = 0.28, KW_PER_FE_TICK = 0.25;
     /** Key positions on the 'key' channel (OFF, RUN, START: tools/build-diesel-generator-v1.mjs KEY_RUN). */
     public static final double KEY_RUN = 0.529412;
@@ -143,7 +157,9 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         fault = false;
         mode = Mode.CRANKING;
         crank = 0;
-        sound(AflSounds.DIESEL_GENERATOR_START.get(), 1.0F);
+        // an empty tank: the starter alone (the start sound has the engine firing in it)
+        sound((fuel.getFluidAmount() > 0 ? AflSounds.DIESEL_GENERATOR_START : AflSounds.DIESEL_GENERATOR_CRANK).get(), 1.0F);
+        noise(CRANK_NOISE);
         click();
         sync(true);
     }
@@ -169,6 +185,11 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         if (level == null) return;
         Vec3 at = engineWorld();
         level.playSound(null, at.x, at.y, at.z, sound, SoundSource.BLOCKS, 1.0F, pitch);
+    }
+
+    private void noise(double radius) {
+        if (level instanceof ServerLevel server) NoiseSystem.emit(new NoiseEvent(null, engineWorld(), NoiseType.MACHINE,
+                server.getGameTime(), AflBlocks.DIESEL_GENERATOR.getId(), radius), server);
     }
 
     private Vec3 panelWorld() {
@@ -203,7 +224,7 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
                 oil += (1.2F - oil) * 0.15F;
                 if (++crank >= CRANK_TICKS) {
                     if (fuel.getFluidAmount() <= 0) { mode = Mode.OFF; fault = true; sync(true); }   // cranked, never caught
-                    else { mode = Mode.RUNNING; sync(true); }
+                    else { mode = Mode.RUNNING; noise(RUN_NOISE); sync(true); }
                 }
             }
             case RUNNING -> {
@@ -228,6 +249,8 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         loadAvg += (ratio * RATED - loadAvg) * 0.025F;
         // the port seeds its cable network; the network pulls from output at the level's end
         if (mode == Mode.RUNNING) PowerCableTransfer.transferFrom(server, worldPosition, facing().getOpposite(), output, RATED);
+        // running: heard again every NOISE_INTERVAL ticks, staggered by position so several sets do not query together
+        if (mode == Mode.RUNNING && Math.floorMod(now + worldPosition.asLong(), NOISE_INTERVAL) == 0) noise(RUN_NOISE);
         sync(false);
     }
 

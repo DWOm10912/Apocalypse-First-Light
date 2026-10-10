@@ -85,13 +85,17 @@ public final class AflBlockMeshProfileLoader {
             for (var entry : definitionsA.entrySet()) {
                 String channel = name(entry.getKey());
                 var a = object(entry.getValue(), channel);
-                keys(a, "duration_ticks", "easing", "transforms", "loop_ticks");
+                keys(a, "duration_ticks", "easing", "transforms", "loop_ticks", "follow_ticks", "wrap");
                 double duration = number(a.get("duration_ticks"));
                 require(duration > 0 && duration <= 72000, "duration_ticks must be in (0,72000]");
                 Easing easing = Easing.valueOf(string(a.get("easing")).toUpperCase(Locale.ROOT));
                 double loop = a.has("loop_ticks") ? number(a.get("loop_ticks")) : 0;
                 require(!a.has("loop_ticks") || loop > 0 && loop <= 72000, "loop_ticks must be in (0,72000]");
-                animations.put(channel, new Animation(duration, easing, loop));
+                double follow = a.has("follow_ticks") ? number(a.get("follow_ticks")) : 0;
+                require(!a.has("follow_ticks") || follow > 0 && follow <= 1200, "follow_ticks must be in (0,1200]");
+                boolean wraps = a.has("wrap") && bool(a.get("wrap"));
+                require((loop > 0 ? 1 : 0) + (follow > 0 ? 1 : 0) + (wraps ? 1 : 0) <= 1, "loop_ticks, follow_ticks and wrap exclude each other");
+                animations.put(channel, new Animation(duration, easing, loop, follow, wraps));
                 var transforms = object(a.get("transforms"), "transforms");
                 require(!transforms.keySet().isEmpty(), "empty animation transforms");
                 for (var target : transforms.entrySet()) {
@@ -155,6 +159,10 @@ public final class AflBlockMeshProfileLoader {
     private static String string(JsonElement value) {
         require(value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString(), "expected string");
         return value.getAsString();
+    }
+    private static boolean bool(JsonElement value) {
+        require(value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isBoolean(), "expected boolean");
+        return value.getAsBoolean();
     }
     private static double number(JsonElement value) {
         require(value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(), "expected number");

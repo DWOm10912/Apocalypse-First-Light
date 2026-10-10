@@ -33,6 +33,7 @@ public final class NoiseSystem {
             case BLOCK_BREAK -> "Block";
             case FOOTSTEP, LANDING -> "Movement";
             case INTERACTION -> "Block";
+            case MACHINE -> "Machine";
         };
 
         ApocalypseFirstLight.LOGGER.debug(

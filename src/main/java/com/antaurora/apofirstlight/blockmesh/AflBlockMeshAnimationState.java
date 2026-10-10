@@ -8,6 +8,8 @@ public final class AflBlockMeshAnimationState {
     private final Map<String, Transition> channels = new HashMap<>();
     /** Loop channels (Animation#loops): their phase and speed. */
     private final Map<String, Rotor> rotors = new HashMap<>();
+    /** Follower channels (Animation#follows): position and speed at their last target. */
+    private final Map<String, Follower> followers = new HashMap<>();
     private AflBlockMeshProfile profile;
     /** Bumped whenever a channel's target or the profile changes (client/blockmesh/AflMeshChunking re-checks then). */
     private int version;
@@ -18,6 +20,7 @@ public final class AflBlockMeshAnimationState {
         version++;
         channels.clear(); // Initial load/reload snaps to authority; never keeps stale definitions.
         rotors.clear();
+        followers.clear();
     }
 
     public int version() {
@@ -42,26 +45,37 @@ public final class AflBlockMeshAnimationState {
             else if (rotor.target != target) { rotor.retarget(target, tick); version++; }
             return;
         }
+        if (animation.follows()) {
+            var follower = followers.get(channel);
+            if (follower == null) { followers.put(channel, new Follower(animation, target, tick)); version++; }
+            else if (follower.target != target) { follower.retarget(target, tick); version++; }
+            return;
+        }
         var transition = channels.get(channel);
         if (transition == null) {
             channels.put(channel, new Transition(animation, target, tick));
             version++;
-        } else if (transition.target != target) {
+        } else if (transition.goal != target) {
             version++;
             // State packets can arrive between frames within the same client tick.
             // Never reverse from a time earlier than the pose already shown to the player.
             tick = Math.max(tick, transition.lastSample);
-            double current = transition.sample(tick);
+            double current = transition.sample(tick), end = target;
+            // a wrapping channel: the short way round (end may be just past 1 or below 0; sample wraps it back)
+            if (animation.wraps()) end = target + Math.rint(current - target);
             transition.from = current;
-            transition.target = target;
+            transition.target = end;
+            transition.goal = target;
             transition.start = tick;
-            transition.duration = animation.durationTicks() * Math.abs(target - current);
+            transition.duration = animation.durationTicks() * Math.abs(end - current);
         }
     }
 
     public double sample(String channel, double tick) {
         var rotor = rotors.get(channel);
         if (rotor != null) return rotor.sample(tick);
+        var follower = followers.get(channel);
+        if (follower != null) return follower.sample(tick);
         var transition = channels.get(channel);
         return transition == null ? 0 : transition.sample(tick);
     }
@@ -70,17 +84,21 @@ public final class AflBlockMeshAnimationState {
     public double settled(String channel, double tick) {
         var rotor = rotors.get(channel);
         if (rotor != null) return rotor.speed(Math.max(tick, rotor.lastSample)) > 0 ? -1 : rotor.sample(tick);   // stopped: its angle
+        var follower = followers.get(channel);
+        if (follower != null) return follower.settled(tick) ? follower.target : -1;
         var transition = channels.get(channel);
         if (transition == null) return 0;
-        return transition.duration <= 0 || Math.max(tick, transition.lastSample) - transition.start >= transition.duration ? transition.target : -1;
+        return transition.duration <= 0 || Math.max(tick, transition.lastSample) - transition.start >= transition.duration ? transition.goal : -1;
     }
 
     /** Where the channel is heading or resting (0..1). */
     public double targetValue(String channel) {
         var rotor = rotors.get(channel);
         if (rotor != null) return rotor.target > 0 ? 0.5 : rotor.sample(rotor.lastSample);   // turning: never a resting pose
+        var follower = followers.get(channel);
+        if (follower != null) return follower.target;
         var transition = channels.get(channel);
-        return transition == null ? 0 : transition.target;
+        return transition == null ? 0 : transition.goal;
     }
 
     /**
@@ -129,21 +147,69 @@ public final class AflBlockMeshAnimationState {
         }
     }
 
+    /**
+     * A follower channel: a critically damped approach to the target with time constant followTicks (w = 1 / followTicks),
+     * x(t) = target + (a + b t) e^(-w t), a = x0 - target, b = v0 + w a, from the position x0 and speed v0 it had when
+     * this target arrived; a new target carries both over, so the motion never restarts from rest. Clamped to 0..1.
+     */
+    private static final class Follower {
+        final double w;
+        double target, x0, v0, start, lastSample;
+
+        Follower(AflBlockMeshProfile.Animation animation, double target, double tick) {
+            this.w = 1 / animation.followTicks();
+            this.target = this.x0 = target;
+            this.start = this.lastSample = tick;
+        }
+
+        private double position(double tau) {
+            double a = x0 - target, b = v0 + w * a;
+            return target + (a + b * tau) * Math.exp(-w * tau);
+        }
+
+        private double velocity(double tau) {
+            double a = x0 - target, b = v0 + w * a;
+            return (v0 - w * b * tau) * Math.exp(-w * tau);
+        }
+
+        double sample(double tick) {
+            tick = Math.max(tick, lastSample);
+            lastSample = tick;
+            return Math.max(0, Math.min(1, position(Math.max(0, tick - start))));
+        }
+
+        /** Within 1e-4 of the target and slower than 1e-4 a time constant: rest there (the needle can join the chunk). */
+        boolean settled(double tick) {
+            double tau = Math.max(0, Math.max(tick, lastSample) - start);
+            return Math.abs(position(tau) - target) < 1e-4 && Math.abs(velocity(tau)) / w < 1e-4;
+        }
+
+        void retarget(double next, double tick) {
+            tick = Math.max(tick, lastSample);
+            double tau = Math.max(0, tick - start), x = position(tau), v = velocity(tau);
+            x0 = Math.max(0, Math.min(1, x));
+            v0 = x0 == x ? v : 0;   // pinned at an end: it starts from rest there
+            target = next;
+            start = tick;
+        }
+    }
+
     private static final class Transition {
         final AflBlockMeshProfile.Animation animation;
-        double from, target, start, duration, lastSample;
+        /** target: where the easing ends (a wrapping channel's may lie outside 0..1); goal: the value asked for. */
+        double from, target, goal, start, duration, lastSample;
         Transition(AflBlockMeshProfile.Animation animation, double target, double tick) {
             this.animation = animation;
-            this.from = this.target = target;
+            this.from = this.target = this.goal = target;
             this.start = tick;
             this.lastSample = tick;
         }
         double sample(double tick) {
             tick = Math.max(tick, lastSample);
             lastSample = tick;
-            if (duration <= 0) return target;
-            double t = Math.max(0, Math.min(1, (tick - start) / duration));
-            return from + (target - from) * animation.easing().apply(t);
+            double t = duration <= 0 ? 1 : Math.max(0, Math.min(1, (tick - start) / duration));
+            double v = from + (target - from) * animation.easing().apply(t);
+            return animation.wraps() ? v - Math.floor(v) : v;
         }
     }
 }

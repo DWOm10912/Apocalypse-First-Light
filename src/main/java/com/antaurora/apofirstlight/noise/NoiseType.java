@@ -6,5 +6,7 @@ public enum NoiseType {
     BLOCK_BREAK,
     FOOTSTEP,
     LANDING,
-    INTERACTION
+    INTERACTION,
+    /** A machine running or starting (2026-10-09: the diesel generator); no player source. */
+    MACHINE
 }

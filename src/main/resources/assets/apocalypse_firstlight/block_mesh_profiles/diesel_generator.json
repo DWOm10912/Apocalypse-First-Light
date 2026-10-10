@@ -250,6 +250,7 @@
     "load": {
       "duration_ticks": 20,
       "easing": "ease_in_out",
+      "follow_ticks": 5,
       "transforms": {
         "needle_load": {
           "rotation": [
@@ -263,6 +264,7 @@
     "fuel": {
       "duration_ticks": 40,
       "easing": "ease_in_out",
+      "follow_ticks": 5,
       "transforms": {
         "needle_fuel": {
           "rotation": [
@@ -297,6 +299,7 @@
     "temp": {
       "duration_ticks": 40,
       "easing": "ease_in_out",
+      "follow_ticks": 5,
       "transforms": {
         "needle_temp": {
           "rotation": [
@@ -310,6 +313,7 @@
     "oil": {
       "duration_ticks": 16,
       "easing": "ease_in_out",
+      "follow_ticks": 5,
       "transforms": {
         "needle_oil": {
           "rotation": [
@@ -336,6 +340,7 @@
     "h0": {
       "duration_ticks": 4,
       "easing": "ease_in_out",
+      "wrap": true,
       "transforms": {
         "drum_0": {
           "rotation": [
@@ -349,6 +354,7 @@
     "h1": {
       "duration_ticks": 4,
       "easing": "ease_in_out",
+      "wrap": true,
       "transforms": {
         "drum_1": {
           "rotation": [
@@ -362,6 +368,7 @@
     "h2": {
       "duration_ticks": 4,
       "easing": "ease_in_out",
+      "wrap": true,
       "transforms": {
         "drum_2": {
           "rotation": [
@@ -375,6 +382,7 @@
     "h3": {
       "duration_ticks": 4,
       "easing": "ease_in_out",
+      "wrap": true,
       "transforms": {
         "drum_3": {
           "rotation": [
@@ -388,6 +396,7 @@
     "h4": {
       "duration_ticks": 4,
       "easing": "ease_in_out",
+      "wrap": true,
       "transforms": {
         "drum_4": {
           "rotation": [
