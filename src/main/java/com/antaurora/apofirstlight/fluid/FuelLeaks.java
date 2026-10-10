@@ -263,8 +263,10 @@ public final class FuelLeaks extends SavedData {
         for (FuelContainers.Container one : all) FuelContainers.destroy(level, one);
         level.explode(null, centre.x, centre.y, centre.z, power, true, Level.ExplosionInteraction.BLOCK);
         AflNetwork.sendFuelBlast(level, centre, power, c.diesel());   // the smoke burst and column (client/FireFx)
-        level.playSound(null, centre.x, centre.y, centre.z, com.antaurora.apofirstlight.registry.AflSounds.FUEL_EXPLODE.get(), SoundSource.BLOCKS,
-                3.0F, (c.diesel() ? 0.85F : 1.0F) * (0.92F + 0.16F * level.random.nextFloat()));   // over vanilla's blast: heard to about 96 blocks
+        // over vanilla's blast, heard as far as the blast's noise (noise/ExplosionNoiseEvents plays vanilla's at the same radius)
+        com.antaurora.apofirstlight.noise.RangedSound.play(level, centre, com.antaurora.apofirstlight.registry.AflSounds.FUEL_EXPLODE.get(),
+                SoundSource.BLOCKS, com.antaurora.apofirstlight.noise.ExplosionNoiseProfile.radius(power), 1.0F,
+                (c.diesel() ? 0.85F : 1.0F) * (0.92F + 0.16F * level.random.nextFloat()));
         FuelSpills spills = FuelSpills.get(level);
         for (FuelContainers.Container one : all) {
             int stains = rupture || one != c ? Mth.clamp(one.amount() / 25, one.amount() > 0 ? 3 : 0, 40) : Mth.clamp(one.amount() / 25, 0, 12);

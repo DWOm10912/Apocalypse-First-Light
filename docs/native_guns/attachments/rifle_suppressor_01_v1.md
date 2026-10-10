@@ -43,7 +43,7 @@
 - Shared renderer mounts `rifle_suppressor_root`; accessory `muzzle_exit_anchor` is `[0,0,-11.55]`. Mounted exit is `[0,11.4375,-37.75]` before animation/render transforms.
 - Equipped guns capture muzzle visuals at the definition's mounting anchor plus accessory exit. Bare BR51 still uses its original `muzzle_pos` and barrel offset. Existing shotId snapshot/tracer and suppressed FX consume the resolved exit, without changing server hit authority.
 - Gun-defined `suppressed_fire_sound`: `apocalypse_firstlight:br51_01_suppressed`, mapped in sounds.json to `br51_01/suppressed.ogg`. Imported from user `E:/Download/br_51_suppressed.ogg`, converted from stereo to 48 kHz mono for positional playback; original untouched. Bare BR51 sound remains unchanged.
-- Shared noise formula `max(1, round(base * 0.05))`: BR51 112 → 6; P9 64 → 3. Actual audio attenuation is not multiplied by 0.05. Sound belongs to the gun, not the generic accessory.
+- Shared noise formula `max(1, round(base * 0.05))`: BR51 112 → 6; P9 64 → 3. Actual audio range is not multiplied by 0.05: a suppressed shot is heard 16 blocks (user decision 2026-10-09, `NativeGunNoise.SUPPRESSED_SOUND_RADIUS`), while an unsuppressed one is heard exactly as far as its noise (noise/RangedSound; docs "声音与感染者听觉" section 14). Sound belongs to the gun, not the generic accessory.
 
 ## Verification (historical integration results)
 

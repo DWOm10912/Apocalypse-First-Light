@@ -122,8 +122,10 @@ public class LeadChestBlock extends Block implements EntityBlock, AflMeshInterac
      */
     private static void setOpen(Level level, BlockPos pos, BlockState state, boolean open, Player player) {
         level.setBlock(pos, state.setValue(OPEN, open), Block.UPDATE_ALL);
-        level.playSound(null, pos, open ? AflSounds.LEAD_CHEST_OPEN.get() : AflSounds.LEAD_CHEST_CLOSE.get(),
-                SoundSource.BLOCKS, 0.8F, 0.98F + level.random.nextFloat() * 0.04F);
+        // heard as far as the opening's noise, both ways (noise/RangedSound, 2026-10-09; was 12 blocks)
+        if (level instanceof ServerLevel server) com.antaurora.apofirstlight.noise.RangedSound.play(server, pos.getCenter(),
+                open ? AflSounds.LEAD_CHEST_OPEN.get() : AflSounds.LEAD_CHEST_CLOSE.get(), SoundSource.BLOCKS, OPEN_NOISE_RADIUS,
+                0.8F, 0.98F + level.random.nextFloat() * 0.04F);
         level.gameEvent(player, open ? GameEvent.CONTAINER_OPEN : GameEvent.CONTAINER_CLOSE, pos);
         if (open && level instanceof ServerLevel server) {
             NoiseSystem.emit(new NoiseEvent(player, pos.getCenter(), NoiseType.INTERACTION, server.getGameTime(),

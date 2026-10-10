@@ -33,7 +33,7 @@
 
 NativeGunNoise.resolve 从服务器真实 ItemStack 取得有效 MUZZLE，最终半径 max(1,round(base×倍率))，P9 64→3。NativeGunShot 把最终值送给 NoiseSystem→InfectedHearingSystem；耳鸣也读取最终半径和抑音状态，P9原本 tinnitus=false。不新增第二个噪声事件。
 
-P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；无消音器仍为 p9_01_fire。未来其他兼容枪可声明自己的消音声，未声明时回退原枪声。声音播放音量/衰减沿用原流程，不乘0.05。导入用户 E:/Download/p9_01_suppressed.ogg，资源位于 sounds/weapons/p9_01/p9_01_suppressed.ogg，注册与 sounds.json 同步；导入前未发现相同音频。原文件为48kHz双声道，游戏内副本仅转单声道Vorbis以支持空间衰减，时长保持0.48秒；原文件未改，不额外降低音量。
+P9 可选数据 suppressed_fire_sound=apocalypse_firstlight:p9_01_suppressed；无消音器仍为 p9_01_fire。未来其他兼容枪可声明自己的消音声，未声明时回退原枪声。声音播放音量不变，传播距离不乘 0.05：消音枪声 16 格（用户 2026-10-09 定，`NativeGunNoise.SUPPRESSED_SOUND_RADIUS`），噪声 3 格；不装消音器时开火声传到噪声半径 64 格（`noise/RangedSound`）。导入用户 E:/Download/p9_01_suppressed.ogg，资源位于 sounds/weapons/p9_01/p9_01_suppressed.ogg，注册与 sounds.json 同步；导入前未发现相同音频。原文件为48kHz双声道，游戏内副本仅转单声道Vorbis以支持空间衰减，时长保持0.48秒；原文件未改，不额外降低音量。
 
 伤害、射程、散布、ADS、后坐、射速、弹匣、换弹与camera/look弹道不改。
 

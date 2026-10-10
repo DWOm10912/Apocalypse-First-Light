@@ -157,8 +157,10 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         fault = false;
         mode = Mode.CRANKING;
         crank = 0;
-        // an empty tank: the starter alone (the start sound has the engine firing in it)
-        sound((fuel.getFluidAmount() > 0 ? AflSounds.DIESEL_GENERATOR_START : AflSounds.DIESEL_GENERATOR_CRANK).get(), 1.0F);
+        // an empty tank: the starter alone (the start sound has the engine firing in it). The start recording runs on into the
+        // engine running, so it is heard as far as the running engine; the crank alone as far as cranking
+        if (fuel.getFluidAmount() > 0) sound(AflSounds.DIESEL_GENERATOR_START.get(), RUN_NOISE, 1.0F);
+        else sound(AflSounds.DIESEL_GENERATOR_CRANK.get(), CRANK_NOISE, 1.0F);
         noise(CRANK_NOISE);
         click();
         sync(true);
@@ -170,7 +172,7 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         boolean wasRunning = mode == Mode.RUNNING;
         mode = Mode.OFF;
         crank = 0;
-        if (wasRunning) sound(AflSounds.DIESEL_GENERATOR_STOP.get(), 1.0F);
+        if (wasRunning) sound(AflSounds.DIESEL_GENERATOR_STOP.get(), RUN_NOISE, 1.0F);
         click();
         sync(true);
     }
@@ -181,10 +183,10 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
         level.playSound(null, at.x, at.y, at.z, AflSounds.DISTRIBUTION_PANEL_LATCH.get(), SoundSource.BLOCKS, 0.6F, 1.35F);
     }
 
-    private void sound(SoundEvent sound, float pitch) {
-        if (level == null) return;
-        Vec3 at = engineWorld();
-        level.playSound(null, at.x, at.y, at.z, sound, SoundSource.BLOCKS, 1.0F, pitch);
+    /** Heard as far as the noise that goes with it (noise/RangedSound): the crank 12, the start and the stop 24. */
+    private void sound(SoundEvent sound, double radius, float pitch) {
+        if (!(level instanceof ServerLevel server)) return;
+        com.antaurora.apofirstlight.noise.RangedSound.play(server, engineWorld(), sound, SoundSource.BLOCKS, radius, 1.0F, pitch);
     }
 
     private void noise(double radius) {
@@ -233,7 +235,7 @@ public class DieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
                 while (fuelDebt >= 1) {
                     FluidStack drained = fuel.drain(1, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
                     fuelDebt -= 1;
-                    if (drained.isEmpty()) { mode = Mode.OFF; fault = true; fuelDebt = 0; sound(AflSounds.DIESEL_GENERATOR_STOP.get(), 0.9F); sync(true); break; }
+                    if (drained.isEmpty()) { mode = Mode.OFF; fault = true; fuelDebt = 0; sound(AflSounds.DIESEL_GENERATOR_STOP.get(), RUN_NOISE, 0.9F); sync(true); break; }
                 }
                 hours += 1.0 / HOUR_TICKS;
                 temp += (WARM_C + 6F * ratio - temp) / 300F;

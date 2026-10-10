@@ -168,7 +168,10 @@ public final class NativeGunActions {
         }
         item.triggerAnim(player, state.id, NativeGunItem.ACTION_CONTROLLER, state.clip);
         if (!reload) {
-            sound(player, NativeGunNoise.resolve(player.getMainHandItem(),definition).fireSound(item));
+            // heard exactly as far as the shot's noise (NativeGunShot emits the same radius); a suppressed one 16 blocks
+            var shotNoise = NativeGunNoise.resolve(player.getMainHandItem(), definition);
+            com.antaurora.apofirstlight.noise.RangedSound.play(player.serverLevel(), player.getEyePosition(), shotNoise.fireSound(item),
+                    SoundSource.PLAYERS, shotNoise.soundRadius(), 1.0F, 1.0F);
             var shot = NativeGunShot.executeWithTrajectories(player, definition,
                     aiming && !player.isSprinting() && !player.isUsingItem());
             var hit = shot.representative();
@@ -260,7 +263,8 @@ public final class NativeGunActions {
 
     // Bound to the player entity (ClientboundSoundEntityPacket -> EntityBoundSoundInstance), not to the position the
     // action started at: a long mono action sound (HR55 reload_empty 3 s, inspect 6 s) follows the shooter instead of
-    // staying behind when they turn and walk away. Same source, volume, pitch and audible range as before.
+    // staying behind when they turn and walk away. Same source, volume, pitch and audible range as before. Not the shot
+    // itself: that one is heard as far as its noise (noise/RangedSound, 2026-10-09).
     private static void sound(ServerPlayer player, SoundEvent sound) {
         player.serverLevel().playSound(null, player, sound, SoundSource.PLAYERS, 1.0F, 1.0F);
     }

@@ -158,7 +158,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         // one turns the engine over and lets it stop (two recordings, at random)
         float chance = pullStart < warmUntil ? (good ? WARM_GOOD : WARM_POOR) : (good ? COLD_GOOD : COLD_POOR);
         pullCatches = fuel.getFluidAmount() > 0 && level.getRandom().nextFloat() < chance;
-        sound((pullCatches ? AflSounds.PORTABLE_GENERATOR_PULL : AflSounds.PORTABLE_GENERATOR_PULL_FAIL).get(), good ? 1.0F : 0.95F);
+        sound((pullCatches ? AflSounds.PORTABLE_GENERATOR_PULL : AflSounds.PORTABLE_GENERATOR_PULL_FAIL).get(), PULL_NOISE, good ? 1.0F : 0.95F);
         noise(PULL_NOISE);
         sync();
     }
@@ -168,7 +168,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         if (!running || level == null) return;
         running = false;
         warmUntil = level.getGameTime() + WARM_TICKS;
-        sound(AflSounds.PORTABLE_GENERATOR_STOP.get(), 1.0F);
+        sound(AflSounds.PORTABLE_GENERATOR_STOP.get(), RUN_NOISE, 1.0F);
         sync();
     }
 
@@ -197,10 +197,11 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         return give;
     }
 
-    private void sound(SoundEvent sound, float pitch) {
-        if (level == null) return;
+    /** Heard as far as the noise that goes with it (noise/RangedSound): the pulls 8, the start and the stop 32. */
+    private void sound(SoundEvent sound, double radius, float pitch) {
+        if (!(level instanceof ServerLevel server)) return;
         Vec3 at = PortableDieselGeneratorBlock.world(worldPosition, getBlockState(), PortableDieselGeneratorBlock.ENGINE);
-        level.playSound(null, at.x, at.y, at.z, sound, SoundSource.BLOCKS, 1.0F, pitch);
+        com.antaurora.apofirstlight.noise.RangedSound.play(server, at, sound, SoundSource.BLOCKS, radius, 1.0F, pitch);
     }
 
     private void noise(double radius) {
@@ -227,7 +228,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
             long age = now - pullStart;
             if (age == CATCH_AT && !running && pullCatches && fuel.getFluidAmount() > 0) {
                 running = true;
-                sound(AflSounds.PORTABLE_GENERATOR_START.get(), 1.0F);
+                sound(AflSounds.PORTABLE_GENERATOR_START.get(), RUN_NOISE, 1.0F);
                 noise(RUN_NOISE);
                 sync();
             }
@@ -255,7 +256,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
                 fuelDebt -= 1;
                 if (drained.isEmpty()) {   // ran dry: it stops
                     running = false; fuelDebt = 0; warmUntil = now + WARM_TICKS;
-                    sound(AflSounds.PORTABLE_GENERATOR_STOP.get(), 0.9F);
+                    sound(AflSounds.PORTABLE_GENERATOR_STOP.get(), RUN_NOISE, 0.9F);
                     sync();
                     break;
                 }

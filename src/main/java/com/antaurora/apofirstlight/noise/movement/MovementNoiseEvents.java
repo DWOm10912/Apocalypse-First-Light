@@ -22,8 +22,8 @@ public final class MovementNoiseEvents {
     private static final double WALK_STEP_DISTANCE = 0.9;
     private static final double SPRINT_STEP_DISTANCE = 1.2;
     private static final double LIGHT_LANDING_RADIUS = 5.0;
-    private static final double HEAVY_LANDING_RADIUS = 8.0;
-    private static final double VERY_HEAVY_LANDING_RADIUS = 12.0;
+    public static final double HEAVY_LANDING_RADIUS = 8.0;
+    public static final double VERY_HEAVY_LANDING_RADIUS = 12.0;
     private static final Map<ServerPlayer, MovementNoiseState> STATES = Collections.synchronizedMap(new WeakHashMap<>());
 
     private MovementNoiseEvents() {
@@ -107,6 +107,11 @@ public final class MovementNoiseEvents {
                 player.level().getGameTime(), null, radius));
         ApocalypseFirstLight.LOGGER.debug("[AFL MOVEMENT NOISE] Type=LANDING FallDistance={} Radius={} Player={}",
                 fallDistance, radius, player.getGameProfile().getName());
+    }
+
+    /** A step's radius for this player's gait (sneak, walk, sprint); also how far the step sound is heard (client/NoiseSoundRanges). */
+    public static double footstepRadius(net.minecraft.world.entity.player.Player player) {
+        return player.isCrouching() ? SNEAK_RADIUS : player.isSprinting() ? SPRINT_RADIUS : WALK_RADIUS;
     }
 
     private static MovementMode movementMode(ServerPlayer player) {

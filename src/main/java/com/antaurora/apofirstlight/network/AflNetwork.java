@@ -119,6 +119,9 @@ public final class AflNetwork {
         channel.registerMessage(nextId++, ContainerSearchSoundS2CPacket.class, ContainerSearchSoundS2CPacket::encode,
                 ContainerSearchSoundS2CPacket::decode, ContainerSearchSoundS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        channel.registerMessage(nextId++, RangedSoundS2CPacket.class, RangedSoundS2CPacket::encode,
+                RangedSoundS2CPacket::decode, RangedSoundS2CPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.weight.WeightPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.stamina.StaminaPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.thirst.ThirstPackets.register(channel, nextId);
@@ -159,6 +162,11 @@ public final class AflNetwork {
     }
 
     /** Progressive Container Search: a container's search sound running (its id, repeated as a keep-alive) or stopped (null), to everyone tracking its chunk. */
+    /** A sound heard as far as its noise (noise/RangedSound), to one player within its radius. */
+    public static void rangedSound(ServerPlayer player, RangedSoundS2CPacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
     public static void containerSearchSound(ServerLevel level, BlockPos pos, @org.jetbrains.annotations.Nullable ResourceLocation sound) {
         if (channel != null) channel.send(PacketDistributor.TRACKING_CHUNK.with(() -> level.getChunkAt(pos)),
                 new ContainerSearchSoundS2CPacket(pos.immutable(), sound));
