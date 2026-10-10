@@ -138,7 +138,7 @@
 - **选择框**：只有泵在自己那一格里的部分（三种安装方式都有一部分在自己那格里）；伸到下面那格的部分，对着下面的油桶操作也一样。没有碰撞。
 - **挖掘**：同容器，镐子，没有等级要求，硬度 1.0 / 2.0。
 - **方块实体**（`HandFuelPumpBlockEntity`）：同步"在不在摇"。客户端转摇把，每秒一圈。
-- **渲染**（`client/HandFuelPumpRenderer`）：泵身是烘焙模型（每种 `mount` 一个）；摇把是单独的模型 `block/hand_fuel_pump/crank`，绕自己的轴转；软管实时画：三次曲线，从出油口竖直向下离开，从上方进入接口，带一点松弛，半径 0.3 px，用图集里的橡胶色块（带同一套 LabPBR）。
+- **渲染**（`client/HandFuelPumpRenderer`）：泵身是烘焙模型（每种 `mount` 一个）；摇把是单独的模型 `block/hand_fuel_pump/crank`，绕自己的轴转；软管实时画：三次曲线，从出油口竖直向下离开，从上方进入接口，带一点松弛，半径 0.3 px，用图集里的橡胶色块（带同一套 LabPBR）。取色点在渲染时挪到所在像素的正中心（`LiquidJetRenderer.texelCentre`，2026-10-09）：原来的 `HOSE_U` 离像素交界只有万分之一像素，Sundial 下可能采错颜色，见 [shader_pbr_tuning_v1.md](../rendering/shader_pbr_tuning_v1.md)"单点 UV 的管子在 Sundial 下变色"。
 - 声音暂用原版：摇把隔一次右键响一下链条声，抽油时每秒一声倒水声。
 
 ## 子弹、着火、爆炸

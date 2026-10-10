@@ -101,6 +101,7 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 
 电源（2026-10-09，[备用柴油发电机组 V1](../machines/diesel_standby_generator_v1.md)；还没实机验证）：
 - `diesel_generator`（`open=false`、`fill=false`）：3 × 1 × 2 格带罩柴油发电机组，`facing` 是正面（检修门、仪表盘）。用 `place_multiblock`，锚点 `c0r0`（列沿 `facing.getClockWise()`）；带方块实体的主格是中间那列下格 `c1r0`，它的背面中心是标准钢电源接口，电缆接在主格后面那一格。放下是空的、停机的。镐 + 钻石级。门往前开约 1 m，前面留空。散热端（`c2r0` 的端面，`facing` 顺时针那一面）是标准流体接口，外面那一格可以接流体管道进柴油；加油口盒在另一端的台阶上。
+- `portable_diesel_generator`（`cap=false`，2026-10-09，[便携式柴油发电机 V1](../machines/portable_diesel_generator_v1.md)，还没实机验证）：一格的开架式手拉柴油发电机，`facing` 是控制面板；放在地上，放下是空的、停机的、加油盖关着。面板上两组 NEMA 5-15R 双联插座，插头电器和插线板直接插在它上面。镐 + 钻石级。A1 打算放在库房后门旁。
 
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

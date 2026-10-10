@@ -26,6 +26,8 @@ public final class StaminaConfig {
         /** Rolling on an office chair, per second; the load's movement multiplier applies at this share of its excess over 1. */
         public double officeChair = 0.5, officeChairLoad = 2.0 / 3.0;
         public double meleeEmptyHand = 3, melee = 5, shot = 0.6, reload = 1;
+        /** One pull of a recoil starter (the portable diesel generator, 2026-10-09). */
+        public double recoilPull = 6;
         /** item id → cost per swing */
         public Map<String, Double> meleeItems = Map.of("apocalypse_firstlight:crowbar", 8.0);
         /** ammo item id → cost per shot */

@@ -237,6 +237,10 @@
       "unit_mass_kg": 90,
       "estimated": true
     },
+    "apocalypse_firstlight:portable_diesel_generator": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
     "apocalypse_firstlight:enclosure_gate": {
       "unit_mass_kg": 30,
       "estimated": true

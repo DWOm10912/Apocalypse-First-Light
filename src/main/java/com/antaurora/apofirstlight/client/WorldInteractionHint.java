@@ -62,6 +62,7 @@ public final class WorldInteractionHint {
         float step=Math.min(.2f,(now-last)/1_000_000_000f)/AttachmentHintStyle.FADE_SECONDS;last=now;
         if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
         Target target=null;
+        if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
         if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
@@ -73,6 +74,7 @@ public final class WorldInteractionHint {
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=enclosureGate(mc,hit);
             if(target==null) target=dieselGenerator(mc,hit);
+            if(target==null) target=portableGenerator(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=pavementPaint(mc,hit);
             if(target==null) target=curb(mc,hit);
@@ -300,6 +302,17 @@ public final class WorldInteractionHint {
      * Diesel standby generator, as DieselGeneratorBlock#use (its own action resolver): start / stop and the e-stop at the
      * panel, the doors, the fill box's lid, and "pour" with a jerry can at the open fill box (the can starts it).
      */
+    /** Portable diesel generator V1 (PortableDieselGeneratorBlock#action): pull, stop, cap, pour, reset; its sockets as an outlet's. */
+    private static Target portableGenerator(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.PortableDieselGeneratorBlock block)) return null;
+        var action=block.action(mc.level,hit.getBlockPos(),s,hit.getLocation(),mc.player,com.antaurora.apofirstlight.client.PlugCordRenderer.localCarrying());
+        if(action==null) return null;
+        String key=switch(action){case PLUG_IN->"plug.plug_in";case UNPLUG->"plug.unplug";default->"portable_diesel_generator."+action.name().toLowerCase(java.util.Locale.ROOT);};
+        return new Target(Component.translatable("hint.apocalypse_firstlight."+key),block.anchor(hit.getBlockPos(),s,action,hit.getLocation()));
+    }
+
     private static Target dieselGenerator(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var s=mc.level.getBlockState(hit.getBlockPos());

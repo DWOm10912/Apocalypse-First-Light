@@ -95,8 +95,8 @@ public final class HandFuelPumpRenderer implements BlockEntityRenderer<HandFuelP
             b = new Vec3(b.x, floor(level, b, 3) + RADIUS, b.z);
         }
         TextureAtlasSprite sprite = mc.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(ATLAS_TEXTURE);
-        hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), level, origin, a, b, into,
-                sprite.getU(HOSE_U * 16), sprite.getV(HOSE_V * 16));
+        float[] uv = LiquidJetRenderer.texelCentre(sprite, HOSE_U, HOSE_V);
+        hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), level, origin, a, b, into, uv[0], uv[1]);
     }
 
     /** The top of what stands under {@code p} (searching {@code depth} blocks down), or p's own height when nothing is there. */

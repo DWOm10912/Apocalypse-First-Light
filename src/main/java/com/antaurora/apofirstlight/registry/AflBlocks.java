@@ -252,6 +252,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> DIESEL_GENERATOR = BLOCKS.register("diesel_generator",
             () -> new com.antaurora.apofirstlight.block.DieselGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    /** Portable diesel generator V1 (docs/machines/portable_diesel_generator_v1.md): an industrial machine, pickaxe + diamond tier. */
+    public static final RegistryObject<Block> PORTABLE_DIESEL_GENERATOR = BLOCKS.register("portable_diesel_generator",
+            () -> new com.antaurora.apofirstlight.block.PortableDieselGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(4.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
     public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)

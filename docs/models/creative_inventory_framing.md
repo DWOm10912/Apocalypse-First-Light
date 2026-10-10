@@ -23,6 +23,7 @@ The user screenshot was measured against the center of each 18-pixel inventory s
 | `roof_tpo`、`cmu_screen_wall` | 原版方块的显示参数（父模型是方块模型 / `block/block`）。围墙的物品模型是居中的一段带压顶的直墙（`cmu_screen_wall/item`，`tools/build-trash-enclosure-v1.mjs`） |
 | `rooftop_unit` | `tools/build-store-roof-v1.mjs`：父模型 `rooftop_unit/unit`，rotation `[25,200,0]`，scale 0.473，translation `[3.238,-0.89,0]`；其余视角 `heldDisplay` |
 | `diesel_generator` | `tools/build-diesel-generator-v1.mjs`（2026-10-09）：父模型 `diesel_generator/item`（整台机组，门关、灯灭、不带表玻璃，OBJ），rotation `[20,200,0]`，按投影自动缩放到 15.2 px（scale 0.33，translation `[0.064,-1.537,0]`）；其余视角 `heldDisplay`。在工业页，热力发电机后面。见 [diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md) |
+| `portable_diesel_generator` | `tools/build-portable-diesel-generator-v1.mjs`（2026-10-09）：父模型 `portable_diesel_generator/item`（整台，加油盖关、拉手收着，OBJ，不带表玻璃），rotation `[25,215,0]`，按投影自动缩放到 15.2 px（scale 0.987，translation `[-0.201,2.938,0]`）；其余视角 `heldDisplay`。在工业页，大机组后面。见 [portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md) |
 | `enclosure_gate` | `tools/build-trash-enclosure-v1.mjs`：父模型 `enclosure_gate/item`（右合页、关着的整扇门，OBJ），rotation `[20,200,0]`，scale 0.45，translation `[4.469,-4.132,0]`；其余视角 `heldDisplay` |
 | `commercial_glass_double_door` | `[0,-2.3,0]` |
 | `beverage_cooler` | 2026-09-30 起由 `tools/build-beverage-cooler-v2.mjs` 生成：rotation `[25,225,0]`、translation `[-1.78,-3.254,0.613]`、scale 0.328（V2 Mesh，2026-10-01 修正为正面朝外，见 [beverage_cooler_v2.md](beverage_cooler_v2.md)） |

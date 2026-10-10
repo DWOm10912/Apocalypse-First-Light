@@ -37,6 +37,7 @@
     "apocalypse_firstlight:fluid_tank",
     "apocalypse_firstlight:back_bar_shelf",
     "apocalypse_firstlight:storage_rack",
-    "apocalypse_firstlight:diesel_generator"
+    "apocalypse_firstlight:diesel_generator",
+    "apocalypse_firstlight:portable_diesel_generator"
   ]
 }

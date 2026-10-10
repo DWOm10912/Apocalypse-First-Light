@@ -67,6 +67,12 @@
 
 ## 功能
 
+**别的插座宿主**（2026-10-09，[便携式柴油发电机](../machines/portable_diesel_generator_v1.md)）：方块实现 `energy/PlugSocketHost`，就能有自己的插孔。`PowerPlugs` 的每个方法都先问它：插孔数、占用、位置、朝向、瞄准哪个、收不收这根线、取电、有没有电；插拔、手拿插头、电线够不够长、电线渲染都不用改。
+- 第一个是便携发电机面板上的两组 NEMA 5-15R 双联插座（4 个插孔），和墙上插座同一种。游戏里只有一种插头（用户 2026-10-09："目前游戏里面的不就一种通用插头？"）。
+- 插线板现在也能插在发电机上。插线板有没有电（`PowerStripBlockEntity.live`）：插在墙上插座上看配电盘，插在插座宿主上问宿主（发电机运行中、没跳闸）。
+- 插线板插错地方的提示改成"插线板要插在墙上插座或发电机上"。
+- 空手右键宿主的插孔：`PowerPlugs.useSocketHost`，和墙上插座的 `useOutlet` 一样（拿着插头就插上，空手就拔出瞄准的那个）。
+
 **插座的电**（`energy/PowerPlugs`）：
 - 插座所在的格子在某个配电盘的"这栋楼"范围里，那个配电盘总闸合着、"插座"那一路没断开、缓冲里有电，插座就有电。这就是暗线，插座本身不接电缆。
 - 插在插座上的东西从配电盘缓冲里取电，算进"插座"那一路的用电（`DistributionPanelBlockEntity.drawOutlets`）。这一轮还没有用电的插头电器，插线板本身不耗电，所以配电盘上这一路的用电还是 0。
@@ -174,6 +180,7 @@
 - 生成器：`tools/build-power-outlets-v1.mjs`（`--check`、`--preview DIR`）。
   - 可编辑源：`src/main/blockbench/{wall_outlet,power_strip}_v1.bbmodel` 和 `textures/` 里的贴图副本。插线板、插头共用一张 512 贴图。
   - 电线色样的 UV 由生成器算出（`CORD_UV`），要和 `PowerStripRenderer.CORD_U / CORD_V` 一致。改了插线板几何以后，看输出里的 `cordUV` 有没有变。
+  - 渲染时 `PlugCordRenderer` 再把这个点挪到所在像素的正中心（`LiquidJetRenderer.texelCentre`，2026-10-09）：色块正中间在宽度为偶数时落在像素交界上，Sundial 下会采错颜色，见 [shader_pbr_tuning_v1.md](../rendering/shader_pbr_tuning_v1.md)"单点 UV 的管子在 Sundial 下变色"。现在的电线本来就在像素中间，颜色不变。
 - 运行时：
   - `models/block/wall_outlet.{obj,mtl,json}`；
   - `models/block/power_strip_{3,6}/{off,on,lit}{,_lowered}.{obj,mtl,json}`；

@@ -31,8 +31,9 @@ import java.util.UUID;
  * in its block state, live over the building's hidden wiring: in a Distribution Panel's building, main on, the outlet
  * circuit on, something in the buffer) and the power strips (3 / 6, flags in the block entity, live while switched on
  * and plugged into a live outlet). Cords ({@link PlugCord}) belong to the strips and the plug-in appliances; a strip's
- * cord only goes into a wall outlet. The player carries a plug by hand (sneak + empty hand on the device), then
- * right-clicks a socket with an empty hand; the plug goes into the aimed socket, or the other free one.
+ * cord only goes into a wall outlet or a generator's sockets. The player carries a plug by hand (sneak + empty hand on the
+ * device), then right-clicks a socket with an empty hand; the plug goes into the aimed socket, or the other free one.
+ * Blocks with sockets of their own ({@link PlugSocketHost}, 2026-10-09: the portable diesel generator) are asked first.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class PowerPlugs {
@@ -59,6 +60,7 @@ public final class PowerPlugs {
     /** Draws up to {@code fe} through the socket host at {@code host}: a wall outlet (its panel) or a power strip (its switch and plug). */
     public static int draw(Level level, BlockPos host, int fe, boolean simulate) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.draw(level, host, fe, simulate);
         if (state.getBlock() instanceof WallOutletBlock) {
             DistributionPanelBlockEntity panel = panelFor(level, host);
             return panel == null ? 0 : panel.drawOutlets(fe, simulate);
@@ -71,25 +73,29 @@ public final class PowerPlugs {
 
     public static int sockets(Level level, BlockPos host) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.sockets(level, host, state);
         if (state.getBlock() instanceof WallOutletBlock) return 2;
         return state.getBlock() instanceof PowerStripBlock strip ? strip.outlets() : 0;
     }
 
     public static boolean used(Level level, BlockPos host, int socket) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.socketUsed(level, host, socket);
         if (state.getBlock() instanceof WallOutletBlock) return WallOutletBlock.used(state, socket);
         return level.getBlockEntity(host) instanceof PowerStripBlockEntity strip && strip.socketUsed(socket);
     }
 
     public static void setUsed(Level level, BlockPos host, int socket, boolean used) {
         BlockState state = level.getBlockState(host);
-        if (state.getBlock() instanceof WallOutletBlock) level.setBlock(host, WallOutletBlock.withUsed(state, socket, used), 3);
+        if (state.getBlock() instanceof PlugSocketHost h) h.setSocketUsed(level, host, socket, used);
+        else if (state.getBlock() instanceof WallOutletBlock) level.setBlock(host, WallOutletBlock.withUsed(state, socket, used), 3);
         else if (level.getBlockEntity(host) instanceof PowerStripBlockEntity strip) strip.setSocketUsed(socket, used);
     }
 
     /** The centre of the socket's face, world coordinates. */
     public static Vec3 socketPoint(Level level, BlockPos host, int socket) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.socketPoint(host, state, socket);
         if (state.getBlock() instanceof PowerStripBlock strip) return strip.socketPoint(host, state, socket);
         return state.getBlock() instanceof WallOutletBlock ? WallOutletBlock.socket(host, state, socket) : Vec3.atCenterOf(host);
     }
@@ -97,6 +103,7 @@ public final class PowerPlugs {
     /** Out of the socket (the plug's axis). */
     public static Vec3 socketAxis(Level level, BlockPos host, int socket) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.socketAxis(state, socket);
         if (state.getBlock() instanceof WallOutletBlock) return Vec3.atLowerCornerOf(state.getValue(WallOutletBlock.FACING).getNormal());
         return new Vec3(0, 1, 0);
     }
@@ -104,12 +111,14 @@ public final class PowerPlugs {
     /** Toward the socket's slots, away from its ground hole (the plug's up). */
     public static Vec3 socketUp(Level level, BlockPos host, int socket) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.socketUp(state, socket);
         return state.getBlock() instanceof PowerStripBlock strip ? strip.socketUp(state, socket) : new Vec3(0, 1, 0);
     }
 
     /** The socket aimed at: on an outlet the upper or lower one by height, on a strip the nearest one. */
     public static int aimedSocket(Level level, BlockPos host, BlockHitResult hit) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.aimedSocket(host, state, hit.getLocation());
         if (state.getBlock() instanceof PowerStripBlock strip) {
             int best = 0; double bestD = Double.MAX_VALUE;
             for (int i = 0; i < strip.outlets(); i++) { double d = strip.socketPoint(host, state, i).distanceToSqr(hit.getLocation()); if (d < bestD) { bestD = d; best = i; } }
@@ -118,9 +127,10 @@ public final class PowerPlugs {
         return hit.getLocation().y - host.getY() >= WallOutletBlock.CENTRE_Y / 16.0 ? 0 : 1;
     }
 
-    /** A strip's cord goes into wall outlets only. */
+    /** A strip's cord goes into wall outlets (and socket hosts that take it) only. */
     public static boolean accepts(Level level, BlockPos host, PlugCord cord) {
         BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.acceptsPlug(level, host, cord);
         if (state.getBlock() instanceof WallOutletBlock) return true;
         return state.getBlock() instanceof PowerStripBlock && !cord.strip() && !host.equals(cord.ownerPos());
     }
@@ -216,6 +226,25 @@ public final class PowerPlugs {
         cord.plugInto(host, socket);
         setUsed(level, host, socket, true);
         level.playSound(null, host, SoundEvents.STONE_BUTTON_CLICK_ON, SoundSource.BLOCKS, 0.5F, 0.8F);
+        return InteractionResult.CONSUME;
+    }
+
+    /**
+     * Right-click with an empty hand on a socket host's sockets ({@link PlugSocketHost}): plug the carried plug in, or pull
+     * out the one in the aimed socket (as {@link #useOutlet}). PASS when that socket is free and nothing is carried.
+     */
+    public static InteractionResult useSocketHost(Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        if (level.isClientSide()) return InteractionResult.SUCCESS;
+        if (!(player instanceof ServerPlayer server) || !player.getMainHandItem().isEmpty()) return InteractionResult.PASS;
+        if (carried(player) != null) return plugCarried(level, pos, hit, server);
+        int aimed = aimedSocket(level, pos, hit);
+        if (!used(level, pos, aimed)) return InteractionResult.PASS;
+        PlugCord cord = pluggedInto(level, pos, aimed);
+        if (cord != null) {
+            cord.unplug();
+            carry(server, cord);
+            level.playSound(null, pos, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.5F, 0.7F);
+        } else setUsed(level, pos, aimed, false);   // stale flag
         return InteractionResult.CONSUME;
     }
 

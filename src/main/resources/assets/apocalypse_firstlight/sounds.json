@@ -475,6 +475,27 @@
     "subtitle": "subtitles.apocalypse_firstlight.diesel_generator_stop",
     "sounds": [{"name": "apocalypse_firstlight:diesel_generator/stop", "attenuation_distance": 24}]
   },
+  "portable_generator_pull": {
+    "subtitle": "subtitles.apocalypse_firstlight.portable_generator_pull",
+    "sounds": [{"name": "apocalypse_firstlight:portable_generator/pull", "attenuation_distance": 16}]
+  },
+  "portable_generator_pull_fail": {
+    "subtitle": "subtitles.apocalypse_firstlight.portable_generator_pull",
+    "sounds": [{"name": "apocalypse_firstlight:portable_generator/pull_fail_1", "attenuation_distance": 16},
+      {"name": "apocalypse_firstlight:portable_generator/pull_fail_2", "attenuation_distance": 16}]
+  },
+  "portable_generator_start": {
+    "subtitle": "subtitles.apocalypse_firstlight.portable_generator_start",
+    "sounds": [{"name": "apocalypse_firstlight:portable_generator/start", "attenuation_distance": 32}]
+  },
+  "portable_generator_run": {
+    "subtitle": "subtitles.apocalypse_firstlight.portable_generator_run",
+    "sounds": [{"name": "apocalypse_firstlight:portable_generator/run_loop", "attenuation_distance": 32}]
+  },
+  "portable_generator_stop": {
+    "subtitle": "subtitles.apocalypse_firstlight.portable_generator_stop",
+    "sounds": [{"name": "apocalypse_firstlight:portable_generator/stop", "attenuation_distance": 32}]
+  },
   "office_chair_roll": {
     "subtitle": "subtitles.apocalypse_firstlight.office_chair_roll",
     "sounds": [{"name": "apocalypse_firstlight:office_chair/roll_loop", "attenuation_distance": 12}]

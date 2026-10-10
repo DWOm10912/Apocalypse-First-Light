@@ -105,6 +105,19 @@ public final class LiquidJetRenderer {
         }
     }
 
+    /**
+     * The UV every vertex of a solid-colour tube samples (a hose, a cord, a rope: one texel of a block-atlas sprite): the
+     * centre of the sprite's texel at (u, v), fractions of the sprite. Never a texel corner. Sundial clamps each block-atlas
+     * quad to the texels round its mid UV (floor to ceil, in its vertex shader). On a texel boundary that range is empty,
+     * the clamped coordinate goes NaN and reads an unrelated part of the atlas: the portable generator's rope, at
+     * white_concrete's exact middle, came out red (2026-10-09).
+     */
+    public static float[] texelCentre(TextureAtlasSprite sprite, double u, double v) {
+        int w = sprite.contents().width(), h = sprite.contents().height();
+        double x = (Mth.clamp(Math.floor(u * w), 0, w - 1) + 0.5) / w, y = (Mth.clamp(Math.floor(v * h), 0, h - 1) + 0.5) / h;
+        return new float[]{sprite.getU(x * 16), sprite.getV(y * 16)};
+    }
+
     /** Rotation-minimising frames (parallel transport) along a polyline: each point's ring of unit directions round the axis. */
     public static Vec3[][] rings(Vec3[] points, int sides) {
         int last = points.length - 1;

@@ -50,10 +50,13 @@ public class PowerStripBlockEntity extends BlockEntity implements PlugCord.Owner
         return state.hasProperty(PowerStripBlock.ON) && state.getValue(PowerStripBlock.ON);
     }
 
-    /** Switched on, plugged into a wall outlet, and the outlet has power. */
+    /** Switched on, plugged into a wall outlet that has power, or into a socket host that is live (a running generator). */
     public boolean live() {
         BlockPos host = cord.host();
-        return level != null && switchedOn() && host != null && level.getBlockState(host).getBlock() instanceof WallOutletBlock && PowerPlugs.outletLive(level, host);
+        if (level == null || !switchedOn() || host == null) return false;
+        var block = level.getBlockState(host).getBlock();
+        if (block instanceof com.antaurora.apofirstlight.energy.PlugSocketHost h) return h.live(level, host);
+        return block instanceof WallOutletBlock && PowerPlugs.outletLive(level, host);
     }
 
     public int draw(int fe, boolean simulate) {

@@ -221,6 +221,8 @@ public final class AflItems {
     public static final RegistryObject<Item> DIESEL_GENERATOR = ITEMS.register("diesel_generator",
             () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
                     (com.antaurora.apofirstlight.block.DieselGeneratorBlock) AflBlocks.DIESEL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> PORTABLE_DIESEL_GENERATOR = ITEMS.register("portable_diesel_generator",
+            () -> new net.minecraft.world.item.BlockItem(AflBlocks.PORTABLE_DIESEL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENCLOSURE_GATE = ITEMS.register("enclosure_gate",
             () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
                     (com.antaurora.apofirstlight.block.EnclosureGateBlock) AflBlocks.ENCLOSURE_GATE.get(), new Item.Properties().stacksTo(1)));

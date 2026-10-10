@@ -1,0 +1,284 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/portable_diesel_generator.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/portable_diesel_generator.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.023902,
+    -0.015625,
+    0.175375,
+    1.344162,
+    0.742587,
+    0.824625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "handle": {
+      "pivot": [
+        0.356379,
+        0.346395,
+        -0.054043
+      ]
+    },
+    "cap": {
+      "pivot": [
+        0.17,
+        0.649,
+        -0.02
+      ]
+    },
+    "fuel_level": {
+      "pivot": [
+        0.17,
+        0.555,
+        -0.06
+      ]
+    },
+    "fuel_needle": {
+      "pivot": [
+        -0.06,
+        0,
+        -0.08
+      ]
+    },
+    "needle_volts": {
+      "pivot": [
+        -0.0468,
+        0.3974,
+        0
+      ]
+    },
+    "breaker_0": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "breaker_1": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "breaker_2": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "drum_0": {
+      "pivot": [
+        -0.1038,
+        0.413,
+        -0.188534
+      ]
+    },
+    "drum_1": {
+      "pivot": [
+        -0.117,
+        0.413,
+        -0.188534
+      ]
+    },
+    "drum_2": {
+      "pivot": [
+        -0.1302,
+        0.413,
+        -0.188534
+      ]
+    },
+    "drum_3": {
+      "pivot": [
+        -0.1434,
+        0.413,
+        -0.188534
+      ]
+    },
+    "drum_4": {
+      "pivot": [
+        -0.1566,
+        0.413,
+        -0.188534
+      ]
+    }
+  },
+  "animations": {
+    "pull": {
+      "duration_ticks": 5,
+      "easing": "ease_out",
+      "transforms": {
+        "handle": {
+          "translation": [
+            0.459483,
+            0.28488,
+            -0.101086
+          ]
+        }
+      }
+    },
+    "cap": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "cap": {
+          "rotation": [
+            110,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "volts": {
+      "duration_ticks": 20,
+      "easing": "ease_in_out",
+      "follow_ticks": 5,
+      "transforms": {
+        "needle_volts": {
+          "rotation": [
+            0,
+            0,
+            270
+          ]
+        }
+      }
+    },
+    "fuel": {
+      "duration_ticks": 40,
+      "easing": "ease_in_out",
+      "follow_ticks": 5,
+      "transforms": {
+        "fuel_needle": {
+          "rotation": [
+            0,
+            180,
+            0
+          ]
+        },
+        "fuel_level": {
+          "translation": [
+            0,
+            0.03,
+            0
+          ]
+        }
+      }
+    },
+    "trip": {
+      "duration_ticks": 3,
+      "easing": "ease_out",
+      "transforms": {
+        "breaker_0": {
+          "translation": [
+            0,
+            0,
+            -0.005
+          ]
+        },
+        "breaker_1": {
+          "translation": [
+            0,
+            0,
+            -0.005
+          ]
+        },
+        "breaker_2": {
+          "translation": [
+            0,
+            0,
+            -0.005
+          ]
+        }
+      }
+    },
+    "h0": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "wrap": true,
+      "transforms": {
+        "drum_0": {
+          "rotation": [
+            360,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "h1": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "wrap": true,
+      "transforms": {
+        "drum_1": {
+          "rotation": [
+            360,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "h2": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "wrap": true,
+      "transforms": {
+        "drum_2": {
+          "rotation": [
+            360,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "h3": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "wrap": true,
+      "transforms": {
+        "drum_3": {
+          "rotation": [
+            360,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "h4": {
+      "duration_ticks": 4,
+      "easing": "ease_in_out",
+      "wrap": true,
+      "transforms": {
+        "drum_4": {
+          "rotation": [
+            360,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

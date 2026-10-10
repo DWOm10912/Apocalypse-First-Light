@@ -1,0 +1,6 @@
+{
+  "loader": "apocalypse_firstlight:static_mesh",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/portable_diesel_generator"
+  }
+}

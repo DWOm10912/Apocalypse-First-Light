@@ -62,6 +62,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(LightPoleJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.LightPoleBaseBlockEntity.class);
         registration.registerBlockDataProvider(PriceSignJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.PriceSignBlockEntity.class);
         registration.registerBlockDataProvider(DieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.class);
+        registration.registerBlockDataProvider(PortableDieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.class);
     }
 
     @Override
@@ -105,6 +106,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(LightPoleJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.LightPoleBaseBlock.class);
         registration.registerBlockComponent(PriceSignJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.PriceSignBlock.class);
         registration.registerBlockComponent(DieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.DieselGeneratorBlock.class);
+        registration.registerBlockComponent(PortableDieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.PortableDieselGeneratorBlock.class);
         PriceSignJadeProvider.registerRedirect(registration);
         PavementMarkingJadeRedirect.register(registration);
     }

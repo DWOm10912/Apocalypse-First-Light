@@ -121,8 +121,9 @@ public final class PlugCordRenderer {
         curve(level, s.point, s.dir, tail, axis, points);
         // light from where the cord comes into view (the lead may start inside the wall behind the appliance, at light 0)
         int lightStart = LevelRenderer.getLightColor(level, BlockPos.containing(s.point.add(0, 0.05, 0))), lightEnd = LevelRenderer.getLightColor(level, BlockPos.containing(tail));
+        float[] uv = LiquidJetRenderer.texelCentre(sprite, CORD_U, CORD_V);
         tube(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), points.toArray(Vec3[]::new), s.lead.size() - 1,
-                origin, lightStart, lightEnd, sprite.getU(CORD_U * 16), sprite.getV(CORD_V * 16));
+                origin, lightStart, lightEnd, uv[0], uv[1]);
     }
 
     /** Where the free part of the cord starts, and the straight lead before it (along an appliance's back). */

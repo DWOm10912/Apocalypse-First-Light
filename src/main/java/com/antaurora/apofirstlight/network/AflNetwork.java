@@ -100,6 +100,9 @@ public final class AflNetwork {
                 BeverageCoolerDoorC2SPacket::encode, BeverageCoolerDoorC2SPacket::decode,
                 BeverageCoolerDoorC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
+        channel.registerMessage(nextId++, PortableGeneratorPullC2SPacket.class, PortableGeneratorPullC2SPacket::encode,
+                PortableGeneratorPullC2SPacket::decode, PortableGeneratorPullC2SPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
         channel.registerMessage(nextId++, RestroomDoorC2SPacket.class, RestroomDoorC2SPacket::encode,
                 RestroomDoorC2SPacket::decode, RestroomDoorC2SPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER));
@@ -219,6 +222,10 @@ public final class AflNetwork {
 
     public static void requestBeverageCoolerDoor(BlockPos master, boolean left) {
         if (channel != null) channel.sendToServer(new BeverageCoolerDoorC2SPacket(master, left));
+    }
+    /** The portable diesel generator's recoil QTE: a pull (good: timed in the zone) or letting go. */
+    public static void requestPortablePull(BlockPos pos, boolean pull, boolean good) {
+        if (channel != null) channel.sendToServer(new PortableGeneratorPullC2SPacket(pos, pull, good));
     }
     public static void requestRestroomDoor(BlockPos pos) {
         if(channel!=null)channel.sendToServer(new RestroomDoorC2SPacket(pos));

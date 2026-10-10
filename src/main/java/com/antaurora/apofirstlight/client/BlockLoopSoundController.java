@@ -44,7 +44,9 @@ public final class BlockLoopSoundController {
     private static final double AUDIBLE_RADIUS = 8.0D;
     /** The diesel generator's engine is heard further (its loop's attenuation distance in sounds.json is 24 too). */
     private static final double GENERATOR_RADIUS = 24.0D;
-    private static final int SCAN_RADIUS_CHUNKS = 2;   // covers the longest radius (24) from anywhere in the player's chunk
+    /** The portable diesel generator: an open frame, louder (sounds.json attenuation 32 too). */
+    private static final double PORTABLE_RADIUS = 32.0D;
+    private static final int SCAN_RADIUS_CHUNKS = 3;   // covers the longest radius (32) from anywhere in the player's chunk
     private static final int SCAN_INTERVAL_TICKS = 5;
 
     private record Source<T extends BlockEntity>(Class<T> type, Predicate<T> active, Function<T, Vec3> position,
@@ -94,7 +96,14 @@ public final class BlockLoopSoundController {
                     com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::running,
                     com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::engineWorld,
                     AflSounds.DIESEL_GENERATOR_RUN, 1.0F, com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.LOOP_FADE_IN[0],
-                    com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.LOOP_FADE_IN[1], GENERATOR_RADIUS));
+                    com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.LOOP_FADE_IN[1], GENERATOR_RADIUS),
+            // the portable diesel generator's engine while it runs, heard as far as it is loud; it waits for the start sound
+            // and fades in under its fade-out (all cut from one take: tools/build-portable-generator-sounds-v1.mjs)
+            new Source<>(com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.class,
+                    com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity::running,
+                    com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity::engineWorld,
+                    AflSounds.PORTABLE_GENERATOR_RUN, 1.0F, com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.LOOP_FADE_IN[0],
+                    com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.LOOP_FADE_IN[1], PORTABLE_RADIUS));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;

@@ -130,6 +130,11 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("diesel_generator_port", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.DieselGeneratorPortBlockEntity::new,
                             AflBlocks.DIESEL_GENERATOR.get()).build(null));
+    /** Portable diesel generator V1 (docs/machines/portable_diesel_generator_v1.md). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity>> PORTABLE_DIESEL_GENERATOR =
+            BLOCK_ENTITIES.register("portable_diesel_generator", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity::new,
+                            AflBlocks.PORTABLE_DIESEL_GENERATOR.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.EnclosureGateBlockEntity>> ENCLOSURE_GATE =
             BLOCK_ENTITIES.register("enclosure_gate", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.EnclosureGateBlockEntity::new,

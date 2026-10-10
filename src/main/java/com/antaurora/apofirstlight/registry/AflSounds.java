@@ -103,6 +103,12 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_START = simple("diesel_generator_start");
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_RUN = simple("diesel_generator_run");
     public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_STOP = simple("diesel_generator_stop");
+    /** Portable diesel generator V1: cut from the user's recordings (docs/machines/portable_diesel_generator_v1.md "声音"). */
+    public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_PULL = simple("portable_generator_pull");
+    public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_PULL_FAIL = simple("portable_generator_pull_fail");
+    public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_START = simple("portable_generator_start");
+    public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_RUN = simple("portable_generator_run");
+    public static final RegistryObject<SoundEvent> PORTABLE_GENERATOR_STOP = simple("portable_generator_stop");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

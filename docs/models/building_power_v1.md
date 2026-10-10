@@ -158,4 +158,5 @@
 2. ~~冷柜、冰柜、售货机、饮水机改成插头取电（去掉背后的钢接口）~~：2026-10-08 已做，电源线 4 格，用户实机 PASS（[Power Outlets V1](power_outlets_v1.md)）；
 3. ~~吸顶灯重做，吸顶自动亮，接到"照明"那一路~~：2026-10-08 已做（方形面板灯、线形灯、应急灯），未实机验证，见 [Building Lights V1](building_lights_v1.md)；
 4. A1：设备间换配电盘、后墙外换电表箱（建造脚本 `power` 模式已写好，还没运行），布置插座，接能量单元实测。
-5. 生存模式的电源：**备用柴油发电机组**（2026-10-09 实现，未实机验证，[diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md)）。额定 400 FE/t，从主格背面的标准接口出线；A1 的摆放脚本把它放在店后 u 25..27、v 6，电缆沿后墙根进电表箱底部，并拆掉 3 个测试能量单元（`tools/afl_minecraft_mcp/fuel_stop_a1_genset.mjs`，写好未运行）。
+5. 生存模式的电源：**备用柴油发电机组**（2026-10-09 实现，未实机验证，[diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md)）。额定 400 FE/t，从主格背面的标准接口出线；用户 2026-10-09 实机 PASS。A1 不放它（用户：以后由城市电网供电），原来的摆放脚本已删；A1 改放便携式柴油发电机。
+6. **便携式柴油发电机**（2026-10-09 实现，未实机验证，[portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md)）：20 FE/t，只有插座（两组 NEMA 5-15R 双联、4 个插孔），插头电器和插线板直接插在它上面；不接配电盘。

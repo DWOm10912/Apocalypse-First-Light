@@ -31,6 +31,9 @@ public final class AflBlockEntityRenderers {
         // Diesel standby generator V1: doors, fill lid, rain flap, gauge needles, key, hour meter drums, lamps (generic runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.DIESEL_GENERATOR.get(),
                 AflBlockEntityRendering.wrap("diesel_generator", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // Portable diesel generator V1: the generic runtime for the set, plus the starter rope and the first-person pulling arm
+        event.registerBlockEntityRenderer(AflBlockEntities.PORTABLE_DIESEL_GENERATOR.get(),
+                AflBlockEntityRendering.wrap("portable_diesel_generator", PortableGeneratorRenderer::new));
         // Trash enclosure V1 gate: the leaf swings (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.ENCLOSURE_GATE.get(),
                 AflBlockEntityRendering.wrap("enclosure_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/项目内容/02 - 制作清单.md",
+                "file": "docs/项目内容/01 - 设计/方块/机器.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "02 - 制作清单"
+              "title": "机器"
             }
           }
         ]
@@ -190,29 +190,31 @@
   },
   "active": "b3e2c81f3cf9edad",
   "lastOpenFiles": [
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_1.xwmc.outdated",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_1.xwmc",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_1.xwmc",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_1.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/-1_0.xwmc.temp",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc",
-    "run/xaero/world-map/新的世界 (1)/null/cache_1/0_0.xwmc.temp",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/spodumene_concentrate.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/item/clinical_thermometer_mesh_s.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/wall_outlet_n.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/wall_outlet.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/modern_lcd_monitor_n.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/power_strip.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/power_strip_s.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/wall_outlet_s.png",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/power_strip_n.png",
+    "run/saves/新的世界 (1)/level6841372897735259816.dat",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-5896014445246243285.dat",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/-1_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_0.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/-1_1.xwmc.outdated",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_1.xwmc.outdated",
+    "run/saves/新的世界 (1)/level12806135369023194982.dat",
+    "run/saves/新的世界 (1)/playerdata/380df991-f603-344c-a090-369bad2a924a-8231945656880662340.dat",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_1.xwmc",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_1.xwmc.temp",
+    "run/xaero/world-map/新的世界 (1)/null/caves/-3/cache_1/0_0.xwmc",
+    "docs/项目内容/02 - 制作清单.md",
+    "docs/dev/player_animation_rework_plan_v1.md",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/portable_diesel_generator_s.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/portable_diesel_generator_n.png",
+    "build/resources/main/assets/apocalypse_firstlight/textures/block/portable_diesel_generator.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/portable_diesel_generator_n.png",
+    "src/main/blockbench/textures/portable_diesel_generator_v1_n.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/portable_diesel_generator_s.png",
+    "src/main/blockbench/textures/portable_diesel_generator_v1_s.png",
+    "src/main/resources/assets/apocalypse_firstlight/textures/block/portable_diesel_generator.png",
+    "src/main/blockbench/textures/portable_diesel_generator_v1.png",
+    "src/main/blockbench/textures/portable_diesel_generator_panel_v1.png",
     "docs/dev/development_order_v1.md",
     "docs/worldgen/interstate_design_v1.md",
-    "build/resources/main/assets/apocalypse_firstlight/textures/block/distribution_panel_n.png",
     "docs/models/power_outlets_v1.md",
     "docs/models/building_power_v1.md",
     "docs/worldgen/highway_v2_m1b_route_geometry.md",
@@ -233,8 +235,6 @@
     "docs/worldgen/terrain_v2_migration_plan.md",
     "docs/worldgen/columbian_federation_terrain_v2_research.md",
     "docs/models/metal_wall_panel_v1.md",
-    "docs/项目内容/02 - 制作清单.md",
-    "docs/rendering/mesh_hit_runtime_v1.md",
-    "docs/rendering/block_break_particles_v1.md"
+    "docs/rendering/mesh_hit_runtime_v1.md"
   ]
 }

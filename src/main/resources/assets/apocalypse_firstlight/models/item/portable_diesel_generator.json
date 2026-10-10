@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/portable_diesel_generator/item",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0.026,
+        3.131,
+        1.922
+      ],
+      "scale": [
+        0.648,
+        0.648,
+        0.648
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        -0.024,
+        2.985,
+        1.736
+      ],
+      "scale": [
+        0.597,
+        0.597,
+        0.597
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0.024,
+        1.57,
+        -0.024
+      ],
+      "scale": [
+        0.602,
+        0.602,
+        0.602
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0.024,
+        1.57,
+        -0.024
+      ],
+      "scale": [
+        0.602,
+        0.602,
+        0.602
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0.22,
+        3.785,
+        0
+      ],
+      "scale": [
+        0.301,
+        0.301,
+        0.301
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        -0.441,
+        1.573,
+        0
+      ],
+      "scale": [
+        0.603,
+        0.603,
+        0.603
+      ]
+    },
+    "gui": {
+      "rotation": [
+        25,
+        215,
+        0
+      ],
+      "translation": [
+        -0.201,
+        2.938,
+        0
+      ],
+      "scale": [
+        0.987,
+        0.987,
+        0.987
+      ]
+    }
+  }
+}

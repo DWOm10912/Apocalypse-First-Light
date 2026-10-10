@@ -44,6 +44,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | 近战 | 空手 3；撬棍 8；其它 5 | 是 | `AttackEntityEvent`（打中实体才算，挥空不算；被手持枪取消的不算） |
 | 开枪 | 按弹种：9mm 0.4、7.62 0.6、.50 AE 1.2、12 号 1.5、12.7 2.5；其它 0.6 | 是 | 服务端接受的每一发 |
 | 换弹 | 1；HR55 2 | 是 | 服务端接受的换弹 |
+| 拉起动绳 | 6（`costs.recoil_pull`） | 是 | 便携式柴油发电机的拉绳 QTE，服务端接受的每一下（2026-10-09，[portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md)） |
 
 骑乘时不算移动消耗（坐骑自己出力），办公椅例外：坐着滑行是用脚蹬，算低强度活动（上表），坐着不动不扣、照常恢复，也不产生运动热。
 - 滑行消耗 = `office_chair` × (1 + (负重的移动类倍率 − 1) × `office_chair_load`)，配置为 0.5 和 0.6667，即负重倍率只取超出 1 的三分之二：30 kg 约 0.6、50 kg 约 0.83、≥ 60 kg 为 1.0 / 秒。
