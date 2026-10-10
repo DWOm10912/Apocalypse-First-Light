@@ -23,7 +23,7 @@ public final class MainNationBiomeRegionPlanTest {
         var constructor = MainNationBiomeRegionPlan.class.getDeclaredConstructor(long.class);
         constructor.setAccessible(true);
         check(plan.pockets().equals(constructor.newInstance(seed).pockets()), "same seed reconstruction");
-        check(plan.regionAt(0, 0) == MainNationBiomeRegionPlan.Region.STARTUP_PLAINS, "startup exists");
+        check(plan.regionAt(0, 0) != MainNationBiomeRegionPlan.Region.STARTUP_PLAINS, "startup Plains retired (2026-10-10)");
         check(plan.pockets().size() <= 3 && plan.pockets().size() <= plan.requestedCount(), "0..3 pockets");
         for (var p : plan.pockets()) {
             check(p.radius() >= 96 && p.radius() <= 224 && p.amplitude() >= 24 && p.amplitude() <= 48, "scale");

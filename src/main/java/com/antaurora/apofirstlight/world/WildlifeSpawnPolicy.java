@@ -29,10 +29,6 @@ public final class WildlifeSpawnPolicy {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return Decision.pass("NOT_OVERWORLD");
         if (!isTargetVanillaWildlife(type)) return Decision.pass("NOT_TARGET");
         if (!isNaturalSpawnReason(reason)) return Decision.pass("NOT_NATURAL_REASON");
-        StartupPlainsEnclave.Zone startup = StartupPlainsEnclave.zoneAt(pos.getX(), pos.getZ(), level.getSeed());
-        if (startup == StartupPlainsEnclave.Zone.CORE_PLAINS || startup == StartupPlainsEnclave.Zone.FRINGE_PLAINS)
-            return Decision.pass("STARTUP_SAFE");
-        if (startup == StartupPlainsEnclave.Zone.FALLOUT_BUFFER) return Decision.deny("STARTUP_FALLOUT");
         return RadiationManager.isNaturalZone(level, pos, RadiationZone.SAFE)
                 ? Decision.pass("NATURAL_SAFE") : Decision.deny("NATURAL_IRRADIATED");
     }

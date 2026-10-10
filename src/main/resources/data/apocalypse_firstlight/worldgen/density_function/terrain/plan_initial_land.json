@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:clamp",
+  "input": {
+    "type": "minecraft:add",
+    "argument1": -0.703125,
+    "argument2": "apocalypse_firstlight:terrain/plan_sloped_cheese"
+  },
+  "min": -64,
+  "max": 64
+}

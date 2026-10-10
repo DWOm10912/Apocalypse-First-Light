@@ -26,7 +26,11 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-@Mod.EventBusSubscriber(modid = "apocalypse_firstlight", bus = Mod.EventBusSubscriber.Bus.FORGE)
+/**
+ * RETIRED 2026-10-10 (docs/worldgen/legacy_worldgen_retirement_v1.md): no longer subscribed, so a new world gets no
+ * bunker and no bunker radiation anchor, and the startup-enclave diagnostics stop. Kept for its reusable placement
+ * path (BunkerPlacementManager) until the forest-house start replaces it.
+ */
 public final class BunkerWorldEvents {
 
     private BunkerWorldEvents() {}

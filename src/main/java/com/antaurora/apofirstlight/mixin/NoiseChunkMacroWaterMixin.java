@@ -25,6 +25,9 @@ public abstract class NoiseChunkMacroWaterMixin {
     @Unique private MacroGeography apocalypse$geography;
     @Unique private MacroGeographySample[] apocalypse$columns;
     @Unique private long[] apocalypse$columnKeys;
+    // Terrain V2: the drowned valleys (estuaries) the plan adds to the macro sea; per column: floor Y, or NaN (no estuary)
+    @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$plan;
+    @Unique private double[] apocalypse$estuaryFloor;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void apocalypse$bindGeography(int cellCount, RandomState randomState, int x, int z,
@@ -36,6 +39,10 @@ public abstract class NoiseChunkMacroWaterMixin {
             apocalypse$geography = MacroGeography.forSeed(access.apocalypse$getSeed());
             apocalypse$columns = new MacroGeographySample[256];
             apocalypse$columnKeys = new long[256];
+            if (access.apocalypse$hasTerrainPlan()) {
+                apocalypse$plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(access.apocalypse$getSeed());
+                apocalypse$estuaryFloor = new double[256];
+            }
         }
     }
 
@@ -45,6 +52,8 @@ public abstract class NoiseChunkMacroWaterMixin {
         if (apocalypse$columns[index] == null || apocalypse$columnKeys[index] != key) {
             apocalypse$columns[index] = apocalypse$geography.sample(x, z);
             apocalypse$columnKeys[index] = key;
+            if (apocalypse$plan != null) apocalypse$estuaryFloor[index] = apocalypse$plan.waterClass(x, z) == 2
+                    ? apocalypse$plan.heightAt(x, z) : Double.NaN;
         }
         return apocalypse$columns[index];
     }
@@ -57,6 +66,13 @@ public abstract class NoiseChunkMacroWaterMixin {
             int y = noiseChunk.blockY();
             if (column.isWater() && y >= column.surfaceHeight() && y < MacroGeography.SEA_LEVEL)
                 cir.setReturnValue(Blocks.WATER.defaultBlockState());
+            else if (apocalypse$plan != null && y < MacroGeography.SEA_LEVEL) {
+                // an estuary: open air over the drowned floor (and the floor's top block) fills to sea level
+                double floor = apocalypse$estuaryFloor[(noiseChunk.blockX() & 15) | ((noiseChunk.blockZ() & 15) << 4)];
+                BlockState state = cir.getReturnValue();
+                if (!Double.isNaN(floor) && y >= floor - 1 && state != null && state.isAir())   // null = the default (solid) block
+                    cir.setReturnValue(Blocks.WATER.defaultBlockState());
+            }
         }
     }
 }

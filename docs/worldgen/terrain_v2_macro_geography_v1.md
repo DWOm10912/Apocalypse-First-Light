@@ -1,5 +1,7 @@
 # Terrain V2 Phase 1 / Macro Geography V1.1
 
+**2026-10-10**：主世界地形已改由 Terrain V2 r1 规划生成（[Terrain V2 Phase 2](terrain_v2_phase2_generation_v1.md)，等实机验收）；本文的 LAND 链路（LandTerrainRelief / LandTerrainBias / InlandElevationBias / MacroTerrainDensity）不再被 overworld.json 引用，代码保留到验收通过。`MacroGeography` 的海陆拓扑（VERSION 3、主岛 + 三座卫星岛）不变，仍是规划的输入。
+
 2026-10-07：新的[哥伦比亚联邦 Terrain V2 研究](columbian_federation_terrain_v2_research.md)及[迁移设计](terrain_v2_migration_plan.md)已文档化，尚未实施。本文仍记录现行/历史 Macro Geography 链路；新研究沿用 Terrain V2 名称不表示 topology version 3 已被替换。现行 LAND 使用完整三维密度及洞穴，LAND `surfaceHeight` 不是最终高度；新增连续低地与稳定层只是计划。新世界高度暂建议保持 -64～320，详见研究报告容量分析。
 
 状态：2026-09-22 起 `MacroGeography.VERSION = 3`，只把附属岛数量固定为3并增加稳定设施/桥梁政策metadata，详见 [Fixed Three Satellite Metadata V3](satellite_facility_islands_v3.md)。曾加入的天然Campus最终地形资格和初始化期候选重规划导致游戏崩溃，现已完整撤回；岛屿尺寸、位置、bank-fit、轮廓、缓存和terrain pipeline恢复V1.1行为。V1.1/version 2 的随机数量验收不覆盖固定三岛。Terrain密度公式未改，已有chunk不重写。

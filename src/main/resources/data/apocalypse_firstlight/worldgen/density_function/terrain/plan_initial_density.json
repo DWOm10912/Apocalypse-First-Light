@@ -1,0 +1,7 @@
+{
+  "type": "apocalypse_firstlight:plan_terrain",
+  "land": "apocalypse_firstlight:terrain/plan_initial_land",
+  "terrain": "apocalypse_firstlight:terrain/plan_sloped_cheese",
+  "underground": 0,
+  "initial": true
+}

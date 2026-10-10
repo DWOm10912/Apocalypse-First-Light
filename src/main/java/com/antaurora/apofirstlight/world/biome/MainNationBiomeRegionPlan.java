@@ -93,9 +93,8 @@ public final class MainNationBiomeRegionPlan {
 
     private Region regionAt(int x, int z, MacroGeographySample sample) {
         if (!mainlandLand(sample)) return Region.DEFAULT_FALLOUT;
-        var startup = StartupPlainsEnclave.zoneAt(x, z, seed);
-        if (startup == StartupPlainsEnclave.Zone.CORE_PLAINS
-                || startup == StartupPlainsEnclave.Zone.FRINGE_PLAINS) return Region.STARTUP_PLAINS;
+        // 2026-10-10: the circular startup Plains around (0, 0) is retired (legacy_worldgen_retirement_v1);
+        // STARTUP_PLAINS is no longer produced. The pockets keep their old positions (same seed, same pockets).
         for (var pocket : pockets) if (pocket.contains(x, z)) return Region.ADDITIONAL_PLAINS;
         return Region.DEFAULT_FALLOUT;
     }
@@ -105,6 +104,9 @@ public final class MainNationBiomeRegionPlan {
         var sample = geography.sample(x, z);
         if (sample.isWater() || sample.surfaceClass() == MacroGeographySample.SurfaceClass.COAST)
             return MacroBiomePolicy.override(sample, original);
+        // Terrain V2: a drowned valley the plan adds to the sea is water here too (one land / water mask)
+        var plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(seed);
+        if (plan != null && plan.waterClass(x, z) == 2) return Biomes.OCEAN;
         if (sample.nationId() == MacroGeographySample.NationId.MAIN_NATION && sample.isLand())
             return regionAt(x, z, sample) == Region.DEFAULT_FALLOUT ? AflBiomes.FALLOUT_BARRENS : Biomes.PLAINS;
         return original;

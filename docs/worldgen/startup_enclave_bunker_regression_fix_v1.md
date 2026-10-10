@@ -1,5 +1,7 @@
 # Startup Enclave + Bunker Regression Fix V1
 
+**2026-10-10 退役**：地堡强制生成、首登传送进地堡和强制重生点、出生点圆形平原、出生区大范围辐射上限都已停用，见 [旧世界生成逻辑退役 V1](legacy_worldgen_retirement_v1.md)。新世界出生在自然陆地上（有 Terrain V2 规划时按规划挑平原，见 [Terrain V2 Phase 2](terrain_v2_phase2_generation_v1.md)）。下文是历史记录。
+
 后续现行变更：[Macro Geography V1](terrain_v2_macro_geography_v1.md)及MAIN_NATION Biome Region Planner V1已接入。ParameterList与SurfaceSystem共用按seed缓存的区域plan和biomeAt；水域/Beach优先于LAND规划。Lush/Dripstone沿用水域海床深度>12、陆地上方12格preliminary density>0.390625的地下判据；Deep Dark禁用。Scorched biome与专属抑水已删除，共享Macro保水保留。出生reserve384格、core3800格及地堡搜索/首登流程未改。群系变更要求新世界；以下startup回归及部署hash是**历史版本**证据，不代表当前群系已通过实机验收。
 
 ## 根因与实现

@@ -1,0 +1,872 @@
+{
+ "id": "cp1_york_pamunkey_va",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.7685,
+ "elevation_abs_m": {
+  "p0": -0.89,
+  "p1": -0.263,
+  "p5": 0.2646,
+  "p50": 3.8537,
+  "p95": 22.9443,
+  "p99": 33.7219,
+  "p100": 45.258,
+  "mean": 6.6554
+ },
+ "elevation_rel_m": {
+  "p5": 0.5275,
+  "p25": 1.4865,
+  "p50": 4.1166,
+  "p75": 9.3753,
+  "p95": 23.2073,
+  "p99": 33.9849,
+  "p100": 45.521,
+  "mean": 6.9184
+ },
+ "hypsometric_integral": 0.164,
+ "slope": {
+  "10m": {
+   "p5": 0.0021,
+   "p25": 0.0064,
+   "p50": 0.0142,
+   "p75": 0.0412,
+   "p95": 0.1607,
+   "p99": 0.2737,
+   "mean": 0.0375
+  },
+  "30m": {
+   "p5": 0.0013,
+   "p25": 0.0042,
+   "p50": 0.0108,
+   "p75": 0.0312,
+   "p95": 0.106,
+   "p99": 0.1704,
+   "mean": 0.0259
+  },
+  "90m": {
+   "p5": 0.0006,
+   "p25": 0.0028,
+   "p50": 0.0076,
+   "p75": 0.0189,
+   "p95": 0.0519,
+   "p99": 0.0785,
+   "mean": 0.0143
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.3885,
+   "1-3.1%": 0.308,
+   "3.1-6.25%": 0.1253,
+   "6.25-12.5%": 0.0998,
+   "12.5-25%": 0.0639,
+   "25-50%": 0.0144,
+   ">50%": 0.0002
+  },
+  "30m": {
+   "<1%": 0.4796,
+   "1-3.1%": 0.2705,
+   "3.1-6.25%": 0.1276,
+   "6.25-12.5%": 0.0893,
+   "12.5-25%": 0.0324,
+   "25-50%": 0.0006,
+   ">50%": 0.0
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 0.4038,
+   "p90": 2.8068,
+   "p99": 6.9291,
+   "mean": 1.0073
+  },
+  "100m": {
+   "p50": 1.7156,
+   "p90": 9.5186,
+   "p99": 17.5115,
+   "mean": 3.4592
+  },
+  "300m": {
+   "p50": 4.3339,
+   "p90": 18.563,
+   "p99": 27.5714,
+   "mean": 7.4908
+  },
+  "1000m": {
+   "p50": 17.0703,
+   "p90": 34.1358,
+   "p99": 37.5619,
+   "mean": 18.1676
+  },
+  "3000m": null
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.0444,
+   "p90": 0.2492,
+   "p99": 0.6716,
+   "mean": 0.0969
+  },
+  "100m": {
+   "p50": 0.2437,
+   "p90": 1.4101,
+   "p99": 2.9598,
+   "mean": 0.5213
+  },
+  "300m": {
+   "p50": 0.6967,
+   "p90": 3.2324,
+   "p99": 5.4256,
+   "mean": 1.2397
+  },
+  "1000m": {
+   "p50": 2.1484,
+   "p90": 6.2648,
+   "p99": 8.0393,
+   "mean": 3.0807
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.0677,
+  "40-80 m": 0.2233,
+  "80-160 m": 0.3479,
+  "160-320 m": 0.4582,
+  "320-640 m": 0.6281,
+  "640-1280 m": 0.7369,
+  "1280-2560 m": 1.1868,
+  "2560-5120 m": 1.5958
+ },
+ "orientation": {
+  "strike_deg": 117.9,
+  "coherence": 0.092
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 2.753,
+   "channel_heads_per_km2": 5.91,
+   "confluences_per_km2": 3.344,
+   "max_strahler": 4,
+   "cells_by_order": {
+    "1": 11095,
+    "2": 5161,
+    "3": 1662,
+    "4": 180
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 66.5685,
+    "p50": 146.5685,
+    "p75": 247.2792,
+    "p95": 397.9899,
+    "p99": 522.8427,
+    "mean": 168.7769
+   },
+   "hand_m": {
+    "p5": 0.0,
+    "p25": 0.4264,
+    "p50": 1.3453,
+    "p75": 4.2382,
+    "p95": 13.0975,
+    "p99": 20.0951,
+    "mean": 3.2936
+   },
+   "streams_by_order": {
+    "1": 456,
+    "2": 108,
+    "3": 16,
+    "4": 2
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.22,
+    "2/3": 6.75,
+    "3/4": 8.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 40.0,
+    "p25": 150.0,
+    "p50": 330.0,
+    "p75": 605.0,
+    "p95": 1175.0,
+    "p99": 2018.0,
+    "mean": 440.525
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 0.536,
+   "channel_heads_per_km2": 0.557,
+   "confluences_per_km2": 0.117,
+   "max_strahler": 2,
+   "cells_by_order": {
+    "1": 2637,
+    "2": 864
+   },
+   "hillslope_flow_length_m": {
+    "p5": 44.1421,
+    "p25": 250.7107,
+    "p50": 526.2742,
+    "p75": 825.9798,
+    "p95": 1364.386,
+    "p99": 1737.5231,
+    "mean": 580.2007
+   },
+   "hand_m": {
+    "p5": 0.1061,
+    "p25": 1.673,
+    "p50": 3.5943,
+    "p75": 8.3332,
+    "p95": 19.5252,
+    "p99": 26.878,
+    "mean": 5.8938
+   },
+   "streams_by_order": {
+    "1": 43,
+    "2": 7
+   },
+   "bifurcation_ratio": {
+    "1/2": 6.14
+   },
+   "channel_spacing_transects_m": {
+    "p5": 35.0,
+    "p25": 101.25,
+    "p50": 477.5,
+    "p75": 1417.5,
+    "p95": 2841.75,
+    "p99": 3699.55,
+    "mean": 871.4796
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.0,
+   "channel_heads_per_km2": 0.0,
+   "confluences_per_km2": 0.0,
+   "max_strahler": 0,
+   "cells_by_order": {},
+   "hillslope_flow_length_m": null,
+   "hand_m": null,
+   "streams_by_order": {},
+   "bifurcation_ratio": {},
+   "channel_spacing_transects_m": null
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 2.8724,
+  "p50": 5.638,
+  "p75": 11.0465,
+  "p90": 20.5324,
+  "p99": 31.4392,
+  "mean": 8.1852
+ },
+ "floodplain": {
+  "fraction_of_land": 0.0,
+  "area_km2": 0.0,
+  "main_channel_km": 0.0,
+  "mean_width_m": 0.0
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.7501,
+   "largest_km2": 35.121,
+   "largest_fraction_of_land": 0.4552,
+   "components_ge_0.25km2": 12,
+   "components_ge_1km2": 3
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.8777,
+   "largest_km2": 61.935,
+   "largest_fraction_of_land": 0.8027,
+   "components_ge_0.25km2": 6,
+   "components_ge_1km2": 2
+  }
+ },
+ "ridges": [],
+ "ridge_spacing_centroids_m": null,
+ "height_above_water": {
+  "water_level_m": -0.87,
+  "bands": {
+   "0-1": 0.0296,
+   "1-3": 0.28,
+   "3-10": 0.4407,
+   "10-20": 0.1722,
+   "20-40": 0.0759,
+   "40-80": 0.0014,
+   "80-9999": 0.0
+  }
+ },
+ "cover_by_landform": {
+  "flat<3%": {
+   "share_of_land": 0.7413,
+   "cover": {
+    "wetland_herbaceous": 0.25,
+    "developed": 0.177,
+    "forest_evergreen": 0.174,
+    "cropland": 0.125,
+    "wetland_woody": 0.109,
+    "forest_mixed": 0.097,
+    "grassland": 0.03,
+    "shrub": 0.016,
+    "forest_deciduous": 0.015
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.1725,
+   "cover": {
+    "forest_mixed": 0.256,
+    "wetland_woody": 0.228,
+    "forest_evergreen": 0.196,
+    "developed": 0.099,
+    "cropland": 0.071,
+    "grassland": 0.043,
+    "wetland_herbaceous": 0.039,
+    "forest_deciduous": 0.03,
+    "shrub": 0.029
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.0822,
+   "cover": {
+    "forest_mixed": 0.419,
+    "forest_evergreen": 0.256,
+    "wetland_woody": 0.115,
+    "forest_deciduous": 0.053,
+    "grassland": 0.044,
+    "developed": 0.039,
+    "cropland": 0.036,
+    "shrub": 0.025
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.004,
+   "cover": {
+    "forest_mixed": 0.587,
+    "forest_evergreen": 0.258,
+    "forest_deciduous": 0.059,
+    "grassland": 0.026,
+    "developed": 0.023,
+    "cropland": 0.015,
+    "wetland_woody": 0.015,
+    "shrub": 0.012
+   }
+  }
+ },
+ "cover": {
+  "water": 0.2315,
+  "wetland_herbaceous": 0.1481,
+  "forest_evergreen": 0.1418,
+  "forest_mixed": 0.1173,
+  "developed": 0.1165,
+  "wetland_woody": 0.0993,
+  "cropland": 0.083,
+  "grassland": 0.0257,
+  "forest_deciduous": 0.0162,
+  "shrub": 0.0147,
+  "pasture_hay": 0.0036,
+  "barren": 0.0022
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0011,
+    "p25": 0.0156,
+    "p50": 0.0312,
+    "p75": 0.0649,
+    "p95": 0.2415,
+    "p99": 0.4851,
+    "mean": 0.0627
+   },
+   "slope_classes": {
+    "<1%": 0.1474,
+    "1-3.1%": 0.3535,
+    "3.1-6.25%": 0.2396,
+    "6.25-12.5%": 0.1307,
+    "12.5-25%": 0.0819,
+    "25-50%": 0.0378,
+    ">50%": 0.0091
+   },
+   "rms_4m": {
+    "p50": 0.0133,
+    "p90": 0.0402,
+    "mean": 0.019
+   },
+   "relief_4m": {
+    "p50": 0.1248,
+    "p90": 0.584,
+    "mean": 0.2423
+   },
+   "rms_8m": {
+    "p50": 0.0321,
+    "p90": 0.1163,
+    "mean": 0.0507
+   },
+   "relief_8m": {
+    "p50": 0.2659,
+    "p90": 1.2092,
+    "mean": 0.5205
+   },
+   "rms_16m": {
+    "p50": 0.0636,
+    "p90": 0.2632,
+    "mean": 0.1138
+   },
+   "relief_16m": {
+    "p50": 0.5529,
+    "p90": 2.5632,
+    "mean": 1.0067
+   },
+   "rms_32m": {
+    "p50": 0.1394,
+    "p90": 0.663,
+    "mean": 0.2441
+   },
+   "relief_32m": {
+    "p50": 1.1605,
+    "p90": 4.7293,
+    "mean": 1.8247
+   },
+   "rms_64m": {
+    "p50": 0.3039,
+    "p90": 1.1109,
+    "mean": 0.4694
+   },
+   "relief_64m": {
+    "p50": 1.9936,
+    "p90": 6.424,
+    "mean": 3.0717
+   },
+   "rms_128m": {
+    "p50": 0.6238,
+    "p90": 1.4677,
+    "mean": 0.7832
+   },
+   "relief_128m": {
+    "p50": 5.2176,
+    "p90": 9.1007,
+    "mean": 5.0638
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0106,
+    "4-8 m": 0.0419,
+    "8-16 m": 0.1072,
+    "16-32 m": 0.2336,
+    "32-64 m": 0.5145,
+    "64-128 m": 0.7022,
+    "128-256 m": 0.9801,
+    "256-512 m": 1.6114
+   },
+   "slope_2m": {
+    "p5": 0.0021,
+    "p25": 0.0126,
+    "p50": 0.0253,
+    "p75": 0.057,
+    "p95": 0.2235,
+    "p99": 0.4585,
+    "mean": 0.0561
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0017,
+    "p25": 0.0119,
+    "p50": 0.0253,
+    "p75": 0.0627,
+    "p95": 0.2361,
+    "p99": 0.465,
+    "mean": 0.0582
+   },
+   "slope_classes": {
+    "<1%": 0.2056,
+    "1-3.1%": 0.3627,
+    "3.1-6.25%": 0.1811,
+    "6.25-12.5%": 0.1277,
+    "12.5-25%": 0.0777,
+    "25-50%": 0.0375,
+    ">50%": 0.0077
+   },
+   "rms_4m": {
+    "p50": 0.005,
+    "p90": 0.0214,
+    "mean": 0.0091
+   },
+   "relief_4m": {
+    "p50": 0.0793,
+    "p90": 0.3951,
+    "mean": 0.1633
+   },
+   "rms_8m": {
+    "p50": 0.0266,
+    "p90": 0.0978,
+    "mean": 0.0429
+   },
+   "relief_8m": {
+    "p50": 0.215,
+    "p90": 1.1005,
+    "mean": 0.4571
+   },
+   "rms_16m": {
+    "p50": 0.0529,
+    "p90": 0.2439,
+    "mean": 0.1014
+   },
+   "relief_16m": {
+    "p50": 0.4694,
+    "p90": 2.5809,
+    "mean": 0.9782
+   },
+   "rms_32m": {
+    "p50": 0.113,
+    "p90": 0.6187,
+    "mean": 0.2264
+   },
+   "relief_32m": {
+    "p50": 0.987,
+    "p90": 5.0416,
+    "mean": 1.8717
+   },
+   "rms_64m": {
+    "p50": 0.272,
+    "p90": 1.2381,
+    "mean": 0.4701
+   },
+   "relief_64m": {
+    "p50": 1.9557,
+    "p90": 7.4314,
+    "mean": 3.2394
+   },
+   "rms_128m": {
+    "p50": 0.6621,
+    "p90": 1.7805,
+    "mean": 0.8435
+   },
+   "relief_128m": {
+    "p50": 5.0388,
+    "p90": 10.0721,
+    "mean": 5.3642
+   },
+   "band_rms_m": {
+    "4-8 m": 0.039,
+    "8-16 m": 0.097,
+    "16-32 m": 0.21,
+    "32-64 m": 0.4482,
+    "64-128 m": 0.673,
+    "128-256 m": 0.9415,
+    "256-512 m": 1.5397,
+    "512-1024 m": 1.8012
+   }
+  }
+ },
+ "seconds": 5.8,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "cp1_york_pamunkey_va",
+    "region": "Mid-Atlantic Coastal Plain",
+    "lat": 37.53,
+    "lon": -76.8,
+    "why": "Tidal Pamunkey and Mattaponi rivers joining into the York River estuary: marsh, floodplain forest, coastal plain terraces",
+    "detail": [
+     1000,
+     1000
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1664265,
+    1774335,
+    1674285,
+    1784355
+   ],
+   "utc": "2026-10-10T16:35:14Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4390,
+     "Name": "n38w077",
+     "LowPS": 10.307360350155633,
+     "Best": 13543,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269219641e-05
+    },
+    {
+     "OBJECTID": 2179,
+     "Name": "n38w077",
+     "LowPS": 30.92208098137158,
+     "Best": 21068,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 55372,
+     "Name": "VA_UpperMiddleNeck_2018_D18",
+     "LowPS": 1,
+     "Best": 50360,
+     "AcquisitionDate": 1593561600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 14502,
+     "Name": "ned19_n37x75_w077x00_va_3middlecos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 130954,
+     "AcquisitionDate": 1328313600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14504,
+     "Name": "ned19_n37x75_w077x00_va_ninenortherncos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140846,
+     "AcquisitionDate": 1317772800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14503,
+     "Name": "ned19_n37x75_w077x00_va_kingwilliamco_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140936,
+     "AcquisitionDate": 1303257600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14501,
+     "Name": "ned19_n37x75_w077x00_va_11coastalcounties_2010",
+     "LowPS": 3.435786885024356,
+     "Best": 150846,
+     "AcquisitionDate": 1286236800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "cp1_york_pamunkey_va",
+    "region": "Mid-Atlantic Coastal Plain",
+    "lat": 37.53,
+    "lon": -76.8,
+    "why": "Tidal Pamunkey and Mattaponi rivers joining into the York River estuary: marsh, floodplain forest, coastal plain terraces",
+    "detail": [
+     1000,
+     1000
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1664265,
+    1774335,
+    1674285,
+    1784355
+   ],
+   "utc": "2026-10-10T16:35:17Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "cp1_york_pamunkey_va",
+    "region": "Mid-Atlantic Coastal Plain",
+    "lat": 37.53,
+    "lon": -76.8,
+    "why": "Tidal Pamunkey and Mattaponi rivers joining into the York River estuary: marsh, floodplain forest, coastal plain terraces",
+    "detail": [
+     2590,
+     2810
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1671365,
+    1781655,
+    1672365,
+    1782655
+   ],
+   "utc": "2026-10-10T16:47:19Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4390,
+     "Name": "n38w077",
+     "LowPS": 10.307360350155633,
+     "Best": 13543,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269219641e-05
+    },
+    {
+     "OBJECTID": 2179,
+     "Name": "n38w077",
+     "LowPS": 30.92208098137158,
+     "Best": 21068,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 55372,
+     "Name": "VA_UpperMiddleNeck_2018_D18",
+     "LowPS": 1,
+     "Best": 50360,
+     "AcquisitionDate": 1593561600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 14502,
+     "Name": "ned19_n37x75_w077x00_va_3middlecos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 130954,
+     "AcquisitionDate": 1328313600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14504,
+     "Name": "ned19_n37x75_w077x00_va_ninenortherncos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140846,
+     "AcquisitionDate": 1317772800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14503,
+     "Name": "ned19_n37x75_w077x00_va_kingwilliamco_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140936,
+     "AcquisitionDate": 1303257600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14501,
+     "Name": "ned19_n37x75_w077x00_va_11coastalcounties_2010",
+     "LowPS": 3.435786885024356,
+     "Best": 150846,
+     "AcquisitionDate": 1286236800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "cp1_york_pamunkey_va",
+    "region": "Mid-Atlantic Coastal Plain",
+    "lat": 37.53,
+    "lon": -76.8,
+    "why": "Tidal Pamunkey and Mattaponi rivers joining into the York River estuary: marsh, floodplain forest, coastal plain terraces",
+    "detail": [
+     2590,
+     2810
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1670865,
+    1781155,
+    1672865,
+    1783155
+   ],
+   "utc": "2026-10-10T16:47:23Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4390,
+     "Name": "n38w077",
+     "LowPS": 10.307360350155633,
+     "Best": 13543,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269219641e-05
+    },
+    {
+     "OBJECTID": 2179,
+     "Name": "n38w077",
+     "LowPS": 30.92208098137158,
+     "Best": 21068,
+     "AcquisitionDate": 1710979200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 55372,
+     "Name": "VA_UpperMiddleNeck_2018_D18",
+     "LowPS": 1,
+     "Best": 50360,
+     "AcquisitionDate": 1593561600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 14502,
+     "Name": "ned19_n37x75_w077x00_va_3middlecos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 130954,
+     "AcquisitionDate": 1328313600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14504,
+     "Name": "ned19_n37x75_w077x00_va_ninenortherncos_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140846,
+     "AcquisitionDate": 1317772800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14503,
+     "Name": "ned19_n37x75_w077x00_va_kingwilliamco_2011",
+     "LowPS": 3.435786885024356,
+     "Best": 140936,
+     "AcquisitionDate": 1303257600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 14501,
+     "Name": "ned19_n37x75_w077x00_va_11coastalcounties_2010",
+     "LowPS": 3.435786885024356,
+     "Best": 150846,
+     "AcquisitionDate": 1286236800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

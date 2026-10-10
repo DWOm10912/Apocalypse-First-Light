@@ -24,6 +24,7 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     @Unique
     private long apocalypse$seed;
     @Unique private boolean apocalypse$macroGeography;
+    @Unique private boolean apocalypse$terrainPlan;
 
     /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -48,6 +49,19 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
                 apocalypse$macroGeography = true;
                 return bias.withSeed(seed);
             }
+            // Terrain V2: the plan is fetched (memory / disk cache / one build) here, at world load, never per chunk
+            if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanHeightDensity height) {
+                apocalypse$macroGeography = apocalypse$terrainPlan = true;
+                return height.withSeed(seed);
+            }
+            if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanStabilityDensity stability) {
+                apocalypse$macroGeography = apocalypse$terrainPlan = true;
+                return stability.withSeed(seed);
+            }
+            if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanTerrainDensity terrain) {
+                apocalypse$macroGeography = apocalypse$terrainPlan = true;
+                return terrain.withSeed(seed);
+            }
             if (function instanceof MacroTerrainDensity macro) {
                 apocalypse$macroGeography = true;
                 return macro.withSeed(seed);
@@ -69,4 +83,6 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     }
 
     @Override public boolean apocalypse$hasMacroGeography() { return apocalypse$macroGeography; }
+
+    @Override public boolean apocalypse$hasTerrainPlan() { return apocalypse$terrainPlan; }
 }

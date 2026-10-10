@@ -1,0 +1,289 @@
+{
+ "suitability_share_of_land": {
+  "high": 0.5421,
+  "medium": 0.1348,
+  "low": 0.0955,
+  "unsuitable": 0.2276
+ },
+ "city_candidates": [
+  {
+   "id": "C1",
+   "area_km2": 47.95,
+   "square_m": 3104,
+   "high_share": 0.865,
+   "centre_xz": [
+    4176,
+    144
+   ],
+   "square_rc": [
+    308,
+    434,
+    97
+   ],
+   "mean_y": 78.5,
+   "extent_m": [
+    7456,
+    13248
+   ],
+   "to_water_m": 2173
+  },
+  {
+   "id": "C2",
+   "area_km2": 15.31,
+   "square_m": 2208,
+   "high_share": 0.879,
+   "centre_xz": [
+    -2480,
+    4944
+   ],
+   "square_rc": [
+    472,
+    240,
+    69
+   ],
+   "mean_y": 78.2,
+   "extent_m": [
+    5792,
+    5280
+   ],
+   "to_water_m": 1493
+  },
+  {
+   "id": "C3",
+   "area_km2": 8.17,
+   "square_m": 672,
+   "high_share": 0.747,
+   "centre_xz": [
+    -2800,
+    -4560
+   ],
+   "square_rc": [
+    199,
+    254,
+    21
+   ],
+   "mean_y": 71.2,
+   "extent_m": [
+    6272,
+    6656
+   ],
+   "to_water_m": 477
+  },
+  {
+   "id": "C4",
+   "area_km2": 5.33,
+   "square_m": 1088,
+   "high_share": 0.874,
+   "centre_xz": [
+    -6624,
+    1568
+   ],
+   "square_rc": [
+    384,
+    128,
+    34
+   ],
+   "mean_y": 71.0,
+   "extent_m": [
+    2336,
+    4960
+   ],
+   "to_water_m": 776
+  },
+  {
+   "id": "C5",
+   "area_km2": 4.05,
+   "square_m": 672,
+   "high_share": 0.615,
+   "centre_xz": [
+    -6288,
+    4368
+   ],
+   "square_rc": [
+    478,
+    145,
+    21
+   ],
+   "mean_y": 85.6,
+   "extent_m": [
+    3424,
+    3744
+   ],
+   "to_water_m": 443
+  },
+  {
+   "id": "C6",
+   "area_km2": 3.44,
+   "square_m": 1024,
+   "high_share": 0.891,
+   "centre_xz": [
+    800,
+    -6080
+   ],
+   "square_rc": [
+    146,
+    361,
+    32
+   ],
+   "mean_y": 69.6,
+   "extent_m": [
+    3136,
+    2112
+   ],
+   "to_water_m": 635
+  },
+  {
+   "id": "C7",
+   "area_km2": 2.01,
+   "square_m": 704,
+   "high_share": 0.557,
+   "centre_xz": [
+    -352,
+    1376
+   ],
+   "square_rc": [
+    384,
+    330,
+    22
+   ],
+   "mean_y": 99.3,
+   "extent_m": [
+    2592,
+    2240
+   ],
+   "to_water_m": 4666
+  },
+  {
+   "id": "C8",
+   "area_km2": 1.59,
+   "square_m": 512,
+   "high_share": 0.443,
+   "centre_xz": [
+    -1056,
+    -3296
+   ],
+   "square_rc": [
+    241,
+    311,
+    16
+   ],
+   "mean_y": 104.3,
+   "extent_m": [
+    2848,
+    3072
+   ],
+   "to_water_m": 1952
+  }
+ ],
+ "port": {
+  "centre_xz": [
+   -6976,
+   2400
+  ]
+ },
+ "corridors": [
+  {
+   "from": "C1",
+   "to": "C6",
+   "length_m": 8085,
+   "grade96_max": 0.0389,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  },
+  {
+   "from": "C6",
+   "to": "C3",
+   "length_m": 4398,
+   "grade96_max": 0.0243,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  },
+  {
+   "from": "C3",
+   "to": "C4",
+   "length_m": 8109,
+   "grade96_max": 0.0347,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  },
+  {
+   "from": "C4",
+   "to": "PORT",
+   "length_m": 1068,
+   "grade96_max": 0.0324,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  },
+  {
+   "from": "PORT",
+   "to": "C5",
+   "length_m": 2427,
+   "grade96_max": 0.0267,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  },
+  {
+   "from": "C5",
+   "to": "C2",
+   "length_m": 4391,
+   "grade96_max": 0.0206,
+   "grade96_le_1_16": 1.0,
+   "river_crossings": 0,
+   "crosses_belt": false
+  }
+ ],
+ "trunks": [
+  {
+   "name": "A 长轴干线（C5–C1–C6）",
+   "length_m": 20654,
+   "grade96_max": 0.0389,
+   "grade96_le_1_16": 1.0,
+   "max_y": 101.1,
+   "river_crossings": 0,
+   "bridges_estuary_cells": 0,
+   "crosses_belt": false
+  },
+  {
+   "name": "B 港口—内陆（最省力）",
+   "length_m": 14078,
+   "grade96_max": 0.0297,
+   "grade96_le_1_16": 1.0,
+   "max_y": 86.0,
+   "river_crossings": 0,
+   "bridges_estuary_cells": 1,
+   "crosses_belt": false
+  },
+  {
+   "name": "B′ 港口—内陆（经穿山缺口）",
+   "length_m": 14695,
+   "grade96_max": 0.0641,
+   "grade96_le_1_16": 0.992,
+   "max_y": 128.1,
+   "river_crossings": 2,
+   "bridges_estuary_cells": 1,
+   "crosses_belt": true
+  }
+ ],
+ "ecology_share_of_land": {
+  "agri_plain": 0.4395,
+  "riparian": 0.0932,
+  "slope_forest": 0.0735,
+  "ridge_oak": 0.1089,
+  "hollow_conifer": 0.0144,
+  "coastal_pine": 0.2332,
+  "swamp_forest": 0.0253,
+  "tidal_marsh": 0.0091,
+  "wet_prairie": 0.003
+ },
+ "crop_rows_cols_32m": [
+  67,
+  583,
+  51,
+  588
+ ]
+}

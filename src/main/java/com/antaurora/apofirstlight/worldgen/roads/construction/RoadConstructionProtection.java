@@ -26,11 +26,7 @@ public final class RoadConstructionProtection {
         if (area.isEmpty() || area.width() > 1024 || area.depth() > 1024)
             throw new IllegalArgumentException("PROTECTION_QUERY_BUDGET");
         List<SpatialClaim> claims = new ArrayList<>(HighwaySpatialClaimProvider.query(level.getSeed(), level.dimension(), area));
-        int radius = StartupPlainsEnclave.PLAINS_BASE_RADIUS + StartupPlainsEnclave.PLAINS_NOISE_AMPLITUDE
-                + StartupSettlementProtection.STARTUP_SETTLEMENT_FALLOUT_PROTECTION_DEPTH;
-        add(level, area, claims, "startup_protection", new BoundsXZ(StartupPlainsEnclave.CENTER_X - radius,
-                StartupPlainsEnclave.CENTER_Z - radius, StartupPlainsEnclave.CENTER_X + radius + 1,
-                StartupPlainsEnclave.CENTER_Z + radius + 1));
+        // 2026-10-10: the startup-protection square round (0, 0) is retired with the startup Plains.
         BunkerSavedData bunker = level.getDataStorage().get(BunkerSavedData::load, BunkerSavedData.ID);
         if (bunker != null && bunker.isGenerated()) {
             var template = level.getServer().getStructureManager().get(BUNKER)

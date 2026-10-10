@@ -1,0 +1,774 @@
+{
+ "id": "ap2_blue_mountain_front_pa_x0.55",
+ "cell_m": 10,
+ "size_m": [
+  5510,
+  5510
+ ],
+ "land_fraction": 0.9962,
+ "elevation_abs_m": {
+  "p0": 75.685,
+  "p1": 78.1033,
+  "p5": 81.5629,
+  "p50": 101.4679,
+  "p95": 258.9252,
+  "p99": 301.412,
+  "p100": 332.5199,
+  "mean": 121.0703
+ },
+ "elevation_rel_m": {
+  "p5": 3.4596,
+  "p25": 14.5346,
+  "p50": 23.3646,
+  "p75": 40.9885,
+  "p95": 180.8219,
+  "p99": 223.3086,
+  "p100": 254.4166,
+  "mean": 42.967
+ },
+ "hypsometric_integral": 0.177,
+ "slope": {
+  "10m": {
+   "p5": 0.0147,
+   "p25": 0.0425,
+   "p50": 0.0744,
+   "p75": 0.1346,
+   "p95": 0.3456,
+   "p99": 0.5479,
+   "mean": 0.1099
+  },
+  "30m": {
+   "p5": 0.0123,
+   "p25": 0.0328,
+   "p50": 0.0563,
+   "p75": 0.1053,
+   "p95": 0.3163,
+   "p99": 0.5235,
+   "mean": 0.091
+  },
+  "90m": {
+   "p5": 0.0088,
+   "p25": 0.0206,
+   "p50": 0.0345,
+   "p75": 0.0697,
+   "p95": 0.2733,
+   "p99": 0.4281,
+   "mean": 0.0678
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.0285,
+   "1-3.1%": 0.1304,
+   "3.1-6.25%": 0.2546,
+   "6.25-12.5%": 0.3107,
+   "12.5-25%": 0.1829,
+   "25-50%": 0.0752,
+   ">50%": 0.0179
+  },
+  "30m": {
+   "<1%": 0.0352,
+   "1-3.1%": 0.1971,
+   "3.1-6.25%": 0.3194,
+   "6.25-12.5%": 0.2453,
+   "12.5-25%": 0.1305,
+   "25-50%": 0.0586,
+   ">50%": 0.014
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 1.997,
+   "p90": 6.2038,
+   "p99": 14.6891,
+   "mean": 2.924
+  },
+  "100m": {
+   "p50": 7.4992,
+   "p90": 25.0155,
+   "p99": 61.8601,
+   "mean": 11.5233
+  },
+  "300m": {
+   "p50": 16.1928,
+   "p90": 86.9317,
+   "p99": 129.2001,
+   "mean": 31.1591
+  },
+  "1000m": {
+   "p50": 29.2338,
+   "p90": 189.8492,
+   "p99": 214.5876,
+   "mean": 81.0002
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.1306,
+   "p90": 0.3772,
+   "p99": 0.8313,
+   "mean": 0.1808
+  },
+  "100m": {
+   "p50": 0.8565,
+   "p90": 1.8562,
+   "p99": 3.9064,
+   "mean": 1.0324
+  },
+  "300m": {
+   "p50": 2.3337,
+   "p90": 6.6606,
+   "p99": 16.6332,
+   "mean": 3.3352
+  },
+  "1000m": {
+   "p50": 5.8138,
+   "p90": 25.9563,
+   "p99": 28.6288,
+   "mean": 11.7253
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.1834,
+  "40-80 m": 0.5137,
+  "80-160 m": 1.0751,
+  "160-320 m": 1.712,
+  "320-640 m": 3.1494,
+  "640-1280 m": 5.3482,
+  "1280-2560 m": 15.3546,
+  "2560-5120 m": 15.6678
+ },
+ "orientation": {
+  "strike_deg": 41.6,
+  "coherence": 0.376
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 2.827,
+   "channel_heads_per_km2": 5.72,
+   "confluences_per_km2": 3.901,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 4285,
+    "2": 1915,
+    "3": 1005
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 66.5685,
+    "p50": 144.8528,
+    "p75": 245.5635,
+    "p95": 397.9899,
+    "p99": 525.9798,
+    "mean": 168.6466
+   },
+   "hand_m": {
+    "p5": 0.2894,
+    "p25": 3.149,
+    "p50": 7.0539,
+    "p75": 13.0823,
+    "p95": 62.3726,
+    "p99": 127.18,
+    "mean": 14.2234
+   },
+   "streams_by_order": {
+    "1": 173,
+    "2": 33,
+    "3": 6
+   },
+   "bifurcation_ratio": {
+    "1/2": 5.24,
+    "2/3": 5.5
+   },
+   "channel_spacing_transects_m": {
+    "p5": 60.0,
+    "p25": 200.0,
+    "p50": 370.0,
+    "p75": 617.5,
+    "p95": 1393.25,
+    "p99": 2230.45,
+    "mean": 491.0143
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 0.705,
+   "channel_heads_per_km2": 0.496,
+   "confluences_per_km2": 0.198,
+   "max_strahler": 2,
+   "cells_by_order": {
+    "1": 1164,
+    "2": 637
+   },
+   "hillslope_flow_length_m": {
+    "p5": 40.0,
+    "p25": 197.2792,
+    "p50": 426.2742,
+    "p75": 758.4062,
+    "p95": 1318.8225,
+    "p99": 1629.9495,
+    "mean": 518.7598
+   },
+   "hand_m": {
+    "p5": 1.0087,
+    "p25": 7.4105,
+    "p50": 13.2776,
+    "p75": 23.4006,
+    "p95": 97.6199,
+    "p99": 179.1254,
+    "mean": 25.1916
+   },
+   "streams_by_order": {
+    "1": 15,
+    "2": 4
+   },
+   "bifurcation_ratio": {
+    "1/2": 3.75
+   },
+   "channel_spacing_transects_m": {
+    "p5": 129.0,
+    "p25": 377.5,
+    "p50": 1065.0,
+    "p75": 1612.5,
+    "p95": 3544.0,
+    "p99": 4296.6,
+    "mean": 1278.3051
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.038,
+   "channel_heads_per_km2": 0.033,
+   "confluences_per_km2": 0.0,
+   "max_strahler": 1,
+   "cells_by_order": {
+    "1": 95
+   },
+   "hillslope_flow_length_m": {
+    "p5": 203.1371,
+    "p25": 1325.3911,
+    "p50": 2617.0563,
+    "p75": 3520.904,
+    "p95": 4618.486,
+    "p99": 4953.3506,
+    "mean": 2472.4008
+   },
+   "hand_m": {
+    "p5": 4.0057,
+    "p25": 14.6359,
+    "p50": 21.93,
+    "p75": 46.3157,
+    "p95": 129.3094,
+    "p99": 207.8246,
+    "mean": 38.1819
+   },
+   "streams_by_order": {
+    "1": 1
+   },
+   "bifurcation_ratio": {},
+   "channel_spacing_transects_m": {
+    "p5": 45.0,
+    "p25": 45.0,
+    "p50": 45.0,
+    "p75": 45.0,
+    "p95": 45.0,
+    "p99": 45.0,
+    "mean": 45.0
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 19.3236,
+  "p50": 38.2128,
+  "p75": 83.1183,
+  "p90": 144.8537,
+  "p99": 214.0899,
+  "mean": 59.4163
+ },
+ "floodplain": {
+  "fraction_of_land": 0.006,
+  "area_km2": 0.18,
+  "main_channel_km": 0.95,
+  "mean_width_m": 189.5
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.2281,
+   "largest_km2": 1.29,
+   "largest_fraction_of_land": 0.0429,
+   "components_ge_0.25km2": 2,
+   "components_ge_1km2": 2
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.5454,
+   "largest_km2": 15.049,
+   "largest_fraction_of_land": 0.5009,
+   "components_ge_0.25km2": 2,
+   "components_ge_1km2": 1
+  }
+ },
+ "ridges": [
+  {
+   "area_km2": 1.406,
+   "length_m": 2734,
+   "width_m": 514,
+   "strike_deg": 23.6,
+   "crest_above_tile_p5_m": 217.4,
+   "crest_std_m": 26.0,
+   "crest_range_m": 102.3,
+   "saddles_20m": 0,
+   "max_tpi_m": 105.8,
+   "cx_m": 2199,
+   "cy_m": -841
+  },
+  {
+   "area_km2": 0.308,
+   "length_m": 956,
+   "width_m": 322,
+   "strike_deg": 59.7,
+   "crest_above_tile_p5_m": 198.7,
+   "crest_std_m": 26.2,
+   "crest_range_m": 88.2,
+   "saddles_20m": 0,
+   "max_tpi_m": 110.4,
+   "cx_m": 239,
+   "cy_m": -371
+  }
+ ],
+ "ridge_flank_hollows_per_km": 5.15,
+ "ridge_spacing_centroids_m": [],
+ "height_above_water": {
+  "water_level_m": 78.6,
+  "bands": {
+   "0-1": 0.012,
+   "1-3": 0.0251,
+   "3-10": 0.1254,
+   "10-20": 0.2254,
+   "20-40": 0.3467,
+   "40-80": 0.1003,
+   "80-9999": 0.1517
+  }
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0799,
+    "p25": 0.167,
+    "p50": 0.2654,
+    "p75": 0.4741,
+    "p95": 0.6289,
+    "p99": 0.737,
+    "mean": 0.3158
+   },
+   "slope_classes": {
+    "<1%": 0.0009,
+    "1-3.1%": 0.0073,
+    "3.1-6.25%": 0.0223,
+    "6.25-12.5%": 0.102,
+    "12.5-25%": 0.3389,
+    "25-50%": 0.3188,
+    ">50%": 0.2099
+   },
+   "rms_4m": {
+    "p50": 0.0262,
+    "p90": 0.05,
+    "mean": 0.0306
+   },
+   "relief_4m": {
+    "p50": 0.9937,
+    "p90": 2.0084,
+    "mean": 1.1464
+   },
+   "rms_8m": {
+    "p50": 0.0578,
+    "p90": 0.1036,
+    "mean": 0.0659
+   },
+   "relief_8m": {
+    "p50": 2.271,
+    "p90": 4.6146,
+    "mean": 2.6471
+   },
+   "rms_16m": {
+    "p50": 0.1215,
+    "p90": 0.2071,
+    "mean": 0.1369
+   },
+   "relief_16m": {
+    "p50": 4.8062,
+    "p90": 9.7229,
+    "mean": 5.6347
+   },
+   "rms_32m": {
+    "p50": 0.2672,
+    "p90": 0.492,
+    "mean": 0.3176
+   },
+   "relief_32m": {
+    "p50": 9.8084,
+    "p90": 19.7142,
+    "mean": 11.5568
+   },
+   "rms_64m": {
+    "p50": 0.5967,
+    "p90": 1.5882,
+    "mean": 0.8077
+   },
+   "relief_64m": {
+    "p50": 17.7085,
+    "p90": 37.3497,
+    "mean": 22.6185
+   },
+   "rms_128m": {
+    "p50": 2.1383,
+    "p90": 5.5524,
+    "mean": 2.6625
+   },
+   "relief_128m": {
+    "p50": 32.7108,
+    "p90": 73.1158,
+    "mean": 43.4412
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0221,
+    "4-8 m": 0.0429,
+    "8-16 m": 0.0812,
+    "16-32 m": 0.1513,
+    "32-64 m": 0.2987,
+    "64-128 m": 0.9154,
+    "128-256 m": 7.146,
+    "256-512 m": 15.3782
+   },
+   "slope_2m": {
+    "p5": 0.0817,
+    "p25": 0.1655,
+    "p50": 0.2593,
+    "p75": 0.4762,
+    "p95": 0.6215,
+    "p99": 0.72,
+    "mean": 0.313
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0647,
+    "p25": 0.1578,
+    "p50": 0.252,
+    "p75": 0.4146,
+    "p95": 0.5894,
+    "p99": 0.6809,
+    "mean": 0.2896
+   },
+   "slope_classes": {
+    "<1%": 0.0007,
+    "1-3.1%": 0.0093,
+    "3.1-6.25%": 0.037,
+    "6.25-12.5%": 0.1138,
+    "12.5-25%": 0.3349,
+    "25-50%": 0.3613,
+    ">50%": 0.143
+   },
+   "rms_4m": {
+    "p50": 0.009,
+    "p90": 0.0266,
+    "mean": 0.0125
+   },
+   "relief_4m": {
+    "p50": 0.6389,
+    "p90": 1.3234,
+    "mean": 0.729
+   },
+   "rms_8m": {
+    "p50": 0.0475,
+    "p90": 0.095,
+    "mean": 0.0565
+   },
+   "relief_8m": {
+    "p50": 1.9081,
+    "p90": 3.9202,
+    "mean": 2.178
+   },
+   "rms_16m": {
+    "p50": 0.1188,
+    "p90": 0.2398,
+    "mean": 0.1417
+   },
+   "relief_16m": {
+    "p50": 4.3828,
+    "p90": 9.0222,
+    "mean": 5.0509
+   },
+   "rms_32m": {
+    "p50": 0.2796,
+    "p90": 0.627,
+    "mean": 0.3504
+   },
+   "relief_32m": {
+    "p50": 9.1296,
+    "p90": 18.8547,
+    "mean": 10.7077
+   },
+   "rms_64m": {
+    "p50": 0.73,
+    "p90": 1.8009,
+    "mean": 0.9037
+   },
+   "relief_64m": {
+    "p50": 17.9138,
+    "p90": 38.2663,
+    "mean": 21.6677
+   },
+   "rms_128m": {
+    "p50": 2.0377,
+    "p90": 4.364,
+    "mean": 2.403
+   },
+   "relief_128m": {
+    "p50": 36.3737,
+    "p90": 74.0076,
+    "mean": 43.1616
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0414,
+    "8-16 m": 0.0803,
+    "16-32 m": 0.1578,
+    "32-64 m": 0.344,
+    "64-128 m": 0.9544,
+    "128-256 m": 3.0696,
+    "256-512 m": 17.2657,
+    "512-1024 m": 27.5402
+   }
+  }
+ },
+ "seconds": 2.3,
+ "scale": 0.55,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1553925,
+    2060775,
+    1563945,
+    2070795
+   ],
+   "utc": "2026-10-10T16:35:12Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9085,
+     "Name": "ned19_n40x25_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1553925,
+    2060775,
+    1563945,
+    2070795
+   ],
+   "utc": "2026-10-10T16:35:16Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1556435,
+    2067885,
+    1557435,
+    2068885
+   ],
+   "utc": "2026-10-10T16:35:31Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9092,
+     "Name": "ned19_n40x50_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1555935,
+    2067385,
+    1557935,
+    2069385
+   ],
+   "utc": "2026-10-10T16:37:48Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9092,
+     "Name": "ned19_n40x50_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

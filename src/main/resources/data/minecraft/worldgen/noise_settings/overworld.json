@@ -28,10 +28,10 @@
     "depth": "minecraft:overworld/depth",
     "erosion": "minecraft:overworld/erosion",
     "final_density": {
-      "type": "apocalypse_firstlight:macro_terrain",
-      "land": "apocalypse_firstlight:terrain/macro_caves",
-      "terrain": "apocalypse_firstlight:terrain/ocean_sloped_cheese",
-      "underground": "apocalypse_firstlight:terrain/ocean_caves"
+      "type": "apocalypse_firstlight:plan_terrain",
+      "land": "apocalypse_firstlight:terrain/plan_caves",
+      "terrain": "apocalypse_firstlight:terrain/plan_sloped_cheese",
+      "underground": "apocalypse_firstlight:terrain/plan_ocean_caves"
     },
     "fluid_level_floodedness": {
       "type": "minecraft:noise",
@@ -45,7 +45,7 @@
       "xz_scale": 1,
       "y_scale": 0.7142857142857143
     },
-    "initial_density_without_jaggedness": "apocalypse_firstlight:terrain/macro_initial_density",
+    "initial_density_without_jaggedness": "apocalypse_firstlight:terrain/plan_initial_density",
     "lava": {
       "type": "minecraft:noise",
       "noise": "minecraft:aquifer_lava",

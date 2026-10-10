@@ -1,0 +1,860 @@
+{
+ "id": "mw1_darby_plains_oh",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.992,
+ "elevation_abs_m": {
+  "p0": 260.3814,
+  "p1": 265.3653,
+  "p5": 272.1411,
+  "p50": 291.7025,
+  "p95": 298.9627,
+  "p99": 301.3015,
+  "p100": 310.9809,
+  "mean": 288.8125
+ },
+ "elevation_rel_m": {
+  "p5": 6.7758,
+  "p25": 16.1299,
+  "p50": 26.3372,
+  "p75": 30.9035,
+  "p95": 33.5974,
+  "p99": 35.9362,
+  "p100": 45.6156,
+  "mean": 23.4472
+ },
+ "hypsometric_integral": 0.562,
+ "slope": {
+  "10m": {
+   "p5": 0.0023,
+   "p25": 0.0067,
+   "p50": 0.012,
+   "p75": 0.022,
+   "p95": 0.0868,
+   "p99": 0.2067,
+   "mean": 0.0233
+  },
+  "30m": {
+   "p5": 0.0017,
+   "p25": 0.0047,
+   "p50": 0.0084,
+   "p75": 0.0154,
+   "p95": 0.0644,
+   "p99": 0.136,
+   "mean": 0.0163
+  },
+  "90m": {
+   "p5": 0.0011,
+   "p25": 0.0029,
+   "p50": 0.005,
+   "p75": 0.0094,
+   "p95": 0.0422,
+   "p99": 0.067,
+   "mean": 0.0099
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.413,
+   "1-3.1%": 0.4223,
+   "3.1-6.25%": 0.0897,
+   "6.25-12.5%": 0.0457,
+   "12.5-25%": 0.0234,
+   "25-50%": 0.0057,
+   ">50%": 0.0001
+  },
+  "30m": {
+   "<1%": 0.5829,
+   "1-3.1%": 0.2999,
+   "3.1-6.25%": 0.065,
+   "6.25-12.5%": 0.0394,
+   "12.5-25%": 0.0127,
+   "25-50%": 0.0002,
+   ">50%": 0.0
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 0.3298,
+   "p90": 1.3086,
+   "p99": 5.2836,
+   "mean": 0.6258
+  },
+  "100m": {
+   "p50": 1.236,
+   "p90": 5.027,
+   "p99": 12.9938,
+   "mean": 2.1541
+  },
+  "300m": {
+   "p50": 2.9332,
+   "p90": 11.9859,
+   "p99": 18.4075,
+   "mean": 4.7153
+  },
+  "1000m": {
+   "p50": 6.7363,
+   "p90": 19.378,
+   "p99": 26.833,
+   "mean": 9.2153
+  },
+  "3000m": {
+   "p50": 15.7986,
+   "p90": 27.6716,
+   "p99": 30.67,
+   "mean": 17.1582
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.0291,
+   "p90": 0.1375,
+   "p99": 0.5236,
+   "mean": 0.061
+  },
+  "100m": {
+   "p50": 0.1704,
+   "p90": 0.7185,
+   "p99": 2.1064,
+   "mean": 0.3136
+  },
+  "300m": {
+   "p50": 0.3664,
+   "p90": 1.6682,
+   "p99": 3.2231,
+   "mean": 0.6861
+  },
+  "1000m": {
+   "p50": 0.5974,
+   "p90": 2.7986,
+   "p99": 5.005,
+   "mean": 1.0546
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.0881,
+  "40-80 m": 0.2687,
+  "80-160 m": 0.5748,
+  "160-320 m": 0.8465,
+  "320-640 m": 1.1548,
+  "640-1280 m": 2.0732,
+  "1280-2560 m": 2.5291,
+  "2560-5120 m": 2.8417
+ },
+ "orientation": {
+  "strike_deg": 12.1,
+  "coherence": 0.075
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 3.595,
+   "channel_heads_per_km2": 5.402,
+   "confluences_per_km2": 4.608,
+   "max_strahler": 5,
+   "cells_by_order": {
+    "1": 15877,
+    "2": 9303,
+    "3": 4520,
+    "4": 767,
+    "5": 66
+   },
+   "hillslope_flow_length_m": {
+    "p5": 14.1421,
+    "p25": 58.2843,
+    "p50": 126.5685,
+    "p75": 227.2792,
+    "p95": 376.2742,
+    "p99": 482.132,
+    "mean": 154.1581
+   },
+   "hand_m": {
+    "p5": 0.0,
+    "p25": 0.305,
+    "p50": 0.7874,
+    "p75": 1.7701,
+    "p95": 8.4166,
+    "p99": 13.6505,
+    "mean": 1.759
+   },
+   "streams_by_order": {
+    "1": 538,
+    "2": 125,
+    "3": 33,
+    "4": 6,
+    "5": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.3,
+    "2/3": 3.79,
+    "3/4": 5.5,
+    "4/5": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 50.0,
+    "p25": 170.0,
+    "p50": 332.5,
+    "p75": 550.0,
+    "p95": 1120.75,
+    "p99": 1825.45,
+    "mean": 425.7595
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 1.121,
+   "channel_heads_per_km2": 0.693,
+   "confluences_per_km2": 0.341,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 6976,
+    "2": 2039,
+    "3": 507
+   },
+   "hillslope_flow_length_m": {
+    "p5": 34.1421,
+    "p25": 204.1421,
+    "p50": 501.4214,
+    "p75": 882.5483,
+    "p95": 1466.8124,
+    "p99": 1885.3947,
+    "mean": 590.8878
+   },
+   "hand_m": {
+    "p5": 0.117,
+    "p25": 0.9508,
+    "p50": 2.0971,
+    "p75": 4.6089,
+    "p95": 14.3651,
+    "p99": 17.4084,
+    "mean": 3.849
+   },
+   "streams_by_order": {
+    "1": 69,
+    "2": 17,
+    "3": 4
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.06,
+    "2/3": 4.25
+   },
+   "channel_spacing_transects_m": {
+    "p5": 70.0,
+    "p25": 310.0,
+    "p50": 655.0,
+    "p75": 1260.0,
+    "p95": 3213.0,
+    "p99": 4539.6,
+    "mean": 1000.9276
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.097,
+   "channel_heads_per_km2": 0.06,
+   "confluences_per_km2": 0.01,
+   "max_strahler": 2,
+   "cells_by_order": {
+    "1": 750,
+    "2": 66
+   },
+   "hillslope_flow_length_m": {
+    "p5": 227.2792,
+    "p25": 1184.6804,
+    "p50": 2173.7973,
+    "p75": 3272.0815,
+    "p95": 5175.8357,
+    "p99": 6319.676,
+    "mean": 2345.2022
+   },
+   "hand_m": {
+    "p5": 1.4786,
+    "p25": 3.8211,
+    "p50": 6.6189,
+    "p75": 15.702,
+    "p95": 29.5215,
+    "p99": 32.5122,
+    "mean": 10.7105
+   },
+   "streams_by_order": {
+    "1": 6,
+    "2": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 82.5,
+    "p25": 192.5,
+    "p50": 337.5,
+    "p75": 1318.75,
+    "p95": 2780.0,
+    "p99": 5756.0,
+    "mean": 1008.125
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 2.6851,
+  "p50": 4.1197,
+  "p75": 7.8015,
+  "p90": 14.6261,
+  "p99": 19.4245,
+  "mean": 5.9408
+ },
+ "floodplain": {
+  "fraction_of_land": 0.066,
+  "area_km2": 6.571,
+  "main_channel_km": 8.16,
+  "mean_width_m": 805.3
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.8222,
+   "largest_km2": 52.093,
+   "largest_fraction_of_land": 0.523,
+   "components_ge_0.25km2": 10,
+   "components_ge_1km2": 3
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.88,
+   "largest_km2": 84.671,
+   "largest_fraction_of_land": 0.8501,
+   "components_ge_0.25km2": 4,
+   "components_ge_1km2": 2
+  }
+ },
+ "ridges": [],
+ "ridge_spacing_centroids_m": null,
+ "height_above_water": {
+  "water_level_m": 268.26,
+  "bands": {
+   "0-1": 0.0055,
+   "1-3": 0.0122,
+   "3-10": 0.0974,
+   "10-20": 0.2642,
+   "20-40": 0.5943,
+   "40-80": 0.0,
+   "80-9999": 0.0
+  }
+ },
+ "cover_by_landform": {
+  "floodplain": {
+   "share_of_land": 0.066,
+   "cover": {
+    "cropland": 0.52,
+    "forest_deciduous": 0.207,
+    "developed": 0.163,
+    "pasture_hay": 0.072,
+    "wetland_herbaceous": 0.021,
+    "wetland_woody": 0.014
+   }
+  },
+  "flat<3%": {
+   "share_of_land": 0.8179,
+   "cover": {
+    "cropland": 0.72,
+    "developed": 0.144,
+    "pasture_hay": 0.068,
+    "forest_deciduous": 0.057
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.0803,
+   "cover": {
+    "forest_deciduous": 0.334,
+    "pasture_hay": 0.232,
+    "developed": 0.224,
+    "cropland": 0.164,
+    "wetland_herbaceous": 0.011,
+    "grassland": 0.01
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.0344,
+   "cover": {
+    "forest_deciduous": 0.668,
+    "pasture_hay": 0.136,
+    "developed": 0.121,
+    "cropland": 0.031,
+    "forest_mixed": 0.015,
+    "wetland_woody": 0.012
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.0015,
+   "cover": {
+    "forest_deciduous": 0.815,
+    "developed": 0.08,
+    "wetland_woody": 0.043,
+    "pasture_hay": 0.037,
+    "cropland": 0.012,
+    "forest_mixed": 0.012
+   }
+  }
+ },
+ "cover": {
+  "cropland": 0.6325,
+  "developed": 0.1495,
+  "forest_deciduous": 0.1101,
+  "pasture_hay": 0.083,
+  "water": 0.008,
+  "wetland_woody": 0.0047,
+  "wetland_herbaceous": 0.0044,
+  "grassland": 0.0032,
+  "barren": 0.0023,
+  "forest_mixed": 0.0018,
+  "forest_evergreen": 0.0007,
+  "shrub": 0.0
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0072,
+    "p25": 0.0202,
+    "p50": 0.0399,
+    "p75": 0.0903,
+    "p95": 0.3296,
+    "p99": 0.5557,
+    "mean": 0.0824
+   },
+   "slope_classes": {
+    "<1%": 0.0894,
+    "1-3.1%": 0.3168,
+    "3.1-6.25%": 0.2467,
+    "6.25-12.5%": 0.1643,
+    "12.5-25%": 0.1052,
+    "25-50%": 0.0603,
+    ">50%": 0.0173
+   },
+   "rms_4m": {
+    "p50": 0.0136,
+    "p90": 0.04,
+    "mean": 0.0198
+   },
+   "relief_4m": {
+    "p50": 0.1597,
+    "p90": 0.7814,
+    "mean": 0.3161
+   },
+   "rms_8m": {
+    "p50": 0.0352,
+    "p90": 0.1124,
+    "mean": 0.0531
+   },
+   "relief_8m": {
+    "p50": 0.36,
+    "p90": 1.6757,
+    "mean": 0.6961
+   },
+   "rms_16m": {
+    "p50": 0.0813,
+    "p90": 0.2642,
+    "mean": 0.1253
+   },
+   "relief_16m": {
+    "p50": 0.7326,
+    "p90": 3.5184,
+    "mean": 1.3776
+   },
+   "rms_32m": {
+    "p50": 0.1724,
+    "p90": 0.6729,
+    "mean": 0.2781
+   },
+   "relief_32m": {
+    "p50": 1.3289,
+    "p90": 6.9509,
+    "mean": 2.5378
+   },
+   "rms_64m": {
+    "p50": 0.3658,
+    "p90": 1.4953,
+    "mean": 0.5939
+   },
+   "relief_64m": {
+    "p50": 2.1177,
+    "p90": 12.3973,
+    "mean": 4.6554
+   },
+   "rms_128m": {
+    "p50": 0.6696,
+    "p90": 2.8402,
+    "mean": 1.1776
+   },
+   "relief_128m": {
+    "p50": 6.3038,
+    "p90": 15.1722,
+    "mean": 7.9001
+   },
+   "band_rms_m": {
+    "2-4 m": 0.011,
+    "4-8 m": 0.0391,
+    "8-16 m": 0.0952,
+    "16-32 m": 0.2059,
+    "32-64 m": 0.4424,
+    "64-128 m": 0.8358,
+    "128-256 m": 1.3719,
+    "256-512 m": 2.6709
+   },
+   "slope_2m": {
+    "p5": 0.006,
+    "p25": 0.0179,
+    "p50": 0.0357,
+    "p75": 0.0822,
+    "p95": 0.3127,
+    "p99": 0.5378,
+    "mean": 0.0765
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0048,
+    "p25": 0.0131,
+    "p50": 0.0254,
+    "p75": 0.0577,
+    "p95": 0.2538,
+    "p99": 0.5409,
+    "mean": 0.0606
+   },
+   "slope_classes": {
+    "<1%": 0.1693,
+    "1-3.1%": 0.4049,
+    "3.1-6.25%": 0.1934,
+    "6.25-12.5%": 0.1114,
+    "12.5-25%": 0.0699,
+    "25-50%": 0.0374,
+    ">50%": 0.0138
+   },
+   "rms_4m": {
+    "p50": 0.0041,
+    "p90": 0.019,
+    "mean": 0.0081
+   },
+   "relief_4m": {
+    "p50": 0.0726,
+    "p90": 0.4031,
+    "mean": 0.1655
+   },
+   "rms_8m": {
+    "p50": 0.0196,
+    "p90": 0.0884,
+    "mean": 0.038
+   },
+   "relief_8m": {
+    "p50": 0.2136,
+    "p90": 1.1401,
+    "mean": 0.4704
+   },
+   "rms_16m": {
+    "p50": 0.047,
+    "p90": 0.2315,
+    "mean": 0.0952
+   },
+   "relief_16m": {
+    "p50": 0.4871,
+    "p90": 2.5324,
+    "mean": 1.0154
+   },
+   "rms_32m": {
+    "p50": 0.1081,
+    "p90": 0.5271,
+    "mean": 0.2148
+   },
+   "relief_32m": {
+    "p50": 0.9857,
+    "p90": 5.2072,
+    "mean": 1.9606
+   },
+   "rms_64m": {
+    "p50": 0.2341,
+    "p90": 1.1973,
+    "mean": 0.452
+   },
+   "relief_64m": {
+    "p50": 1.7643,
+    "p90": 9.6119,
+    "mean": 3.5494
+   },
+   "rms_128m": {
+    "p50": 0.4434,
+    "p90": 2.3739,
+    "mean": 0.8467
+   },
+   "relief_128m": {
+    "p50": 3.5073,
+    "p90": 14.8142,
+    "mean": 5.9453
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0387,
+    "8-16 m": 0.0958,
+    "16-32 m": 0.213,
+    "32-64 m": 0.4627,
+    "64-128 m": 0.928,
+    "128-256 m": 1.4226,
+    "256-512 m": 2.1536,
+    "512-1024 m": 5.1404
+   }
+  }
+ },
+ "seconds": 6.8,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "mw1_darby_plains_oh",
+    "region": "Midwest plain",
+    "lat": 39.97,
+    "lon": -83.3,
+    "why": "Central Ohio till plain (Darby Plains, Wisconsinan ground moraine) cut by Big and Little Darby Creek",
+    "detail": [
+     400,
+     -1400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1066935,
+    1950345,
+    1076955,
+    1960365
+   ],
+   "utc": "2026-10-10T16:35:00Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 120317,
+     "Name": "OH_Statewide_Phase3_2021_B21",
+     "LowPS": 1,
+     "Best": 20352,
+     "AcquisitionDate": 1673740800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 108755,
+     "Name": "OH_Columbus_2019",
+     "LowPS": 1,
+     "Best": 60060,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 4453,
+     "Name": "n40w084",
+     "LowPS": 10.307360350155633,
+     "Best": 63457,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 9.2592593e-05
+    },
+    {
+     "OBJECTID": 1943,
+     "Name": "n40w084",
+     "LowPS": 30.92208098137158,
+     "Best": 70982,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 0.00027777778
+    },
+    {
+     "OBJECTID": 11365,
+     "Name": "ned19_n40x00_w083x50_oh_southcentral_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190825,
+     "AcquisitionDate": 1149033600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "mw1_darby_plains_oh",
+    "region": "Midwest plain",
+    "lat": 39.97,
+    "lon": -83.3,
+    "why": "Central Ohio till plain (Darby Plains, Wisconsinan ground moraine) cut by Big and Little Darby Creek",
+    "detail": [
+     400,
+     -1400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1066935,
+    1950345,
+    1076955,
+    1960365
+   ],
+   "utc": "2026-10-10T16:35:15Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "mw1_darby_plains_oh",
+    "region": "Midwest plain",
+    "lat": 39.97,
+    "lon": -83.3,
+    "why": "Central Ohio till plain (Darby Plains, Wisconsinan ground moraine) cut by Big and Little Darby Creek",
+    "detail": [
+     400,
+     -1400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1071845,
+    1953455,
+    1072845,
+    1954455
+   ],
+   "utc": "2026-10-10T16:35:17Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 120317,
+     "Name": "OH_Statewide_Phase3_2021_B21",
+     "LowPS": 1,
+     "Best": 20352,
+     "AcquisitionDate": 1673740800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 108755,
+     "Name": "OH_Columbus_2019",
+     "LowPS": 1,
+     "Best": 60060,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 4453,
+     "Name": "n40w084",
+     "LowPS": 10.307360350155633,
+     "Best": 63457,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 9.2592593e-05
+    },
+    {
+     "OBJECTID": 1943,
+     "Name": "n40w084",
+     "LowPS": 30.92208098137158,
+     "Best": 70982,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 0.00027777778
+    },
+    {
+     "OBJECTID": 11365,
+     "Name": "ned19_n40x00_w083x50_oh_southcentral_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190825,
+     "AcquisitionDate": 1149033600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "mw1_darby_plains_oh",
+    "region": "Midwest plain",
+    "lat": 39.97,
+    "lon": -83.3,
+    "why": "Central Ohio till plain (Darby Plains, Wisconsinan ground moraine) cut by Big and Little Darby Creek",
+    "detail": [
+     400,
+     -1400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1071345,
+    1952955,
+    1073345,
+    1954955
+   ],
+   "utc": "2026-10-10T16:37:29Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 120317,
+     "Name": "OH_Statewide_Phase3_2021_B21",
+     "LowPS": 1,
+     "Best": 20352,
+     "AcquisitionDate": 1673740800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 108755,
+     "Name": "OH_Columbus_2019",
+     "LowPS": 1,
+     "Best": 60060,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 4453,
+     "Name": "n40w084",
+     "LowPS": 10.307360350155633,
+     "Best": 63457,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 9.2592593e-05
+    },
+    {
+     "OBJECTID": 1943,
+     "Name": "n40w084",
+     "LowPS": 30.92208098137158,
+     "Best": 70982,
+     "AcquisitionDate": 1562198400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 0.00027777778
+    },
+    {
+     "OBJECTID": 11365,
+     "Name": "ned19_n40x00_w083x50_oh_southcentral_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190825,
+     "AcquisitionDate": 1149033600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

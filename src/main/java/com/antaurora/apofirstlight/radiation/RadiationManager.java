@@ -233,9 +233,9 @@ public final class RadiationManager {
 
     private static double effectiveEnvironmentalField(ServerLevel level, int x, int z,
                                                       EnvironmentalField environmental) {
-        double effectiveField = environmental.preStartupEffectiveField();
-        double startupCap = startupRadiationCap(level.getSeed(), x, z, effectiveField);
-        return Double.isNaN(startupCap) ? effectiveField : Math.min(effectiveField, startupCap);
+        // 2026-10-10: the startup cap (a safe / irradiated buffer out to about 530 blocks round (0, 0)) is retired
+        // with the startup Plains (legacy_worldgen_retirement_v1); only the small anchor bubble remains.
+        return environmental.preStartupEffectiveField();
     }
 
     private static double clamp01(double value) {

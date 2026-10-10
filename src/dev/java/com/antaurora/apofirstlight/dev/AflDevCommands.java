@@ -56,6 +56,7 @@ public final class AflDevCommands {
         dev.then(schem);
         dev.then(mask);
         dev.then(MacroGeographyCommand.build());
+        dev.then(TerrainV2Command.build());   // Terrain V2 Phase 2 acceptance (2026-10-10)
         dev.then(Commands.literal("bunker")
                 .then(Commands.literal("status")
                         .executes(AflDevCommands::bunkerStatus)));

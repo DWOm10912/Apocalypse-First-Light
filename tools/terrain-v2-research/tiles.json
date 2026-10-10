@@ -1,0 +1,72 @@
+{
+ "note": "Terrain V2 real-terrain reference tiles (2026-10-10). Centre in NAD83 degrees; the tile is snapped to the NLCD 30 m grid in EPSG:5070 (cell edges at 15 m mod 30) and is size_m on a side. Candidates are previewed first (fetch.py preview). detail: the 1000 m lidar window (fetch.py lidar), metres from the tile centre (x east, y north), picked on the previews.",
+ "size_m": 10020,
+ "tiles": [
+  {
+   "id": "mw1_darby_plains_oh",
+   "region": "Midwest plain",
+   "lat": 39.97,
+   "lon": -83.3,
+   "why": "Central Ohio till plain (Darby Plains, Wisconsinan ground moraine) cut by Big and Little Darby Creek",
+   "detail": [
+    400,
+    -1400
+   ]
+  },
+  {
+   "id": "mw2_wabash_valley_in",
+   "region": "Midwest plain",
+   "lat": 40.32,
+   "lon": -87.12,
+   "why": "Wabash River valley below Lafayette, Indiana: terraces, bluffs and tributary ravines cut into the till plain",
+   "detail": [
+    -1200,
+    200
+   ]
+  },
+  {
+   "id": "mw3_bloomington_moraine_il",
+   "region": "Midwest plain",
+   "lat": 40.36,
+   "lon": -89.1,
+   "why": "Illinois Bloomington Ridged Plain: an end moraine (Funks Grove) on flat till plain",
+   "detail": [
+    -2000,
+    -200
+   ]
+  },
+  {
+   "id": "ap1_susquehanna_gaps_pa",
+   "region": "Appalachian Ridge and Valley",
+   "lat": 40.4,
+   "lon": -76.95,
+   "why": "Parallel ridges (Blue, Second, Peters Mountain) with long valleys; the Susquehanna cuts water gaps through them",
+   "detail": [
+    1000,
+    400
+   ]
+  },
+  {
+   "id": "ap2_blue_mountain_front_pa",
+   "region": "Appalachian front",
+   "lat": 40.23,
+   "lon": -77.4,
+   "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+   "detail": [
+    -2000,
+    2600
+   ]
+  },
+  {
+   "id": "cp1_york_pamunkey_va",
+   "region": "Mid-Atlantic Coastal Plain",
+   "lat": 37.53,
+   "lon": -76.8,
+   "why": "Tidal Pamunkey and Mattaponi rivers joining into the York River estuary: marsh, floodplain forest, coastal plain terraces",
+   "detail": [
+    2590,
+    2810
+   ]
+  }
+ ]
+}

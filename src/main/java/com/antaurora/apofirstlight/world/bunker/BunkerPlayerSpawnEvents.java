@@ -16,7 +16,11 @@ import org.slf4j.Logger;
 
 import java.util.Optional;
 
-@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+/**
+ * RETIRED 2026-10-10 (docs/worldgen/legacy_worldgen_retirement_v1.md): no longer subscribed. New players spawn at the
+ * natural world spawn (vanilla, or the Terrain V2 spawn picker), are not teleported into a bunker, get no forced
+ * respawn point and are never disconnected because a bunker is missing. The safe-position helpers stay for dev tools.
+ */
 public final class BunkerPlayerSpawnEvents {
     private static final Logger LOGGER = ApocalypseFirstLight.LOGGER;
     private static final String INITIAL_SPAWN_KEY = ApocalypseFirstLight.MOD_ID + ":bunker_initial_spawned";

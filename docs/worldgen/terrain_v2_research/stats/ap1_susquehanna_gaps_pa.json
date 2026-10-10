@@ -1,0 +1,992 @@
+{
+ "id": "ap1_susquehanna_gaps_pa",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.8459,
+ "elevation_abs_m": {
+  "p0": 93.8492,
+  "p1": 102.0246,
+  "p5": 107.9565,
+  "p50": 157.1026,
+  "p95": 338.8155,
+  "p99": 390.0282,
+  "p100": 424.7802,
+  "mean": 181.8207
+ },
+ "elevation_rel_m": {
+  "p5": 5.9319,
+  "p25": 31.545,
+  "p50": 55.078,
+  "p75": 106.0137,
+  "p95": 236.7909,
+  "p99": 288.0037,
+  "p100": 322.7557,
+  "mean": 79.7961
+ },
+ "hypsometric_integral": 0.266,
+ "slope": {
+  "10m": {
+   "p5": 0.0164,
+   "p25": 0.0666,
+   "p50": 0.1295,
+   "p75": 0.2422,
+   "p95": 0.4655,
+   "p99": 0.6529,
+   "mean": 0.1723
+  },
+  "30m": {
+   "p5": 0.0158,
+   "p25": 0.062,
+   "p50": 0.1185,
+   "p75": 0.2189,
+   "p95": 0.4263,
+   "p99": 0.5967,
+   "mean": 0.158
+  },
+  "90m": {
+   "p5": 0.0158,
+   "p25": 0.048,
+   "p50": 0.0912,
+   "p75": 0.1918,
+   "p95": 0.3736,
+   "p99": 0.4787,
+   "mean": 0.1339
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.028,
+   "1-3.1%": 0.0755,
+   "3.1-6.25%": 0.1283,
+   "6.25-12.5%": 0.2524,
+   "12.5-25%": 0.2777,
+   "25-50%": 0.2005,
+   ">50%": 0.0376
+  },
+  "30m": {
+   "<1%": 0.0308,
+   "1-3.1%": 0.0757,
+   "3.1-6.25%": 0.1463,
+   "6.25-12.5%": 0.2716,
+   "12.5-25%": 0.268,
+   "25-50%": 0.1818,
+   ">50%": 0.0258
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 3.4356,
+   "p90": 9.9235,
+   "p99": 17.3318,
+   "mean": 4.5901
+  },
+  "100m": {
+   "p50": 14.9424,
+   "p90": 40.9314,
+   "p99": 66.204,
+   "mean": 19.4403
+  },
+  "300m": {
+   "p50": 37.3487,
+   "p90": 114.4965,
+   "p99": 154.7714,
+   "mean": 54.158
+  },
+  "1000m": {
+   "p50": 162.0783,
+   "p90": 267.9548,
+   "p99": 286.63,
+   "mean": 155.5077
+  },
+  "3000m": {
+   "p50": 289.7904,
+   "p90": 289.7904,
+   "p99": 289.7904,
+   "mean": 289.7904
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.1404,
+   "p90": 0.4513,
+   "p99": 1.0745,
+   "mean": 0.2096
+  },
+  "100m": {
+   "p50": 0.8885,
+   "p90": 2.4056,
+   "p99": 4.8813,
+   "mean": 1.1851
+  },
+  "300m": {
+   "p50": 3.4663,
+   "p90": 7.612,
+   "p99": 19.2435,
+   "mean": 4.3947
+  },
+  "1000m": {
+   "p50": 14.0796,
+   "p90": 43.2857,
+   "p99": 54.4459,
+   "mean": 19.0266
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.2096,
+  "40-80 m": 0.5603,
+  "80-160 m": 1.2375,
+  "160-320 m": 2.9227,
+  "320-640 m": 6.784,
+  "640-1280 m": 14.7353,
+  "1280-2560 m": 33.7373,
+  "2560-5120 m": 58.9811
+ },
+ "orientation": {
+  "strike_deg": 33.7,
+  "coherence": 0.602
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 2.569,
+   "channel_heads_per_km2": 5.617,
+   "confluences_per_km2": 4.628,
+   "max_strahler": 5,
+   "cells_by_order": {
+    "1": 10244,
+    "2": 4627,
+    "3": 1811,
+    "4": 1706,
+    "5": 43
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 82.4264,
+    "p50": 181.4214,
+    "p75": 326.5685,
+    "p95": 651.127,
+    "p99": 856.1017,
+    "mean": 234.6716
+   },
+   "hand_m": {
+    "p5": 0.5385,
+    "p25": 6.6357,
+    "p50": 16.0781,
+    "p75": 39.8305,
+    "p95": 154.8518,
+    "p99": 215.1159,
+    "mean": 36.2577
+   },
+   "streams_by_order": {
+    "1": 477,
+    "2": 110,
+    "3": 18,
+    "4": 5,
+    "5": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.34,
+    "2/3": 6.11,
+    "3/4": 3.6,
+    "4/5": 5.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 40.0,
+    "p25": 140.0,
+    "p50": 340.0,
+    "p75": 643.75,
+    "p95": 2082.75,
+    "p99": 2976.4,
+    "mean": 546.7308
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 0.703,
+   "channel_heads_per_km2": 0.495,
+   "confluences_per_km2": 0.294,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 2948,
+    "2": 1609,
+    "3": 476
+   },
+   "hillslope_flow_length_m": {
+    "p5": 44.1421,
+    "p25": 234.8528,
+    "p50": 496.2742,
+    "p75": 805.2691,
+    "p95": 1171.5433,
+    "p99": 1373.6753,
+    "mean": 539.5954
+   },
+   "hand_m": {
+    "p5": 1.922,
+    "p25": 15.5157,
+    "p50": 31.2233,
+    "p75": 71.5876,
+    "p95": 197.4084,
+    "p99": 251.5908,
+    "mean": 55.2667
+   },
+   "streams_by_order": {
+    "1": 42,
+    "2": 6,
+    "3": 2
+   },
+   "bifurcation_ratio": {
+    "1/2": 7.0,
+    "2/3": 3.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 50.0,
+    "p25": 261.25,
+    "p50": 790.0,
+    "p75": 2643.75,
+    "p95": 4477.5,
+    "p99": 4938.9,
+    "mean": 1438.8614
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.221,
+   "channel_heads_per_km2": 0.047,
+   "confluences_per_km2": 0.0,
+   "max_strahler": 1,
+   "cells_by_order": {
+    "1": 1593
+   },
+   "hillslope_flow_length_m": {
+    "p5": 120.7107,
+    "p25": 662.5483,
+    "p50": 1339.5332,
+    "p75": 2171.4928,
+    "p95": 3596.0512,
+    "p99": 4481.3203,
+    "mean": 1518.6682
+   },
+   "hand_m": {
+    "p5": 4.4789,
+    "p25": 24.5529,
+    "p50": 43.3191,
+    "p75": 95.9973,
+    "p95": 225.6887,
+    "p99": 275.7345,
+    "mean": 70.2726
+   },
+   "streams_by_order": {
+    "1": 4
+   },
+   "bifurcation_ratio": {},
+   "channel_spacing_transects_m": {
+    "p5": 110.0,
+    "p25": 256.25,
+    "p50": 695.0,
+    "p75": 2836.25,
+    "p95": 4701.5,
+    "p99": 4722.6,
+    "mean": 1608.4211
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 50.3336,
+  "p50": 127.1216,
+  "p75": 192.6692,
+  "p90": 234.3585,
+  "p99": 283.6545,
+  "mean": 126.9531
+ },
+ "floodplain": {
+  "fraction_of_land": 0.0133,
+  "area_km2": 1.129,
+  "main_channel_km": 15.93,
+  "mean_width_m": 70.8
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.0966,
+   "largest_km2": 1.03,
+   "largest_fraction_of_land": 0.0121,
+   "components_ge_0.25km2": 5,
+   "components_ge_1km2": 1
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.2374,
+   "largest_km2": 1.82,
+   "largest_fraction_of_land": 0.0214,
+   "components_ge_0.25km2": 14,
+   "components_ge_1km2": 3
+  }
+ },
+ "ridges": [
+  {
+   "area_km2": 6.186,
+   "length_m": 11964,
+   "width_m": 517,
+   "strike_deg": 32.5,
+   "crest_above_tile_p5_m": 285.9,
+   "crest_std_m": 19.7,
+   "crest_range_m": 163.8,
+   "saddles_20m": 7,
+   "max_tpi_m": 134.2,
+   "cx_m": 4749,
+   "cy_m": -4443
+  },
+  {
+   "area_km2": 1.531,
+   "length_m": 4257,
+   "width_m": 360,
+   "strike_deg": 32.7,
+   "crest_above_tile_p5_m": 177.9,
+   "crest_std_m": 32.0,
+   "crest_range_m": 154.1,
+   "saddles_20m": 1,
+   "max_tpi_m": 114.4,
+   "cx_m": 8434,
+   "cy_m": -5037
+  },
+  {
+   "area_km2": 1.348,
+   "length_m": 2555,
+   "width_m": 528,
+   "strike_deg": 40.1,
+   "crest_above_tile_p5_m": 291.5,
+   "crest_std_m": 40.9,
+   "crest_range_m": 185.9,
+   "saddles_20m": 0,
+   "max_tpi_m": 169.0,
+   "cx_m": 8953,
+   "cy_m": -8125
+  },
+  {
+   "area_km2": 0.498,
+   "length_m": 1609,
+   "width_m": 309,
+   "strike_deg": 6.2,
+   "crest_above_tile_p5_m": 152.9,
+   "crest_std_m": 65.9,
+   "crest_range_m": 194.8,
+   "saddles_20m": 0,
+   "max_tpi_m": 188.9,
+   "cx_m": 6600,
+   "cy_m": -9852
+  },
+  {
+   "area_km2": 0.34,
+   "length_m": 867,
+   "width_m": 392,
+   "strike_deg": 69.1,
+   "crest_above_tile_p5_m": 92.7,
+   "crest_std_m": 9.7,
+   "crest_range_m": 32.3,
+   "saddles_20m": 0,
+   "max_tpi_m": 61.2,
+   "cx_m": 2614,
+   "cy_m": -1055
+  }
+ ],
+ "ridge_flank_hollows_per_km": 8.75,
+ "ridge_spacing_centroids_m": [
+  2857,
+  2539
+ ],
+ "height_above_water": {
+  "water_level_m": 99.73,
+  "bands": {
+   "0-1": 0.0017,
+   "1-3": 0.0109,
+   "3-10": 0.0504,
+   "10-20": 0.0625,
+   "20-40": 0.1894,
+   "40-80": 0.3393,
+   "80-9999": 0.3425
+  }
+ },
+ "cover_by_landform": {
+  "floodplain": {
+   "share_of_land": 0.0133,
+   "cover": {
+    "forest_deciduous": 0.348,
+    "forest_mixed": 0.28,
+    "cropland": 0.126,
+    "developed": 0.095,
+    "pasture_hay": 0.093,
+    "wetland_woody": 0.044,
+    "forest_evergreen": 0.01
+   }
+  },
+  "flat<3%": {
+   "share_of_land": 0.0912,
+   "cover": {
+    "cropland": 0.269,
+    "pasture_hay": 0.201,
+    "developed": 0.174,
+    "forest_deciduous": 0.144,
+    "forest_mixed": 0.101,
+    "wetland_woody": 0.065,
+    "wetland_herbaceous": 0.017,
+    "grassland": 0.014,
+    "forest_evergreen": 0.013
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.2273,
+   "cover": {
+    "developed": 0.214,
+    "pasture_hay": 0.213,
+    "cropland": 0.205,
+    "forest_deciduous": 0.203,
+    "forest_mixed": 0.137,
+    "forest_evergreen": 0.011
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.3662,
+   "cover": {
+    "forest_deciduous": 0.484,
+    "forest_mixed": 0.153,
+    "pasture_hay": 0.135,
+    "developed": 0.135,
+    "cropland": 0.083
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.1818,
+   "cover": {
+    "forest_deciduous": 0.781,
+    "forest_mixed": 0.122,
+    "developed": 0.054,
+    "pasture_hay": 0.016
+   }
+  },
+  "ridge": {
+   "share_of_land": 0.1203,
+   "cover": {
+    "forest_deciduous": 0.931,
+    "forest_mixed": 0.025,
+    "cropland": 0.019,
+    "pasture_hay": 0.012
+   }
+  }
+ },
+ "cover": {
+  "forest_deciduous": 0.4188,
+  "water": 0.1541,
+  "developed": 0.1067,
+  "forest_mixed": 0.1059,
+  "pasture_hay": 0.103,
+  "cropland": 0.0903,
+  "wetland_woody": 0.0075,
+  "forest_evergreen": 0.0053,
+  "grassland": 0.0033,
+  "wetland_herbaceous": 0.0032,
+  "shrub": 0.0013,
+  "barren": 0.0006
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0279,
+    "p25": 0.0744,
+    "p50": 0.1256,
+    "p75": 0.2253,
+    "p95": 0.3786,
+    "p99": 0.5082,
+    "mean": 0.1589
+   },
+   "slope_classes": {
+    "<1%": 0.0076,
+    "1-3.1%": 0.0546,
+    "3.1-6.25%": 0.1349,
+    "6.25-12.5%": 0.3004,
+    "12.5-25%": 0.2945,
+    "25-50%": 0.1971,
+    ">50%": 0.011
+   },
+   "rms_4m": {
+    "p50": 0.0145,
+    "p90": 0.0363,
+    "mean": 0.0194
+   },
+   "relief_4m": {
+    "p50": 0.4932,
+    "p90": 1.2827,
+    "mean": 0.6305
+   },
+   "rms_8m": {
+    "p50": 0.0359,
+    "p90": 0.0891,
+    "mean": 0.0484
+   },
+   "relief_8m": {
+    "p50": 1.1462,
+    "p90": 2.942,
+    "mean": 1.4574
+   },
+   "rms_16m": {
+    "p50": 0.0785,
+    "p90": 0.2054,
+    "mean": 0.1058
+   },
+   "relief_16m": {
+    "p50": 2.4754,
+    "p90": 6.2513,
+    "mean": 3.1069
+   },
+   "rms_32m": {
+    "p50": 0.1618,
+    "p90": 0.4469,
+    "mean": 0.2215
+   },
+   "relief_32m": {
+    "p50": 5.0541,
+    "p90": 12.5621,
+    "mean": 6.328
+   },
+   "rms_64m": {
+    "p50": 0.3788,
+    "p90": 0.8409,
+    "mean": 0.4648
+   },
+   "relief_64m": {
+    "p50": 10.3969,
+    "p90": 25.1776,
+    "mean": 13.12
+   },
+   "rms_128m": {
+    "p50": 0.9689,
+    "p90": 1.7551,
+    "mean": 1.0248
+   },
+   "relief_128m": {
+    "p50": 22.237,
+    "p90": 50.9974,
+    "mean": 27.7807
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0102,
+    "4-8 m": 0.0363,
+    "8-16 m": 0.0823,
+    "16-32 m": 0.1836,
+    "32-64 m": 0.3669,
+    "64-128 m": 0.6423,
+    "128-256 m": 1.389,
+    "256-512 m": 4.5109
+   },
+   "slope_2m": {
+    "p5": 0.0274,
+    "p25": 0.0743,
+    "p50": 0.124,
+    "p75": 0.2237,
+    "p95": 0.3675,
+    "p99": 0.4885,
+    "mean": 0.1563
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0259,
+    "p25": 0.0731,
+    "p50": 0.145,
+    "p75": 0.2872,
+    "p95": 0.4897,
+    "p99": 0.6688,
+    "mean": 0.1934
+   },
+   "slope_classes": {
+    "<1%": 0.0093,
+    "1-3.1%": 0.0603,
+    "3.1-6.25%": 0.1363,
+    "6.25-12.5%": 0.2377,
+    "12.5-25%": 0.2472,
+    "25-50%": 0.2633,
+    ">50%": 0.046
+   },
+   "rms_4m": {
+    "p50": 0.0078,
+    "p90": 0.0283,
+    "mean": 0.0126
+   },
+   "relief_4m": {
+    "p50": 0.3813,
+    "p90": 1.117,
+    "mean": 0.5211
+   },
+   "rms_8m": {
+    "p50": 0.0407,
+    "p90": 0.1133,
+    "mean": 0.0566
+   },
+   "relief_8m": {
+    "p50": 1.1509,
+    "p90": 3.2566,
+    "mean": 1.5475
+   },
+   "rms_16m": {
+    "p50": 0.0937,
+    "p90": 0.2688,
+    "mean": 0.1309
+   },
+   "relief_16m": {
+    "p50": 2.6564,
+    "p90": 7.3584,
+    "mean": 3.5648
+   },
+   "rms_32m": {
+    "p50": 0.2127,
+    "p90": 0.5636,
+    "mean": 0.2799
+   },
+   "relief_32m": {
+    "p50": 5.5836,
+    "p90": 15.3311,
+    "mean": 7.5427
+   },
+   "rms_64m": {
+    "p50": 0.4721,
+    "p90": 1.0708,
+    "mean": 0.5962
+   },
+   "relief_64m": {
+    "p50": 10.7539,
+    "p90": 30.9323,
+    "mean": 15.2348
+   },
+   "rms_128m": {
+    "p50": 1.0066,
+    "p90": 2.2769,
+    "mean": 1.3412
+   },
+   "relief_128m": {
+    "p50": 22.3784,
+    "p90": 62.0853,
+    "mean": 30.7477
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0378,
+    "8-16 m": 0.0834,
+    "16-32 m": 0.1682,
+    "32-64 m": 0.3372,
+    "64-128 m": 0.6104,
+    "128-256 m": 1.105,
+    "256-512 m": 2.6872,
+    "512-1024 m": 11.4329
+   }
+  }
+ },
+ "seconds": 7.3,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "ap1_susquehanna_gaps_pa",
+    "region": "Appalachian Ridge and Valley",
+    "lat": 40.4,
+    "lon": -76.95,
+    "why": "Parallel ridges (Blue, Second, Peters Mountain) with long valleys; the Susquehanna cuts water gaps through them",
+    "detail": [
+     1000,
+     400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1587345,
+    2086905,
+    1597365,
+    2096925
+   ],
+   "utc": "2026-10-10T16:35:09Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5213,
+     "Name": "n41w077",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 922,
+     "Name": "n41w077",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 18505,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 63409,
+     "Name": "PA_Dauphin_2016",
+     "LowPS": 1,
+     "Best": 90141,
+     "AcquisitionDate": 1458950400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9089,
+     "Name": "ned19_n40x50_w077x00_pa_southcentral_2008",
+     "LowPS": 3.435786885024356,
+     "Best": 111255,
+     "AcquisitionDate": 1388534400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9088,
+     "Name": "ned19_n40x50_w077x00_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9087,
+     "Name": "ned19_n40x50_w077x00_pa_northwest_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190927,
+     "AcquisitionDate": 1146268800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "ap1_susquehanna_gaps_pa",
+    "region": "Appalachian Ridge and Valley",
+    "lat": 40.4,
+    "lon": -76.95,
+    "why": "Parallel ridges (Blue, Second, Peters Mountain) with long valleys; the Susquehanna cuts water gaps through them",
+    "detail": [
+     1000,
+     400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1587345,
+    2086905,
+    1597365,
+    2096925
+   ],
+   "utc": "2026-10-10T16:35:16Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "ap1_susquehanna_gaps_pa",
+    "region": "Appalachian Ridge and Valley",
+    "lat": 40.4,
+    "lon": -76.95,
+    "why": "Parallel ridges (Blue, Second, Peters Mountain) with long valleys; the Susquehanna cuts water gaps through them",
+    "detail": [
+     1000,
+     400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1592855,
+    2091815,
+    1593855,
+    2092815
+   ],
+   "utc": "2026-10-10T16:35:29Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5213,
+     "Name": "n41w077",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 922,
+     "Name": "n41w077",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 18505,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 63409,
+     "Name": "PA_Dauphin_2016",
+     "LowPS": 1,
+     "Best": 90141,
+     "AcquisitionDate": 1458950400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9089,
+     "Name": "ned19_n40x50_w077x00_pa_southcentral_2008",
+     "LowPS": 3.435786885024356,
+     "Best": 111255,
+     "AcquisitionDate": 1388534400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9088,
+     "Name": "ned19_n40x50_w077x00_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9087,
+     "Name": "ned19_n40x50_w077x00_pa_northwest_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190927,
+     "AcquisitionDate": 1146268800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "ap1_susquehanna_gaps_pa",
+    "region": "Appalachian Ridge and Valley",
+    "lat": 40.4,
+    "lon": -76.95,
+    "why": "Parallel ridges (Blue, Second, Peters Mountain) with long valleys; the Susquehanna cuts water gaps through them",
+    "detail": [
+     1000,
+     400
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1592355,
+    2091315,
+    1594355,
+    2093315
+   ],
+   "utc": "2026-10-10T16:37:44Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5213,
+     "Name": "n41w077",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 922,
+     "Name": "n41w077",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 18505,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 63409,
+     "Name": "PA_Dauphin_2016",
+     "LowPS": 1,
+     "Best": 90141,
+     "AcquisitionDate": 1458950400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9089,
+     "Name": "ned19_n40x50_w077x00_pa_southcentral_2008",
+     "LowPS": 3.435786885024356,
+     "Best": 111255,
+     "AcquisitionDate": 1388534400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9088,
+     "Name": "ned19_n40x50_w077x00_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    },
+    {
+     "OBJECTID": 9087,
+     "Name": "ned19_n40x50_w077x00_pa_northwest_2006",
+     "LowPS": 3.435786885024356,
+     "Best": 190927,
+     "AcquisitionDate": 1146268800000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

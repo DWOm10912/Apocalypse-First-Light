@@ -25,5 +25,12 @@ public final class AflDensityFunctions {
             TYPES.register("land_bias", () -> LandTerrainBias.CODEC.codec());
     public static final RegistryObject<Codec<? extends DensityFunction>> INLAND_ELEVATION_BIAS =
             TYPES.register("inland_elevation_bias", () -> InlandElevationBias.CODEC.codec());
+    // Terrain V2 (Phase 2, 2026-10-10): the planned surface, the stable layer, the land / water router
+    public static final RegistryObject<Codec<? extends DensityFunction>> PLAN_HEIGHT =
+            TYPES.register("plan_height", () -> com.antaurora.apofirstlight.worldgen.terrain.v2.PlanHeightDensity.CODEC.codec());
+    public static final RegistryObject<Codec<? extends DensityFunction>> PLAN_STABILITY =
+            TYPES.register("plan_stability", () -> com.antaurora.apofirstlight.worldgen.terrain.v2.PlanStabilityDensity.CODEC.codec());
+    public static final RegistryObject<Codec<? extends DensityFunction>> PLAN_TERRAIN =
+            TYPES.register("plan_terrain", () -> com.antaurora.apofirstlight.worldgen.terrain.v2.PlanTerrainDensity.CODEC.codec());
     private AflDensityFunctions() {}
 }

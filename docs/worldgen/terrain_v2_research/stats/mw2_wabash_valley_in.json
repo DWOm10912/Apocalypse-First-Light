@@ -1,0 +1,800 @@
+{
+ "id": "mw2_wabash_valley_in",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.9886,
+ "elevation_abs_m": {
+  "p0": 151.7998,
+  "p1": 153.9797,
+  "p5": 155.7385,
+  "p50": 210.4733,
+  "p95": 222.9433,
+  "p99": 225.9986,
+  "p100": 235.1845,
+  "mean": 201.6533
+ },
+ "elevation_rel_m": {
+  "p5": 1.7588,
+  "p25": 34.7978,
+  "p50": 56.4936,
+  "p75": 63.7015,
+  "p95": 68.9636,
+  "p99": 72.0189,
+  "p100": 81.2048,
+  "mean": 47.6737
+ },
+ "hypsometric_integral": 0.598,
+ "slope": {
+  "10m": {
+   "p5": 0.004,
+   "p25": 0.0113,
+   "p50": 0.0221,
+   "p75": 0.0452,
+   "p95": 0.1321,
+   "p99": 0.2967,
+   "mean": 0.0398
+  },
+  "30m": {
+   "p5": 0.0034,
+   "p25": 0.0096,
+   "p50": 0.0189,
+   "p75": 0.038,
+   "p95": 0.1031,
+   "p99": 0.1908,
+   "mean": 0.0315
+  },
+  "90m": {
+   "p5": 0.0024,
+   "p25": 0.0068,
+   "p50": 0.0138,
+   "p75": 0.0281,
+   "p95": 0.067,
+   "p99": 0.1086,
+   "mean": 0.0215
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.2133,
+   "1-3.1%": 0.4165,
+   "3.1-6.25%": 0.2058,
+   "6.25-12.5%": 0.1096,
+   "12.5-25%": 0.0394,
+   "25-50%": 0.0139,
+   ">50%": 0.0015
+  },
+  "30m": {
+   "<1%": 0.2643,
+   "1-3.1%": 0.422,
+   "3.1-6.25%": 0.1893,
+   "6.25-12.5%": 0.0905,
+   "12.5-25%": 0.0308,
+   "25-50%": 0.0032,
+   ">50%": 0.0
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 0.5938,
+   "p90": 2.3021,
+   "p99": 7.5896,
+   "mean": 1.055
+  },
+  "100m": {
+   "p50": 2.535,
+   "p90": 9.0436,
+   "p99": 19.3451,
+   "mean": 3.9888
+  },
+  "300m": {
+   "p50": 7.5398,
+   "p90": 20.7689,
+   "p99": 33.1998,
+   "mean": 9.958
+  },
+  "1000m": {
+   "p50": 20.0096,
+   "p90": 42.013,
+   "p99": 61.4533,
+   "mean": 22.5123
+  },
+  "3000m": {
+   "p50": 31.9118,
+   "p90": 61.5539,
+   "p99": 71.1456,
+   "mean": 37.1768
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.035,
+   "p90": 0.1876,
+   "p99": 0.749,
+   "mean": 0.0821
+  },
+  "100m": {
+   "p50": 0.2532,
+   "p90": 1.1393,
+   "p99": 2.9345,
+   "mean": 0.4731
+  },
+  "300m": {
+   "p50": 0.8658,
+   "p90": 2.851,
+   "p99": 5.5769,
+   "mean": 1.3078
+  },
+  "1000m": {
+   "p50": 2.3379,
+   "p90": 5.2917,
+   "p99": 9.2378,
+   "mean": 2.8194
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.1289,
+  "40-80 m": 0.3687,
+  "80-160 m": 0.7492,
+  "160-320 m": 1.2394,
+  "320-640 m": 1.6753,
+  "640-1280 m": 2.1611,
+  "1280-2560 m": 2.7143,
+  "2560-5120 m": 7.3074
+ },
+ "orientation": {
+  "strike_deg": 72.6,
+  "coherence": 0.093
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 3.256,
+   "channel_heads_per_km2": 5.491,
+   "confluences_per_km2": 4.715,
+   "max_strahler": 5,
+   "cells_by_order": {
+    "1": 14207,
+    "2": 7241,
+    "3": 4501,
+    "4": 1681,
+    "5": 42
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 64.1421,
+    "p50": 140.7107,
+    "p75": 239.7056,
+    "p95": 393.8478,
+    "p99": 514.8528,
+    "mean": 164.5998
+   },
+   "hand_m": {
+    "p5": 0.0181,
+    "p25": 0.7203,
+    "p50": 2.0323,
+    "p75": 5.4651,
+    "p95": 16.4582,
+    "p99": 27.6317,
+    "mean": 4.2774
+   },
+   "streams_by_order": {
+    "1": 545,
+    "2": 137,
+    "3": 33,
+    "4": 6,
+    "5": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 3.98,
+    "2/3": 4.15,
+    "3/4": 5.5,
+    "4/5": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 44.75,
+    "p25": 160.0,
+    "p50": 360.0,
+    "p75": 625.0,
+    "p95": 1320.0,
+    "p99": 1862.7,
+    "mean": 464.9722
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 1.047,
+   "channel_heads_per_km2": 0.604,
+   "confluences_per_km2": 0.353,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 5271,
+    "2": 2210,
+    "3": 1397
+   },
+   "hillslope_flow_length_m": {
+    "p5": 34.1421,
+    "p25": 195.5635,
+    "p50": 455.2691,
+    "p75": 785.9798,
+    "p95": 1232.9646,
+    "p99": 1515.3911,
+    "mean": 522.7028
+   },
+   "hand_m": {
+    "p5": 0.2836,
+    "p25": 1.9359,
+    "p50": 5.2328,
+    "p75": 13.3501,
+    "p95": 29.6957,
+    "p99": 40.6251,
+    "mean": 8.9791
+   },
+   "streams_by_order": {
+    "1": 60,
+    "2": 17,
+    "3": 2
+   },
+   "bifurcation_ratio": {
+    "1/2": 3.53,
+    "2/3": 8.5
+   },
+   "channel_spacing_transects_m": {
+    "p5": 50.0,
+    "p25": 350.0,
+    "p50": 900.0,
+    "p75": 1750.0,
+    "p95": 3216.0,
+    "p99": 5916.8,
+    "mean": 1205.9769
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.236,
+   "channel_heads_per_km2": 0.04,
+   "confluences_per_km2": 0.0,
+   "max_strahler": 1,
+   "cells_by_order": {
+    "1": 2002
+   },
+   "hillslope_flow_length_m": {
+    "p5": 92.4264,
+    "p25": 583.5534,
+    "p50": 1416.1017,
+    "p75": 2339.6551,
+    "p95": 4401.7366,
+    "p99": 5421.8586,
+    "mean": 1646.4866
+   },
+   "hand_m": {
+    "p5": 2.2166,
+    "p25": 9.3801,
+    "p50": 15.9239,
+    "p75": 22.2775,
+    "p95": 33.5398,
+    "p99": 51.546,
+    "mean": 16.58
+   },
+   "streams_by_order": {
+    "1": 4
+   },
+   "bifurcation_ratio": {},
+   "channel_spacing_transects_m": {
+    "p5": 43.75,
+    "p25": 333.75,
+    "p50": 2120.0,
+    "p75": 4317.5,
+    "p95": 6450.0,
+    "p99": 7015.75,
+    "mean": 2534.1071
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 6.0248,
+  "p50": 13.8541,
+  "p75": 24.3908,
+  "p90": 36.1114,
+  "p99": 54.1196,
+  "mean": 16.6904
+ },
+ "floodplain": {
+  "fraction_of_land": 0.0271,
+  "area_km2": 2.693,
+  "main_channel_km": 20.02,
+  "mean_width_m": 134.5
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.6623,
+   "largest_km2": 40.594,
+   "largest_fraction_of_land": 0.409,
+   "components_ge_0.25km2": 13,
+   "components_ge_1km2": 8
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.8469,
+   "largest_km2": 62.41,
+   "largest_fraction_of_land": 0.6287,
+   "components_ge_0.25km2": 9,
+   "components_ge_1km2": 5
+  }
+ },
+ "ridges": [],
+ "ridge_spacing_centroids_m": null,
+ "height_above_water": {
+  "water_level_m": 152.32,
+  "bands": {
+   "0-1": 0.0024,
+   "1-3": 0.04,
+   "3-10": 0.0486,
+   "10-20": 0.0374,
+   "20-40": 0.1491,
+   "40-80": 0.7218,
+   "80-9999": 0.0001
+  }
+ },
+ "cover_by_landform": {
+  "floodplain": {
+   "share_of_land": 0.0271,
+   "cover": {
+    "cropland": 0.534,
+    "forest_deciduous": 0.323,
+    "wetland_woody": 0.057,
+    "forest_mixed": 0.039,
+    "developed": 0.023,
+    "grassland": 0.013
+   }
+  },
+  "flat<3%": {
+   "share_of_land": 0.6481,
+   "cover": {
+    "cropland": 0.777,
+    "forest_deciduous": 0.075,
+    "pasture_hay": 0.059,
+    "developed": 0.056,
+    "wetland_woody": 0.015,
+    "forest_mixed": 0.011
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.2432,
+   "cover": {
+    "cropland": 0.371,
+    "forest_deciduous": 0.33,
+    "pasture_hay": 0.15,
+    "developed": 0.068,
+    "forest_mixed": 0.055,
+    "grassland": 0.013
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.0733,
+   "cover": {
+    "forest_deciduous": 0.722,
+    "forest_mixed": 0.081,
+    "developed": 0.08,
+    "pasture_hay": 0.069,
+    "cropland": 0.038
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.0083,
+   "cover": {
+    "forest_deciduous": 0.9,
+    "forest_mixed": 0.045,
+    "developed": 0.042
+   }
+  }
+ },
+ "cover": {
+  "cropland": 0.6043,
+  "forest_deciduous": 0.1956,
+  "pasture_hay": 0.0788,
+  "developed": 0.0589,
+  "forest_mixed": 0.0276,
+  "wetland_woody": 0.0138,
+  "water": 0.0114,
+  "grassland": 0.0071,
+  "shrub": 0.0011,
+  "wetland_herbaceous": 0.0008,
+  "forest_evergreen": 0.0004,
+  "barren": 0.0002
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0141,
+    "p25": 0.0328,
+    "p50": 0.0574,
+    "p75": 0.1062,
+    "p95": 0.3355,
+    "p99": 0.7384,
+    "mean": 0.0983
+   },
+   "slope_classes": {
+    "<1%": 0.0243,
+    "1-3.1%": 0.2076,
+    "3.1-6.25%": 0.3066,
+    "6.25-12.5%": 0.2635,
+    "12.5-25%": 0.126,
+    "25-50%": 0.0446,
+    ">50%": 0.0274
+   },
+   "rms_4m": {
+    "p50": 0.0094,
+    "p90": 0.0392,
+    "mean": 0.0183
+   },
+   "relief_4m": {
+    "p50": 0.2241,
+    "p90": 0.7533,
+    "mean": 0.3774
+   },
+   "rms_8m": {
+    "p50": 0.0247,
+    "p90": 0.1248,
+    "mean": 0.0527
+   },
+   "relief_8m": {
+    "p50": 0.5292,
+    "p90": 1.707,
+    "mean": 0.8525
+   },
+   "rms_16m": {
+    "p50": 0.0656,
+    "p90": 0.3228,
+    "mean": 0.1322
+   },
+   "relief_16m": {
+    "p50": 1.1435,
+    "p90": 3.4905,
+    "mean": 1.7336
+   },
+   "rms_32m": {
+    "p50": 0.1813,
+    "p90": 0.7011,
+    "mean": 0.3114
+   },
+   "relief_32m": {
+    "p50": 2.3741,
+    "p90": 6.5993,
+    "mean": 3.31
+   },
+   "rms_64m": {
+    "p50": 0.4757,
+    "p90": 1.5826,
+    "mean": 0.7014
+   },
+   "relief_64m": {
+    "p50": 4.4886,
+    "p90": 13.0919,
+    "mean": 5.9771
+   },
+   "rms_128m": {
+    "p50": 1.0615,
+    "p90": 2.9572,
+    "mean": 1.3703
+   },
+   "relief_128m": {
+    "p50": 8.6846,
+    "p90": 19.0065,
+    "mean": 9.6364
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0082,
+    "4-8 m": 0.0352,
+    "8-16 m": 0.0936,
+    "16-32 m": 0.1971,
+    "32-64 m": 0.3956,
+    "64-128 m": 0.793,
+    "128-256 m": 1.0816,
+    "256-512 m": 1.9292
+   },
+   "slope_2m": {
+    "p5": 0.0141,
+    "p25": 0.0323,
+    "p50": 0.0562,
+    "p75": 0.1033,
+    "p95": 0.3169,
+    "p99": 0.6938,
+    "mean": 0.0944
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0109,
+    "p25": 0.0268,
+    "p50": 0.0462,
+    "p75": 0.0825,
+    "p95": 0.2281,
+    "p99": 0.5665,
+    "mean": 0.0753
+   },
+   "slope_classes": {
+    "<1%": 0.0421,
+    "1-3.1%": 0.2715,
+    "3.1-6.25%": 0.3283,
+    "6.25-12.5%": 0.2235,
+    "12.5-25%": 0.0911,
+    "25-50%": 0.0303,
+    ">50%": 0.0131
+   },
+   "rms_4m": {
+    "p50": 0.0034,
+    "p90": 0.0159,
+    "mean": 0.0075
+   },
+   "relief_4m": {
+    "p50": 0.1215,
+    "p90": 0.3992,
+    "mean": 0.2006
+   },
+   "rms_8m": {
+    "p50": 0.0184,
+    "p90": 0.0918,
+    "mean": 0.0401
+   },
+   "relief_8m": {
+    "p50": 0.367,
+    "p90": 1.1513,
+    "mean": 0.5797
+   },
+   "rms_16m": {
+    "p50": 0.0495,
+    "p90": 0.241,
+    "mean": 0.1025
+   },
+   "relief_16m": {
+    "p50": 0.8627,
+    "p90": 2.4865,
+    "mean": 1.2756
+   },
+   "rms_32m": {
+    "p50": 0.1348,
+    "p90": 0.5525,
+    "mean": 0.2418
+   },
+   "relief_32m": {
+    "p50": 1.8086,
+    "p90": 4.891,
+    "mean": 2.5406
+   },
+   "rms_64m": {
+    "p50": 0.3322,
+    "p90": 1.0306,
+    "mean": 0.5165
+   },
+   "relief_64m": {
+    "p50": 3.5802,
+    "p90": 8.1958,
+    "mean": 4.6283
+   },
+   "rms_128m": {
+    "p50": 0.7482,
+    "p90": 1.957,
+    "mean": 1.0479
+   },
+   "relief_128m": {
+    "p50": 6.8795,
+    "p90": 13.8724,
+    "mean": 7.9138
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0434,
+    "8-16 m": 0.1178,
+    "16-32 m": 0.2628,
+    "32-64 m": 0.5371,
+    "64-128 m": 1.0728,
+    "128-256 m": 1.7017,
+    "256-512 m": 2.0478,
+    "512-1024 m": 2.8599
+   }
+  }
+ },
+ "seconds": 6.4,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "mw2_wabash_valley_in",
+    "region": "Midwest plain",
+    "lat": 40.32,
+    "lon": -87.12,
+    "why": "Wabash River valley below Lafayette, Indiana: terraces, bluffs and tributary ravines cut into the till plain",
+    "detail": [
+     -1200,
+     200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    742005,
+    1952745,
+    752025,
+    1962765
+   ],
+   "utc": "2026-10-10T16:35:03Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5419,
+     "Name": "n41w088",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 2106,
+     "Name": "n41w088",
+     "LowPS": 30.92208098137158,
+     "Best": 21060,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 62352,
+     "Name": "IN_Indiana_Statewide_LiDAR_2017_B17",
+     "LowPS": 1,
+     "Best": 50056,
+     "AcquisitionDate": 1604448000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "mw2_wabash_valley_in",
+    "region": "Midwest plain",
+    "lat": 40.32,
+    "lon": -87.12,
+    "why": "Wabash River valley below Lafayette, Indiana: terraces, bluffs and tributary ravines cut into the till plain",
+    "detail": [
+     -1200,
+     200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    742005,
+    1952745,
+    752025,
+    1962765
+   ],
+   "utc": "2026-10-10T16:35:15Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "mw2_wabash_valley_in",
+    "region": "Midwest plain",
+    "lat": 40.32,
+    "lon": -87.12,
+    "why": "Wabash River valley below Lafayette, Indiana: terraces, bluffs and tributary ravines cut into the till plain",
+    "detail": [
+     -1200,
+     200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    745315,
+    1957455,
+    746315,
+    1958455
+   ],
+   "utc": "2026-10-10T16:35:21Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5419,
+     "Name": "n41w088",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 2106,
+     "Name": "n41w088",
+     "LowPS": 30.92208098137158,
+     "Best": 21060,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 62352,
+     "Name": "IN_Indiana_Statewide_LiDAR_2017_B17",
+     "LowPS": 1,
+     "Best": 50056,
+     "AcquisitionDate": 1604448000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "mw2_wabash_valley_in",
+    "region": "Midwest plain",
+    "lat": 40.32,
+    "lon": -87.12,
+    "why": "Wabash River valley below Lafayette, Indiana: terraces, bluffs and tributary ravines cut into the till plain",
+    "detail": [
+     -1200,
+     200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    744815,
+    1956955,
+    746815,
+    1958955
+   ],
+   "utc": "2026-10-10T16:37:33Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 5419,
+     "Name": "n41w088",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 2106,
+     "Name": "n41w088",
+     "LowPS": 30.92208098137158,
+     "Best": 21060,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 62352,
+     "Name": "IN_Indiana_Statewide_LiDAR_2017_B17",
+     "LowPS": 1,
+     "Best": 50056,
+     "AcquisitionDate": 1604448000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

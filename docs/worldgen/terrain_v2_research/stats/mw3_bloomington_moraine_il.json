@@ -1,0 +1,832 @@
+{
+ "id": "mw3_bloomington_moraine_il",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.9997,
+ "elevation_abs_m": {
+  "p0": 193.0851,
+  "p1": 198.1425,
+  "p5": 203.2969,
+  "p50": 214.967,
+  "p95": 226.2267,
+  "p99": 231.1408,
+  "p100": 236.5317,
+  "mean": 215.3338
+ },
+ "elevation_rel_m": {
+  "p5": 5.1544,
+  "p25": 13.0969,
+  "p50": 16.8245,
+  "p75": 22.1569,
+  "p95": 28.0842,
+  "p99": 32.9983,
+  "p100": 38.3891,
+  "mean": 17.1913
+ },
+ "hypsometric_integral": 0.512,
+ "slope": {
+  "10m": {
+   "p5": 0.0041,
+   "p25": 0.0108,
+   "p50": 0.018,
+   "p75": 0.0283,
+   "p95": 0.0543,
+   "p99": 0.1,
+   "mean": 0.0226
+  },
+  "30m": {
+   "p5": 0.0035,
+   "p25": 0.0093,
+   "p50": 0.0155,
+   "p75": 0.024,
+   "p95": 0.0425,
+   "p99": 0.0674,
+   "mean": 0.0185
+  },
+  "90m": {
+   "p5": 0.0027,
+   "p25": 0.0069,
+   "p50": 0.011,
+   "p75": 0.0165,
+   "p95": 0.0282,
+   "p99": 0.0409,
+   "mean": 0.0127
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.2234,
+   "1-3.1%": 0.5737,
+   "3.1-6.25%": 0.168,
+   "6.25-12.5%": 0.0292,
+   "12.5-25%": 0.0051,
+   "25-50%": 0.0005,
+   ">50%": 0.0
+  },
+  "30m": {
+   "<1%": 0.2786,
+   "1-3.1%": 0.5899,
+   "3.1-6.25%": 0.1187,
+   "6.25-12.5%": 0.0119,
+   "12.5-25%": 0.0009,
+   "25-50%": 0.0,
+   ">50%": 0.0
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 0.4761,
+   "p90": 1.1043,
+   "p99": 2.6383,
+   "mean": 0.5995
+  },
+  "100m": {
+   "p50": 1.9999,
+   "p90": 4.1094,
+   "p99": 7.4466,
+   "mean": 2.3216
+  },
+  "300m": {
+   "p50": 5.2362,
+   "p90": 9.2891,
+   "p99": 13.109,
+   "mean": 5.7248
+  },
+  "1000m": {
+   "p50": 12.0835,
+   "p90": 17.22,
+   "p99": 20.8244,
+   "mean": 12.2908
+  },
+  "3000m": {
+   "p50": 24.4355,
+   "p90": 26.5086,
+   "p99": 27.2285,
+   "mean": 22.9466
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.0205,
+   "p90": 0.0785,
+   "p99": 0.3467,
+   "mean": 0.0399
+  },
+  "100m": {
+   "p50": 0.1714,
+   "p90": 0.4488,
+   "p99": 1.1313,
+   "mean": 0.2336
+  },
+  "300m": {
+   "p50": 0.6418,
+   "p90": 1.2342,
+   "p99": 2.2085,
+   "mean": 0.739
+  },
+  "1000m": {
+   "p50": 1.622,
+   "p90": 2.5177,
+   "p99": 3.6403,
+   "mean": 1.7049
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.0887,
+  "40-80 m": 0.2272,
+  "80-160 m": 0.3455,
+  "160-320 m": 0.6095,
+  "320-640 m": 0.8802,
+  "640-1280 m": 1.1543,
+  "1280-2560 m": 1.8639,
+  "2560-5120 m": 3.9744
+ },
+ "orientation": {
+  "strike_deg": 46.3,
+  "coherence": 0.22
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 3.232,
+   "channel_heads_per_km2": 5.39,
+   "confluences_per_km2": 4.892,
+   "max_strahler": 5,
+   "cells_by_order": {
+    "1": 14354,
+    "2": 6799,
+    "3": 4312,
+    "4": 1310,
+    "5": 898
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 66.5685,
+    "p50": 138.2843,
+    "p75": 227.2792,
+    "p95": 367.2792,
+    "p99": 482.132,
+    "mean": 158.463
+   },
+   "hand_m": {
+    "p5": 0.04,
+    "p25": 0.6978,
+    "p50": 1.7419,
+    "p75": 3.3212,
+    "p95": 6.6849,
+    "p99": 9.7951,
+    "mean": 2.3212
+   },
+   "streams_by_order": {
+    "1": 541,
+    "2": 125,
+    "3": 27,
+    "4": 6,
+    "5": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.33,
+    "2/3": 4.63,
+    "3/4": 4.5,
+    "4/5": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 45.0,
+    "p25": 160.0,
+    "p50": 370.0,
+    "p75": 680.0,
+    "p95": 1312.5,
+    "p99": 2007.5,
+    "mean": 486.4542
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 0.961,
+   "channel_heads_per_km2": 0.488,
+   "confluences_per_km2": 0.369,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 4508,
+    "2": 2002,
+    "3": 1662
+   },
+   "hillslope_flow_length_m": {
+    "p5": 38.2843,
+    "p25": 221.4214,
+    "p50": 490.7107,
+    "p75": 822.5483,
+    "p95": 1293.9697,
+    "p99": 1609.2388,
+    "mean": 555.4898
+   },
+   "hand_m": {
+    "p5": 0.3477,
+    "p25": 2.1533,
+    "p50": 4.3801,
+    "p75": 7.351,
+    "p95": 12.3951,
+    "p99": 16.4724,
+    "mean": 5.1091
+   },
+   "streams_by_order": {
+    "1": 49,
+    "2": 12,
+    "3": 2
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.08,
+    "2/3": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 50.0,
+    "p25": 311.25,
+    "p50": 987.5,
+    "p75": 1827.5,
+    "p95": 3612.5,
+    "p99": 4911.7,
+    "mean": 1283.2143
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.269,
+   "channel_heads_per_km2": 0.06,
+   "confluences_per_km2": 0.02,
+   "max_strahler": 2,
+   "cells_by_order": {
+    "1": 1352,
+    "2": 898
+   },
+   "hillslope_flow_length_m": {
+    "p5": 160.7107,
+    "p25": 883.259,
+    "p50": 1778.2338,
+    "p75": 2823.2085,
+    "p95": 4352.031,
+    "p99": 5034.1631,
+    "mean": 1945.9329
+   },
+   "hand_m": {
+    "p5": 1.8028,
+    "p25": 5.6422,
+    "p50": 9.569,
+    "p75": 13.5567,
+    "p95": 18.8938,
+    "p99": 22.3645,
+    "mean": 9.8197
+   },
+   "streams_by_order": {
+    "1": 6,
+    "2": 1
+   },
+   "bifurcation_ratio": {
+    "1/2": 6.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 40.0,
+    "p25": 121.25,
+    "p50": 660.0,
+    "p75": 4377.5,
+    "p95": 5729.75,
+    "p99": 6180.3,
+    "mean": 1958.0714
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 6.1026,
+  "p50": 8.3463,
+  "p75": 10.8871,
+  "p90": 13.6186,
+  "p99": 19.1169,
+  "mean": 8.7207
+ },
+ "floodplain": {
+  "fraction_of_land": 0.0718,
+  "area_km2": 7.204,
+  "main_channel_km": 22.5,
+  "mean_width_m": 320.2
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.8058,
+   "largest_km2": 50.953,
+   "largest_fraction_of_land": 0.5077,
+   "components_ge_0.25km2": 2,
+   "components_ge_1km2": 2
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.9135,
+   "largest_km2": 91.578,
+   "largest_fraction_of_land": 0.9124,
+   "components_ge_0.25km2": 1,
+   "components_ge_1km2": 1
+  }
+ },
+ "ridges": [],
+ "ridge_spacing_centroids_m": null,
+ "height_above_water": {
+  "water_level_m": 209.08,
+  "bands": {
+   "0-1": 0.0335,
+   "1-3": 0.0978,
+   "3-10": 0.4003,
+   "10-20": 0.282,
+   "20-40": 0.019,
+   "40-80": 0.0,
+   "80-9999": 0.0
+  }
+ },
+ "cover_by_landform": {
+  "floodplain": {
+   "share_of_land": 0.0718,
+   "cover": {
+    "cropland": 0.583,
+    "forest_deciduous": 0.147,
+    "pasture_hay": 0.121,
+    "wetland_woody": 0.098,
+    "developed": 0.035,
+    "forest_mixed": 0.013
+   }
+  },
+  "flat<3%": {
+   "share_of_land": 0.7909,
+   "cover": {
+    "cropland": 0.898,
+    "developed": 0.051,
+    "forest_deciduous": 0.028,
+    "pasture_hay": 0.02
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.1318,
+   "cover": {
+    "cropland": 0.68,
+    "forest_deciduous": 0.147,
+    "pasture_hay": 0.099,
+    "developed": 0.065
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.0055,
+   "cover": {
+    "forest_deciduous": 0.61,
+    "cropland": 0.132,
+    "developed": 0.114,
+    "pasture_hay": 0.096,
+    "forest_mixed": 0.044
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.0,
+   "cover": {
+    "forest_deciduous": 1.0
+   }
+  }
+ },
+ "cover": {
+  "cropland": 0.8418,
+  "forest_deciduous": 0.0556,
+  "developed": 0.0517,
+  "pasture_hay": 0.0381,
+  "wetland_woody": 0.0084,
+  "forest_mixed": 0.0036,
+  "water": 0.0003,
+  "grassland": 0.0002,
+  "barren": 0.0002,
+  "wetland_herbaceous": 0.0002
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0108,
+    "p25": 0.0284,
+    "p50": 0.0484,
+    "p75": 0.0792,
+    "p95": 0.1947,
+    "p99": 0.4127,
+    "mean": 0.0686
+   },
+   "slope_classes": {
+    "<1%": 0.0429,
+    "1-3.1%": 0.2457,
+    "3.1-6.25%": 0.3501,
+    "6.25-12.5%": 0.251,
+    "12.5-25%": 0.0789,
+    "25-50%": 0.0255,
+    ">50%": 0.0057
+   },
+   "rms_4m": {
+    "p50": 0.0198,
+    "p90": 0.0484,
+    "mean": 0.0246
+   },
+   "relief_4m": {
+    "p50": 0.1971,
+    "p90": 0.4831,
+    "mean": 0.2683
+   },
+   "rms_8m": {
+    "p50": 0.0484,
+    "p90": 0.1058,
+    "mean": 0.059
+   },
+   "relief_8m": {
+    "p50": 0.4164,
+    "p90": 0.9866,
+    "mean": 0.5618
+   },
+   "rms_16m": {
+    "p50": 0.0865,
+    "p90": 0.2044,
+    "mean": 0.1138
+   },
+   "relief_16m": {
+    "p50": 0.7714,
+    "p90": 2.0465,
+    "mean": 1.0565
+   },
+   "rms_32m": {
+    "p50": 0.1304,
+    "p90": 0.4547,
+    "mean": 0.2091
+   },
+   "relief_32m": {
+    "p50": 1.456,
+    "p90": 3.3034,
+    "mean": 1.888
+   },
+   "rms_64m": {
+    "p50": 0.2192,
+    "p90": 0.8256,
+    "mean": 0.3804
+   },
+   "relief_64m": {
+    "p50": 2.8005,
+    "p90": 6.2364,
+    "mean": 3.325
+   },
+   "rms_128m": {
+    "p50": 0.5338,
+    "p90": 1.4044,
+    "mean": 0.7094
+   },
+   "relief_128m": {
+    "p50": 4.581,
+    "p90": 10.8576,
+    "mean": 5.6848
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0165,
+    "4-8 m": 0.0484,
+    "8-16 m": 0.095,
+    "16-32 m": 0.2102,
+    "32-64 m": 0.5006,
+    "64-128 m": 0.8241,
+    "128-256 m": 1.0601,
+    "256-512 m": 1.6945
+   },
+   "slope_2m": {
+    "p5": 0.0091,
+    "p25": 0.0246,
+    "p50": 0.0409,
+    "p75": 0.0645,
+    "p95": 0.1738,
+    "p99": 0.3777,
+    "mean": 0.0587
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0085,
+    "p25": 0.0215,
+    "p50": 0.0386,
+    "p75": 0.0646,
+    "p95": 0.1649,
+    "p99": 0.3558,
+    "mean": 0.0562
+   },
+   "slope_classes": {
+    "<1%": 0.0683,
+    "1-3.1%": 0.3307,
+    "3.1-6.25%": 0.3371,
+    "6.25-12.5%": 0.1846,
+    "12.5-25%": 0.0553,
+    "25-50%": 0.0213,
+    ">50%": 0.0027
+   },
+   "rms_4m": {
+    "p50": 0.0068,
+    "p90": 0.0294,
+    "mean": 0.0121
+   },
+   "relief_4m": {
+    "p50": 0.1178,
+    "p90": 0.3241,
+    "mean": 0.1678
+   },
+   "rms_8m": {
+    "p50": 0.0399,
+    "p90": 0.0971,
+    "mean": 0.0507
+   },
+   "relief_8m": {
+    "p50": 0.3313,
+    "p90": 0.8389,
+    "mean": 0.4531
+   },
+   "rms_16m": {
+    "p50": 0.078,
+    "p90": 0.2007,
+    "mean": 0.1033
+   },
+   "relief_16m": {
+    "p50": 0.6832,
+    "p90": 1.827,
+    "mean": 0.9317
+   },
+   "rms_32m": {
+    "p50": 0.1246,
+    "p90": 0.4337,
+    "mean": 0.1922
+   },
+   "relief_32m": {
+    "p50": 1.3195,
+    "p90": 3.2618,
+    "mean": 1.7309
+   },
+   "rms_64m": {
+    "p50": 0.2167,
+    "p90": 0.8163,
+    "mean": 0.3557
+   },
+   "relief_64m": {
+    "p50": 2.5862,
+    "p90": 5.7688,
+    "mean": 3.0578
+   },
+   "rms_128m": {
+    "p50": 0.5176,
+    "p90": 1.2463,
+    "mean": 0.6485
+   },
+   "relief_128m": {
+    "p50": 4.5732,
+    "p90": 8.3916,
+    "mean": 5.1393
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0477,
+    "8-16 m": 0.0917,
+    "16-32 m": 0.1783,
+    "32-64 m": 0.3829,
+    "64-128 m": 0.6419,
+    "128-256 m": 0.8222,
+    "256-512 m": 1.3127,
+    "512-1024 m": 2.2779
+   }
+  }
+ },
+ "seconds": 7.1,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "mw3_bloomington_moraine_il",
+    "region": "Midwest plain",
+    "lat": 40.36,
+    "lon": -89.1,
+    "why": "Illinois Bloomington Ridged Plain: an end moraine (Funks Grove) on flat till plain",
+    "detail": [
+     -2000,
+     -200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    575445,
+    1943385,
+    585465,
+    1953405
+   ],
+   "utc": "2026-10-10T16:35:04Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 3001,
+     "Name": "n41w090",
+     "LowPS": 30.92208098137158,
+     "Best": 1061,
+     "AcquisitionDate": 1774656000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 4979,
+     "Name": "n41w090",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 40686,
+     "Name": "IL_MidNorth_D22",
+     "LowPS": 1,
+     "Best": 29839,
+     "AcquisitionDate": 1656374400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "mw3_bloomington_moraine_il",
+    "region": "Midwest plain",
+    "lat": 40.36,
+    "lon": -89.1,
+    "why": "Illinois Bloomington Ridged Plain: an end moraine (Funks Grove) on flat till plain",
+    "detail": [
+     -2000,
+     -200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    575445,
+    1943385,
+    585465,
+    1953405
+   ],
+   "utc": "2026-10-10T16:35:16Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "mw3_bloomington_moraine_il",
+    "region": "Midwest plain",
+    "lat": 40.36,
+    "lon": -89.1,
+    "why": "Illinois Bloomington Ridged Plain: an end moraine (Funks Grove) on flat till plain",
+    "detail": [
+     -2000,
+     -200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    577955,
+    1947695,
+    578955,
+    1948695
+   ],
+   "utc": "2026-10-10T16:35:24Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 3001,
+     "Name": "n41w090",
+     "LowPS": 30.92208098137158,
+     "Best": 1061,
+     "AcquisitionDate": 1774656000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 97784,
+     "Name": "IL_10CountyNRCS_D23",
+     "LowPS": 1,
+     "Best": 10138,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 4979,
+     "Name": "n41w090",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 115884,
+     "Name": "IL_MidNorth_D22",
+     "LowPS": 1,
+     "Best": 29839,
+     "AcquisitionDate": 1656374400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 26908,
+     "Name": "IL_LoganCo_2013",
+     "LowPS": 1,
+     "Best": 119337,
+     "AcquisitionDate": 1385769600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "mw3_bloomington_moraine_il",
+    "region": "Midwest plain",
+    "lat": 40.36,
+    "lon": -89.1,
+    "why": "Illinois Bloomington Ridged Plain: an end moraine (Funks Grove) on flat till plain",
+    "detail": [
+     -2000,
+     -200
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    577455,
+    1947195,
+    579455,
+    1949195
+   ],
+   "utc": "2026-10-10T16:37:38Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 3001,
+     "Name": "n41w090",
+     "LowPS": 30.92208098137158,
+     "Best": 1061,
+     "AcquisitionDate": 1774656000000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 97784,
+     "Name": "IL_10CountyNRCS_D23",
+     "LowPS": 1,
+     "Best": 10138,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 4979,
+     "Name": "n41w090",
+     "LowPS": 10.307360350155633,
+     "Best": 13535,
+     "AcquisitionDate": 1711670400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 115884,
+     "Name": "IL_MidNorth_D22",
+     "LowPS": 1,
+     "Best": 29839,
+     "AcquisitionDate": 1656374400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 26908,
+     "Name": "IL_LoganCo_2013",
+     "LowPS": 1,
+     "Best": 119337,
+     "AcquisitionDate": 1385769600000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}

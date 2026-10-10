@@ -1,0 +1,865 @@
+{
+ "id": "ap2_blue_mountain_front_pa",
+ "cell_m": 10,
+ "size_m": [
+  10020,
+  10020
+ ],
+ "land_fraction": 0.996,
+ "elevation_abs_m": {
+  "p0": 137.5966,
+  "p1": 142.0091,
+  "p5": 148.2893,
+  "p50": 184.4947,
+  "p95": 470.7653,
+  "p99": 548.0101,
+  "p100": 604.7643,
+  "mean": 220.1196
+ },
+ "elevation_rel_m": {
+  "p5": 6.2802,
+  "p25": 26.4179,
+  "p50": 42.4856,
+  "p75": 74.4962,
+  "p95": 328.7562,
+  "p99": 406.001,
+  "p100": 462.7552,
+  "mean": 78.1106
+ },
+ "hypsometric_integral": 0.177,
+ "slope": {
+  "10m": {
+   "p5": 0.0149,
+   "p25": 0.0444,
+   "p50": 0.0787,
+   "p75": 0.1432,
+   "p95": 0.3629,
+   "p99": 0.5557,
+   "mean": 0.1156
+  },
+  "30m": {
+   "p5": 0.0139,
+   "p25": 0.0391,
+   "p50": 0.0676,
+   "p75": 0.1225,
+   "p95": 0.3314,
+   "p99": 0.5387,
+   "mean": 0.1023
+  },
+  "90m": {
+   "p5": 0.0105,
+   "p25": 0.0266,
+   "p50": 0.0456,
+   "p75": 0.0881,
+   "p95": 0.2962,
+   "p99": 0.4961,
+   "mean": 0.0803
+  }
+ },
+ "slope_classes": {
+  "10m": {
+   "<1%": 0.0281,
+   "1-3.1%": 0.1234,
+   "3.1-6.25%": 0.2376,
+   "6.25-12.5%": 0.3129,
+   "12.5-25%": 0.1933,
+   "25-50%": 0.0856,
+   ">50%": 0.0192
+  },
+  "30m": {
+   "<1%": 0.03,
+   "1-3.1%": 0.1492,
+   "3.1-6.25%": 0.2809,
+   "6.25-12.5%": 0.2962,
+   "12.5-25%": 0.1618,
+   "25-50%": 0.0653,
+   ">50%": 0.0166
+  }
+ },
+ "relief_m": {
+  "30m": {
+   "p50": 2.0394,
+   "p90": 6.605,
+   "p99": 14.774,
+   "mean": 3.0185
+  },
+  "100m": {
+   "p50": 8.4859,
+   "p90": 25.5732,
+   "p99": 64.4106,
+   "mean": 12.4921
+  },
+  "300m": {
+   "p50": 21.2192,
+   "p90": 79.5058,
+   "p99": 168.3396,
+   "mean": 34.7468
+  },
+  "1000m": {
+   "p50": 44.6475,
+   "p90": 239.1748,
+   "p99": 307.7996,
+   "mean": 91.4437
+  },
+  "3000m": {
+   "p50": 209.4019,
+   "p90": 384.212,
+   "p99": 403.7473,
+   "mean": 245.3588
+  }
+ },
+ "rms_about_plane_m": {
+  "30m": {
+   "p50": 0.0934,
+   "p90": 0.2886,
+   "p99": 0.7058,
+   "mean": 0.1363
+  },
+  "100m": {
+   "p50": 0.7481,
+   "p90": 1.8374,
+   "p99": 3.4906,
+   "mean": 0.9404
+  },
+  "300m": {
+   "p50": 2.6681,
+   "p90": 5.7178,
+   "p99": 12.4295,
+   "mean": 3.2845
+  },
+  "1000m": {
+   "p50": 6.5751,
+   "p90": 27.4877,
+   "p99": 43.482,
+   "mean": 10.9123
+  }
+ },
+ "band_rms_m": {
+  "20-40 m": 0.112,
+  "40-80 m": 0.4253,
+  "80-160 m": 1.0675,
+  "160-320 m": 2.1508,
+  "320-640 m": 3.277,
+  "640-1280 m": 6.446,
+  "1280-2560 m": 11.2132,
+  "2560-5120 m": 31.8831
+ },
+ "orientation": {
+  "strike_deg": 41.4,
+  "coherence": 0.349
+ },
+ "drainage": {
+  "A>=0.05km2": {
+   "threshold_km2": 0.05,
+   "drainage_density_km_per_km2": 2.937,
+   "channel_heads_per_km2": 5.38,
+   "confluences_per_km2": 4.45,
+   "max_strahler": 4,
+   "cells_by_order": {
+    "1": 13831,
+    "2": 6589,
+    "3": 2684,
+    "4": 1759
+   },
+   "hillslope_flow_length_m": {
+    "p5": 20.0,
+    "p25": 68.2843,
+    "p50": 147.2792,
+    "p75": 253.1371,
+    "p95": 456.9848,
+    "p99": 683.9697,
+    "mean": 180.478
+   },
+   "hand_m": {
+    "p5": 0.3187,
+    "p25": 3.5375,
+    "p50": 8.4632,
+    "p75": 17.0116,
+    "p95": 88.7365,
+    "p99": 193.4377,
+    "mean": 19.4001
+   },
+   "streams_by_order": {
+    "1": 538,
+    "2": 116,
+    "3": 24,
+    "4": 5
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.64,
+    "2/3": 4.83,
+    "3/4": 4.8
+   },
+   "channel_spacing_transects_m": {
+    "p5": 53.5,
+    "p25": 200.0,
+    "p50": 390.0,
+    "p75": 700.0,
+    "p95": 1391.5,
+    "p99": 2485.6,
+    "mean": 523.6078
+   }
+  },
+  "A>=0.5km2": {
+   "threshold_km2": 0.5,
+   "drainage_density_km_per_km2": 0.843,
+   "channel_heads_per_km2": 0.48,
+   "confluences_per_km2": 0.28,
+   "max_strahler": 3,
+   "cells_by_order": {
+    "1": 4462,
+    "2": 2016,
+    "3": 646
+   },
+   "hillslope_flow_length_m": {
+    "p5": 40.0,
+    "p25": 202.4264,
+    "p50": 447.6955,
+    "p75": 764.2641,
+    "p95": 1240.8326,
+    "p99": 1588.8664,
+    "mean": 519.0005
+   },
+   "hand_m": {
+    "p5": 1.1039,
+    "p25": 9.0052,
+    "p50": 18.1814,
+    "p75": 32.2995,
+    "p95": 146.8182,
+    "p99": 288.8193,
+    "mean": 35.6715
+   },
+   "streams_by_order": {
+    "1": 48,
+    "2": 10,
+    "3": 2
+   },
+   "bifurcation_ratio": {
+    "1/2": 4.8,
+    "2/3": 5.0
+   },
+   "channel_spacing_transects_m": {
+    "p5": 110.0,
+    "p25": 507.5,
+    "p50": 935.0,
+    "p75": 1742.5,
+    "p95": 3639.0,
+    "p99": 4960.9,
+    "mean": 1307.2531
+   }
+  },
+  "A>=5km2": {
+   "threshold_km2": 5.0,
+   "drainage_density_km_per_km2": 0.218,
+   "channel_heads_per_km2": 0.05,
+   "confluences_per_km2": 0.0,
+   "max_strahler": 1,
+   "cells_by_order": {
+    "1": 1836
+   },
+   "hillslope_flow_length_m": {
+    "p5": 116.5685,
+    "p25": 595.2691,
+    "p50": 1410.5382,
+    "p75": 2441.7872,
+    "p95": 3861.026,
+    "p99": 4758.4948,
+    "mean": 1622.0662
+   },
+   "hand_m": {
+    "p5": 2.9418,
+    "p25": 17.8291,
+    "p50": 28.8349,
+    "p75": 45.4988,
+    "p95": 207.2643,
+    "p99": 348.3362,
+    "mean": 51.1402
+   },
+   "streams_by_order": {
+    "1": 5
+   },
+   "bifurcation_ratio": {},
+   "channel_spacing_transects_m": {
+    "p5": 47.5,
+    "p25": 667.5,
+    "p50": 1690.0,
+    "p75": 2908.75,
+    "p95": 6367.5,
+    "p99": 8093.5,
+    "mean": 2468.8043
+   }
+  }
+ },
+ "valley_depth_interfluve_hand_m": {
+  "p25": 25.3503,
+  "p50": 44.9534,
+  "p75": 138.9472,
+  "p90": 243.4238,
+  "p99": 341.1996,
+  "mean": 92.8563
+ },
+ "floodplain": {
+  "fraction_of_land": 0.0212,
+  "area_km2": 2.117,
+  "main_channel_km": 18.36,
+  "mean_width_m": 115.3
+ },
+ "buildable": {
+  "grade<=1/32": {
+   "fraction_of_land": 0.1638,
+   "largest_km2": 3.105,
+   "largest_fraction_of_land": 0.031,
+   "components_ge_0.25km2": 4,
+   "components_ge_1km2": 2
+  },
+  "grade<=1/16": {
+   "fraction_of_land": 0.4363,
+   "largest_km2": 13.078,
+   "largest_fraction_of_land": 0.1308,
+   "components_ge_0.25km2": 11,
+   "components_ge_1km2": 6
+  }
+ },
+ "ridges": [
+  {
+   "area_km2": 4.303,
+   "length_m": 4827,
+   "width_m": 891,
+   "strike_deg": 23.0,
+   "crest_above_tile_p5_m": 393.7,
+   "crest_std_m": 50.7,
+   "crest_range_m": 242.8,
+   "saddles_20m": 0,
+   "max_tpi_m": 124.0,
+   "cx_m": 4044,
+   "cy_m": -1414
+  },
+  {
+   "area_km2": 0.854,
+   "length_m": 2041,
+   "width_m": 419,
+   "strike_deg": 59.0,
+   "crest_above_tile_p5_m": 356.2,
+   "crest_std_m": 65.8,
+   "crest_range_m": 211.6,
+   "saddles_20m": 0,
+   "max_tpi_m": 150.1,
+   "cx_m": 461,
+   "cy_m": -762
+  }
+ ],
+ "ridge_flank_hollows_per_km": 12.52,
+ "ridge_spacing_centroids_m": [
+  2859
+ ],
+ "height_above_water": {
+  "water_level_m": 142.92,
+  "bands": {
+   "0-1": 0.0066,
+   "1-3": 0.0128,
+   "3-10": 0.0542,
+   "10-20": 0.1085,
+   "20-40": 0.2747,
+   "40-80": 0.2931,
+   "80-9999": 0.2366
+  }
+ },
+ "cover_by_landform": {
+  "floodplain": {
+   "share_of_land": 0.0212,
+   "cover": {
+    "wetland_woody": 0.286,
+    "pasture_hay": 0.253,
+    "forest_deciduous": 0.135,
+    "wetland_herbaceous": 0.119,
+    "developed": 0.089,
+    "cropland": 0.079,
+    "forest_mixed": 0.039
+   }
+  },
+  "flat<3%": {
+   "share_of_land": 0.1528,
+   "cover": {
+    "cropland": 0.36,
+    "pasture_hay": 0.359,
+    "developed": 0.119,
+    "forest_deciduous": 0.061,
+    "wetland_woody": 0.057,
+    "forest_mixed": 0.026,
+    "wetland_herbaceous": 0.016
+   }
+  },
+  "gentle3-8%": {
+   "share_of_land": 0.4047,
+   "cover": {
+    "pasture_hay": 0.45,
+    "cropland": 0.257,
+    "forest_deciduous": 0.124,
+    "developed": 0.115,
+    "forest_mixed": 0.035,
+    "wetland_woody": 0.01
+   }
+  },
+  "moderate8-20%": {
+   "share_of_land": 0.285,
+   "cover": {
+    "forest_deciduous": 0.465,
+    "pasture_hay": 0.288,
+    "forest_mixed": 0.076,
+    "cropland": 0.076,
+    "developed": 0.073,
+    "wetland_woody": 0.01
+   }
+  },
+  "steep>20%": {
+   "share_of_land": 0.0837,
+   "cover": {
+    "forest_deciduous": 0.912,
+    "forest_mixed": 0.037,
+    "developed": 0.025,
+    "pasture_hay": 0.013
+   }
+  },
+  "ridge": {
+   "share_of_land": 0.0526,
+   "cover": {
+    "forest_deciduous": 0.977,
+    "developed": 0.014
+   }
+  }
+ },
+ "cover": {
+  "pasture_hay": 0.3248,
+  "forest_deciduous": 0.3214,
+  "cropland": 0.1819,
+  "developed": 0.0899,
+  "forest_mixed": 0.0437,
+  "wetland_woody": 0.0221,
+  "wetland_herbaceous": 0.0074,
+  "water": 0.004,
+  "grassland": 0.0028,
+  "forest_evergreen": 0.0012,
+  "shrub": 0.0007,
+  "barren": 0.0001
+ },
+ "fine": {
+  "1km_at_1m": {
+   "cell_m": 1,
+   "slope": {
+    "p5": 0.0787,
+    "p25": 0.1688,
+    "p50": 0.2698,
+    "p75": 0.4717,
+    "p95": 0.6379,
+    "p99": 0.761,
+    "mean": 0.3183
+   },
+   "slope_classes": {
+    "<1%": 0.0009,
+    "1-3.1%": 0.0074,
+    "3.1-6.25%": 0.0234,
+    "6.25-12.5%": 0.1017,
+    "12.5-25%": 0.3281,
+    "25-50%": 0.331,
+    ">50%": 0.2076
+   },
+   "rms_4m": {
+    "p50": 0.0299,
+    "p90": 0.0568,
+    "mean": 0.0347
+   },
+   "relief_4m": {
+    "p50": 1.0084,
+    "p90": 2.038,
+    "mean": 1.1597
+   },
+   "rms_8m": {
+    "p50": 0.0607,
+    "p90": 0.1121,
+    "mean": 0.0702
+   },
+   "relief_8m": {
+    "p50": 2.3187,
+    "p90": 4.6962,
+    "mean": 2.6817
+   },
+   "rms_16m": {
+    "p50": 0.1225,
+    "p90": 0.2107,
+    "mean": 0.1373
+   },
+   "relief_16m": {
+    "p50": 4.8326,
+    "p90": 9.8629,
+    "mean": 5.6827
+   },
+   "rms_32m": {
+    "p50": 0.2516,
+    "p90": 0.4319,
+    "mean": 0.2834
+   },
+   "relief_32m": {
+    "p50": 9.9022,
+    "p90": 20.2,
+    "mean": 11.6555
+   },
+   "rms_64m": {
+    "p50": 0.5135,
+    "p90": 1.1241,
+    "mean": 0.6499
+   },
+   "relief_64m": {
+    "p50": 19.128,
+    "p90": 39.5973,
+    "mean": 23.2376
+   },
+   "rms_128m": {
+    "p50": 1.2353,
+    "p90": 3.591,
+    "mean": 1.7073
+   },
+   "relief_128m": {
+    "p50": 32.7189,
+    "p90": 76.8112,
+    "mean": 43.8848
+   },
+   "band_rms_m": {
+    "2-4 m": 0.0248,
+    "4-8 m": 0.0471,
+    "8-16 m": 0.088,
+    "16-32 m": 0.1606,
+    "32-64 m": 0.3026,
+    "64-128 m": 0.615,
+    "128-256 m": 2.4336,
+    "256-512 m": 20.7795
+   },
+   "slope_2m": {
+    "p5": 0.0803,
+    "p25": 0.1668,
+    "p50": 0.2645,
+    "p75": 0.4745,
+    "p95": 0.6279,
+    "p99": 0.7339,
+    "mean": 0.3153
+   }
+  },
+  "2km_at_2m": {
+   "cell_m": 2,
+   "slope": {
+    "p5": 0.0655,
+    "p25": 0.1584,
+    "p50": 0.2554,
+    "p75": 0.417,
+    "p95": 0.5951,
+    "p99": 0.693,
+    "mean": 0.292
+   },
+   "slope_classes": {
+    "<1%": 0.0009,
+    "1-3.1%": 0.01,
+    "3.1-6.25%": 0.035,
+    "6.25-12.5%": 0.1146,
+    "12.5-25%": 0.3287,
+    "25-50%": 0.3657,
+    ">50%": 0.1452
+   },
+   "rms_4m": {
+    "p50": 0.012,
+    "p90": 0.0345,
+    "mean": 0.0162
+   },
+   "relief_4m": {
+    "p50": 0.6487,
+    "p90": 1.3369,
+    "mean": 0.7378
+   },
+   "rms_8m": {
+    "p50": 0.0516,
+    "p90": 0.1003,
+    "mean": 0.061
+   },
+   "relief_8m": {
+    "p50": 1.922,
+    "p90": 3.9648,
+    "mean": 2.1956
+   },
+   "rms_16m": {
+    "p50": 0.1129,
+    "p90": 0.219,
+    "mean": 0.1333
+   },
+   "relief_16m": {
+    "p50": 4.4286,
+    "p90": 9.1115,
+    "mean": 5.0791
+   },
+   "rms_32m": {
+    "p50": 0.25,
+    "p90": 0.517,
+    "mean": 0.3025
+   },
+   "relief_32m": {
+    "p50": 9.3636,
+    "p90": 19.3236,
+    "mean": 10.8094
+   },
+   "rms_64m": {
+    "p50": 0.5887,
+    "p90": 1.3341,
+    "mean": 0.7347
+   },
+   "relief_64m": {
+    "p50": 18.8574,
+    "p90": 39.0909,
+    "mean": 22.0124
+   },
+   "rms_128m": {
+    "p50": 1.5847,
+    "p90": 3.5313,
+    "mean": 1.8506
+   },
+   "relief_128m": {
+    "p50": 36.5228,
+    "p90": 77.4723,
+    "mean": 44.3549
+   },
+   "band_rms_m": {
+    "4-8 m": 0.0519,
+    "8-16 m": 0.0875,
+    "16-32 m": 0.1632,
+    "32-64 m": 0.3178,
+    "64-128 m": 0.7132,
+    "128-256 m": 1.9736,
+    "256-512 m": 8.2857,
+    "512-1024 m": 41.5543
+   }
+  }
+ },
+ "seconds": 7.5,
+ "sources": {
+  "dem10": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1553925,
+    2060775,
+    1563945,
+    2070795
+   ],
+   "utc": "2026-10-10T16:35:12Z",
+   "grid": {
+    "cell_m": 10,
+    "width": 1002,
+    "height": 1002
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9085,
+     "Name": "ned19_n40x25_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "nlcd2021": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1553925,
+    2060775,
+    1563945,
+    2070795
+   ],
+   "utc": "2026-10-10T16:35:16Z",
+   "grid": {
+    "cell_m": 30
+   },
+   "bytes": 114828,
+   "content_type": "image/geotiff"
+  },
+  "lidar1": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1556435,
+    2067885,
+    1557435,
+    2068885
+   ],
+   "utc": "2026-10-10T16:35:31Z",
+   "grid": {
+    "cell_m": 1,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9092,
+     "Name": "ned19_n40x50_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  },
+  "lidar2": {
+   "tile": {
+    "id": "ap2_blue_mountain_front_pa",
+    "region": "Appalachian front",
+    "lat": 40.23,
+    "lon": -77.4,
+    "why": "Blue (North) Mountain front against the Great (Cumberland) Valley lowland: mountain to plain transition",
+    "detail": [
+     -2000,
+     2600
+    ]
+   },
+   "crs": "EPSG:5070",
+   "bbox": [
+    1555935,
+    2067385,
+    1557935,
+    2069385
+   ],
+   "utc": "2026-10-10T16:37:48Z",
+   "grid": {
+    "cell_m": 2,
+    "width": 1000,
+    "height": 1000
+   },
+   "sources_at_centre": [
+    {
+     "OBJECTID": 4763,
+     "Name": "n41w078",
+     "LowPS": 10.307360350155633,
+     "Best": 62741,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -9.259259269220167e-05
+    },
+    {
+     "OBJECTID": 1284,
+     "Name": "n41w078",
+     "LowPS": 30.92208098137158,
+     "Best": 70266,
+     "AcquisitionDate": 1574467200000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": -0.000277777777786999
+    },
+    {
+     "OBJECTID": 46334,
+     "Name": "PA_South_Central_B1_2017",
+     "LowPS": 1,
+     "Best": 79246,
+     "AcquisitionDate": 1513814400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": null
+    },
+    {
+     "OBJECTID": 9092,
+     "Name": "ned19_n40x50_w077x50_pa_south_2007",
+     "LowPS": 3.435786885024356,
+     "Best": 180933,
+     "AcquisitionDate": 1177286400000,
+     "VerticalDatum": "North American Vertical Datum of 1988 (NAVD 88)",
+     "Resolution_Y": 1e-05
+    }
+   ],
+   "bytes": 4196028,
+   "content_type": "image/tiff"
+  }
+ }
+}
