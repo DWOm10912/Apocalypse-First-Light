@@ -24,7 +24,20 @@ public final class AflBlockMeshProfile {
             };
         }
     }
-    public record Animation(double durationTicks, Easing easing) {}
+    /**
+     * One channel. loopTicks > 0 (2026-10-09, the diesel generator's fan): a loop channel, turning its transforms over
+     * continuously, one full transform every loopTicks at full speed while its target is 1; the target is a speed, reached
+     * linearly over durationTicks (easing unused). 0: an ordinary channel between its ends.
+     */
+    public record Animation(double durationTicks, Easing easing, double loopTicks) {
+        public Animation(double durationTicks, Easing easing) {
+            this(durationTicks, easing, 0);
+        }
+
+        public boolean loops() {
+            return loopTicks > 0;
+        }
+    }
     public record Motion(String channel, Transform target) {}
     /** Absolute model-space pivot; mesh corners are already relative to this pivot. */
     public record Part(String bone, Vec3 pivot, Transform rest, Motion motion, List<Part> children) {

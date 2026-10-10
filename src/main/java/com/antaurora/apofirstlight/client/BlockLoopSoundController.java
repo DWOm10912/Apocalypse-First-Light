@@ -79,7 +79,12 @@ public final class BlockLoopSoundController {
                             && pump.getBlockState().getValue(IntakePumpBlock.LAMP) == IntakePumpBlock.Lamp.RUN,
                     pump -> IntakePumpBlock.world(pump.getBlockPos(), pump.getBlockState().getValue(IntakePumpBlock.FACING),
                             IntakePumpBlockEntity.MOTOR[0], IntakePumpBlockEntity.MOTOR[1], IntakePumpBlockEntity.MOTOR[2]),
-                    AflSounds.INTAKE_PUMP_LOOP, 1.0F, IntakePumpBlockEntity.LOOP_FADE_IN[0], IntakePumpBlockEntity.LOOP_FADE_IN[1]));
+                    AflSounds.INTAKE_PUMP_LOOP, 1.0F, IntakePumpBlockEntity.LOOP_FADE_IN[0], IntakePumpBlockEntity.LOOP_FADE_IN[1]),
+            // the diesel generator's engine while it runs (silent until its recording; then it will want a longer range than 8)
+            new Source<>(com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity.class,
+                    com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::running,
+                    com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::engineWorld,
+                    AflSounds.DIESEL_GENERATOR_RUN, 1.0F));
     private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
 
     private static ClientLevel trackedLevel;

@@ -218,6 +218,9 @@ public final class AflItems {
                     (com.antaurora.apofirstlight.block.PriceSignBlock) AflBlocks.PRICE_SIGN.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ROOF_TPO = ITEMS.register("roof_tpo",
             () -> new BlockItem(AflBlocks.ROOF_TPO.get(), new Item.Properties()));
+    public static final RegistryObject<Item> DIESEL_GENERATOR = ITEMS.register("diesel_generator",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.DieselGeneratorBlock) AflBlocks.DIESEL_GENERATOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> ENCLOSURE_GATE = ITEMS.register("enclosure_gate",
             () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
                     (com.antaurora.apofirstlight.block.EnclosureGateBlock) AflBlocks.ENCLOSURE_GATE.get(), new Item.Properties().stacksTo(1)));
@@ -314,6 +317,11 @@ public final class AflItems {
             () -> new com.antaurora.apofirstlight.item.FuelCanItem((com.antaurora.apofirstlight.block.FuelCanBlock) AflBlocks.SMALL_FUEL_DRUM.get(), false, new Item.Properties()));
     public static final RegistryObject<Item> FUEL_DRUM = ITEMS.register("fuel_drum",
             () -> new com.antaurora.apofirstlight.item.FuelCanItem((com.antaurora.apofirstlight.block.FuelCanBlock) AflBlocks.FUEL_DRUM.get(), false, new Item.Properties()));
+    /** Creative-only test sources (no recipe, no loot): 5000 L of gasoline / diesel, poured at once, never filled (2026-10-09). */
+    public static final RegistryObject<Item> CREATIVE_GASOLINE_BARREL = ITEMS.register("creative_gasoline_barrel",
+            () -> new com.antaurora.apofirstlight.item.CreativeFuelBarrelItem(AflFluids.GASOLINE, new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
+    public static final RegistryObject<Item> CREATIVE_DIESEL_BARREL = ITEMS.register("creative_diesel_barrel",
+            () -> new com.antaurora.apofirstlight.item.CreativeFuelBarrelItem(AflFluids.DIESEL, new Item.Properties().rarity(net.minecraft.world.item.Rarity.EPIC)));
     public static final RegistryObject<Item> HAND_FUEL_PUMP = ITEMS.register("hand_fuel_pump",
             () -> new BlockItem(AflBlocks.HAND_FUEL_PUMP.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FUEL_DISPENSER_SUMP = ITEMS.register("fuel_dispenser_sump",

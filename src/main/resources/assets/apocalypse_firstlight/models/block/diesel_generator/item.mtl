@@ -1,0 +1,4 @@
+# AFL Diesel standby generator V1
+newmtl diesel_generator
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/diesel_generator

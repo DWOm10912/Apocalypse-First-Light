@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.item;
 
 import com.antaurora.apofirstlight.block.FuelCanBlock;
 import com.antaurora.apofirstlight.block.FuelSumpCoverBlock;
+import com.antaurora.apofirstlight.fluid.FuelPourTarget;
 import com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity;
 import com.antaurora.apofirstlight.fluid.FuelCanTransfers;
 import net.minecraft.ChatFormatting;
@@ -138,10 +139,18 @@ public final class FuelCanItem extends BlockItem {
         if (tag.isEmpty()) stack.setTag(null);
     }
 
-    /** An open fill cover, the only thing a can pours into for now. */
+    /** An open fill cover, or another fill opening that takes a pour now (fluid/FuelPourTarget: the diesel generator's fill box). */
     public static boolean takesPour(BlockGetter level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof FuelPourTarget target) return target.takesPour(level, pos, state);
         return state.getBlock() instanceof FuelSumpCoverBlock cover && cover.kind() == FuelSumpCoverBlock.Kind.FILL && state.getValue(FuelSumpCoverBlock.OPEN);
+    }
+
+    /** Where the stream falls into what {@code pos} is (world): a fuel fill cover's opening, or a FuelPourTarget's. */
+    public static Vec3 pourOpening(BlockGetter level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof FuelPourTarget target) return target.pourOpening(level, pos, state);
+        return new Vec3(pos.getX() + 0.5, pos.getY() + 0.45, pos.getZ() + 0.5);
     }
 
     @Override
@@ -199,7 +208,8 @@ public final class FuelCanItem extends BlockItem {
             stopPour(stack);
             return;
         }
-        if (player.getEyePosition().distanceToSqr(Vec3.atCenterOf(target)) > POUR_RANGE * POUR_RANGE) {
+        Vec3 reach = level.getBlockState(target).getBlock() instanceof FuelPourTarget ? pourOpening(level, target) : Vec3.atCenterOf(target);
+        if (player.getEyePosition().distanceToSqr(reach) > POUR_RANGE * POUR_RANGE) {
             stopPour(stack);
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can.too_far"), true);
             return;
@@ -217,7 +227,8 @@ public final class FuelCanItem extends BlockItem {
         IFluidHandler into = FuelCanTransfers.handler(server, target, Direction.UP);
         if (into == null || into.fill(one, IFluidHandler.FluidAction.EXECUTE) <= 0) {
             FluidStack there = into == null ? FluidStack.EMPTY : FuelCanTransfers.contents(into);
-            String why = into == null || into.getTanks() == 0 || !into.isFluidValid(0, one) ? "wont_take" : !there.isEmpty() && !there.isFluidEqual(one) ? "other_fuel" : "full";
+            String refusal = level.getBlockState(target).getBlock() instanceof FuelPourTarget t ? t.refusal() : "wont_take";
+            String why = into == null || into.getTanks() == 0 ? "wont_take" : !into.isFluidValid(0, one) ? refusal : !there.isEmpty() && !there.isFluidEqual(one) ? "other_fuel" : "full";
             stopPour(stack);
             player.displayClientMessage(Component.translatable("message.apocalypse_firstlight.fuel_can." + why), true);
             return;

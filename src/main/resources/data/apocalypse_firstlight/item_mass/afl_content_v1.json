@@ -233,6 +233,10 @@
       "unit_mass_kg": 0.15,
       "estimated": true
     },
+    "apocalypse_firstlight:diesel_generator": {
+      "unit_mass_kg": 90,
+      "estimated": true
+    },
     "apocalypse_firstlight:enclosure_gate": {
       "unit_mass_kg": 30,
       "estimated": true
@@ -346,6 +350,14 @@
       "estimated": true
     },
     "apocalypse_firstlight:fuel_drum": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:creative_gasoline_barrel": {
+      "unit_mass_kg": 18,
+      "estimated": true
+    },
+    "apocalypse_firstlight:creative_diesel_barrel": {
       "unit_mass_kg": 18,
       "estimated": true
     },

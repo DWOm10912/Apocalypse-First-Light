@@ -73,17 +73,17 @@ public final class ChemicalReactorRecipeCategory implements IRecipeCategory<Chem
                 .setStandardSlotBackground()
                 .addIngredients(recipe.itemInput());
         FluidStack fluidInput = recipe.fluidInput();
-        builder.addSlot(RecipeIngredientRole.INPUT, FLUID_INPUT_X, SLOT_Y)
+        AflJeiLitres.of(builder.addSlot(RecipeIngredientRole.INPUT, FLUID_INPUT_X, SLOT_Y)
                 .setStandardSlotBackground()
-                .setFluidRenderer(fluidInput.getAmount(), false, 16, 16)
+                .setFluidRenderer(fluidInput.getAmount(), false, 16, 16))
                 .addFluidStack(fluidInput.getFluid(), fluidInput.getAmount());
         builder.addSlot(RecipeIngredientRole.OUTPUT, ITEM_OUTPUT_X, SLOT_Y)
                 .setStandardSlotBackground()
                 .addItemStack(recipe.itemOutput());
         FluidStack wasteOutput = recipe.wasteOutput();
-        builder.addSlot(RecipeIngredientRole.OUTPUT, WASTE_OUTPUT_X, SLOT_Y)
+        AflJeiLitres.of(builder.addSlot(RecipeIngredientRole.OUTPUT, WASTE_OUTPUT_X, SLOT_Y)
                 .setStandardSlotBackground()
-                .setFluidRenderer(wasteOutput.getAmount(), false, 16, 16)
+                .setFluidRenderer(wasteOutput.getAmount(), false, 16, 16))
                 .addFluidStack(wasteOutput.getFluid(), wasteOutput.getAmount());
     }
 

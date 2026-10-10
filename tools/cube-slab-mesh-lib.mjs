@@ -450,8 +450,13 @@ export function zFightLevels(parts, slabs, {skip = () => false, tol = 1e-3, minA
 }
 
 // ---------------- UV: planar islands (normal flood fill), shelf packing ----------------
-/** Copies (part.copyOf) reuse their original's UVs. Returns {islands, S, uvOf, faceUV}. */
-export function unwrap(PARTS, {atlas, pad, startS, stepS}) {
+/**
+ * Copies (part.copyOf) reuse their original's UVs. Returns {islands, S, uvOf, faceUV}. reserve [x0, y0, x1, y1] (atlas
+ * px, optional; 2026-10-09, the diesel generator's gauge panel art): a rectangle at the atlas's right edge the packer
+ * leaves free, rows that reach into its height end at its left edge. islandScale(part, mat) (optional, same day): an
+ * island's density relative to S (a dark engine bay seen through a door can take fewer texels than the outside).
+ */
+export function unwrap(PARTS, {atlas, pad, startS, stepS, reserve = null, islandScale = null}) {
   const islands = [];
   for (const part of PARTS) {
     if (part.copyOf) continue;
@@ -471,7 +476,8 @@ export function unwrap(PARTS, {atlas, pad, startS, stepS}) {
       }
       const n = norm(mem.reduce((acc, i) => add(acc, F[i].n), [0, 0, 0]));
       let t = sub([0, 0, 1], mul(n, n[2])); if (Math.hypot(...t) < 0.3) t = sub([0, 1, 0], mul(n, n[1])); t = norm(t); const bt = cross(n, t);
-      const vs = [...new Set(mem.flatMap(i => F[i].f.ids))], uv = new Map(vs.map(i => [i, [dot(part.v[i], t), -dot(part.v[i], bt)]]));
+      const ks = islandScale ? islandScale(part, F[s0].f.mat) : 1;
+      const vs = [...new Set(mem.flatMap(i => F[i].f.ids))], uv = new Map(vs.map(i => [i, [ks * dot(part.v[i], t), -ks * dot(part.v[i], bt)]]));
       const us = [...uv.values()], u0 = Math.min(...us.map(a => a[0])), v0 = Math.min(...us.map(a => a[1]));
       islands.push({part, faces: mem.map(i => F[i]), uv, u0, v0, w: Math.max(...us.map(a => a[0])) - u0, h: Math.max(...us.map(a => a[1])) - v0});
     }
@@ -483,7 +489,9 @@ export function unwrap(PARTS, {atlas, pad, startS, stepS}) {
     for (const is of islands.slice().sort((a, b) => b.h - a.h || b.w - a.w)) {
       const W = Math.ceil(is.w * S) + 1, H = Math.ceil(is.h * S) + 1;
       if (W + 2 * pad > atlas) return false;
-      if (x + W + pad > atlas) { x = pad; y += rowH + pad; rowH = 0; }
+      const right = () => reserve && y + H + pad > reserve[1] && y < reserve[3] + pad ? reserve[0] : atlas;
+      if (x + W + pad > right()) { x = pad; y += rowH + pad; rowH = 0; }
+      if (x + W + pad > right() && reserve) { if (W + 2 * pad > reserve[0]) y = Math.max(y, reserve[3] + pad); }
       if (y + H + pad > atlas) return false;
       Object.assign(is, {px: x, py: y, W, H}); x += W + pad; rowH = Math.max(rowH, H);
     }

@@ -176,8 +176,10 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
         boolean pouring = held.getItem() instanceof FuelCanItem can && can.pours() && !FuelCanItem.fluid(held).isEmpty();
         boolean free = level.getBlockState(pos.above()).canBeReplaced();
         if (state.getBlock() instanceof HandFuelPumpBlock) return empty ? sneak ? "take_pump" : HandFuelPumpBlock.target(level, pos, state) == null ? "needs_container" : "crank" : null;
+        boolean barrel = held.getItem() instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem;
         if (state.getBlock() instanceof FuelCanBlock can) {
             if (held.getItem() instanceof FuelNozzleItem) return "fill";
+            if (barrel) return "barrel";
             if (pump && can.size.drum() && free) return "mount_pump";
             BlockState above = level.getBlockState(pos.above());
             if (empty && can.size.drum() && above.getBlock() instanceof HandFuelPumpBlock)
@@ -189,6 +191,7 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
             if (pump && free) return "mount_pump";
             if (FuelCanItem.isPouring(held)) return "pour_stop";
             if (pouring && !sneak) return "pour_tank";
+            if (barrel) return "barrel";
         }
         return null;
     }

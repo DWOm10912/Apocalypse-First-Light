@@ -66,6 +66,8 @@ public final class AflMeshChunking {
     private static final long ADD_DELAY_NANOS = 200_000_000L, SEEN_NANOS = 250_000_000L,
             BURST_NANOS = 4_000_000_000L, FREEZE_NANOS = 10_000_000_000L;
     private static final long[] NONE = new long[2];
+    /** How far from 0 or 1 a resting value channel counts as between its ends. */
+    private static final double BETWEEN = 1e-4;
 
     /** What the chunk draws for one block entity: parts {@code lo/hi} (pre-order index bits), channels at 1 {@code ones}. */
     record Variant(AflBlockMeshProfile profile, Direction facing, int shading, long lo, long hi, int ones) {
@@ -237,7 +239,8 @@ public final class AflMeshChunking {
             int c = layout.channel[i];
             if (c >= 0 && rest) {
                 double value = snap ? animation.targetValue(layout.channels[c]) : animation.settled(layout.channels[c], time);
-                if (value < 0) rest = false;
+                // a value channel resting between its ends (a gauge needle) stays with the renderer: the chunk poses 0 or 1
+                if (value < 0 || value > BETWEEN && value < 1 - BETWEEN) rest = false;
                 else if (value > 0.5) ones |= 1 << c;
             }
             visible[i] = shown;

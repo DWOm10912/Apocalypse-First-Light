@@ -22,6 +22,7 @@ import java.util.Set;
  * <ul>
  *   <li>an open fuel fill cover: the tank its riser leads to (the first fluid handler down its pipe run; the fill cell of an
  *   underground fuel tank hands over the tank's own handler). Shut, nothing.</li>
+ *   <li>another fill opening (FuelPourTarget, 2026-10-09: the diesel generator's fill box): its own handler while it is open.</li>
  *   <li>any other block entity with a fluid handler: on the face reached, else its unsided one (a fluid tank's top port,
  *   a fuel container).</li>
  * </ul>
@@ -39,6 +40,7 @@ public final class FuelCanTransfers {
         if (state.getBlock() instanceof FuelSumpCoverBlock cover && cover.kind() == FuelSumpCoverBlock.Kind.FILL) {
             return state.getValue(FuelSumpCoverBlock.OPEN) ? throughPipes(level, pos, Direction.DOWN) : null;
         }
+        if (state.getBlock() instanceof FuelPourTarget target) return target.pourHandler(level, pos, state);
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity == null) return null;
         IFluidHandler sided = entity.getCapability(ForgeCapabilities.FLUID_HANDLER, face).resolve().orElse(null);

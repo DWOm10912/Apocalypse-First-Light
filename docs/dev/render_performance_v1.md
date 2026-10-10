@@ -151,7 +151,7 @@
   - 方块模型 JSON 只写 `{"loader": "apocalypse_firstlight:static_mesh", "textures": {"particle": ...}}`；
   - `AflAnimatedMeshHost` 默认提供 `getModelData()`。
 
-  2026-10-08 起 15 个网格资产都已接入：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机。生成器同步了。2026-10-09 新的围栏钢门 `enclosure_gate`（[fuel_stop_a1_details_v1.md](../models/fuel_stop_a1_details_v1.md)）一开始就这样接入（2 × 2 格，主格的方块实体；门扇关着、开着都伸出主格不到 1.1 格（最多约 0.99 格），静止时都进区块）。
+  2026-10-08 起 15 个网格资产都已接入：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机。生成器同步了。2026-10-09 新的围栏钢门 `enclosure_gate`（[fuel_stop_a1_details_v1.md](../models/fuel_stop_a1_details_v1.md)）一开始就这样接入（2 × 2 格，主格的方块实体；门扇关着、开着都伸出主格不到 1.1 格（最多约 0.99 格），静止时都进区块）。柴油发电机组 `diesel_generator`（2026-10-09，[diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md)）也是：3 × 1 × 2 格，主格放在**中间那一列**，机身往两边各伸出 0.84 格、开着的门最多 0.99 格，都在 1.1 格以内（主格放在一端的话机身要伸出 1.84 格，整台只能由渲染器画）。它的仪表指针、钥匙、小时计鼓轮是数值通道，停在中间值时由渲染器画，归零时进区块。
 - 网格 BER 的可见距离从 64 格改成 128 格（`AflAnimatedBlockMeshRenderer.VIEW_DISTANCE`），因为区块在任何距离都画静止零件，玻璃、发光件和货物要跟得更远一点。
 
 **需要实机确认的差异**：

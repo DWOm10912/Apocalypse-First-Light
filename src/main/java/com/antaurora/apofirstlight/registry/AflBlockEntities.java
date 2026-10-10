@@ -121,6 +121,15 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("price_sign", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.PriceSignBlockEntity::new,
                             AflBlocks.PRICE_SIGN.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity>> DIESEL_GENERATOR =
+            BLOCK_ENTITIES.register("diesel_generator", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.DieselGeneratorBlockEntity::new,
+                            AflBlocks.DIESEL_GENERATOR.get()).build(null));
+    /** The diesel generator's pipe port cell (c2r0): forwards a fluid pipe to the master's tank. */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.DieselGeneratorPortBlockEntity>> DIESEL_GENERATOR_PORT =
+            BLOCK_ENTITIES.register("diesel_generator_port", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.DieselGeneratorPortBlockEntity::new,
+                            AflBlocks.DIESEL_GENERATOR.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.EnclosureGateBlockEntity>> ENCLOSURE_GATE =
             BLOCK_ENTITIES.register("enclosure_gate", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.EnclosureGateBlockEntity::new,

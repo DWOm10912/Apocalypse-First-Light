@@ -10,6 +10,7 @@ import net.minecraftforge.common.extensions.IForgeBlockEntity;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 
 /**
  * What {@code AflAnimatedBlockMeshRenderer} needs from a block entity. {@link AflAnimatedMeshBlockEntity} implements it
@@ -36,6 +37,24 @@ public interface AflAnimatedMeshHost extends IForgeBlockEntity {
      * (meshhit/AnimatedMeshHits, docs/rendering/mesh_hit_runtime_v1.md) poses the model by it on either side.
      */
     boolean meshChannelTarget(String channel);
+
+    /**
+     * Value channels (2026-10-09, the diesel generator's gauge needles, key switch and hour meter drums): the channel's
+     * target as a value 0..1, the animation's transforms scaled by it, eased from where the channel stands. Hosts that move
+     * a channel only between its two ends keep the default, the boolean target. A channel resting between 0 and 1 is
+     * drawn by the block entity renderer, not the chunk (client/blockmesh/AflMeshChunking).
+     */
+    default double meshChannelValue(String channel) {
+        return meshChannelTarget(channel) ? 1 : 0;
+    }
+
+    /**
+     * Whether the hit mesh (meshhit/AnimatedMeshHits) follows this channel. False for value channels of small parts
+     * (needles, drums): the hit mesh keeps them at 0 and never waits for them to settle.
+     */
+    default boolean meshChannelAffectsHits(String channel) {
+        return true;
+    }
 
     /**
      * Profile part visibility, read every frame. A hidden part skips its geometry and its children. Used for alternative
@@ -68,6 +87,16 @@ public interface AflAnimatedMeshHost extends IForgeBlockEntity {
         animation.configure(profile);
         if (profile != null) for (var channel : profile.animations().keySet())
             animation.target(channel, target.test(channel), level.getGameTime());
+    }
+
+    /** {@link #refreshTargets} for hosts with value channels ({@link #meshChannelValue}). */
+    static void refreshValueTargets(Level level, ResourceLocation meshProfile, AflBlockMeshAnimationState animation,
+                                    ToDoubleFunction<String> value) {
+        if (level == null || !level.isClientSide || animation == null || meshProfile == null) return;
+        var profile = AflBlockMeshProfiles.get(meshProfile);
+        animation.configure(profile);
+        if (profile != null) for (var channel : profile.animations().keySet())
+            animation.target(channel, value.applyAsDouble(channel), level.getGameTime());
     }
 
     /** Shared render bounds: the profile's full motion envelope for this facing, else the single block. */

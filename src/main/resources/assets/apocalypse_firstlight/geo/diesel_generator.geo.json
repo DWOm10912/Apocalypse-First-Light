@@ -1,0 +1,208 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.diesel_generator",
+        "texture_width": 2048,
+        "texture_height": 2048,
+        "visible_bounds_width": 5,
+        "visible_bounds_height": 3,
+        "visible_bounds_offset": [
+          0,
+          1,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "door_l",
+          "pivot": [
+            -18.976,
+            0,
+            -7.232
+          ]
+        },
+        {
+          "name": "door_r",
+          "pivot": [
+            14.976,
+            0,
+            -7.232
+          ]
+        },
+        {
+          "name": "fill_lid",
+          "pivot": [
+            19.2,
+            6.912,
+            -0.384
+          ]
+        },
+        {
+          "name": "flap",
+          "pivot": [
+            -15.12,
+            28.816,
+            4.96
+          ]
+        },
+        {
+          "name": "fan",
+          "pivot": [
+            -17.2,
+            14.72,
+            0
+          ]
+        },
+        {
+          "name": "tank_needle",
+          "pivot": [
+            13.2,
+            2.72,
+            0
+          ]
+        },
+        {
+          "name": "needle_load",
+          "pivot": [
+            6.032,
+            19.59424,
+            0
+          ]
+        },
+        {
+          "name": "needle_fuel",
+          "pivot": [
+            8.3872,
+            19.59424,
+            0
+          ]
+        },
+        {
+          "name": "needle_temp",
+          "pivot": [
+            6.032,
+            17.18016,
+            0
+          ]
+        },
+        {
+          "name": "needle_oil",
+          "pivot": [
+            8.3872,
+            17.18016,
+            0
+          ]
+        },
+        {
+          "name": "key",
+          "pivot": [
+            10.65408,
+            17.68064,
+            0
+          ]
+        },
+        {
+          "name": "drum_0",
+          "pivot": [
+            9.99168,
+            20.08,
+            -6.714964983328
+          ]
+        },
+        {
+          "name": "drum_1",
+          "pivot": [
+            10.32288,
+            20.08,
+            -6.714964983328
+          ]
+        },
+        {
+          "name": "drum_2",
+          "pivot": [
+            10.65408,
+            20.08,
+            -6.714964983328
+          ]
+        },
+        {
+          "name": "drum_3",
+          "pivot": [
+            10.98528,
+            20.08,
+            -6.714964983328
+          ]
+        },
+        {
+          "name": "drum_4",
+          "pivot": [
+            11.31648,
+            20.08,
+            -6.714964983328
+          ]
+        },
+        {
+          "name": "lamp_run",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "lamp_run_lit",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "lamp_low",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "lamp_low_lit",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "lamp_fault",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "lamp_fault_lit",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        }
+      ]
+    }
+  ]
+}

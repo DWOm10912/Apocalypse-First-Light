@@ -72,6 +72,7 @@ public final class WorldInteractionHint {
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=enclosureGate(mc,hit);
+            if(target==null) target=dieselGenerator(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
             if(target==null) target=pavementPaint(mc,hit);
             if(target==null) target=curb(mc,hit);
@@ -293,6 +294,20 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.EnclosureGateBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.enclosure_gate."
                 +(s.getValue(com.antaurora.apofirstlight.block.EnclosureGateBlock.OPEN)?"close":"open")),null);
+    }
+
+    /**
+     * Diesel standby generator, as DieselGeneratorBlock#use (its own action resolver): start / stop and the e-stop at the
+     * panel, the doors, the fill box's lid, and "pour" with a jerry can at the open fill box (the can starts it).
+     */
+    private static Target dieselGenerator(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.DieselGeneratorBlock block)) return null;
+        var action=block.action(mc.level,hit.getBlockPos(),s,hit.getLocation(),mc.player);
+        if(action==null) return null;
+        return new Target(Component.translatable("hint.apocalypse_firstlight.diesel_generator."+action.name().toLowerCase(java.util.Locale.ROOT)),
+                block.anchor(hit.getBlockPos(),s,action,hit.getLocation()));
     }
 
     /**

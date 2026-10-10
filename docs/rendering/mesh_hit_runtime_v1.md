@@ -55,6 +55,7 @@
 **AFL 动画网格方块**（`meshhit/AnimatedMeshHits`）：方块实体是 `AflAnimatedMeshHost` 时，用它的 mesh sidecar（`meshes/<stem>.aflmesh.json`）按 block mesh profile 摆出整个模型，变换和渲染器完全一致：方块原点 → `[0.5,0,0.5]` → 朝向 → origin → scale → 每个 part：父节点、pivot 差和位移、Rz·Ry·Rx、缩放。
 - 从 mod jar 直接读 profile 和 sidecar（`AflBlockMeshProfiles` 只在客户端有），所以服务端（子弹）和客户端（准星）算的一样。
 - **姿势**：每个动画 channel 取两端之一，关（0）或开（1），由方块的权威状态决定。为此 `AflAnimatedMeshHost` 新增 `meshChannelTarget(channel)`，各方块实体原来写在 `refreshMeshAnimationTargets` 里的 lambda 挪成这个方法，两端共用，动画行为不变。所以开着盖的垃圾箱、开着门的储物柜，命中网格也是开着的姿势。
+  - 2026-10-09（柴油发电机组）：方块实体用 `meshChannelAffectsHits(channel)` 返回 false 的通道（仪表指针、钥匙、小时计鼓轮、排气防雨帽这类停在两端之间的数值通道）不参与：按 0 摆，也不等它在客户端停稳（否则指针一动，整台机组就退回碰撞盒）。门和加油口盖照常参与。
 - **动画进行中**（客户端这个 channel 的采样值还没到目标）不用网格，这几 tick 照旧方盒子。服务端没有动画过程，直接按目标姿势。
 - **不算的部件**：`goods_` 开头的部件（物资）和它们的子部件不算，它们在壳里面，开着时随战利品出现消失；方块实体当前隐藏的部件（`meshPartVisible` 为 false：售货机砸碎后的玻璃、灯的另一套镜片）不算。
 - 缓存：profile 按 id 读一次；每个（profile，朝向，各 channel 开 / 关）组合摆一次，每个部件一个 `MeshHitModel`；可见部件组合对应的 `Shape` 也缓存。

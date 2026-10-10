@@ -96,6 +96,7 @@ public final class AflCreativeTabs {
 
     public static final RegistryObject<CreativeModeTab> INDUSTRY = tab("industry", NATURAL_BLOCKS, AflItems.CRUSHER,
             AflItems.THERMAL_GENERATOR,
+            AflItems.DIESEL_GENERATOR,
             AflItems.ENERGY_CELL,
             AflItems.ENERGY_BATTERY,
             AflItems.POWER_CABLE,
@@ -157,6 +158,8 @@ public final class AflCreativeTabs {
             AflItems.JERRY_CAN,
             AflItems.SMALL_FUEL_DRUM,
             AflItems.FUEL_DRUM,
+            AflItems.CREATIVE_GASOLINE_BARREL,
+            AflItems.CREATIVE_DIESEL_BARREL,
             AflItems.HAND_FUEL_PUMP,
             AflItems.MODERN_OFFICE_DESK,
             AflItems.MODERN_OFFICE_CHAIR,

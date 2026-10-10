@@ -85,11 +85,13 @@ public final class AflBlockMeshProfileLoader {
             for (var entry : definitionsA.entrySet()) {
                 String channel = name(entry.getKey());
                 var a = object(entry.getValue(), channel);
-                keys(a, "duration_ticks", "easing", "transforms");
+                keys(a, "duration_ticks", "easing", "transforms", "loop_ticks");
                 double duration = number(a.get("duration_ticks"));
                 require(duration > 0 && duration <= 72000, "duration_ticks must be in (0,72000]");
                 Easing easing = Easing.valueOf(string(a.get("easing")).toUpperCase(Locale.ROOT));
-                animations.put(channel, new Animation(duration, easing));
+                double loop = a.has("loop_ticks") ? number(a.get("loop_ticks")) : 0;
+                require(!a.has("loop_ticks") || loop > 0 && loop <= 72000, "loop_ticks must be in (0,72000]");
+                animations.put(channel, new Animation(duration, easing, loop));
                 var transforms = object(a.get("transforms"), "transforms");
                 require(!transforms.keySet().isEmpty(), "empty animation transforms");
                 for (var target : transforms.entrySet()) {

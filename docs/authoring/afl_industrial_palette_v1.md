@@ -99,5 +99,8 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 - `cmu_screen_wall`（`north` / `east` / `south` / `west` 哪几边有墙，`cap` 上面不是围墙时为 true）：200 mm 磨面砌块围墙，贴格子边，和勒脚同一套贴图。镐，无等级。直接写状态时把 `cap` 写对（最上面一层 true）。
 - `enclosure_gate`（`hinge=right|left`、`open=false`）：2 × 2 格钢门，自带立柱，往 `facing` 那边开；门扇在格子后边线上，围墙从门后面那排开始。一对门关 4 格宽的口子：`right` 立柱在锚点那列，`left` 在第二列。
 
+电源（2026-10-09，[备用柴油发电机组 V1](../machines/diesel_standby_generator_v1.md)；还没实机验证）：
+- `diesel_generator`（`open=false`、`fill=false`）：3 × 1 × 2 格带罩柴油发电机组，`facing` 是正面（检修门、仪表盘）。用 `place_multiblock`，锚点 `c0r0`（列沿 `facing.getClockWise()`）；带方块实体的主格是中间那列下格 `c1r0`，它的背面中心是标准钢电源接口，电缆接在主格后面那一格。放下是空的、停机的。镐 + 钻石级。门往前开约 1 m，前面留空。散热端（`c2r0` 的端面，`facing` 顺时针那一面）是标准流体接口，外面那一格可以接流体管道进柴油；加油口盒在另一端的台阶上。
+
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

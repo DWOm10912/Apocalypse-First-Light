@@ -28,6 +28,9 @@ public final class AflBlockEntityRenderers {
         // Checkout Counter V1 gate: the flap and the door animate (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.CHECKOUT_COUNTER_GATE.get(),
                 AflBlockEntityRendering.wrap("checkout_counter_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // Diesel standby generator V1: doors, fill lid, rain flap, gauge needles, key, hour meter drums, lamps (generic runtime)
+        event.registerBlockEntityRenderer(AflBlockEntities.DIESEL_GENERATOR.get(),
+                AflBlockEntityRendering.wrap("diesel_generator", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         // Trash enclosure V1 gate: the leaf swings (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.ENCLOSURE_GATE.get(),
                 AflBlockEntityRendering.wrap("enclosure_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));

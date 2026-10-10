@@ -96,6 +96,9 @@ final class AuthoringFixtureRegistry {
     /** The enclosure gate: cells c<col>r<row>, 2 x 2, anchor c0r0, columns along facing.getClockWise(). */
     private static final Multiblock ENCLOSURE_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c0r1","c1r1"),
             (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The diesel generator: cells c<col>r<row>, 3 x 2, anchor c0r0 (the block's master, holding the block entity, is c1r0), columns along facing.getClockWise(). */
+    private static final Multiblock DIESEL_GENERATOR=new Multiblock("cell",List.of("c0r0","c1r0","c2r0","c0r1","c1r1","c2r1"),
+            (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
     private static final Multiblock DESK=new Multiblock("part",List.of("center","left","right"),
             (a,f,p)->ModernOfficeDeskBlock.partPosition(a,f,ModernOfficeDeskBlock.Part.valueOf(constant(p))));
     private static final Multiblock WORKSTATION=new Multiblock("part",List.of("base","side","upper","upper_side"),
@@ -240,6 +243,8 @@ final class AuthoringFixtureRegistry {
                     .notes("Fuel Stop A1 details V1 (2026-10-09): a packaged rooftop unit, 2 long x 1 deep x 2 high on its roof curb; anchor c0r0, the second column at facing.getClockWise(). The rain hood sticks 0.19 m out of the west (counter-clockwise) end. Look only (no power) in V1."),
             new Def(A+"enclosure_gate",safe,"utility").facing(H4).multi(ENCLOSURE_GATE).variant("hinge","right","left").fixed("open","false").support(Support.NONE)
                     .notes("Trash enclosure V1 (2026-10-09): one steel gate leaf with its own hinge post, 2 wide x 2 high; facing = the outside (the leaf opens toward it), the leaf hangs at the back of its cells. hinge=right: the post in the anchor column c0; hinge=left: in c1 (facing.getClockWise()). A pair closes a 4-cell opening between cmu_screen_wall runs that start in the cells behind."),
+            new Def(A+"diesel_generator",safe,"utility").facing(H4).multi(DIESEL_GENERATOR).fixed("open","false").fixed("fill","false").support(Support.NONE)
+                    .notes("Diesel standby generator V1 (2026-10-09): a canopy genset on its sub-base fuel tank, 3 long x 1 deep x 2 high; facing = the front (service doors, instrument panel). Anchor c0r0; the master and its block entity are c1r0 (the middle column), whose back face centre is the standard steel power port (a power cable in the cell behind it). Placed off and empty (0 L): fuel with a jerry can at the fill box on the tank step."),
             new Def(A+"canopy_downlight",safe,"utility").fixed("lit","false").support(Support.BLOCK_RULE)
                     .notes("Site Lighting V1: 150 mm cylinder downlight in the cell under a metal_eyebrow_canopy (or any sturdy ceiling); its top reaches 31 mm into the canopy cell. On the building's lighting circuit, dark by day; lit is runtime."),
             new Def(A+"alloy_furnace",machine,"machine").notes("Processing machine with runtime state; not an authoring fixture."),

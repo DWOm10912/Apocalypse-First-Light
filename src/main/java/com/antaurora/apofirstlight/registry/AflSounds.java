@@ -98,6 +98,10 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> CHARGING_STATION_START = simple("charging_station_start");
     public static final RegistryObject<SoundEvent> CHARGING_STATION_FULL = simple("charging_station_full");
     public static final RegistryObject<SoundEvent> CHARGING_STATION_HUM = simple("charging_station_hum");
+    // Diesel standby generator V1: registered silent (sounds.json lists no files) until the user's recordings are mixed in
+    public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_START = simple("diesel_generator_start");
+    public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_RUN = simple("diesel_generator_run");
+    public static final RegistryObject<SoundEvent> DIESEL_GENERATOR_STOP = simple("diesel_generator_stop");
     // Hollow sheet-metal block sounds (AflSoundTypes.SHEET_METAL); sounds.json cancels the vanilla SoundType pitch factors
     public static final RegistryObject<SoundEvent> SHEET_METAL_BREAK = simple("sheet_metal_break");
     public static final RegistryObject<SoundEvent> SHEET_METAL_STEP = simple("sheet_metal_step");

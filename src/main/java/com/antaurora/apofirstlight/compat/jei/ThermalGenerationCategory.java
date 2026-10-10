@@ -29,7 +29,7 @@ public final class ThermalGenerationCategory implements IRecipeCategory<DisplayF
     @Override public void setRecipe(IRecipeLayoutBuilder builder, DisplayFuel fuel, IFocusGroup focuses) {
         var slot = builder.addSlot(RecipeIngredientRole.INPUT, 5, 10).setStandardSlotBackground();
         if (!fuel.item().isEmpty()) slot.addItemStack(fuel.item());
-        else slot.setFluidRenderer(fuel.fluid().getAmount(), false, 16, 16)
+        else AflJeiLitres.of(slot.setFluidRenderer(fuel.fluid().getAmount(), false, 16, 16))
                 .addFluidStack(fuel.fluid().getFluid(), fuel.fluid().getAmount());
     }
     @Override public void draw(DisplayFuel fuel, mezz.jei.api.gui.ingredient.IRecipeSlotsView slots,

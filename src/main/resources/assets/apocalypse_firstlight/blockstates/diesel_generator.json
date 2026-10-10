@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "cell=c0r0": {
+      "model": "apocalypse_firstlight:block/diesel_generator/cell"
+    },
+    "cell=c1r0": {
+      "model": "apocalypse_firstlight:block/diesel_generator/generator"
+    },
+    "cell=c2r0": {
+      "model": "apocalypse_firstlight:block/diesel_generator/cell"
+    },
+    "cell=c0r1": {
+      "model": "apocalypse_firstlight:block/diesel_generator/cell"
+    },
+    "cell=c1r1": {
+      "model": "apocalypse_firstlight:block/diesel_generator/cell"
+    },
+    "cell=c2r1": {
+      "model": "apocalypse_firstlight:block/diesel_generator/cell"
+    }
+  }
+}

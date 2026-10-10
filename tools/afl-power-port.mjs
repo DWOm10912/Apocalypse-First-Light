@@ -19,7 +19,9 @@ export function cyl(part, ax, cu, cv, r, a0, a1, seg) {
   const A = AX[ax], ang = i => Math.PI / seg + 2 * Math.PI * i / seg;
   const rg = a => Array.from({length: seg}, (_, i) => part.vtx(A.to3(cu + r * Math.cos(ang(i)), cv + r * Math.sin(ang(i)), a)));
   const r0 = rg(a0), r1 = rg(a1);
-  for (let i = 0; i < seg; i++) { const j = (i + 1) % seg, m = (ang(i) + ang(j)) / 2;
+  // the side quad's outward hint at its middle angle (2026-10-09: the average of ang(i) and ang(j) is pi for the last quad,
+  // whose ends straddle 0, so that quad came out wound inward: the pin's and the socket's +x face)
+  for (let i = 0; i < seg; i++) { const j = (i + 1) % seg, m = ang(i) + Math.PI / seg;
     part.face([r0[i], r0[j], r1[j], r1[i]], A.to3(Math.cos(m), Math.sin(m), 0), 'side'); }
   for (const [ring_, a, s] of [[r0, a0, -1], [r1, a1, 1]]) { const c = part.vtx(A.to3(cu, cv, a));
     for (let i = 0; i < seg; i++) part.face([c, ring_[i], ring_[(i + 1) % seg]], mul(A.n, s), 'cap'); }

@@ -104,6 +104,21 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 
 **channel 权威状态（2026-10-06，命中网格加入）**：`AflAnimatedMeshHost` 新增必须实现的 `meshChannelTarget(channel)`：这个 channel 现在应该在开（目标姿势）还是关。原来各方块实体在 `refreshMeshAnimationTargets` 里传给 `refreshTargets` 的 lambda 挪成了这个方法（`AflAnimatedMeshBlockEntity` 转给已有的 `meshAnimationTarget`），动画行为不变。它两端都能调用：命中网格（[mesh_hit_runtime_v1.md](mesh_hit_runtime_v1.md) 0.6 节，`meshhit/AnimatedMeshHits`）在服务端也要按它摆出开 / 关姿势。新接入的方块实体必须让它只读两端都有的状态（方块状态、同步过的字段）。
 
+**数值通道（2026-10-09，柴油发电机组加入）**：一个通道除了在两端（0 关、1 开）之间走，也可以停在中间的任意值，profile 里的变换按这个值缩放（仪表指针、钥匙开关、小时计鼓轮，[diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md)）。
+
+- `AflAnimatedMeshHost.meshChannelValue(channel)`：通道的目标值 0..1；默认是 `meshChannelTarget` 的 1 / 0，所以只走两端的方块实体什么都不用改。
+- `AflAnimatedMeshHost.refreshValueTargets(level, profile, animation, ToDoubleFunction)`：带数值的 `refreshTargets`。`AflAnimatedMeshBlockEntity` 改用它（传 `meshChannelValue`）；直接实现接口的方块实体仍用原来的 `refreshTargets`，行为不变。
+- `AflBlockMeshAnimationState.target(channel, double, tick)`：值夹到 0..1，从当前显示的值缓动过去，时长 = `duration_ticks` × 距离（和两端之间一样）。布尔版本转给它。
+- 区块：停在两端之间的数值通道算"在动"，它的零件和子零件留给渲染器画（区块只会摆 0 或 1 的姿势）；停在 0 或 1 时照常进区块。
+- 命中网格：`meshChannelAffectsHits(channel)`（默认 true）返回 false 的通道不参与命中网格的姿势，也不等它停稳（指针、鼓轮这类小零件按 0 摆）。
+
+**循环通道（2026-10-09，柴油发电机组的散热风扇）**：profile 的动画写 `loop_ticks`（0 < 值 ≤ 72000）就是循环通道，零件一直转下去，不在两端之间走。
+
+- 目标值是**转速**（0..1，1 = 每 `loop_ticks` 转完一整个变换，比如 `rotation [360, 0, 0]` 就是一整圈）；转速从当前值线性变到目标值，用时 `duration_ticks` × 变化量（`easing` 不用）。方块实体照常用 `meshChannelValue` 给目标（风扇：运行时 1）。
+- 相位是转速对时间的积分，按 tick 解析算出（`AflBlockMeshAnimationState.Rotor`），同一帧的主画面和阴影、每个零件拿到的角度都一样，不会越转越飘。
+- 区块：转着的零件算"在动"，由渲染器画；停下以后停在什么角度就是什么角度，不是 0 的话仍由渲染器画（区块只摆 0 / 1 的姿势），从没转过的停在 0 照常进区块。
+- 命中网格不跟循环通道（方块实体的 `meshChannelAffectsHits` 返回 false）。
+
 **部件显示与自发光（2026-10-01，充电站加入）**：`AflAnimatedMeshHost` 新增两个默认方法，renderer 每帧逐 part 询问：
 
 - `meshPartVisible(part)`（默认 true）：返回 false 时跳过这个 part 的几何体和它的子 part。用于同一位置的两套部件互相替换，例如指示灯的暗灯 / 亮灯两套镜片（亮灯那套在贴图 `_s` 的 alpha 里带 LabPBR 自发光，这样光影下只有亮着的灯发光）。
@@ -129,7 +144,7 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 渲染性能 V1 第二步（[render_performance_v1.md](../dev/render_performance_v1.md)）。方块实体渲染器每帧都把全部顶点重新提交一遍，开光影时阴影还要再提交一遍。但一个网格方块的大部分零件大部分时间都不动：柜体、关着的门、盖、货物。
 
 - **规则**：一个零件的几何由区块画（2026-10-08 起包括玻璃，见下面"静止的玻璃也由区块画"），条件是：
-  - 动画通道停稳（关或开都行）；
+  - 动画通道停稳（关或开都行；数值通道停在两端之间不算，2026-10-09）；
   - 可见（`meshPartVisible`）；
   - 不是全亮（`meshPartEmissive`）；
   - 父零件也满足这几条。
@@ -183,7 +198,7 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 - **开关**：开发开关 `static_mesh off`，或方块模型不是这个模型时，渲染器照旧画全部。
 - **PBR**：区块路径由 Oculus 按图集 sprite 读同名 `_n` / `_s`，所以贴图必须放在 `textures/block/`。原版会自动把这个目录拼进方块图集。
 - **可见距离**：区块在任何距离都画静止零件，所以网格渲染器的可见距离从 64 格改成 128 格（`AflAnimatedBlockMeshRenderer.VIEW_DISTANCE`），玻璃、发光件和货物跟得更远一点。
-- **使用者**（2026-10-08 全部接入，生成器已同步）：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机。冷柜的第一版原型是在 profile 里手写 `baked` 列表，已删除。
+- **使用者**（2026-10-08 全部接入，生成器已同步）：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机；之后新增的围栏钢门、柴油发电机组（2026-10-09）也是。冷柜的第一版原型是在 profile 里手写 `baked` 列表，已删除。
 - **实机**：用户 2026-10-08 在 Sundial 下 PASS（外观、开关门、动画正常，性能"好太多"），数字见 [render_performance_v1.md](../dev/render_performance_v1.md)"结果"。仍属理论上的差异：区块的面按自己贴着的那一格取光照，渲染器只在主格取一次；开光影时区块可能被按图集 mipmap 采样；动画开始那一两帧可能有重影。
 
 ## Bounds、缓存与 reload
@@ -202,7 +217,7 @@ mesh、分层列表、profile 树、变换定义、bounds 均在 reload 时缓�
 
 ## V1 边界与后续接入
 
-支持刚性 part 层级、一个 atlas、独立 boolean channels、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning、连续循环 rotor 时钟、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO；自发光只有上面的逐 part 全亮度开关，没有更细的光照策略。
+支持刚性 part 层级、一个 atlas、独立 boolean channels 和数值通道（2026-10-09，见上文）、translation/rotation/scale、四种 easing。暂不支持 timeline/keyframes、animation graph、同一 part 多动画混合、IK/skinning（连续循环的转子 2026-10-09 起用循环通道支持，见上文）、自动碰撞/门占位、自动 multi-block、逐 part 贴图、LOD/instancing/GPU skinning、terrain AO；自发光只有上面的逐 part 全亮度开关，没有更细的光照策略。
 
 industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-industrial-locker-v2.mjs`，bones `body` / `door`，通道 `open`，-100°，10 ticks），详见 [industrial_locker_v2.md](../models/industrial_locker_v2.md)。
 
@@ -211,6 +226,6 @@ industrial_locker V2 已于 2026-09-29 按这个流程接入（`tools/build-indu
 ## 冻结 Runtime 文件清单
 
 - 共享底层：`src/main/java/com/antaurora/apofirstlight/client/mesh/{AflMeshCache,AflMeshModel,AflMeshRenderer}.java`。
-- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入，2026-10-01 加入 `meshPartVisible` / `meshPartEmissive` 默认方法）。
+- 新增通用数据/实例：`src/main/java/com/antaurora/apofirstlight/blockmesh/{AflBlockMeshProfile,AflBlockMeshProfiles,AflBlockMeshAnimationState,AflAnimatedMeshBlockEntity,AflAnimatedMeshHost}.java`（`AflAnimatedMeshHost` 于 2026-09-29 加入，2026-10-01 加入 `meshPartVisible` / `meshPartEmissive` 默认方法，2026-10-09 加入 `meshChannelValue` / `meshChannelAffectsHits` / `refreshValueTargets`）。
 - 新增客户端：`src/main/java/com/antaurora/apofirstlight/client/blockmesh/{AflBlockMeshProfileLoader,AflAnimatedBlockMeshRenderer}.java`。2026-10-08 加入 `AflStaticMeshModel.java`、`AflMeshChunking.java`（静止部件由区块画）；`blockmesh/AflMeshChunkData.java`；`AflBlockMeshAnimationState` 加入 `version()` / `settled()` / `targetValue()`。
 - 文档：本文件及 `docs/native_guns/hybrid_mesh_runtime_v1.md` 的共享底层说明。

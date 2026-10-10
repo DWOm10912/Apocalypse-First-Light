@@ -37,6 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>A channel still moving on the client (its sample is not at the target yet) gives no hit mesh: the block's shape
  *   boxes for those ticks.</li>
+ *   <li>Channels the host keeps out (AflAnimatedMeshHost#meshChannelAffectsHits: value channels of gauge needles and
+ *   counter drums) stay at 0 and are never waited for.</li>
  *   <li>Contents ('goods_' parts and their children) are left out: they sit inside a shut shell, and with the shell
  *   open they come and go with the loot.</li>
  *   <li>Parts the host hides (AflAnimatedMeshHost#meshPartVisible: a vending machine's smashed glass, a lamp's other
@@ -88,6 +90,8 @@ public final class AnimatedMeshHits {
         long ends = 0;
         for (int i = 0; i < profile.channels.size(); i++) {
             String channel = profile.channels.get(i);
+            // value channels of small parts (gauge needles) keep the hit mesh at 0 and never hold it back
+            if (!host.meshChannelAffectsHits(channel)) continue;
             boolean open = host.meshChannelTarget(channel);
             // the client draws the channel moving towards its target: no hit mesh until it is there
             if (client && Math.abs(host.meshAnimation().sample(channel, level.getGameTime()) - (open ? 1 : 0)) > 1e-4) return null;

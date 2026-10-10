@@ -43,7 +43,7 @@ public abstract class AflAnimatedMeshBlockEntity extends BlockEntity implements 
 
     /** NBT-driven targets must also call this after applying update tag / BE packet data. */
     public final void refreshMeshAnimationTargets() {
-        AflAnimatedMeshHost.refreshTargets(level, meshProfile, meshAnimation, this::meshChannelTarget);
+        AflAnimatedMeshHost.refreshValueTargets(level, meshProfile, meshAnimation, this::meshChannelValue);
     }
 
     @Override public AABB getRenderBoundingBox() {
