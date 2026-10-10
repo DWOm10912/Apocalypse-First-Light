@@ -1,5 +1,7 @@
 # Highway V2 M1-A：隔离世界空间 Mesh 与基础碰撞测试场
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 日期：2026-10-07。基线：`65d40b0f`（原型）及 `a97e428d`（审查/设计契约）。
 
 **状态：M1-A 测试能力已集成主目录 Master；用户确认连续道路 Mesh 实际渲染正常、双向分离与弯道视觉基本正常、玩家坡面行走无明显卡脚，且 /afl dev highway_mesh verify 已成功执行。完整生命周期和光影兼容尚未验收。** 此文描述开发原型，不把全国 Highway、Terrain Phase 2 或 Road V1-B 标为已改造。

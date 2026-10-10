@@ -87,8 +87,8 @@ public class RouteGeometryCheck {
         if(args[0].equals("--meshes")){
             for(String id:List.of("m1b_rural4_export_fixture","m1b_suburban6_export_fixture")){
                 Path dir=Path.of(args[1]);try(var mesh=Files.newBufferedReader(dir.resolve(id+".aflmesh.json"));var geo=Files.newBufferedReader(dir.resolve(id+".geo.json"))){
-                    var model=com.antaurora.apofirstlight.client.mesh.AflMeshLoader.load(id,mesh,geo);
-                    int count=model.parts("road").stream().mapToInt(com.antaurora.apofirstlight.client.mesh.AflMeshPart::triangleEquivalent).sum();
+                    var model=com.antaurora.vextris.mesh.MeshLoader.load(id,mesh,geo);
+                    int count=model.parts("road").stream().mapToInt(com.antaurora.vextris.mesh.MeshPart::triangleEquivalent).sum();
                     require(count==(id.contains("rural4")?376:400),"existing exporter -> existing Java Loader");
                 }
             }

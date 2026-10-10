@@ -1,10 +1,12 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshPart;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshPart;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.antaurora.apofirstlight.entity.OfficeChairEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -35,7 +37,7 @@ public final class OfficeChairRenderer extends EntityRenderer<OfficeChairEntity>
 
     @Override
     public void render(OfficeChairEntity chair, float entityYaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
-        AflMeshModel mesh = AflMeshCache.snapshot().get(GEOMETRY);
+        MeshModel mesh = VextrisMeshes.byGeometry(GEOMETRY);
         if (mesh != null) {
             VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
             pose.pushPose();
@@ -59,8 +61,8 @@ public final class OfficeChairRenderer extends EntityRenderer<OfficeChairEntity>
         super.render(chair, entityYaw, partialTick, pose, buffers, light);
     }
 
-    private static void draw(AflMeshModel mesh, String bone, PoseStack pose, VertexConsumer vertices, int light) {
-        AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(bone, AflMeshPart.Layer.CUTOUT), pose, vertices, light,
+    private static void draw(MeshModel mesh, String bone, PoseStack pose, VertexConsumer vertices, int light) {
+        MeshRenderer.renderParts(mesh.parts(bone, MeshLayer.CUTOUT), pose, vertices, light,
                 OverlayTexture.NO_OVERLAY, 1.0F, 1.0F, 1.0F, 1.0F, null);
     }
 

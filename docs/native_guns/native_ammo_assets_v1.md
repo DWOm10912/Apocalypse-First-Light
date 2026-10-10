@@ -1,5 +1,7 @@
 # Native 正式弹药资产 V1
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 ## 当前实现
 
 | ID（均为 apocalypse_firstlight 命名空间） | 中文 | 英文 | 用途 |

@@ -1,9 +1,10 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -60,7 +61,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
     public void renderByItem(ItemStack stack, ItemDisplayContext context, PoseStack pose,
                              MultiBufferSource buffers, int light, int overlay) {
         // Both caches are replaced on F3+T. Never hold an old baked bone or sidecar across reloads.
-        AflMeshModel mesh = AflMeshCache.snapshot().get(geometry);
+        MeshModel mesh = VextrisMeshes.byGeometry(geometry);
         var geo = GeckoLibCache.getBakedModels().get(geometry);
         if (mesh == null || geo == null) return;
 
@@ -72,7 +73,7 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
             // Mesh vertices are centered on X/Z=0; put them at the old item model's center.
             pose.translate(0.5, context == ItemDisplayContext.GROUND ? groundVerticalOffset : verticalOffset, 0.5);
             if (mesh.hasTranslucent() && !opaqueOnly.test(stack)) {
-                com.antaurora.apofirstlight.client.mesh.AflHybridMeshRendering.renderAtCurrentPose(
+                com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer.render(
                         geometry, texture, pose, buffers, light, overlay);
             } else {
                 for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
@@ -84,13 +85,13 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
     }
 
     /** Bones flagged {@code neverRender} in the geo (e.g. a block's lit lamp set) are block-only and skipped here. */
-    private static void renderBone(AflMeshModel mesh, GeoBone bone, PoseStack pose,
+    private static void renderBone(MeshModel mesh, GeoBone bone, PoseStack pose,
                                    VertexConsumer vertices, int light, int overlay) {
         if (Boolean.TRUE.equals(bone.shouldNeverRender())) return;
         pose.pushPose();
         try {
             RenderUtils.prepMatrixForBone(pose, bone);
-            AflMeshRenderer.render(mesh, bone, pose, vertices, light, overlay, 1, 1, 1, 1);
+            GeckoMeshRenderer.renderBone(mesh, bone, pose, vertices, light, overlay, 1, 1, 1, 1);
             if (!bone.isHidingChildren())
                 for (GeoBone child : bone.getChildBones()) renderBone(mesh, child, pose, vertices, light, overlay);
         } finally {

@@ -11,18 +11,20 @@ assert(process.argv.slice(2).every(x=>x==='--compiled'));
 const jars=d=>fs.existsSync(d)?fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?jars(path.join(d,e.name)):e.name.endsWith('.jar')&&!e.name.includes('sources')?[path.join(d,e.name)]:[]):[];
 const gson=jars(path.join(process.env.GRADLE_USER_HOME||path.join(os.homedir(),'.gradle'),'caches/modules-2/files-2.1/com.google.code.gson/gson')).sort().at(-1);
 assert(gson,'Existing Gson cache required; no download attempted');
+// Mesh loader/model classes come from the Vextris jar (pure Java + Gson in com.antaurora.vextris.mesh).
+const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/libs/vextris-forge-1.20.1-0.1.0-dev.jar');
+assert(fs.existsSync(vextris),'Vextris jar required (build Vextris first, or set VEXTRIS_JAR): '+vextris);
 const java=process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',process.platform==='win32'?'java.exe':'java'):'java';
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'afl-m1a-check-')),created=[];
 try {
   let sources=[fs.readFileSync(path.join(root,'tools/highway-v2-m1a/GeometryCheck.java'),'utf8')];
-  let cp=gson;
+  let cp=gson+path.delimiter+vextris;
   if(process.argv.includes('--compiled'))cp+=path.delimiter+path.join(root,'build/classes/java/main');
   else {
-    for(const name of ['AflMeshPart','AflMeshModel','AflMeshLoader'])sources.push(fs.readFileSync(path.join(root,'src/main/java/com/antaurora/apofirstlight/client/mesh',name+'.java'),'utf8'));
     for(const name of ['ChunkMeshGeometry','RoadMeshAsset'])sources.push(fs.readFileSync(path.join(root,'src/dev/java/com/antaurora/apofirstlight/dev/highwaymesh',name+'.java'),'utf8'));
     sources=sources.map(s=>{
       const isConsumer=s.includes('class RoadMeshAsset')||s.includes('class GeometryCheck');
-      s=s.replace(/^package .*;\r?\n/gm,'').replace(/^import (static )?com\.antaurora\..*;\r?\n/gm,'').replace(/public final class /g,'final class ');
+      s=s.replace(/^package .*;\r?\n/gm,'').replace(/^import (static )?com\.antaurora\.apofirstlight\..*;\r?\n/gm,'').replace(/public final class /g,'final class ');
       if(isConsumer){for(const n of ['Vertex','Triangle','Tile','Normal'])s=s.replace(new RegExp('\\b'+n+'\\b','g'),'ChunkMeshGeometry.'+n);for(const n of ['clip','triangulate'])s=s.replace(new RegExp('(?<![.\\w])'+n+'\\(','g'),'ChunkMeshGeometry.'+n+'(');}
       return s;
     });

@@ -6,9 +6,10 @@ import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.Part;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfiles;
 import com.antaurora.apofirstlight.client.AflRenderDev;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshPart;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshPart;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -82,14 +83,14 @@ public final class AflMeshChunking {
 
     /** A profile's parts in pre-order, with their parents, channels and chained channel bits. */
     static final class Layout {
-        final AflMeshModel mesh;
+        final MeshModel mesh;
         final Part[] parts;
         final int[] parent, channel, chain;
         final boolean[] geometry;
         final String[] channels;
         final Map<Part, Integer> index = new IdentityHashMap<>();
 
-        Layout(AflBlockMeshProfile profile, AflMeshModel mesh) {
+        Layout(AflBlockMeshProfile profile, MeshModel mesh) {
             this.mesh = mesh;
             channels = profile.animations().keySet().stream().sorted().toArray(String[]::new);
             var list = new ArrayList<Part>();
@@ -106,8 +107,8 @@ public final class AflMeshChunking {
                 if (motion != null) for (int j = 0; j < channels.length; j++) if (channels[j].equals(motion.channel())) c = j;
                 channel[i] = c;
                 chain[i] = (parent[i] >= 0 ? chain[parent[i]] : 0) | (c >= 0 ? 1 << c : 0);
-                geometry[i] = !mesh.parts(parts[i].bone(), AflMeshPart.Layer.CUTOUT).isEmpty()
-                        || !mesh.parts(parts[i].bone(), AflMeshPart.Layer.TRANSLUCENT).isEmpty();
+                geometry[i] = !mesh.parts(parts[i].bone(), MeshLayer.CUTOUT).isEmpty()
+                        || !mesh.parts(parts[i].bone(), MeshLayer.TRANSLUCENT).isEmpty();
             }
         }
 
@@ -157,8 +158,8 @@ public final class AflMeshChunking {
         if (event.getLevel().isClientSide()) HOSTS.clear();
     }
 
-    static Layout layout(AflBlockMeshProfile profile, AflMeshModel mesh) {
-        long generation = AflMeshCache.snapshot().generation();
+    static Layout layout(AflBlockMeshProfile profile, MeshModel mesh) {
+        long generation = VextrisMeshes.generation();
         if (generation != layoutGeneration) { LAYOUTS.clear(); layoutGeneration = generation; }
         Layout layout = LAYOUTS.get(profile);
         if (layout == null || layout.mesh != mesh) {
@@ -201,7 +202,7 @@ public final class AflMeshChunking {
      * For the renderer, each pass: the parts it must not draw because the chunk draws them in the same pose
      * ({@code {lo, hi}} pre-order index bits). In the main pass it also keeps the chunk's variant current.
      */
-    static long[] skip(BlockEntity entity, AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh,
+    static long[] skip(BlockEntity entity, AflAnimatedMeshHost host, AflBlockMeshProfile profile, MeshModel mesh,
                        double time, boolean shadowPass) {
         if (!enabled(entity)) return NONE;
         HostState s = state(entity);
@@ -269,7 +270,7 @@ public final class AflMeshChunking {
     /** Recomputes the variant (client thread) and asks for a rebuild when it changed. */
     private static void evaluate(BlockEntity entity, AflAnimatedMeshHost host, HostState s, long now, boolean ask) {
         var profile = AflBlockMeshProfiles.get(host.meshProfile());
-        var mesh = profile == null ? null : AflMeshCache.snapshot().get(profile.geometry());
+        var mesh = profile == null ? null : VextrisMeshes.byGeometry(profile.geometry());
         if (profile == null || mesh == null || entity.getLevel() == null) return;
         double time = entity.getLevel().getGameTime() + Minecraft.getInstance().getFrameTime();
         s.moving = moving(host, profile, time);

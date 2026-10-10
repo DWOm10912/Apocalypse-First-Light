@@ -1,5 +1,7 @@
 # AFL Hybrid Mesh Runtime — V1 / V2
 
+> **2026-10-10 Vextris 迁移**：本文描述的 loader、cache、CPU 提交与混合层（`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering`）已经移入独立库 Vextris，AFL 的 `client/mesh` 包已删除。sidecar 格式、资源路径、bone/pivot 约定、提交顺序和 RenderType 策略不变；现在的类名是 `MeshLoader` / `VextrisMeshes` / `MeshRenderer` / `GeckoMeshRenderer`（GeckoLib 骨骼上的 Mesh），对应表和行为差异（`closedSolid` 修正，82 个部件）见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。下文中的旧类名是历史名称。
+
 2026-09-29 新增 [AFL Animated Block Mesh Runtime V1](../rendering/animated_block_mesh_runtime_v1.md)，现按用户确认标记 **COMPLETE / FROZEN**。方块复用同一 loader/cache/part 数据和 CPU 提交；`AflMeshRenderer.renderPartsAtCurrentPose` 提供无 GeoBone 的低层入口，原枪械/物品 wrapper 保留。`AflMeshCache` 在同一 reload 增加载入 `block_mesh_profiles/*.json`。新方块的层级/pivot/简单开合由 native profile 管理；下文 GeckoLib skeleton/动画描述继续适用于原枪械与物品路径。开发 Demo 已删除，通用 Runtime 保留；没有迁移现有生产家具，也没有修改枪械动画、正式资产或材质绑定。本次清理未新增代理实机验证记录。
 
 2026-09-27 新增 [Transparent Hybrid Mesh Runtime V1](transparent_hybrid_mesh_runtime_v1.md)：V1/V2 part 可选 `render_layer`，缺省 CUTOUT，透明层使用标准 `entityNoOutline`。Mixed attachment/static presentation 先提交 cutout，再提交透明 parts；shadow pass 跳过透明层。首个正式资产为 pistol_red_dot，保持源几何/UV/贴图 alpha 24 不变。Shader OFF 路径就绪；Oculus 默认透明 shader 的 0.1 alpha test 仍可能裁掉镜片，透明 PBR 尚未实机通过。原低层单 VertexConsumer API 仍默认 CUTOUT，不自动分配第二个 buffer；新 mixed 调用者应使用高层双层入口。见专文的排序与 GPU 验证限制。

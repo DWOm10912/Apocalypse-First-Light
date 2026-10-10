@@ -1,5 +1,7 @@
 # Fuel Containers V1（油壶、油桶、手摇油泵）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 状态（2026-10-05，同日 V1.1 放大尺寸、改软管接法，V1.2 软管走法和提示位置）：**已实现**，`compileJava --offline` 通过（包括 `src/dev`），生成器 `--check` 通过；模型只在 Blender 里做过离线预览。后来用户实机试过：2026-10-06 反馈容器的软管有错位、提示位置不对，其余逻辑没问题（V1.2 已改）；2026-10-08 确认拿油壶往卸油口倒油能灌进地下罐。没有逐项记录看过的还有：子弹打漏和爆炸、Jade、负重、光影下的效果。（这里原来写着整份"没有实机验证"。）
 
 ## 是什么

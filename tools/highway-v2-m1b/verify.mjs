@@ -12,13 +12,16 @@ assert(process.argv.slice(2).every(a=>a==='--check'));
 const jars=d=>fs.existsSync(d)?fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?jars(path.join(d,e.name)):e.name.endsWith('.jar')&&!e.name.includes('sources')?[path.join(d,e.name)]:[]):[];
 const gson=jars(path.join(process.env.GRADLE_USER_HOME||path.join(os.homedir(),'.gradle'),'caches/modules-2/files-2.1/com.google.code.gson/gson')).sort().at(-1);
 assert(gson,'Existing Gson cache required; no download');
+// Mesh loader/model classes come from the Vextris jar (pure Java + Gson in com.antaurora.vextris.mesh).
+const vextris=process.env.VEXTRIS_JAR||path.join(root,'../Vextris/build/libs/vextris-forge-1.20.1-0.1.0-dev.jar');
+assert(fs.existsSync(vextris),'Vextris jar required (build Vextris first, or set VEXTRIS_JAR): '+vextris);
 const bin=n=>process.env.JAVA_HOME?path.join(process.env.JAVA_HOME,'bin',n+(process.platform==='win32'?'.exe':'')):n;
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'afl-m1b-'));
 function run(tool,args){const r=spawnSync(bin(tool),args,{cwd:root,encoding:'utf8',timeout:240000,windowsHide:true,maxBuffer:8*1024*1024});process.stdout.write(r.stdout||'');assert.equal(r.status,0,r.stderr||String(r.error));}
 try{
   const classes=path.join(temp,'classes');fs.mkdirSync(classes);
-  run('javac',['-encoding','UTF-8','-cp',gson,'-sourcepath',['src/main/java','src/dev/java'].join(path.delimiter),'-d',classes,'tools/highway-v2-m1b/RouteGeometryCheck.java','tools/highway-v2-m1a/GeometryCheck.java']);
-  const cp=classes+path.delimiter+gson;
+  run('javac',['-encoding','UTF-8','-cp',gson+path.delimiter+vextris,'-sourcepath',['src/main/java','src/dev/java'].join(path.delimiter),'-d',classes,'tools/highway-v2-m1b/RouteGeometryCheck.java','tools/highway-v2-m1a/GeometryCheck.java']);
+  const cp=classes+path.delimiter+gson+path.delimiter+vextris;
   run('java',['-Xmx1G','-cp',cp,'GeometryCheck','src/dev/highway_mesh_resources/assets/afl_highway_demo/prototype',path.join(temp,'m1a.json')]);
   const old=JSON.parse(fs.readFileSync('tools/highway-v2-m1a/validation.json','utf8')),now=JSON.parse(fs.readFileSync(path.join(temp,'m1a.json'),'utf8'));
   assert.equal(now.modelFingerprint,old.modelFingerprint,'M1-A loader/render geometry regression');

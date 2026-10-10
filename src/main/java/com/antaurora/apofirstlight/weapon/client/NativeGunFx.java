@@ -1,9 +1,10 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -353,7 +354,7 @@ public final class NativeGunFx {
         var buffers = mc.renderBuffers().bufferSource();
         var type = RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS);
         var out = buffers.getBuffer(type);
-        var meshSnapshot = AflMeshCache.snapshot();
+        var meshSnapshot = VextrisMeshes.snapshot();
         var meshTypes = new java.util.LinkedHashSet<RenderType>();
         Vec3 camera = event.getCamera().getPosition();
         var pose = event.getPoseStack();
@@ -369,9 +370,9 @@ public final class NativeGunFx {
             MeshCasing meshCasing = MESH_CASINGS.get(c.model);
             if (meshCasing != null) {
                 // Ejection draws the FX-only low-poly casing; the item's high-detail mesh is only a fallback if it is missing.
-                boolean fx = meshSnapshot.get(meshCasing.fxGeometry()) != null && GeckoLibCache.getBakedModels().get(meshCasing.fxGeometry()) != null;
+                boolean fx = meshSnapshot.byGeometry(meshCasing.fxGeometry()) != null && GeckoLibCache.getBakedModels().get(meshCasing.fxGeometry()) != null;
                 var geometry = fx ? meshCasing.fxGeometry() : meshCasing.geometry();
-                var casingMesh = meshSnapshot.get(geometry);
+                var casingMesh = meshSnapshot.byGeometry(geometry);
                 var casingGeo = GeckoLibCache.getBakedModels().get(geometry);
                 if (casingMesh != null && casingGeo != null) {
                     pose.scale(meshCasing.scale(), meshCasing.scale(), meshCasing.scale());
@@ -410,12 +411,12 @@ public final class NativeGunFx {
         for (var meshType : meshTypes) buffers.endBatch(meshType);
     }
 
-    private static void renderCasingMesh(AflMeshModel mesh, GeoBone bone, PoseStack pose,
+    private static void renderCasingMesh(MeshModel mesh, GeoBone bone, PoseStack pose,
                                          VertexConsumer vertices, int light) {
         pose.pushPose();
         try {
             RenderUtils.prepMatrixForBone(pose, bone);
-            AflMeshRenderer.render(mesh, bone, pose, vertices, light, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
+            GeckoMeshRenderer.renderBone(mesh, bone, pose, vertices, light, OverlayTexture.NO_OVERLAY, 1, 1, 1, 1);
             if (!bone.isHidingChildren())
                 for (GeoBone child : bone.getChildBones()) renderCasingMesh(mesh, child, pose, vertices, light);
         } finally { pose.popPose(); }

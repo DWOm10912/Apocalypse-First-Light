@@ -1,6 +1,6 @@
 package com.antaurora.apofirstlight.client;
 
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
+import com.antaurora.vextris.client.VextrisMeshes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
@@ -63,7 +63,7 @@ public final class GunInspectionController {
         double dt = lastFrame == 0 ? 0 : Math.max(0, (now - lastFrame) / 1e9);
         lastFrame = now;
         var bounds = MaintenanceGunRendering.bounds(stack);
-        long resources = AflMeshCache.snapshot().generation();
+        long resources = VextrisMeshes.generation();
         if (bodyBounds != bounds || generation != resources || !ItemStack.isSameItemSameTags(stack, snapshot)) {
             boolean differentGun = stack.getItem() != snapshot.getItem();
             Vec3 retainedPivot = !differentGun && bodyBounds == bounds && generation == resources && geometry != null

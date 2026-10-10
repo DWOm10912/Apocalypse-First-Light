@@ -1,5 +1,7 @@
 # 渲染性能 V1：方块实体的重复几何提交
 
+> **2026-10-10 Vextris 迁移**：本文的区块绘制与阴影剔除逻辑仍在 AFL；其中用到的 Mesh 数据和 CPU 提交（原 `AflMeshCache` / `AflMeshRenderer`）现由 Vextris 提供。`AflStaticMeshModel.emit` 只给非封闭部件生成背面，而 Vextris 修正了 `closedSolid`，82 个部件改判封闭（柴油发电机机身等），从模型内部看时少了内壁，见 [Vextris 迁移 V1](vextris_migration_v1.md)。
+
 状态（2026-10-08）：**第二版用户实机 PASS**（"这一版没问题了，PASS，好太多"），`compileJava --offline` 通过。
 - 问题已用数据确认（见"问题"和"第一次实机测试"）。
 - 第一版：第一步（阴影剔除）加上第二步的冷柜原型（只烘焙柜体）。用户实机看过，冷柜外观没问题，但"还是没有好多少"：站着不卡，在货架那一带一转视角就卡。

@@ -2,9 +2,10 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.NativeSightRendering;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.*;
@@ -27,15 +28,15 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
     private static final Map<BakedGeoModel,Map<net.minecraft.world.item.Item,Double>> REST_LIFTS=new WeakHashMap<>();
     private static long meshGeneration = -1;
     private static void refreshMeshBounds() {
-        long generation = AflMeshCache.snapshot().generation();
+        long generation = VextrisMeshes.generation();
         if (meshGeneration != generation) {
             BOUNDS.clear(); LONGITUDINAL_CENTERS.clear(); REST_LIFTS.clear();
             meshGeneration = generation;
         }
     }
-    private static AflMeshModel mesh(ItemStack stack) {
+    private static MeshModel mesh(ItemStack stack) {
         var resource=asset(stack,"geo/",".geo.json");
-        return resource==null?null:AflMeshCache.snapshot().get(resource);
+        return resource==null?null:VextrisMeshes.byGeometry(resource);
     }
     private static double longitudinalCenter(ItemStack stack,double fallback){
         refreshMeshBounds();
@@ -112,7 +113,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             var geo=GeckoLibCache.getBakedModels().get(geometry);
             if(geo!=null){
                 pose.pushPose();RenderUtils.translateToPivotPoint(pose,bone);
-                for(var b:geo.topLevelBones())collect(b,pose,out,AflMeshCache.snapshot().get(geometry));
+                for(var b:geo.topLevelBones())collect(b,pose,out,VextrisMeshes.byGeometry(geometry));
                 pose.popPose();
             }
         }
@@ -145,7 +146,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         }else for(var child:bone.getChildBones()){result=anchorPoint(child,pose,name,x,y,z);if(result!=null)break;}
         pose.popPose();return result;
     }
-    private static void collect(GeoBone bone,PoseStack pose,List<net.minecraft.world.phys.AABB> result,AflMeshModel mesh){
+    private static void collect(GeoBone bone,PoseStack pose,List<net.minecraft.world.phys.AABB> result,MeshModel mesh){
         pose.pushPose();RenderUtils.prepMatrixForBone(pose,bone);
         for(var cube:bone.getCubes()){
             pose.pushPose();RenderUtils.translateToPivotPoint(pose,cube);RenderUtils.rotateMatrixAroundCube(pose,cube);RenderUtils.translateAwayFromPivotPoint(pose,cube);
@@ -156,7 +157,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             }
             if(Double.isFinite(x))result.add(new net.minecraft.world.phys.AABB(x,y,z,xx,yy,zz));pose.popPose();
         }
-        AflMeshRenderer.collectBounds(mesh,bone,pose,result);
+        GeckoMeshRenderer.collectBounds(mesh,bone,pose,result);
         for(var b:bone.getChildBones())collect(b,pose,result,mesh);pose.popPose();
     }
     public static void render(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
@@ -185,7 +186,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         b.getCubes().addAll(source.getCubes());
         for(var child:source.getChildBones()){var c=copy(child,b,rotations);if(c!=null)b.getChildBones().add(c);}return b;
     }
-    private static void draw(GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,RenderType type,int light,AflMeshModel mesh) {
+    private static void draw(GeoBone b,ItemStack stack,PoseStack p,MultiBufferSource buffers,RenderType type,int light,MeshModel mesh) {
         p.pushPose();RenderUtils.prepMatrixForBone(p,b);
         boolean magazine=com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replaces(stack,b);
         if(magazine)com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
@@ -193,7 +194,7 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             p.pushPose();DRAWER.renderCube(p,cube,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);p.popPose();
         }
-        if(!magazine && mesh!=null)AflMeshRenderer.render(mesh,b,p,buffers.getBuffer(type),light,
+        if(!magazine && mesh!=null)GeckoMeshRenderer.renderBone(mesh,b,p,buffers.getBuffer(type),light,
                 net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
         NativeSightRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack))

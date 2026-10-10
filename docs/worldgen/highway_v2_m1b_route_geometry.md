@@ -1,5 +1,7 @@
 # Highway V2 M1-B：RouteGraph 接入、统一断面与独立预览
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 集成更新：用户批准后，从 master@e437fb9b 正常合并 2ab587a5，保留 Claude 的钢框门/A1 和杨木移除提交。本次只引入 M1-B 提交，不合并旧 Codex 分支上的 Terrain 增量。主目录两份不相交的未提交文件原样保留。M1-B 独立客户端已启动过，但没有新增道路实机验收结论；渲染、生命周期、光影和性能仍待用户验收。下文独立 Worktree 路径、基线和开发验证记录属于原始开发交付；集成后亦可从主目录启动开发客户端，仍应新建独立测试世界。此合并不自动施工或替换任何正式道路。主目录仅执行一次 compileJava --offline，BUILD SUCCESSFUL in 26s（2 executed、2 up-to-date）；未运行客户端或完整构建。
 日期：2026-10-07。开发基线：Master `4db85e52acb4728d8b89dd5b978b66d790b6754a`。
 开发分支：`codex/highway-v2-m1b`。

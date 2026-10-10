@@ -1,5 +1,7 @@
 # AFL Equipment Meshes V1（装备网格）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 状态：**已实现（2026-10-03），生成脚本 `--check` 通过，编译通过，没有实机验证**。
 
 装备类物品（随身带的、戴在身上的）用和 Material Meshes（`material_meshes_v1.md`）同一套 bake：

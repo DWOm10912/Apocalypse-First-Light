@@ -3,8 +3,8 @@ package com.antaurora.apofirstlight.client.blockmesh;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.*;
-import com.antaurora.apofirstlight.client.mesh.AflMeshLoader;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
+import com.antaurora.vextris.mesh.MeshLoader;
+import com.antaurora.vextris.mesh.MeshModel;
 import com.google.gson.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -13,12 +13,12 @@ import net.minecraft.world.phys.Vec3;
 import java.io.Reader;
 import java.util.*;
 
-/** Small animation/profile decoder only. Geometry is always decoded by AflMeshLoader. */
+/** Small animation/profile decoder only. Geometry is always decoded by the Vextris MeshLoader. */
 public final class AflBlockMeshProfileLoader {
     private record PartSpec(String parent, Vec3 pivot, Transform rest) {}
 
     public static Map<ResourceLocation, AflBlockMeshProfile> loadAll(ResourceManager manager,
-                                                                     Map<ResourceLocation, AflMeshModel> meshes) {
+                                                                     Map<ResourceLocation, MeshModel> meshes) {
         var profiles = new HashMap<ResourceLocation, AflBlockMeshProfile>();
         manager.listResources("block_mesh_profiles", id -> id.getPath().endsWith(".json")).forEach((id, resource) -> {
             try (var reader = resource.openAsReader()) {
@@ -32,12 +32,12 @@ public final class AflBlockMeshProfileLoader {
         return Map.copyOf(profiles);
     }
 
-    private static AflBlockMeshProfile load(Reader reader, Map<ResourceLocation, AflMeshModel> meshes) throws Exception {
+    private static AflBlockMeshProfile load(Reader reader, Map<ResourceLocation, MeshModel> meshes) throws Exception {
         var text = new StringBuilder();
         char[] buffer = new char[4096];
         int count;
         while ((count = reader.read(buffer)) != -1) {
-            require(text.length() + count <= AflMeshLoader.MAX_CHARACTERS, "profile exceeds 4 MiB");
+            require(text.length() + count <= MeshLoader.MAX_CHARACTERS, "profile exceeds 4 MiB");
             text.append(buffer, 0, count);
         }
         var root = object(JsonParser.parseString(text.toString()), "profile");

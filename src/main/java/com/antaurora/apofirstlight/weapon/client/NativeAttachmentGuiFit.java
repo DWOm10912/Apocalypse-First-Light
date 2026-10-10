@@ -1,8 +1,9 @@
 package com.antaurora.apofirstlight.weapon.client;
 
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -54,7 +55,7 @@ public final class NativeAttachmentGuiFit {
     }
 
     private static AABB bounds(ItemStack item) {
-        long current = AflMeshCache.snapshot().generation();
+        long current = VextrisMeshes.generation();
         if (current != generation) { BOUNDS.clear(); generation = current; }
         var cached = BOUNDS.get(item.getItem());
         if (cached != null) return cached;
@@ -64,7 +65,7 @@ public final class NativeAttachmentGuiFit {
         if (model == null) return null;
         var boxes = new ArrayList<AABB>();
         var pose = new PoseStack();
-        var mesh = AflMeshCache.snapshot().get(geometry);
+        var mesh = VextrisMeshes.byGeometry(geometry);
         for (var bone : model.topLevelBones()) collect(bone, pose, boxes, mesh);
         if (boxes.isEmpty()) return null;
         AABB union = boxes.get(0);
@@ -74,7 +75,7 @@ public final class NativeAttachmentGuiFit {
     }
 
     /** Bind-pose bounds of Gecko cubes and AFL mesh parts, as the attachment renderers draw them. */
-    private static void collect(GeoBone bone, PoseStack pose, List<AABB> out, AflMeshModel mesh) {
+    private static void collect(GeoBone bone, PoseStack pose, List<AABB> out, MeshModel mesh) {
         pose.pushPose();
         RenderUtils.prepMatrixForBone(pose, bone);
         for (var cube : bone.getCubes()) {
@@ -88,7 +89,7 @@ public final class NativeAttachmentGuiFit {
             if (Double.isFinite(x)) out.add(new AABB(x, y, z, xx, yy, zz));
             pose.popPose();
         }
-        AflMeshRenderer.collectBounds(mesh, bone, pose, out);
+        GeckoMeshRenderer.collectBounds(mesh, bone, pose, out);
         for (var child : bone.getChildBones()) collect(child, pose, out, mesh);
         pose.popPose();
     }

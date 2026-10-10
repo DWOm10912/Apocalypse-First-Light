@@ -1,6 +1,6 @@
 package com.antaurora.apofirstlight.weapon.client;
 
-import com.antaurora.apofirstlight.client.mesh.AflHybridMeshRendering;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.antaurora.apofirstlight.weapon.NativeGunAmmo;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.mojang.math.Axis;
@@ -57,7 +57,7 @@ final class NativeMagazineRoundRendering {
         if (rotation[0] != 0) local.mulPose(Axis.XP.rotationDegrees(rotation[0]));
         if (rotation[1] != 0) local.mulPose(Axis.YP.rotationDegrees(rotation[1]));
         if (rotation[2] != 0) local.mulPose(Axis.ZP.rotationDegrees(rotation[2]));
-        AflHybridMeshRendering.renderAtCurrentPose(visual.geometry(), visual.texture(),
+        GeckoMeshRenderer.render(visual.geometry(), visual.texture(),
                 local, buffers, light, overlay);
     }
 

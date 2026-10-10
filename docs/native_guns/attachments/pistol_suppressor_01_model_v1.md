@@ -1,5 +1,7 @@
 # 手枪消音器 / Pistol Suppressor — Model V2（AFL 通用 9mm，Pure Mesh）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../../dev/vextris_migration_v1.md)。
+
 Asset ID：`pistol_suppressor_01`（Registry ID 未变）。2026-09-27 起为 **AFL 通用 9mm 手枪消音器**：圆柱分段式 Pure Mesh，运行时走 AFL Hybrid Mesh（`.aflmesh` V2 → `AflHybridMeshRendering` / `AflMeshRenderer`），带 Base Color 与 LabPBR `_s` / `_n`。装备、声音、噪声等运行行为见 [可装备 V1](pistol_suppressor_01_v1.md)；本文件只说明资产。
 
 **已废弃**：V1 八边形 57 cube GeckoLib 资产（长 9.1、`muzzle_exit_anchor` `(0,0,-9.1)`、64×128 贴图）已被本版整体替换，可在 git 历史取回。`src/dev/pistol-suppressor-model.js` 是生成 V1 的 Blockbench 脚本，仅作历史参考，不要再运行。V1 文档里的 P9 锚点 `(-2.98,10.35,-4.72)` 属于更早的 P9 V1 Rig，早已失效。

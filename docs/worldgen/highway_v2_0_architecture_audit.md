@@ -1,5 +1,7 @@
 # Highway V2-0：现有架构审查与冻结边界
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 **2026-10-10**：旧高速的自然生成已停用：群系修改器 `primary_highway.json` 改为 `forge:none`，新区块不再放高速。RouteGraph、几何、空间占地、Pure Mesh 预览开发工具保留，见 [旧世界生成逻辑退役 V1](legacy_worldgen_retirement_v1.md)。高速以后按 Terrain V2 的走廊重新选线。
 
 日期：2026-10-07。基线：`5dc68bbc2f1960aa685ba11d5f9a7cd5c985367c`，Minecraft 1.20.1 / Forge 47.4.22。开始时工作树干净。本报告由当前源码、构建配置、资源入口审查形成；历史文档只用于辨别历史验证范围。

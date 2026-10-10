@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.dev.highwaymesh;
 
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
@@ -53,7 +54,7 @@ public final class DevHighwayMeshClient {
     @SubscribeEvent public static void render(RenderLevelStageEvent event){
         if(event.getStage()!=RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES||FMLEnvironment.production||!active()||failed||asset==null)return;
         var mc=Minecraft.getInstance();var camera=event.getCamera().getPosition();var buffers=mc.renderBuffers().bufferSource();
-        var metrics=new AflMeshRenderer.Metrics();Map<Long,Integer> lights=new HashMap<>();drawnTiles=0;
+        var metrics=new MeshRenderer.Metrics();Map<Long,Integer> lights=new HashMap<>();drawnTiles=0;
         for(var e:CACHE.entrySet()){
             if(!loaded(e.getKey()))continue; // unload takes effect immediately, before next cache prune
             var b=e.getValue();Vec3 origin=new Vec3(scene.origin().getX()+e.getKey().x()*16,scene.origin().getY(),scene.origin().getZ()+e.getKey().z()*16);

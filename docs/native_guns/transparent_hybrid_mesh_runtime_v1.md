@@ -1,5 +1,7 @@
 # AFL Transparent Hybrid Mesh Runtime V1
 
+> **2026-10-10 Vextris 迁移**：透明层策略（`entityNoOutline`、cutout 后刷新、阴影阶段跳过）现在由 Vextris 的 `MeshRendering` / `GeckoMeshRenderer.render` 执行，行为不变；`AflMeshPart.Layer` 现为 `com.antaurora.vextris.mesh.MeshLayer`。见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。下文中的旧类名是历史名称。
+
 2026-09-27。状态：**PARTIAL**。混合材质提交、旧格式兼容与红点资源接入已完成；离线验证通过。Shader OFF 代码就绪，实际 GPU/视觉未验证。**当前 alpha 24/255 在 Oculus 默认透明 shader alpha test 下仍可能被丢弃**，不宣称 Shader ON 镜片/PBR 已通过。最终 compileJava 结果见本轮交付报告。
 
 ## 格式与作者入口

@@ -1,7 +1,8 @@
 package com.antaurora.apofirstlight.client.blockmesh;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshPart;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshPart;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -37,7 +38,7 @@ public final class AflMovingGlass {
     private AflMovingGlass() {}
 
     /** Queues one part's glass at pose (view space, the renderer's current pose); false when it cannot be baked. */
-    static boolean queue(List<AflMeshPart> parts, Matrix4f pose, TextureAtlasSprite sprite, int light) {
+    static boolean queue(List<MeshPart> parts, Matrix4f pose, TextureAtlasSprite sprite, int light) {
         int start = QUADS.size();
         if (AflStaticMeshModel.emit(parts, pose, sprite, 0, false, QUADS) != null) {
             QUADS.subList(start, QUADS.size()).clear();

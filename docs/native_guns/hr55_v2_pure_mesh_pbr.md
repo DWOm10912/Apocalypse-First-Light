@@ -1,5 +1,7 @@
 # HR55 V2 Pure Mesh + PBR（Phase 2）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 2026-09-29，已实现，离线校验全部通过。**未实机验证**：没有运行 runClient、GameTest，也没有在 Iris / Oculus 光影下看过。
 
 ## 范围

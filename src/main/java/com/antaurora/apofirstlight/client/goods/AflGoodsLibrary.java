@@ -1,9 +1,11 @@
 package com.antaurora.apofirstlight.client.goods;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshPart;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshPart;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.antaurora.apofirstlight.containersearch.AflGoodsState;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -41,7 +43,7 @@ public final class AflGoodsLibrary {
     public static void draw(List<AflGoodsState.Spot> spots, CellPosition cell, float scale, PoseStack pose, MultiBufferSource buffers,
                             int light, int overlay) {
         if (spots.isEmpty()) return;
-        var mesh = AflMeshCache.snapshot().get(GEO);
+        var mesh = VextrisMeshes.byGeometry(GEO);
         if (mesh == null) return;
         VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
         float s = scale;
@@ -53,9 +55,9 @@ public final class AflGoodsLibrary {
             pose.mulPose(Axis.YP.rotationDegrees(spot.yaw()));
             pose.scale(s, s, s);
             float[] tint = TINTS[Math.floorMod(spot.tint(), TINTS.length)];
-            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product(), AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+            MeshRenderer.renderParts(mesh.parts(spot.product(), MeshLayer.CUTOUT), pose, vertices, light, overlay,
                     1.0F, 1.0F, 1.0F, 1.0F, null);
-            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product() + "_tint", AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+            MeshRenderer.renderParts(mesh.parts(spot.product() + "_tint", MeshLayer.CUTOUT), pose, vertices, light, overlay,
                     tint[0], tint[1], tint[2], 1.0F, null);
             pose.popPose();
         }
@@ -69,7 +71,7 @@ public final class AflGoodsLibrary {
     public static void drawPlaced(List<AflGoodsState.Spot> spots, CellPlacement placement, PoseStack pose, MultiBufferSource buffers,
                                   int light, int overlay) {
         if (spots.isEmpty()) return;
-        var mesh = AflMeshCache.snapshot().get(GEO);
+        var mesh = VextrisMeshes.byGeometry(GEO);
         if (mesh == null) return;
         VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE));
         for (AflGoodsState.Spot spot : spots) {
@@ -82,9 +84,9 @@ public final class AflGoodsLibrary {
             pose.mulPose(Axis.YP.rotationDegrees(spot.yaw()));
             pose.scale(at[4], at[5], at[6]);
             float[] tint = TINTS[Math.floorMod(spot.tint(), TINTS.length)];
-            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product(), AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+            MeshRenderer.renderParts(mesh.parts(spot.product(), MeshLayer.CUTOUT), pose, vertices, light, overlay,
                     1.0F, 1.0F, 1.0F, 1.0F, null);
-            AflMeshRenderer.renderPartsAtCurrentPose(mesh.parts(spot.product() + "_tint", AflMeshPart.Layer.CUTOUT), pose, vertices, light, overlay,
+            MeshRenderer.renderParts(mesh.parts(spot.product() + "_tint", MeshLayer.CUTOUT), pose, vertices, light, overlay,
                     tint[0], tint[1], tint[2], 1.0F, null);
             pose.popPose();
         }

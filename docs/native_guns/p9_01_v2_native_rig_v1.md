@@ -1,5 +1,7 @@
 # P9-01 V2 — AFL Native Rig + Pure Mesh（已接入运行时，客户端待验收）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 状态（2026-09-27）：正式 Registry ID 仍为 `apocalypse_firstlight:p9_01`，Java 物品已切换到 `ConfiguredNativeGunItem`，运行时 Profile 指向 `p9_01_v2_native` Geo、动画、贴图、Display 与 Pure Mesh sidecar；玩家手臂走 `NativePlayerArmRenderer`。旧 P9 专用类及旧 Geo/动画/贴图/手持 Display 运行时资源已删除，旧 `.bbmodel` 只作历史源保留。V2 源有 10 条 clip，其中 9 条在 Profile 中启用；`first_draw` 仅作为资源存在，没有运行时触发。静态/离线结果不能代替客户端验证；尚未执行 `runClient` 或游戏内手部、ADS、附件、维护台、声音验收。
 
 ## 文件

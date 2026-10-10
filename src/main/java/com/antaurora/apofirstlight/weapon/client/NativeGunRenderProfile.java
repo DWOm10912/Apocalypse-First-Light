@@ -1,9 +1,10 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
@@ -39,7 +40,7 @@ public final class NativeGunRenderProfile {
         long calls, parts, triangles, vertices, cpuNs, quadFaces, triangleFaces;
         long hiddenTriangles, zeroScaleTriangles, invalidNormalTriangles;
 
-        void add(AflMeshRenderer.Metrics metrics, long ns) {
+        void add(MeshRenderer.Metrics metrics, long ns) {
             calls++;
             parts += metrics.parts;
             triangles += metrics.triangles;
@@ -68,7 +69,7 @@ public final class NativeGunRenderProfile {
             for (var pass : Pass.values()) passes.put(pass, new Counts());
         }
 
-        void add(Pass pass, ItemDisplayContext perspective, AflMeshRenderer.Metrics metrics, long ns,
+        void add(Pass pass, ItemDisplayContext perspective, MeshRenderer.Metrics metrics, long ns,
                  boolean shadowKnown) {
             passes.get(pass).add(metrics, ns);
             total.add(metrics, ns);
@@ -130,7 +131,7 @@ public final class NativeGunRenderProfile {
             String shader = shaderActive == null ? "UNCONFIRMED" : shaderActive ? "YES" : "NO";
             String pack = Boolean.TRUE.equals(shaderActive) ? AflShaderCompat.packName() : "none";
             String key = selected + '|' + shader + '|' + pack + '|' + mc.options.getCameraType()
-                    + '|' + AflMeshCache.snapshot().generation();
+                    + '|' + VextrisMeshes.generation();
             if (!key.equals(currentKey)) {
                 currentKey = key;
                 sample = new Sample(selected, shader, pack);
@@ -146,11 +147,11 @@ public final class NativeGunRenderProfile {
         }
     }
 
-    public static void render(AflMeshModel mesh, GeoBone bone, PoseStack pose, VertexConsumer buffer,
+    public static void render(MeshModel mesh, GeoBone bone, PoseStack pose, VertexConsumer buffer,
                               int light, int overlay, float red, float green, float blue, float alpha,
                               ItemStack stack, ItemDisplayContext perspective) {
         if (!ENABLED || !frameOpen || sample == null || !sample.weapon.equals(weapon(stack))) {
-            AflMeshRenderer.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha);
+            GeckoMeshRenderer.renderBone(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha);
             return;
         }
         Boolean shadow = AflShaderCompat.shadowPass();
@@ -159,9 +160,9 @@ public final class NativeGunRenderProfile {
         Pass pass = classify(perspective, shadow, handPhase, sample.shader);
         if (sample.formatVersion == 0) sample.formatVersion = mesh.formatVersion();
         else if (sample.formatVersion != mesh.formatVersion()) sample.formatVersion = -1;
-        var metrics = new AflMeshRenderer.Metrics();
+        var metrics = new MeshRenderer.Metrics();
         long start = System.nanoTime();
-        AflMeshRenderer.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha, metrics);
+        GeckoMeshRenderer.renderBone(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha, metrics);
         long elapsed = System.nanoTime() - start;
         sample.add(pass, perspective, metrics, elapsed, shadow != null);
     }

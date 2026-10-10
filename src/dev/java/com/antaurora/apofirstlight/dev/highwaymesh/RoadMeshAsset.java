@@ -1,6 +1,11 @@
 package com.antaurora.apofirstlight.dev.highwaymesh;
 
-import com.antaurora.apofirstlight.client.mesh.*;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshLoader;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.mesh.MeshPart;
 import com.google.gson.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +22,7 @@ public final class RoadMeshAsset {
         public double top(){return y+layers/32.0;}
         public double error(){return Math.max(Math.abs(top()-minHeight),Math.abs(top()-maxHeight));}
     }
-    public record BakedTile(Tile tile,AflMeshModel model,List<Normal> sourceNormals,int triangles,int faces,int corners,double minY,double maxY,int tinyFacesDropped) {}
+    public record BakedTile(Tile tile,MeshModel model,List<Normal> sourceNormals,int triangles,int faces,int corners,double minY,double maxY,int tinyFacesDropped) {}
     private record Column(int x,int z) implements Comparable<Column> {
         @Override public int compareTo(Column b){int c=Integer.compare(x,b.x);return c!=0?c:Integer.compare(z,b.z);}
     }
@@ -46,7 +51,7 @@ public final class RoadMeshAsset {
         for(var value:d.getAsJsonArray("modules")){var module=value.getAsJsonObject();String id=module.get("id").getAsString();var origin=module.getAsJsonArray("origin");
             double ox=origin.get(0).getAsDouble(),oy=origin.get(1).getAsDouble(),oz=origin.get(2).getAsDouble();
             String mesh=text.get(id+".aflmesh.json"),geo=text.get(id+".geo.json");
-            var loaded=AflMeshLoader.load(id,new StringReader(mesh),new StringReader(geo));
+            var loaded=MeshLoader.load(id,new StringReader(mesh),new StringReader(geo));
             for(var part:JsonParser.parseString(mesh).getAsJsonObject().getAsJsonArray("parts"))stored+=part.getAsJsonObject().getAsJsonArray("vertices").size();
             for(var part:loaded.parts("road")){equivalents+=part.triangleEquivalent();
                 for(int f=0;f<part.faceCount();f++){List<Vertex> points=new ArrayList<>(4);
@@ -118,7 +123,7 @@ public final class RoadMeshAsset {
         }
         root.add("parts",parts);
         String geo="{\"minecraft:geometry\":[{\"description\":{\"texture_width\":128,\"texture_height\":128},\"bones\":[{\"name\":\"road\"}]}]}";
-        var model=AflMeshLoader.load("road-tile-"+tile,new StringReader(root.toString()),new StringReader(geo));
+        var model=MeshLoader.load("road-tile-"+tile,new StringReader(root.toString()),new StringReader(geo));
         int tris=0,faces=0,corners=0;double low=Double.POSITIVE_INFINITY,high=Double.NEGATIVE_INFINITY;
         for(var p:model.parts("road")){tris+=p.triangleEquivalent();faces+=p.faceCount();corners+=p.cornerCount();low=Math.min(low,p.bounds().minY());high=Math.max(high,p.bounds().maxY());}
         if(faces!=normals.size()||tris!=faces)throw new IOException("Road clip topology changed; cannot safely map canonical normals");

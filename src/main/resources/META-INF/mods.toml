@@ -75,10 +75,22 @@ mixinConfigs=["apocalypse_firstlight.mixins.json"]
     ordering="NONE"
     side="BOTH"
 
+# GeckoLib: exactly the version the Vextris GeckoLib bridge is verified with (AFL's guns draw their meshes through it).
+# Was [4.7,5); another version would leave the bridge disabled and the gun meshes unrenderable, so it is refused at
+# launch instead (docs/dev/vextris_migration_v1.md).
 [[dependencies.${mod_id}]]
     modId="geckolib"
     mandatory=true
-    versionRange="[4.7,5)"
+    versionRange="[4.7.4]"
+    ordering="AFTER"
+    side="BOTH"
+
+# Vextris: AFL's mesh loading, cache and mesh rendering (a separate mod, not bundled). AFTER: its client reload
+# listener runs before AFL's block-profile listener, which reads the meshes Vextris has just published.
+[[dependencies.${mod_id}]]
+    modId="vextris"
+    mandatory=true
+    versionRange="[0.1.0-dev,0.2)"
     ordering="AFTER"
     side="BOTH"
 

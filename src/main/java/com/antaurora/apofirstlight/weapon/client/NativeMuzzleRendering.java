@@ -1,7 +1,7 @@
 package com.antaurora.apofirstlight.weapon.client;
 
-import com.antaurora.apofirstlight.client.mesh.AflHybridMeshRendering;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
 import com.antaurora.apofirstlight.weapon.*;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -37,8 +37,8 @@ public final class NativeMuzzleRendering implements GeoRenderer<GeoItem> {
         var model=model(item);if(model==null)return;
         var geometry=resource(item,"geo/",".geo.json");var texture=resource(item,"textures/item/",".png");
         // Pure Mesh accessories: an AFL Hybrid Mesh sidecar for this geo takes precedence; Cube geos keep the Gecko path.
-        if(AflMeshCache.snapshot().get(geometry)!=null){
-            AflHybridMeshRendering.renderAtCurrentPose(geometry,texture,pose,buffers,light,overlay);return;
+        if(VextrisMeshes.byGeometry(geometry)!=null){
+            GeckoMeshRenderer.render(geometry,texture,pose,buffers,light,overlay);return;
         }
         var type=RenderType.entityCutoutNoCull(texture);
         for(var bone:model.topLevelBones())draw(bone,pose,buffers,type,light,overlay);

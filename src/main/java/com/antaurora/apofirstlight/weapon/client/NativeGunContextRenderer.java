@@ -1,8 +1,8 @@
 package com.antaurora.apofirstlight.weapon.client;
 
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -20,7 +20,7 @@ import software.bernie.geckolib.renderer.GeoItemRenderer;
 public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemRenderer<T> {
     private final NativeThirdPersonPose thirdPerson = new NativeThirdPersonPose();
     private final String idle;
-    private AflMeshModel mesh;
+    private MeshModel mesh;
     private boolean skipMeshShadow;
 
     protected NativeGunContextRenderer(GeoModel<T> model, String idle) {
@@ -33,12 +33,12 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
             int light, int overlay, float red, float green, float blue, float alpha) {
         var previousMesh = mesh;
         boolean previousSkip = skipMeshShadow;
-        mesh = AflMeshCache.snapshot().get(getGeoModel().getModelResource(item));
+        mesh = VextrisMeshes.byGeometry(getGeoModel().getModelResource(item));
         skipMeshShadow = mesh != null && NativeGunShadowSkip.shouldSkip(currentItemStack, renderPerspective, item);
         // first person: the eye sits at the pose origin, so the closed parts' back faces (and those of the rounds and
         // attachments drawn in this traversal) can be skipped on the CPU (docs/native_guns/hybrid_mesh_runtime_v1.md)
         boolean firstPerson = renderPerspective == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || renderPerspective == ItemDisplayContext.FIRST_PERSON_LEFT_HAND;
-        boolean previousCull = com.antaurora.apofirstlight.client.mesh.AflMeshRenderer.cullBackFaces(firstPerson && !AflShaderCompat.activeShadowPass());
+        boolean previousCull = com.antaurora.vextris.client.MeshRenderer.cullBackFaces(firstPerson && !AflShaderCompat.activeShadowPass());
         try {
             boolean third = renderPerspective == ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                     || renderPerspective == ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
@@ -56,7 +56,7 @@ public class NativeGunContextRenderer<T extends Item & GeoItem> extends GeoItemR
         } finally {
             mesh = previousMesh;
             skipMeshShadow = previousSkip;
-            com.antaurora.apofirstlight.client.mesh.AflMeshRenderer.cullBackFaces(previousCull);
+            com.antaurora.vextris.client.MeshRenderer.cullBackFaces(previousCull);
         }
     }
 

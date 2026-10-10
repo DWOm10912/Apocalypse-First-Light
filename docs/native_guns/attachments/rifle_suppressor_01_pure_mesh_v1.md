@@ -1,5 +1,7 @@
 # 7.62×51mm 步枪消音器 V1（Pure Mesh + PBR）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../../dev/vextris_migration_v1.md)。
+
 2026-09-28，已实现，`compileJava --offline` 通过，**未实机验证**（未运行 runClient / GameTest / 光影）。
 
 - 注册 ID 不变：`apocalypse_firstlight:rifle_suppressor_01`。没有新物品，也没有做注册 ID 迁移。

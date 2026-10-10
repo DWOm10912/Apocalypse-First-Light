@@ -2,7 +2,12 @@ package com.antaurora.apofirstlight.client.blockmesh;
 
 import com.antaurora.apofirstlight.blockmesh.*;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.*;
-import com.antaurora.apofirstlight.client.mesh.*;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshLoader;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.mesh.MeshPart;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -39,7 +44,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
         if (entity.getLevel() == null) return;
         var profile = AflBlockMeshProfiles.get(entity.meshProfile());
         if (profile == null) return;
-        var mesh = AflMeshCache.snapshot().get(profile.geometry());
+        var mesh = VextrisMeshes.byGeometry(profile.geometry());
         if (mesh == null) return;
         entity.refreshMeshAnimationTargets(); // Handles resource-generation changes, not a gameplay update.
         double time = entity.getLevel().getGameTime() + partialTick;
@@ -55,7 +60,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
             var cutout = RenderType.entityCutoutNoCull(profile.texture());
             long timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
             draw(entity, profile, mesh, time, pose, buffers.getBuffer(cutout),
-                    packedLight, packedOverlay, AflMeshPart.Layer.CUTOUT, layout, skip, null);
+                    packedLight, packedOverlay, MeshLayer.CUTOUT, layout, skip, null);
             com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.cutout", timing);
             if (mesh.hasTranslucent() && !AflShaderCompat.activeShadowPass()) {
                 timing = com.antaurora.apofirstlight.client.AflRenderProfiler.begin();
@@ -66,7 +71,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                 // with the same program as the chunk glass
                 var deferred = AflShaderCompat.shaderPackInUse() ? AflStaticMeshModel.atlasSprite(profile.texture()) : null;
                 boolean glass = draw(entity, profile, mesh, time, pose, buffers.getBuffer(translucent),
-                        packedLight, packedOverlay, AflMeshPart.Layer.TRANSLUCENT, layout, skip, deferred);
+                        packedLight, packedOverlay, MeshLayer.TRANSLUCENT, layout, skip, deferred);
                 if (buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(translucent);
                 // Emissive parts once more, after the glass this renderer drew. Packs without gbuffers_block_translucent
                 // (Sundial) draw that glass with gbuffers_block, which overwrites the material buffers behind it; the
@@ -78,7 +83,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                     if (!hasVisibleEmissive(entity, part)) continue;
                     if (relitVertices == null) relitVertices = buffers.getBuffer(relit);
                     drawPart(entity, part, Vec3.ZERO, mesh, time, pose, relitVertices, packedLight, packedOverlay,
-                            AflMeshPart.Layer.CUTOUT, true, layout, NO_SKIP, null);
+                            MeshLayer.CUTOUT, true, layout, NO_SKIP, null);
                 }
                 if (relitVertices != null && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch(relit);
                 com.antaurora.apofirstlight.client.AflRenderProfiler.end("mesh.glass_and_relit", timing);
@@ -96,8 +101,8 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
     private static final long[] NO_SKIP = new long[2];
 
     /** Whether any geometry was submitted to vertices (deferred: glass queued in AflMovingGlass instead, at this sprite). */
-    private static boolean draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, AflMeshModel mesh, double time,
-                                PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
+    private static boolean draw(AflAnimatedMeshHost host, AflBlockMeshProfile profile, MeshModel mesh, double time,
+                                PoseStack pose, VertexConsumer vertices, int light, int overlay, MeshLayer layer,
                                 AflMeshChunking.Layout layout, long[] skip, TextureAtlasSprite deferred) {
         boolean drew = false;
         for (var part : profile.roots())
@@ -109,8 +114,8 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
      * emissiveOnly: only the geometry of emissive parts (the after-glass redraw); the pose still walks every part. skip:
      * pre-order part bits whose geometry the chunk draws (their children are still walked). Whether any geometry was submitted.
      */
-    private static boolean drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, AflMeshModel mesh, double time,
-                                 PoseStack pose, VertexConsumer vertices, int light, int overlay, AflMeshPart.Layer layer,
+    private static boolean drawPart(AflAnimatedMeshHost host, Part part, Vec3 parentPivot, MeshModel mesh, double time,
+                                 PoseStack pose, VertexConsumer vertices, int light, int overlay, MeshLayer layer,
                                  boolean emissiveOnly, AflMeshChunking.Layout layout, long[] skip, TextureAtlasSprite deferred) {
         if (!host.meshPartVisible(part.bone())) return false;
         AflBlockMeshAnimationState animation = host.meshAnimation();
@@ -135,7 +140,7 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
                 var geometry = mesh.parts(part.bone(), layer);
                 int partLight = emissive ? LightTexture.FULL_BRIGHT : light;
                 if (deferred == null || geometry.isEmpty() || !AflMovingGlass.queue(geometry, pose.last().pose(), deferred, partLight)) {
-                    AflMeshRenderer.renderPartsAtCurrentPose(geometry, pose, vertices, partLight, overlay, 1, 1, 1, 1, null);
+                    MeshRenderer.renderParts(geometry, pose, vertices, partLight, overlay, 1, 1, 1, 1, null);
                     drew = !geometry.isEmpty();
                 }
             }

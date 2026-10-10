@@ -1,5 +1,7 @@
 # 旧世界生成逻辑退役 V1（Terrain V2 实施第一步）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 日期：2026-10-10。状态：**已实现，编译通过（compileJava + compileDevJava），未实机验证**。
 
 用户 2026-10-10 验收 Terrain V2 r1 后定的顺序："第一步：旧世界生成逻辑退役"。停用旧高速自动生成与施工入口、旧地堡强制生成、强制地堡出生、出生点周围圆形平原、出生点大范围辐射安全缓冲；保留 Pure Mesh 核心、已验收的连续道路几何、有价值的 RouteGraph 接口、仍在用的开发工具、旧地堡可复用的方块和建筑资产；不删除整个 `src/dev/java`；正式森林住宅开局完成前保留可靠的自然陆地出生回退。

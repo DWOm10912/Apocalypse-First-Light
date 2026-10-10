@@ -6,9 +6,10 @@ import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.Part;
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile.Transform;
 import com.antaurora.apofirstlight.blockmesh.AflMeshChunkData;
 import com.antaurora.apofirstlight.client.AflRenderDev;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshPart;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.mesh.MeshLayer;
+import com.antaurora.vextris.mesh.MeshPart;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -155,7 +156,7 @@ public final class AflStaticMeshModel {
     }
 
     private static Built built(AflMeshChunking.Variant variant) {
-        long generation = AflMeshCache.snapshot().generation();
+        long generation = VextrisMeshes.generation();
         if (generation != builtGeneration || BUILT.size() > CACHE_LIMIT) { BUILT.clear(); builtGeneration = generation; }
         return BUILT.computeIfAbsent(variant, AflStaticMeshModel::build);
     }
@@ -163,7 +164,7 @@ public final class AflStaticMeshModel {
     /** The variant's parts in block space, exactly as AflAnimatedBlockMeshRenderer places them at rest. */
     private static Built build(AflMeshChunking.Variant v) {
         AflBlockMeshProfile profile = v.profile();
-        AflMeshModel mesh = AflMeshCache.snapshot().get(profile.geometry());
+        MeshModel mesh = VextrisMeshes.byGeometry(profile.geometry());
         if (mesh == null) return NOTHING;
         ResourceLocation texture = profile.texture();
         String path = texture.getPath();
@@ -193,8 +194,8 @@ public final class AflStaticMeshModel {
             poses[i] = pose(base, part, parentPivot, t);
             if (!v.has(i)) continue;
             int start = out.size(), glassStart = glass.size();
-            String problem = emit(mesh.parts(part.bone(), AflMeshPart.Layer.CUTOUT), poses[i], sprite, v.shading(), true, out);
-            if (problem == null) problem = emit(mesh.parts(part.bone(), AflMeshPart.Layer.TRANSLUCENT), poses[i], sprite, v.shading(), true, glass);
+            String problem = emit(mesh.parts(part.bone(), MeshLayer.CUTOUT), poses[i], sprite, v.shading(), true, out);
+            if (problem == null) problem = emit(mesh.parts(part.bone(), MeshLayer.TRANSLUCENT), poses[i], sprite, v.shading(), true, glass);
             if (problem != null) {
                 out.subList(start, out.size()).clear();
                 glass.subList(glassStart, glass.size()).clear();
@@ -242,13 +243,13 @@ public final class AflStaticMeshModel {
     }
 
     /**
-     * The faces of one part at pose m, as AflMeshRenderer#renderPartsAtCurrentPose writes them: ABCD for quads, ABCC for
+     * The faces of one part at pose m, as Vextris MeshRenderer#renderParts writes them: ABCD for quads, ABCC for
      * triangles, the boundary reversed under a mirroring pose, the first corner's normal for the whole face. Faces of an
      * open part also get their back side (reversed boundary, reversed normal). Vertex layout: DefaultVertexFormat.BLOCK.
      * Null, or why the part cannot be baked. reach: keep within {@link #REACH} of the cell (chunk geometry; off for
      * AflMovingGlass, whose pose is view space).
      */
-    static String emit(List<AflMeshPart> parts, Matrix4f m, TextureAtlasSprite sprite, int shading, boolean reach, List<BakedQuad> out) {
+    static String emit(List<MeshPart> parts, Matrix4f m, TextureAtlasSprite sprite, int shading, boolean reach, List<BakedQuad> out) {
         if (parts.isEmpty()) return null;
         float determinant = m.determinant3x3();
         if (!Float.isFinite(determinant) || Math.abs(determinant) < 1e-12F) return null;   // zero scale: nothing to draw

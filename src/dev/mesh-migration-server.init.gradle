@@ -1,0 +1,11 @@
+// Vextris migration dedicated-server smoke check (docs/dev/vextris_migration_v1.md).
+// gradlew runServer -I src/dev/mesh-migration-server.init.gradle
+// Isolated run directory under build/ (its eula.txt is set by the person running the check); stops once started.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.server {
+            workingDirectory project.file('build/vextris-server-check')
+            property 'afl.meshMigrationServerCheck', 'true'
+        }
+    }
+}

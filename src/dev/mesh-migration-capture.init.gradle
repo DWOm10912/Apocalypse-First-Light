@@ -1,0 +1,12 @@
+// Vextris migration visual regression capture (docs/dev/vextris_migration_v1.md).
+// gradlew runClient -I src/dev/mesh-migration-capture.init.gradle -PmeshCaptureLabel=<label>
+// Isolated run directory under build/ (never the developer's run/ folder, worlds or options); fixed window size.
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/mesh-migration-capture')
+            property 'afl.meshMigrationCapture', project.findProperty('meshCaptureLabel') ?: 'capture'
+            args '--width', '1280', '--height', '800'
+        }
+    }
+}

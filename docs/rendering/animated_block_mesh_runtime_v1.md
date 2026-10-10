@@ -1,5 +1,7 @@
 # AFL Animated Block Mesh Runtime V1
 
+> **2026-10-10 Vextris 迁移**：方块 Mesh 的几何来自 Vextris（`VextrisMeshes.byGeometry(profile.geometry())`，提交用 `MeshRenderer.renderParts`）；方块 profile、动画状态、区块绘制和本文的全部 AFL 逻辑留在 AFL，profile 的重载由新的 `client/blockmesh/AflBlockMeshProfileReload` 负责（在 Vextris 发布 Mesh 之后）。`closedSolid` 修正让部分方块部件不再生成区块背面，见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。下文中的旧类名是历史名称。
+
 2026-09-29。**STATUS = COMPLETE / FROZEN（用户确认）**。通用 Runtime V1 保持冻结；开发 Demo 方块及其全部专用代码、资源、源模型、生成器和 Gradle 配置已删除。
 
 验证记录：首次 `compileJava --offline` 通过；本次移除 Demo 仅做文件、引用与 Runtime 内容不变检查，没有重新编译或启动客户端。封版状态依据用户确认，不补记代理未执行的世界内、PBR 或挖掘测试。

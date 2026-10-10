@@ -1,5 +1,7 @@
 # BR51-01 V2 Pure Mesh + Material + PBR（Phase 2）
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 2026-09-28，已实现，**未实机验证**（未运行 runClient / GameTest / Iris·Oculus 光影）。离线校验全部通过，见文末。
 
 本轮把 BR51 主枪与标准弹匣从 Cube 几何重建为 AFL Native Pure Mesh（硬表面、真实倒角、真圆柱、无台阶），并配套 1024 Base Color + LabPBR `_s` / `_n`，经 Hybrid Mesh V2 sidecar 输出。外形、尺寸、Phase 1 Rig 与全部动画冻结。未新增前握把或其他附件；Mag2 / Mag3、步枪红点、步枪消音器未改动。

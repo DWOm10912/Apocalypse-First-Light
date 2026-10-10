@@ -1,9 +1,10 @@
 package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
-import com.antaurora.apofirstlight.client.mesh.AflMeshCache;
-import com.antaurora.apofirstlight.client.mesh.AflMeshModel;
-import com.antaurora.apofirstlight.client.mesh.AflMeshRenderer;
+import com.antaurora.vextris.client.VextrisMeshes;
+import com.antaurora.vextris.mesh.MeshModel;
+import com.antaurora.vextris.client.MeshRenderer;
+import com.antaurora.vextris.compat.geckolib.GeckoMeshRenderer;
 import com.antaurora.apofirstlight.item.FuelCanItem;
 import com.antaurora.apofirstlight.weapon.client.NativePlayerArmRenderer;
 import com.antaurora.apofirstlight.weapon.client.NativeRenderMatrices;
@@ -141,7 +142,7 @@ public final class JerryCanFirstPerson {
 
     private static final class Renderer extends GeoObjectRenderer<ViewModel> {
         @Nullable
-        private AflMeshModel mesh;
+        private MeshModel mesh;
 
         Renderer() {
             super(new Model());
@@ -183,7 +184,7 @@ public final class JerryCanFirstPerson {
                               float partial, int light, int overlay, float red, float green, float blue, float alpha) {
             super.preRender(pose, view, model, buffers, buffer, reRender, partial, light, overlay, red, green, blue, alpha);
             pose.translate(-0.5, -0.51, -0.5);   // GeoObjectRenderer centres a world object; the rig is in camera space
-            mesh = AflMeshCache.snapshot().get(GEO);
+            mesh = VextrisMeshes.byGeometry(GEO);
         }
 
         /** The can's AFL Mesh on its bones (the geo has no cubes). */
@@ -191,7 +192,7 @@ public final class JerryCanFirstPerson {
         public void renderCubesOfBone(PoseStack pose, GeoBone bone, VertexConsumer buffer, int light, int overlay,
                                       float red, float green, float blue, float alpha) {
             super.renderCubesOfBone(pose, bone, buffer, light, overlay, red, green, blue, alpha);
-            if (mesh != null) AflMeshRenderer.render(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha);
+            if (mesh != null) GeckoMeshRenderer.renderBone(mesh, bone, pose, buffer, light, overlay, red, green, blue, alpha);
         }
     }
 

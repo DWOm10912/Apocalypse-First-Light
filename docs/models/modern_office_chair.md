@@ -1,5 +1,7 @@
 # Modern Office Chair — 建模资产
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 状态：**V2（2026-10-03）已接入；能坐、能转，坐上去后能用 WASD 推着走，移动时有滚动音效**。生成脚本 `--check` 通过，`compileJava --offline` 通过；**没有实机验证**。
 
 时间线：

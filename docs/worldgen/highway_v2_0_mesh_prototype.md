@@ -1,5 +1,7 @@
 # Highway V2-0：Pure Mesh离线样段与能力证明
 
+> 2026-10-10：AFL 的 Mesh 加载与渲染已迁移到独立库 Vextris，`AflMeshLoader` / `AflMeshCache` / `AflMeshRenderer` / `AflHybridMeshRendering` / `AflMeshModel` / `AflMeshPart` 已删除；本文中的这些类名是当时的历史名称，对应关系见 [Vextris 迁移 V1](../dev/vextris_migration_v1.md)。
+
 日期：2026-10-07。状态：**离线导出、数据校验、现行Java Loader加载PASS；客户端/世界/碰撞/兼容/性能未测。**
 
 后续状态：[M1-A隔离开发测试场](highway_v2_m1a_mesh_sandbox.md)已复用本页原型，新增dev资源、实际16格裁剪、世界渲染及有限碰撞；编译/离线检查通过，M1-A 已集成 Master，基础渲染/坡面行走已获用户确认，生命周期与光影兼容仍待验收。下文“此次/本轮/没有Java改动”等均描述V2-0提交范围，不表示M1-A尚未实现。原始离线产物保持不变。

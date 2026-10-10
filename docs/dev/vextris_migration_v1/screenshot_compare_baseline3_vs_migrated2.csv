@@ -1,0 +1,117 @@
+shot,meanAbsDiff,changedPercent,changedBox
+01_machine_diesel_generator.png,0.000,0.001,931 574 1170 774
+02_inside_diesel_generator.png,11.374,51.350,0 0 1165 799
+03_inside_back_diesel_generator.png,12.193,44.384,488 175 1279 799
+04_machine_portable_diesel_generator.png,0.000,0.000,951 591 1034 618
+05_inside_portable_diesel_generator.png,0.000,0.000,
+06_inside_back_portable_diesel_generator.png,0.000,0.000,
+07_machine_lead_chest.png,0.000,0.000,931 629 1159 649
+08_inside_lead_chest.png,0.000,0.000,
+09_inside_back_lead_chest.png,0.000,0.000,
+10_machine_metal_trash_can.png,0.000,0.001,932 612 1192 774
+11_inside_metal_trash_can.png,0.000,0.000,
+12_inside_back_metal_trash_can.png,0.000,0.000,
+13_machine_cash_register.png,0.000,0.000,
+14_inside_cash_register.png,0.000,0.000,
+15_inside_back_cash_register.png,0.000,0.000,
+16_machine_distribution_panel.png,0.001,0.001,931 578 1203 774
+17_inside_distribution_panel.png,0.000,0.000,
+18_inside_back_distribution_panel.png,0.000,0.000,
+19_machine_service_meter_box.png,0.000,0.000,934 679 1181 774
+20_inside_service_meter_box.png,0.000,0.000,
+21_inside_back_service_meter_box.png,0.000,0.000,
+22_p9_fp_idle.png,0.003,0.004,645 516 1072 790
+23_p9_fp_reload_tactical_a.png,0.049,0.095,25 300 1278 799
+24_p9_fp_reload_tactical_b.png,0.044,0.060,1 404 1269 798
+25_p9_fp_empty_idle.png,0.012,0.021,632 518 1072 799
+26_p9_fp_reload_empty.png,0.014,0.019,10 297 1275 784
+27_p9_fp_shoot.png,0.023,0.037,632 520 1081 799
+28_p9_fp_ads.png,0.038,0.042,1 386 1227 799
+29_p9_tp_back.png,0.000,0.000,
+30_p9_tp_front.png,0.000,0.000,
+31_br51_fp_idle.png,0.069,0.110,556 437 1279 798
+32_br51_fp_reload_tactical_a.png,0.405,0.547,0 326 1278 799
+33_br51_fp_reload_tactical_b.png,0.374,0.516,0 358 1279 799
+34_br51_fp_empty_idle.png,0.063,0.100,557 440 1278 799
+35_br51_fp_reload_empty.png,1.836,2.465,0 348 1279 799
+36_br51_fp_shoot.png,0.300,0.421,552 433 1279 799
+37_br51_fp_ads.png,0.005,0.005,249 393 912 794
+38_br51_tp_back.png,0.000,0.000,
+39_br51_tp_front.png,0.001,0.001,594 423 684 458
+40_hr55_fp_idle.png,0.026,0.039,476 458 1142 799
+41_hr55_fp_reload_tactical_a.png,0.130,0.182,1 378 1279 799
+42_hr55_fp_reload_tactical_b.png,0.983,1.304,0 393 1279 799
+43_hr55_fp_empty_idle.png,0.025,0.039,475 463 1145 799
+44_hr55_fp_reload_empty.png,0.955,1.308,0 381 1279 799
+45_hr55_fp_shoot.png,0.022,0.035,475 457 1133 799
+46_hr55_fp_ads.png,0.007,0.009,206 399 944 795
+47_hr55_tp_back.png,0.000,0.000,
+48_hr55_tp_front.png,0.002,0.002,603 415 671 474
+49_silverwood12_fp_idle.png,0.013,0.019,554 473 1067 798
+50_silverwood12_fp_reload_tactical_a.png,0.387,0.548,0 391 1279 799
+51_silverwood12_fp_reload_tactical_b.png,0.001,0.002,173 434 1190 774
+52_silverwood12_fp_empty_idle.png,0.027,0.043,552 472 1091 799
+53_silverwood12_fp_reload_empty.png,0.484,0.680,0 342 1276 799
+54_silverwood12_fp_shoot.png,0.008,0.012,547 489 1080 799
+55_silverwood12_fp_ads.png,0.009,0.012,142 400 979 797
+56_silverwood12_tp_back.png,0.000,0.000,
+57_silverwood12_tp_front.png,0.000,0.000,632 433 632 433
+58_blackridge50_fp_idle.png,0.036,0.054,634 488 1081 799
+59_blackridge50_fp_reload_tactical_a.png,0.015,0.020,14 325 1273 787
+60_blackridge50_fp_reload_tactical_b.png,0.146,0.170,4 302 1279 799
+61_blackridge50_fp_empty_idle.png,0.008,0.013,645 492 1061 780
+62_blackridge50_fp_reload_empty.png,0.159,0.226,666 300 1216 799
+63_blackridge50_fp_shoot.png,0.054,0.088,629 484 1081 799
+64_blackridge50_fp_ads.png,0.009,0.008,12 381 1047 797
+65_blackridge50_tp_back.png,0.000,0.000,607 422 672 459
+66_blackridge50_tp_front.png,0.001,0.001,632 422 677 458
+67_br51_reddot_drum_fp_idle.png,0.017,0.022,554 407 1276 799
+68_br51_reddot_drum_fp_reload_tactical_a.png,2.756,3.776,0 326 1279 799
+69_br51_reddot_drum_fp_reload_tactical_b.png,0.054,0.065,0 389 1277 799
+70_br51_reddot_drum_fp_empty_idle.png,0.087,0.139,558 403 1279 799
+71_br51_reddot_drum_fp_reload_empty_drum.png,0.752,1.025,0 313 1279 799
+72_br51_reddot_drum_fp_shoot.png,0.021,0.026,558 413 1258 799
+73_br51_reddot_drum_fp_ads.png,0.026,0.027,341 274 886 799
+74_br51_reddot_drum_tp_back.png,0.000,0.000,
+75_br51_reddot_drum_tp_front.png,0.001,0.001,625 418 678 444
+76_p9_reddot_fp_idle.png,0.015,0.022,646 517 1080 799
+77_p9_reddot_fp_reload_tactical_a.png,0.014,0.023,40 317 1278 799
+78_p9_reddot_fp_reload_tactical_b.png,0.026,0.035,1 404 1269 796
+79_p9_reddot_fp_empty_idle.png,0.004,0.006,638 523 1076 798
+80_p9_reddot_fp_reload_empty.png,0.007,0.008,168 317 1235 774
+81_p9_reddot_fp_shoot.png,0.021,0.035,633 516 1079 799
+82_p9_reddot_fp_ads.png,0.001,0.001,2 594 1064 793
+83_p9_reddot_tp_back.png,0.000,0.000,591 425 612 426
+84_p9_reddot_tp_front.png,0.001,0.000,631 430 651 478
+85_hr55_reddot_fp_idle.png,0.011,0.017,477 421 1128 799
+86_hr55_reddot_fp_reload_tactical_a.png,0.669,0.903,1 376 1279 799
+87_hr55_reddot_fp_reload_tactical_b.png,0.805,1.096,0 393 1279 799
+88_hr55_reddot_fp_empty_idle.png,0.033,0.053,468 421 1144 799
+89_hr55_reddot_fp_reload_empty.png,1.428,1.935,0 381 1279 799
+90_hr55_reddot_fp_shoot.png,0.169,0.251,471 418 1133 799
+91_hr55_reddot_fp_ads.png,0.014,0.013,413 316 714 798
+92_hr55_reddot_tp_back.png,0.000,0.000,
+93_hr55_reddot_tp_front.png,0.002,0.002,624 404 673 462
+94_after_reload_br51_reddot_drum_fp_idle.png,0.000,0.000,
+95_after_reload_br51_reddot_drum_fp_ads.png,0.000,0.000,
+96_after_reload_machine_diesel_generator.png,0.004,0.004,555 409 1191 799
+97_after_reload_inside_diesel_generator.png,17.084,58.596,0 0 1155 799
+98_after_reload_inside_back_diesel_generator.png,12.597,44.413,488 167 1279 799
+99_after_reload_machine_portable_diesel_generator.png,0.000,0.000,
+100_after_reload_inside_portable_diesel_generator.png,0.000,0.000,
+101_after_reload_inside_back_portable_diesel_generator.png,0.000,0.000,
+102_after_reload_machine_lead_chest.png,0.005,0.007,624 414 1267 799
+103_after_reload_inside_lead_chest.png,0.000,0.000,
+104_after_reload_inside_back_lead_chest.png,0.000,0.000,
+105_after_reload_machine_metal_trash_can.png,0.001,0.001,782 474 1122 785
+106_after_reload_inside_metal_trash_can.png,0.000,0.000,
+107_after_reload_inside_back_metal_trash_can.png,0.000,0.000,
+108_after_reload_machine_cash_register.png,0.002,0.002,624 414 1256 706
+109_after_reload_inside_cash_register.png,0.000,0.000,
+110_after_reload_inside_back_cash_register.png,0.000,0.000,
+111_after_reload_machine_distribution_panel.png,0.001,0.001,782 474 1153 785
+112_after_reload_inside_distribution_panel.png,0.000,0.000,
+113_after_reload_inside_back_distribution_panel.png,0.000,0.000,
+114_after_reload_machine_service_meter_box.png,0.002,0.002,624 414 1256 706
+115_after_reload_inside_service_meter_box.png,0.000,0.000,
+116_after_reload_inside_back_service_meter_box.png,0.000,0.000,
