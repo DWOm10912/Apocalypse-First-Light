@@ -1,12 +1,14 @@
 package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.FuelCanBlock;
+import com.antaurora.apofirstlight.fluid.FuelFill;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import com.antaurora.apofirstlight.registry.AflFluids;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -29,6 +31,7 @@ public class FuelCanBlockEntity extends BlockEntity {
 
     private final FluidTank tank;
     private LazyOptional<IFluidHandler> capability;
+    private @Nullable CompoundTag fill;   // FuelFill marker until it is rolled
 
     public FuelCanBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.FUEL_CAN.get(), pos, state);
@@ -79,11 +82,28 @@ public class FuelCanBlockEntity extends BlockEntity {
                 tank.setFluid(fluid);
             }
         }
+        fill = tag.contains(FuelFill.KEY, Tag.TAG_COMPOUND) ? tag.getCompound(FuelFill.KEY) : null;
+        rollFill();
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        rollFill();
+    }
+
+    /** An exported building's container (fluid/FuelFill): the fuel it held then, else the rule's pick; rolled once in a server level. */
+    private void rollFill() {
+        if (fill != null && level instanceof ServerLevel server && FuelFill.fill(server, worldPosition, fill, tank, null)) {
+            fill = null;
+            setChanged();
+        }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         if (!tank.isEmpty()) tag.put(FLUID_KEY, tank.getFluid().writeToNBT(new CompoundTag()));
+        if (fill != null) tag.put(FuelFill.KEY, fill);
     }
 }

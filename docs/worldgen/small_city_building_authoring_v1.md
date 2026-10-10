@@ -116,7 +116,16 @@ No generated debug block exists to leak into capture. Manually placed authoring 
 
 Validation also does not prove attachment survival after placement. The `office_midrise_01` first test exposed unsupported sink buttons that passed capture validation; corrected backing walls and a fresh export were verified in all four live rotations. Compare actual placed states after normal neighbor updates, not only serialized NBT or transform math.
 
-Exports are **INTACT BASE STRUCTURE**. No random damage/loot processing. Future FOOD/MEDICAL/TOOL/INDUSTRIAL/WEAPON/DOCUMENT/GENERAL loot markers and deterministic damage pass are documentation-only extension concepts, not live features. Hero damaged variants would be distinct explicitly authored IDs later.
+**Export state (2026-10-09, `authoring/ExportState`).** Capture normalizes its own NBT copy (never the world) before the fingerprint, so validate and export agree:
+- no power: every block entity's `EnergyStored` is 0 and its `Powered` flag false;
+- no fuel: the underground tank, fuel can / drum and portable generator get a `fluid/FuelFill` marker (`AflFuelFill`: the rule, and for a can the fuel it held) in place of their fuel. The submersible pump's buffer and the dispenser's lines are emptied: they dispense only with power and then refill from the tank;
+- nothing in progress: the generators stopped (no pull, grip, warm-up, fuel debt, trip, load), dispenser nozzle holders removed, `PlugCarrier` and `AflContainerSearch` removed;
+- plugs stay in (`PlugHost`).
+- `validate` and `export` print the changes by kind and how many AFL block states are still `lit=true`; the MCP `authoring_validate` returns them as `export_state` / `lit_afl_states`.
+
+**Placement.** Only blocks placed from an exported template carry a marker (any placement of it: a future city generator, `/place template`, a structure block). A block a player places from an item starts empty as before, and a rolled holder has dropped its marker, so breaking and replacing it, or copying it, carries none. A marker is rolled by its holder the first time it is in a server level (load with a level, else `onLoad`), seeded by the world seed and position, from `data/<ns>/fuel_fills/<rule>.json` (`underground_tank`: 20 % empty, else 5–40 %; `fuel_container`: 50 % empty, else 10–100 %, a can empty at export picks gasoline 7 : diesel 3; `portable_generator`: 50 % empty, else 1–8 L). Vanilla template placement copies block entity data unturned, so every AFL building placement must add `worldgen/structure/AflBlockEntityProcessor` (`settings.addProcessor(AflBlockEntityProcessor.INSTANCE)`, or processor type `apocalypse_firstlight:block_entity`): it turns `PlugHost`, a power strip's `Outlet` and a meter box's `Panel` with the placement's mirror and rotation. GameTests `dev/ExportStateGameTests` (`src/dev/export-state-gametest.init.gradle`) and `dev/GasStation01GameTests` (four rotations of the A1 asset) PASS 2026-10-10; run them with `-PaflWithoutShaders` (Oculus cannot load on the dedicated GameTest server). See [gas_station_01_asset_v1.md](gas_station_01_asset_v1.md).
+
+Exports are **INTACT BASE STRUCTURE**. No random damage/loot processing beyond the fuel fill above. Future FOOD/MEDICAL/TOOL/INDUSTRIAL/WEAPON/DOCUMENT/GENERAL loot markers and deterministic damage pass are documentation-only extension concepts, not live features. Hero damaged variants would be distinct explicitly authored IDs later.
 
 ## Asset production passes
 

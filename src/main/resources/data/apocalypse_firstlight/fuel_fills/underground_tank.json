@@ -1,0 +1,6 @@
+{
+  "empty_chance": 0.2,
+  "min": 0.05,
+  "max": 0.4,
+  "unit": "fraction"
+}

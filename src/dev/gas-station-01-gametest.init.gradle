@@ -1,0 +1,19 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/gas-station-01-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_a1_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                if (!log.exists() || !log.getText('UTF-8').contains('[AFL A1 ASSET TEST] PASS')) {
+                    throw new GradleException('A1 asset test did not execute')
+                }
+            }
+        }
+    }
+}

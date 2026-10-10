@@ -268,3 +268,7 @@
 - 不模拟一氧化碳，在室内也能开。
 - 没有电缆接口，接不了配电盘（用户选了 A）。
 - 第三人称姿势不考虑潜行时肩膀变低。
+
+## 导出的建筑里（2026-10-09）
+
+导出建筑时油换成灌油标记（`AflFuelFill`，规则 `portable_generator`），并且停机：不在运行、没有拉绳和握把、没有预热、没有欠油、断路器复位，运行小时数保留。放下后第一次在服务端加载时掷一次，50% 空、否则 1–8 L 柴油。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

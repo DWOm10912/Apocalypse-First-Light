@@ -213,3 +213,7 @@
 3. A1：设备间换配电盘、后墙外换电表箱，沿墙每隔约 3.6 m 布置插座，柜台上方一排，接能量单元实测。
 
 - 2026-10-09：手持、掉落、展示框改成按模型包围盒居中（`tools/item-held-display.mjs`），原来的固定平移让它偏离手的位置，见 [creative_inventory_framing.md](creative_inventory_framing.md)。
+
+## 导出的建筑里（2026-10-09）
+
+插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱的 `Panel`；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

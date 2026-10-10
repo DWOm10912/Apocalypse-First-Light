@@ -110,9 +110,10 @@ public final class BuildingAuthoringCommands {
                         throw new IllegalArgumentException("Invalid/expired confirmation; run /afl_author clear again");
                     BuildingAuthoringService.clear(level,s);say(src,"Capture volume cleared without drops; not automatically recoverable");
                 }
-                case "validate" -> {var result=BuildingAuthoringService.validate(level,s);say(src,"VALIDATED: "+result.blocks()+" non-air blocks; no entities/loot/debug blocks");}
+                case "validate" -> {var result=BuildingAuthoringService.validate(level,s);say(src,"VALIDATED: "+result.blocks()+" non-air blocks; no entities/loot/debug blocks; "+result.state().text());}
                 case "export" -> {var directory=net.minecraftforge.fml.loading.FMLPaths.GAMEDIR.get().resolve("afl_authoring_exports");
-                    say(src,"EXPORTED: "+BuildingAuthoringService.export(level,s,directory)+" + metadata JSON. Not in any city pool.");}
+                    var exported=BuildingAuthoringService.export(level,s,directory);
+                    say(src,"EXPORTED: "+exported.nbt()+" + metadata JSON. Not in any city pool. "+exported.state().text());}
                 default -> throw new IllegalArgumentException("Unknown action");
             }
             return 1;

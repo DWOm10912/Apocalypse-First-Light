@@ -57,6 +57,7 @@ public class ApocalypseFirstLight {
         AflSounds.SOUND_EVENTS.register(modEventBus);
         AflFeatures.FEATURES.register(modEventBus);
         AflDensityFunctions.TYPES.register(modEventBus);
+        com.antaurora.apofirstlight.registry.AflStructureProcessors.PROCESSORS.register(modEventBus);
         AflCreativeTabs.CREATIVE_MODE_TABS.register(modEventBus);
     }
 

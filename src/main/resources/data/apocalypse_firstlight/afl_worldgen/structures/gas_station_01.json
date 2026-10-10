@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "asset_revision": "2026-10-10-befb52f3ee10e9da",
+  "structure_nbt": "apocalypse_firstlight:gas_station_01",
+  "category": "apocalypse_firstlight:commercial",
+  "front": "NORTH",
+  "ground_anchor_offset_y": 5,
+  "allowed_rotations": ["NONE", "CLOCKWISE_90", "CLOCKWISE_180", "COUNTERCLOCKWISE_90"],
+  "sockets": [
+    {"name": "main_entrance", "position": [51, 5, 0], "facing": "NORTH", "type": "DRIVEWAY"},
+    {"name": "side_entrance", "position": [0, 5, 60], "facing": "WEST", "type": "DRIVEWAY"}
+  ],
+  "tags": ["apocalypse_firstlight:fuel_station", "apocalypse_firstlight:corner_lot"]
+}

@@ -1,0 +1,10 @@
+{
+  "empty_chance": 0.5,
+  "min": 0.1,
+  "max": 1.0,
+  "unit": "fraction",
+  "fluids": [
+    {"fluid": "apocalypse_firstlight:gasoline", "weight": 7},
+    {"fluid": "apocalypse_firstlight:diesel", "weight": 3}
+  ]
+}

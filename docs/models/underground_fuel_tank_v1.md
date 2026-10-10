@@ -93,3 +93,7 @@
 - 潜油泵、泵井盖、卸油口盖已做（2026-10-05，见 [fuel_station_sump_v1.md](fuel_station_sump_v1.md)）。罐里的油经潜油泵送到加油机，油枪能滋到地上、给地上的油壶和油桶加油；拿着油壶对着打开的卸油口倒油能灌进罐里，手摇泵能从卸油口往外抽（[Fuel Containers V1](fuel_containers_v1.md)，用户 2026-10-08 确认倒油能灌进罐）。还没做：油罐车卸油。
 - 被挖掉时油直接丢失，不会洒出来。被子弹打中会漏油（玻璃钢，不打火花）；着火后会烧或爆炸，爆炸时油烧着洒出来，见 [fuel_fire_v1.md](../gameplay/fuel_fire_v1.md) 第二阶段（2026-10-05）。地面上的爆炸隔着土碰不到它。
 - 2026-10-08 放进了作者工具（`AuthoringFixtureRegistry` 的格子布局 `FUEL_TANK`：`place_multiblock`，anchor 是底层正中格，facing 指向卸油口那头），见 [minecraft_authoring_mcp_v1.md](../dev/minecraft_authoring_mcp_v1.md)。
+
+## 导出的建筑里（2026-10-09）
+
+导出建筑时油量换成灌油标记（`AflFuelFill`，规则 `underground_tank`）：放下后主格第一次在服务端加载时掷一次，20% 空、否则 5–40%，油种按罐子本身（汽油罐 / 柴油罐）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

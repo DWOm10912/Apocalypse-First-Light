@@ -74,6 +74,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
     private static final String FUEL_KEY = "Fuel", RUNNING_KEY = "Running", HOURS_KEY = "Hours", DEBT_KEY = "FuelDebt", PULL_KEY = "PullStart",
             PULLER_KEY = "Puller", WARM_KEY = "WarmUntil", GRIP_KEY = "Gripper", GOOD_KEY = "PullGood", CATCHES_KEY = "PullCatches", TRIP_KEY = "Tripped", SOCKETS_KEY = "Sockets", DEMAND_KEY = "Demand";
 
+    private @org.jetbrains.annotations.Nullable CompoundTag fill;   // FuelFill marker until it is rolled
     private final FluidTank fuel = new FluidTank(TANK, stack -> stack.getFluid().isSame(AflFluids.DIESEL.get())) {
         @Override
         protected void onContentsChanged() {
@@ -315,6 +316,8 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
     public void load(CompoundTag tag) {
         super.load(tag);
         fuel.readFromNBT(tag.getCompound(FUEL_KEY));
+        fill = tag.contains(com.antaurora.apofirstlight.fluid.FuelFill.KEY, net.minecraft.nbt.Tag.TAG_COMPOUND)
+                ? tag.getCompound(com.antaurora.apofirstlight.fluid.FuelFill.KEY) : null;
         running = tag.getBoolean(RUNNING_KEY);
         hours = Math.max(0, tag.getDouble(HOURS_KEY));
         fuelDebt = tag.getDouble(DEBT_KEY);
@@ -327,13 +330,30 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         tripped = tag.getBoolean(TRIP_KEY);
         usedSockets = tag.getInt(SOCKETS_KEY);
         demand = tag.getFloat(DEMAND_KEY);
+        rollFill();
         refreshMeshAnimationTargets();
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        rollFill();
+    }
+
+    /** An exported building's generator (fluid/FuelFill): a little diesel or none, rolled once in a server level. */
+    private void rollFill() {
+        if (fill != null && level instanceof ServerLevel server
+                && com.antaurora.apofirstlight.fluid.FuelFill.fill(server, worldPosition, fill, fuel, AflFluids.DIESEL.get())) {
+            fill = null;
+            setChanged();
+        }
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put(FUEL_KEY, fuel.writeToNBT(new CompoundTag()));
+        if (fill != null) tag.put(com.antaurora.apofirstlight.fluid.FuelFill.KEY, fill);
         tag.putBoolean(RUNNING_KEY, running);
         tag.putDouble(HOURS_KEY, hours);
         tag.putDouble(DEBT_KEY, fuelDebt);

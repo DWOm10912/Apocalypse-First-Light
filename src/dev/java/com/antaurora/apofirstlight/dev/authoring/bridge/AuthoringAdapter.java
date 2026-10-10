@@ -17,7 +17,7 @@ final class AuthoringAdapter {
     static JsonObject call(String tool,JsonObject a,ServerPlayer p) throws Exception {
         if(!BuildingAuthoringCommands.allowed(p.createCommandSourceStack()))throw new IllegalArgumentException("AUTHORING_DISABLED_OR_PERMISSION_DENIED");
         if(tool.equals("authoring_info"))return info(p);
-        if(tool.equals("authoring_validate")){var s=active(p);new BridgeBounds(s.origin,s.max()).check(p.serverLevel(),BridgeBounds.PLOT_LIMIT);var scan=BuildingAuthoringService.validate(p.serverLevel(),s);return object("validated",true,"non_air",scan.blocks(),"exported",false);}
+        if(tool.equals("authoring_validate")){var s=active(p);new BridgeBounds(s.origin,s.max()).check(p.serverLevel(),BridgeBounds.PLOT_LIMIT);var scan=BuildingAuthoringService.validate(p.serverLevel(),s);return object("validated",true,"non_air",scan.blocks(),"exported",false,"export_state",scan.state().changes(),"lit_afl_states",scan.state().litStates());}
         String command;
         if(tool.equals("authoring_create")){
             String id=string(a,"building_id","");if(!id.matches("[a-z][a-z0-9_]{0,63}"))throw new IllegalArgumentException("INVALID_BUILDING_ID");

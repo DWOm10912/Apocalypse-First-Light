@@ -1,10 +1,14 @@
 package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.UndergroundFuelTankBlock;
+import com.antaurora.apofirstlight.fluid.FuelFill;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -33,6 +37,7 @@ public class UndergroundFuelTankBlockEntity extends BlockEntity {
         }
     };
     private LazyOptional<IFluidHandler> capability = LazyOptional.of(() -> tank);
+    private @Nullable CompoundTag fill;   // FuelFill marker until it is rolled
 
     public UndergroundFuelTankBlockEntity(BlockPos position, BlockState state) {
         super(AflBlockEntities.UNDERGROUND_FUEL_TANK.get(), position, state);
@@ -75,11 +80,31 @@ public class UndergroundFuelTankBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         tank.readFromNBT(tag.getCompound(TANK_KEY));
+        fill = tag.contains(FuelFill.KEY, Tag.TAG_COMPOUND) ? tag.getCompound(FuelFill.KEY) : null;
+        rollFill();
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        rollFill();
     }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.put(TANK_KEY, tank.writeToNBT(new CompoundTag()));
+        if (fill != null) tag.put(FuelFill.KEY, fill);
+    }
+
+    /** An exported building's tank (fluid/FuelFill): rolled once in a server level, the master only (the fill cell holds nothing). */
+    private void rollFill() {
+        if (fill == null || !(level instanceof ServerLevel server)) return;
+        BlockState state = getBlockState();
+        Fluid fuel = state.getBlock() instanceof UndergroundFuelTankBlock block && UndergroundFuelTankBlock.isMaster(state) ? block.fuel() : null;
+        if (fuel == null || FuelFill.fill(server, worldPosition, fill, tank, fuel)) {
+            fill = null;
+            setChanged();
+        }
     }
 }

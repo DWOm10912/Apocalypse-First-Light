@@ -15,7 +15,8 @@ import java.util.*;
 /** Server-thread-only, bounded developer operations. No worldgen hook or permanent chunk load. */
 public final class BuildingAuthoringService {
     private BuildingAuthoringService() {}
-    public record Capture(StructureTemplate template, CompoundTag nbt, String digest, int blocks) {}
+    public record Capture(StructureTemplate template, CompoundTag nbt, String digest, int blocks, ExportState.Summary state) {}
+    public record Exported(Path nbt, ExportState.Summary state) {}
     public static void accessible(ServerLevel level, BuildingAuthoringSession s) {
         if(!level.dimension().equals(s.dimension)) throw new IllegalArgumentException("Return to session dimension: "+s.dimension.location());
         if(s.origin.getY()<level.getMinBuildHeight()||s.max().getY()>=level.getMaxBuildHeight()
@@ -70,9 +71,12 @@ public final class BuildingAuthoringService {
         var m=s.metadata;var t=new StructureTemplate();
         t.fillFromWorld(level,s.origin,new Vec3i(m.width(),m.height(),m.depth()),false,null);
         CompoundTag nbt=t.save(new CompoundTag());
+        // the exported state (no power, no fuel but fill markers, nothing in progress), on the copy only; the template follows it
+        var state=ExportState.normalize(nbt);
+        t=new StructureTemplate();t.load(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK),nbt);
         String digest=digest(nbt)+m.json().toString();
         if(!Objects.equals(s.approvedDigest,digest))s.state=blocks==0?BuildingAuthoringSession.State.EMPTY:BuildingAuthoringSession.State.DRAFT;
-        return new Capture(t,nbt,digest,blocks);
+        return new Capture(t,nbt,digest,blocks,state);
     }
     private static String digest(CompoundTag tag) throws IOException {
         try {
@@ -92,7 +96,7 @@ public final class BuildingAuthoringService {
         }
         s.changed();s.state=BuildingAuthoringSession.State.EMPTY;
     }
-    public static Path export(ServerLevel level, BuildingAuthoringSession s, Path directory) throws IOException {
+    public static Exported export(ServerLevel level, BuildingAuthoringSession s, Path directory) throws IOException {
         Capture c=validate(level,s); // Always rescan immediately, including WorldEdit/command/BE edits.
         Path root=directory.toAbsolutePath().normalize();Files.createDirectories(root);
         Path nbt=root.resolve(s.metadata.id()+".nbt"),json=root.resolve(s.metadata.id()+".json");
@@ -104,7 +108,7 @@ public final class BuildingAuthoringService {
             Files.writeString(temp.resolve("metadata.json"),new GsonBuilder().setPrettyPrinting().create().toJson(s.metadata.json()));
             Files.move(temp.resolve("structure.nbt"),nbt);wroteNbt=true;
             Files.move(temp.resolve("metadata.json"),json);
-            s.state=BuildingAuthoringSession.State.EXPORTED;return nbt;
+            s.state=BuildingAuthoringSession.State.EXPORTED;return new Exported(nbt,c.state());
         }catch(IOException e){if(wroteNbt)Files.deleteIfExists(nbt);throw e;}
         finally {Files.deleteIfExists(temp.resolve("structure.nbt"));Files.deleteIfExists(temp.resolve("metadata.json"));Files.deleteIfExists(temp);}
     }
