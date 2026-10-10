@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity;
 import com.antaurora.apofirstlight.item.FuelCanItem;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -45,6 +46,13 @@ import org.jetbrains.annotations.Nullable;
  * the item). Steel: bullets hole them, fire sets them off (fluid/FuelContainers, fluid/FuelLeaks).
  */
 public final class FuelCanBlock extends HorizontalDirectionalBlock implements EntityBlock {
+    /**
+     * The cap off (2026-10-10, the user: unscrew it before filling, set it down beside): the jerry can's spout cap stands on
+     * the ground beside the can, a drum's 2" plug on its head, the opening open (the open models, tools/build-fuel-containers-v1.mjs
+     * OPEN). Only an open container takes fuel: the nozzle (fluid/NozzleFill), a hand pump's hose or a pump on a drum's bung
+     * (HandFuelPumpBlock), a pour (fluid/FuelCanTransfers). Placed shut; a jerry can picked up has its cap back on.
+     */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty OPEN = net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN;
     public enum Size {
         /** Body box (px, facing north), fuel box (the body's inside, px), the opening (px, cell-centred, facing north). */
         // tools/build-fuel-containers-v1.mjs prints these lines and --check finds them (V1.1: drawn larger than life)
@@ -75,7 +83,7 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
     public FuelCanBlock(Size size, Properties properties) {
         super(properties);
         this.size = size;
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
     }
 
     public Size size() {
@@ -139,6 +147,8 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (hand != InteractionHand.MAIN_HAND || player.isSpectator()) return InteractionResult.PASS;
         ItemStack held = player.getMainHandItem();
+        // a tool that puts fuel in, on a shut container: the click unscrews the cap first (the next one fills or mounts)
+        if (fillsIt(held, state) && !state.getValue(OPEN)) return setCap(level, pos, state, true);
         if (!held.isEmpty()) return InteractionResult.PASS;
         BlockPos above = pos.above();
         if (size.drum() && level.getBlockState(above).getBlock() instanceof HandFuelPumpBlock) {
@@ -153,7 +163,24 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
             level.playSound(null, pos, getSoundType(state, level, pos, player).getHitSound(), net.minecraft.sounds.SoundSource.BLOCKS, 0.6F, 1.2F);
             return InteractionResult.CONSUME;
         }
-        return InteractionResult.PASS;
+        return setCap(level, pos, state, !state.getValue(OPEN));   // an empty hand screws the cap off or back on
+    }
+
+    /** A held tool that puts fuel into this container: the dispenser nozzle, the creative barrel, a hand pump for a drum. */
+    private boolean fillsIt(ItemStack held, BlockState state) {
+        return held.getItem() instanceof FuelNozzleItem || held.getItem() instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem
+                || size.drum() && held.is(AflBlocks.HAND_FUEL_PUMP.get().asItem());
+    }
+
+    /** Screws the cap off (open: set down beside the opening) or back on. */
+    private InteractionResult setCap(Level level, BlockPos pos, BlockState state, boolean open) {
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+        level.setBlock(pos, state.setValue(OPEN, open), Block.UPDATE_ALL);
+        // the can's cap or the drum's bung, played as the cap moves (the 200 L drum a little lower than the 60 L)
+        level.playSound(null, pos, (size.drum() ? open ? AflSounds.DRUM_BUNG_OPEN : AflSounds.DRUM_BUNG_CLOSE
+                        : open ? AflSounds.JERRY_CAN_CAP_OPEN : AflSounds.JERRY_CAN_CAP_CLOSE).get(),
+                net.minecraft.sounds.SoundSource.BLOCKS, 0.7F, size == Size.DRUM ? 0.92F : 1.0F);
+        return InteractionResult.CONSUME;
     }
 
     /** True for an item that acts on a container on its own (dispenser nozzle, a can that pours, the hand pump). */
@@ -178,13 +205,16 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
         if (state.getBlock() instanceof HandFuelPumpBlock) return empty ? sneak ? "take_pump" : HandFuelPumpBlock.target(level, pos, state) == null ? "needs_container" : "crank" : null;
         boolean barrel = held.getItem() instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem;
         if (state.getBlock() instanceof FuelCanBlock can) {
+            boolean open = state.getValue(OPEN);
+            if (can.fillsIt(held, state) && (can.size.drum() && pump ? free : true) && !open) return "open_cap";
             if (held.getItem() instanceof FuelNozzleItem) return "fill";
             if (barrel) return "barrel";
             if (pump && can.size.drum() && free) return "mount_pump";
             BlockState above = level.getBlockState(pos.above());
             if (empty && can.size.drum() && above.getBlock() instanceof HandFuelPumpBlock)
                 return sneak ? "take_pump" : HandFuelPumpBlock.target(level, pos.above(), above) == null ? "needs_container" : "crank";
-            if (empty && can.size == Size.JERRY_CAN) return "pick_up";
+            if (empty && can.size == Size.JERRY_CAN && sneak) return "pick_up";
+            if (empty) return open ? "close_cap" : "open_cap";
             return null;
         }
         if (state.getBlock() instanceof FuelSumpCoverBlock cover && cover.kind() == FuelSumpCoverBlock.Kind.FILL && state.getValue(FuelSumpCoverBlock.OPEN)) {
@@ -229,6 +259,6 @@ public final class FuelCanBlock extends HorizontalDirectionalBlock implements En
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, OPEN);
     }
 }

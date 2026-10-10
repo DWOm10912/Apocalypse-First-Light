@@ -122,6 +122,13 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_STOP = simple("intake_pump_stop");
     public static final RegistryObject<SoundEvent> INTAKE_PUMP_LOOP = simple("intake_pump_loop");
     public static final RegistryObject<SoundEvent> FUEL_NOZZLE_SPRAY = simple("fuel_nozzle_spray");
+    /** The nozzle put into a fuel opening (2026-10-10): in, the fill loop, the automatic shut-off, out. Placeholder files until the user's recording. */
+    public static final RegistryObject<SoundEvent> FUEL_NOZZLE_INSERT = simple("fuel_nozzle_insert");
+    public static final RegistryObject<SoundEvent> FUEL_NOZZLE_FILL = simple("fuel_nozzle_fill");
+    public static final RegistryObject<SoundEvent> FUEL_NOZZLE_SHUT_OFF = simple("fuel_nozzle_shut_off");
+    public static final RegistryObject<SoundEvent> FUEL_NOZZLE_PULL = simple("fuel_nozzle_pull");
+    /** A breaker tripping on an overload (2026-10-10): the distribution panel's main, the portable generator's (tools/build-breaker-trip-sound-v1.mjs). */
+    public static final RegistryObject<SoundEvent> BREAKER_TRIP = simple("breaker_trip");
     /** Fuel fire (docs/gameplay/fuel_fire_v1.md "声音", tools/build-fuel-fire-sounds-v1.mjs): catching, burning, a tank going up. */
     public static final RegistryObject<SoundEvent> FUEL_IGNITE = simple("fuel_ignite");
     public static final RegistryObject<SoundEvent> FUEL_FIRE_LOOP = simple("fuel_fire_loop");
@@ -130,6 +137,13 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> JERRY_CAN_OPEN = simple("jerry_can_open");
     public static final RegistryObject<SoundEvent> JERRY_CAN_POUR = simple("jerry_can_pour");
     public static final RegistryObject<SoundEvent> JERRY_CAN_CLOSE = simple("jerry_can_close");
+    /** A container's cap screwed off / back on where it stands (FuelCanBlock OPEN, 2026-10-10): the jerry can's cap, a drum's 2" bung.
+     *  The first-person pour sounds above run on that animation's 2-3 s clock, so they do not fit an instant cap. All four play the panel's latch click
+     *  at their own pitch (sounds.json); the user kept it (2026-10-10: generated cap foley comes out clanky). */
+    public static final RegistryObject<SoundEvent> JERRY_CAN_CAP_OPEN = simple("jerry_can_cap_open");
+    public static final RegistryObject<SoundEvent> JERRY_CAN_CAP_CLOSE = simple("jerry_can_cap_close");
+    public static final RegistryObject<SoundEvent> DRUM_BUNG_OPEN = simple("drum_bung_open");
+    public static final RegistryObject<SoundEvent> DRUM_BUNG_CLOSE = simple("drum_bung_close");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

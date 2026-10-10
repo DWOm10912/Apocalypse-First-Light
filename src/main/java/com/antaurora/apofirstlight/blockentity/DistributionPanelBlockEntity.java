@@ -227,7 +227,7 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
 
     private void trip(ServerLevel server) {
         tripped = true; overloadTicks = 0;
-        server.playSound(null, worldPosition, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.8F, 1.6F);
+        server.playSound(null, worldPosition, com.antaurora.apofirstlight.registry.AflSounds.BREAKER_TRIP.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         sync();
     }
 

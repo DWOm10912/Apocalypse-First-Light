@@ -98,3 +98,7 @@ V1 的"中心方块 + 连接臂"（`show_core` 状态和三个方块模型）已
 - 只认路牙：别的方块夹在中间照样断。
 - 灯杆底座放在路牙上时自动把路牙下的电缆接上，拆掉时断开（`LightPoleBaseBlock.onPlace` / `onRemove`）。
 - 状态：`compileJava --offline` 通过（2026-10-09），还没实机测。
+
+## 结构旋转（2026-10-10）
+
+电缆（`PowerCableBlock`） 继承原版 `PipeBlock`，原版没有 `rotate` / `mirror`：结构转 90 / 180 / 270° 放下后，六个面的连接还指着原来的方向，方块更新再按同样错的邻居重算，沿转后方向的整段线全断开。A1 第一次四向放置测试里约 70% 的电缆和油管都这样。现在 `rotate` / `mirror` 交给 `block/PipeSides`，按旋转、镜像转换东南西北四个面的连接（上下不变）。GameTest `dev/GasStation01GameTests` 四向 PASS，放下后状态变化 0，见 [gas_station_01_asset_v1.md](../worldgen/gas_station_01_asset_v1.md)。

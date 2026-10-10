@@ -97,6 +97,19 @@ public final class PowerCableBlock extends PipeBlock {
         return null;
     }
 
+    /** The side flags turn and mirror with a structure (PipeSides). */
+    @Override
+    @SuppressWarnings("deprecation")
+    public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return PipeSides.rotate(state, rotation);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        return PipeSides.mirror(state, mirror);
+    }
+
     /** A neighbouring cable's side is mirrored (both ends always agree); power ports connect whenever present (also through a curb). */
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,

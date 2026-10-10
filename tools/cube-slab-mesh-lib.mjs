@@ -115,7 +115,7 @@ function offset(L, d) {
   return out;
 }
 // Ear clipping of a polygon with holes (holes bridged to the outer loop). Returns triangles of 2D points' indices into pts.
-function triangulate(outer, holes) {
+export function triangulate(outer, holes) {
   const pts = [], idx = L => L.map(p => { pts.push(p); return pts.length - 1; });
   let poly = idx(outer);
   const hs = holes.map(h => idx(h)).sort((a, b) => Math.max(...b.map(i => pts[i][0])) - Math.max(...a.map(i => pts[i][0])));

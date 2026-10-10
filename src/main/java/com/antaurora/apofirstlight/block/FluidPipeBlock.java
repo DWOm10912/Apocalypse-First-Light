@@ -108,6 +108,19 @@ public final class FluidPipeBlock extends PipeBlock implements com.antaurora.apo
         return placedState(level, position, state, null);
     }
 
+    /** The side flags turn and mirror with a structure (PipeSides). */
+    @Override
+    @SuppressWarnings("deprecation")
+    public BlockState rotate(BlockState state, net.minecraft.world.level.block.Rotation rotation) {
+        return PipeSides.rotate(state, rotation);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public BlockState mirror(BlockState state, net.minecraft.world.level.block.Mirror mirror) {
+        return PipeSides.mirror(state, mirror);
+    }
+
     /** A neighbouring pipe's side is mirrored (both ends always agree); fluid ports connect whenever present. */
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,

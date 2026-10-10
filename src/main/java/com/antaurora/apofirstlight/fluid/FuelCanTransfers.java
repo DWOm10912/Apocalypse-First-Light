@@ -41,6 +41,7 @@ public final class FuelCanTransfers {
             return state.getValue(FuelSumpCoverBlock.OPEN) ? throughPipes(level, pos, Direction.DOWN) : null;
         }
         if (state.getBlock() instanceof FuelPourTarget target) return target.pourHandler(level, pos, state);
+        if (state.getBlock() instanceof com.antaurora.apofirstlight.block.FuelCanBlock && !state.getValue(com.antaurora.apofirstlight.block.FuelCanBlock.OPEN)) return null;   // the cap on
         BlockEntity entity = level.getBlockEntity(pos);
         if (entity == null) return null;
         IFluidHandler sided = entity.getCapability(ForgeCapabilities.FLUID_HANDLER, face).resolve().orElse(null);

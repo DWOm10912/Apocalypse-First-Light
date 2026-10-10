@@ -81,7 +81,7 @@ public final class HandFuelPumpBlock extends HorizontalDirectionalBlock implemen
         if (below.getBlock() instanceof FuelSumpCoverBlock cover && cover.kind() == FuelSumpCoverBlock.Kind.FILL && below.getValue(FuelSumpCoverBlock.OPEN)) {
             return pump.setValue(MOUNT, Mount.FILL).setValue(FACING, below.getValue(FuelSumpCoverBlock.FACING).getOpposite());
         }
-        if (below.getBlock() instanceof FuelCanBlock can && can.size().drum()) {
+        if (below.getBlock() instanceof FuelCanBlock can && can.size().drum() && below.getValue(FuelCanBlock.OPEN)) {   // the bung open
             return pump.setValue(MOUNT, can.size() == FuelCanBlock.Size.DRUM ? Mount.DRUM : Mount.SMALL_DRUM).setValue(FACING, below.getValue(FACING));
         }
         return null;
@@ -126,7 +126,7 @@ public final class HandFuelPumpBlock extends HorizontalDirectionalBlock implemen
             if (dx == 0 && dz == 0) continue;   // the pump's own cell, and what it stands on
             BlockPos at = pump.offset(dx, dy, dz);
             BlockState there = level.getBlockState(at);
-            if (!(there.getBlock() instanceof FuelCanBlock)) continue;
+            if (!(there.getBlock() instanceof FuelCanBlock) || !there.getValue(FuelCanBlock.OPEN)) continue;   // the cap off
             double d = FuelCanBlock.opening(at, there).distanceToSqr(from);
             if (d < nearest) {
                 nearest = d;

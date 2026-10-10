@@ -63,7 +63,9 @@ public final class WorldInteractionHint {
         if(mc.player==null||mc.level==null||mc.screen!=null||mc.options.hideGui) {fade=0;return;}
         Target target=null;
         if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
-        if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
+        Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
+        if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
+        else if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
             if(target==null) target=vendingMachine(mc,hit);

@@ -147,9 +147,10 @@ public class DieselGeneratorBlock extends RectMultiblockBlock<DieselGeneratorBlo
         if (!(level.getBlockEntity(masterPosition(pos, state)) instanceof DieselGeneratorBlockEntity generator)) return null;
         Vec3 local = toStructure(hit, origin(pos, state), state.getValue(FACING));
         boolean open = state.getValue(OPEN), fill = state.getValue(FILL);
-        // a jerry can at the open fill box pours (FuelCanItem#use starts it)
+        // a jerry can at the open fill box pours (FuelCanItem#use starts it), a nozzle goes in (FuelNozzleItem#onItemUseFirst)
         var held = player.getMainHandItem().getItem();
-        if (fill && (held instanceof FuelCanItem can && can.pours() || held instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem))
+        if (fill && (held instanceof FuelCanItem can && can.pours() || held instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem
+                || held instanceof com.antaurora.apofirstlight.item.FuelNozzleItem))
             return in(local, FILL_REGION) ? Action.POUR : null;
         if (in(local, FILL_REGION)) return fill ? Action.CLOSE_FILL : Action.OPEN_FILL;
         if (!open && in(local, ESTOP)) return generator.engineOn() ? Action.ESTOP : null;

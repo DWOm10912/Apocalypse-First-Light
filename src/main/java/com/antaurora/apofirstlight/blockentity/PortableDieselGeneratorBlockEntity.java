@@ -247,7 +247,7 @@ public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEnti
         demand += ((outputOn() ? asked : 0) - demand) * DEMAND_RATE;   // off or tripped: it falls away (no trip on the next start)
         if (running && !tripped && demand > RATED + TRIP_MARGIN) {
             tripped = true;
-            level.playSound(null, worldPosition, SoundEvents.STONE_BUTTON_CLICK_OFF, SoundSource.BLOCKS, 0.7F, 0.8F);
+            level.playSound(null, worldPosition, AflSounds.BREAKER_TRIP.get(), SoundSource.BLOCKS, 0.8F, 1.0F);   // its smaller push-button breakers: a little quieter
             sync();
         }
         if (running) {

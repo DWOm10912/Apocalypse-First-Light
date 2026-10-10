@@ -6,12 +6,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import com.antaurora.apofirstlight.fluid.NozzleFill;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -26,7 +29,11 @@ import org.jetbrains.annotations.Nullable;
  * no fuel.
  * <p>
  * Spraying (2026-10-05, docs/models/fuel_dispenser_v1.md "滋油"): holding right click (use) runs the nozzle; every use tick
- * the dispenser draws fuel from that grade's line onto the ground in view (FuelDispenserBlockEntity#spray). No containers yet.
+ * the dispenser draws fuel from that grade's line onto the ground in view (FuelDispenserBlockEntity#spray).
+ * <p>
+ * Filling (2026-10-10, docs/models/fuel_dispenser_v1.md "插枪加油"): a click on a fuel opening (a jerry can's spout, a drum's
+ * bung, an open generator fill: fluid/NozzleFill) puts the nozzle in, before the block's own click (an open fill would
+ * close); the dispenser fills it by itself and the nozzle comes out when it is full or with another click anywhere.
  */
 public final class FuelNozzleItem extends Item {
     private static final String TAG = "FuelDispenser";
@@ -80,6 +87,40 @@ public final class FuelNozzleItem extends Item {
         return tag != null && tag.getInt("Nozzle") == nozzle && tag.getInt("Session") == session && session != 0;
     }
 
+    /** This nozzle stack's dispenser block entity in the level, or null. */
+    @Nullable
+    public static FuelDispenserBlockEntity dispenser(ItemStack stack, Level level) {
+        BlockPos pos = dispenserOf(stack);
+        return pos != null && level.getBlockEntity(pos) instanceof FuelDispenserBlockEntity dispenser ? dispenser : null;
+    }
+
+    /** This nozzle stack's nozzle, or null. */
+    @Nullable
+    public static Nozzle nozzle(ItemStack stack) {
+        int i = nozzleIndexOf(stack);
+        return i >= 0 && i < Nozzle.values().length ? Nozzle.values()[i] : null;
+    }
+
+    /**
+     * A click on a fuel opening puts the nozzle in; while it is in, a click on anything takes it out. CONSUME, not SUCCESS:
+     * no swing and no equip bob of the held item.
+     */
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        Player player = context.getPlayer();
+        Level level = context.getLevel();
+        FuelDispenserBlockEntity dispenser = dispenser(stack, level);
+        Nozzle nozzle = nozzle(stack);
+        if (player == null || context.getHand() != InteractionHand.MAIN_HAND || dispenser == null || nozzle == null) return InteractionResult.PASS;
+        if (dispenser.inserted(nozzle) != null) {
+            if (player instanceof ServerPlayer server) dispenser.pullOut(server, nozzle);
+            return InteractionResult.CONSUME;
+        }
+        if (NozzleFill.opening(level, context.getClickedPos()) == null) return InteractionResult.PASS;
+        if (player instanceof ServerPlayer server) dispenser.insert(server, nozzle, context.getClickedPos());
+        return InteractionResult.CONSUME;
+    }
+
     /**
      * Hold right click in the main hand: the nozzle runs while it is held (onUseTick). Returns PASS although it starts
      * using: any consuming result makes the client replay the held item's equip bob (ItemInHandRenderer#itemUsed), which
@@ -88,7 +129,14 @@ public final class FuelNozzleItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (hand == InteractionHand.MAIN_HAND) player.startUsingItem(hand);
+        if (hand != InteractionHand.MAIN_HAND) return InteractionResultHolder.pass(stack);
+        FuelDispenserBlockEntity dispenser = dispenser(stack, level);
+        Nozzle nozzle = nozzle(stack);
+        if (dispenser != null && nozzle != null && dispenser.inserted(nozzle) != null) {   // a click in the air takes it out
+            if (player instanceof ServerPlayer server) dispenser.pullOut(server, nozzle);
+            return InteractionResultHolder.pass(stack);
+        }
+        player.startUsingItem(hand);
         return InteractionResultHolder.pass(stack);
     }
 

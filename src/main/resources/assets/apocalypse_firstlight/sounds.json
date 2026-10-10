@@ -431,6 +431,26 @@
     "subtitle": "subtitles.apocalypse_firstlight.fuel_explode",
     "sounds": [{"name": "apocalypse_firstlight:fuel_fire/explode", "attenuation_distance": 32}]
   },
+  "fuel_nozzle_insert": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_insert",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/hang", "attenuation_distance": 10, "volume": 0.7}]
+  },
+  "fuel_nozzle_fill": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_fill",
+    "sounds": [{"name": "apocalypse_firstlight:jerry_can/pour", "attenuation_distance": 10}]
+  },
+  "fuel_nozzle_shut_off": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_shut_off",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10}]
+  },
+  "fuel_nozzle_pull": {
+    "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_pull",
+    "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/take", "attenuation_distance": 10, "volume": 0.7}]
+  },
+  "breaker_trip": {
+    "subtitle": "subtitles.apocalypse_firstlight.breaker_trip",
+    "sounds": [{"name": "apocalypse_firstlight:breaker/trip", "attenuation_distance": 12}]
+  },
   "fuel_nozzle_spray": {
     "subtitle": "subtitles.apocalypse_firstlight.fuel_nozzle_spray",
     "sounds": [{"name": "apocalypse_firstlight:fuel_nozzle/spray", "attenuation_distance": 10}]
@@ -516,5 +536,21 @@
   "jerry_can_close": {
     "subtitle": "subtitles.apocalypse_firstlight.jerry_can_close",
     "sounds": [{"name": "apocalypse_firstlight:jerry_can/close", "attenuation_distance": 10}]
+  },
+  "jerry_can_cap_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.jerry_can_open",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10, "pitch": 1.25}]
+  },
+  "jerry_can_cap_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.jerry_can_close",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10, "pitch": 1.1}]
+  },
+  "drum_bung_open": {
+    "subtitle": "subtitles.apocalypse_firstlight.drum_bung_open",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10, "pitch": 0.95}]
+  },
+  "drum_bung_close": {
+    "subtitle": "subtitles.apocalypse_firstlight.drum_bung_close",
+    "sounds": [{"name": "apocalypse_firstlight:distribution_panel/latch", "attenuation_distance": 10, "pitch": 0.85}]
   }
 }

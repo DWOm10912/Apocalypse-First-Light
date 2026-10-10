@@ -92,6 +92,7 @@ public final class NoiseSoundRanges {
         if (path.endsWith("door.open") || path.endsWith("door.close") || path.endsWith("fence_gate.open") || path.endsWith("fence_gate.close")) {
             Optional<InteractionNoiseResolver.Result> block = InteractionNoiseResolver.resolveToggle(mc.level.getBlockState(BlockPos.containing(at)));
             if (block.isPresent()) return block.get().radius();
+            if (!mc.level.getBlockState(BlockPos.containing(at)).isAir()) return 0;   // another block with a door's sound (a fuel sump lid)
             boolean iron = path.contains("iron");
             if (path.contains("trapdoor")) return iron ? InteractionNoiseResolver.IRON_TRAPDOOR : InteractionNoiseResolver.WOODEN_TRAPDOOR;
             if (path.contains("fence_gate")) return InteractionNoiseResolver.FENCE_GATE;

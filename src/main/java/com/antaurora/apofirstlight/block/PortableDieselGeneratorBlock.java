@@ -122,7 +122,8 @@ public class PortableDieselGeneratorBlock extends HorizontalDirectionalBlock imp
         Vec3 p = local(pos, state, hit);
         boolean open = state.getValue(CAP);
         var held = player.getMainHandItem();
-        if (open && (held.getItem() instanceof FuelCanItem can && can.pours() || held.getItem() instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem))
+        if (open && (held.getItem() instanceof FuelCanItem can && can.pours() || held.getItem() instanceof com.antaurora.apofirstlight.item.CreativeFuelBarrelItem
+                || held.getItem() instanceof com.antaurora.apofirstlight.item.FuelNozzleItem))
             return in(p, CAP_OPEN) ? Action.POUR : null;
         if (in(p, open ? CAP_OPEN : CAP_SHUT)) return open ? Action.CLOSE_CAP : Action.OPEN_CAP;
         if (!held.isEmpty()) return null;

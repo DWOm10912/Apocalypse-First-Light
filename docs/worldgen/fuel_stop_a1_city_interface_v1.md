@@ -35,7 +35,7 @@
 | A1（本方案） | 64×64 | 右手转角地块，主干道在前、支路在右 |
 | Codex 标准加油站 | 64×72 | 临街宽64、纵深72，见正式规格§5 |
 
-命名：仓库现有结构用 `<类型>_<两位序号>`（`convenience_store_01`、`gas_station_01`），旧 `gas_station_01.nbt` 已退出当前源码资产，不复用历史ID，所以建议 A1 的资产 ID 为 `gas_station_02`。地块变体显式记录宽/深及主临街边，A1为64×64；V1-A已增加独立地块目录parser，但没有给A1创建正式NBT/StructureDefinition注册。不要把 A1 放进 64×72 的槽位，除非规格写明多出的 8 格放在哪一侧、入口怎么平移。
+命名：仓库现有结构用 `<类型>_<两位序号>`（`convenience_store_01`、`gas_station_01`），旧 `gas_station_01.nbt` 已退出当前源码资产，不复用历史ID，所以建议 A1 的资产 ID 为 `gas_station_02`。（2026-10-10 用户改为 `gas_station_01`："这个其实是第一栋加油站"，旧的那个已经删掉。）地块变体显式记录宽/深及主临街边，A1为64×64；V1-A已增加独立地块目录parser，但没有给A1创建正式NBT/StructureDefinition注册。不要把 A1 放进 64×72 的槽位，除非规格写明多出的 8 格放在哪一侧、入口怎么平移。
 
 ## 2. 与 Codex 64×72 的关系
 
@@ -142,6 +142,8 @@ A1 图纸里的 **±0.00 = G**（便利店室内地面 = 人行道顶 = 入口�
   | COUNTERCLOCKWISE_90 | 0 | 63 |
 
 ### 5.2 模块划分（不合成一个巨型 NBT）
+
+> **2026-10-10 作废（对 A1）**：正式资产见 [gas_station_01_asset_v1.md](gas_station_01_asset_v1.md)（元数据 `afl_worldgen/structures/gas_station_01.json`）。A1 在世界里把整块地都建出来了，用户定整片导出成一个 NBT `gas_station_01`（导出时叫 `gas_station_02`；64 × 16 × 64），见 [A1 设计](fuel_stop_a1_design_v1.md)"冻结前"。下面的模块表只留作参考。
 
 地块本身不是 NBT。沥青、标线、绿化、树、灯杆、1/16 过渡圈由地块层生成；只有下面的模块是 NBT。X、Z 的半开区间用地块坐标，k 为层范围。
 
@@ -289,7 +291,7 @@ front NORTH 写法下的局部坐标：main (24, 2, 0) NORTH；secondary (6, 2, 
 
 ## 10. 结论
 
-**A1 可以作为北美城市生成系统的首个正式加油站建筑模板**，身份是 64×64 的右手转角地块变体（`gas_station_02`，ID 待确认），前提是完成上面的 P0。
+**A1 可以作为北美城市生成系统的首个正式加油站建筑模板**，身份是 64×64 的右手转角地块变体（`gas_station_01`，2026-10-10 用户定），前提是完成上面的 P0。
 
 下一轮需要做的 P0 资产（等用户确认后开始）：
 1. 店面玻璃幕墙（黑框，格边 / 格中竖梃、横梃）——2026-10-06 已做成 `storefront_glazing` 并新增黑框门，见 [storefront_glazing_v1.md](../models/storefront_glazing_v1.md)，未实机验证；转角件挪到以后；

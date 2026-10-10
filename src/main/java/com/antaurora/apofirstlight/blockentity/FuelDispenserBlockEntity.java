@@ -2,8 +2,8 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.FuelDispenserBlock;
 import com.antaurora.apofirstlight.block.FuelDispenserBlock.Nozzle;
-import com.antaurora.apofirstlight.blockentity.FuelCanBlockEntity;
 import com.antaurora.apofirstlight.energy.CompressorAppliance;
+import com.antaurora.apofirstlight.fluid.NozzleFill;
 import com.antaurora.apofirstlight.energy.MachineBalanceManager;
 import com.antaurora.apofirstlight.item.FuelNozzleItem;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -49,15 +49,15 @@ import java.util.UUID;
  * coupling let go. Any copies of it in the holder's inventory are removed.
  * <p>
  * Fuel (2026-10-05): two small line buffers, gasoline and diesel ({@link #LINE_MB} each), filled from the pipes at the
- * Fuel Dispenser Sump under it (FuelDispenserSumpBlockEntity hands its ports {@link #fuelInput}). Fill only; the nozzles do
- * not dispense yet. The sump's power port feeds the same lamp buffer as the master's own bottom port ({@link #energyInput}).
+ * Fuel Dispenser Sump under it (FuelDispenserSumpBlockEntity hands its ports {@link #fuelInput}). A nozzle clicked on a fuel
+ * opening goes into it and fills it (2026-10-10, {@link #insert}, fluid/NozzleFill); held anywhere else it sprays. The sump's power port feeds the same lamp buffer as the master's own bottom port ({@link #energyInput}).
  * <p>
  * Spraying (2026-10-05): a nozzle held in use draws {@link #SPRAY_MB} a tick from its grade's line (only while the dispenser
  * has power, the lamp lit) and marks the nozzle running ({@link #flowing}, synced). The stream is each client's
  * (client/FuelNozzleJets: a LiquidJet from the held spout along the holder's view at {@link #NOZZLE_SPEED}); the sprayer's
  * own client reports where its stream lands ({@link #landed}, AflNetwork.FuelSprayHitsC2SPacket), so the stains lie exactly
  * under the stream that player sees (2026-10-05: a server-side jet from an estimated spout put them off). The server
- * checks the report and lays the fuel as stains (fluid/FuelSpills: saved, synced, slippery, soaking). No containers yet.
+ * checks the report and lays the fuel as stains (fluid/FuelSpills: saved, synced, slippery, soaking).
  */
 public class FuelDispenserBlockEntity extends BlockEntity implements CompressorAppliance.Host {
     /** Hose the outlet's retractor can pay out (blocks, outlet to hand); the live hose is drawn up to it, then goes taut. */
@@ -156,8 +156,48 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
     private int flowing;
     private final long[] lastFlow = new long[Nozzle.values().length];
 
+    // ---- the nozzle put into a fuel opening (fluid/NozzleFill, 2026-10-10) ----
+    /** Ticks the automatic shut-off holds the nozzle in before it comes out by itself. */
+    private static final int SHUT_OFF_HOLD = 8;
+    /** Ticks after the nozzle went in or out in which a click does not toggle it again (a held button repeats; the client also waits for a release). */
+    private static final int TOGGLE_GUARD = 6;
+    /** The opening block each nozzle is in, and the heading it went in along (synced). */
+    private final BlockPos[] inserted = new BlockPos[Nozzle.values().length];
+    private final float[] insertHeading = new float[Nozzle.values().length];
+    /** Nozzles whose fuel runs into their opening (bit per nozzle) and how full that is (0..32): synced, for the fill sound. */
+    private int filling;
+    private final byte[] share = new byte[Nozzle.values().length];
+    private final long[] shutOff = new long[Nozzle.values().length], lastPour = new long[Nozzle.values().length], toggled = new long[Nozzle.values().length];
+    /** Client: when each nozzle last went in or out (game time), and where it was in (its way back out). */
+    public final long[] clientChanged = new long[Nozzle.values().length];
+    public final BlockPos[] clientWas = new BlockPos[Nozzle.values().length];
+    public final float[] clientWasHeading = new float[Nozzle.values().length];
+
     public FuelDispenserBlockEntity(BlockPos pos, BlockState state) {
         super(AflBlockEntities.FUEL_DISPENSER.get(), pos, state);
+        java.util.Arrays.fill(shutOff, -1);
+        java.util.Arrays.fill(toggled, Long.MIN_VALUE / 2);
+        java.util.Arrays.fill(clientChanged, Long.MIN_VALUE / 2);
+    }
+
+    /** The opening block this nozzle is in, or null. */
+    @Nullable
+    public BlockPos inserted(Nozzle nozzle) {
+        return inserted[nozzle.ordinal()];
+    }
+
+    public float insertHeading(Nozzle nozzle) {
+        return insertHeading[nozzle.ordinal()];
+    }
+
+    /** True while this nozzle's fuel runs into its opening (synced). */
+    public boolean filling(Nozzle nozzle) {
+        return (filling & 1 << nozzle.ordinal()) != 0;
+    }
+
+    /** How full the opening this nozzle fills is, 0..1 (synced in 32 steps). */
+    public float fillShare(Nozzle nozzle) {
+        return share[nozzle.ordinal()] / 32F;
     }
 
     @Nullable
@@ -209,6 +249,124 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
                 release(nozzle, player, Release.BREAKAWAY);
             }
         }
+        long now = level.getGameTime();
+        for (Nozzle nozzle : Nozzle.values()) {
+            int i = nozzle.ordinal();
+            if (inserted[i] == null) continue;
+            ServerPlayer player = holders[i] == null ? null : level.getServer().getPlayerList().getPlayer(holders[i]);
+            if (player == null) pull(nozzle, null);
+            else fillTick((net.minecraft.server.level.ServerLevel) level, player, nozzle, now);
+        }
+    }
+
+    /**
+     * A nozzle in an opening (2026-10-10): 1 L every other tick (10 L a second) from its line while the dispenser has power;
+     * when the opening takes no more, the automatic shut-off clicks and the nozzle comes out {@link #SHUT_OFF_HOLD} ticks
+     * later. It also comes out when the opening goes (closed, broken) or the holder is more than a block past the reach.
+     */
+    private void fillTick(net.minecraft.server.level.ServerLevel server, ServerPlayer player, Nozzle nozzle, long now) {
+        int i = nozzle.ordinal();
+        Vec3 opening = NozzleFill.opening(server, inserted[i]);
+        double keep = NozzleFill.REACH + 1;
+        if (opening == null || player.getEyePosition().distanceToSqr(opening) > keep * keep) {
+            pull(nozzle, opening);
+            return;
+        }
+        if (shutOff[i] >= 0) {
+            if (now - shutOff[i] >= SHUT_OFF_HOLD) pull(nozzle, opening);
+            return;
+        }
+        if (now - lastPour[i] > 3) setFilling(i, false);
+        boolean tell = now % 20 == 0;
+        if (!lit()) {
+            if (tell) say(player, "no_power");
+            return;
+        }
+        if (now % 2 != 0) return;
+        IFluidHandler into = NozzleFill.handler(server, inserted[i]);
+        if (into == null) {
+            pull(nozzle, opening);
+            return;
+        }
+        FluidStack one = line(nozzle.grade).drain(1, IFluidHandler.FluidAction.SIMULATE);
+        if (one.isEmpty()) {
+            if (tell) say(player, "no_fuel");
+            return;
+        }
+        if (into.fill(one, IFluidHandler.FluidAction.SIMULATE) <= 0) {   // the automatic shut-off
+            shutOff[i] = now;
+            setFilling(i, false);
+            play(opening, AflSounds.FUEL_NOZZLE_SHUT_OFF.get(), 0.9F);
+            say(player, "full");
+            return;
+        }
+        into.fill(line(nozzle.grade).drain(1, IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
+        lastPour[i] = now;
+        setFilling(i, true);
+        byte full = (byte) Math.round(NozzleFill.share(into) * 32);
+        if (full != share[i]) {
+            share[i] = full;
+            sync();
+        }
+    }
+
+    private void setFilling(int i, boolean on) {
+        int was = filling;
+        filling = on ? filling | 1 << i : filling & ~(1 << i);
+        if (filling != was) sync();
+    }
+
+    /** The holder puts this nozzle into the opening of target (a click on it); false when it does not go in (told why). */
+    public boolean insert(ServerPlayer player, Nozzle nozzle, BlockPos target) {
+        int i = nozzle.ordinal();
+        if (!(level instanceof net.minecraft.server.level.ServerLevel server) || !player.getUUID().equals(holders[i]) || inserted[i] != null
+                || server.getGameTime() - toggled[i] < TOGGLE_GUARD) return false;
+        Vec3 opening = NozzleFill.opening(server, target);
+        if (opening == null) return false;
+        if (player.getEyePosition().distanceToSqr(opening) > NozzleFill.REACH * NozzleFill.REACH) {
+            say(player, "too_far");
+            return false;
+        }
+        String refusal = NozzleFill.refusal(server, target, fuel(nozzle.grade));
+        if (refusal != null) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(refusal), true);
+            return false;
+        }
+        inserted[i] = target.immutable();
+        toggled[i] = server.getGameTime();
+        insertHeading[i] = NozzleFill.heading(player.getEyePosition(), opening);
+        shutOff[i] = -1;
+        lastPour[i] = Long.MIN_VALUE / 2;
+        IFluidHandler into = NozzleFill.handler(server, target);
+        share[i] = into == null ? 0 : (byte) Math.round(NozzleFill.share(into) * 32);
+        play(opening, AflSounds.FUEL_NOZZLE_INSERT.get(), 0.8F);
+        sync();
+        return true;
+    }
+
+    /** The holder takes this nozzle out of its opening (a click). */
+    public boolean pullOut(ServerPlayer player, Nozzle nozzle) {
+        if (!player.getUUID().equals(holders[nozzle.ordinal()]) || inserted[nozzle.ordinal()] == null
+                || level == null || level.getGameTime() - toggled[nozzle.ordinal()] < TOGGLE_GUARD) return false;
+        pull(nozzle, null);
+        return true;
+    }
+
+    private void pull(Nozzle nozzle, @Nullable Vec3 at) {
+        int i = nozzle.ordinal();
+        if (inserted[i] == null) return;
+        Vec3 where = at != null ? at : level != null ? NozzleFill.opening(level, inserted[i]) : null;
+        clearInsert(i);
+        if (level != null) toggled[i] = level.getGameTime();
+        if (where != null) play(where, AflSounds.FUEL_NOZZLE_PULL.get(), 0.8F);
+        sync();
+    }
+
+    private void clearInsert(int i) {
+        inserted[i] = null;
+        shutOff[i] = -1;
+        filling &= ~(1 << i);
+        share[i] = 0;
     }
 
     /** One use tick of a held nozzle (FuelNozzleItem#onUseTick): fuel from its line along the stream, wherever it lands. */
@@ -220,7 +378,6 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             if (tell) say(player, "no_power");
             return;
         }
-        if (fill(server, player, nozzle, tell)) return;
         FluidStack drawn = line(nozzle.grade).drain(SPRAY_MB, IFluidHandler.FluidAction.EXECUTE);
         if (drawn.isEmpty()) {
             if (tell) say(player, "no_fuel");
@@ -231,42 +388,6 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             flowing |= 1 << i;
             sync();
         }
-    }
-
-    /** How far the nozzle reaches into a container (blocks from the eyes); litres a tick it fills at, every other tick. */
-    private static final double FILL_REACH = 2.5;
-
-    /**
-     * Fuel Containers V1 (2026-10-05, docs/models/fuel_containers_v1.md): the nozzle pointed at a fuel container standing in
-     * reach (a jerry can, a drum) fills it, 10 L a second, instead of spraying: no stream. A full one stops it (the
-     * automatic shut-off), one holding the other fuel takes none. True when the nozzle is on a container.
-     */
-    private boolean fill(net.minecraft.server.level.ServerLevel server, ServerPlayer player, Nozzle nozzle, boolean tell) {
-        Vec3 eye = player.getEyePosition();
-        net.minecraft.world.phys.BlockHitResult aim = server.clip(new net.minecraft.world.level.ClipContext(eye, eye.add(player.getLookAngle().scale(FILL_REACH)),
-                net.minecraft.world.level.ClipContext.Block.OUTLINE, net.minecraft.world.level.ClipContext.Fluid.NONE, player));
-        if (aim.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK
-                || !(server.getBlockEntity(aim.getBlockPos()) instanceof FuelCanBlockEntity can)) return false;
-        int i = nozzle.ordinal();
-        if ((flowing & 1 << i) != 0) {   // no stream while it fills
-            flowing &= ~(1 << i);
-            sync();
-        }
-        if (server.getGameTime() % 2 != 0) return true;
-        FluidStack one = line(nozzle.grade).drain(1, IFluidHandler.FluidAction.SIMULATE);
-        if (one.isEmpty()) {
-            if (tell) say(player, "no_fuel");
-            return true;
-        }
-        if (can.tank().fill(one, IFluidHandler.FluidAction.SIMULATE) <= 0) {
-            if (tell) say(player, !can.tank().isEmpty() && !can.tank().getFluid().isFluidEqual(one) ? "other_fuel" : "full");
-            return true;
-        }
-        can.tank().fill(line(nozzle.grade).drain(1, IFluidHandler.FluidAction.EXECUTE), IFluidHandler.FluidAction.EXECUTE);
-        if (server.getGameTime() % 16 == 0) {   // placeholder sound
-            server.playSound(null, aim.getBlockPos(), net.minecraft.sounds.SoundEvents.BUCKET_FILL, net.minecraft.sounds.SoundSource.BLOCKS, 0.35F, 1.3F);
-        }
-        return true;
     }
 
     /** A report reaches this far from the sprayer's eyes at most; the stream flies up to 3 s after the nozzle stops. */
@@ -337,6 +458,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             if (player != null) removeCopies(player, i, sessions[i]);
             holders[i] = null;
             sessions[i] = 0;
+            clearInsert(i);
         }
     }
 
@@ -346,6 +468,7 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         if (player != null) removeCopies(player, i, sessions[i]);
         holders[i] = null;
         sessions[i] = 0;
+        clearInsert(i);
         BlockState state = getBlockState();
         if (state.getBlock() instanceof FuelDispenserBlock && !state.getValue(nozzle.property)) {
             level.setBlock(worldPosition, state.setValue(nozzle.property, true), Block.UPDATE_ALL);
@@ -445,6 +568,21 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
             holders[i] = tag.hasUUID("Holder" + i) ? tag.getUUID("Holder" + i) : null;
             sessions[i] = i < saved.length ? saved[i] : 0;
         }
+        // the nozzles in openings (update tag only; on the client the change starts the nozzle's way in or out)
+        filling = tag.getByte("Fill");
+        for (int i = 0; i < inserted.length; i++) {
+            BlockPos now = tag.contains("In" + i) ? BlockPos.of(tag.getLong("In" + i)) : null;
+            if (level != null && level.isClientSide && !java.util.Objects.equals(now, inserted[i])) {
+                clientChanged[i] = level.getGameTime();
+                if (inserted[i] != null) {
+                    clientWas[i] = inserted[i];
+                    clientWasHeading[i] = insertHeading[i];
+                }
+            }
+            inserted[i] = now;
+            insertHeading[i] = tag.getFloat("InHeading" + i);
+            share[i] = tag.getByte("Share" + i);
+        }
     }
 
     @Override
@@ -473,6 +611,13 @@ public class FuelDispenserBlockEntity extends BlockEntity implements CompressorA
         for (int i = 0; i < holders.length; i++) if (holders[i] != null) out |= 1 << i;
         tag.putByte("Out", (byte) out);
         tag.putByte("Flow", (byte) flowing);
+        tag.putByte("Fill", (byte) filling);
+        for (int i = 0; i < inserted.length; i++) {
+            if (inserted[i] == null) continue;
+            tag.putLong("In" + i, inserted[i].asLong());
+            tag.putFloat("InHeading" + i, insertHeading[i]);
+            tag.putByte("Share" + i, share[i]);
+        }
         return tag;
     }
 

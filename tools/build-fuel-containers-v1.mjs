@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {Part, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels} from './cube-slab-mesh-lib.mjs';
+import {Part, extrude, add, sub, mul, dot, cross, norm, newell, area2, unwrap, paint, png, zFightLevels, triangulate} from './cube-slab-mesh-lib.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -151,15 +151,55 @@ function drum(P, D, mat, seg) {
   const prof = [[b + 0.28 * k, r - 0.38 * k], [b + 0.05 * k, r - 0.23 * k], [b, r - 0.06 * k], [b + 0.08 * k, r + 0.08 * k], [b + 0.38 * k, r + 0.10 * k], [b + 0.6 * k, r]];
   for (const y of D.hoops) prof.push([y - 0.2 * k, r], [y - 0.05 * k, r + 0.16 * k], [y + 0.25 * k, r + 0.16 * k], [y + 0.4 * k, r]);
   prof.push([t - 0.56 * k, r], [t - 0.34 * k, r + 0.10 * k], [t - 0.08 * k, r + 0.08 * k], [t, r - 0.06 * k], [t - 0.06 * k, r - 0.23 * k], [h, r - 0.38 * k]);
-  lathe(P('shell', mat), 'y', [0, 0], prof, seg);
-  const bungs = P('bungs', 'zinc'), big = [0.6 * k, 0.45 * k], small = [0.38 * k, 0.27 * k];
+  const shell = P('shell', mat);
+  lathe(shell, 'y', [0, 0], prof, seg, [true, false]);
+  topHead(shell, D, r - 0.38 * k, seg);
+  const bungs = P('bungs', 'zinc'), plug = P('bung_plug', 'zinc'), big = [0.6 * k, 0.45 * k], small = [0.38 * k, 0.27 * k];
   cyl(P('bung_flanges', mat), 'y', [0, D.bung], h - 0.04, h + 0.12 * k, big[0], 20, [false, true]);
-  cyl(bungs, 'y', [0, D.bung], h + 0.1 * k, h + 0.32 * k, big[1], 20, [false, true]);
-  extrude(bungs, 'y', shape(zx(rect(-big[1] * 0.8, D.bung - 0.06 * k, big[1] * 0.8, D.bung + 0.06 * k))), h + 0.3 * k, h + 0.44 * k, 0);
+  cyl(plug, 'y', [0, D.bung], h + 0.1 * k, h + 0.32 * k, big[1], 20, [false, true]);
+  extrude(plug, 'y', shape(zx(rect(-big[1] * 0.8, D.bung - 0.06 * k, big[1] * 0.8, D.bung + 0.06 * k))), h + 0.3 * k, h + 0.44 * k, 0);
   cyl(P('vent_flange', mat), 'y', [0, D.vent], h - 0.04, h + 0.1 * k, small[0], 16, [false, true]);
   cyl(bungs, 'y', [0, D.vent], h + 0.08 * k, h + 0.26 * k, small[1], 16, [false, true]);
 }
 const bungTop = D => D.head + 0.12 * D.s;   // the 2" flange's top: the pump's adapter sits on it
+// the top head, facing up at D.head from the shell's last ring (the lathe's own points, so no crack) to a hole for the
+// 2" bung (its bore's points). A closed drum's flange covers the hole; an open drum shows its bore through it (2026-10-10:
+// the head used to be the lathe's whole cap, so it shut the bore off just under the flange and the open bung looked flat)
+function topHead(part, D, r, seg) {
+  const ring = (cz, R, n) => Array.from({length: n}, (_, i) => { const a = 2 * Math.PI * (i + 0.5) / n; return [R * Math.cos(a), cz + R * Math.sin(a)]; });
+  const {pts, tris} = triangulate(orient(ring(0, r, seg), true), [orient(ring(D.bung, BUNG_IN * D.s, 20), false)]);
+  const ids = pts.map(([x, z]) => part.vtx([x, D.head, z]));
+  for (const tri of tris) part.face(tri.map(i => ids[i]), [0, 1, 0], 'cap');
+}
+
+// ---------------- the caps off (FuelCanBlock OPEN, 2026-10-10) ----------------
+// The user: unscrew the cap before filling and set it down beside the container. The open models are the closed ones' own
+// parts (their atlas islands too) with the cap moved, plus, for a drum, its open bung: no second copy of a body in the atlas.
+// The jerry can's cap with its cam lever stands on the ground beside the can on the spout's side, its rim a hair up (no
+// face on the floor's plane); the neck and its dark bore show (built to be seen with the cap off). A drum's 2" plug stands
+// on the head toward its middle (clear of a mounted pump's discharge, inside the 60 L head too), the bung a flange ring
+// with a dark bore going down through the head's hole (topHead), as the can's neck. 2026-10-10 (the user: no inside):
+// dark from just under the lip (a standing player sees the inner wall, the painted one read as a flat ring) and 1.2 x the
+// detail scale under the head.
+const CAN_CAP_DOWN = {x: CAN.w + 1.15, z: 0.35, lift: 0.015};
+const BUNG_IN = 0.36, PLUG_DOWN = {toward: 1.6, lift: 0.015};
+function openBung(P, D, mat) {
+  const h = D.head, k = D.s, big = 0.6 * k;   // up the flange's outside, across its top, down its inside; then the bore
+  lathe(P('flange_ring', mat), 'y', [0, D.bung], [[h - 0.04, big], [h + 0.12 * k, big], [h + 0.12 * k, BUNG_IN * k], [h + 0.06 * k, BUNG_IN * k]], 20, [false, false]);
+  lathe(P('bore', 'bore'), 'y', [0, D.bung], [[h + 0.06 * k, BUNG_IN * k], [h - 1.2 * k, BUNG_IN * k]], 20, [false, true]);
+}
+// each open model: the pieces it takes, the parts it leaves out, the parts it moves (px, after the larger-than-life scale)
+const canCapMove = () => { const [sx, sz] = CAN.spout; return mul([CAN_CAP_DOWN.x - sx, CAN.y0 + CAN_CAP_DOWN.lift / CAN.scale + 1.05, CAN_CAP_DOWN.z - sz], CAN.scale); };
+const plugMove = D => [0, PLUG_DOWN.lift - 0.1 * D.s, PLUG_DOWN.toward * D.s];
+export const OPEN = {
+  'jerry_can/open': {bones: ['jerry_can/body'], skip: [], move: {spout_cap: canCapMove(), cam_lever: canCapMove()}},
+  'small_fuel_drum/open': {bones: ['small_fuel_drum/body', 'small_fuel_drum/open_bung'], skip: ['bung_flanges'], move: {bung_plug: plugMove(SMALL)}},
+  'fuel_drum/open': {bones: ['fuel_drum/body', 'fuel_drum/open_bung'], skip: ['bung_flanges'], move: {bung_plug: plugMove(DRUM)}},
+};
+const partKey = p => p.name.split('__').pop();
+/** The parts of an open model as drawn: the skipped ones out, the moved ones as moved copies (same faces, so the same UVs). */
+const openParts = (parts, spec) => parts.filter(p => spec.bones.includes(p.bone) && !spec.skip.includes(partKey(p)))
+  .map(p => spec.move[partKey(p)] ? {...p, v: p.v.map(q => add(q, spec.move[partKey(p)]))} : p);
 
 // the hand pump, in its own frame (y = 0 on the bung / riser it stands on), raised by `housing` to the housing's centre
 function pumpBody(P, {housing, column, tube: suction}) {
@@ -208,6 +248,9 @@ export const PIECES = {
   'jerry_can/body': P => jerryCan(P),
   'small_fuel_drum/body': P => drum(P, SMALL, 'red', 36),
   'fuel_drum/body': P => drum(P, DRUM, 'blue', 44),
+  // a drum's open bung (drawn only in its open model, OPEN)
+  'small_fuel_drum/open_bung': P => openBung(P, SMALL, 'red'),
+  'fuel_drum/open_bung': P => openBung(P, DRUM, 'blue'),
   ...Object.fromEntries(Object.entries(MOUNTS).map(([k, m]) => [`hand_fuel_pump/body_${k}`, P => pumpBody(P, m)])),
   'hand_fuel_pump/crank': P => crank(P),
   'hand_fuel_pump/item': P => { pumpBody(P, ITEM_PUMP); },
@@ -258,8 +301,9 @@ function bake() {
   for (const p of live) assert(p.f.every(f => UV.faceUV.get(p)?.has(f)), `unmapped face in ${p.name}`);
   const painted = paint({PARTS: live, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas, pad: 2, MATS, ZONED: new Set(), groupInfo: new Map(),
     sourceGroups: () => [], refTexture: {source: DUMMY}, refUvWidth: 1, background: {c: [60, 64, 52, 255], s: [100, 22, 0, 255], n: [128, 128, 255, 255]}});
-  const groups = Object.keys(PIECES).filter(k => !k.startsWith('swatch')).map(k => [k]);
-  const coplanar = groups.flatMap(g => zFightLevels(live.filter(p => g.includes(p.bone)), new Map()).unresolved);
+  const groups = Object.keys(PIECES).filter(k => !k.startsWith('swatch') && !k.endsWith('/open_bung')).map(k => [k]);
+  const coplanar = [...groups.map(g => live.filter(p => g.includes(p.bone))), ...Object.values(OPEN).map(spec => openParts(live, spec))]
+    .flatMap(ps => zFightLevels(ps, new Map()).unresolved);
   // the hose swatch: the middle of its island, as 0..1 of the texture (client/HandFuelPumpRenderer HOSE_U / HOSE_V)
   const sw = UV.islands.filter(is => is.part.bone === 'swatch/hose').sort((a, b) => b.W * b.H - a.W * a.H)[0];
   const hose = [(sw.px + sw.W / 2) / atlas, (sw.py + sw.H / 2) / atlas];
@@ -301,15 +345,15 @@ function cornerNormals(V, F) {
   return F.map((f, k) => { const n0 = norm(fn[k]); return f.ids.map(i => norm(byV.get(i).reduce((a, j) => dot(norm(fn[j]), n0) >= SMOOTH ? add(a, fn[j]) : a, [0, 0, 0]))); });
 }
 const toCell = q => q.map(v => v / 16 + 0.5);
-function objOf(b, title, file, bones) {
+function objOf(b, title, file, bones, parts = null) {
   const out = [`# AFL ${title}, generated by tools/build-fuel-containers-v1.mjs`, `mtllib ${file.split('/').pop()}.mtl`];
   let vBase = 1, tBase = 1, nBase = 1;
-  for (const p of b.PARTS) {
-    if (!bones.includes(p.bone)) continue;
+  const original = new Map(b.PARTS.map(p => [p.name, p]));
+  for (const p of parts ?? b.PARTS.filter(q => bones.includes(q.bone))) {
     const V = p.v.map(toCell), F = p.f;
     out.push(`o ${p.name}`, `usemtl ${b.id}`);
     for (const q of V) out.push(`v ${f6(q[0])} ${f6(q[1])} ${f6(q[2])}`);
-    const uvs = b.UV.faceUV.get(p), vt = [], vn = [], fl = [], cn = cornerNormals(V, F), nIndex = new Map();
+    const uvs = b.UV.faceUV.get(original.get(p.name)), vt = [], vn = [], fl = [], cn = cornerNormals(V, F), nIndex = new Map();
     F.forEach((f, k) => {
       const uv = uvs.get(f);
       fl.push('f ' + f.ids.map((id, j) => {
@@ -353,16 +397,20 @@ export const B = bake();
 const bbDir = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
-const model = (file, bones) => { const obj = objOf(B, file, file, bones);
+const model = (file, bones, parts = null) => { const obj = objOf(B, file, file, bones, parts);
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(B, file)], [path.join(assets, `models/block/${file}.json`), json(objModel(file))]);
   objs.push([file, obj]); };
 outputs.push([path.join(bbDir, 'fuel_containers_v1.bbmodel'), JSON.stringify(sourceOf(B))],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bbDir, `textures/fuel_containers_v1${k}.png`), B.maps[i]], [path.join(assets, `textures/block/fuel_containers${k}.png`), B.maps[i]]]));
-for (const piece of Object.keys(PIECES)) if (!piece.startsWith('swatch') && piece !== 'hand_fuel_pump/item_crank') model(piece, piece === 'hand_fuel_pump/item' ? [piece, 'hand_fuel_pump/item_crank'] : [piece]);
+for (const piece of Object.keys(PIECES)) if (!piece.startsWith('swatch') && piece !== 'hand_fuel_pump/item_crank' && !piece.endsWith('/open_bung'))
+  model(piece, piece === 'hand_fuel_pump/item' ? [piece, 'hand_fuel_pump/item_crank'] : [piece]);
+for (const [file, spec] of Object.entries(OPEN)) model(file, spec.bones, openParts(B.PARTS, spec));
 // blockstates: FuelCanBlock (facing: the jerry can's broad face, the drums' 2" bung toward the front), HandFuelPumpBlock
 // (facing: the discharge, mount: what it stands on)
-for (const [id, piece] of [['jerry_can', 'jerry_can/body'], ['small_fuel_drum', 'small_fuel_drum/body'], ['fuel_drum', 'fuel_drum/body']])
-  outputs.push([path.join(assets, `blockstates/${id}.json`), json({variants: Object.fromEntries(DIRS.map(F => [`facing=${F}`, ref(piece, F)]))})]);
+// (open: the cap off, FuelCanBlock OPEN)
+for (const id of ['jerry_can', 'small_fuel_drum', 'fuel_drum'])
+  outputs.push([path.join(assets, `blockstates/${id}.json`), json({variants: Object.fromEntries(DIRS.flatMap(F => [false, true].map(o =>
+    [`facing=${F},open=${o}`, ref(`${id}/${o ? 'open' : 'body'}`, F)])))})]);
 outputs.push([path.join(assets, 'blockstates/hand_fuel_pump.json'), json({variants: Object.fromEntries(DIRS.flatMap(F => Object.keys(MOUNTS).map(m =>
   [`facing=${F},mount=${m}`, ref(`hand_fuel_pump/body_${m}`, F)])))})]);
 const C = CAN;
@@ -398,7 +446,8 @@ const java = [
   ...Object.entries(SIZES).map(e => ['block/FuelCanBlock.java', sizeLine(e)]),
   ['block/HandFuelPumpBlock.java', pumpLine]];
 const tris = bone => B.PARTS.filter(p => p.bone === bone).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
-export const stats = {triangles: Object.fromEntries(Object.keys(PIECES).map(k => [k, tris(k)])), atlas: {texelsPerPx: B.UV.S, islands: B.UV.islands.length, coplanar: B.coplanar.length}};
+export const stats = {triangles: {...Object.fromEntries(Object.keys(PIECES).map(k => [k, tris(k)])),
+  ...Object.fromEntries(Object.entries(OPEN).map(([k, spec]) => [k, openParts(B.PARTS, spec).reduce((s2, p) => s2 + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0)]))}, atlas: {texelsPerPx: B.UV.S, islands: B.UV.islands.length, coplanar: B.coplanar.length}};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   console.log(JSON.stringify(stats));

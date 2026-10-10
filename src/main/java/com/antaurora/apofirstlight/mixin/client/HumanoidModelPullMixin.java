@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Portable diesel generator V1: while someone pulls its recoil starter, their right arm points at the T handle
- * (PortableGeneratorPull#poseArm), set after vanilla's pose. A stand-in until the player animation rework.
+ * (PortableGeneratorPull#poseArm), set after vanilla's pose; while a fuel nozzle is in a fuel opening, at its grip
+ * (NozzleFillView#poseArm, 2026-10-10). A stand-in until the player animation rework.
  */
 @Mixin(HumanoidModel.class)
 public abstract class HumanoidModelPullMixin {
@@ -18,5 +19,6 @@ public abstract class HumanoidModelPullMixin {
     private void afl$recoilPull(LivingEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
                                 float netHeadYaw, float headPitch, CallbackInfo ci) {
         PortableGeneratorPull.poseArm((HumanoidModel<?>) (Object) this, entity, ageInTicks);
+        com.antaurora.apofirstlight.client.NozzleFillView.poseArm((HumanoidModel<?>) (Object) this, entity, ageInTicks);
     }
 }

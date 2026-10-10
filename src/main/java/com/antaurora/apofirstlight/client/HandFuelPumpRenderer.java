@@ -44,7 +44,7 @@ public final class HandFuelPumpRenderer implements BlockEntityRenderer<HandFuelP
     private static final ResourceLocation CRANK = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/hand_fuel_pump/crank");
     private static final ResourceLocation ATLAS_TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/fuel_containers");
     /** The hose's rubber in the containers' texture, 0..1 (checked by the generator). */
-    static final float HOSE_U = 0.803711F, HOSE_V = 0.686523F;
+    static final float HOSE_U = 0.627441F, HOSE_V = 0.656738F;
     /** Per mount (HandFuelPumpBlock.Mount order): the crank's pivot, px about the cell's centre, facing north (generator). */
     private static final double[][] PIVOT = {{1.25, -5.2, 0.0}, {1.25, -4.07, -3.8}, {1.25, -8.02, -2.6}};
     private static final double RADIUS = 0.37 / 16;

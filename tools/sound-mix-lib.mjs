@@ -61,14 +61,14 @@ export function writeOgg(x, file) {
 }
 
 /**
- * sources: {name: sha256 prefix} (WAV files in srcDir); outputs: {key: {file, reference, offset, layers}} with file and
+ * sources: {name: sha256 prefix} (name.wav in srcDir, or the file itself when the name ends in .wav / .ogg); outputs: {key: {file, reference, offset, layers}} with file and
  * reference relative to soundsDir. A layer is {src, at (where its peak sample lands, s), gain (dB), rate?, trim? (cut the
  * start of the source, s), fadeFrom? / fadeTo? (linear fade-out window in the trimmed source, s)}. Returns a report.
  */
 export function buildSounds({srcDir, soundsDir, sources, outputs}) {
   const src = {}, level = {};
   for (const [name, sha] of Object.entries(sources)) {
-    const file = path.join(srcDir, name + '.wav');
+    const file = path.join(srcDir, /\.(wav|ogg)$/i.test(name) ? name : name + '.wav');
     const h = createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 16);
     if (h !== sha) throw new Error(`${name}.wav changed (sha ${h}, expected ${sha})`);
     src[name] = decode(file);

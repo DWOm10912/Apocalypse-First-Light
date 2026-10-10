@@ -66,8 +66,19 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
             if (holder != null && holder.getMainHandItem().getItem() instanceof FuelNozzleItem) {
                 double floor = Math.min(origin.getY() + 3.0 / 16, holder.getPosition(partialTick).y) + RADIUS;
                 frame = held(holder, partialTick);
-                hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), level, origin, dispenser.outlet(nozzle),
-                        new HoseEnd(frame.point(SWIVEL_X, SWIVEL_Y, SWIVEL_Z), frame.direction(0, 0, 1)), floor);
+                NozzleFillView.Way way = NozzleFillView.way(dispenser, nozzle, partialTick);
+                if (way != null) {
+                    // in a fuel opening, or on its way in or out: drawn here, the hose to it (2026-10-10, fluid/NozzleFill)
+                    NozzleFillView.Frame in = NozzleFillView.inserted(way.opening(), way.heading()), from = frameOf(frame);
+                    NozzleFillView.Frame f = from == null ? in : NozzleFillView.lerp(from, in, way.k());
+                    nozzleModel(pose, buffers, level, origin, nozzle, f);
+                    hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), level, origin, dispenser.outlet(nozzle),
+                            new HoseEnd(f.point(com.antaurora.apofirstlight.fluid.NozzleFill.SWIVEL), f.z()), floor);
+                    if (holder == Minecraft.getInstance().player) NozzleFillView.renderArm(f.point(com.antaurora.apofirstlight.fluid.NozzleFill.GRIP), way.k(), origin, level, pose, buffers);
+                } else {
+                    hose(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TEXTURE)), level, origin, dispenser.outlet(nozzle),
+                            new HoseEnd(frame.point(SWIVEL_X, SWIVEL_Y, SWIVEL_Z), frame.direction(0, 0, 1)), floor);
+                }
             }
             FuelNozzleJets.Jet jet = FuelNozzleJets.get(origin, nozzle);
             if (jet != null) jet(pose, buffers, level, origin, jet, frame != null && jet.flowing ? frame.point(SPOUT_X, SPOUT_Y, SPOUT_Z) : null, partialTick);
@@ -193,6 +204,33 @@ public final class FuelDispenserRenderer implements BlockEntityRenderer<FuelDisp
                 return new Vec3(d.x(), d.y(), d.z()).normalize();
             }
         };
+    }
+
+    /** The held frame as a rigid frame (for the way into an opening), or null if it is mirrored (a left main arm). */
+    @org.jetbrains.annotations.Nullable
+    private static NozzleFillView.Frame frameOf(HeldFrame held) {
+        Vec3 o = held.point(0, 0, 0), ex = held.point(1, 0, 0).subtract(o), ey = held.point(0, 1, 0).subtract(o), ez = held.point(0, 0, 1).subtract(o);
+        double scale = (ex.length() + ey.length() + ez.length()) / 3;
+        if (scale < 1e-6) return null;
+        Vec3 x = ex.normalize(), y = ey.subtract(x.scale(ey.dot(x))).normalize(), z = x.cross(y);
+        return z.dot(ez) > 0 ? new NozzleFillView.Frame(o, x, y, z, scale) : null;
+    }
+
+    private static final java.util.Map<Nozzle, ItemStack> NOZZLE_STACKS = new java.util.EnumMap<>(Nozzle.class);
+
+    /** The nozzle item's model at a frame in the world (the model's own block units; the item renderer centres it by -0.5). */
+    private static void nozzleModel(PoseStack pose, MultiBufferSource buffers, Level level, BlockPos origin, Nozzle nozzle, NozzleFillView.Frame f) {
+        ItemStack stack = NOZZLE_STACKS.computeIfAbsent(nozzle, n -> new ItemStack(n.grade.nozzleItem()));
+        pose.pushPose();
+        pose.translate(f.o().x - origin.getX(), f.o().y - origin.getY(), f.o().z - origin.getZ());
+        Matrix3f basis = new Matrix3f((float) f.x().x, (float) f.x().y, (float) f.x().z, (float) f.y().x, (float) f.y().y, (float) f.y().z,
+                (float) f.z().x, (float) f.z().y, (float) f.z().z);
+        pose.mulPose(new Quaternionf().setFromNormalized(basis));
+        pose.scale((float) f.s(), (float) f.s(), (float) f.s());
+        pose.translate(0.5F, 0.5F, 0.5F);
+        int light = LevelRenderer.getLightColor(level, BlockPos.containing(f.point(com.antaurora.apofirstlight.fluid.NozzleFill.GRIP)));
+        Minecraft.getInstance().getItemRenderer().renderStatic(stack, ItemDisplayContext.NONE, light, OverlayTexture.NO_OVERLAY, pose, buffers, level, 0);
+        pose.popPose();
     }
 
     private static void hose(PoseStack pose, VertexConsumer out, Level level, BlockPos origin, Vec3 a, HoseEnd end, double floor) {

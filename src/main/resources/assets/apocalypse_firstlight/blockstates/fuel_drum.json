@@ -1,18 +1,33 @@
 {
   "variants": {
-    "facing=north": {
+    "facing=north,open=false": {
       "model": "apocalypse_firstlight:block/fuel_drum/body"
     },
-    "facing=east": {
+    "facing=north,open=true": {
+      "model": "apocalypse_firstlight:block/fuel_drum/open"
+    },
+    "facing=east,open=false": {
       "model": "apocalypse_firstlight:block/fuel_drum/body",
       "y": 90
     },
-    "facing=south": {
+    "facing=east,open=true": {
+      "model": "apocalypse_firstlight:block/fuel_drum/open",
+      "y": 90
+    },
+    "facing=south,open=false": {
       "model": "apocalypse_firstlight:block/fuel_drum/body",
       "y": 180
     },
-    "facing=west": {
+    "facing=south,open=true": {
+      "model": "apocalypse_firstlight:block/fuel_drum/open",
+      "y": 180
+    },
+    "facing=west,open=false": {
       "model": "apocalypse_firstlight:block/fuel_drum/body",
+      "y": 270
+    },
+    "facing=west,open=true": {
+      "model": "apocalypse_firstlight:block/fuel_drum/open",
       "y": 270
     }
   }
