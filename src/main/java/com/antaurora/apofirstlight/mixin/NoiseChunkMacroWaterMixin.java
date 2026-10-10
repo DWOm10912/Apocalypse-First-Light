@@ -52,8 +52,18 @@ public abstract class NoiseChunkMacroWaterMixin {
         if (apocalypse$columns[index] == null || apocalypse$columnKeys[index] != key) {
             apocalypse$columns[index] = apocalypse$geography.sample(x, z);
             apocalypse$columnKeys[index] = key;
-            if (apocalypse$plan != null) apocalypse$estuaryFloor[index] = apocalypse$plan.waterClass(x, z) == 2
-                    ? apocalypse$plan.heightAt(x, z) : Double.NaN;
+            if (apocalypse$plan != null) {
+                // an estuary column, or (Phase 2b) a low shore column within 48 m of open water whose ground lies under
+                // Y63: the water edge then follows the ground's Y63 contour, not the plan's 16 m cells
+                int wc = apocalypse$plan.waterClass(x, z);
+                double floor = Double.NaN;
+                if (wc == 2) floor = apocalypse$plan.heightAt(x, z);
+                else if (wc == 0 && apocalypse$plan.shoreDistance(x, z) <= 48) {
+                    double h = apocalypse$plan.heightAt(x, z);
+                    if (h < MacroGeography.SEA_LEVEL) floor = h;
+                }
+                apocalypse$estuaryFloor[index] = floor;
+            }
         }
         return apocalypse$columns[index];
     }
@@ -67,7 +77,8 @@ public abstract class NoiseChunkMacroWaterMixin {
             if (column.isWater() && y >= column.surfaceHeight() && y < MacroGeography.SEA_LEVEL)
                 cir.setReturnValue(Blocks.WATER.defaultBlockState());
             else if (apocalypse$plan != null && y < MacroGeography.SEA_LEVEL) {
-                // an estuary: open air over the drowned floor (and the floor's top block) fills to sea level
+                // an estuary (or the low shore beside it): open air over the drowned floor (and the floor's top block)
+                // fills to sea level
                 double floor = apocalypse$estuaryFloor[(noiseChunk.blockX() & 15) | ((noiseChunk.blockZ() & 15) << 4)];
                 BlockState state = cir.getReturnValue();
                 if (!Double.isNaN(floor) && y >= floor - 1 && state != null && state.isAir())   // null = the default (solid) block

@@ -70,8 +70,8 @@ public final class RadiationCommands {
         RadiationManager.StartupRadiationDebug startup = RadiationManager.startupRadiationDebug(level, pos.getX(), pos.getZ());
         source.sendSuccess(() -> Component.literal("[AFL Radiation]"), false);
         source.sendSuccess(() -> Component.literal(String.format(
-                "Position: %d, %d, %d | Surface Y: %d | Surface Biome: %s | Biome Profile: %s | Raw World Radiation: %.4f | Biome Base Radiation: %.4f | Zone: %s | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
-                pos.getX(), pos.getY(), pos.getZ(), biome.surfaceY(), biome.biomeId(), biome.profile(),
+                "Environment: %s | Position: %d, %d, %d | Surface Y: %d | Surface Biome: %s | Biome Profile: %s | Raw World Radiation: %.4f | Biome Base Radiation: %.4f | Zone: %s | Ambient Radiation: %.2f RU/h | Shelter Transmission: %.3f | Shelter Shielding: %.1f%% | Shielded Ambient: %.2f RU/h | Local Radiation: %.2f RU/h | Final Radiation: %.2f RU/h | Spawn Safe Core: %s | Spawn Suppression: %.2f | Safe Anchor: %d, %d | Safe Anchor Source: %s",
+                RadiationManager.environmentMode(level), pos.getX(), pos.getY(), pos.getZ(), biome.surfaceY(), biome.biomeId(), biome.profile(),
                 sample.rawWorldField(), sample.baseField(), sample.zone(),
                 sample.worldAmbientRadiation() / Math.max(sample.shelterTransmission(), 0.000001),
                 sample.shelterTransmission(), (1.0 - sample.shelterTransmission()) * 100.0,

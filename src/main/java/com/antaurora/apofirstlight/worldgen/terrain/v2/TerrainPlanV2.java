@@ -659,7 +659,13 @@ public final class TerrainPlanV2 {
             double depth = wet ? 6 : water[i] == 3 ? 12 : 12 * (wPlain[i] + wCoastal[i]) + 6 * wFoot[i] + 4 * wBelt[i];
             stable[i] = (byte) Math.round(depth);
         });
-        s = new TerrainPlanSurface(VERSION, seed, noiseSeed, h.clone(), water.clone(), wBelt.clone(), stable, shore);
+        TerrainPlanSurface bare = new TerrainPlanSurface(VERSION, seed, noiseSeed, h.clone(), water.clone(), wBelt.clone(), stable, shore, null);
+        long t0 = System.nanoTime();
+        RiverNetwork rivers = RiverNetwork.build(this, bare);      // Phase 2b: river water on the frozen r1 network
+        report.put("ms_rivers", (System.nanoTime() - t0) / 1_000_000);
+        report.put("river_lines", rivers.lines());
+        report.put("river_vertices", rivers.vertices());
+        s = bare.withRivers(rivers);
         surface = s;
         return s;
     }

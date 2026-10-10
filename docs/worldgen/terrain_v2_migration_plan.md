@@ -2,6 +2,8 @@
 
 日期：2026-10-07。状态：**Phase 0 IMPLEMENTED / PENDING USER VALIDATION；Phase 1～8 PLANNED / NOT IMPLEMENTED**。原研究阶段只有源码审查、外部研究和文档变更；后续已实现[Phase 0 只读诊断](terrain_v2_phase0_diagnostics_and_baseline.md)，没有切换生成算法或资源，没有实机验收。
 
+**2026-10-10 第三次更新**：用户 Phase 2 初步实机验收 PASS。**Phase 2b（河流水体 + 湿地水塘 + 稳定层硬底与熔岩湖门控 + 自动环境辐射停用）已实现**，见 [Terrain V2 Phase 2b](terrain_v2_phase2b_rivers_v1.md)，离线验证与编译通过，等实机验收；Phase 3 的稳定层由此成为"平原硬底、山区软层"。生态与群系阶段在 Phase 2b 实机验收之后。
+
 **2026-10-10 第二次更新**：用户验收 r1 规划 PASS。旧世界生成逻辑已退役（[旧世界生成逻辑退役 V1](legacy_worldgen_retirement_v1.md)）；**Phase 2（LAND 高程 + 近地表稳定层 + 统一水面掩码）已实现**，见 [Terrain V2 Phase 2](terrain_v2_phase2_generation_v1.md)，等用户在全新世界实机验收；Phase 3 的稳定层在这一步一起做了第一版（密度侧 + 雕刻器侧）。Phase 4 群系重构要等 Phase 2 实机验收之后。
 
 **2026-10-10 更新（Claude 接手）**：Phase 1 已按真实地貌重做，见 [Terrain V2 真实地貌研究与规划 r1](terrain_v2_real_terrain_research_v1.md)。用户批准下载 USGS 3DEP 高程与 NLCD 土地覆盖，对 6 块美国样方（OH / IN / IL 冰碛平原、PA 山脊谷地与山前、VA 海岸平原）做了定量统计；新的离线规划器 `TerrainPlanV2`（`tools/terrain-v2-research/`，不进 mod）先规划水系、再塑造地形，参数冻结为 `afl_terrain_plan_v2_r1`，**等用户看图验收**。Codex 的 Phase 1 分支 `codex/terrain-v2-phase1` 不合并：它的确定性、海陆掩码、有界查询和适宜性思路被保留，地貌公式（三正弦平原、双高斯山、三条平行河）被替换。下面 Phase 2–8 的边界仍然有效，Phase 2 的接入方案见新文档 K 节；验收前不动正式密度链和群系。

@@ -162,7 +162,7 @@ seed + 原始 continents / erosion
 | Surface | 通用 surface rules 配合 Fallout ground patches；patch 替换已有草方块，不挖空气 | 改成覆盖/材质状态，不用地质破碎表达污染 |
 | 植被与视觉 | 稀疏植被、dead bush、土壤配色、环境粉尘 | 独立损伤程度与生态基底组合 |
 | 天气 | temperature 1.35、downfall 0.08、无降水 | 温带气候独立；污染不必让整片森林气候变成炎热干旱 |
-| Radiation | Fallout → HEAVY_FALLOUT（约 0.62–0.82），Plains → SAFE（约 0–0.075），其他多数 UNKNOWN；`RadiationField` 再受 profile 约束及 safe anchor 抑制 | 改环境 profile 来源，不重写剂量、掩蔽、物品辐射或免疫逻辑 |
+| Radiation | Fallout → HEAVY_FALLOUT（约 0.62–0.82），Plains → SAFE（约 0–0.075），其他多数 UNKNOWN；`RadiationField` 再受 profile 约束及 safe anchor 抑制 | 改环境 profile 来源，不重写剂量、掩蔽、物品辐射或免疫逻辑（2026-10-10 起自动环境辐射默认关闭，这套取值只在 LEGACY 开发模式下使用，见 [Phase 2b](terrain_v2_phase2b_rivers_v1.md)） |
 | 结构资格 | Highway tag 已支持 Overworld，不以 Fallout 为唯一前提；旧 Rural 已退役；地堡有出生生态相关兜底 | 按具体消费者更新资格/回退，不恢复旧 Rural，也不全局替换 biome 字符串 |
 
 Deep Dark 被禁；Lush/Dripstone 仅在足够地下保留。地下生态现有 initial density 判据必须随新密度校准，不能因恢复森林把地下或表面路由打断。地表 lava lake 禁用 tag 也要覆盖新增生态；这与自然洞穴是两件事。

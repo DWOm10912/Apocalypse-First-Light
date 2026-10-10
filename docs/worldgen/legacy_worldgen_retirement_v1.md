@@ -21,7 +21,7 @@
 ## 保留了什么
 
 - **自然陆地出生回退**：没有地堡以后，出生点是原版的自然出生点：原版按气候点搜索，再在 11×11 区块内找能站的地面。勘察确认 (0,0) 周围约 2.5 km 内全是主岛陆地。Phase 2 加了按规划挑平原出生点的处理（`TerrainV2SpawnEvents`，见 [Phase 2](terrain_v2_phase2_generation_v1.md)），没有规划的世界仍走原版。
-- **出生点的小安全泡**：辐射系统本来就有的锚点保护（40 格内 SAFE，96 格渐变）不是"大范围缓冲"，保留。锚点在世界第一次需要时取 `getSharedSpawnPos()`，所以现在落在新的自然出生点。
+- ~~出生点的小安全泡~~：辐射系统本来就有的锚点保护（40 格内 SAFE，96 格渐变）当时保留；**同日在 [Terrain V2 Phase 2b](terrain_v2_phase2b_rivers_v1.md) 按用户要求取消**，自动环境辐射也整体停用（默认 OFF）。
 - **地堡资产**：`structures/bunker.nbt`、里面用到的 AFL 方块（钢筋混凝土及台阶 / 楼梯、钢块、钢格栅、钢门、工业灯、线形灯、配电盘、工业储物柜）全部注册不变；`BunkerPlacementManager`（放置、坐标换算）、`BunkerSurfaceIntegration`、`BunkerPlacementHygiene`、`BunkerSavedData`、安全位置检查保留，以后做成普通结构时可以复用。开发工具 `BunkerExteriorAirMasker`、`/afl dev bunker status` 保留。
 - **高速**：`HighwayRouteGraph` 及其纯几何类（`HighwayGeometry`、`OrthogonalHighwayPath`、`SatelliteHighwayRouting`、`SeaBridgeGeometry`、`HighwaySpatialClaimProvider` 等）、Pure Mesh 核心（`client/mesh/*`）、M1-A / M1-B 网格预览开发命令、只读的 `/afl highway_network` 诊断全部保留。注意：`src/dev/java/.../worldgen/highway/*` 和主代码同一个包，打包时会进 jar（`build.gradle` 只排除 `dev/**`），这次没动。
 - **城市道路 V1-B**：本来就没有自然生成入口（只有开发命令），不受影响；它仍把 RouteGraph 的高速走廊当作 HARD 保护。
@@ -43,4 +43,4 @@
 - 已经生成的地堡方块、`BunkerSavedData`、地堡辐射锚点留在旧世界里。锚点已经初始化，不会自己挪回出生点。
 - 已有玩家的强制重生点（SpawnForced）仍指向地堡，直到睡床或 `/spawnpoint` 改掉。
 - 新旧规则混在同一个世界会有接缝：**验收用全新世界**。
-- 没有出生平原以后，出生点附近（小安全泡外）是 Fallout 荒原，辐射为 HEAVY_FALLOUT。生态和灾难层要等 Phase 2 实机验收之后的群系重构才改；看地形建议用创造模式。
+- 没有出生平原以后，出生点附近是 Fallout 荒原（群系重构要等 Phase 2b 实机验收之后）。它当时带 HEAVY_FALLOUT 环境辐射；2026-10-10 Phase 2b 起自动环境辐射默认关闭，荒原只剩外观。

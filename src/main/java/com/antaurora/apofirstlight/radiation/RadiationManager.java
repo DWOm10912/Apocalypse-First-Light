@@ -14,12 +14,18 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 
 import java.util.Optional;
 
+/**
+ * World radiation. 2026-10-10 (docs/项目内容/01 - 设计/辐射/辐射系统.md, "自动环境辐射停用"): the automatic environmental
+ * field (seed noise RadiationField x surface-biome profile, Fallout Barrens 0.62-0.82) is OFF by default in every world,
+ * and the spawn safe bubble (40 blocks safe, 96 falloff round the anchor) is gone, so the island carries no ambient
+ * radiation. Future environmental radiation comes from the disaster system (blast sites, fallout, sources). Damage,
+ * dose, sickness, the Geiger counter, shielding, carried / container sources and contamination all still run; the old
+ * field can be switched back on per world for tests (EnvironmentMode.LEGACY, /afl dev radiation_environment).
+ */
 public final class RadiationManager {
     private static final double SAFE_THRESHOLD = 0.08;
     private static final double HEAVY_THRESHOLD = 0.62;
     private static final double EXTREME_THRESHOLD = 0.84;
-    private static final double FULL_SAFE_RADIUS = 40.0;
-    private static final double FALLOFF_RADIUS = 96.0;
     public static final int STARTUP_RADIATION_HANDOFF_WIDTH = 48;
     public static final double STARTUP_FALLOUT_MIN = 0.10D;
     public static final double STARTUP_FALLOUT_MAX = 0.42D;
@@ -37,8 +43,6 @@ public final class RadiationManager {
             return RadiationSample.safe(0, 0);
         }
         RadiationWorldData data = RadiationWorldData.get(level);
-        double distance = distanceFromAnchor(pos, data);
-        boolean core = distance <= FULL_SAFE_RADIUS;
         EnvironmentalField environmental = computeEnvironmentalField(level, pos.getX(), pos.getZ(), data);
         double rawWorldField = environmental.rawWorldField();
         double base = environmental.biomeConstrainedField();
@@ -49,12 +53,8 @@ public final class RadiationManager {
         double shieldedAmbient = ambient * shielding.transmission();
         double local = getLocalRadiation(level, pos);
         RadiationZone zone = zoneFor(effectiveField);
-        if (core && local <= 0.0) {
-            shieldedAmbient = 0.0;
-            zone = RadiationZone.SAFE;
-        }
         return new RadiationSample(rawWorldField, base, zone, shieldedAmbient, local, shieldedAmbient + local,
-                shielding.transmission(), shielding.shieldingRaysHit(), shielding.shieldingBlocksCounted(), core, suppression,
+                shielding.transmission(), shielding.shieldingRaysHit(), shielding.shieldingBlocksCounted(), false, suppression,
                 data.safeAnchorX(), data.safeAnchorZ(), data.anchorSource());
     }
 
@@ -73,10 +73,21 @@ public final class RadiationManager {
         return rateFor(effectiveEnvironmentalField(level, pos.getX(), pos.getZ(), environmental));
     }
 
-    /** Natural, unsuppressed field for chunk-independent ecology/search consumers; not player radiation. */
+    /** Natural field for chunk-independent ecology/search consumers (0 while the environment is OFF); not player radiation. */
     public static double getNaturalBaseField(ServerLevel level, int x, int z) {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return 0.0;
+        if (environmentMode(level) == EnvironmentMode.OFF) return 0.0;
         return field(level).sample(x, z);
+    }
+
+    /** The world's environmental radiation mode (persisted in RadiationWorldData). */
+    public static EnvironmentMode environmentMode(ServerLevel level) {
+        if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return EnvironmentMode.OFF;
+        return RadiationWorldData.get(level).environmentMode();
+    }
+
+    public static void setEnvironmentMode(ServerLevel level, EnvironmentMode mode) {
+        RadiationWorldData.get(level).setEnvironmentMode(mode);
     }
 
     public static double getNaturalRawField(ServerLevel level, int x, int z) {
@@ -130,11 +141,7 @@ public final class RadiationManager {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) {
             return false;
         }
-        RadiationWorldData data = RadiationWorldData.get(level);
-        double dx = pos.getX() - data.safeAnchorX();
-        double dz = pos.getZ() - data.safeAnchorZ();
-        double distance = Math.sqrt(dx * dx + dz * dz);
-        return distance >= FALLOFF_RADIUS && zoneFor(getNaturalBaseField(level, pos.getX(), pos.getZ())) == target;
+        return zoneFor(getNaturalBaseField(level, pos.getX(), pos.getZ())) == target;
     }
 
     public static void setSpawnSafeChunk(ServerLevel level, long chunkX, long chunkZ) {
@@ -177,12 +184,6 @@ public final class RadiationManager {
     }
 
     private record CachedShielding(long tick, RadiationShielding.Sample sample) {}
-
-    private static double distanceFromAnchor(BlockPos pos, RadiationWorldData data) {
-        double dx = pos.getX() - data.safeAnchorX();
-        double dz = pos.getZ() - data.safeAnchorZ();
-        return Math.sqrt(dx * dx + dz * dz);
-    }
 
     private static RadiationZone zoneFor(double field) {
         if (field < SAFE_THRESHOLD) return RadiationZone.SAFE;
@@ -234,7 +235,8 @@ public final class RadiationManager {
     private static double effectiveEnvironmentalField(ServerLevel level, int x, int z,
                                                       EnvironmentalField environmental) {
         // 2026-10-10: the startup cap (a safe / irradiated buffer out to about 530 blocks round (0, 0)) is retired
-        // with the startup Plains (legacy_worldgen_retirement_v1); only the small anchor bubble remains.
+        // with the startup Plains (legacy_worldgen_retirement_v1), and the automatic field itself is OFF by default.
+        if (environmentMode(level) == EnvironmentMode.OFF) return 0.0D;
         return environmental.preStartupEffectiveField();
     }
 
@@ -252,11 +254,17 @@ public final class RadiationManager {
         double constrained = resolution.profile().constrain(raw);
         double anchorDistance = Math.sqrt((double) (x - data.safeAnchorX()) * (x - data.safeAnchorX())
                 + (double) (z - data.safeAnchorZ()) * (z - data.safeAnchorZ()));
-        double suppression = anchorDistance <= FULL_SAFE_RADIUS ? 0.0
-                : smoothstep(Math.min(1.0D, (anchorDistance - FULL_SAFE_RADIUS)
-                / (FALLOFF_RADIUS - FULL_SAFE_RADIUS)));
-        return new EnvironmentalField(raw, resolution, constrained, anchorDistance, suppression,
-                constrained * suppression);
+        // the spawn safe bubble (40 safe, 96 falloff) is retired 2026-10-10: no suppression anywhere
+        return new EnvironmentalField(raw, resolution, constrained, anchorDistance, 1.0D, constrained);
+    }
+
+    /** Automatic environmental radiation: OFF (the default since 2026-10-10) or the LEGACY field for dev tests. */
+    public enum EnvironmentMode {
+        OFF, LEGACY;
+
+        static EnvironmentMode parse(String name) {
+            return "LEGACY".equals(name) ? LEGACY : OFF;
+        }
     }
 
     private record EnvironmentalField(double rawWorldField, BiomeRadiationResolver.Resolution biomeResolution,

@@ -15,11 +15,14 @@ import java.util.zip.CRC32;
  *   (MacroGeography's sea plus the estuaries the plan drowns);</li>
  *   <li>{@link #stableDepth}: blocks below the surface kept free of cave openings and carvers (plains / coastal plain
  *   12, foothills 6, fold belt 4, water floors 6);</li>
- *   <li>{@link #shoreDistance}: signed metres to the unified water (land +, water -), clamped to +-127.</li>
+ *   <li>{@link #shoreDistance}: signed metres to the unified water (land +, water -), clamped to +-127;</li>
+ *   <li>{@link #rivers}: the river water of the r1 network (Phase 2b, RiverNetwork) and {@link #poolAt}, the open
+ *   water of the tidal marsh. Both are applied by RiverCarver after the noise fill; {@link #heightAt} stays the r1
+ *   surface.</li>
  * </ul>
  */
 public final class TerrainPlanSurface {
-    public static final int FORMAT = 1;
+    public static final int FORMAT = 2;                // 2: + rivers (Phase 2b, 2026-10-10)
     public static final int N = TerrainPlanV2.N;
     public static final double CELL = TerrainPlanV2.CELL, ORIGIN = TerrainPlanV2.ORIGIN;
 
@@ -31,8 +34,10 @@ public final class TerrainPlanSurface {
     final float[] belt;
     final byte[] stable;
     final byte[] shore;
+    public final RiverNetwork rivers;
 
-    TerrainPlanSurface(String version, long seed, long noiseSeed, float[] h, byte[] water, float[] belt, byte[] stable, byte[] shore) {
+    TerrainPlanSurface(String version, long seed, long noiseSeed, float[] h, byte[] water, float[] belt, byte[] stable, byte[] shore,
+                       RiverNetwork rivers) {
         this.version = version;
         this.seed = seed;
         this.noiseSeed = noiseSeed;
@@ -41,6 +46,11 @@ public final class TerrainPlanSurface {
         this.belt = belt;
         this.stable = stable;
         this.shore = shore;
+        this.rivers = rivers;
+    }
+
+    TerrainPlanSurface withRivers(RiverNetwork r) {
+        return new TerrainPlanSurface(version, seed, noiseSeed, h, water, belt, stable, shore, r);
     }
 
     static int idx(int col, int row) { return row * N + col; }
@@ -88,6 +98,25 @@ public final class TerrainPlanSurface {
 
     public int stableDepth(double x, double z) { return stable[idx(cellOf(x), cellOf(z))]; }
 
+    /**
+     * Open water in the tidal marsh (Phase 2b): pools and leads at sea level (top water block Y62) on the marsh flat
+     * (top block Y63), about 40 % of the marsh interior and fewer toward its edge (a smooth marsh fraction, so the
+     * pools never trace the 16 m grid). RiverCarver opens a pool only where the generated top is exactly Y63.
+     */
+    public boolean poolAt(int x, int z) {
+        double gx = (x + 0.5 - ORIGIN) / CELL - 0.5, gz = (z + 0.5 - ORIGIN) / CELL - 0.5;
+        int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
+        double fx = gx - c0, fz = gz - r0;
+        double m = 0;
+        for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++)
+            if (water[idx(clampI(c0 + a), clampI(r0 + b))] == 3) m += (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
+        if (m < POOL_MARSH) return false;
+        double f = PlanNoise.fbm(noiseSeed, x, z, 30, 2, 0.5, 401) + 0.5 * PlanNoise.fbm(noiseSeed, x, z, 9, 2, 0.5, 402);
+        return f < POOL_EDGE + (POOL_CORE - POOL_EDGE) * (m - POOL_MARSH) / (1 - POOL_MARSH);
+    }
+
+    static final double POOL_MARSH = 0.55, POOL_EDGE = -0.7, POOL_CORE = 0.05;
+
     public int shoreDistance(double x, double z) { return shore[idx(cellOf(x), cellOf(z))]; }
 
     /** Plan-grid slope (rise / run) at a cell. */
@@ -105,7 +134,8 @@ public final class TerrainPlanSurface {
     /**
      * The natural-land spawn (TerrainV2SpawnEvents): the plan cell nearest the origin, ring by ring on the 16 m grid
      * out to maxRadius, that is dry plain / coastal plain (stable depth 12), at least 64 m from water, grade at most
-     * 1/32, not marsh, Y >= 65, with level dry ground for 32 m round it. Deterministic; null when nothing fits.
+     * 1/32, not marsh, not on a river or its graded banks, Y >= 65, with level dry ground for 32 m round it.
+     * Deterministic; null when nothing fits.
      */
     public int[] naturalSpawn(int maxRadius) {
         int step = (int) CELL;
@@ -126,6 +156,7 @@ public final class TerrainPlanSurface {
 
     boolean spawnSuitable(int x, int z) {
         if (waterClass(x, z) != 0 || stableDepth(x, z) < 12 || shoreDistance(x, z) < 64 || slopeAt(x, z) > 1.0 / 32) return false;
+        if (rivers != null && rivers.edgeDistance(x, z) < RiverNetwork.BANK_REACH + 2) return false;
         double h0 = baseHeightAt(x, z);
         for (int k = -2; k <= 2; k++) for (int j = -2; j <= 2; j++) {
             int xx = x + k * 16, zz = z + j * 16;
@@ -155,6 +186,7 @@ public final class TerrainPlanSurface {
         for (float v : belt) out.writeFloat(v);
         out.write(stable);
         out.write(shore);
+        rivers.write(out);
     }
 
     /** Reads a cached surface; null when it is for another seed / version / format or does not check out. */
@@ -172,7 +204,8 @@ public final class TerrainPlanSurface {
         for (int i = 0; i < n; i++) belt[i] = in.readFloat();
         in.readFully(stable);
         in.readFully(shore);
-        TerrainPlanSurface t = new TerrainPlanSurface(v, s, noiseSeed, h, water, belt, stable, shore);
+        RiverNetwork rivers = RiverNetwork.read(in);
+        TerrainPlanSurface t = new TerrainPlanSurface(v, s, noiseSeed, h, water, belt, stable, shore, rivers);
         return t.checksum().getValue() == want ? t : null;
     }
 
@@ -187,6 +220,7 @@ public final class TerrainPlanSurface {
         crc.update(water);
         crc.update(stable);
         crc.update(shore);
+        if (rivers != null) rivers.checksum(crc);
         return crc;
     }
 }

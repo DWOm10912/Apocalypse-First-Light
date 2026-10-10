@@ -78,6 +78,11 @@ public final class AflDevCommands {
                 .executes(AflDevCommands::startupEcologyRadial));
         dev.then(Commands.literal("startup_radiation_sample")
                 .executes(AflDevCommands::startupRadiationSample));
+        // 2026-10-10: the automatic world radiation is OFF by default; LEGACY brings the old field back for tests
+        dev.then(Commands.literal("radiation_environment")
+                .executes(c -> radiationEnvironment(c, null))
+                .then(Commands.literal("off").executes(c -> radiationEnvironment(c, RadiationManager.EnvironmentMode.OFF)))
+                .then(Commands.literal("legacy").executes(c -> radiationEnvironment(c, RadiationManager.EnvironmentMode.LEGACY))));
         dev.then(Commands.literal("settlement_prototype")
                 .executes(context -> settlementPrototype(context))
                 .then(Commands.literal("here").executes(context -> settlementPrototype(context))));
@@ -375,6 +380,16 @@ public final class AflDevCommands {
                         + " falloutMin=" + RadiationManager.STARTUP_FALLOUT_MIN
                         + " falloutMax=" + RadiationManager.STARTUP_FALLOUT_MAX
                         + " semantics=MIN(original,startupCap) doseShieldingUnchanged=true"), false);
+        return 1;
+    }
+
+    private static int radiationEnvironment(CommandContext<CommandSourceStack> context, RadiationManager.EnvironmentMode mode) {
+        ServerLevel level = context.getSource().getServer().overworld();
+        if (mode != null) RadiationManager.setEnvironmentMode(level, mode);
+        RadiationManager.EnvironmentMode now = RadiationManager.environmentMode(level);
+        context.getSource().sendSuccess(() -> Component.literal("[AFL Radiation] environment " + now
+                + (now == RadiationManager.EnvironmentMode.OFF ? " (no automatic world radiation)"
+                : " (old seed-noise x biome field, dev test only)")), mode != null);
         return 1;
     }
 

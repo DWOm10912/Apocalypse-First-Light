@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
+import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverCarver;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.core.BlockPos;
@@ -26,6 +27,8 @@ import java.util.function.Function;
  * them. Every block a carver would remove is checked here: within the column's stable depth under the planned surface
  * (plains 12, foothills 6, fold belt 4, water floors 6) the carver leaves it. Deeper caves, ravines in the belt and
  * everything in worlds without the plan are untouched. Uses the plan grid surface without detail (+-0.5 block).
+ * Phase 2b (2026-10-10): also nothing under a river bed, its graded banks or a marsh pool (8 below the lowest
+ * water level in reach), so river water never hangs over a carved cave.
  */
 @Mixin(WorldCarver.class)
 public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
@@ -39,8 +42,11 @@ public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
         TerrainPlanSurface plan = TerrainPlanStore.peek(access.apocalypse$getSeed());
         if (plan == null) return;
         int stable = plan.stableDepth(pos.getX(), pos.getZ());
-        if (stable <= 0) return;
-        double depth = plan.baseHeightAt(pos.getX(), pos.getZ()) - pos.getY();
-        if (depth < stable + 1) cir.setReturnValue(false);
+        if (stable > 0) {
+            double depth = plan.baseHeightAt(pos.getX(), pos.getZ()) - pos.getY();
+            if (depth < stable + 1) { cir.setReturnValue(false); return; }
+        }
+        // Phase 2b: no carver under a river bed, its banks or a marsh pool (RiverCarver.carveCeiling)
+        if (pos.getY() >= RiverCarver.carveCeiling(plan, pos.getX(), pos.getZ())) cir.setReturnValue(false);
     }
 }

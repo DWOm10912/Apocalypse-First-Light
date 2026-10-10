@@ -13,6 +13,9 @@ public final class RadiationWorldData extends SavedData {
     private boolean safeAnchorInitialized;
     private String anchorSource = "WORLD_SPAWN";
     private int anchorVersion;
+    /** 2026-10-10: the automatic world radiation is retired until the disaster system: OFF (default, also for old
+     *  worlds) or LEGACY (the old seed-noise x biome-profile field, for dev tests only). */
+    private RadiationManager.EnvironmentMode environmentMode = RadiationManager.EnvironmentMode.OFF;
 
     public static RadiationWorldData load(CompoundTag tag) {
         RadiationWorldData data = new RadiationWorldData();
@@ -23,6 +26,7 @@ public final class RadiationWorldData extends SavedData {
         data.safeAnchorInitialized = tag.getBoolean("SafeAnchorInitialized");
         data.anchorSource = tag.contains("AnchorSource", 8) ? tag.getString("AnchorSource") : "WORLD_SPAWN";
         data.anchorVersion = tag.getInt("AnchorVersion");
+        data.environmentMode = RadiationManager.EnvironmentMode.parse(tag.getString("EnvironmentMode"));
         return data;
     }
 
@@ -35,6 +39,7 @@ public final class RadiationWorldData extends SavedData {
         tag.putBoolean("SafeAnchorInitialized", safeAnchorInitialized);
         tag.putString("AnchorSource", anchorSource);
         tag.putInt("AnchorVersion", anchorVersion);
+        tag.putString("EnvironmentMode", environmentMode.name());
         return tag;
     }
 
@@ -81,4 +86,9 @@ public final class RadiationWorldData extends SavedData {
     public boolean safeAnchorInitialized() { return safeAnchorInitialized; }
     public String anchorSource() { return anchorSource; }
     public int anchorVersion() { return anchorVersion; }
+    public RadiationManager.EnvironmentMode environmentMode() { return environmentMode; }
+
+    public void setEnvironmentMode(RadiationManager.EnvironmentMode mode) {
+        if (mode != environmentMode) { environmentMode = mode; setDirty(); }
+    }
 }
