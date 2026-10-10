@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:temperate_grassland",
+    "apocalypse_firstlight:oak_hickory_woodland",
+    "apocalypse_firstlight:mixed_mesophytic_forest",
+    "apocalypse_firstlight:ridge_oak_forest",
+    "apocalypse_firstlight:hemlock_hollow",
+    "apocalypse_firstlight:riparian_forest",
+    "apocalypse_firstlight:coastal_pine_oak_forest",
+    "apocalypse_firstlight:coastal_sandy_clearing",
+    "apocalypse_firstlight:coastal_swamp_forest",
+    "apocalypse_firstlight:tidal_marsh",
+    "apocalypse_firstlight:wet_prairie"
+  ]
+}

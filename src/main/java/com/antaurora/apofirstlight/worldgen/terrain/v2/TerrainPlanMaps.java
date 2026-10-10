@@ -37,7 +37,7 @@ public final class TerrainPlanMaps {
                 int c;
                 // open water wherever the ground is under Y63 in the sea, a drowned valley or the low shore beside them
                 // (what the game fills to sea level), so the coast follows the ground, not the plan's 16 m cells
-                if (hh < 63 && (wc == 1 || wc == 2 || s.shoreDistance(x, zz) <= 48)) c = wc == 1 ? SEA : ESTUARY;
+                if (hh < 63 && s.seaFloodAt(x, zz, hh)) c = wc == 1 ? SEA : ESTUARY;
                 else {
                     double gx = (row0[px + 1] - row0[px] + row1[px + 1] - row1[px]) / (2 * mpp);
                     double gz = (row1[px] - row0[px] + row1[px + 1] - row0[px + 1]) / (2 * mpp);
@@ -50,6 +50,36 @@ public final class TerrainPlanMaps {
                             if (col.kind == RiverNetwork.Column.RIVER) c = RIVER;
                         }
                         if (col.kind != RiverNetwork.Column.RIVER && s.poolAt(bx, bz) && Math.ceil(s.heightAt(bx, bz)) - 1 == 63) c = POOL;
+                    }
+                }
+                img.setRGB(px, py, c);
+            }
+            double[] t = row0; row0 = row1; row1 = t;
+        }
+        if (!fine && s.rivers != null) drawRivers(img, s.rivers, x0, z0, mpp);
+        return img;
+    }
+
+    /** Ecology map of the window: EcologyBiomes colours with relief shading; rivers as in {@link #render}. */
+    public static BufferedImage renderEcology(TerrainPlanSurface s, double x0, double z0, int w, int h, double mpp) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        boolean fine = mpp <= 2.0;
+        double[] row0 = new double[w + 1], row1 = new double[w + 1];
+        for (int px = 0; px <= w; px++) row0[px] = height(s, x0 + px * mpp, z0, fine);
+        RiverNetwork.Column col = new RiverNetwork.Column();
+        for (int py = 0; py < h; py++) {
+            for (int px = 0; px <= w; px++) row1[px] = height(s, x0 + px * mpp, z0 + (py + 1) * mpp, fine);
+            for (int px = 0; px < w; px++) {
+                double x = x0 + (px + 0.5) * mpp, z = z0 + (py + 0.5) * mpp;
+                int b = EcologyBiomes.biomeAt(s, x, z);
+                int c = 0xFF000000 | EcologyBiomes.COLOURS[b];
+                if (b != EcologyBiomes.SEA) {
+                    double gx = (row0[px + 1] - row0[px] + row1[px + 1] - row1[px]) / (2 * mpp);
+                    double gz = (row1[px] - row0[px] + row1[px + 1] - row0[px + 1]) / (2 * mpp);
+                    c = shade(c, gx, gz, mpp);
+                    if (fine && s.rivers != null) {
+                        s.rivers.column((int) Math.floor(x), (int) Math.floor(z), col);
+                        if (col.kind == RiverNetwork.Column.RIVER) c = RIVER;
                     }
                 }
                 img.setRGB(px, py, c);

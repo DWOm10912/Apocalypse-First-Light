@@ -8,11 +8,13 @@ import net.minecraft.world.level.biome.Biomes;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import net.minecraft.world.level.levelgen.DensityFunction;
 
-/** Immutable state owned by one TerraBlender ParameterList, not by a worker or global world. */
+/** Immutable state owned by one TerraBlender ParameterList, not by a worker or global world. Since the ecology stage
+ *  (2026-10-10) any key the region plan returns (the AFL natural biomes too) resolves through the biome registry. */
 public record StartupEcologyState(long seed, Holder<Biome> plains, Holder<Biome> fallout,
                                   Holder<Biome> ocean, Holder<Biome> deepOcean, Holder<Biome> beach,
                                   MacroGeography geography, DensityFunction preliminarySurface,
-                                  MainNationBiomeRegionPlan regionPlan) {
+                                  MainNationBiomeRegionPlan regionPlan, net.minecraft.core.Registry<Biome> registry,
+                                  java.util.concurrent.ConcurrentHashMap<net.minecraft.resources.ResourceKey<Biome>, Holder<Biome>> holders) {
     public StartupEcologyState {
         java.util.Objects.requireNonNull(plains,"Startup plains holder");
         java.util.Objects.requireNonNull(fallout,"Startup fallout holder");
@@ -26,6 +28,8 @@ public record StartupEcologyState(long seed, Holder<Biome> plains, Holder<Biome>
         if (Biomes.BEACH.equals(override)) return beach;
         if (Biomes.PLAINS.equals(override)) return plains;
         if (AflBiomes.FALLOUT_BARRENS.equals(override)) return fallout;
-        return original;
+        if (override == null) return original;
+        Holder<Biome> holder = holders.computeIfAbsent(override, k -> registry.getHolder(k).map(h -> (Holder<Biome>) h).orElse(null));
+        return holder != null ? holder : original;
     }
 }

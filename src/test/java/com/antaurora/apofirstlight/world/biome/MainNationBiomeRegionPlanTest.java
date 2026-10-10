@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.world.biome;
 
-import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample;
 import net.minecraft.world.level.biome.Biomes;
@@ -39,7 +38,7 @@ public final class MainNationBiomeRegionPlanTest {
             }
         }
         for (var island : geography.islands()) if (island.role() == MacroGeographySample.LandmassRole.SATELLITE_ISLAND)
-            check(plan.surfaceBiome((int)island.x(), (int)island.z(), Biomes.PLAINS).equals(AflBiomes.FALLOUT_BARRENS), "satellite fallout");
+            check(plan.surfaceBiome((int)island.x(), (int)island.z(), Biomes.OCEAN).equals(Biomes.PLAINS), "satellite land is Plains, no Fallout (2026-10-10)");
         boolean coast = false, ocean = false, deep = false;
         // One short mainland-to-sea transect, not a multi-seed/worldgen matrix.
         for (int x = 4000; x <= 10000; x += 16) {
@@ -56,7 +55,7 @@ public final class MainNationBiomeRegionPlanTest {
         }
         check(coast && ocean && deep, "all marine cases reached");
         DensityFunction below = new ConstantDensity(1), above = new ConstantDensity(0);
-        check(plan.biomeAt(0, -32, 0, Biomes.DEEP_DARK, below).equals(AflBiomes.FALLOUT_BARRENS), "deep dark fallback");
+        check(plan.biomeAt(0, -32, 0, Biomes.DEEP_DARK, below).equals(Biomes.PLAINS), "deep dark fallback (Plains, no Fallout)");
         check(AflVanillaBiomePolicy.isDisabled(Biomes.DEEP_DARK), "deep dark candidate filter");
         for (var cave : java.util.List.of(Biomes.LUSH_CAVES, Biomes.DRIPSTONE_CAVES)) {
             check(!AflVanillaBiomePolicy.isDisabled(cave), "cave candidate retained");

@@ -53,16 +53,10 @@ public abstract class NoiseChunkMacroWaterMixin {
             apocalypse$columns[index] = apocalypse$geography.sample(x, z);
             apocalypse$columnKeys[index] = key;
             if (apocalypse$plan != null) {
-                // an estuary column, or (Phase 2b) a low shore column within 48 m of open water whose ground lies under
-                // Y63: the water edge then follows the ground's Y63 contour, not the plan's 16 m cells
-                int wc = apocalypse$plan.waterClass(x, z);
-                double floor = Double.NaN;
-                if (wc == 2) floor = apocalypse$plan.heightAt(x, z);
-                else if (wc == 0 && apocalypse$plan.shoreDistance(x, z) <= 48) {
-                    double h = apocalypse$plan.heightAt(x, z);
-                    if (h < MacroGeography.SEA_LEVEL) floor = h;
-                }
-                apocalypse$estuaryFloor[index] = floor;
+                // a sea or estuary column, or (Phase 2b) a low shore column within 48 m of open water whose ground lies
+                // under Y63: the water edge then follows the ground's Y63 contour, not the plan's 16 m cells
+                double h = apocalypse$plan.heightAt(x, z);
+                apocalypse$estuaryFloor[index] = apocalypse$plan.seaFloodAt(x, z, h) ? h : Double.NaN;
             }
         }
         return apocalypse$columns[index];
@@ -74,11 +68,14 @@ public abstract class NoiseChunkMacroWaterMixin {
         if (apocalypse$geography != null) {
             MacroGeographySample column = apocalypse$column(noiseChunk.blockX(), noiseChunk.blockZ());
             int y = noiseChunk.blockY();
-            if (column.isWater() && y >= column.surfaceHeight() && y < MacroGeography.SEA_LEVEL)
+            // without a plan the macro sea is forced from its own floor up; with a Terrain V2 plan the planned ground is
+            // the floor everywhere (Phase 2b fix: the macro coast is a different line from the plan's, and forcing water
+            // there under planned ground left crusts and straight shores), so only open air under Y63 fills
+            if (apocalypse$plan == null && column.isWater() && y >= column.surfaceHeight() && y < MacroGeography.SEA_LEVEL)
                 cir.setReturnValue(Blocks.WATER.defaultBlockState());
             else if (apocalypse$plan != null && y < MacroGeography.SEA_LEVEL) {
-                // an estuary (or the low shore beside it): open air over the drowned floor (and the floor's top block)
-                // fills to sea level
+                // the sea, an estuary or the low shore beside them: open air over the planned floor (and the floor's top
+                // block) fills to sea level
                 double floor = apocalypse$estuaryFloor[(noiseChunk.blockX() & 15) | ((noiseChunk.blockZ() & 15) << 4)];
                 BlockState state = cir.getReturnValue();
                 if (!Double.isNaN(floor) && y >= floor - 1 && state != null && state.isAir())   // null = the default (solid) block

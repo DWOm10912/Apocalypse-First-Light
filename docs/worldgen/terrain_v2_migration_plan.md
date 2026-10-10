@@ -2,6 +2,12 @@
 
 日期：2026-10-07。状态：**Phase 0 IMPLEMENTED / PENDING USER VALIDATION；Phase 1～8 PLANNED / NOT IMPLEMENTED**。原研究阶段只有源码审查、外部研究和文档变更；后续已实现[Phase 0 只读诊断](terrain_v2_phase0_diagnostics_and_baseline.md)，没有切换生成算法或资源，没有实机验收。
 
+**2026-10-10 第六次更新**：生态与群系 V1 用户实机验收 **PASS**（含内陆白沙修正），Phase 4 第一版完成。下一步按开发顺序另定。
+
+**2026-10-10 第五次更新**：用户批准生态分布方案（六项决定），**生态与群系 V1 已接入世界生成**（11 个 AFL 自然群系、地表规则、原版植被、宽谷底与山前林带调整、外海海岸平滑），离线验证与编译通过，等实机验收，见 [Terrain V2 生态 V1](terrain_v2_ecology_v1.md)。
+
+**2026-10-10 第四次更新**：Phase 2b 初步实机 PASS，河口与湿地直边修复。**Phase 4（生态与群系）开始**：Fallout 已停止自然生成，辐射与群系脱钩；r1 生态分区移植成 Java，完整生态的分布预览等用户确认，见 [Terrain V2 生态 V1](terrain_v2_ecology_v1.md)。
+
 **2026-10-10 第三次更新**：用户 Phase 2 初步实机验收 PASS。**Phase 2b（河流水体 + 湿地水塘 + 稳定层硬底与熔岩湖门控 + 自动环境辐射停用）已实现**，见 [Terrain V2 Phase 2b](terrain_v2_phase2b_rivers_v1.md)，离线验证与编译通过，等实机验收；Phase 3 的稳定层由此成为"平原硬底、山区软层"。生态与群系阶段在 Phase 2b 实机验收之后。
 
 **2026-10-10 第二次更新**：用户验收 r1 规划 PASS。旧世界生成逻辑已退役（[旧世界生成逻辑退役 V1](legacy_worldgen_retirement_v1.md)）；**Phase 2（LAND 高程 + 近地表稳定层 + 统一水面掩码）已实现**，见 [Terrain V2 Phase 2](terrain_v2_phase2_generation_v1.md)，等用户在全新世界实机验收；Phase 3 的稳定层在这一步一起做了第一版（密度侧 + 雕刻器侧）。Phase 4 群系重构要等 Phase 2 实机验收之后。

@@ -422,6 +422,17 @@
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s 在与 %2$s 战斗时死于热射病",
 
   "biome.apocalypse_firstlight.fallout_barrens": "沉降荒原",
+  "biome.apocalypse_firstlight.temperate_grassland": "温带草地",
+  "biome.apocalypse_firstlight.oak_hickory_woodland": "栎-山核桃林地",
+  "biome.apocalypse_firstlight.mixed_mesophytic_forest": "坡地混合阔叶林",
+  "biome.apocalypse_firstlight.ridge_oak_forest": "山脊栎林",
+  "biome.apocalypse_firstlight.hemlock_hollow": "谷地铁杉-白松林",
+  "biome.apocalypse_firstlight.riparian_forest": "河岸林",
+  "biome.apocalypse_firstlight.coastal_pine_oak_forest": "海岸松栎林",
+  "biome.apocalypse_firstlight.coastal_sandy_clearing": "海岸沙地疏林草地",
+  "biome.apocalypse_firstlight.coastal_swamp_forest": "海岸沼泽林",
+  "biome.apocalypse_firstlight.tidal_marsh": "潮汐湿地",
+  "biome.apocalypse_firstlight.wet_prairie": "湿草甸",
 
   "effect.apocalypse_firstlight.radiation_sickness": "辐射病",
   "effect.apocalypse_firstlight.gastroenteritis": "肠胃感染",

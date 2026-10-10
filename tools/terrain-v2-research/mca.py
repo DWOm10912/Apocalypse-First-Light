@@ -77,7 +77,25 @@ class Chunk:
         self.cx, self.cz = nbt['xPos'], nbt['zPos']
         self.status = nbt.get('Status', '')
         self.sections = {}
+        self.biomes = {}
         for s in nbt.get('sections', []):
+            bi = s.get('biomes')
+            if bi:
+                bpal = list(bi['palette'])
+                bdata = bi.get('data')
+                if bdata is None or len(bpal) == 1:
+                    self.biomes[s['Y']] = [bpal[0]] * 64
+                else:
+                    bits = max(1, (len(bpal) - 1).bit_length())
+                    per = 64 // bits
+                    out = []
+                    for v in bdata:
+                        v &= 0xFFFFFFFFFFFFFFFF
+                        for k in range(per):
+                            out.append(bpal[(v >> (k * bits)) & ((1 << bits) - 1)])
+                            if len(out) == 64: break
+                        if len(out) == 64: break
+                    self.biomes[s['Y']] = out
             bs = s.get('block_states')
             if not bs: continue
             pal = [p['Name'] for p in bs['palette']]
@@ -111,6 +129,11 @@ class Chunk:
                 arr = out
         self._cache[sy] = arr
         return arr
+
+    def biome(self, lx, y, lz):
+        sec = self.biomes.get(y >> 4)
+        if sec is None: return '?'
+        return sec[(((y & 15) >> 2) * 4 + (lz >> 2)) * 4 + (lx >> 2)]
 
     def name(self, lx, y, lz):
         arr = self.section_array(y >> 4)

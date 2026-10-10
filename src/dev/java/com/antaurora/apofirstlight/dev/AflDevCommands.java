@@ -301,9 +301,8 @@ public final class AflDevCommands {
         int lobeIndex = shapeSource == StartupPlainsEnclave.ShapeSource.PRIMARY_LOBE ? -1
                 : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_0 ? 0
                 : shapeSource == StartupPlainsEnclave.ShapeSource.SECONDARY_LOBE_1 ? 1 : -2;
-        String expected = zone == StartupPlainsEnclave.Zone.FALLOUT_BUFFER
-                ? "apocalypse_firstlight:fallout_barrens"
-                : zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
+        // 2026-10-10: Fallout Barrens is no longer placed (terrain_v2_ecology_v1); the retired enclave zones all expect Plains
+        String expected = zone == StartupPlainsEnclave.Zone.OUTSIDE ? "original" : "minecraft:plains";
         boolean match = "original".equals(expected) || expected.equals(surfaceBiome);
         context.getSource().sendSuccess(() -> Component.literal(String.format(
                 "[AFL STARTUP ECOLOGY HERE] pos=(%d,%d,%d) seed=%d distance=%.1f zone=%s falloutShapeSource=%s primaryLobeAngleDeg=%.1f primaryLobeExtraLength=%d primaryLobeHalfWidth=%d secondaryLobeCount=%d lobeForward=%.1f lobeSide=%.1f lobeBoundaryMargin=%.1f plainsBoundary=%d settlementProtectionBoundary=%d settlementProtected=%s protectionClass=%s falloutBoundary=%d eligibleFalloutWidth=%d expectedBiome=%s surfaceY=%d surfaceQuartY=%d surfaceBiome=%s playerBiome=%s surfaceMatch=%s verticalOverride=SURFACE_BAND blockY=48..112 quartY=12..28 holderResolutionStatus=%s overridePath=MultiNoiseBiomeSource#getNoiseBiome:RETURN",
@@ -416,8 +415,8 @@ public final class AflDevCommands {
         int localRoads = Math.max(0, plan.roadPlans().size() - 1);
         long residentialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.RESIDENTIAL).count();
         long commercialLots = plan.lots().stream().filter(lot -> lot.type() == SettlementPrototype.LotType.COMMERCIAL).count();
-        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=apocalypse_firstlight:fallout_barrens archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s %s",
-                plan.anchor().toShortString(), orientation, plan.bounds(), terrain.sampleCount(), terrain.minY(), terrain.p10(), terrain.median(), terrain.p90(), terrain.maxY(), terrain.effectiveRelief(), terrain.outlierCount(), terrain.outlierRatio(),
+        String message = String.format("[AFL SETTLEMENT PROTOTYPE] anchor=%s biome=%s archetype=STAGGERED_T orientation=%s plannedBounds=%s samples=%d minY=%d p10=%d median=%d p90=%d maxY=%d effectiveRelief=%d outliers=%d outlierRatio=%.3f mainRoadSegments=%d localRoads=%d intersections=%d residentialLots=%d commercialLots=%d emptyFrontage=APPROX_20_PERCENT treesCleared=%d logsCleared=%d leavesCleared=%d otherVegetationCleared=%d regionalStubA=%s regionalStubB=%s %s",
+                plan.anchor().toShortString(), level.getBiome(plan.anchor()).unwrapKey().map(k -> k.location().toString()).orElse("unknown"), orientation, plan.bounds(), terrain.sampleCount(), terrain.minY(), terrain.p10(), terrain.median(), terrain.p90(), terrain.maxY(), terrain.effectiveRelief(), terrain.outlierCount(), terrain.outlierRatio(),
                 1, localRoads, localRoads, residentialLots, commercialLots, result.logsCleared() + result.leavesCleared(), result.logsCleared(),
                 result.leavesCleared(), result.otherVegetationCleared(), "PRESENT", "PRESENT", result.detail() == null ? "" : result.detail());
         context.getSource().sendSuccess(() -> Component.literal(message), true);

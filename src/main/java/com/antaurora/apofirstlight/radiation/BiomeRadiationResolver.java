@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.radiation;
 
-import com.antaurora.apofirstlight.registry.AflBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -10,7 +9,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/** Resolves radiation tendency from the surface biome of an X/Z column. */
+/**
+ * Resolves the surface biome of an X/Z column for radiation diagnostics. Since 2026-10-10 no biome sets a radiation
+ * profile (Fallout Barrens used to force HEAVY_FALLOUT and Plains SAFE): the automatic field is OFF by default and the
+ * LEGACY dev mode is the plain seed-noise field. Future environmental radiation comes from the disaster system.
+ */
 public final class BiomeRadiationResolver {
     private static final int CACHE_LIMIT = 4096;
     private static final Map<ServerLevel, LinkedHashMap<Long, Resolution>> CACHE = new WeakHashMap<>();
@@ -40,11 +43,7 @@ public final class BiomeRadiationResolver {
         int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
         BlockPos surface = new BlockPos(x, Math.max(level.getMinBuildHeight(), surfaceY - 1), z);
         var biome = level.getBiome(surface);
-        BiomeRadiationProfile profile = biome.is(AflBiomes.FALLOUT_BARRENS)
-                ? BiomeRadiationProfile.HEAVY_FALLOUT
-                : biome.is(net.minecraft.world.level.biome.Biomes.PLAINS)
-                ? BiomeRadiationProfile.SAFE
-                : BiomeRadiationProfile.UNKNOWN;
+        BiomeRadiationProfile profile = BiomeRadiationProfile.UNKNOWN;
         ResourceLocation biomeId = biome.unwrapKey().map(keyRef -> keyRef.location()).orElse(null);
         Resolution resolution = new Resolution(surfaceY, biomeId, profile);
         synchronized (CACHE) {

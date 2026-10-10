@@ -27,7 +27,21 @@ public final class RiverWaterFill {
     private RiverWaterFill() {
     }
 
+    /** Chunks filled and the time spent here (dev: /afl dev terrain_v2 ecology prints them). */
+    public static final java.util.concurrent.atomic.LongAdder CHUNKS = new java.util.concurrent.atomic.LongAdder(),
+            NANOS = new java.util.concurrent.atomic.LongAdder();
+
     public static void apply(TerrainPlanSurface plan, ChunkAccess chunk, BlockState stone) {
+        long t0 = System.nanoTime();
+        try {
+            applyTimed(plan, chunk, stone);
+        } finally {
+            CHUNKS.increment();
+            NANOS.add(System.nanoTime() - t0);
+        }
+    }
+
+    private static void applyTimed(TerrainPlanSurface plan, ChunkAccess chunk, BlockState stone) {
         ChunkPos cp = chunk.getPos();
         int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ();
         RiverNetwork.Column col = new RiverNetwork.Column();
@@ -38,9 +52,9 @@ public final class RiverWaterFill {
         for (int dz = -1; dz <= 16; dz++) for (int dx = -1; dx <= 16; dx++) {
             int x = x0 + dx, z = z0 + dz, wc = plan.waterClass(x, z);
             int l = wc == 1 || wc == 2 ? RiverNetwork.SEA_WATER_TOP : Integer.MIN_VALUE;
-            if (wc != 1 && wc != 2 && plan.rivers != null) {
+            if (plan.rivers != null) {
                 plan.rivers.column(x, z, col);
-                if (col.kind == RiverNetwork.Column.RIVER) l = col.level;
+                if (col.kind == RiverNetwork.Column.RIVER) l = wc == 1 || wc == 2 ? Math.min(l, col.level) : col.level;
                 if (col.kind != RiverNetwork.Column.NONE && dx >= 0 && dz >= 0 && dx < 16 && dz < 16) any = true;
             }
             level[(dz + 1) * 18 + dx + 1] = l;

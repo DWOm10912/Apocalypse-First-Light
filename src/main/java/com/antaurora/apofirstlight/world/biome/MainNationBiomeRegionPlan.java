@@ -1,6 +1,5 @@
 package com.antaurora.apofirstlight.world.biome;
 
-import com.antaurora.apofirstlight.registry.AflBiomes;
 import com.antaurora.apofirstlight.worldgen.geography.MacroBiomePolicy;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeographySample;
@@ -15,7 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.SplittableRandom;
 
-/** Seed-only immutable surface regions. No terrain/chunk queries or climate thresholds. */
+/**
+ * Seed-only immutable surface regions. No terrain/chunk queries or climate thresholds.
+ * <p>2026-10-10 (ecology stage, docs/worldgen/terrain_v2_ecology_v1.md): Fallout Barrens is no longer placed in new
+ * worlds; the Fallout biome stays registered for old worlds and later reuse. In a Terrain V2 world the surface biome is
+ * the plan's ecology (EcologyBiomes: the r1 zones, soft ecotones, woodlots, riparian corridors, beaches) mapped to the
+ * AFL natural biomes, water and beach to vanilla Ocean / Deep Ocean / Beach, all from the planned ground and its
+ * unified water mask (not MacroGeography's own coastline). The result depends only on the quart column, so it is
+ * cached per worker thread (biome fill and the surface rules ask thousands of times per chunk). Without a plan
+ * main-nation land is Plains.
+ */
 public final class MainNationBiomeRegionPlan {
     private static final Map<Long, MainNationBiomeRegionPlan> CACHE = new LinkedHashMap<>(16, .75f, true);
     public static final int SAFETY_GAP = 128;
@@ -24,7 +32,8 @@ public final class MainNationBiomeRegionPlan {
     private final List<Pocket> pockets;
     private final int requestedCount;
 
-    public enum Region { STARTUP_PLAINS, ADDITIONAL_PLAINS, DEFAULT_FALLOUT }
+    /** DEFAULT_LAND was DEFAULT_FALLOUT before 2026-10-10 (it gave Fallout Barrens; it now gives Plains). */
+    public enum Region { STARTUP_PLAINS, ADDITIONAL_PLAINS, DEFAULT_LAND }
 
     public static synchronized MainNationBiomeRegionPlan forSeed(long seed) {
         var plan = CACHE.get(seed);
@@ -92,24 +101,61 @@ public final class MainNationBiomeRegionPlan {
     }
 
     private Region regionAt(int x, int z, MacroGeographySample sample) {
-        if (!mainlandLand(sample)) return Region.DEFAULT_FALLOUT;
+        if (!mainlandLand(sample)) return Region.DEFAULT_LAND;
         // 2026-10-10: the circular startup Plains around (0, 0) is retired (legacy_worldgen_retirement_v1);
         // STARTUP_PLAINS is no longer produced. The pockets keep their old positions (same seed, same pockets).
         for (var pocket : pockets) if (pocket.contains(x, z)) return Region.ADDITIONAL_PLAINS;
-        return Region.DEFAULT_FALLOUT;
+        return Region.DEFAULT_LAND;
     }
 
     /** Shared final surface policy. Water/coast always win over the land region plan. */
     public ResourceKey<Biome> surfaceBiome(int x, int z, ResourceKey<Biome> original) {
+        // Terrain V2: the plan's water mask and ground decide water, sea floor and beach (the macro coast is another line)
+        var plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(seed);
+        if (plan != null) return planSurfaceBiome(plan, x, z);
         var sample = geography.sample(x, z);
         if (sample.isWater() || sample.surfaceClass() == MacroGeographySample.SurfaceClass.COAST)
             return MacroBiomePolicy.override(sample, original);
-        // Terrain V2: a drowned valley the plan adds to the sea is water here too (one land / water mask)
-        var plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(seed);
-        if (plan != null && plan.waterClass(x, z) == 2) return Biomes.OCEAN;
-        if (sample.nationId() == MacroGeographySample.NationId.MAIN_NATION && sample.isLand())
-            return regionAt(x, z, sample) == Region.DEFAULT_FALLOUT ? AflBiomes.FALLOUT_BARRENS : Biomes.PLAINS;
+        if (sample.nationId() == MacroGeographySample.NationId.MAIN_NATION && sample.isLand()) return Biomes.PLAINS;
         return original;
+    }
+
+    /** Terrain V2 surface biome: the ecology of the quart column (x, z multiples of 4), cached per worker thread. */
+    static ResourceKey<Biome> planSurfaceBiome(com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan, int x, int z) {
+        QuartCache cache = QUART_CACHE.get();
+        int i = ((x >> 2) & 63) | (((z >> 2) & 63) << 6);
+        long key = ((long) (x >> 2) << 32) ^ ((z >> 2) & 0xffffffffL);
+        CALLS.increment();
+        if (cache.owner[i] == plan && cache.key[i] == key) return cache.value[i];
+        long t0 = System.nanoTime();
+        ResourceKey<Biome> result = ecologyBiome(plan, x, z);
+        MISS_NANOS.add(System.nanoTime() - t0);
+        MISSES.increment();
+        cache.owner[i] = plan;
+        cache.key[i] = key;
+        cache.value[i] = result;
+        return result;
+    }
+
+    /** The ecology biome without the cache (dev tools, maps). */
+    public static ResourceKey<Biome> ecologyBiome(com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan, double x, double z) {
+        int b = com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyBiomes.biomeAt(plan, x, z);
+        if (b == com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyBiomes.SEA)
+            return plan.heightAt(x, z) < 32 ? Biomes.DEEP_OCEAN : Biomes.OCEAN;
+        if (b == com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyBiomes.BEACH) return Biomes.BEACH;
+        return com.antaurora.apofirstlight.registry.AflBiomes.ecology(b);
+    }
+
+    private static final ThreadLocal<QuartCache> QUART_CACHE = ThreadLocal.withInitial(QuartCache::new);
+    public static final java.util.concurrent.atomic.LongAdder CALLS = new java.util.concurrent.atomic.LongAdder(),
+            MISSES = new java.util.concurrent.atomic.LongAdder(), MISS_NANOS = new java.util.concurrent.atomic.LongAdder();
+
+    private static final class QuartCache {
+        final long[] key = new long[4096];
+        @SuppressWarnings("unchecked")
+        final ResourceKey<Biome>[] value = new ResourceKey[4096];
+        final com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface[] owner =
+                new com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface[4096];
     }
 
     /** Both biome filling and SurfaceSystem call this resolver on the same quart lattice. */
@@ -118,7 +164,7 @@ public final class MainNationBiomeRegionPlan {
         x = x >> 2 << 2;
         y = y >> 2 << 2;
         z = z >> 2 << 2;
-        if (Biomes.DEEP_DARK.equals(original)) return AflBiomes.FALLOUT_BARRENS;
+        if (Biomes.DEEP_DARK.equals(original)) return Biomes.PLAINS;     // filtered anyway; never Fallout (2026-10-10)
         if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(original)) {
             var sample = geography.sample(x, z);
             boolean belowSurface = sample.isWater() ? sample.surfaceHeight() - y > 12

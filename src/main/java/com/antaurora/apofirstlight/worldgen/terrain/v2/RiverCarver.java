@@ -16,7 +16,9 @@ package com.antaurora.apofirstlight.worldgen.terrain.v2;
  *   bank is sealed down to 6 below the lowest level in reach.</li>
  *   <li>POOL (tidal marsh, TerrainPlanSurface.poolAt, only where the generated top is the marsh flat Y63): water at the
  *   sea level Y62 over a bed at Y61.</li>
- *   <li>Sea and estuary columns are left to their own sea-level fill (NoiseChunkMacroWaterMixin).</li>
+ *   <li>Open sea and estuary water (generated ground under Y62) is left to its own sea-level fill
+ *   (NoiseChunkMacroWaterMixin); dry ground inside a sea or estuary cell takes the rules above (Phase 2b fix: the river
+ *   used to stop at the estuary cell's edge, leaving a straight wall across its mouth).</li>
  * </ul>
  */
 public final class RiverCarver {
@@ -50,8 +52,7 @@ public final class RiverCarver {
         long key = ((long) x << 32) ^ (z & 0xffffffffL);
         if (c.owner[i] != s || c.key[i] != key) {
             int ceiling = Integer.MAX_VALUE;
-            int wc = s.waterClass(x, z);
-            if (wc != 1 && wc != 2 && s.rivers != null) {
+            if (s.rivers != null) {
                 s.rivers.column(x, z, c.col);
                 if (c.col.kind != RiverNetwork.Column.NONE) ceiling = c.col.lowLevel - 8;
             }
@@ -79,7 +80,9 @@ public final class RiverCarver {
         e.sealTo = Integer.MAX_VALUE;
         e.level = Integer.MIN_VALUE;
         int wc = s.waterClass(x, z);
-        if (wc == 1 || wc == 2) return;
+        // open water (ground under the sea's top water block) keeps its own fill; dry ground inside a sea or estuary
+        // cell takes the river rules, so a river is cut all the way to the water instead of stopping at the cell edge
+        if ((wc == 1 || wc == 2) && top < RiverNetwork.SEA_WATER_TOP) return;
         if (s.rivers != null) s.rivers.column(x, z, col);
         else col.kind = RiverNetwork.Column.NONE;
         if (col.kind == RiverNetwork.Column.RIVER) {

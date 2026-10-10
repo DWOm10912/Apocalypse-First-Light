@@ -6,6 +6,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.Climate;
 import terrablender.api.Region;
 import terrablender.api.RegionType;
@@ -13,7 +14,8 @@ import terrablender.api.RegionType;
 import java.util.function.Consumer;
 
 public final class AflOverworldRegion extends Region {
-    /** Candidate fallback only; MainNationBiomeRegionPlan owns final MAIN_NATION land selection. */
+    /** Candidate fallback only; MainNationBiomeRegionPlan owns final MAIN_NATION land selection. Since 2026-10-10 the
+     *  candidates are Plains, not Fallout Barrens (Fallout is no longer placed naturally; the biome stays registered). */
     public static final int REGION_WEIGHT = 190;
 
     public AflOverworldRegion(ResourceLocation name, int weight) {
@@ -31,7 +33,7 @@ public final class AflOverworldRegion extends Region {
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.point(0.0F),
                 0.0F,
-                AflBiomes.FALLOUT_BARRENS);
+                Biomes.PLAINS);
         addBiome(mapper,
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, -0.35F),
@@ -40,6 +42,22 @@ public final class AflOverworldRegion extends Region {
                 Climate.Parameter.span(-1.0F, 1.0F),
                 Climate.Parameter.span(-1.0F, 1.0F),
                 0.0F,
-                AflBiomes.FALLOUT_BARRENS);
+                Biomes.PLAINS);
+        // Terrain V2 ecology (2026-10-10): the AFL natural biomes must be possible biomes of the source, or their
+        // vegetation never enters the generator's feature list; MainNationBiomeRegionPlan decides where they are, so the
+        // raw climate slots here (weirdness slices of the land span) only make them known
+        var natural = AflBiomes.ECOLOGY;
+        for (int k = 0; k < natural.size(); k++) {
+            float w0 = -1.0F + 2.0F * k / natural.size(), w1 = -1.0F + 2.0F * (k + 1) / natural.size();
+            addBiome(mapper,
+                    Climate.Parameter.span(-1.0F, 1.0F),
+                    Climate.Parameter.span(-0.35F, 1.0F),
+                    Climate.Parameter.span(-0.11F, 1.0F),
+                    Climate.Parameter.span(-1.0F, 1.0F),
+                    Climate.Parameter.span(w0, w1),
+                    Climate.Parameter.point(0.0F),
+                    0.0F,
+                    natural.get(k));
+        }
     }
 }

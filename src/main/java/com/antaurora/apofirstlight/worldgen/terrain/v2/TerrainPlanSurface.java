@@ -19,10 +19,17 @@ import java.util.zip.CRC32;
  *   <li>{@link #rivers}: the river water of the r1 network (Phase 2b, RiverNetwork) and {@link #poolAt}, the open
  *   water of the tidal marsh. Both are applied by RiverCarver after the noise fill; {@link #heightAt} stays the r1
  *   surface.</li>
+ *   <li>Shore warp (Phase 2b fix, 2026-10-10; open coast added in the ecology stage): within two cells of a land /
+ *   water boundary (estuary, marsh, open sea) every query
+ *   reads the plan through a smooth domain warp of up to about 12 m (two gradient noise octaves, 120 and 36 m, warp
+ *   gradient under 0.35), so the estuary and marsh shores no longer run along the
+ *   16 m cells (= chunk borders); heights, water mask, stable depth and pools all read the same warped point. The
+ *   sub-grid detail fades with the bilinear share of open-water cells instead of switching off at a water cell, so
+ *   there is no half-block step on a cell border. Away from estuaries and marsh nothing changes (r1 heights).</li>
  * </ul>
  */
 public final class TerrainPlanSurface {
-    public static final int FORMAT = 2;                // 2: + rivers (Phase 2b, 2026-10-10)
+    public static final int FORMAT = 4;                // 2: + rivers; 3: shore warp (Phase 2b); 4: + ecology zones (2026-10-10)
     public static final int N = TerrainPlanV2.N;
     public static final double CELL = TerrainPlanV2.CELL, ORIGIN = TerrainPlanV2.ORIGIN;
 
@@ -35,9 +42,15 @@ public final class TerrainPlanSurface {
     final byte[] stable;
     final byte[] shore;
     public final RiverNetwork rivers;
+    /** The r1 ecology zones and HAND per cell (EcologyPlan; ecology stage), null on a bare build surface. */
+    public final EcologyPlan.Zones ecology;
+    /** Shore warp weight per cell (0 / 1, read bilinearly), derived from the water mask. */
+    final float[] warpW;
+    /** Open-coast smoothing (ecology stage): the 5 x 5 cell mean of h near the open sea, and its weight per cell. */
+    final float[] hCoast, coastW;
 
     TerrainPlanSurface(String version, long seed, long noiseSeed, float[] h, byte[] water, float[] belt, byte[] stable, byte[] shore,
-                       RiverNetwork rivers) {
+                       RiverNetwork rivers, EcologyPlan.Zones ecology) {
         this.version = version;
         this.seed = seed;
         this.noiseSeed = noiseSeed;
@@ -47,10 +60,137 @@ public final class TerrainPlanSurface {
         this.stable = stable;
         this.shore = shore;
         this.rivers = rivers;
+        this.ecology = ecology;
+        this.warpW = warpWeights(water);
+        float[][] coast = coastSmoothing(h, water);
+        this.hCoast = coast[0];
+        this.coastW = coast[1];
     }
 
-    TerrainPlanSurface withRivers(RiverNetwork r) {
-        return new TerrainPlanSurface(version, seed, noiseSeed, h, water, belt, stable, shore, r);
+    static final int WARP_REACH = 2;
+    static final double WARP_A1 = 14, WARP_L1 = 120, WARP_A2 = 4, WARP_L2 = 36;
+
+    /** 1 for cells within WARP_REACH of a land / water boundary: estuaries, marsh and (since the ecology stage) the open
+     *  coast too, whose sea cells drew a 16 m staircase along every diagonal shore (the sea fill and the biomes follow the
+     *  planned ground, so warping it is safe). */
+    static float[] warpWeights(byte[] water) {
+        float[] w = new float[N * N];
+        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) {
+            boolean wet = false, dry = false;
+            for (int dr = -WARP_REACH; dr <= WARP_REACH; dr++) for (int dc = -WARP_REACH; dc <= WARP_REACH; dc++) {
+                int k = water[idx(clampI(c + dc), clampI(r + dr))];
+                if (k != 0) wet = true;
+                if (k == 0 || k == 3) dry = true;
+            }
+            w[idx(c, r)] = wet && dry ? 1 : 0;
+        }
+        return w;
+    }
+
+    /**
+     * Open-coast smoothing (2026-10-10, ecology stage): the macro sea's 16 m cells meet the coastal land in a staircase,
+     * and the planned shore traced it (steps about 50 m long on every diagonal coast, a sawtooth beach). Within two
+     * cells of both open sea and land the plan surface blends to the 5 x 5 cell (80 m) mean of h, so the shore becomes a
+     * gentle, smooth slope; estuaries and marsh keep their own surface (they have the shore warp), inland is unchanged.
+     */
+    static float[][] coastSmoothing(float[] h, byte[] water) {
+        int n = N * N;
+        boolean[] sea = new boolean[n], land = new boolean[n];
+        for (int i = 0; i < n; i++) { sea[i] = water[i] == 1; land[i] = water[i] == 0 || water[i] == 3; }
+        boolean[] near2 = and(dilate(sea, 2), dilate(land, 2)), near4 = and(dilate(sea, 4), dilate(land, 4));
+        float[] hs = h.clone(), w = new float[n];
+        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) {
+            int i = idx(c, r);
+            if (near2[i]) w[i] = 1;
+            if (!near4[i]) continue;
+            double sum = 0;
+            for (int dr = -2; dr <= 2; dr++) for (int dc = -2; dc <= 2; dc++) sum += h[idx(clampI(c + dc), clampI(r + dr))];
+            hs[i] = (float) (sum / 25);
+        }
+        return new float[][]{hs, w};
+    }
+
+    static boolean[] dilate(boolean[] m, int rad) {
+        boolean[] a = new boolean[m.length], b = new boolean[m.length];
+        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) {
+            boolean v = false;
+            for (int d = -rad; d <= rad && !v; d++) v = m[idx(clampI(c + d), r)];
+            a[idx(c, r)] = v;
+        }
+        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) {
+            boolean v = false;
+            for (int d = -rad; d <= rad && !v; d++) v = a[idx(c, clampI(r + d))];
+            b[idx(c, r)] = v;
+        }
+        return b;
+    }
+
+    static boolean[] and(boolean[] a, boolean[] b) {
+        boolean[] o = new boolean[a.length];
+        for (int i = 0; i < a.length; i++) o[i] = a[i] && b[i];
+        return o;
+    }
+
+    /** The plan grid's surface at grid coordinates, the open-coast smoothing blended in. */
+    private double gridHeight(double gx, double gz) {
+        double y = baseHeight(h, gx, gz);
+        int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
+        double fx = gx - c0, fz = gz - r0, cw = 0;
+        for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++)
+            cw += coastW[idx(clampI(c0 + a), clampI(r0 + b))] * (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
+        if (cw <= 0) return y;
+        cw = cw * cw * (3 - 2 * cw);
+        return y + (baseHeight(hCoast, gx, gz) - y) * cw;
+    }
+
+    /** The shore-warp offset of a block column (cached per worker thread), {dx, dz} in m. */
+    private float[] warp(double x, double z) {
+        int bx = (int) Math.floor(x), bz = (int) Math.floor(z);
+        WarpCache c = WARP.get();
+        int i = (bx & 15) | ((bz & 15) << 4);
+        long key = ((long) bx << 32) ^ (bz & 0xffffffffL);
+        if (c.owner[i] != this || c.key[i] != key) {
+            c.owner[i] = this;
+            c.key[i] = key;
+            double gx = (bx + 0.5 - ORIGIN) / CELL - 0.5, gz = (bz + 0.5 - ORIGIN) / CELL - 0.5;
+            int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
+            double fx = gx - c0, fz = gz - r0, wt = 0;
+            for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++)
+                wt += warpW[idx(clampI(c0 + a), clampI(r0 + b))] * (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
+            if (wt <= 0) { c.dx[i] = 0; c.dz[i] = 0; }
+            else {
+                wt = wt * wt * (3 - 2 * wt);
+                double px = bx + 0.5, pz = bz + 0.5;
+                c.dx[i] = (float) (wt * (WARP_A1 * PlanNoise.noise(noiseSeed, px / WARP_L1, pz / WARP_L1, 501)
+                        + WARP_A2 * PlanNoise.noise(noiseSeed, px / WARP_L2, pz / WARP_L2, 503)));
+                c.dz[i] = (float) (wt * (WARP_A1 * PlanNoise.noise(noiseSeed, px / WARP_L1, pz / WARP_L1, 502)
+                        + WARP_A2 * PlanNoise.noise(noiseSeed, px / WARP_L2, pz / WARP_L2, 504)));
+            }
+        }
+        c.out[0] = c.dx[i];
+        c.out[1] = c.dz[i];
+        return c.out;
+    }
+
+    private static final ThreadLocal<WarpCache> WARP = ThreadLocal.withInitial(WarpCache::new);
+
+    private static final class WarpCache {
+        final long[] key = new long[256];
+        final float[] dx = new float[256], dz = new float[256], out = new float[2];
+        final TerrainPlanSurface[] owner = new TerrainPlanSurface[256];
+    }
+
+    /** The (shore-warped) plan cell index of a point, for tools outside the package. */
+    public static int cellIndex(TerrainPlanSurface s, double x, double z) { return s.cellAt(x, z); }
+
+    /** The plan cell index a point reads (shore-warped). */
+    int cellAt(double x, double z) {
+        float[] w = warp(x, z);
+        return idx(cellOf(x + w[0]), cellOf(z + w[1]));
+    }
+
+    TerrainPlanSurface withRivers(RiverNetwork r, EcologyPlan.Zones e) {
+        return new TerrainPlanSurface(version, seed, noiseSeed, h, water, belt, stable, shore, r, e);
     }
 
     static int idx(int col, int row) { return row * N + col; }
@@ -61,12 +201,21 @@ public final class TerrainPlanSurface {
 
     /** The planned surface (top of the ground) at a point. */
     public double heightAt(double x, double z) {
-        double gx = (x - ORIGIN) / CELL - 0.5, gz = (z - ORIGIN) / CELL - 0.5;
-        double y = baseHeight(gx, gz);
+        float[] w = warp(x, z);
+        double gx = (x + w[0] - ORIGIN) / CELL - 0.5, gz = (z + w[1] - ORIGIN) / CELL - 0.5;
+        double y = gridHeight(gx, gz);
         int i = idx(clampI((int) Math.round(gx)), clampI((int) Math.round(gz)));
-        if (water[i] == 1 || water[i] == 2) return y;
+        // the detail fades with the bilinear share of open-water cells (r1: switched off inside a water cell, which left
+        // a step of up to a block on the cell border); identical to r1 wherever no open water is among the 4 cells
+        int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
+        double fx = gx - c0, fz = gz - r0, wet = 0;
+        for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++) {
+            int k = water[idx(clampI(c0 + a), clampI(r0 + b))];
+            if (k == 1 || k == 2) wet += (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
+        }
+        if (wet >= 0.999) return y;
         double steep = Math.min(1, slopeAt(i) / 0.25);
-        double amp = 0.20 + 0.45 * steep + 0.20 * belt[i];
+        double amp = (0.20 + 0.45 * steep + 0.20 * belt[i]) * (1 - wet);
         y += amp * PlanNoise.fbm(noiseSeed, x, z, 48, 2, 0.5, 91) + 0.25 * amp * PlanNoise.fbm(noiseSeed, x, z, 11, 2, 0.5, 92)
                 + 0.05 * amp * PlanNoise.fbm(noiseSeed, x, z, 4, 1, 0.5, 93);
         return y;
@@ -74,10 +223,11 @@ public final class TerrainPlanSurface {
 
     /** The plan grid's own surface without sub-grid detail (cheap: carver checks, spawn search). */
     public double baseHeightAt(double x, double z) {
-        return baseHeight((x - ORIGIN) / CELL - 0.5, (z - ORIGIN) / CELL - 0.5);
+        float[] w = warp(x, z);
+        return gridHeight((x + w[0] - ORIGIN) / CELL - 0.5, (z + w[1] - ORIGIN) / CELL - 0.5);
     }
 
-    private double baseHeight(double gx, double gz) {
+    private static double baseHeight(float[] h, double gx, double gz) {
         int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
         double fx = gx - c0, fz = gz - r0;
         double[] col = new double[4], row = new double[4];
@@ -88,7 +238,19 @@ public final class TerrainPlanSurface {
         return cr(col, fz);
     }
 
-    public int waterClass(double x, double z) { return water[idx(cellOf(x), cellOf(z))]; }
+    public int waterClass(double x, double z) { return water[cellAt(x, z)]; }
+
+    /**
+     * Whether open air under Y63 over the planned ground fills to sea level here (the one sea-fill rule: the generator's
+     * water, the biome, the maps and the audits all ask this): sea and drowned-valley cells, and land or marsh within
+     * 48 m of open water whose planned ground lies under Y63 (so the shore follows the ground's contour; 2b.1: the low
+     * marsh edge next to an estuary used to stay dry at Y61 and left a water face).
+     */
+    public boolean seaFloodAt(double x, double z, double h) {
+        int wc = waterClass(x, z);
+        if (wc == 1 || wc == 2) return true;
+        return h < 63 && shoreDistance(x, z) <= 48;
+    }
 
     /** Open water at the surface: the macro sea or a drowned valley (marsh is land at Y63.4). */
     public boolean waterAt(double x, double z) {
@@ -96,28 +258,34 @@ public final class TerrainPlanSurface {
         return w == 1 || w == 2;
     }
 
-    public int stableDepth(double x, double z) { return stable[idx(cellOf(x), cellOf(z))]; }
+    public int stableDepth(double x, double z) { return stable[cellAt(x, z)]; }
 
     /**
      * Open water in the tidal marsh (Phase 2b): pools and leads at sea level (top water block Y62) on the marsh flat
-     * (top block Y63), about 40 % of the marsh interior and fewer toward its edge (a smooth marsh fraction, so the
-     * pools never trace the 16 m grid). RiverCarver opens a pool only where the generated top is exactly Y63.
+     * (top block Y63), about 40 % of the marsh interior and fewer toward its edge: the noise threshold rises smoothly
+     * with the bilinear marsh share (shore-warped), so the pools never trace the 16 m grid. RiverCarver opens a pool
+     * only where the generated top is exactly Y63.
      */
     public boolean poolAt(int x, int z) {
-        double gx = (x + 0.5 - ORIGIN) / CELL - 0.5, gz = (z + 0.5 - ORIGIN) / CELL - 0.5;
+        float[] w = warp(x, z);
+        double gx = (x + 0.5 + w[0] - ORIGIN) / CELL - 0.5, gz = (z + 0.5 + w[1] - ORIGIN) / CELL - 0.5;
         int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
         double fx = gx - c0, fz = gz - r0;
         double m = 0;
         for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++)
             if (water[idx(clampI(c0 + a), clampI(r0 + b))] == 3) m += (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
         if (m < POOL_MARSH) return false;
+        // the threshold rises smoothly with the marsh share (no hard m cut: inside a cell the bilinear share's
+        // iso-lines are straight, and a hard cut drew straight pool edges; Phase 2b fix)
+        double t = (m - POOL_MARSH) / (1 - POOL_MARSH);
+        t = t * t * (3 - 2 * t);
         double f = PlanNoise.fbm(noiseSeed, x, z, 30, 2, 0.5, 401) + 0.5 * PlanNoise.fbm(noiseSeed, x, z, 9, 2, 0.5, 402);
-        return f < POOL_EDGE + (POOL_CORE - POOL_EDGE) * (m - POOL_MARSH) / (1 - POOL_MARSH);
+        return f < POOL_EDGE + (POOL_CORE - POOL_EDGE) * t;
     }
 
-    static final double POOL_MARSH = 0.55, POOL_EDGE = -0.7, POOL_CORE = 0.05;
+    static final double POOL_MARSH = 0.2, POOL_EDGE = -2.2, POOL_CORE = 0.1;
 
-    public int shoreDistance(double x, double z) { return shore[idx(cellOf(x), cellOf(z))]; }
+    public int shoreDistance(double x, double z) { return shore[cellAt(x, z)]; }
 
     /** Plan-grid slope (rise / run) at a cell. */
     double slopeAt(int i) {
@@ -127,9 +295,9 @@ public final class TerrainPlanSurface {
         return Math.hypot(gx, gz);
     }
 
-    public double slopeAt(double x, double z) { return slopeAt(idx(cellOf(x), cellOf(z))); }
+    public double slopeAt(double x, double z) { return slopeAt(cellAt(x, z)); }
 
-    public float beltWeight(double x, double z) { return belt[idx(cellOf(x), cellOf(z))]; }
+    public float beltWeight(double x, double z) { return belt[cellAt(x, z)]; }
 
     /**
      * The natural-land spawn (TerrainV2SpawnEvents): the plan cell nearest the origin, ring by ring on the 16 m grid
@@ -187,6 +355,8 @@ public final class TerrainPlanSurface {
         out.write(stable);
         out.write(shore);
         rivers.write(out);
+        out.write(ecology.zone());
+        out.write(ecology.hand());
     }
 
     /** Reads a cached surface; null when it is for another seed / version / format or does not check out. */
@@ -205,7 +375,10 @@ public final class TerrainPlanSurface {
         in.readFully(stable);
         in.readFully(shore);
         RiverNetwork rivers = RiverNetwork.read(in);
-        TerrainPlanSurface t = new TerrainPlanSurface(v, s, noiseSeed, h, water, belt, stable, shore, rivers);
+        byte[] zone = new byte[n], hand = new byte[n];
+        in.readFully(zone);
+        in.readFully(hand);
+        TerrainPlanSurface t = new TerrainPlanSurface(v, s, noiseSeed, h, water, belt, stable, shore, rivers, new EcologyPlan.Zones(zone, hand));
         return t.checksum().getValue() == want ? t : null;
     }
 
@@ -221,6 +394,7 @@ public final class TerrainPlanSurface {
         crc.update(stable);
         crc.update(shore);
         if (rivers != null) rivers.checksum(crc);
+        if (ecology != null) { crc.update(ecology.zone()); crc.update(ecology.hand()); }
         return crc;
     }
 }

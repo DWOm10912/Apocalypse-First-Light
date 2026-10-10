@@ -17,9 +17,10 @@ import java.util.List;
  *   donors start tributary lines that end on their parent's centreline. Breadth first, so a parent is final before its
  *   tributaries are drawn.</li>
  *   <li>Planform: the 16 m cell path Gaussian-smoothed along its length (sigma 2.2 W + 24 m, 28..56 m, ends held:
- *   no D8 staircase), resampled every 2 m, with an irregular meander offset (a sine at a wandering wavelength about
+ *   no D8 staircase; a junction end held over 2 sigma, a mouth over sigma / 2 after running 1.5 cells on into the
+ *   open water, the source free), resampled every 2 m, with an irregular meander offset (a sine at a wandering wavelength about
  *   12 W blended with fBm; amplitude min(1.6 W, 0.45 x floodplain half-width - W / 2), less in the foothills and the
- *   fold belt, swelling and fading into straight reaches, zero at both ends) that is held back wherever it would climb
+ *   fold belt, swelling and fading into straight reaches, zero at the junction or mouth) that is held back wherever it would climb
  *   more than 1.2 m up the valley side, so the river stays on the valley floor the plan carved for it.</li>
  *   <li>Width W = max(2.5, 3.0 A_km2^0.42) m (3 m at 1 km2, 8 at 10, 14 at 40); centre depth 1 + 2 lg A_km2 blocks,
  *   1..4.</li>
@@ -143,12 +144,33 @@ public final class RiverNetwork {
                 pz[m - 1] = qz[best];
                 parentLevel = ls.get(parent)[best];
             }
+            // a mouth ends in the open water as the shore-warped plan reads it (a sea or estuary cell whose ground is under
+            // Y62.5): the nearest such point within 48 m of the water cell (4 m search grid), joined by a straight run
+            // past the cell centre, so the smoothed line still ends in water
+            if (parent < 0 && m >= 2 && p.water[cells[m - 1]] != 0) {
+                double cx0 = px[m - 1], cz0 = pz[m - 1], bx = Double.NaN, bz = Double.NaN, bd = Double.MAX_VALUE;
+                for (int dz = -12; dz <= 12; dz++) for (int dx = -12; dx <= 12; dx++) {
+                    double qx = cx0 + dx * 4, qz = cz0 + dz * 4, d = dx * dx + dz * dz;
+                    if (d > 144 || d >= bd) continue;
+                    if (s.waterAt(qx, qz) && s.heightAt(qx, qz) < SEA_WATER_TOP + 0.5) { bd = d; bx = qx; bz = qz; }
+                }
+                if (!Double.isNaN(bx) && bd > 0) {
+                    px = Arrays.copyOf(px, m + 1); pz = Arrays.copyOf(pz, m + 1); pa = Arrays.copyOf(pa, m + 1);
+                    px[m] = bx;
+                    pz[m] = bz;
+                    pa[m] = pa[m - 1];
+                }
+            }
             // 1) the D8 cell path (0 / 45 degree runs) at 4 m, Gaussian-smoothed along its length (sigma 2.2 W + 24 m,
             //    28..56 m), the ends held: a valley-floor line without the grid's staircase
             double[][] lin = resample(px, pz, pa, 4.0);
             px = lin[0]; pz = lin[1]; pa = lin[2];
             int k0 = px.length;
             double[] sx = px.clone(), sz = pz.clone();
+            // a tributary's junction end is held over 2 sigma (it must stay on its parent), a mouth only over sigma / 2
+            // (Phase 2b fix: a long hold left a straight D8 run through the marsh to the estuary); the source is free
+            boolean pinEnd = parent >= 0;
+            double holdLen = pinEnd ? 2 : 0.5;
             for (int k = 1; k < k0 - 1; k++) {
                 double sigma = Math.max(28, Math.min(56, 2.2 * width(pa[k]) + 24)) / 4.0;   // in 4 m samples
                 int rad = (int) Math.ceil(2 * sigma);
@@ -157,7 +179,7 @@ public final class RiverNetwork {
                     double g = Math.exp(-0.5 * (j - k) * (j - k) / (sigma * sigma));
                     wx += g * px[j]; wz += g * pz[j]; ws += g;
                 }
-                double hold = TerrainPlanV2.smooth(Math.min(k, k0 - 1 - k) / (2 * sigma));
+                double hold = TerrainPlanV2.smooth((k0 - 1 - k) / (holdLen * sigma));
                 sx[k] = px[k] + (wx / ws - px[k]) * hold;
                 sz[k] = pz[k] + (wz / ws - pz[k]) * hold;
             }
@@ -190,7 +212,7 @@ public final class RiverNetwork {
                 double fp = ra[k] >= 1e6 ? 35 * Math.sqrt(ra[k] / 1e6) : 0;
                 double amp = Math.max(0, Math.min(1.6 * w, 0.45 * fp - 0.5 * w))
                         * (1 - 0.8 * Math.min(1, p.wBelt[cell] + 0.5 * p.wFoot[cell]));
-                double taper = TerrainPlanV2.smooth(Math.min(rs[k], total - rs[k]) / (lambda * 0.75));
+                double taper = TerrainPlanV2.smooth((total - rs[k]) / (lambda * (pinEnd ? 0.75 : 0.25)));
                 double grow = TerrainPlanV2.smooth(0.45 + 1.1 * PlanNoise.noise(s.noiseSeed, rs[k] / (2 * lambda), line * 7.31, 311));
                 double skew = PlanNoise.noise(s.noiseSeed, rs[k] / (4 * lambda), line * 9.13 + 20, 314);
                 double wig = Math.max(-1.4, Math.min(1.4, PlanNoise.fbm(s.noiseSeed, rs[k], line * 977.0 + 13, 1.3 * lambda, 3, 0.45, 301) / 1.2));
@@ -411,6 +433,33 @@ public final class RiverNetwork {
             out.level = bankLevel;
             out.maxTop = Math.max(cap, bankLevel + 1);
         }
+    }
+
+    /**
+     * Distance from (x, z) to the nearest river water edge within maxDist (scans the index buckets in range), and that
+     * river's width into width[0]; maxDist when no river is that close (ecology: the riparian corridor).
+     */
+    public double nearestEdge(double x, double z, double maxDist, double[] width) {
+        width[0] = 0;
+        if (nbx == 0) return maxDist;
+        int r = (int) Math.ceil(maxDist / BUCKET);
+        int bx = (int) Math.floor(x / BUCKET) - bx0, bz = (int) Math.floor(z / BUCKET) - bz0;
+        double best = maxDist;
+        for (int cz = Math.max(0, bz - r); cz <= Math.min(nbz - 1, bz + r); cz++)
+            for (int cx = Math.max(0, bx - r); cx <= Math.min(nbx - 1, bx + r); cx++) {
+                int key = cz * nbx + cx;
+                for (int q = bucketStart[key]; q < bucketStart[key + 1]; q++) {
+                    int i = bucketSeg[q];
+                    double ax = vx[i], az = vz[i], dx = vx[i + 1] - ax, dz = vz[i + 1] - az;
+                    double l2 = dx * dx + dz * dz;
+                    double t = l2 > 1e-12 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)) : 0;
+                    double ex = ax + dx * t - x, ez = az + dz * t - z;
+                    double w = vw[i] + (vw[i + 1] - vw[i]) * t;
+                    double edge = Math.sqrt(ex * ex + ez * ez) - w / 2;
+                    if (edge < best) { best = edge; width[0] = w; }
+                }
+            }
+        return best;
     }
 
     /** Distance from a point to the nearest river water edge, capped at the index reach (spawn search, maps). */

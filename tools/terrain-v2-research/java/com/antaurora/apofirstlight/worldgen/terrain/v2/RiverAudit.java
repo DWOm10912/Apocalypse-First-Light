@@ -40,6 +40,8 @@ public final class RiverAudit {
         // ---------------------------------------------------------------- network
         double total = 0, mainLen = 0;
         int mains = 0, uphill = 0, junctionLow = 0, drops = 0, maxDrop = 0;
+        int mouthsTotal = 0, mouthsWet = 0;
+        StringBuilder mouthList = new StringBuilder();
         double[] widthLen = new double[5];    // < 4, 4-8, 8-12, 12-16, >= 16 m
         float maxArea = 0;
         for (int line = 0; line < r.lines(); line++) {
@@ -57,6 +59,15 @@ public final class RiverAudit {
                 maxArea = Math.max(maxArea, r.vertexArea(i));
             }
             int par = r.lineParent(line);
+            if (par < 0) {
+                // a main stem must end in open water (the sea fill: ground under Y63 in a sea / estuary cell or the low shore)
+                int e = b - 1;
+                double hx = r.vertexX(e), hz = r.vertexZ(e), hh = s.heightAt(hx, hz);
+                int wc = s.waterClass(hx, hz);
+                mouthsTotal++;
+                if (hh < 63 && s.seaFloodAt(hx, hz, hh)) mouthsWet++;
+                else if (mouthList.length() < 600) mouthList.append(String.format(" (%.0f, %.0f h %.1f class %d)", hx, hz, hh, wc));
+            }
             if (par >= 0) {
                 int end = b - 1;
                 int best = -1;
@@ -74,6 +85,7 @@ public final class RiverAudit {
                 r.lines(), mains, r.vertices(), total / 1000, mainLen / 1000, maxArea / 1e6,
                 widthLen[0] / 1000, widthLen[1] / 1000, widthLen[2] / 1000, widthLen[3] / 1000, widthLen[4] / 1000,
                 drops, maxDrop, uphill, junctionLow));
+        md.append(String.format("- main stems ending in open water: %d of %d%s%n%n", mouthsWet, mouthsTotal, mouthList.length() > 0 ? "; dry ends:" + mouthList : ""));
         // ---------------------------------------------------------------- column simulation over every touched bucket
         Map<Long, int[]> cols = new HashMap<>();   // key -> {kind, ground, water, level}
         RiverNetwork.Column col = new RiverNetwork.Column();
@@ -137,7 +149,7 @@ public final class RiverAudit {
                 else {
                     int wc = s.waterClass(xx, zz);
                     ground = (int) Math.ceil(s.heightAt(xx, zz)) - 1;
-                    boolean sea = wc == 1 || wc == 2 || (wc == 0 && s.shoreDistance(xx, zz) <= 48 && s.heightAt(xx, zz) < 63);
+                    boolean sea = s.seaFloodAt(xx, zz, s.heightAt(xx, zz));
                     water = sea && ground < RiverNetwork.SEA_WATER_TOP ? RiverNetwork.SEA_WATER_TOP : Integer.MIN_VALUE;
                 }
                 // every block of this column's water from the ground up must be held: by water as high or higher, or by solid

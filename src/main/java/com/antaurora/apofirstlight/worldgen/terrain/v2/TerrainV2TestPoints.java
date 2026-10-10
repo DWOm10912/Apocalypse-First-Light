@@ -15,6 +15,37 @@ public final class TerrainV2TestPoints {
     public record Point(String name, int x, int z, String note) {
     }
 
+    /**
+     * Ecology acceptance points (2026-10-10): for every natural biome and the beach, the interior sample nearest the
+     * natural spawn (or the origin), searched ring by ring on a 48 m grid out to 9 km; interior = the same biome 24 m
+     * away in four directions.
+     */
+    public static List<Point> ecology(TerrainPlanSurface s) {
+        List<Point> out = new ArrayList<>();
+        int[] spawn = s.naturalSpawn(4096);
+        int cx = spawn == null ? 0 : spawn[0], cz = spawn == null ? 0 : spawn[1];
+        int n = EcologyBiomes.IDS.length;
+        int[][] found = new int[n][];
+        int left = n - 1;                                   // all but the sea
+        for (int ring = 0; ring * 48 <= 9000 && left > 0; ring++)
+            for (int dx = -ring; dx <= ring && left > 0; dx++) for (int dz = -ring; dz <= ring && left > 0; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != ring) continue;
+                int x = cx + dx * 48, z = cz + dz * 48;
+                int b = EcologyBiomes.biomeAt(s, x, z);
+                if (b == EcologyBiomes.SEA || found[b] != null) continue;
+                if (EcologyBiomes.biomeAt(s, x + 24, z) != b || EcologyBiomes.biomeAt(s, x - 24, z) != b
+                        || EcologyBiomes.biomeAt(s, x, z + 24) != b || EcologyBiomes.biomeAt(s, x, z - 24) != b) {
+                    if (b != EcologyBiomes.BEACH) continue;        // beaches are narrow strips: no interior test
+                }
+                found[b] = new int[]{x, z};
+                left--;
+            }
+        for (int b = 1; b < n; b++) if (found[b] != null)
+            out.add(new Point("eco_" + EcologyBiomes.IDS[b], found[b][0], found[b][1], b == EcologyBiomes.BEACH ? "minecraft:beach"
+                    : "apocalypse_firstlight:" + EcologyBiomes.IDS[b]));
+        return out;
+    }
+
     public static List<Point> rivers(TerrainPlanSurface s) {
         List<Point> out = new ArrayList<>();
         RiverNetwork r = s.rivers;

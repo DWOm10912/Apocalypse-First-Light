@@ -422,6 +422,17 @@
   "death.attack.apocalypse_firstlight.heatstroke.player": "%1$s died of heatstroke whilst fighting %2$s",
 
   "biome.apocalypse_firstlight.fallout_barrens": "Fallout Barrens",
+  "biome.apocalypse_firstlight.temperate_grassland": "Temperate Grassland",
+  "biome.apocalypse_firstlight.oak_hickory_woodland": "Oak-Hickory Woodland",
+  "biome.apocalypse_firstlight.mixed_mesophytic_forest": "Mixed Mesophytic Forest",
+  "biome.apocalypse_firstlight.ridge_oak_forest": "Ridge Oak Forest",
+  "biome.apocalypse_firstlight.hemlock_hollow": "Hemlock Hollow",
+  "biome.apocalypse_firstlight.riparian_forest": "Riparian Forest",
+  "biome.apocalypse_firstlight.coastal_pine_oak_forest": "Coastal Pine-Oak Forest",
+  "biome.apocalypse_firstlight.coastal_sandy_clearing": "Coastal Sandy Clearing",
+  "biome.apocalypse_firstlight.coastal_swamp_forest": "Coastal Swamp Forest",
+  "biome.apocalypse_firstlight.tidal_marsh": "Tidal Marsh",
+  "biome.apocalypse_firstlight.wet_prairie": "Wet Prairie",
 
   "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
   "effect.apocalypse_firstlight.gastroenteritis": "Stomach Bug",

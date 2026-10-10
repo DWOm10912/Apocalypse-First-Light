@@ -60,6 +60,8 @@ public final class TerrainV2Command {
                 .then(Commands.literal("check").executes(c -> check(c, 6))
                         .then(Commands.argument("chunks", IntegerArgumentType.integer(1, 24)).executes(c -> check(c, IntegerArgumentType.getInteger(c, "chunks")))))
                 .then(Commands.literal("points").executes(TerrainV2Command::points))
+                .then(Commands.literal("ecology").executes(c -> ecology(c, 6))
+                        .then(Commands.argument("chunks", IntegerArgumentType.integer(1, 24)).executes(c -> ecology(c, IntegerArgumentType.getInteger(c, "chunks")))))
                 .then(Commands.literal("export").executes(TerrainV2Command::export));
     }
 
@@ -91,6 +93,12 @@ public final class TerrainV2Command {
                 plan.version, x, z, h, top, (int) Math.ceil(h) - 1, WATER[plan.waterClass(x, z)], plan.stableDepth(x, z),
                 PlanStabilityDensity.hardDepth(plan.stableDepth(x, z)), plan.shoreDistance(x, z), plan.slopeAt(x, z),
                 plan.beltWeight(x, z), river)), false);
+        String actual = level.getBiome(new BlockPos(x, top, z)).unwrapKey().map(k -> k.location().toString()).orElse("?");
+        String planned = com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan
+                .ecologyBiome(plan, x >> 2 << 2, z >> 2 << 2).location().toString();
+        int zone = plan.ecology == null ? -1 : plan.ecology.zone()[TerrainPlanSurface.cellIndex(plan, x, z)];
+        c.getSource().sendSuccess(() -> Component.literal(String.format("Ecology: biome %s (plan %s) | r1 zone %s",
+                actual, planned, zone < 0 ? "water" : com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyPlan.NAMES[zone])), false);
         return 1;
     }
 
@@ -106,7 +114,7 @@ public final class TerrainV2Command {
         int pcx = pos.getX() >> 4, pcz = pos.getZ() >> 4;
         int chunks = 0, cols = 0, within1 = 0, exact = 0;
         int hardCols = 0, hardOpen = 0, softCols = 0, softOpen = 0, layerLava = 0;
-        int estuaryCols = 0, estuaryWet = 0;
+        int estuaryCols = 0, estuaryWet = 0, seaCols = 0, seaExposed = 0;
         int riverCols = 0, riverWet = 0, riverDry = 0, exposed = 0, borderCols = 0, borderMismatch = 0, poolCols = 0, poolWet = 0, bankCols = 0;
         double sumAbs = 0, maxAbs = 0;
         double[] diffs = new double[(2 * radius + 1) * (2 * radius + 1) * 256];
@@ -129,7 +137,16 @@ public final class TerrainV2Command {
                     estuaryCols++;
                     if (chunk.getBlockState(p.set(x, 62, z)).getFluidState().isSource()) estuaryWet++;
                 }
-                if (wc == 1 || wc == 2) continue;
+                // sea-level water (sea, estuary, flooded low shore): a water block at Y62 beside open air (2b.1 check)
+                if (plan.seaFloodAt(x, z, h) && waterAt(chunk, x, 62, z)) {
+                    seaCols++;
+                    for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                        int xx = x + d[0], zz = z + d[1];
+                        LevelChunk nc = (xx >> 4) == cx && (zz >> 4) == cz ? chunk : level.getChunkSource().getChunkNow(xx >> 4, zz >> 4);
+                        if (nc != null && nc.getBlockState(p.set(xx, 62, zz)).isAir()) seaExposed++;
+                    }
+                }
+                if ((wc == 1 || wc == 2) && top < 62) continue;
                 // what the river pass intended for this column (from the planned top: the generated top is already edited)
                 RiverCarver.plan(plan, x, z, (int) Math.ceil(h) - 1, col, e);
                 if (e.kind == RiverCarver.RIVER || e.kind == RiverCarver.POOL) {
@@ -195,9 +212,9 @@ public final class TerrainV2Command {
                 chunks, cols, mean, p95, fMax, pct(within1, cols), pct(exact, cols), seam, inner);
         String layer = String.format("Stable layer: hard floor (plains / coastal) air in %d of %d columns (%.2f%%), soft layer (foothills / belt, cave mouths allowed) air in %d of %d (%.2f%%), lava in the layer %d",
                 hardOpen, hardCols, pct(hardOpen, hardCols), softOpen, softCols, pct(softOpen, softCols), layerLava);
-        String water = String.format("Water: estuary columns %d, water at Y62 in %d | river columns %d: water at the planned level %d, dry %d, exposed water faces %d, "
+        String water = String.format("Water: estuary columns %d, water at Y62 in %d | sea-level water columns %d, faces against air %d | river columns %d: water at the planned level %d, dry %d, exposed water faces %d, "
                         + "chunk-border columns %d (mismatch %d) | bank columns %d | marsh pools %d, with water %d",
-                estuaryCols, estuaryWet, riverCols, riverWet, riverDry, exposed, borderCols, borderMismatch, bankCols, poolCols, poolWet);
+                estuaryCols, estuaryWet, seaCols, seaExposed, riverCols, riverWet, riverDry, exposed, borderCols, borderMismatch, bankCols, poolCols, poolWet);
         c.getSource().sendSuccess(() -> Component.literal(land), false);
         c.getSource().sendSuccess(() -> Component.literal(layer), false);
         c.getSource().sendSuccess(() -> Component.literal(water), false);
@@ -231,6 +248,72 @@ public final class TerrainV2Command {
             c.getSource().sendSuccess(() -> Component.literal(String.format("  %s: %d %d (plan surface %.1f) - %s",
                     pt.name(), pt.x(), pt.z(), plan.heightAt(pt.x(), pt.z()), pt.note())), false);
         }
+        for (TerrainV2TestPoints.Point pt : TerrainV2TestPoints.ecology(plan)) {
+            c.getSource().sendSuccess(() -> Component.literal(String.format("  %s: %d %d (plan surface %.1f) - %s",
+                    pt.name(), pt.x(), pt.z(), plan.heightAt(pt.x(), pt.z()), pt.note())), false);
+        }
+        return 1;
+    }
+
+    /**
+     * Ecology acceptance over the loaded chunks round the player (2026-10-10): per surface biome the columns, canopy cover
+     * (leaves within 40 blocks above the ground top), trees (log columns standing on soil), ground cover (a plant on the
+     * ground), bare sand / gravel / mud tops; biome-plan agreement; and the cost of the biome resolution and river fill.
+     */
+    private static int ecology(CommandContext<CommandSourceStack> c, int radius) {
+        ServerLevel level = c.getSource().getLevel();
+        TerrainPlanSurface plan = plan(level);
+        if (plan == null) { c.getSource().sendFailure(Component.literal("No Terrain V2 plan in this world")); return 0; }
+        BlockPos pos = BlockPos.containing(c.getSource().getPosition());
+        java.util.Map<String, int[]> stats = new java.util.TreeMap<>();   // columns, canopy, trees, cover, bare, planAgree
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        int chunks = 0;
+        for (int cx = (pos.getX() >> 4) - radius; cx <= (pos.getX() >> 4) + radius; cx++)
+            for (int cz = (pos.getZ() >> 4) - radius; cz <= (pos.getZ() >> 4) + radius; cz++) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                chunks++;
+                for (int lx = 0; lx < 16; lx++) for (int lz = 0; lz < 16; lz++) {
+                    int x = (cx << 4) + lx, z = (cz << 4) + lz;
+                    int top = groundTop(chunk, lx, lz);
+                    String id = level.getBiome(p.set(x, top, z)).unwrapKey().map(k -> k.location().toString()).orElse("?");
+                    int[] st = stats.computeIfAbsent(id, k -> new int[6]);
+                    st[0]++;
+                    String planned = com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan
+                            .ecologyBiome(plan, x >> 2 << 2, z >> 2 << 2).location().toString();
+                    if (planned.equals(id)) st[5]++;
+                    BlockState ground = chunk.getBlockState(p.set(x, top, z));
+                    if (ground.is(Blocks.SAND) || ground.is(Blocks.GRAVEL) || ground.is(Blocks.MUD) || ground.is(Blocks.STONE)) st[4]++;
+                    BlockState above = chunk.getBlockState(p.set(x, top + 1, z));
+                    if (above.is(BlockTags.LOGS) && !chunk.getBlockState(p.set(x, top, z)).is(BlockTags.LOGS)) st[2]++;
+                    else if (!above.isAir() && above.getFluidState().isEmpty() && above.canBeReplaced()) st[3]++;
+                    for (int y = top + 1; y <= top + 40; y++) {
+                        BlockState s = chunk.getBlockState(p.set(x, y, z));
+                        if (s.is(BlockTags.LEAVES)) { st[1]++; break; }
+                    }
+                }
+            }
+        if (chunks == 0) { c.getSource().sendFailure(Component.literal("No loaded chunks round the player")); return 0; }
+        final int fChunks = chunks;
+        c.getSource().sendSuccess(() -> Component.literal("Terrain V2 ecology over " + fChunks + " loaded chunks (biome at the ground top):"), false);
+        for (var e : stats.entrySet()) {
+            int[] st = e.getValue();
+            double area = st[0] / 256.0;
+            String line = String.format("  %s: %d columns (%.1f%%) | canopy %.0f%% | trees %.1f per chunk | ground plants %.0f%% | sand/gravel/mud/stone top %.0f%% | matches the plan %.0f%%",
+                    e.getKey(), st[0], 100.0 * st[0] / (fChunks * 256.0), 100.0 * st[1] / st[0], st[2] / area,
+                    100.0 * st[3] / st[0], 100.0 * st[4] / st[0], 100.0 * st[5] / st[0]);
+            c.getSource().sendSuccess(() -> Component.literal(line), false);
+        }
+        // the cost: biome-plan resolution (cache misses are real evaluations) and the river pass, since server start
+        long calls = com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.CALLS.sum();
+        long misses = com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.MISSES.sum();
+        long missNs = com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.MISS_NANOS.sum();
+        long rChunks = com.antaurora.apofirstlight.worldgen.terrain.v2.RiverWaterFill.CHUNKS.sum();
+        long rNs = com.antaurora.apofirstlight.worldgen.terrain.v2.RiverWaterFill.NANOS.sum();
+        String perf = String.format("Cost since start: biome plan %d calls, %d evaluated (%.1f%% cache hits), %.1f us per evaluation; river / pool pass %d chunks, %.2f ms per chunk",
+                calls, misses, calls > 0 ? 100.0 * (calls - misses) / calls : 0, misses > 0 ? missNs / 1000.0 / misses : 0,
+                rChunks, rChunks > 0 ? rNs / 1e6 / rChunks : 0);
+        c.getSource().sendSuccess(() -> Component.literal(perf), false);
         return 1;
     }
 
@@ -259,10 +342,21 @@ public final class TerrainV2Command {
                 TerrainPlanMaps.mark(win, pos.getX() - 256, pos.getZ() - 256, 1.0, pos.getX(), pos.getZ(), 0xFFFFFFFF);
                 String name = "window_" + pos.getX() + "_" + pos.getZ() + "_1m.png";
                 ImageIO.write(win, "png", dir.resolve(name).toFile());
+                BufferedImage eco = TerrainPlanMaps.renderEcology(plan, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, n, n, mpp);
+                List<TerrainV2TestPoints.Point> ecoPts = TerrainV2TestPoints.ecology(plan);
+                for (TerrainV2TestPoints.Point pt : ecoPts) TerrainPlanMaps.mark(eco, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pt.x(), pt.z(), 0xFFE0402A);
+                TerrainPlanMaps.mark(eco, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pos.getX(), pos.getZ(), 0xFFFFFFFF);
+                ImageIO.write(eco, "png", dir.resolve("ecology_8m.png").toFile());
+                BufferedImage ecoWin = TerrainPlanMaps.renderEcology(plan, pos.getX() - 256, pos.getZ() - 256, 512, 512, 1.0);
+                TerrainPlanMaps.mark(ecoWin, pos.getX() - 256, pos.getZ() - 256, 1.0, pos.getX(), pos.getZ(), 0xFFFFFFFF);
+                ImageIO.write(ecoWin, "png", dir.resolve("ecology_" + pos.getX() + "_" + pos.getZ() + "_1m.png").toFile());
+                pts = new java.util.ArrayList<>(pts);
+                pts.addAll(ecoPts);
                 StringBuilder txt = new StringBuilder("Terrain V2 " + plan.version + " seed " + plan.seed + "\n");
                 txt.append("national_8m.png: x/z ").append((int) TerrainPlanSurface.ORIGIN).append(" .. ").append((int) (TerrainPlanSurface.ORIGIN + ext))
                         .append(", 8 m per pixel, north up; white = the player, red = river acceptance points\n");
                 txt.append(name).append(": 512 m round the player at 1 m per pixel (river water and marsh pools column by column)\n");
+                txt.append("ecology_8m.png / ecology_<x>_<z>_1m.png: the natural biomes (colours in docs/worldgen/terrain_v2_ecology_v1.md), red = ecology points\n");
                 txt.append("rivers: ").append(plan.rivers == null ? 0 : plan.rivers.lines()).append(" lines\n");
                 for (TerrainV2TestPoints.Point pt : pts) txt.append(pt.name()).append(' ').append(pt.x()).append(' ').append(pt.z()).append(" - ").append(pt.note()).append('\n');
                 Files.writeString(dir.resolve("export.txt"), txt);

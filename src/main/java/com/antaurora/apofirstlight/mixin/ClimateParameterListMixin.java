@@ -47,7 +47,8 @@ public abstract class ClimateParameterListMixin {
                 biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS), biomes.getHolderOrThrow(Biomes.OCEAN),
                 biomes.getHolderOrThrow(Biomes.DEEP_OCEAN), biomes.getHolderOrThrow(Biomes.BEACH),
                 MacroGeography.forSeed(seed), terrainDepth,
-                com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.forSeed(seed));
+                com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.forSeed(seed),
+                biomes, new java.util.concurrent.ConcurrentHashMap<>());
         var geography = apocalypse$ecology.geography();
         ApocalypseFirstLight.LOGGER.info("[AFL MACRO GEO] version={} seed={} mainlandAxes={}x{} startupReserve={} mainlandCore={} inlandSeaCount={} bayCount={} strategicIslandCount={} foreignLand=false",
                 MacroGeography.VERSION, seed, geography.majorAxis(), geography.minorAxis(),
