@@ -1,32 +1,45 @@
 package com.antaurora.apofirstlight.dev.terrainsmooth;
 
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
+import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
+import com.antaurora.apofirstlight.terrainsmooth.client.TerrainSmoothClient;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.Locale;
 
 /**
- * Terrain smoothing P1 diagnostics (development runs only): the local player's movement inside the test area, tick by tick,
- * in a ring of the last 40 ticks. Written to the log (latest.log, "[AFL terrain smooth probe]") when the player is stuck
+ * Terrain Smooth diagnostics (development runs only): the local player's movement on smoothed ground, tick by tick, in a
+ * ring of the last 40 ticks. Written to the log (latest.log, "[AFL terrain smooth probe]") when the player is stuck
  * (moving keys held, under 1 block in 20 ticks) or the server moved the player (a correction between two ticks), at most
  * once per 5 seconds, and on /afl dev terrain_smooth probe. Each record also lists the blocks under and around the feet with
- * the slope the client and the server compute for them and whether the player's box cuts into their collision boxes.
+ * the slope the client and the server compute for them (cached and fresh) and whether the player's box cuts into them.
+ * It found the stale server cache of P1 (2026-10-11).
  */
-final class SmoothProbe {
+@Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
+public final class SmoothProbe {
     private static final Logger LOG = LogUtils.getLogger();
     private static final int RING = 40, STUCK_WINDOW = 20;
     private static final ArrayDeque<String> ticks = new ArrayDeque<>();
@@ -38,7 +51,19 @@ final class SmoothProbe {
 
     private SmoothProbe() {}
 
-    static long events() { return events; }
+    /** After the formal handlers (the lift runs at the end of the player's tick). */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void playerTick(TickEvent.PlayerTickEvent event) {
+        if (FMLEnvironment.production || !event.side.isClient()) return;
+        var mc = Minecraft.getInstance();
+        if (event.player != mc.player || mc.level == null) return;
+        if (!TerrainSmooth.CLIENT.collides() || !TerrainSmooth.applies(mc.level)) {
+            reset();
+            return;
+        }
+        if (event.phase == TickEvent.Phase.START) start(mc.player);
+        else end(mc.player, TerrainSmoothClient.lastLift);
+    }
 
     /** Before the player's tick: a position change since the end of the last tick came from outside (a server correction). */
     static void start(LocalPlayer p) {
@@ -49,7 +74,6 @@ final class SmoothProbe {
         }
     }
 
-    /** After the player's tick (and the lift). */
     static void end(LocalPlayer p, double lift) {
         tick++;
         Vec3 pos = p.position(), d = p.getDeltaMovement();
@@ -97,9 +121,9 @@ final class SmoothProbe {
                 id, reason, corrections, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ));
         for (String t : ticks) out.append("  ").append(t).append('\n');
         out.append("  client blocks:\n");
-        blocks(level, p, box, SmoothWorld.CLIENT, out);
+        blocks(level, p, box, out);
         LOG.info(out.toString());
-        SmoothPrototype.message("probe event " + id + " written to the log (" + reason + ")");
+        SmoothDevClient.message("probe event " + id + " written to the log (" + reason + ")");
         var server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) return;
         var uuid = p.getUUID();
@@ -112,40 +136,40 @@ final class SmoothProbe {
             AABB sb = sp.getBoundingBox();
             s.append(String.format(Locale.ROOT, "[AFL terrain smooth probe] event %d, server side: player %.4f %.4f %.4f ground %s; at the client's box:%n",
                     id, sp.getX(), sp.getY(), sp.getZ(), sp.onGround()));
-            blocks(sl, sp, box, SmoothWorld.SERVER, s);
+            blocks(sl, sp, box, s);
             s.append(String.format(Locale.ROOT, "  server box %.4f %.4f %.4f: free %s%n", sb.minX, sb.minY, sb.minZ, sl.noCollision(sp, sb.deflate(1.0E-5))));
             LOG.info(s.toString());
         });
     }
 
-    /** Blocks in the box's columns plus one ring, from 2 below the feet to 1 above: state, slope corners, box cut-in. */
-    private static void blocks(Level level, net.minecraft.world.entity.Entity e, AABB box, SmoothWorld.Config c, StringBuilder out) {
+    /** Blocks in the box's columns plus one ring, from 2 below the feet to 1 above: state, slope (cached / fresh), box cut-in. */
+    private static void blocks(Level level, Entity e, AABB box, StringBuilder out) {
         AABB inner = box.deflate(1.0E-5);
         VoxelShape player = Shapes.create(inner);
         var pos = new BlockPos.MutableBlockPos();
         int feet = Mth.floor(box.minY);
         CollisionContext ctx = CollisionContext.of(e);
         for (int x = Mth.floor(box.minX) - 1; x <= Mth.floor(box.maxX) + 1; x++)
-            for (int z = Mth.floor(box.minZ) - 1; z <= Mth.floor(box.maxZ) + 1; z++)
+            for (int z = Mth.floor(box.minZ) - 1; z <= Mth.floor(box.maxZ) + 1; z++) {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+                if (chunk == null) continue;
                 for (int y = feet - 2; y <= feet + 1; y++) {
                     BlockState s = level.getBlockState(pos.set(x, y, z));
                     if (s.isAir()) continue;
-                    long g = SmoothWorld.geometry(level, c, x, y, z);
-                    // what collision uses: the per-position cache (a stale entry would differ from the fresh rules)
-                    String stale = "";
-                    if (SmoothWorld.surface(s.getBlock()) && c.active() && c.contains(x, z)) {
-                        long cached = c.cachedGeometry(level, pos.immutable());
-                        if (cached != g) stale = String.format(Locale.ROOT, " CACHE DIFFERS (cached %x, fresh %x)", cached, g);
+                    String slope = "", stale = "";
+                    if (TerrainSmooth.ground(s.getBlock())) {
+                        long g = TerrainSmooth.geometry(level, chunk, x, y, z), fresh = TerrainSmooth.fresh(level, chunk, x, y, z);
+                        if (g >= 0) {
+                            float[] k = SmoothRules.corners(g);
+                            slope = String.format(Locale.ROOT, " slope nw %.2f ne %.2f sw %.2f se %.2f", k[0], k[1], k[2], k[3]);
+                        }
+                        if (g != fresh) stale = String.format(Locale.ROOT, " CACHE DIFFERS (cached %x, fresh %x)", g, fresh);
                     }
                     VoxelShape shape = s.getCollisionShape(level, pos, ctx);
                     boolean cut = !shape.isEmpty() && Shapes.joinIsNotEmpty(shape.move(x, y, z), player, BooleanOp.AND);
-                    String slope = "";
-                    if (g >= 0) {
-                        float[] k = SmoothRules.corners(g);
-                        slope = String.format(Locale.ROOT, " slope nw %.2f ne %.2f sw %.2f se %.2f", k[0], k[1], k[2], k[3]);
-                    }
                     out.append(String.format(Locale.ROOT, "    %d %d %d %s%s shape top %.4f%s%s%s%n", x, y, z, s, slope,
                             shape.isEmpty() ? 0 : shape.max(net.minecraft.core.Direction.Axis.Y), shape.isEmpty() ? " (no collision)" : "", cut ? " CUTS INTO THE PLAYER" : "", stale));
                 }
+            }
     }
 }

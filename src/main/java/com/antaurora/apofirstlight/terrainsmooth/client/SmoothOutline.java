@@ -1,38 +1,39 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth.client;
 
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
+import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderHighlightEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 
 /**
- * Terrain smoothing prototype P1, client: the selection outline of a smoothed natural block follows its drawn top (the
- * four corners and the fold along the nw-se diagonal, down to the floor) instead of the box steps of its selection shape
- * or the vanilla cube. Only while collision and selection follow the slopes; otherwise vanilla draws its outline.
+ * Terrain Smooth V1, client: the selection outline of a sloped natural surface top follows its drawn top (the four corners
+ * and the fold along the nw-se diagonal, down to the floor) instead of the box steps of its selection shape or the vanilla
+ * cube. Only while collision and selection follow the slopes; otherwise vanilla draws its outline.
  */
-@Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class SmoothOutline {
     private SmoothOutline() {}
 
     @SubscribeEvent
     public static void outline(RenderHighlightEvent.Block event) {
-        if (FMLEnvironment.production) return;
-        var c = SmoothWorld.CLIENT;
         var level = Minecraft.getInstance().level;
-        if (!c.active() || !c.shapes || level == null) return;
+        if (level == null || !TerrainSmooth.CLIENT.collides() || !TerrainSmooth.applies(level)) return;
         BlockPos pos = event.getTarget().getBlockPos();
-        if (!c.contains(pos.getX(), pos.getZ())) return;
-        BlockState state = level.getBlockState(pos);
-        if (!SmoothWorld.surface(state.getBlock())) return;
-        long g = c.cachedGeometry(level, pos);
+        if (!TerrainSmooth.ground(level.getBlockState(pos).getBlock())) return;
+        LevelChunk chunk = level.getChunkSource().getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, false);
+        if (chunk == null) return;
+        long g = TerrainSmooth.geometry(level, chunk, pos.getX(), pos.getY(), pos.getZ());
         if (g < 0) return;
         event.setCanceled(true);
         float[] k = SmoothRules.corners(g);   // nw, ne, sw, se

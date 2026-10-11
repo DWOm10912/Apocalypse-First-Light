@@ -1,4 +1,4 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth;
 
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -45,6 +45,7 @@ final class PhysicsCheck {
     static Terrain synth(SmoothCheck.World w) {
         return new Terrain() {
             @Override public int cell(int x, int y, int z) { return w.cell(x, y, z); }
+            @Override public int surface(int x, int z) { return w.surface(x, z); }
             @Override public int top(int x, int z) { int k = w.i(x, z); return k < 0 ? Integer.MIN_VALUE : w.h[k]; }
         };
     }
@@ -69,15 +70,15 @@ final class PhysicsCheck {
 
         boolean solid(int x, int y, int z) {
             int c = t.cell(x, y, z);
-            return c == SmoothRules.NATURAL || c == SmoothRules.OTHER;
+            return c == SmoothRules.NATURAL || c == SmoothRules.OTHER || c == SmoothRules.TREE;
         }
 
         long geometry(int x, int y, int z) {
             if (t.cell(x, y, z) != SmoothRules.NATURAL) return -1;
-            if (cache == null) return SmoothRules.geometry(t, mode, area[0], area[1], area[2], x, y, z);
+            if (cache == null) return SmoothRules.geometry(t, mode, x, y, z);
             long key = net.minecraft.core.BlockPos.asLong(x, y, z), v = cache.get(key);
             if (v != Long.MIN_VALUE) return v;
-            v = SmoothRules.geometry(t, mode, area[0], area[1], area[2], x, y, z);
+            v = SmoothRules.geometry(t, mode, x, y, z);
             cache.put(key, v);
             return v;
         }
@@ -89,9 +90,9 @@ final class PhysicsCheck {
             return g < 0 ? Shapes.block() : SmoothShapes.shape(g, true);
         }
 
-        /** BlockStateBase#hasLargeCollisionShape with the P1 hook: true for the six ground blocks while active. */
-        boolean large(int x, int y, int z) {
-            return mode != SmoothRules.MODE_OFF && t.cell(x, y, z) == SmoothRules.NATURAL;
+        /** BlockCollisions, Terrain Smooth V1 (TerrainSmooth#risesIntoBox): the six ground blocks count as large in the layer under the box only. */
+        boolean large(int x, int y, int z, int bottomLayer) {
+            return mode != SmoothRules.MODE_OFF && t.cell(x, y, z) == SmoothRules.NATURAL && y == bottomLayer;
         }
 
         /** BlockStateBase#isSuffocating: blocks motion and a full cube (cached per state), or false on a smoothed top (fix). */
@@ -110,7 +111,7 @@ final class PhysicsCheck {
             for (int z = z0; z <= z1; z++) for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) {
                 int type = (x == x0 || x == x1 ? 1 : 0) + (y == y0 || y == y1 ? 1 : 0) + (z == z0 || z == z1 ? 1 : 0);
                 if (type == 3) continue;
-                if (onlySuffocating && !suffocating(x, y, z) || type == 1 && !large(x, y, z) || type == 2) continue;   // type 2: moving pistons only
+                if (onlySuffocating && !suffocating(x, y, z) || type == 1 && !large(x, y, z, y0) || type == 2) continue;   // type 2: moving pistons only
                 VoxelShape shape = collision(x, y, z);
                 if (shape == Shapes.block()) {
                     if (!box.intersects(x, y, z, x + 1.0D, y + 1.0D, z + 1.0D)) continue;
@@ -332,6 +333,9 @@ final class PhysicsCheck {
 
     static int[] areaOf(SmoothCheck.World t) { return new int[]{t.x0 + 2, t.z0 + 2, t.w - 4}; }
 
+    /** inside the walked square (walks stop at its border) */
+    static boolean inside(int minX, int minZ, int size, int x, int z) { return x >= minX && x < minX + size && z >= minZ && z < minZ + size; }
+
     /** Highest collision top under the player's footprint near height y (the ground they should stand on). */
     static double surfaceAt(Ground g, double x, double z, double y) {
         AABB foot = new AABB(x - Player.WIDTH / 2, y - 2, z - Player.WIDTH / 2, x + Player.WIDTH / 2, y + 1, z + Player.WIDTH / 2);
@@ -363,7 +367,7 @@ final class PhysicsCheck {
                 last = along;
             }
             int cx = Mth.floor(p.x), cz = Mth.floor(p.z);
-            if (g.t.top(cx, cz) == Integer.MIN_VALUE || !SmoothRules.inArea(g.area[0] + 1, g.area[1] + 1, g.area[2] - 2, cx, cz)) break;
+            if (g.t.top(cx, cz) == Integer.MIN_VALUE || !inside(g.area[0] + 1, g.area[1] + 1, g.area[2] - 2, cx, cz)) break;
         }
         return new Walk(p.y - y0, p.x * ux + p.z * uz - along0, p.pushes, stalls, jitter, p.lifts, p.waterTicks, p.deepest);
     }
@@ -409,9 +413,14 @@ final class PhysicsCheck {
             if (c < 0) return Integer.MIN_VALUE;
             for (int y = y0 + h - 1; y >= y0; y--) {
                 int k = kinds[c + y - y0] & 7;
-                if (k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.FLUID) return y + 1;
+                if (k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.FLUID || k == SmoothRules.TREE) return y + 1;
             }
             return y0;
+        }
+
+        /** the game's rule (TerrainSmooth#columnSurface) from the highest exported cell down */
+        @Override public int surface(int x, int z) {
+            return column(x, z) < 0 ? SmoothRules.NO_SURFACE : SmoothRules.surface(this, x, z, y0 + h - 1, y0);
         }
     }
 
@@ -473,6 +482,7 @@ final class PhysicsCheck {
                     Player p = new Player(g, x + 0.2 + 0.3 * (s % 3), top + 1.5, z + 0.2 + 0.3 * (s / 3));
                     p.lift = true;
                     p.settle();
+                    p.lifts = 0;   // count standing only, not the drop onto the ground
                     double y0 = p.y, x0 = p.x, z0 = p.z, move = 0;
                     for (int i = 0; i < 40; i++) {
                         p.tick(0, 0, false, true);

@@ -41,6 +41,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.weapon.NativeHeadshots.SPEC, "apocalypse_firstlight-guns.toml");
+        // Terrain Smooth V1: per world (serverconfig), read when the server starts, sent to clients
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothConfig.SPEC, "apocalypse_firstlight-terrain.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);

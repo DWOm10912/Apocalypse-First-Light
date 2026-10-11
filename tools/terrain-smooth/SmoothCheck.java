@@ -1,38 +1,59 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth;
 
 import java.util.Locale;
 import java.util.Random;
 
 /**
- * Offline checks of the terrain smoothing rules (SmoothRules, P1): no Minecraft, a synthetic world of columns. Run by
- * tools/terrain-smooth/check.mjs. Prints the measured numbers; exits 1 on a failed check.
+ * Offline checks of the terrain smoothing rules (SmoothRules, Terrain Smooth V1): no Minecraft, a synthetic world of
+ * columns. Run by tools/terrain-smooth/check.mjs. Prints the measured numbers; exits 1 on a failed check.
  */
 final class SmoothCheck {
     static int failures;
 
     static void require(boolean ok, String what) { if (!ok) { failures++; System.out.println("FAIL " + what); } }
 
-    /** Columns: surface H, kind of top (natural / other / water), cover (plant) or log on top. */
+    /**
+     * Columns: surface H, kind of top (natural / other / water), cover (plant), trunk or leaves on top; optionally a cave
+     * inside the ground (air between caveFloor and caveTop), a roof block high above, leaves of a crown 3..4 above.
+     */
     static final class World implements SmoothRules.Cells {
         final int x0, z0, w;
-        final int[] h;
-        final byte[] top, above;   // top: 0 natural, 1 other, 2 water; above: 0 air, 1 plant, 2 log (3 high), 3 leaves
-        World(int x0, int z0, int w) { this.x0 = x0; this.z0 = z0; this.w = w; h = new int[w * w]; top = new byte[w * w]; above = new byte[w * w]; }
+        final int[] h, caveFloor, caveTop, roof;
+        final byte[] top, above;   // top: 0 natural, 1 other, 2 water; above: 0 air, 1 plant, 2 trunk (3 high), 3 leaves
+        final boolean[] crown;
+
+        World(int x0, int z0, int w) {
+            this.x0 = x0; this.z0 = z0; this.w = w;
+            h = new int[w * w]; caveFloor = new int[w * w]; caveTop = new int[w * w]; roof = new int[w * w];
+            top = new byte[w * w]; above = new byte[w * w]; crown = new boolean[w * w];
+            java.util.Arrays.fill(roof, Integer.MIN_VALUE);
+        }
+
         int i(int x, int z) { int a = x - x0, b = z - z0; return a < 0 || b < 0 || a >= w || b >= w ? -1 : b * w + a; }
+
         @Override public int cell(int x, int y, int z) {
             int k = i(x, z);
             if (k < 0) return SmoothRules.UNKNOWN;
             int hh = h[k];
+            if (y == roof[k]) return SmoothRules.OTHER;
+            if (crown[k] && (y == hh + 3 || y == hh + 4)) return SmoothRules.LEAF;
             if (top[k] == 2) {   // water: a bed of natural ground two below the water surface
                 if (y >= hh) return SmoothRules.AIR;
                 return y >= hh - 2 ? SmoothRules.FLUID : SmoothRules.NATURAL;
             }
+            if (caveTop[k] > caveFloor[k] && y > caveFloor[k] && y < caveTop[k]) return SmoothRules.AIR;
             if (y < hh - 1) return SmoothRules.NATURAL;
             if (y == hh - 1) return top[k] == 0 ? SmoothRules.NATURAL : SmoothRules.OTHER;
             if (above[k] == 1 && y == hh) return SmoothRules.COVER;
-            if (above[k] == 2 && y >= hh && y < hh + 3) return SmoothRules.OTHER;
+            if (above[k] == 2 && y >= hh && y < hh + 3) return SmoothRules.TREE;
             if (above[k] == 3 && y == hh) return SmoothRules.LEAF;
             return SmoothRules.AIR;
+        }
+
+        /** the game's rule: down from the highest block (a little above anything this world puts on a column) */
+        @Override public int surface(int x, int z) {
+            int k = i(x, z);
+            return k < 0 ? SmoothRules.NO_SURFACE : SmoothRules.surface(this, x, z, Math.max(h[k] + 8, roof[k]), h[k] - 30);
         }
     }
 
@@ -51,11 +72,12 @@ final class SmoothCheck {
         return t;
     }
 
+    /** the checked blocks: two columns in from the data's edge */
     static int[] area(World t) { return new int[]{t.x0 + 2, t.z0 + 2, t.w - 4}; }
 
-    static long geo(World t, int mode, int[] a, int x, int z) {
+    static long geo(World t, int mode, int x, int z) {
         int k = t.i(x, z);
-        return SmoothRules.geometry(t, mode, a[0], a[1], a[2], x, t.h[k] - 1, z);
+        return SmoothRules.geometry(t, mode, x, t.h[k] - 1, z);
     }
 
     public static void main(String[] args) {
@@ -68,7 +90,11 @@ final class SmoothCheck {
             collision(t, mode, a);
             edits(t, mode, a);
         }
-        offAndArea();
+        underground();
+        crowns();
+        roofs();
+        explosions();
+        offAndUnknown();
         bench();
         System.out.println(failures == 0 ? "TERRAIN SMOOTH CHECK OK" : "TERRAIN SMOOTH CHECK FAILED: " + failures);
         if (failures != 0) System.exit(1);
@@ -78,17 +104,16 @@ final class SmoothCheck {
     static void straightStep() {
         World t = new World(-10, -10, 20);
         for (int z = -10; z < 10; z++) for (int x = -10; x < 10; x++) t.h[t.i(x, z)] = x <= 0 ? 72 : 71;
-        int[] a = {-8, -8, 16};
-        float[] u = SmoothRules.corners(geo(t, SmoothRules.MODE_B, a, 0, 0)), l = SmoothRules.corners(geo(t, SmoothRules.MODE_B, a, 1, 0));
+        float[] u = SmoothRules.corners(geo(t, SmoothRules.MODE_B, 0, 0)), l = SmoothRules.corners(geo(t, SmoothRules.MODE_B, 1, 0));
         require(u[0] == 1 && u[2] == 1 && u[1] == 0.5F && u[3] == 0.5F, "B: upper block falls to 0.5 at the step " + java.util.Arrays.toString(u));
         require(l[0] == 1.5F && l[2] == 1.5F && l[1] == 1 && l[3] == 1, "B: lower block rises to 1.5 at the step " + java.util.Arrays.toString(l));
-        float[] ua = SmoothRules.corners(geo(t, SmoothRules.MODE_A, a, 0, 0));
-        require(ua[0] == 1 && ua[1] == 0 && geo(t, SmoothRules.MODE_A, a, 1, 0) == -1, "A: only the upper block slopes, 45 degrees");
+        float[] ua = SmoothRules.corners(geo(t, SmoothRules.MODE_A, 0, 0));
+        require(ua[0] == 1 && ua[1] == 0 && geo(t, SmoothRules.MODE_A, 1, 0) == -1, "A: only the upper block slopes, 45 degrees");
         // collision along the slope, mode B: box tops every 0.25 m from x = -1 to x = 3
         StringBuilder sb = new StringBuilder();
         double prev = Double.NaN, maxStep = 0;
         for (int x = -1; x <= 2; x++) {
-            long g = geo(t, SmoothRules.MODE_B, a, x, 0);
+            long g = geo(t, SmoothRules.MODE_B, x, 0);
             int floor = t.h[t.i(x, 0)] - 1;
             int[] b = SmoothRules.boxes(g);
             for (int i = 0; i < SmoothRules.GRID; i++) {
@@ -106,7 +131,7 @@ final class SmoothCheck {
     static void corners(World t, int mode, int[] a) {
         int points = 0, mismatched = 0, smoothed = 0, raised = 0, natural = 0;
         for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
-            long g = geo(t, mode, a, x, z);
+            long g = geo(t, mode, x, z);
             int k = t.i(x, z);
             if (t.top[k] == 0 && t.above[k] != 2 && t.above[k] != 3) natural++;
             if (g < 0) continue;
@@ -120,7 +145,7 @@ final class SmoothCheck {
             boolean bad = false;
             int[][] around = {{px - 1, pz - 1, 3}, {px, pz - 1, 2}, {px - 1, pz, 1}, {px, pz, 0}};   // corner index of the point in that block
             for (int[] b : around) {
-                long g = geo(t, mode, a, b[0], b[1]);
+                long g = geo(t, mode, b[0], b[1]);
                 if (g < 0) continue;
                 double abs = t.h[t.i(b[0], b[1])] - 1 + SmoothRules.corners(g)[b[2]];
                 // a pinned point keeps each block's own height: only compare blocks whose value moved off their own height
@@ -141,30 +166,23 @@ final class SmoothCheck {
         for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2] - 1; x++) {
             if (t.above[t.i(x, z)] == 2 || t.above[t.i(x + 1, z)] == 2) continue;   // a trunk fills the cell beside the other block
             // east edge of (x, z) against west edge of (x + 1, z): points (x+1, z) [ne of A, nw of B] and (x+1, z+1) [se of A, sw of B]
-            double[] ta = tops(t, mode, a, x, z, 1, 3), tb = tops(t, mode, a, x + 1, z, 0, 2);
-            double[] la = bands(t, mode, a, x, z, 3), lb = bands(t, mode, a, x + 1, z, 2);   // side E of A (a = se, b = ne), side W of B (a = nw, b = sw)
+            double[] ta = tops(t, mode, x, z, 1, 3), tb = tops(t, mode, x + 1, z, 0, 2);
+            double[] la = bands(t, mode, x, z, 3), lb = bands(t, mode, x + 1, z, 2);   // side E of A (a = se, b = ne), side W of B (a = nw, b = sw)
             for (int e = 0; e < 2; e++) {
                 edges++;
                 double hiTop = Math.max(ta[e], tb[e]), loTop = Math.min(ta[e], tb[e]);
                 if (hiTop - loTop < 1e-6) continue;
                 // the higher block draws its band down to the lower top (band lowers are per corner of the band's ends)
                 double band = ta[e] > tb[e] ? la[e] : lb[e];
-                if (Double.isNaN(band) || band > loTop + 1e-6) {
-                    if (gaps++ < 3 && System.getenv("SMOOTH_DEBUG") != null) {
-                        StringBuilder sb = new StringBuilder();
-                        for (int dz = -1; dz <= 2; dz++) { for (int dx = -1; dx <= 2; dx++) { int q = t.i(x + dx, z + dz); sb.append(t.h[q]).append(t.top[q] == 0 ? "" : t.top[q] == 1 ? "o" : "w").append(t.above[q] == 2 ? "L" : t.above[q] == 3 ? "f" : t.above[q] == 1 ? "p" : "").append(' '); } sb.append("| "); }
-                        System.out.printf(Locale.ROOT, "gap mode %d at %d %d end %d: tops A %.2f B %.2f bands A %.2f B %.2f geoA %d geoB %d; columns x-1..x+2 rows z-1..z+2: %s%n",
-                                mode, x, z, e, ta[e], tb[e], la[e], lb[e], geo(t, mode, a, x, z), geo(t, mode, a, x + 1, z), sb);
-                    }
-                }
+                if (Double.isNaN(band) || band > loTop + 1e-6) gaps++;
             }
         }
         require(gaps == 0, "mode " + mode + ": no gaps between drawn tops (" + gaps + " of " + edges + " edge ends)");
     }
 
     /** Absolute top heights of block (x, z) at two of its corners (a vanilla block: its own surface). */
-    static double[] tops(World t, int mode, int[] a, int x, int z, int c1, int c2) {
-        long g = geo(t, mode, a, x, z);
+    static double[] tops(World t, int mode, int x, int z, int c1, int c2) {
+        long g = geo(t, mode, x, z);
         int h = t.h[t.i(x, z)];
         if (g < 0) return new double[]{h, h};
         float[] c = SmoothRules.corners(g);
@@ -173,22 +191,20 @@ final class SmoothCheck {
 
     /**
      * Absolute bottom of the side band of block (x, z) on side W (2) or E (3), ordered like tops(): for E (se, ne)... reordered
-     * to (ne, se) / for W (nw, sw). NaN where nothing is drawn below the top (a vanilla block draws its full side down to its
-     * floor when the neighbour is lower, which is the same as a band from its floor).
+     * to (ne, se) / for W (nw, sw). A vanilla block draws its full side down to its floor when the neighbour is lower.
      */
-    static double[] bands(World t, int mode, int[] a, int x, int z, int side) {
-        long g = geo(t, mode, a, x, z);
+    static double[] bands(World t, int mode, int x, int z, int side) {
+        long g = geo(t, mode, x, z);
         int h = t.h[t.i(x, z)];
-        if (g < 0) return new double[]{h - 1, h - 1};   // vanilla: the whole side shows wherever the neighbour is lower
+        if (g < 0) return new double[]{h - 1, h - 1};
         double qa = (g >>> (16 + 8 * side) & 15) / 4.0, qb = (g >>> (20 + 8 * side) & 15) / 4.0;
-        // side E: band end a = se, b = ne -> order (ne, se) = (qb, qa); side W: a = nw, b = sw -> (qa, qb)
         return side == 3 ? new double[]{h - 1 + qb, h - 1 + qa} : new double[]{h - 1 + qa, h - 1 + qb};
     }
 
     /**
      * Collision boxes against the drawn top, for 2 x 2, 4 x 4 and 8 x 8 boxes: how far feet sink into or float over the
      * drawn surface; the steps between boxes inside a block and across blocks where the drawn tops meet (a walker feels
-     * those); and, where the drawn tops do not meet (a step that stays visible: trees, water, cliffs, the area border),
+     * those); and, where the drawn tops do not meet (a step that stays visible: trees, water, cliffs, unloaded columns),
      * whether the collision step matches the visible one.
      */
     static void collision(World t, int mode, int[] a) {
@@ -197,7 +213,7 @@ final class SmoothCheck {
             double sink = 0, flt = 0, inside = 0, maxTop = 0;
             int blocks = 0;
             for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
-                long g = geo(t, mode, a, x, z);
+                long g = geo(t, mode, x, z);
                 if (g < 0) continue;
                 blocks++;
                 float[] c = SmoothRules.corners(g);
@@ -219,9 +235,9 @@ final class SmoothCheck {
             int continuousEdges = 0, stepEdges = 0;
             for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2] - 1; x++) {
                 if (t.above[t.i(x, z)] == 2 || t.above[t.i(x + 1, z)] == 2) continue;   // a trunk fills the cell beside: not walkable either way
-                if (geo(t, mode, a, x, z) < 0 && geo(t, mode, a, x + 1, z) < 0) continue;
-                double[] ta = tops(t, mode, a, x, z, 1, 3), tb = tops(t, mode, a, x + 1, z, 0, 2);   // (ne, se) of the west block, (nw, sw) of the east one
-                double[] ea = row(t, mode, a, x, z, true, grid), wb = row(t, mode, a, x + 1, z, false, grid);
+                if (geo(t, mode, x, z) < 0 && geo(t, mode, x + 1, z) < 0) continue;
+                double[] ta = tops(t, mode, x, z, 1, 3), tb = tops(t, mode, x + 1, z, 0, 2);
+                double[] ea = row(t, mode, x, z, true, grid), wb = row(t, mode, x + 1, z, false, grid);
                 boolean meets = Math.abs(ta[0] - tb[0]) < 1e-6 && Math.abs(ta[1] - tb[1]) < 1e-6;
                 if (meets) continuousEdges++; else stepEdges++;
                 for (int j = 0; j < grid; j++) {
@@ -244,8 +260,8 @@ final class SmoothCheck {
     }
 
     /** Absolute box tops of the east (or west) row of block (x, z), by j; a vanilla block: its surface. */
-    static double[] row(World t, int mode, int[] a, int x, int z, boolean east, int grid) {
-        long g = geo(t, mode, a, x, z);
+    static double[] row(World t, int mode, int x, int z, boolean east, int grid) {
+        long g = geo(t, mode, x, z);
         int h = t.h[t.i(x, z)];
         double[] out = new double[grid];
         if (g < 0) { java.util.Arrays.fill(out, h); return out; }
@@ -254,80 +270,327 @@ final class SmoothCheck {
         return out;
     }
 
-    /** Digging or placing one block changes only blocks within 1 column and 2 below to 1 above it (the re-mesh radius). */
+    /**
+     * Digging or placing one block, or putting a roof block high over a column, re-shapes only blocks within one column of
+     * it and inside SmoothRules#affected (2 below to 1 above the edit, and around the column's natural surface before and
+     * after): exactly what the game re-meshes and what drops the cached slopes.
+     */
     static void edits(World t, int mode, int[] a) {
         Random r = new Random(99 + mode);
-        int edits = 0, outside = 0, changedTotal = 0;
-        for (int n = 0; n < 300; n++) {
+        int edits = 0, outside = 0, changedTotal = 0, roofs = 0;
+        for (int n = 0; n < 400; n++) {
             int x = a[0] + 4 + r.nextInt(a[2] - 8), z = a[1] + 4 + r.nextInt(a[2] - 8), k = t.i(x, z);
             if (t.top[k] == 2) continue;
-            long[] before = snapshot(t, mode, a, x, z);
-            int[] heights = heightsAround(t, x, z);
-            int old = t.h[k];
-            boolean dig = r.nextBoolean();
-            t.h[k] = dig ? old - 1 : old + 1;   // dig the top block, or place one on it
-            int ey = dig ? old - 1 : old;       // the edited cell
-            long[] after = snapshot(t, mode, a, x, z);
-            int[] heightsAfter = heightsAround(t, x, z);
+            long[] before = snapshot(t, mode, x, z);
+            int oldSurface = t.surface(x, z), old = t.h[k], ey;
+            int kind = r.nextInt(3);
+            if (kind == 2) {   // a roof block five above the ground (a building's roof, an overhang)
+                ey = old + 4;
+                t.roof[k] = ey;
+                roofs++;
+            } else {
+                boolean dig = kind == 0;
+                t.h[k] = dig ? old - 1 : old + 1;   // dig the top block, or place one on it
+                ey = dig ? old - 1 : old;
+            }
+            long[] after = snapshot(t, mode, x, z);
+            int[] range = SmoothRules.affected(ey, oldSurface, t.surface(x, z));
             for (int q = 0; q < before.length; q++) {
                 if (before[q] == after[q]) continue;
                 changedTotal++;
-                int dx = q % 7 - 3, dz = q / 7 - 3;
-                int yb = Math.min(heights[q], heightsAfter[q]) - 1;   // that column's top block level
-                if (Math.abs(dx) > 1 || Math.abs(dz) > 1 || yb < ey - 2 || yb > ey + 1) outside++;
+                int dx = q % 7 - 3, dz = q / 7 - 3, yb = (int) (Math.min(before[q] >>> 50, after[q] >>> 50)) - 1;   // that block's level
+                if (Math.abs(dx) > 1 || Math.abs(dz) > 1 || yb < range[0] || yb > range[1]) outside++;
             }
             t.h[k] = old;
+            t.roof[k] = Integer.MIN_VALUE;
             edits++;
         }
-        require(outside == 0, "mode " + mode + ": an edit changes only blocks within 1 column and 2 levels (" + outside + " outside)");
-        System.out.printf(Locale.ROOT, "mode %s edits: %d single-block digs / placements, %d tops re-shaped in total, all within x/z +-1 and y -2..+2 of the edit%n",
-                mode == SmoothRules.MODE_A ? "A" : "B", edits, changedTotal);
+        require(outside == 0, "mode " + mode + ": an edit re-shapes only blocks within 1 column and SmoothRules.affected (" + outside + " outside)");
+        System.out.printf(Locale.ROOT, "mode %s edits: %d digs / placements / roofs (%d roofs), %d tops re-shaped in total, all within x/z +-1 and the affected levels%n",
+                mode == SmoothRules.MODE_A ? "A" : "B", edits, roofs, changedTotal);
     }
 
-    static long[] snapshot(World t, int mode, int[] a, int cx, int cz) {
+    /** geometry and top level of the 7 x 7 columns around (cx, cz): level in bits 50+ (positive heights) */
+    static long[] snapshot(World t, int mode, int cx, int cz) {
         long[] out = new long[49];
-        for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++) out[(dz + 3) * 7 + dx + 3] = geo(t, mode, a, cx + dx, cz + dz) ^ ((long) t.h[t.i(cx + dx, cz + dz)] << 50);
+        for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++)
+            out[(dz + 3) * 7 + dx + 3] = (geo(t, mode, cx + dx, cz + dz) & ((1L << 50) - 1)) | ((long) t.h[t.i(cx + dx, cz + dz)] << 50);
         return out;
     }
 
-    static int[] heightsAround(World t, int cx, int cz) {
-        int[] out = new int[49];
-        for (int dz = -3; dz <= 3; dz++) for (int dx = -3; dx <= 3; dx++) out[(dz + 3) * 7 + dx + 3] = t.h[t.i(cx + dx, cz + dz)];
-        return out;
+    /** Cave floors (air above, ground over the cave) keep their cubes; the surface above the cave is not changed by it. */
+    static void underground() {
+        World plain = terrain(11, -40, -40, 96, false), caves = terrain(11, -40, -40, 96, false);
+        int[] a = area(caves);
+        Random r = new Random(5);
+        int floors = 0, floorSloped = 0, surfaceChanged = 0, floorsWithStep = 0;
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
+            int k = caves.i(x, z);
+            // a winding cave 8..12 below the surface, its floor stepping by one here and there
+            if (Math.abs(Math.sin(x / 7.0) * 9 - (z % 24 - 12)) > 3) continue;
+            caves.caveFloor[k] = caves.h[k] - 12 + (r.nextInt(5) == 0 ? 1 : 0);
+            caves.caveTop[k] = caves.h[k] - 8;
+        }
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
+            int k = caves.i(x, z);
+            if (caves.caveTop[k] <= caves.caveFloor[k]) continue;
+            floors++;
+            int fy = caves.caveFloor[k];
+            boolean step = false;
+            for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                int n = caves.i(x + d[0], z + d[1]);
+                if (n >= 0 && caves.caveTop[n] > caves.caveFloor[n] && caves.caveFloor[n] != fy) step = true;
+            }
+            if (step) floorsWithStep++;
+            if (SmoothRules.geometry(caves, SmoothRules.MODE_B, x, fy, z) >= 0) floorSloped++;
+        }
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++)
+            if (geo(caves, SmoothRules.MODE_B, x, z) != geo(plain, SmoothRules.MODE_B, x, z)) surfaceChanged++;
+        require(floors > 300 && floorsWithStep > 50, "underground: the test has cave floors with one-block steps (" + floors + ", " + floorsWithStep + ")");
+        require(floorSloped == 0, "underground: cave floors keep their cubes (" + floorSloped + " of " + floors + " sloped)");
+        require(surfaceChanged == 0, "underground: the surface above a cave is not changed by it (" + surfaceChanged + ")");
+        System.out.printf(Locale.ROOT, "underground: %d cave floor blocks (%d at a one-block step) all cubes; surface above unchanged%n", floors, floorsWithStep);
     }
 
-    static void offAndArea() {
-        World t = terrain(3, -40, -40, 96, false);
+    /** Ground under a tree crown (leaves 3..4 above) is still natural surface: the same slopes as without the crown. */
+    static void crowns() {
+        World bare = terrain(13, -40, -40, 96, false), forest = terrain(13, -40, -40, 96, false);
+        int[] a = area(forest);
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) if (((x / 6) + (z / 6)) % 2 == 0) forest.crown[forest.i(x, z)] = true;
+        int under = 0, differ = 0, sloped = 0;
+        for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) {
+            if (!forest.crown[forest.i(x, z)]) continue;
+            under++;
+            long g = geo(forest, SmoothRules.MODE_B, x, z);
+            if (g >= 0) sloped++;
+            if (g != geo(bare, SmoothRules.MODE_B, x, z)) differ++;
+        }
+        require(sloped > 100 && differ == 0, "crowns: ground under leaves slopes as in the open (" + differ + " of " + under + " differ, " + sloped + " sloped)");
+        System.out.printf(Locale.ROOT, "crowns: %d blocks under leaves, %d sloped, all the same as in the open%n", under, sloped);
+    }
+
+    /** Ground under a roof (a building, an overhang) keeps its cube, and the slopes around it are pinned at its columns. */
+    static void roofs() {
+        World t = terrain(17, -40, -40, 96, false);
         int[] a = area(t);
-        int off = 0, outside = 0, borderMoved = 0;
-        for (int z = t.z0 + 1; z < t.z0 + t.w - 1; z++) for (int x = t.x0 + 1; x < t.x0 + t.w - 1; x++) {
-            if (geo(t, SmoothRules.MODE_OFF, a, x, z) != -1) off++;
-            boolean in = SmoothRules.inArea(a[0], a[1], a[2], x, z);
-            long g = geo(t, SmoothRules.MODE_B, a, x, z);
-            if (!in && g != -1) outside++;
-            if (in && g >= 0 && (x == a[0] || z == a[1] || x == a[0] + a[2] - 1 || z == a[1] + a[2] - 1)) {
-                // corners on the area border are pinned: those corners keep the block's own height
-                float[] c = SmoothRules.corners(g);
-                int h = t.h[t.i(x, z)];
-                if (x == a[0] && (c[0] != 1 || c[2] != 1)) borderMoved++;
-                if (z == a[1] && (c[0] != 1 || c[1] != 1)) borderMoved++;
+        for (int z = 0; z < 12; z++) for (int x = 0; x < 12; x++) t.roof[t.i(x, z)] = t.h[t.i(x, z)] + 3;
+        int roofed = 0, sloped = 0, edgeMoved = 0;
+        for (int z = -2; z < 14; z++) for (int x = -2; x < 14; x++) {
+            boolean under = x >= 0 && x < 12 && z >= 0 && z < 12;
+            long g = geo(t, SmoothRules.MODE_B, x, z);
+            if (under) { roofed++; if (g >= 0) sloped++; continue; }
+            if (g < 0) continue;
+            // a block just west of the roofed square: its east corners touch roofed columns, so they keep its own height
+            float[] c = SmoothRules.corners(g);
+            if (x == -1 && z >= 1 && z <= 10 && (c[1] != 1 || c[3] != 1)) edgeMoved++;
+        }
+        require(sloped == 0, "roofs: ground under a roof keeps its cubes (" + sloped + " of " + roofed + ")");
+        require(edgeMoved == 0, "roofs: slopes next to a roofed column are pinned there (" + edgeMoved + ")");
+        System.out.printf(Locale.ROOT, "roofs: %d roofed tops all cubes; neighbours pinned along the roof%n", roofed);
+    }
+
+    /** A full 3D grid of cells (for explosions): ground up to h, air above; surfaces from the game's scan. */
+    static final class Grid implements SmoothRules.Cells {
+        final int x0, y0, z0, w, h;
+        final byte[] c;
+
+        Grid(int x0, int y0, int z0, int w, int h) { this.x0 = x0; this.y0 = y0; this.z0 = z0; this.w = w; this.h = h; c = new byte[w * w * h]; }
+
+        int i(int x, int y, int z) { int a = x - x0, b = y - y0, d = z - z0; return a < 0 || d < 0 || a >= w || d >= w ? -1 : b < 0 ? -2 : b >= h ? -3 : (d * w + a) * h + b; }
+
+        @Override public int cell(int x, int y, int z) {
+            int k = i(x, y, z);
+            return k == -1 ? SmoothRules.UNKNOWN : k == -2 ? SmoothRules.NATURAL : k == -3 ? SmoothRules.AIR : c[k];
+        }
+
+        @Override public int surface(int x, int z) { return i(x, y0, z) == -1 ? SmoothRules.NO_SURFACE : SmoothRules.surface(this, x, z, y0 + h - 1, y0); }
+
+        boolean solid(int x, int y, int z) { int k = cell(x, y, z); return k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE; }
+    }
+
+    /**
+     * A TNT-like crater: a ball of blocks removed one by one in random order (the client's Explosion#finalizeExplosion
+     * shuffles them), each removal followed by what the game marks for re-meshing: vanilla's LevelRenderer#setBlocksDirty
+     * (the sections touching the block +-1) and TerrainSmoothClient#blockChanged (with the surface table updated block by
+     * block, exactly as TerrainSmooth#changed does). Every block whose drawing changed (its slope, or which of its faces show)
+     * must sit in a marked section.
+     */
+    static void explosions() {
+        int missed = 0, changedBlocks = 0, craters = 0, seams = 0;
+        for (int seed = 0; seed < 40; seed++) {
+            Random r = new Random(1000 + seed);
+            Grid g = new Grid(-24, 40, -24, 48, 48);
+            for (int z = g.z0; z < g.z0 + g.w; z++) for (int x = g.x0; x < g.x0 + g.w; x++) {
+                int top = 64 + (int) Math.round(2 * Math.sin(x / 5.0 + seed) + 1.5 * Math.cos(z / 4.0));
+                for (int y = g.y0; y < top; y++) g.c[g.i(x, y, z)] = (byte) (y < top - 3 && r.nextInt(16) == 0 ? SmoothRules.OTHER : SmoothRules.NATURAL);   // ores, andesite...
+                if (r.nextInt(6) == 0) g.c[g.i(x, top, z)] = SmoothRules.COVER;
+            }
+            int[][] surface = new int[g.w][g.w];
+            for (int z = 0; z < g.w; z++) for (int x = 0; x < g.w; x++) surface[x][z] = g.surface(g.x0 + x, g.z0 + z);
+            long[] before = render(g);
+            // the ball
+            double cx = r.nextInt(16) - 8 + 0.5, cy = 62 + r.nextInt(3), cz = r.nextInt(16) - 8 + 0.5, radius = 3.5 + r.nextDouble() * 2;
+            java.util.List<int[]> blow = new java.util.ArrayList<>();
+            for (int z = (int) (cz - radius) - 1; z <= cz + radius + 1; z++) for (int y = (int) (cy - radius) - 1; y <= cy + radius + 1; y++)
+                for (int x = (int) (cx - radius) - 1; x <= cx + radius + 1; x++) {
+                    double d = Math.sqrt((x + 0.5 - cx) * (x + 0.5 - cx) + (y + 0.5 - cy) * (y + 0.5 - cy) + (z + 0.5 - cz) * (z + 0.5 - cz));
+                    if (d <= radius * (0.85 + 0.3 * r.nextDouble()) && g.cell(x, y, z) != SmoothRules.AIR) blow.add(new int[]{x, y, z});
+                }
+            java.util.Collections.shuffle(blow, r);
+            java.util.Set<Long> marked = new java.util.HashSet<>();
+            for (int[] p : blow) {
+                int x = p[0], y = p[1], z = p[2];
+                g.c[g.i(x, y, z)] = SmoothRules.AIR;
+                // vanilla
+                for (int sx = (x - 1) >> 4; sx <= (x + 1) >> 4; sx++) for (int sy = (y - 1) >> 4; sy <= (y + 1) >> 4; sy++)
+                    for (int sz = (z - 1) >> 4; sz <= (z + 1) >> 4; sz++) marked.add(section(sx, sy, sz));
+                // TerrainSmooth#changed: this column's surface again; TerrainSmoothClient#blockChanged
+                int a = x - g.x0, b = z - g.z0, old = surface[a][b], now = g.surface(x, z);
+                surface[a][b] = now;
+                boolean near = false;
+                for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) {
+                    int s = surface[a + dx][b + dz];
+                    if (s != SmoothRules.NO_SURFACE && s >= y - 2 && s <= y + 1) near = true;
+                }
+                if (old == now && !near) continue;
+                int[] range = SmoothRules.affected(y, old, now);
+                for (int sx = (x - 1) >> 4; sx <= (x + 1) >> 4; sx++) for (int sy = Math.floorDiv(range[0], 16); sy <= Math.floorDiv(range[1] + 2, 16); sy++)
+                    for (int sz = (z - 1) >> 4; sz <= (z + 1) >> 4; sz++) marked.add(section(sx, sy, sz));
+            }
+            long[] after = render(g);
+            craters++;
+            seams += seams(g);
+            for (int k = 0; k < before.length; k++) {
+                if (before[k] == after[k]) continue;
+                changedBlocks++;
+                int b = k % g.h, rest = k / g.h, x = g.x0 + rest % g.w, z = g.z0 + rest / g.w, y = g.y0 + b;
+                if (!marked.contains(section(x >> 4, y >> 4, z >> 4))) {
+                    if (missed++ < 5) System.out.printf(Locale.ROOT, "  unmarked change at %d %d %d (crater at %.1f %.1f %.1f)%n", x, y, z, cx, cy, cz);
+                }
             }
         }
+        require(missed == 0, "explosions: every block whose drawing changes is in a re-meshed section (" + missed + " not)");
+        require(seams == 0, "explosions: side by side on one level, a sloped block and its neighbour meet along their edge (" + seams + " seams)");
+        System.out.printf(Locale.ROOT, "explosions: %d craters, %d blocks drawn differently afterwards, %d in sections nobody marked, %d open seams%n", craters, changedBlocks, missed, seams);
+    }
+
+    /**
+     * Vanilla culls a block's face against any full neighbour, and a sloped block still counts as full. Two solid blocks
+     * side by side on one level, at least one sloped, leave a see-through gap when the drawn tops differ along the shared
+     * edge AND the culled face would show: below 1.0 (a lowered top beside a block whose face toward it is culled), or above
+     * 1.0 where the cell above the other block is not solid (a raised top whose side toward it is culled).
+     */
+    static int seams(Grid g) {
+        int bad = 0;
+        // corner indices nw 0, ne 1, sw 2, se 3; east edge of A = (ne, se) against west edge of B = (nw, sw); south: (sw, se) / (nw, ne)
+        int[][] edge = {{1, 0, 1, 3, 0, 2}, {0, 1, 2, 3, 0, 1}};   // dx, dz, A corner 1, A corner 2, B corner 1, B corner 2
+        for (int z = g.z0 + 1; z < g.z0 + g.w - 2; z++) for (int x = g.x0 + 1; x < g.x0 + g.w - 2; x++) for (int y = g.y0; y < g.y0 + g.h - 1; y++) {
+            if (!g.solid(x, y, z)) continue;
+            long ga = SmoothRules.geometry(g, SmoothRules.MODE_B, x, y, z);
+            for (int[] e : edge) {
+                int bx = x + e[0], bz = z + e[1];
+                if (!g.solid(bx, y, bz)) continue;
+                long gb = SmoothRules.geometry(g, SmoothRules.MODE_B, bx, y, bz);
+                if (ga < 0 && gb < 0) continue;
+                float[] ca = ga < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(ga), cb = gb < 0 ? new float[]{1, 1, 1, 1} : SmoothRules.corners(gb);
+                boolean aboveA = g.solid(x, y + 1, z), aboveB = g.solid(bx, y + 1, bz);
+                boolean gap = false;
+                for (int k = 0; k < 2; k++) {
+                    float ta = ca[e[2 + k]], tb = cb[e[4 + k]];
+                    if (Math.abs(ta - tb) < 1e-6) continue;
+                    float lo = Math.min(ta, tb), hi = Math.max(ta, tb);
+                    boolean aHigher = ta > tb;
+                    if (lo < 1 - 1e-6) gap = true;                                      // a lowered top beside a culled face
+                    if (hi > 1 + 1e-6 && !(aHigher ? aboveB : aboveA)) gap = true;     // a raised top's culled side, open above the other
+                }
+                if (gap && bad++ < 5) System.out.printf(Locale.ROOT, "  seam between %d %d %d and %d %d %d: %s / %s, solid above %s / %s%n", x, y, z, bx, y, bz,
+                        java.util.Arrays.toString(ca), java.util.Arrays.toString(cb), aboveA, aboveB);
+            }
+            bad += openSides(g, x, y, z, ga);
+        }
+        return bad;
+    }
+
+    /** SmoothSurfaceModel's sides: per side N, S, W, E the neighbour (dx, dz) and the corner indices at the band's ends a, b */
+    static final int[][] SIDES = {{0, -1, 1, 0}, {0, 1, 2, 3}, {-1, 0, 0, 2}, {1, 0, 3, 1}};
+
+    /**
+     * A sloped block draws its sides only as bands from the neighbour column's surface up to its top; below the band it
+     * counts on the neighbour being solid. Where the neighbour cell at the block's level is not solid (an overhang's cavity
+     * after an explosion), nothing is drawn there: a see-through hole into the block. Counted per side.
+     */
+    static int openSides(Grid g, int x, int y, int z, long geo) {
+        if (geo < 0) return 0;
+        float[] c = SmoothRules.corners(geo);
+        int bad = 0;
+        for (int s = 0; s < 4; s++) {
+            int nx = x + SIDES[s][0], nz = z + SIDES[s][1];
+            float la = (geo >>> (16 + 8 * s) & 15) / 4F, lb = (geo >>> (20 + 8 * s) & 15) / 4F;
+            float ua = c[SIDES[s][2]], ub = c[SIDES[s][3]];
+            la = Math.min(la, ua);
+            lb = Math.min(lb, ub);
+            if (Math.max(la, lb) <= 1e-6) continue;   // the whole side is drawn
+            if (g.solid(nx, y, nz)) continue;           // the undrawn part (within this cell) is behind a solid neighbour
+            // a neighbour one lower whose sloped top rises into this level covers the undrawn part up to its surface
+            long below = SmoothRules.geometry(g, SmoothRules.MODE_B, nx, y - 1, nz);
+            if (below >= 0) {
+                float[] k = SmoothRules.corners(below);
+                // the neighbour's corners at the shared edge, seen from the neighbour: N side -> its sw, se; S -> nw, ne; W -> ne, se; E -> nw, sw
+                int[][] facing = {{2, 3}, {0, 1}, {1, 3}, {0, 2}};
+                int[] f = facing[s];
+                // shared corner a of this block is f[?]: N: a = ne -> neighbour se (3), b = nw -> sw (2); S: a = sw -> nw (0), b = se -> ne (1);
+                // W: a = nw -> ne (1), b = sw -> se (3); E: a = se -> sw (2), b = ne -> nw (0)
+                int[][] match = {{3, 2}, {0, 1}, {1, 3}, {2, 0}};
+                if (k[match[s][0]] - 1 >= la - 1e-6 && k[match[s][1]] - 1 >= lb - 1e-6) continue;
+            }
+            if (bad++ < 3 && failuresShown++ < 6) System.out.printf(Locale.ROOT, "  open side %d of %d %d %d: band from %.2f / %.2f, neighbour cell not solid%n", s, x, y, z, la, lb);
+        }
+        return bad;
+    }
+
+    static int failuresShown;
+
+    static long section(int x, int y, int z) { return ((long) x & 0xFFFFF) << 40 | ((long) y & 0xFFFFF) << 20 | ((long) z & 0xFFFFF); }
+
+    /** What each block draws: its slope key and which of its six neighbours hide its faces. */
+    static long[] render(Grid g) {
+        long[] out = new long[g.c.length];
+        for (int z = g.z0 + 1; z < g.z0 + g.w - 1; z++) for (int x = g.x0 + 1; x < g.x0 + g.w - 1; x++) for (int y = g.y0; y < g.y0 + g.h; y++) {
+            int k = g.i(x, y, z);
+            if (!g.solid(x, y, z)) { out[k] = 0; continue; }
+            long faces = (g.solid(x + 1, y, z) ? 1 : 0) | (g.solid(x - 1, y, z) ? 2 : 0) | (g.solid(x, y + 1, z) ? 4 : 0) | (g.solid(x, y - 1, z) ? 8 : 0)
+                    | (g.solid(x, y, z + 1) ? 16 : 0) | (g.solid(x, y, z - 1) ? 32 : 0);
+            out[k] = SmoothRules.geometry(g, SmoothRules.MODE_B, x, y, z) * 64 + faces + 1;
+        }
+        return out;
+    }
+
+    static void offAndUnknown() {
+        World t = terrain(3, -40, -40, 96, false);
+        int off = 0, edgeMoved = 0;
+        for (int z = t.z0; z < t.z0 + t.w; z++) for (int x = t.x0; x < t.x0 + t.w; x++) {
+            if (geo(t, SmoothRules.MODE_OFF, x, z) != -1) off++;
+            long g = geo(t, SmoothRules.MODE_B, x, z);
+            if (g < 0) continue;
+            // the data's first column: its west neighbours are not loaded (unknown), so its west corners keep its height
+            float[] c = SmoothRules.corners(g);
+            if (x == t.x0 && (c[0] != 1 || c[2] != 1)) edgeMoved++;
+            if (z == t.z0 && (c[0] != 1 || c[1] != 1)) edgeMoved++;
+        }
         require(off == 0, "mode off: every block vanilla");
-        require(outside == 0, "outside the area: every block vanilla");
-        require(borderMoved == 0, "area border corners pinned (" + borderMoved + ")");
-        System.out.println("off / outside the area: vanilla; border corners pinned");
+        require(edgeMoved == 0, "next to columns not loaded: corners pinned (" + edgeMoved + ")");
+        System.out.println("off: vanilla; next to unloaded columns: corners pinned");
     }
 
     static void bench() {
         World t = terrain(5, -40, -40, 96, true);
         int[] a = area(t);
         long sink = 0;
-        for (int warm = 0; warm < 3; warm++) for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) sink += geo(t, SmoothRules.MODE_B, a, x, z);
+        for (int warm = 0; warm < 3; warm++) for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) sink += geo(t, SmoothRules.MODE_B, x, z);
         long begin = System.nanoTime();
         int n = 0;
-        for (int rep = 0; rep < 20; rep++) for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) { sink += geo(t, SmoothRules.MODE_B, a, x, z); n++; }
+        for (int rep = 0; rep < 20; rep++) for (int z = a[1]; z < a[1] + a[2]; z++) for (int x = a[0]; x < a[0] + a[2]; x++) { sink += geo(t, SmoothRules.MODE_B, x, z); n++; }
         double ns = (System.nanoTime() - begin) / (double) n;
-        System.out.printf(Locale.ROOT, "rules alone: %.0f ns per block (%d calls; in the game each cell read is a getBlockState, so expect more)%s%n", ns, n, sink == 42 ? "" : "");
+        System.out.printf(Locale.ROOT, "rules alone: %.0f ns per surface block, surfaces scanned each time (%d calls; the game reads surfaces from the chunk's table and each cell is a getBlockState)%s%n", ns, n, sink == 42 ? "" : "");
     }
 }

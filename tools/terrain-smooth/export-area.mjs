@@ -2,8 +2,8 @@
 // (tools/terrain-smooth/PhysicsCheck.java, real-world mode). Reads the Anvil region files (1.20.1) directly; the game
 // must have saved the area (quit to the title screen first).
 //   node tools/terrain-smooth/export-area.mjs <world dir> <minX> <minZ> <size> <minY> <maxY> <out file>
-// Each block becomes one byte: the SmoothWorld#cell kind (bits 0-2: 0 air, 1 cover, 2 leaf, 3 fluid, 4 natural, 5 other,
-// 6 unknown), for natural ground the block (bits 3-5: 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone),
+// Each block becomes one byte: the TerrainSmooth#cell kind (bits 0-2: 0 air, 1 cover, 2 leaf, 3 fluid, 4 natural, 5 other,
+// 6 unknown, 7 tree), for natural ground the block (bits 3-5: 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone),
 // and a second byte the water surface height above the block's floor in 1/16 (0 = no water), as vanilla's fluid
 // pushing reads it. The area grows by 2 columns on every side (the shapes read their neighbours).
 // Header (big-endian int32): minX, minZ, width, depth, minY, height.
@@ -87,6 +87,8 @@ function classify(s) {
   if (COVER.has(name) || name.endsWith('_sapling')) return [1, 0];
   if (name.endsWith('_leaves')) return [2, 0];
   if (name in NATURAL) return [4 | (NATURAL[name] << 3), 0];
+  // TerrainSmooth#cell TREE: logs, wood, stems, hyphae (BlockTags.LOGS), vines, huge mushrooms, cocoa, bee nests
+  if (/_(log|wood|stem|hyphae)$/.test(name) || name === 'vine' || /_mushroom_block$/.test(name) || name === 'mushroom_stem' || name === 'cocoa' || name === 'bee_nest') return [7, 0];
   return [5, 0];
 }
 

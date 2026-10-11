@@ -1,12 +1,13 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth;
 
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
- * The box shapes of the smoothed tops (P1): only VoxelShape / Shapes, no registries, so the offline physics check builds
- * exactly the shapes the game uses. Collision 8 x 8 (SmoothRules.GRID), selection 4 x 4; one shape per corner combination.
+ * The box shapes of the smoothed tops: only VoxelShape / Shapes, no registries, so the offline physics check builds
+ * exactly the shapes the game uses. Collision 8 x 8 (SmoothRules.GRID), selection 4 x 4; one shape per corner combination
+ * (at most 65 536 each, built once, shared by both sides: shapes are immutable, a racing build stores an equal shape).
  */
 public final class SmoothShapes {
     /** Selection boxes: 4 x 4 is close enough to aim (the outline itself is drawn from the slope) and keeps the

@@ -1,4 +1,4 @@
-// Terrain smoothing prototype P1: offline walking check (docs/worldgen/terrain_smooth_p1_interaction.md).
+// Terrain Smooth V1: offline walking check (docs/worldgen/terrain_smooth_v1.md; first written for P1).
 // Compiles SmoothRules + SmoothShapes (the shapes the game builds) with tools/terrain-smooth/{SmoothCheck,PhysicsCheck}.java
 // against the recompiled Forge 1.20.1 jar (real VoxelShape / Shapes.collide code) and runs PhysicsCheck.
 //   node tools/terrain-smooth/physics.mjs                      synthetic hills and terrain (pass / fail)
@@ -31,7 +31,7 @@ function newestJar(group) {
 
 if (!fs.existsSync(FORGE)) throw new Error('missing ' + FORGE);
 const classpath = [FORGE, ...LIBS.map(newestJar)];
-const src = 'src/dev/java/com/antaurora/apofirstlight/dev/terrainsmooth/';
+const src = 'src/main/java/com/antaurora/apofirstlight/terrainsmooth/';
 const sources = [src + 'SmoothRules.java', src + 'SmoothShapes.java', 'tools/terrain-smooth/SmoothCheck.java', 'tools/terrain-smooth/PhysicsCheck.java'].map(p => path.join(ROOT, p));
 const exe = n => (process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', n) : n) + (process.platform === 'win32' && process.env.JAVA_HOME ? '.exe' : '');
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-smoothphysics-'));
@@ -39,7 +39,7 @@ const run = (cmd, a) => { const r = spawnSync(cmd, a, {stdio: 'inherit'}); if (r
 try {
   const cp = classpath.join(path.delimiter);
   if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-cp', cp, '-d', out, ...sources]) !== 0) process.exit(2);
-  process.exitCode = run(exe('java'), ['-cp', [out, cp].join(path.delimiter), 'com.antaurora.apofirstlight.dev.terrainsmooth.PhysicsCheck', ...process.argv.slice(2)]);
+  process.exitCode = run(exe('java'), ['-cp', [out, cp].join(path.delimiter), 'com.antaurora.apofirstlight.terrainsmooth.PhysicsCheck', ...process.argv.slice(2)]);
 } finally {
   fs.rmSync(out, {recursive: true, force: true});
 }

@@ -1,5 +1,6 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth.client;
 
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -21,8 +22,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Prototype chunk model of a natural ground block (SmoothPrototype): outside the test area, or where the block stays
- * flat, exactly the vanilla model. Where it slopes:
+ * Chunk model of a natural ground block (Terrain Smooth V1; look approved in P0 / P1, mode B): exactly the vanilla model
+ * unless the block is a sloped natural surface top. Then:
  * <ul>
  *   <li>the top: one quad per vanilla top layer (grass top, snowy top...) through the four corner heights, texture
  *   projected from above like the vanilla top, in the UP list (lit from the cell above, culled by a block placed on it);</li>
@@ -30,17 +31,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *   and its tinted overlay) mapped down from the band's top edge, so the grass fringe follows the slope;</li>
  *   <li>the bottom: the vanilla one.</li>
  * </ul>
- * Lighting: vanilla smooth lighting samples a quad that is not flush with its face from the block's own cell, which is dark
- * inside an opaque block; sloped blocks are therefore lit flat (no AO) unless {@code ao on} is chosen. Forge 47 decides AO
- * per state, so the decision for the block being meshed is handed from getModelData to useAmbientOcclusion through a
- * thread local: both run on the same chunk-builder thread, one right after the other (vanilla and Embeddium alike).
+ * Lighting: vanilla smooth lighting (and Forge's per-quad flat path inside it) samples a quad that is not flush with its
+ * face from the block's own cell, which is dark inside an opaque block; sloped blocks are therefore lit flat (no AO),
+ * where the culled-face lists take their light from the neighbour cell. Forge 47 decides AO per model and state, so the
+ * decision for the block being meshed is handed over by TerrainSmoothClient (#slopedNow).
  * <p>
  * Without a shader pack the top is darkened by its tilt like vanilla's directional shading (a 45-degree slope facing
  * east is between the top's 1.0 and the east side's 0.6); with one, the pack shades it from the normals.
  */
 final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Long> GEOMETRY = new ModelProperty<>();
-    private static final ThreadLocal<boolean[]> SLOPED = ThreadLocal.withInitial(() -> new boolean[1]);
     private static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
     /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them */
     private static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
@@ -54,24 +54,13 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     @Override
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull ModelData data) {
         ModelData base = super.getModelData(level, pos, state, data);
-        SmoothWorld.Config c = SmoothWorld.CLIENT;
-        if (!c.active()) return base;   // the common case: every stone block of every chunk passes here
-        boolean[] flag = SLOPED.get();
-        flag[0] = false;
-        if (!c.contains(pos.getX(), pos.getZ())) return base;
-        long begin = System.nanoTime();
-        long g = SmoothWorld.geometry(level, c, pos.getX(), pos.getY(), pos.getZ());   // read from the render region
-        SmoothPrototype.dataCalls.increment();
-        SmoothPrototype.dataNanos.add(System.nanoTime() - begin);
-        if (g < 0) return base;
-        SmoothPrototype.sloped.increment();
-        flag[0] = true;
-        return base.derive().with(GEOMETRY, g).build();
+        long g = TerrainSmoothClient.renderGeometry(level, pos, state);   // every ground block of every chunk passes here
+        return g < 0 ? base : base.derive().with(GEOMETRY, g).build();
     }
 
     @Override
     public boolean useAmbientOcclusion(BlockState state, RenderType renderType) {
-        if (SmoothWorld.CLIENT.active() && !SmoothPrototype.aoOnSlopes && SLOPED.get()[0]) return false;
+        if (!TerrainSmoothClient.aoOnSlopes && TerrainSmoothClient.slopedNow(state)) return false;
         return super.useAmbientOcclusion(state, renderType);
     }
 
@@ -81,7 +70,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         Long g = data.get(GEOMETRY);
         if (g == null || state == null) return super.getQuads(state, side, random, data, renderType);
         int layer = renderType == null ? 0 : RenderType.chunkBufferLayers().indexOf(renderType) + 1;
-        long key = g | (long) layer << 48 | (SmoothPrototype.shaderPack ? 1L << 56 : 0);
+        long key = g | (long) layer << 48 | (TerrainSmoothClient.shaderPack ? 1L << 56 : 0);
+        if (cache.size() > 32768) cache.clear();   // distinct slopes are far fewer; bound it anyway
         List<BakedQuad>[] quads = cache.computeIfAbsent(key, k -> build(state, g, renderType));
         return quads[side == null ? 6 : side.ordinal()];
     }
@@ -96,7 +86,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         // top
         float[][] top = {{0, c[0], 0}, {0, c[2], 1}, {1, c[3], 1}, {1, c[1], 0}};
         float[][] topUv = {{0, 0}, {0, 1}, {1, 1}, {1, 0}};
-        int color = SmoothPrototype.shaderPack ? -1 : gray(tiltShade(top));
+        int color = TerrainSmoothClient.shaderPack ? -1 : gray(tiltShade(top));
         List<BakedQuad> tops = new ArrayList<>();
         for (BakedQuad o : originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType))
             tops.add(quad(top, topUv, o.getSprite(), o.getTintIndex(), Direction.UP, color));
@@ -118,8 +108,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
             out[SIDES[s].ordinal()] = List.copyOf(band);
         }
         out[Direction.DOWN.ordinal()] = originalModel.getQuads(state, Direction.DOWN, random, ModelData.EMPTY, renderType);
-        SmoothPrototype.quadBuilds.increment();
-        SmoothPrototype.quadNanos.add(System.nanoTime() - begin);
+        TerrainSmoothClient.quadBuilds.increment();
+        TerrainSmoothClient.quadNanos.add(System.nanoTime() - begin);
         return out;
     }
 

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "37";
+    private static final String PROTOCOL = "38";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -126,6 +126,16 @@ public final class AflNetwork {
         nextId = com.antaurora.apofirstlight.stamina.StaminaPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.thirst.ThirstPackets.register(channel, nextId);
         nextId = com.antaurora.apofirstlight.temperature.TemperaturePackets.register(channel, nextId);
+
+        channel.registerMessage(nextId++, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket.class,
+                com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
+                com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Terrain Smooth V1: the server's state (collision must agree on both sides). */
+    public static void sendTerrainSmooth(ServerPlayer player, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
     }
 
     /** Temperature V1: the player's own temperature state. */

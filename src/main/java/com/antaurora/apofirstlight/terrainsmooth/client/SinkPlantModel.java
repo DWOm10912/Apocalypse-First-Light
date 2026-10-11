@@ -1,5 +1,6 @@
-package com.antaurora.apofirstlight.dev.terrainsmooth;
+package com.antaurora.apofirstlight.terrainsmooth.client;
 
+import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.resources.model.BakedModel;
@@ -23,9 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Prototype chunk model of a small plant (grass, ferns, flowers, saplings, both halves of tall plants): standing on a
- * sloped block of the test area, it moves up or down to the sloped surface under its own (randomly offset) position, so
- * it neither floats over a lowered slope nor sinks into a raised one. Elsewhere exactly the vanilla model.
+ * Chunk model of a small plant (grass, ferns, flowers, saplings, both halves of tall plants; Terrain Smooth V1): standing
+ * on a sloped natural surface top, it moves up or down to the sloped surface under its own (randomly offset) position,
+ * so it neither floats over a lowered slope nor sinks into a raised one. Elsewhere exactly the vanilla model.
  */
 final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Integer> SHIFT = new ModelProperty<>();   // in 1/64 block
@@ -38,12 +39,9 @@ final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
     @Override
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull ModelData data) {
         ModelData base = super.getModelData(level, pos, state, data);
-        SmoothWorld.Config cfg = SmoothWorld.CLIENT;
-        if (!cfg.active() || !cfg.contains(pos.getX(), pos.getZ())) return base;
-        SmoothPrototype.plantCalls.increment();
         int support = pos.getY() - 1;
         if (state.hasProperty(DoublePlantBlock.HALF) && state.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.UPPER) support--;
-        long g = SmoothWorld.geometry(level, cfg, pos.getX(), support, pos.getZ());
+        long g = TerrainSmoothClient.supportGeometry(level, new BlockPos(pos.getX(), support, pos.getZ()));
         if (g < 0) return base;
         float[] c = SmoothRules.corners(g);   // above the support's floor
         Vec3 off = state.getOffset(level, pos);
@@ -52,7 +50,7 @@ final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
         double surface = SmoothRules.surface(c, fx, fz);
         int shift = (int) Math.round((surface - 1) * 64);
         if (shift == 0) return base;
-        SmoothPrototype.plantMoved.increment();
+        TerrainSmoothClient.plantsMoved.increment();
         return base.derive().with(SHIFT, shift).build();
     }
 
@@ -64,6 +62,7 @@ final class SinkPlantModel extends BakedModelWrapper<BakedModel> {
         if (shift == null || quads.isEmpty()) return quads;
         int layer = renderType == null ? 0 : RenderType.chunkBufferLayers().indexOf(renderType) + 1;
         long key = (long) shift << 16 | (long) layer << 4 | (side == null ? 6 : side.ordinal());
+        if (cache.size() > 32768) cache.clear();
         return cache.computeIfAbsent(key, k -> moved(quads, shift / 64F));
     }
 
