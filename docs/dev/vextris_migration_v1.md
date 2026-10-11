@@ -1,10 +1,12 @@
 # AFL → Vextris 迁移 V1（Mesh 加载、缓存与渲染）
 
-日期：2026-10-10。分支：`vextris-migration`（基线 `678d70fab792f3cf3b069c894d3bb8c3076a9b7c`，**未提交、未合并**）。状态：**代码迁移完成，离线与自动化运行时验证完成，等待人工验收**（验收项见文末）。
+日期：2026-10-10。分支：`vextris-migration`（基线 `678d70fab792f3cf3b069c894d3bb8c3076a9b7c`；迁移由作者提交为 `afa0f2e8`，**未合并**）。状态：**代码迁移完成，离线与自动化运行时验证完成，等待人工验收**（验收项见文末）。
+
+2026-10-10 补充：Vextris 依赖已从 `0.1.0-dev` 升级到首个公开 Alpha **`0.1.0-alpha.1`**（见下面的“升级到 Vextris 0.1.0-alpha.1”）。
 
 ## 结论
 
-- AFL 现在依赖独立的 Mesh 库 **Vextris 0.1.0-dev**（作者 Antaurora，仓库 `D:/Minecraft Modding/Vextris`）。
+- AFL 现在依赖独立的 Mesh 库 **Vextris 0.1.0-alpha.1**（作者 Antaurora，仓库 `D:/Minecraft Modding/Vextris`，Apache-2.0）。迁移时用的是 `0.1.0-dev`，两者的类文件逐字节相同。
   - 加载、校验、烘焙、缓存、重载、CPU 顶点提交、两层 RenderType 和 GeckoLib 骨骼上的 Mesh 提交，都由 Vextris 完成。
   - AFL 自己的 `client/mesh` 包（6 个类）已删除。
 - **GeckoLib 4.7.4 继续负责** AFL 的骨骼和全部动画：
@@ -21,11 +23,11 @@
 
 | 项 | 内容 |
 |---|---|
-| Gradle | `gradle.properties` 新增：`vextris_version=0.1.0-dev`，`vextris_repo=../Vextris/build/repo` |
+| Gradle | `gradle.properties`：`vextris_version=0.1.0-alpha.1`（迁移时是 `0.1.0-dev`），`vextris_repo=../Vextris/build/repo` |
 | | `build.gradle` 新增一个本地 Maven 仓库（只收 `com.antaurora.vextris` 组） |
-| | `compileOnly` + `runtimeOnly fg.deobf("com.antaurora.vextris:vextris-forge-1.20.1:0.1.0-dev")`。Vextris 不会被打包进 AFL JAR（已检查 JAR 里 `com/antaurora/vextris` 条目为 0） |
+| | `compileOnly` + `runtimeOnly fg.deobf("com.antaurora.vextris:vextris-forge-1.20.1:${vextris_version}")`。Vextris 不会被打包进 AFL JAR（已检查 JAR 里 `com/antaurora/vextris` 条目为 0） |
 | 构建前提 | 先在 Vextris 仓库执行 `gradlew build publish`，生成 `build/repo` |
-| `mods.toml` | `vextris` 强制依赖，`[0.1.0-dev,0.2)`，`ordering="AFTER"`，`side="BOTH"` |
+| `mods.toml` | `vextris` 强制依赖，`[0.1.0-alpha.1,0.2.0-alpha)`（迁移时是 `[0.1.0-dev,0.2)`），`ordering="AFTER"`，`side="BOTH"` |
 | | `geckolib` 从 `[4.7,5)` **收窄为 `[4.7.4]`**，原因见下 |
 | 运行 | 玩家需要同时安装 Vextris。缺少时 Forge 拒绝启动，并报 missing mandatory dependency |
 
@@ -53,11 +55,11 @@
 - 物品与方块：`AflStaticMeshItemRenderer`、`OfficeChairRenderer`、`AflGoodsLibrary`、`client/blockmesh/*`（5 个）；
 - 开发用高速公路代码：4 个（`dev/highwaymesh`）。
 
-所有改动都是一一对应的替换：每个被调用的 Vextris 方法，都是从对应的 AFL 方法原样抽取过去的，见 Vextris 的 `NOTICE.md`。
+所有改动都是一一对应的替换：每个被调用的 Vextris 方法，都是从对应的 AFL 方法原样抽取过去的，见 Vextris 的 `docs/provenance.md`（原来的 `NOTICE.md`）。
 
 离线工具也改为使用 Vextris：
 - `tools/verify-afl-mesh.mjs`：jshell 改为从 classpath 加载 Vextris 类；源码断言改为检查新 API；GeoBone 的渲染和包围盒检查改为调用与 `GeckoMeshRenderer` 相同的辅助函数，因为离线没有 FML，兼容层的版本检查会拒绝。
-- `tools/highway-v2-0/verify-loader.mjs`、`tools/highway-v2-m1a/*`、`tools/highway-v2-m1b/*`：改为使用 `../Vextris/build/libs/vextris-forge-1.20.1-0.1.0-dev.jar`，也可以用 `VEXTRIS_JAR` 指定。
+- `tools/highway-v2-0/verify-loader.mjs`、`tools/highway-v2-m1a/*`、`tools/highway-v2-m1b/*`：改为使用 `../Vextris/build/libs/vextris-forge-1.20.1-0.1.0-alpha.1.jar`（迁移时是 `-0.1.0-dev.jar`），也可以用 `VEXTRIS_JAR` 指定。
 
 ## 行为变化：`closedSolid` 修复（82 个部件）
 
@@ -130,8 +132,36 @@ Vextris 修正了 AFL 焊接哈希的碰撞问题：互为对径点的位置会�
 
 - `gradlew runServer -PaflWithoutShaders -I src/dev/mesh-migration-server.init.gradle`
   - 运行在独立目录 `build/vextris-server-check`，`eula.txt` 经作者同意写入；
-  - 真实的 `DedicatedServer` 启动完成，日志记录了 vextris 0.1.0-dev、geckolib 4.7.4、apocalypse_firstlight 1.0.0-alpha，没有加载客户端类的错误，随后自动停止。
+  - 真实的 `DedicatedServer` 启动完成，日志记录了 vextris 0.1.0-dev（迁移时的版本）、geckolib 4.7.4、apocalypse_firstlight 1.0.0-alpha，没有加载客户端类的错误，随后自动停止。
 - 不加 `-PaflWithoutShaders` 时，**Oculus** 在服务端加载失败（加载了客户端的 Screen 类）。这是开发运行时本来就有的问题，以前跑 GameTest 时就需要这个参数，与 Vextris 无关。
+
+## 升级到 Vextris 0.1.0-alpha.1（2026-10-10）
+
+作者确定首个公开版本为 `0.1.0-alpha.1`，并批准 AFL 跟着升级。修改范围只有依赖声明，**不涉及玩法和 Mesh 渲染逻辑**：
+
+| 文件 | 修改 |
+|---|---|
+| `gradle.properties` | `vextris_version=0.1.0-dev` → `0.1.0-alpha.1` |
+| `src/main/resources/META-INF/mods.toml` | vextris 的 `versionRange="[0.1.0-dev,0.2)"` → `"[0.1.0-alpha.1,0.2.0-alpha)"` |
+| `tools/highway-v2-0/verify-loader.mjs`、`tools/highway-v2-m1a/verify.mjs`、`tools/highway-v2-m1b/verify.mjs` | 默认 JAR 路径改为 `vextris-forge-1.20.1-0.1.0-alpha.1.jar` |
+
+**为什么范围必须改**：Forge 按 Maven 规则比较版本，`dev` 这类未知限定词排在正式版之后（`0.1.0-dev > 0.1.0 > 0.1.0-alpha.1`）。所以旧范围 `[0.1.0-dev,0.2)` 会拒绝 alpha.1，ANANKE 在运行时实测被拒。新范围接受整个 0.1 系列，拒绝 0.2 的预发布版和正式版。实测记录在 Vextris 的 `tools/version-check/`。
+
+**代码层面没有变化**：alpha.1 和 0.1.0-dev 的 24 个类文件逐字节相同。区别只在元数据：版本号、Logo、Apache-2.0 许可证文件。
+
+**验证（在 AFL 工作区）**：
+
+| 项 | 结果 |
+|---|---|
+| `gradlew build --offline` | 通过：`projectionMathTest`、`terrainContractTest`，以及 WG-02 到 WG-05.1 全部 PASS |
+| AFL JAR | `com/antaurora/vextris` 条目 0（没有打包 Vextris）；`mods.toml` 里是新范围 |
+| 专用服务器 | 通过：`runServer -PaflWithoutShaders -I src/dev/mesh-migration-server.init.gradle`，日志 `vextris 0.1.0-alpha.1, geckolib 4.7.4, apocalypse_firstlight 1.0.0-alpha`，自动停止，没有 ERROR |
+| 客户端截图对比 | 用 `MeshMigrationCapture` 拍了 116 张（标签 `alpha1`），与迁移时的 `migrated2` 对比：<br>• 35 张逐像素相同，9 张差异超过 0.5%，最大 2.47%（`br51_fp_reload_empty`，换弹中途帧的亚像素位移）；<br>• 没有一张超出两次 0.1.0-dev 运行之间的自然噪声；<br>• 重载后 generation 2，65 个 Mesh，0 个被拒。 |
+| 公路验证脚本 | 三个脚本都通过，结果文件没有改动：<br>• `highway-v2-m1a/verify.mjs`：`M1A_OFFLINE_PASS`；<br>• `highway-v2-m1b/verify.mjs --check`：`M1B_OFFLINE_PASS`、`M1B_EXPORTED_LOADER_PASS`、`M1B_REPRODUCIBLE_OUTPUT_PASS`；<br>• `highway-v2-0/verify-loader.mjs`：`HIGHWAY_DEMO_JAVA_LOADER_PASS` |
+
+- 截图在 `build/mesh-migration-capture/screenshots/alpha1_*`。这是独立运行目录，不是开发者自己的 `run/` 和存档。
+- 用 0.1.0-dev 存过的世界，第一次用 alpha.1 打开时，Forge 会打一条 WARN：`vextris (version 0.1.0-dev -> 0.1.0-alpha.1)`。Vextris 不往存档写数据，这条警告无害。
+- 上面“需要人工验收”的各项仍然有效。这次升级没有改变它们。
 
 ## 已知问题
 
