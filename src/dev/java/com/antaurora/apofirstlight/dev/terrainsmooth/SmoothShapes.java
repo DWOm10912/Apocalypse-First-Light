@@ -1,0 +1,55 @@
+package com.antaurora.apofirstlight.dev.terrainsmooth;
+
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+
+/**
+ * The box shapes of the smoothed tops (P1): only VoxelShape / Shapes, no registries, so the offline physics check builds
+ * exactly the shapes the game uses. Collision 8 x 8 (SmoothRules.GRID), selection 4 x 4; one shape per corner combination.
+ */
+public final class SmoothShapes {
+    /** Selection boxes: 4 x 4 is close enough to aim (the outline itself is drawn from the slope) and keeps the
+     *  break particles (vanilla spawns them per box) near the vanilla count. */
+    public static final int SELECT_GRID = 4;
+    private static final VoxelShape[] COLLISION = new VoxelShape[1 << 16], SELECTION = new VoxelShape[1 << 16];
+
+    private SmoothShapes() {}
+
+    /** grid x grid columns from the floor up to the drawn top at their centres (1/16 steps). */
+    public static VoxelShape shape(long g, boolean collision) {
+        int key = (int) (g & 0xFFFF);
+        VoxelShape[] cache = collision ? COLLISION : SELECTION;
+        VoxelShape s = cache[key];
+        if (s != null) return s;
+        int grid = collision ? SmoothRules.GRID : SELECT_GRID;
+        int[] h = SmoothRules.boxes(g, grid);
+        VoxelShape out = Shapes.empty();
+        double w = 1.0 / grid;
+        for (int j = 0; j < grid; j++) for (int i = 0; i < grid; i++) {
+            int top = h[j * grid + i];
+            if (top <= 0) continue;
+            out = Shapes.or(out, Shapes.box(i * w, 0, j * w, (i + 1) * w, top / 16.0, (j + 1) * w));
+        }
+        s = out.optimize();
+        cache[key] = s;
+        return s;
+    }
+
+    /** Lifts above this are not a slope rising under the feet (the box is in the ground some other way): left alone. */
+    public static final double MAX_LIFT = 1.0;
+
+    /**
+     * How far to lift an entity box whose bottom is inside smoothed tops (positioned shapes), or 0. Smoothed tops do not
+     * suffocate, so vanilla's push out of blocks skips them; an edit next to a standing player can raise the slope under the
+     * feet (a placed block pins the shared corners), measured up to 0.38 blocks deep (tools/terrain-smooth/PhysicsCheck).
+     * Every box in the footprint starts at its block's floor, so lifting to the highest one that cuts in clears them all.
+     */
+    public static double lift(AABB box, Iterable<VoxelShape> tops) {
+        AABB inner = box.deflate(1.0E-7D);
+        double lift = 0;
+        for (VoxelShape s : tops) for (AABB b : s.toAabbs())
+            if (b.intersects(inner)) lift = Math.max(lift, b.maxY - box.minY);
+        return lift > MAX_LIFT ? 0 : lift;
+    }
+}

@@ -98,6 +98,8 @@ minecraft {
             // ForgeGradle deobfuscated development environment.
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${buildDir}/createSrgToMcp/output.srg"
+            // Development-only mixins (terrain smoothing prototype): loaded by dev runs, never listed in the jar manifest.
+            args '--mixin.config', 'apocalypse_firstlight_dev.mixins.json'
         }
 
         clientPureForge {
@@ -110,7 +112,7 @@ minecraft {
 
         server {
             property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+            args '--nogui', '--mixin.config', 'apocalypse_firstlight_dev.mixins.json'
         }
 
         // This run config launches GameTestServer and runs all registered gametests, then exits.
@@ -364,6 +366,7 @@ tasks.named('jar', Jar).configure {
     exclude 'assets/afl_highway_demo/**'
     exclude 'assets/apocalypse_firstlight/blockstates/dev_highway_surface.json'
     exclude 'assets/apocalypse_firstlight/models/block/dev_highway_surface.json'
+    exclude 'apocalypse_firstlight_dev.mixins.json'
     exclude '.gitattributes'
 
     manifest {
