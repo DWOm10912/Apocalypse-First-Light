@@ -574,6 +574,11 @@ public final class AflBlocks {
             () -> new CurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape(), CurbBlock.Back.SIDEWALK));
     public static final RegistryObject<Block> CURB_GRASS = BLOCKS.register("curb_grass",
             () -> new CurbBlock(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape(), CurbBlock.Back.GRASS));
+    // Graded turf (2026-10-10, docs/worldgen/highway_r4_sample_v1.md E): engineered grass ground with a sloped top (road
+    // medians and side slopes). Natural ground: shovel, no tier, drops dirt, no random ticks, no item.
+    public static final RegistryObject<Block> GRADED_TURF = BLOCKS.register("graded_turf",
+            () -> new com.antaurora.apofirstlight.block.GradedTurfBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
+                    .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS).noOcclusion()));
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",
