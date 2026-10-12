@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "afl_tree_demo:block/red_oak_bark"
+  }
+}

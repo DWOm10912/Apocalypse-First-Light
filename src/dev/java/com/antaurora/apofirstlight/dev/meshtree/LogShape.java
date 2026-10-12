@@ -10,8 +10,9 @@ import java.util.List;
  * Mesh Trees P2.2 (docs/rendering/mesh_trees_p2_felling.md, V): the log block's geometry, a rounded-square prism one
  * block long. Pure Java (the client model bakes it, the offline check tests it).
  * <ul>
- * <li>Cross-section: the full block square with rounded corners (white oak radius 3/16, a squarer hardwood log; white
- * pine 5/16, a rounder softwood log), {@value #ARC} segments a corner. The flat middle of each side lies on the block's
+ * <li>Cross-section: the full block square with rounded corners, {@value #ARC} segments a corner. Per species (the
+ * end texture's outline matches: radius x 32 px): shagbark hickory 2.5/16, white oak 3/16, red oak 3.5/16 (the hard
+ * hardwoods squarest), red maple 4.5/16, white pine 5/16, eastern hemlock 6/16 (the softwoods roundest). The flat middle of each side lies on the block's
  * face and is culled against a neighbour like a cube face; the corner strips are never culled. Stacked logs therefore
  * show the grooves of a log wall and no gap.</li>
  * <li>Bark round the sides: each side, with the halves of its two corners, is one bark tile across (the seams sit on the
@@ -39,7 +40,14 @@ public final class LogShape {
 
     /** Corner radius (blocks) of a species' log. */
     public static float radius(Species s) {
-        return s == Species.WHITE_PINE ? 5 / 16F : 3 / 16F;
+        return switch (s) {
+            case WHITE_OAK -> 3 / 16F;
+            case WHITE_PINE -> 5 / 16F;
+            case RED_OAK -> 3.5F / 16;
+            case SHAGBARK_HICKORY -> 2.5F / 16;
+            case RED_MAPLE -> 4.5F / 16;
+            case EASTERN_HEMLOCK -> 6 / 16F;
+        };
     }
 
     /** The rounded outline, each point {x, z, nx, nz}: corners NE, SE, SW, NW, each arc from one side's normal to the next. */

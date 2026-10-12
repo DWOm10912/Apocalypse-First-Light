@@ -54,12 +54,13 @@ import java.util.function.Supplier;
  * only, OP2 and a player; placing also needs creative mode, the overworld and a world folder named {@code AFL_TREE_*}
  * (the command says which one is missing).
  * <pre>
- *   place [white_oak|white_pine] [variant 0-15] [turns 0-3]   one tree, its root on the block you stand in
- *   grove [count 2-16] [white_oak|white_pine|mixed]            a grid of trees around you on the surface (default 9, mixed)
+ *   place [species] [variant 0-15] [turns 0-3]          one tree, its root on the block you stand in; species: white_oak,
+ *                                                       white_pine, red_oak, shagbark_hickory, red_maple, eastern_hemlock
+ *   grove [count 2-16] [species|mixed]                  a grid of trees around you on the surface (default 9, mixed)
  *   clear                                                      removes every sample tree, restores what each cell replaced
  *   lod auto | 0 | 1 | 2 | proxy                               this client: distance levels, one level, the voxel proxy
  *   status                                                     trees here; on your client: index, levels, cost, shader IDs
- *   forest status | here | find open_oak|white_pine|mixed       the natural forest (P1, read only; ForestCommands)
+ *   forest status | here | find <scenario>              the natural forest (P1, read only; ForestCommands)
  *   felling here | status                                       the felling (P2, read only; FellingCommands)
  * </pre>
  * A cell is written only into air or a replaceable plant (the journal keeps what was there); a trunk or branch cell that

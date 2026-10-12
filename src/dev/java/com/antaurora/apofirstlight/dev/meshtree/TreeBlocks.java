@@ -44,8 +44,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <li>{@code dev_tree_wood}: trunk and branch cells; a cell a thick branch passes collides with that branch's voxels
  * (1/8 block), looked up through the tree index on either side ({@link TreeIndex}), so client and server agree.</li>
  * <li>{@code dev_tree_foliage} / {@code dev_tree_canopy}: white oak crown cells (carrying leaf quads / volume only);
- * {@code dev_white_pine_foliage} / {@code dev_white_pine_canopy} the same for white pine. Per species so a voxel view
- * (Voxy, a map) gets the species' colour and texture.</li>
+ * {@code dev_<species>_foliage} / {@code dev_<species>_canopy} the same for every other species (white pine since P0-B,
+ * P3: red oak, shagbark hickory, red maple, eastern hemlock). Per species so a voxel view (Voxy, a map) gets the
+ * species' colour and texture.</li>
  * </ul>
  * In the vanilla tags {@code minecraft:logs} (root, wood) and {@code minecraft:leaves} (crowns), so Terrain Smooth treats
  * them as tree and leaves without any change, and Voxy treats the crowns as leaves.
@@ -56,13 +57,12 @@ public final class TreeBlocks {
             WOOD_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_wood"),
             FOLIAGE_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_foliage"),
             CANOPY_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_canopy"),
-            PINE_FOLIAGE_ID = new ResourceLocation("apocalypse_firstlight", "dev_white_pine_foliage"),
-            PINE_CANOPY_ID = new ResourceLocation("apocalypse_firstlight", "dev_white_pine_canopy"),
             STUMP_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_stump");
 
     /** The species as a block state property. */
     public enum SpeciesProperty implements StringRepresentable {
-        WHITE_OAK(Species.WHITE_OAK), WHITE_PINE(Species.WHITE_PINE);
+        WHITE_OAK(Species.WHITE_OAK), WHITE_PINE(Species.WHITE_PINE), RED_OAK(Species.RED_OAK), SHAGBARK_HICKORY(Species.SHAGBARK_HICKORY),
+        RED_MAPLE(Species.RED_MAPLE), EASTERN_HEMLOCK(Species.EASTERN_HEMLOCK);
         final Species species;
         SpeciesProperty(Species species) { this.species = species; }
         @Override public String getSerializedName() { return species.id; }
@@ -83,7 +83,8 @@ public final class TreeBlocks {
     private static Root root;
     private static Wood wood;
     private static Stump stump;
-    private static Foliage foliage, canopy, pineFoliage, pineCanopy;
+    /** Crown blocks by species ordinal: carrying leaf quads, volume only. */
+    private static Foliage[] carriers, volumes;
 
     private TreeBlocks() {}
 
@@ -93,17 +94,17 @@ public final class TreeBlocks {
         event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
             root = new Root();
             wood = new Wood();
-            foliage = new Foliage(Species.WHITE_OAK, true);
-            canopy = new Foliage(Species.WHITE_OAK, false);
-            pineFoliage = new Foliage(Species.WHITE_PINE, true);
-            pineCanopy = new Foliage(Species.WHITE_PINE, false);
             stump = new Stump();
             helper.register(ROOT_ID, root);
             helper.register(WOOD_ID, wood);
-            helper.register(FOLIAGE_ID, foliage);
-            helper.register(CANOPY_ID, canopy);
-            helper.register(PINE_FOLIAGE_ID, pineFoliage);
-            helper.register(PINE_CANOPY_ID, pineCanopy);
+            carriers = new Foliage[Species.values().length];
+            volumes = new Foliage[Species.values().length];
+            for (Species s : Species.values()) {
+                carriers[s.ordinal()] = new Foliage(s, true);
+                volumes[s.ordinal()] = new Foliage(s, false);
+                helper.register(crownId(s, true), carriers[s.ordinal()]);
+                helper.register(crownId(s, false), volumes[s.ordinal()]);
+            }
             helper.register(STUMP_ID, stump);
         });
     }
@@ -113,13 +114,21 @@ public final class TreeBlocks {
     public static Wood wood() { return require(wood); }
     public static Stump stump() { return require(stump); }
 
+    /** A species' crown block id: white oak's from P0-A, every other species {@code dev_<id>_foliage} / {@code _canopy}. */
+    public static ResourceLocation crownId(Species s, boolean carrier) {
+        if (s == Species.WHITE_OAK) return carrier ? FOLIAGE_ID : CANOPY_ID;
+        return new ResourceLocation("apocalypse_firstlight", "dev_" + s.id + (carrier ? "_foliage" : "_canopy"));
+    }
+
     /** The crown block of a species: carrying leaf quads, or volume only. */
     public static Foliage crown(Species species, boolean carrier) {
-        return require(species == Species.WHITE_PINE ? carrier ? pineFoliage : pineCanopy : carrier ? foliage : canopy);
+        return require(require(carrier ? carriers : volumes)[species.ordinal()]);
     }
 
     public static Foliage[] crowns() {
-        return new Foliage[]{require(foliage), require(canopy), require(pineFoliage), require(pineCanopy)};
+        Foliage[] all = new Foliage[2 * require(carriers).length];
+        for (int i = 0; i < carriers.length; i++) { all[2 * i] = carriers[i]; all[2 * i + 1] = volumes[i]; }
+        return all;
     }
 
     private static <T> T require(T block) {

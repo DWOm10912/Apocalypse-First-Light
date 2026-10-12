@@ -20,21 +20,34 @@ public final class TreeForms {
     static final float COLLIDE_BASE = 0.12F, COLLIDE_MIN = 0.065F;
 
     /**
-     * The species. {@code id} is also the wood id of the planned AFL wood system (docs/dev/development_order_v1.md):
-     * {@code <id>_log}, {@code <id>_lumber}, {@code <id>_planks}; nothing of it is registered yet.
+     * The species. {@code id} is also the wood id of the planned AFL wood system (docs/dev/wood_system_plan_v1.md):
+     * {@code <id>_log} (P2.2: a dev log block), later {@code <id>_lumber}, {@code <id>_planks}. P3
+     * (docs/rendering/mesh_trees_p3_species.md): four more eastern North American species. New species go at the end:
+     * the ordinal orders shared crown cells (ForestPlan#wins), the sprite list and the falling tree's packet.
      */
     public enum Species {
-        WHITE_OAK("white_oak", 0, new int[]{3000, 1100, 600}),
-        WHITE_PINE("white_pine", 1, new int[]{3400, 1800, 750});
+        WHITE_OAK("white_oak", "white_oak_leaves", 0, false, new int[]{3000, 1100, 600}),
+        WHITE_PINE("white_pine", "white_pine_needles", 1, true, new int[]{3400, 1800, 750}),
+        RED_OAK("red_oak", "red_oak_leaves", 0, false, new int[]{3400, 1300, 700}),
+        SHAGBARK_HICKORY("shagbark_hickory", "shagbark_hickory_leaves", 0, false, new int[]{2800, 1100, 600}),
+        RED_MAPLE("red_maple", "red_maple_leaves", 0, false, new int[]{3200, 1250, 700}),
+        EASTERN_HEMLOCK("eastern_hemlock", "eastern_hemlock_needles", 2, true, new int[]{3800, 1900, 850});
 
         public final String id;
-        /** Leaf tint index: 0 the biome's foliage colour, 1 the species' own colour. */
+        /** The leaf material's item id and the base name of the leaf textures ({@code _mid}, {@code _far}, {@code _proxy}). */
+        public final String leavesId;
+        /** Leaf tint index: 0 the biome's foliage colour, 1 white pine's own colour, 2 eastern hemlock's (TreeModels). */
         public final int tint;
+        /**
+         * A conifer: one stem to the top (LOD2 draws the whole trunk; the thin branches' bark tile is 2 m at LOD0 too),
+         * needle foliage (Oculus: the spruce leaves ID, so the pack waves it as needles).
+         */
+        public final boolean conifer;
         /** Triangle budgets per level (both sides of a leaf card counted). */
         public final int[] budget;
 
-        Species(String id, int tint, int[] budget) {
-            this.id = id; this.tint = tint; this.budget = budget;
+        Species(String id, String leavesId, int tint, boolean conifer, int[] budget) {
+            this.id = id; this.leavesId = leavesId; this.tint = tint; this.conifer = conifer; this.budget = budget;
         }
 
         public static Species byId(String id) {
@@ -43,8 +56,8 @@ public final class TreeForms {
         }
     }
 
-    /** Leaf card styles. */
-    static final int BROADLEAF = 0, NEEDLE = 1;
+    /** Leaf card styles: broadleaf clusters, white pine's level needle plates, eastern hemlock's drooping flat sprays. */
+    static final int BROADLEAF = 0, NEEDLE = 1, SPRAY = 2;
 
     /** A branch: polyline points and radii; sides per level (0: not drawn); LOD2 draws its first lod2Segments only. */
     record Branch(float[][] points, float[] radii, int depth, boolean collide, int[] sides, int lod2Segments, boolean taper) {}
@@ -71,7 +84,14 @@ public final class TreeForms {
     }
 
     static Form grow(Species species, int variant) {
-        return species == Species.WHITE_OAK ? whiteOak(variant) : whitePine(variant);
+        return switch (species) {
+            case WHITE_OAK -> whiteOak(variant);
+            case WHITE_PINE -> whitePine(variant);
+            case RED_OAK -> redOak(variant);
+            case SHAGBARK_HICKORY -> hickory(variant);
+            case RED_MAPLE -> redMaple(variant);
+            case EASTERN_HEMLOCK -> hemlock(variant);
+        };
     }
 
     // ------------------------------------------------------------------------------------------- white oak
@@ -240,6 +260,390 @@ public final class TreeForms {
         f.groups.add(new Group(top[0], top[1] - 0.2F, top[2], 0.9F, true, NEEDLE, 1, 0));
         float[] sub = at(trunk, height - 1.2F);
         f.groups.add(new Group(sub[0], sub[1], sub[2], 0.9F, true, NEEDLE, 0, 1));
+        f.crown();
+        return f;
+    }
+
+    // --------------------------------------------------------------------------------------------- red oak
+
+    /**
+     * Quercus rubra (Silvics: 20-30 m, 61-91 cm d.b.h.; forest-grown a tall straight bole, open-grown a short bole and
+     * a spreading crown): the test forests' trees stand fairly open, so a clear bole of 5-7 m, then a rounded crown,
+     * taller and narrower than the white oak's, of five to seven stout limbs that ascend (30-55 degrees, the white oak's
+     * low limbs run nearly level). Three variants in four keep a central stem into the crown; the fourth divides at the
+     * bole's top into steep co-dominant limbs. Per variant: size, bole height, limb count, a crown longer to one side.
+     */
+    static Form redOak(int variant) {
+        var rng = new Rng(0x7ED0_A4B1L * 37 + variant * 0x85EBCA6BL + 11);
+        var f = new Form(Species.RED_OAK);
+        float size = rng.range(0.88F, 1.12F);
+        boolean leader = variant % 4 != 1;
+        float height = rng.range(18.5F, 22.5F) * size;
+        float fork = rng.range(4.4F, 6.0F) * size;
+        float leanAz = rng.range(0, 6.2832F), lean = rng.range(0.0F, 0.18F);
+        float sideAz = rng.range(0, 6.2832F), side = rng.range(0.0F, 0.15F);
+        float r0 = 0.33F * size + 0.04F;
+        float trunkLen = leader ? height - rng.range(2.2F, 3.2F) : fork + 0.9F;
+        int rings = (int) Math.ceil(trunkLen);
+        float[][] tp = new float[rings + 1][];
+        float[] tr = new float[rings + 1];
+        for (int i = 0; i <= rings; i++) {
+            float y = Math.min(i, trunkLen), u = Math.min(1, y / fork);
+            float wob = y > fork ? (y - fork) * 0.05F : 0;
+            tp[i] = new float[]{0.5F + (float) Math.cos(leanAz) * lean * u * u + wob * (float) Math.cos(sideAz + 1),
+                    y, 0.5F + (float) Math.sin(leanAz) * lean * u * u + wob * (float) Math.sin(sideAz + 1)};
+            float above = Math.max(0, y - fork) / Math.max(0.5F, trunkLen - fork);
+            tr[i] = (r0 - 0.07F * u) * (1 - 0.8F * above) + (y < 0.6F ? 0.17F * size * (1 - y / 0.6F) * (1 - y / 0.6F) : 0);
+        }
+        tr[rings] = 0.04F;
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{12, 6, 4}, Integer.MAX_VALUE, false));
+        f.trunkTop = fork;
+        Branch trunk = f.branches.get(0);
+        int limbs = 5 + (int) (rng.next() * 2.99F);
+        float base = rng.range(0, 6.2832F);
+        float span = leader ? (trunkLen - fork) * 0.55F : 1.0F;
+        for (int i = 0; i < limbs; i++) {
+            float t = i / (float) (limbs - 1);
+            float y0 = fork - 0.3F + span * t;
+            float az = base + i * 2.39996F + rng.range(-0.25F, 0.25F);
+            float toward = (float) Math.cos(az - sideAz) * side;
+            float el = (float) Math.toRadians(leader ? rng.range(22, 32) + 24 * t : rng.range(46, 60));
+            float len = leader ? rng.range(6.2F, 7.4F) * size * (1 - 0.4F * t) * (1 + toward) : rng.range(7.4F, 8.8F) * size * (1 - 0.25F * t);
+            float[] start = at(trunk, y0);
+            float rl = Math.min(radiusAt(trunk, y0) * (leader ? 0.72F : 0.85F), rng.range(0.17F, 0.22F) * size * (1 - 0.3F * t));
+            Branch limb = bend(start, az, el, len, 4, 0.03F, rl, 0.05F, 1, rng, new int[]{6, 3, 3}, 2);
+            f.branches.add(limb);
+            int subs = 2 + (rng.next() < 0.7F ? 1 : 0);
+            for (int k = 0; k < subs; k++) {
+                float ts = 0.3F + 0.6F * (k + 0.2F + rng.next() * 0.5F) / subs;
+                float[] s = along(limb, ts);
+                float saz = az + (k % 2 == 0 ? 1 : -1) * (float) Math.toRadians(rng.range(28, 55));
+                float sel = el + (float) Math.toRadians(rng.range(0, 28));
+                float sr = Math.min(radiusAlong(limb, ts) * 0.72F, 0.09F);
+                Branch sub = bend(s, saz, sel, rng.range(2.4F, 3.4F) * size, 2, 0.05F, sr, 0.03F, 2, rng, new int[]{4, 0, 0}, 0);
+                f.branches.add(sub);
+                float[] st = sub.points()[2];
+                f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.3F, 1.55F), true, BROADLEAF, 0, 0));
+                float[] mid = along(sub, 0.45F);
+                f.groups.add(new Group(mid[0], mid[1] + 0.2F, mid[2], rng.range(1.0F, 1.2F), false, BROADLEAF, 0, 0));
+            }
+            float[] tip = limb.points()[limb.points().length - 1];
+            f.groups.add(new Group(tip[0], tip[1] + 0.1F, tip[2], rng.range(1.4F, 1.6F), true, BROADLEAF, 0, 0));
+            for (float ta = 0.35F; ta < 0.9F; ta += 0.2F) {
+                float[] p = along(limb, ta);
+                f.groups.add(new Group(p[0], p[1] + 0.35F, p[2], rng.range(1.1F, 1.3F), ta > 0.6F, BROADLEAF, 0, 0));
+            }
+            // the dome above the limb (shoots rising from its upper side fill the gap to the crown above)
+            float[] up = along(limb, 0.6F);
+            f.groups.add(new Group(up[0], up[1] + 1.1F, up[2], rng.range(1.1F, 1.3F), false, BROADLEAF, 0, 0));
+        }
+        if (leader) {
+            float laz = rng.range(0, 6.2832F);
+            for (int k = 0; k < 2; k++) {
+                float y = trunkLen - 2.6F + 1.3F * k;
+                float[] s = at(trunk, y);
+                Branch shoot = bend(s, laz + (float) Math.PI * k, (float) Math.toRadians(rng.range(30, 45)), rng.range(2.0F, 2.8F) * size, 2, 0.05F,
+                        Math.min(radiusAt(trunk, y) * 0.75F, 0.08F), 0.03F, 2, rng, new int[]{4, 0, 0}, 0);
+                f.branches.add(shoot);
+                float[] st = shoot.points()[2];
+                f.groups.add(new Group(st[0], st[1] + 0.1F, st[2], rng.range(1.3F, 1.5F), true, BROADLEAF, 0, 0));
+            }
+            float[] top = tp[rings];
+            f.groups.add(new Group(top[0], top[1] + 0.3F, top[2], rng.range(1.5F, 1.7F), true, BROADLEAF, 0, 0));
+            float[] mid = at(trunk, fork + (trunkLen - fork) * 0.5F);
+            f.groups.add(new Group(mid[0], mid[1], mid[2], 1.3F, false, BROADLEAF, 0, 0));
+        } else {
+            float[] top = tp[rings];
+            f.groups.add(new Group(top[0], top[1] + 2.2F, top[2], 1.5F, false, BROADLEAF, 0, 0));
+        }
+        f.crown();
+        return f;
+    }
+
+    // ------------------------------------------------------------------------------------ shagbark hickory
+
+    /**
+     * Carya ovata (Silvics: 21-24 m, 30-61 cm d.b.h.; a clear straight cylindrical bole, the main stem forking at one half
+     * to two thirds of the height; open, irregular branching): a slim bole that tapers little, a few short side branches
+     * below the fork (the lowest drooping), two or three steep stems above it with short irregular side branches, and a
+     * narrow oblong crown of loose foliage groups (big compound leaves, an open crown).
+     */
+    static Form hickory(int variant) {
+        var rng = new Rng(0x41C0_0A7AL * 29 + variant * 0xC2B2AE35L + 5);
+        var f = new Form(Species.SHAGBARK_HICKORY);
+        float size = rng.range(0.9F, 1.1F);
+        float height = rng.range(20.0F, 24.5F) * size;
+        float fork = height * rng.range(0.5F, 0.64F);
+        int stems = variant % 3 == 0 ? 3 : 2;
+        float r0 = 0.25F * size + 0.05F;
+        float leanAz = rng.range(0, 6.2832F), lean = rng.range(0.0F, 0.15F);
+        float leadAz = rng.range(0, 6.2832F), leadTilt = rng.range(0.12F, 0.24F);
+        // the trunk runs on as the main stem: above the fork it leans away (radians from vertical) and tapers to a point
+        float trunkLen = height - rng.range(1.4F, 2.2F);
+        int rings = (int) Math.ceil(trunkLen);
+        float[][] tp = new float[rings + 1][];
+        float[] tr = new float[rings + 1];
+        for (int i = 0; i <= rings; i++) {
+            float y = Math.min(i, trunkLen), u = Math.min(1, y / fork);
+            float off = y > fork ? (y - fork) * (float) Math.tan(leadTilt) : 0;
+            tp[i] = new float[]{0.5F + (float) Math.cos(leanAz) * lean * u * u + (float) Math.cos(leadAz) * off, y,
+                    0.5F + (float) Math.sin(leanAz) * lean * u * u + (float) Math.sin(leadAz) * off};
+            float above = Math.max(0, y - fork) / Math.max(0.5F, trunkLen - fork);
+            tr[i] = (r0 - 0.06F * u) * (1 - 0.78F * above) + (y < 0.5F ? 0.11F * size * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
+        }
+        tr[rings] = 0.03F;
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.trunkTop = fork;
+        Branch trunk = f.branches.get(0);
+        var leaders = new ArrayList<Branch>();
+        leaders.add(trunk);
+        for (int k = 1; k < stems; k++) {
+            float az = leadAz + (float) (Math.PI * 2 * k / stems) + rng.range(-0.3F, 0.3F);
+            float y0 = fork + rng.range(-0.3F, 0.4F);
+            float el = (float) Math.toRadians(90 - rng.range(16, 28));
+            Branch stem = bend(at(trunk, y0), az, el, (height - y0) * rng.range(0.75F, 0.88F), 4, -0.02F,
+                    Math.min(radiusAt(trunk, y0) * 0.82F, 0.2F * size), 0.03F, 1, rng, new int[]{8, 4, 3}, 3);
+            f.branches.add(stem);
+            leaders.add(stem);
+        }
+        // below the fork: a few short side branches, the lowest ones drooping
+        int lows = 4 + (int) (rng.next() * 2.5F);
+        float az = rng.range(0, 6.2832F);
+        for (int k = 0; k < lows; k++) {
+            float h = height * 0.33F + (fork - 0.6F - height * 0.33F) * (k + rng.next() * 0.5F) / lows;
+            az += 2.39996F + rng.range(-0.3F, 0.3F);
+            float u = k / (float) Math.max(1, lows - 1);
+            float el = (float) Math.toRadians(-10 + 34 * u + rng.range(-6, 6));
+            float len = rng.range(3.4F, 4.8F) * size;
+            Branch b = bend(at(trunk, h), az, el, len, 3, u < 0.5F ? -0.06F : 0.03F, Math.min(radiusAt(trunk, h) * 0.42F, 0.11F), 0.03F, 1, rng,
+                    new int[]{4, 3, 0}, 1);
+            f.branches.add(b);
+            float[] tip = b.points()[3];
+            f.groups.add(new Group(tip[0], tip[1] + 0.15F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
+            float[] mid = along(b, 0.55F);
+            f.groups.add(new Group(mid[0], mid[1] + 0.25F, mid[2], rng.range(1.0F, 1.2F), false, BROADLEAF, 0, 0));
+            float[] s = along(b, 0.45F);
+            float sa = az + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(30, 55));
+            Branch twig = bend(s, sa, el + (float) Math.toRadians(rng.range(5, 25)), rng.range(1.6F, 2.4F) * size, 2, 0.04F,
+                    Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.05F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+            f.branches.add(twig);
+            float[] tt = twig.points()[2];
+            f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
+        }
+        // the stems: short irregular side branches every 1.5-2.2 m, a tuft at each top
+        for (Branch stem : leaders) {
+            boolean main = stem == trunk;
+            float[][] pts = stem.points();
+            float len = 0;
+            for (int i = 0; i + 1 < pts.length; i++) len += (float) Math.hypot(Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][2] - pts[i][2]), pts[i + 1][1] - pts[i][1]);
+            float t0 = main ? Math.min(0.92F, (fork + 0.6F) / trunkLen) : 0.12F;
+            float saz = rng.range(0, 6.2832F);
+            for (float t = t0; t < 0.9F; t += rng.range(1.1F, 1.5F) / len) {
+                float[] s = along(stem, t);
+                saz += 2.39996F + rng.range(-0.5F, 0.5F);
+                float sl = rng.range(2.6F, 4.0F) * size * (1 - 0.35F * t);
+                float sel = (float) Math.toRadians(rng.range(10, 40));
+                Branch b = bend(s, saz, sel, sl, 2, 0.04F, Math.min(radiusAlong(stem, t) * 0.55F, 0.08F), 0.025F, 2, rng,
+                        new int[]{4, 0, 0}, 0);
+                f.branches.add(b);
+                float[] tip = b.points()[2];
+                f.groups.add(new Group(tip[0], tip[1] + 0.1F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
+                if (rng.next() < 0.7F) {
+                    float[] mid = along(b, 0.5F);
+                    f.groups.add(new Group(mid[0], mid[1] + 0.2F, mid[2], rng.range(1.0F, 1.15F), false, BROADLEAF, 0, 0));
+                }
+                if (sl > 2.8F && rng.next() < 0.6F) {
+                    float[] ss = along(b, 0.5F);
+                    float sa = saz + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(35, 60));
+                    Branch twig = bend(ss, sa, sel + (float) Math.toRadians(rng.range(5, 20)), rng.range(1.4F, 2.0F) * size, 2, 0.04F,
+                            Math.min(radiusAlong(b, 0.5F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+                    f.branches.add(twig);
+                    float[] tt = twig.points()[2];
+                    f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
+                }
+            }
+            float[] top = pts[pts.length - 1];
+            f.groups.add(new Group(top[0], top[1] + 0.2F, top[2], rng.range(1.25F, 1.45F), true, BROADLEAF, 0, 0));
+            float[] mid = along(stem, main ? 0.82F : 0.6F);
+            f.groups.add(new Group(mid[0], mid[1], mid[2], 1.1F, false, BROADLEAF, 0, 0));
+        }
+        f.crown();
+        return f;
+    }
+
+    // ------------------------------------------------------------------------------------------- red maple
+
+    /**
+     * Acer rubrum (Silvics: 18-27 m, 46-76 cm d.b.h.; a prolific sprouter, stems in clumps from a stump): smaller and
+     * finer than the oaks. Half the variants fork low (2.3-3.1 m) into a clump of two or three stems leaning out; the
+     * others keep one stem with a fork at 5-6 m. The branches ascend steeply (a V of 35-55 degrees), the crown is an
+     * oval to rounded mass of many small dense foliage groups.
+     */
+    static Form redMaple(int variant) {
+        var rng = new Rng(0x3A91_E5E1L * 23 + variant * 0x27D4EB2FL + 9);
+        var f = new Form(Species.RED_MAPLE);
+        float size = rng.range(0.88F, 1.12F);
+        float height = rng.range(15.5F, 20.0F) * size;
+        boolean clump = variant % 2 == 0;
+        float fork = clump ? rng.range(2.3F, 3.1F) : rng.range(4.8F, 6.2F) * size;
+        int stems = clump ? (variant % 4 == 0 ? 3 : 2) : 1;
+        float r0 = 0.24F * size + 0.05F;
+        float leanAz = rng.range(0, 6.2832F), lean = rng.range(0.0F, 0.15F);
+        float leadAz = rng.range(0, 6.2832F), leadTilt = clump ? rng.range(0.2F, 0.34F) : rng.range(0.0F, 0.08F);
+        float trunkLen = height - rng.range(1.2F, 2.0F);
+        int rings = (int) Math.ceil(trunkLen);
+        float[][] tp = new float[rings + 1][];
+        float[] tr = new float[rings + 1];
+        for (int i = 0; i <= rings; i++) {
+            float y = Math.min(i, trunkLen), u = Math.min(1, y / fork);
+            float off = y > fork ? (y - fork) * (float) Math.tan(leadTilt) : 0;
+            tp[i] = new float[]{0.5F + (float) Math.cos(leanAz) * lean * u * u + (float) Math.cos(leadAz) * off, y,
+                    0.5F + (float) Math.sin(leanAz) * lean * u * u + (float) Math.sin(leadAz) * off};
+            float above = Math.max(0, y - fork) / Math.max(0.5F, trunkLen - fork);
+            float stemShare = clump && y > fork ? 0.82F : 1;
+            tr[i] = (r0 - 0.05F * u) * stemShare * (1 - 0.8F * above) + (y < 0.5F ? 0.12F * size * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
+        }
+        tr[rings] = 0.03F;
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        f.trunkTop = fork;
+        Branch trunk = f.branches.get(0);
+        var leaders = new ArrayList<Branch>();
+        leaders.add(trunk);
+        for (int k = 1; k < stems; k++) {
+            float az = leadAz + (float) (Math.PI * 2 * k / stems) + rng.range(-0.35F, 0.35F);
+            float y0 = fork + rng.range(-0.2F, 0.3F);
+            float el = (float) Math.toRadians(90 - rng.range(18, 30));
+            Branch stem = bend(at(trunk, y0), az, el, (height - y0) * rng.range(0.78F, 0.9F), 4, 0.01F,
+                    Math.min(radiusAt(trunk, y0) * 0.85F, 0.19F * size), 0.03F, 1, rng, new int[]{8, 4, 3}, 3);
+            f.branches.add(stem);
+            leaders.add(stem);
+        }
+        // single-stem variants: ascending limbs from the fork, a V
+        if (!clump) {
+            int limbs = 3 + (int) (rng.next() * 1.99F);
+            float az = rng.range(0, 6.2832F);
+            for (int i = 0; i < limbs; i++) {
+                az += 2.39996F + rng.range(-0.3F, 0.3F);
+                float y0 = fork - 0.2F + 1.4F * i / limbs;
+                float el = (float) Math.toRadians(rng.range(40, 55));
+                Branch limb = bend(at(trunk, y0), az, el, rng.range(5.4F, 6.6F) * size, 3, 0.02F,
+                        Math.min(radiusAt(trunk, y0) * 0.7F, 0.15F * size), 0.04F, 1, rng, new int[]{6, 3, 3}, 2);
+                f.branches.add(limb);
+                leaders.add(limb);
+            }
+        }
+        // every stem and limb: steep side branches with dense foliage groups along their outer part
+        for (Branch stem : leaders) {
+            boolean main = stem == trunk;
+            float[][] pts = stem.points();
+            float len = 0;
+            for (int i = 0; i + 1 < pts.length; i++) len += (float) Math.hypot(Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][2] - pts[i][2]), pts[i + 1][1] - pts[i][1]);
+            float t0 = main ? Math.min(0.92F, (fork + (clump ? 1.6F : 0.8F)) / trunkLen) : 0.25F;
+            float saz = rng.range(0, 6.2832F), spacing = leaders.size() >= 3 ? 1.45F : 1.0F;
+            for (float t = t0; t < 0.88F; t += rng.range(1.0F, 1.4F) * spacing / len) {
+                float[] s = along(stem, t);
+                saz += 2.39996F + rng.range(-0.4F, 0.4F);
+                float sl = rng.range(3.0F, 4.4F) * size * (1 - 0.4F * t);
+                float sel = (float) Math.toRadians(rng.range(25, 45));
+                Branch b = bend(s, saz, sel, sl, 2, 0.04F, Math.min(radiusAlong(stem, t) * 0.55F, 0.08F), 0.025F, 2, rng,
+                        new int[]{4, 0, 0}, 0);
+                f.branches.add(b);
+                float[] tip = b.points()[2];
+                f.groups.add(new Group(tip[0], tip[1] + 0.1F, tip[2], rng.range(1.2F, 1.4F), true, BROADLEAF, 0, 0));
+                float[] mid = along(b, 0.5F);
+                f.groups.add(new Group(mid[0], mid[1] + 0.2F, mid[2], rng.range(1.0F, 1.2F), rng.next() < 0.4F, BROADLEAF, 0, 0));
+                if (rng.next() < 0.6F) {
+                    float[] ss = along(b, 0.45F);
+                    float sa = saz + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(30, 55));
+                    Branch twig = bend(ss, sa, sel + (float) Math.toRadians(rng.range(5, 20)), rng.range(1.4F, 2.2F) * size, 2, 0.04F,
+                            Math.min(radiusAlong(b, 0.45F) * 0.6F, 0.045F), 0.02F, 2, rng, new int[]{4, 0, 0}, 0);
+                    f.branches.add(twig);
+                    float[] tt = twig.points()[2];
+                    f.groups.add(new Group(tt[0], tt[1] + 0.1F, tt[2], rng.range(1.1F, 1.3F), true, BROADLEAF, 0, 0));
+                }
+            }
+            float[] top = pts[pts.length - 1];
+            f.groups.add(new Group(top[0], top[1] + 0.25F, top[2], rng.range(1.3F, 1.5F), true, BROADLEAF, 0, 0));
+            float[] mid = along(stem, main ? 0.8F : 0.65F);
+            f.groups.add(new Group(mid[0], mid[1], mid[2], 1.15F, false, BROADLEAF, 0, 0));
+        }
+        f.crown();
+        return f;
+    }
+
+    // ------------------------------------------------------------------------------------- eastern hemlock
+
+    /**
+     * Tsuga canadensis (Silvics: over 30 m and 89-102 cm in old stands, the most shade tolerant tree, cool moist coves,
+     * north slopes and stream banks; dendrology: a dense conical crown, fine branches, a drooping leader, a poor self
+     * pruner): a strongly tapering trunk, slender branches not in whorls (one or two every half metre, round the trunk)
+     * from low down (live crown from 2-6 m), level to drooping, shortening steadily toward the top; the top nods to one
+     * side. Foliage: flat sprays hanging off the branches (SPRAY), smaller and denser than the white pine's.
+     */
+    static Form hemlock(int variant) {
+        var rng = new Rng(0x7E31_0C4BL * 41 + variant * 0x165667B1L + 13);
+        var f = new Form(Species.EASTERN_HEMLOCK);
+        float size = rng.range(0.9F, 1.1F);
+        float height = rng.range(18.5F, 24.5F) * size;
+        float r0 = 0.22F + 0.011F * height;
+        float leanAz = rng.range(0, 6.2832F), lean = rng.range(0.0F, 0.2F);
+        float nodAz = rng.range(0, 6.2832F), nod = rng.range(0.6F, 1.0F);
+        int rings = (int) Math.ceil(height);
+        float[][] tp = new float[rings + 1][];
+        float[] tr = new float[rings + 1];
+        for (int i = 0; i <= rings; i++) {
+            float y = Math.min(i, height), u = y / height;
+            // the drooping leader: the last 1.6 m bends over toward nodAz
+            float bendT = Math.max(0, y - (height - 1.6F)) / 1.6F;
+            float off = nod * bendT * bendT * 1.1F;
+            tp[i] = new float[]{0.5F + (float) Math.cos(leanAz) * lean * u * u + (float) Math.cos(nodAz) * off, y - nod * bendT * bendT * 0.4F,
+                    0.5F + (float) Math.sin(leanAz) * lean * u * u + (float) Math.sin(nodAz) * off};
+            tr[i] = r0 * (float) Math.pow(1 - u, 0.95) + 0.025F + (y < 0.5F ? 0.12F * (1 - y / 0.5F) * (1 - y / 0.5F) : 0);
+        }
+        tr[rings] = 0.015F;
+        f.branches.add(new Branch(tp, tr, 0, true, new int[]{10, 6, 4}, Integer.MAX_VALUE, false));
+        Branch trunk = f.branches.get(0);
+        f.trunkTop = height;
+        float crownBase = Math.max(2.4F, rng.range(0.08F, 0.2F) * height);
+        float lmax = rng.range(5.0F, 6.0F) * size;
+        float az = rng.range(0, 6.2832F);
+        for (float h = crownBase; h < height - 1.1F; h += rng.range(0.42F, 0.62F)) {
+            float u = (h - crownBase) / (height - crownBase);
+            int n = rng.next() < 0.22F ? 2 : 1;
+            for (int k = 0; k < n; k++) {
+                az += k == 0 ? 2.39996F + rng.range(-0.4F, 0.4F) : (float) Math.PI + rng.range(-0.5F, 0.5F);
+                float len = Math.max(0.7F, lmax * (0.1F + 0.9F * (float) Math.pow(1 - u, 1.05)) * rng.range(0.85F, 1.1F));
+                float el = (float) Math.toRadians(u < 0.3F ? rng.range(-16, -4) : u < 0.7F ? rng.range(-8, 4) : rng.range(0, 14));
+                float rise = u > 0.8F ? -0.04F : -0.09F;
+                // near the ground the sweep is gentler: the tip stays above about 1 m
+                if (h - 0.5F * len < 1.2F) { el = Math.max(el, (float) Math.toRadians(-2)); rise = -0.04F; }
+                float rb = Math.min(radiusAt(trunk, h) * 0.45F, 0.025F + 0.012F * len);
+                int segs = len > 2.8F ? 3 : 2;
+                Branch b = bend(at(trunk, h), az, el, len, segs, rise, rb, 0.02F, 1, rng,
+                        new int[]{3, rb >= 0.07F && u < 0.4F ? 3 : 0, 0}, 0);
+                f.branches.add(b);
+                float dx = (float) Math.cos(az), dz = (float) Math.sin(az);
+                float t0 = Math.max(0.15F, 1 - 3.2F / len);
+                for (float t = t0; t < 0.97F; t += 0.78F / len) {
+                    float[] p = along(b, t);
+                    f.groups.add(new Group(p[0], p[1] + 0.05F, p[2], rng.range(0.62F, 0.74F), t > 0.7F || u > 0.85F, SPRAY, dx, dz));
+                }
+                float[] tip = b.points()[b.points().length - 1];
+                f.groups.add(new Group(tip[0], tip[1] + 0.02F, tip[2], rng.range(0.74F, 0.84F), true, SPRAY, dx, dz));
+                if (len > 3.0F) for (float t : new float[]{0.48F, 0.74F}) {
+                    float[] s = along(b, t);
+                    float sa = az + (rng.next() < 0.5F ? 1 : -1) * (float) Math.toRadians(rng.range(45, 70));
+                    float sl = rng.range(0.6F, 0.95F);
+                    f.groups.add(new Group(s[0] + (float) Math.cos(sa) * sl, s[1] - 0.05F, s[2] + (float) Math.sin(sa) * sl,
+                            0.62F, false, SPRAY, (float) Math.cos(sa), (float) Math.sin(sa)));
+                }
+            }
+        }
+        // the nodding top: sprays along the bent leader
+        for (float d : new float[]{0.4F, 1.2F}) {
+            float[] p = along(trunk, (height - d) / height);
+            f.groups.add(new Group(p[0], p[1], p[2], 0.7F, true, SPRAY, (float) Math.cos(nodAz), (float) Math.sin(nodAz)));
+        }
         f.crown();
         return f;
     }

@@ -10,8 +10,8 @@ import java.util.List;
 /**
  * Mesh Trees P2.1 (docs/rendering/mesh_trees_p2_felling.md, U): offline previews of the felling assets on their real
  * geometry (TreeCut over the layouts' root cells), with the generated textures. Not a check: pictures for review.
- * Arguments: textures folder (block), output folder. Writes felling_assets.png: per species a stump from the side and
- * from above, and the notch of stages 1 to 4.
+ * Arguments: textures folder (block), output folder. Writes felling_assets.png: per species (P3: all six) a stump from
+ * the side and from above, and the notch of stages 1 to 4.
  */
 public final class AssetPreview {
     static BufferedImage[] tex;
@@ -19,12 +19,20 @@ public final class AssetPreview {
     public static void main(String[] args) throws Exception {
         File dir = new File(args[0]), out = new File(args[1]);
         out.mkdirs();
-        String[] names = {"white_oak_bark", "white_oak_leaves", "white_oak_leaves_mid", "white_oak_leaves_far", "white_pine_bark", "white_pine_needles",
-                "white_pine_needles_mid", "white_pine_needles_far", "white_oak_cut", "white_pine_cut", "white_oak_end_grain", "white_pine_end_grain"};
-        tex = new BufferedImage[names.length];
-        for (int i = 0; i < names.length; i++) tex[i] = ImageIO.read(new File(dir, names[i] + ".png"));
+        // the sprite numbers of TreeCellModel: per species bark, leaves, mid, far; then cut wood, then end grain per species
+        int n = Species.values().length;
+        tex = new BufferedImage[TreeCut.END_SPRITE + n];
+        for (Species s : Species.values()) {
+            int i = s.ordinal() * TreeShape.SLOTS;
+            tex[i] = ImageIO.read(new File(dir, s.id + "_bark.png"));
+            tex[i + 1] = ImageIO.read(new File(dir, s.leavesId + ".png"));
+            tex[i + 2] = ImageIO.read(new File(dir, s.leavesId + "_mid.png"));
+            tex[i + 3] = ImageIO.read(new File(dir, s.leavesId + "_far.png"));
+            tex[TreeCut.CUT_SPRITE + s.ordinal()] = ImageIO.read(new File(dir, s.id + "_cut.png"));
+            tex[TreeCut.END_SPRITE + s.ordinal()] = ImageIO.read(new File(dir, s.id + "_end_grain.png"));
+        }
         int W = 420, H = 420, cols = 6;
-        var sheet = new BufferedImage(W * cols, H * 2, BufferedImage.TYPE_INT_RGB);
+        var sheet = new BufferedImage(W * cols, H * n, BufferedImage.TYPE_INT_RGB);
         for (Species sp : Species.values()) {
             int row = sp.ordinal(), v = sp == Species.WHITE_OAK ? 0 : 2;
             var layout = TreeShape.layout(sp, v, 0);

@@ -1,0 +1,15 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "base": {
+    "parent": "apocalypse_firstlight:item/eastern_hemlock_needles_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "afl_tree_demo:item/eastern_hemlock_needles"
+      }
+    }
+  }
+}

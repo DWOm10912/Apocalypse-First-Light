@@ -64,11 +64,7 @@ final class TreeCellModel implements IDynamicBakedModel {
      * Sprites by TreeShape sprite number (species * SLOTS + slot), then (P2, TreeCut) cut wood and end grain per species;
      * the two species' proxy faces separately.
      */
-    private static final ResourceLocation[] SPRITES = {
-            tex("white_oak_bark"), tex("white_oak_leaves"), tex("white_oak_leaves_mid"), tex("white_oak_leaves_far"),
-            tex("white_pine_bark"), tex("white_pine_needles"), tex("white_pine_needles_mid"), tex("white_pine_needles_far"),
-            tex("white_oak_cut"), tex("white_pine_cut"), tex("white_oak_end_grain"), tex("white_pine_end_grain")};
-    private static final ResourceLocation[] PROXY_LEAVES = {tex("white_oak_leaves_proxy"), tex("white_pine_needles_proxy")};
+    private static final ResourceLocation[] SPRITES = spriteIds(), PROXY_LEAVES = proxyIds();
     private static final Map<Integer, Map<Integer, Cell>> BAKED = new ConcurrentHashMap<>();
     private static final Map<Integer, Map<Direction, List<BakedQuad>>> PROXIES = new ConcurrentHashMap<>();
     /** P2: notched root cells (cut stage, side, cut height) and stumps, built on first sight. */
@@ -85,6 +81,28 @@ final class TreeCellModel implements IDynamicBakedModel {
 
     private static ResourceLocation tex(String name) {
         return new ResourceLocation("afl_tree_demo", "block/" + name);
+    }
+
+    /** Per species bark, leaves, leaves_mid, leaves_far (TreeShape slots), then cut wood and end grain per species (TreeCut). */
+    private static ResourceLocation[] spriteIds() {
+        Species[] all = Species.values();
+        var ids = new ResourceLocation[TreeCut.END_SPRITE + all.length];
+        for (Species s : all) {
+            int i = s.ordinal() * TreeShape.SLOTS;
+            ids[i + TreeShape.BARK] = tex(s.id + "_bark");
+            ids[i + TreeShape.LEAVES] = tex(s.leavesId);
+            ids[i + TreeShape.LEAVES_MID] = tex(s.leavesId + "_mid");
+            ids[i + TreeShape.LEAVES_FAR] = tex(s.leavesId + "_far");
+            ids[TreeCut.CUT_SPRITE + s.ordinal()] = tex(s.id + "_cut");
+            ids[TreeCut.END_SPRITE + s.ordinal()] = tex(s.id + "_end_grain");
+        }
+        return ids;
+    }
+
+    private static ResourceLocation[] proxyIds() {
+        var ids = new ResourceLocation[Species.values().length];
+        for (Species s : Species.values()) ids[s.ordinal()] = tex(s.leavesId + "_proxy");
+        return ids;
     }
 
     static void clearCache() {

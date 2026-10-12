@@ -65,8 +65,11 @@ public final class ForestCheck {
         cost(s, seed, cx0, cz0);
         int[][] spots = spots(plan, cx0, cz0);
         for (int[] p : spots) if (p != null) cells(plan, p[0], p[1]);
-        // the biomes of the pine and the mixed spot, which the centre window may not hold
-        for (int k = 1; k < 3; k++) if (spots[k] != null) census(plan, spots[k][0], spots[k][1], 1024);
+        // the biomes of the spots the centre window may not hold (coastal pine, swamp)
+        for (String name : new String[]{"mixed", "swamp"}) {
+            int k = ForestPlan.scenario(name);
+            if (spots[k] != null) census(plan, spots[k][0], spots[k][1], 1024);
+        }
         map(plan, spots, new File(out, "forest_scenarios.png"));
         System.out.println(failures == 0 ? "MESH FOREST CHECK OK" : "MESH FOREST CHECK: " + failures + " failures");
         System.exit(failures == 0 ? 0 : 1);
@@ -90,8 +93,9 @@ public final class ForestCheck {
         // Quad: header + 4 float arrays (12, 8, 12, 4) + fields; Cell: header, list array, 3 lists, optional voxels;
         // a baked quad: header + int[32] + fields; one baked map per layout, level and shading mode in use
         double layoutMb = (quads * 260.0 + cells * 150.0) / 1e6, bakedMb = baked * 190.0 / 1e6;
-        System.out.printf("layouts: 32 base %.0f ms, 96 turns %.0f ms; 128 layouts hold %d cells, %d quads (LOD0/1/2 %d/%d/%d), about %.0f MB; baked (client, one shading mode, every layout at every level) about %.0f MB%n",
-                (t1 - t0) / 1e6, (t2 - t1) / 1e6, cells, quads, lodQuads[0], lodQuads[1], lodQuads[2], layoutMb, bakedMb);
+        int base = Species.values().length * TreeShape.VARIANTS;
+        System.out.printf("layouts: %d base %.0f ms, %d turns %.0f ms; %d layouts hold %d cells, %d quads (LOD0/1/2 %d/%d/%d), about %.0f MB; baked (client, one shading mode, every layout at every level) about %.0f MB%n",
+                base, (t1 - t0) / 1e6, 3 * base, (t2 - t1) / 1e6, 4 * base, cells, quads, lodQuads[0], lodQuads[1], lodQuads[2], layoutMb, bakedMb);
         for (Species sp : Species.values()) {
             float rmin = 99, rmax = 0, hmin = 99, hmax = 0;
             int ext = 0;
@@ -120,8 +124,10 @@ public final class ForestCheck {
         long t0 = System.nanoTime();
         var trees = window(plan, x0, z0, W);
         long t1 = System.nanoTime();
-        int[] count = new int[nb], pines = new int[nb];
-        for (var t : trees) { count[t.biome()]++; if (t.species() == Species.WHITE_PINE) pines[t.biome()]++; }
+        int ns = Species.values().length;
+        int[] count = new int[nb];
+        int[][] bySpecies = new int[nb][ns];
+        for (var t : trees) { count[t.biome()]++; bySpecies[t.biome()][t.species().ordinal()]++; }
         var nn = nearest(trees);
         System.out.printf("census %d x %d m at %d %d: %d trees (%.1f ms for %d chunks)%n", W, W, x0, z0, trees.size(), (t1 - t0) / 1e6, (W / 16) * (W / 16));
         for (int b = 0; b < nb; b++) {
@@ -131,9 +137,18 @@ public final class ForestCheck {
             var d = new ArrayList<Double>();
             for (int i = 0; i < trees.size(); i++) if (trees.get(i).biome() == b) d.add(nn[i]);
             Collections.sort(d);
-            System.out.printf("  %-24s %7.0f chunks  %5d trees  %.2f / chunk%s  pine %3.0f %%  nearest p5 %.1f median %.1f m%n",
+            var mix = new StringBuilder();
+            for (Species sp : Species.values()) if (bySpecies[b][sp.ordinal()] > 0)
+                mix.append(String.format(" %s %.0f%%", SHORT[sp.ordinal()], 100.0 * bySpecies[b][sp.ordinal()] / count[b]));
+            System.out.printf("  %-24s %7.0f chunks  %5d trees  %.2f / chunk%s  nearest p5 %.1f median %.1f m %s%n",
                     EcologyBiomes.IDS[b], area[b], count[b], per, st == null ? (ForestPlan.VANILLA_TREES[b] ? "  (vanilla trees kept)" : "") : String.format(" (target %.2f)", st.target()),
-                    count[b] == 0 ? 0 : 100.0 * pines[b] / count[b], d.isEmpty() ? 0 : d.get(d.size() / 20), d.isEmpty() ? 0 : d.get(d.size() / 2));
+                    d.isEmpty() ? 0 : d.get(d.size() / 20), d.isEmpty() ? 0 : d.get(d.size() / 2), mix.length() == 0 ? "" : " mix" + mix);
+            // the mix follows the stand's weights (patch noise moves it about; large areas only)
+            if (st != null && area[b] >= 1000 && count[b] >= 200) for (Species sp : Species.values()) {
+                double got = bySpecies[b][sp.ordinal()] / (double) count[b], want = st.share(sp);
+                require(want > 0 || got == 0, EcologyBiomes.IDS[b] + ": no " + sp.id + " outside the stand's mix");
+                require(Math.abs(got - want) <= 0.12 + 0.25 * want, EcologyBiomes.IDS[b] + ": " + sp.id + String.format(" share %.2f near the mix's %.2f", got, want));
+            }
             // large areas only: small woodlots lose their edges to the vanilla-tree buffer and the hillside rule
             if (st != null && area[b] >= 1000) require(Math.abs(per - st.target()) <= 0.25 * st.target() + 0.03, EcologyBiomes.IDS[b] + ": density " + String.format("%.2f", per) + " within 25 % of the target " + st.target());
             if (st == null) require(count[b] == 0, EcologyBiomes.IDS[b] + ": no mesh tree outside the mesh forest biomes");
@@ -307,37 +322,45 @@ public final class ForestCheck {
 
     // ------------------------------------------------------------------------------------------- test spots
 
-    static final String[] SCENARIOS = {"open white oak (grassland groves)", "white pine forest", "mixed pine-oak forest"};
+    static final String[] SHORT = {"wo", "wp", "ro", "hi", "rm", "he"};
 
     /** The nearest test spot of each scenario (ForestPlan#find, the command's search; rings out to 6 km). */
     static int[][] spots(ForestPlan plan, int cx0, int cz0) {
-        int[][] found = new int[3][];
-        for (int k = 0; k < 3; k++) {
+        int n = ForestPlan.SCENARIOS.length;
+        int[][] found = new int[n][];
+        for (int k = 0; k < n; k++) {
+            var sc = ForestPlan.SCENARIOS[k];
             found[k] = plan.find(k, cx0, cz0, 190);
-            if (found[k] == null) { System.out.println("spot " + SCENARIOS[k] + ": none within 6 km"); require(false, "a " + SCENARIOS[k] + " spot exists"); continue; }
+            if (found[k] == null) { System.out.println("spot " + sc.label() + ": none within 6 km"); require(false, "a " + sc.label() + " spot exists"); continue; }
             int x = found[k][0], z = found[k][1];
             var trees = window(plan, x - 64, z - 64, 128);
-            int pines = 0;
-            for (var t : trees) if (t.species() == Species.WHITE_PINE) pines++;
+            int[] by = new int[Species.values().length];
+            for (var t : trees) by[t.species().ordinal()]++;
+            var mix = new StringBuilder();
+            for (Species sp : Species.values()) if (by[sp.ordinal()] > 0) mix.append(" ").append(SHORT[sp.ordinal()]).append(" ").append(by[sp.ordinal()]);
             int y = plan.top(x, z);
-            System.out.printf("spot %-34s x %d z %d (ground y %d, %.0f m from the centre): biome %s, %d trees in the 128 m square (%d pine) -> /tp @s %d %d %d%n",
-                    SCENARIOS[k], x, z, y, Math.hypot(x - cx0, z - cz0), EcologyBiomes.IDS[plan.biome(x, z)], trees.size(), pines, x, y + 2, z);
+            System.out.printf("spot %-12s %-32s x %d z %d (ground y %d, %.0f m from the centre): biome %s, %d trees in the 128 m square (%s) -> /tp @s %d %d %d%n",
+                    sc.name(), sc.label(), x, z, y, Math.hypot(x - cx0, z - cz0), EcologyBiomes.IDS[plan.biome(x, z)], trees.size(), mix.toString().trim(), x, y + 2, z);
         }
         return found;
     }
 
+    /** Map colours per species: white oak, white pine, red oak, hickory, red maple, hemlock. */
+    static final Color[] SPECIES_COLOURS = {new Color(58, 112, 34, 170), new Color(20, 80, 64, 170), new Color(140, 70, 30, 170),
+            new Color(170, 150, 40, 170), new Color(200, 40, 40, 170), new Color(30, 40, 110, 170)};
+
     // -------------------------------------------------------------------------------------------------- map
 
     static void map(ForestPlan plan, int[][] spots, File file) throws Exception {
-        int M = 320, S = 2, P = M * S;
-        var img = new BufferedImage(P * 3, P + 40, BufferedImage.TYPE_INT_RGB);
+        int M = 320, S = 2, P = M * S, cols = 5, rows = (spots.length + cols - 1) / cols;
+        var img = new BufferedImage(P * cols, (P + 40) * rows, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, img.getWidth(), img.getHeight());
-        for (int k = 0; k < 3; k++) {
+        for (int k = 0; k < spots.length; k++) {
             if (spots[k] == null) continue;
-            int x0 = spots[k][0] - M / 2, z0 = spots[k][1] - M / 2, ox = k * P;
+            int x0 = spots[k][0] - M / 2, z0 = spots[k][1] - M / 2, ox = (k % cols) * P, oy = (k / cols) * (P + 40);
             for (int z = 0; z < M; z++) for (int x = 0; x < M; x++) {
                 int b = plan.biome(x0 + x, z0 + z);
                 int c = EcologyBiomes.COLOURS[b];
@@ -346,15 +369,14 @@ public final class ForestCheck {
                 if (plan.surface.waterAt(x0 + x, z0 + z)) c = 0x3F6F9F;
                 int rr = (int) ((c >> 16 & 255) * shade * 0.55 + 115), gg = (int) ((c >> 8 & 255) * shade * 0.55 + 115), bb = (int) ((c & 255) * shade * 0.55 + 115);
                 g.setColor(new Color(Math.min(255, rr), Math.min(255, gg), Math.min(255, bb)));
-                g.fillRect(ox + x * S, z * S, S, S);
+                g.fillRect(ox + x * S, oy + z * S, S, S);
             }
             for (var t : window(plan, x0 - 16, z0 - 16, M + 32)) {
                 float r = t.radius() * S;
-                double px = ox + (t.x() - x0 + 0.5) * S, pz = (t.z() - z0 + 0.5) * S;
+                double px = ox + (t.x() - x0 + 0.5) * S, pz = oy + (t.z() - z0 + 0.5) * S;
                 if (px < ox - r || px > ox + P + r) continue;
-                boolean pine = t.species() == Species.WHITE_PINE;
-                g.setClip(ox, 0, P, P);
-                g.setColor(pine ? new Color(20, 80, 64, 170) : new Color(58, 112, 34, 170));
+                g.setClip(ox, oy, P, P);
+                g.setColor(SPECIES_COLOURS[t.species().ordinal()]);
                 g.fill(new java.awt.geom.Ellipse2D.Double(px - r, pz - r, 2 * r, 2 * r));
                 g.setColor(new Color(30, 30, 20));
                 g.fill(new java.awt.geom.Ellipse2D.Double(px - 1.5, pz - 1.5, 3, 3));
@@ -362,9 +384,9 @@ public final class ForestCheck {
             }
             g.setColor(Color.BLACK);
             g.setStroke(new BasicStroke(2));
-            g.drawRect(ox, 0, P - 1, P - 1);
+            g.drawRect(ox, oy, P - 1, P - 1);
             g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
-            g.drawString(SCENARIOS[k] + "  centre " + spots[k][0] + " " + spots[k][1] + "  (320 m)", ox + 8, P + 26);
+            g.drawString(ForestPlan.SCENARIOS[k].label() + "  centre " + spots[k][0] + " " + spots[k][1] + "  (320 m)", ox + 8, oy + P + 26);
         }
         g.dispose();
         ImageIO.write(img, "png", file);

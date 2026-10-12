@@ -172,14 +172,14 @@ public final class TreeShape {
             for (int l = 0; l < LODS; l++) {
                 int sides = b.sides()[l];
                 if (sides == 0) continue;
-                // LOD2: the trunk up to the crown (oak) or whole (pine), a branch's first segments; the bark tile is
-                // 2 m there (stretched, nobody sees it), 1 m nearer
+                // LOD2: the trunk up to the crown (broadleaf) or whole (conifer), a branch's first segments; the bark
+                // tile is 2 m there (stretched, nobody sees it), 1 m nearer
                 boolean far = l == 2;
-                float maxY = far && b.depth() == 0 && f.species == Species.WHITE_OAK ? f.trunkTop : Float.MAX_VALUE;
+                float maxY = far && b.depth() == 0 && !f.species.conifer ? f.trunkTop : Float.MAX_VALUE;
                 int segments = far && b.depth() > 0 ? b.lod2Segments() : Integer.MAX_VALUE;
-                // LOD1 and LOD2: a 2 m bark tile (fewer rings; the stretch is not visible from 64 m on); the thin pine
-                // branches use it at LOD0 too
-                float tile = l > 0 || b.depth() > 0 && f.species == Species.WHITE_PINE ? 2.0F : 1.0F;
+                // LOD1 and LOD2: a 2 m bark tile (fewer rings; the stretch is not visible from 64 m on); a conifer's
+                // thin branches use it at LOD0 too
+                float tile = l > 0 || b.depth() > 0 && f.species.conifer ? 2.0F : 1.0F;
                 tube(f, b, sides, tile, maxY, segments, bark, out[l]);
             }
         }
@@ -328,7 +328,9 @@ public final class TreeShape {
 
     /**
      * Needle sprays: kind 0 and 1 level plates (tilted 10 to 35 degrees) side by side along the branch, kind 2 a card
-     * standing along the branch, leaning out, which is what a pine's crown shows from the side.
+     * standing along the branch, leaning out, which is what a pine's crown shows from the side. P3, eastern hemlock
+     * (style SPRAY): kinds 0 and 1 hang, their outer edge dipping 15 to 35 degrees along the branch (flat sprays on
+     * drooping branchlets).
      */
     private static void sprays(Form f, Group g, int n, int first, float s, int sprite, Rng rng, List<Quad> out) {
         float dx = g.dirX(), dz = g.dirZ();
@@ -342,7 +344,13 @@ public final class TreeShape {
             float[] w;
             if (k < 2) {
                 float tilt = (float) Math.toRadians(rng.range(10, 35)), ta = rng.range(0, 6.2832F);
-                w = norm(new float[]{(float) (Math.sin(tilt) * Math.cos(ta)), (float) Math.cos(tilt), (float) (Math.sin(tilt) * Math.sin(ta))});
+                if (g.style() == TreeForms.SPRAY) {
+                    // the normal leans outward along the branch: the spray's outer edge hangs lower
+                    float droop = (float) Math.toRadians(15) + tilt * 0.8F, wob = (ta - 3.1416F) * 0.12F;
+                    float ox = dx * (float) Math.cos(wob) - dz * (float) Math.sin(wob), oz = dz * (float) Math.cos(wob) + dx * (float) Math.sin(wob);
+                    w = norm(new float[]{ox * (float) Math.sin(droop), (float) Math.cos(droop), oz * (float) Math.sin(droop)});
+                } else
+                    w = norm(new float[]{(float) (Math.sin(tilt) * Math.cos(ta)), (float) Math.cos(tilt), (float) (Math.sin(tilt) * Math.sin(ta))});
             } else {
                 // normal across the branch, leaning out and up
                 w = norm(new float[]{-dz + dx * 0.25F, 0.35F, dx + dz * 0.25F});

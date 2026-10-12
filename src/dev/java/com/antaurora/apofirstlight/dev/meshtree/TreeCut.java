@@ -24,8 +24,8 @@ import java.util.List;
  * </ul>
  */
 final class TreeCut {
-    /** Extra sprites (TreeCellModel's list): cut wood and end grain, per species ordinal. */
-    static final int CUT_SPRITE = 8, END_SPRITE = 10;
+    /** Extra sprites (TreeCellModel's list): after every species' slots, cut wood per species ordinal, then end grain. */
+    static final int CUT_SPRITE = TreeForms.Species.values().length * TreeShape.SLOTS, END_SPRITE = CUT_SPRITE + TreeForms.Species.values().length;
     /**
      * Notch per stage 1..4: apex depth as a share of the trunk radius at the cut (its outline on the bark then spans
      * 31, 44, 57 and 68 degrees either side of the chopping direction); columns per band where the notch reaches.

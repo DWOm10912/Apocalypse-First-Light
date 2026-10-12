@@ -30,8 +30,13 @@ import java.util.Map;
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TreeModels {
-    /** White pine needles (Pinus strobus is a soft blue green). */
-    static final int PINE_COLOR = 0x5E9472;
+    /** White pine needles (Pinus strobus is a soft blue green); P3: eastern hemlock, a deep green (dark glossy needles). */
+    static final int PINE_COLOR = 0x5E9472, HEMLOCK_COLOR = 0x4C7A50;
+
+    /** A species' own leaf colour by its tint index (TreeForms.Species#tint), -1 for none (0: the biome's). */
+    static int ownColor(int tint) {
+        return tint == 1 ? PINE_COLOR : tint == 2 ? HEMLOCK_COLOR : -1;
+    }
 
     private TreeModels() {}
 
@@ -74,7 +79,7 @@ public final class TreeModels {
     @SubscribeEvent
     public static void colors(RegisterColorHandlersEvent.Block event) {
         if (!TreeBlocks.ready()) return;
-        event.register((state, level, pos, tint) -> tint == 1 ? PINE_COLOR : tint != 0 ? -1 : level != null && pos != null
+        event.register((state, level, pos, tint) -> tint >= 1 ? ownColor(tint) : tint != 0 ? -1 : level != null && pos != null
                 ? BiomeColors.getAverageFoliageColor(level, pos) : FoliageColor.getDefaultColor(), TreeBlocks.crowns());
     }
 
@@ -82,7 +87,9 @@ public final class TreeModels {
     @SubscribeEvent
     public static void itemColors(RegisterColorHandlersEvent.Item event) {
         if (!FellingRegistry.ready()) return;
-        event.register((stack, tint) -> tint == 1 ? FoliageColor.getDefaultColor() : -1, FellingRegistry.leaves(Species.WHITE_OAK));
-        event.register((stack, tint) -> tint == 1 ? PINE_COLOR : -1, FellingRegistry.leaves(Species.WHITE_PINE));
+        for (Species s : Species.values()) {
+            int color = s.tint == 0 ? FoliageColor.getDefaultColor() : ownColor(s.tint);
+            event.register((stack, tint) -> tint == 1 ? color : -1, FellingRegistry.leaves(s));
+        }
     }
 }

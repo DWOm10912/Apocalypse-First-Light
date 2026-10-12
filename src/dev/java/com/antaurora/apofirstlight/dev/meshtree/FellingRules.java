@@ -33,7 +33,24 @@ public final class FellingRules {
     static final Params WHITE_OAK = new Params(1.0F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.33F, 48, 24, 0.22F, 0.72F);
     static final Params WHITE_PINE = new Params(0.55F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.40F, 48, 24, 0.18F, 0.66F);
 
-    public static Params params(Species s) { return s == Species.WHITE_PINE ? WHITE_PINE : WHITE_OAK; }
+    // P3 (docs/rendering/mesh_trees_p3_species.md, F): hardness as the square root of the Janka hardness over white oak's
+    // 1360 lbf (USDA Wood Handbook: northern red oak 1290, shagbark hickory 1820, red maple 950, eastern hemlock 500;
+    // white pine 380 gives 0.53, about the 0.55 already set); crown props and length shares like the nearest form
+    static final Params RED_OAK = new Params(0.97F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.33F, 48, 24, 0.21F, 0.70F);
+    static final Params SHAGBARK_HICKORY = new Params(1.16F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.30F, 48, 24, 0.18F, 0.68F);
+    static final Params RED_MAPLE = new Params(0.84F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.36F, 48, 24, 0.20F, 0.70F);
+    static final Params EASTERN_HEMLOCK = new Params(0.61F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.42F, 48, 24, 0.17F, 0.64F);
+
+    public static Params params(Species s) {
+        return switch (s) {
+            case WHITE_OAK -> WHITE_OAK;
+            case WHITE_PINE -> WHITE_PINE;
+            case RED_OAK -> RED_OAK;
+            case SHAGBARK_HICKORY -> SHAGBARK_HICKORY;
+            case RED_MAPLE -> RED_MAPLE;
+            case EASTERN_HEMLOCK -> EASTERN_HEMLOCK;
+        };
+    }
 
     private FellingRules() {}
 

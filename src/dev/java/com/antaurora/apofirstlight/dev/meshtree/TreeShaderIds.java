@@ -70,7 +70,7 @@ final class TreeShaderIds {
             copy.defaultReturnValue(ids.defaultReturnValue());
             int added = alias(copy, TreeBlocks.root(), logId) + alias(copy, TreeBlocks.wood(), logId);
             for (var crown : TreeBlocks.crowns())
-                added += alias(copy, crown, crown.species == TreeForms.Species.WHITE_PINE ? needleId : leafId);
+                added += alias(copy, crown, crown.species.conifer ? needleId : leafId);
             if (added == 0) {
                 lastMap = map;
                 status = "pack " + AflShaderCompat.currentPackLabel() + " defines no oak leaves / log ID (or lists the sample itself): nothing to alias";
@@ -81,7 +81,7 @@ final class TreeShaderIds {
             lastMap = copy;
             var renderer = Minecraft.getInstance().levelRenderer;
             if (renderer != null) renderer.allChanged();
-            status = "pack " + AflShaderCompat.currentPackLabel() + ": oak crowns use the oak leaves ID " + leafId + ", pine crowns the spruce leaves ID "
+            status = "pack " + AflShaderCompat.currentPackLabel() + ": broadleaf crowns use the oak leaves ID " + leafId + ", conifer crowns the spruce leaves ID "
                     + needleId + ", wood the oak log ID " + logId + " (" + added + " states aliased, chunks rebuilt once)";
         } catch (ReflectiveOperationException | ClassCastException | LinkageError e) {
             get = null;

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Mesh Trees P1 (docs/rendering/mesh_trees_p1_forest.md, C/D): where the natural white oaks and white pines of an
- * {@code AFL_TREE_*} test world stand. Pure Java over the Terrain V2 plan (biome, planned ground, water, rivers), never
+ * Mesh Trees P1 (docs/rendering/mesh_trees_p1_forest.md, C/D; P3: docs/rendering/mesh_trees_p3_species.md, E): where
+ * the natural mesh trees of an {@code AFL_TREE_*} test world stand. Pure Java over the Terrain V2 plan (biome, planned ground, water, rivers), never
  * a block: every chunk computes the same trees for any position, in any generation order, without loading anything.
  * <ul>
  * <li>Candidates: one per {@value #GRID} x {@value #GRID} block cell at a hashed spot; it is kept with the stand's
@@ -23,7 +23,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * (a hash) is closer than the pair's spacing, {@code k x (crown radius A + crown radius B)} with the stands' mean k, at
  * least {@value #MIN_TRUNK} m. The rule only reads candidates, never whether a neighbour itself stands, so it needs no
  * recursion and two chunks always agree.</li>
- * <li>Species from the stand's pine share (a species-patch noise); variant 0..15 and facing from the hash.</li>
+ * <li>Species from the stand's mix (P3: weights per species, each scaled by its own 90 m patch noise, so a species
+ * gathers in patches instead of salting the stand evenly); variant 0..15 and facing from the hash.</li>
  * </ul>
  * The feature (ForestFeature) asks for the trees rooted in one chunk and then checks the real ground.
  */
@@ -44,10 +45,18 @@ public final class ForestPlan {
 
     /**
      * A mesh forest stand. density: kept candidates per chunk before spacing; target: trees per chunk after spacing
-     * (what the offline check measures); pine share; spacing factor k; grove: 0 = forest (noise thins and thickens, mean
-     * one), above 0 = open land where only the noise peaks carry groves (the threshold).
+     * (what the offline check measures); mix: species weights by ordinal (sum 1); spacing factor k; grove: 0 = forest
+     * (noise thins and thickens, mean one), above 0 = open land where only the noise peaks carry groves (the threshold).
      */
-    public record Stand(String name, double density, double target, double pineShare, double spacing, double grove) {}
+    public record Stand(String name, double density, double target, double[] mix, double spacing, double grove) {
+        /** A species' share of the stand's mix. */
+        public double share(Species s) { return mix[s.ordinal()]; }
+    }
+
+    /** Species weights in Species order: white oak, white pine, red oak, shagbark hickory, red maple, eastern hemlock. */
+    static double[] mix(double whiteOak, double whitePine, double redOak, double hickory, double redMaple, double hemlock) {
+        return new double[]{whiteOak, whitePine, redOak, hickory, redMaple, hemlock};
+    }
 
     /** By EcologyBiomes index; null: not a mesh forest biome. */
     static final Stand[] STANDS = new Stand[EcologyBiomes.IDS.length];
@@ -56,16 +65,34 @@ public final class ForestPlan {
 
     static {
         // the sample trees are mature with wide crowns (oak radius 7-10 m, pine 6-8.4 m): a closed stand is about one
-        // tree per chunk (40 / ha), so the crown cover, not the stem count, sets the targets (offline check, 2026-10-11)
-        STANDS[EcologyBiomes.GRASSLAND] = new Stand("open white oak (grassland groves)", 3.0, 0.10, 0.0, 0.75, 0.6);
-        STANDS[EcologyBiomes.WOODLAND] = new Stand("white oak woodland", 6.0, 0.85, 0.08, 0.55, 0);
-        STANDS[EcologyBiomes.RIDGE_FOREST] = new Stand("ridge oak, some pine", 4.0, 0.65, 0.25, 0.6, 0);
-        STANDS[EcologyBiomes.HEMLOCK_HOLLOW] = new Stand("white pine forest", 8.0, 1.1, 0.88, 0.5, 0);
-        STANDS[EcologyBiomes.COASTAL_PINE] = new Stand("mixed pine-oak", 7.0, 1.0, 0.55, 0.55, 0);
-        STANDS[EcologyBiomes.COASTAL_CLEARING] = new Stand("sandy clearing, scattered", 2.0, 0.12, 0.55, 0.8, 0.6);
-        VANILLA_TREES[EcologyBiomes.SLOPE_FOREST] = true;
-        VANILLA_TREES[EcologyBiomes.RIPARIAN_FOREST] = true;
-        VANILLA_TREES[EcologyBiomes.SWAMP_FOREST] = true;
+        // tree per chunk (40 / ha), so the crown cover, not the stem count, sets the targets (offline check, 2026-10-11).
+        // P3: the mixes follow the SAF forest cover types of Silvics of North America (types in brackets); every
+        // ecology biome with trees is now a mesh forest, none keeps its vanilla trees.
+        //                                                                                     white  white  red    hick-  red    hem-
+        //                                                                                     oak    pine   oak    ory    maple  lock
+        // targets: measured (offline check, AFL_TREE_01's seed, 2026-10-11); the new species' smaller crowns stand closer at
+        // the same spacing rule, so forests hold more stems than with white oak alone (woodland 1.35 / chunk = 53 / ha,
+        // nearest neighbour median about 10 m); the open grassland keeps P1's sparse groves: its crowns only touch (k 1.0)
+        STANDS[EcologyBiomes.GRASSLAND] = new Stand("open oak-hickory groves (52 open grown)", 3.0, 0.10, mix(0.55, 0, 0.25, 0.20, 0, 0), 1.0, 0.6);
+        STANDS[EcologyBiomes.WOODLAND] = new Stand("oak-hickory woodland (52, 53)", 6.0, 1.35, mix(0.38, 0.08, 0.24, 0.20, 0.10, 0), 0.55, 0);
+        STANDS[EcologyBiomes.SLOPE_FOREST] = new Stand("mixed mesophytic slopes (55, 60, 58: red oak, maple, hickory, hemlock coves)", 7.0, 1.75,
+                mix(0.12, 0.05, 0.30, 0.15, 0.25, 0.13), 0.5, 0);
+        STANDS[EcologyBiomes.RIDGE_FOREST] = new Stand("ridge oak, some pine (52, 44)", 4.0, 0.65, mix(0.38, 0.17, 0.30, 0.10, 0.05, 0), 0.6, 0);
+        STANDS[EcologyBiomes.HEMLOCK_HOLLOW] = new Stand("hemlock hollow (23, 22, 24)", 8.0, 1.75, mix(0, 0.25, 0.05, 0, 0.10, 0.60), 0.5, 0);
+        STANDS[EcologyBiomes.RIPARIAN_FOREST] = new Stand("riparian (39 red maple, bottomland hickory, hemlock banks)", 6.0, 1.6,
+                mix(0, 0.10, 0.10, 0.15, 0.50, 0.15), 0.5, 0);
+        STANDS[EcologyBiomes.COASTAL_PINE] = new Stand("white pine - red oak - red maple (20)", 7.0, 1.3, mix(0.15, 0.45, 0.25, 0, 0.15, 0), 0.55, 0);
+        STANDS[EcologyBiomes.COASTAL_CLEARING] = new Stand("sandy clearing, scattered", 2.0, 0.12, mix(0.20, 0.50, 0.20, 0, 0.10, 0), 0.8, 0.6);
+        STANDS[EcologyBiomes.SWAMP_FOREST] = new Stand("red maple swamp (108; hemlock on the swamp borders)", 5.0, 1.45, mix(0, 0.08, 0, 0, 0.80, 0.12), 0.5, 0);
+    }
+
+    /** Some biome keeps its vanilla trees (P3: none; the buffer rule stays for later species that are not mesh yet). */
+    static final boolean ANY_VANILLA_TREES;
+
+    static {
+        boolean any = false;
+        for (boolean b : VANILLA_TREES) any |= b;
+        ANY_VANILLA_TREES = any;
     }
 
     /** The biomes whose vanilla tree features the dev biome modifier replaces (EcologyBiomes ids). */
@@ -162,9 +189,28 @@ public final class ForestPlan {
         return Math.max(0.05, Math.min(1.8, 1 + 0.6 * n));
     }
 
-    double pineShare(Stand st, int x, int z) {
-        if (st.pineShare <= 0 || st.pineShare >= 1) return st.pineShare;
-        return Math.max(0, Math.min(1, st.pineShare + 0.3 * PlanNoise.fbm(noiseSeed, x, z, 90, 2, 0.5, 12)));
+    /**
+     * The species of a candidate: the stand's weights, each scaled by its species' own 90 m patch noise (0.05..1.9 of
+     * the weight), drawn with u in [0, 1). A species absent from the stand never appears.
+     */
+    Species species(Stand st, int x, int z, double u) {
+        Species[] all = Species.values();
+        double[] w = new double[all.length];
+        double total = 0;
+        for (int s = 0; s < all.length; s++) {
+            if (st.mix[s] <= 0) continue;
+            w[s] = st.mix[s] * Math.max(0.05, 1 + 0.9 * PlanNoise.fbm(noiseSeed, x, z, 90, 2, 0.5, 12 + s));
+            total += w[s];
+        }
+        double acc = 0;
+        Species last = Species.WHITE_OAK;
+        for (int s = 0; s < all.length; s++) {
+            if (w[s] <= 0) continue;
+            last = all[s];
+            acc += w[s] / total;
+            if (u < acc) return all[s];
+        }
+        return last;
     }
 
     /** Why a kept candidate is not a mesh forest site (pure), or null. */
@@ -177,7 +223,7 @@ public final class ForestPlan {
             double[] w = new double[1];
             if (s.rivers.nearestEdge(x, z, BANK + 1, w) < BANK) return "river bank";
         }
-        for (int k = 0; k < 8; k++) {
+        for (int k = 0; k < 8 && ANY_VANILLA_TREES; k++) {
             double a = k * Math.PI / 4;
             for (int r = BUFFER / 2; r <= BUFFER; r += BUFFER / 2) {
                 int b = biome((int) Math.floor(x + r * Math.cos(a)), (int) Math.floor(z + r * Math.sin(a)));
@@ -253,7 +299,7 @@ public final class ForestPlan {
         if (unit(hash(gx, gz, 1)) >= keep) { if (why != null) why[0] = "thinned"; return null; }
         String bad = site(x, z, b);
         if (bad != null) { if (why != null) why[0] = bad; return null; }
-        Species sp = unit(hash(gx, gz, 2)) < pineShare(st, x, z) ? Species.WHITE_PINE : Species.WHITE_OAK;
+        Species sp = species(st, x, z, unit(hash(gx, gz, 2)));
         long v = hash(gx, gz, 3);
         int variant = (int) Math.floorMod(v, TreeShape.VARIANTS), turns = (int) (v >>> 8 & 3);
         if (hillside(x, z, sp, variant, turns)) { if (why != null) why[0] = "branch in the hillside"; return null; }
@@ -304,21 +350,47 @@ public final class ForestPlan {
 
     // ---------------------------------------------------------------------------------------------- test spots
 
-    /** Test scenarios: open white oak (grassland groves), white pine forest, mixed pine-oak forest. */
-    public static final String[] SCENARIOS = {"open_oak", "white_pine", "mixed"};
+    /**
+     * A test scenario: a biome (-1: any) that fills at least biomeShare of the disc of radius r, at least minTrees
+     * trees there, and a species (null: any) at a share in [minShare, maxShare] of them.
+     */
+    public record Scenario(String name, String label, int biome, double biomeShare, int radius, int minTrees, Species species,
+                           double minShare, double maxShare) {}
 
-    /** A test spot: the scenario's biome fills the disc round it, with trees of the kind (offline check and command). */
+    /** Test scenarios (offline check and {@code forest find}): P1's three, P3 one per new species and the newly covered biomes. */
+    public static final Scenario[] SCENARIOS = {
+            new Scenario("open_oak", "open oak groves (grassland)", EcologyBiomes.GRASSLAND, 0.9, 64, 5, null, 0, 1),
+            new Scenario("white_pine", "white pine forest", -1, 0, 40, 12, Species.WHITE_PINE, 0.6, 1),
+            new Scenario("mixed", "mixed pine-oak forest", EcologyBiomes.COASTAL_PINE, 0.9, 64, 30, Species.WHITE_PINE, 0.3, 0.7),
+            new Scenario("red_oak", "northern red oak stand", -1, 0, 48, 10, Species.RED_OAK, 0.4, 1),
+            new Scenario("hickory", "shagbark hickory stand", -1, 0, 48, 8, Species.SHAGBARK_HICKORY, 0.3, 1),
+            new Scenario("red_maple", "red maple stand", -1, 0, 48, 10, Species.RED_MAPLE, 0.45, 1),
+            new Scenario("hemlock", "eastern hemlock hollow", EcologyBiomes.HEMLOCK_HOLLOW, 0.75, 40, 12, Species.EASTERN_HEMLOCK, 0.5, 1),
+            new Scenario("mesophytic", "mixed mesophytic slope forest", EcologyBiomes.SLOPE_FOREST, 0.85, 48, 16, null, 0, 1),
+            new Scenario("riparian", "riparian forest", EcologyBiomes.RIPARIAN_FOREST, 0.6, 40, 6, null, 0, 1),
+            new Scenario("swamp", "red maple swamp", EcologyBiomes.SWAMP_FOREST, 0.75, 48, 8, null, 0, 1)};
+
+    /** The scenario index of a name, or -1. */
+    public static int scenario(String name) {
+        for (int k = 0; k < SCENARIOS.length; k++) if (SCENARIOS[k].name.equals(name)) return k;
+        return -1;
+    }
+
+    /** A test spot of scenario k at (x, z) (offline check and command). */
     public boolean scenario(int k, int x, int z) {
-        int want = k == 0 ? EcologyBiomes.GRASSLAND : k == 1 ? EcologyBiomes.HEMLOCK_HOLLOW : EcologyBiomes.COASTAL_PINE;
-        int r = k == 1 ? 40 : 64, in = 0, n = 0;
-        for (int dz = -r; dz <= r; dz += 16) for (int dx = -r; dx <= r; dx += 16) { n++; if (biome(x + dx, z + dz) == want) in++; }
-        if (in < n * (k == 1 ? 0.75 : 0.9)) return false;
+        Scenario sc = SCENARIOS[k];
+        int r = sc.radius;
+        if (sc.biome >= 0) {
+            int in = 0, n = 0;
+            for (int dz = -r; dz <= r; dz += 16) for (int dx = -r; dx <= r; dx += 16) { n++; if (biome(x + dx, z + dz) == sc.biome) in++; }
+            if (in < n * sc.biomeShare) return false;
+        } else if (stand(biome(x, z)) == null) return false;
         var trees = window(x - r, z - r, 2 * r);
-        int pines = 0;
-        for (var t : trees) if (t.species == Species.WHITE_PINE) pines++;
-        if (k == 0) return trees.size() >= 5;
-        if (k == 1) return trees.size() >= 12 && pines >= 0.75 * trees.size();
-        return trees.size() >= 30 && pines >= 0.3 * trees.size() && pines <= 0.7 * trees.size();
+        if (trees.size() < sc.minTrees) return false;
+        if (sc.species == null) return true;
+        int of = 0;
+        for (var t : trees) if (t.species == sc.species) of++;
+        return of >= sc.minShare * trees.size() && of <= sc.maxShare * trees.size();
     }
 
     /** The nearest test spot of a scenario on a 32 m lattice, square rings out to maxRing (32 m each), or null. */

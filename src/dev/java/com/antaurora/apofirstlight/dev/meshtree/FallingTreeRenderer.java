@@ -99,7 +99,7 @@ public final class FallingTreeRenderer extends EntityRenderer<FallingTree> {
         for (int i = 0; i < m.quads.size(); i++) {
             var q = m.quads.get(i);
             boolean leaf = q.kind == TreeShape.FOLIAGE;
-            int tint = !leaf || q.tint < 0 ? 0xFFFFFF : q.tint == 1 ? TreeModels.PINE_COLOR : foliage;
+            int tint = !leaf || q.tint < 0 ? 0xFFFFFF : q.tint >= 1 ? TreeModels.ownColor(q.tint) : foliage;
             float tr = (tint >> 16 & 255) / 255F, tg = (tint >> 8 & 255) / 255F, tb = (tint & 255) / 255F;
             int l = light[Math.min(SAMPLES - 1, (int) (m.along[i] * SAMPLES))];
             TextureAtlasSprite sp = sprites[q.sprite];

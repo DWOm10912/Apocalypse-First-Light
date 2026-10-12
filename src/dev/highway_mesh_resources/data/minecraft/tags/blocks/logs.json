@@ -20,6 +20,22 @@
     {
       "id": "apocalypse_firstlight:white_pine_log",
       "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_log",
+      "required": false
     }
   ]
 }

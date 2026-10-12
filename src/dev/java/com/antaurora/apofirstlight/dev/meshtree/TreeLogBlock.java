@@ -46,11 +46,26 @@ public final class TreeLogBlock extends RotatedPillarBlock {
         occlusion[2] = Shapes.or(Block.box(r, 0, 0, s, 16, 16), Block.box(0, r, 0, 16, s, 16));
     }
 
-    /** End grain on a map: white oak's yellow-brown heartwood, white pine's cream. */
-    private static MapColor endColor(Species s) { return s == Species.WHITE_PINE ? MapColor.SAND : MapColor.WOOD; }
+    /** End grain on a map: the heartwood (oaks yellow- to red-brown) or the wide pale sapwood (pine, hickory, maple). */
+    private static MapColor endColor(Species s) {
+        return switch (s) {
+            case WHITE_OAK -> MapColor.WOOD;
+            case RED_OAK -> MapColor.TERRACOTTA_ORANGE;
+            case WHITE_PINE, SHAGBARK_HICKORY -> MapColor.SAND;
+            case RED_MAPLE -> MapColor.TERRACOTTA_WHITE;
+            case EASTERN_HEMLOCK -> MapColor.RAW_IRON;
+        };
+    }
 
-    /** Bark on a map: white oak's pale grey plates, white pine's dark grey-brown. */
-    private static MapColor barkColor(Species s) { return s == Species.WHITE_PINE ? MapColor.COLOR_BROWN : MapColor.COLOR_LIGHT_GRAY; }
+    /** Bark on a map: pale grey (white oak, hickory), grey (red oak, red maple), dark brown (white pine, hemlock). */
+    private static MapColor barkColor(Species s) {
+        return switch (s) {
+            case WHITE_OAK, SHAGBARK_HICKORY -> MapColor.COLOR_LIGHT_GRAY;
+            case RED_OAK, RED_MAPLE -> MapColor.COLOR_GRAY;
+            case WHITE_PINE -> MapColor.COLOR_BROWN;
+            case EASTERN_HEMLOCK -> MapColor.TERRACOTTA_BROWN;
+        };
+    }
 
     @Override
     @SuppressWarnings("deprecation")

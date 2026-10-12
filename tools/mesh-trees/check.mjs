@@ -63,7 +63,8 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
   const plan = read(dev + '/ForestPlan.java');
   const covered = [...plan.matchAll(/STANDS\[EcologyBiomes\.(\w+)\] = new Stand/g)].map(m => m[1]);
   const ids = {GRASSLAND: 'temperate_grassland', WOODLAND: 'oak_hickory_woodland', RIDGE_FOREST: 'ridge_oak_forest', HEMLOCK_HOLLOW: 'hemlock_hollow',
-    COASTAL_PINE: 'coastal_pine_oak_forest', COASTAL_CLEARING: 'coastal_sandy_clearing'};
+    COASTAL_PINE: 'coastal_pine_oak_forest', COASTAL_CLEARING: 'coastal_sandy_clearing', SLOPE_FOREST: 'mixed_mesophytic_forest',
+    RIPARIAN_FOREST: 'riparian_forest', SWAMP_FOREST: 'coastal_swamp_forest'};
   require(covered.length === mod.biomes.length && covered.every(c => mod.biomes.includes('apocalypse_firstlight:' + ids[c])), 'the modifier covers exactly the plan stands');
   for (const b of mod.biomes) {
     const biome = JSON.parse(read('src/main/resources/data/apocalypse_firstlight/worldgen/biome/' + b.split(':')[1] + '.json'));
@@ -73,13 +74,19 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
 }
 // P2 felling: the stump and the item models dropped from the jar, no formal namesakes, registrations outside
 // production only, the server gated to AFL_TREE_* overworlds, the rules pure
+const P3 = [['red_oak', 'red_oak_leaves'], ['shagbark_hickory', 'shagbark_hickory_leaves'], ['red_maple', 'red_maple_leaves'],
+  ['eastern_hemlock', 'eastern_hemlock_needles']];
 {
   const A = 'src/dev/highway_mesh_resources/assets/apocalypse_firstlight/';
   const files = ['blockstates/dev_tree_stump.json', 'models/block/dev_tree_stump.json',
     ...['white_oak_log', 'white_pine_log', 'white_oak_branch', 'white_pine_branch', 'white_oak_leaves', 'white_pine_needles'].map(i => `models/item/${i}.json`),
     // P2.2: the log blocks and the 3D leaf material
     ...['white_oak_log', 'white_pine_log'].flatMap(i => [`blockstates/${i}.json`, `models/block/${i}.json`]),
-    'models/item/white_oak_leaves_3d.json', 'models/item/white_pine_needles_3d.json'];
+    'models/item/white_oak_leaves_3d.json', 'models/item/white_pine_needles_3d.json',
+    // P3: per new species its crown blocks, log block, branch and leaf material
+    ...P3.flatMap(([id, leaves]) => [`blockstates/dev_${id}_foliage.json`, `blockstates/dev_${id}_canopy.json`, `models/block/dev_${id}_foliage.json`,
+      `models/block/dev_${id}_canopy.json`, `blockstates/${id}_log.json`, `models/block/${id}_log.json`, `models/item/${id}_log.json`,
+      `models/item/${id}_branch.json`, `models/item/${leaves}.json`, `models/item/${leaves}_3d.json`])];
   for (const f of files) {
     require(fs.existsSync(path.join(ROOT, A, f)), `dev felling resource ${f} exists`);
     require(gradle.includes(`exclude 'assets/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
@@ -95,7 +102,7 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
   const logs = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/logs.json'));
   require(logs.values.some(v => v.id === 'apocalypse_firstlight:dev_tree_stump' && v.required === false), 'the stump is an optional entry of the dev logs tag');
   // P2.2 log blocks: self-dropping (dev loot tables dropped from the jar), axe through the dev logs tag, no 2D log icon
-  for (const log of ['white_oak_log', 'white_pine_log']) {
+  for (const log of ['white_oak_log', 'white_pine_log', ...P3.map(([id]) => id + '_log')]) {
     const loot = `data/apocalypse_firstlight/loot_tables/blocks/${log}.json`;
     require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources', loot)), `dev loot table ${log} exists`);
     require(gradle.includes(`exclude '${loot}'`), `the jar drops the ${log} loot table`);
@@ -105,6 +112,20 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
     require(logs.values.some(v => v.id === 'apocalypse_firstlight:' + log && v.required === false), `${log} is an optional entry of the dev logs tag`);
     require(!fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/item', log + '.png')), `no 2D icon for the ${log} block`);
   }
+  // P3: every species' crown blocks in the dev leaves tag; every species in the forms, the textures and the lang
+  const leavesTag = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/leaves.json'));
+  const lang = JSON.parse(read('src/dev/highway_mesh_resources/assets/afl_tree_demo/lang/zh_cn.json'));
+  const T = 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/';
+  for (const [id, leaves] of P3) {
+    for (const k of ['foliage', 'canopy']) require(leavesTag.values.some(v => v.id === `apocalypse_firstlight:dev_${id}_${k}`), `dev_${id}_${k} in the dev leaves tag`);
+    for (const t of [`block/${id}_bark`, `block/${leaves}`, `block/${leaves}_mid`, `block/${leaves}_far`, `block/${leaves}_proxy`, `block/${id}_cut`,
+      `block/${id}_end_grain`, `block/${id}_log_end`, `item/${id}_branch`, `item/${leaves}`])
+      require(fs.existsSync(path.join(ROOT, T, t + '.png')), `texture ${t}`);
+    for (const k of [`block.apocalypse_firstlight.${id}_log`, `item.apocalypse_firstlight.${id}_branch`, `item.apocalypse_firstlight.${leaves}`,
+      `block.apocalypse_firstlight.dev_${id}_foliage`]) require(typeof lang[k] === 'string', `zh_cn ${k}`);
+  }
+  const forms = read(dev + '/TreeForms.java');
+  for (const [id] of P3) require(forms.includes(`"${id}"`), `${id} in the species table`);
   const lb = read(dev + '/TreeLogBlock.java');
   require(!/requiresCorrectToolForDrops/.test(lb) && /strength\(2\.0F\)/.test(lb) && /getMaxLightLevel\(\)/.test(lb), 'the log block: vanilla log strength, no tool requirement, blocks light');
 }

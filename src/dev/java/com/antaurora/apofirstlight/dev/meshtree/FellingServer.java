@@ -191,8 +191,13 @@ public final class FellingServer {
         CHOP_NANOS.add(System.nanoTime() - t0);
     }
 
+    /** Chip particles: the vanilla stripped log nearest the species' fresh wood. */
     static BlockState chips(Species s) {
-        return s == Species.WHITE_PINE ? Blocks.STRIPPED_BIRCH_LOG.defaultBlockState() : Blocks.STRIPPED_OAK_LOG.defaultBlockState();
+        return switch (s) {
+            case WHITE_PINE, SHAGBARK_HICKORY, RED_MAPLE -> Blocks.STRIPPED_BIRCH_LOG.defaultBlockState();
+            case EASTERN_HEMLOCK -> Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState();
+            default -> Blocks.STRIPPED_OAK_LOG.defaultBlockState();
+        };
     }
 
     // --------------------------------------------------------------------------------------------------- fell

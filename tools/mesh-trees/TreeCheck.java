@@ -62,8 +62,7 @@ public final class TreeCheck {
                     v0.trunkVolume, v0.limbVolume, v0.twigVolume);
             require(maxH - minH > 1.5F && maxW - minW > 1.5F && shapes.size() >= 8, sp.id + ": the variants differ (height, crown, structure)");
         }
-        voxy(TreeShape.layout(Species.WHITE_OAK, 0, 0), "white oak");
-        voxy(TreeShape.layout(Species.WHITE_PINE, 0, 0), "white pine");
+        for (Species sp : Species.values()) voxy(TreeShape.layout(sp, 0, 0), sp.id);
         Preview.render(textures, out);
         System.out.println(failures == 0 ? "MESH TREE CHECK OK" : "MESH TREE CHECK: " + failures + " failures");
         System.exit(failures == 0 ? 0 : 1);
@@ -259,19 +258,32 @@ public final class TreeCheck {
     // ----------------------------------------------------------------------------------------------- previews
 
     static final class Preview {
-        static final float[][] TINT = {{0x59 / 255F, 0xAE / 255F, 0x30 / 255F}, {0x5E / 255F, 0x94 / 255F, 0x72 / 255F}};
-        static final String[] NAMES = {"white_oak_bark", "white_oak_leaves", "white_oak_leaves_mid", "white_oak_leaves_far",
-                "white_pine_bark", "white_pine_needles", "white_pine_needles_mid", "white_pine_needles_far"};
+        /** By tint index: the default foliage colour, white pine's, eastern hemlock's (TreeModels). */
+        static final float[][] TINT = {{0x59 / 255F, 0xAE / 255F, 0x30 / 255F}, {0x5E / 255F, 0x94 / 255F, 0x72 / 255F},
+                {0x4C / 255F, 0x7A / 255F, 0x50 / 255F}};
         static BufferedImage[] sprites, proxies;
 
+        /** A texture, or a flat grey stand-in while it does not exist yet. */
         static BufferedImage tex(File dir, String name) throws Exception {
-            return ImageIO.read(new File(dir, name + ".png"));
+            File f = new File(dir, name + ".png");
+            if (f.exists()) return ImageIO.read(f);
+            var img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+            for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) img.setRGB(x, y, (x + y) % 3 == 0 ? 0 : 0xFF909090);
+            return img;
         }
 
         static void load(File dir) throws Exception {
-            sprites = new BufferedImage[NAMES.length];
-            for (int i = 0; i < NAMES.length; i++) sprites[i] = tex(dir, NAMES[i]);
-            proxies = new BufferedImage[]{tex(dir, "white_oak_leaves_proxy"), tex(dir, "white_pine_needles_proxy")};
+            int n = Species.values().length;
+            sprites = new BufferedImage[n * TreeShape.SLOTS];
+            proxies = new BufferedImage[n];
+            for (Species sp : Species.values()) {
+                int i = sp.ordinal() * TreeShape.SLOTS;
+                sprites[i + TreeShape.BARK] = tex(dir, sp.id + "_bark");
+                sprites[i + TreeShape.LEAVES] = tex(dir, sp.leavesId);
+                sprites[i + TreeShape.LEAVES_MID] = tex(dir, sp.leavesId + "_mid");
+                sprites[i + TreeShape.LEAVES_FAR] = tex(dir, sp.leavesId + "_far");
+                proxies[sp.ordinal()] = tex(dir, sp.leavesId + "_proxy");
+            }
         }
 
         static void draw(Raster r, TreeShape.Layout l, int lod) {
@@ -287,8 +299,8 @@ public final class TreeCheck {
             load(dir);
             for (Species sp : Species.values()) {
                 var l = TreeShape.layout(sp, 0, 0);
-                boolean pine = sp == Species.WHITE_PINE;
-                float scale = pine ? 22 : 30, mid = pine ? 10.5F : 6.5F;
+                // frame the tree: scale from its height, middle at half of it
+                float scale = Math.min(30, 560 / (l.height + 3)), mid = l.height * 0.5F;
                 int W = 560, H = 600;
                 var sheet = new BufferedImage(W * 5, H * 2, BufferedImage.TYPE_INT_RGB);
                 for (int view = 0; view < 2; view++) {

@@ -18,7 +18,9 @@ import java.util.TreeMap;
  * <pre>
  *   forest status                             gate, prewarm, worldgen counters (chunks, trees, refusals, cells, cost)
  *   forest here                               the plan round you: biome, stand, trees of the 3 x 3 chunks, standing or not
- *   forest find open_oak|white_pine|mixed     the nearest test spot of a scenario (plan search, out to 6 km)
+ *   forest find <scenario>                    the nearest test spot of a scenario (ForestPlan.SCENARIOS: open_oak,
+ *                                             white_pine, mixed, red_oak, hickory, red_maple, hemlock, mesophytic,
+ *                                             riparian, swamp; plan search, out to 6 km)
  * </pre>
  */
 final class ForestCommands {
@@ -31,7 +33,7 @@ final class ForestCommands {
         var find = Commands.literal("find");
         for (int k = 0; k < ForestPlan.SCENARIOS.length; k++) {
             int scenario = k;
-            find.then(Commands.literal(ForestPlan.SCENARIOS[k]).executes(x -> find(x, scenario)));
+            find.then(Commands.literal(ForestPlan.SCENARIOS[k].name()).executes(x -> find(x, scenario)));
         }
         forest.then(find);
         return forest;
@@ -64,7 +66,7 @@ final class ForestCommands {
         int b = plan.biome(px, pz);
         var st = ForestPlan.stand(b);
         say(x, "Mesh forest " + (ForestGate.enabled() ? "ON" : "off (" + ForestGate.reason() + ")") + "; here " + EcologyBiomes.IDS[b] + ": "
-                + (st != null ? st.name() + String.format(", target %.2f trees per chunk, pine %.0f %%", st.target(), 100 * st.pineShare())
+                + (st != null ? st.name() + String.format(", target %.2f trees per chunk, mix %s", st.target(), mixText(st))
                 : ForestPlan.VANILLA_TREES[b] ? "keeps its vanilla trees" : "no trees"));
         int planned = 0, standing = 0;
         var lines = new ArrayList<String>();
@@ -89,14 +91,23 @@ final class ForestCommands {
         return 1;
     }
 
+    /** "red_oak 30 %, red_maple 25 %, ..." in falling order. */
+    static String mixText(ForestPlan.Stand st) {
+        var parts = new ArrayList<String>();
+        var order = new ArrayList<>(java.util.List.of(com.antaurora.apofirstlight.dev.meshtree.TreeForms.Species.values()));
+        order.sort((a, b) -> Double.compare(st.share(b), st.share(a)));
+        for (var s : order) if (st.share(s) > 0) parts.add(String.format("%s %.0f %%", s.id, 100 * st.share(s)));
+        return String.join(", ", parts);
+    }
+
     private static int find(CommandContext<CommandSourceStack> x, int scenario) {
         if (!(x.getSource().getEntity() instanceof ServerPlayer player)) return 0;
         ForestPlan plan = ForestGate.plan(x.getSource().getServer());
         if (plan == null) { x.getSource().sendFailure(Component.literal("Mesh forest: no Terrain V2 plan for this world's seed")); return 0; }
         int[] p = plan.find(scenario, player.getBlockX(), player.getBlockZ(), 190);
-        if (p == null) { x.getSource().sendFailure(Component.literal("Mesh forest: no " + ForestPlan.SCENARIOS[scenario] + " spot within 6 km")); return 0; }
+        if (p == null) { x.getSource().sendFailure(Component.literal("Mesh forest: no " + ForestPlan.SCENARIOS[scenario].name() + " spot within 6 km")); return 0; }
         int y = plan.top(p[0], p[1]);
-        say(x, String.format("Mesh forest %s: %d %d (planned ground y %d, %.0f m away): /tp @s %d %d %d", ForestPlan.SCENARIOS[scenario], p[0], p[1], y,
+        say(x, String.format("Mesh forest %s: %d %d (planned ground y %d, %.0f m away): /tp @s %d %d %d", ForestPlan.SCENARIOS[scenario].name(), p[0], p[1], y,
                 Math.hypot(p[0] - player.getX(), p[1] - player.getZ()), p[0], y + 2, p[1]));
         return 1;
     }

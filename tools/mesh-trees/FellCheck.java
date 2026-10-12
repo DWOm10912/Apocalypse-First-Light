@@ -89,9 +89,13 @@ public final class FellCheck {
                 System.out.printf("  iron axe: %d-%d chops (slimmer oaks, dbh under 0.80 m: %d-%d; the rest %d-%d)%n", all0, all1, ironSmall, ironSmallMax, ironBigMin, ironBig);
                 require(all0 >= 6 && all0 <= 8, "the smallest white oak cuts: 6-8 chops with an iron axe");
                 require(all1 >= 10 && all1 <= 14, "the biggest white oak cuts: 10-14 chops with an iron axe");
-            } else {
+            } else if (sp == Species.WHITE_PINE) {
                 System.out.printf("  iron axe: %d-%d chops%n", ironBigMin, ironBig);
                 require(ironBigMin >= 7 && ironBig <= 13, "white pine: 8-12 chops with an iron axe (about)");
+            } else {
+                // P3: the hardness (Janka) and the trunk at the cut set the count; within the white oak's span, roughly
+                System.out.printf("  iron axe: %d-%d chops (hardness %.2f)%n", ironBigMin, ironBig, FellingRules.params(sp).hardness());
+                require(ironBigMin >= 4 && ironBig <= 16, sp.id + ": 4-16 chops with an iron axe");
             }
             System.out.printf("  drops per tree (16 variants): logs %d-%d (mean %.1f), branches mean %.1f, leaf items mean %.1f%n",
                     minLogs, maxLogs, logs / 16, branches / 16, leaves / 16);
@@ -201,7 +205,8 @@ public final class FellCheck {
     // ------------------------------------------------------------------------------------------------ 3. falls
 
     static void falls() {
-        float[] durOak = {99, 0}, durPine = {99, 0};
+        float[][] dur = new float[Species.values().length][];
+        for (int s = 0; s < dur.length; s++) dur[s] = new float[]{99, 0};
         for (Species sp : Species.values()) for (int v = 0; v < TreeShape.VARIANTS; v++) {
             var f = TreeForms.grow(sp, v);
             float cut = 0.6F;
@@ -214,7 +219,7 @@ public final class FellCheck {
             for (float rest : new float[]{uphill, flat, down}) {
                 var c = FellingRules.curve(sp, f.crownTop, cut, rest);
                 float sec = c.contact() / 20F;
-                float[] d = sp == Species.WHITE_OAK ? durOak : durPine;
+                float[] d = dur[sp.ordinal()];
                 if (rest == flat) { d[0] = Math.min(d[0], sec); d[1] = Math.max(d[1], sec); }
                 require(sec >= 1.2F && sec <= 3.6F, sp.id + " " + v + ": falls in 1.2-3.6 s (" + sec + ")");
                 // slow start, speeding up until the contact, the rest after it
@@ -233,9 +238,12 @@ public final class FellCheck {
                 require(rest - minAfter <= 3.01F, sp.id + " " + v + ": a small rebound");
             }
         }
-        System.out.printf("falls: white oak %.2f-%.2f s, white pine %.2f-%.2f s to the ground on flat land (pause %.2f s before, lying %.2f s after)%n",
-                durOak[0], durOak[1], durPine[0], durPine[1], FellingRules.PAUSE_TICKS / 20F, FellingRules.LIE_TICKS / 20F);
-        require(durPine[0] > durOak[0], "the taller white pine takes longer to fall");
+        var sb = new StringBuilder();
+        for (Species sp : Species.values()) sb.append(String.format("%s %.2f-%.2f s, ", sp.id, dur[sp.ordinal()][0], dur[sp.ordinal()][1]));
+        System.out.printf("falls: %sto the ground on flat land (pause %.2f s before, lying %.2f s after)%n",
+                sb, FellingRules.PAUSE_TICKS / 20F, FellingRules.LIE_TICKS / 20F);
+        require(dur[Species.WHITE_PINE.ordinal()][0] > dur[Species.WHITE_OAK.ordinal()][0], "the taller white pine takes longer to fall");
+        require(dur[Species.EASTERN_HEMLOCK.ordinal()][0] > dur[Species.WHITE_OAK.ordinal()][0], "the tall hemlock takes longer to fall than the white oak");
     }
 
     // ------------------------------------------------------------------------------------------- 4. directions
@@ -366,12 +374,14 @@ public final class FellCheck {
             for (int c : edges.values()) if (c != 2) open++;
             require(open == 0, id + ": one closed surface (" + open + " edges not shared by two quads)");
             float r = LogShape.radius(sp);
-            double want = 2 * (1 - (4 - Math.PI) * r * r);
-            require(Math.abs(capArea - want) < 0.02, id + ": the end caps cover the rounded square (" + capArea + " vs " + want + ")");
+            // the corner fans are polygons of ARC triangles: the square without its corner squares plus the fans
+            double want = 2 * (1 - 4 * r * r + 4 * LogShape.ARC * 0.5 * r * r * Math.sin(Math.PI / (2 * LogShape.ARC)));
+            require(Math.abs(capArea - want) < 1e-3, id + ": the end caps cover the rounded square (" + capArea + " vs " + want + ")");
         }
-        System.out.printf("log blocks: 2 species x 3 axes, %d parts: closed, outward, culled faces on their planes in vanilla order, end caps %.3f (oak) / %.3f (pine) of the square%n",
-                parts, 1 - (4 - Math.PI) * LogShape.radius(Species.WHITE_OAK) * LogShape.radius(Species.WHITE_OAK),
-                1 - (4 - Math.PI) * LogShape.radius(Species.WHITE_PINE) * LogShape.radius(Species.WHITE_PINE));
+        var caps = new StringBuilder();
+        for (Species sp : Species.values()) caps.append(String.format(" %s %.3f", sp.id, 1 - (4 - Math.PI) * LogShape.radius(sp) * LogShape.radius(sp)));
+        System.out.printf("log blocks: %d species x 3 axes, %d parts: closed, outward, culled faces on their planes in vanilla order, end caps of the square:%s%n",
+                Species.values().length, parts, caps);
     }
 
     // ------------------------------------------------------------------------------------------ 6. shared cells

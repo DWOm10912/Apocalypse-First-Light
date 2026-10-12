@@ -73,7 +73,8 @@
 
 ## 五、树木系统里已经留好的接口
 
-- 树种 id（`white_oak`、`white_pine`）就是木材系列的标识，计划的注册名都以它开头。见下面的产品线草案。
+- 树种 id（`white_oak`、`white_pine`；Mesh Trees P3 起还有 `red_oak`、`shagbark_hickory`、`red_maple`、`eastern_hemlock`）就是木材系列的标识，计划的注册名都以它开头。见下面的产品线草案。
+- 作者 2026-10-11 定的顺序：先完成六种树的生态体系与正式接入，再集中开发木板、木梁、圆角方木和工匠台（[mesh_trees_p3_species L 节](../rendering/mesh_trees_p3_species.md)）。
 - 每棵树的布局按枝的体积算好了三项（`TreeShape.Layout`）：
   - 树干体积，出原木；
   - 粗枝体积（会碰撞的枝），出原木或短原木；

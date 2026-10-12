@@ -30,7 +30,7 @@ export const PINE = {
   twig: [0x6a, 0x5c, 0x4e], twigLight: [0x86, 0x77, 0x66], twigDark: [0x48, 0x3e, 0x35], sheath: [0x9a, 0x7a, 0x55],
 };
 
-function rngOf(seed) {
+export function rngOf(seed) {
   let s = BigInt(seed) & 0xFFFFFFFFFFFFFFFFn;
   return () => {
     s = (s + 0x9E3779B97F4A7C15n) & 0xFFFFFFFFFFFFFFFFn;
@@ -42,16 +42,27 @@ function rngOf(seed) {
   };
 }
 
-function canvas(W, H) { return {W, H, v: new Float32Array(W * H), a: new Uint8Array(W * H), rgb: new Uint8Array(W * H * 3)}; }
-function put(img, x, y, c) {
+export function canvas(W, H) { return {W, H, v: new Float32Array(W * H), a: new Uint8Array(W * H), rgb: new Uint8Array(W * H * 3)}; }
+export function put(img, x, y, c) {
   if (x < 0 || y < 0 || x >= img.W || y >= img.H) return;
   img.rgb.set(c.map(v => Math.max(0, Math.min(255, Math.round(v)))), (y * img.W + x) * 3);
   img.a[y * img.W + x] = 1;
 }
-function getc(img, x, y) { const i = (y * img.W + x) * 3; return [img.rgb[i], img.rgb[i + 1], img.rgb[i + 2]]; }
-const mul = (c, k) => c.map(v => v * k);
-const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-const filled = (img, x, y) => x >= 0 && y >= 0 && x < img.W && y < img.H && img.a[y * img.W + x] === 1;
+export function getc(img, x, y) { const i = (y * img.W + x) * 3; return [img.rgb[i], img.rgb[i + 1], img.rgb[i + 2]]; }
+export const mul = (c, k) => c.map(v => v * k);
+export const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+export const filled = (img, x, y) => x >= 0 && y >= 0 && x < img.W && y < img.H && img.a[y * img.W + x] === 1;
+
+// ----------------------------------------------------------------------------------------- wood profiles
+
+/**
+ * A species' wood as the end grain, the log end and the cut show it: the stump cap's rim / inner bark / sapwood radii
+ * (end grain, px of 32), the log end's rounded-square corner radius R (= LogShape.radius x 32) and its band widths
+ * (rim, inner bark, sapwood, px), ring spacing and latewood share, drying checks (1 or 2), oak ray flecks, pine resin.
+ * P3 adds the four new species (species-art.mjs); white oak's and white pine's values are P2.1's.
+ */
+export const OAK_WOOD = {R: 6, rimR: 14.0, innerR: 13.4, sapR: 11.9, rimW: 1.1, innerW: 0.6, sapW: 2.2, spacing: 2.15, lateShare: 0.4, checks: 1, rays: true, resin: false};
+export const PINE_WOOD = {R: 10, rimR: 13.3, innerR: 12.7, sapR: 9.0, rimW: 1.7, innerW: 0.8, sapW: 4.2, spacing: 2.75, lateShare: 0.34, checks: 2, rays: false, resin: true};
 
 // ------------------------------------------------------------------------------------------------- end grain
 
@@ -59,14 +70,13 @@ const filled = (img, x, y) => x >= 0 && y >= 0 && x < img.W && y < img.H && img.
  * 32 x 32, centred: the cap's UVs put the trunk's axis at the centre and its bark edge at radius 0.476 of the sprite
  * (15.2 px), so the bark rim fills the outermost 1.2-2 px and everything beyond (never seen) stays bark.
  */
-export function endGrain(p, pine, seed) {
+export function endGrain(p, w, seed) {
   const W = 32, r = rngOf(seed), img = canvas(W, W);
-  const rimR = pine ? 13.3 : 14.0, innerR = pine ? 12.7 : 13.4, sapR = pine ? 9.0 : 11.9;
-  const spacing = pine ? 2.75 : 2.15, lateShare = pine ? 0.34 : 0.4;
+  const {rimR, innerR, sapR, spacing, lateShare} = w;
   const ph1 = r() * 6.283, ph2 = r() * 6.283;
-  const checks = [r() * 6.283, ...(pine ? [r() * 6.283] : [])].map(a => ({a, len: 7 + r() * 3, bend: (r() - 0.5) * 0.08}));
+  const checks = [r() * 6.283, ...(w.checks > 1 ? [r() * 6.283] : [])].map(a => ({a, len: 7 + r() * 3, bend: (r() - 0.5) * 0.08}));
   const rays = Array.from({length: 7}, (_, k) => ({a: (k + r() * 0.6) * 6.283 / 7, from: 3 + r() * 2, to: 6.5 + r() * 3}));
-  const resin = pine ? Array.from({length: 4}, () => ({a: r() * 6.283, d: 8.2 + r() * 3.6})) : [];
+  const resin = w.resin ? Array.from({length: 4}, () => ({a: r() * 6.283, d: 8.2 + r() * 3.6})) : [];
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
     const dx = x + 0.5 - 16, dy = y + 0.5 - 16, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
     const wob = 0.42 * Math.sin(3 * a + ph1) + 0.22 * Math.sin(5 * a + ph2);
@@ -79,8 +89,8 @@ export function endGrain(p, pine, seed) {
     else c = ((dw / spacing) % 1) < lateShare ? p.late : p.heart;
     // a gentle light-to-dark across the cap (the cut is never quite flat)
     if (d < innerR) c = mul(c, 1.03 - 0.06 * ((x + y) / (2 * W)));
-    // white oak: ray flecks out from the pith, broken
-    if (!pine) for (const ray of rays) {
+    // oaks: ray flecks out from the pith, broken
+    if (w.rays) for (const ray of rays) {
       const off = Math.abs(Math.atan2(Math.sin(a - ray.a), Math.cos(a - ray.a))) * d;
       if (d > ray.from && d < ray.to && off < 0.5) c = mix(c, p.ray, 0.55);
     }
@@ -109,19 +119,18 @@ export function endGrain(p, pine, seed) {
  * the outline in: bark rim, inner bark, sapwood (bands following the outline), then heartwood rings whose shape turns
  * from the outline's near the sapwood to round at the pith (a squared trunk: vanilla's square log rings, softened).
  */
-export function logEnd(p, pine, seed) {
-  const W = 32, R = pine ? 10 : 6, h = 16 - R, r = rngOf(seed), img = canvas(W, W);
-  const rimW = pine ? 1.7 : 1.1, innerW = pine ? 0.8 : 0.6, sapW = pine ? 4.2 : 2.2, heartE = rimW + innerW + sapW;
-  const spacing = pine ? 2.75 : 2.15, lateShare = pine ? 0.34 : 0.4;
+export function logEnd(p, w, seed) {
+  const W = 32, R = w.R, h = 16 - R, r = rngOf(seed), img = canvas(W, W);
+  const {rimW, innerW, sapW, spacing, lateShare} = w, heartE = rimW + innerW + sapW;
   const ph1 = r() * 6.283, ph2 = r() * 6.283;
   const depth = (dx, dy) => {
     const qx = Math.abs(dx) - h, qy = Math.abs(dy) - h;
     return -(Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - R);
   };
-  const checks = [r() * 6.283, ...(pine ? [r() * 6.283] : [])].map(a => ({a, len: 8 + r() * 3, bend: (r() - 0.5) * 0.08}));
+  const checks = [r() * 6.283, ...(w.checks > 1 ? [r() * 6.283] : [])].map(a => ({a, len: 8 + r() * 3, bend: (r() - 0.5) * 0.08}));
   const rays = Array.from({length: 8}, (_, k) => ({a: (k + r() * 0.6) * 6.283 / 8, from: 3 + r() * 2, to: 7.5 + r() * 3}));
   const resin = [];
-  while (pine && resin.length < 4) {
+  while (w.resin && resin.length < 4) {
     const x = 2 + r() * 28, y = 2 + r() * 28, e = depth(x - 16, y - 16);
     if (e > rimW + innerW + 0.9 && e < heartE - 0.9) resin.push([x, y]);
   }
@@ -139,8 +148,8 @@ export function logEnd(p, pine, seed) {
     else c = ((rw / spacing) % 1) < lateShare ? p.late : p.heart;
     // a gentle light-to-dark across the end (the saw cut is never quite flat)
     if (e >= rimW + innerW) c = mul(c, 1.03 - 0.06 * ((x + y) / (2 * W)));
-    // white oak: ray flecks out from the pith, broken
-    if (!pine) for (const ray of rays) {
+    // oaks: ray flecks out from the pith, broken
+    if (w.rays) for (const ray of rays) {
       const off = Math.abs(Math.atan2(Math.sin(a - ray.a), Math.cos(a - ray.a))) * d;
       if (d > ray.from && d < ray.to && off < 0.5) c = mix(c, p.ray, 0.55);
     }
@@ -166,12 +175,12 @@ export function logEnd(p, pine, seed) {
  * 32 x 32: u across the notch, v from the bark (0 / 1) to the apex (0.5). Axe facets are bands across (each stroke's
  * edge leaves a ridge parallel to the apex), the wood's fibres run along v (the grain crosses the slanted face).
  */
-export function cutWood(p, pine, seed) {
+export function cutWood(p, w, seed) {
   const W = 32, r = rngOf(seed), img = canvas(W, W);
   const bands = [];
   for (let y = 0; y < W;) { const h = 4 + Math.floor(r() * 4); bands.push([y, Math.min(W, y + h), r()]); y += h; }
   const fibres = Array.from({length: 6}, () => ({x: r() * W, wob: r() * 6.283, gap: r() * 9}));
-  const resin = pine ? [[r() * W, r() * W], [r() * W, r() * W]] : [];
+  const resin = w.resin ? [[r() * W, r() * W], [r() * W, r() * W]] : [];
   for (const [y0, y1, k] of bands) for (let y = y0; y < y1; y++) for (let x = 0; x < W; x++) {
     let c = mix(p.cut, p.cutLight, 0.1 + 0.55 * k);
     if (y === y0 && y0 > 0) c = p.cutEdge;                                        // the ridge left by a stroke
@@ -188,7 +197,7 @@ export function cutWood(p, pine, seed) {
 // ------------------------------------------------------------------------------------------------ item icons
 
 /** Edge pixels darker (more on the lower right), the vanilla item outline. */
-function outline(img) {
+export function outline(img) {
   const out = [];
   for (let y = 0; y < img.H; y++) for (let x = 0; x < img.W; x++) {
     if (!filled(img, x, y)) continue;
@@ -200,7 +209,7 @@ function outline(img) {
 }
 
 /** Fills discs along a polyline (thickness tapering from r0 to r1 pixels radius). */
-function limb(img, pts, r0, r1, colour) {
+export function limb(img, pts, r0, r1, colour) {
   let total = 0;
   for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
   let run = 0;
@@ -300,7 +309,7 @@ export function needleIcon(p) {
 }
 
 /** A one-pixel line (Bresenham) from (x0, y0) to (x1, y1); its last two pixels in the tip colour. */
-function seg(img, x0, y0, x1, y1, colour, tip) {
+export function seg(img, x0, y0, x1, y1, colour, tip) {
   let x = Math.floor(x0), y = Math.floor(y0);
   const xe = Math.floor(x1), ye = Math.floor(y1), dx = Math.abs(xe - x), dy = -Math.abs(ye - y), sx = x < xe ? 1 : -1, sy = y < ye ? 1 : -1;
   const pts = [];

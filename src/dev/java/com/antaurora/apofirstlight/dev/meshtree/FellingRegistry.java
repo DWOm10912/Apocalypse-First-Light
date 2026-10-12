@@ -37,7 +37,7 @@ public final class FellingRegistry {
 
     private FellingRegistry() {}
 
-    static String leavesId(Species s) { return s == Species.WHITE_PINE ? "white_pine_needles" : s.id + "_leaves"; }
+    static String leavesId(Species s) { return s.leavesId; }
 
     @SubscribeEvent
     public static void register(RegisterEvent event) {
