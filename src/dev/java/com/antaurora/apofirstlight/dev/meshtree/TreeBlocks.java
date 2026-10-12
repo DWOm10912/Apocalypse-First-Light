@@ -57,7 +57,8 @@ public final class TreeBlocks {
             FOLIAGE_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_foliage"),
             CANOPY_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_canopy"),
             PINE_FOLIAGE_ID = new ResourceLocation("apocalypse_firstlight", "dev_white_pine_foliage"),
-            PINE_CANOPY_ID = new ResourceLocation("apocalypse_firstlight", "dev_white_pine_canopy");
+            PINE_CANOPY_ID = new ResourceLocation("apocalypse_firstlight", "dev_white_pine_canopy"),
+            STUMP_ID = new ResourceLocation("apocalypse_firstlight", "dev_tree_stump");
 
     /** The species as a block state property. */
     public enum SpeciesProperty implements StringRepresentable {
@@ -71,9 +72,17 @@ public final class TreeBlocks {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final IntegerProperty VARIANT = IntegerProperty.create("variant", 0, TreeShape.VARIANTS - 1);
     public static final EnumProperty<SpeciesProperty> SPECIES = EnumProperty.create("species", SpeciesProperty.class);
+    /**
+     * P2 (docs/rendering/mesh_trees_p2_felling.md, D): the root's cut stage (0 untouched, 1..4 the notch deepens) and the
+     * notch's direction (8 steps of 45 degrees, toward the first chopper). In the block state, so the notch is saved
+     * with the chunk, reaches every client with the block, and survives level changes, reloads and rebuilds.
+     */
+    public static final IntegerProperty CHOP = IntegerProperty.create("chop", 0, FellingRules.STAGES);
+    public static final IntegerProperty CUT = IntegerProperty.create("cut", 0, FellingRules.SIDES - 1);
 
     private static Root root;
     private static Wood wood;
+    private static Stump stump;
     private static Foliage foliage, canopy, pineFoliage, pineCanopy;
 
     private TreeBlocks() {}
@@ -88,18 +97,21 @@ public final class TreeBlocks {
             canopy = new Foliage(Species.WHITE_OAK, false);
             pineFoliage = new Foliage(Species.WHITE_PINE, true);
             pineCanopy = new Foliage(Species.WHITE_PINE, false);
+            stump = new Stump();
             helper.register(ROOT_ID, root);
             helper.register(WOOD_ID, wood);
             helper.register(FOLIAGE_ID, foliage);
             helper.register(CANOPY_ID, canopy);
             helper.register(PINE_FOLIAGE_ID, pineFoliage);
             helper.register(PINE_CANOPY_ID, pineCanopy);
+            helper.register(STUMP_ID, stump);
         });
     }
 
     public static boolean ready() { return root != null; }
     public static Root root() { return require(root); }
     public static Wood wood() { return require(wood); }
+    public static Stump stump() { return require(stump); }
 
     /** The crown block of a species: carrying leaf quads, or volume only. */
     public static Foliage crown(Species species, boolean carrier) {
@@ -136,6 +148,12 @@ public final class TreeBlocks {
     public static BlockState rootState(Species species, int variant, int turns) {
         return root().defaultBlockState().setValue(SPECIES, SpeciesProperty.of(species)).setValue(VARIANT, variant)
                 .setValue(FACING, Direction.from2DDataValue(turns));
+    }
+
+    /** The stump a felled root leaves: the same species, variant and facing (its trunk below the cut). */
+    public static BlockState stumpState(BlockState rootState) {
+        return stump().defaultBlockState().setValue(SPECIES, rootState.getValue(SPECIES)).setValue(VARIANT, rootState.getValue(VARIANT))
+                .setValue(FACING, rootState.getValue(FACING));
     }
 
     // ---------------------------------------------------------------------------------------------- collision
@@ -214,12 +232,13 @@ public final class TreeBlocks {
     public static final class Root extends Block {
         Root() {
             super(woody());
-            registerDefaultState(stateDefinition.any().setValue(FACING, Direction.SOUTH).setValue(VARIANT, 0).setValue(SPECIES, SpeciesProperty.WHITE_OAK));
+            registerDefaultState(stateDefinition.any().setValue(FACING, Direction.SOUTH).setValue(VARIANT, 0).setValue(SPECIES, SpeciesProperty.WHITE_OAK)
+                    .setValue(CHOP, 0).setValue(CUT, 0));
         }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-            builder.add(FACING, VARIANT, SPECIES);
+            builder.add(FACING, VARIANT, SPECIES, CHOP, CUT);
         }
 
         @Override
@@ -311,6 +330,70 @@ public final class TreeBlocks {
             // Crown cells stay open (no collision, no LeavesBlock, so not the LEAVES path type either).
             return collision(level, pos, false).isEmpty() && super.isPathfindable(state, level, pos, type);
         }
+    }
+
+    /**
+     * P2 (docs/rendering/mesh_trees_p2_felling.md, J): what a felled tree leaves at its root. Its trunk below the cut (the
+     * cut height follows the root position, FellingRules#cutHeight) with an end-grain top; it collides with the trunk's
+     * own voxels below the cut and needs no tree index (species, variant and facing are in its state). Mining (block
+     * audit): not breakable in survival (strength -1, like the tree cells; a stump tool comes later), no drops, no
+     * mineable tag; creative players can remove it. Blocks mob paths; in the logs tag for Terrain Smooth.
+     */
+    public static final class Stump extends Block {
+        Stump() {
+            super(woody());
+            registerDefaultState(stateDefinition.any().setValue(FACING, Direction.SOUTH).setValue(VARIANT, 0).setValue(SPECIES, SpeciesProperty.WHITE_OAK));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+            builder.add(FACING, VARIANT, SPECIES);
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+            return stumpShape(state, pos, false);
+        }
+
+        @Override
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+            return stumpShape(state, pos, true);
+        }
+
+        @Override
+        public RenderShape getRenderShape(BlockState state) { return RenderShape.MODEL; }
+
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) { return true; }
+
+        @Override
+        public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return Shapes.empty(); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) { return false; }
+    }
+
+    private static final Map<Integer, VoxelShape> STUMP_SHAPES = new ConcurrentHashMap<>();
+
+    /** The stump's collision: the root cell's trunk voxels in the layers below the cut; the outline is their box. */
+    static VoxelShape stumpShape(BlockState state, BlockPos pos, boolean outline) {
+        float cut = FellingRules.cutHeight(species(state), pos.getX(), pos.getY(), pos.getZ());
+        int layers = Math.max(1, Math.min(TreeShape.SUB, Math.round(cut * TreeShape.SUB)));
+        int key = ((((species(state).ordinal() * TreeShape.VARIANTS + state.getValue(VARIANT)) * 4 + turns(state)) * 16 + layers) << 1) | (outline ? 1 : 0);
+        return STUMP_SHAPES.computeIfAbsent(key, k -> {
+            var cell = layoutOf(state).cell(0, 0, 0);
+            if (cell == null || cell.solid == null) return Shapes.box(0.3, 0, 0.3, 0.7, layers / (double) TreeShape.SUB, 0.7);
+            var cutCell = new TreeShape.Cell(0, 0, 0, TreeShape.WOOD);
+            cutCell.solid = new long[TreeShape.SUB];
+            for (int y = 0; y < layers; y++) cutCell.solid[y] = cell.solid[y];
+            return outline ? outline(cutCell) : voxels(cutCell);
+        });
     }
 
     /** Crown cells of a species: no collision, not targetable, they dim sky light by one like leaves. */

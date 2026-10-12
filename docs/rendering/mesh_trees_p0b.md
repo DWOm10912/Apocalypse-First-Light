@@ -23,6 +23,10 @@
   - 树根和木格在有碰撞的地方阻挡生物路径（`isPathfindable`）；
   - 客户端换档改为批处理（最多等 10 tick、区段去重）；
   - `TreeIndex.REACH` 改为引用 `ForestPlan.REACH`（值仍为 12）。
+- **后续 P2**（2026-10-11，[mesh_trees_p2_felling](mesh_trees_p2_felling.md)）：整树砍伐，游戏实机未测。P2 对本轮代码的改动：
+  - 树根方块加了 `chop`（0–4，砍伐阶段）和 `cut`（0–7，砍口方向）两个属性；旧存档里的树根按默认值 0 读入；
+  - 根格在砍伐时，LOD0 画砍口；
+  - 新增树桩方块 `dev_tree_stump`。
 
 ## B. 树形系统
 

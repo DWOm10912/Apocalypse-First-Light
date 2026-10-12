@@ -4,5 +4,14 @@
   "block.apocalypse_firstlight.dev_tree_foliage": "White Oak Sample Crown (dev)",
   "block.apocalypse_firstlight.dev_tree_canopy": "White Oak Sample Crown Volume (dev)",
   "block.apocalypse_firstlight.dev_white_pine_foliage": "White Pine Sample Crown (dev)",
-  "block.apocalypse_firstlight.dev_white_pine_canopy": "White Pine Sample Crown Volume (dev)"
+  "block.apocalypse_firstlight.dev_white_pine_canopy": "White Pine Sample Crown Volume (dev)",
+  "block.apocalypse_firstlight.dev_tree_stump": "Sample Tree Stump (dev)",
+  "item.apocalypse_firstlight.white_oak_log": "White Oak Log",
+  "item.apocalypse_firstlight.white_pine_log": "White Pine Log",
+  "item.apocalypse_firstlight.white_oak_branch": "White Oak Branch",
+  "item.apocalypse_firstlight.white_pine_branch": "White Pine Branch",
+  "item.apocalypse_firstlight.white_oak_leaves": "White Oak Leaves",
+  "item.apocalypse_firstlight.white_pine_needles": "White Pine Needles",
+  "entity.apocalypse_firstlight.dev_falling_tree": "Falling Tree (dev)",
+  "message.afl_tree_demo.need_axe": "Needs an axe"
 }

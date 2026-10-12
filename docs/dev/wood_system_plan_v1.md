@@ -84,7 +84,10 @@
   - 白松：树干 11.08 m³、粗枝 0.73 m³、细枝 1.82 m³。
 
   每件物品折合多少体积还没定，要和背包、重量一起平衡（AFL 的方块是轻量搬运单位：泥土一块 0.15 kg、石头 0.25 kg，物品接近真实重量）。
+  - Mesh Trees P2（2026-10-11，[mesh_trees_p2_felling](../rendering/mesh_trees_p2_felling.md) K 节）先用暂定值：原木 0.5 m³ 一件，树枝 0.1 m³ 一件，叶材按树冠半径算。只在 `FellingRules.drops` 一处计算，平衡时只改这里。
 - 倒树后由实体一次性结算；格子本身不掉落（现在就是 `noLootTable`）。
+  - P2 已实现：倒树实体落地后结算一次，同一棵树不会掉第二次。
+  - P2 已用规划的名字做了开发专用注册，只是普通物品，没有配方：`white_oak_log`、`white_pine_log`、`white_oak_branch`、`white_pine_branch`，以及叶材 `white_oak_leaves`、`white_pine_needles`。正式注册时接管这些 id，并删掉开发注册。
 
 ## 六、木材产品线草案
 

@@ -60,6 +60,7 @@ import java.util.function.Supplier;
  *   lod auto | 0 | 1 | 2 | proxy                               this client: distance levels, one level, the voxel proxy
  *   status                                                     trees here; on your client: index, levels, cost, shader IDs
  *   forest status | here | find open_oak|white_pine|mixed       the natural forest (P1, read only; ForestCommands)
+ *   felling here | status                                       the felling (P2, read only; FellingCommands)
  * </pre>
  * A cell is written only into air or a replaceable plant (the journal keeps what was there); a trunk or branch cell that
  * finds anything else refuses the tree; a crown cell that finds another sample tree's crown shares it, anything else is
@@ -90,6 +91,24 @@ public final class TreeCommands {
         }
     }
 
+    /** P2: a chop at a trunk cell, client to server (FellingClient sends, FellingServer#chop decides). */
+    public record Chop(long pos) {
+        static void encode(Chop m, FriendlyByteBuf b) { b.writeLong(m.pos); }
+
+        static Chop decode(FriendlyByteBuf b) { return new Chop(b.readLong()); }
+
+        static void handle(Chop m, Supplier<NetworkEvent.Context> supplier) {
+            var c = supplier.get();
+            ServerPlayer sender = c.getSender();
+            c.enqueueWork(() -> FellingServer.chop(sender, BlockPos.of(m.pos)));
+            c.setPacketHandled(true);
+        }
+    }
+
+    static void sendChop(BlockPos pos) {
+        if (channel != null) channel.sendToServer(new Chop(pos.asLong()));
+    }
+
     private static SimpleChannel channel;
 
     private TreeCommands() {}
@@ -99,8 +118,9 @@ public final class TreeCommands {
         @SubscribeEvent
         public static void setup(FMLCommonSetupEvent event) {
             if (FMLEnvironment.production) return;
-            channel = NetworkRegistry.newSimpleChannel(new ResourceLocation("apocalypse_firstlight", "dev_mesh_tree"), () -> "2", "2"::equals, "2"::equals);
+            channel = NetworkRegistry.newSimpleChannel(new ResourceLocation("apocalypse_firstlight", "dev_mesh_tree"), () -> "3", "3"::equals, "3"::equals);
             channel.registerMessage(0, Msg.class, Msg::encode, Msg::decode, Msg::handle, Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+            channel.registerMessage(1, Chop.class, Chop::encode, Chop::decode, Chop::handle, Optional.of(NetworkDirection.PLAY_TO_SERVER));
         }
     }
 
@@ -134,6 +154,7 @@ public final class TreeCommands {
             lod.then(Commands.literal("proxy").executes(x -> toPlayer(x, new Msg(LOD, 0, TreeShape.LODS))));
             c.then(lod);
             c.then(ForestCommands.node());
+            c.then(FellingCommands.node());
             event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("dev").then(c)));
         }
     }

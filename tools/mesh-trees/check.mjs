@@ -7,6 +7,9 @@
 // 4. P1 natural forest (docs/rendering/mesh_trees_p1_forest.md, N): static audit of the dev-only worldgen wiring, then
 //    ForestPlan (pure Java) over the real Terrain V2 plan cache of a seed with ForestCheck.java (densities, spacing,
 //    determinism and generation order, buffer, cells against the planned ground, cost, test spots, a map).
+// 5. P2 felling (docs/rendering/mesh_trees_p2_felling.md, O): static audit of the dev-only felling wiring, then
+//    FellingRules, TreeCut and FellingLedger (pure Java) with FellCheck.java (chops, drops, cut geometry, fall curves,
+//    rest angles, directions, the ledger, shared cells of natural trees over the same plan cache).
 //   node tools/mesh-trees/check.mjs [seed centreX centreZ]      (default: AFL_TREE_01's seed and spawn)
 // Needs a JDK 17 (JAVA_HOME, or javac on PATH).
 import fs from 'node:fs';
@@ -68,6 +71,26 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
     require(trees.length > 0 && trees.every(f => mod.remove.includes(f)), `${b}: every tree feature is removed (${trees})`);
   }
 }
+// P2 felling: the stump and the item models dropped from the jar, no formal namesakes, registrations outside
+// production only, the server gated to AFL_TREE_* overworlds, the rules pure
+{
+  const A = 'src/dev/highway_mesh_resources/assets/apocalypse_firstlight/';
+  const files = ['blockstates/dev_tree_stump.json', 'models/block/dev_tree_stump.json',
+    ...['white_oak_log', 'white_pine_log', 'white_oak_branch', 'white_pine_branch', 'white_oak_leaves', 'white_pine_needles'].map(i => `models/item/${i}.json`)];
+  for (const f of files) {
+    require(fs.existsSync(path.join(ROOT, A, f)), `dev felling resource ${f} exists`);
+    require(gradle.includes(`exclude 'assets/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
+    require(!fs.existsSync(path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight', f)), `no formal ${f}`);
+  }
+  const reg = read(dev + '/FellingRegistry.java'), srv = read(dev + '/FellingServer.java');
+  require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.ITEMS/.test(reg), 'the felling items and entity register only outside production');
+  require(/if \(!testWorld\(level\)\)/.test(srv) && /TreeCommands\.PREFIX/.test(srv) && /Level\.OVERWORLD/.test(srv), 'chopping is gated to AFL_TREE_* overworlds');
+  require(/addFreshEntity\(fall\)\) \{[^}]*return; \}\s*var journal/.test(srv), 'the falling tree is added before any cell is removed');
+  for (const pure of ['FellingRules', 'TreeCut', 'FellingLedger'])
+    require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/' + pure + '.java')), pure + ' is pure Java');
+  const logs = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/logs.json'));
+  require(logs.values.some(v => v.id === 'apocalypse_firstlight:dev_tree_stump' && v.required === false), 'the stump is an optional entry of the dev logs tag');
+}
 console.log(failures === 0 ? 'static audit: development-only wiring OK' : `static audit: ${failures} failures`);
 
 // ---- 2. textures
@@ -99,7 +122,19 @@ try {
       fs.rmSync(fout, {recursive: true, force: true});
     }
   }
-  process.exitCode = status !== 0 ? status : forest !== 0 ? forest : failures === 0 ? 0 : 1;
+  // 5. the felling
+  let felling = 0;
+  {
+    const fout = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-fellcheck-'));
+    try {
+      const sp = [path.join(ROOT, 'src/main/java'), path.join(ROOT, 'src/dev/java')].join(path.delimiter);
+      if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', fout, '-sourcepath', sp, path.join(ROOT, 'tools/mesh-trees/FellCheck.java')]) !== 0) felling = 2;
+      else felling = run(exe('java'), ['-Xmx3g', '-cp', fout, 'com.antaurora.apofirstlight.dev.meshtree.FellCheck', ...(fs.existsSync(cache) ? [cache, seed, cx, cz] : [])]);
+    } finally {
+      fs.rmSync(fout, {recursive: true, force: true});
+    }
+  }
+  process.exitCode = status !== 0 ? status : forest !== 0 ? forest : felling !== 0 ? felling : failures === 0 ? 0 : 1;
 } finally {
   fs.rmSync(out, {recursive: true, force: true});
 }

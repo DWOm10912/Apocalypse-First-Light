@@ -380,6 +380,15 @@ tasks.named('jar', Jar).configure {
     exclude 'assets/apocalypse_firstlight/models/block/dev_white_pine_canopy.json'
     exclude 'data/minecraft/tags/blocks/logs.json'
     exclude 'data/minecraft/tags/blocks/leaves.json'
+    // Mesh Trees P2 felling (docs/rendering/mesh_trees_p2_felling.md): the stump and the raw wood items, development only
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_tree_stump.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_tree_stump.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_oak_log.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_pine_log.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_oak_branch.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_pine_branch.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_oak_leaves.json'
+    exclude 'assets/apocalypse_firstlight/models/item/white_pine_needles.json'
     // Mesh Trees P1 natural forest test (docs/rendering/mesh_trees_p1_forest.md): development only
     exclude 'data/apocalypse_firstlight/forge/biome_modifier/dev_mesh_forest.json'
     exclude 'data/apocalypse_firstlight/worldgen/configured_feature/dev_mesh_forest.json'

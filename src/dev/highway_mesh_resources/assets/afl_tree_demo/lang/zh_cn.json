@@ -4,5 +4,14 @@
   "block.apocalypse_firstlight.dev_tree_foliage": "白栎样板 树冠（开发）",
   "block.apocalypse_firstlight.dev_tree_canopy": "白栎样板 树冠体积（开发）",
   "block.apocalypse_firstlight.dev_white_pine_foliage": "白松样板 树冠（开发）",
-  "block.apocalypse_firstlight.dev_white_pine_canopy": "白松样板 树冠体积（开发）"
+  "block.apocalypse_firstlight.dev_white_pine_canopy": "白松样板 树冠体积（开发）",
+  "block.apocalypse_firstlight.dev_tree_stump": "样板树 树桩（开发）",
+  "item.apocalypse_firstlight.white_oak_log": "白栎原木",
+  "item.apocalypse_firstlight.white_pine_log": "白松原木",
+  "item.apocalypse_firstlight.white_oak_branch": "白栎树枝",
+  "item.apocalypse_firstlight.white_pine_branch": "白松树枝",
+  "item.apocalypse_firstlight.white_oak_leaves": "白栎叶",
+  "item.apocalypse_firstlight.white_pine_needles": "白松针叶",
+  "entity.apocalypse_firstlight.dev_falling_tree": "倒下的树（开发）",
+  "message.afl_tree_demo.need_axe": "需要斧头"
 }

@@ -9,6 +9,7 @@ import net.minecraft.world.level.FoliageColor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -35,12 +36,19 @@ public final class TreeModels {
         var models = event.getModels();
         put(models, TreeBlocks.root(), new TreeCellModel(TreeCellModel.Kind.ROOT, Species.WHITE_OAK));
         put(models, TreeBlocks.wood(), new TreeCellModel(TreeCellModel.Kind.WOOD, Species.WHITE_OAK));
+        put(models, TreeBlocks.stump(), new TreeCellModel(TreeCellModel.Kind.STUMP, Species.WHITE_OAK));
         for (var crown : TreeBlocks.crowns())
             put(models, crown, new TreeCellModel(crown.carrier ? TreeCellModel.Kind.FOLIAGE : TreeCellModel.Kind.CANOPY, crown.species));
     }
 
     private static void put(Map<ResourceLocation, BakedModel> models, Block block, TreeCellModel model) {
         for (BlockState state : block.getStateDefinition().getPossibleStates()) models.put(BlockModelShaper.stateToModelLocation(state), model);
+    }
+
+    /** P2: the falling tree's renderer (FallingTreeRenderer). */
+    @SubscribeEvent
+    public static void renderers(EntityRenderersEvent.RegisterRenderers event) {
+        if (FellingRegistry.ready()) event.registerEntityRenderer(FellingRegistry.fallingTree, FallingTreeRenderer::new);
     }
 
     @SubscribeEvent

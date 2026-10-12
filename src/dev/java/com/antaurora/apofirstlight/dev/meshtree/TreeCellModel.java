@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Baked quads are cached per variant, turn, level and shading (the layout is immutable); a model reload clears them.
  */
 final class TreeCellModel implements IDynamicBakedModel {
-    enum Kind { ROOT, WOOD, FOLIAGE, CANOPY }
+    enum Kind { ROOT, WOOD, FOLIAGE, CANOPY, STUMP }
 
     /** What one cell draws in AFL's view; {@code data} is the model data that carries it. */
     static final class Cell {
@@ -60,13 +60,19 @@ final class TreeCellModel implements IDynamicBakedModel {
     static final ModelProperty<Cell> CELL = new ModelProperty<>();
     static final Cell NOTHING = new Cell(List.of(), false), PROXY = new Cell(List.of(), true);
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid()), LEAVES = ChunkRenderTypeSet.of(RenderType.cutoutMipped());
-    /** Sprites by TreeShape sprite number (species * SLOTS + slot), then the two species' proxy faces. */
+    /**
+     * Sprites by TreeShape sprite number (species * SLOTS + slot), then (P2, TreeCut) cut wood and end grain per species;
+     * the two species' proxy faces separately.
+     */
     private static final ResourceLocation[] SPRITES = {
             tex("white_oak_bark"), tex("white_oak_leaves"), tex("white_oak_leaves_mid"), tex("white_oak_leaves_far"),
-            tex("white_pine_bark"), tex("white_pine_needles"), tex("white_pine_needles_mid"), tex("white_pine_needles_far")};
+            tex("white_pine_bark"), tex("white_pine_needles"), tex("white_pine_needles_mid"), tex("white_pine_needles_far"),
+            tex("white_oak_cut"), tex("white_pine_cut"), tex("white_oak_end_grain"), tex("white_pine_end_grain")};
     private static final ResourceLocation[] PROXY_LEAVES = {tex("white_oak_leaves_proxy"), tex("white_pine_needles_proxy")};
     private static final Map<Integer, Map<Integer, Cell>> BAKED = new ConcurrentHashMap<>();
     private static final Map<Integer, Map<Direction, List<BakedQuad>>> PROXIES = new ConcurrentHashMap<>();
+    /** P2: notched root cells (cut stage, side, cut height) and stumps, built on first sight. */
+    private static final Map<Long, Cell> NOTCHED = new ConcurrentHashMap<>(), STUMPS = new ConcurrentHashMap<>();
 
     private final Kind kind;
     /** The crown blocks' species (their proxy face and tint); the wood blocks are shared by all species. */
@@ -84,14 +90,18 @@ final class TreeCellModel implements IDynamicBakedModel {
     static void clearCache() {
         BAKED.clear();
         PROXIES.clear();
+        NOTCHED.clear();
+        STUMPS.clear();
     }
+
+    static int notchedCacheSize() { return NOTCHED.size() + STUMPS.size(); }
 
     static int cacheSize() {
         return BAKED.size();
     }
 
     private boolean woody() {
-        return kind == Kind.ROOT || kind == Kind.WOOD;
+        return kind == Kind.ROOT || kind == Kind.WOOD || kind == Kind.STUMP;
     }
 
     // ------------------------------------------------------------------------------------------- model data
@@ -100,16 +110,22 @@ final class TreeCellModel implements IDynamicBakedModel {
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull ModelData data) {
         if (TreeClient.override == TreeClient.PROXY) return PROXY.data;
         if (kind == Kind.CANOPY) return NOTHING.data;
+        int shade = AflShaderCompat.shaderPackInUse() ? 0 : 1;
+        if (kind == Kind.STUMP) return stump(state, pos, shade).data;
         long start = System.nanoTime();
         var roots = new ArrayList<TreeIndex.Root>(2);
         TreeIndex.CLIENT.roots(pos.getX(), pos.getY(), pos.getZ(), roots);
-        int shade = AflShaderCompat.shaderPackInUse() ? 0 : 1;
         Cell found = null;
         List<BakedQuad> merged = null;
         for (var r : roots) {
             var cell = r.layout.cell(pos.getX() - r.x, pos.getY() - r.y, pos.getZ() - r.z);
             if (cell == null || (cell.kind == TreeShape.WOOD) != woody()) continue;
-            Cell c = baked(r.layout, TreeClient.levelOf(r), shade).get(TreeShape.key(cell.x, cell.y, cell.z));
+            int lod = TreeClient.levelOf(r);
+            Cell c;
+            // P2: a root being chopped draws its notch (near level only: the chopper is close)
+            if (kind == Kind.ROOT && cell.x == 0 && cell.y == 0 && cell.z == 0 && lod == 0 && state.getBlock() == TreeBlocks.root()
+                    && state.getValue(TreeBlocks.CHOP) > 0) c = notched(r.layout, state, pos, shade);
+            else c = baked(r.layout, lod, shade).get(TreeShape.key(cell.x, cell.y, cell.z));
             if (c == null) continue;
             if (found == null) found = c;
             else {
@@ -157,12 +173,52 @@ final class TreeCellModel implements IDynamicBakedModel {
         return Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(id);
     }
 
+    /** The atlas sprites by sprite number. */
+    static TextureAtlasSprite[] sprites() {
+        TextureAtlasSprite[] sprites = new TextureAtlasSprite[SPRITES.length];
+        for (int i = 0; i < sprites.length; i++) sprites[i] = sprite(SPRITES[i]);
+        return sprites;
+    }
+
+    static long layoutKey(TreeShape.Layout layout) {
+        return (layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4L + layout.turns;
+    }
+
+    /** The root cell with the notch of its state's cut stage and side, at the cut height of its position (LOD0 quads). */
+    private static Cell notched(TreeShape.Layout layout, BlockState state, BlockPos pos, int shade) {
+        int stage = state.getValue(TreeBlocks.CHOP), side = state.getValue(TreeBlocks.CUT);
+        float cut = FellingRules.cutHeight(layout.species, pos.getX(), pos.getY(), pos.getZ());
+        long key = ((((layoutKey(layout) * 8 + stage) * 8 + side) * 64 + Math.round(cut * 32)) << 1) | shade;
+        return NOTCHED.computeIfAbsent(key, k -> {
+            var root = layout.cell(0, 0, 0);
+            var quads = TreeCut.notch(root == null ? List.of() : root.quads[0], cut, stage, FellingRules.sideAngle(side), layout.species.ordinal());
+            return bakeAll(quads, shade);
+        });
+    }
+
+    /** A stump: its state's trunk below the cut of its position, with the end-grain cap. */
+    private static Cell stump(BlockState state, BlockPos pos, int shade) {
+        var layout = TreeBlocks.layoutOf(state);
+        float cut = FellingRules.cutHeight(layout.species, pos.getX(), pos.getY(), pos.getZ());
+        long key = ((layoutKey(layout) * 64 + Math.round(cut * 32)) << 1) | shade;
+        return STUMPS.computeIfAbsent(key, k -> {
+            var root = layout.cell(0, 0, 0);
+            return bakeAll(TreeCut.stump(root == null ? List.of() : root.quads[0], cut, layout.species.ordinal()), shade);
+        });
+    }
+
+    private static Cell bakeAll(List<TreeShape.Quad> quads, int shade) {
+        TextureAtlasSprite[] sprites = sprites();
+        var list = new ArrayList<BakedQuad>(quads.size() * 2);
+        for (var q : quads) bake(q, 0, 0, 0, sprites[q.sprite], shade, list);
+        return new Cell(List.copyOf(list), false);
+    }
+
     /** One variant, turn, level, shading: cell key -> what that cell draws (cells without quads at that level absent). */
     static Map<Integer, Cell> baked(TreeShape.Layout layout, int level, int shade) {
         int key = (((layout.species.ordinal() * TreeShape.VARIANTS + layout.variant) * 4 + layout.turns) * TreeShape.LODS + level) * 2 + shade;
         return BAKED.computeIfAbsent(key, k -> {
-            TextureAtlasSprite[] sprites = new TextureAtlasSprite[SPRITES.length];
-            for (int i = 0; i < sprites.length; i++) sprites[i] = sprite(SPRITES[i]);
+            TextureAtlasSprite[] sprites = sprites();
             var out = new java.util.HashMap<Integer, Cell>();
             for (var cell : layout.cells.values()) {
                 var quads = cell.quads[level];
@@ -207,7 +263,7 @@ final class TreeCellModel implements IDynamicBakedModel {
     /** The volume proxy of a cell: a leaf cube (culled against neighbouring crown cells) or a bark post of the girth. */
     private List<BakedQuad> proxy(BlockState state, @Nullable Direction side) {
         // wood: a bark post (root wider); crowns: a leaf cube with the species' face and tint
-        int which = kind == Kind.WOOD ? 4 : kind == Kind.ROOT ? 7 : -1 - species.ordinal();
+        int which = kind == Kind.WOOD ? 4 : kind == Kind.ROOT || kind == Kind.STUMP ? 7 : -1 - species.ordinal();
         // side null: the faces inside the cell (a post's sides); a direction: the faces on that cell boundary
         List<BakedQuad> faces = PROXIES.computeIfAbsent(which, TreeCellModel::buildProxy).get(side);
         return faces == null ? List.of() : faces;
