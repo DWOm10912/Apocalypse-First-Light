@@ -12,6 +12,14 @@
     {
       "id": "apocalypse_firstlight:dev_tree_stump",
       "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_log",
+      "required": false
     }
   ]
 }

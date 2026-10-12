@@ -38,6 +38,7 @@ public final class FellCheck {
         falls();
         directions();
         ledger();
+        logs();
         if (args.length >= 4) shared(Path.of(args[0]), Long.parseLong(args[1]), Integer.parseInt(args[2]), Integer.parseInt(args[3]));
         else System.out.println("shared cells: no plan cache given, skipped");
         System.out.println(failures == 0 ? "MESH FELLING CHECK OK" : "MESH FELLING CHECK: " + failures + " failures");
@@ -296,6 +297,81 @@ public final class FellCheck {
         L2.settle(new UUID(7, 7), tick + 200 + FellingLedger.KEEP_SETTLED + 10);
         require(!L2.isSettled(fall), "settled ids are pruned after " + FellingLedger.KEEP_SETTLED + " ticks");
         System.out.println("ledger: spam ignored, two players share one progress, a reload keeps it, a double last chop fells once, a fall settles once");
+    }
+
+    // ------------------------------------------------------------------------------------------- 5b. log blocks
+
+    /**
+     * P2.2 log blocks (LogShape), every species and axis: inside the block; culled parts on their face plane and, when
+     * rectangles, in vanilla's corner order; facing outward; UVs in the sprite; one closed surface (every edge shared by
+     * two quads); the end caps cover the rounded square's area; every part either culled or a corner strip that faces
+     * the two sides it takes its light from (LogShape.cornerSides).
+     */
+    /** Direction ordinals (DOWN, UP, NORTH, SOUTH, WEST, EAST) as unit vectors. */
+    static final int[][] DIRS = {{0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}};
+
+    static void logs() {
+        int parts = 0;
+        for (Species sp : Species.values()) for (int axis = 0; axis < 3; axis++) {
+            var list = LogShape.vanillaOrder(LogShape.axis(LogShape.build(sp), axis));
+            String id = sp.id + " log axis " + "XYZ".charAt(axis);
+            var edges = new HashMap<String, Integer>();
+            double capArea = 0;
+            for (var part : list) {
+                var q = part.quad();
+                parts++;
+                float cx = 0, cy = 0, cz = 0;
+                for (int c = 0; c < 4; c++) {
+                    for (int k = 0; k < 3; k++) require(q.p[c * 3 + k] >= -1e-5F && q.p[c * 3 + k] <= 1 + 1e-5F, id + ": inside the block");
+                    require(q.uv[c * 2] >= -1e-5F && q.uv[c * 2] <= 1 + 1e-5F && q.uv[c * 2 + 1] >= -1e-5F && q.uv[c * 2 + 1] <= 1 + 1e-5F, id + ": UV in the sprite");
+                    cx += q.p[c * 3] / 4; cy += q.p[c * 3 + 1] / 4; cz += q.p[c * 3 + 2] / 4;
+                }
+                // outward: the normal points away from the block's centre
+                float nx = (q.n[0] + q.n[3] + q.n[6] + q.n[9]) / 4, ny = (q.n[1] + q.n[4] + q.n[7] + q.n[10]) / 4, nz = (q.n[2] + q.n[5] + q.n[8] + q.n[11]) / 4;
+                require(nx * (cx - 0.5F) + ny * (cy - 0.5F) + nz * (cz - 0.5F) > 0, id + ": faces outward");
+                // winding by the diagonals (robust for a fan triangle with its repeated corner)
+                float[] e1 = {q.p[6] - q.p[0], q.p[7] - q.p[1], q.p[8] - q.p[2]}, e2 = {q.p[9] - q.p[3], q.p[10] - q.p[4], q.p[11] - q.p[5]};
+                float[] g = TreeShape.cross(e1, e2);
+                require(g[0] * nx + g[1] * ny + g[2] * nz > 0, id + ": wound counter-clockwise from outside");
+                if (part.cull() != LogShape.NONE) {
+                    int d = part.cull(), ax = d < 2 ? 1 : d < 4 ? 2 : 0;
+                    float plane = d % 2 == 1 ? 1 : 0;
+                    for (int c = 0; c < 4; c++) require(Math.abs(q.p[c * 3 + ax] - plane) < 1e-5F, id + ": a culled part lies on its face");
+                    if (LogShape.rectangle(q)) {
+                        float[] lo = {9, 9, 9}, hi = {-9, -9, -9};
+                        for (int c = 0; c < 4; c++) for (int k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], q.p[c * 3 + k]); hi[k] = Math.max(hi[k], q.p[c * 3 + k]); }
+                        for (int c = 0; c < 4; c++) for (int k = 0; k < 3; k++) {
+                            int want = LogShape.FACE_INFO[d][c][k];
+                            if (want >= 0) require(Math.abs(q.p[c * 3 + k] - (want == 1 ? hi[k] : lo[k])) < 1e-5F, id + ": rectangle in vanilla corner order");
+                        }
+                    }
+                    // the two end planes' area (along the axis)
+                    if (ax == axis) capArea += Math.sqrt(g[0] * g[0] + g[1] * g[1] + g[2] * g[2]) / 2;
+                } else {
+                    require(part.corner() >= 0, id + ": an unculled part is a corner strip");
+                    if (part.corner() >= 0) for (int side : LogShape.cornerSides(part.corner(), axis)) {
+                        var dir = DIRS[side];
+                        require(nx * dir[0] + ny * dir[1] + nz * dir[2] > 0.1F, id + ": a corner strip faces the sides that light it");
+                        require(dir[axis] == 0, id + ": a corner's light sides lie across the log");
+                    }
+                }
+                for (int c = 0; c < 4; c++) {
+                    String a = key(q, c), b = key(q, (c + 1) % 4);
+                    if (a.equals(b)) continue;
+                    String e = a.compareTo(b) < 0 ? a + "|" + b : b + "|" + a;
+                    edges.merge(e, 1, Integer::sum);
+                }
+            }
+            int open = 0;
+            for (int c : edges.values()) if (c != 2) open++;
+            require(open == 0, id + ": one closed surface (" + open + " edges not shared by two quads)");
+            float r = LogShape.radius(sp);
+            double want = 2 * (1 - (4 - Math.PI) * r * r);
+            require(Math.abs(capArea - want) < 0.02, id + ": the end caps cover the rounded square (" + capArea + " vs " + want + ")");
+        }
+        System.out.printf("log blocks: 2 species x 3 axes, %d parts: closed, outward, culled faces on their planes in vanilla order, end caps %.3f (oak) / %.3f (pine) of the square%n",
+                parts, 1 - (4 - Math.PI) * LogShape.radius(Species.WHITE_OAK) * LogShape.radius(Species.WHITE_OAK),
+                1 - (4 - Math.PI) * LogShape.radius(Species.WHITE_PINE) * LogShape.radius(Species.WHITE_PINE));
     }
 
     // ------------------------------------------------------------------------------------------ 6. shared cells

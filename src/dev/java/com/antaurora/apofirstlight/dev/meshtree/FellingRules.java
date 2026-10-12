@@ -29,8 +29,9 @@ public final class FellingRules {
 
     // work per m2: the mesh trunk flares linearly to the first ring (1 m), so a cut at 0.45-0.75 m crosses 0.4-0.75 m
     // of radius; 12 gives an iron axe about 7 chops on a small white oak, 14 on the biggest (offline check)
-    static final Params WHITE_OAK = new Params(1.0F, 12F, 0.45F, 0.75F, 0.5F, 0.1F, 0.33F, 48, 24, 0.22F, 0.72F);
-    static final Params WHITE_PINE = new Params(0.55F, 12F, 0.45F, 0.75F, 0.5F, 0.1F, 0.40F, 48, 24, 0.18F, 0.66F);
+    // P2.2: a log item is a log block, one cubic metre of wood (docs/rendering/mesh_trees_p2_felling.md, V)
+    static final Params WHITE_OAK = new Params(1.0F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.33F, 48, 24, 0.22F, 0.72F);
+    static final Params WHITE_PINE = new Params(0.55F, 12F, 0.45F, 0.75F, 1.0F, 0.1F, 0.40F, 48, 24, 0.18F, 0.66F);
 
     public static Params params(Species s) { return s == Species.WHITE_PINE ? WHITE_PINE : WHITE_OAK; }
 

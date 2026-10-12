@@ -76,20 +76,37 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
 {
   const A = 'src/dev/highway_mesh_resources/assets/apocalypse_firstlight/';
   const files = ['blockstates/dev_tree_stump.json', 'models/block/dev_tree_stump.json',
-    ...['white_oak_log', 'white_pine_log', 'white_oak_branch', 'white_pine_branch', 'white_oak_leaves', 'white_pine_needles'].map(i => `models/item/${i}.json`)];
+    ...['white_oak_log', 'white_pine_log', 'white_oak_branch', 'white_pine_branch', 'white_oak_leaves', 'white_pine_needles'].map(i => `models/item/${i}.json`),
+    // P2.2: the log blocks and the 3D leaf material
+    ...['white_oak_log', 'white_pine_log'].flatMap(i => [`blockstates/${i}.json`, `models/block/${i}.json`]),
+    'models/item/white_oak_leaves_3d.json', 'models/item/white_pine_needles_3d.json'];
   for (const f of files) {
     require(fs.existsSync(path.join(ROOT, A, f)), `dev felling resource ${f} exists`);
     require(gradle.includes(`exclude 'assets/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
     require(!fs.existsSync(path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight', f)), `no formal ${f}`);
   }
   const reg = read(dev + '/FellingRegistry.java'), srv = read(dev + '/FellingServer.java');
-  require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.ITEMS/.test(reg), 'the felling items and entity register only outside production');
+  require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.BLOCKS[\s\S]*?\}\);\s*event\.register\(ForgeRegistries\.Keys\.ITEMS/.test(reg),
+    'the log blocks, the felling items and the entity register only outside production');
   require(/if \(!testWorld\(level\)\)/.test(srv) && /TreeCommands\.PREFIX/.test(srv) && /Level\.OVERWORLD/.test(srv), 'chopping is gated to AFL_TREE_* overworlds');
   require(/addFreshEntity\(fall\)\) \{[^}]*return; \}\s*var journal/.test(srv), 'the falling tree is added before any cell is removed');
-  for (const pure of ['FellingRules', 'TreeCut', 'FellingLedger'])
+  for (const pure of ['FellingRules', 'TreeCut', 'FellingLedger', 'LogShape'])
     require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/' + pure + '.java')), pure + ' is pure Java');
   const logs = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/logs.json'));
   require(logs.values.some(v => v.id === 'apocalypse_firstlight:dev_tree_stump' && v.required === false), 'the stump is an optional entry of the dev logs tag');
+  // P2.2 log blocks: self-dropping (dev loot tables dropped from the jar), axe through the dev logs tag, no 2D log icon
+  for (const log of ['white_oak_log', 'white_pine_log']) {
+    const loot = `data/apocalypse_firstlight/loot_tables/blocks/${log}.json`;
+    require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources', loot)), `dev loot table ${log} exists`);
+    require(gradle.includes(`exclude '${loot}'`), `the jar drops the ${log} loot table`);
+    require(!fs.existsSync(path.join(ROOT, 'src/main/resources', loot)), `no formal ${log} loot table`);
+    const table = JSON.parse(read('src/dev/highway_mesh_resources/' + loot));
+    require(table.pools[0].entries[0].name === 'apocalypse_firstlight:' + log, `${log} drops itself`);
+    require(logs.values.some(v => v.id === 'apocalypse_firstlight:' + log && v.required === false), `${log} is an optional entry of the dev logs tag`);
+    require(!fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/item', log + '.png')), `no 2D icon for the ${log} block`);
+  }
+  const lb = read(dev + '/TreeLogBlock.java');
+  require(!/requiresCorrectToolForDrops/.test(lb) && /strength\(2\.0F\)/.test(lb) && /getMaxLightLevel\(\)/.test(lb), 'the log block: vanilla log strength, no tool requirement, blocks light');
 }
 console.log(failures === 0 ? 'static audit: development-only wiring OK' : `static audit: ${failures} failures`);
 

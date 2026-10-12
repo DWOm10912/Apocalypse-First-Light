@@ -4,8 +4,10 @@
 //                       radial drying checks; white oak: thin pale sapwood, fine rings, light ray flecks; white pine:
 //                       wide creamy sapwood, wider rings, amber resin beads
 //   cut wood 32 x 32    the notch faces: fresh wood, fibres running out from the apex, axe facets across
-//   items 16 x 16       logs, branches, leaf material: vanilla-style pixel art with dark edges, lit from the upper left,
-//                       the trees' own bark and wood palettes
+//   log end 32 x 32     P2.2 (V): the log block's ends, over the whole block face: the rounded-square outline of the log
+//                       with its bark rim, rings following the outline near the bark and turning round toward the pith
+//   items 16 x 16       branches, leaf material: vanilla-style pixel art with dark edges, lit from the upper left, the
+//                       trees' own bark and wood palettes (P2.2: the logs are blocks, their 2D icons are gone)
 //   LabPBR _n / _s      bark, end grain, cut wood: normals from a smoothed height (gentle, no POM: height alpha 255),
 //                       dielectric wood (F0 10 / 255), rough; leaves keep the shader pack's own leaf handling
 
@@ -99,6 +101,65 @@ export function endGrain(p, pine, seed) {
   return img;
 }
 
+// ---------------------------------------------------------------------------------------------------- log end
+
+/**
+ * 32 x 32 over the whole block face (the cap's UVs are the block's own coordinates). The log's outline is the rounded
+ * square of LogShape (corner radius 6 px white oak, 10 px white pine: radius x 32); outside it (never drawn) bark. From
+ * the outline in: bark rim, inner bark, sapwood (bands following the outline), then heartwood rings whose shape turns
+ * from the outline's near the sapwood to round at the pith (a squared trunk: vanilla's square log rings, softened).
+ */
+export function logEnd(p, pine, seed) {
+  const W = 32, R = pine ? 10 : 6, h = 16 - R, r = rngOf(seed), img = canvas(W, W);
+  const rimW = pine ? 1.7 : 1.1, innerW = pine ? 0.8 : 0.6, sapW = pine ? 4.2 : 2.2, heartE = rimW + innerW + sapW;
+  const spacing = pine ? 2.75 : 2.15, lateShare = pine ? 0.34 : 0.4;
+  const ph1 = r() * 6.283, ph2 = r() * 6.283;
+  const depth = (dx, dy) => {
+    const qx = Math.abs(dx) - h, qy = Math.abs(dy) - h;
+    return -(Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - R);
+  };
+  const checks = [r() * 6.283, ...(pine ? [r() * 6.283] : [])].map(a => ({a, len: 8 + r() * 3, bend: (r() - 0.5) * 0.08}));
+  const rays = Array.from({length: 8}, (_, k) => ({a: (k + r() * 0.6) * 6.283 / 8, from: 3 + r() * 2, to: 7.5 + r() * 3}));
+  const resin = [];
+  while (pine && resin.length < 4) {
+    const x = 2 + r() * 28, y = 2 + r() * 28, e = depth(x - 16, y - 16);
+    if (e > rimW + innerW + 0.9 && e < heartE - 0.9) resin.push([x, y]);
+  }
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+    const dx = x + 0.5 - 16, dy = y + 0.5 - 16, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx), e = depth(dx, dy);
+    // ring radius: round near the pith, the outline's rounded square toward the bark
+    const sq = 16 - e, t = Math.max(0, Math.min(1, (sq - 3) / 10)), s = t * t * (3 - 2 * t);
+    const rho = d + (sq - d) * s;
+    const rw = rho + 0.42 * Math.sin(3 * a + ph1) + 0.22 * Math.sin(5 * a + ph2);
+    let c;
+    if (e < rimW) c = e < 0 ? mul(p.rim, 0.9) : p.rim;                                         // bark rim
+    else if (e < rimW + innerW) c = p.inner;
+    else if (e < heartE) c = ((e / spacing) % 1) < lateShare * 0.6 ? p.sapLate : p.sap;       // sapwood: faint bands
+    else if (d < 1.1) c = p.pith;
+    else c = ((rw / spacing) % 1) < lateShare ? p.late : p.heart;
+    // a gentle light-to-dark across the end (the saw cut is never quite flat)
+    if (e >= rimW + innerW) c = mul(c, 1.03 - 0.06 * ((x + y) / (2 * W)));
+    // white oak: ray flecks out from the pith, broken
+    if (!pine) for (const ray of rays) {
+      const off = Math.abs(Math.atan2(Math.sin(a - ray.a), Math.cos(a - ray.a))) * d;
+      if (d > ray.from && d < ray.to && off < 0.5) c = mix(c, p.ray, 0.55);
+    }
+    // radial drying checks from the pith
+    for (const ch of checks) {
+      const aa = ch.a + ch.bend * d;
+      const off = Math.abs(Math.atan2(Math.sin(a - aa), Math.cos(a - aa))) * d;
+      if (d > 1.4 && d < ch.len && off < 0.55) c = p.check;
+    }
+    // white pine: resin beads in the sapwood
+    for (const [rx, ry] of resin) {
+      const q = Math.hypot(x + 0.5 - rx, y + 0.5 - ry);
+      if (q < 1.15) c = q < 0.6 ? p.resinHi : p.resin;
+    }
+    put(img, x, y, c);
+  }
+  return img;
+}
+
 // --------------------------------------------------------------------------------------------------- cut wood
 
 /**
@@ -136,43 +197,6 @@ function outline(img) {
     if (lowerRight) out.push([x, y, 0.58]); else if (upperLeft) out.push([x, y, 0.78]);
   }
   for (const [x, y, k] of out) put(img, x, y, mul(getc(img, x, y), k));
-}
-
-/** A short log lying from its cut end (lower left, facing us) to the upper right, bark lit from the upper left. */
-export function logIcon(p, pine) {
-  const img = canvas(16, 16);
-  const ax = 4.1, ay = 11.9, ux = Math.SQRT1_2, uy = -Math.SQRT1_2, sx = Math.SQRT1_2, sy = Math.SQRT1_2;
-  const R = 3.3, L = 10.4, k = 0.62;
-  const cells = [];
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const wx = x + 0.5 - ax, wy = y + 0.5 - ay, t = wx * ux + wy * uy, s = wx * sx + wy * sy;
-    const face = (t / (k * R)) ** 2 + (s / R) ** 2 <= 1;
-    const body = (t >= 0 && t <= L && Math.abs(s) <= R) || ((t - L) / (k * R)) ** 2 + (s / R) ** 2 <= 1;
-    if (face) cells.push([x, y, 'face', t, s]); else if (body) cells.push([x, y, 'bark', t, s]);
-  }
-  for (const [x, y, kind, t, s] of cells) {
-    let c;
-    if (kind === 'bark') {
-      c = s < -1.7 ? p.barkLight : s < 1.1 ? p.bark1 : p.bark3;
-      if (pine) {
-        // deep furrows between long ridges, a warm cast in the furrow walls
-        for (const f of [-1.8, 0.1, 1.9]) if (Math.abs(s - f - 0.3 * Math.sin(t * 0.8 + f)) < 0.5) c = s > 1 ? p.deep : p.crack;
-        if (Math.abs(s - 1.0) < 0.45 && ((t * 1.7) % 3) < 1.2) c = p.rust;
-      } else {
-        // white oak: light blocky plates, alternating a little in tone, shallow fissures and short breaks across
-        if (s > -1.7 && s < 1.1 && Math.floor((t + (s > -0.3 ? 1.4 : 0)) / 2.8) % 2 === 0) c = p.bark2;
-        for (const f of [-1.9, -0.3, 1.3]) if (Math.abs(s - f - 0.25 * Math.sin(t * 1.1 + f)) < 0.36) c = s > 1 ? p.deep : p.crack;
-        if (((t + (s > -0.3 ? 1.4 : 0)) % 2.8) < 0.4 && s > -1.9 && s < 1.3) c = p.crack;
-      }
-    } else {
-      const e = Math.hypot(t / (k * R), s / R);
-      c = e > 0.84 ? p.rim : e > 0.74 ? p.inner : e > (pine ? 0.46 : 0.6) ? p.sap : e < 0.17 ? p.pith : ((e * (pine ? 3.4 : 4.6)) % 1) < 0.35 ? p.late : p.heart;
-      if (pine && e > 0.5 && e < 0.7 && s < -0.8 && t < 0) c = p.resin;
-    }
-    put(img, x, y, c);
-  }
-  outline(img);
-  return img;
 }
 
 /** Fills discs along a polyline (thickness tapering from r0 to r1 pixels radius). */

@@ -12,8 +12,10 @@
 // Mesh Trees P2.1 (docs/rendering/mesh_trees_p2_felling.md, U), formal felling assets from felling-art.mjs:
 //   white_oak_cut.png / white_pine_cut.png              32 x 32 fresh cut wood (the notch faces)
 //   white_oak_end_grain.png / white_pine_end_grain.png  32 x 32 rings, sapwood, bark rim (stump top, falling log cut)
-//   ../item/<wood>_log, _branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
+//   ../item/<wood>_branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
 //   LabPBR _n / _s for both barks, cut wood and end grain (leaves: none, the shader pack's leaf handling stays)
+// Mesh Trees P2.2 (mesh_trees_p2_felling.md, V): the log blocks' ends (the logs' 2D item icons are gone, they are blocks)
+//   white_oak_log_end.png / white_pine_log_end.png      32 x 32 rounded-square end with bark rim, rings; LabPBR _n / _s
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -257,8 +259,9 @@ const outputs = {
   'white_pine_cut.png': art.cutWood(art.PINE, true, 4302),
   'white_oak_end_grain.png': art.endGrain(art.OAK, false, 4303),
   'white_pine_end_grain.png': art.endGrain(art.PINE, true, 4304),
-  '../item/white_oak_log.png': art.logIcon(art.OAK, false),
-  '../item/white_pine_log.png': art.logIcon(art.PINE, true),
+  // P2.2 log block ends
+  'white_oak_log_end.png': art.logEnd(art.OAK, false, 4305),
+  'white_pine_log_end.png': art.logEnd(art.PINE, true, 4306),
   '../item/white_oak_branch.png': art.branchIcon(art.OAK, false),
   '../item/white_pine_branch.png': art.branchIcon(art.PINE, true),
   '../item/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
@@ -271,7 +274,7 @@ Object.assign(outputs, {
   'white_pine_bark_n.png': art.normalMap(whitePineBark, 1.0, true, 50),
   'white_pine_bark_s.png': art.specularMap(whitePineBark, 14, 36, 40, true),
 });
-for (const name of ['white_oak_cut', 'white_pine_cut', 'white_oak_end_grain', 'white_pine_end_grain']) {
+for (const name of ['white_oak_cut', 'white_pine_cut', 'white_oak_end_grain', 'white_pine_end_grain', 'white_oak_log_end', 'white_pine_log_end']) {
   const base = outputs[name + '.png'], cut = name.endsWith('_cut');
   outputs[name + '_n.png'] = art.normalMap(base, cut ? 0.6 : 0.5, false, cut ? 25 : 20);
   outputs[name + '_s.png'] = art.specularMap(base, cut ? 50 : 40, cut ? 80 : 70, 50, false);

@@ -233,6 +233,11 @@ final class TreeCellModel implements IDynamicBakedModel {
 
     /** A sample quad as chunk quads relative to its cell (front, and back for a card). Layout: DefaultVertexFormat.BLOCK. */
     static void bake(TreeShape.Quad q, int ox, int oy, int oz, TextureAtlasSprite sprite, int shade, List<BakedQuad> out) {
+        bake(q, ox, oy, oz, sprite, shade, 0, out);
+    }
+
+    /** The same with a baked light (packed like LightTexture.pack; the renderer keeps the brighter of it and its own per channel). */
+    static void bake(TreeShape.Quad q, int ox, int oy, int oz, TextureAtlasSprite sprite, int shade, int lightmap, List<BakedQuad> out) {
         boolean leaf = q.kind == TreeShape.FOLIAGE;
         float u0 = sprite.getU0(), du = sprite.getU1() - u0, v0 = sprite.getV0(), dv = sprite.getV1() - v0;
         for (int side = 0; side < (q.twoSided ? 2 : 1); side++) {
@@ -253,7 +258,7 @@ final class TreeCellModel implements IDynamicBakedModel {
                 data[o + 3] = 0xFF000000 | g << 16 | g << 8 | g;               // ABGR
                 data[o + 4] = Float.floatToRawIntBits(u0 + du * q.uv[c * 2]);
                 data[o + 5] = Float.floatToRawIntBits(v0 + dv * q.uv[c * 2 + 1]);
-                data[o + 6] = 0;                                                // lightmap: the chunk renderer's
+                data[o + 6] = lightmap;                                         // 0: the chunk renderer's light only
                 data[o + 7] = (((byte) (nx * 127)) & 0xFF) | (((byte) (ny * 127)) & 0xFF) << 8 | (((byte) (nz * 127)) & 0xFF) << 16;
             }
             out.add(new BakedQuad(data, leaf ? Math.max(0, q.tint) : -1, Direction.getNearest(fx, fy, fz), sprite, shade == 0, false));
