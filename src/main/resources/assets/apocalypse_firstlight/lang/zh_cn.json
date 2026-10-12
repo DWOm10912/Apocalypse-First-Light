@@ -618,6 +618,18 @@
   "jade.apocalypse_firstlight.portable_diesel_generator.tripped": "断路器跳闸",
   "jade.apocalypse_firstlight.portable_diesel_generator.load": "负载 %s / %s FE/t",
   "jade.apocalypse_firstlight.portable_diesel_generator.fuel": "柴油 %s / %s L",
+  "jade.apocalypse_firstlight.tree.trunk.white_oak": "白栎树干",
+  "jade.apocalypse_firstlight.tree.trunk.white_pine": "白松树干",
+  "jade.apocalypse_firstlight.tree.trunk.red_oak": "北方红栎树干",
+  "jade.apocalypse_firstlight.tree.trunk.shagbark_hickory": "裂皮山核桃树干",
+  "jade.apocalypse_firstlight.tree.trunk.red_maple": "红枫树干",
+  "jade.apocalypse_firstlight.tree.trunk.eastern_hemlock": "加拿大铁杉树干",
+  "jade.apocalypse_firstlight.tree.stump.white_oak": "白栎树桩",
+  "jade.apocalypse_firstlight.tree.stump.white_pine": "白松树桩",
+  "jade.apocalypse_firstlight.tree.stump.red_oak": "北方红栎树桩",
+  "jade.apocalypse_firstlight.tree.stump.shagbark_hickory": "裂皮山核桃树桩",
+  "jade.apocalypse_firstlight.tree.stump.red_maple": "红枫树桩",
+  "jade.apocalypse_firstlight.tree.stump.eastern_hemlock": "加拿大铁杉树桩",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "主手为空。",
   "command.apocalypse_firstlight.contamination.get": "物品：%1$s | 污染等级：%2$s（%3$s）",
@@ -653,6 +665,7 @@
   "config.jade.plugin_apocalypse_firstlight.diesel_generator": "AFL 柴油发电机组",
   "config.jade.plugin_apocalypse_firstlight.portable_diesel_generator": "AFL 便携式发电机",
   "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL 应急灯",
+  "config.jade.plugin_apocalypse_firstlight.tree": "AFL 树种",
 
   "curios.identifier.ears": "耳部",
 

@@ -7,7 +7,10 @@ import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -156,6 +159,38 @@ public final class TerrainSmoothClient {
             c.region = null;
             c.level = null;
         }
+    }
+
+    /** per side N, S, W, E of SmoothSurfaceModel: the neighbour's direction and the corner indices at the band's ends a, b */
+    private static final Direction[] SIDE_DIRS = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+    private static final int[][] SIDE_CORNERS = {{1, 0}, {2, 3}, {0, 2}, {3, 1}};
+
+    /**
+     * The sides of a sloped block whose part below the band SmoothSurfaceModel must draw itself (bits 0-3, N S W E), with
+     * the light it bakes into that part (bits 4-11: sky << 4 | block, of the cell above the top), 0 for none (nearly every
+     * block). docs/worldgen/terrain_smooth_v1.md S: below its band a side is left to the neighbour cell at the block's level
+     * whenever the rules count that cell solid. Mesh trunks, roots, stumps, the AFL logs, glass, slabs, torches... are
+     * solid for the rules but hide nothing (no full occlusion shape), so that part was drawn by nobody: a see-through
+     * window. The light: such a neighbour may block light itself (the AFL logs do), and the flat path lights a culled face
+     * from the neighbour cell; the baked light is merged by maximum (Forge and Embeddium), so the part is never darker
+     * than the slope's own top.
+     */
+    static int underSides(BlockAndTintGetter region, BlockPos pos, long g) {
+        float[] c = SmoothRules.corners(g);
+        int mask = 0;
+        BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+        for (int s = 0; s < 4; s++) {
+            float la = Math.min(Math.min((g >>> (16 + 8 * s) & 15) / 4F, c[SIDE_CORNERS[s][0]]), 1);
+            float lb = Math.min(Math.min((g >>> (20 + 8 * s) & 15) / 4F, c[SIDE_CORNERS[s][1]]), 1);
+            if (la <= 1e-4F && lb <= 1e-4F) continue;   // the whole side is a band
+            n.setWithOffset(pos, SIDE_DIRS[s]);
+            BlockState neighbour = region.getBlockState(n);
+            int k = TerrainSmooth.cell(neighbour);
+            if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
+        }
+        if (mask == 0) return 0;
+        int light = LevelRenderer.getLightColor(region, pos.above());
+        return mask | (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 4;
     }
 
     /** Geometry of a plant's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */

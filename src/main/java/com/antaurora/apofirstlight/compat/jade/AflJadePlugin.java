@@ -107,6 +107,11 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(PriceSignJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.PriceSignBlock.class);
         registration.registerBlockComponent(DieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.DieselGeneratorBlock.class);
         registration.registerBlockComponent(PortableDieselGeneratorJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.PortableDieselGeneratorBlock.class);
+        for (Class<? extends net.minecraft.world.level.block.Block> trunk : java.util.List.of(com.antaurora.apofirstlight.tree.TreeBlocks.Root.class,
+                com.antaurora.apofirstlight.tree.TreeBlocks.Wood.class, com.antaurora.apofirstlight.tree.TreeBlocks.Stump.class)) {
+            registration.registerBlockComponent(TreeSpeciesJadeProvider.INSTANCE, trunk);
+            registration.registerBlockIcon(TreeSpeciesJadeProvider.INSTANCE, trunk);
+        }
         PriceSignJadeProvider.registerRedirect(registration);
         PavementMarkingJadeRedirect.register(registration);
     }

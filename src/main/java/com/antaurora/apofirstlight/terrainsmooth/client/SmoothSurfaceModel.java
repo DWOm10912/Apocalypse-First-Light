@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.terrainsmooth.client;
 
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -28,7 +29,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>the top: one quad per vanilla top layer (grass top, snowy top...) through the four corner heights, texture
  *   projected from above like the vanilla top, in the UP list (lit from the cell above, culled by a block placed on it);</li>
  *   <li>each side: only the band between the neighbour's surface and this top, with the vanilla side layers (grass side
- *   and its tinted overlay) mapped down from the band's top edge, so the grass fringe follows the slope;</li>
+ *   and its tinted overlay) mapped down from the band's top edge, so the grass fringe follows the slope; below the band
+ *   the neighbour cell is counted on, and where that cell hides nothing (a mesh trunk, a log, glass, a slab...;
+ *   TerrainSmoothClient#underSides) the part below the band too, culled like a vanilla face (2026-10-12);</li>
  *   <li>the bottom: the vanilla one.</li>
  * </ul>
  * Lighting: vanilla smooth lighting (and Forge's per-quad flat path inside it) samples a quad that is not flush with its
@@ -41,6 +44,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Long> GEOMETRY = new ModelProperty<>();
+    /** TerrainSmoothClient#underSides: sides whose part below the band this model draws itself, and that part's light */
+    static final ModelProperty<Integer> UNDER = new ModelProperty<>();
     private static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
     /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them */
     private static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
@@ -55,7 +60,10 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state, @NotNull ModelData data) {
         ModelData base = super.getModelData(level, pos, state, data);
         long g = TerrainSmoothClient.renderGeometry(level, pos, state);   // every ground block of every chunk passes here
-        return g < 0 ? base : base.derive().with(GEOMETRY, g).build();
+        if (g < 0) return base;
+        int under = TerrainSmoothClient.underSides(level, pos, g);
+        var sloped = base.derive().with(GEOMETRY, g);
+        return (under == 0 ? sloped : sloped.with(UNDER, under)).build();
     }
 
     @Override
@@ -70,14 +78,17 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         Long g = data.get(GEOMETRY);
         if (g == null || state == null) return super.getQuads(state, side, random, data, renderType);
         int layer = renderType == null ? 0 : RenderType.chunkBufferLayers().indexOf(renderType) + 1;
-        long key = g | (long) layer << 48 | (TerrainSmoothClient.shaderPack ? 1L << 56 : 0);
+        Integer u = data.get(UNDER);
+        int under = u == null ? 0 : u;
+        // g: bits 0-47; layer 48-50 (five chunk layers); shader pack 51; under (sides and light, 12 bits) 52-63
+        long key = g | (long) (layer & 7) << 48 | (TerrainSmoothClient.shaderPack ? 1L << 51 : 0) | (long) under << 52;
         if (cache.size() > 32768) cache.clear();   // distinct slopes are far fewer; bound it anyway
-        List<BakedQuad>[] quads = cache.computeIfAbsent(key, k -> build(state, g, renderType));
+        List<BakedQuad>[] quads = cache.computeIfAbsent(key, k -> build(state, g, under, renderType));
         return quads[side == null ? 6 : side.ordinal()];
     }
 
     @SuppressWarnings("unchecked")
-    private List<BakedQuad>[] build(BlockState state, long g, @Nullable RenderType renderType) {
+    private List<BakedQuad>[] build(BlockState state, long g, int under, @Nullable RenderType renderType) {
         long begin = System.nanoTime();
         List<BakedQuad>[] out = new List[7];
         for (int i = 0; i < 7; i++) out[i] = List.of();
@@ -89,23 +100,35 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         int color = TerrainSmoothClient.shaderPack ? -1 : gray(tiltShade(top));
         List<BakedQuad> tops = new ArrayList<>();
         for (BakedQuad o : originalModel.getQuads(state, Direction.UP, random, ModelData.EMPTY, renderType))
-            tops.add(quad(top, topUv, o.getSprite(), o.getTintIndex(), Direction.UP, color));
+            tops.add(quad(top, topUv, o.getSprite(), o.getTintIndex(), Direction.UP, color, 0));
         out[Direction.UP.ordinal()] = List.copyOf(tops);
-        // side bands
+        // side bands, and where a neighbour that hides nothing was counted on for the part below a band, that part too
+        int underLight = LightTexture.pack(under >> 4 & 15, under >> 8 & 15);
         for (int s = 0; s < 4; s++) {
             float la = (g >>> (16 + 8 * s) & 15) / 4F, lb = (g >>> (20 + 8 * s) & 15) / 4F;
             float ua = c[SIDE_CORNERS[s][0]], ub = c[SIDE_CORNERS[s][1]];
-            if (ua <= la + 1e-4F && ub <= lb + 1e-4F) continue;
+            boolean hasBand = ua > la + 1e-4F || ub > lb + 1e-4F, hasUnder = (under >> s & 1) != 0;
+            if (!hasBand && !hasUnder) continue;
             la = Math.min(la, ua);
             lb = Math.min(lb, ub);
             float[] a = SIDE_A[s], b = SIDE_B[s];
-            float[][] p = {{a[0], la, a[1]}, {b[0], lb, b[1]}, {b[0], ub, b[1]}, {a[0], ua, a[1]}};
-            // v measured down from the band's top edge: the side texture's top rows (the grass fringe) follow the slope
-            float[][] uv = {{0, Math.min(1, ua - la)}, {1, Math.min(1, ub - lb)}, {1, 0}, {0, 0}};
-            List<BakedQuad> band = new ArrayList<>();
-            for (BakedQuad o : originalModel.getQuads(state, SIDES[s], random, ModelData.EMPTY, renderType))
-                band.add(quad(p, uv, o.getSprite(), o.getTintIndex(), SIDES[s], -1));
-            out[SIDES[s].ordinal()] = List.copyOf(band);
+            List<BakedQuad> side = new ArrayList<>();
+            List<BakedQuad> layers = originalModel.getQuads(state, SIDES[s], random, ModelData.EMPTY, renderType);
+            if (hasBand) {
+                float[][] p = {{a[0], la, a[1]}, {b[0], lb, b[1]}, {b[0], ub, b[1]}, {a[0], ua, a[1]}};
+                // v measured down from the band's top edge: the side texture's top rows (the grass fringe) follow the slope
+                float[][] uv = {{0, Math.min(1, ua - la)}, {1, Math.min(1, ub - lb)}, {1, 0}, {0, 0}};
+                for (BakedQuad o : layers) side.add(quad(p, uv, o.getSprite(), o.getTintIndex(), SIDES[s], -1, 0));
+            }
+            if (hasUnder) {
+                // from the floor to the band (within this cell), the texture continuing the band's; in the culled list, so a
+                // neighbour that does hide it (a full block placed there later) still culls it like a vanilla face
+                float ta = Math.min(la, 1), tb = Math.min(lb, 1);
+                float[][] p = {{a[0], 0, a[1]}, {b[0], 0, b[1]}, {b[0], tb, b[1]}, {a[0], ta, a[1]}};
+                float[][] uv = {{0, Math.min(1, ua)}, {1, Math.min(1, ub)}, {1, Math.min(1, ub - tb)}, {0, Math.min(1, ua - ta)}};
+                for (BakedQuad o : layers) side.add(quad(p, uv, o.getSprite(), o.getTintIndex(), SIDES[s], -1, underLight));
+            }
+            out[SIDES[s].ordinal()] = List.copyOf(side);
         }
         out[Direction.DOWN.ordinal()] = originalModel.getQuads(state, Direction.DOWN, random, ModelData.EMPTY, renderType);
         TerrainSmoothClient.quadBuilds.increment();
@@ -138,7 +161,8 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         return new float[]{n[0] / l, n[1] / l, n[2] / l};
     }
 
-    private static BakedQuad quad(float[][] p, float[][] uv, TextureAtlasSprite sprite, int tint, Direction dir, int color) {
+    /** light: baked lightmap (LightTexture#pack), merged with the computed one by maximum; 0 for none */
+    private static BakedQuad quad(float[][] p, float[][] uv, TextureAtlasSprite sprite, int tint, Direction dir, int color, int light) {
         float[] n = normal(p, dir);
         int packed = (((byte) (n[0] * 127)) & 0xFF) | ((((byte) (n[1] * 127)) & 0xFF) << 8) | ((((byte) (n[2] * 127)) & 0xFF) << 16);
         int[] data = new int[32];
@@ -150,7 +174,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
             data[o + 3] = color;
             data[o + 4] = Float.floatToRawIntBits(sprite.getU(uv[i][0] * 16));
             data[o + 5] = Float.floatToRawIntBits(sprite.getV(uv[i][1] * 16));
-            data[o + 6] = 0;
+            data[o + 6] = light;
             data[o + 7] = packed;
         }
         return new BakedQuad(data, tint, dir, sprite, true, true);

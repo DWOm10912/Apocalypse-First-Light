@@ -618,6 +618,18 @@
   "jade.apocalypse_firstlight.portable_diesel_generator.tripped": "Breaker tripped",
   "jade.apocalypse_firstlight.portable_diesel_generator.load": "Load %s / %s FE/t",
   "jade.apocalypse_firstlight.portable_diesel_generator.fuel": "Diesel %s / %s L",
+  "jade.apocalypse_firstlight.tree.trunk.white_oak": "White Oak Trunk",
+  "jade.apocalypse_firstlight.tree.trunk.white_pine": "White Pine Trunk",
+  "jade.apocalypse_firstlight.tree.trunk.red_oak": "Red Oak Trunk",
+  "jade.apocalypse_firstlight.tree.trunk.shagbark_hickory": "Shagbark Hickory Trunk",
+  "jade.apocalypse_firstlight.tree.trunk.red_maple": "Red Maple Trunk",
+  "jade.apocalypse_firstlight.tree.trunk.eastern_hemlock": "Eastern Hemlock Trunk",
+  "jade.apocalypse_firstlight.tree.stump.white_oak": "White Oak Stump",
+  "jade.apocalypse_firstlight.tree.stump.white_pine": "White Pine Stump",
+  "jade.apocalypse_firstlight.tree.stump.red_oak": "Red Oak Stump",
+  "jade.apocalypse_firstlight.tree.stump.shagbark_hickory": "Shagbark Hickory Stump",
+  "jade.apocalypse_firstlight.tree.stump.red_maple": "Red Maple Stump",
+  "jade.apocalypse_firstlight.tree.stump.eastern_hemlock": "Eastern Hemlock Stump",
 
   "command.apocalypse_firstlight.contamination.empty_hand": "The main hand is empty.",
   "command.apocalypse_firstlight.contamination.get": "Item: %1$s | Contamination Level: %2$s (%3$s)",
@@ -653,6 +665,7 @@
   "config.jade.plugin_apocalypse_firstlight.diesel_generator": "AFL Diesel Generator",
   "config.jade.plugin_apocalypse_firstlight.portable_diesel_generator": "AFL Portable Generator",
   "config.jade.plugin_apocalypse_firstlight.emergency_light": "AFL Emergency Light",
+  "config.jade.plugin_apocalypse_firstlight.tree": "AFL Tree Species",
 
   "curios.identifier.ears": "Ears",
 

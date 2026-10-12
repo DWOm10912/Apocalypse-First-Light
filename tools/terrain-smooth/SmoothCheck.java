@@ -94,6 +94,7 @@ final class SmoothCheck {
         crowns();
         roofs();
         explosions();
+        seeThroughNeighbours();
         offAndUnknown();
         bench();
         System.out.println(failures == 0 ? "TERRAIN SMOOTH CHECK OK" : "TERRAIN SMOOTH CHECK FAILED: " + failures);
@@ -394,7 +395,13 @@ final class SmoothCheck {
         final int x0, y0, z0, w, h;
         final byte[] c;
 
-        Grid(int x0, int y0, int z0, int w, int h) { this.x0 = x0; this.y0 = y0; this.z0 = z0; this.w = w; this.h = h; c = new byte[w * w * h]; }
+        /** solid for the rules but hiding nothing behind it in the renderer (mesh trunks, logs, glass, slabs, torches...) */
+        final boolean[] see;
+
+        Grid(int x0, int y0, int z0, int w, int h) { this.x0 = x0; this.y0 = y0; this.z0 = z0; this.w = w; this.h = h; c = new byte[w * w * h]; see = new boolean[c.length]; }
+
+        /** the cell hides a neighbour's face toward it (vanilla / Embeddium culling: a full opaque block) */
+        boolean hides(int x, int y, int z) { int k = i(x, y, z); return solid(x, y, z) && (k < 0 || !see[k]); }
 
         int i(int x, int y, int z) { int a = x - x0, b = y - y0, d = z - z0; return a < 0 || d < 0 || a >= w || d >= w ? -1 : b < 0 ? -2 : b >= h ? -3 : (d * w + a) * h + b; }
 
@@ -549,6 +556,117 @@ final class SmoothCheck {
     }
 
     static int failuresShown;
+
+    /** neighbour kinds of seeThroughNeighbours */
+    static final String[] KINDS = {"mesh trunk / root", "stump", "lying log", "glass, slab, torch...", "full block (control)"};
+
+    /**
+     * 2026-10-12 (docs/worldgen/terrain_smooth_v1.md S): see-through windows beside tree roots, lying logs and blocks placed on
+     * slopes. Rolling ground with what stands on it at the first open level: mesh trees (root plus trunk), stumps, logs lying
+     * three long, see-through blocks, and full blocks as the control. A sloped block's side below its band is left to the
+     * neighbour cell at its level when the rules count that cell solid; the renderer culls a face only against a block that
+     * hides it. Counted per side: the part left to a neighbour that hides nothing, before the fix (nothing drawn there) and
+     * after it (SmoothSurfaceModel draws that part itself as a face culled like vanilla's, see #underSides).
+     */
+    static void seeThroughNeighbours() {
+        int[] before = new int[KINDS.length], after = new int[KINDS.length];
+        int scenes = 0, sloped = 0, seams = 0, plainUnder = 0;
+        for (int seed = 0; seed < 40; seed++) {
+            Random r = new Random(5000 + seed);
+            Grid g = new Grid(-24, 40, -24, 48, 48);
+            byte[][] kind = new byte[g.w][g.w];
+            int[][] top = new int[g.w][g.w];
+            for (int z = g.z0; z < g.z0 + g.w; z++) for (int x = g.x0; x < g.x0 + g.w; x++) {
+                int t = 64 + (int) Math.round(2.5 * Math.sin(x / 5.0 + seed) + 1.8 * Math.cos(z / 4.0 + seed * 0.7));
+                top[x - g.x0][z - g.z0] = t;
+                for (int y = g.y0; y < t; y++) g.c[g.i(x, y, z)] = SmoothRules.NATURAL;
+                if (r.nextInt(6) == 0) g.c[g.i(x, t, z)] = SmoothRules.COVER;
+            }
+            // the plain ground first: the fix must add nothing there
+            for (int z = g.z0 + 1; z < g.z0 + g.w - 1; z++) for (int x = g.x0 + 1; x < g.x0 + g.w - 1; x++) {
+                int y = top[x - g.x0][z - g.z0] - 1;
+                long geo = SmoothRules.geometry(g, SmoothRules.MODE_B, x, y, z);
+                if (geo >= 0) plainUnder += Integer.bitCount(underSides(g, x, y, z, geo) & 15);
+            }
+            for (int z = g.z0 + 2; z < g.z0 + g.w - 2; z++) for (int x = g.x0 + 2; x < g.x0 + g.w - 2; x++) {
+                int t = top[x - g.x0][z - g.z0], roll = r.nextInt(100);
+                if (g.cell(x, t, z) != SmoothRules.AIR && g.cell(x, t, z) != SmoothRules.COVER) continue;
+                if (roll < 3) {                                           // a mesh tree: root on the first open level, trunk above
+                    for (int y = t; y < t + 6; y++) put(g, kind, x, y, z, SmoothRules.TREE, 1);
+                } else if (roll < 4) {
+                    put(g, kind, x, t, z, SmoothRules.TREE, 2);
+                } else if (roll < 5) {                                    // a log lying along x or z where the ground lets it
+                    boolean alongX = r.nextBoolean();
+                    for (int k = 0; k < 3; k++) {
+                        int lx = alongX ? x + k : x, lz = alongX ? z : z + k;
+                        int c = g.cell(lx, t, lz);
+                        if (c == SmoothRules.AIR || c == SmoothRules.COVER) put(g, kind, lx, t, lz, SmoothRules.TREE, 3);
+                    }
+                } else if (roll < 7) {
+                    put(g, kind, x, t, z, SmoothRules.OTHER, 4);
+                } else if (roll < 9) {
+                    put(g, kind, x, t, z, SmoothRules.OTHER, 5);
+                }
+            }
+            scenes++;
+            seams += seams(g);
+            for (int z = g.z0 + 1; z < g.z0 + g.w - 1; z++) for (int x = g.x0 + 1; x < g.x0 + g.w - 1; x++) for (int y = g.y0; y < g.y0 + g.h - 1; y++) {
+                if (g.cell(x, y, z) != SmoothRules.NATURAL) continue;
+                long geo = SmoothRules.geometry(g, SmoothRules.MODE_B, x, y, z);
+                if (geo < 0) continue;
+                sloped++;
+                int drawn = underSides(g, x, y, z, geo);
+                for (int s = 0; s < 4; s++) {
+                    int nx = x + SIDES[s][0], nz = z + SIDES[s][1];
+                    if (!leftToNeighbour(geo, s) || !g.solid(nx, y, nz) || g.hides(nx, y, nz)) continue;
+                    int k = kind[nx - g.x0][nz - g.z0] - 1;
+                    if (k < 0) k = 3;
+                    before[k]++;
+                    if ((drawn >> s & 1) == 0) after[k]++;
+                }
+            }
+        }
+        int b = 0, a = 0;
+        for (int k = 0; k < KINDS.length; k++) {
+            b += before[k];
+            a += after[k];
+            System.out.printf(Locale.ROOT, "  beside %-22s %4d see-through sides before, %d after%n", KINDS[k] + ":", before[k], after[k]);
+        }
+        require(before[4] == 0, "see-through neighbours: a full block hides the side it is counted on for");
+        require(a == 0, "see-through neighbours: every side part left to a neighbour that hides nothing is drawn (" + a + " not)");
+        require(plainUnder == 0, "see-through neighbours: plain ground gets no extra side parts (" + plainUnder + ")");
+        require(seams == 0, "see-through neighbours: no lowered top beside a culled face (" + seams + " seams)");
+        System.out.printf(Locale.ROOT, "see-through neighbours: %d scenes, %d sloped blocks, %d see-through sides before the fix, %d after; plain ground: %d extra parts; %d seams%n",
+                scenes, sloped, b, a, plainUnder, seams);
+    }
+
+    static void put(Grid g, byte[][] kind, int x, int y, int z, int cell, int k) {
+        int i = g.i(x, y, z);
+        if (i < 0) return;
+        g.c[i] = (byte) cell;
+        g.see[i] = k != 5;
+        kind[x - g.x0][z - g.z0] = (byte) k;
+    }
+
+    /** Side s of a sloped block has a part below its band, within its own cell, left to the neighbour (SmoothSurfaceModel). */
+    static boolean leftToNeighbour(long geo, int s) {
+        float[] c = SmoothRules.corners(geo);
+        float la = (geo >>> (16 + 8 * s) & 15) / 4F, lb = (geo >>> (20 + 8 * s) & 15) / 4F;
+        return Math.min(Math.min(la, c[SIDES[s][2]]), 1) > 1e-6 || Math.min(Math.min(lb, c[SIDES[s][3]]), 1) > 1e-6;
+    }
+
+    /**
+     * The fix, as TerrainSmoothClient#underSides decides it: the sides whose part below the band SmoothSurfaceModel draws
+     * itself (bit s), those whose neighbour cell at this level the rules count solid while it hides nothing.
+     */
+    static int underSides(Grid g, int x, int y, int z, long geo) {
+        int mask = 0;
+        for (int s = 0; s < 4; s++) {
+            int nx = x + SIDES[s][0], nz = z + SIDES[s][1];
+            if (leftToNeighbour(geo, s) && g.solid(nx, y, nz) && !g.hides(nx, y, nz)) mask |= 1 << s;
+        }
+        return mask;
+    }
 
     static long section(int x, int y, int z) { return ((long) x & 0xFFFFF) << 40 | ((long) y & 0xFFFFF) << 20 | ((long) z & 0xFFFFF); }
 

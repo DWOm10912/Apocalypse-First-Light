@@ -114,7 +114,15 @@ const P3 = SPECIES.slice(2);
     for (const [id, leaves] of SPECIES) for (const i of [`${id}_branch`, leaves]) require(typeof l[`item.apocalypse_firstlight.${i}`] === 'string', `${lang}: item ${i}`);
     for (const k of ['entity.apocalypse_firstlight.falling_tree', 'message.apocalypse_firstlight.felling.need_axe', 'message.apocalypse_firstlight.felling.not_loaded',
       'message.apocalypse_firstlight.felling.no_fall']) require(typeof l[k] === 'string', `${lang}: ${k}`);
+    // Jade (P4 U2): the trunk cells are one block for all species, so the species' trunk / stump names come from the provider
+    for (const [id] of SPECIES) for (const k of ['trunk', 'stump'])
+      require(typeof l[`jade.apocalypse_firstlight.tree.${k}.${id}`] === 'string', `${lang}: Jade ${k} name of ${id}`);
+    require(typeof l['config.jade.plugin_apocalypse_firstlight.tree'] === 'string', `${lang}: Jade config name of the tree provider`);
   }
+  const jade = read('src/main/java/com/antaurora/apofirstlight/compat/jade/AflJadePlugin.java');
+  require(/TreeBlocks\.Root\.class/.test(jade) && /TreeBlocks\.Wood\.class/.test(jade) && /TreeBlocks\.Stump\.class/.test(jade)
+    && /registerBlockComponent\(TreeSpeciesJadeProvider\.INSTANCE/.test(jade) && /registerBlockIcon\(TreeSpeciesJadeProvider\.INSTANCE/.test(jade),
+    'Jade names the species on root, wood and stump (name and icon)');
   const leftovers = walk(path.join(ROOT, 'src/dev/highway_mesh_resources')).map(f => path.relative(ROOT, f).replace(/\\/g, '/'))
     .filter(f => /afl_tree_demo|tree_|_foliage|_canopy|mesh_forest|tags\/blocks\/(logs|leaves)|_log\.json|_branch|_leaves|_needles/.test(f));
   require(leftovers.length === 0, `no tree resource left in the dev resources (${leftovers.slice(0, 3)})`);
