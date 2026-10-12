@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    {"id": "apocalypse_firstlight:dev_tree_root", "required": false},
+    {"id": "apocalypse_firstlight:dev_tree_wood", "required": false}
+  ]
+}

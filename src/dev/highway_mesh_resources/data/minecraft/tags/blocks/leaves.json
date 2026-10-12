@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {"id": "apocalypse_firstlight:dev_tree_foliage", "required": false},
+    {"id": "apocalypse_firstlight:dev_tree_canopy", "required": false},
+    {"id": "apocalypse_firstlight:dev_white_pine_foliage", "required": false},
+    {"id": "apocalypse_firstlight:dev_white_pine_canopy", "required": false}
+  ]
+}

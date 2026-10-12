@@ -364,6 +364,22 @@ tasks.named('jar', Jar).configure {
     exclude 'assets/afl_highway_demo/**'
     exclude 'assets/apocalypse_firstlight/blockstates/dev_highway_surface.json'
     exclude 'assets/apocalypse_firstlight/models/block/dev_highway_surface.json'
+    // Mesh Trees sample (docs/rendering/mesh_trees_p0a.md, mesh_trees_p0b.md): development only
+    exclude 'assets/afl_tree_demo/**'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_tree_root.json'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_tree_wood.json'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_tree_foliage.json'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_tree_canopy.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_tree_root.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_tree_wood.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_tree_foliage.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_tree_canopy.json'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_white_pine_foliage.json'
+    exclude 'assets/apocalypse_firstlight/blockstates/dev_white_pine_canopy.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_white_pine_foliage.json'
+    exclude 'assets/apocalypse_firstlight/models/block/dev_white_pine_canopy.json'
+    exclude 'data/minecraft/tags/blocks/logs.json'
+    exclude 'data/minecraft/tags/blocks/leaves.json'
     exclude '.gitattributes'
 
     manifest {
