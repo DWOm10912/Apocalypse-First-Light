@@ -9,6 +9,7 @@
 ### Git 与集成状态
 
 - 主目录在 `vextris-migration` 分支：Vextris 迁移（`afa0f2e8`）和 alpha.1 依赖升级（`bd859a6d`）**已提交，未合并进 `master`**。`master` 停在 `678d70fa`，还没有 Vextris。
+  - 2026-10-11 更新：`vextris-migration` 已快进合并进 `master`（`860f6fbb`，已推送），包括本样板；此后在 `master` 上开发。
 - 用户 2026-10-10 要求直接在主目录开发，不开新分支。样板就在主目录的当前分支上开发，**未提交**。合并进 `master` 由用户决定。
 - Codex 的工作树还在（`C:\Users\willi\.codex\worktrees\`：M1-A、M1-B、M2-A、M2-B），只读参考。M2-A / M2-B **从未合并**。
 

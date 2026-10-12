@@ -128,6 +128,7 @@ public final class FellCheck {
             }
             require(caps >= 6, id + ": the stump has a cap (" + caps + " fan triangles)");
             require(closed(stump, TreeCut.END_SPRITE + sp.ordinal()), id + ": the stump cap is one closed ring");
+            for (var q : stump) for (int c = 0; c < 8; c++) require(q.uv[c] >= -1e-4F && q.uv[c] <= 1 + 1e-4F, id + ": stump UV inside the sprite");
             stumps++;
             // falling tree, every level: no trunk below the cut, a cap under it
             for (int level = 0; level < TreeShape.LODS; level++) {
@@ -166,6 +167,9 @@ public final class FellCheck {
                 for (var q : n) if (q.sprite == TreeCut.CUT_SPRITE + sp.ordinal())
                     for (int c : new int[]{2, 3}) if (q.p[c * 3 + 1] < cut + 1e-4F && q.p[c * 3 + 1] > cut - 1e-4F && corners.get(key(q, c)) < 2) lonely++;
                 require(lonely == 0, id + " stage " + stage + ": the notch's inner edge is shared by its neighbours (" + lonely + " open)");
+                // P2.1: every cut-wood UV inside the sprite (outside it, the atlas neighbour would show)
+                for (var q : n) if (q.sprite == TreeCut.CUT_SPRITE + sp.ordinal())
+                    for (int c = 0; c < 8; c++) require(q.uv[c] >= 0 && q.uv[c] <= 1, id + " stage " + stage + ": notch UV inside the sprite");
                 require(deepest <= ring[2] * (TreeCut.DEPTH[stage - 1] + 0.05F), id + " stage " + stage + ": depth as specified");
                 require(deepest >= ring[2] * TreeCut.DEPTH[stage - 1] * 0.6F, id + " stage " + stage + ": a visible notch (" + deepest + ")");
                 notches++;

@@ -1,6 +1,6 @@
 # AFL → Vextris 迁移 V1（Mesh 加载、缓存与渲染）
 
-日期：2026-10-10。分支：`vextris-migration`（基线 `678d70fab792f3cf3b069c894d3bb8c3076a9b7c`；迁移由作者提交为 `afa0f2e8`，**未合并**）。状态：**代码迁移完成，离线与自动化运行时验证完成，等待人工验收**（验收项见文末）。
+日期：2026-10-10。分支：`vextris-migration`（基线 `678d70fab792f3cf3b069c894d3bb8c3076a9b7c`；迁移由作者提交为 `afa0f2e8`；2026-10-11 作者批准后快进合并进 `master`（`860f6fbb`，已推送到 GitHub），此后 `master` 是 AFL 的默认开发分支，`vextris-migration` 暂时保留）。状态：**代码迁移完成，离线与自动化运行时验证完成，等待人工验收**（验收项见文末）。
 
 2026-10-10 补充：Vextris 依赖已从 `0.1.0-dev` 升级到首个公开 Alpha **`0.1.0-alpha.1`**（见下面的“升级到 Vextris 0.1.0-alpha.1”）。
 

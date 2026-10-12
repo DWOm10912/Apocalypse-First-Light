@@ -9,17 +9,16 @@
 //   white_pine_needles.png      32 x 32 needle spray (bundles of five on a twig) for LOD0 plates
 //   white_pine_needles_mid.png / _far.png   denser sprays for LOD1 / LOD2
 //   white_pine_needles_proxy.png  16 x 16 cube face for the pine's volume proxy
-// Mesh Trees P2 (docs/rendering/mesh_trees_p2_felling.md, D/J/K):
-//   white_oak_cut.png / white_pine_cut.png              16 x 16 fresh cut wood with axe facets (the notch faces)
-//   white_oak_end_grain.png / white_pine_end_grain.png  16 x 16 growth rings and a bark rim (stump top, falling log)
+// Mesh Trees P2.1 (docs/rendering/mesh_trees_p2_felling.md, U), formal felling assets from felling-art.mjs:
+//   white_oak_cut.png / white_pine_cut.png              32 x 32 fresh cut wood (the notch faces)
+//   white_oak_end_grain.png / white_pine_end_grain.png  32 x 32 rings, sapwood, bark rim (stump top, falling log cut)
 //   ../item/<wood>_log, _branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
-// Leaves are grey (biome foliage tint), alpha is 0 or 255 (cutout). Deterministic.
-//   node tools/mesh-trees/build-tree-textures.mjs          write
-//   node tools/mesh-trees/build-tree-textures.mjs --check  compare with the files on disk
+//   LabPBR _n / _s for both barks, cut wood and end grain (leaves: none, the shader pack's leaf handling stays)
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {png} from '../cube-slab-mesh-lib.mjs';
+import * as art from './felling-art.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const OUT = path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/block');
@@ -241,138 +240,42 @@ function pineProxy() {
   return img;
 }
 
-// ---- P2: fresh cut wood, axe facets across the fibres (the notch faces; u round the trunk, v across the cut)
-function cutWood(seed, light, dark, line) {
-  const W = 16, H = 16, r = rng(seed);
-  const img = image(W, H);
-  img.rgb = new Uint8Array(W * H * 3);
-  // facets: bands 3-4 px high, each a little lighter or darker (an axe stroke each), fibre lines along u
-  const bands = [];
-  for (let y = 0; y < H;) { const h = 3 + Math.floor(r() * 2); bands.push([y, Math.min(H, y + h), r()]); y += h; }
-  for (const [y0, y1, k] of bands) for (let y = y0; y < y1; y++) for (let x = 0; x < W; x++) {
-    const t = 0.35 + 0.5 * k + (y === y0 ? 0.12 : 0) - (y === y1 - 1 ? 0.15 : 0);
-    let c = light.map((v, i) => Math.round(dark[i] + (v - dark[i]) * Math.max(0, Math.min(1, t))));
-    if ((x + Math.floor(y / 5) * 3) % 5 === 0 && y !== y0) c = line;          // fibre lines
-    img.rgb.set(c, (y * W + x) * 3);
-    img.a[y * W + x] = 1;
-  }
-  return img;
-}
-
-// ---- P2: end grain: growth rings round the pith, a few radial checks, the bark rim (UV centred, radius about 7.6 px)
-function endGrain(seed, early, late, pith, bark) {
-  const W = 16, H = 16, r = rng(seed);
-  const img = image(W, H);
-  img.rgb = new Uint8Array(W * H * 3);
-  const checks = [r() * 6.283, r() * 6.283];
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const dx = x + 0.5 - 8, dy = y + 0.5 - 8, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
-    const wob = 0.25 * Math.sin(a * 3 + 1.3) + 0.15 * Math.sin(a * 5);
-    const ring = Math.floor((d + wob) / 1.3);
-    let c = ring % 2 === 0 ? early : late;
-    if (d < 1.1) c = pith;
-    for (const ch of checks) if (Math.abs(Math.atan2(Math.sin(a - ch), Math.cos(a - ch))) < 0.09 && d > 2 && d < 6.5) c = late.map(v => Math.round(v * 0.75));
-    if (d > 6.9) c = bark;
-    img.rgb.set(c, (y * W + x) * 3);
-    img.a[y * W + x] = 1;
-  }
-  return img;
-}
-
-// ---- P2: item icons (alpha cutout, coloured, 16 x 16)
-function icon() { const img = image(16, 16); img.rgb = new Uint8Array(16 * 16 * 3); return img; }
-function dot(img, x, y, c) {
-  if (x < 0 || y < 0 || x >= img.W || y >= img.H) return;
-  img.rgb.set(c, (y * img.W + x) * 3); img.a[y * img.W + x] = 1;
-}
-
-function logIcon(barkA, barkB, early, late, bark) {
-  const img = icon();
-  // a short log lying from the lower left to the upper right, its cut end toward the viewer at the lower left
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const u = (x - 3 + (12 - y)) / 2, v = (x - 3 - (12 - y)) / 2;      // along / across the log
-    if (u < 0 || u > 9.5 || Math.abs(v) > 3.2) continue;
-    dot(img, x, y, (Math.floor(u * 1.3) + Math.round(v)) % 3 === 0 ? barkB : barkA);
-  }
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const d = Math.hypot(x + 0.5 - 4.5, y + 0.5 - 11.5);
-    if (d > 3.4) continue;
-    dot(img, x, y, d > 2.7 ? bark : Math.floor(d / 0.9) % 2 === 0 ? early : late);
-  }
-  return img;
-}
-
-function branchIcon(seed, bark, tip, leafColour, needles) {
-  const img = icon(), r = rng(seed);
-  const seg = (x0, y0, x1, y1, c) => { const n = 24; for (let k = 0; k <= n; k++) dot(img, Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), c); };
-  seg(2, 14, 13, 3, bark);
-  seg(3, 14, 13, 4, bark);
-  seg(8, 8, 13, 9, bark);
-  seg(6, 10, 4, 5, bark);
-  dot(img, 13, 3, tip); dot(img, 13, 9, tip); dot(img, 4, 5, tip);
-  if (needles) {
-    for (const [cx, cy] of [[13, 3], [13, 9], [4, 5]]) for (let k = 0; k < 5; k++) {
-      const a = -2.4 + k * 0.45 + r() * 0.2;
-      for (let s = 1; s <= 2; s++) dot(img, Math.round(cx + Math.cos(a) * s), Math.round(cy + Math.sin(a) * s), leafColour);
-    }
-  } else {
-    for (const [cx, cy] of [[12, 2], [14, 9]]) for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) if (Math.abs(x) + Math.abs(y) < 2) dot(img, cx + x, cy + y, leafColour);
-  }
-  return img;
-}
-
-function leafIcon(colour, vein, edge) {
-  const img = icon();
-  // a lobed white oak leaf, stalk at the lower left
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    const u = (x - 3 + (12 - y)) / 13, v = (x - 3 - (12 - y)) / 2;
-    if (u < 0.08 || u > 1) continue;
-    const half = 3.6 * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.7) * (0.55 + 0.45 * Math.abs(Math.cos(u * Math.PI * 3.5)));
-    if (Math.abs(v) > half) continue;
-    dot(img, x, y, Math.abs(v) < 0.5 ? vein : Math.abs(v) > half - 0.6 ? edge : colour);
-  }
-  for (let k = 0; k < 3; k++) dot(img, 2 + k, 13 - k, vein);
-  return img;
-}
-
-function needleIcon(seed, colour, light, twig) {
-  const img = icon(), r = rng(seed);
-  // a twig from the lower left to the upper right, needles fanning forward on both sides of it
-  const ta = Math.atan2(4 - 13, 12 - 3);
-  for (let k = 0; k < 7; k++) {
-    const t = 0.1 + 0.85 * k / 6, bx = 3 + 9 * t, by = 13 - 9 * t;
-    for (const side of [-1, 1]) {
-      const a = ta + side * (0.65 + 0.15 * r()), len = 3.5 + r() * 1.5;
-      for (let s = 1; s <= len; s++) dot(img, Math.round(bx + Math.cos(a) * s), Math.round(by + Math.sin(a) * s), s > len - 1 ? light : colour);
-    }
-  }
-  for (let k = 0; k <= 18; k++) dot(img, Math.round(3 + 9 * k / 18), Math.round(13 - 9 * k / 18), twig);
-  return img;
-}
-
+const oakBark = bark(), whitePineBark = pineBark();
 const outputs = {
-  'white_oak_bark.png': bark(),
+  'white_oak_bark.png': oakBark,
   'white_oak_leaves.png': cluster(4102, 15, 9, 6, 17, 1),
   'white_oak_leaves_mid.png': cluster(4103, 26, 9.5, 7, 20, 1),
   'white_oak_leaves_far.png': cluster(4104, 40, 10, 7.5, 22, 1),
   'white_oak_leaves_proxy.png': proxy(),
-  'white_pine_bark.png': pineBark(),
+  'white_pine_bark.png': whitePineBark,
   'white_pine_needles.png': needles(4202, 12, 9, 6),
   'white_pine_needles_mid.png': needles(4203, 17, 10, 8),
   'white_pine_needles_far.png': needles(4204, 24, 11, 10),
   'white_pine_needles_proxy.png': pineProxy(),
-  // P2
-  'white_oak_cut.png': cutWood(4301, [0xd9, 0xc4, 0x98], [0xa8, 0x8a, 0x5c], [0xb0, 0x93, 0x66]),
-  'white_pine_cut.png': cutWood(4302, [0xe8, 0xd9, 0xae], [0xc2, 0xa8, 0x76], [0xcc, 0xb4, 0x84]),
-  'white_oak_end_grain.png': endGrain(4303, [0xc9, 0xa9, 0x74], [0x9c, 0x7a, 0x4b], [0x6e, 0x52, 0x33], [0x6a, 0x64, 0x5a]),
-  'white_pine_end_grain.png': endGrain(4304, [0xe2, 0xcd, 0x98], [0xbf, 0x9b, 0x62], [0x8c, 0x6a, 0x40], [0x4f, 0x45, 0x3e]),
-  '../item/white_oak_log.png': logIcon([0x93, 0x8d, 0x83], [0x6e, 0x69, 0x61], [0xc9, 0xa9, 0x74], [0x9c, 0x7a, 0x4b], [0x5a, 0x55, 0x4e]),
-  '../item/white_pine_log.png': logIcon([0x6a, 0x5e, 0x55], [0x45, 0x3c, 0x36], [0xe2, 0xcd, 0x98], [0xbf, 0x9b, 0x62], [0x3e, 0x36, 0x31]),
-  '../item/white_oak_branch.png': branchIcon(4305, [0x7a, 0x6f, 0x62], [0xa3, 0x96, 0x84], [0x5c, 0x8a, 0x3a], false),
-  '../item/white_pine_branch.png': branchIcon(4306, [0x5e, 0x51, 0x48], [0x80, 0x71, 0x64], [0x4e, 0x7e, 0x5e], true),
-  '../item/white_oak_leaves.png': leafIcon([0x5e, 0x8c, 0x3a], [0x7c, 0xa4, 0x52], [0x45, 0x6b, 0x29]),
-  '../item/white_pine_needles.png': needleIcon(4307, [0x4e, 0x7e, 0x5e], [0x6e, 0x9e, 0x7c], [0x5e, 0x51, 0x48]),
+  // P2.1 formal felling assets (felling-art.mjs)
+  'white_oak_cut.png': art.cutWood(art.OAK, false, 4301),
+  'white_pine_cut.png': art.cutWood(art.PINE, true, 4302),
+  'white_oak_end_grain.png': art.endGrain(art.OAK, false, 4303),
+  'white_pine_end_grain.png': art.endGrain(art.PINE, true, 4304),
+  '../item/white_oak_log.png': art.logIcon(art.OAK, false),
+  '../item/white_pine_log.png': art.logIcon(art.PINE, true),
+  '../item/white_oak_branch.png': art.branchIcon(art.OAK, false),
+  '../item/white_pine_branch.png': art.branchIcon(art.PINE, true),
+  '../item/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
+  '../item/white_pine_needles.png': art.needleIcon(art.PINE),
 };
+// LabPBR (normals gentle and smoothed, height alpha flat, dielectric rough wood)
+Object.assign(outputs, {
+  'white_oak_bark_n.png': art.normalMap(oakBark, 0.7, true, 40),
+  'white_oak_bark_s.png': art.specularMap(oakBark, 18, 42, 40, true),
+  'white_pine_bark_n.png': art.normalMap(whitePineBark, 1.0, true, 50),
+  'white_pine_bark_s.png': art.specularMap(whitePineBark, 14, 36, 40, true),
+});
+for (const name of ['white_oak_cut', 'white_pine_cut', 'white_oak_end_grain', 'white_pine_end_grain']) {
+  const base = outputs[name + '.png'], cut = name.endsWith('_cut');
+  outputs[name + '_n.png'] = art.normalMap(base, cut ? 0.6 : 0.5, false, cut ? 25 : 20);
+  outputs[name + '_s.png'] = art.specularMap(base, cut ? 50 : 40, cut ? 80 : 70, 50, false);
+}
 
 const check = process.argv.includes('--check');
 let bad = 0;

@@ -14,17 +14,25 @@ import java.util.List;
  * joined.</li>
  * <li>Stump: the trunk below the cut and an end-grain cap on it; falling tree: everything above the cut and a cap
  * under it.</li>
- * <li>Notch (the standing tree while it is chopped): in the band round the cut, the edges' points at the cut height
- * move in toward the trunk's axis, most on the chopping side and nothing beyond the notch's half-angle; the band there
- * becomes an upper slanted face and a lower nearly flat face of cut wood. The same edge point moves the same way in
- * both bands that share it, so the notch is closed.</li>
+ * <li>Notch (the standing tree while it is chopped), a felling face cut: two planes through the trunk meeting at a
+ * straight apex, a chord at the stage's depth on the chopping side, at the cut height; the upper plane rises at 45
+ * degrees (less on a big trunk cut high, so it stays in the root cell), the lower one falls gently. Where the planes
+ * are inside the trunk the bark is gone and cut wood shows; on the bark the notch's outline is the planes' intersection
+ * with the trunk, smooth because the bands there are split into narrow columns. Every band at the cut height is cut
+ * there (no T-junctions), and neighbouring columns share their edges, so the notch is closed (P2.1: was a ring of
+ * points pulled toward the axis, which read as a groove round the whole front).</li>
  * </ul>
  */
 final class TreeCut {
     /** Extra sprites (TreeCellModel's list): cut wood and end grain, per species ordinal. */
     static final int CUT_SPRITE = 8, END_SPRITE = 10;
-    /** Notch per stage 1..4: depth (share of the trunk radius at the cut) and half-angle (degrees). */
-    static final float[] DEPTH = {0.14F, 0.28F, 0.45F, 0.62F}, HALF = {38, 50, 62, 72};
+    /**
+     * Notch per stage 1..4: apex depth as a share of the trunk radius at the cut (its outline on the bark then spans
+     * 31, 44, 57 and 68 degrees either side of the chopping direction); columns per band where the notch reaches.
+     */
+    static final float[] DEPTH = {0.14F, 0.28F, 0.45F, 0.62F};
+    static final int COLUMNS = 4;
+    static final float LOWER = 0.2F;
 
     private TreeCut() {}
 
@@ -69,8 +77,13 @@ final class TreeCut {
 
     /** The part of a band between heights lo and hi (both edges cut there), or null when nothing is left. */
     static Quad slice(Quad q, float lo, float hi) {
+        return slice(q, lo, hi, lo, hi);
+    }
+
+    /** The part of a band between heights on each tube edge (A: corners 0-3, B: corners 1-2), or null. */
+    static Quad slice(Quad q, float loA, float hiA, float loB, float hiB) {
         float a0 = q.p[1], a1 = q.p[10], b0 = q.p[4], b1 = q.p[7];
-        float ta0 = t(a0, a1, lo), ta1 = t(a0, a1, hi), tb0 = t(b0, b1, lo), tb1 = t(b0, b1, hi);
+        float ta0 = t(a0, a1, loA), ta1 = t(a0, a1, hiA), tb0 = t(b0, b1, loB), tb1 = t(b0, b1, hiB);
         if (ta1 - ta0 < 1e-4F && tb1 - tb0 < 1e-4F) return null;
         var r = like(q);
         put(r, 0, at(q, 0, 3, ta0));
@@ -164,67 +177,95 @@ final class TreeCut {
         return new float[]{cx, cz, r / n};
     }
 
-    /** How far the notch reaches in at an angle round the trunk (0 outside its half-angle, 1 on its centre line). */
-    static float taper(double angle, double side, float halfDeg) {
-        double c = Math.cos(angle - side), lim = Math.cos(Math.toRadians(halfDeg));
-        double w = (c - lim) / (1 - lim);
-        return w <= 0 ? 0 : (float) Math.pow(Math.min(1, w), 0.7);
+    /** The part of a band between fractions f0 and f1 across it (along its rings): a narrower band. */
+    static Quad column(Quad q, float f0, float f1) {
+        var r = like(q);
+        put(r, 0, at(q, 0, 1, f0));
+        put(r, 1, at(q, 0, 1, f1));
+        put(r, 2, at(q, 3, 2, f1));
+        put(r, 3, at(q, 3, 2, f0));
+        return r;
     }
 
     /**
-     * The root cell's quads with the notch of a cut stage (1..4) at the cut height, centred on a direction (radians,
+     * The root cell's quads with the notch of a cut stage (1..4) at the cut height, toward a direction (radians,
      * atan2(dz, dx)); stage 0 or no band at the cut: the quads unchanged.
      */
     static List<Quad> notch(List<Quad> quads, float cut, int stage, double side, int species) {
         if (stage <= 0) return quads;
         float[] ring = ring(quads, cut);
         if (ring == null) return quads;
-        int s = Math.min(FellingRules.STAGES, stage) - 1;
-        float depth = DEPTH[s] * ring[2], up = depth, lo = depth * 0.3F, half = HALF[s];
-        var out = new ArrayList<Quad>(quads.size() + 16);
+        float r = ring[2], d = DEPTH[Math.min(FellingRules.STAGES, stage) - 1] * r;
+        float nx = (float) Math.cos(side), nz = (float) Math.sin(side);
+        // the upper plane at 45 degrees, flatter where the root cell's bands end before it would reach the bark
+        float top = Float.MAX_VALUE;
+        for (var q : quads) if (band(q) && minY(q) <= cut && maxY(q) >= cut) top = Math.min(top, Math.min(q.p[7], q.p[10]));
+        float up = Math.max(0.2F, Math.min(1, (top - 0.02F - cut) / d));
+        var g = new Notch(ring[0], ring[1], r - d, nx, nz, cut, up);
+        int sprite = CUT_SPRITE + species;
+        var out = new ArrayList<Quad>(quads.size() + 48);
         for (var q : quads) {
-            if (!band(q) || maxY(q) <= cut - lo || minY(q) >= cut + up) { out.add(q); continue; }
-            Quad below = slice(q, -1e9F, cut - lo), above = slice(q, cut + up, 1e9F), mid = slice(q, cut - lo, cut + up);
-            if (below != null) out.add(below);
-            if (above != null) out.add(above);
-            if (mid == null) continue;
-            float[] a0 = at(q, 0, 3, t(q.p[1], q.p[10], cut - lo)), a1 = at(q, 0, 3, t(q.p[1], q.p[10], cut + up));
-            float[] b0 = at(q, 1, 2, t(q.p[4], q.p[7], cut - lo)), b1 = at(q, 1, 2, t(q.p[4], q.p[7], cut + up));
-            float[] am = at(q, 0, 3, t(q.p[1], q.p[10], cut)), bm = at(q, 1, 2, t(q.p[4], q.p[7], cut));
-            float wa = taper(Math.atan2(am[2] - ring[1], am[0] - ring[0]), side, half);
-            float wb = taper(Math.atan2(bm[2] - ring[1], bm[0] - ring[0]), side, half);
-            if (wa <= 0 && wb <= 0) { out.add(mid); continue; }
-            inward(am, ring, depth * wa);
-            inward(bm, ring, depth * wb);
-            int sprite = CUT_SPRITE + species;
-            out.add(face(new float[][]{a0, b0, bm, am}, sprite, new float[]{1, 1, 0.55F, 0.55F}, wa, wb));
-            out.add(face(new float[][]{am, bm, b1, a1}, sprite, new float[]{0.55F, 0.55F, 0, 0}, wa, wb));
+            if (!band(q) || minY(q) > cut || maxY(q) < cut) { out.add(q); continue; }
+            boolean reached = g.depth(edge(q, 0, 3, cut)) > 0 || g.depth(edge(q, 1, 2, cut)) > 0;
+            int cols = reached ? COLUMNS : 1;
+            for (int j = 0; j < cols; j++) {
+                Quad c = cols == 1 ? q : column(q, j / (float) cols, (j + 1) / (float) cols);
+                float[] a = edge(c, 0, 3, cut), b = edge(c, 1, 2, cut);
+                float da = g.depth(a), db = g.depth(b);
+                Quad below = slice(c, -1e9F, cut - LOWER * da, -1e9F, cut - LOWER * db);
+                Quad above = slice(c, cut + up * da, 1e9F, cut + up * db, 1e9F);
+                if (below != null) out.add(below);
+                if (above != null) out.add(above);
+                if (da <= 0 && db <= 0) continue;
+                float[] a0 = edge(c, 0, 3, cut - LOWER * da), b0 = edge(c, 1, 2, cut - LOWER * db);
+                float[] a1 = edge(c, 0, 3, cut + up * da), b1 = edge(c, 1, 2, cut + up * db);
+                float[] aa = g.apex(a, da), ba = g.apex(b, db);
+                out.add(g.face(new float[][]{a0, b0, ba, aa}, sprite, false));
+                out.add(g.face(new float[][]{aa, ba, b1, a1}, sprite, true));
+            }
         }
         return out;
     }
 
-    private static void inward(float[] v, float[] ring, float d) {
-        float dx = ring[0] - v[0], dz = ring[1] - v[2], l = (float) Math.hypot(dx, dz);
-        if (l < 1e-5F || d <= 0) return;
-        v[0] += dx / l * d;
-        v[2] += dz / l * d;
+    /** The point (p, n, uv, ao) where a band's tube edge (corners a to b) crosses a height. */
+    private static float[] edge(Quad q, int a, int b, float y) {
+        return at(q, a, b, t(q.p[a * 3 + 1], q.p[b * 3 + 1], y));
     }
 
-    /** A cut-wood face over four points (corner order as a band), its own flat normal, v from the given values. */
-    private static Quad face(float[][] c, int sprite, float[] v, float wa, float wb) {
-        var q = new Quad();
-        q.kind = TreeShape.WOOD; q.sprite = sprite;
-        float[] e1 = {c[1][0] - c[0][0], c[1][1] - c[0][1], c[1][2] - c[0][2]}, e2 = {c[3][0] - c[0][0], c[3][1] - c[0][1], c[3][2] - c[0][2]};
-        float[] n = TreeShape.norm(TreeShape.cross(e1, e2));
-        for (int i = 0; i < 4; i++) {
-            q.p[i * 3] = c[i][0]; q.p[i * 3 + 1] = c[i][1]; q.p[i * 3 + 2] = c[i][2];
-            q.n[i * 3] = n[0]; q.n[i * 3 + 1] = n[1]; q.n[i * 3 + 2] = n[2];
-            q.uv[i * 2] = c[i][6];
-            q.uv[i * 2 + 1] = v[i];
-            // deeper inside the notch is darker
-            float w = i == 0 || i == 3 ? wa : wb;
-            q.ao[i] = (v[i] == 0.55F ? 0.78F + 0.12F * (1 - w) : 0.95F);
+    /** The notch's planes: apex chord at distance {@code plane} from the axis along (nx, nz), at the cut height. */
+    private record Notch(float cx, float cz, float plane, float nx, float nz, float cut, float up) {
+        /** How far a point at the cut height on the bark lies beyond the apex plane (0: the notch does not reach it). */
+        float depth(float[] p) {
+            return Math.max(0, (p[0] - cx) * nx + (p[2] - cz) * nz - plane);
         }
-        return q;
+
+        /** The apex point behind a bark point: moved back along the notch direction onto the apex plane. */
+        float[] apex(float[] p, float depth) {
+            float[] v = p.clone();
+            v[0] -= nx * depth;
+            v[1] = cut;
+            v[2] -= nz * depth;
+            return v;
+        }
+
+        /** A cut-wood face (corner order as a band): its plane's normal, UVs planar across and along the notch. */
+        Quad face(float[][] c, int sprite, boolean upper) {
+            var q = new Quad();
+            q.kind = TreeShape.WOOD; q.sprite = sprite;
+            float[] e1 = {c[1][0] - c[0][0], c[1][1] - c[0][1], c[1][2] - c[0][2]}, e2 = {c[3][0] - c[0][0], c[3][1] - c[0][1], c[3][2] - c[0][2]};
+            float[] n = TreeShape.norm(TreeShape.cross(e1, e2));
+            for (int i = 0; i < 4; i++) {
+                float x = c[i][0], y = c[i][1], z = c[i][2];
+                float across = (x - cx) * -nz + (z - cz) * nx, out = (x - cx) * nx + (z - cz) * nz - plane;
+                q.p[i * 3] = x; q.p[i * 3 + 1] = y; q.p[i * 3 + 2] = z;
+                q.n[i * 3] = n[0]; q.n[i * 3 + 1] = n[1]; q.n[i * 3 + 2] = n[2];
+                // inside the sprite (no atlas neighbour bleeds in): across at most 0.8 m either side, depth at most 0.48 m
+                q.uv[i * 2] = Math.max(0.02F, Math.min(0.98F, 0.5F + across * 0.6F));
+                q.uv[i * 2 + 1] = Math.max(0.02F, Math.min(0.98F, 0.5F + (upper ? -out : out)));
+                // darker into the notch, toward the apex
+                q.ao[i] = 0.74F + 0.21F * Math.min(1, out / 0.12F);
+            }
+            return q;
+        }
     }
 }
