@@ -45,22 +45,35 @@ import java.util.concurrent.ConcurrentHashMap;
  * values on the flat faces, smooth round the corners) without a shader pack; with one, and for items, plain colour and
  * the pack or the item lighting shade by the normal.</li>
  * <li>Item: the upright log, the JSON model's transforms (vanilla's block item placement).</li>
+ * <li>Wood Building Blocks V1 (docs/models/wood_building_blocks_v1.md, 2026-10-12): the rounded timber is the same prism
+ * with its own radius, planed side and end textures (the second constructor); the logs are unchanged.</li>
  * </ul>
  */
 final class TreeLogModel implements IDynamicBakedModel {
     /** Per corner (8 bits each, corner 0 lowest): sky light << 4 | block light of the brightest cell it faces. */
     static final ModelProperty<Integer> LIGHT = new ModelProperty<>();
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid());
-    /** Faces by direction ordinal, per (species, shade, axis). */
+    /** Faces by direction ordinal, per (model id, shade, axis). */
     private static final Map<Integer, List<BakedQuad>[]> FACES = new ConcurrentHashMap<>();
-    /** One corner's strips at one light, per (species, shade, axis, corner, light). */
+    /** One corner's strips at one light, per (model id, shade, axis, corner, light). */
     private static final Map<Integer, List<BakedQuad>> CORNERS = new ConcurrentHashMap<>();
 
-    private final Species species;
+    /** The caches' id: a log's species ordinal (0..5), the rounded timber's 6 + its species ordinal. */
+    private final int id;
+    private final float radius;
+    private final ResourceLocation side, end;
     private final BakedModel base;
 
     TreeLogModel(Species species, BakedModel base) {
-        this.species = species;
+        this(species.ordinal(), LogShape.radius(species), bark(species), end(species), base);
+    }
+
+    /** A rounded-square prism of corner radius r, sides and ends textured (sprites BARK and END of LogShape). */
+    TreeLogModel(int id, float radius, ResourceLocation side, ResourceLocation end, BakedModel base) {
+        this.id = id;
+        this.radius = radius;
+        this.side = side;
+        this.end = end;
         this.base = base;
     }
 
@@ -114,7 +127,7 @@ final class TreeLogModel implements IDynamicBakedModel {
         // an item (no state) stands upright and leaves the shading to the item lighting
         int axis = state != null && state.hasProperty(RotatedPillarBlock.AXIS) ? state.getValue(RotatedPillarBlock.AXIS).ordinal() : 1;
         int shade = state == null || AflShaderCompat.shaderPackInUse() ? 0 : 1;
-        int key = (species.ordinal() * 2 + shade) * 3 + axis;
+        int key = (id * 2 + shade) * 3 + axis;
         if (side != null) return faces(key)[side.ordinal()];
         Integer light = data.get(LIGHT);
         int l = light == null ? 0 : light;
@@ -128,7 +141,7 @@ final class TreeLogModel implements IDynamicBakedModel {
             @SuppressWarnings("unchecked") List<BakedQuad>[] lists = new List[6];
             var build = new ArrayList<List<BakedQuad>>(6);
             for (int d = 0; d < 6; d++) build.add(new ArrayList<>());
-            TextureAtlasSprite[] sprites = {sprite(bark(species)), sprite(end(species))};
+            TextureAtlasSprite[] sprites = {sprite(side), sprite(end)};
             for (var part : parts(k % 3))
                 if (part.cull() != LogShape.NONE) TreeCellModel.bake(part.quad(), 0, 0, 0, sprites[part.quad().sprite], shadeOf(k), build.get(part.cull()));
             for (int d = 0; d < 6; d++) lists[d] = List.copyOf(build.get(d));
@@ -139,7 +152,7 @@ final class TreeLogModel implements IDynamicBakedModel {
     private List<BakedQuad> corner(int key, int corner, int light) {
         return CORNERS.computeIfAbsent((key * 4 + corner) << 8 | light, k -> {
             var list = new ArrayList<BakedQuad>(LogShape.ARC);
-            TextureAtlasSprite sprite = sprite(bark(species));
+            TextureAtlasSprite sprite = sprite(side);
             int packed = (light & 0xF) << 4 | (light >>> 4) << 20;           // LightTexture.pack(block, sky)
             for (var part : parts(key % 3))
                 if (part.corner() == corner) TreeCellModel.bake(part.quad(), 0, 0, 0, sprite, shadeOf(key), packed, list);
@@ -150,7 +163,7 @@ final class TreeLogModel implements IDynamicBakedModel {
     private static int shadeOf(int key) { return key / 3 % 2; }
 
     private List<LogShape.Part> parts(int axis) {
-        return LogShape.vanillaOrder(LogShape.axis(LogShape.build(species), axis));
+        return LogShape.vanillaOrder(LogShape.axis(LogShape.build(radius), axis));
     }
 
     // -------------------------------------------------------------------------------------------- the rest
@@ -159,7 +172,7 @@ final class TreeLogModel implements IDynamicBakedModel {
     @Override public boolean isGui3d() { return true; }
     @Override public boolean usesBlockLight() { return true; }
     @Override public boolean isCustomRenderer() { return false; }
-    @Override public @NotNull TextureAtlasSprite getParticleIcon() { return sprite(bark(species)); }
+    @Override public @NotNull TextureAtlasSprite getParticleIcon() { return sprite(side); }
     @SuppressWarnings("deprecation")
     @Override public @NotNull ItemTransforms getTransforms() { return base.getTransforms(); }
     @Override public @NotNull ItemOverrides getOverrides() { return ItemOverrides.EMPTY; }

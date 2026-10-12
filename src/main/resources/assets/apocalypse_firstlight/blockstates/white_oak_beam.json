@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "apocalypse_firstlight:block/wood/white_oak_beam"
+    },
+    "axis=z": {
+      "model": "apocalypse_firstlight:block/wood/white_oak_beam",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "apocalypse_firstlight:block/wood/white_oak_beam",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

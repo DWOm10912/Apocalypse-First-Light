@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Terrain Smooth V1: wraps the vanilla block models of the six natural ground blocks (SmoothSurfaceModel) and of the small
+ * Terrain Smooth V1: wraps the vanilla block models of the natural ground blocks (TerrainSmooth.GROUND, SmoothSurfaceModel) and of the small
  * plants (SinkPlantModel) at every model bake (F3+T included). The wrappers return the vanilla model unchanged while the
  * feature is off and for every block that is not a sloped natural surface top; no block, item or model file changes.
  */

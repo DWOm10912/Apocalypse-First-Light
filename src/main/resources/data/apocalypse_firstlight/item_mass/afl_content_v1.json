@@ -698,6 +698,79 @@
       "unit_mass_kg": 0.05,
       "estimated": true
     }
+,
+    "apocalypse_firstlight:white_oak_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_planks": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_rounded_timber": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_beam": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    }
   },
   "carry_factors": [
     {

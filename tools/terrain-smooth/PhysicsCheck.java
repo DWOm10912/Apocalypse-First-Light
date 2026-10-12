@@ -37,7 +37,7 @@ final class PhysicsCheck {
         /** water surface above the floor of cell (x, y, z), 0..1, or 0 without water (FluidState#getHeight) */
         default double water(int x, int y, int z) { return 0; }
 
-        /** natural ground block of a cell for the report: 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone */
+        /** natural ground block of a cell (GROUND, export-area.mjs): 1 grass block, 2 dirt, 3 coarse dirt, 4 sand, 5 gravel, 6 stone, 7 podzol, 8 mud, 9 clay */
         default int ground(int x, int y, int z) { return 1; }
     }
 
@@ -87,10 +87,11 @@ final class PhysicsCheck {
         VoxelShape collision(int x, int y, int z) {
             if (!solid(x, y, z)) return Shapes.empty();
             long g = geometry(x, y, z);
+            if (t.ground(x, y, z) == MUD) return g < 0 ? MUD_BLOCK : SmoothShapes.sunk(g);
             return g < 0 ? Shapes.block() : SmoothShapes.shape(g, true);
         }
 
-        /** BlockCollisions, Terrain Smooth V1 (TerrainSmooth#risesIntoBox): the six ground blocks count as large in the layer under the box only. */
+        /** BlockCollisions, Terrain Smooth V1 (TerrainSmooth#risesIntoBox): the ground blocks count as large in the layer under the box only. */
         boolean large(int x, int y, int z, int bottomLayer) {
             return mode != SmoothRules.MODE_OFF && t.cell(x, y, z) == SmoothRules.NATURAL && y == bottomLayer;
         }
@@ -307,7 +308,7 @@ final class PhysicsCheck {
                 for (int bz = Mth.floor(box.minZ); bz <= Mth.floor(box.maxZ); bz++)
                     for (int by = feet - 2; by <= feet + 1; by++) {
                         long geo = g.mode == SmoothRules.MODE_OFF ? -1 : g.geometry(bx, by, bz);
-                        if (geo >= 0) tops.add(SmoothShapes.shape(geo, true).move(bx, by, bz));
+                        if (geo >= 0) tops.add((g.t.ground(bx, by, bz) == MUD ? SmoothShapes.sunk(geo) : SmoothShapes.shape(geo, true)).move(bx, by, bz));   // TerrainSmooth#collision
                     }
             double up = tops.isEmpty() ? 0 : SmoothShapes.lift(box, tops);
             if (up <= 0 || !g.collisions(box.move(0, up, 0).deflate(1.0E-7D), false).isEmpty()) return;
@@ -461,7 +462,7 @@ final class PhysicsCheck {
 
         @Override public int ground(int x, int y, int z) {
             int c = column(x, z);
-            return c < 0 || y < y0 || y >= y0 + h ? 0 : kinds[c + y - y0] >> 3 & 7;
+            return c < 0 || y < y0 || y >= y0 + h ? 0 : kinds[c + y - y0] >> 3 & 15;
         }
 
         /** Above the highest solid block (logs and leaves of trees included). */
@@ -481,7 +482,10 @@ final class PhysicsCheck {
         }
     }
 
-    static final String[] GROUND = {"?", "grass block", "dirt", "coarse dirt", "sand", "gravel", "stone"};
+    static final String[] GROUND = {"?", "grass block", "dirt", "coarse dirt", "sand", "gravel", "stone", "podzol", "mud", "clay"};
+    /** mud (GROUND index) and vanilla mud's collision (MudBlock: 14 / 16) */
+    static final int MUD = 8;
+    static final VoxelShape MUD_BLOCK = Shapes.box(0, 0, 0, 1, 1 - SmoothShapes.MUD_SINK / 16.0, 1);
 
     /**
      * java PhysicsCheck world <export file> <minX> <minZ> <size>: from every column of the area whose top is natural ground,
@@ -496,7 +500,7 @@ final class PhysicsCheck {
             Ground g = new Ground(t, mode, area, false);
             g.cache = new it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap();
             g.cache.defaultReturnValue(Long.MIN_VALUE);
-            double[][] sum = new double[7][7];   // walks, distance, stalls, water ticks, lifts, pushes, walks touching water
+            double[][] sum = new double[GROUND.length][7];   // walks, distance, stalls, water ticks, lifts, pushes, walks touching water
             for (int z = area[1] + 3; z < area[1] + area[2] - 3; z++) for (int x = area[0] + 3; x < area[0] + area[2] - 3; x++) {
                 int top = t.top(x, z), k = t.cell(x, top - 1, z);
                 if (k != SmoothRules.NATURAL) continue;
@@ -515,7 +519,7 @@ final class PhysicsCheck {
                     }
                 }
             }
-            for (int ground = 1; ground <= 6; ground++) {
+            for (int ground = 1; ground < GROUND.length; ground++) {
                 double[] s = sum[ground];
                 if (s[0] == 0) continue;
                 System.out.println(String.format(Locale.ROOT, "%-7s %-11s walks %5.0f: distance %.2f per 40 ticks, stalled windows %.2f per walk, ticks in water %.2f per walk (%.1f %% of walks touch water), lifts %.0f, pushes %.0f",
@@ -664,6 +668,21 @@ final class PhysicsCheck {
         Walk diag = walk(hillFixed, -6.5, -8.5, r, r, 160, false, true);
         System.out.println("hill 1:2 diagonal walk fixed: " + fmt(diag));
         require(diag.rise > 5.9 && diag.pushes == 0 && diag.stalls == 0, "walks diagonally up the hill");
+
+        // 2b. The same hill in mud (2026-10-12): mud collides MUD_SINK below its top, smoothed too (SmoothShapes#sunk).
+        Terrain synthHill = synth(hill);
+        Terrain mudHill = new Terrain() {
+            @Override public int cell(int x, int y, int z) { return synthHill.cell(x, y, z); }
+            @Override public int surface(int x, int z) { return synthHill.surface(x, z); }
+            @Override public int top(int x, int z) { return synthHill.top(x, z); }
+            @Override public int ground(int x, int y, int z) { return MUD; }
+        };
+        Ground mudFixed = new Ground(mudHill, SmoothRules.MODE_B, ha, false);
+        Walk mudUp = walk(mudFixed, -6.5, 0.5, 1, 0, 120, false, true), mudDown = walk(mudFixed, 14.5, 0.5, -1, 0, 160, false, true);
+        System.out.println("mud hill 1:2 up   walk fixed: " + fmt(mudUp) + ", deepest " + String.format(Locale.ROOT, "%.3f", mudUp.deepest));
+        System.out.println("mud hill 1:2 down walk fixed: " + fmt(mudDown));
+        require(mudUp.rise > 5.9 && mudUp.pushes == 0 && mudUp.stalls == 0 && mudUp.lifts == 0, "walks up a mud hill (sunk collision), no pushes, stalls or lifts");
+        require(mudDown.rise < -5.9 && mudDown.pushes == 0 && mudDown.stalls == 0 && mudDown.lifts == 0, "walks down a mud hill");
 
         // 3. Rugged synthetic terrain (the offline check's terrain, mode B): many walks in 16 headings, with and without the fix.
         SmoothCheck.World land = SmoothCheck.terrain(9, -40, -40, 96, false);

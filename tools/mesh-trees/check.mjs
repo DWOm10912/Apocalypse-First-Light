@@ -45,7 +45,8 @@ const P3 = SPECIES.slice(2);
     require(!formal.includes(c + '.java'), `${c} is not formal`);
     require(gradle.includes(`exclude 'com/antaurora/apofirstlight/tree/${c}*'`), `the jar drops ${c}`);
   }
-  const CLIENT = ['TreeCellModel', 'TreeLogModel', 'TreeModels', 'TreeClient', 'FallingTreeRenderer', 'TreeShaderIds', 'FellingClient'];
+  // WoodModels: the rounded timber's TreeLogModel (Wood Building Blocks V1)
+  const CLIENT = ['TreeCellModel', 'TreeLogModel', 'TreeModels', 'TreeClient', 'FallingTreeRenderer', 'TreeShaderIds', 'FellingClient', 'WoodModels'];
   for (const f of formal) {
     const name = f.slice(0, -5), src = code(read(`${dev}/${f}`));
     for (const c of commands) require(!new RegExp('\\b' + c + '\\b').test(src), `formal ${name} does not use the development ${c}`);
@@ -61,7 +62,7 @@ const P3 = SPECIES.slice(2);
     } else if (name !== 'FellingClient' && name !== 'TreeClient' && name !== 'TreeModels' && name !== 'FallingTreeRenderer') {
       require(!/@Mod\.EventBusSubscriber\((?![^)]*Dist\.CLIENT)/.test(src), `client ${name} subscribes to no common bus`);
     }
-    if (['TreeClient', 'TreeModels', 'FellingClient'].includes(name)) require(/@Mod\.EventBusSubscriber\([^)]*Dist\.CLIENT/.test(src), `${name} subscribes on the client only`);
+    if (['TreeClient', 'TreeModels', 'FellingClient', 'WoodModels'].includes(name)) require(/@Mod\.EventBusSubscriber\([^)]*Dist\.CLIENT/.test(src), `${name} subscribes on the client only`);
   }
   for (const pure of ['TreeShape', 'TreeForms', 'FellingRules', 'TreeCut', 'FellingLedger', 'LogShape'])
     require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(code(read(`${dev}/${pure}.java`))), pure + ' is pure Java');

@@ -23,6 +23,8 @@ import net.minecraftforge.network.NetworkHooks;
  * <ul>
  * <li>Every side computes the same fall curve from those values (FellingRules#curve); clients only draw it
  * (FallingTreeRenderer). No collision, no physics, not pushable, cannot be hurt.</li>
+ * <li>Server, until the contact: each tick's sweep hurts the living bodies in its way (FellingServer#sweep,
+ * FellingRules#hit; 2026-10-12), each once per kind of hit; a fall that went on while nobody was here hits nothing.</li>
  * <li>Server: the impact (sound, particles) at the contact tick, then after lying a second the drops, once per fall
  * (the ledger's settle), and the entity goes. Saved with its chunk like any entity: after a reload, a chunk unload or a
  * server stop it goes on from its start tick, so a fall that should be over settles at once; a fall already settled
@@ -38,6 +40,11 @@ public final class FallingTree extends Entity implements IEntityAdditionalSpawnD
     long start;
     boolean impact;
     private FellingRules.Curve curve;
+    private TreeForms.Form form;
+    /** Server: the angle swept up to and its tick (NaN after a load); the bodies hit, kinds of hit as bits. */
+    private float sweptAngle = Float.NaN;
+    private long sweptTick;
+    final java.util.Map<java.util.UUID, Integer> struck = new java.util.HashMap<>();
     /** Client: the frozen geometry and level of this fall (FallingTreeRenderer), dropped with the entity. */
     Object mesh;
 
@@ -53,10 +60,17 @@ public final class FallingTree extends Entity implements IEntityAdditionalSpawnD
         e.species = species; e.variant = variant; e.turns = turns;
         e.direction = direction; e.rest = rest; e.cut = cut; e.start = start;
         e.setPos(root.getX() + 0.5, root.getY() + cut, root.getZ() + 0.5);
+        e.sweptAngle = 0;
+        e.sweptTick = 0;
         return e;
     }
 
     TreeShape.Layout layout() { return TreeShape.layout(species, variant, turns); }
+
+    TreeForms.Form form() {
+        if (form == null) form = TreeForms.grow(species, variant);
+        return form;
+    }
 
     FellingRules.Curve curve() {
         if (curve == null) curve = FellingRules.curve(species, layout().height, cut, rest);
@@ -75,6 +89,13 @@ public final class FallingTree extends Entity implements IEntityAdditionalSpawnD
         if (journal.ledger.isSettled(getUUID())) { discard(); return; }
         long t = server.getGameTime() - start;
         var c = curve();
+        if (!impact && t > 0 && t <= c.contact()) {
+            float a = c.at(t);
+            if (!Float.isNaN(sweptAngle) && t > sweptTick)
+                FellingServer.sweep(server, this, sweptAngle, a, Math.toRadians(a - sweptAngle) * 20 / (t - sweptTick));
+            sweptAngle = a;
+            sweptTick = t;
+        }
         if (!impact && t >= c.contact()) {
             impact = true;
             // a fall that ended while nobody was here (unloaded, server stopped) lands without its sound
@@ -105,6 +126,8 @@ public final class FallingTree extends Entity implements IEntityAdditionalSpawnD
         start = tag.getLong("start");
         impact = tag.getBoolean("impact");
         curve = null;
+        form = null;
+        sweptAngle = Float.NaN;
     }
 
     @Override
@@ -143,6 +166,7 @@ public final class FallingTree extends Entity implements IEntityAdditionalSpawnD
         cut = b.readFloat();
         start = b.readLong();
         curve = null;
+        form = null;
     }
 
     @Override

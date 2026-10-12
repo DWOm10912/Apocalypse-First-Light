@@ -69,7 +69,14 @@ public final class LogShape {
 
     /** The log along +Y, its parts (positions in the block). */
     public static List<Part> build(Species s) {
-        float r = radius(s);
+        return build(radius(s));
+    }
+
+    /**
+     * The prism of corner radius r along +Y (the logs: their species' radius; the rounded timber, WoodBlocks: one radius
+     * for every species), its parts; sprite BARK is the side texture, END the ends'.
+     */
+    public static List<Part> build(float r) {
         var pts = outline(r);
         var out = new ArrayList<Part>();
         int n = pts.size();                         // 4 corners x (ARC + 1) points; consecutive corners joined by a flat side

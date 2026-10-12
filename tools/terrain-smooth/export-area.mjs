@@ -65,7 +65,7 @@ function state(dir, x, y, z) {
   return pal[Number((BigInt.asUintN(64, word) >> BigInt((i % per) * bits)) & ((1n << BigInt(bits)) - 1n))];
 }
 
-const NATURAL = {'grass_block': 1, 'dirt': 2, 'coarse_dirt': 3, 'sand': 4, 'gravel': 5, 'stone': 6};
+const NATURAL = {'grass_block': 1, 'dirt': 2, 'coarse_dirt': 3, 'sand': 4, 'gravel': 5, 'stone': 6, 'podzol': 7, 'mud': 8, 'clay': 9};   // TerrainSmooth.GROUND
 const ALWAYS_WET = new Set(['water', 'bubble_column', 'seagrass', 'tall_seagrass', 'kelp', 'kelp_plant']);
 // vanilla BushBlock subclasses (and snow layers): SmoothWorld#cell counts them as cover
 const COVER = new Set(['grass', 'tall_grass', 'fern', 'large_fern', 'dead_bush', 'dandelion', 'poppy', 'blue_orchid', 'allium', 'azure_bluet',

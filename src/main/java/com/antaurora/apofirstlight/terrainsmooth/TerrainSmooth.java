@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.LongAdder;
 import static com.antaurora.apofirstlight.terrainsmooth.SmoothRules.*;
 
 /**
- * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md), the common half: natural surface slopes in mode B on the six
- * natural ground blocks of the overworld, for collision, selection and suffocation on both sides (the client half draws
+ * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md), the common half: natural surface slopes in mode B on the nine
+ * natural ground blocks (GROUND; podzol, mud and clay since 2026-10-12) of the overworld, for collision, selection and suffocation on both sides (the client half draws
  * them, TerrainSmoothClient). Nothing is written to the world: the slopes are computed from the blocks.
  * <ul>
  *   <li>State: one Side per logical side. The server reads TerrainSmoothConfig when it starts and sends its state to every
@@ -60,7 +60,8 @@ public final class TerrainSmooth {
     private static final Logger LOG = LogUtils.getLogger();
     /** the approved look: gentle two-block slopes */
     public static final int MODE = SmoothRules.MODE_B;
-    public static final Block[] GROUND = {Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.SAND, Blocks.GRAVEL, Blocks.STONE};
+    public static final Block[] GROUND = {Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.COARSE_DIRT, Blocks.SAND, Blocks.GRAVEL, Blocks.STONE,
+            Blocks.PODZOL, Blocks.MUD, Blocks.CLAY};
 
     /** One logical side's session state and counters. */
     public static final class Side {
@@ -126,7 +127,13 @@ public final class TerrainSmooth {
     public static boolean applies(Level level) { return level.dimension() == Level.OVERWORLD; }
 
     public static boolean ground(Block b) {
-        return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.SAND || b == Blocks.GRAVEL || b == Blocks.STONE;
+        return b == Blocks.GRASS_BLOCK || b == Blocks.DIRT || b == Blocks.COARSE_DIRT || b == Blocks.SAND || b == Blocks.GRAVEL || b == Blocks.STONE
+                || b == Blocks.PODZOL || b == Blocks.MUD || b == Blocks.CLAY;
+    }
+
+    /** A smoothed top's collision: the slope boxes; mud's sit SmoothShapes.MUD_SINK lower, as vanilla mud's (feet sink in a little). */
+    static VoxelShape collision(Block block, long g) {
+        return block == Blocks.MUD ? SmoothShapes.sunk(g) : SmoothShapes.shape(g, true);
     }
 
     /** SmoothRules cell code of a block state. */
@@ -298,7 +305,7 @@ public final class TerrainSmooth {
     public static VoxelShape shape(Block block, BlockGetter getter, BlockPos pos, boolean collision) {
         if (!anyCollides || !ground(block)) return null;
         long g = sloped(getter, pos);
-        return g < 0 ? null : SmoothShapes.shape(g, collision);
+        return g < 0 ? null : collision ? collision(block, g) : SmoothShapes.shape(g, false);
     }
 
     /**
@@ -311,7 +318,7 @@ public final class TerrainSmooth {
         if (!anyCollides || !ground(block)) return Double.NaN;
         long g = sloped(getter, pos);
         if (g < 0) return Double.NaN;
-        double top = SmoothShapes.shape(g, true).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
+        double top = collision(block, g).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
         return Double.isInfinite(top) ? Double.NaN : top;
     }
 
@@ -325,7 +332,7 @@ public final class TerrainSmooth {
     }
 
     /**
-     * Hook (BlockCollisions, in place of the per-state "large collision shape" flag for the six blocks): a smoothed top
+     * Hook (BlockCollisions, in place of the per-state "large collision shape" flag for the ground blocks): a smoothed top
      * rises up to 0.75 above its own cell, so the layer just under a box must be asked about it. Only that layer, so the
      * rest of the collision sweep stays exactly vanilla; whether the block really is a sloped top is up to the shape.
      */
@@ -344,9 +351,10 @@ public final class TerrainSmooth {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
                 if (chunk == null) continue;
                 for (int y = feet - 2; y <= feet + 1; y++) {   // tops reach up to 2 above their floor
-                    if (!ground(chunk.getBlockState(pos.set(x, y, z)).getBlock())) continue;
+                    Block block = chunk.getBlockState(pos.set(x, y, z)).getBlock();
+                    if (!ground(block)) continue;
                     long g = geometry(level, chunk, x, y, z);
-                    if (g >= 0) tops.add(SmoothShapes.shape(g, true).move(x, y, z));
+                    if (g >= 0) tops.add(collision(block, g).move(x, y, z));
                 }
             }
         return tops.isEmpty() ? 0 : SmoothShapes.lift(box, tops);

@@ -13,22 +13,31 @@ public final class SmoothShapes {
     /** Selection boxes: 4 x 4 is close enough to aim (the outline itself is drawn from the slope) and keeps the
      *  break particles (vanilla spawns them per box) near the vanilla count. */
     public static final int SELECT_GRID = 4;
-    private static final VoxelShape[] COLLISION = new VoxelShape[1 << 16], SELECTION = new VoxelShape[1 << 16];
+    /** Mud collides this many sixteenths below its top, smoothed or not (vanilla MudBlock: 14 / 16; 2026-10-12). */
+    public static final int MUD_SINK = 2;
+    private static final VoxelShape[] COLLISION = new VoxelShape[1 << 16], SELECTION = new VoxelShape[1 << 16], SUNK = new VoxelShape[1 << 16];
 
     private SmoothShapes() {}
 
     /** grid x grid columns from the floor up to the drawn top at their centres (1/16 steps). */
     public static VoxelShape shape(long g, boolean collision) {
+        return collision ? build(g, COLLISION, SmoothRules.GRID, 0) : build(g, SELECTION, SELECT_GRID, 0);
+    }
+
+    /** A mud top's collision: the collision columns MUD_SINK sixteenths lower (a column that low has none). */
+    public static VoxelShape sunk(long g) {
+        return build(g, SUNK, SmoothRules.GRID, MUD_SINK);
+    }
+
+    private static VoxelShape build(long g, VoxelShape[] cache, int grid, int sink) {
         int key = (int) (g & 0xFFFF);
-        VoxelShape[] cache = collision ? COLLISION : SELECTION;
         VoxelShape s = cache[key];
         if (s != null) return s;
-        int grid = collision ? SmoothRules.GRID : SELECT_GRID;
         int[] h = SmoothRules.boxes(g, grid);
         VoxelShape out = Shapes.empty();
         double w = 1.0 / grid;
         for (int j = 0; j < grid; j++) for (int i = 0; i < grid; i++) {
-            int top = h[j * grid + i];
+            int top = h[j * grid + i] - sink;
             if (top <= 0) continue;
             out = Shapes.or(out, Shapes.box(i * w, 0, j * w, (i + 1) * w, top / 16.0, (j + 1) * w));
         }

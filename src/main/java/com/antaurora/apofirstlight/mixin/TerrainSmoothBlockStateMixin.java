@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md): a natural surface top of the six ground blocks collides and is
+ * Terrain Smooth V1 (docs/worldgen/terrain_smooth_v1.md): a natural surface top of the ground blocks (TerrainSmooth.GROUND) collides and is
  * selected as the slope boxes and does not suffocate; every other block and position gets exactly the vanilla call.
  * Redirects of the calls inside BlockStateBase, not cancellable injections: these run for every shape query in the
  * game, and a redirect allocates nothing.

@@ -19,7 +19,8 @@ import java.util.zip.InflaterInputStream;
  * <li>Chops per species and size with each axe tier; drops per species.</li>
  * <li>Cut geometry: stump below the cut with a closed cap, the falling tree above it with a cap, the notch of every
  * stage and side closed (each moved point the same in both bands) and inside the trunk.</li>
- * <li>Fall: durations, slow start then speeding up, the rest angle on flat, uphill and downhill ground.</li>
+ * <li>Fall: durations, slow start then speeding up, the rest angle on flat, uphill and downhill ground; hits on bodies in
+ * its way (2026-10-12), never the chopper.</li>
  * <li>Direction: deterministic, never toward the chopper, obstacles avoided.</li>
  * <li>Ledger: two players, a double last chop, chop spam, a reload in the middle, a fall restored twice.</li>
  * <li>Shared cells (plan): felling any natural tree leaves every cell as if it had never been there.</li>
@@ -36,6 +37,7 @@ public final class FellCheck {
         chops();
         geometry();
         falls();
+        hits();
         directions();
         ledger();
         logs();
@@ -246,6 +248,63 @@ public final class FellCheck {
         require(dur[Species.EASTERN_HEMLOCK.ordinal()][0] > dur[Species.WHITE_OAK.ordinal()][0], "the tall hemlock takes longer to fall than the white oak");
     }
 
+    // ------------------------------------------------------------------------------------------------ 3b. hits
+
+    /** The hits a body gets from a fall on flat ground: {crush, limbs, twigs} damage (0 for none), the first of each kind. */
+    static float[] struck(TreeForms.Form f, Species sp, FellingRules.Curve c, float cut, double along, double across, double w, double height) {
+        float[] out = new float[3];
+        for (int t = 1; t <= c.contact(); t++) {
+            double a0 = c.at(t - 1), a1 = c.at(t);
+            var h = FellingRules.hit(f, sp, cut, a0, a1, Math.toRadians(a1 - a0) * 20, along, across, w, -cut, height - cut);
+            if (h != null && out[h.kind()] == 0) out[h.kind()] = h.damage();
+        }
+        return out;
+    }
+
+    static float max(float[] hits) { return Math.max(hits[0], Math.max(hits[1], hits[2])); }
+
+    /**
+     * Falling tree hits (2026-10-12): a player (0.6 x 1.8 m), a zombie (0.6 x 1.95, 20 HP) and a cow (0.9 x 1.4, 10 HP)
+     * in the fall line a third of the way to the crown top, a player two thirds of the way, a chicken (0.4 x 0.7) under the crown off the fall line, the
+     * chopper anywhere beside or behind the stump, a body well beside the crown.
+     */
+    static void hits() {
+        for (Species sp : Species.values()) {
+            float t1lo = 999, t1hi = 0, t2lo = 999, t2hi = 0, clo = 999, chi = 0, zlo = 999, zhi = 0;
+            for (int v = 0; v < TreeShape.VARIANTS; v++) {
+                var f = TreeForms.grow(sp, v);
+                float cut = 0.6F;
+                float rest = FellingRules.restAngle(FellingRules.profile(f, cut, sp), d -> -cut);
+                var c = FellingRules.curve(sp, f.crownTop, cut, rest);
+                double length = f.crownTop - cut;
+                float[] third = struck(f, sp, c, cut, length / 3, 0, 0.3, 1.8), twoThirds = struck(f, sp, c, cut, length * 2 / 3, 0, 0.3, 1.8);
+                float[] zombie = struck(f, sp, c, cut, length / 3, 0, 0.3, 1.95), cow = struck(f, sp, c, cut, length / 3, 0, 0.45, 1.4);
+                double mid = (f.crownBottom + f.crownTop) / 2 - cut;
+                float[] chicken = struck(f, sp, c, cut, Math.max(mid, length * 2 / 3), f.crownRadius * 0.3, 0.2, 0.7);
+                require(third[FellingRules.CRUSH] >= 16 && third[FellingRules.CRUSH] <= 40, sp.id + " " + v + ": a player in the fall line a third of the way is crushed, 16-40 (" + third[0] + ")");
+                require(max(cow) >= 10, sp.id + " " + v + ": a cow there dies (" + max(cow) + ")");
+                zlo = Math.min(zlo, max(zombie)); zhi = Math.max(zhi, max(zombie));
+                require(max(twoThirds) >= 6, sp.id + " " + v + ": a player two thirds of the way is hurt (" + Arrays.toString(twoThirds) + ")");
+                require(max(chicken) >= 4, sp.id + " " + v + ": a chicken under the crown dies (" + Arrays.toString(chicken) + ")");
+                require(chicken[FellingRules.TWIGS] <= 6, sp.id + " " + v + ": twigs whip, at most 6");
+                t1lo = Math.min(t1lo, third[0]); t1hi = Math.max(t1hi, third[0]);
+                t2lo = Math.min(t2lo, max(twoThirds)); t2hi = Math.max(t2hi, max(twoThirds));
+                clo = Math.min(clo, max(chicken)); chi = Math.max(chi, max(chicken));
+                // the chopper: beside or behind the stump (the fall is at least 100 degrees away from them)
+                for (double dist : new double[]{0.8, 0.85, 1.0, 1.5, 2.5})
+                    for (int deg = 100; deg <= 260; deg += 10) {
+                        double a = Math.toRadians(deg);
+                        float[] chopper = struck(f, sp, c, cut, dist * Math.cos(a), Math.abs(dist * Math.sin(a)), 0.3, 1.8);
+                        require(max(chopper) == 0, sp.id + " " + v + ": the chopper at " + dist + " m, " + deg + " degrees is not hit");
+                    }
+                float[] aside = struck(f, sp, c, cut, mid, f.crownRadius + 1.5, 0.3, 1.8);
+                require(max(aside) == 0, sp.id + " " + v + ": a body 1.5 m beside the crown is not hit");
+            }
+            System.out.printf("hits %s: player in the fall line a third of the way %.1f-%.1f (zombie %.1f-%.1f), two thirds %.1f-%.1f, chicken under the crown %.1f-%.1f%n",
+                    sp.id, t1lo, t1hi, zlo, zhi, t2lo, t2hi, clo, chi);
+        }
+    }
+
     // ------------------------------------------------------------------------------------------- 4. directions
 
     static void directions() {
@@ -313,16 +372,23 @@ public final class FellCheck {
      * P2.2 log blocks (LogShape), every species and axis: inside the block; culled parts on their face plane and, when
      * rectangles, in vanilla's corner order; facing outward; UVs in the sprite; one closed surface (every edge shared by
      * two quads); the end caps cover the rounded square's area; every part either culled or a corner strip that faces
-     * the two sides it takes its light from (LogShape.cornerSides).
+     * the two sides it takes its light from (LogShape.cornerSides). Wood Building Blocks V1: the rounded timber is the same
+     * prism at its own radius (TreeLogModel's second constructor), checked alike.
      */
     /** Direction ordinals (DOWN, UP, NORTH, SOUTH, WEST, EAST) as unit vectors. */
     static final int[][] DIRS = {{0, -1, 0}, {0, 1, 0}, {0, 0, -1}, {0, 0, 1}, {-1, 0, 0}, {1, 0, 0}};
+    /** WoodBlocks.TIMBER_RADIUS (WoodBlocks needs Forge; tools/build-wood-blocks-v1.mjs --check keeps the two equal). */
+    static final float TIMBER_RADIUS = 1.5F / 16;
 
     static void logs() {
         int parts = 0;
-        for (Species sp : Species.values()) for (int axis = 0; axis < 3; axis++) {
-            var list = LogShape.vanillaOrder(LogShape.axis(LogShape.build(sp), axis));
-            String id = sp.id + " log axis " + "XYZ".charAt(axis);
+        var prisms = new LinkedHashMap<String, Float>();
+        for (Species sp : Species.values()) prisms.put(sp.id + " log", LogShape.radius(sp));
+        prisms.put("rounded timber", TIMBER_RADIUS);
+        for (var prism : prisms.entrySet()) for (int axis = 0; axis < 3; axis++) {
+            float r = prism.getValue();
+            var list = LogShape.vanillaOrder(LogShape.axis(LogShape.build(r), axis));
+            String id = prism.getKey() + " axis " + "XYZ".charAt(axis);
             var edges = new HashMap<String, Integer>();
             double capArea = 0;
             for (var part : list) {
@@ -373,14 +439,13 @@ public final class FellCheck {
             int open = 0;
             for (int c : edges.values()) if (c != 2) open++;
             require(open == 0, id + ": one closed surface (" + open + " edges not shared by two quads)");
-            float r = LogShape.radius(sp);
             // the corner fans are polygons of ARC triangles: the square without its corner squares plus the fans
             double want = 2 * (1 - 4 * r * r + 4 * LogShape.ARC * 0.5 * r * r * Math.sin(Math.PI / (2 * LogShape.ARC)));
             require(Math.abs(capArea - want) < 1e-3, id + ": the end caps cover the rounded square (" + capArea + " vs " + want + ")");
         }
         var caps = new StringBuilder();
-        for (Species sp : Species.values()) caps.append(String.format(" %s %.3f", sp.id, 1 - (4 - Math.PI) * LogShape.radius(sp) * LogShape.radius(sp)));
-        System.out.printf("log blocks: %d species x 3 axes, %d parts: closed, outward, culled faces on their planes in vanilla order, end caps of the square:%s%n",
+        for (var prism : prisms.entrySet()) caps.append(String.format(" %s %.3f", prism.getKey().replace(" log", ""), 1 - (4 - Math.PI) * prism.getValue() * prism.getValue()));
+        System.out.printf("log blocks: %d species + the rounded timber x 3 axes, %d parts: closed, outward, culled faces on their planes in vanilla order, end caps of the square:%s%n",
                 Species.values().length, parts, caps);
     }
 

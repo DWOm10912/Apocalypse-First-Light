@@ -88,8 +88,8 @@ final class FellingCommands {
         long chops = FellingServer.CHOPS.sum(), fells = FellingServer.FELLS.sum();
         int loaded = 0;
         for (var e : level.getAllEntities()) if (e instanceof FallingTree) loaded++;
-        say(x, String.format("Felling (this session): %d chops counted, %d ignored (too soon), %d trees felled, %d falls settled, %d item stacks dropped; %.2f ms per chop, %.2f ms per fell (direction, rest angle, cells)",
-                chops, FellingServer.IGNORED.sum(), fells, FellingServer.SETTLES.sum(), FellingServer.ITEMS.sum(),
+        say(x, String.format("Felling (this session): %d chops counted, %d ignored (too soon), %d trees felled, %d falls settled, %d item stacks dropped, %d bodies hit; %.2f ms per chop, %.2f ms per fell (direction, rest angle, cells)",
+                chops, FellingServer.IGNORED.sum(), fells, FellingServer.SETTLES.sum(), FellingServer.ITEMS.sum(), FellingServer.HITS.sum(),
                 chops == 0 ? 0 : FellingServer.CHOP_NANOS.sum() / 1e6 / chops, fells == 0 ? 0 : FellingServer.FELL_NANOS.sum() / 1e6 / fells));
         say(x, String.format("  ledger: %d trees partly chopped, %d falls under way, %d settled falls remembered; %d falling trees loaded now; %s",
                 ledger.work.size(), ledger.falling.size(), ledger.settled.size(), loaded,

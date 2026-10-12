@@ -47,7 +47,7 @@ public final class TreeLogBlock extends RotatedPillarBlock {
     }
 
     /** End grain on a map: the heartwood (oaks yellow- to red-brown) or the wide pale sapwood (pine, hickory, maple). */
-    private static MapColor endColor(Species s) {
+    static MapColor endColor(Species s) {
         return switch (s) {
             case WHITE_OAK -> MapColor.WOOD;
             case RED_OAK -> MapColor.TERRACOTTA_ORANGE;

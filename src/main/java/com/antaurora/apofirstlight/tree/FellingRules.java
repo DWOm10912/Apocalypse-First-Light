@@ -226,6 +226,99 @@ public final class FellingRules {
         double cost(double angle);
     }
 
+    // ------------------------------------------------------------------------------------------------- hits
+
+    /** Kinds of hit: the trunk or main limbs passing through a body, the crown's propping limbs under them, its twigs. */
+    public static final int CRUSH = 0, LIMBS = 1, TWIGS = 2;
+
+    /** One hit of a falling tree on a body: its kind, the damage, the speed (m/s) of the tree there. */
+    public record Hit(int kind, float damage, double speed) {}
+
+    static final double HEFT_RADIUS = 0.3;
+
+    /**
+     * Damage of a crush at v m/s by a tree whose trunk is r m in radius at the cut (2026-10-12): (4 + 2.2 v) x the
+     * tree's heft (r / HEFT_RADIUS, 0.6..1.3), at most 40. A body in the fall line a third of the way to the crown top
+     * takes about 20-35 (offline check): a zombie or anything smaller dies, an unarmoured player at full health about too.
+     */
+    public static float crushHit(double v, double r) {
+        return (float) Math.min(40, (4 + 2.2 * v) * Math.max(0.6, Math.min(1.3, r / HEFT_RADIUS)));
+    }
+
+    /** The crown's propping limbs under the trunk's line: half a crush. */
+    public static float limbsHit(double v, double r) {
+        return crushHit(v, r) * 0.5F;
+    }
+
+    /** The crown's twigs at v m/s: 1 + 0.35 v, at most 6 (a chicken, not a player). */
+    public static float twigsHit(double v) {
+        return (float) Math.min(6, 1 + 0.35 * v);
+    }
+
+    /** The tree's core at a height: the trunk, above its top the main limbs going on, tapering to a third at the crown top. */
+    static double coreRadius(Form f, double h) {
+        if (h <= f.trunkTop) return trunkRadius(f, (float) h);
+        double u = Math.min(1, (h - f.trunkTop) / Math.max(0.5, f.crownTop - f.trunkTop));
+        return trunkRadius(f, f.trunkTop) * (1 - 0.67 * u);
+    }
+
+    /** The crown's radius at a height (a bell over its height, 0 outside it). */
+    static double crownAt(Form f, double h) {
+        if (h < f.crownBottom || h > f.crownTop) return 0;
+        return f.crownRadius * Math.sin(Math.PI * (h - f.crownBottom) / Math.max(0.5, f.crownTop - f.crownBottom));
+    }
+
+    /**
+     * What a falling tree's sweep from a0 to a1 degrees from upright (turning at omega rad/s) does to a body, in the fall's
+     * own frame: the body's centre {@code along} the fall direction and {@code across} it (m, from the pivot), its half
+     * width, its bottom and top relative to the pivot. Null for no contact. The body is met at its distance from the
+     * pivot, by what reaches it there:
+     * <ul>
+     * <li>the core (the trunk, then the main limbs, coreRadius), within its radius across the fall line: CRUSH;</li>
+     * <li>under the core the crown's propping limbs (how far the tree reaches below its axis where it rests, as in
+     * #profile: the species' crownSupport x the crown's radius), within half the crown's radius across: LIMBS;</li>
+     * <li>the same reach within 0.8 of the crown's radius across: TWIGS (the twigs' first touch, higher up, is ignored).</li>
+     * </ul>
+     * Nothing within 0.5 m of the pivot is hit (the butt hardly moves: the chopper beside the stump is safe), nor anything
+     * behind it (the tree falls away from it); a body low under a propped-up trunk stays under it.
+     */
+    public static Hit hit(Form f, Species species, float cut, double a0, double a1, double omega, double along, double across,
+                          double halfWidth, double y0, double y1) {
+        if (!(a1 > a0)) return null;
+        double length = f.crownTop - cut;
+        double nearA = Math.min(along + halfWidth, Math.max(along - halfWidth, 0)), nearY = Math.min(y1, Math.max(y0, 0));
+        double near = Math.hypot(nearA, nearY);
+        if (near > length) return null;
+        double s = Math.max(near, Math.min(length, Math.hypot(along, (y0 + y1) / 2)));
+        if (s < 0.5) return null;
+        double h = cut + s, v = Math.abs(omega) * s, core = coreRadius(f, h), crown = crownAt(f, h);
+        double heft = trunkRadius(f, cut);
+        if (across <= halfWidth + core && sweeps(a0, a1, along, halfWidth, y0, y1, core, s)) return new Hit(CRUSH, crushHit(v, heft), v);
+        double reach = Math.max(core, params(species).crownSupport * crown);
+        if (reach <= core || !sweeps(a0, a1, along, halfWidth, y0, y1, reach, s)) return null;
+        if (across <= halfWidth + Math.max(core, 0.5 * crown)) return new Hit(LIMBS, limbsHit(v, heft), v);
+        if (across <= halfWidth + 0.8 * crown) return new Hit(TWIGS, twigsHit(v), v);
+        return null;
+    }
+
+    /**
+     * Whether the wedge a0..a1 (degrees from upright, toward +along), as thick as r at distance s, crosses the body's
+     * outline along +- w, y0..y1 (its part ahead of the pivot: only that is in the tree's way).
+     */
+    private static boolean sweeps(double a0, double a1, double along, double w, double y0, double y1, double r, double s) {
+        double front = Math.max(0, along - w), back = along + w;
+        if (back <= 0) return false;
+        double lo = Double.MAX_VALUE, hi = -Double.MAX_VALUE;
+        for (double a : new double[]{front, back})
+            for (double y : new double[]{y0, y1}) {
+                double phi = Math.toDegrees(Math.atan2(a, y));
+                lo = Math.min(lo, phi);
+                hi = Math.max(hi, phi);
+            }
+        double pad = Math.toDegrees(Math.asin(Math.min(1, r / s)));
+        return hi + pad >= a0 && lo - pad <= a1;
+    }
+
     // ----------------------------------------------------------------------------------------- shared cells
 
     /**

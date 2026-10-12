@@ -1,14 +1,20 @@
 package com.antaurora.apofirstlight.tree;
 
+import com.antaurora.apofirstlight.stamina.PlayerStamina;
+import com.antaurora.apofirstlight.stamina.StaminaConfig;
 import com.antaurora.apofirstlight.tree.TreeForms.Species;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -16,7 +22,10 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TieredItem;
@@ -28,6 +37,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.ToolActions;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -49,8 +59,9 @@ import java.util.concurrent.atomic.LongAdder;
  * <li>Vanilla breaking stays out: the cells are unbreakable in survival; a creative left click with an axe on them is
  * cancelled here and on the client, so no cell is ever broken by hand.</li>
  * <li>Chop (the client's ChopMsg): a player, in reach, with an axe (Forge's AXE_DIG action: any axe, modded included),
- * at least MIN_CHOP_TICKS after their last chop. Work = the tool's power (FellingRules#power), into the ledger; the
- * root's cut stage and notch side follow it in its block state; wood sound, chips at the notch, one durability.</li>
+ * at least MIN_CHOP_TICKS after their last chop. Work = the tool's power (FellingRules#power; winded x stamina's
+ * winded.dig_speed), into the ledger; the root's cut stage and notch side follow it in its block state; wood sound,
+ * chips at the notch, one durability, stamina's costs.chop (2026-10-12).</li>
  * <li>Last chop: FellingRules#direction picks the fall direction, FellingRules#restAngle the angle it comes to rest at
  * on the ground there; the falling tree entity is added first (if it cannot be, the tree stays and the work too); then
  * the tree's cells go: each keeps what another tree has there (FellingRules#keeper), else empties (a development
@@ -63,7 +74,10 @@ public final class FellingServer {
     /** The ledger's saved data; P0-P3 test worlds wrote it under the development name, read once if the new one is absent. */
     static final String NAME = "afl_mesh_tree_felling", LEGACY = "afl_dev_mesh_tree_felling";
     static final LongAdder CHOPS = new LongAdder(), IGNORED = new LongAdder(), FELLS = new LongAdder(), SETTLES = new LongAdder(),
-            ITEMS = new LongAdder(), FELL_NANOS = new LongAdder(), CHOP_NANOS = new LongAdder();
+            ITEMS = new LongAdder(), FELL_NANOS = new LongAdder(), CHOP_NANOS = new LongAdder(), HITS = new LongAdder();
+    /** A falling tree's hit (2026-10-12): armour counts, a helmet takes a quarter off (damages_helmet), like a falling block. */
+    public static final ResourceKey<DamageType> FALLING_TREE = ResourceKey.create(Registries.DAMAGE_TYPE,
+            new ResourceLocation("apocalypse_firstlight", "falling_tree"));
     private static final Map<UUID, Long> lastRefusal = new HashMap<>();
 
     private FellingServer() {}
@@ -167,10 +181,13 @@ public final class FellingServer {
         // the notch never goes back: a stage the block shows (its ledger entry lost) counts as that much work done
         int shown = rootState.getValue(TreeBlocks.CHOP);
         if (shown > 0 && !journal.ledger.work.containsKey(rootPos.asLong())) journal.ledger.work.put(rootPos.asLong(), shown * need / 5F);
-        var c = journal.ledger.chop(rootPos.asLong(), player.getUUID(), level.getGameTime(), power(tool), need);
+        // winded: the swing lands weaker, like winded digging (stamina's winded.dig_speed)
+        float power = power(tool) * (PlayerStamina.winded(player) ? (float) StaminaConfig.get().winded.digSpeed : 1F);
+        var c = journal.ledger.chop(rootPos.asLong(), player.getUUID(), level.getGameTime(), power, need);
         if (c.result() == FellingLedger.Result.COOLDOWN) { IGNORED.increment(); return; }
         journal.setDirty();
         CHOPS.increment();
+        PlayerStamina.spend(player, StaminaConfig.get().costs.chop, false);
         double cx = r.x + 0.5, cy = r.y + cut, cz = r.z + 0.5;
         // the notch faces the first chopper; its stage follows the work
         int side = c.stageBefore() == 0 && rootState.getValue(TreeBlocks.CHOP) == 0
@@ -324,6 +341,41 @@ public final class FellingServer {
             if (!want.equals(now)) level.setBlock(pos, want, flags);
         }
         level.setBlock(root, TreeBlocks.stumpState(rootState), flags);
+    }
+
+    // ------------------------------------------------------------------------------------------------- hits
+
+    /**
+     * One tick of a fall, a0 to a1 degrees from upright at omega rad/s (FellingRules#hit): each living body in the tree's
+     * way is hurt (FALLING_TREE, no attacker) once per kind of hit, and pushed along the fall.
+     */
+    static void sweep(ServerLevel level, FallingTree e, float a0, float a1, double omega) {
+        if (!(a1 > a0)) return;
+        var form = e.form();
+        double length = form.crownTop - e.cut, reach = form.crownRadius + 1;
+        double ux = Math.cos(e.direction), uz = Math.sin(e.direction), px = e.getX(), py = e.getY(), pz = e.getZ();
+        // the swept wedge's box: the pivot and the top at both angles (level between them), widened by the crown
+        double far = length * (a0 <= 90 && a1 >= 90 ? 1 : Math.max(Math.sin(Math.toRadians(a0)), Math.sin(Math.toRadians(a1))));
+        double top = length * Math.cos(Math.toRadians(a0));
+        var box = new AABB(px, py, pz, px + ux * far, py + top, pz + uz * far).inflate(reach).expandTowards(0, -3, 0);
+        Holder<DamageType> type = null;
+        for (LivingEntity body : level.getEntitiesOfClass(LivingEntity.class, box, b -> b.isAlive() && !b.isSpectator())) {
+            AABB bb = body.getBoundingBox();
+            double ex = (bb.minX + bb.maxX) / 2 - px, ez = (bb.minZ + bb.maxZ) / 2 - pz;
+            var hit = FellingRules.hit(form, e.species, e.cut, a0, a1, omega, ex * ux + ez * uz, Math.abs(ez * ux - ex * uz),
+                    (bb.getXsize() + bb.getZsize()) / 4, bb.minY - py, bb.maxY - py);
+            if (hit == null) continue;
+            int had = e.struck.getOrDefault(body.getUUID(), 0);
+            if ((had & 1 << hit.kind()) != 0) continue;
+            e.struck.put(body.getUUID(), had | 1 << hit.kind());
+            if (type == null) type = level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(FALLING_TREE);
+            if (body.hurt(new DamageSource(type), hit.damage())) {
+                double k = Math.min(0.6, 0.04 * hit.speed()) * (hit.kind() == FellingRules.TWIGS ? 0.5 : 1);
+                body.push(ux * k, 0.1, uz * k);
+                body.hurtMarked = true;
+            }
+            HITS.increment();
+        }
     }
 
     // ------------------------------------------------------------------------------------------- landing, drops

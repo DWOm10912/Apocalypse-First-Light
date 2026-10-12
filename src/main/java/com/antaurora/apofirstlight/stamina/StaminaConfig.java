@@ -28,6 +28,8 @@ public final class StaminaConfig {
         public double meleeEmptyHand = 3, melee = 5, shot = 0.6, reload = 1;
         /** One pull of a recoil starter (the portable diesel generator, 2026-10-09). */
         public double recoilPull = 6;
+        /** One accepted axe chop on a standing tree (Mesh Trees felling, 2026-10-12): a full swing like a melee hit, a bit less. */
+        public double chop = 4;
         /** item id → cost per swing */
         public Map<String, Double> meleeItems = Map.of("apocalypse_firstlight:crowbar", 8.0);
         /** ammo item id → cost per shot */

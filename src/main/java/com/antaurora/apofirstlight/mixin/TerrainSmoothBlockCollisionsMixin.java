@@ -13,9 +13,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
  * Terrain Smooth V1: vanilla's collision sweep only looks at the outer layer of cells around a box for states flagged as
- * having a large collision shape (fences). A smoothed top rises up to 0.75 above its cell, so for the six ground blocks
- * the layer just under the box counts too: there, at that one position, not by flagging the states (the P1 prototype did,
- * which made every collision in the world scan all six blocks in its outer layer).
+ * having a large collision shape (fences). A smoothed top rises up to 0.75 above its cell, so for the ground blocks
+ * (TerrainSmooth.GROUND) the layer just under the box counts too: there, at that one position, not by flagging the states
+ * (the P1 prototype did, which made every collision in the world scan all of them in its outer layer).
  */
 @Mixin(BlockCollisions.class)
 public abstract class TerrainSmoothBlockCollisionsMixin {

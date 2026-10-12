@@ -16,6 +16,24 @@
     "minecraft:chest",
     "minecraft:trapped_chest",
     "minecraft:lectern",
-    "minecraft:composter"
+    "minecraft:composter",
+    "apocalypse_firstlight:white_oak_planks",
+    "apocalypse_firstlight:white_oak_rounded_timber",
+    "apocalypse_firstlight:white_oak_beam",
+    "apocalypse_firstlight:white_pine_planks",
+    "apocalypse_firstlight:white_pine_rounded_timber",
+    "apocalypse_firstlight:white_pine_beam",
+    "apocalypse_firstlight:red_oak_planks",
+    "apocalypse_firstlight:red_oak_rounded_timber",
+    "apocalypse_firstlight:red_oak_beam",
+    "apocalypse_firstlight:shagbark_hickory_planks",
+    "apocalypse_firstlight:shagbark_hickory_rounded_timber",
+    "apocalypse_firstlight:shagbark_hickory_beam",
+    "apocalypse_firstlight:red_maple_planks",
+    "apocalypse_firstlight:red_maple_rounded_timber",
+    "apocalypse_firstlight:red_maple_beam",
+    "apocalypse_firstlight:eastern_hemlock_planks",
+    "apocalypse_firstlight:eastern_hemlock_rounded_timber",
+    "apocalypse_firstlight:eastern_hemlock_beam"
   ]
 }
