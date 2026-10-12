@@ -25,23 +25,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {png} from './cube-slab-mesh-lib.mjs';
+import {N, hash, clamp, sstep, mul, mix, vn, wrapD, render} from './mesh-trees/hd-art.mjs';
 import {OAK, PINE, OAK_WOOD, PINE_WOOD} from './mesh-trees/felling-art.mjs';
 import {RED_OAK, HICKORY, RED_MAPLE, HEMLOCK, RED_OAK_WOOD, HICKORY_WOOD, RED_MAPLE_WOOD, HEMLOCK_WOOD} from './mesh-trees/species-art.mjs';
-
-const N = 240, SS = 3, MM = 1000 / N;
-const hash = (a, b, c) => { let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2147483647); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
-const smooth = t => t * t * (3 - 2 * t), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const sstep = (a, b, v) => smooth(clamp((v - a) / (b - a), 0, 1));
-const mul = (c, t) => c.map(v => v * t), mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
-/** Periodic value noise (period N on both axes), cells cx x cy texels (both divide N), -1..1. */
-function vn(x, y, seed, cx, cy = cx) {
-  const nx = N / cx, ny = N / cy, xi = Math.floor(x / cx), yi = Math.floor(y / cy);
-  const h = (i, j) => hash(((i % nx) + nx) % nx, ((j % ny) + ny) % ny, seed);
-  const tx = smooth(x / cx - xi), ty = smooth(y / cy - yi);
-  const a = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * tx, b = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * tx;
-  return 2 * (a + (b - a) * ty) - 1;
-}
-const wrapD = (a, n = N) => { const d = ((a % n) + n) % n; return Math.min(d, n - d); };
 
 /** The species in Species order, with the trees' palettes and wood profiles. */
 // lumber: the sawn wood's sapwood share (0 heartwood .. 1 sapwood: oaks sell heartwood, maple its pale sapwood, hickory
@@ -169,31 +155,6 @@ function timberEnd(sp) {
     }
     return {c, s, p: por, h, ao};
   };
-}
-
-// ---- rasterise: supersampled colour / smoothness / porosity / height / AO, slopes wrapping ----
-function render(f) {
-  const col = Buffer.alloc(N * N * 4), spec = Buffer.alloc(N * N * 4), nrm = Buffer.alloc(N * N * 4), H = new Float64Array(N * N);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    let c = [0, 0, 0], s = 0, p = 0, h = 0, ao = 0;
-    for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
-      const r = f(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS);
-      c = c.map((v, i) => v + r.c[i]); s += r.s; p += r.p; h += r.h; ao += r.ao;
-    }
-    const k = SS * SS, o = (y * N + x) * 4;
-    c.forEach((v, i) => { col[o + i] = clamp(Math.round(v / k), 0, 255); }); col[o + 3] = 255;
-    spec[o] = clamp(Math.round(s / k), 0, 255); spec[o + 1] = 10; spec[o + 2] = clamp(Math.round(p / k), 0, 64); spec[o + 3] = 255;
-    H[y * N + x] = h / k; nrm[o + 2] = clamp(Math.round(255 * ao / k), 0, 255);
-  }
-  const at = (i, j) => H[((j + N) % N) * N + ((i + N) % N)];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const hx = (at(x + 1, y) - at(x - 1, y)) / (2 * MM), hy = (at(x, y + 1) - at(x, y - 1)) / (2 * MM);
-    let nx = -hx, ny = -hy; const l = Math.hypot(nx, ny, 1); nx /= l; ny /= l;
-    const o = (y * N + x) * 4;
-    nrm[o] = Math.round((nx * 0.5 + 0.5) * 255); nrm[o + 1] = Math.round((ny * 0.5 + 0.5) * 255);
-    nrm[o + 3] = clamp(Math.round(255 * (1 + H[y * N + x] / 250)), 0, 255);
-  }
-  return {col, maps: [png(col, N, N), png(spec, N, N), png(nrm, N, N)]};
 }
 
 /** Every texture set: [name, {col, maps}]. */

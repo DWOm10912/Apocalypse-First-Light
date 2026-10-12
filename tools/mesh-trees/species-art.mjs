@@ -9,9 +9,11 @@
 //                       red twigs and buds; wide creamy sapwood, fine faint rings
 //   eastern hemlock     cinnamon-brown bark, broad scaly ridges, deep purplish furrows; short flat needles in two
 //                       ranks on flat lacy sprays, white bands beneath, tiny cones at the tips; pale wood, no resin
-// Bark 16 x 16 RGB seamless both ways (vanilla density, like the P0 barks); leaf cards 32 x 32 grey values (the crown's
-// tint colours them: the biome foliage for the broadleaves, hemlock its own deep green), with _mid / _far denser for
-// LOD1 / LOD2 and a 16 x 16 _proxy cube face; item icons 16 x 16 coloured pixel art like felling-art's.
+// Palettes and wood profiles (bark-art.mjs draws the 32 px bark from the palettes since 2026-10-12, mesh_trees_p4_formal.md
+// W; the 16 px barks drawn here are gone; felling-art.mjs draws the log ends, end grain and cut wood from palette and
+// profile); leaf cards 32 x 32 grey values (the crown's tint colours them: the biome foliage for the broadleaves, hemlock
+// its own deep green), with _mid / _far denser for LOD1 / LOD2 and a 16 x 16 _proxy cube face; item icons 16 x 16
+// coloured pixel art like felling-art's.
 import {rngOf, canvas, put, getc, mul, mix, filled, outline, limb, seg} from './felling-art.mjs';
 
 // ------------------------------------------------------------------------------------------------- palettes
@@ -59,128 +61,6 @@ export const RED_OAK_WOOD = {R: 7, rimR: 13.8, innerR: 13.1, sapR: 11.6, rimW: 1
 export const HICKORY_WOOD = {R: 5, rimR: 14.2, innerR: 13.5, sapR: 10.2, rimW: 1.2, innerW: 0.6, sapW: 3.6, spacing: 2.3, lateShare: 0.38, checks: 2, rays: false, resin: false};
 export const RED_MAPLE_WOOD = {R: 9, rimR: 14.3, innerR: 13.8, sapR: 7.5, rimW: 0.9, innerW: 0.5, sapW: 5.6, spacing: 1.9, lateShare: 0.25, checks: 1, rays: false, resin: false};
 export const HEMLOCK_WOOD = {R: 12, rimR: 13.0, innerR: 12.2, sapR: 11.4, rimW: 2.0, innerW: 0.9, sapW: 0.8, spacing: 2.6, lateShare: 0.36, checks: 2, rays: false, resin: false};
-
-const wrap = (v, n) => ((v % n) + n) % n;
-
-/** Wandering column positions (one per row, wrapping), closed vertically: the last rows walk back to the first. */
-function wander(r, start, H, W, every, step) {
-  const row = [];
-  let x = start;
-  for (let y = 0; y < H; y++) {
-    if (y > 0 && y % every === 0 && y < H - every) x += r() < 0.5 ? -step : step;
-    row.push(wrap(x, W));
-  }
-  // walk back to the start over the last rows, one pixel a row at most
-  for (let y = H - 1, k = 0; y > 0 && wrap(row[y] - row[0], W) !== 0 && k < 3; y--, k++) row[y] = row[0];
-  return row;
-}
-
-// --------------------------------------------------------------------------------------------------- barks
-
-/** Northern red oak: four shallow dark furrows, flat ridges between them with a light stripe along the top. */
-export function redOakBark(p) {
-  const W = 16, H = 16, r = rngOf(4401), img = canvas(W, H);
-  const furrows = [0, 4, 8, 12].map(c => wander(r, c + (r() < 0.5 ? 0 : 1), H, W, 4, 1));
-  // per ridge: its own run of tone segments (3-7 rows) and two short breaks, nothing aligned across ridges
-  const tones = furrows.map(() => segments(r, H, 3, 7));
-  const breaks = furrows.map(() => [Math.floor(r() * H), Math.floor(r() * H)]);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let best = 99, k = 0;
-    for (let i = 0; i < furrows.length; i++) { const d = wrap(x - furrows[i][y], W); if (d < best) { best = d; k = i; } }
-    const next = furrows[(k + 1) % furrows.length][y], width = wrap(next - furrows[k][y], W) || W;
-    let c;
-    if (best === 0) c = (x * 5 + y * 3) % 7 === 0 ? p.deep : p.crack;
-    else if (best === width - 1) c = p.bark3;                                   // the ridge's shaded side
-    else if (best === 1 || (best === 2 && width > 4)) c = p.barkLight;          // the flat, light top ("ski track")
-    else c = tones[k][y] ? p.bark1 : p.bark2;
-    if (best > 0 && breaks[k].includes(y) && best < width - 1) c = best === 1 ? p.bark3 : p.crack;
-    put(img, x, y, c);
-  }
-  return img;
-}
-
-/** Alternating 0/1 runs of random lengths [lo, hi] over n rows, cyclic (the last run meets the first). */
-function segments(r, n, lo, hi) {
-  const out = new Array(n).fill(0);
-  let y = 0, v = r() < 0.5 ? 0 : 1;
-  while (y < n) { const len = lo + Math.floor(r() * (hi - lo + 1)); for (let k = 0; k < len && y < n; k++) out[y++] = v; v ^= 1; }
-  return out;
-}
-
-/**
- * Shagbark hickory: long loose plates in six columns of uneven width, each plate 7-11 rows, its ends staggered from the
- * neighbours'; a plate's top end curls out (light row), its shadow falls on the plate below, the gaps between columns
- * are dark but broken where two plates press together.
- */
-export function hickoryBark(p) {
-  const W = 16, H = 16, r = rngOf(4501), img = canvas(W, H);
-  const widths = [3, 2, 3, 3, 2, 3];
-  let x0 = 0;
-  for (let c = 0; c < widths.length; c++) {
-    const w = widths[c], x1 = x0 + w;
-    // two plates over the 16 rows: a start row and the second start 7-9 rows later (cyclic)
-    const s0 = Math.floor(r() * H), s1 = wrap(s0 + 7 + Math.floor(r() * 3), H);
-    const gapFrom = Math.floor(r() * H), gapLen = 9 + Math.floor(r() * 5);
-    for (let y = 0; y < H; y++) {
-      const fromStart0 = wrap(y - s0, H), fromStart1 = wrap(y - s1, H), along = Math.min(fromStart0, fromStart1);
-      const second = fromStart1 < fromStart0;
-      for (let x = x0; x < x1; x++) {
-        let col = (c + (second ? 1 : 0)) % 2 ? p.bark1 : p.bark2;
-        if (along >= 5 && x === x1 - 1) col = p.bark3;                       // the plate's lower part, its edge in shade
-        if (along <= 1 && x > x0) col = along === 0 ? p.barkLight : mix(p.barkLight, p.bark1, 0.5);   // the curled top end
-        if (along === H - 1 || (y === wrap((second ? s0 : s1) - 1, H) && x > x0)) col = p.deep;      // its shadow below
-        if (x === x0 && wrap(y - gapFrom, H) < gapLen) col = wrap(y - gapFrom, H) % 5 === 0 ? p.deep : p.crack;
-        put(img, x, y, col);
-      }
-    }
-    x0 = x1;
-  }
-  return img;
-}
-
-/** Red maple: narrow ridges two or three pixels wide, thin dark lines between, frequent short scaly breaks. */
-export function mapleBark(p) {
-  const W = 16, H = 16, r = rngOf(4601), img = canvas(W, H);
-  const lines = [0, 3, 5, 8, 11, 13].map(c => wander(r, c, H, W, 5, 1));
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let best = 99, k = 0;
-    for (let i = 0; i < lines.length; i++) { const d = wrap(x - lines[i][y], W); if (d < best) { best = d; k = i; } }
-    let c = (Math.floor((y + k * 3) / 4) % 3) === 0 ? p.bark2 : (Math.floor((y + k * 3) / 4) % 3) === 1 ? p.bark1 : p.barkLight;
-    if (best === 0) c = (y + k) % 4 === 0 ? p.deep : p.crack;
-    else if ((y + k * 3) % 4 === 0) c = p.bark3;                               // the scale breaks
-    put(img, x, y, c);
-  }
-  return img;
-}
-
-/**
- * Eastern hemlock: three deep furrows that wander, broad ridges between them broken into scales by short slanting
- * cracks at uneven intervals (each ridge its own), the furrows' inner walls purplish.
- */
-export function hemlockBark(p) {
-  const W = 16, H = 16, r = rngOf(4701), img = canvas(W, H);
-  const furrows = [1, 6, 11].map(c => wander(r, c + Math.floor(r() * 2), H, W, 3, 1));
-  // scale breaks per ridge: rows 2-5 apart; a break slants down across the ridge by one row
-  const cracks = furrows.map(() => { const rows = []; let y = Math.floor(r() * 3); while (y < H) { rows.push(y); y += 2 + Math.floor(r() * 4); } return rows; });
-  const tones = furrows.map(() => segments(r, H, 2, 5));
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let best = 99, k = 0;
-    for (let i = 0; i < furrows.length; i++) { const d = wrap(x - furrows[i][y], W); if (d < best) { best = d; k = i; } }
-    const next = furrows[(k + 1) % furrows.length][y], width = wrap(next - furrows[k][y], W) || W;
-    let c;
-    if (best === 0) c = p.deep;
-    else if (best === 1) c = (x + y) % 3 === 0 ? p.deep : p.rust;               // the furrow's purplish inner wall
-    else if (best === width - 1) c = p.bark3;
-    else c = tones[k][y] ? p.bark1 : p.bark2;
-    if (best > 1 && best < width - 1) {
-      const slant = best > width / 2 ? 1 : 0;
-      if (cracks[k].includes(wrap(y - slant, H))) c = p.crack;                  // a scale edge, slanting
-      else if (cracks[k].includes(wrap(y - slant - 1, H)) && best === 2) c = p.barkLight;
-    }
-    put(img, x, y, c);
-  }
-  return img;
-}
 
 // ---------------------------------------------------------------------------------------------- leaf cards
 

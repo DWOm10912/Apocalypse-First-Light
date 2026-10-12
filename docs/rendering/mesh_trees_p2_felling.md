@@ -380,6 +380,7 @@
   - `_n`：法线由贴图亮度推出的高度先平滑一次再求，强度温和（白栎树皮 0.7，白松 1.0，木面 0.5–0.6）；蓝通道是材质遮蔽；高度通道（alpha）取 255，所以光影包的视差不会把弧形网格推变形。法线方向约定和已经实机验收的地面材质相同（`ny = -dh/dy`）。
   - `_s`：粗糙（平滑度：树皮 14–42，木面 40–80）、非金属（F0 = 10，约 4 %）、孔隙度 40–50、不发光。
   - 实机未看。如果在 Sundial 下觉得树皮太花，可以只删掉 `*_bark_n.png`，其他不受影响。
+  - 2026-10-12：树皮改成 32 像素像素画，`_n` / `_s` 由 `tools/mesh-trees/bark-art.mjs` 按画法里的高度一起画（不再由亮度推，倾角中位数 0.7–3.4°），见 [P4 W 节](mesh_trees_p4_formal.md)；切口、年轮、端面仍按本节。中间试过 240 像素版，实机不通过，已删除。
 - **测试世界的自然生成**：**P1 起就已经接好**（ForestGate / ForestFeature / ForestPlan），这一轮没改生成逻辑。
   - 开关：服务端世界文件夹名以 `AFL_TREE_` 开头（`AFL_TREE_FOREST_*` 包括在内），而且是这个世界还没生成任何区块时写下的标记文件。所以 `AFL_TREE_FOREST_01` 已经开着，新探索的区块都会长 Mesh 树；新建 `AFL_TREE_*` 世界也会。
   - 生成 Mesh 树的群系：temperate_grassland（开阔地白栎树丛）、oak_hickory_woodland（白栎林，少量白松）、ridge_oak_forest（山脊白栎，约四分之一白松）、hemlock_hollow（白松林）、coastal_pine_oak_forest（松栎混交）、coastal_sandy_clearing（稀疏散树）。

@@ -8,8 +8,9 @@
 //                       with its bark rim, rings following the outline near the bark and turning round toward the pith
 //   items 16 x 16       branches, leaf material: vanilla-style pixel art with dark edges, lit from the upper left, the
 //                       trees' own bark and wood palettes (P2.2: the logs are blocks, their 2D icons are gone)
-//   LabPBR _n / _s      bark, end grain, cut wood: normals from a smoothed height (gentle, no POM: height alpha 255),
-//                       dielectric wood (F0 10 / 255), rough; leaves keep the shader pack's own leaf handling
+//   LabPBR _n / _s      end grain, cut wood, log end: normals from a smoothed height (gentle, no POM: height alpha 255),
+//                       dielectric wood (F0 10 / 255), rough; leaves keep the shader pack's own leaf handling. The bark
+//                       draws its own maps (bark-art.mjs, 2026-10-12, mesh_trees_p4_formal.md W)
 
 export const OAK = {
   barkLight: [0xa8, 0xa2, 0x97], bark1: [0x9d, 0x97, 0x8c], bark2: [0x93, 0x8d, 0x83], bark3: [0x8a, 0x85, 0x7b],

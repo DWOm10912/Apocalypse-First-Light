@@ -1,30 +1,22 @@
-// Mesh Trees P0-A (docs/rendering/mesh_trees_p0a.md): the white oak technical sample's textures, development only.
-// Writes src/main/resources/assets/apocalypse_firstlight/textures/block/tree/ (P0-P3: the dev folder afl_tree_demo):
-//   white_oak_bark.png          16 x 16, seamless both ways (tube quads restart it every metre of length)
-//   white_oak_leaves.png        32 x 32 leaf cluster for LOD0 cards (1.5 m card: about 21 px per metre)
-//   white_oak_leaves_mid.png    32 x 32 denser clusters for LOD1 (two cards stand in for six)
-//   white_oak_leaves_far.png    32 x 32 leaf mass for LOD2 (one or two cards per cluster)
-//   white_oak_leaves_proxy.png  16 x 16 cube face for the volume proxy (what Voxy and maps see)
-//   white_pine_bark.png         16 x 16, dark grey-brown, deep furrows between long flat ridges
-//   white_pine_needles.png      32 x 32 needle spray (bundles of five on a twig) for LOD0 plates
-//   white_pine_needles_mid.png / _far.png   denser sprays for LOD1 / LOD2
-//   white_pine_needles_proxy.png  16 x 16 cube face for the pine's volume proxy
-// Mesh Trees P2.1 (docs/rendering/mesh_trees_p2_felling.md, U), formal felling assets from felling-art.mjs:
-//   white_oak_cut.png / white_pine_cut.png              32 x 32 fresh cut wood (the notch faces)
-//   white_oak_end_grain.png / white_pine_end_grain.png  32 x 32 rings, sapwood, bark rim (stump top, falling log cut)
-//   ../../item/tree/<wood>_branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
-//   LabPBR _n / _s for both barks, cut wood and end grain (leaves: none, the shader pack's leaf handling stays)
-// Mesh Trees P2.2 (mesh_trees_p2_felling.md, V): the log blocks' ends (the logs' 2D item icons are gone, they are blocks)
-//   white_oak_log_end.png / white_pine_log_end.png      32 x 32 rounded-square end with bark rim, rings; LabPBR _n / _s
-// Mesh Trees P3 (mesh_trees_p3_species.md, C), from species-art.mjs, for red_oak, shagbark_hickory, red_maple and
-// eastern_hemlock: <id>_bark (+ _n/_s), the leaf cards <leaves>, _mid, _far, _proxy, <id>_cut, _end_grain, _log_end
-// (+ _n/_s), and ../../item/tree/<id>_branch and <leaves> icons
+// Mesh Trees P0-A (docs/rendering/mesh_trees_p0a.md) .. P4: the trees' textures, written to
+// src/main/resources/assets/apocalypse_firstlight/textures/block/tree/ (and ../../item/tree/ for the icons); --check
+// compares instead of writing. Per species (white_oak, white_pine, red_oak, shagbark_hickory, red_maple, eastern_hemlock):
+//   <id>_bark           32 x 32 pixel art + LabPBR _n / _s, from bark-art.mjs (2026-10-12, mesh_trees_p4_formal.md W;
+//                       16 px before; a 240 px bark was rejected in game the same day)
+//   <id>_log_end, <id>_end_grain, <id>_cut   32 x 32 + LabPBR _n / _s from the luminance, felling-art.mjs (P2.1 / P2.2,
+//                       the four P3 species with their own palettes and profiles)
+//   leaf cards          32 x 32 grey values for the crown's tint: LOD0 cards, _mid / _far denser for LOD1 / LOD2, a 16 x 16
+//                       _proxy cube face (what Voxy and maps see); white oak and white pine drawn here (P0-A), the four P3
+//                       species in species-art.mjs
+//   item icons          16 x 16 pixel art: <id>_branch and the leaf material (felling-art.mjs, species-art.mjs)
+// Leaves have no LabPBR maps: the shader pack's own leaf handling stays.
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {png} from '../cube-slab-mesh-lib.mjs';
 import * as art from './felling-art.mjs';
 import * as sp from './species-art.mjs';
+import {barkMaps, M as BARK_PX} from './bark-art.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 // P4 (mesh_trees_p4_formal.md): the formal textures, apocalypse_firstlight:block/tree/... and item/tree/...
@@ -44,7 +36,9 @@ function rng(seed) {
 
 function image(W, H) { return {W, H, v: new Float32Array(W * H), a: new Uint8Array(W * H), rgb: null}; }
 
+/** A canvas ({W, H, v, a, rgb}) to PNG; a bark map ({png, W, H}) is a PNG already. */
 function toPng(img) {
+  if (img.png) return img.png;
   const buf = Buffer.alloc(img.W * img.H * 4);
   for (let i = 0; i < img.W * img.H; i++) {
     if (img.rgb) {
@@ -57,39 +51,6 @@ function toPng(img) {
     if (!img.a[i]) { buf[i * 4] = 0; buf[i * 4 + 1] = 0; buf[i * 4 + 2] = 0; }
   }
   return png(buf, img.W, img.H);
-}
-
-// ---- bark: shallow fissures between irregular vertical plates, light ash grey (white oak)
-function bark() {
-  const W = 16, H = 16, r = rng(4101);
-  const img = image(W, H);
-  img.rgb = new Uint8Array(W * H * 3);
-  const plate = [[0x9d, 0x97, 0x8c], [0x93, 0x8d, 0x83], [0x8a, 0x85, 0x7b]];
-  const crack = [0x63, 0x5e, 0x56], deep = [0x50, 0x4c, 0x45], lit = [0xa8, 0xa2, 0x97];
-  // fissure x per row: four wandering fissures, wrapping both ways
-  const base = [1, 5, 9, 13];
-  const fx = [];
-  for (let k = 0; k < 4; k++) {
-    const row = [];
-    let x = base[k] + (r() < 0.5 ? 0 : 1);
-    for (let y = 0; y < H; y++) { if (y % 4 === 0 && y > 0) x += r() < 0.33 ? -1 : r() < 0.5 ? 1 : 0; row.push(((x % W) + W) % W); }
-    // close the loop vertically: last row back to the first one's column
-    row[H - 1] = row[0];
-    fx.push(row);
-  }
-  // plate shade: per plate (between fissures) and per 5-6 px band of height
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let c = plate[(Math.floor(x / 4) + Math.floor((y + (x >> 2) * 3) / 6)) % 3];
-    let onCrack = false, nearCrack = false;
-    for (const row of fx) { const d = ((x - row[y]) % W + W) % W; if (d === 0) onCrack = true; if (d === 1) nearCrack = true; }
-    if (onCrack) c = (y * 7 + x * 3) % 5 === 0 ? deep : crack;
-    else if (nearCrack && (y + x) % 3 === 0) c = lit;
-    // short horizontal breaks between plates
-    if (!onCrack && (y === 3 || y === 10) && (x % 4 === 2)) c = crack;
-    img.rgb.set(c, (y * W + x) * 3);
-    img.a[y * W + x] = 1;
-  }
-  return img;
 }
 
 // ---- leaf clusters: lobed obovate leaves on a twig, grey values for the foliage tint
@@ -166,7 +127,7 @@ function despeckle(img) {
   img.a.set(keep);
 }
 
-function coverage(img) { let n = 0; for (const a of img.a) n += a; return n / img.a.length; }
+function coverage(img) { if (img.png) return 1; let n = 0; for (const a of img.a) n += a; return n / img.a.length; }
 
 // ---- proxy cube face: vanilla-like leaves tile, seamless, dense (what a distant crown voxel shows)
 function proxy() {
@@ -177,28 +138,6 @@ function proxy() {
     const hole = ((x * 5 + y * 3) % 7 === 0) || ((x * 3 + y * 11) % 13 === 0);
     img.a[i] = hole ? 0 : 1;
     img.v[i] = 0.6 + 0.2 * r() - ((x + y * 2) % 5 === 0 ? 0.12 : 0);
-  }
-  return img;
-}
-
-// ---- white pine bark: deep dark furrows between long flat ridges, short scaly breaks on the ridges
-function pineBark() {
-  const W = 16, H = 16, r = rng(4201);
-  const img = image(W, H);
-  img.rgb = new Uint8Array(W * H * 3);
-  const ridge = [[0x74, 0x67, 0x5d], [0x6a, 0x5e, 0x55], [0x7e, 0x71, 0x66]];
-  const furrow = [0x41, 0x39, 0x34], deep = [0x30, 0x2a, 0x27];
-  const cols = [0, 5, 10];   // furrow columns (two pixels wide), wandering slightly
-  const fx = cols.map(c => { const row = []; let x = c; for (let y = 0; y < H; y++) { if (y % 5 === 4) x += r() < 0.5 ? 1 : 0; row.push(x % W); } row[H - 1] = row[0]; return row; });
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let c = ridge[(Math.floor(x / 5) + Math.floor((y + x) / 7)) % 3];
-    for (const row of fx) {
-      const d = ((x - row[y]) % W + W) % W;
-      if (d === 0) c = deep; else if (d === 1) c = furrow;
-    }
-    if ((y === 4 || y === 12) && c !== deep && c !== furrow && x % 5 === 3) c = furrow;   // scale breaks
-    img.rgb.set(c, (y * W + x) * 3);
-    img.a[y * W + x] = 1;
   }
   return img;
 }
@@ -247,14 +186,11 @@ function pineProxy() {
   return img;
 }
 
-const oakBark = bark(), whitePineBark = pineBark();
 const outputs = {
-  'white_oak_bark.png': oakBark,
   'white_oak_leaves.png': cluster(4102, 15, 9, 6, 17, 1),
   'white_oak_leaves_mid.png': cluster(4103, 26, 9.5, 7, 20, 1),
   'white_oak_leaves_far.png': cluster(4104, 40, 10, 7.5, 22, 1),
   'white_oak_leaves_proxy.png': proxy(),
-  'white_pine_bark.png': whitePineBark,
   'white_pine_needles.png': needles(4202, 12, 9, 6),
   'white_pine_needles_mid.png': needles(4203, 17, 10, 8),
   'white_pine_needles_far.png': needles(4204, 24, 11, 10),
@@ -272,26 +208,22 @@ const outputs = {
   '../../item/tree/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
   '../../item/tree/white_pine_needles.png': art.needleIcon(art.PINE),
 };
-// P3: the four new species. [id, leaves id, palette, wood, bark, LOD0/mid/far cards, proxy, icons, seed base, bark normal strength]
+// P3: the four new species. [id, leaves id, palette, wood, LOD0/mid/far cards, proxy, icons, seed base]
 const P3 = [
-  ['red_oak', 'red_oak_leaves', sp.RED_OAK, sp.RED_OAK_WOOD, sp.redOakBark,
+  ['red_oak', 'red_oak_leaves', sp.RED_OAK, sp.RED_OAK_WOOD,
     [s => sp.redOakCluster(s, 13, 11, 17), s => sp.redOakCluster(s, 22, 11.5, 20), s => sp.redOakCluster(s, 34, 12, 22)],
-    s => sp.proxyTile(s, [5, 3, 7], [3, 11, 13], 0.55, 0.2), sp.redOakLeafIcon, sp.redOakBranchIcon, 4400, 0.9],
-  ['shagbark_hickory', 'shagbark_hickory_leaves', sp.HICKORY, sp.HICKORY_WOOD, sp.hickoryBark,
+    s => sp.proxyTile(s, [5, 3, 7], [3, 11, 13], 0.55, 0.2), sp.redOakLeafIcon, sp.redOakBranchIcon, 4400],
+  ['shagbark_hickory', 'shagbark_hickory_leaves', sp.HICKORY, sp.HICKORY_WOOD,
     [s => sp.hickoryCluster(s, 7, 13, 17), s => sp.hickoryCluster(s, 14, 13, 19), s => sp.hickoryCluster(s, 32, 14, 23)],
-    s => sp.proxyTile(s, [7, 3, 9], [2, 5, 11], 0.64, 0.18), sp.hickoryLeafIcon, sp.hickoryBranchIcon, 4500, 1.1],
-  ['red_maple', 'red_maple_leaves', sp.RED_MAPLE, sp.RED_MAPLE_WOOD, sp.mapleBark,
+    s => sp.proxyTile(s, [7, 3, 9], [2, 5, 11], 0.64, 0.18), sp.hickoryLeafIcon, sp.hickoryBranchIcon, 4500],
+  ['red_maple', 'red_maple_leaves', sp.RED_MAPLE, sp.RED_MAPLE_WOOD,
     [s => sp.mapleCluster(s, 18, 4.2, 16), s => sp.mapleCluster(s, 36, 4.5, 19), s => sp.mapleCluster(s, 60, 4.9, 22)],
-    s => sp.proxyTile(s, [5, 3, 7], [3, 7, 11], 0.6, 0.2), sp.mapleLeafIcon, sp.mapleBranchIcon, 4600, 0.7],
-  ['eastern_hemlock', 'eastern_hemlock_needles', sp.HEMLOCK, sp.HEMLOCK_WOOD, sp.hemlockBark,
+    s => sp.proxyTile(s, [5, 3, 7], [3, 7, 11], 0.6, 0.2), sp.mapleLeafIcon, sp.mapleBranchIcon, 4600],
+  ['eastern_hemlock', 'eastern_hemlock_needles', sp.HEMLOCK, sp.HEMLOCK_WOOD,
     [s => sp.hemlockSprays(s, 5, 16), s => sp.hemlockSprays(s, 7, 19), s => sp.hemlockSprays(s, 9, 22)],
-    s => sp.proxyTile(s, [7, 3, 9], [2, 5, 11], 0.5, 0.16), sp.hemlockIcon, sp.hemlockBranchIcon, 4700, 1.0],
+    s => sp.proxyTile(s, [7, 3, 9], [2, 5, 11], 0.5, 0.16), sp.hemlockIcon, sp.hemlockBranchIcon, 4700],
 ];
-for (const [id, leaves, pal, wood, barkFn, cards, proxyFn, leafIcon, branchIcon, seed, strength] of P3) {
-  const b = barkFn(pal);
-  outputs[id + '_bark.png'] = b;
-  outputs[id + '_bark_n.png'] = art.normalMap(b, strength, true, 45);
-  outputs[id + '_bark_s.png'] = art.specularMap(b, 14, 40, 40, true);
+for (const [id, leaves, pal, wood, cards, proxyFn, leafIcon, branchIcon, seed] of P3) {
   outputs[leaves + '.png'] = cards[0](seed + 2);
   outputs[leaves + '_mid.png'] = cards[1](seed + 3);
   outputs[leaves + '_far.png'] = cards[2](seed + 4);
@@ -302,13 +234,11 @@ for (const [id, leaves, pal, wood, barkFn, cards, proxyFn, leafIcon, branchIcon,
   outputs['../../item/tree/' + id + '_branch.png'] = branchIcon(pal);
   outputs['../../item/tree/' + leaves + '.png'] = leafIcon(pal);
 }
-// LabPBR (normals gentle and smoothed, height alpha flat, dielectric rough wood)
-Object.assign(outputs, {
-  'white_oak_bark_n.png': art.normalMap(oakBark, 0.7, true, 40),
-  'white_oak_bark_s.png': art.specularMap(oakBark, 18, 42, 40, true),
-  'white_pine_bark_n.png': art.normalMap(whitePineBark, 1.0, true, 50),
-  'white_pine_bark_s.png': art.specularMap(whitePineBark, 14, 36, 40, true),
-});
+// the six barks: colour, _s, _n drawn together (bark-art.mjs, fixed seeds of its own)
+for (const [id, pal] of [['white_oak', art.OAK], ['white_pine', art.PINE], ...P3.map(([id, , pal]) => [id, pal])]) {
+  barkMaps(id, pal).forEach((buf, k) => { outputs[id + '_bark' + ['', '_s', '_n'][k] + '.png'] = {png: buf, W: BARK_PX, H: BARK_PX}; });
+}
+// LabPBR of the ends and the cut (normals gentle and smoothed, height alpha flat, dielectric rough wood)
 for (const name of ['white_oak_cut', 'white_pine_cut', 'white_oak_end_grain', 'white_pine_end_grain', 'white_oak_log_end', 'white_pine_log_end',
   ...P3.flatMap(([id]) => [id + '_cut', id + '_end_grain', id + '_log_end'])]) {
   const base = outputs[name + '.png'], cut = name.endsWith('_cut');
