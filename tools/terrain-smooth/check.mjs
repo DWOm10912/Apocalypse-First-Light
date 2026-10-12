@@ -20,7 +20,8 @@ const require = (ok, what) => { if (!ok) { failures++; console.log('FAIL ' + wha
 // ---- 1. static audit
 const mixins = JSON.parse(read('src/main/resources/apocalypse_firstlight.mixins.json'));
 const common = mixins.mixins || [], client = mixins.client || [];
-for (const m of ['TerrainSmoothBlockStateMixin', 'TerrainSmoothBlockCollisionsMixin', 'TerrainSmoothLevelMixin', 'TerrainSmoothServerLevelMixin', 'TerrainSmoothLevelChunkMixin']) {
+for (const m of ['TerrainSmoothBlockStateMixin', 'TerrainSmoothBlockCollisionsMixin', 'TerrainSmoothLevelMixin', 'TerrainSmoothServerLevelMixin', 'TerrainSmoothLevelChunkMixin',
+                 'TerrainSmoothMoveControlMixin', 'TerrainSmoothPathNavigationMixin']) {
   require(common.includes(m), `formal mixin config lists ${m} in the common section`);
   require(fs.existsSync(path.join(ROOT, 'src/main/java/com/antaurora/apofirstlight/mixin', m + '.java')), `${m}.java exists`);
 }

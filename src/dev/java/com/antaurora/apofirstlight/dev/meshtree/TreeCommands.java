@@ -50,7 +50,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * {@code /afl dev mesh_tree} (docs/rendering/mesh_trees_p0b.md, H): places and removes sample trees. Development runs
+ * {@code /afl dev mesh_tree} (docs/rendering/mesh_trees_p0b.md, H; forest: mesh_trees_p1_forest.md, H): places and removes sample trees. Development runs
  * only, OP2 and a player; placing also needs creative mode, the overworld and a world folder named {@code AFL_TREE_*}
  * (the command says which one is missing).
  * <pre>
@@ -59,6 +59,7 @@ import java.util.function.Supplier;
  *   clear                                                      removes every sample tree, restores what each cell replaced
  *   lod auto | 0 | 1 | 2 | proxy                               this client: distance levels, one level, the voxel proxy
  *   status                                                     trees here; on your client: index, levels, cost, shader IDs
+ *   forest status | here | find open_oak|white_pine|mixed       the natural forest (P1, read only; ForestCommands)
  * </pre>
  * A cell is written only into air or a replaceable plant (the journal keeps what was there); a trunk or branch cell that
  * finds anything else refuses the tree; a crown cell that finds another sample tree's crown shares it, anything else is
@@ -132,6 +133,7 @@ public final class TreeCommands {
             for (int l = 0; l < TreeShape.LODS; l++) { int level = l; lod.then(Commands.literal(String.valueOf(l)).executes(x -> toPlayer(x, new Msg(LOD, 0, level)))); }
             lod.then(Commands.literal("proxy").executes(x -> toPlayer(x, new Msg(LOD, 0, TreeShape.LODS))));
             c.then(lod);
+            c.then(ForestCommands.node());
             event.getDispatcher().register(Commands.literal("afl").then(Commands.literal("dev").then(c)));
         }
     }
@@ -176,6 +178,7 @@ public final class TreeCommands {
         @SubscribeEvent
         public static void stopped(ServerStoppedEvent event) {
             TreeIndex.SERVER.clear();
+            ForestGate.stopped();
         }
     }
 

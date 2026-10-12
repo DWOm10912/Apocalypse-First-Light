@@ -148,6 +148,9 @@ public final class TreeShape {
 
     private static final Map<Integer, Layout> LAYOUTS = new java.util.concurrent.ConcurrentHashMap<>();
 
+    /** Layouts built so far (status). */
+    public static int cached() { return LAYOUTS.size(); }
+
     /** The layout of a species variant (0..15) turned by quarter turns (0..3); built once, then shared (read only). */
     public static Layout layout(Species species, int variant, int turns) {
         int key = (species.ordinal() * VARIANTS + variant) * 4 + turns;

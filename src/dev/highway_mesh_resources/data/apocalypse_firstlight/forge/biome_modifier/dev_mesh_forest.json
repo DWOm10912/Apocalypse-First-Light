@@ -1,0 +1,20 @@
+{
+  "type": "apocalypse_firstlight:dev_mesh_forest",
+  "biomes": [
+    "apocalypse_firstlight:temperate_grassland",
+    "apocalypse_firstlight:oak_hickory_woodland",
+    "apocalypse_firstlight:ridge_oak_forest",
+    "apocalypse_firstlight:hemlock_hollow",
+    "apocalypse_firstlight:coastal_pine_oak_forest",
+    "apocalypse_firstlight:coastal_sandy_clearing"
+  ],
+  "remove": [
+    "apocalypse_firstlight:eco_trees_grassland",
+    "apocalypse_firstlight:eco_trees_woodland",
+    "apocalypse_firstlight:eco_trees_ridge",
+    "apocalypse_firstlight:eco_trees_hemlock",
+    "apocalypse_firstlight:eco_trees_coastal",
+    "apocalypse_firstlight:eco_trees_clearing"
+  ],
+  "feature": "apocalypse_firstlight:dev_mesh_forest"
+}

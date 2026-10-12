@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TreeIndex {
     public static final TreeIndex SERVER = new TreeIndex(), CLIENT = new TreeIndex();
     /** Trees reach at most this far (blocks) sideways from their root. */
-    static final int REACH = 12;
+    static final int REACH = ForestPlan.REACH;
 
     /** A root: position, layout, the tree's world bounds (cells, plus quad reach), its current view level (client). */
     public static final class Root {
@@ -74,6 +74,12 @@ public final class TreeIndex {
     }
 
     public Iterable<Root[]> all() { return byChunk.values(); }
+
+    /** The roots indexed in one chunk (empty when none or not loaded). */
+    public Root[] chunk(int cx, int cz) {
+        Root[] list = byChunk.get(ChunkPos.asLong(cx, cz));
+        return list == null ? NONE : list;
+    }
     public int chunks() { return byChunk.size(); }
 
     public int size() {

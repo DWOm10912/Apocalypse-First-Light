@@ -8,6 +8,11 @@
 - **`compileJava --offline` 通过**。
 - **游戏实机**：作者第一次实机（2026-10-11）用 TNT 炸坑，平滑效果不错，但坑壁和坑边有透明窟窿（见 Q 节），已修复；修复版本由作者提交（`4dc5e650`），同日复测后作者验收 **V1 PASS**，V1 冻结。**发布 JAR：未打包、未验证**（见 P 节）。
 - **性能**：只有离线数字；作者没有报告游戏内 16 / 24 / 32 区块视距的帧时间、区块构建时间，专用服务器也没跑过（N 节第 1、6 条），这几项仍按**未测**记，不能说达标。
+- **V1.1 生物寻路修正**（2026-10-11，R 节）：
+  - 实机问题：僵尸每到斜坡都跳；
+  - 根因：离线复现，原版用坡块的最高角当地面；
+  - 修法：两个新 mixin，改为取生物站立处的坡顶高度；
+  - 状态：代码完成、离线物理通过、编译通过；**游戏实机未测**。
 
 前身：
 - [P0 视觉原型](terrain_smooth_visual_prototype_p0.md)：用户选定 B 方案。
@@ -122,7 +127,9 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 
 ## H. Mixin 打包与加载
 
-- 5 个 mixin 写在正式配置 `apocalypse_firstlight.mixins.json` 的公共段（客户端和专用服务端都加载），`defaultRequire 1`：注入失败会直接报错，不会静默失效。
+- 7 个 mixin 写在正式配置 `apocalypse_firstlight.mixins.json` 的公共段（客户端和专用服务端都加载），`defaultRequire 1`：注入失败会直接报错，不会静默失效。
+  - V1 有 5 个；
+  - V1.1 加了 `TerrainSmoothMoveControlMixin` 和 `TerrainSmoothPathNavigationMixin`（R 节），refmap 里有它们的目标 `MoveControl#m_8126_`、`VoxelShape#m_83297_`、`PathNavigation#m_183345_`、`WalkNodeEvaluator#m_77611_`。
 - 正式配置由 MixinGradle 写进 JAR 清单，不再依赖 `runClient` 的启动参数。开发 mixin 配置、`--mixin.config` 参数、对应的 JAR 排除行都已删除。
 - refmap：编译生成的 `apocalypse_firstlight.refmap.json` 里有全部重定向和注入目标的 SRG 名。`BlockCollisions` 的两个影子字段 `pos`、`box` 在 `compileJava-mappings.tsrg` 里（`f_186395_`、`f_186392_`），由 `reobfJar` 处理，和项目已有 mixin 的影子字段同一路径。
 - 专用服务端隔离：公共包不引用任何客户端类（静态审查逐个文件检查）；状态包用 `DistExecutor` 交给客户端，和 `AflNetwork` 其他包同一写法；模型、轮廓、客户端逻辑都标了 `Dist.CLIENT`。
@@ -173,6 +180,7 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
   - 规则：直坡；角点一致；无缝；2 / 4 / 8 碰撞盒；编辑影响范围（含屋顶）；地下洞穴；树冠；屋顶；炸坑（重建标记覆盖、共用边、悬空下的侧面，见 Q 节）；关闭和未加载区块。
   - 结果：全部通过。
 - `node tools/terrain-smooth/physics.mjs`（真实碰撞代码 + 正式版底层大形状规则）：上坡、冲刺、下坡、斜走、站立、三种脚边编辑、64 条起伏路线，全部通过。
+  - V1.1 加了第 4 部分“生物”：僵尸追逐，按原版 `MoveControl` 的跳跃判断和 `getGroundY`。结果见 R 节。
 - `physics.mjs world`（`AFL_R4_01` 测试区，树干单独分类后重新导出）：
   - 草、泥土、沙、砾石在 B 下都比原版走得远、停顿少，进水比例和原版相同；
   - 3645 个沙 / 砾石站立点里，站立期间抬升 0 次；会移动的 10 个点都是落在树干或台阶边上、被原版推出逻辑推下去（测试放人方式的问题，P1 时已确认）。
@@ -182,6 +190,11 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 
 - **新增，正式代码**：`terrainsmooth/`（`SmoothRules`、`SmoothShapes`、`SmoothChunkData`、`SmoothChunkHolder`、`TerrainSmooth`、`TerrainSmoothConfig`、`TerrainSmoothStatePacket`）；`terrainsmooth/client/`（`TerrainSmoothClient`、`SmoothSurfaceModel`、`SinkPlantModel`、`SmoothModels`、`SmoothOutline`）；`mixin/TerrainSmooth*Mixin` 5 个。
 - **修改**：`apocalypse_firstlight.mixins.json`、`AflNetwork`、`ApocalypseFirstLight`（注册配置）、`build.gradle`（删开发 mixin 参数和排除行）。
+- **V1.1**：
+  - 新增 `mixin/TerrainSmoothMoveControlMixin`、`mixin/TerrainSmoothPathNavigationMixin`；
+  - `TerrainSmooth` 加 `standingTop`；
+  - `apocalypse_firstlight.mixins.json` 加两项；
+  - `tools/terrain-smooth/PhysicsCheck.java` 加僵尸追逐；`check.mjs` 的静态审查加这两个 mixin。
 - **开发包**：`SmoothCommands` 重写；新增 `SmoothDevClient`；`SmoothProbe` 改用正式接口。删除已迁移的 8 个类、3 个开发 mixin 和开发 mixin 配置。
 - **工具**：`tools/terrain-smooth/` 下 `check.mjs`、`SmoothCheck.java`、`PhysicsCheck.java`、`physics.mjs`、`export-area.mjs`。
 
@@ -191,6 +204,14 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 2. **Embeddium 和光影下的区块构建**：数据流和 P0 / P1 相同（区块模型路径），但现在覆盖全世界，林下、雪地、沙滩、河岸要实机看。
 3. **高度图依赖**：自然地表依赖 `WORLD_SURFACE` 高度图。高度图异常的区块（例如被外部工具改过）会按高度图判断。
 4. **生物**：寻路仍按整格（P1 已知）；刷怪检查在“高出本格”的坡段可能被挡（刷怪空间被坡面占了一点）。要实机看刷怪是否明显变少。
+   - **实机确认（作者，2026-10-11）**：僵尸追人时，每到斜坡都跳着走。**下一轮要解决**。
+   - 初步推断（未验证）：原版寻路的路径点在整数格高上，生物在坡上实际站在半格高度；往上走时，下一个路径点比脚下高出超过跨步高度（僵尸 0.6），移动控制就会让它跳。
+   - 下一轮先在离线行走物理（`tools/terrain-smooth/physics.mjs`）里复现，再决定改寻路的地面高度，还是改移动控制的跳跃判断；所有生物都要看，不只僵尸。
+   - **已离线复现，已修**（V1.1，R 节）：上面的推断只对了一半。
+     - 真正的原因：原版两处都用了坡块的**最高角**：路径点的目标高度，和移动控制里“脚下方块比脚高”的判断。
+     - 两处都改成取生物站立处的坡顶高度。
+     - 游戏实机**未测**。
+   - 刷怪在坡段是否变少，仍未看。
 5. **雪层**：雪层仍按原版整格画，坡上会浮空或陷入（P0 已知）。
 6. **专用服务器**：没有跑过。代码上已隔离客户端类，但要实际启动一次确认。
 7. **其他模组的 mixin**：如果有别的模组重定向同样的调用点，会冲突报错，不会静默失效。当前开发环境里没有这类模组。
@@ -205,6 +226,30 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 6. **Sundial**：开光影，没有黑面、缺贴图；Xaero 小地图颜色正常；按一次 F3+T。
 7. **关闭**：退出世界，把该世界 `serverconfig/apocalypse_firstlight-terrain.toml` 改成 `terrainSmoothEnabled = false`，再进：地形恢复原版方块，碰撞和选中原版，没有回拉。
 8. **性能**：分别在 16 / 24 / 32 区块视距下飞一段森林、平原、丘陵，看帧率和区块加载；执行 `/afl dev terrain_smooth status` 记下数字。
+
+## R. V1.1：生物在坡上跳着走（原因与修复）
+
+- **现象**（作者实机，2026-10-11）：僵尸追人时，每到平滑过的斜坡都跳着走。
+- **离线复现**（`tools/terrain-smooth/PhysicsCheck.java` 第 4 部分）：
+  - 按原版 1.20.1 的 `MoveControl#tick` 跳跃判断模拟僵尸（速度 0.23）；
+  - 目标高度按 `PathNavigation#getGroundY` → `WalkNodeEvaluator.getFloorLevel` 计算；
+  - 在 1:2 的平滑山坡上，上坡跳 3 次、下坡跳 1 次；64 条起伏路线共跳 433 次。和实机一致。
+- **根因**：原版有两处读坡块碰撞形状的最高点（`VoxelShape#max(Y)`），也就是坡的最高角：
+  1. **目标高度**：路径点的目标 Y = 脚下方块的碰撞顶 = 最高角。生物站在坡的低处时，这个高度比脚高出超过跨步高度（0.6），原版就跳。
+  2. **脚下判断**：移动控制里，“脚所在方块有碰撞、且脚低于它的最高点”也会让生物跳。站在坡上时，脚总低于最高角。
+- **修法**（只对 Terrain Smooth 正在平滑的自然地表块生效，其余原版不变）：
+  - `TerrainSmooth.standingTop(block, getter, pos, fx, fz)`：给定生物在格内的水平位置，返回坡在那一点的顶高（和碰撞同一个坡面形状）；不是平滑块时返回 NaN。
+  - `TerrainSmoothPathNavigationMixin`：`getGroundY` 取路径点所在格中心的坡顶，不再取最高角。
+  - `TerrainSmoothMoveControlMixin`：跳跃判断里，脚所在方块的“顶”取生物所在位置的坡顶。
+  - 真正的 1 格台阶，以及不平滑的方块（建筑、树、未知区块），照旧会跳。
+  - 寻路网格本身仍按整格（路径区域里平滑返回“无”），所以路线怎么选和原版一样，只是不再在坡上跳。
+- **离线结果**（`physics.mjs`）：
+  - 上坡：原版跳 3 次 → 修后 0 次；
+  - 下坡：1 → 0；
+  - 同一座山换成原版方块台阶时，修后仍跳 6 次（台阶该跳）；
+  - 64 条起伏路线：433 → 0，卡住的时间窗 0，62/64 条追出 15 格以上。
+- **覆盖范围**：所有用原版 `MoveControl` 和 `PathNavigation#getGroundY` 的地面生物（僵尸、骷髅、苦力怕、村民、动物等）。自己重写了移动控制的生物（史莱姆、飞行和水生生物）不受影响，它们本来也不走这条路。
+- **状态**：代码完成、离线通过、编译通过；**游戏实机未测**。验收方法：生存模式下 `/summon zombie`，在平滑山坡上让它追，看上下坡还跳不跳（[Mesh Trees P1 L 节](../rendering/mesh_trees_p1_forest.md)第 4 步同时看树林）。
 
 ## Q. 实机问题：TNT 炸坑后坑壁透明窟窿（原因与修复）
 

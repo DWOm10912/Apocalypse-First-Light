@@ -8,6 +8,7 @@
     "client.TerrainParticleSampleMixin",
     "client.MeshHitPickMixin", "client.HumanoidModelPullMixin", "client.PortableGeneratorCameraMixin", "client.ExplosionSoundMixin", "client.LevelRendererBreakSoundMixin", "client.ItemInHandLayerNozzleMixin"],
   "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkMacroWaterMixin", "WorldCarverStabilityMixin", "LakeFeatureStabilityMixin", "NoiseFillRiverMixin", "RandomStateSeedMixin", "SurfaceSystemStartupBiomeMixin", "BiomeManagerStartupSurfaceMixin", "ZombieSunlightMixin", "EntityIndustrialWasteSoundMixin", "ExplosionAccessor", "LockedInventoryMixin", "LockedInventorySlotMixin", "LockedInventoryMenuMixin", "LockedInventoryWrapperMixin", "LockedInventoryRecipeMixin", "FoodDataThirstMixin", "InventoryMenuEquipmentMixin", "LivingEntityFuelSlipMixin",
-    "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin"],
+    "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin",
+    "TerrainSmoothMoveControlMixin", "TerrainSmoothPathNavigationMixin"],
   "injectors": {"defaultRequire": 1}
 }

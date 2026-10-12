@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.network.AflNetwork;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
@@ -298,6 +299,20 @@ public final class TerrainSmooth {
         if (!anyCollides || !ground(block)) return null;
         long g = sloped(getter, pos);
         return g < 0 ? null : SmoothShapes.shape(g, collision);
+    }
+
+    /**
+     * Hooks (MoveControl#tick, PathNavigation#getGroundY; V1.1, 2026-10-11): the height a smoothed top is stood on at
+     * (fx, fz) within its cell, the collision column there (VoxelShape#max(Y, z, x)), above the cell's bottom; NaN for a
+     * vanilla block. Vanilla takes the shape's highest point, a slope's highest corner, so a mob walking on a slope is
+     * always "below" its block and its next node always looks a step up: it jumped at every slope.
+     */
+    public static double standingTop(Block block, BlockGetter getter, BlockPos pos, double fx, double fz) {
+        if (!anyCollides || !ground(block)) return Double.NaN;
+        long g = sloped(getter, pos);
+        if (g < 0) return Double.NaN;
+        double top = SmoothShapes.shape(g, true).max(Direction.Axis.Y, Mth.clamp(fz, 0.0D, 0.9999D), Mth.clamp(fx, 0.0D, 0.9999D));
+        return Double.isInfinite(top) ? Double.NaN : top;
     }
 
     /**

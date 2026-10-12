@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.shapes.BooleanOp;
@@ -248,6 +249,15 @@ public final class TreeBlocks {
         public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return Shapes.empty(); }
 
         @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
+            // mob paths (P1, docs/rendering/mesh_trees_p1_forest.md G): blocked where the cell collides. The voxels are no
+            // full block, so vanilla would call the cell open and walkers would run into the trunk and hop against it.
+            // Crown cells stay open (no collision, no LeavesBlock, so not the LEAVES path type either).
+            return collision(level, pos, false).isEmpty() && super.isPathfindable(state, level, pos, type);
+        }
+
+        @Override
         public void onPlace(BlockState state, Level level, BlockPos pos, BlockState old, boolean moving) {
             super.onPlace(state, level, pos, old, moving);
             if (level instanceof ServerLevel server && !old.equals(state)) TreeCommands.rootChanged(server, pos, state);
@@ -292,6 +302,15 @@ public final class TreeBlocks {
         @Override
         @SuppressWarnings("deprecation")
         public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return Shapes.empty(); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) {
+            // mob paths (P1, docs/rendering/mesh_trees_p1_forest.md G): blocked where the cell collides. The voxels are no
+            // full block, so vanilla would call the cell open and walkers would run into the trunk and hop against it.
+            // Crown cells stay open (no collision, no LeavesBlock, so not the LEAVES path type either).
+            return collision(level, pos, false).isEmpty() && super.isPathfindable(state, level, pos, type);
+        }
     }
 
     /** Crown cells of a species: no collision, not targetable, they dim sky light by one like leaves. */

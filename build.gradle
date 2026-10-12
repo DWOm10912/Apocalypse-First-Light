@@ -380,6 +380,10 @@ tasks.named('jar', Jar).configure {
     exclude 'assets/apocalypse_firstlight/models/block/dev_white_pine_canopy.json'
     exclude 'data/minecraft/tags/blocks/logs.json'
     exclude 'data/minecraft/tags/blocks/leaves.json'
+    // Mesh Trees P1 natural forest test (docs/rendering/mesh_trees_p1_forest.md): development only
+    exclude 'data/apocalypse_firstlight/forge/biome_modifier/dev_mesh_forest.json'
+    exclude 'data/apocalypse_firstlight/worldgen/configured_feature/dev_mesh_forest.json'
+    exclude 'data/apocalypse_firstlight/worldgen/placed_feature/dev_mesh_forest.json'
     exclude '.gitattributes'
 
     manifest {

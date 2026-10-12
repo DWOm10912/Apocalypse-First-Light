@@ -372,6 +372,63 @@ final class PhysicsCheck {
         return new Walk(p.y - y0, p.x * ux + p.z * uz - along0, p.pushes, stalls, jitter, p.lifts, p.waterTicks, p.deepest);
     }
 
+    // ------------------------------------------------------------------------------------------------- mobs
+
+    /** A chase result: jumps MoveControl asked for, rise, distance, 10-tick windows with < 0.5 block progress. */
+    record Chase(int jumps, double rise, double distance, int stalls) {}
+
+    /**
+     * A zombie (0.6 wide, step 0.6, movement speed 0.23) following path nodes straight ahead, with MoveControl#tick's
+     * jump test: (wanted Y - y > step and the node is close) or (the block at the feet has a shape whose top is above
+     * the feet). The wanted Y comes from PathNavigation#getGroundY = WalkNodeEvaluator#getFloorLevel of the node: the
+     * shape's top over the block under it. vanilla: tops are VoxelShape#max(Y) (a slope's highest corner); fixed (Terrain
+     * Smooth V1.1): a smoothed top's column top where it is stood on (the node's centre, the mob's own x z).
+     */
+    static Chase chase(Ground g, double sx, double sz, double ux, double uz, int ticks, boolean fixed) {
+        int top = g.t.top(Mth.floor(sx), Mth.floor(sz));
+        Player p = new Player(g, sx, top + 1.5, sz);
+        p.settle();
+        double y0 = p.y, along0 = p.x * ux + p.z * uz, last = along0;
+        int jumps = 0, stalls = 0;
+        for (int i = 1; i <= ticks; i++) {
+            // the next node: the block one step ahead, its feet cell above the ground
+            int nx = Mth.floor(p.x + ux * 0.9), nz = Mth.floor(p.z + uz * 0.9);
+            int ny = g.t.top(nx, nz);
+            if (ny == Integer.MIN_VALUE) break;
+            VoxelShape under = g.collision(nx, ny - 1, nz);
+            double floor = under.isEmpty() ? 0 : fixed && g.geometry(nx, ny - 1, nz) >= 0 ? under.max(Direction.Axis.Y, 0.5, 0.5) : under.max(Direction.Axis.Y);
+            double wantedY = ny - 1 + floor;
+            double d0 = nx + 0.5 - p.x, d1 = nz + 0.5 - p.z, d2 = wantedY - p.y;
+            int fx = Mth.floor(p.x), fy = Mth.floor(p.y), fz = Mth.floor(p.z);
+            VoxelShape feet = g.collision(fx, fy, fz);
+            double feetTop = feet.isEmpty() ? Double.NEGATIVE_INFINITY : fixed && g.geometry(fx, fy, fz) >= 0
+                    ? feet.max(Direction.Axis.Y, p.z - fz, p.x - fx) : feet.max(Direction.Axis.Y);
+            boolean jump = d2 > Player.STEP && d0 * d0 + d1 * d1 < Math.max(1.0, Player.WIDTH) || !feet.isEmpty() && p.y < feetTop + fy;
+            if (jump && p.onGround) { p.dy = 0.42; jumps++; }
+            // walking toward the node at the zombie's speed (MoveControl#setSpeed, LivingEntity#travel on the ground)
+            double len = Math.max(1e-6, Math.hypot(d0, d1)), friction = p.onGround ? 0.6 : 1.0;
+            double speed = p.onGround ? 0.23 * (0.21600002F / (float) (friction * friction * friction)) : 0.02;
+            p.dx += d0 / len * 0.98 * speed;
+            p.dz += d1 / len * 0.98 * speed;
+            p.move(new Vec3(p.dx, p.dy, p.dz));
+            p.dy = (p.dy - 0.08) * 0.98;
+            p.dx *= friction * 0.91;
+            p.dz *= friction * 0.91;
+            if (i % 10 == 0) {
+                double along = p.x * ux + p.z * uz;
+                if (along - last < 0.5) stalls++;
+                last = along;
+            }
+            int cx = Mth.floor(p.x), cz = Mth.floor(p.z);
+            if (g.t.top(cx, cz) == Integer.MIN_VALUE || !inside(g.area[0] + 2, g.area[1] + 2, g.area[2] - 4, cx, cz)) break;
+        }
+        return new Chase(jumps, p.y - y0, p.x * ux + p.z * uz - along0, stalls);
+    }
+
+    static String fmt(Chase c) {
+        return String.format(Locale.ROOT, "jumps %d, rise %+.2f, distance %.1f, stalled windows %d", c.jumps, c.rise, c.distance, c.stalls);
+    }
+
     // ---------------------------------------------------------------------------------------------- real world
 
     /** Blocks exported from a save by tools/terrain-smooth/export-area.mjs. */
@@ -627,6 +684,34 @@ final class PhysicsCheck {
         System.out.println(String.format(Locale.ROOT, "rugged terrain, 64 walks x 200 ticks, fixed:     pushes + lifts %d, stalled windows %d, walks past 15 blocks %d/64, largest sideways move per tick %.3f", stats[3], stats[4], stats[5], worstJerkAfter));
         require(stats[3] == 0, "no push out of blocks anywhere on smoothed ground");
         require(stats[5] == 64 && stats[4] == 0, "every walk across rugged smoothed ground keeps going");
+
+        // 4. Mobs (V1.1, the user's test: "zombies jump at every slope"): a zombie chasing up and down the 1:2 hill and across
+        //    the rugged terrain, MoveControl's jump test as vanilla computes it on smoothed tops, then fixed.
+        Ground mobHill = new Ground(hill, SmoothRules.MODE_B, ha, false);
+        Chase upV = chase(mobHill, -6.5, 0.5, 1, 0, 160, false), upF = chase(mobHill, -6.5, 0.5, 1, 0, 160, true);
+        Chase downV = chase(mobHill, 14.5, 0.5, -1, 0, 160, false), downF = chase(mobHill, 14.5, 0.5, -1, 0, 160, true);
+        System.out.println("zombie up the 1:2 hill,   vanilla jump test: " + fmt(upV));
+        System.out.println("zombie up the 1:2 hill,   fixed:             " + fmt(upF));
+        System.out.println("zombie down the 1:2 hill, vanilla jump test: " + fmt(downV));
+        System.out.println("zombie down the 1:2 hill, fixed:             " + fmt(downF));
+        require(upF.jumps == 0 && upF.rise > 5.9 && upF.stalls == 0, "a zombie walks up the 1:2 hill without jumping");
+        require(downF.jumps == 0 && downF.rise < -5.9 && downF.stalls == 0, "a zombie walks down the 1:2 hill without jumping");
+        Ground mobVanilla = new Ground(hill, SmoothRules.MODE_OFF, ha, true);
+        Chase stairs = chase(mobVanilla, -6.5, 0.5, 1, 0, 160, true);
+        System.out.println("zombie up the same hill as vanilla blocks, fixed jump test: " + fmt(stairs));
+        require(stairs.jumps >= 5 && stairs.rise > 5.9, "real one-block steps still make a zombie jump (vanilla blocks keep vanilla)");
+        int[] mob = new int[4];
+        for (int s = 0; s < 64; s++) {
+            double a = Math.PI * 2 * (s % 16) / 16, ux = Math.cos(a), uz = Math.sin(a);
+            double sx = -20.5 + (s / 16) * 12, sz = -20.5 + (s % 4) * 10;
+            Ground lg = new Ground(land, SmoothRules.MODE_B, la, false);
+            Chase v = chase(lg, sx, sz, ux, uz, 200, false), f = chase(lg, sx, sz, ux, uz, 200, true);
+            mob[0] += v.jumps; mob[1] += f.jumps; mob[2] += f.stalls; mob[3] += f.distance > 15 ? 1 : 0;
+        }
+        System.out.println(String.format(Locale.ROOT, "rugged terrain, 64 zombie chases x 200 ticks: jumps vanilla %d, fixed %d; fixed: stalled windows %d, chases past 15 blocks %d/64",
+                mob[0], mob[1], mob[2], mob[3]));
+        require(upV.jumps >= 3 && downV.jumps >= 1 && mob[0] > 100, "the harness reproduces the user test (zombies jump on smoothed slopes)");
+        require(mob[1] * 4 < mob[0] && mob[2] == 0, "the fix removes the slope jumps on rugged smoothed ground, nothing stalls");
 
         System.out.println(failures == 0 ? "TERRAIN SMOOTH PHYSICS CHECK OK" : "TERRAIN SMOOTH PHYSICS CHECK FAILED: " + failures);
         if (failures != 0) System.exit(1);

@@ -4,6 +4,8 @@ import com.antaurora.apofirstlight.dev.meshtree.TreeForms.Species;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +20,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -29,6 +33,9 @@ import java.util.concurrent.atomic.LongAdder;
  * <li>Levels: each tree has one level for all its cells (no seams inside a crown), from the horizontal camera distance
  * to the root: LOD0 under {@value #NEAR} blocks, LOD1 under {@value #MID}, then LOD2, with {@value #HYSTERESIS} blocks of
  * hysteresis. A change marks the tree's sections for a rebuild; the shadow pass draws the same section meshes.</li>
+ * <li>Batching (P1, docs/rendering/mesh_trees_p1_forest.md G): level changes wait up to {@value #FLUSH_TICKS} ticks and are
+ * applied together (a tree that turns back inside the window never rebuilds); every rebuild mark of a tick goes through
+ * one set, so a section that several trees reach is marked once. In a forest most sections hold several trees.</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = "apocalypse_firstlight", value = Dist.CLIENT)
@@ -42,6 +49,12 @@ public final class TreeClient {
             quadsOut = new LongAdder();
     static long marks, marksWindowStart, marksWindow;
     static final int[] levelChanges = new int[TreeShape.LODS];
+    static final int FLUSH_TICKS = 10;
+    /** Sections to mark this tick (deduplicated); trees whose new level waits for the next flush. Client thread only. */
+    private static final LongOpenHashSet DIRTY = new LongOpenHashSet();
+    private static final Map<TreeIndex.Root, Integer> PENDING = new HashMap<>();
+    static long flushes, flushedTrees, flushedSections;
+    static int ticks, lastTrees, lastSections, maxSections;
 
     private TreeClient() {}
 
@@ -62,13 +75,26 @@ public final class TreeClient {
         dirty(r);
     }
 
-    /** Marks every section a tree reaches for a rebuild (sections that are not loaded are ignored by the renderer). */
+    /** Queues every section a tree reaches for a rebuild this tick (sections that are not loaded are ignored by the renderer). */
     static void dirty(TreeIndex.Root r) {
-        var renderer = Minecraft.getInstance().levelRenderer;
-        if (renderer == null) return;
         for (int sx = r.minX >> 4; sx <= r.maxX >> 4; sx++)
             for (int sy = r.minY >> 4; sy <= r.maxY >> 4; sy++)
-                for (int sz = r.minZ >> 4; sz <= r.maxZ >> 4; sz++) { renderer.setSectionDirty(sx, sy, sz); marks++; }
+                for (int sz = r.minZ >> 4; sz <= r.maxZ >> 4; sz++) DIRTY.add(SectionPos.asLong(sx, sy, sz));
+    }
+
+    /** Marks the queued sections, each once. */
+    private static void markQueued() {
+        if (DIRTY.isEmpty()) return;
+        var renderer = Minecraft.getInstance().levelRenderer;
+        if (renderer != null) {
+            var it = DIRTY.iterator();
+            while (it.hasNext()) {
+                long k = it.nextLong();
+                renderer.setSectionDirty(SectionPos.x(k), SectionPos.y(k), SectionPos.z(k));
+                marks++;
+            }
+        }
+        DIRTY.clear();
     }
 
     static void dirtyAll() {
@@ -90,6 +116,8 @@ public final class TreeClient {
     public static void loggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         TreeIndex.CLIENT.clear();
         override = -1;
+        DIRTY.clear();
+        PENDING.clear();
     }
 
     /** The server's messages (client thread). */
@@ -124,12 +152,32 @@ public final class TreeClient {
         for (TreeIndex.Root[] list : TreeIndex.CLIENT.all()) for (var r : list) {
             double d = Math.hypot(r.x + 0.5 - cam.x, r.z + 0.5 - cam.z);
             int old = r.level, now = level(d, old);
-            if (now == old) continue;
-            r.level = now;
-            if (old >= 0) levelChanges[now]++;
-            // a root without a level yet was meshed as LOD0
-            if (override < 0 && (old >= 0 || now != 0)) dirty(r);
+            if (now == old) { if (!PENDING.isEmpty()) PENDING.remove(r); continue; }
+            if (old < 0) {
+                // a root without a level yet was meshed as LOD0
+                r.level = now;
+                if (override < 0 && now != 0) dirty(r);
+                continue;
+            }
+            PENDING.put(r, now);
         }
+        if (++ticks % FLUSH_TICKS == 0 && !PENDING.isEmpty()) {
+            int before = DIRTY.size();
+            for (var e : PENDING.entrySet()) {
+                var r = e.getKey();
+                r.level = e.getValue();
+                levelChanges[r.level]++;
+                if (override < 0) dirty(r);
+            }
+            lastTrees = PENDING.size();
+            lastSections = DIRTY.size() - before;
+            maxSections = Math.max(maxSections, lastSections);
+            flushes++;
+            flushedTrees += lastTrees;
+            flushedSections += lastSections;
+            PENDING.clear();
+        }
+        markQueued();
         long t = System.nanoTime();
         if (t - marksWindowStart > 10_000_000_000L) { marksWindow = marks; marksWindowStart = t; }
     }
@@ -166,6 +214,8 @@ public final class TreeClient {
                 n, n == 0 ? 0 : lookupNanos.sum() / 1000.0 / n, carriers.sum(), orphans.sum(), quadsOut.sum()));
         say(String.format("  rebuild marks: %d total, %d since the last 10 s mark; level changes to LOD0/1/2: %s; baked caches %d",
                 marks, marks - marksWindow, Arrays.toString(levelChanges), TreeCellModel.cacheSize()));
+        say(String.format("  level batches (every %d ticks): %d, %d trees -> %d sections (%.1f sections per tree); last %d trees -> %d sections, largest %d sections; %d waiting",
+                FLUSH_TICKS, flushes, flushedTrees, flushedSections, flushedTrees == 0 ? 0 : flushedSections / (double) flushedTrees, lastTrees, lastSections, maxSections, PENDING.size()));
         say("  shaders: " + TreeShaderIds.describe() + "; Embeddium " + (ModList.get().isLoaded("embeddium") ? "loaded" : "not loaded"));
     }
 }

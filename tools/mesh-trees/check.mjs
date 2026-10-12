@@ -4,7 +4,10 @@
 // 2. Textures match tools/mesh-trees/build-tree-textures.mjs.
 // 3. Compiles src/dev/.../meshtree/TreeShape.java (pure Java) with TreeCheck.java and runs it: cell reach, Oculus
 //    midBlock range, budgets, turns, determinism, the Voxy mip simulation; previews go to build/mesh-trees/.
-//   node tools/mesh-trees/check.mjs
+// 4. P1 natural forest (docs/rendering/mesh_trees_p1_forest.md, N): static audit of the dev-only worldgen wiring, then
+//    ForestPlan (pure Java) over the real Terrain V2 plan cache of a seed with ForestCheck.java (densities, spacing,
+//    determinism and generation order, buffer, cells against the planned ground, cost, test spots, a map).
+//   node tools/mesh-trees/check.mjs [seed centreX centreZ]      (default: AFL_TREE_01's seed and spawn)
 // Needs a JDK 17 (JAVA_HOME, or javac on PATH).
 import fs from 'node:fs';
 import os from 'node:os';
@@ -41,6 +44,30 @@ for (const pure of ['TreeShape', 'TreeForms']) require(!/net\.minecraft|net\.min
 const walk = d => fs.readdirSync(d, {withFileTypes: true}).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
 for (const f of walk(path.join(ROOT, 'src/main/java')).filter(f => f.endsWith('.java')))
   require(!/dev\.meshtree/.test(fs.readFileSync(f, 'utf8')), `formal ${path.relative(ROOT, f)} uses no mesh tree sample class`);
+// P1 natural forest: dev data dropped from the jar, the feature and the modifier registered only outside production, the
+// gate reads the server's world folder, the modifier's biomes and removed features match the plan and the biome files
+for (const f of ['forge/biome_modifier/dev_mesh_forest.json', 'worldgen/configured_feature/dev_mesh_forest.json', 'worldgen/placed_feature/dev_mesh_forest.json']) {
+  require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/data/apocalypse_firstlight', f)), `dev forest data ${f} exists`);
+  require(gradle.includes(`exclude 'data/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
+  require(!fs.existsSync(path.join(ROOT, 'src/main/resources/data/apocalypse_firstlight', f)), `no formal ${f}`);
+}
+const gate = read(dev + '/ForestGate.java');
+require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.FEATURES/.test(gate), 'the forest feature and modifier register only outside production');
+require(/getWorldPath\(LevelResource\.ROOT\)/.test(gate) && /startsWith\(TreeCommands\.PREFIX\)/.test(gate) && /generated\(root\)/.test(gate), 'the gate reads the server world folder, its prefix and whether it has chunks');
+require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/ForestPlan.java')), 'ForestPlan is pure Java');
+{
+  const mod = JSON.parse(read('src/dev/highway_mesh_resources/data/apocalypse_firstlight/forge/biome_modifier/dev_mesh_forest.json'));
+  const plan = read(dev + '/ForestPlan.java');
+  const covered = [...plan.matchAll(/STANDS\[EcologyBiomes\.(\w+)\] = new Stand/g)].map(m => m[1]);
+  const ids = {GRASSLAND: 'temperate_grassland', WOODLAND: 'oak_hickory_woodland', RIDGE_FOREST: 'ridge_oak_forest', HEMLOCK_HOLLOW: 'hemlock_hollow',
+    COASTAL_PINE: 'coastal_pine_oak_forest', COASTAL_CLEARING: 'coastal_sandy_clearing'};
+  require(covered.length === mod.biomes.length && covered.every(c => mod.biomes.includes('apocalypse_firstlight:' + ids[c])), 'the modifier covers exactly the plan stands');
+  for (const b of mod.biomes) {
+    const biome = JSON.parse(read('src/main/resources/data/apocalypse_firstlight/worldgen/biome/' + b.split(':')[1] + '.json'));
+    const trees = biome.features.flat().filter(f => /trees|tree_/.test(f));
+    require(trees.length > 0 && trees.every(f => mod.remove.includes(f)), `${b}: every tree feature is removed (${trees})`);
+  }
+}
 console.log(failures === 0 ? 'static audit: development-only wiring OK' : `static audit: ${failures} failures`);
 
 // ---- 2. textures
@@ -57,7 +84,22 @@ try {
   if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', out, ...sources]) !== 0) process.exit(2);
   const status = run(exe('java'), ['-Djava.awt.headless=true', '-cp', out, 'com.antaurora.apofirstlight.dev.meshtree.TreeCheck',
     path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/block'), previews]);
-  process.exitCode = status !== 0 ? status : failures === 0 ? 0 : 1;
+  // 4. the natural forest over a real plan
+  const [seed, cx, cz] = process.argv.length >= 5 ? process.argv.slice(2, 5) : ['-4770121886729009152', '-856', '856'];
+  const cache = path.join(ROOT, 'run/afl_cache/terrain_plan', `afl_terrain_plan_v2_r1_${(BigInt(seed) & ((1n << 64n) - 1n)).toString()}.bin`);
+  let forest = 0;
+  if (!fs.existsSync(cache)) console.log(`forest: no plan cache for seed ${seed} (${cache}); open a world with that seed once`), forest = 1;
+  else {
+    const fout = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-forestcheck-'));
+    try {
+      const sp = [path.join(ROOT, 'src/main/java'), path.join(ROOT, 'src/dev/java')].join(path.delimiter);
+      if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', fout, '-sourcepath', sp, path.join(ROOT, 'tools/mesh-trees/ForestCheck.java')]) !== 0) forest = 2;
+      else forest = run(exe('java'), ['-Xmx3g', '-Djava.awt.headless=true', '-cp', fout, 'com.antaurora.apofirstlight.dev.meshtree.ForestCheck', cache, seed, previews, cx, cz]);
+    } finally {
+      fs.rmSync(fout, {recursive: true, force: true});
+    }
+  }
+  process.exitCode = status !== 0 ? status : forest !== 0 ? forest : failures === 0 ? 0 : 1;
 } finally {
   fs.rmSync(out, {recursive: true, force: true});
 }
