@@ -1,0 +1,53 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "apocalypse_firstlight:white_oak_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_canopy",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_canopy",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_canopy",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_canopy",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_canopy",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_foliage",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_canopy",
+      "required": false
+    }
+  ]
+}

@@ -9,6 +9,11 @@
 - **编译通过**：`.\gradlew.bat compileJava --offline`，BUILD SUCCESSFUL。本轮编译两次，两次之前都确认游戏已关闭：
   - 第一次：寻路修正和 P1 全部代码完成后；
   - 第二次：补了三处（树干格阻挡生物路径，见 G 节；读不到的结构起点不再拒树；根格被占时拒树），这是最终版本。
+- **P4 起正式化**（2026-10-12，[mesh_trees_p4_formal](mesh_trees_p4_formal.md) F/O 节）：
+  - 森林不再要求 `AFL_TREE_*` 世界和标记文件；
+  - 由服务端配置 `meshForestEnabled`（默认开）决定，所有 AFL 世界的新区块都生成；
+  - 特性、修改器 `dev_mesh_forest` → `mesh_forest`。
+  - 下面的门控说明是 P1 当时的。
 - **P3 改动**（2026-10-11，[mesh_trees_p3_species E 节](mesh_trees_p3_species.md)）：
   - 林分从"白松比例"改成六个树种的混交比例，按 SAF 林型定；
   - 混合中生林、河岸林、海岸沼泽林也换成 Mesh 树，已经没有保留原版树的群系；

@@ -13,6 +13,12 @@
   - 编译通过：`compileJava --offline` 一次通过，编译前确认游戏已关闭；
   - **游戏实机未看。**
 - **"正式接入"还没做**：生成仍然只在 `AFL_TREE_*` 测试世界，方块和物品仍是开发专用（L 节）。
+- **作者实机 P3 PASS**（2026-10-11）。
+- **P4 起正式化**（[mesh_trees_p4_formal](mesh_trees_p4_formal.md)，2026-10-12）：
+  - 代码移到 `src/main/java/.../tree`，资源移到 `src/main/resources`，所有 AFL 世界默认生成；
+  - 方块 ID 去掉 `dev_` 前缀（例如 `dev_red_oak_foliage` → `red_oak_foliage`），旧 ID 自动重映射；
+  - 贴图路径从 `afl_tree_demo:block/...` 改成 `apocalypse_firstlight:block/tree/...`。
+  - 本文里的开发路径和 ID 是 P3 当时的。
 - **还没做过的验证，都不算 PASS**：
   - 单人实机（外观、风动、LOD、碰撞、砍伐、生态分布）；
   - Sundial、Voxy；

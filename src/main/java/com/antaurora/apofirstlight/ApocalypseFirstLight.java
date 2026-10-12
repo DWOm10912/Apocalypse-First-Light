@@ -45,6 +45,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothConfig.SPEC, "apocalypse_firstlight-terrain.toml");
+        // Mesh Trees P4: the natural mesh forest, per world (serverconfig), read when the server starts
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.tree.MeshForestConfig.SPEC, "apocalypse_firstlight-trees.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);

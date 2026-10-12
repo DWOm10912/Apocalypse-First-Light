@@ -1,5 +1,5 @@
 // Mesh Trees P0-A (docs/rendering/mesh_trees_p0a.md): the white oak technical sample's textures, development only.
-// Writes src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/block/:
+// Writes src/main/resources/assets/apocalypse_firstlight/textures/block/tree/ (P0-P3: the dev folder afl_tree_demo):
 //   white_oak_bark.png          16 x 16, seamless both ways (tube quads restart it every metre of length)
 //   white_oak_leaves.png        32 x 32 leaf cluster for LOD0 cards (1.5 m card: about 21 px per metre)
 //   white_oak_leaves_mid.png    32 x 32 denser clusters for LOD1 (two cards stand in for six)
@@ -12,13 +12,13 @@
 // Mesh Trees P2.1 (docs/rendering/mesh_trees_p2_felling.md, U), formal felling assets from felling-art.mjs:
 //   white_oak_cut.png / white_pine_cut.png              32 x 32 fresh cut wood (the notch faces)
 //   white_oak_end_grain.png / white_pine_end_grain.png  32 x 32 rings, sapwood, bark rim (stump top, falling log cut)
-//   ../item/<wood>_branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
+//   ../../item/tree/<wood>_branch, white_oak_leaves, white_pine_needles .png   16 x 16 item icons
 //   LabPBR _n / _s for both barks, cut wood and end grain (leaves: none, the shader pack's leaf handling stays)
 // Mesh Trees P2.2 (mesh_trees_p2_felling.md, V): the log blocks' ends (the logs' 2D item icons are gone, they are blocks)
 //   white_oak_log_end.png / white_pine_log_end.png      32 x 32 rounded-square end with bark rim, rings; LabPBR _n / _s
 // Mesh Trees P3 (mesh_trees_p3_species.md, C), from species-art.mjs, for red_oak, shagbark_hickory, red_maple and
 // eastern_hemlock: <id>_bark (+ _n/_s), the leaf cards <leaves>, _mid, _far, _proxy, <id>_cut, _end_grain, _log_end
-// (+ _n/_s), and ../item/<id>_branch, ../item/<leaves> icons
+// (+ _n/_s), and ../../item/tree/<id>_branch and <leaves> icons
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -27,7 +27,8 @@ import * as art from './felling-art.mjs';
 import * as sp from './species-art.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/block');
+// P4 (mesh_trees_p4_formal.md): the formal textures, apocalypse_firstlight:block/tree/... and item/tree/...
+const OUT = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/block/tree');
 
 function rng(seed) {
   let s = BigInt(seed) & 0xFFFFFFFFFFFFFFFFn;
@@ -266,10 +267,10 @@ const outputs = {
   // P2.2 log block ends
   'white_oak_log_end.png': art.logEnd(art.OAK, art.OAK_WOOD, 4305),
   'white_pine_log_end.png': art.logEnd(art.PINE, art.PINE_WOOD, 4306),
-  '../item/white_oak_branch.png': art.branchIcon(art.OAK, false),
-  '../item/white_pine_branch.png': art.branchIcon(art.PINE, true),
-  '../item/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
-  '../item/white_pine_needles.png': art.needleIcon(art.PINE),
+  '../../item/tree/white_oak_branch.png': art.branchIcon(art.OAK, false),
+  '../../item/tree/white_pine_branch.png': art.branchIcon(art.PINE, true),
+  '../../item/tree/white_oak_leaves.png': art.oakLeafIcon(art.OAK),
+  '../../item/tree/white_pine_needles.png': art.needleIcon(art.PINE),
 };
 // P3: the four new species. [id, leaves id, palette, wood, bark, LOD0/mid/far cards, proxy, icons, seed base, bark normal strength]
 const P3 = [
@@ -298,8 +299,8 @@ for (const [id, leaves, pal, wood, barkFn, cards, proxyFn, leafIcon, branchIcon,
   outputs[id + '_cut.png'] = art.cutWood(pal, wood, seed + 6);
   outputs[id + '_end_grain.png'] = art.endGrain(pal, wood, seed + 7);
   outputs[id + '_log_end.png'] = art.logEnd(pal, wood, seed + 8);
-  outputs['../item/' + id + '_branch.png'] = branchIcon(pal);
-  outputs['../item/' + leaves + '.png'] = leafIcon(pal);
+  outputs['../../item/tree/' + id + '_branch.png'] = branchIcon(pal);
+  outputs['../../item/tree/' + leaves + '.png'] = leafIcon(pal);
 }
 // LabPBR (normals gentle and smoothed, height alpha flat, dielectric rough wood)
 Object.assign(outputs, {

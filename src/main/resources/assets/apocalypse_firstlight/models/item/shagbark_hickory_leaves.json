@@ -1,0 +1,15 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "base": {
+    "parent": "apocalypse_firstlight:item/shagbark_hickory_leaves_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/tree/shagbark_hickory_leaves"
+      }
+    }
+  }
+}

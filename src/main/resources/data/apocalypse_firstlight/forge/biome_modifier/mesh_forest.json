@@ -1,0 +1,26 @@
+{
+  "type": "apocalypse_firstlight:mesh_forest",
+  "biomes": [
+    "apocalypse_firstlight:temperate_grassland",
+    "apocalypse_firstlight:oak_hickory_woodland",
+    "apocalypse_firstlight:ridge_oak_forest",
+    "apocalypse_firstlight:hemlock_hollow",
+    "apocalypse_firstlight:coastal_pine_oak_forest",
+    "apocalypse_firstlight:coastal_sandy_clearing",
+    "apocalypse_firstlight:mixed_mesophytic_forest",
+    "apocalypse_firstlight:riparian_forest",
+    "apocalypse_firstlight:coastal_swamp_forest"
+  ],
+  "remove": [
+    "apocalypse_firstlight:eco_trees_grassland",
+    "apocalypse_firstlight:eco_trees_woodland",
+    "apocalypse_firstlight:eco_trees_ridge",
+    "apocalypse_firstlight:eco_trees_hemlock",
+    "apocalypse_firstlight:eco_trees_coastal",
+    "apocalypse_firstlight:eco_trees_clearing",
+    "apocalypse_firstlight:eco_trees_mesophytic",
+    "apocalypse_firstlight:eco_trees_riparian",
+    "minecraft:trees_swamp"
+  ],
+  "feature": "apocalypse_firstlight:mesh_forest"
+}

@@ -625,6 +625,79 @@
       "unit_mass_kg": 20,
       "estimated": true
     }
+,
+    "apocalypse_firstlight:white_oak_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_leaves": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_pine_needles": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_oak_leaves": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:shagbark_hickory_leaves": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:red_maple_leaves": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_log": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_branch": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:eastern_hemlock_needles": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    }
   },
   "carry_factors": [
     {

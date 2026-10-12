@@ -1,15 +1,15 @@
-// Mesh Trees P0-A: offline checks (docs/rendering/mesh_trees_p0a.md, section N).
-// 1. Static audit: the sample stays development-only (dev package, dev assets and tags excluded from the jar, the
-//    blocks registered only outside production, no formal source references the dev package).
+// Mesh Trees offline checks (P0-A docs/rendering/mesh_trees_p0a.md N ... P4 mesh_trees_p4_formal.md P).
+// 1. Static audit (P4, formal): the trees live in src/main (package com.antaurora.apofirstlight.tree), the development
+//    commands in src/dev/java and out of the jar; no formal class depends on them or on a dev package; common classes
+//    load no client class; no production gate is left; formal ids, the old-id remap, resources, tags, lang, loot,
+//    the forest's biome modifier and config, the jar excludes.
 // 2. Textures match tools/mesh-trees/build-tree-textures.mjs.
-// 3. Compiles src/dev/.../meshtree/TreeShape.java (pure Java) with TreeCheck.java and runs it: cell reach, Oculus
-//    midBlock range, budgets, turns, determinism, the Voxy mip simulation; previews go to build/mesh-trees/.
-// 4. P1 natural forest (docs/rendering/mesh_trees_p1_forest.md, N): static audit of the dev-only worldgen wiring, then
-//    ForestPlan (pure Java) over the real Terrain V2 plan cache of a seed with ForestCheck.java (densities, spacing,
-//    determinism and generation order, buffer, cells against the planned ground, cost, test spots, a map).
-// 5. P2 felling (docs/rendering/mesh_trees_p2_felling.md, O): static audit of the dev-only felling wiring, then
-//    FellingRules, TreeCut and FellingLedger (pure Java) with FellCheck.java (chops, drops, cut geometry, fall curves,
-//    rest angles, directions, the ledger, shared cells of natural trees over the same plan cache).
+// 3. TreeShape (pure Java) with TreeCheck.java: cell reach, Oculus midBlock range, budgets, turns, determinism, the Voxy
+//    mip simulation; previews go to build/mesh-trees/.
+// 4. ForestPlan over the real Terrain V2 plan cache of a seed with ForestCheck.java (densities, mixes, spacing,
+//    determinism and generation order, cells against the planned ground, cost, test spots, a map).
+// 5. FellingRules, TreeCut, FellingLedger, LogShape with FellCheck.java (chops, drops, cut geometry, fall curves, rest
+//    angles, directions, the ledger, log blocks, shared cells of natural trees over the same plan cache).
 //   node tools/mesh-trees/check.mjs [seed centreX centreZ]      (default: AFL_TREE_01's seed and spawn)
 // Needs a JDK 17 (JAVA_HOME, or javac on PATH).
 import fs from 'node:fs';
@@ -20,47 +20,117 @@ import {fileURLToPath} from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
+const exists = p => fs.existsSync(path.join(ROOT, p));
 let failures = 0;
 const require = (ok, what) => { if (!ok) { failures++; console.log('FAIL ' + what); } };
+const walk = d => fs.readdirSync(d, {withFileTypes: true}).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
+const code = s => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');   // without comments
 
 // ---- 1. static audit
 const gradle = read('build.gradle');
-require(/exclude 'com\/antaurora\/apofirstlight\/dev\/\*\*'/.test(gradle), 'the jar drops the development package');
-require(/exclude 'assets\/afl_tree_demo\/\*\*'/.test(gradle), 'the jar drops the tree sample assets');
-for (const f of ['tree_root', 'tree_wood', 'tree_foliage', 'tree_canopy', 'white_pine_foliage', 'white_pine_canopy'].flatMap(n => [`blockstates/dev_${n}.json`, `models/block/dev_${n}.json`])) {
-  require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/assets/apocalypse_firstlight', f)), `dev resource ${f} exists`);
-  require(gradle.includes(`exclude 'assets/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
-}
-for (const t of ['logs', 'leaves']) {
-  const p = `src/dev/highway_mesh_resources/data/minecraft/tags/blocks/${t}.json`;
-  require(fs.existsSync(path.join(ROOT, p)), `dev tag ${t}.json exists`);
-  require(gradle.includes(`exclude 'data/minecraft/tags/blocks/${t}.json'`), `the jar drops the dev ${t} tag`);
-  require(!fs.existsSync(path.join(ROOT, `src/main/resources/data/minecraft/tags/blocks/${t}.json`)), `no formal ${t} tag collides with the dev one`);
-  if (fs.existsSync(path.join(ROOT, p))) {
-    const tag = JSON.parse(read(p));
-    require(tag.replace === false && tag.values.every(v => typeof v === 'object' && v.required === false), `dev ${t} tag adds optional entries only`);
-  }
-}
-const dev = 'src/dev/java/com/antaurora/apofirstlight/dev/meshtree';
-require(/FMLEnvironment\.production\) return/.test(read(dev + '/TreeBlocks.java')), 'the sample blocks register only outside production');
-for (const pure of ['TreeShape', 'TreeForms']) require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/' + pure + '.java')), pure + ' is pure Java');
-const walk = d => fs.readdirSync(d, {withFileTypes: true}).flatMap(e => e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]);
-for (const f of walk(path.join(ROOT, 'src/main/java')).filter(f => f.endsWith('.java')))
-  require(!/dev\.meshtree/.test(fs.readFileSync(f, 'utf8')), `formal ${path.relative(ROOT, f)} uses no mesh tree sample class`);
-// P1 natural forest: dev data dropped from the jar, the feature and the modifier registered only outside production, the
-// gate reads the server's world folder, the modifier's biomes and removed features match the plan and the biome files
-for (const f of ['forge/biome_modifier/dev_mesh_forest.json', 'worldgen/configured_feature/dev_mesh_forest.json', 'worldgen/placed_feature/dev_mesh_forest.json']) {
-  require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/data/apocalypse_firstlight', f)), `dev forest data ${f} exists`);
-  require(gradle.includes(`exclude 'data/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
-  require(!fs.existsSync(path.join(ROOT, 'src/main/resources/data/apocalypse_firstlight', f)), `no formal ${f}`);
-}
-const gate = read(dev + '/ForestGate.java');
-require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.FEATURES/.test(gate), 'the forest feature and modifier register only outside production');
-require(/getWorldPath\(LevelResource\.ROOT\)/.test(gate) && /startsWith\(TreeCommands\.PREFIX\)/.test(gate) && /generated\(root\)/.test(gate), 'the gate reads the server world folder, its prefix and whether it has chunks');
-require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/ForestPlan.java')), 'ForestPlan is pure Java');
+const dev = 'src/main/java/com/antaurora/apofirstlight/tree';          // the formal package (named dev in P0-P3)
+const devCommands = 'src/dev/java/com/antaurora/apofirstlight/tree';
+const A = 'src/main/resources/assets/apocalypse_firstlight/';
+const SPECIES = [['white_oak', 'white_oak_leaves'], ['white_pine', 'white_pine_needles'], ['red_oak', 'red_oak_leaves'],
+  ['shagbark_hickory', 'shagbark_hickory_leaves'], ['red_maple', 'red_maple_leaves'], ['eastern_hemlock', 'eastern_hemlock_needles']];
+const P3 = SPECIES.slice(2);
 {
-  const mod = JSON.parse(read('src/dev/highway_mesh_resources/data/apocalypse_firstlight/forge/biome_modifier/dev_mesh_forest.json'));
-  const plan = read(dev + '/ForestPlan.java');
+  // where the classes are
+  require(!exists('src/dev/java/com/antaurora/apofirstlight/dev/meshtree') || fs.readdirSync(path.join(ROOT, 'src/dev/java/com/antaurora/apofirstlight/dev/meshtree')).length === 0,
+    'no class left in the P0-P3 dev package');
+  const formal = fs.readdirSync(path.join(ROOT, dev)).filter(f => f.endsWith('.java'));
+  const commands = ['TreeCommands', 'ForestCommands', 'FellingCommands'];
+  for (const c of commands) {
+    require(exists(`${devCommands}/${c}.java`), `${c} stays in src/dev/java`);
+    require(!formal.includes(c + '.java'), `${c} is not formal`);
+    require(gradle.includes(`exclude 'com/antaurora/apofirstlight/tree/${c}*'`), `the jar drops ${c}`);
+  }
+  const CLIENT = ['TreeCellModel', 'TreeLogModel', 'TreeModels', 'TreeClient', 'FallingTreeRenderer', 'TreeShaderIds', 'FellingClient'];
+  for (const f of formal) {
+    const name = f.slice(0, -5), src = code(read(`${dev}/${f}`));
+    for (const c of commands) require(!new RegExp('\\b' + c + '\\b').test(src), `formal ${name} does not use the development ${c}`);
+    require(!/com\.antaurora\.apofirstlight\.dev\b/.test(src), `formal ${name} uses no dev package`);
+    require(!/FMLEnvironment\.production/.test(src), `formal ${name} has no development-only gate`);
+    require(!/AFL_TREE_|afl_tree_demo/.test(src), `formal ${name} has no test-world gate or dev namespace`);
+    if (!CLIENT.includes(name)) {
+      require(!/import (net\.minecraft\.client|com\.mojang\.blaze3d|net\.minecraftforge\.client)\./.test(src), `common ${name} imports no client class`);
+      for (const c of CLIENT) {
+        const uses = src.split('\n').filter(l => new RegExp('\\b' + c + '\\b').test(l));
+        require(uses.every(l => /DistExecutor/.test(l)), `common ${name} reaches ${c} only through DistExecutor (${uses.length})`);
+      }
+    } else if (name !== 'FellingClient' && name !== 'TreeClient' && name !== 'TreeModels' && name !== 'FallingTreeRenderer') {
+      require(!/@Mod\.EventBusSubscriber\((?![^)]*Dist\.CLIENT)/.test(src), `client ${name} subscribes to no common bus`);
+    }
+    if (['TreeClient', 'TreeModels', 'FellingClient'].includes(name)) require(/@Mod\.EventBusSubscriber\([^)]*Dist\.CLIENT/.test(src), `${name} subscribes on the client only`);
+  }
+  for (const pure of ['TreeShape', 'TreeForms', 'FellingRules', 'TreeCut', 'FellingLedger', 'LogShape'])
+    require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(code(read(`${dev}/${pure}.java`))), pure + ' is pure Java');
+  require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(code(read(`${dev}/ForestPlan.java`))), 'ForestPlan is pure Java');
+  for (const f of walk(path.join(ROOT, 'src/main/java')).filter(f => f.endsWith('.java')))
+    require(!/dev\.meshtree/.test(fs.readFileSync(f, 'utf8')), `formal ${path.relative(ROOT, f)} uses no P0-P3 dev class`);
+
+  // ids: formal names; every P0-P3 dev id remapped
+  const blocks = read(`${dev}/TreeBlocks.java`), reg = read(`${dev}/FellingRegistry.java`), gate = read(`${dev}/ForestGate.java`), events = read(`${dev}/TreeServerEvents.java`);
+  require(/"tree_root"/.test(blocks) && /"tree_wood"/.test(blocks) && /"tree_stump"/.test(blocks), 'formal root, wood and stump ids');
+  require(/s\.id \+ \(carrier \? "_foliage" : "_canopy"\)/.test(blocks), 'formal crown ids <species>_foliage / _canopy');
+  require(/"falling_tree"/.test(reg) && /"mesh_forest"/.test(gate), 'formal falling tree and forest ids');
+  for (const f of formal.filter(f => f !== 'TreeServerEvents.java'))
+    require(!/"dev_/.test(code(read(`${dev}/${f}`))), `formal ${f} registers no dev_ id`);
+  const oldIds = ['dev_tree_root', 'dev_tree_wood', 'dev_tree_stump', 'dev_tree_foliage', 'dev_tree_canopy',
+    ...SPECIES.slice(1).flatMap(([id]) => [`dev_${id}_foliage`, `dev_${id}_canopy`]), 'dev_falling_tree', 'dev_mesh_forest'];
+  for (const id of oldIds) require(events.includes(`"${id}"`), `the old id ${id} is remapped`);
+  require(/MissingMappingsEvent/.test(events) && /m\.remap\(target\)/.test(events), 'old ids remap through MissingMappingsEvent');
+  // the formal tree ids are not registered anywhere else
+  const others = walk(path.join(ROOT, 'src/main/java')).filter(f => f.endsWith('.java') && !f.replace(/\\/g, '/').includes('/apofirstlight/tree/'));
+  const names = ['tree_root', 'tree_wood', 'tree_stump', 'falling_tree', 'mesh_forest', ...SPECIES.flatMap(([id, l]) => [`${id}_log`, `${id}_branch`, l, `${id}_foliage`, `${id}_canopy`])];
+  for (const f of others) {
+    const s = fs.readFileSync(f, 'utf8');
+    for (const n of names) require(!s.includes(`"${n}"`), `${path.basename(f)} does not register ${n} again`);
+  }
+
+  // resources: blockstates, models, item models, loot, textures, tags, lang; none left in the dev resources
+  const blockIds = ['tree_root', 'tree_wood', 'tree_stump', ...SPECIES.flatMap(([id]) => [`${id}_foliage`, `${id}_canopy`, `${id}_log`])];
+  for (const b of blockIds) for (const f of [`blockstates/${b}.json`, `models/block/${b}.json`]) require(exists(A + f), `formal ${f}`);
+  for (const [id, leaves] of SPECIES) for (const f of [`${id}_log`, `${id}_branch`, leaves, `${leaves}_3d`]) require(exists(A + `models/item/${f}.json`), `formal item model ${f}`);
+  const texOk = ref => exists(A + 'textures/' + ref.split(':')[1] + '.png');
+  for (const f of walk(path.join(ROOT, A, 'models')).filter(f => /(tree_|_foliage|_canopy|_log|_branch|_leaves|_needles)/.test(path.basename(f))))
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/"(apocalypse_firstlight:(?:block|item)\/tree\/[\w/]+)"/g))
+      require(texOk(m[1]), `${path.basename(f)}: texture ${m[1]} exists`);
+  for (const [id, leaves] of SPECIES) {
+    for (const t of [`${id}_bark`, leaves, `${leaves}_mid`, `${leaves}_far`, `${leaves}_proxy`, `${id}_cut`, `${id}_end_grain`, `${id}_log_end`])
+      require(exists(A + `textures/block/tree/${t}.png`), `texture block/tree/${t}`);
+    for (const t of [`${id}_branch`, leaves]) require(exists(A + `textures/item/tree/${t}.png`), `icon item/tree/${t}`);
+    require(!exists(A + `textures/item/tree/${id}_log.png`), `no 2D icon for the ${id}_log block`);
+    const loot = `src/main/resources/data/apocalypse_firstlight/loot_tables/blocks/${id}_log.json`;
+    require(exists(loot) && JSON.parse(read(loot)).pools[0].entries[0].name === `apocalypse_firstlight:${id}_log`, `${id}_log drops itself`);
+  }
+  const tag = t => JSON.parse(read(`src/main/resources/data/minecraft/tags/blocks/${t}.json`)).values.map(v => typeof v === 'string' ? v : v.id);
+  const logs = tag('logs'), leavesTag = tag('leaves');
+  for (const b of ['tree_root', 'tree_wood', 'tree_stump', ...SPECIES.map(([id]) => `${id}_log`)]) require(logs.includes('apocalypse_firstlight:' + b), `${b} in minecraft:logs (axe, Terrain Smooth)`);
+  for (const [id] of SPECIES) for (const k of ['foliage', 'canopy']) require(leavesTag.includes(`apocalypse_firstlight:${id}_${k}`), `${id}_${k} in minecraft:leaves`);
+  for (const lang of ['en_us', 'zh_cn']) {
+    const l = JSON.parse(read(A + `lang/${lang}.json`));
+    for (const b of blockIds) require(typeof l[`block.apocalypse_firstlight.${b}`] === 'string', `${lang}: block ${b}`);
+    for (const [id, leaves] of SPECIES) for (const i of [`${id}_branch`, leaves]) require(typeof l[`item.apocalypse_firstlight.${i}`] === 'string', `${lang}: item ${i}`);
+    for (const k of ['entity.apocalypse_firstlight.falling_tree', 'message.apocalypse_firstlight.felling.need_axe', 'message.apocalypse_firstlight.felling.not_loaded',
+      'message.apocalypse_firstlight.felling.no_fall']) require(typeof l[k] === 'string', `${lang}: ${k}`);
+  }
+  const leftovers = walk(path.join(ROOT, 'src/dev/highway_mesh_resources')).map(f => path.relative(ROOT, f).replace(/\\/g, '/'))
+    .filter(f => /afl_tree_demo|tree_|_foliage|_canopy|mesh_forest|tags\/blocks\/(logs|leaves)|_log\.json|_branch|_leaves|_needles/.test(f));
+  require(leftovers.length === 0, `no tree resource left in the dev resources (${leftovers.slice(0, 3)})`);
+  for (const f of walk(path.join(ROOT, 'src/main/resources')).filter(f => f.endsWith('.json')))
+    require(!/afl_tree_demo|apocalypse_firstlight:dev_(tree|white|red|shagbark|eastern|mesh|falling)/.test(fs.readFileSync(f, 'utf8')), `${path.basename(f)} names no dev tree resource`);
+  // the jar keeps every tree resource
+  for (const line of gradle.split('\n').filter(l => /^\s*exclude '/.test(l)))
+    require(!/tree|_log\.json|_branch|_leaves|_needles|_foliage|_canopy|mesh_forest|tags\/blocks\/(logs|leaves)/.test(line) || /tree\/(TreeCommands|ForestCommands|FellingCommands)\*/.test(line),
+      `the jar keeps the trees (${line.trim()})`);
+
+  // the forest: formal data, the modifier covers exactly the plan stands, the config decides
+  for (const f of ['forge/biome_modifier/mesh_forest.json', 'worldgen/configured_feature/mesh_forest.json', 'worldgen/placed_feature/mesh_forest.json'])
+    require(exists('src/main/resources/data/apocalypse_firstlight/' + f), `formal forest data ${f}`);
+  const mod = JSON.parse(read('src/main/resources/data/apocalypse_firstlight/forge/biome_modifier/mesh_forest.json'));
+  require(mod.type === 'apocalypse_firstlight:mesh_forest' && mod.feature === 'apocalypse_firstlight:mesh_forest', 'the modifier and its feature are mesh_forest');
+  const plan = read(`${dev}/ForestPlan.java`);
   const covered = [...plan.matchAll(/STANDS\[EcologyBiomes\.(\w+)\] = new Stand/g)].map(m => m[1]);
   const ids = {GRASSLAND: 'temperate_grassland', WOODLAND: 'oak_hickory_woodland', RIDGE_FOREST: 'ridge_oak_forest', HEMLOCK_HOLLOW: 'hemlock_hollow',
     COASTAL_PINE: 'coastal_pine_oak_forest', COASTAL_CLEARING: 'coastal_sandy_clearing', SLOPE_FOREST: 'mixed_mesophytic_forest',
@@ -71,65 +141,22 @@ require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/Fore
     const trees = biome.features.flat().filter(f => /trees|tree_/.test(f));
     require(trees.length > 0 && trees.every(f => mod.remove.includes(f)), `${b}: every tree feature is removed (${trees})`);
   }
-}
-// P2 felling: the stump and the item models dropped from the jar, no formal namesakes, registrations outside
-// production only, the server gated to AFL_TREE_* overworlds, the rules pure
-const P3 = [['red_oak', 'red_oak_leaves'], ['shagbark_hickory', 'shagbark_hickory_leaves'], ['red_maple', 'red_maple_leaves'],
-  ['eastern_hemlock', 'eastern_hemlock_needles']];
-{
-  const A = 'src/dev/highway_mesh_resources/assets/apocalypse_firstlight/';
-  const files = ['blockstates/dev_tree_stump.json', 'models/block/dev_tree_stump.json',
-    ...['white_oak_log', 'white_pine_log', 'white_oak_branch', 'white_pine_branch', 'white_oak_leaves', 'white_pine_needles'].map(i => `models/item/${i}.json`),
-    // P2.2: the log blocks and the 3D leaf material
-    ...['white_oak_log', 'white_pine_log'].flatMap(i => [`blockstates/${i}.json`, `models/block/${i}.json`]),
-    'models/item/white_oak_leaves_3d.json', 'models/item/white_pine_needles_3d.json',
-    // P3: per new species its crown blocks, log block, branch and leaf material
-    ...P3.flatMap(([id, leaves]) => [`blockstates/dev_${id}_foliage.json`, `blockstates/dev_${id}_canopy.json`, `models/block/dev_${id}_foliage.json`,
-      `models/block/dev_${id}_canopy.json`, `blockstates/${id}_log.json`, `models/block/${id}_log.json`, `models/item/${id}_log.json`,
-      `models/item/${id}_branch.json`, `models/item/${leaves}.json`, `models/item/${leaves}_3d.json`])];
-  for (const f of files) {
-    require(fs.existsSync(path.join(ROOT, A, f)), `dev felling resource ${f} exists`);
-    require(gradle.includes(`exclude 'assets/apocalypse_firstlight/${f}'`), `the jar drops ${f}`);
-    require(!fs.existsSync(path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight', f)), `no formal ${f}`);
-  }
-  const reg = read(dev + '/FellingRegistry.java'), srv = read(dev + '/FellingServer.java');
-  require(/if \(FMLEnvironment\.production\) return;\s*event\.register\(ForgeRegistries\.Keys\.BLOCKS[\s\S]*?\}\);\s*event\.register\(ForgeRegistries\.Keys\.ITEMS/.test(reg),
-    'the log blocks, the felling items and the entity register only outside production');
-  require(/if \(!testWorld\(level\)\)/.test(srv) && /TreeCommands\.PREFIX/.test(srv) && /Level\.OVERWORLD/.test(srv), 'chopping is gated to AFL_TREE_* overworlds');
+  require(/MeshForestConfig\.ENABLED\.get\(\)/.test(gate), 'the forest gate reads the server config');
+  require(/registerConfig\([\s\S]{0,120}ModConfig\.Type\.SERVER,[\s\S]{0,120}MeshForestConfig\.SPEC/.test(read('src/main/java/com/antaurora/apofirstlight/ApocalypseFirstLight.java')),
+    'the forest config is a registered SERVER config');
+  require(/static final int VERSION = \d+;/.test(plan) && /ForestRecord/.test(events), 'the forest records its generation version per world');
+
+  // felling: the order of the fell, the legacy ledger, the log blocks
+  const srv = read(`${dev}/FellingServer.java`);
   require(/addFreshEntity\(fall\)\) \{[^}]*return; \}\s*var journal/.test(srv), 'the falling tree is added before any cell is removed');
-  for (const pure of ['FellingRules', 'TreeCut', 'FellingLedger', 'LogShape'])
-    require(!/net\.minecraft|net\.minecraftforge|com\.mojang/.test(read(dev + '/' + pure + '.java')), pure + ' is pure Java');
-  const logs = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/logs.json'));
-  require(logs.values.some(v => v.id === 'apocalypse_firstlight:dev_tree_stump' && v.required === false), 'the stump is an optional entry of the dev logs tag');
-  // P2.2 log blocks: self-dropping (dev loot tables dropped from the jar), axe through the dev logs tag, no 2D log icon
-  for (const log of ['white_oak_log', 'white_pine_log', ...P3.map(([id]) => id + '_log')]) {
-    const loot = `data/apocalypse_firstlight/loot_tables/blocks/${log}.json`;
-    require(fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources', loot)), `dev loot table ${log} exists`);
-    require(gradle.includes(`exclude '${loot}'`), `the jar drops the ${log} loot table`);
-    require(!fs.existsSync(path.join(ROOT, 'src/main/resources', loot)), `no formal ${log} loot table`);
-    const table = JSON.parse(read('src/dev/highway_mesh_resources/' + loot));
-    require(table.pools[0].entries[0].name === 'apocalypse_firstlight:' + log, `${log} drops itself`);
-    require(logs.values.some(v => v.id === 'apocalypse_firstlight:' + log && v.required === false), `${log} is an optional entry of the dev logs tag`);
-    require(!fs.existsSync(path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/item', log + '.png')), `no 2D icon for the ${log} block`);
-  }
-  // P3: every species' crown blocks in the dev leaves tag; every species in the forms, the textures and the lang
-  const leavesTag = JSON.parse(read('src/dev/highway_mesh_resources/data/minecraft/tags/blocks/leaves.json'));
-  const lang = JSON.parse(read('src/dev/highway_mesh_resources/assets/afl_tree_demo/lang/zh_cn.json'));
-  const T = 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/';
-  for (const [id, leaves] of P3) {
-    for (const k of ['foliage', 'canopy']) require(leavesTag.values.some(v => v.id === `apocalypse_firstlight:dev_${id}_${k}`), `dev_${id}_${k} in the dev leaves tag`);
-    for (const t of [`block/${id}_bark`, `block/${leaves}`, `block/${leaves}_mid`, `block/${leaves}_far`, `block/${leaves}_proxy`, `block/${id}_cut`,
-      `block/${id}_end_grain`, `block/${id}_log_end`, `item/${id}_branch`, `item/${leaves}`])
-      require(fs.existsSync(path.join(ROOT, T, t + '.png')), `texture ${t}`);
-    for (const k of [`block.apocalypse_firstlight.${id}_log`, `item.apocalypse_firstlight.${id}_branch`, `item.apocalypse_firstlight.${leaves}`,
-      `block.apocalypse_firstlight.dev_${id}_foliage`]) require(typeof lang[k] === 'string', `zh_cn ${k}`);
-  }
-  const forms = read(dev + '/TreeForms.java');
-  for (const [id] of P3) require(forms.includes(`"${id}"`), `${id} in the species table`);
-  const lb = read(dev + '/TreeLogBlock.java');
+  require(/LEGACY = "afl_dev_mesh_tree_felling"/.test(srv), 'a P0-P3 test world keeps its felling ledger');
+  const lb = read(`${dev}/TreeLogBlock.java`);
   require(!/requiresCorrectToolForDrops/.test(lb) && /strength\(2\.0F\)/.test(lb) && /getMaxLightLevel\(\)/.test(lb), 'the log block: vanilla log strength, no tool requirement, blocks light');
+  const forms = read(`${dev}/TreeForms.java`);
+  for (const [id] of SPECIES) require(forms.includes(`"${id}"`), `${id} in the species table`);
+  require(/keepQuads = FMLEnvironment\.dist\.isClient\(\)/.test(blocks), 'a dedicated server keeps no draw geometry');
 }
-console.log(failures === 0 ? 'static audit: development-only wiring OK' : `static audit: ${failures} failures`);
+console.log(failures === 0 ? 'static audit: formal tree wiring OK' : `static audit: ${failures} failures`);
 
 // ---- 2. textures
 const tex = spawnSync(process.execPath, [path.join(ROOT, 'tools/mesh-trees/build-tree-textures.mjs'), '--check'], {stdio: 'inherit'});
@@ -143,8 +170,8 @@ const previews = path.join(ROOT, 'build/mesh-trees');
 const run = (cmd, a) => { const r = spawnSync(cmd, a, {stdio: 'inherit'}); if (r.error) throw r.error; return r.status; };
 try {
   if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', out, ...sources]) !== 0) process.exit(2);
-  const status = run(exe('java'), ['-Djava.awt.headless=true', '-cp', out, 'com.antaurora.apofirstlight.dev.meshtree.TreeCheck',
-    path.join(ROOT, 'src/dev/highway_mesh_resources/assets/afl_tree_demo/textures/block'), previews]);
+  const status = run(exe('java'), ['-Djava.awt.headless=true', '-cp', out, 'com.antaurora.apofirstlight.tree.TreeCheck',
+    path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight/textures/block/tree'), previews]);
   // 4. the natural forest over a real plan
   const [seed, cx, cz] = process.argv.length >= 5 ? process.argv.slice(2, 5) : ['-4770121886729009152', '-856', '856'];
   const cache = path.join(ROOT, 'run/afl_cache/terrain_plan', `afl_terrain_plan_v2_r1_${(BigInt(seed) & ((1n << 64n) - 1n)).toString()}.bin`);
@@ -155,7 +182,7 @@ try {
     try {
       const sp = [path.join(ROOT, 'src/main/java'), path.join(ROOT, 'src/dev/java')].join(path.delimiter);
       if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', fout, '-sourcepath', sp, path.join(ROOT, 'tools/mesh-trees/ForestCheck.java')]) !== 0) forest = 2;
-      else forest = run(exe('java'), ['-Xmx3g', '-Djava.awt.headless=true', '-cp', fout, 'com.antaurora.apofirstlight.dev.meshtree.ForestCheck', cache, seed, previews, cx, cz]);
+      else forest = run(exe('java'), ['-Xmx3g', '-Djava.awt.headless=true', '-cp', fout, 'com.antaurora.apofirstlight.tree.ForestCheck', cache, seed, previews, cx, cz]);
     } finally {
       fs.rmSync(fout, {recursive: true, force: true});
     }
@@ -167,7 +194,7 @@ try {
     try {
       const sp = [path.join(ROOT, 'src/main/java'), path.join(ROOT, 'src/dev/java')].join(path.delimiter);
       if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', fout, '-sourcepath', sp, path.join(ROOT, 'tools/mesh-trees/FellCheck.java')]) !== 0) felling = 2;
-      else felling = run(exe('java'), ['-Xmx3g', '-cp', fout, 'com.antaurora.apofirstlight.dev.meshtree.FellCheck', ...(fs.existsSync(cache) ? [cache, seed, cx, cz] : [])]);
+      else felling = run(exe('java'), ['-Xmx3g', '-cp', fout, 'com.antaurora.apofirstlight.tree.FellCheck', ...(fs.existsSync(cache) ? [cache, seed, cx, cz] : [])]);
     } finally {
       fs.rmSync(fout, {recursive: true, force: true});
     }

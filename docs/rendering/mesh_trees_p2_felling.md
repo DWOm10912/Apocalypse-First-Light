@@ -19,6 +19,12 @@
   - 作者的下一步想法：原木和叶材做成 3D。原木做成圆角方形、可以盖房子的方块，每种树的原木可以不一样；叶材保持 2D 还是做 3D 待定。
 - **P2.2 3D 原木方块与 3D 叶材**（2026-10-11，V 节）：代码和资源完成，离线检查通过，编译通过；作者实机 **P2.2 PASS**（2026-10-11）。
 - **P3**（[mesh_trees_p3_species](mesh_trees_p3_species.md)）：又加了四个树种，砍伐参数、原木圆角、掉落按树种（P3 F 节）。本文里写"白栎 / 白松"的规则，P3 起由树种表决定。
+- **P4 起正式化**（[mesh_trees_p4_formal](mesh_trees_p4_formal.md)，2026-10-12）：
+  - 砍伐在所有世界可用，不再限 `AFL_TREE_*`；
+  - 倒树实体 `dev_falling_tree` → `falling_tree`，树桩 `dev_tree_stump` → `tree_stump`，旧 ID 自动重映射；
+  - 账本 `afl_dev_mesh_tree_felling` → `afl_mesh_tree_felling`，旧的读一次；
+  - 拒绝提示改成翻译键。
+  - 本文里的开发路径和门控说明是 P2 当时的。
 - **还没有做过的验证，都不能算 PASS**：Sundial 下的倒树外观（作者没有单独报告），以及：
   - 单人实机；
   - 多人同步；
