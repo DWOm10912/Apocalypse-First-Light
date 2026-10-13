@@ -1,0 +1,134 @@
+<title>AFL Forest Start Home</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Same sheet-set layout as design/buildings/fuel_stop_a1: title block, numbered sections, one rendered sheet per section. */
+:root{
+  --bg:#e9ecec; --panel:#f6f7f6; --fg:#1c2124; --mute:#5b6569; --line:#c5cccd;
+  --accent:#8e3a32; --accent2:#2c6174;
+  --f-display:"IBM Plex Sans Condensed","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --f-body:"Noto Sans SC","Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131618; --panel:#1b1f22; --fg:#e1e5e5; --mute:#97a1a4; --line:#2f3639;
+  --accent:#d27b6d; --accent2:#80b4c6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#131618; --panel:#1b1f22; --fg:#e1e5e5; --mute:#97a1a4; --line:#2f3639;
+  --accent:#d27b6d; --accent2:#80b4c6; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 var(--f-body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:grid;gap:28px}
+header.tb{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:end;border-bottom:2px solid var(--fg);padding-bottom:14px}
+.tb .code{font:700 13px/1 var(--f-mono);letter-spacing:.08em;border:2px solid var(--fg);padding:8px 10px}
+.tb h1{font:700 clamp(28px,4vw,44px)/1.05 var(--f-display);margin:0;letter-spacing:.01em;text-wrap:balance}
+.tb .meta{font:12px/1.5 var(--f-mono);color:var(--mute);text-align:right}
+nav.idx{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:6px 14px;padding-block:8px;border-bottom:1px solid var(--line);font:500 12.5px/1.4 var(--f-mono)}
+nav.idx a{color:var(--mute);text-decoration:none}
+nav.idx a:hover,nav.idx a:focus-visible{color:var(--accent);outline:none}
+nav.idx b{color:var(--fg);font-weight:500}
+section.s{display:grid;gap:14px;min-width:0}
+.sh{display:grid;grid-template-columns:76px 1fr;align-items:baseline;gap:14px;border-top:1px solid var(--fg);padding-top:10px}
+.sh .no{font:700 18px/1 var(--f-mono);color:var(--accent)}
+.sh h2{font:700 22px/1.25 var(--f-display);margin:0;text-wrap:balance}
+.sh p.sub{grid-column:2;margin:2px 0 0;color:var(--mute);font-size:13.5px}
+p{margin:0;max-width:72ch}
+.lede{font-size:16.5px;max-width:70ch}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--line);background:var(--panel);margin:0}
+.spec div{padding:10px 12px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.spec dt{font:500 11.5px/1.3 var(--f-mono);letter-spacing:.06em;color:var(--mute);text-transform:uppercase}
+.spec dd{margin:4px 0 0;font:600 17px/1.3 var(--f-display);font-variant-numeric:tabular-nums}
+.spec dd small{display:block;font:400 12px/1.4 var(--f-mono);color:var(--mute)}
+.status{font-size:13.5px;color:var(--mute);border-left:3px solid var(--accent);padding:4px 0 4px 12px}
+ul.plain,ol.plain{margin:0;padding-left:1.3em;display:grid;gap:4px;max-width:78ch}
+.sheet{display:block;border:1px solid var(--line);background:#fbfbf8}
+.sheet img{display:block;width:100%;height:auto}
+.cap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font:12px/1.4 var(--f-mono);color:var(--mute)}
+code{font:13px var(--f-mono)}
+a{color:var(--accent2)}
+@media (max-width:640px){.sh{grid-template-columns:1fr}.sh p.sub{grid-column:1}header.tb{grid-template-columns:1fr}.tb .meta{text-align:left}}
+</style>
+
+<div class="wrap">
+<header class="tb">
+  <div class="code">AFL · FSH-1</div>
+  <h1>AFL 森林开局住宅<br><span style="font-size:.55em;font-weight:600;color:var(--mute)">林中住宅 + 私家车道 + 县道 · 概念设计</span></h1>
+  <div class="meta">比例 1 格 = 1 m<br>2026-10-12 · 第 1 轮<br>已选 B · M0 白模</div>
+</header>
+<nav class="idx" aria-label="图纸目录">
+  <a href="#s0"><b>0</b> 概要</a><a href="#s1"><b>1</b> 三个方向</a><a href="#s2"><b>2</b> 方案 A</a><a href="#s3"><b>3</b> 方案 B</a>
+  <a href="#s4"><b>4</b> B 平面</a><a href="#s5"><b>5</b> 方案 C</a><a href="#s6"><b>6</b> 道路联动</a><a href="#s7"><b>7</b> 下一步</a>
+</nav>
+
+<section class="s" id="s0">
+  <div class="sh"><span class="no">0</span><h2>概要</h2></div>
+  <p class="lede">默认森林开局，核战后 1–3 个月。主角是战前就住在山里的隐居者，没有电网：柴炉取暖，要用电时开便携柴油发电机。住宅和道路一起设计：林中老宅 → 私家车道 → 县道 → 小镇方向，开局的第一个目标就是出门。</p>
+  <dl class="spec">
+    <div><dt>推荐</dt><dd>B 溪谷老宅<small>原木主屋 + 加建 + 前廊</small></dd></div>
+    <div><dt>主屋</dt><dd>10 × 8 m · 1.5 层<small>阁楼盖北半边和卧室</small></dd></div>
+    <div><dt>加建</dt><dd>4.5 × 6.5 m<small>厨房 / 泥房，板条墙</small></dd></div>
+    <div><dt>前廊</dt><dd>10 × 3 m<small>总面积约 76 m² + 阁楼</small></dd></div>
+    <div><dt>柴油</dt><dd>约 25 L<small>满载约 14 游戏小时</small></dd></div>
+    <div><dt>食物 / 柴</dt><dd>3–4 天 / 1–2 天<small>逼玩家出门</small></dd></div>
+  </dl>
+  <p class="status">2026-10-12 用户选定 B 作为森林开局 V1 的默认实现，A、C 保留作以后随机开局变体的候选；实现拆分见 <code>docs/worldgen/forest_start_home_b_v1_plan.md</code>。这一轮只做设计：没有改代码，没有建世界生成结构，没有做家具包，没有加木材衍生方块。图是网页里的低多边形示意（three.js 场景 + 2D 平面），不是游戏截图。文字版（平面坐标、开局物资、派生需求 V1 必须 / V1 占位 / V2）在 <code>docs/worldgen/forest_start_home_concept_v1.md</code>。</p>
+</section>
+
+<section class="s" id="s1">
+  <div class="sh"><span class="no">1</span><h2>三个方向</h2><p class="sub">A 最省，B 生活逻辑最完整，C 车和路的联动最好。</p></div>
+  <a class="sheet" href="sheets/fh_compare.png"><img src="sheets/fh_compare.png" alt="三个方向对比：A 山脊猎人小屋、B 溪谷老宅、C 林道工房小屋" loading="lazy"></a>
+  <div class="cap"><span>fh_compare.png</span><span>点图看原尺寸</span></div>
+</section>
+
+<section class="s" id="s2">
+  <div class="sh"><span class="no">2</span><h2>方案 A｜山脊猎人小屋</h2><p class="sub">7 × 8 m 原木一层 + 阁楼，山包顶，土路下山。经典、最省，但太挤，讲不出"住了很多年"。</p></div>
+  <a class="sheet" href="sheets/fh_A.png"><img src="sheets/fh_A.png" alt="方案 A：外观、场地鸟瞰、西侧柴垛和发电机雨棚" loading="lazy"></a>
+  <div class="cap"><span>fh_A.png</span><span>外观 · 场地 · 西侧院子</span></div>
+</section>
+
+<section class="s" id="s3">
+  <div class="sh"><span class="no">3</span><h2>方案 B｜溪谷老宅（推荐）</h2><p class="sub">一个人住了很多年的家：原木主屋 + 自己加盖的厨房泥房 + 全宽前廊。</p></div>
+  <a class="sheet" href="sheets/fh_B.png"><img src="sheets/fh_B.png" alt="方案 B：外观、院子、室内炉边" loading="lazy"></a>
+  <div class="cap"><span>fh_B.png</span><span>外观 · 院子 · 室内</span></div>
+  <ul class="plain">
+    <li>柴、电、车、水、食物各有位置，开局物资放得下又不像别墅。</li>
+    <li>柴炉取暖做饭烧水，发电机经外墙电源入口供电，接得上现有的温度、口渴、燃料、建筑电力系统。</li>
+    <li>收音机、手绘地图、缺油的发电机和皮卡，把玩家推到车道和县道上。</li>
+    <li>A 的资产是 B 的子集，选 B 不浪费。</li>
+  </ul>
+</section>
+
+<section class="s" id="s4">
+  <div class="sh"><span class="no">4</span><h2>方案 B｜方块平面与场地总图</h2><p class="sub">方块坐标 x 向东、z 向南，北在上。主屋 x 0–10 × z 0–8，加建 x 10–15 × z 0–6，前廊 z 9–11；柴炉 (7, 1)，出生床 (1, 1–2)。</p></div>
+  <a class="sheet" href="sheets/fh_B_plans.png"><img src="sheets/fh_B_plans.png" alt="方案 B 的方块平面和场地总图" loading="lazy"></a>
+  <div class="cap"><span>fh_B_plans.png</span><span>层高和阁楼楼板高度在测试世界小样里定</span></div>
+</section>
+
+<section class="s" id="s5">
+  <div class="sh"><span class="no">5</span><h2>方案 C｜林道工房小屋</h2><p class="sub">8 × 6 m 板条小屋 + 12 × 11 m 金属工棚，短车道直通县道。偏半工业，隐居感弱。</p></div>
+  <a class="sheet" href="sheets/fh_C.png"><img src="sheets/fh_C.png" alt="方案 C：从县道看、场地鸟瞰、工棚东侧" loading="lazy"></a>
+  <div class="cap"><span>fh_C.png</span><span>外观 · 场地 · 工棚</span></div>
+</section>
+
+<section class="s" id="s6">
+  <div class="sh"><span class="no">6</span><h2>道路联动</h2><p class="sub">老宅 → 沿溪碎石私家车道 → 管式大门和信箱 → 县道 → Millbrook 方向。概念场景把距离压缩到约 160 m，路网和镇子位置都是占位。</p></div>
+  <a class="sheet" href="sheets/fh_road.png"><img src="sheets/fh_road.png" alt="道路联动：串联关系、鸟瞰、私家车道、路口、县道" loading="lazy"></a>
+  <div class="cap"><span>fh_road.png</span><span>串联 · 鸟瞰 · 车道 · 路口 · 县道</span></div>
+</section>
+
+<section class="s" id="s7">
+  <div class="sh"><span class="no">7</span><h2>下一步（建议）</h2></div>
+  <ol class="plain">
+    <li>用户选方向（或在 B 上改）。</li>
+    <li>最小结构方块：原木墙、坡屋顶、门、窗、台阶楼梯、板条墙、碎石车道。</li>
+    <li>最小家具和 Mesh：柴炉、床、桌椅、厨台、储物架、枪架、收音机、柴垛、静态皮卡、信箱、大门。</li>
+    <li>测试世界用建造工具搭 B 的 V1，实机看。</li>
+    <li>出生和首次登录：森林群系选址、树让位、床设重生点、物资装进容器。</li>
+    <li>县道短段，连到 Fuel Stop A1 或一个小镇占位。</li>
+  </ol>
+  <p class="status">重新出图：<code>node source/serve.cjs</code>，打开 <code>http://127.0.0.1:8765/forest_home_concept.html</code>，在控制台跑 <code>await renderAll()</code> 再 <code>await renderSheets()</code>，图纸会覆盖 <code>sheets/</code> 里的同名文件。</p>
+</section>
+</div>
