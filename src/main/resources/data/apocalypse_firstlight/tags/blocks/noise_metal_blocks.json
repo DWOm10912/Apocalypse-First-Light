@@ -60,6 +60,11 @@
     "minecraft:waxed_cut_copper_stairs",
     "minecraft:waxed_exposed_cut_copper_stairs",
     "minecraft:waxed_weathered_cut_copper_stairs",
-    "minecraft:waxed_oxidized_cut_copper_stairs"
+    "minecraft:waxed_oxidized_cut_copper_stairs",
+    "apocalypse_firstlight:green_standing_seam_roof",
+    "apocalypse_firstlight:galvanized_corrugated_roof",
+    "apocalypse_firstlight:rusty_corrugated_roof",
+    "apocalypse_firstlight:stove_pipe",
+    "apocalypse_firstlight:woven_wire_fence"
   ]
 }

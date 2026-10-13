@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/grey_board_siding"
+  },
+  "item": [
+    [
+      "siding/grey_core",
+      0
+    ],
+    [
+      "siding/grey_battens",
+      0
+    ],
+    [
+      "siding/grey_battens",
+      1
+    ],
+    [
+      "siding/grey_battens",
+      2
+    ],
+    [
+      "siding/grey_battens",
+      3
+    ]
+  ]
+}

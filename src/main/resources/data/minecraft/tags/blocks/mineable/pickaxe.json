@@ -123,6 +123,12 @@
     "apocalypse_firstlight:cmu_screen_wall",
     "apocalypse_firstlight:enclosure_gate",
     "apocalypse_firstlight:diesel_generator",
-    "apocalypse_firstlight:portable_diesel_generator"
+    "apocalypse_firstlight:portable_diesel_generator",
+    "apocalypse_firstlight:green_standing_seam_roof",
+    "apocalypse_firstlight:galvanized_corrugated_roof",
+    "apocalypse_firstlight:rusty_corrugated_roof",
+    "apocalypse_firstlight:stove_pipe",
+    "apocalypse_firstlight:fieldstone",
+    "apocalypse_firstlight:woven_wire_fence"
   ]
 }

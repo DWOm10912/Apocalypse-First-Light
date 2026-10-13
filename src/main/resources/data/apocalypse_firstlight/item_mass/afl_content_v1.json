@@ -770,6 +770,78 @@
     "apocalypse_firstlight:eastern_hemlock_beam": {
       "unit_mass_kg": 0.1,
       "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_log_wall": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:green_standing_seam_roof": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:galvanized_corrugated_roof": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rusty_corrugated_roof": {
+      "unit_mass_kg": 0.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_cabin_door": {
+      "unit_mass_kg": 2.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_board_door": {
+      "unit_mass_kg": 1.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_double_hung_window": {
+      "unit_mass_kg": 1.2,
+      "estimated": true
+    },
+    "apocalypse_firstlight:brown_board_and_batten": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:grey_board_and_batten": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_porch_post": {
+      "unit_mass_kg": 0.8,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_porch_railing": {
+      "unit_mass_kg": 0.6,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_porch_deck": {
+      "unit_mass_kg": 0.15,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stove_pipe": {
+      "unit_mass_kg": 1.0,
+      "estimated": true
+    },
+    "apocalypse_firstlight:fieldstone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
+    "apocalypse_firstlight:firewood_stack": {
+      "unit_mass_kg": 0.3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_stairs": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:white_oak_slab": {
+      "unit_mass_kg": 0.05,
+      "estimated": true
+    },
+    "apocalypse_firstlight:woven_wire_fence": {
+      "unit_mass_kg": 0.4,
+      "estimated": true
     }
   },
   "carry_factors": [

@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/roof_green"
+  },
+  "item": [
+    [
+      "roof/green_lower",
+      0
+    ],
+    [
+      "roof/under_lower",
+      0
+    ],
+    [
+      "roof/green_eave_lower",
+      0
+    ],
+    [
+      "roof/green_rake_neg_lower",
+      0
+    ],
+    [
+      "roof/green_rake_pos_lower",
+      0
+    ]
+  ]
+}

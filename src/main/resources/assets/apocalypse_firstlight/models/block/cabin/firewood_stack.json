@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "apocalypse_firstlight:block/cabin/firewood_end",
+    "side": "apocalypse_firstlight:block/cabin/firewood_side"
+  }
+}

@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.tree;
 
+import com.antaurora.apofirstlight.cabin.CabinBlocks;
 import com.antaurora.apofirstlight.registry.AflCreativeTabs;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.antaurora.apofirstlight.tree.TreeForms.Species;
@@ -106,6 +107,7 @@ public final class WoodBlocks {
             event.getEntries().putAfter(after, stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
             after = stack;
         }
+        CabinBlocks.tabs(event, after);   // Cabin Exterior V1 (docs/models/cabin_exterior_v1.md): after the wood blocks
     }
 
     static boolean ready() { return TIMBER[0] != null; }

@@ -19,6 +19,18 @@
     "apocalypse_firstlight:red_maple_beam",
     "apocalypse_firstlight:eastern_hemlock_planks",
     "apocalypse_firstlight:eastern_hemlock_rounded_timber",
-    "apocalypse_firstlight:eastern_hemlock_beam"
+    "apocalypse_firstlight:eastern_hemlock_beam",
+    "apocalypse_firstlight:white_oak_log_wall",
+    "apocalypse_firstlight:white_oak_cabin_door",
+    "apocalypse_firstlight:white_oak_board_door",
+    "apocalypse_firstlight:white_oak_double_hung_window",
+    "apocalypse_firstlight:brown_board_and_batten",
+    "apocalypse_firstlight:grey_board_and_batten",
+    "apocalypse_firstlight:white_oak_porch_post",
+    "apocalypse_firstlight:white_oak_porch_railing",
+    "apocalypse_firstlight:white_oak_porch_deck",
+    "apocalypse_firstlight:firewood_stack",
+    "apocalypse_firstlight:white_oak_stairs",
+    "apocalypse_firstlight:white_oak_slab"
   ]
 }

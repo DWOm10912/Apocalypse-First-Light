@@ -2,6 +2,8 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:steel_door",
-    "apocalypse_firstlight:commercial_wood_door"
+    "apocalypse_firstlight:commercial_wood_door",
+    "apocalypse_firstlight:white_oak_cabin_door",
+    "apocalypse_firstlight:white_oak_board_door"
   ]
 }

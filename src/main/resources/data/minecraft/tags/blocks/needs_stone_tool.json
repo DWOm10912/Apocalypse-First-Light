@@ -2,6 +2,11 @@
   "replace": false,
   "values": [
     "apocalypse_firstlight:asphalt",
-    "apocalypse_firstlight:fused_ground"
+    "apocalypse_firstlight:fused_ground",
+    "apocalypse_firstlight:green_standing_seam_roof",
+    "apocalypse_firstlight:galvanized_corrugated_roof",
+    "apocalypse_firstlight:rusty_corrugated_roof",
+    "apocalypse_firstlight:stove_pipe",
+    "apocalypse_firstlight:woven_wire_fence"
   ]
 }

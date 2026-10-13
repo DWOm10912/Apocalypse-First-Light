@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/white_oak_log_wall"
+  },
+  "item": [
+    [
+      "log_wall/run_x",
+      0
+    ]
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/roof_galvanized"
+  },
+  "item": [
+    [
+      "roof/galvanized_lower",
+      0
+    ],
+    [
+      "roof/under_lower",
+      0
+    ],
+    [
+      "roof/galvanized_eave_lower",
+      0
+    ],
+    [
+      "roof/galvanized_rake_neg_lower",
+      0
+    ],
+    [
+      "roof/galvanized_rake_pos_lower",
+      0
+    ]
+  ]
+}

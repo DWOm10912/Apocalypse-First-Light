@@ -1,0 +1,61 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/oak_deck_boards"
+  },
+  "item": [
+    [
+      "porch/deck_x",
+      0
+    ],
+    [
+      "porch/deck_rim_x_n",
+      0
+    ],
+    [
+      "porch/deck_rim_x_e",
+      0
+    ],
+    [
+      "porch/deck_rim_x_s",
+      0
+    ],
+    [
+      "porch/deck_rim_x_w",
+      0
+    ],
+    [
+      "porch/deck_corner_x_ne",
+      0
+    ],
+    [
+      "porch/deck_corner_x_se",
+      0
+    ],
+    [
+      "porch/deck_corner_x_sw",
+      0
+    ],
+    [
+      "porch/deck_corner_x_nw",
+      0
+    ],
+    [
+      "porch/pier_corner",
+      0
+    ],
+    [
+      "porch/pier_corner",
+      1
+    ],
+    [
+      "porch/pier_corner",
+      2
+    ],
+    [
+      "porch/pier_corner",
+      3
+    ]
+  ]
+}

@@ -1,0 +1,804 @@
+package com.antaurora.apofirstlight.cabin;
+
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.DoubleHighBlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.FenceBlock;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.StairBlock;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.level.pathfinder.PathComputationType;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegisterEvent;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Cabin Exterior V1 (docs/models/cabin_exterior_v1.md, 2026-10-12): the exterior blocks of the forest start home B
+ * ("溪谷老宅", docs/worldgen/forest_start_home_b_v1_plan.md, M1). Mesh blocks ({@link CabinPieces}, drawn by
+ * {@link CabinMeshModel}): the white oak log wall, three roofs, two doors, the double-hung window, two board and batten
+ * walls, the porch post, railing and deck (M1.1), the stove pipe. JSON blocks: fieldstone, firewood stack, white oak
+ * stairs and slab, the woven wire garden fence. Mining (AGENTS.md audit): wood on the axe without a tier and without a correct-tool
+ * requirement (vanilla wood); fieldstone on any pickaxe (vanilla stone rules); the sheet metal roofs, the stove pipe and
+ * the wire fence on a stone pickaxe ({@code minecraft:needs_stone_tool}, correct tool required). Each drops itself (the
+ * doors from the lower half, a double slab two). Assets and data: tools/build-cabin-exterior-v1.mjs.
+ */
+@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+public final class CabinBlocks {
+    private static final List<Block> BLOCKS = new ArrayList<>();
+    private static final List<Item> ITEMS = new ArrayList<>();
+    private static final String[] IDS = {"white_oak_log_wall", "green_standing_seam_roof", "galvanized_corrugated_roof", "rusty_corrugated_roof",
+            "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
+            "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
+            "white_oak_slab", "woven_wire_fence"};
+
+    private CabinBlocks() {}
+
+    static ResourceLocation id(String path) { return new ResourceLocation(ApocalypseFirstLight.MOD_ID, path); }
+
+    /** Quarter turns clockwise from north (the pieces are drawn facing north). */
+    static int turn(Direction d) { return (d.get2DDataValue() + 2) & 3; }
+
+    private static BlockBehaviour.Properties wood(MapColor color, float strength) {
+        return BlockBehaviour.Properties.of().mapColor(color).instrument(NoteBlockInstrument.BASS).strength(strength, 3.0F).sound(SoundType.WOOD).ignitedByLava();
+    }
+
+    private static BlockBehaviour.Properties metal(MapColor color, SoundType sound) {
+        return BlockBehaviour.Properties.of().mapColor(color).strength(2.0F, 6.0F).sound(sound).requiresCorrectToolForDrops();
+    }
+
+    private static Block make(String id) {
+        return switch (id) {
+            case "white_oak_log_wall" -> new LogWall(wood(MapColor.WOOD, 2.0F));
+            case "green_standing_seam_roof" -> new Roof("green", metal(MapColor.COLOR_GREEN, SoundType.METAL));
+            case "galvanized_corrugated_roof" -> new Roof("galvanized", metal(MapColor.METAL, SoundType.METAL));
+            case "rusty_corrugated_roof" -> new Roof("rust", metal(MapColor.TERRACOTTA_ORANGE, SoundType.METAL));
+            case "white_oak_cabin_door" -> new CabinDoor("cabin", wood(MapColor.WOOD, 3.0F).noOcclusion().pushReaction(PushReaction.DESTROY));
+            case "white_oak_board_door" -> new CabinDoor("board", wood(MapColor.WOOD, 3.0F).noOcclusion().pushReaction(PushReaction.DESTROY));
+            case "white_oak_double_hung_window" -> new Window(wood(MapColor.WOOD, 1.5F).noOcclusion()
+                    .isSuffocating((s, l, p) -> false).isViewBlocking((s, l, p) -> false).isRedstoneConductor((s, l, p) -> false));
+            case "brown_board_and_batten" -> new BoardAndBatten("brown", wood(MapColor.COLOR_BROWN, 2.0F));
+            case "grey_board_and_batten" -> new BoardAndBatten("grey", wood(MapColor.COLOR_GRAY, 2.0F));
+            case "white_oak_porch_post" -> new PorchPost(wood(MapColor.WOOD, 2.0F).noOcclusion());
+            case "white_oak_porch_railing" -> new PorchRailing(wood(MapColor.WOOD, 2.0F).noOcclusion());
+            case "white_oak_porch_deck" -> new PorchDeck(wood(MapColor.WOOD, 2.0F).dynamicShape());   // the piers follow the neighbours
+            case "stove_pipe" -> new StovePipe(metal(MapColor.COLOR_BLACK, SoundType.METAL).noOcclusion());
+            case "fieldstone" -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM)
+                    .strength(2.0F, 6.0F).requiresCorrectToolForDrops().sound(SoundType.STONE));
+            case "firewood_stack" -> new Firewood(wood(MapColor.WOOD, 2.0F));
+            case "white_oak_stairs" -> new StairBlock(() -> planks().defaultBlockState(), wood(MapColor.WOOD, 2.0F));
+            case "white_oak_slab" -> new SlabBlock(wood(MapColor.WOOD, 2.0F));
+            case "woven_wire_fence" -> new WovenWireFence(metal(MapColor.METAL, SoundType.CHAIN).noOcclusion());
+            default -> throw new IllegalArgumentException(id);
+        };
+    }
+
+    private static Block planks() {
+        Block b = ForgeRegistries.BLOCKS.getValue(id("white_oak_planks"));
+        return b == null || b == Blocks.AIR ? Blocks.OAK_PLANKS : b;
+    }
+
+    @SubscribeEvent
+    public static void register(RegisterEvent event) {
+        event.register(ForgeRegistries.Keys.BLOCKS, helper -> {
+            BLOCKS.clear();
+            for (String id : IDS) {
+                Block b = make(id);
+                BLOCKS.add(b);
+                helper.register(id(id), b);
+            }
+        });
+        event.register(ForgeRegistries.Keys.ITEMS, helper -> {
+            ITEMS.clear();
+            for (int i = 0; i < IDS.length; i++) {
+                Block b = BLOCKS.get(i);
+                Item item = b instanceof DoorBlock ? new DoubleHighBlockItem(b, new Item.Properties()) : new BlockItem(b, new Item.Properties());
+                ITEMS.add(item);
+                helper.register(id(IDS[i]), item);
+            }
+        });
+    }
+
+    /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */
+    public static void tabs(BuildCreativeModeTabContentsEvent event, ItemStack after) {
+        for (Item item : ITEMS) {
+            ItemStack stack = new ItemStack(item);
+            event.getEntries().putAfter(after, stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+            after = stack;
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ shapes
+
+    /** Boxes (pixels) drawn for the north side, turned r quarters clockwise seen from above: (x, z) -> (16 - z, x). */
+    static VoxelShape turned(int r, double[]... boxes) {
+        VoxelShape out = Shapes.empty();
+        for (double[] b : boxes) {
+            double x0 = b[0], z0 = b[2], x1 = b[3], z1 = b[5];
+            for (int k = 0; k < r; k++) {
+                double nx0 = 16 - z1, nx1 = 16 - z0;
+                z0 = x0; z1 = x1; x0 = nx0; x1 = nx1;
+            }
+            out = Shapes.or(out, Block.box(x0, b[1], z0, x1, b[4], z1));
+        }
+        return out.optimize();
+    }
+
+    private static boolean isLogWall(BlockState s) { return s.getBlock() instanceof LogWall; }
+
+    // ---------------------------------------------------------------------------------------------- log wall
+
+    /**
+     * Three peeled logs per block, along X or along Z (the placed axis), interleaved at corners. A full opaque block. Flags:
+     * the sides it joins (bit per direction: N 1, E 2, S 4, W 8): a log wall there, or a door / window set in a wall
+     * running that way. Joined both ways: a corner (both cores, round log ends pushed out on the open sides).
+     */
+    public static final class LogWall extends Block implements CabinPieces {
+        public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
+        private static final Direction[] SIDES = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+
+        LogWall(Properties p) {
+            super(p);
+            registerDefaultState(defaultBlockState().setValue(AXIS, Direction.Axis.X));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(AXIS); }
+
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            return defaultBlockState().setValue(AXIS, context.getHorizontalDirection().getClockWise().getAxis());
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState rotate(BlockState state, Rotation rotation) {
+            return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
+                    ? state.setValue(AXIS, state.getValue(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X) : state;
+        }
+
+        static boolean joins(BlockGetter level, BlockPos pos, Direction d) {
+            BlockState o = level.getBlockState(pos.relative(d));
+            if (isLogWall(o)) return true;
+            Direction facing = o.getBlock() instanceof Window || o.getBlock() instanceof CabinDoor ? o.getValue(HorizontalDirectionalBlock.FACING) : null;
+            return facing != null && facing.getAxis() != d.getAxis();
+        }
+
+        static int joinFlags(BlockGetter level, BlockPos pos) {
+            int f = 0;
+            for (int i = 0; i < 4; i++) if (joins(level, pos, SIDES[i])) f |= 1 << i;
+            return f;
+        }
+
+        /** 'x', 'z' or 'c' (corner) for a wall with these joins. */
+        static char look(BlockState state, int f) {
+            boolean ew = (f & 10) != 0, ns = (f & 5) != 0;
+            return ew && ns ? 'c' : ew ? 'x' : ns ? 'z' : state.getValue(AXIS) == Direction.Axis.X ? 'x' : 'z';
+        }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return joinFlags(level, pos); }
+
+        private static String flip(String s) { return s.equals("neg") ? "pos" : s.equals("pos") ? "neg" : "mid"; }
+
+        @Override
+        public void cabinPieces(BlockState state, int f, Sink sink) {
+            char look = look(state, f);
+            if (look != 'c') {
+                sink.add("log_wall/run_" + look, 0);
+                return;
+            }
+            boolean n = (f & 1) != 0, e = (f & 2) != 0, s = (f & 4) != 0, w = (f & 8) != 0;
+            sink.add("log_wall/core_x", 0);
+            sink.add("log_wall/core_z", 0);
+            String zs = !n && s ? "neg" : !s && n ? "pos" : "mid", xs = !w && e ? "neg" : !e && w ? "pos" : "mid";
+            if (!w) sink.add("log_wall/stubx_" + zs, 0);
+            if (!e) sink.add("log_wall/stubx_" + flip(zs), 2);
+            if (!n) sink.add("log_wall/stubz_" + xs, 0);
+            if (!s) sink.add("log_wall/stubz_" + flip(xs), 2);
+        }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    // -------------------------------------------------------------------------------------------------- roofs
+
+    public enum RoofShape implements StringRepresentable {
+        LOWER("lower"), UPPER("upper"), RIDGE("ridge");
+
+        private final String name;
+
+        RoofShape(String name) { this.name = name; }
+
+        @Override
+        public String getSerializedName() { return name; }
+    }
+
+    /**
+     * A 1:2 roof (26.6 degrees) in half-block steps: a lower cell (surface 0 .. 1/2 up the slope), an upper cell (1/2 .. 1)
+     * and a ridge cell (an odd-width roof's top, 1/2 .. 3/4 .. 1/2); facing is the downslope side (the eave). Collision,
+     * outline and light occlusion are four steps under the surface: the cell keeps its sky light, its bottom shuts the
+     * light out of the room below. Flags (from the neighbours): eave, top edge, the two rake (gable) edges, the fill down to
+     * a wall below (logs along / across / corner, brown or grey boards), a stove pipe below (a boot round it). The header
+     * beam under the eave is the state's {@code beam} (set by the builder).
+     */
+    public static final class Roof extends Block implements CabinPieces {
+        public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+        public static final EnumProperty<RoofShape> SHAPE = EnumProperty.create("shape", RoofShape.class);
+        public static final BooleanProperty BEAM = BooleanProperty.create("beam");
+        static final int EAVE = 1, TOP = 2, RAKE_NEG = 4, RAKE_POS = 8, PIPE = 128, INFILL_SHIFT = 4;
+        private static final String[] INFILL = {null, "log_along", "log_across", "log_corner", "board_brown", "board_grey"};
+        private static final VoxelShape[][] SHAPES = new VoxelShape[3][4];
+
+        static {
+            for (int r = 0; r < 4; r++) {
+                int dir = r;
+                for (RoofShape sh : RoofShape.values()) {
+                    double[][] boxes = new double[4][];
+                    for (int k = 0; k < 4; k++) {
+                        double top = switch (sh) {
+                            case LOWER -> 2 * (k + 1);
+                            case UPPER -> 8 + 2 * (k + 1);
+                            case RIDGE -> k == 0 || k == 3 ? 10 : 12;
+                        };
+                        boxes[k] = new double[]{0, 0, 4 * k, 16, top, 4 * k + 4};
+                    }
+                    SHAPES[sh.ordinal()][dir] = turned(dir, boxes);
+                }
+            }
+        }
+
+        final String material;
+
+        Roof(String material, Properties p) {
+            super(p);
+            this.material = material;
+            registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH).setValue(SHAPE, RoofShape.LOWER).setValue(BEAM, false));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, SHAPE, BEAM); }
+
+        private static VoxelShape shape(BlockState s) { return SHAPES[s.getValue(SHAPE).ordinal()][turn(s.getValue(FACING))]; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return shape(state); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return shape(state); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean useShapeForLightOcclusion(BlockState state) { return true; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) { return false; }
+
+        /** Placed from below the eave looking up the slope; next to a lower cell of the same slope it goes on as upper or ridge. */
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            Direction f = context.getHorizontalDirection().getOpposite();
+            var level = context.getLevel();
+            BlockPos pos = context.getClickedPos();
+            BlockState down = level.getBlockState(pos.relative(f)), up = level.getBlockState(pos.relative(f.getOpposite()));
+            RoofShape shape = RoofShape.LOWER;
+            if (same(down, f, RoofShape.LOWER)) shape = same(up, f.getOpposite(), RoofShape.LOWER) ? RoofShape.RIDGE : RoofShape.UPPER;
+            return defaultBlockState().setValue(FACING, f).setValue(SHAPE, shape);
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState rotate(BlockState state, Rotation rotation) { return state.setValue(FACING, rotation.rotate(state.getValue(FACING))); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState mirror(BlockState state, Mirror mirror) { return state.rotate(mirror.getRotation(state.getValue(FACING))); }
+
+        private static boolean same(BlockState o, Direction facing, RoofShape... shapes) {
+            if (!(o.getBlock() instanceof Roof) || o.getValue(FACING) != facing) return false;
+            for (RoofShape s : shapes) if (o.getValue(SHAPE) == s) return true;
+            return false;
+        }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            Direction f = state.getValue(FACING);
+            RoofShape sh = state.getValue(SHAPE);
+            int flags = 0;
+            if (sh == RoofShape.LOWER) {
+                if (!same(level.getBlockState(pos.relative(f).below()), f, RoofShape.UPPER)) flags |= EAVE;
+                if (!same(level.getBlockState(pos.relative(f.getOpposite())), f, RoofShape.UPPER, RoofShape.RIDGE)) flags |= TOP;
+            } else if (sh == RoofShape.UPPER) {
+                if (!same(level.getBlockState(pos.relative(f)), f, RoofShape.LOWER)) flags |= EAVE;
+                if (!same(level.getBlockState(pos.relative(f.getOpposite()).above()), f, RoofShape.LOWER)) flags |= TOP;
+            }
+            Direction left = f.getCounterClockWise(), right = f.getClockWise();
+            if (!same(level.getBlockState(pos.relative(left)), f, sh)) flags |= RAKE_NEG;
+            if (!same(level.getBlockState(pos.relative(right)), f, sh)) flags |= RAKE_POS;
+            BlockPos belowPos = pos.below();
+            BlockState below = level.getBlockState(belowPos);
+            int infill = 0;
+            if (isLogWall(below)) {
+                char look = LogWall.look(below, LogWall.joinFlags(level, belowPos));
+                char along = f.getAxis() == Direction.Axis.Z ? 'z' : 'x';
+                infill = look == 'c' ? 3 : look == along ? 1 : 2;
+            } else if (below.getBlock() instanceof BoardAndBatten bb) infill = bb.colour.equals("brown") ? 4 : 5;
+            flags |= infill << INFILL_SHIFT;
+            if (below.getBlock() instanceof StovePipe) flags |= PIPE;
+            return flags;
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            int r = turn(state.getValue(FACING));
+            String sh = state.getValue(SHAPE).getSerializedName(), m = material;
+            sink.add("roof/" + m + "_" + sh, r);
+            sink.add("roof/under_" + sh, r);
+            boolean eave = (flags & EAVE) != 0, rn = (flags & RAKE_NEG) != 0, rp = (flags & RAKE_POS) != 0;
+            if (eave) sink.add("roof/" + m + "_eave_" + sh, r);
+            if ((flags & TOP) != 0) sink.add("roof/" + m + "_top_" + sh, r);
+            if (rn) sink.add("roof/" + m + "_rake_neg_" + sh, r);
+            if (rp) sink.add("roof/" + m + "_rake_pos_" + sh, r);
+            if (eave && rn) sink.add("roof/" + m + "_eave_corner_neg_" + sh, r);
+            if (eave && rp) sink.add("roof/" + m + "_eave_corner_pos_" + sh, r);
+            int infill = flags >>> INFILL_SHIFT & 7;
+            if (infill > 0 && infill < INFILL.length) sink.add("roof/infill_" + INFILL[infill] + "_" + sh, r);
+            boolean ridge = state.getValue(SHAPE) == RoofShape.RIDGE;
+            if (state.getValue(BEAM) && !ridge) sink.add("roof/beam_" + sh, r);
+            if ((flags & PIPE) != 0 && !ridge) sink.add("roof/" + m + "_pipe_" + sh, r);
+        }
+    }
+
+    // -------------------------------------------------------------------------------------------------- doors
+
+    /** Two-tall white oak doors (vanilla door behaviour, oak sounds) in a lined, cased opening. */
+    public static final class CabinDoor extends DoorBlock implements CabinPieces {
+        final String type;
+
+        CabinDoor(String type, Properties p) {
+            super(p, BlockSetType.OAK);
+            this.type = type;
+        }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            int r = turn(state.getValue(FACING));
+            String half = state.getValue(HALF).getSerializedName();
+            sink.add("door/" + type + "_frame_" + half, r);
+            sink.add("door/" + type + "_panel_" + half + "_" + state.getValue(HINGE).getSerializedName() + "_" + (state.getValue(OPEN) ? "open" : "closed"), r);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------- window
+
+    /**
+     * A double-hung window, one block or two stacked (the same window and facing above or below: bottom and top halves of
+     * one tall window). Facing is the outside. Full collision; light passes (glass).
+     */
+    public static final class Window extends HorizontalDirectionalBlock implements CabinPieces {
+        Window(Properties p) {
+            super(p);
+            registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING); }
+
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+        }
+
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) { return true; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) { return 1.0F; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return Shapes.empty(); }
+
+        private static boolean sameWindow(BlockState o, BlockState state) {
+            return o.getBlock() == state.getBlock() && o.getValue(FACING) == state.getValue(FACING);
+        }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            return (sameWindow(level.getBlockState(pos.above()), state) ? 1 : 0) | (sameWindow(level.getBlockState(pos.below()), state) ? 2 : 0);
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            sink.add("window/" + ((flags & 1) != 0 ? "bottom" : (flags & 2) != 0 ? "top" : "single"), turn(state.getValue(FACING)));
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------- board and batten
+
+    /** A full block of vertical boards; battens on each side that does not touch an opaque block. */
+    public static final class BoardAndBatten extends Block implements CabinPieces {
+        final String colour;
+
+        BoardAndBatten(String colour, Properties p) {
+            super(p);
+            this.colour = colour;
+        }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            int f = 0;
+            for (int i = 0; i < 4; i++) {
+                BlockPos at = pos.relative(Direction.from2DDataValue((i + 2) & 3));   // N, E, S, W
+                if (!level.getBlockState(at).isSolidRender(level, at)) f |= 1 << i;
+            }
+            return f;
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            sink.add("siding/" + colour + "_core", 0);
+            for (int i = 0; i < 4; i++) if ((flags & 1 << i) != 0) sink.add("siding/" + colour + "_battens", i);
+        }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    // -------------------------------------------------------------------------------------------------- porch
+
+    /** A chamfered 16 cm porch post; rail stubs toward neighbouring railings. */
+    public static final class PorchPost extends Block implements CabinPieces {
+        private static final VoxelShape SHAPE = Block.box(6.72, 0, 6.72, 9.28, 16, 9.28);
+
+        PorchPost(Properties p) { super(p); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return SHAPE; }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            int f = 0;
+            for (int i = 0; i < 4; i++) if (level.getBlockState(pos.relative(Direction.from2DDataValue((i + 2) & 3))).getBlock() instanceof PorchRailing) f |= 1 << i;
+            return f;
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            sink.add("porch/post", 0);
+            for (int i = 0; i < 4; i++) if ((flags & 1 << i) != 0) sink.add("porch/post_rail", i);
+        }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    /** A porch railing along X or Z: top and bottom rail, eight balusters. Collision 1.5 tall like a fence. */
+    public static final class PorchRailing extends Block implements CabinPieces {
+        public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
+        private static final VoxelShape[] OUTLINE = {Block.box(0, 0, 7, 16, 15.04, 9), Block.box(7, 0, 0, 9, 15.04, 16)};
+        private static final VoxelShape[] COLLISION = {Block.box(0, 0, 7, 16, 24, 9), Block.box(7, 0, 0, 9, 24, 16)};
+
+        PorchRailing(Properties p) {
+            super(p);
+            registerDefaultState(defaultBlockState().setValue(AXIS, Direction.Axis.X));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(AXIS); }
+
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            return defaultBlockState().setValue(AXIS, context.getHorizontalDirection().getClockWise().getAxis());
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState rotate(BlockState state, Rotation rotation) {
+            return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
+                    ? state.setValue(AXIS, state.getValue(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X) : state;
+        }
+
+        private static int i(BlockState s) { return s.getValue(AXIS) == Direction.Axis.X ? 0 : 1; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return OUTLINE[i(state)]; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return COLLISION[i(state)]; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) { return false; }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) { sink.add("porch/railing", i(state)); }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    /**
+     * M1.1 porch deck: 3 cm white oak boards along {@code axis} on two joists, at the block top (walkable like a full
+     * block), open underneath; on each open side (not another deck, not an opaque block) a rim board under a nosing, at a
+     * corner of two open sides the nosing's corner square; supports under the open edges (one at each open corner, one
+     * under every second edge cell and under every post; M1.2: a 14 cm oak post on a 34 cm squared stone block). Collision, outline, support and light occlusion are the boards: the top face is
+     * sturdy, the cell keeps the light from its open sides, sky light does not fall through.
+     */
+    public static final class PorchDeck extends Block implements CabinPieces {
+        public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
+        private static final VoxelShape SHAPE = Block.box(0, 15.52, 0, 16, 16, 16);
+        private static final String[] SIDE = {"n", "e", "s", "w"}, CORNER = {"ne", "se", "sw", "nw"};
+        /** The board plus the piers, per pier mask (piers()); filled on first use. */
+        private static final VoxelShape[] SHAPES = new VoxelShape[256];
+
+        PorchDeck(Properties p) {
+            super(p);
+            registerDefaultState(defaultBlockState().setValue(AXIS, Direction.Axis.X));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(AXIS); }
+
+        /** The boards run across the player's view (along the edge they face). */
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            return defaultBlockState().setValue(AXIS, context.getHorizontalDirection().getClockWise().getAxis());
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public BlockState rotate(BlockState state, Rotation rotation) {
+            return rotation == Rotation.CLOCKWISE_90 || rotation == Rotation.COUNTERCLOCKWISE_90
+                    ? state.setValue(AXIS, state.getValue(AXIS) == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X) : state;
+        }
+
+        /**
+         * The boards and the porch supports (M1.1, user 2026-10-12: the piers had no collision): each support's stone
+         * block (0..0.22) and its post from the stone up to the boards (M1.2, as the mesh pieces porch/pier_*). The
+         * occlusion and light shape stays the board alone. The block has a dynamic shape (the supports depend on the
+         * neighbours), so vanilla does not cache one shape per state.
+         */
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+            int p = piers(cabinFlags(state, level, pos));
+            VoxelShape s = SHAPES[p];
+            if (s == null) {
+                s = SHAPE;
+                for (int i = 0; i < 4; i++) {
+                    if ((p & 1 << i) != 0) s = Shapes.or(s, support(0.8, i));
+                    if ((p & 16 << i) != 0) s = Shapes.or(s, support(0.5, i));
+                }
+                SHAPES[p] = s = s.optimize();
+            }
+            return s;
+        }
+
+        /** A support centred at x = cx on the north side (as the mesh pieces porch/pier_*), turned i quarters clockwise. */
+        private static VoxelShape support(double cx, int i) {
+            return Shapes.or(turnedBox(cx - 0.17, 0, 0.03, cx + 0.17, 0.22, 0.37, i), turnedBox(cx - 0.07, 0.22, 0.13, cx + 0.07, 0.97, 0.27, i));
+        }
+
+        private static VoxelShape turnedBox(double x0, double y0, double z0, double x1, double y1, double z1, int i) {
+            for (int k = 0; k < i; k++) {
+                double nx0 = 1 - z1, nx1 = 1 - z0;
+                z0 = x0; z1 = x1; x0 = nx0; x1 = nx1;
+            }
+            return Shapes.box(x0, y0, z0, x1, y1, z1);
+        }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return SHAPE; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean useShapeForLightOcclusion(BlockState state) { return true; }
+
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) { return false; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public boolean isPathfindable(BlockState state, BlockGetter level, BlockPos pos, PathComputationType type) { return false; }
+
+        /**
+         * Bit i (N 1, E 2, S 4, W 8): that side is open; 16: x even, 32: z even, 64: a porch post stands on the deck. An
+         * edge pier stands on every second cell of an open edge (even x along a north / south edge, even z along an east /
+         * west edge) and always under a post, so the piers are 1.3 to 2.3 m apart instead of a row of stilts.
+         */
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            int f = 0;
+            for (int i = 0; i < 4; i++) {
+                BlockPos at = pos.relative(Direction.from2DDataValue((i + 2) & 3));   // N, E, S, W
+                BlockState o = level.getBlockState(at);
+                if (!(o.getBlock() instanceof PorchDeck) && !o.isSolidRender(level, at)) f |= 1 << i;
+            }
+            if ((pos.getX() & 1) == 0) f |= 16;
+            if ((pos.getZ() & 1) == 0) f |= 32;
+            if (level.getBlockState(pos.above()).getBlock() instanceof PorchPost) f |= 64;
+            return f;
+        }
+
+        /**
+         * The piers of a deck with these flags: bit i (0..3) a corner pier at the corner after side i (turn i), bit 4 + i
+         * an edge pier in the middle of side i.
+         */
+        static int piers(int f) {
+            int p = 0;
+            for (int i = 0; i < 4; i++) {
+                boolean open = (f & 1 << i) != 0, next = (f & 1 << (i + 1 & 3)) != 0, prev = (f & 1 << (i + 3 & 3)) != 0;
+                if (!open) continue;
+                if (next) p |= 1 << i;
+                boolean even = (f & ((i & 1) == 0 ? 16 : 32)) != 0;
+                if (!next && !prev && (even || (f & 64) != 0)) p |= 16 << i;
+            }
+            return p;
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int f, Sink sink) {
+            String a = state.getValue(AXIS) == Direction.Axis.X ? "x" : "z";
+            sink.add("porch/deck_" + a, 0);
+            for (int i = 0; i < 4; i++) {
+                if ((f & 1 << i) == 0) continue;
+                sink.add("porch/deck_rim_" + a + "_" + SIDE[i], 0);
+                if ((f & 1 << (i + 1 & 3)) != 0) sink.add("porch/deck_corner_" + a + "_" + CORNER[i], 0);
+            }
+            int p = piers(f);
+            for (int i = 0; i < 4; i++) {
+                if ((p & 1 << i) != 0) sink.add("porch/pier_corner", i);
+                if ((p & 16 << i) != 0) sink.add("porch/pier_edge", i);
+            }
+        }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 20; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    // --------------------------------------------------------------------------------------------- stove pipe
+
+    /** A 15 cm black stove pipe; a rain cap on top unless it goes on (another pipe, or a roof it passes through). */
+    public static final class StovePipe extends Block implements CabinPieces {
+        private static final VoxelShape SHAPE = Block.box(6.8, 0, 6.8, 9.2, 16, 9.2);
+
+        StovePipe(Properties p) { super(p); }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return SHAPE; }
+
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            BlockState up = level.getBlockState(pos.above());
+            boolean on = up.getBlock() instanceof StovePipe || up.getBlock() instanceof Roof && up.getValue(Roof.SHAPE) != RoofShape.RIDGE;
+            return on ? 0 : 1;
+        }
+
+        @Override
+        public void cabinPieces(BlockState state, int flags, Sink sink) { sink.add(flags == 0 ? "pipe/stove_pipe" : "pipe/stove_pipe_cap", 0); }
+    }
+
+    // ------------------------------------------------------------------------------------------- JSON blocks
+
+    /** Split firewood stacked crosswise, axis X / Y / Z like a log; burns like one. */
+    public static final class Firewood extends RotatedPillarBlock {
+        Firewood(Properties p) { super(p); }
+
+        @Override
+        public int getFlammability(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+
+        @Override
+        public int getFireSpreadSpeed(BlockState state, BlockGetter level, BlockPos pos, Direction direction) { return 5; }
+    }
+
+    /**
+     * A woven wire garden fence: vanilla fence connections (it joins other non-wooden fences and sturdy faces), the wire
+     * between, a green steel T-post ({@code post}) at every turn or end and every third block of a straight run.
+     */
+    public static final class WovenWireFence extends FenceBlock {
+        public static final BooleanProperty POST = BooleanProperty.create("post");
+
+        WovenWireFence(Properties p) {
+            super(p);
+            registerDefaultState(defaultBlockState().setValue(POST, true));
+        }
+
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+            super.createBlockStateDefinition(builder);
+            builder.add(POST);
+        }
+
+        private static BlockState withPost(BlockState s, BlockPos pos) {
+            boolean x = s.getValue(EAST) && s.getValue(WEST), z = s.getValue(NORTH) && s.getValue(SOUTH);
+            boolean straight = x && !s.getValue(NORTH) && !s.getValue(SOUTH) || z && !s.getValue(EAST) && !s.getValue(WEST);
+            return s.setValue(POST, !straight || Mth.positiveModulo(pos.getX() + pos.getZ(), 3) == 0);
+        }
+
+        @Override
+        public BlockState getStateForPlacement(BlockPlaceContext context) {
+            BlockState s = super.getStateForPlacement(context);
+            return s == null ? null : withPost(s, context.getClickedPos());
+        }
+
+        @Override
+        public BlockState updateShape(BlockState state, Direction direction, BlockState neighbour, LevelAccessor level, BlockPos pos, BlockPos neighbourPos) {
+            return withPost(super.updateShape(state, direction, neighbour, level, pos, neighbourPos), pos);
+        }
+    }
+
+    @Nullable
+    static Block block(String id) {
+        for (int i = 0; i < IDS.length; i++) if (IDS[i].equals(id) && i < BLOCKS.size()) return BLOCKS.get(i);
+        return null;
+    }
+}

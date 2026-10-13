@@ -1,0 +1,327 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Cabin Exterior V1 preview</title>
+<style>html,body{margin:0;background:#9fb0b8;overflow:hidden}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head><body>
+<script>
+// Cabin Exterior V1 (docs/models/cabin_exterior_v1.md): an offline look at the generated mesh pieces and textures, assembled
+// into a small sample cabin with the same piece choices CabinMeshModel makes in game (design use only, not a game asset).
+// Lighting is a plain sun + sky without the game's light map or shader packs; normal maps are not used. M1.1: the porch
+// deck and its piers, the Mesh corrugation, nearest texel filtering (as the game); the 240 px textures as in M1.
+// M1.2 concept round (2026-10-12): ?concept=A|B swaps the fieldstone and the porch piers for a candidate from
+// plinth_concepts/ (build-plinth-concepts.mjs); those stones and piers are lit with their normal maps, the rest is not.
+const A = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const W = 1600, H = 1000, QS = new URLSearchParams(location.search), SHEET = QS.get('concept'), CDIR = '/plinth_concepts/';
+const CONCEPT = SHEET === 'v3' ? null : SHEET;   // ?concept=v3: the current game assets, framed like the concept sheets
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setSize(W, H); renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xa9bcc6);
+scene.add(new THREE.HemisphereLight(0xdfe8ee, 0x5d6a4a, 0.75));
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.05); sun.position.set(-14, 22, -9); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 80}); sun.shadow.bias = -0.0004;
+scene.add(sun);
+// the concept sheets: a darker, earthy ground (displays about #5d6845) so the stone's value reads against it
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({color: SHEET ? 0x1b2310 : 0x6f8a4c, roughness: 1}));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+
+// ------------------------------------------------------------------ the sample cabin (world cells; north = -z)
+const G = new Map(), K = (x, y, z) => x + ',' + y + ',' + z;
+const set = (x, y, z, c) => G.set(K(x, y, z), c), at = (x, y, z) => G.get(K(x, y, z));
+for (let x = 0; x <= 4; x++) for (let z = 0; z <= 4; z++) {
+  const edge = x === 0 || x === 4 || z === 0 || z === 4;
+  set(x, 0, z, edge ? {b: 'stone'} : {b: 'planks'});
+  if (edge) for (let y = 1; y <= 3; y++) set(x, y, z, {b: 'log', axis: z === 0 || z === 4 ? 'x' : 'z'});
+}
+for (const z of [1, 2, 3]) for (const x of [0, 4]) set(x, 4, z, {b: 'log', axis: 'z'});
+set(2, 1, 0, {b: 'doorC', facing: 'south', half: 'lower', hinge: 'right', open: false});
+set(2, 2, 0, {b: 'doorC', facing: 'south', half: 'upper', hinge: 'right', open: false});
+set(1, 2, 0, {b: 'win', facing: 'north'});
+set(3, 2, 0, {b: 'win', facing: 'north'}); set(3, 3, 0, {b: 'win', facing: 'north'});
+set(0, 2, 2, {b: 'win', facing: 'west'});
+set(2, 2, 4, {b: 'doorB', facing: 'north', half: 'lower', hinge: 'left', open: true});
+set(2, 1, 4, {b: 'doorB', facing: 'north', half: 'lower', hinge: 'left', open: true});
+set(2, 2, 4, {b: 'doorB', facing: 'north', half: 'upper', hinge: 'left', open: true});
+// main roof: walls to 4.0, ridge at 5.75 over z 2 (a 5-wide gable), 1 m overhang all round
+const ROWS = [[-1, 4, 'lower', 'north'], [0, 4, 'upper', 'north'], [1, 5, 'lower', 'north'], [2, 5, 'ridge', 'north'], [3, 5, 'lower', 'south'], [4, 4, 'upper', 'south'], [5, 4, 'lower', 'south']];
+for (const [z, y, shape, facing] of ROWS) for (let x = -1; x <= 5; x++) set(x, y, z, {b: 'roof', mat: 'green', shape, facing});
+at(2, 5, 1).pipe = true;
+for (let y = 1; y <= 4; y++) set(2, y, 1, {b: 'pipe'});
+set(2, 6, 1, {b: 'pipe'});
+// porch: deck, two posts, a low galvanised roof under the eave with a header on the posts' line
+for (let x = 0; x <= 4; x++) for (const z of [-1, -2]) set(x, 0, z, {b: 'deck', axis: 'x'});
+for (const x of [0, 4]) for (const y of [1, 2]) set(x, y, -2, {b: 'post'});
+for (const x of [1, 3]) set(x, 1, -2, {b: 'rail', axis: 'x'});
+for (let x = 0; x <= 4; x++) { set(x, 3, -1, {b: 'roof', mat: 'galvanized', shape: 'upper', facing: 'north'}); set(x, 3, -2, {b: 'roof', mat: 'galvanized', shape: 'lower', facing: 'north', beam: true}); }
+// samples to the east
+for (const y of [0, 1]) { set(8, y, 0, {b: 'bbB'}); set(9, y, 0, {b: 'bbB'}); set(8, y, 2, {b: 'bbG'}); }
+set(8, 0, 4, {b: 'fire', axis: 'x'}); set(9, 0, 4, {b: 'fire', axis: 'x'}); set(8, 1, 4, {b: 'fire', axis: 'x'});
+set(10, 0, 4, {b: 'stone'}); set(10, 1, 4, {b: 'stone'});
+for (let x = 11; x <= 13; x++) for (const z of [2, 3]) set(x, 0, z, {b: 'deck', axis: 'z'});
+for (let x = 7; x <= 13; x++) set(x, 0, 7, {b: 'fence'});
+set(13, 0, 6, {b: 'fence'}); set(13, 0, 5, {b: 'fence'});
+// M1.1 checks: a window standing alone (closed solids, user 2026-10-12) and a 6 m fieldstone plinth (the 3 x 2 rubble texture)
+set(7, 0, -4, {b: 'win', facing: 'north'});
+for (let x = 9; x <= 14; x++) set(x, 0, -4, {b: 'stone'});
+
+// ------------------------------------------------------------------ piece choice (CabinMeshModel / the block classes)
+const DIRS = {north: [0, 0, -1], east: [1, 0, 0], south: [0, 0, 1], west: [-1, 0, 0]}, TURN = {north: 0, east: 1, south: 2, west: 3};
+const CW = {north: 'east', east: 'south', south: 'west', west: 'north'}, OPP = {north: 'south', south: 'north', east: 'west', west: 'east'};
+const rot = (d, r) => { for (let i = 0; i < r; i++) d = CW[d]; return d; };
+const nb = (x, y, z, d, dy = 0) => { const v = DIRS[d]; return at(x + v[0], y + dy, z + v[2]); };
+const SOLID = new Set(['log', 'stone', 'bbB', 'bbG', 'planks', 'fire']);
+const flip = s => s === 'neg' ? 'pos' : s === 'pos' ? 'neg' : 'mid';
+// a log wall joins a neighbouring log wall, or a door / window set in a wall running that way (its facing across it)
+const OPENING = new Set(['win', 'doorC', 'doorB']);
+function joins(x, y, z, d) {
+  const o = nb(x, y, z, d);
+  if (!o) return false;
+  if (o.b === 'log') return true;
+  return OPENING.has(o.b) && ((d === 'east' || d === 'west') === (o.facing === 'north' || o.facing === 'south'));
+}
+function logAxis(x, y, z, c) {
+  const is = d => joins(x, y, z, d), ew = is('east') || is('west'), ns = is('north') || is('south');
+  return ew && ns ? 'corner' : ew ? 'x' : ns ? 'z' : c.axis;
+}
+function choose(x, y, z, c) {
+  const P = [];
+  if (c.b === 'log') {
+    const is = d => joins(x, y, z, d), n = is('north'), e = is('east'), s = is('south'), w = is('west'), ax = logAxis(x, y, z, c);
+    if (ax !== 'corner') return [['log_wall/run_' + ax, 0]];
+    P.push(['log_wall/core_x', 0], ['log_wall/core_z', 0]);
+    const zs = !n && s ? 'neg' : !s && n ? 'pos' : 'mid', xs = !w && e ? 'neg' : !e && w ? 'pos' : 'mid';
+    if (!w) P.push(['log_wall/stubx_' + zs, 0]);
+    if (!e) P.push(['log_wall/stubx_' + flip(zs), 2]);
+    if (!n) P.push(['log_wall/stubz_' + xs, 0]);
+    if (!s) P.push(['log_wall/stubz_' + flip(xs), 2]);
+    return P;
+  }
+  if (c.b === 'roof') {
+    const f = c.facing, r = TURN[f], m = c.mat, sh = c.shape, same = (o, shapes) => o && o.b === 'roof' && o.facing === f && shapes.includes(o.shape);
+    P.push([`roof/${m}_${sh}`, r], [`roof/under_${sh}`, r]);
+    let eave = false, top = false;
+    if (sh === 'lower') { eave = !same(nb(x, y, z, f, -1), ['upper']); top = !same(nb(x, y, z, OPP[f]), ['upper', 'ridge']); }
+    if (sh === 'upper') { eave = !same(nb(x, y, z, f), ['lower']); top = !same(nb(x, y, z, OPP[f], 1), ['lower']); }
+    const left = rot('west', r), right = rot('east', r);
+    const rn = !same(nb(x, y, z, left), [sh]), rp = !same(nb(x, y, z, right), [sh]);
+    if (eave) P.push([`roof/${m}_eave_${sh}`, r]);
+    if (top) P.push([`roof/${m}_top_${sh}`, r]);
+    if (rn) P.push([`roof/${m}_rake_neg_${sh}`, r]);
+    if (rp) P.push([`roof/${m}_rake_pos_${sh}`, r]);
+    if (eave && rn) P.push([`roof/${m}_eave_corner_neg_${sh}`, r]);
+    if (eave && rp) P.push([`roof/${m}_eave_corner_pos_${sh}`, r]);
+    const below = at(x, y - 1, z);
+    if (below?.b === 'log') {
+      const ax = logAxis(x, y - 1, z, below), along = f === 'north' || f === 'south' ? 'z' : 'x';
+      P.push([`roof/infill_log_${ax === 'corner' ? 'corner' : ax === along ? 'along' : 'across'}_${sh}`, r]);
+    } else if (below?.b === 'bbB' || below?.b === 'bbG') P.push([`roof/infill_board_${below.b === 'bbB' ? 'brown' : 'grey'}_${sh}`, r]);
+    if (c.beam && sh !== 'ridge') P.push([`roof/beam_${sh}`, r]);
+    if (c.pipe && sh !== 'ridge') P.push([`roof/${m}_pipe_${sh}`, r]);
+    return P;
+  }
+  if (c.b === 'doorC' || c.b === 'doorB') {
+    const t = c.b === 'doorC' ? 'cabin' : 'board', r = TURN[c.facing];
+    return [[`door/${t}_frame_${c.half}`, r], [`door/${t}_panel_${c.half}_${c.hinge}_${c.open ? 'open' : 'closed'}`, r]];
+  }
+  if (c.b === 'win') {
+    const up = at(x, y + 1, z), dn = at(x, y - 1, z), sameW = o => o && o.b === 'win' && o.facing === c.facing;
+    return [['window/' + (sameW(up) ? 'bottom' : sameW(dn) ? 'top' : 'single'), TURN[c.facing]]];
+  }
+  if (c.b === 'bbB' || c.b === 'bbG') {
+    const col = c.b === 'bbB' ? 'brown' : 'grey';
+    P.push([`siding/${col}_core`, 0]);
+    for (const d of ['north', 'east', 'south', 'west']) if (!SOLID.has(nb(x, y, z, d)?.b)) P.push([`siding/${col}_battens`, TURN[d]]);
+    return P;
+  }
+  if (c.b === 'post') {
+    P.push(['porch/post', 0]);
+    for (const d of ['north', 'east', 'south', 'west']) if (nb(x, y, z, d)?.b === 'rail') P.push(['porch/post_rail', TURN[d]]);
+    return P;
+  }
+  if (c.b === 'rail') return [['porch/railing', c.axis === 'x' ? 0 : 1]];
+  if (c.b === 'deck') {
+    const a = c.axis, S = ['n', 'e', 's', 'w'], C = ['ne', 'se', 'sw', 'nw'], D4 = ['north', 'east', 'south', 'west'];
+    const open = D4.map(d => { const o = nb(x, y, z, d); return !(o && (o.b === 'deck' || SOLID.has(o.b))); });
+    P.push(['porch/deck_' + a, 0]);
+    for (let i = 0; i < 4; i++) {
+      if (!open[i]) continue;
+      const next = open[(i + 1) % 4], prev = open[(i + 3) % 4];
+      P.push(['porch/deck_rim_' + a + '_' + S[i], 0]);
+      if (next) P.push(['porch/deck_corner_' + a + '_' + C[i], 0], ['porch/pier_corner', i]);
+      const even = ((i & 1) === 0 ? x : z) % 2 === 0, post = at(x, y + 1, z)?.b === 'post';
+      if (!next && !prev && (even || post)) P.push(['porch/pier_edge', i]);
+    }
+    return P;
+  }
+  if (c.b === 'pipe') {
+    const up = at(x, y + 1, z);
+    return [[up && (up.b === 'pipe' || (up.b === 'roof' && up.pipe)) ? 'pipe/stove_pipe' : 'pipe/stove_pipe_cap', 0]];
+  }
+  return P;
+}
+
+// ------------------------------------------------------------------ loading and drawing
+const loader = new THREE.TextureLoader(), texCache = new Map(), matCache = new Map(), pieceCache = new Map();
+const texPath = id => id.startsWith('concept:') ? CDIR + id.slice(8) + '.png' : id.replace('apocalypse_firstlight:', A + 'textures/') + '.png';
+function texture(id) {   // 'apocalypse_firstlight:block/cabin/x', or 'concept:A/fieldstone_0'
+  if (!texCache.has(id)) {
+    const p = texPath(id);
+    const t = loader.load(p); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; texCache.set(id, t);
+  }
+  return texCache.get(id);
+}
+function material(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop(), opts = {map: texture(id), roughness: 0.82, metalness: 0};
+    if (/roof_green|stove|sash|iron/.test(n)) opts.roughness = 0.5;
+    if (/galvanized/.test(n)) { opts.roughness = 0.55; opts.metalness = 0.35; }
+    if (/glass/.test(n)) Object.assign(opts, {transparent: true, roughness: 0.1, depthWrite: false});
+    if (/wire/.test(n)) Object.assign(opts, {alphaTest: 0.5, side: THREE.DoubleSide});
+    if (id.startsWith('concept:')) {   // the candidates' relief: tangent normals (_pn, v down as the game's _n)
+      const nm = loader.load(texPath(id).replace('.png', '_pn.png')); nm.flipY = false; nm.magFilter = THREE.NearestFilter; nm.minFilter = THREE.LinearMipmapLinearFilter;
+      Object.assign(opts, {normalMap: nm, normalScale: new THREE.Vector2(1, 1), roughness: /concrete/.test(n) ? 0.78 : 0.86});
+    } else if (SHEET && /fieldstone_\d/.test(n)) {   // v3 on the sheets: its LabPBR _n (B = AO) rebuilt to a tangent normal, for a fair comparison
+      const img = new Image(), cv = document.createElement('canvas'), nm = new THREE.CanvasTexture(cv);
+      nm.flipY = false; nm.magFilter = THREE.NearestFilter;
+      img.onload = () => {
+        cv.width = img.width; cv.height = img.height; const g = cv.getContext('2d'); g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, cv.width, cv.height);
+        for (let i = 0; i < d.data.length; i += 4) { const x = d.data[i] / 127.5 - 1, y = d.data[i + 1] / 127.5 - 1; d.data[i + 2] = Math.round((Math.sqrt(Math.max(0, 1 - x * x - y * y)) * 0.5 + 0.5) * 255); d.data[i + 3] = 255; }
+        g.putImageData(d, 0, 0); nm.needsUpdate = true;
+      };
+      img.src = texPath(id).replace('.png', '_n.png');
+      Object.assign(opts, {normalMap: nm, normalScale: new THREE.Vector2(1, 1), roughness: 0.86});
+    }
+    matCache.set(id, new THREE.MeshStandardMaterial(opts));
+  }
+  return matCache.get(id);
+}
+async function piece(name) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A + 'cabin_mesh/' + name + '.json').then(r => { if (!r.ok) throw new Error('missing piece ' + name); return r.json(); }));
+  return pieceCache.get(name);
+}
+// geometry buckets per texture
+const buckets = new Map();
+function emit(texId, pts, uvs, nrm) {
+  if (!buckets.has(texId)) buckets.set(texId, {p: [], uv: [], n: []});
+  const b = buckets.get(texId);
+  for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(name, r, ox, oy, oz) {
+  const pc = await piece(name);
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]], pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) {
+      const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r);
+      pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r));
+    }
+    emit(t, pts, uvs, nrm);
+  }
+}
+// a fieldstone block as MacroTileModel draws it: per face the tile picked by position, vanilla cube UVs (u to the right
+// as seen from outside, v down; up: u = x, v = z; down: u = x, v = -z), faces against another full cube culled
+const FACES = {   // corners TL, BL, BR, TR as seen from outside
+  north: [[1, 1, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0]], south: [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]],
+  west: [[0, 1, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]], east: [[1, 1, 1], [1, 0, 1], [1, 0, 0], [1, 1, 0]],
+  up: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], down: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]],
+};
+const FN = {north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0], east: [1, 0, 0], up: [0, 1, 0], down: [0, -1, 0]};
+const FUV = [[0, 0], [0, 1], [1, 1], [1, 0]];
+function tileOf(face, x, y, z) {
+  const [u, v] = {north: [-x - 1, -y - 1], south: [x, -y - 1], west: [z, -y - 1], east: [-z - 1, -y - 1], up: [x, z], down: [x, -z - 1]}[face];
+  return (((v % 2) + 2) % 2) * 3 + (((u % 3) + 3) % 3);
+}
+const FULL = new Set(['stone', 'planks', 'bbB', 'bbG', 'fire']);
+function stoneBlock(x, y, z) {
+  for (const f of Object.keys(FACES)) {
+    const n = FN[f], o = at(x + n[0], y + n[1], z + n[2]);
+    if (o && FULL.has(o.b)) continue;
+    const t = (CONCEPT ? 'concept:' + CONCEPT + '/' : 'apocalypse_firstlight:block/cabin/') + 'fieldstone_' + tileOf(f, x, y, z);
+    emit(t, FACES[f].map(c => [x + c[0], y + c[1], z + c[2]]), FUV, FACES[f].map(() => n));
+  }
+}
+// an axis-aligned box in a north-facing piece frame, turned like the pieces; UVs by position (sides: v = 1 - y)
+function boxOut(tex, lo, hi, r, ox, oy, oz, skip = 'down') {
+  for (const f of Object.keys(FACES)) {
+    if (skip.includes(f)) continue;
+    const P = FACES[f].map(c => [c[0] ? hi[0] : lo[0], c[1] ? hi[1] : lo[1], c[2] ? hi[2] : lo[2]]);
+    const uv = P.map(([px, py, pz]) => f === 'north' ? [1 - px, 1 - py] : f === 'south' ? [px, 1 - py] : f === 'west' ? [pz, 1 - py] : f === 'east' ? [1 - pz, 1 - py] : f === 'up' ? [px, pz] : [px, 1 - pz]);
+    emit(tex, P.map(p => { const q = turnP(p, r); return [q[0] + ox, q[1] + oy, q[2] + oz]; }), uv, P.map(() => turnN(FN[f], r)));
+  }
+}
+// the candidates' porch supports (north-facing frame as porch/pier_corner and porch/pier_edge: corner at the north-east)
+const POST_V = 'apocalypse_firstlight:block/cabin/oak_trim_v';
+function conceptPier(kind, r, ox, oy, oz) {
+  const cx = kind === 'corner' ? 0.815 : 0.5;
+  if (CONCEPT === 'A') boxOut('concept:A/pier_concrete', [cx - 0.15, 0, 0.035], [cx + 0.15, 0.77, 0.335], r, ox, oy, oz);   // 30 cm square concrete
+  else {   // a 34 cm squared stone block, 22 cm high; a 14 cm oak post up to the joists
+    const sx = kind === 'corner' ? 0.8 : 0.5;
+    boxOut('concept:B/pier_stone', [sx - 0.17, 0, 0.03], [sx + 0.17, 0.22, 0.37], r, ox, oy, oz);
+    boxOut(POST_V, [sx - 0.07, 0.22, 0.13], [sx + 0.07, 0.77, 0.27], r, ox, oy, oz, 'down');
+  }
+}
+function cube(texId, x, y, z, cols) {   // a plain JSON cube (fieldstone, planks, firewood)
+  const g = new THREE.BoxGeometry(1, 1, 1), mats = cols.map(id => material(id));
+  const m = new THREE.Mesh(g, mats); m.position.set(x + 0.5, y + 0.5, z + 0.5); m.castShadow = m.receiveShadow = true; scene.add(m);
+  for (const t of texCache.values()) t.flipY = false;
+}
+async function build() {
+  const jobs = [];
+  for (const [k, c] of G) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (c.b === 'stone') { stoneBlock(x, y, z); continue; }   // M1.1: one 3 x 2 block texture in tiles, picked by position (as MacroTileModel)
+    if (c.b === 'planks') { const t = 'apocalypse_firstlight:block/wood/white_oak_planks'; cube(t, x, y, z, [t, t, t, t, t, t]); continue; }
+    if (c.b === 'fire') { const e = 'apocalypse_firstlight:block/cabin/firewood_end', s = 'apocalypse_firstlight:block/cabin/firewood_side'; cube(e, x, y, z, [e, e, s, s, s, s]); continue; }
+    if (c.b === 'fence') continue;
+    for (const [name, r] of choose(x, y, z, c)) {
+      if (CONCEPT && name.startsWith('porch/pier_')) conceptPier(name.slice(11), r, x, y, z);
+      else jobs.push(addPiece(name, r, x, y, z));
+    }
+  }
+  await Promise.all(jobs);
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    const m = new THREE.Mesh(g, material(t)); m.castShadow = !/glass/.test(t); m.receiveShadow = true; scene.add(m);
+  }
+  // the wire fence (JSON model: posts every third block and at the turn, the wire panel)
+  const wire = material('apocalypse_firstlight:block/cabin/woven_wire'), post = material('apocalypse_firstlight:block/cabin/fence_t_post');
+  for (const [k, c] of G) if (c.b === 'fence') {
+    const [x, y, z] = k.split(',').map(Number);
+    const isF = (dx, dz) => at(x + dx, y, z + dz)?.b === 'fence';
+    const straightX = isF(1, 0) && isF(-1, 0) && !isF(0, 1) && !isF(0, -1), straightZ = isF(0, 1) && isF(0, -1) && !isF(1, 0) && !isF(-1, 0);
+    const postOn = !(straightX || straightZ) || ((x + z) % 3 + 3) % 3 === 0;
+    if (postOn) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.075, 1.25, 0.075), post); m.position.set(x + 0.5, y + 0.625, z + 0.5); m.castShadow = true; scene.add(m); }
+    for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (isF(dx, dz)) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 1), wire.clone()); m.material.map = texture('apocalypse_firstlight:block/cabin/woven_wire');
+      m.position.set(x + 0.5 + dx * 0.25, y + 0.5, z + 0.5 + dz * 0.25); if (dx) m.rotation.y = 0; else m.rotation.y = Math.PI / 2; m.castShadow = true; scene.add(m);
+    }
+  }
+}
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.05, 200);
+const VIEWS = {
+  front: [[-6.5, 4.6, -10.5], [2.4, 2.9, 1.5], 38], corner: [[-2.4, 2.4, -2.9], [0.6, 2.4, 0.5], 46],
+  eave: [[-2.6, 3.6, -3.4], [0.2, 4.4, 0.2], 46], back: [[10.5, 6.5, 11], [3.5, 2.6, 2.5], 38], samples: [[5.5, 2.6, -1.8], [9.5, 0.8, 3.5], 44],
+  deck: [[-1.6, 1.2, -4.2], [1.2, 0.6, -1.4], 46], roof: [[-1.2, 5.2, -4.6], [1.6, 3.4, -1.2], 40], deck2: [[9.4, 2.4, -1.0], [12, 0.6, 2.5], 50],
+  window: [[5.6, 1.9, -5.4], [7.5, 0.5, -3.6], 40], plinth: [[11.6, 1.3, -8.2], [11.9, 0.45, -4], 44],
+};
+const CVIEWS = {   // M1.2 concept sheets
+  c_front: [[-4.8, 2.3, -7.9], [1.9, 1.3, 0.3], 40], c_porch: [[-2.3, 0.95, -3.9], [1.0, 0.45, -0.7], 46],
+  c_row: [[6.4, 0.75, -4.0], [1.2, 0.35, -1.4], 42], c_plinth: [[10.7, 0.95, -6.6], [11.8, 0.48, -4], 38], c_close: [[11.3, 0.66, -5.1], [11.5, 0.5, -4], 32],
+};
+Object.assign(VIEWS, CVIEWS);
+function view(name) { const [p, t, fov] = VIEWS[name]; camera.position.set(...p); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(...t); renderer.render(scene, camera); }
+async function save(name) {
+  const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+window.renderAll = async () => { for (const v of Object.keys(VIEWS)) { if (!CVIEWS[v]) { view(v); await save('cabin_' + v + '.png'); } } return 'saved'; };
+window.renderConcept = async () => { for (const v of Object.keys(CVIEWS)) { view(v); await save('m1_2_' + (SHEET || 'v3') + '_' + v.slice(2) + '.png'); } return 'saved'; };
+window.view = view;
+build().then(() => setTimeout(() => { view('front'); document.title = 'ready'; }, 1500)).catch(e => { document.title = 'error ' + e.message; console.error(e); });
+</script>
+</body></html>

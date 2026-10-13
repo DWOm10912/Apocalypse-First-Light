@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:macro_tile",
+  "columns": 3,
+  "rows": 2,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/fieldstone_0",
+    "tile0": "apocalypse_firstlight:block/cabin/fieldstone_0",
+    "tile1": "apocalypse_firstlight:block/cabin/fieldstone_1",
+    "tile2": "apocalypse_firstlight:block/cabin/fieldstone_2",
+    "tile3": "apocalypse_firstlight:block/cabin/fieldstone_3",
+    "tile4": "apocalypse_firstlight:block/cabin/fieldstone_4",
+    "tile5": "apocalypse_firstlight:block/cabin/fieldstone_5"
+  }
+}

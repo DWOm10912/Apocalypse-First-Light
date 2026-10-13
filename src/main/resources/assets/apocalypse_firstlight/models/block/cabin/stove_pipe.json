@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/cabin/stove_pipe"
+  },
+  "item": [
+    [
+      "pipe/stove_pipe",
+      0
+    ]
+  ]
+}
