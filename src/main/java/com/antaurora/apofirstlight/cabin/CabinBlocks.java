@@ -59,6 +59,8 @@ import java.util.List;
  * requirement (vanilla wood); fieldstone on any pickaxe (vanilla stone rules); the sheet metal roofs, the stove pipe and
  * the wire fence on a stone pickaxe ({@code minecraft:needs_stone_tool}, correct tool required). Each drops itself (the
  * doors from the lower half, a double slab two). Assets and data: tools/build-cabin-exterior-v1.mjs.
+ * <p>Also registered here (same mesh loader, same creative tab run): the generic {@link WoodFurniture} (Wood Furniture V1,
+ * docs/models/wood_furniture_v1.md, tools/build-wood-furniture-v1.mjs), on the axe without a tier like the wood above.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class CabinBlocks {
@@ -67,7 +69,8 @@ public final class CabinBlocks {
     private static final String[] IDS = {"white_oak_log_wall", "green_standing_seam_roof", "galvanized_corrugated_roof", "rusty_corrugated_roof",
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
-            "white_oak_slab", "woven_wire_fence"};
+            "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
+            "wooden_gun_rack"};
 
     private CabinBlocks() {}
 
@@ -106,6 +109,12 @@ public final class CabinBlocks {
             case "white_oak_stairs" -> new StairBlock(() -> planks().defaultBlockState(), wood(MapColor.WOOD, 2.0F));
             case "white_oak_slab" -> new SlabBlock(wood(MapColor.WOOD, 2.0F));
             case "woven_wire_fence" -> new WovenWireFence(metal(MapColor.METAL, SoundType.CHAIN).noOcclusion());
+            // Wood Furniture V1 (WoodFurniture): the generic furniture, one set for every wood
+            case "wooden_table" -> new WoodFurniture.Table(wood(MapColor.WOOD, 2.5F).noOcclusion());
+            case "wooden_chair" -> new WoodFurniture.Chair(wood(MapColor.WOOD, 2.0F).noOcclusion());
+            case "wooden_kitchen_counter" -> new WoodFurniture.Counter(false, wood(MapColor.WOOD, 2.5F).noOcclusion());
+            case "wooden_sink_counter" -> new WoodFurniture.Counter(true, wood(MapColor.WOOD, 2.5F).noOcclusion());
+            case "wooden_gun_rack" -> new WoodFurniture.GunRack(wood(MapColor.WOOD, 2.0F).noOcclusion());
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -134,6 +143,7 @@ public final class CabinBlocks {
                 helper.register(id(IDS[i]), item);
             }
         });
+        WoodFurniture.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */

@@ -31,6 +31,11 @@
     "apocalypse_firstlight:white_oak_porch_deck",
     "apocalypse_firstlight:firewood_stack",
     "apocalypse_firstlight:white_oak_stairs",
-    "apocalypse_firstlight:white_oak_slab"
+    "apocalypse_firstlight:white_oak_slab",
+    "apocalypse_firstlight:wooden_table",
+    "apocalypse_firstlight:wooden_chair",
+    "apocalypse_firstlight:wooden_kitchen_counter",
+    "apocalypse_firstlight:wooden_sink_counter",
+    "apocalypse_firstlight:wooden_gun_rack"
   ]
 }

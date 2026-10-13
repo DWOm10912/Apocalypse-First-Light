@@ -171,6 +171,15 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
         for(var bone:bones)draw(bone,stack,pose,buffers,type,light,mesh);
         pose.popPose();
     }
+    /** The same bind-pose gun in its own model space, without the bench transform: for displays that place it themselves (Wood Furniture V1 gun rack). */
+    public static void renderBindPose(ItemStack stack,PoseStack pose,MultiBufferSource buffers,int light) {
+        if(!(stack.getItem() instanceof NativeGunItem))return;
+        var model=model(stack);
+        if(model==null)return;
+        var type=renderType(stack);
+        var mesh=mesh(stack);
+        for(var bone:bones(stack,model))draw(bone,stack,pose,buffers,type,light,mesh);
+    }
     static RenderType renderType(ItemStack stack) {
         return RenderType.entityCutoutNoCull(asset(stack,"textures/item/",".png"));
     }
@@ -194,12 +203,29 @@ public final class MaintenanceGunRendering implements GeoRenderer<GeoItem> {
             p.pushPose();DRAWER.renderCube(p,cube,buffers.getBuffer(type),light,
                     net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);p.popPose();
         }
-        if(!magazine && mesh!=null)GeckoMeshRenderer.renderBone(mesh,b,p,buffers.getBuffer(type),light,
-                net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
+        if(!magazine && mesh!=null){
+            if(buffers instanceof ClosedFaces faces)meshParts(mesh,b,p,buffers.getBuffer(type),light,faces);
+            else GeckoMeshRenderer.renderBone(mesh,b,p,buffers.getBuffer(type),light,
+                    net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
+        }
         NativeSightRendering.render(stack,b,p,buffers,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY);
         if(!magazine||!com.antaurora.apofirstlight.weapon.client.NativeMagazineRendering.replacesSubtree(stack))
             for(var child:b.getChildBones())draw(child,stack,p,buffers,type,light,mesh);
         p.popPose();
+    }
+    /** A buffer source told which mesh faces close a solid (their back sides are never seen): the gun rack's chunk capture (WoodGunRackChunking). */
+    public interface ClosedFaces { void closedFaces(boolean closed); }
+    /** GeckoMeshRenderer#renderBone one part at a time, so the capture knows each part's closure. */
+    private static void meshParts(MeshModel mesh,GeoBone b,PoseStack p,VertexConsumer out,int light,ClosedFaces faces){
+        if(b.isHidden())return;
+        var parts=mesh.parts(b.getName(),com.antaurora.vextris.mesh.MeshLayer.CUTOUT);
+        if(parts.isEmpty())return;
+        p.pushPose();RenderUtils.translateToPivotPoint(p,b);
+        for(var part:parts){
+            faces.closedFaces(part.closed());
+            MeshRenderer.renderParts(List.of(part),p,out,light,net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,1,1,1,1);
+        }
+        faces.closedFaces(false);p.popPose();
     }
     @Override public GeoModel<GeoItem> getGeoModel(){return null;}
     @Override public GeoItem getAnimatable(){return null;}

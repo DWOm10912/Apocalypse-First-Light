@@ -71,6 +71,8 @@ import java.util.function.Function;
  * <li>Flat light, no ambient occlusion; without a shader pack the direction shading is baked by the normal (vanilla's
  * values), with one (and for items) plain colour and the pack or the item lighting shade by the normal.</li>
  * <li>Glass quads draw in the translucent layer, all else solid; an item with glass draws translucent.</li>
+ * <li>A block entity may add quads of its own in the cutout layer through its model data ({@link #EXTRA}): the guns on a
+ * gun rack (Wood Furniture V1, client WoodGunRackChunking).</li>
  * </ul>
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -82,12 +84,25 @@ public final class CabinMeshModel {
     private static final ModelProperty<Long> KEY = new ModelProperty<>();
     /** Per unculled light group of that look: sky << 4 | block light. */
     private static final ModelProperty<int[]> LIGHTS = new ModelProperty<>();
+    /** Geometry the block entity adds to the chunk mesh (Wood Furniture V1: the guns on a gun rack), from its model data. */
+    public static final ModelProperty<Extra> EXTRA = new ModelProperty<>();
     private static final ChunkRenderTypeSet SOLID = ChunkRenderTypeSet.of(RenderType.solid());
     private static final ChunkRenderTypeSet SOLID_GLASS = ChunkRenderTypeSet.of(RenderType.solid(), RenderType.translucent());
+    private static final ChunkRenderTypeSet SOLID_CUTOUT = ChunkRenderTypeSet.of(RenderType.solid(), RenderType.cutout());
+    private static final ChunkRenderTypeSet SOLID_CUTOUT_GLASS = ChunkRenderTypeSet.of(RenderType.solid(), RenderType.cutout(), RenderType.translucent());
     /** The pieces of the bake under way (dropped when it completes; each baked model keeps its own map). */
     private static Map<String, Piece> loading;
 
     private CabinMeshModel() {}
+
+    /**
+     * A block entity's extra chunk geometry: block-space quads in the cutout layer, unculled, flat lit from the cell
+     * (light baked in a quad is kept where brighter). Read on chunk builder threads: immutable, prepared on the client thread.
+     */
+    public interface Extra {
+        /** The quads for this meshing (asked even when there are none); the call also tells the owner what the chunk now has. */
+        List<BakedQuad> meshCutout();
+    }
 
     @SubscribeEvent
     public static void registerLoaders(ModelEvent.RegisterGeometryLoaders event) {
@@ -363,7 +378,11 @@ public final class CabinMeshModel {
             Assembly a = assembly(key);
             int[] lights = new int[a.keys.length];
             for (int g = 0; g < lights.length; g++) lights[g] = light(level, pos, a.keys[g]);
-            return ModelData.builder().with(KEY, key).with(LIGHTS, lights).build();
+            return data.derive().with(KEY, key).with(LIGHTS, lights).build();   // keeps the block entity's EXTRA
+        }
+
+        private static @Nullable Extra extra(ModelData data) {
+            return data.get(EXTRA);
         }
 
         private Assembly of(@Nullable BlockState state, ModelData data) {
@@ -375,6 +394,10 @@ public final class CabinMeshModel {
         @Override
         public @NotNull List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, @NotNull RandomSource rand,
                                                  @NotNull ModelData data, @Nullable RenderType renderType) {
+            if (renderType == RenderType.cutout()) {
+                Extra e = state == null || side != null ? null : extra(data);
+                return e == null ? List.of() : e.meshCutout();
+            }
             int layer = renderType == null ? 2 : renderType == RenderType.solid() ? 0 : renderType == RenderType.translucent() ? 1 : -1;
             if (layer < 0) return List.of();
             Assembly a = of(state, data);
@@ -390,7 +413,9 @@ public final class CabinMeshModel {
 
         @Override
         public @NotNull ChunkRenderTypeSet getRenderTypes(@NotNull BlockState state, @NotNull RandomSource rand, @NotNull ModelData data) {
-            return of(state, data).glass ? SOLID_GLASS : SOLID;
+            boolean glass = of(state, data).glass;
+            if (extra(data) != null) return glass ? SOLID_CUTOUT_GLASS : SOLID_CUTOUT;
+            return glass ? SOLID_GLASS : SOLID;
         }
 
         @Override

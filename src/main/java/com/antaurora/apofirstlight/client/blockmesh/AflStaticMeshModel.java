@@ -211,7 +211,7 @@ public final class AflStaticMeshModel {
     }
 
     /** The block atlas sprite of a profile texture ({@code ns:textures/block/x.png} is {@code ns:block/x}); null when it is not there. */
-    static @Nullable TextureAtlasSprite atlasSprite(ResourceLocation texture) {
+    public static @Nullable TextureAtlasSprite atlasSprite(ResourceLocation texture) {
         String path = texture.getPath();
         if (!path.startsWith("textures/") || !path.endsWith(".png")) return null;
         TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
@@ -299,11 +299,16 @@ public final class AflStaticMeshModel {
     /** The entity shader's diffuse light for a world-space normal (Lighting.setupLevel / setupNetherLevel, minecraft_mix_light). */
     private static int color(float nx, float ny, float nz, int shading) {
         if (shading == 0) return -1;
-        Vector3f second = shading == 2 ? NETHER_L1 : L1;
-        float light = Math.min(1.0F, (Math.max(0.0F, L0.x * nx + L0.y * ny + L0.z * nz)
-                + Math.max(0.0F, second.x * nx + second.y * ny + second.z * nz)) * 0.6F + 0.4F);
-        int c = Math.round(light * 255.0F);
+        int c = Math.round(diffuse(nx, ny, nz, shading) * 255.0F);
         return 0xFF000000 | c << 16 | c << 8 | c;
+    }
+
+    /** That light as a factor (1 with a shader pack, shading 0; 1 overworld, 2 nether lights). */
+    public static float diffuse(float nx, float ny, float nz, int shading) {
+        if (shading == 0) return 1.0F;
+        Vector3f second = shading == 2 ? NETHER_L1 : L1;
+        return Math.min(1.0F, (Math.max(0.0F, L0.x * nx + L0.y * ny + L0.z * nz)
+                + Math.max(0.0F, second.x * nx + second.y * ny + second.z * nz)) * 0.6F + 0.4F);
     }
 
     private static BakedQuad quad(int[] corners, float[] x, float[] y, float[] z, float[] u, float[] v,

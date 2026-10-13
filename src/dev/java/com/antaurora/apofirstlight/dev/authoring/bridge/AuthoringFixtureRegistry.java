@@ -169,6 +169,12 @@ final class AuthoringFixtureRegistry {
             new Def("minecraft:chest",storage,"storage").facing(H4).fixed("type","single","waterlogged","false").inventory().support(Support.NONE)
                     .notes("Single chest only; double-chest pairing is not authored. Generic WorldEdit writes of chests stay forbidden."),
             new Def("minecraft:barrel",storage,"storage").facing(ALL6).fixed("open","false").inventory().support(Support.NONE),
+            new Def(A+"wooden_kitchen_counter",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V1 (2026-10-13): base cabinet, 18 slots, facing = the doors; its back goes against a wall. Doors start shut; open is runtime (someone has it open)."),
+            new Def(A+"wooden_sink_counter",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V1 (2026-10-13): the cabinet with an enamel sink and a cast-iron pitcher pump (looks only), 9 slots; the pump handle reaches 12 cm over the cell at facing.getClockWise() (keep a counter or air there, not a wall)."),
+            new Def(A+"wooden_gun_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Wood Furniture V1 (2026-10-13): wall rack, facing = away from the wall; three notches for long guns and a two-place shelf, items kept in its BlockEntity (starts empty). Long guns overhang its cell up to 20 cm each side."),
             new Def(A+"modern_office_desk",safe,"office").facing(H4).multi(DESK).support(Support.FLOOR)
                     .notes("3 wide. Anchor = center; left at facing.getCounterClockWise(), right at facing.getClockWise()."),
             new Def(A+"modern_office_chair",safe,"office").facing(H4),

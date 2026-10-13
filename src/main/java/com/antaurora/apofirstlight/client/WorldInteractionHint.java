@@ -92,6 +92,7 @@ public final class WorldInteractionHint {
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
+            if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
@@ -447,6 +448,24 @@ public final class WorldInteractionHint {
     }
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */
+    /** Wood Furniture V1: sit on a chair, open a cabinet, hang / put / take on the gun rack (the same tests as their use()). */
+    private static Target woodFurniture(Minecraft mc,BlockHitResult hit) {
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);String k="hint.apocalypse_firstlight.";
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Chair)
+            return mc.player.isSecondaryUseActive()||mc.player.isPassenger()||com.antaurora.apofirstlight.cabin.FurnitureSeat.occupied(mc.level,pos)
+                    ?null:new Target(Component.translatable(k+"chair.sit"),null);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Counter) return new Target(Component.translatable(k+"cabinet.open"),null);
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack)
+                ||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity rack)) return null;
+        var held=mc.player.getMainHandItem();
+        int aimed=com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack.slotAt(s,pos,hit.getLocation());
+        if(held.isEmpty()) return rack.item(aimed).isEmpty()?null:new Target(Component.translatable(k+"gun_rack.take"),
+                com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack.slotPoint(s,pos,aimed));
+        int slot=com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack.target(rack,held,aimed);
+        return slot<0?null:new Target(Component.translatable(k+(slot<3?"gun_rack.hang":"gun_rack.put")),
+                com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack.slotPoint(s,pos,slot));
+    }
+
     private static Target meshInteraction(Minecraft mc,BlockHitResult hit) {
         var s=mc.level.getBlockState(hit.getBlockPos());
         if(!(s.getBlock() instanceof AflMeshInteractionBlock block)) return null;

@@ -78,5 +78,10 @@ public final class AflBlockEntityRenderers {
         // Industrial Locker V2: generic AFL Animated Block Mesh Runtime, no locker-specific renderer
         event.registerBlockEntityRenderer(AflBlockEntities.INDUSTRIAL_LOCKER.get(),
                 AflBlockEntityRendering.wrap("industrial_locker", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // Wood Furniture V1: what hangs on the gun rack until the chunk shows it (the rack itself and the counters are chunk-drawn cabin meshes);
+        // the chair's seat is an invisible rider anchor
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.GUN_RACK, AflBlockEntityRendering.wrap("wooden_gun_rack", WoodGunRackRenderer::new));
+        com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk
+        event.registerEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.SEAT, net.minecraft.client.renderer.entity.NoopRenderer::new);
     }
 }

@@ -2,7 +2,9 @@
 // authoring bridge: the M0 v2 house (docs/worldgen/forest_home_b_whitebox_m0.md) rebuilt with the Cabin Exterior V1 blocks
 // (docs/models/cabin_exterior_v1.md): white oak log walls, Mesh roofs, doors, double-hung windows, porch posts / railings,
 // board and batten, fieldstone, stove pipe, firewood; plus the user's extras (2026-10-12): a root cellar, an outhouse and a
-// woven wire garden. No antenna, no power line. The M0 interior stand-ins stay (M2 is the interior).
+// woven wire garden. No antenna, no power line. M2.1 (2026-10-13): the Wood Furniture V1 pieces (docs/models/wood_furniture_v1.md)
+// replace the M0 stand-ins for the chairs, tables, kitchen counters, sink and gun rack; the other M0 stand-ins stay until
+// their M2 pieces exist.
 // Paper frame as M0: X east, Z south (the front faces +Z), k = layer above grade (k 0 = the first air layer: plinth, floors,
 // porch deck; k -1 = the grade surface). Plot 37 x 13 x 26: x = X + 10 (X -10..26), y = k + 3 (k -3..9), z = Z + 10
 // (Z -10..15), front SOUTH, no rotation. The site is graded: k -1 grass, k -3..-2 dirt, everything else in the plot is air
@@ -13,9 +15,10 @@
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs plan       -> counts + checks + cells JSON (no game)
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs build      -> grades the active plot (id forest_home_b_m1) and writes the
 //                                                                   recipe, reconciles fence / stairs shapes, audits support
-//   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs fixtures   -> genset, kit chest and barrels (place_fixture)
+//   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs fixtures   -> genset, kit chest, barrels, counters, gun rack (place_fixture)
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs slices 2 5 -> redo those Z slices (clear + their cells), e.g. after an animal stopped one
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs region 3 15 -10 -2 -> redo one X / Z box only (M1.3: the root cellar)
+//   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs furniture  -> M2.1 in a built house: only the Wood Furniture cells and fixtures
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -25,7 +28,7 @@ export const ID = 'forest_home_b_m1', SIZE = [37, 13, 26];
 const X0 = -10, X1 = 26, K0 = -3, K1 = 9, Z0 = -10, Z1 = 15;
 const A = id => 'apocalypse_firstlight:' + id, M = id => 'minecraft:' + id;
 
-// ---- palette (Cabin Exterior V1 where it has a block; the M0 interior stand-ins stay vanilla until M2) ----
+// ---- palette (Cabin Exterior V1 / Wood Furniture V1 where they have a block; the other M0 stand-ins stay until M2) ----
 export const P = {
   LOG: axis => A(`white_oak_log_wall[axis=${axis}]`),
   BB_BROWN: A('brown_board_and_batten'), BB_GREY: A('grey_board_and_batten'),
@@ -40,10 +43,12 @@ export const P = {
   STAIRS: facing => A(`white_oak_stairs[facing=${facing},half=bottom,shape=straight,waterlogged=false]`),
   FENCE: A('woven_wire_fence[east=false,north=false,post=true,south=false,waterlogged=false,west=false]'),
   GRASS: M('grass_block[snowy=false]'), DIRT: M('dirt'), BED_SOIL: M('coarse_dirt'),
-  // M0 interior stand-ins (M2 replaces them)
-  COUNTER: A('white_oak_planks'), STOVE: A('steel_block'),
+  // Wood Furniture V1 (M2.1): chairs face where the sitter looks; a table lists the tables it joins
+  CHAIR: facing => A(`wooden_chair[facing=${facing}]`),
+  TABLE: (n = false, e = false, s = false, w = false) => A(`wooden_table[east=${e},north=${n},south=${s},west=${w}]`),
+  // M0 interior stand-ins (later M2 pieces replace them): the cold box, the stove, the bed
+  COLD_BOX: A('white_oak_planks'), STOVE: A('steel_block'),
   BED: M('smooth_quartz_slab[type=bottom,waterlogged=false]'),
-  GUN_RACK: M('spruce_trapdoor[facing=north,half=bottom,open=true,powered=false,waterlogged=false]'),
 };
 const GREEN = 'green_standing_seam_roof', GALV = 'galvanized_corrugated_roof', RUST = 'rusty_corrugated_roof';
 const vstairs = facing => M(`spruce_stairs[facing=${facing},half=bottom,shape=straight,waterlogged=false]`);
@@ -71,7 +76,7 @@ export function recipe() {
   const del = (X, k, Z) => { cells.delete(key(X, k, Z)); tags.delete(key(X, k, Z)); };
   const get = (X, k, Z) => cells.get(key(X, k, Z));
   const fill = (xa, ka, za, xb, kb, zb, s, tag) => { for (let k = ka; k <= kb; k++) for (let Z = za; Z <= zb; Z++) for (let X = xa; X <= xb; X++) put(X, k, Z, s, tag); };
-  const storage = (X, k, Z, id, facing) => fixtures.push({tool: 'place_fixture', block_id: M(id), at: [X, k, Z], facing});
+  const storage = (X, k, Z, id, facing) => fixtures.push({tool: 'place_fixture', block_id: id.includes(':') ? id : M(id), at: [X, k, Z], facing});
   const door = (type, X, Z, facing, hinge, k = 1) => { put(X, k, Z, P.DOOR(type, facing, 'lower', hinge), 'door'); put(X, k + 1, Z, P.DOOR(type, facing, 'upper', hinge), 'door'); };
   const win = (X, Z, facing, ka, kb) => { for (let k = ka; k <= kb; k++) put(X, k, Z, P.WINDOW(facing), 'window'); };
   const roof = (X, k, Z, mat, facing, shape, beam) => put(X, k, Z, P.ROOF(mat, facing, shape, beam), 'roof');
@@ -159,12 +164,13 @@ export function recipe() {
   storage(9, 1, 1, 'barrel', 'up');
   fill(10, 1, 1, 11, 2, 1, M('bookshelf'));
   del(6, 4, 3); fill(6, 1, 3, 6, 4, 3, M('ladder[facing=east,waterlogged=false]'), 'ladder');
-  put(8, 1, 4, vstairs('south')); put(10, 1, 4, vstairs('south'));
+  // by the stove: two chairs facing it (armchairs later), the lamp stand between them (stand-in)
+  put(8, 1, 4, P.CHAIR('north')); put(10, 1, 4, P.CHAIR('north'));
   put(9, 1, 4, vfence); put(9, 2, 4, M('lantern[hanging=false,waterlogged=false]'));
-  put(6, 1, 7, vslab('top')); put(7, 1, 7, vstairs('east'));
-  put(11, 1, 7, vslab('top')); put(11, 1, 8, vslab('top'));
-  put(10, 1, 7, vstairs('west')); put(10, 1, 8, vstairs('west'));
-  put(7, 2, 9, P.GUN_RACK, 'gunrack');
+  put(6, 1, 7, P.TABLE()); put(7, 1, 7, P.CHAIR('west'));                   // the radio table and its chair
+  put(11, 1, 7, P.TABLE(false, false, true)); put(11, 1, 8, P.TABLE(true));   // the dining table, two cells joined along Z
+  put(10, 1, 7, P.CHAIR('east')); put(10, 1, 8, P.CHAIR('east'));
+  storage(7, 2, 9, A('wooden_gun_rack'), 'north');                          // on the front wall by the door, 1.1..2.0 m up
   for (const [X, Z] of [[6, 4], [7, 4], [8, 4], [9, 4], [10, 4], [11, 4], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9]]) put(X, 5, Z, vfence);
   put(1, 1, 1, P.BED, 'bed'); put(1, 1, 2, P.BED, 'bed');
   storage(1, 1, 3, 'chest', 'east');
@@ -172,9 +178,11 @@ export function recipe() {
   for (const k of [1, 2]) for (const Z of [5, 6]) storage(1, k, Z, 'barrel', 'east');
   fill(1, 1, 8, 1, 2, 9, M('bookshelf'));
   storage(4, 1, 9, 'barrel', 'up');
-  put(13, 1, 1, P.COUNTER); put(14, 1, 1, M('cauldron')); put(15, 1, 1, P.COUNTER);
+  // the kitchen run on the back wall under the window: counter, sink counter (the pump handle over the west counter), counter
+  storage(13, 1, 1, A('wooden_kitchen_counter'), 'south'); storage(14, 1, 1, A('wooden_sink_counter'), 'south');
+  storage(15, 1, 1, A('wooden_kitchen_counter'), 'south');
   fill(13, 1, 4, 13, 2, 5, M('bookshelf'));
-  put(16, 1, 4, P.COUNTER); put(16, 1, 5, P.COUNTER);
+  put(16, 1, 4, P.COLD_BOX); put(16, 1, 5, P.COLD_BOX);
   put(13, 1, 6, vslab('bottom'));
 
   // ---------------- woodshed X 19..23 + genset bay X 24..26, Z -4..-2, rusty lean-to falling north ----------------
@@ -390,6 +398,29 @@ async function plan() {
   console.log(JSON.stringify({cells: r.cells.size, batches: b.length, ops: b.reduce((n, x) => n + x.ops.length, 0), fixtures: r.fixtures.length, checks: checks(r)}, null, 1));
 }
 
+/**
+ * M2.1 (2026-10-13): swap the M0 furniture stand-ins of a built house for Wood Furniture V1 without touching anything else:
+ * the chair and table cells are rewritten, the cells of the counters and the gun rack cleared (the planks, the cauldron, the
+ * trapdoor) and those placed as fixtures (they keep a block entity).
+ */
+async function furniture() {
+  const c = new BridgeClient('./run');
+  await c.call('minecraft_status'); const info = await c.call('authoring_info');
+  if (info.id !== ID) throw Error('PLOT_MISMATCH ' + JSON.stringify(info));
+  const o = info.min, world = ([x, y, z]) => [o[0] + x, o[1] + y, o[2] + z], out = [];
+  const r = recipe(), fx = r.fixtures.filter(f => f.block_id.includes(':wooden_')), ops = [];
+  for (const [kk, s] of r.cells) if (s.includes(':wooden_')) { const at = world(plotOf(kk.split(',').map(Number))); ops.push({min: at, max: at, block: s}); }
+  for (const f of fx) { const at = world(plotOf(f.at)); ops.push({min: at, max: at, block: M('air')}); }
+  try { await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: ops}); out.push('ok cells (' + ops.length + ' ops)'); }
+  catch (e) { out.push('FAIL cells ' + String(e.message || e)); }
+  for (const f of fx) {
+    const pos = world(plotOf(f.at));
+    try { await c.call(f.tool, {block_id: f.block_id, pos, facing: f.facing}); out.push('ok ' + f.block_id.replace(/^.*:/, '') + ' ' + pos); }
+    catch (e) { out.push('FAIL ' + f.block_id.replace(/^.*:/, '') + ' ' + pos + ' ' + String(e.message || e)); }
+  }
+  console.log(out.join(String.fromCharCode(10)));
+}
+
 const direct = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
 const mode = direct ? process.argv[2] : null;
 if (mode === 'plan') await plan();
@@ -397,4 +428,5 @@ else if (mode === 'build') await build();
 else if (mode === 'fixtures') await placeFixtures();
 else if (mode === 'slices') await rebuildSlices(process.argv.slice(3).map(Number));
 else if (mode === 'region') await rebuildRegion(...process.argv.slice(3, 7).map(Number));
-else if (direct) console.log('modes: plan | build | fixtures | slices <Z..> | region <xa> <xb> <za> <zb>');
+else if (mode === 'furniture') await furniture();
+else if (direct) console.log('modes: plan | build | fixtures | slices <Z..> | region <xa> <xb> <za> <zb> | furniture');

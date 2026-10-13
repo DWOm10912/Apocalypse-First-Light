@@ -10,8 +10,11 @@
 // denoised 240 set were tried and rejected: they blurred the forms the house relies on. New: the porch deck boards; the
 // corrugation moved into the mesh (build script), the sheet textures keep the zinc / rust and shade the valleys in step.
 // M1.2: the fieldstone is roughly squared rubble (the user's pick of two concepts), the porch posts' stone footing.
+// 2026-10-13 (user: the cabin's white oak was far off the white oak planks and logs): the oak is the species' own wood
+// now, from the trees' palette like the Wood Building Blocks; the logs keep a small aged-and-oiled warming over it.
 import {png} from '../cube-slab-mesh-lib.mjs';
 import {N, hash, clamp, sstep, mul, mix, vn, wrapD, cells} from '../mesh-trees/hd-art.mjs';
+import {OAK} from '../mesh-trees/felling-art.mjs';
 
 const SS = 3, MM = 1000 / N;
 
@@ -46,11 +49,23 @@ export function renderX(f, {height = true} = {}) {
 
 // ------------------------------------------------------------------------------------------------- wood
 
-/** Aged, oiled white oak (the logs): honey brown, a little lighter in the latewood-free bands. */
-export const LOG = {wood: [142, 107, 73], late: [116, 86, 56], light: [156, 120, 83], knot: [88, 63, 42], check: [68, 50, 35]};
+/**
+ * White oak lumber (trim, posts, rails, doors, ceiling boards, the porch deck, stairs and slabs): the planed face of the
+ * species' wood, made the way build-wood-blocks-v1 faceColours makes the white oak planks (heartwood with a little
+ * sapwood, a touch of the cut's light), so the cabin's oak and the planks, timber and beams read as one wood. Until
+ * 2026-10-13 the cabin had its own honey brown from the concept render: L 47..54 and redder (hue 69..72) against the
+ * planks' L 66 (hue 78); the user saw the difference in game.
+ */
+const OAK_FACE = mix(mix(OAK.heart, OAK.cutLight, 0.12), mix(OAK.sap, OAK.cutLight, 0.15), 0.15);
+const OAK_LATE = mix(OAK.late, OAK.heart, 0.25);
+/** Aged and oiled (the log walls: decades of sun and linseed): the same wood a little darker and warmer, not a new colour. */
+const aged = c => [c[0] * 0.88, c[1] * 0.84, c[2] * 0.8];
+/** The logs: aged white oak, a little lighter in the latewood-free bands. */
+export const LOG = {wood: aged(OAK_FACE), late: aged(OAK_LATE), light: aged(mix(OAK_FACE, OAK.sap, 0.25)),
+  knot: aged(mix(OAK.late, OAK.pith, 0.6)), check: aged(mix(OAK.check, OAK.pith, 0.4))};
 const CHINK = [192, 184, 164];
 /** Soft straight grain along u: the latewood share 0..1, rings `S` texels apart, swaying with the noise. */
-function grain(t, s, S, seed, x, y, share = 0.38) {
+export function grain(t, s, S, seed, x, y, share = 0.38) {
   const e = 1.4 / S, phase = (t + 5 * vn(x, y, seed, 120, 40)) / S + 0.4 * vn(x, y, seed + 7, 120, 24) + 0.15 * s / N;
   const f = ((phase % 1) + 1) % 1;
   return sstep(0, e, f) * (1 - sstep(share - e, share + e, f));
@@ -118,8 +133,8 @@ export function logEnd() {
     const dx = x - N / 2, dy = y - N / 2, r = Math.hypot(dx, dy) / (N * 0.47), a = Math.atan2(dy, dx);
     const wob = 1 + 0.03 * Math.sin(3 * a + 1.3) + 0.02 * Math.sin(5 * a + 0.4);
     const ring = ((r * wob * 14) % 1 + 1) % 1, late = sstep(0.55, 0.7, ring) * (1 - sstep(0.85, 0.98, ring));
-    let c = mix([142, 112, 80], [116, 88, 60], late * 0.6);
-    c = mix(c, [128, 116, 100], 0.35 * sstep(0.6, 1.0, r));             // weathered grey toward the rim
+    let c = mix(mul(LOG.wood, 0.97), LOG.late, late * 0.6);            // end grain drinks a little light
+    c = mix(c, [150, 140, 124], 0.35 * sstep(0.6, 1.0, r));             // weathered grey toward the rim
     c = mul(c, 1 + 0.03 * vn(x, y, seed + 3, 40));
     let h = 0;
     for (const ca of checks) {
@@ -139,7 +154,7 @@ export function trim(vertical) {
   return (X, Y) => {
     const [x, y] = vertical ? [Y, X] : [X, Y];
     const late = grain(y, x, 8, seed, x, y);
-    const c = mul(mix([150, 114, 78], [123, 91, 60], late * 0.45), 1 + 0.02 * vn(x, y, seed + 3, 120, 30));
+    const c = mul(mix(OAK_FACE, OAK_LATE, late * 0.45), 1 + 0.02 * vn(x, y, seed + 3, 120, 30));
     return {c, s: 118, p: 20, h: 0, ao: 1};
   };
 }
@@ -150,20 +165,20 @@ export function doorBoards() {
   return (x, y) => {
     const k = Math.floor(x / W) % 6, tx = x - k * W, d = Math.min(tx, W - tx);
     const late = grain(tx + 31 * k, y, 8, seed + 5 + k, y, x);
-    let c = mul(mix([142, 107, 72], [116, 86, 56], late * 0.45), tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 30, 120)));
+    let c = mul(mix(OAK_FACE, OAK_LATE, late * 0.45), 0.96 * tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 30, 120)));
     let h = 0, ao = 1;
     if (d < 3) { const t = 1 - d / 3; h = -1.6 * t; c = mul(c, 1 - 0.25 * t); ao = 1 - 0.25 * t; }
     return {c, s: 110, p: 22, h, ao};
   };
 }
 
-/** Ceiling boards under the roofs: tongue-and-groove, ten 10 cm boards across v, grain along u, slightly paler wood. */
+/** Ceiling boards under the roofs: tongue-and-groove, ten 10 cm boards across v, grain along u, a little paler (no sun). */
 export function roofBoards() {
   const seed = 2600, W = N / 10, tones = Array.from({length: 10}, (_, k) => 0.95 + 0.1 * hash(k, 1, seed));
   return (x, y) => {
     const k = Math.floor(y / W) % 10, ty = y - k * W, d = Math.min(ty, W - ty);
     const late = grain(ty + 17 * k, x, 8, seed + 5 + k, x, y);
-    let c = mul(mix([166, 130, 90], [138, 105, 70], late * 0.4), tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 120, 24)));
+    let c = mul(mix(OAK_FACE, OAK_LATE, late * 0.4), 1.03 * tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 120, 24)));
     let h = 0, ao = 1;
     if (d < 2.5) { const t = 1 - d / 2.5; h = -1.2 * t; c = mul(c, 1 - 0.3 * t); ao = 1 - 0.3 * t; }
     return {c, s: 70, p: 30, h, ao};
@@ -181,7 +196,7 @@ export function deckBoards() {
   return (x, y) => {
     const k = Math.floor(y / W) % 8, ty = y - k * W, d = Math.min(Math.min(ty, W - ty), wrapD(x - butts[k]));
     const late = grain(ty + 19 * k, x, 9, seed + 5 + k, x, y);
-    let c = mul(mix([148, 116, 82], [122, 91, 60], late * 0.45), tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 120, 24)));
+    let c = mul(mix(OAK_FACE, OAK_LATE, late * 0.45), tones[k] * (1 + 0.02 * vn(x, y, seed + 9, 120, 24)));
     c = mix(c, [150, 140, 124], 0.1 * sstep(0.3, 1, vn(x, y, seed + 13, 60, 30)));   // weathered, a touch grey
     if (d < 1.5) return {c: [70, 54, 40], s: 30, p: 40, h: -1.5, ao: 0.6};
     let h = 0, ao = 1;
