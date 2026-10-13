@@ -92,6 +92,7 @@ public final class WorldInteractionHint {
             if(target==null) target=chargingStation(mc,hit);
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
+            if(target==null) target=boxStove(mc,hit);
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
@@ -449,6 +450,23 @@ public final class WorldInteractionHint {
 
     /** Any Mesh Shape interaction block: aimed region + the block's own state -> prompt, drawn at the region's anchor. */
     /** Wood Furniture V1: sit on a chair, open a cabinet, hang / put / take on the gun rack (the same tests as their use()). */
+    /** Box Stove V1: the door (open / close), wood in, lighting it, the cook top (put on / take). */
+    private static Target boxStove(Minecraft mc,BlockHitResult hit) {
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.BoxStove.Stove)||mc.player.isSecondaryUseActive()
+                ||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.BoxStoveBlockEntity stove)) return null;
+        var a=com.antaurora.apofirstlight.cabin.BoxStove.Stove.action(mc.level,s,pos,stove,mc.player.getMainHandItem(),hit.getLocation(),hit.getDirection());
+        String k="hint.apocalypse_firstlight.box_stove.";
+        int spot=com.antaurora.apofirstlight.cabin.BoxStove.Stove.spotAt(s,pos,hit.getLocation(),hit.getDirection());
+        return switch(a) {
+            case OPEN,CLOSE,FUEL,LIGHT -> new Target(Component.translatable(k+a.name().toLowerCase(java.util.Locale.ROOT)),
+                    com.antaurora.apofirstlight.cabin.BoxStove.Stove.doorPoint(s,pos));
+            case PUT -> new Target(Component.translatable(k+"put"),com.antaurora.apofirstlight.cabin.BoxStove.Stove.spotPoint(s,pos,stove.freeSpot(spot)));
+            case TAKE -> new Target(Component.translatable(k+"take"),com.antaurora.apofirstlight.cabin.BoxStove.Stove.spotPoint(s,pos,stove.takeSpot(spot)));
+            default -> null;
+        };
+    }
+
     private static Target woodFurniture(Minecraft mc,BlockHitResult hit) {
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);String k="hint.apocalypse_firstlight.";
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Chair)

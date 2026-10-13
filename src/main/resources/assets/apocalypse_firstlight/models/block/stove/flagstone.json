@@ -1,0 +1,26 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:macro_tile",
+  "columns": 3,
+  "rows": 2,
+  "top_columns": 3,
+  "top_rows": 3,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/stove/flagstone_top_0",
+    "tile0": "apocalypse_firstlight:block/cabin/fieldstone_0",
+    "tile1": "apocalypse_firstlight:block/cabin/fieldstone_1",
+    "tile2": "apocalypse_firstlight:block/cabin/fieldstone_2",
+    "tile3": "apocalypse_firstlight:block/cabin/fieldstone_3",
+    "tile4": "apocalypse_firstlight:block/cabin/fieldstone_4",
+    "tile5": "apocalypse_firstlight:block/cabin/fieldstone_5",
+    "top0": "apocalypse_firstlight:block/stove/flagstone_top_0",
+    "top1": "apocalypse_firstlight:block/stove/flagstone_top_1",
+    "top2": "apocalypse_firstlight:block/stove/flagstone_top_2",
+    "top3": "apocalypse_firstlight:block/stove/flagstone_top_3",
+    "top4": "apocalypse_firstlight:block/stove/flagstone_top_4",
+    "top5": "apocalypse_firstlight:block/stove/flagstone_top_5",
+    "top6": "apocalypse_firstlight:block/stove/flagstone_top_6",
+    "top7": "apocalypse_firstlight:block/stove/flagstone_top_7",
+    "top8": "apocalypse_firstlight:block/stove/flagstone_top_8"
+  }
+}

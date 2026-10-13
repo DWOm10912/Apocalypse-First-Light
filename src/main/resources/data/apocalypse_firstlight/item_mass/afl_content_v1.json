@@ -862,6 +862,18 @@
     "apocalypse_firstlight:wooden_gun_rack": {
       "unit_mass_kg": 4,
       "estimated": true
+    },
+    "apocalypse_firstlight:box_stove": {
+      "unit_mass_kg": 60,
+      "estimated": true
+    },
+    "apocalypse_firstlight:stove_heat_shield": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:flagstone": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
     }
   },
   "carry_factors": [

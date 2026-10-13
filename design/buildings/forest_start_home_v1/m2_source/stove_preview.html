@@ -1,0 +1,134 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Box Stove preview</title>
+<style>html,body{margin:0;background:#9fb0b8;overflow:hidden}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head><body>
+<script>
+// Box Stove V1, M2.2 (docs/models/box_stove_v1.md): an offline look at the generated stove, shield and pipe pieces
+// (tools/build-box-stove-v1.mjs) against the cabin's log wall, on a flagstone hearth (design use only, not a game asset).
+// Served by m1_source/serve.cjs at /repo/design/buildings/forest_start_home_v1/m2_source/stove_preview.html; saves go to
+// m1_sheets/ and are moved to m2_sheets/.
+// Two hearths as in the house (north frame here: the stove faces -z, the wall behind it at z 2): left x 12..14 open with
+// three splits and a flame stand-in (the game draws soft FuelFlames there), right x 7..9 closed and cold. The shield masks
+// are the ones BoxStove#panelMask gives for this layout. Plain sun + sky, no normal maps; nearest texel filtering.
+const A = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const W = 1600, H = 1000;
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setSize(W, H); renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xa9bcc6);
+scene.add(new THREE.HemisphereLight(0xe6ecef, 0x6a5e4c, 0.75));
+const sun = new THREE.DirectionalLight(0xfff1dc, 0.9); sun.position.set(4, 12, -9); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40}); sun.shadow.bias = -0.0004;
+sun.target.position.set(10, 0, 1); scene.add(sun, sun.target);
+
+const P = [];   // [piece, turn, x, y, z]
+// the stove (x0) with its shields either side, two pipe sections over it; masks: 1 x-, 2 x+, 4 up, 8 down
+function hearth(x0, open, load) {
+  P.push(['stove/body', 0, x0, 0, 1], [open ? 'stove/door_open' : 'stove/door_closed', 0, x0, 0, 1], ['shield/panel_7', 0, x0, 0, 1]);
+  if (load) P.push(['stove/load_' + load, 0, x0, 0, 1]);
+  P.push(['shield/panel_6', 0, x0 - 1, 0, 1], ['shield/panel_5', 0, x0 + 1, 0, 1]);
+  P.push(['shield/panel_10', 0, x0 - 1, 1, 1], ['shield/panel_9', 0, x0 + 1, 1, 1]);
+  P.push(['pipe/stove_pipe', 0, x0, 1, 1], ['shield/panel_11', 0, x0, 1, 1], ['pipe/stove_pipe', 0, x0, 2, 1]);
+}
+hearth(8, false, 0);
+hearth(13, true, 3);
+const WALL = [];
+for (let x = 5; x <= 16; x++) for (let y = 0; y <= 2; y++) WALL.push([x, y, 2]);
+const FLAMES = [[0.30, 0.22, 0.47, 0.24, 0.17], [0.42, 0.21, 0.45, 0.22, 0.15], [0.20, 0.21, 0.47, 0.18, 0.13]];
+
+const loader = new THREE.TextureLoader(), texCache = new Map(), matCache = new Map(), pieceCache = new Map();
+const texPath = id => id.replace('apocalypse_firstlight:', A + 'textures/') + '.png';
+function texture(id) {
+  if (!texCache.has(id)) {
+    const t = loader.load(texPath(id)); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; texCache.set(id, t);
+  }
+  return texCache.get(id);
+}
+function material(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop(), opts = {map: texture(id), roughness: 0.82, metalness: 0};
+    if (/cast_iron|stove_pipe/.test(n)) opts.roughness = 0.6;
+    if (n === 'nickel') { opts.roughness = 0.3; opts.metalness = 0.85; }
+    if (n === 'heat_shield') opts.roughness = 0.5;
+    if (n === 'ceramic') opts.roughness = 0.35;
+    if (/soot|ash/.test(n)) opts.roughness = 0.95;
+    matCache.set(id, new THREE.MeshStandardMaterial(opts));
+  }
+  return matCache.get(id);
+}
+async function piece(name) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A + 'cabin_mesh/' + name + '.json').then(r => { if (!r.ok) throw new Error('missing piece ' + name); return r.json(); }));
+  return pieceCache.get(name);
+}
+const buckets = new Map();
+function emit(texId, pts, uvs, nrm) {
+  if (!buckets.has(texId)) buckets.set(texId, {p: [], uv: [], n: []});
+  const b = buckets.get(texId);
+  for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(name, r, ox, oy, oz) {
+  const pc = await piece(name);
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]], pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) {
+      const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r);
+      pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r));
+    }
+    emit(t, pts, uvs, nrm);
+  }
+}
+// the flagstone block's top: MacroTileModel UP tile = (z mod 3) * 3 + (x mod 3), u along +x, v along +z
+function flagstone(x, z) {
+  const k = ((z % 3) + 3) % 3 * 3 + ((x % 3) + 3) % 3;
+  const m = material('apocalypse_firstlight:block/stove/flagstone_top_' + k);
+  const g = new THREE.PlaneGeometry(1, 1); g.rotateX(-Math.PI / 2);
+  const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setY(i, 1 - uv.getY(i));   // flipY off: v 0 at -z
+  const o = new THREE.Mesh(g, m); o.position.set(x + 0.5, 0.0015, z + 0.5); o.receiveShadow = true; scene.add(o);
+}
+function flames(x0) {
+  const fm = new THREE.MeshBasicMaterial({color: 0xffb060, transparent: true, opacity: 0.85, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false});
+  for (const [x, y, z, w, h] of FLAMES) for (const ry of [0.4, -0.7]) {
+    const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), fm); f.position.set(x0 + x, y + h / 2, 1 + z); f.rotation.y = ry; scene.add(f);
+  }
+  const glow = new THREE.PointLight(0xff9a40, 1.6, 2.2, 2); glow.position.set(x0 + 0.25, 0.3, 1.46); scene.add(glow);
+}
+async function build() {
+  const jobs = P.map(([n, r, x, y, z]) => addPiece(n, r, x, y, z));
+  for (const [x, y, z] of WALL) jobs.push(addPiece('log_wall/run_x', 0, x, y, z));
+  await Promise.all(jobs);
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    const m = new THREE.Mesh(g, material(t)); m.castShadow = m.receiveShadow = true; scene.add(m);
+  }
+  const fl = material('apocalypse_firstlight:block/wood/white_oak_planks');
+  fl.map.wrapS = fl.map.wrapT = THREE.RepeatWrapping; fl.map.repeat.set(12, 5);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 5), fl); floor.rotation.x = -Math.PI / 2; floor.position.set(11, 0, -0.5); floor.receiveShadow = true; scene.add(floor);
+  for (const x0 of [8, 13]) for (let x = x0 - 1; x <= x0 + 1; x++) flagstone(x, 1);
+  flames(13);
+}
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.02, 200);
+const VIEWS = {
+  all: [[11.0, 2.3, -4.2], [11.0, 0.9, 1.6], 44],
+  closed: [[8.75, 1.15, -0.9], [8.4, 0.42, 1.45], 46],
+  door: [[7.15, 0.85, 0.15], [8.0, 0.36, 1.5], 50],
+  open: [[12.25, 0.95, -0.25], [13.1, 0.33, 1.5], 50],
+  top: [[8.55, 1.75, 0.35], [8.38, 0.56, 1.45], 46],
+  shield: [[5.6, 1.6, -0.4], [8.0, 1.0, 1.9], 46],
+  standoff: [[6.4, 1.15, 1.55], [9.0, 0.95, 1.93], 52],
+};
+function view(name) { const [p, t, fov] = VIEWS[name]; camera.position.set(...p); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(...t); renderer.render(scene, camera); }
+async function save(name) {
+  const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+window.renderAll = async (prefix = 'm2_2_v1_') => { for (const v of Object.keys(VIEWS)) { view(v); await save(prefix + v + '.png'); } return 'saved'; };
+window.view = view;
+build().then(() => setTimeout(() => { view('all'); document.title = 'ready'; }, 1500)).catch(e => { document.title = 'error ' + e.message; console.error(e); });
+</script>
+</body></html>

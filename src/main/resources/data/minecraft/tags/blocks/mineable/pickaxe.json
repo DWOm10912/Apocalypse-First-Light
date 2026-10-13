@@ -129,6 +129,9 @@
     "apocalypse_firstlight:rusty_corrugated_roof",
     "apocalypse_firstlight:stove_pipe",
     "apocalypse_firstlight:fieldstone",
+    "apocalypse_firstlight:box_stove",
+    "apocalypse_firstlight:stove_heat_shield",
+    "apocalypse_firstlight:flagstone",
     "apocalypse_firstlight:woven_wire_fence"
   ]
 }

@@ -1,0 +1,496 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Box stove concepts</title>
+<style>html,body{margin:0;background:#555;overflow:auto}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head><body>
+<script>
+// Forest start home B, M2 F1 (docs/worldgen/forest_start_home_b_v1_plan.md): concept round for the cast-iron box stove
+// (user 2026-10-13: "做铸铁箱式炉，先出概念图"). Design use only, not a game asset. Two candidates in the cabin's stove
+// corner, built from the real cabin pieces (log wall, white oak floor, stove pipe, chairs) around a procedural stove:
+//   A  old long box stove: long axis along the wall, loading door on the east end, one cook lid, four cast legs; fits the
+//      existing 3 x 1 hearth and the centred pipe.
+//   B  compact upright box stove: door toward the room, ash drawer, flat cook top; needs the hearth one row deeper.
+// Real constraints (2026-10-13 research): 6" (15 cm) flue = the existing stove_pipe; the log wall bulges 7 cm into the
+// stove cell, so the stove back is ~31 cm from the logs: legal only with a ventilated heat shield (sheet on 2.5 cm
+// standoffs, open at the bottom: 36" -> 12"); non-combustible floor 45 cm (18") in front of the loading door.
+// Served by m1_source/serve.cjs at /repo/design/buildings/forest_start_home_v1/m2_source/stove_concepts.html;
+// window.renderSheets() saves the sheets to m1_sheets/ (moved to m2_sheets/ by hand): m2_2_stove_A / _B / _compare.png.
+const A_ = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const FONT = '"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif';
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.85;
+renderer.physicallyCorrectLights = false;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+// Everything below is built in a design frame (wall at +z, room at -z) and shown through root, which mirrors z about 1 so
+// the picture matches the house: north wall at z 0..1, stove cell z 1, room toward +z, east (+x) on the right when
+// looking at the wall. Camera and annotation points are written in the design frame and go through W().
+const root = new THREE.Group(); root.scale.z = -1; root.position.z = 2; scene.add(root);
+const W = p => [p[0], p[1], 2 - p[2]];
+
+// ---------------------------------------------------------------- environment (so the iron picks up soft highlights)
+{
+  const env = new THREE.Scene();
+  const c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#d9d4ca'); gr.addColorStop(0.45, '#bfb6a6'); gr.addColorStop(0.55, '#6a5a46'); gr.addColorStop(1, '#3a3026');
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({map: t, side: THREE.BackSide})));
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), new THREE.MeshBasicMaterial({color: 0xffffff}));
+  win.position.set(6, 2, -6); win.lookAt(0, 0, 0); env.add(win);
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(env, 0.02).texture;
+}
+const hemi = new THREE.HemisphereLight(0xe9e3d8, 0x5b4b39, 0.5); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0dc, 0.85); sun.position.set(13, 4.5, -5.5); sun.target.position.set(8.5, 0.4, 0.4);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0003;
+Object.assign(sun.shadow.camera, {left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20});
+root.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xcfd8e0, 0.25); fill.position.set(4, 3, -6); root.add(fill);
+
+// ---------------------------------------------------------------- textures and materials
+const loader = new THREE.TextureLoader();
+function tex(path, rep) {
+  const t = loader.load(A_ + 'textures/' + path + '.png'); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; t.flipY = false;
+  if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); }
+  return t;
+}
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+// flat stone slabs for the hearth (a proposal: the M0 hearth is fieldstone rubble seen from the top)
+function flagstone(cols, rows, seed) {
+  return canvasTex(cols * 400, rows * 400, (g, w, h) => {
+    const r = rng(seed); g.fillStyle = '#5d5850'; g.fillRect(0, 0, w, h);
+    const xs = [0]; while (xs[xs.length - 1] < w - 1) xs.push(Math.min(w, xs[xs.length - 1] + 150 + r() * 130));
+    if (w - xs[xs.length - 2] < 90) xs.splice(xs.length - 2, 1);
+    for (let i = 0; i + 1 < xs.length; i++) {
+      let y = 0;
+      while (y < h - 1) {
+        let y2 = Math.min(h, y + 120 + r() * 120); if (h - y2 < 70) y2 = h;
+        const j = () => (r() - 0.5) * 22, x0 = xs[i] + 5, x1 = xs[i + 1] - 5, ya = y + 5, yb = y2 - 5;
+        const tone = 118 + r() * 34, warm = r() * 10;
+        g.fillStyle = `rgb(${tone + warm},${tone + warm * 0.6 - 3},${tone - 8})`;
+        g.beginPath(); g.moveTo(x0 + j(), ya + j()); g.lineTo(x1 + j(), ya + j()); g.lineTo(x1 + j(), yb + j()); g.lineTo(x0 + j(), yb + j()); g.closePath(); g.fill();
+        for (let k = 0; k < 900; k++) { g.fillStyle = 'rgba(' + (r() < 0.5 ? '40,36,30' : '210,204,192') + ',' + (0.05 + r() * 0.07) + ')'; g.fillRect(x0 + r() * (x1 - x0), ya + r() * (yb - ya), 1 + r() * 3, 1 + r() * 3); }
+        y = y2;
+      }
+    }
+  });
+}
+const firebrickTex = canvasTex(256, 128, (g, w, h) => {
+  g.fillStyle = '#4c3a2a'; g.fillRect(0, 0, w, h); const r = rng(7);
+  for (let row = 0; row < 4; row++) for (let col = -1; col < 3; col++) {
+    const x = col * 128 + (row % 2) * 64 + 3, y = row * 32 + 3, t = 150 + r() * 30;
+    g.fillStyle = `rgb(${t},${t * 0.74},${t * 0.5})`; g.fillRect(x, y, 122, 26);
+  }
+});
+const ashTex = canvasTex(256, 256, (g, w, h) => { const r = rng(3); g.fillStyle = '#4a4744'; g.fillRect(0, 0, w, h); for (let i = 0; i < 500; i++) { const v = 50 + r() * 60; g.fillStyle = `rgb(${v},${v - 2},${v - 5})`; g.fillRect(r() * w, r() * h, 2 + r() * 6, 2 + r() * 6); } });
+const emberTex = canvasTex(256, 256, (g, w, h) => { const r = rng(5); g.fillStyle = '#000'; g.fillRect(0, 0, w, h); for (let i = 0; i < 70; i++) { const x = r() * w, y = r() * h, s = 3 + r() * 9, gr = g.createRadialGradient(x, y, 0, x, y, s); gr.addColorStop(0, '#ffb050'); gr.addColorStop(0.5, '#e0501a'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); } });
+const flameTex = canvasTex(128, 256, (g, w, h) => {
+  for (const [cx, sc] of [[64, 1], [40, 0.65], [90, 0.7]]) {
+    const gr = g.createRadialGradient(cx, h * 0.92, 2, cx, h * (1 - 0.5 * sc), h * 0.55 * sc);
+    gr.addColorStop(0, 'rgba(255,240,200,0.95)'); gr.addColorStop(0.25, 'rgba(255,170,60,0.85)'); gr.addColorStop(0.6, 'rgba(230,80,20,0.45)'); gr.addColorStop(1, 'rgba(120,20,0,0)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(cx - 34 * sc, h); g.quadraticCurveTo(cx - 38 * sc, h * (1 - 0.45 * sc), cx, h * (1 - 0.95 * sc)); g.quadraticCurveTo(cx + 38 * sc, h * (1 - 0.45 * sc), cx + 34 * sc, h); g.fill();
+  }
+});
+const M = {
+  iron: new THREE.MeshStandardMaterial({color: 0x2a2c2f, roughness: 0.62, metalness: 0.35, envMapIntensity: 0.9}),
+  edge: new THREE.MeshStandardMaterial({color: 0x4c4f54, roughness: 0.42, metalness: 0.6, envMapIntensity: 1.0}),
+  pipe: new THREE.MeshStandardMaterial({color: 0x232527, roughness: 0.6, metalness: 0.3, envMapIntensity: 0.8}),
+  nickel: new THREE.MeshStandardMaterial({color: 0xc4c2bc, roughness: 0.28, metalness: 1.0}),
+  hole: new THREE.MeshStandardMaterial({color: 0x0b0b0b, roughness: 1, metalness: 0}),
+  glow: new THREE.MeshBasicMaterial({color: 0xff7a2a}),
+  brick: new THREE.MeshStandardMaterial({map: firebrickTex, roughness: 0.95}),
+  ash: new THREE.MeshStandardMaterial({map: ashTex, roughness: 1, emissiveMap: emberTex, emissive: 0x000000}),
+  flame: new THREE.MeshBasicMaterial({map: flameTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide}),
+  shield: new THREE.MeshStandardMaterial({color: 0x6b6f73, roughness: 0.55, metalness: 0.6, envMapIntensity: 0.7}),
+  ceramic: new THREE.MeshStandardMaterial({color: 0xe6e1d6, roughness: 0.35}),
+  logSide: new THREE.MeshStandardMaterial({map: tex('block/cabin/firewood_side'), roughness: 0.9}),
+  logEnd: new THREE.MeshStandardMaterial({map: tex('block/cabin/firewood_end'), roughness: 0.9}),
+};
+for (const m of Object.values(M)) if (m.color && !m.map) m.color.convertSRGBToLinear();
+function mesh(g, m, shadow = true) { const o = new THREE.Mesh(g, m); o.castShadow = shadow; o.receiveShadow = true; return o; }
+/** A box x0..x1, y0..y1, z0..z1 with its edges rounded by r (cast iron is never razor sharp). */
+function rbox(x0, x1, y0, y1, z0, z1, m, r = 0.003) {
+  const w = x1 - x0, h = y1 - y0, d = z1 - z0; r = Math.min(r, w / 3, h / 3, d / 3);
+  const s = new THREE.Shape(), x = w / 2 - r, y = h / 2 - r;
+  s.moveTo(-x, -y); s.lineTo(x, -y); s.lineTo(x, y); s.lineTo(-x, y); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth: Math.max(1e-4, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 2});
+  g.translate(0, 0, -(d - 2 * r) / 2);
+  const o = mesh(g, m); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); return o;
+}
+/** A cylinder along axis 'x' | 'y' | 'z' centred at c. */
+function cyl(r, len, axis, c, m, seg = 32, r2 = r) {
+  const o = mesh(new THREE.CylinderGeometry(r2, r, len, seg), m);
+  if (axis === 'x') o.rotation.z = -Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2;
+  o.position.set(...c); return o;
+}
+/** A coil-spring handle (stays cool): a nickel wire helix of length len along axis. */
+function coil(len, axis, c) {
+  class Helix extends THREE.Curve { getPoint(t) { const a = t * Math.PI * 2 * 10; return new THREE.Vector3(Math.cos(a) * 0.009, t * len - len / 2, Math.sin(a) * 0.009); } }
+  const o = mesh(new THREE.TubeGeometry(new Helix(), 400, 0.0017, 6, false), M.nickel);
+  if (axis === 'x') o.rotation.z = -Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2;
+  o.position.set(...c); return o;
+}
+/** A raised cast frame on a panel face: rectangle u0..u1 x v0..v1 in the plane, out = the face's outward axis. */
+function frame(out, plane, u0, u1, v0, v1, w = 0.016, t = 0.005) {
+  const g = new THREE.Group(), [ax, sign, at] = out;   // e.g. ['z', -1, 0.30]: the face at z 0.30 looking -z
+  const f0 = sign < 0 ? at - t : at, f1 = sign < 0 ? at : at + t;
+  const strip = (a0, a1, b0, b1) => {
+    if (ax === 'z') g.add(rbox(a0, a1, b0, b1, f0, f1, M.edge, 0.002));
+    else g.add(rbox(f0, f1, b0, b1, a0, a1, M.edge, 0.002));
+  };
+  strip(u0, u1, v0, v0 + w); strip(u0, u1, v1 - w, v1); strip(u0, u0 + w, v0 + w, v1 - w); strip(u1 - w, u1, v0 + w, v1 - w);
+  return g;
+}
+/** A spin draft (rosette) on a door face: disc of radius 0.04 facing axis, six holes. */
+function spinDraft(axis, sign, c, holes) {
+  const g = new THREE.Group(), d = 0.008;
+  const at = (k, off) => { const p = [...c]; p[k] += off; return p; };
+  const k = axis === 'x' ? 0 : 2;
+  g.add(cyl(0.042, d, axis, at(k, sign * d / 2), M.edge, 40));
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * Math.PI * 2, p = [...c], u = Math.cos(a) * 0.026, v = Math.sin(a) * 0.026;
+    p[1] += v; if (axis === 'x') p[2] += u; else p[0] += u; p[k] += sign * (d + 0.0005);
+    const h = cyl(0.0065, 0.001, axis, p, M.hole, 16); holes.push(h); g.add(h);
+  }
+  g.add(cyl(0.011, 0.012, axis, at(k, sign * (d + 0.006)), M.edge, 20));
+  return g;
+}
+/** A cast leg: tapered, splayed out toward (sx, sz), with a pad foot. */
+function leg(x, z, h, sx, sz) {
+  const g = new THREE.BoxGeometry(0.044, h, 0.044, 1, 4, 1), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const t = (h / 2 - p.getY(i)) / h, s = 1 - 0.3 * t, k = 0.016 * t * t;
+    p.setX(i, p.getX(i) * s + sx * k); p.setZ(i, p.getZ(i) * s + sz * k);
+  }
+  g.computeVertexNormals();
+  const o = new THREE.Group(), l = mesh(g, M.iron); l.position.set(x, h / 2, z); o.add(l);
+  o.add(rbox(x + sx * 0.016 - 0.024, x + sx * 0.016 + 0.024, 0, 0.012, z + sz * 0.016 - 0.024, z + sz * 0.016 + 0.024, M.iron, 0.003));
+  return o;
+}
+function flames(g, list) { for (const [x, y, z, w, h, ry] of list) { const f = new THREE.Mesh(new THREE.PlaneGeometry(w, h), M.flame); f.position.set(x, y, z); f.rotation.y = ry; f.renderOrder = 10; g.add(f); } }
+function logPiece(r, len, axis, c) { const o = mesh(new THREE.CylinderGeometry(r, r, len, 14), [M.logSide, M.logEnd, M.logEnd]); if (axis === 'x') o.rotation.z = -Math.PI / 2; if (axis === 'z') o.rotation.x = Math.PI / 2; o.position.set(...c); return o; }
+
+// ---------------------------------------------------------------- stove A: old long box stove (door on the east end)
+// cell frame: x 0..1 along the wall, z 0 room side .. 1 wall side (the logs bulge to 0.93), y up. Flue at the cell centre.
+function stoveA() {
+  const S = {group: new THREE.Group(), holes: [], fire: new THREE.Group(), door: new THREE.Group()}, g = S.group;
+  const X0 = 0.32, X1 = 1.02, Z0 = 0.30, Z1 = 0.62, Y0 = 0.165, Y1 = 0.53, T = 0.012;
+  for (const [x, z, sx, sz] of [[0.37, 0.335, -1, -1], [0.97, 0.335, 1, -1], [0.37, 0.585, -1, 1], [0.97, 0.585, 1, 1]]) g.add(leg(x, z, 0.15, sx, sz));
+  g.add(rbox(X0 - 0.006, X1 + 0.006, 0.14, Y0, Z0 - 0.006, Z1 + 0.006, M.iron, 0.004));            // bottom plate
+  g.add(rbox(X0 - 0.012, X1 + 0.012, Y1, 0.56, Z0 - 0.012, Z1 + 0.012, M.iron, 0.006));            // top plate
+  g.add(rbox(X0, X1, Y0, Y1, Z0, Z0 + T, M.iron, 0.002)); g.add(rbox(X0, X1, Y0, Y1, Z1 - T, Z1, M.iron, 0.002));   // long sides
+  g.add(rbox(X0, X0 + T, Y0, Y1, Z0, Z1, M.iron, 0.002));                                          // west end
+  const OY0 = 0.255, OY1 = 0.435, OZ0 = 0.355, OZ1 = 0.565;                                        // east end, the door opening
+  g.add(rbox(X1 - T, X1, Y0, OY0, Z0, Z1, M.iron, 0.002)); g.add(rbox(X1 - T, X1, OY1, Y1, Z0, Z1, M.iron, 0.002));
+  g.add(rbox(X1 - T, X1, OY0, OY1, Z0, OZ0, M.iron, 0.002)); g.add(rbox(X1 - T, X1, OY0, OY1, OZ1, Z1, M.iron, 0.002));
+  g.add(frame(['z', -1, Z0], 'xy', X0 + 0.025, X1 - 0.025, Y0 + 0.025, Y1 - 0.025));               // raised cast frames
+  g.add(frame(['z', 1, Z1], 'xy', X0 + 0.025, X1 - 0.025, Y0 + 0.025, Y1 - 0.025));
+  g.add(frame(['x', -1, X0], 'zy', Z0 + 0.025, Z1 - 0.025, Y0 + 0.025, Y1 - 0.025));
+  for (const [x, z] of [[X0, Z0], [X1, Z0], [X0, Z1], [X1, Z1]]) g.add(cyl(0.009, Y1 - Y0, 'y', [x, (Y0 + Y1) / 2, z], M.edge, 12));
+  for (const x of [X0 + 0.02, X1 - 0.02]) for (const y of [Y0 + 0.02, Y1 - 0.02]) for (const [z, s] of [[Z0, -1], [Z1, 1]]) { const b = mesh(new THREE.SphereGeometry(0.0055, 10, 6), M.edge); b.position.set(x, y, z + s * 0.004); g.add(b); }
+  // ash apron under the door
+  g.add(rbox(X1, X1 + 0.08, 0.142, 0.16, 0.33, 0.59, M.iron, 0.003)); g.add(rbox(X1 + 0.07, X1 + 0.082, 0.16, 0.172, 0.33, 0.59, M.edge, 0.003));
+  // cook lid (lift it with the lifter: the notch), and the flue collar with its flange
+  g.add(cyl(0.0905, 0.003, 'y', [0.80, 0.5615, 0.46], M.hole, 48));
+  g.add(cyl(0.087, 0.007, 'y', [0.80, 0.5635, 0.46], M.edge, 48));
+  g.add(rbox(0.875, 0.888, 0.566, 0.57, 0.455, 0.465, M.hole, 0.001));
+  g.add(cyl(0.10, 0.008, 'y', [0.5, 0.564, 0.5], M.edge, 48)); g.add(cyl(0.08, 0.06, 'y', [0.5, 0.59, 0.5], M.iron, 48));
+  g.add(cyl(0.0755, 0.38, 'y', [0.5, 0.81, 0.5], M.pipe, 40));                                       // single-wall pipe to the cell top
+  g.add(cyl(0.004, 0.2, 'x', [0.5, 0.86, 0.5], M.iron, 8)); g.add(coil(0.045, 'x', [0.62, 0.86, 0.5]));   // damper
+  // door: hinged on the wall side (z 0.58), opens toward the wall so the room sees in
+  const d = S.door; d.position.set(X1, 0.345, 0.58);
+  d.add(rbox(0, 0.015, -0.105, 0.105, -0.24, 0, M.iron, 0.003));
+  d.add(frame(['x', 1, 0.015], 'zy', -0.24, 0, -0.105, 0.105, 0.014, 0.004));
+  d.add(spinDraft('x', 1, [0.019, 0, -0.12], S.holes));
+  d.add(rbox(0.015, 0.042, -0.012, 0.012, -0.226, -0.214, M.iron, 0.002));                         // latch arm
+  d.add(coil(0.06, 'y', [0.046, 0, -0.22]));
+  for (const y of [-0.07, 0.07]) d.add(cyl(0.008, 0.03, 'y', [0.008, y, 0.002], M.edge, 12));      // hinge knuckles
+  g.add(d);
+  // inside: firebrick, ash bed with embers, two splits
+  g.add(rbox(X0 + 0.02, X1 - 0.02, Y0, 0.40, Z0 + T, Z0 + T + 0.022, M.brick, 0.001));
+  g.add(rbox(X0 + 0.02, X1 - 0.02, Y0, 0.40, Z1 - T - 0.022, Z1 - T, M.brick, 0.001));
+  g.add(rbox(X0 + T, X0 + T + 0.022, Y0, 0.40, Z0 + T, Z1 - T, M.brick, 0.001));
+  g.add(rbox(X0 + T, X1 - T, Y0, 0.19, Z0 + T + 0.022, Z1 - T - 0.022, M.ash, 0.001));
+  g.add(logPiece(0.045, 0.44, 'x', [0.70, 0.237, 0.43])); g.add(logPiece(0.038, 0.38, 'x', [0.66, 0.229, 0.52]));
+  flames(S.fire, [[0.74, 0.30, 0.47, 0.24, 0.17, Math.PI / 2], [0.62, 0.29, 0.45, 0.22, 0.15, Math.PI / 2], [0.70, 0.29, 0.47, 0.36, 0.13, 0.6]]);
+  const lamp = new THREE.PointLight(0xff8a3a, 1.2, 2.6, 2); lamp.position.set(X1 + 0.03, 0.33, 0.46); S.fire.add(lamp);
+  g.add(S.fire);
+  S.open = a => { d.rotation.y = -a; };
+  return S;
+}
+
+// ---------------------------------------------------------------- stove B: compact upright box stove (door toward the room)
+function stoveB() {
+  const S = {group: new THREE.Group(), holes: [], fire: new THREE.Group(), door: new THREE.Group()}, g = S.group;
+  const X0 = 0.32, X1 = 0.68, Z0 = 0.12, Z1 = 0.62, Y0 = 0.14, Y1 = 0.60, T = 0.012;
+  for (const [x, z] of [[X0 + 0.02, Z0 + 0.02], [X1 - 0.02, Z0 + 0.02], [X0 + 0.02, Z1 - 0.02], [X1 - 0.02, Z1 - 0.02]]) g.add(rbox(x - 0.022, x + 0.022, 0, 0.032, z - 0.022, z + 0.022, M.iron, 0.004));
+  g.add(rbox(X0 + 0.01, X1 - 0.01, 0.03, Y0, Z0 + 0.015, Z1 - 0.01, M.iron, 0.003));                // ash pit base
+  g.add(rbox(0.352, 0.648, 0.042, 0.128, Z0 + 0.005, Z0 + 0.016, M.iron, 0.003));                   // ash drawer front
+  g.add(frame(['z', -1, Z0 + 0.005], 'xy', 0.352, 0.648, 0.042, 0.128, 0.01, 0.003));
+  g.add(cyl(0.011, 0.02, 'z', [0.5, 0.085, Z0 - 0.003], M.edge, 16));
+  g.add(rbox(X0 - 0.004, X1 + 0.004, Y0 - 0.012, Y0, Z0 - 0.004, Z1 + 0.004, M.iron, 0.003));
+  g.add(rbox(X0 - 0.014, X1 + 0.014, Y1, 0.635, Z0 - 0.014, Z1 + 0.014, M.iron, 0.006));            // cook top
+  for (const [a0, a1, b0, b1] of [[X0 - 0.014, X1 + 0.014, Z0 - 0.014, Z0 - 0.002], [X0 - 0.014, X1 + 0.014, Z1 + 0.002, Z1 + 0.014], [X0 - 0.014, X0 - 0.002, Z0 - 0.002, Z1 + 0.002], [X1 + 0.002, X1 + 0.014, Z0 - 0.002, Z1 + 0.002]])
+    g.add(rbox(a0, a1, 0.635, 0.642, b0, b1, M.edge, 0.002));                                       // its raised rim
+  g.add(rbox(X0, X0 + T, Y0, Y1, Z0, Z1, M.iron, 0.002)); g.add(rbox(X1 - T, X1, Y0, Y1, Z0, Z1, M.iron, 0.002));
+  g.add(rbox(X0, X1, Y0, Y1, Z1 - T, Z1, M.iron, 0.002));
+  const OX0 = 0.38, OX1 = 0.62, OY0 = 0.27, OY1 = 0.47;
+  g.add(rbox(X0, X1, Y0, OY0, Z0, Z0 + T, M.iron, 0.002)); g.add(rbox(X0, X1, OY1, Y1, Z0, Z0 + T, M.iron, 0.002));
+  g.add(rbox(X0, OX0, OY0, OY1, Z0, Z0 + T, M.iron, 0.002)); g.add(rbox(OX1, X1, OY0, OY1, Z0, Z0 + T, M.iron, 0.002));
+  g.add(frame(['x', -1, X0], 'zy', Z0 + 0.03, Z1 - 0.03, Y0 + 0.03, Y1 - 0.03));
+  g.add(frame(['x', 1, X1], 'zy', Z0 + 0.03, Z1 - 0.03, Y0 + 0.03, Y1 - 0.03));
+  for (const x of [X0, X1]) g.add(cyl(0.009, Y1 - Y0, 'y', [x, (Y0 + Y1) / 2, Z0], M.edge, 12));
+  g.add(cyl(0.10, 0.008, 'y', [0.5, 0.639, 0.5], M.edge, 48)); g.add(cyl(0.08, 0.06, 'y', [0.5, 0.665, 0.5], M.iron, 48));
+  g.add(cyl(0.0755, 0.305, 'y', [0.5, 0.8475, 0.5], M.pipe, 40));
+  g.add(cyl(0.004, 0.2, 'x', [0.5, 0.88, 0.5], M.iron, 8)); g.add(coil(0.045, 'x', [0.62, 0.88, 0.5]));
+  // door: hinged on the west side (x 0.365), swings out toward the room and away from the chairs on the east
+  const d = S.door; d.position.set(0.365, 0.37, Z0);
+  d.add(rbox(0, 0.27, -0.115, 0.115, -0.015, 0, M.iron, 0.003));
+  d.add(frame(['z', -1, -0.015], 'xy', 0, 0.27, -0.115, 0.115, 0.014, 0.004));
+  d.add(spinDraft('z', -1, [0.135, 0.01, -0.019], S.holes));
+  d.add(rbox(0.25, 0.262, -0.012, 0.012, -0.045, -0.015, M.iron, 0.002));
+  d.add(coil(0.06, 'y', [0.256, 0, -0.049]));
+  for (const y of [-0.08, 0.08]) d.add(cyl(0.008, 0.03, 'y', [-0.002, y, -0.008], M.edge, 12));
+  g.add(d);
+  g.add(rbox(X0 + T, X0 + T + 0.022, Y0, 0.46, Z0 + T, Z1 - T, M.brick, 0.001));
+  g.add(rbox(X1 - T - 0.022, X1 - T, Y0, 0.46, Z0 + T, Z1 - T, M.brick, 0.001));
+  g.add(rbox(X0 + T, X1 - T, Y0, 0.46, Z1 - T - 0.022, Z1 - T, M.brick, 0.001));
+  g.add(rbox(X0 + T + 0.022, X1 - T - 0.022, Y0, 0.17, Z0 + T, Z1 - T - 0.022, M.ash, 0.001));
+  g.add(logPiece(0.045, 0.38, 'z', [0.455, 0.215, 0.40])); g.add(logPiece(0.04, 0.34, 'z', [0.55, 0.21, 0.42]));
+  g.add(logPiece(0.035, 0.32, 'z', [0.50, 0.28, 0.41]));
+  flames(S.fire, [[0.5, 0.31, 0.36, 0.26, 0.18, Math.PI / 2], [0.5, 0.30, 0.30, 0.24, 0.16, 0], [0.48, 0.30, 0.42, 0.22, 0.15, 0.5]]);
+  const lamp = new THREE.PointLight(0xff8a3a, 1.2, 2.6, 2); lamp.position.set(0.5, 0.36, Z0 - 0.04); S.fire.add(lamp);
+  g.add(S.fire);
+  S.open = a => { d.rotation.y = a; };
+  return S;
+}
+
+// ---------------------------------------------------------------- the stove corner (cabin pieces), frame as in the house
+// preview frame: the stove cell is (8, 0, 0); the log wall runs along x at z 1 (the house's north wall); the room is -z.
+const context = new THREE.Group(); root.add(context);
+const hearthA = new THREE.Group(), hearthB = new THREE.Group(); context.add(hearthA, hearthB);
+const pieceCache = new Map(), matCache = new Map();
+function pieceMaterial(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop(), m = new THREE.MeshStandardMaterial({map: tex(id.replace('apocalypse_firstlight:', '')), roughness: 0.82});
+    if (/pipe/.test(n)) { m.roughness = 0.6; m.metalness = 0.3; }
+    matCache.set(id, m);
+  }
+  return matCache.get(id);
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(parent, name, r, ox, oy, oz) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A_ + 'cabin_mesh/' + name + '.json').then(x => x.json()));
+  const pc = await pieceCache.get(name), buckets = new Map();
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]]; if (!buckets.has(t)) buckets.set(t, {p: [], uv: [], n: []});
+    const b = buckets.get(t), pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) { const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r); pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r)); }
+    for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+  }
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    parent.add(mesh(g, pieceMaterial(t)));
+  }
+}
+async function buildContext() {
+  const jobs = [];
+  for (let x = 4; x <= 13; x++) for (let y = 0; y <= 2; y++) jobs.push(addPiece(context, 'log_wall/run_x', 0, x, y, 1));
+  for (const y of [1, 2]) jobs.push(addPiece(context, 'pipe/stove_pipe', 0, 8, y, 0));
+  for (const x of [8, 10]) jobs.push(addPiece(context, 'furniture/chair', 2, x, 0, -3));
+  await Promise.all(jobs);
+  const fl = new THREE.MeshStandardMaterial({map: tex('block/wood/white_oak_planks', [10, 7]), roughness: 0.7});
+  const floor = mesh(new THREE.PlaneGeometry(10, 7), fl); floor.rotation.x = -Math.PI / 2; floor.position.set(9, 0, -2.5); context.add(floor);
+  const hearth = (grp, z0, rows, seed) => {
+    const m = new THREE.MeshStandardMaterial({map: flagstone(3, rows, seed), roughness: 0.85});
+    const h = mesh(new THREE.BoxGeometry(3, 0.02, rows), m); h.position.set(8.5, 0.01, z0 + rows / 2); grp.add(h);
+  };
+  hearth(hearthA, 0, 1, 11); hearth(hearthB, -1, 2, 12);
+  // heat shield: a sheet 2.5 cm off the logs on ceramic spools, open at the bottom and the top (air flows up behind it)
+  const sh = rbox(7.85, 9.35, 0.08, 1.65, 0.896, 0.9, M.shield, 0.001); context.add(sh);
+  for (const x of [7.92, 8.6, 9.28]) for (const y of [0.16, 0.86, 1.57]) context.add(cyl(0.014, 0.03, 'z', [x, y, 0.915], M.ceramic, 14));
+}
+const A = stoveA(), B = stoveB(); A.group.position.set(8, 0, 0); B.group.position.set(8, 0, 0); root.add(A.group, B.group);
+function setup(which, {open = 0, lit = true, room = true} = {}) {
+  A.group.visible = which === 'A'; B.group.visible = which === 'B';
+  hearthA.visible = which === 'A'; hearthB.visible = which === 'B';
+  context.visible = room;
+  for (const S of [A, B]) {
+    S.open(open); S.fire.visible = lit && open > 0.1;
+    for (const h of S.holes) h.material = lit ? M.glow : M.hole;
+  }
+  M.ash.emissive.setHex(lit ? 0xffffff : 0x000000);
+  scene.background = new THREE.Color(room ? 0x8b8478 : 0xdedad3);
+}
+
+// ---------------------------------------------------------------- views, dimension overlays, sheets
+const persp = new THREE.PerspectiveCamera(42, 1.5, 0.03, 100);
+function shoot(w, h, cam) {
+  renderer.setSize(w, h);
+  if (cam.isPerspectiveCamera) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  renderer.render(scene, cam);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(renderer.domElement, 0, 0);
+  return c;
+}
+function look(pos, target, fov) { persp.position.set(...W(pos)); persp.fov = fov; persp.lookAt(...W(target)); persp.updateMatrixWorld(); return persp; }
+/** Orthographic view of the stove from dir ('front': from the room looking +z, 'end': from +x looking -x), height span m. */
+function ortho(dir, center, span, w, h) {
+  const a = w / h, cam = new THREE.OrthographicCamera(-span * a / 2, span * a / 2, span / 2, -span / 2, 0.01, 50);
+  const c = W(center);
+  if (dir === 'front') cam.position.set(c[0], c[1], c[2] + 10); else cam.position.set(c[0] + 10, c[1], c[2]);
+  cam.lookAt(...c); cam.updateMatrixWorld(); cam.updateProjectionMatrix(); return cam;
+}
+function proj(cam, p, w, h) { const v = new THREE.Vector3(...W(p)).project(cam); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h]; }
+/** Dimension line between world points p, q, drawn offset by (ox, oy) px, label in the middle. */
+function dim(g, cam, w, h, p, q, ox, oy, label) {
+  const [x1, y1] = proj(cam, p, w, h), [x2, y2] = proj(cam, q, w, h);
+  const a = [x1 + ox, y1 + oy], b = [x2 + ox, y2 + oy];
+  g.strokeStyle = '#3a3530'; g.fillStyle = '#3a3530'; g.lineWidth = 1.6;
+  g.setLineDash([3, 4]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(...a); g.moveTo(x2, y2); g.lineTo(...b); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (const [pt, s] of [[a, 1], [b, -1]]) { g.beginPath(); g.moveTo(...pt); g.lineTo(pt[0] + s * 11 * Math.cos(ang - 0.35), pt[1] + s * 11 * Math.sin(ang - 0.35)); g.lineTo(pt[0] + s * 11 * Math.cos(ang + 0.35), pt[1] + s * 11 * Math.sin(ang + 0.35)); g.fill(); }
+  g.font = `bold 22px ${FONT}`; const tw = g.measureText(label).width, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  g.fillStyle = 'rgba(222,218,211,0.92)'; g.fillRect(mx - tw / 2 - 6, my - 15, tw + 12, 30); g.fillStyle = '#2b2622'; g.fillText(label, mx - tw / 2, my + 8);
+}
+function callout(g, cam, w, h, p, dx, dy, text) {
+  const [x, y] = proj(cam, p, w, h);
+  g.strokeStyle = 'rgba(255,248,236,0.95)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 5, 0, 7); g.stroke();
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + dy); g.stroke();
+  g.font = `20px ${FONT}`; const tw = g.measureText(text).width, tx = dx < 0 ? x + dx - tw - 12 : x + dx + 4;
+  g.fillStyle = 'rgba(28,24,20,0.78)'; g.fillRect(tx - 6, y + dy - 18, tw + 16, 32); g.fillStyle = '#f5efe4'; g.fillText(text, tx + 2, y + dy + 6);
+}
+function caption(g, x, y, text) { g.font = `bold 24px ${FONT}`; const tw = g.measureText(text).width; g.fillStyle = 'rgba(20,17,14,0.78)'; g.fillRect(x, y, tw + 28, 40); g.fillStyle = '#f5efe4'; g.fillText(text, x + 14, y + 28); }
+function notes(g, x, y, w, title, lines) {
+  g.fillStyle = '#ece8e1'; g.fillRect(x, y, w, 700); g.fillStyle = '#2b2622'; g.font = `bold 28px ${FONT}`; g.fillText(title, x + 28, y + 50);
+  let yy = y + 96; g.font = `22px ${FONT}`;
+  for (const l of lines) {
+    if (l === '') { yy += 14; continue; }
+    const bold = l.startsWith('!'), s = bold ? l.slice(1) : l; g.font = `${bold ? 'bold ' : ''}22px ${FONT}`;
+    const words = [...s]; let line = '';
+    for (const ch of words) { if (g.measureText(line + ch).width > w - 70) { g.fillText(line, x + 32, yy); yy += 32; line = '  '; } line += ch; }
+    g.fillText(line, x + 32, yy); yy += 34;
+  }
+}
+async function save(c, name) { const blob = await new Promise(r => c.toBlob(r, 'image/png')); await fetch('/save?name=' + name, {method: 'POST', body: blob}); }
+function sheet(title, sub) {
+  const c = document.createElement('canvas'); c.width = 2400; c.height = 1720; const g = c.getContext('2d');
+  g.fillStyle = '#d8d3cb'; g.fillRect(0, 0, 2400, 1720);
+  g.fillStyle = '#26211c'; g.fillRect(0, 0, 2400, 90); g.fillStyle = '#f2ece2'; g.font = `bold 38px ${FONT}`; g.fillText(title, 32, 58);
+  g.font = `22px ${FONT}`; g.fillStyle = '#bdb3a4'; g.fillText(sub, 2400 - 32 - g.measureText(sub).width, 56);
+  g.fillStyle = '#5f574d'; g.font = `18px ${FONT}`;
+  g.fillText('离线概念图：three.js 渲染，背景是游戏里真实的原木墙、白栎地板、烟管、椅子；炉子是示意几何，没有正式贴图，不是游戏截图。', 32, 1704);
+  return [c, g];
+}
+window.renderSheets = async () => {
+  const ROOM = [[9.8, 1.18, -1.6], [8.62, 0.4, 0.45], 40];
+  // ---- A
+  {
+    const [c, g] = sheet('铸铁箱式炉 · 方案 A：老式长箱（门在东端）', '森林开局 B 溪谷老宅 · M2 F1 柴炉 · 2026-10-13');
+    setup('A', {open: 0, lit: true}); let cam = look(...ROOM); let v = shoot(1184, 790, cam);
+    let vg = v.getContext('2d');
+    callout(vg, cam, 1184, 790, [8.80, 0.567, 0.46], 70, -90, '煮锅盖：放水壶、锅');
+    callout(vg, cam, 1184, 790, [9.04, 0.345, 0.46], 90, 40, '炉门在东端，门上旋转风门');
+    callout(vg, cam, 1184, 790, [8.5, 0.6, 0.5], -60, -150, '15 cm 烟口，接现有烟管');
+    callout(vg, cam, 1184, 790, [9.25, 0.85, 0.895], -30, -50, '隔热钢板（离墙 2.5 cm）');
+    g.drawImage(v, 16, 106); caption(g, 32, 122, '起居室里，生着火、炉门关着');
+    setup('A', {open: 1.9, lit: true}); cam = look([10.0, 0.85, 0.1], [8.85, 0.3, 0.47], 42); v = shoot(1184, 790, cam);
+    vg = v.getContext('2d');
+    callout(vg, cam, 1184, 790, [8.80, 0.27, 0.45], -120, 160, '木柴顺长放进去，最长约 55 cm');
+    callout(vg, cam, 1184, 790, [9.06, 0.152, 0.46], 60, 70, '接灰沿：掏灰、掉火星接住');
+    callout(vg, cam, 1184, 790, [8.85, 0.33, 0.586], -120, -170, '里面一圈耐火砖');
+    g.drawImage(v, 1200, 106); caption(g, 1216, 122, '开门：看得见炉膛和火');
+    setup('A', {open: 0, lit: false, room: false});
+    let w = 780, h = 700, oc = ortho('front', [8.67, 0.38, 0.46], 0.92, w, h); v = shoot(w, h, oc); vg = v.getContext('2d');
+    dim(vg, oc, w, h, [8.32, 0.53, 0.30], [9.02, 0.53, 0.30], 0, -150, '炉身 70 cm');
+    dim(vg, oc, w, h, [8.31, 0.0, 0.30], [9.10, 0.0, 0.30], 0, 46, '含接灰沿 79 cm');
+    dim(vg, oc, w, h, [9.03, 0.0, 0.30], [9.03, 0.56, 0.30], 90, 0, '56');
+    dim(vg, oc, w, h, [8.42, 0.0, 0.30], [8.42, 0.62, 0.30], -120, 0, '烟口 62');
+    g.drawImage(v, 16, 912); caption(g, 32, 928, '正面（从屋里看）');
+    oc = ortho('end', [8.6, 0.38, 0.46], 0.92, w, h); v = shoot(w, h, oc); vg = v.getContext('2d');
+    dim(vg, oc, w, h, [9.02, 0.53, 0.30], [9.02, 0.53, 0.62], 0, -150, '宽 32 cm');
+    dim(vg, oc, w, h, [9.03, 0.24, 0.34], [9.03, 0.45, 0.34], -120, 0, '门 24 × 21');
+    dim(vg, oc, w, h, [9.0, 0.0, 0.62], [9.0, 0.15, 0.62], 60, 0, '腿 15');
+    g.drawImage(v, 812, 912); caption(g, 828, 928, '东端（炉门这一头）');
+    notes(g, 1608, 912, 776, '方案 A 要点', [
+      '!参照：19 世纪起北美木屋、学校、小站常见的长方箱炉；四条铸铁腿，平顶，门在一端，木柴顺长塞进去。',
+      '',
+      '尺寸：炉身 70 × 32 × 38 cm，加腿高 56 cm，约 90 kg。',
+      '炉面一个煮锅盖（Ø 18 cm），旁边的平面也能放锅。',
+      '门上旋转风门调进风；镍色弹簧把手不烫手；烟管上有风门挡板。',
+      '',
+      '!放得下：长边贴墙，烟口正在格子中间，接现有 15 cm 烟管；现在三格宽的石炉台不用改，门前那格是石头。',
+      '',
+      '安全距离：炉背到原木只有 31 cm（不加防护要 91 cm），所以墙上挂一块隔热钢板：离墙 2.5 cm、上下留缝通风，降到 30 cm 就合规。',
+      '炉台建议换成平整石板（图里是示意，新方块）。',
+    ]);
+    await save(c, 'm2_2_stove_A.png');
+  }
+  // ---- B
+  {
+    const [c, g] = sheet('铸铁箱式炉 · 方案 B：紧凑立箱（门朝屋里）', '森林开局 B 溪谷老宅 · M2 F1 柴炉 · 2026-10-13');
+    setup('B', {open: 0, lit: true}); let cam = look(...ROOM); let v = shoot(1184, 790, cam);
+    let vg = v.getContext('2d');
+    callout(vg, cam, 1184, 790, [8.62, 0.64, 0.30], 90, -110, '整块平炉面，四周有挡边');
+    callout(vg, cam, 1184, 790, [8.5, 0.38, 0.10], 120, 60, '炉门正对椅子');
+    callout(vg, cam, 1184, 790, [8.5, 0.085, 0.11], 80, 110, '接灰抽屉');
+    callout(vg, cam, 1184, 790, [9.25, 0.85, 0.895], -30, -50, '隔热钢板（离墙 2.5 cm）');
+    g.drawImage(v, 16, 106); caption(g, 32, 122, '起居室里，生着火、炉门关着');
+    setup('B', {open: 1.9, lit: true}); cam = look([8.85, 0.86, -0.85], [8.5, 0.36, 0.36], 42); v = shoot(1184, 790, cam);
+    vg = v.getContext('2d');
+    callout(vg, cam, 1184, 790, [8.5, 0.27, 0.40], -170, -140, '木柴从前往后放，最长约 40 cm');
+    callout(vg, cam, 1184, 790, [8.38, 0.36, 0.45], -150, 140, '两侧和后面是耐火砖');
+    g.drawImage(v, 1200, 106); caption(g, 1216, 122, '开门：看得见炉膛和火');
+    setup('B', {open: 0, lit: false, room: false});
+    let w = 780, h = 700, oc = ortho('front', [8.5, 0.4, 0.37], 0.92, w, h); v = shoot(w, h, oc); vg = v.getContext('2d');
+    dim(vg, oc, w, h, [8.32, 0.64, 0.12], [8.68, 0.64, 0.12], 0, -110, '宽 36 cm');
+    dim(vg, oc, w, h, [8.69, 0.0, 0.12], [8.69, 0.635, 0.12], 80, 0, '64');
+    dim(vg, oc, w, h, [8.36, 0.0, 0.12], [8.36, 0.695, 0.12], -120, 0, '烟口 70');
+    dim(vg, oc, w, h, [8.365, 0.255, 0.10], [8.635, 0.255, 0.10], 0, 215, '门 27 × 23');
+    g.drawImage(v, 16, 912); caption(g, 32, 928, '正面（从屋里看）');
+    oc = ortho('end', [8.6, 0.4, 0.37], 0.92, w, h); v = shoot(w, h, oc); vg = v.getContext('2d');
+    dim(vg, oc, w, h, [8.68, 0.64, 0.12], [8.68, 0.64, 0.62], 0, -110, '深 50 cm');
+    dim(vg, oc, w, h, [8.68, 0.0, 0.62], [8.68, 0.0, 0.93], 0, 30, '离原木 31');
+    g.drawImage(v, 812, 912); caption(g, 828, 928, '侧面');
+    notes(g, 1608, 912, 776, '方案 B 要点', [
+      '!参照：20 世纪常见的小型铸铁立式箱炉；门开在正面，下面接灰抽屉，顶上整块平炉面。',
+      '',
+      '尺寸：36 × 50 cm，高 64 cm，约 100 kg。',
+      '坐在炉边椅子上正对炉门，开门看火最直接。',
+      '门上旋转风门、弹簧把手、烟管风门挡板同 A。',
+      '',
+      '!要改炉台：门朝屋里，门前要 45 cm 石头，所以石炉台要往前加一排（3 × 2 格）。',
+      '',
+      '安全距离同 A：炉背离原木 31 cm，墙上要隔热钢板。',
+      '炉膛比 A 短，木柴要劈短（40 cm）。',
+    ]);
+    await save(c, 'm2_2_stove_B.png');
+  }
+  // ---- side by side in the room
+  {
+    const c = document.createElement('canvas'); c.width = 2400; c.height = 900; const g = c.getContext('2d');
+    g.fillStyle = '#26211c'; g.fillRect(0, 0, 2400, 900);
+    const cam = look([9.4, 1.55, -4.4], [8.7, 0.5, 0.2], 42);
+    setup('A', {open: 0, lit: true}); g.drawImage(shoot(1184, 790, cam), 16, 94);
+    setup('B', {open: 0, lit: true}); g.drawImage(shoot(1184, 790, cam), 1200, 94);
+    g.fillStyle = '#f2ece2'; g.font = `bold 36px ${FONT}`; g.fillText('两个方案放进起居室（从炉边椅子后面看）', 32, 60);
+    caption(g, 32, 110, 'A 老式长箱：门在东端，炉台不动'); caption(g, 1216, 110, 'B 紧凑立箱：门朝屋里，炉台加一排');
+    await save(c, 'm2_2_stove_compare.png');
+  }
+  return 'saved';
+};
+window.setup = setup; window.look = look;
+buildContext().then(() => setTimeout(() => { setup('A'); renderer.setSize(1200, 800); renderer.render(scene, look([10.05, 1.42, -2.55], [8.62, 0.42, 0.42], 40)); document.title = 'ready'; }, 1500))
+  .catch(e => { document.title = 'error ' + e.message; console.error(e); });
+</script>
+</body></html>

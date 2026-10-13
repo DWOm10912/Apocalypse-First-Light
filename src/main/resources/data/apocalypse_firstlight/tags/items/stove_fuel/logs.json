@@ -1,0 +1,34 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:logs_that_burn",
+    {
+      "id": "apocalypse_firstlight:white_oak_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_log",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:firewood_stack",
+      "required": false
+    }
+  ]
+}

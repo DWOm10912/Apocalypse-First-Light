@@ -4,7 +4,8 @@
 // board and batten, fieldstone, stove pipe, firewood; plus the user's extras (2026-10-12): a root cellar, an outhouse and a
 // woven wire garden. No antenna, no power line. M2.1 (2026-10-13): the Wood Furniture V1 pieces (docs/models/wood_furniture_v1.md)
 // replace the M0 stand-ins for the chairs, tables, kitchen counters, sink and gun rack; the other M0 stand-ins stay until
-// their M2 pieces exist.
+// their M2 pieces exist. M2.2 (2026-10-13): the Box Stove V1 (docs/models/box_stove_v1.md) replaces the steel block stand-in,
+// with a heat shield on the back wall either side of it and a flagstone hearth pad under it.
 // Paper frame as M0: X east, Z south (the front faces +Z), k = layer above grade (k 0 = the first air layer: plinth, floors,
 // porch deck; k -1 = the grade surface). Plot 37 x 13 x 26: x = X + 10 (X -10..26), y = k + 3 (k -3..9), z = Z + 10
 // (Z -10..15), front SOUTH, no rotation. The site is graded: k -1 grass, k -3..-2 dirt, everything else in the plot is air
@@ -19,6 +20,7 @@
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs slices 2 5 -> redo those Z slices (clear + their cells), e.g. after an animal stopped one
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs region 3 15 -10 -2 -> redo one X / Z box only (M1.3: the root cellar)
 //   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs furniture  -> M2.1 in a built house: only the Wood Furniture cells and fixtures
+//   node tools/afl_minecraft_mcp/forest_home_b_m1.mjs stove      -> M2.2 in a built house: only the hearth, the shields and the stove
 import {BridgeClient} from './bridge_client.mjs';
 import {mkdir, writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -32,7 +34,7 @@ const A = id => 'apocalypse_firstlight:' + id, M = id => 'minecraft:' + id;
 export const P = {
   LOG: axis => A(`white_oak_log_wall[axis=${axis}]`),
   BB_BROWN: A('brown_board_and_batten'), BB_GREY: A('grey_board_and_batten'),
-  STONE: A('fieldstone'),
+  STONE: A('fieldstone'), FLAG: A('flagstone'),
   FLOOR: A('white_oak_planks'), PARTITION: A('white_oak_planks'),
   ROOF: (mat, facing, shape, beam = false) => A(`${mat}[beam=${beam},facing=${facing},shape=${shape}]`),
   POST: A('white_oak_porch_post'), RAIL: axis => A(`white_oak_porch_railing[axis=${axis}]`),
@@ -46,8 +48,10 @@ export const P = {
   // Wood Furniture V1 (M2.1): chairs face where the sitter looks; a table lists the tables it joins
   CHAIR: facing => A(`wooden_chair[facing=${facing}]`),
   TABLE: (n = false, e = false, s = false, w = false) => A(`wooden_table[east=${e},north=${n},south=${s},west=${w}]`),
-  // M0 interior stand-ins (later M2 pieces replace them): the cold box, the stove, the bed
-  COLD_BOX: A('white_oak_planks'), STOVE: A('steel_block'),
+  // Box Stove V1 (M2.2): the shield faces away from the wall it hangs on
+  SHIELD: facing => A(`stove_heat_shield[facing=${facing}]`),
+  // M0 interior stand-ins (later M2 pieces replace them): the cold box, the bed
+  COLD_BOX: A('white_oak_planks'),
   BED: M('smooth_quartz_slab[type=bottom,waterlogged=false]'),
 };
 const GREEN = 'green_standing_seam_roof', GALV = 'galvanized_corrugated_roof', RUST = 'rusty_corrugated_roof';
@@ -156,12 +160,15 @@ export function recipe() {
   put(11, 1, 11, P.FIREWOOD('z')); put(11, 1, 12, P.FIREWOOD('z'));   // firewood on the porch
 
   // ---------------- interior stand-ins (M0) ----------------
-  fill(7, 0, 1, 9, 0, 1, P.STONE);                         // hearth pad
-  put(8, 1, 1, P.STOVE, 'stove');
+  // M2.2: the box stove on a flagstone hearth pad, long front to the room, its loading door at the east end (it swings into
+  // (9, 1, 1), 1 m of hearth in front of it); a heat shield 2 m high either side on the back wall carries its sheet on
+  // behind the stove and the first pipe section
+  fill(7, 0, 1, 9, 0, 1, P.FLAG, 'hearth');
+  fixtures.push({tool: 'place_fixture', block_id: A('box_stove'), at: [8, 1, 1], facing: 'south'});
+  for (const X of [7, 9]) fill(X, 1, 1, X, 2, 1, P.SHIELD('south'), 'shield');
   del(8, 4, 1);                                            // through the attic floor
   fill(8, 2, 1, 8, 5, 1, P.PIPE, 'pipe');                  // up to the roof cell (8, 6, 1): a boot round it
   fill(8, 7, 1, 8, 8, 1, P.PIPE, 'pipe');                  // above the roof, rain cap on top
-  storage(9, 1, 1, 'barrel', 'up');
   fill(10, 1, 1, 11, 2, 1, M('bookshelf'));
   del(6, 4, 3); fill(6, 1, 3, 6, 4, 3, M('ladder[facing=east,waterlogged=false]'), 'ladder');
   // by the stove: two chairs facing it (armchairs later), the lamp stand between them (stand-in)
@@ -266,13 +273,15 @@ export function recipe() {
 export function checks({cells, tags, fixtures}) {
   const get = (X, k, Z) => cells.get(X + ',' + k + ',' + Z) || null, out = [];
   const isRoof = s => s && /_roof\[/.test(s);
+  const stoveAt = new Set(fixtures.filter(f => f.block_id.endsWith(':box_stove')).map(f => f.at.join(',')));
   for (const [kk, s] of cells) {
     const [X, k, Z] = kk.split(',').map(Number);
     if (s.includes('half=lower') && !(get(X, k + 1, Z) || '').includes('half=upper')) out.push('door without upper ' + kk);
     if (s.includes('half=upper') && !(get(X, k - 1, Z) || '').includes('half=lower')) out.push('door without lower ' + kk);
     if (s.includes('_door[') && s.includes('half=lower') && !get(X, k - 1, Z)) out.push('door on air ' + kk);
     if (s === 'apocalypse_firstlight:white_oak_porch_post' && k === 0 && !get(X, -1, Z)) out.push('post on air ' + kk);
-    if (s.includes('stove_pipe') && !(get(X, k - 1, Z) || '').match(/stove_pipe|steel_block|_roof\[/)) out.push('pipe unsupported ' + kk);
+    if (s.includes('stove_pipe') && !stoveAt.has([X, k - 1, Z].join(',')) && !(get(X, k - 1, Z) || '').match(/stove_pipe|_roof\[/)) out.push('pipe unsupported ' + kk);
+    if (s.includes('stove_heat_shield[facing=south]') && !get(X, k, Z - 1)) out.push('shield without a wall ' + kk);
   }
   // roof cells: every one needs a same-facing neighbour chain or an eave; count shapes and materials
   const roofs = {};
@@ -421,6 +430,30 @@ async function furniture() {
   console.log(out.join(String.fromCharCode(10)));
 }
 
+/**
+ * M2.2 (2026-10-13): swap the M0 stove stand-in of a built house for Box Stove V1 without touching anything else: the
+ * hearth pad becomes flagstone, the shields go on the back wall (one over the old barrel's cell), the stove pipe cells are
+ * written again (in "house test" the M0 stove and the pipe inside the house were already gone, docs/worldgen/
+ * forest_home_b_m1_exterior.md), the steel block's cell is cleared and the stove placed as a fixture (it keeps a block entity).
+ */
+async function stove() {
+  const c = new BridgeClient('./run');
+  await c.call('minecraft_status'); const info = await c.call('authoring_info');
+  if (info.id !== ID) throw Error('PLOT_MISMATCH ' + JSON.stringify(info));
+  const o = info.min, world = ([x, y, z]) => [o[0] + x, o[1] + y, o[2] + z], out = [];
+  const r = recipe(), fx = r.fixtures.filter(f => f.block_id.endsWith(':box_stove')), ops = [];
+  for (const f of fx) { const w = world(plotOf(f.at)); ops.push({min: w, max: w, block: M('air')}); }
+  for (const [kk, s] of r.cells) if (['hearth', 'shield', 'pipe'].includes(r.tags.get(kk))) { const at = world(plotOf(kk.split(',').map(Number))); ops.push({min: at, max: at, block: s}); }
+  try { await c.call('we_batch_set', {target: 'AUTHORING_SESSION', operations: ops}); out.push('ok cells (' + ops.length + ' ops)'); }
+  catch (e) { out.push('FAIL cells ' + String(e.message || e)); }
+  for (const f of fx) {
+    const pos = world(plotOf(f.at));
+    try { await c.call(f.tool, {block_id: f.block_id, pos, facing: f.facing}); out.push('ok ' + f.block_id.replace(/^.*:/, '') + ' ' + pos); }
+    catch (e) { out.push('FAIL ' + f.block_id.replace(/^.*:/, '') + ' ' + pos + ' ' + String(e.message || e)); }
+  }
+  console.log(out.join(String.fromCharCode(10)));
+}
+
 const direct = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
 const mode = direct ? process.argv[2] : null;
 if (mode === 'plan') await plan();
@@ -429,4 +462,5 @@ else if (mode === 'fixtures') await placeFixtures();
 else if (mode === 'slices') await rebuildSlices(process.argv.slice(3).map(Number));
 else if (mode === 'region') await rebuildRegion(...process.argv.slice(3, 7).map(Number));
 else if (mode === 'furniture') await furniture();
-else if (direct) console.log('modes: plan | build | fixtures | slices <Z..> | region <xa> <xb> <za> <zb> | furniture');
+else if (mode === 'stove') await stove();
+else if (direct) console.log('modes: plan | build | fixtures | slices <Z..> | region <xa> <xb> <za> <zb> | furniture | stove');

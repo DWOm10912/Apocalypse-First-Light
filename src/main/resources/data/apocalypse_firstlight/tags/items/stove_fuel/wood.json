@@ -1,0 +1,88 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:planks",
+    "#minecraft:wooden_slabs",
+    "#minecraft:wooden_stairs",
+    {
+      "id": "apocalypse_firstlight:white_oak_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_planks",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_rounded_timber",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_beam",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_stairs",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_oak_slab",
+      "required": false
+    }
+  ]
+}

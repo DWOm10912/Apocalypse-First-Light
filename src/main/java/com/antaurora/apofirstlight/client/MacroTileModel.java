@@ -54,6 +54,10 @@ import java.util.function.Function;
  * <p>
  * Model JSON: {@code {"loader": "apocalypse_firstlight:macro_tile", "columns": 3, "rows": 2, "textures": {"particle",
  * "tile0", ...}}}.
+ * <p>
+ * Box Stove V1 (docs/models/box_stove_v1.md, 2026-10-13): an optional separate top, {@code "top_columns"} x
+ * {@code "top_rows"} tiles {@code top0 ..} for the upward face only (the flagstone: slabs on top, the fieldstone's rubble on
+ * its sides and bottom).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class MacroTileModel {
@@ -90,38 +94,46 @@ public final class MacroTileModel {
         @Override
         public Geometry read(JsonObject json, JsonDeserializationContext context) throws JsonParseException {
             int columns = GsonHelper.getAsInt(json, "columns"), rows = GsonHelper.getAsInt(json, "rows");
-            if (columns < 1 || rows < 1 || columns * rows > 16) throw new JsonParseException("macro_tile: 1..16 tiles");
-            return new Geometry(columns, rows);
+            int topColumns = GsonHelper.getAsInt(json, "top_columns", 0), topRows = GsonHelper.getAsInt(json, "top_rows", 0);
+            if (columns < 1 || rows < 1 || columns * rows > 16 || topColumns * topRows > 16 || topColumns < 0 || topRows < 0)
+                throw new JsonParseException("macro_tile: 1..16 tiles");
+            return new Geometry(columns, rows, topColumns, topRows);
         }
     }
 
-    private record Geometry(int columns, int rows) implements IUnbakedGeometry<Geometry> {
+    /** topColumns x topRows 0: the upward face shows the side tiles too. */
+    private record Geometry(int columns, int rows, int topColumns, int topRows) implements IUnbakedGeometry<Geometry> {
         @Override
         public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> sprites,
                                ModelState state, ItemOverrides overrides, ResourceLocation location) {
-            int n = columns * rows;
-            BakedQuad[][] quads = new BakedQuad[6][n];
-            for (int t = 0; t < n; t++) {
-                String name = "tile" + t;
-                if (!context.hasMaterial(name)) throw new JsonParseException(location + ": macro_tile needs the texture \"" + name + "\"");
-                TextureAtlasSprite sprite = sprites.apply(context.getMaterial(name));
-                for (Direction d : Direction.values()) quads[d.ordinal()][t] = BAKERY.bakeQuad(new Vector3f(0, 0, 0), new Vector3f(16, 16, 16),
-                        new BlockElementFace(d, -1, "#" + name, new BlockFaceUV(new float[]{0, 0, 16, 16}, 0)),
-                        sprite, d, BlockModelRotation.X0_Y0, null, true, location);
+            int n = columns * rows, nt = topColumns * topRows;
+            BakedQuad[][] quads = new BakedQuad[6][Math.max(n, nt)];
+            for (Direction d : Direction.values()) {
+                boolean top = d == Direction.UP && nt > 0;
+                for (int t = 0; t < (top ? nt : n); t++) {
+                    String name = (top ? "top" : "tile") + t;
+                    if (!context.hasMaterial(name)) throw new JsonParseException(location + ": macro_tile needs the texture \"" + name + "\"");
+                    quads[d.ordinal()][t] = BAKERY.bakeQuad(new Vector3f(0, 0, 0), new Vector3f(16, 16, 16),
+                            new BlockElementFace(d, -1, "#" + name, new BlockFaceUV(new float[]{0, 0, 16, 16}, 0)),
+                            sprites.apply(context.getMaterial(name)), d, BlockModelRotation.X0_Y0, null, true, location);
+                }
             }
-            return new Baked(columns, rows, quads, sprites.apply(context.getMaterial("particle")), context.getTransforms());
+            return new Baked(columns, rows, nt > 0 ? topColumns : columns, nt > 0 ? topRows : rows, quads, sprites.apply(context.getMaterial("particle")),
+                    context.getTransforms());
         }
     }
 
     private static final class Baked implements IDynamicBakedModel {
-        private final int columns, rows;
+        private final int columns, rows, topColumns, topRows;
         private final BakedQuad[][] quads;
         private final TextureAtlasSprite particle;
         private final ItemTransforms transforms;
 
-        Baked(int columns, int rows, BakedQuad[][] quads, TextureAtlasSprite particle, ItemTransforms transforms) {
+        Baked(int columns, int rows, int topColumns, int topRows, BakedQuad[][] quads, TextureAtlasSprite particle, ItemTransforms transforms) {
             this.columns = columns;
             this.rows = rows;
+            this.topColumns = topColumns;
+            this.topRows = topRows;
             this.quads = quads;
             this.particle = particle;
             this.transforms = transforms;
@@ -131,7 +143,8 @@ public final class MacroTileModel {
         public @NotNull ModelData getModelData(@NotNull BlockAndTintGetter level, @NotNull BlockPos pos, @NotNull BlockState state,
                                                @NotNull ModelData data) {
             int packed = 0;
-            for (Direction d : Direction.values()) packed |= tile(d, pos, columns, rows) << 4 * d.ordinal();
+            for (Direction d : Direction.values())
+                packed |= (d == Direction.UP ? tile(d, pos, topColumns, topRows) : tile(d, pos, columns, rows)) << 4 * d.ordinal();
             return data.derive().with(TILES, packed).build();
         }
 

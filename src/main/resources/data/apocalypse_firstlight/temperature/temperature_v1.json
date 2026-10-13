@@ -67,6 +67,7 @@
     { "block": "apocalypse_firstlight:thermal_generator", "strength": 12, "radius": 5, "lit": true },
     { "block": "apocalypse_firstlight:crusher", "strength": 5, "radius": 3, "lit": true },
     { "block": "apocalypse_firstlight:compressor", "strength": 5, "radius": 3, "lit": true },
+    { "block": "apocalypse_firstlight:box_stove", "strength": 22, "radius": 6, "lit": true },
     { "block": "minecraft:snow", "strength": -1, "radius": 2 },
     { "block": "minecraft:snow_block", "strength": -2, "radius": 2 },
     { "block": "minecraft:powder_snow", "strength": -2, "radius": 2 },

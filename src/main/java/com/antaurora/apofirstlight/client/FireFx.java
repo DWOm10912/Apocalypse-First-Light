@@ -13,7 +13,10 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -103,6 +106,21 @@ public final class FireFx {
 
     static int sparkCount() {
         return SPARKS.size() + STREAKS.size();
+    }
+
+    /**
+     * Whether x, y, z lies inside a block's collision boxes, not merely in a cell that has some (2026-10-13, Box Stove V1:
+     * the stove's smoke leaves round a rain cap inside the top pipe's cell; with the whole cell counted as a ceiling it
+     * never rose). Smoke and sparks pass the open part of a pipe, fence or slab cell and stop at its real surfaces.
+     */
+    private static boolean solid(ClientLevel level, BlockPos.MutableBlockPos at, double x, double y, double z) {
+        at.set(x, y, z);
+        VoxelShape shape = level.getBlockState(at).getCollisionShape(level, at);
+        if (shape.isEmpty()) return false;
+        if (shape == Shapes.block()) return true;
+        double lx = x - at.getX(), ly = y - at.getY(), lz = z - at.getZ();
+        for (AABB box : shape.toAabbs()) if (box.contains(lx, ly, lz)) return true;
+        return false;
     }
 
     /** False now and then at reduced particle settings (decreased: half, minimal: one in five). */
@@ -234,7 +252,7 @@ public final class FireFx {
             p.vx = p.vx * 0.96 + windX + (r.nextDouble() - 0.5) * 0.002;
             p.vz = p.vz * 0.96 + windZ + (r.nextDouble() - 0.5) * 0.002;
             p.vy = p.vy * 0.975 + 0.0012;   // buoyant: settles at about 0.05 a tick
-            if (p.vy > 0 && !level.getBlockState(above.set(p.x, p.y + p.vy + 0.2, p.z)).getCollisionShape(level, above).isEmpty()) {
+            if (p.vy > 0 && solid(level, above, p.x, p.y + p.vy + 0.2, p.z)) {
                 p.vy = 0;   // under a ceiling: it spreads instead
                 p.vx += (r.nextDouble() - 0.5) * 0.01;
                 p.vz += (r.nextDouble() - 0.5) * 0.01;
@@ -269,7 +287,7 @@ public final class FireFx {
             s.vx *= 0.92;
             s.vz *= 0.92;
             s.vy = s.vy * 0.92 - 0.03;
-            if (!level.getBlockState(above.set(s.x + s.vx, s.y + s.vy, s.z + s.vz)).getCollisionShape(level, above).isEmpty()) {
+            if (solid(level, above, s.x + s.vx, s.y + s.vy, s.z + s.vz)) {
                 s.vy = Math.abs(s.vy) * 0.35;
                 s.vx *= 0.6;
                 s.vz *= 0.6;

@@ -1,0 +1,30 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:stick",
+    {
+      "id": "apocalypse_firstlight:white_oak_branch",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:white_pine_branch",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_oak_branch",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:shagbark_hickory_branch",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:red_maple_branch",
+      "required": false
+    },
+    {
+      "id": "apocalypse_firstlight:eastern_hemlock_branch",
+      "required": false
+    }
+  ]
+}

@@ -98,7 +98,8 @@ public final class ClientFuelStains {
     @SubscribeEvent
     public static void render(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES
-                || FuelStainIndex.CLIENT.isEmpty() && BulletHoles.isEmpty() && Scorches.isEmpty() && FireBlockFlames.isEmpty() && FireFx.isEmpty() && FuelCanPourJets.isEmpty()) return;
+                || FuelStainIndex.CLIENT.isEmpty() && BulletHoles.isEmpty() && Scorches.isEmpty() && FireBlockFlames.isEmpty() && FireFx.isEmpty() && FuelCanPourJets.isEmpty()
+                && BoxStoveFire.isEmpty()) return;
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         if (level == null) return;
@@ -143,10 +144,12 @@ public final class ClientFuelStains {
         FuelFlames.render(pose, buffers, camera, now);   // last: they add light onto everything behind them
         ClientFuelLeaks.renderFlames(buffers.getBuffer(LiquidRenderTypes.FLAME), pose, camera, now);
         FireBlockFlames.render(pose, buffers, level, camera, now);   // vanilla fire blocks, in the same flames
+        BoxStoveFire.renderFlames(pose, buffers, level, camera, now);   // and the fire in an open box stove
         buffers.endBatch(LiquidRenderTypes.FLAME);
         FireStats.lap(FireStats.FLAMES);
         FuelFlames.renderGlows(pose, buffers, camera, now);   // their glow on the floor
         FireBlockFlames.renderGlows(pose, buffers, level, camera, now);
+        BoxStoveFire.renderGlows(pose, buffers, level, camera, now);
         FireFx.renderSparks(pose, buffers, event.getCamera(), event.getPartialTick());
         buffers.endBatch(LiquidRenderTypes.GLOW);
         FireFx.renderStreaks(pose, buffers, event.getCamera(), event.getPartialTick());   // sparks off steel

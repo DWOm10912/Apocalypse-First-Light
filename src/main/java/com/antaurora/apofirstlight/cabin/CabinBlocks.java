@@ -70,7 +70,7 @@ public final class CabinBlocks {
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
-            "wooden_gun_rack"};
+            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone"};
 
     private CabinBlocks() {}
 
@@ -115,6 +115,11 @@ public final class CabinBlocks {
             case "wooden_kitchen_counter" -> new WoodFurniture.Counter(false, wood(MapColor.WOOD, 2.5F).noOcclusion());
             case "wooden_sink_counter" -> new WoodFurniture.Counter(true, wood(MapColor.WOOD, 2.5F).noOcclusion());
             case "wooden_gun_rack" -> new WoodFurniture.GunRack(wood(MapColor.WOOD, 2.0F).noOcclusion());
+            // Box Stove V1 (BoxStove): the cast-iron box stove, its heat shield, the hearth's flagstone
+            case "box_stove" -> new BoxStove.Stove(metal(MapColor.COLOR_BLACK, SoundType.METAL).strength(3.0F, 6.0F).noOcclusion().lightLevel(BoxStove.Stove::light));
+            case "stove_heat_shield" -> new BoxStove.HeatShield(metal(MapColor.METAL, SoundType.METAL).noOcclusion());
+            case "flagstone" -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM)
+                    .strength(2.0F, 6.0F).requiresCorrectToolForDrops().sound(SoundType.STONE));
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -144,6 +149,7 @@ public final class CabinBlocks {
             }
         });
         WoodFurniture.register(event);
+        BoxStove.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */
@@ -750,11 +756,16 @@ public final class CabinBlocks {
         public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
             BlockState up = level.getBlockState(pos.above());
             boolean on = up.getBlock() instanceof StovePipe || up.getBlock() instanceof Roof && up.getValue(Roof.SHAPE) != RoofShape.RIDGE;
-            return on ? 0 : 1;
+            return (on ? 0 : 1) | BoxStove.pipePanel(level, pos) << 1;
         }
 
+        /** Flags: bit 0 the rain cap (nothing above takes the pipe on); Box Stove V1: bits 1.. a heat shield's sheet behind it. */
         @Override
-        public void cabinPieces(BlockState state, int flags, Sink sink) { sink.add(flags == 0 ? "pipe/stove_pipe" : "pipe/stove_pipe_cap", 0); }
+        public void cabinPieces(BlockState state, int flags, Sink sink) {
+            sink.add((flags & 1) == 0 ? "pipe/stove_pipe" : "pipe/stove_pipe_cap", 0);
+            int panel = flags >> 1;
+            if ((panel & 1) != 0) sink.add("shield/panel_" + (panel >> 3 & 15), panel >> 1 & 3);
+        }
     }
 
     // ------------------------------------------------------------------------------------------- JSON blocks

@@ -123,6 +123,7 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 | AFL 工业熔炉 `industrial_furnace` | 14 | 5 | 点燃 |
 | AFL 合金炉 `alloy_furnace`、热能发电机 `thermal_generator` | 12 | 5 | 点燃 |
 | AFL 粉碎机 `crusher`、压缩机 `compressor` | 5 | 3 | 运转（lit） |
+| AFL 铸铁箱式炉 `box_stove`（[Box Stove V1](../models/box_stove_v1.md)，2026-10-13，没进游戏验证） | 22 | 6 | 点燃 |
 | 雪层 | −1 | 2 | |
 | 雪块、细雪、冰 | −2 | 2 | |
 | 浮冰 | −3 | 3 | |

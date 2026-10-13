@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/stove/cast_iron"
+  },
+  "item": [
+    [
+      "stove/body",
+      0
+    ],
+    [
+      "stove/door_closed",
+      0
+    ]
+  ]
+}
