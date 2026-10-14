@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.authoring;
 
+import com.antaurora.apofirstlight.wiring.WiringTemplate;
 import com.google.gson.GsonBuilder;
 import net.minecraft.core.*;
 import net.minecraft.nbt.*;
@@ -15,8 +16,9 @@ import java.util.*;
 /** Server-thread-only, bounded developer operations. No worldgen hook or permanent chunk load. */
 public final class BuildingAuthoringService {
     private BuildingAuthoringService() {}
-    public record Capture(StructureTemplate template, CompoundTag nbt, String digest, int blocks, ExportState.Summary state) {}
-    public record Exported(Path nbt, ExportState.Summary state) {}
+    /** wiring: what the panels carry of the hidden wiring (Building Wiring V1 phase 6, wiring/WiringTemplate#pack). */
+    public record Capture(StructureTemplate template, CompoundTag nbt, String digest, int blocks, ExportState.Summary state, WiringTemplate.Report wiring) {}
+    public record Exported(Path nbt, ExportState.Summary state, WiringTemplate.Report wiring) {}
     public static void accessible(ServerLevel level, BuildingAuthoringSession s) {
         if(!level.dimension().equals(s.dimension)) throw new IllegalArgumentException("Return to session dimension: "+s.dimension.location());
         if(s.origin.getY()<level.getMinBuildHeight()||s.max().getY()>=level.getMaxBuildHeight()
@@ -73,10 +75,12 @@ public final class BuildingAuthoringService {
         CompoundTag nbt=t.save(new CompoundTag());
         // the exported state (no power, no fuel but fill markers, nothing in progress), on the copy only; the template follows it
         var state=ExportState.normalize(nbt);
+        // the hidden wiring lives in the chunks: packed into the panels' copies so the template carries it (wiring phase 6)
+        var wiring=WiringTemplate.pack(level,s.origin,new Vec3i(m.width(),m.height(),m.depth()),nbt);
         t=new StructureTemplate();t.load(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK),nbt);
         String digest=digest(nbt)+m.json().toString();
         if(!Objects.equals(s.approvedDigest,digest))s.state=blocks==0?BuildingAuthoringSession.State.EMPTY:BuildingAuthoringSession.State.DRAFT;
-        return new Capture(t,nbt,digest,blocks,state);
+        return new Capture(t,nbt,digest,blocks,state,wiring);
     }
     private static String digest(CompoundTag tag) throws IOException {
         try {
@@ -108,7 +112,7 @@ public final class BuildingAuthoringService {
             Files.writeString(temp.resolve("metadata.json"),new GsonBuilder().setPrettyPrinting().create().toJson(s.metadata.json()));
             Files.move(temp.resolve("structure.nbt"),nbt);wroteNbt=true;
             Files.move(temp.resolve("metadata.json"),json);
-            s.state=BuildingAuthoringSession.State.EXPORTED;return new Exported(nbt,c.state());
+            s.state=BuildingAuthoringSession.State.EXPORTED;return new Exported(nbt,c.state(),c.wiring());
         }catch(IOException e){if(wroteNbt)Files.deleteIfExists(nbt);throw e;}
         finally {Files.deleteIfExists(temp.resolve("structure.nbt"));Files.deleteIfExists(temp.resolve("metadata.json"));Files.deleteIfExists(temp);}
     }

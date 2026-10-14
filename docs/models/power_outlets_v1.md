@@ -230,4 +230,4 @@
 
 ## 导出的建筑里（2026-10-09）
 
-插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱和发电机进线盒（2026-10-13）的 `Panel`；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。
+插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱和发电机进线盒（2026-10-13）的 `Panel`，还有配电箱打包的暗线 `PackedWiring`（2026-10-14，[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.4 节）；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

@@ -1,0 +1,19 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/cabin-roof-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_cabin_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                if (!log.exists() || !log.getText('UTF-8').contains('[AFL CABIN ROOF TEST] PASS')) {
+                    throw new GradleException('Cabin roof test did not pass')
+                }
+            }
+        }
+    }
+}

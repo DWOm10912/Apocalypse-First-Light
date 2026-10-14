@@ -701,6 +701,7 @@
   "jade.apocalypse_firstlight.distribution_panel.legacy": "Area supply",
   "jade.apocalypse_firstlight.distribution_panel.conflict": "Circuit %s cross-fed",
   "jade.apocalypse_firstlight.distribution_panel.partial": "Wiring unloaded",
+  "jade.apocalypse_firstlight.distribution_panel.packed": "Wiring pending",
   "jade.apocalypse_firstlight.wall_switch.on": "On",
   "jade.apocalypse_firstlight.wall_switch.off": "Off",
   "jade.apocalypse_firstlight.wall_switch.unwired": "Not wired",

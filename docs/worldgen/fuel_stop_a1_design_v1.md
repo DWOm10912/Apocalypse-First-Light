@@ -167,7 +167,7 @@
   - 导出：`authoring/ExportState` 在模板副本上做上面这些（不改世界），`validate`、`export` 会报出改了什么、还有几个亮着的 AFL 方块状态；
   - 灌油：`fluid/FuelFill`，标记 `AflFuelFill`，规则在 `data/apocalypse_firstlight/fuel_fills/`：地下油罐 20% 空、否则 5–40%；油桶油壶 50% 空、否则 10–100%（导出时就是空桶的，按汽油 7 : 柴油 3 选油，这个比例是我加的，表里没有）；便携发电机 50% 空、否则 1–8 L 柴油。油罐、油桶、发电机第一次在服务端加载时按世界种子和位置掷一次，然后删掉标记；
   - 潜油泵缓冲区和加油机管线导出时清空：有电才能加油，来电以后泵从罐里补满，等于"跟着油罐"；
-  - 插头：`worldgen/structure/AflBlockEntityProcessor` 按放置的旋转、镜像转换 `PlugHost`、插线板的 `Outlet`、电表箱的 `Panel`。以后城市生成器放 AFL 建筑时都要加上它；
+  - 插头：`worldgen/structure/AflBlockEntityProcessor` 按放置的旋转、镜像转换 `PlugHost`、插线板的 `Outlet`、电表箱的 `Panel`（2026-10-13 起还有发电机进线盒的 `Panel`；2026-10-14 起还有配电箱打包的暗线 `PackedWiring`，见 [建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.4 节，A1 的配电盘没有暗线，导出不变）。以后城市生成器放 AFL 建筑时都要加上它（`worldgen/structure/AflTemplatePlacer` 已经加上）；
   - 备用柴油机组（A1 没有）导出时只清空、停机，没有灌油规则。
 - 用户 2026-10-09："整栋建筑我查过了，没电，而且没有多余的东西"。
 - 地下油罐的旋转原来记作 P0，已经修好（`UndergroundFuelTankBlock#rotate`，GameTest `UndergroundFuelTankRotationGameTests`，见 [underground_fuel_tank_v1.md](../models/underground_fuel_tank_v1.md)）。

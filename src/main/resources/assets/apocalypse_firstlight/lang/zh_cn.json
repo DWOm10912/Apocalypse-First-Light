@@ -701,6 +701,7 @@
   "jade.apocalypse_firstlight.distribution_panel.legacy": "范围供电",
   "jade.apocalypse_firstlight.distribution_panel.conflict": "第 %s 路互连",
   "jade.apocalypse_firstlight.distribution_panel.partial": "线路未加载",
+  "jade.apocalypse_firstlight.distribution_panel.packed": "线路待展开",
   "jade.apocalypse_firstlight.wall_switch.on": "开",
   "jade.apocalypse_firstlight.wall_switch.off": "关",
   "jade.apocalypse_firstlight.wall_switch.unwired": "未接线",
