@@ -1,0 +1,8 @@
+r1: N=1408 domain 22.5 km; land 146.1 km2 (mainland 143.5 km2, bbox 14.4 x 13.8 km); farthest land 8984 m; ocean margin 2280 m
+federal scale 1.00: land bbox 22.0 x 17.1 km, farthest 11798 m -> N=1760 (28.2 km, 3.10 M cells, 1.56x r1)
+N 1.0 1760
+federal scale 1.30: land bbox 28.7 x 22.2 km, farthest 15338 m -> N=2208 (35.3 km, 4.88 M cells, 2.46x r1)
+N 1.3 2208
+federal scale 2.00: land bbox 44.1 x 34.1 km, farthest 23597 m -> N=3264 (52.2 km, 10.65 M cells, 5.37x r1)
+N 2.0 3264
+fits N=1408 with the r1 margin: federal scale <= 0.76 (mainland about 15.2 x 12.2 km)
