@@ -549,6 +549,14 @@
       "unit_mass_kg": 7.5,
       "estimated": true
     },
+    "apocalypse_firstlight:insulated_copper_wire": {
+      "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wiring_wrench": {
+      "unit_mass_kg": 0.35,
+      "estimated": true
+    },
     "apocalypse_firstlight:modern_office_chair": {
       "unit_mass_kg": 12,
       "estimated": true

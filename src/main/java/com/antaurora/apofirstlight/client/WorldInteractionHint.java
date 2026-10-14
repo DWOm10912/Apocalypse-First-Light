@@ -65,7 +65,8 @@ public final class WorldInteractionHint {
         if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
         Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
-        else if(!mc.player.isSpectator() && mc.hitResult instanceof BlockHitResult hit) {
+        // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
+        else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
             if(mc.player.isShiftKeyDown()) target=powerOutlets(mc,hit);
             if(target==null) target=vendingMachine(mc,hit);

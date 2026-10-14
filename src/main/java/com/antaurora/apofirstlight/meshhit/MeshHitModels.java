@@ -148,6 +148,7 @@ public final class MeshHitModels {
     @Nullable
     private static Shape own(BlockGetter level, BlockPos pos, BlockState state) {
         if (state.hasBlockEntity() && level.getBlockEntity(pos) instanceof AflAnimatedMeshHost host) return AnimatedMeshHits.shape(host);
+        if (CabinMeshHits.covers(state)) return CabinMeshHits.shape(level, pos, state);
         if (state.getBlock() instanceof MeshHitAssembled assembled)
             return ASSEMBLED.computeIfAbsent(List.copyOf(assembled.meshHitPieces(level, pos, state)), MeshHitModels::merged).orElse(null);
         if (state.getBlock() instanceof MeshHitProvider provider) {

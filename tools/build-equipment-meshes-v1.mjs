@@ -91,9 +91,52 @@ function wristThermometer() {
   anchor: [0, cy, 0]};
 }
 
+/**
+ * Wiring wrench (Building Wiring V1, 2026-10-13): an electrician's insulated combination wrench (references: VDE 1000 V
+ * dipped tools), open end at -X, box end at +X, both chrome-plated steel; the shank dipped in red insulation with yellow
+ * collars at its ends, flattened like a real dipped handle. Lies flat in X / Z; the heads 0.6 px thick, the neck runs
+ * 0.45 px into each end of the grip so the steel comes out of the dip's end face, never through its side.
+ */
+function wiringWrench() {
+  const B = 'wiring_wrench', T = 0.3, hn = 0.36, grip = 3.2, collar = 2.55, enter = 2.75, flat = 0.72;
+  const zx = L => L.map(([x, z]) => [z, x]), arc = (cx, R, a0, a1, n) => Array.from({length: n + 1}, (_, i) => {
+    const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [cx + R * Math.cos(a), R * Math.sin(a)]; });
+  // open end: head circle at -X, a straight jaw slot opening to -X with a round bottom
+  const oc = -5.6, oR = 2.0, w = 0.72, slot = -5.3, aS = 180 - Math.asin(w / oR) * 180 / Math.PI, aN = Math.asin(hn / oR) * 180 / Math.PI;
+  const openPlan = [[-enter, hn], ...arc(oc, oR, aN, aS, 12), [slot, w], ...arc(slot, w, 90, -90, 8).slice(1, -1), [slot, -w],
+    ...arc(oc, oR, 360 - aS, 360 - aN, 12), [-enter, -hn]];
+  const open = new Part('open_end', B, 'steel');
+  extrude(open, 'y', {outer: orient(zx(openPlan), true), holes: []}, -T, T, 0.12);
+  // box end: ring at +X with a 12-point hole
+  const bc = 5.5, bR = 1.85, bN = Math.asin(hn / bR) * 180 / Math.PI;
+  const boxPlan = [[enter, -hn], ...arc(bc, bR, 180 + bN, 540 - bN, 22), [enter, hn]];
+  const box = new Part('box_end', B, 'steel');
+  extrude(box, 'y', {outer: orient(zx(boxPlan), true), holes: [orient(zx(circle(bc, 0, 1.0, 12, 0)), false)]}, -T, T, 0.12);
+  // dipped grip: lathed along Z, turned onto X, flattened; yellow collars beyond |x| = collar
+  const dip = new Part('grip', B, 'dip');
+  revolve(dip, 0, 0, [[grip, 0], [grip, 0.62], [grip - 0.2, 0.86], [collar, 0.86], [-collar, 0.86], [-(grip - 0.2), 0.86], [-grip, 0.62], [-grip, 0]], 8);
+  zToX(dip);
+  dip.v = dip.v.map(([x, y, z]) => [x, y * flat, z]);
+  for (const f of dip.f) if (Math.abs(f.ids.reduce((s, id) => s + dip.v[id][0], 0) / f.ids.length) > collar) f.mat = 'collar';
+  return {PARTS: [dip, open, box], MATS: {
+    steel: {c: [150, 152, 156], hl: 12, sm: 128, se: 150, f0: 233},   // satin chrome plating (LabPBR chrome), not mirror
+    dip: {c: [172, 40, 34], hl: 4, sm: 96, se: 110, f0: 20},          // red insulating dip
+    collar: {c: [212, 168, 38], hl: 4, sm: 96, se: 110, f0: 20},      // yellow inner layer at the ends
+  },
+  // held like a vanilla handheld (the thermometer's transforms), working end out, but moved so the hand closes on the grip
+  // in the middle (a sprite's handle sits about 5.7 px from its centre: that distance along the mesh's +X, after scale)
+  display: {
+    thirdperson_righthand: {rotation: [0, -90, -80], translation: [0, -0.9, 1.37], scale: [0.8, 0.8, 0.8]},
+    firstperson_righthand: {rotation: [0, -90, -110], translation: [1.13, -0.46, 2.46], scale: [0.62, 0.62, 0.62]},
+  },
+  // flat face to the viewer, the open end top right like a vanilla tool
+  icon: {view: [90, 225, 0], coverage: 0.4, mat: {steel: [186, 188, 194], dip: [206, 50, 42], collar: [240, 194, 48]}}};
+}
+
 export const ITEMS = {
   clinical_thermometer: clinicalThermometer,
   wrist_thermometer: wristThermometer,
+  wiring_wrench: wiringWrench,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

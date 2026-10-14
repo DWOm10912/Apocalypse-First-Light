@@ -288,6 +288,7 @@ node tools/afl_minecraft_mcp/forest_home_b_m1.mjs stove
 
 ## 7. 技术
 
+- 准星和选框（2026-10-13 晚）：炉子、隔热板按拼块网格选中，选框是网格的折边，子弹也按网格打（[Mesh Hit Runtime V1](../rendering/mesh_hit_runtime_v1.md) 0.7 节）；碰撞不变。放锅 / 取锅的位置（`spotAt`）按命中点算：网格的炉顶板在 0.56、炉盖 0.5615 … 0.567，都在 `TOP − 0.01 … TOP + 0.02` 里，所以照常能用；锅是方块实体画的，不在网格里，瞄锅时射线落到下面的炉顶上，取的就是那个位置。没在游戏里看过。
 - 生成器 `tools/build-box-stove-v1.mjs`，贴图在 `tools/stove/box-stove-art.mjs`。
   - `node tools/build-box-stove-v1.mjs` 写出全部；
   - `--check` 核对输出是否最新，也审查手改的数据：标签、等级、噪声、重量、搬运、语言、燃料标签、温度热源。当前 `CHECK OK (91 outputs)`。

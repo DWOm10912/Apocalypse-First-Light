@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "38";
+    private static final String PROTOCOL = "39";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -131,6 +131,17 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::encode, com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::decode,
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+        nextId = com.antaurora.apofirstlight.wiring.WiringPackets.register(channel, nextId);
+    }
+
+    /** Building Wiring V1: the wiring view (nodes near the player, the wrench's selection), to one player. */
+    public static void wiring(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Building Wiring V1 (client): Hello, the wrench's cut and circuit steps. */
+    public static void wiringToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Terrain Smooth V1: the server's state (collision must agree on both sides). */

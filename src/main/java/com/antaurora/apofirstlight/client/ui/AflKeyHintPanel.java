@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Objects;
@@ -13,12 +14,17 @@ import java.util.Objects;
  * "key cap + what it does", on a dark backing that fades out to the left. The owner hands over this frame's rows; the
  * panel slides in from the right on first show (150 ms), cross-fades and resizes when the rows change (120 ms), fades
  * out when hidden (100 ms), and each cap reacts to its key (AflKeyHint). Reusable: field attachment view, maintenance
- * bench, later vehicles and machines.
+ * bench, held tools (wiring wrench), later vehicles and machines. A row may put a modifier cap before its key (sneak +
+ * scroll), or have no key at all: a status line (the wrench's circuit).
  */
 public final class AflKeyHintPanel {
-    public record Row(AflKeyHint key, Component label) {}
+    public record Row(@Nullable AflKeyHint modifier, @Nullable AflKeyHint key, Component label) {
+        public Row(AflKeyHint key, Component label) {
+            this(null, key, label);
+        }
+    }
 
-    private static final float MARGIN = 8, ROW = 14, PAD_Y = 4, PAD_RIGHT = 6, GAP = 5, FADE_ZONE = 26;
+    private static final float MARGIN = 8, ROW = 14, PAD_Y = 4, PAD_RIGHT = 6, GAP = 5, MOD_GAP = 2, FADE_ZONE = 26;
     private final AflUiTween shown = new AflUiTween(0), height = new AflUiTween(0), width = new AflUiTween(0);
     private List<Row> rows = List.of(), previous = List.of();
     private long changed;
@@ -62,21 +68,29 @@ public final class AflKeyHintPanel {
             Row row = rows.get(i);
             float y = top + PAD_Y + i * ROW, labelX = right - PAD_RIGHT - font.width(row.label());
             AflUiDraw.text(g, font, row.label(), labelX, y + 3.5F, AflUiStyle.TEXT, alpha);
-            float cap = row.key().width(font);
-            row.key().draw(g, font, AflUiTween.snap(labelX - GAP - cap), y + 1.5F, alpha, now);
+            if (row.key() == null) continue;
+            float cap = row.key().width(font), keyX = AflUiTween.snap(labelX - GAP - cap);
+            row.key().draw(g, font, keyX, y + 1.5F, alpha, now);
+            if (row.modifier() != null)
+                row.modifier().draw(g, font, AflUiTween.snap(keyX - MOD_GAP - row.modifier().width(font)), y + 1.5F, alpha, now);
         }
     }
 
     private static float contentWidth(Font font, List<Row> rows) {
         float w = 0;
-        for (Row row : rows) w = Math.max(w, row.key().width(font) + GAP + font.width(row.label()));
+        for (Row row : rows) w = Math.max(w, caps(font, row) + font.width(row.label()));
         return w;
+    }
+
+    private static float caps(Font font, Row row) {
+        if (row.key() == null) return 0;
+        return row.key().width(font) + GAP + (row.modifier() == null ? 0 : row.modifier().width(font) + MOD_GAP);
     }
 
     private static boolean same(List<Row> a, List<Row> b) {
         if (a.size() != b.size()) return false;
         for (int i = 0; i < a.size(); i++)
-            if (a.get(i).key() != b.get(i).key() || !Objects.equals(a.get(i).label().getString(), b.get(i).label().getString())) return false;
+            if (a.get(i).key() != b.get(i).key() || a.get(i).modifier() != b.get(i).modifier() || !Objects.equals(a.get(i).label().getString(), b.get(i).label().getString())) return false;
         return true;
     }
 }

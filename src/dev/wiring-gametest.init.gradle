@@ -1,0 +1,21 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/wiring-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_wiring_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                def text = log.exists() ? log.getText('UTF-8') : ''
+                def missing = ['nodes', 'save', 'survival', 'creative', 'cleanup', 'slopes', 'corner', 'shapes'].findAll { !text.contains("[AFL WIRING TEST] PASS ${it} ") }
+                if (!missing.isEmpty()) {
+                    throw new GradleException("Building Wiring tests did not pass: ${missing}")
+                }
+            }
+        }
+    }
+}

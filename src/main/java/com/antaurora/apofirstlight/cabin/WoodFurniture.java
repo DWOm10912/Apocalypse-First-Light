@@ -97,14 +97,21 @@ public final class WoodFurniture {
         private static final VoxelShape[] SHAPES = new VoxelShape[16];
 
         static {
+            // as the mesh (tools/build-wood-furniture-v1.mjs table()): the top 2 cm in from an open side, the legs at the
+            // open corners, the aprons 5 cm in from an open side between the legs (2026-10-13: the outline was the full cell)
             for (int m = 0; m < 16; m++) {
                 boolean n = (m & 1) != 0, e = (m & 2) != 0, s = (m & 4) != 0, w = (m & 8) != 0;
-                VoxelShape v = Block.box(0, 11.6, 0, 16, 12.16, 16);
-                double a = 0.64, b = 1.6;
-                if (!n && !w) v = Shapes.or(v, Block.box(a, 0, a, b, 11.6, b));
-                if (!n && !e) v = Shapes.or(v, Block.box(16 - b, 0, a, 16 - a, 11.6, b));
-                if (!s && !e) v = Shapes.or(v, Block.box(16 - b, 0, 16 - b, 16 - a, 11.6, 16 - a));
-                if (!s && !w) v = Shapes.or(v, Block.box(a, 0, 16 - b, b, 11.6, 16 - a));
+                double t = 0.32, a = 0.64, b = 1.6, a0 = 0.8, a1 = 1.152, ya = 10, y0 = 11.6;
+                VoxelShape v = Block.box(w ? 0 : t, y0, n ? 0 : t, e ? 16 : 16 - t, 12.16, s ? 16 : 16 - t);
+                if (!n && !w) v = Shapes.or(v, Block.box(a, 0, a, b, y0, b));
+                if (!n && !e) v = Shapes.or(v, Block.box(16 - b, 0, a, 16 - a, y0, b));
+                if (!s && !e) v = Shapes.or(v, Block.box(16 - b, 0, 16 - b, 16 - a, y0, 16 - a));
+                if (!s && !w) v = Shapes.or(v, Block.box(a, 0, 16 - b, b, y0, 16 - a));
+                double x0 = w ? 0 : b, x1 = e ? 16 : 16 - b, z0 = n ? 0 : b, z1 = s ? 16 : 16 - b;
+                if (!n) v = Shapes.or(v, Block.box(x0, ya, a0, x1, y0, a1));
+                if (!s) v = Shapes.or(v, Block.box(x0, ya, 16 - a1, x1, y0, 16 - a0));
+                if (!w) v = Shapes.or(v, Block.box(a0, ya, z0, a1, y0, z1));
+                if (!e) v = Shapes.or(v, Block.box(16 - a1, ya, z0, 16 - a0, y0, z1));
                 SHAPES[m] = v.optimize();
             }
         }

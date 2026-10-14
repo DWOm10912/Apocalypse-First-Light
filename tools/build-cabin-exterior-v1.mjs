@@ -136,8 +136,9 @@ const alongZ = (name, opts) => turned(logsAlongX(name, ZC, {...opts, off: 1 / 6}
  * Round log ends beyond a corner. stubz: Z logs from z 0 out to z -SL; stubx: X logs from x 0 out to x -SL. side: where
  * across the wall they sit ('neg' flush with the x 0 / z 0 face, 'pos' with the 1 face, 'mid' the middle: a T junction).
  */
+const stubC = side => side === 'neg' ? SC : side === 'pos' ? 1 - SC : 0.5;
 function stub(name, along, side) {
-  const pc = new Piece(name), c0 = side === 'neg' ? SC : side === 'pos' ? 1 - SC : 0.5;
+  const pc = new Piece(name), c0 = stubC(side);
   if (along === 'z') {
     for (const yc of ZC) cylinder(pc, ROUND, END, 'z', [c0, yc], -SL, 0, SR, 16, 'a');
     // the halves cut by the block's top and bottom: the flat cut
@@ -338,11 +339,12 @@ function casings(lo, hi, head, loS = lo) {
 }
 /** Lining boxes: the jambs up to top, the head lining (0.95..1) across the whole opening when head. */
 const linings = (top, head) => [...(head ? [[TRIM, [0, 0.95, F0], [1, 1, F1]]] : []), [TRIM_V, [0, 0, F0], [J, top, F1]], [TRIM_V, [1 - J, 0, F0], [1, top, F1]]];
-function doorFrame(name, half) {
+/** The frame's boxes: linings, the threshold (lower half), casings. */
+function doorFrameBoxes(half) {
   const up = half === 'upper', top = up ? 0.95 : 1;
-  const B = [...linings(top, up), ...(up ? [] : [[TRIM, [J, 0, F0], [1 - J, 0.022, F1]]]), ...casings(0, top, up)];
-  return solid(new Piece(name), B);
+  return [...linings(top, up), ...(up ? [] : [[TRIM, [J, 0, F0], [1 - J, 0.022, F1]]]), ...casings(0, top, up)];
 }
+const doorFrame = (name, half) => solid(new Piece(name), doorFrameBoxes(half));
 /** A closed door panel, hinge right (x 1 side), the handle side at x 0. */
 function doorPanel(type, half) {
   const pc = new Piece('p'), top = half === 'upper' ? 0.95 : 1, B = 'oak_door_boards', I = 'cabin_iron', S = [];
@@ -365,9 +367,10 @@ function doorPanel(type, half) {
   return solid(pc, S);
 }
 /** The open panel: the closed one swung a quarter about the hinge line (x 1 - J, z PZ0). */
+const swing = ([x, y, z]) => [1 - J - (z - PZ0), y, PZ0 + (x - (1 - J))];
 function swung(pc) {
-  const hx = 1 - J, out = new Piece(pc.name);
-  return out.merge(pc, ([x, y, z]) => [hx - (z - PZ0), y, PZ0 + (x - hx)], ([nx, ny, nz]) => [-nz, ny, nx]);
+  const out = new Piece(pc.name);
+  return out.merge(pc, swing, ([nx, ny, nz]) => [-nz, ny, nx]);
 }
 function doorPieces() {
   const P = [];
@@ -392,18 +395,24 @@ function sashFrame(pc, S, z0, z1, y0, y1, rails, muntinY) {
   const zm = (z0 + z1) / 2;
   box(pc, 'cabin_glass', [a + w, lo, zm], [b - w, hi, zm], 'ns');
 }
-function windowPiece(part) {
-  const pc = new Piece('window/' + part), hasSill = part !== 'top', hasHead = part !== 'bottom';
-  const top = hasHead ? 0.95 : 1, bot = hasSill ? 0.04 : 0;
+/** A window part's frame boxes: the sill, stool and apron, the linings, the casings. */
+function windowFrame(part) {
+  const hasSill = part !== 'top', hasHead = part !== 'bottom', top = hasHead ? 0.95 : 1, bot = hasSill ? 0.04 : 0;
   // the sill, stool and apron first: they own the cells they share with the jambs (one grain along them)
   const S = hasSill ? [[TRIM, [-0.06, 0, -0.13], [1.06, 0.04, 0.3]], [TRIM, [-0.06, 0.03, 0.3], [1.06, 0.065, 1.12]], [TRIM, [-0.03, -0.08, F1], [1.03, 0.03, 1.09]]] : [];
   S.push(...linings(top, hasHead), ...casings(bot, top, hasHead, hasSill ? 0.065 : 0));
+  return S;
+}
+/** A window part's sashes, sashFrame's arguments: z0, z1 (the upper sash in the outer track), y0, y1, rails, muntin. */
+function windowSashes(part) {
   const U = [0.06, 0.105], L = [0.11, 0.155];
-  if (part === 'single') {
-    sashFrame(pc, S, ...L, 0.04, 0.515, [[0.04, 0.1], [0.48, 0.515]], null);
-    sashFrame(pc, S, ...U, 0.485, 0.95, [[0.485, 0.52], [0.9, 0.95]], null);
-  } else if (part === 'bottom') sashFrame(pc, S, ...L, 0.04, 1, [[0.04, 0.1], [0.965, 1]], 0.53);
-  else sashFrame(pc, S, ...U, 0, 0.95, [[0, 0.035], [0.89, 0.95]], 0.46);
+  if (part === 'single') return [[...L, 0.04, 0.515, [[0.04, 0.1], [0.48, 0.515]], null], [...U, 0.485, 0.95, [[0.485, 0.52], [0.9, 0.95]], null]];
+  if (part === 'bottom') return [[...L, 0.04, 1, [[0.04, 0.1], [0.965, 1]], 0.53]];
+  return [[...U, 0, 0.95, [[0, 0.035], [0.89, 0.95]], 0.46]];
+}
+function windowPiece(part) {
+  const pc = new Piece('window/' + part), S = windowFrame(part);
+  for (const s of windowSashes(part)) sashFrame(pc, S, ...s);
   return solid(pc, S);
 }
 
@@ -419,8 +428,10 @@ function sidingPieces() {
   }
   return P;
 }
+/** The post's faces (x and z a..b); the railing from the bottom rail's underside to the top rail's top, the top rail's half width. */
+const POST_A = 0.42, POST_B = 0.58, RAIL_LO = 0.06, RAIL_HI = 0.94, RAIL_HALF = 0.06;
 function porchPieces() {
-  const post = new Piece('porch/post'), a = 0.42, b = 0.58, c = 0.015;
+  const post = new Piece('porch/post'), a = POST_A, b = POST_B, c = 0.015;
   const oct = [[a + c, a], [b - c, a], [b, a + c], [b, b - c], [b - c, b], [a + c, b], [a, b - c], [a, a + c]];
   for (let i = 0; i < 8; i++) {
     const [x0, z0] = oct[i], [x1, z1] = oct[(i + 1) % 8], mid = [(x0 + x1) / 2 - 0.5, 0, (z0 + z1) / 2 - 0.5];
@@ -429,8 +440,8 @@ function porchPieces() {
   polyOut(post, 'white_oak_log_end', oct.map(([x, z]) => [x, 1, z]), [0, 1, 0], {uv: oct.map(([x, z]) => [x, z])});
   polyOut(post, 'white_oak_log_end', oct.map(([x, z]) => [x, 0, z]), [0, -1, 0], {uv: oct.map(([x, z]) => [x, z])});
   const rail = new Piece('porch/railing');   // along x
-  box(rail, TRIM, [0, 0.86, 0.44], [1, 0.94, 0.56], 'nsudwe');
-  box(rail, TRIM, [0, 0.06, 0.46], [1, 0.12, 0.54], 'nsudwe');
+  box(rail, TRIM, [0, 0.86, 0.5 - RAIL_HALF], [1, RAIL_HI, 0.5 + RAIL_HALF], 'nsudwe');
+  box(rail, TRIM, [0, RAIL_LO, 0.46], [1, 0.12, 0.54], 'nsudwe');
   for (let k = 0; k < 8; k++) { const x = 0.0625 + 0.125 * k; box(rail, TRIM_V, [x - 0.019, 0.12, 0.481], [x + 0.019, 0.86, 0.519], 'nswe'); }
   const stubR = new Piece('porch/post_rail');   // north: from the post's face out to the block edge
   box(stubR, TRIM, [0.44, 0.86, 0], [0.56, 0.94, a], 'udwe');
@@ -449,34 +460,41 @@ function porchPieces() {
  */
 export const DECK_BOT = 0.97, RIM_BOT = 0.74, JOIST_BOT = 0.77, PIER_STONE = 0.17, PIER_STONE_TOP = 0.22, PIER_POST = 0.07;
 const DECK = 'oak_deck_boards', SIDES = ['n', 'e', 's', 'w'], CORNERS = ['ne', 'se', 'sw', 'nw'];
+const JOIST = 0.025, RIM = 0.035, NOSING = 0.025, PIERS = [['porch/pier_edge', 0.5], ['porch/pier_corner', 0.8]];
+/** The boards and the two joists across them (axis = the boards' direction). */
+const deckBoxes = axis => [[DECK, [0, DECK_BOT, 0], [1, 1, 1]], ...[0.25, 0.75].map(c => [TRIM,
+  axis === 'x' ? [c - JOIST, JOIST_BOT, 0] : [0, JOIST_BOT, c - JOIST], axis === 'x' ? [c + JOIST, DECK_BOT, 1] : [1, DECK_BOT, c + JOIST]])];
+/** A north rim board under the nosing; the nosing's corner square at the north-east. */
+const RIM_BOXES = [[TRIM, [0, RIM_BOT, 0], [1, DECK_BOT, RIM]], [DECK, [0, DECK_BOT, -NOSING], [1, 1, 0]]];
+const DECK_CORNER_BOX = [DECK, [1, DECK_BOT, -NOSING], [1 + NOSING, 1, 0]];
+/** A support on the north side centred at x cx: the squared stone block, the oak post up to the joists. */
+const pierBoxes = cx => [['stone_footing', [cx - PIER_STONE, 0, 0.03], [cx + PIER_STONE, PIER_STONE_TOP, 0.37]],
+  [TRIM_V, [cx - PIER_POST, PIER_STONE_TOP, 0.2 - PIER_POST], [cx + PIER_POST, JOIST_BOT, 0.2 + PIER_POST]]];
 function deckPieces() {
   const P = [];
   for (const axis of ['x', 'z']) {
-    const sw = {swap: axis === 'z'}, deck = new Piece('porch/deck_' + axis);
-    box(deck, DECK, [0, DECK_BOT, 0], [1, 1, 1], 'ud', {all: sw});
-    for (const c of [0.25, 0.75]) {
-      if (axis === 'x') box(deck, TRIM, [c - 0.025, JOIST_BOT, 0], [c + 0.025, DECK_BOT, 1], 'wed');
-      else box(deck, TRIM, [0, JOIST_BOT, c - 0.025], [1, DECK_BOT, c + 0.025], 'nsd');
-    }
+    const sw = {swap: axis === 'z'}, deck = new Piece('porch/deck_' + axis), [boards, ...joists] = deckBoxes(axis);
+    box(deck, DECK, boards[1], boards[2], 'ud', {all: sw});
+    for (const [t, a, b] of joists) box(deck, t, a, b, axis === 'x' ? 'wed' : 'nsd');
     P.push(deck);
     const rim = new Piece('x');   // north
-    box(rim, TRIM, [0, RIM_BOT, 0], [1, DECK_BOT, 0.035], 'nsdwe');
-    box(rim, DECK, [0, DECK_BOT, -0.025], [1, 1, 0], 'nudwe', {all: sw});
-    const corner = box(new Piece('x'), DECK, [1, DECK_BOT, -0.025], [1.025, 1, 0], 'neud', {all: sw});   // north-east
+    box(rim, TRIM, RIM_BOXES[0][1], RIM_BOXES[0][2], 'nsdwe');
+    box(rim, DECK, RIM_BOXES[1][1], RIM_BOXES[1][2], 'nudwe', {all: sw});
+    const corner = box(new Piece('x'), DECK, DECK_CORNER_BOX[1], DECK_CORNER_BOX[2], 'neud', {all: sw});   // north-east
     for (let r = 0; r < 4; r++) {
       P.push(turned(rim, r, `porch/deck_rim_${axis}_${SIDES[r]}`));
       P.push(turned(corner, r, `porch/deck_corner_${axis}_${CORNERS[r]}`));
     }
   }
-  for (const [name, cx] of [['porch/pier_edge', 0.5], ['porch/pier_corner', 0.8]]) P.push(solid(new Piece(name), [   // north edge, north-east corner
-    ['stone_footing', [cx - PIER_STONE, 0, 0.03], [cx + PIER_STONE, PIER_STONE_TOP, 0.37]],
-    [TRIM_V, [cx - PIER_POST, PIER_STONE_TOP, 0.2 - PIER_POST], [cx + PIER_POST, JOIST_BOT, 0.2 + PIER_POST]]]));
+  for (const [name, cx] of PIERS) P.push(solid(new Piece(name), pierBoxes(cx)));   // north edge, north-east corner
   return P;
 }
+/** The pipe's radius; the rain cap: the pipe stops at PIPE_TOP, three legs up to the cone (radius CAP_R) from CAP_Y0 to CAP_Y1. */
+const PIPE_R = 0.075, PIPE_TOP = 0.55, CAP_R = 0.16, CAP_Y0 = 0.62, CAP_Y1 = 0.75;
 function pipePieces() {
-  const pipe = cylinder(new Piece('pipe/stove_pipe'), 'stove_pipe', 'stove_pipe', 'y', [0.5, 0.5], 0, 1, 0.075, 16, 'a');
-  const cap = cylinder(new Piece('pipe/stove_pipe_cap'), 'stove_pipe', 'stove_pipe', 'y', [0.5, 0.5], 0, 0.55, 0.075, 16, 'ab');
-  const S = 'stove_pipe', R = 0.16, y0 = 0.62, apex = [0.5, 0.75, 0.5];
+  const pipe = cylinder(new Piece('pipe/stove_pipe'), 'stove_pipe', 'stove_pipe', 'y', [0.5, 0.5], 0, 1, PIPE_R, 16, 'a');
+  const cap = cylinder(new Piece('pipe/stove_pipe_cap'), 'stove_pipe', 'stove_pipe', 'y', [0.5, 0.5], 0, PIPE_TOP, PIPE_R, 16, 'ab');
+  const S = 'stove_pipe', R = CAP_R, y0 = CAP_Y0, apex = [0.5, CAP_Y1, 0.5];
   for (let i = 0; i < 16; i++) {
     const a0 = i / 16 * Math.PI * 2, a1 = (i + 1) / 16 * Math.PI * 2, p0 = [0.5 + Math.cos(a0) * R, y0, 0.5 + Math.sin(a0) * R], p1 = [0.5 + Math.cos(a1) * R, y0, 0.5 + Math.sin(a1) * R];
     const mid = [Math.cos((a0 + a1) / 2), 1.2, Math.sin((a0 + a1) / 2)];
@@ -489,6 +507,90 @@ function pipePieces() {
 
 export function pieces() {
   return [...logWallPieces(), ...roofPieces(), ...doorPieces(), ...['single', 'bottom', 'top'].map(windowPiece), ...sidingPieces(), ...porchPieces(), ...deckPieces(), ...pipePieces()];
+}
+
+// =============================================================================================== shapes
+// Outline and collision (user 2026-10-13: the house had cube outlines and invisible walls where the meshes are thinner or
+// thicker): boxes wrapping each mesh piece, written to CabinShapeData.java (pixels, the pieces' north frame) and turned per
+// state by CabinBlocks. They follow the pieces' own boxes and constants above, so the two cannot drift (--check). Left out
+// as too small to point at: the roofs' eave and rake trims, standing seams and corrugation, door handles and ledges, the
+// battens on board and batten, the pads behind wall fixtures (the fixtures' outlines include them).
+export const ROOF_STEPS = 8;
+const SHAPE_FILE = path.join(ROOT, 'src/main/java/com/antaurora/apofirstlight/cabin/CabinShapeData.java');
+const px = v => Math.round(v * 16 * 10000) / 10000 + 0;
+const pxBox = ([x0, y0, z0], [x1, y1, z1]) => [x0, y0, z0, x1, y1, z1].map(px);
+/** The boxes of a [texture, from, to] list. */
+const pxBoxes = list => list.map(([, a, b]) => pxBox(a, b));
+/**
+ * A roof cell: the slab (steel on top, the ceiling boards RT under it) in ROOF_STEPS steps along the slope, each step from
+ * the lowest underside to the highest surface over it (the ridge cap 3.5 cm higher, its roll on top); fill: down to the
+ * cell's bottom at least (the fill to a wall below).
+ */
+function roofShape(shape, fill) {
+  const B = [];
+  for (let k = 0; k < ROOF_STEPS; k++) {
+    const a = k / ROOF_STEPS, b = (k + 1) / ROOF_STEPS, h = [a, b].map(z => ys(shape, z));
+    const top = Math.max(...h) + (shape === 'ridge' && b > 0.33 && a < 0.67 ? 0.035 : 0), under = Math.min(...h) - RT;
+    B.push(pxBox([0, fill ? Math.min(0, under) : under, a], [1, top, b]));
+  }
+  if (shape === 'ridge') B.push(pxBox([0, 0.785, 0.485], [1, 0.81, 0.515]));
+  return B;
+}
+/** The closed door panel's box (hinge right) and the same swung open. */
+const panelBox = half => [[J, 0, PZ0], [1 - J, half === 'upper' ? 0.95 : 1, PZ1]];
+function swungBox([a, b]) {
+  const p = swing(a), q = swing(b);
+  return [[0, 1, 2].map(i => Math.min(p[i], q[i])), [0, 1, 2].map(i => Math.max(p[i], q[i]))];
+}
+export function shapeData() {
+  const halves = ['lower', 'upper'], parts = ['single', 'bottom', 'top'], sides = ['neg', 'mid', 'pos'];
+  const sashes = part => windowSashes(part).map(([z0, z1, y0, y1]) => pxBox([J, y0, z0], [1 - J, y1, z1]));
+  const capLegs = 0.09 + 0.007;
+  const D = [
+    ['white_oak_log_wall: a run along X (the logs bulge LS out of both z faces) / along Z, out to the log crests', [
+      ['LOG_X', [pxBox([0, 0, -LS], [1, 1, 1 + LS])]], ['LOG_Z', [pxBox([-LS, 0, 0], [1 + LS, 1, 1])]]]],
+    ['A corner\'s round log ends beyond its open sides: west of the cell (X logs) / north (Z logs); neg, mid, pos across the wall', [
+      ['LOG_STUB_X', sides.map(s => [pxBox([-SL, 0, stubC(s) - SR], [0, 1, stubC(s) + SR])])],
+      ['LOG_STUB_Z', sides.map(s => [pxBox([stubC(s) - SR, 0, -SL], [stubC(s) + SR, 1, 0])])]]],
+    ['Roofs, lower / upper / ridge (facing north: the eave at z 0): the slab in ROOF_STEPS steps; ROOF_FILL with the fill down to a wall', [
+      ['ROOF', SHAPES.map(s => roofShape(s, false))], ['ROOF_FILL', SHAPES.map(s => roofShape(s, true))]]],
+    ['Doors, lower / upper half: the frame (linings, threshold, casings on both faces); the panel closed / open, hinge right (the east jamb)', [
+      ['DOOR_FRAME', halves.map(h => pxBoxes(doorFrameBoxes(h)))], ['DOOR_PANEL_CLOSED', halves.map(h => [pxBox(...panelBox(h))])],
+      ['DOOR_PANEL_OPEN', halves.map(h => [pxBox(...swungBox(panelBox(h)))])]]],
+    ['The double-hung window, single / bottom / top: sill, stool, apron, linings, casings, each sash as a slab (its glass is in it)', [
+      ['WINDOW', parts.map(p => [...pxBoxes(windowFrame(p)), ...sashes(p)])]]],
+    ['Porch deck: the boards and joists (boards along X / Z); a north rim board and nosing; the nosing\'s north-east corner; the supports (north edge, north-east corner)', [
+      ['DECK_X', pxBoxes(deckBoxes('x'))], ['DECK_Z', pxBoxes(deckBoxes('z'))], ['DECK_RIM', pxBoxes(RIM_BOXES)], ['DECK_CORNER', pxBoxes([DECK_CORNER_BOX])],
+      ['PIER_EDGE', pxBoxes(pierBoxes(0.5))], ['PIER_CORNER', pxBoxes(pierBoxes(0.8))]]],
+    ['Porch railing along X and a post\'s rail stub toward the north: outline (the rails and balusters), collision 1.5 high like a fence', [
+      ['RAILING', [pxBox([0, RAIL_LO, 0.5 - RAIL_HALF], [1, RAIL_HI, 0.5 + RAIL_HALF])]], ['RAILING_COLLISION', [pxBox([0, 0, 7 / 16], [1, 1.5, 9 / 16])]],
+      ['POST', [pxBox([POST_A, 0, POST_A], [POST_B, 1, POST_B])]],
+      ['POST_RAIL', [pxBox([0.5 - RAIL_HALF, RAIL_LO, 0], [0.5 + RAIL_HALF, RAIL_HI, POST_A])]], ['POST_RAIL_COLLISION', [pxBox([7 / 16, 0, 0], [9 / 16, 1.5, POST_A])]]]],
+    ['Stove pipe: running on; ending in the rain cap (the pipe, the legs, the cone)', [
+      ['PIPE', [pxBox([0.5 - PIPE_R, 0, 0.5 - PIPE_R], [0.5 + PIPE_R, 1, 0.5 + PIPE_R])]],
+      ['PIPE_CAPPED', [pxBox([0.5 - PIPE_R, 0, 0.5 - PIPE_R], [0.5 + PIPE_R, PIPE_TOP, 0.5 + PIPE_R]),
+        pxBox([0.5 - capLegs, PIPE_TOP, 0.5 - capLegs], [0.5 + capLegs, CAP_Y0, 0.5 + capLegs]), pxBox([0.5 - CAP_R, CAP_Y0, 0.5 - CAP_R], [0.5 + CAP_R, CAP_Y1, 0.5 + CAP_R])]]]],
+  ];
+  const boxes = list => '{' + list.map(b => '{' + b.join(', ') + '}').join(', ') + '}';
+  const out = ['// Generated by tools/build-cabin-exterior-v1.mjs (shapeData): do not edit, run the script (its --check compares).',
+    'package com.antaurora.apofirstlight.cabin;', '',
+    '/**',
+    ' * The outline and collision boxes of the Cabin Exterior V1 mesh blocks (docs/models/cabin_exterior_v1.md, "Outline and',
+    ' * collision"): in pixels of the mesh pieces\' north frame, built from the same boxes and constants as the pieces; CabinBlocks',
+    ' * turns them per state.',
+    ' */',
+    'final class CabinShapeData {',
+    `    static final int ROOF_STEPS = ${ROOF_STEPS};`, ''];
+  for (const [doc, fields] of D) {
+    out.push(`    /** ${doc}. */`);
+    for (const [name, v] of fields) {
+      const nested = Array.isArray(v[0][0]);
+      out.push(`    static final double[]${nested ? '[][]' : '[]'} ${name} = ${nested ? '{' + v.map(boxes).join(',\n            ') + '}' : boxes(v)};`);
+    }
+    out.push('');
+  }
+  out.push('    private CabinShapeData() {}', '}', '');
+  return out.join('\n');
 }
 
 // =============================================================================================== models, states, loot
@@ -582,6 +684,7 @@ export function outputs() {
   for (const [name, [make, height]] of Object.entries(TEXTURES)) texOut(name, renderX(make(), {height}));
   fieldstoneTiles().forEach((maps, t) => texOut('fieldstone_' + t, maps));   // one 3 x 2 block texture in tiles (MacroTileModel)
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  out.push([SHAPE_FILE, shapeData()]);
   const bm = id => `${NS}block/cabin/${id}`;
   for (const b of BLOCKS) {
     const id = b.id;

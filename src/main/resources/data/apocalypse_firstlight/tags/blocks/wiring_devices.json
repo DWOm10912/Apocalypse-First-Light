@@ -1,0 +1,16 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:distribution_panel",
+    "apocalypse_firstlight:load_center",
+    "apocalypse_firstlight:service_meter_box",
+    "apocalypse_firstlight:generator_inlet_box",
+    "apocalypse_firstlight:wall_outlet",
+    "apocalypse_firstlight:industrial_utility_light",
+    "apocalypse_firstlight:linear_light",
+    "apocalypse_firstlight:emergency_light",
+    "apocalypse_firstlight:porcelain_lampholder",
+    "apocalypse_firstlight:wall_pack",
+    "apocalypse_firstlight:canopy_downlight"
+  ]
+}

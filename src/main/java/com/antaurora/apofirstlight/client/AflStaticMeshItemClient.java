@@ -52,6 +52,9 @@ public final class AflStaticMeshItemClient {
             bind(AflItems.CLINICAL_THERMOMETER.get(), () -> new AflStaticMeshItemRenderer("clinical_thermometer", "clinical_thermometer_mesh", 0.46189),
                     "clinical_thermometer", com.antaurora.apofirstlight.temperature.ClientThermometerHands.INSTANCE);
             bind(AflItems.WRIST_THERMOMETER.get(), "wrist_thermometer", "wrist_thermometer_mesh", 0.390625);
+            // Building Wiring V1: the wire hank (material meshes, 0.5 - 5.545 / 32) and the wrench (equipment meshes, 0.5 - 1.144 / 32)
+            bind(AflItems.INSULATED_COPPER_WIRE.get(), "insulated_copper_wire", "insulated_copper_wire_mesh", 0.326722);
+            bind(AflItems.WIRING_WRENCH.get(), "wiring_wrench", "wiring_wrench_mesh", 0.464246);
             // Industrial Locker V2 (tools/build-industrial-locker-v2.mjs): the block's own mesh and atlas, closed door pose.
             // Mesh origin = block bottom centre, same place as the old 2-block item model, so its display transforms are kept.
             bind(AflItems.INDUSTRIAL_LOCKER.get(), () -> new AflStaticMeshItemRenderer(

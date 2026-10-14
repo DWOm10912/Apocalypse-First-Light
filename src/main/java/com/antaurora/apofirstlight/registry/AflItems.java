@@ -454,6 +454,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.POWER_STRIP_6.get(), new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> POWER_CABLE = ITEMS.register("power_cable",
             () -> new BlockItem(AflBlocks.POWER_CABLE.get(), new Item.Properties()));
+    // Building Wiring V1 (docs/gameplay/building_wiring_v1.md): hidden building wire, one item = one metre = one cell, and the
+    // wrench that lays and cuts it (Terraria style)
+    public static final RegistryObject<Item> INSULATED_COPPER_WIRE = ITEMS.register("insulated_copper_wire",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WIRING_WRENCH = ITEMS.register("wiring_wrench",
+            () -> new com.antaurora.apofirstlight.item.WiringWrenchItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FLUID_PIPE = ITEMS.register("fluid_pipe",
             () -> new BlockItem(AflBlocks.FLUID_PIPE.get(), new Item.Properties()));
     public static final RegistryObject<Item> FLUID_TANK = ITEMS.register("fluid_tank",

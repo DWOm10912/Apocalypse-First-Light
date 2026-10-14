@@ -38,6 +38,9 @@ public final class MeshHitModel {
     private static final double FOLD = Math.cos(Math.toRadians(35));
     /** Shorter edges are left out of the outline (bolt heads and the like would clutter it). */
     private static final double SHORTEST = 0.015;
+    /** A welded corner this near an edge's line, inside it, splits it (T-junctions); the corner grid's cells a block side. */
+    private static final double ON_EDGE = 1e-4;
+    private static final int GRID = 8;
 
     private MeshHitModel(float[] tri) {
         this.tri = tri;
@@ -63,7 +66,8 @@ public final class MeshHitModel {
 
     /**
      * The model's feature edges in block units, 6 floats each (two ends): corners shared by coincident faces are welded
-     * (to 1e-4), then an edge stays if it bounds one face only, is shared by more than two, or its two faces fold by more
+     * (to 1e-4), each face's edge is split at the welded corners lying inside it (T-junctions, so coplanar faces cut
+     * differently still pair up), then an edge stays if it bounds one face only, is shared by more than two, or its two faces fold by more
      * than 35 degrees (either winding: a double-sided face is flat); edges shorter than {@link #SHORTEST} go.
      */
     public float[] edges() {
@@ -97,12 +101,39 @@ public final class MeshHitModel {
             normal[t * 3 + 1] = ny / len;
             normal[t * 3 + 2] = nz / len;
         }
+        // the welded corners in a coarse grid, for the corners lying inside another face's edge (a T-junction: coplanar faces
+        // cut differently, as the cabin pieces' merged runs are, would leave that edge with one face each side, drawn open)
+        java.util.Map<Long, java.util.List<Integer>> grid = new java.util.HashMap<>();
+        for (int i = 0; i < points.size(); i++) grid.computeIfAbsent(gridKey(points.get(i)), x -> new ArrayList<>()).add(i);
         java.util.Map<Long, java.util.List<Integer>> faces = new java.util.LinkedHashMap<>();
+        java.util.List<double[]> inner = new ArrayList<>();
         for (int t = 0; t < n; t++) for (int k = 0; k < 3; k++) {
             int a = corner[t * 3 + k], c = corner[t * 3 + (k + 1) % 3];
             if (a == c) continue;
-            long key = (long) Math.min(a, c) << 32 | Math.max(a, c);
-            faces.computeIfAbsent(key, x -> new ArrayList<>()).add(t);
+            float[] pa = points.get(a), pc = points.get(c);
+            double dx = pc[0] - pa[0], dy = pc[1] - pa[1], dz = pc[2] - pa[2], len2 = dx * dx + dy * dy + dz * dz;
+            inner.clear();
+            int[] lo = gridCell(Math.min(pa[0], pc[0]) - ON_EDGE, Math.min(pa[1], pc[1]) - ON_EDGE, Math.min(pa[2], pc[2]) - ON_EDGE);
+            int[] hi = gridCell(Math.max(pa[0], pc[0]) + ON_EDGE, Math.max(pa[1], pc[1]) + ON_EDGE, Math.max(pa[2], pc[2]) + ON_EDGE);
+            for (int gx = lo[0]; gx <= hi[0]; gx++) for (int gy = lo[1]; gy <= hi[1]; gy++) for (int gz = lo[2]; gz <= hi[2]; gz++) {
+                java.util.List<Integer> in = grid.get(packCell(gx, gy, gz));
+                if (in == null) continue;
+                for (int q : in) {
+                    if (q == a || q == c) continue;
+                    float[] p = points.get(q);
+                    double wx = p[0] - pa[0], wy = p[1] - pa[1], wz = p[2] - pa[2], s = (wx * dx + wy * dy + wz * dz) / len2;
+                    if (s <= 1e-6 || s >= 1 - 1e-6) continue;
+                    double ox = wx - dx * s, oy = wy - dy * s, oz = wz - dz * s;
+                    if (ox * ox + oy * oy + oz * oz < ON_EDGE * ON_EDGE) inner.add(new double[]{s, q});
+                }
+            }
+            inner.sort((p, q) -> Double.compare(p[0], q[0]));
+            int prev = a;
+            for (double[] q : inner) {
+                addFace(faces, prev, (int) q[1], t);
+                prev = (int) q[1];
+            }
+            addFace(faces, prev, c, t);
         }
         java.util.List<Float> out = new ArrayList<>();
         for (java.util.Map.Entry<Long, java.util.List<Integer>> entry : faces.entrySet()) {
@@ -122,6 +153,24 @@ public final class MeshHitModel {
         float[] e = new float[out.size()];
         for (int i = 0; i < e.length; i++) e[i] = out.get(i);
         return e;
+    }
+
+    private static void addFace(java.util.Map<Long, java.util.List<Integer>> faces, int a, int c, int t) {
+        long key = (long) Math.min(a, c) << 32 | Math.max(a, c);
+        faces.computeIfAbsent(key, x -> new ArrayList<>()).add(t);
+    }
+
+    private static int[] gridCell(double x, double y, double z) {
+        return new int[]{(int) Math.floor(x * GRID), (int) Math.floor(y * GRID), (int) Math.floor(z * GRID)};
+    }
+
+    private static long gridKey(float[] p) {
+        int[] c = gridCell(p[0], p[1], p[2]);
+        return packCell(c[0], c[1], c[2]);
+    }
+
+    private static long packCell(int x, int y, int z) {
+        return ((long) x & 0x1FFFFF) << 42 | ((long) y & 0x1FFFFF) << 21 | ((long) z & 0x1FFFFF);
     }
 
     /** The model's bounds in block units {minX, minY, minZ, maxX, maxY, maxZ}. */

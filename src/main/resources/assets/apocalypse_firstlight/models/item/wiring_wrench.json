@@ -1,0 +1,91 @@
+{
+  "loader": "forge:separate_transforms",
+  "gui_light": "front",
+  "textures": {
+    "particle": "apocalypse_firstlight:item/wiring_wrench"
+  },
+  "base": {
+    "parent": "builtin/entity",
+    "textures": {
+      "particle": "apocalypse_firstlight:item/wiring_wrench"
+    },
+    "display": {
+      "thirdperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          -80
+        ],
+        "translation": [
+          0,
+          -0.9,
+          1.37
+        ],
+        "scale": [
+          0.8,
+          0.8,
+          0.8
+        ]
+      },
+      "firstperson_righthand": {
+        "rotation": [
+          0,
+          -90,
+          -110
+        ],
+        "translation": [
+          1.13,
+          -0.46,
+          2.46
+        ],
+        "scale": [
+          0.62,
+          0.62,
+          0.62
+        ]
+      },
+      "ground": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          3,
+          0
+        ],
+        "scale": [
+          0.324,
+          0.324,
+          0.324
+        ]
+      },
+      "fixed": {
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "translation": [
+          0,
+          0,
+          0
+        ],
+        "scale": [
+          0.567,
+          0.567,
+          0.567
+        ]
+      }
+    }
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "minecraft:item/generated",
+      "textures": {
+        "layer0": "apocalypse_firstlight:item/wiring_wrench"
+      }
+    }
+  }
+}

@@ -234,9 +234,10 @@ const R3 = ([ax, ay, az]) => {   // Minecraft ItemTransform rotation: rotationXY
  * icon: {mat: {name: other material name or [r, g, b]}} (icon-only colours: pixel art wants more contrast between pieces
  * than the PBR base colours), coverage: fraction of a pixel a part must cover to be drawn (thin wires need less),
  * xray: material names drawn only where nothing else is behind them (glass: what is inside shows through it),
- * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross).
+ * seamless: part names that get no darker seam around them (a one-pixel needle would leave a dark cross),
+ * depthSeam: icon px; a part passing in front of itself by more than this also gets the seam (the turns of a coil).
  */
-function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = []} = {}) {
+function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5, xray = [], seamless = [], depthSeam = Infinity} = {}) {
   // centreY: the mesh is drawn centred like the item renderer does (rests on y = 0, offset by half its height)
   const N = 16, SS = 6, R = R3(view.rotation), rot = v => R([v[0], v[1] - centreY, v[2]]), s = view.scale[0], tr = view.translation, tris = [];
   const colourOf = m => { const o = iconMat[m]; return Array.isArray(o) ? o : MATS[o ?? m].c; };
@@ -270,7 +271,7 @@ function drawIcon(PARTS, MATS, view, centreY, {mat: iconMat = {}, coverage = 0.5
     const p = at(x, y); if (!p) continue;
     let c = p.c;
     if (!at(x + 1, y) || !at(x, y + 1)) c = c.map(v => v * 0.62); else if (!at(x - 1, y) || !at(x, y - 1)) c = c.map(v => v * 0.86);
-    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part && q.z > p.z && !seamless.includes(q.part.name); })) c = c.map(v => v * 0.74);
+    else if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const q = at(x + dx, y + dy); return q.part !== p.part ? q.z > p.z && !seamless.includes(q.part.name) : q.z > p.z + depthSeam; })) c = c.map(v => v * 0.74);
     out.set([...c.map(v => Math.max(0, Math.min(255, Math.round(v)))), 255], (y * N + x) * 4);
   }
   return png(out, N, N);
@@ -394,6 +395,34 @@ function highPurityQuartzSand() {
   }};
 }
 
+/**
+ * Insulated copper wire (Building Wiring V1, 2026-10-13): a hank of house wire lying flat, two and a half turns of an
+ * off-white PVC-jacketed cable (references: NM-B house cable coils), both ends leaving the coil tangentially with the copper
+ * bared for 0.6 px. One item is 1 m of any circuit's wire (the circuit colours live in the wiring view), so the jacket
+ * stays neutral. One continuous 12-sided tube with its own UV strip, as the tungsten filament. The icon looks from 50
+ * degrees with seams where a turn passes in front of another: thinner wire with more turns smeared into a mottled ring
+ * at 16 px (variants compared 2026-10-13).
+ */
+function insulatedCopperWire({Rc = 4.0, r = 0.75, core = 0.4, pitch = 1.62, turns = 2.5, sides = 12} = {}) {
+  const per = 20, lead = 2.4, bare = 0.6, step = 0.06, y0 = r;
+  const helix = Array.from({length: turns * per + 1}, (_, i) => { const a = 2 * Math.PI * i / per; return [Rc * Math.cos(a), y0 + pitch * i / per, Rc * Math.sin(a)]; });
+  // a lead runs on along the tangent at an end of the helix: d = the outward tangent, k from the coil to the bared tip
+  const leadOut = (from, d) => [lead - bare - step, lead - bare, lead].map(k => add(from, mul(d, k)));
+  const first = helix[0], last = helix[helix.length - 1];
+  const head = leadOut(first, [0, 0, -1]).reverse(), tail = leadOut(last, [0, 0, -1]);   // both tangents point to -z there
+  const path = [...head, ...helix, ...tail], n = path.length;
+  // rings: tip (core), jacket end (core), jacket (r) ... jacket (r), jacket end (core), tip (core)
+  const radius = i => i <= 1 || i >= n - 2 ? core : r;
+  const mat = i => i === 0 || i === n - 2 ? 'copper' : 'jacket';
+  const wire = new Part('wire', 'insulated_copper_wire', 'jacket'), band = {x: PAD, y: PAD, w: ATLAS - 2 * PAD, h: 14};
+  const tex = sweepTube(wire, path, {sides, radius, mat, capMat: 'copper', band});
+  return {PARTS: [wire], MATS: {
+    jacket: {c: [200, 194, 180], hl: 4, sm: 92, se: 104, f0: 20},     // off-white PVC jacket: dielectric, satin
+    copper: {c: [182, 112, 74], hl: 8, sm: 140, se: 160, f0: 234},    // bare copper conductor (LabPBR copper)
+  }, icon: {coverage: 0.35, view: [50, 225, 0], depthSeam: 0.8, mat: {jacket: [226, 220, 204], copper: [214, 128, 76]}},
+  uv: {islands: [tubeIsland(wire, band, tex)], S: 8, uvOf: (is, id) => is.tex.get(id), faceUV: new Map([[wire, tubeFaceUV(wire, tex)]])}};
+}
+
 export const ITEMS = {
   steel_billet: steelBillet,
   lead_brick: leadBrick,
@@ -403,6 +432,7 @@ export const ITEMS = {
   steel_scrap: steelScrap,
   refractory_ceramic: refractoryCeramic,
   high_purity_quartz_sand: highPurityQuartzSand,
+  insulated_copper_wire: insulatedCopperWire,
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

@@ -102,6 +102,8 @@ public final class AflCreativeTabs {
             AflItems.ENERGY_CELL,
             AflItems.ENERGY_BATTERY,
             AflItems.POWER_CABLE,
+            AflItems.INSULATED_COPPER_WIRE,
+            AflItems.WIRING_WRENCH,
             AflItems.DISTRIBUTION_PANEL,
             AflItems.LOAD_CENTER,
             AflItems.SERVICE_METER_BOX,
