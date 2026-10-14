@@ -18,7 +18,7 @@ import static com.antaurora.apofirstlight.dev.authoring.bridge.BridgeJson.*;
  * then pure shape reconciliation of shape-safe neighbours only. No neighbour notifications, drops or random ticks.
  */
 final class FixtureAdapter {
-    private static final Set<String> PLACE_ARGUMENTS=Set.of("block_id","pos","anchor","facing","properties","replace_policy","dry_run","target");
+    private static final Set<String> PLACE_ARGUMENTS=Set.of("block_id","pos","anchor","facing","properties","replace_policy","dry_run","target","supply_mode");
     private static final int REPORT_LIMIT=256;
     private final BridgeHistory history;
     FixtureAdapter(BridgeHistory history){this.history=history;}
@@ -55,6 +55,13 @@ final class FixtureAdapter {
         String policy=string(a,"replace_policy","AIR_ONLY");
         if(!Set.of("AIR_ONLY","REPLACEABLE").contains(policy))throw new IllegalArgumentException("INVALID_REPLACE_POLICY: AIR_ONLY or REPLACEABLE");
         var targets=AuthoringFixtureRegistry.targets(f,anchor,facing,variants);
+        // Building Wiring V1 phase 2: a Distribution Panel's supply mode (wired, the default for a new panel, or legacy_area)
+        com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity.SupplyMode supplyMode=null;
+        if(a.has("supply_mode")){
+            String m=string(a,"supply_mode","");
+            supplyMode=switch(m){case "wired"->com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity.SupplyMode.WIRED;case "legacy_area"->com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity.SupplyMode.LEGACY_AREA;default->throw new IllegalArgumentException("INVALID_SUPPLY_MODE: wired or legacy_area");};
+            if(targets.values().stream().noneMatch(t->t.getBlock() instanceof com.antaurora.apofirstlight.block.DistributionPanelBlock))throw new IllegalArgumentException("SUPPLY_MODE_NOT_A_PANEL: "+f.id());
+        }
         var level=p.serverLevel();var bounds=bounds(targets.keySet());bounds.inside(scope);bounds.check(level);
         for(var e:targets.entrySet()){
             var pos=e.getKey();var existing=level.getBlockState(pos);
@@ -88,6 +95,7 @@ final class FixtureAdapter {
                 var placed=level.getBlockState(pos);var be=level.getBlockEntity(pos);
                 if(AuthoringFixtureRegistry.ownsBlockEntity(placed)&&be==null)throw new IllegalArgumentException("BLOCK_ENTITY_NOT_CREATED at "+pos.toShortString());
                 if(be!=null){var problem=AuthoringRegionGuard.inventoryProblem(be);if(problem!=null)throw new IllegalArgumentException("BLOCK_ENTITY_NOT_EMPTY at "+pos.toShortString()+": "+problem);}
+                if(supplyMode!=null&&be instanceof com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity panel)panel.setMode(supplyMode);
             }
             applied.replaceAll(c->new BridgeHistory.Change(c.pos(),c.before(),level.getBlockState(c.pos())));
             applied.addAll(neighbourShapes(level,targets.keySet(),scope,warnings));
@@ -100,6 +108,7 @@ final class FixtureAdapter {
         history.push(new BridgeHistory.DirectEntry(applied));s.changed();
         var out=placementJson(f,anchor,facing,targets,level,true);
         out.addProperty("support_check","CAN_SURVIVE");out.addProperty("changed_blocks",applied.size());
+        if(supplyMode!=null)out.addProperty("supply_mode",supplyMode==com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity.SupplyMode.WIRED?"wired":"legacy_area");
         out.addProperty("undo_steps",1);out.add("warnings",GSON.toJsonTree(warnings));
         out.addProperty("operation_id",UUID.randomUUID().toString());out.addProperty("elapsed_ms",(System.nanoTime()-start)/1_000_000);
         return out;

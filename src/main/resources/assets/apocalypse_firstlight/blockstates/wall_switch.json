@@ -1,0 +1,124 @@
+{
+  "variants": {
+    "facing=north,log_mount=false,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off"
+    },
+    "facing=north,log_mount=false,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off"
+    },
+    "facing=north,log_mount=false,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on"
+    },
+    "facing=north,log_mount=false,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on"
+    },
+    "facing=north,log_mount=true,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log"
+    },
+    "facing=north,log_mount=true,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log"
+    },
+    "facing=north,log_mount=true,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log"
+    },
+    "facing=north,log_mount=true,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log"
+    },
+    "facing=east,log_mount=false,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 90
+    },
+    "facing=east,log_mount=false,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 90
+    },
+    "facing=east,log_mount=false,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 90
+    },
+    "facing=east,log_mount=false,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 90
+    },
+    "facing=east,log_mount=true,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 90
+    },
+    "facing=east,log_mount=true,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 90
+    },
+    "facing=east,log_mount=true,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 90
+    },
+    "facing=east,log_mount=true,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 90
+    },
+    "facing=south,log_mount=false,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 180
+    },
+    "facing=south,log_mount=false,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 180
+    },
+    "facing=south,log_mount=false,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 180
+    },
+    "facing=south,log_mount=false,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 180
+    },
+    "facing=south,log_mount=true,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 180
+    },
+    "facing=south,log_mount=true,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 180
+    },
+    "facing=south,log_mount=true,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 180
+    },
+    "facing=south,log_mount=true,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 180
+    },
+    "facing=west,log_mount=false,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 270
+    },
+    "facing=west,log_mount=false,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off",
+      "y": 270
+    },
+    "facing=west,log_mount=false,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 270
+    },
+    "facing=west,log_mount=false,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on",
+      "y": 270
+    },
+    "facing=west,log_mount=true,on=false,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 270
+    },
+    "facing=west,log_mount=true,on=false,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/off_log",
+      "y": 270
+    },
+    "facing=west,log_mount=true,on=true,wired=false": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 270
+    },
+    "facing=west,log_mount=true,on=true,wired=true": {
+      "model": "apocalypse_firstlight:block/wall_switch/on_log",
+      "y": 270
+    }
+  }
+}

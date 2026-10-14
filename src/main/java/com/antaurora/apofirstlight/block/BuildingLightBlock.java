@@ -60,15 +60,30 @@ public abstract class BuildingLightBlock extends Block {
             schedule(level, pos, BuildingLights.PERIOD, ORDINARY);
             return;
         }
-        if (!switchedOn(state)) next = false;   // its own switch (a pull chain) is off: dark, drawing nothing
-        else if (photocell() && level.isDay()) next = false;   // an outdoor fixture's photocell: dark by day, drawing nothing
-        else switch (BuildingLights.period(level, wiringPosition(state, pos), lit, periodEnergy())) {
+        switch (check(state, level, pos, lit)) {
             case LIT -> next = true;
             case DARK -> next = false;
             default -> { next = lit && phase != SECOND_LOOK; retry = next; }   // a lit light waits once for its panel
         }
         if (next != lit) level.setBlock(pos, state.setValue(LIT, next), Block.UPDATE_CLIENTS);
         schedule(level, pos, retry ? BuildingLights.GRACE : BuildingLights.PERIOD, retry ? SECOND_LOOK : ORDINARY);
+    }
+
+    private BuildingLights.Check check(BlockState state, ServerLevel level, BlockPos pos, boolean lit) {
+        if (!switchedOn(state)) return BuildingLights.Check.DARK;   // its own switch (a pull chain) is off: dark, drawing nothing
+        if (photocell() && level.isDay()) return BuildingLights.Check.DARK;   // an outdoor fixture's photocell: dark by day, drawing nothing
+        return BuildingLights.period(level, pos, wiringPosition(state, pos), lit, periodEnergy());
+    }
+
+    /**
+     * Looks again now (Building Wiring V1 phase 3: its light group was switched): lit or dark at once, as a pulled chain; an
+     * UNKNOWN answer keeps the light as it is. The scheduled checks go on as before.
+     */
+    public void recheck(ServerLevel level, BlockPos pos, BlockState state) {
+        boolean lit = state.getValue(LIT);
+        BuildingLights.Check c = check(state, level, pos, lit);
+        boolean next = c == BuildingLights.Check.UNKNOWN ? lit : c == BuildingLights.Check.LIT;
+        if (next != lit) level.setBlock(pos, state.setValue(LIT, next), Block.UPDATE_CLIENTS);
     }
 
     /** A light with a switch of its own (the porcelain lampholder's pull chain) is dark while it is off. */
@@ -87,8 +102,9 @@ public abstract class BuildingLightBlock extends Block {
     }
 
     /**
-     * Where the building's hidden wiring is looked up (BuildingPowerZone): the light's own cell; a fixture on an outside wall,
-     * whose cell has no roof over it, gives the wall it hangs on (as the Service Meter Box finds its panel).
+     * Where a LEGACY_AREA panel's footprint is looked up (BuildingPowerZone): the light's own cell; a fixture on an outside
+     * wall, whose cell has no roof over it, gives the wall it hangs on (as the Service Meter Box finds its panel). Over wires a
+     * light is found by its own cell (its tap).
      */
     protected BlockPos wiringPosition(BlockState state, BlockPos pos) {
         return pos;

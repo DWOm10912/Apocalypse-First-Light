@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/keyless_lampholder/ceiling_off",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        -2.953,
+        -18.352
+      ],
+      "scale": [
+        2.749,
+        2.749,
+        2.749
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        -2.953,
+        -18.352
+      ],
+      "scale": [
+        2.749,
+        2.749,
+        2.749
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        -12.922,
+        0
+      ],
+      "scale": [
+        1.898,
+        1.898,
+        1.898
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        -12.922,
+        0
+      ],
+      "scale": [
+        1.898,
+        1.898,
+        1.898
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        -2.712,
+        0
+      ],
+      "scale": [
+        0.839,
+        0.839,
+        0.839
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        -11.424,
+        0
+      ],
+      "scale": [
+        1.678,
+        1.678,
+        1.678
+      ]
+    },
+    "gui": {
+      "rotation": [
+        20,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        -16.963,
+        0
+      ],
+      "scale": [
+        2.6,
+        2.6,
+        2.6
+      ]
+    }
+  }
+}

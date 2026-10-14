@@ -209,6 +209,10 @@
       "unit_mass_kg": 0.25,
       "estimated": true
     },
+    "apocalypse_firstlight:keyless_lampholder": {
+      "unit_mass_kg": 0.22,
+      "estimated": true
+    },
     "apocalypse_firstlight:light_pole_base": {
       "unit_mass_kg": 6.0,
       "estimated": true
@@ -531,6 +535,10 @@
     },
     "apocalypse_firstlight:wall_outlet": {
       "unit_mass_kg": 0.1,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wall_switch": {
+      "unit_mass_kg": 0.08,
       "estimated": true
     },
     "apocalypse_firstlight:power_strip_3": {

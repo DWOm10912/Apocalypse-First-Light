@@ -2,7 +2,16 @@ package com.antaurora.apofirstlight.dev;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GeneratorInletBoxBlock;
+import com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity;
+import com.antaurora.apofirstlight.blockentity.GeneratorInletBoxBlockEntity;
+import com.antaurora.apofirstlight.energy.BuildingLights;
+import com.antaurora.apofirstlight.energy.BuildingSupply;
+import com.antaurora.apofirstlight.energy.PowerPlugs;
+import com.antaurora.apofirstlight.wiring.WiringSupply;
+import com.antaurora.apofirstlight.block.BuildingLightBlock;
+import com.antaurora.apofirstlight.block.KeylessLampholderBlock;
 import com.antaurora.apofirstlight.block.PorcelainLampholderBlock;
+import com.antaurora.apofirstlight.block.WallSwitchBlock;
 import com.antaurora.apofirstlight.cabin.CabinBlocks;
 import com.antaurora.apofirstlight.dev.wiring.WiringCommands;
 import com.antaurora.apofirstlight.meshhit.MeshBlockHitResult;
@@ -85,6 +94,10 @@ import java.util.UUID;
  *   <li>shapes: the cabin blocks' outlines and collision follow the mesh while the log wall stays a full block for light,
  *   support and mobs (never suffocating: the next cell is free to stand in), the hit meshes follow the drawn pieces (not the
  *   gun rack), and the roof still holds a ceiling fixture.</li>
+ *   <li>supply (phase 2): a new panel is WIRED; it feeds the outlet and the lamp its circuit taps (their breaker cuts them),
+ *   not an outlet off the wire; the top cable takes no breaker; LEGACY_AREA feeds nothing over wires; a second panel on the
+ *   circuit joins them (no power) until it goes; the feeder gives the inlet box its panel; a load center saved without the
+ *   field loads LEGACY_AREA.</li>
  * </ul>
  * Run with {@code src/dev/wiring-gametest.init.gradle} (and -PaflWithoutShaders).
  */
@@ -93,7 +106,7 @@ import java.util.UUID;
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class WiringGameTests {
     private static final String NS = "afl_wiring_tests", TOKEN = "[AFL WIRING TEST] PASS ";
-    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes"};
+    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes", "supply", "groups"};
 
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void template(net.minecraftforge.event.server.ServerStartingEvent event) throws Exception {
@@ -131,6 +144,8 @@ public final class WiringGameTests {
             case "slopes" -> slopes(h);
             case "corner" -> corner(h);
             case "shapes" -> shapes(h);
+            case "supply" -> supply(h);
+            case "groups" -> groups(h);
             default -> throw new IllegalArgumentException(name);
         }
     }
@@ -651,5 +666,213 @@ public final class WiringGameTests {
         BlockState rail = level.getBlockState(pp);
         h.assertTrue(rail.getShape(level, pp).bounds().maxY < 1 && rail.getCollisionShape(level, pp).bounds().maxY > 1.4, "a railing stops a jump");
         pass(h, "shapes", "log wall (no suffocation), corner, roofs, hit meshes, door, window, railing");
+    }
+
+    // ------------------------------------------------------------------------------------------------------ supply
+
+    private static void supply(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        // a wall of stone along z 5; on it (all facing south): the load center, the inlet box, an outlet and a lamp on the
+        // wire, an outlet past the wire's end
+        for (int x = 1; x <= 14; x++) h.setBlock(new BlockPos(x, 2, 5), Blocks.STONE);
+        BlockState south = AflBlocks.LOAD_CENTER.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH);
+        h.setBlock(new BlockPos(2, 2, 6), south);
+        h.setBlock(new BlockPos(4, 2, 6), AflBlocks.GENERATOR_INLET_BOX.get().defaultBlockState().setValue(GeneratorInletBoxBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(6, 2, 6), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(8, 2, 6), AflBlocks.PORCELAIN_LAMPHOLDER.get().defaultBlockState().setValue(PorcelainLampholderBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(13, 2, 6), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        BlockPos panelPos = h.absolutePos(new BlockPos(2, 2, 6)), inlet = h.absolutePos(new BlockPos(4, 2, 6)), outlet = h.absolutePos(new BlockPos(6, 2, 6)),
+                lamp = h.absolutePos(new BlockPos(8, 2, 6)), loose = h.absolutePos(new BlockPos(13, 2, 6));
+        h.assertTrue(level.getBlockEntity(panelPos) instanceof DistributionPanelBlockEntity, "the load center has its block entity");
+        DistributionPanelBlockEntity panel = (DistributionPanelBlockEntity) level.getBlockEntity(panelPos);
+        h.assertTrue(panel.wired(), "a new panel is WIRED");
+        List<BlockPos> red = new ArrayList<>(), feeder = new ArrayList<>();
+        for (int x = 2; x <= 10; x++) red.add(h.absolutePos(new BlockPos(x, 2, 5)));
+        for (int x = 2; x <= 4; x++) feeder.add(h.absolutePos(new BlockPos(x, 2, 5)));
+        WiringCommands.layAll(level, red, 1);
+        WiringCommands.layAll(level, feeder, WiringNode.FEEDER);
+        panel.toggleMain(null);
+        panel.input().receiveEnergy(500, false);
+        panel.serverTick();
+        WiringSupply.Result r = panel.wiring();
+        h.assertTrue(r != null && r.wired[1] && r.devices[1] == 2 && !r.conflict[1] && r.wired[WiringNode.FEEDER] && r.devices[WiringNode.FEEDER] == 1 && !r.partial,
+                "circuit 1 reaches the outlet and the lamp, the feeder the inlet");
+        WiringSupply.Feed f = WiringSupply.feed(level, outlet);
+        h.assertTrue(f != null && f.panel().equals(panelPos) && f.circuit() == 1, "the outlet is on circuit 1 of the panel");
+        h.assertTrue(PowerPlugs.outletLive(level, outlet) && PowerPlugs.draw(level, outlet, 5, true) == 5, "the wired outlet has power");
+        h.assertTrue(BuildingLights.period(level, lamp, lamp, false, BuildingLights.BULB_60W_PERIOD) == BuildingLights.Check.LIT, "the wired lamp lights");
+        h.assertTrue(!PowerPlugs.outletLive(level, loose) && BuildingSupply.outlet(level, loose) == null, "an outlet off the wire has none");
+        h.assertTrue(panelPos.equals(BuildingSupply.entryPanel(level, inlet, inlet.north())), "the feeder gives the inlet box its panel");
+        h.assertTrue(level.getBlockEntity(inlet) instanceof GeneratorInletBoxBlockEntity box && afterTick(box) && panelPos.equals(box.panel()), "the inlet box finds it itself");
+
+        // the breaker of circuit 1 cuts both; the cable's row has none
+        panel.toggleBranch(0, null);
+        h.assertTrue(!PowerPlugs.outletLive(level, outlet) && BuildingLights.period(level, lamp, lamp, true, BuildingLights.BULB_60W_PERIOD) == BuildingLights.Check.DARK,
+                "circuit 1 open: outlet and lamp dead");
+        panel.toggleBranch(0, null);
+        var cable = panel.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.ENERGY, Direction.UP).orElse(null);
+        panel.toggleBranch(WiringNode.BREAKERS, null);
+        h.assertTrue(cable != null && cable.extractEnergy(10, true) == 10, "the top cable takes no breaker (the row cannot be switched)");
+
+        // a second panel on circuit 1: joined, no power for either until it goes
+        h.setBlock(new BlockPos(11, 2, 6), south);
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(11, 2, 5))), 1);
+        panel.serverTick();
+        h.assertTrue(panel.wiring().conflict[1] && panel.conflictMask() == 1 << 1 && !PowerPlugs.outletLive(level, outlet) && WiringSupply.feed(level, outlet) == null, "two panels on one circuit: none");
+        h.assertTrue(!panel.wiring().conflict[WiringNode.FEEDER] && panelPos.equals(WiringSupply.entryPanel(level, inlet)), "the feeder is not joined");
+        h.setBlock(new BlockPos(11, 2, 6), Blocks.AIR);
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(12, 2, 5))), 1);   // any wiring edit: solve again
+        panel.serverTick();
+        h.assertTrue(!panel.wiring().conflict[1] && PowerPlugs.outletLive(level, outlet), "the second panel gone: power again");
+
+        // LEGACY_AREA: nothing over wires (and no building footprint here)
+        panel.setMode(DistributionPanelBlockEntity.SupplyMode.LEGACY_AREA);
+        h.assertTrue(WiringSupply.feed(level, outlet) == null && WiringSupply.entryPanel(level, inlet) == null, "LEGACY_AREA registers nothing over wires");
+        panel.serverTick();
+        h.assertTrue(!PowerPlugs.outletLive(level, outlet) && !panel.circuitLive(1) && WiringSupply.feed(level, outlet) == null, "LEGACY_AREA feeds no wired outlet");
+        panel.setMode(DistributionPanelBlockEntity.SupplyMode.WIRED);
+        panel.serverTick();
+        h.assertTrue(PowerPlugs.outletLive(level, outlet), "WIRED again");
+
+        // a LEGACY_AREA panel still serves its building by footprint (A1): a roofed room, its outlet live without any wire
+        for (int x = 1; x <= 6; x++) for (int z = 12; z <= 17; z++) h.setBlock(new BlockPos(x, 6, z), Blocks.BRICKS);   // stone is natural terrain, no roof
+        h.setBlock(new BlockPos(2, 2, 13), Blocks.STONE);
+        h.setBlock(new BlockPos(4, 2, 13), Blocks.STONE);
+        h.setBlock(new BlockPos(2, 2, 14), south);
+        h.setBlock(new BlockPos(4, 2, 14), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        BlockPos roomOutlet = h.absolutePos(new BlockPos(4, 2, 14));
+        DistributionPanelBlockEntity old = (DistributionPanelBlockEntity) level.getBlockEntity(h.absolutePos(new BlockPos(2, 2, 14)));
+        old.setMode(DistributionPanelBlockEntity.SupplyMode.LEGACY_AREA);
+        old.toggleMain(null);
+        old.input().receiveEnergy(500, false);
+        old.serverTick();
+        var zone = com.antaurora.apofirstlight.energy.BuildingPowerZone.compute(level, old.getBlockPos());
+        h.assertTrue(PowerPlugs.outletLive(level, roomOutlet) && BuildingSupply.outlet(level, roomOutlet).circuit() == 0, "LEGACY_AREA: the room's outlet by footprint ("
+                + zone.status() + " " + zone.columns().size() + " columns, serving " + com.antaurora.apofirstlight.energy.BuildingPowerZone.panelServing(level, roomOutlet)
+                + ", panel " + old.getBlockPos() + " live " + old.live() + " legacy " + !old.wired() + " outlets " + old.outletsLive() + ")");
+        h.assertTrue(!PowerPlugs.outletLive(level, loose), "the footprint stays in its room");
+        old.setMode(DistributionPanelBlockEntity.SupplyMode.WIRED);
+        old.serverTick();
+        h.assertTrue(!PowerPlugs.outletLive(level, roomOutlet), "WIRED: no footprint, and no wire to that outlet");
+
+        // the save field: written as wired; a tag without it (old saves, old templates) loads LEGACY_AREA
+        CompoundTag tag = panel.saveWithoutMetadata();
+        h.assertTrue("wired".equals(tag.getString("SupplyMode")), "the mode is saved");
+        tag.remove("SupplyMode");
+        panel.load(tag);
+        h.assertTrue(!panel.wired(), "no field: LEGACY_AREA");
+        panel.setMode(DistributionPanelBlockEntity.SupplyMode.WIRED);
+        pass(h, "supply", "wired feed, breakers, cable row, conflict, legacy (wires and footprint), feeder, save field");
+    }
+
+    // ------------------------------------------------------------------------------------------------------ groups
+
+    /**
+     * Phase 3: light groups and wall switches. On circuit 1 (all on a stone wall, facing south): keyless lamps A (group 1)
+     * and B (group 2), a pull-chain lamp (group 1), a photocell lamp (15), two switches on group 1, an outlet; a switch on
+     * no wire.
+     */
+    private static void groups(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        for (int x = 1; x <= 14; x++) for (int y = 2; y <= 3; y++) h.setBlock(new BlockPos(x, y, 5), Blocks.STONE);
+        h.setBlock(new BlockPos(2, 2, 6), AflBlocks.LOAD_CENTER.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        BlockState keyless = AflBlocks.KEYLESS_LAMPHOLDER.get().defaultBlockState().setValue(KeylessLampholderBlock.FACING, Direction.SOUTH);
+        BlockState sw = AflBlocks.WALL_SWITCH.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH);
+        h.setBlock(new BlockPos(4, 3, 6), keyless);
+        h.setBlock(new BlockPos(6, 3, 6), keyless);
+        h.setBlock(new BlockPos(5, 3, 6), AflBlocks.PORCELAIN_LAMPHOLDER.get().defaultBlockState().setValue(PorcelainLampholderBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(7, 3, 6), keyless);
+        h.setBlock(new BlockPos(8, 2, 6), sw);
+        h.setBlock(new BlockPos(10, 2, 6), sw);
+        h.setBlock(new BlockPos(12, 2, 6), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(14, 2, 6), sw);
+        BlockPos panelPos = h.absolutePos(new BlockPos(2, 2, 6)), a = h.absolutePos(new BlockPos(4, 3, 6)), b = h.absolutePos(new BlockPos(6, 3, 6)),
+                chain = h.absolutePos(new BlockPos(5, 3, 6)), photo = h.absolutePos(new BlockPos(7, 3, 6)), s1 = h.absolutePos(new BlockPos(8, 2, 6)),
+                s2 = h.absolutePos(new BlockPos(10, 2, 6)), outlet = h.absolutePos(new BlockPos(12, 2, 6)), loose = h.absolutePos(new BlockPos(14, 2, 6));
+        DistributionPanelBlockEntity panel = (DistributionPanelBlockEntity) level.getBlockEntity(panelPos);
+        List<BlockPos> wire = new ArrayList<>();
+        for (int x = 2; x <= 12; x++) wire.add(h.absolutePos(new BlockPos(x, 2, 5)));
+        for (int x = 4; x <= 7; x++) wire.add(h.absolutePos(new BlockPos(x, 3, 5)));
+        WiringCommands.layAll(level, wire, 1);
+        h.assertTrue(WiringCommands.setGroup(level, a, 1) == null && WiringCommands.setGroup(level, chain, 1) == null && WiringCommands.setGroup(level, b, 2) == null
+                && WiringCommands.setGroup(level, photo, WiringNode.PHOTOCELL) == null && WiringCommands.setGroup(level, s1, 1) == null && WiringCommands.setGroup(level, s2, 1) == null,
+                "the taps take their groups");
+        h.assertTrue(WiringCommands.setGroup(level, outlet, 1) != null && WiringCommands.setGroup(level, s1, WiringNode.PHOTOCELL) != null, "outlets stay always on, switches take no photocell");
+        h.assertTrue(WiringCommands.setGroup(level, loose, 1) != null, "a switch on no wire has no tap");
+        panel.toggleMain(null);
+        panel.input().receiveEnergy(4000, false);
+        panel.serverTick();
+        WiringSupply.Result r = panel.wiring();
+        h.assertTrue(r.lights[1][1] == 2 && r.lights[1][2] == 1 && r.lights[1][WiringNode.PHOTOCELL] == 1 && r.switches[1][1] == 2 && r.others[1] == 1 && !r.used(1, 3),
+                "the solve counts the groups (" + r.lights[1][1] + " " + r.lights[1][2] + " " + r.switches[1][1] + " " + r.others[1] + ")");
+        h.assertTrue(level.getBlockState(s1).getValue(WallSwitchBlock.WIRED) && level.getBlockState(s2).getValue(WallSwitchBlock.WIRED)
+                && !level.getBlockState(loose).getValue(WallSwitchBlock.WIRED), "the wired switches are marked, the loose one not");
+        recheck(level, a, b, chain, photo);
+        h.assertTrue(lit(level, a) && lit(level, b) && lit(level, chain), "all groups start on: the lamps light");
+        h.assertTrue(lit(level, photo) == !level.isDay(), "the photocell lamp follows day and night");
+
+        // a switch: its group off, both its switches turn, only its lamps go dark; the outlet keeps power
+        use(h, s1);
+        h.assertTrue(!panel.groupOn(1, 1) && !level.getBlockState(s1).getValue(WallSwitchBlock.ON) && !level.getBlockState(s2).getValue(WallSwitchBlock.ON), "group 1 off, both switches down");
+        h.assertTrue(!lit(level, a) && !lit(level, chain) && lit(level, b) && PowerPlugs.outletLive(level, outlet), "only group 1 goes dark, the outlet stays live");
+        use(h, s2);
+        h.assertTrue(panel.groupOn(1, 1) && level.getBlockState(s1).getValue(WallSwitchBlock.ON) && lit(level, a) && lit(level, chain), "the other switch turns it back on");
+
+        // the pull chain stacks on its group
+        BlockState c = level.getBlockState(chain);
+        level.setBlock(chain, c.setValue(PorcelainLampholderBlock.ON, false), Block.UPDATE_ALL);
+        recheck(level, chain);
+        h.assertTrue(!lit(level, chain) && lit(level, a), "a pulled chain darkens its lamp only");
+        level.setBlock(chain, level.getBlockState(chain).setValue(PorcelainLampholderBlock.ON, true), Block.UPDATE_ALL);
+
+        // power loss: the switch still turns, the state is kept (and saved); power back: as switched
+        panel.toggleMain(null);
+        recheck(level, a, b, chain);
+        h.assertTrue(!lit(level, a) && !lit(level, b), "no power: dark");
+        use(h, s1);
+        h.assertTrue(!panel.groupOn(1, 1) && !level.getBlockState(s2).getValue(WallSwitchBlock.ON), "a switch turns without power");
+        CompoundTag tag = panel.saveWithoutMetadata();
+        h.assertTrue(tag.getInt("GroupOff") == 1, "the groups are saved (" + tag.getInt("GroupOff") + ")");
+        panel.load(tag);
+        h.assertTrue(!panel.groupOn(1, 1) && panel.groupOn(1, 2), "and load back");
+        panel.toggleMain(null);
+        recheck(level, a, b, chain);
+        h.assertTrue(!lit(level, a) && !lit(level, chain) && lit(level, b), "power back: group 1 stays off, group 2 lights");
+        use(h, s2);
+        h.assertTrue(lit(level, a) && lit(level, chain), "switched on again");
+
+        // a switch on no wire turns only itself
+        boolean before = level.getBlockState(loose).getValue(WallSwitchBlock.ON);
+        use(h, loose);
+        h.assertTrue(level.getBlockState(loose).getValue(WallSwitchBlock.ON) != before && panel.groupOn(1, 1) && lit(level, a), "the loose switch works nothing");
+
+        // a switch placed later (its group off) lines up with it on the next solve
+        use(h, s1);
+        h.setBlock(new BlockPos(9, 2, 6), sw);
+        BlockPos s3 = h.absolutePos(new BlockPos(9, 2, 6));
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(9, 2, 5))), 1);   // taps the new switch (group 0)
+        h.assertTrue(WiringCommands.setGroup(level, s3, 1) == null, "the new switch joins group 1");
+        panel.serverTick();
+        h.assertTrue(!level.getBlockState(s3).getValue(WallSwitchBlock.ON) && level.getBlockState(s3).getValue(WallSwitchBlock.WIRED), "a new switch takes its group's state");
+        pass(h, "groups", "groups counted, switch sync, outlet unaffected, pull chain stacks, photocell, power loss kept + saved, loose switch, late switch");
+    }
+
+    private static void use(GameTestHelper h, BlockPos pos) {
+        ServerPlayer p = player(h, "switch", GameType.SURVIVAL);
+        BlockState s = h.getLevel().getBlockState(pos);
+        s.use(h.getLevel(), p, InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(Vec3.atCenterOf(pos), Direction.SOUTH, pos, false));
+    }
+
+    private static void recheck(ServerLevel level, BlockPos... lamps) {
+        for (BlockPos p : lamps) if (level.getBlockState(p).getBlock() instanceof BuildingLightBlock l) l.recheck(level, p, level.getBlockState(p));
+    }
+
+    private static boolean lit(ServerLevel level, BlockPos p) {
+        return level.getBlockState(p).getValue(BuildingLightBlock.LIT);
+    }
+
+    private static boolean afterTick(GeneratorInletBoxBlockEntity box) {
+        box.serverTick();
+        return true;
     }
 }

@@ -34,7 +34,7 @@ public final class LogMount {
 
     /** The pad kinds the wall can draw (tools/build-cabin-exterior-v1.mjs PADS, in this order from 1). */
     public static final int PAD_OUTLET = 1, PAD_LAMPHOLDER = 2, PAD_EMERGENCY = 3, PAD_WALL_PACK = 4, PAD_PANEL_LIGHT = 5,
-            PAD_LINEAR = 6, PAD_PANELBOARD = 7, PAD_LOAD_CENTER = 8, PAD_METER = 9, PAD_INLET = 10;
+            PAD_LINEAR = 6, PAD_PANELBOARD = 7, PAD_LOAD_CENTER = 8, PAD_METER = 9, PAD_INLET = 10, PAD_SWITCH = 11;
 
     /**
      * The pads by kind from 1: px in the fixture's canonical frame (facing north, the wall at z 16), x0, y0, x1, y1, from
@@ -52,7 +52,8 @@ public final class LogMount {
             {3.2, 2.1, 12.8, 13.9},      // commercial panelboard
             {5.05, 4.5, 10.95, 12.3},    // load center
             {1.2, 1.1, 13.9, 11.7},      // service meter box: meter, disconnect, inlet
-            {6.3, 3.8, 9.7, 10.2}};      // generator inlet box and its cord hook
+            {6.3, 3.8, 9.7, 10.2},       // generator inlet box and its cord hook
+            {6.8, 1.5, 9.2, 4.9}};       // wall switch (plate 7.16..8.84 x 1.83..4.57; Building Wiring V1 phase 3, 2026-10-14)
 
     /** A wall fixture that stands on a pad on logs: the pad kind for this state (0: none, e.g. hung from a ceiling). */
     public interface Padded {

@@ -4,7 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GeneratorInletBoxBlock;
 import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
-import com.antaurora.apofirstlight.energy.BuildingPowerZone;
+import com.antaurora.apofirstlight.energy.BuildingSupply;
 import com.antaurora.apofirstlight.energy.PlugCord;
 import com.antaurora.apofirstlight.energy.PowerPlugs;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Generator Inlet Box (docs/models/generator_inlet_v1.md): keeps the 15 m L14-30 cord ({@link PlugCord}, stowing on the
  * box's hook) and feeds what comes in through it to the panel of the building whose wall the box hangs on (the wall
- * column behind it in the panel's footprint, {@link BuildingPowerZone#panelServing}; the run in between is hidden wiring),
+ * column behind it in the panel's footprint, or its feeder wire to a WIRED panel: {@link BuildingSupply#entryPanel}; the run in between is hidden wiring),
  * as the service meter box does. The draw follows the building: the panel's load (its average), plus up to 4 FE/t while
  * its buffer refills, never more than the genset's rating unless the load itself is more, so an overloaded house trips
  * the genset's breaker as a real one would. The genset's rating is passed on as the panel's supply (its capacity readout).
@@ -63,7 +63,7 @@ public class GeneratorInletBoxBlockEntity extends AflAnimatedMeshBlockEntity imp
         if (now >= nextLookup) {
             nextLookup = now + 40;
             BlockPos wall = worldPosition.relative(getBlockState().getValue(GeneratorInletBoxBlock.FACING).getOpposite());
-            BlockPos found = BuildingPowerZone.panelServing(level, wall);
+            BlockPos found = BuildingSupply.entryPanel(level, worldPosition, wall);
             if (!java.util.Objects.equals(found, panel)) { panel = found; sync(); }
         }
         if (panel == null || !level.isLoaded(panel)) return null;

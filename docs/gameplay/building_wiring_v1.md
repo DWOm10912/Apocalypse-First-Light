@@ -1,12 +1,15 @@
 # 建筑暗线 V1（Building Wiring V1）
 
-状态（2026-10-13）：**第 1 阶段「数据核心和拆除」已实现，没有提交**。
-- 用户在「house test」里实机测过第一版，提了 5 个问题，当天修了第二版（第 1.1 节）。
-- 第二版：编译通过；布线 GameTest 8/8 通过；A1 回归 `GasStation01GameTests` 通过。
-- **第二版没有实机验证**。没看过的有：屋顶上斜着走的线、只画当前回路的透视、中键选回路、面板上的米数和"选第 N 路"行、拿扳手时世界提示消失、小屋方块的新选框和碰撞。
+状态（2026-10-14）：
+- **第 1 阶段「数据核心和拆除」**：用户提交了（add28f3d "暗线 V1 第 1 阶段"）。用户实机测过，4 路 PASS（第 1.2 节）。
+- **第 2 阶段「配电箱模式和供电」已实现，没有提交**（第 5.1 节）：编译通过；布线 GameTest 9/9 通过（新增 `supply`）；A1 结构回归 `GasStation01GameTests` 通过。**没有实机验证**：配电箱界面的 4 路和外部馈线行、互连和未加载状态、Jade、扳手面板的配电箱行，都没在游戏里看过。
+- **第 3 阶段「灯光组和开关」已实现，没有提交**（第 5.2 节）：编译通过；布线 GameTest 10/10 通过（新增 `groups`）。**没有实机验证**：墙上开关、无开关瓷灯座、配电箱界面的分组行都没在游戏里看过。
 - 设计、取舍和后面各阶段的计划见 [建筑暗线 V1：技术设计](building_wiring_v1_design.md)。本文只写游戏里现在的实际行为。
 
-**暗线现在还不供电**。墙里可以铺线、剪线、拆墙返还，透视看得见，但灯、插座、配电箱都还按原来的"范围暗线"（`BuildingPowerZone`）取电。配电箱模式和按暗线供电是第 2 阶段。
+**暗线现在能供电了，但只对 `WIRED` 配电箱**（第 5.1 节）：
+- 新放的配电箱是 `WIRED`，只给暗线接到的灯、插座、应急灯供电，进线盒、电表箱用进线接到它；
+- 旧存档、旧模板里的配电箱（A1 加油站、现在「house test」里那个）没有模式字段，是 `LEGACY_AREA`，还按原来的"范围暗线"（`BuildingPowerZone`）供电，墙里的暗线对它不起作用。
+- 灯光组和墙上开关（第 5.2 节）：线头分 0 常亮、1–8 灯光组、15 光控；墙上开关扳的是配电箱里记着的组，插座不受影响。线头的组现在只能用开发指令设。
 
 ## 1. 用户的要求和这一轮的取舍
 
@@ -24,7 +27,7 @@
 - 颜色不再单独存：节点的回路号就决定颜色（`WiringNode#colourOf`），原来的颜色位留空（写 0）。工具里"换回路"就是换颜色，第 5 阶段计划里单独的选色也就不做了。
 - 回路号：1–4 路，5 = 进线（原来 1–12、13）。蹲下 + 滚轮在 1–4 路和进线之间循环。
 - 旧存档（区块数据版本 1）读进来时按颜色并过去：1、5、9 路 → 第 1 路，2、6、10 路 → 第 2 路，以此类推，进线 13 → 进线。工具铺的线都是回路的默认颜色，所以一段线的连接不会断。同一格里两路并到一起时，连线、斜连线取两者的并集，线头先取原来那一路的，没有的再补上（`WiringNode#merge`）。用户说测试世界里还没铺线，这一步只是防万一。
-- 配电箱（第 2 阶段）在 WIRED 模式下只给暗线 4 个分路开关；A1 的 LEGACY_AREA 不变（它的分路由配电箱按范围自动列出）。
+- 配电箱在 `WIRED` 模式下给暗线 4 个分路开关，一路一个（第 5.1 节，2026-10-14 第 2 阶段）；A1 的 `LEGACY_AREA` 不变（照明、插座、外部馈线三路）。
 - 用户 2026-10-14 实机 PASS（4 路）。
 - GameTest 8/8：`nodes` 查 4 路和颜色对应、进线黑色；`save` 加了版本 1 存档的合并（红 1 和红 5 并成第 1 路、连线和线头都在，蓝 10 到第 2 路，进线不变）。
 
@@ -91,6 +94,7 @@
 | 攻击键 | 剪线 |
 | 潜行 + 滚轮 | 换回路 |
 | 选取方块键（只在能用时出现） | 选第 5 路 / 选进线 |
+| 状态行（只在对着配电箱时出现，第 5.1 节） | 范围供电 · 暗线不生效 / 第 N 路互连 |
 
 - 键帽跟着玩家改过的键位显示。
 - 长度是客户端知道的这一路的节点数（1 个节点 = 1 m）：只算同步到客户端的区块（玩家周围半径 2 个区块），线走得更远的部分不算。
@@ -137,11 +141,102 @@
 |---|---|---|
 | 配电箱 `PANEL` | `distribution_panel`、`load_center` | 每一路一个线头，加进线一个 |
 | 进线点 `ENTRY` | `service_meter_box`、`generator_inlet_box` | 只接进线 |
-| 用电设备 `LOAD` | `wall_outlet`、`industrial_utility_light`、`linear_light`、`emergency_light`、`porcelain_lampholder`、`wall_pack`、`canopy_downlight` | 只接 1–4 路，一个线头 |
+| 用电设备 `LOAD` | `wall_outlet`、`industrial_utility_light`、`linear_light`、`emergency_light`、`porcelain_lampholder`、`keyless_lampholder`、`wall_pack`、`canopy_downlight`、`wall_switch` | 只接 1–4 路，一个线头 |
 
 - **安装格**：方块有 `facing` 属性的，是 `facing` 反方向的那一格（挂墙的是背后的墙，朝下吸顶的是天花板）；没有 `facing` 的，是上面一格。
 - 线头记在安装格的节点上，不占格子、不耗线。设备拆了，线头留在墙里，换一个装上就接回去。
-- 线头分组这一轮固定是 0（常亮），灯光组和开关是第 3 阶段。
+- 线头带一个分组（第 5.2 节）。墙上开关也是一个 `LOAD`：它不取电，线头的组就是它扳的组。
+
+### 5.1 配电箱模式和供电（第 2 阶段，2026-10-14）
+
+**模式**（配电箱存档字段 `SupplyMode`，值 `wired` / `legacy_area`）：
+
+| 模式 | 谁是 | 供电 |
+|---|---|---|
+| `WIRED` | 新放的配电箱、负载中心（方块实体新建时就是，第一次存档写进字段） | 只认暗线：没接暗线的灯、插座没电。不登记范围 |
+| `LEGACY_AREA` | 读档时没有这个字段的：旧存档、旧模板（A1 加油站） | 原来的范围（`BuildingPowerZone`），完全不变。墙里的暗线对它不起作用 |
+
+- 模式只能明确改：开发指令 `/afl dev panel_mode`（第 9 节）或开发桥 `place_fixture` 的 `supply_mode`。铺线、检测到暗线都不会自动切换。
+- 改模式时：断路器全部合上，旧模式登记的东西撤掉，新模式下一 tick 开始登记。总闸、跳闸、储能不变。
+- A1 的建造脚本（`tools/afl_minecraft_mcp/fuel_stop_a1_store.mjs`）放配电盘时写明 `supply_mode: 'legacy_area'`，不然重跑会变成 `WIRED`、整个加油站断电。
+
+**求解**（`wiring/WiringSupply`，只有 `WIRED`）：
+- 起点：配电箱安装格里，线头指向配电箱、回路号为 N 的节点就是第 N 路的出线。没有这个线头的回路算没接线。
+- 沿连线和斜连线做广度优先搜索，只走已加载的区块，每一路最多 4,096 个节点。收集所有线头：设备还装在这个线头上（它的安装格就是这一格）才算；1–4 路收用电设备，进线收进线盒和电表箱。设备拆了、线头空着，就跳过。
+- 结果写进这一维度的**设备索引**：设备格子 → (配电箱, 回路, 分组)；进线点 → 配电箱。同一个设备被两个箱子登记时，先登记的算。
+- **互连**：一路的搜索碰到另一个配电箱的线头（两个箱子接到了一起），这一路标"互连"，这个箱子不登记这一路的设备，也不给它供电。对方箱子求解时同样碰到这个箱子，也一样。
+- **未加载**：线走进没加载的区块时，那边的设备没电，配电箱标"线路未加载"。
+- 搜索经过的格子如果已经不能铺线（WorldEdit 快速模式这种绕过了改方块钩子的），线删掉，不返还（设计第 8.4 节）。
+- 什么时候重算：布线修订号变了的下一 tick（任何地方铺线、剪线、清线、区块的布线数据加载，`WiringStorage#revision`），平时每 100 tick 一次（新装了设备、区块卸载）。设计稿写的"只把 64 格内的配电箱标脏"没做：任何布线改动都让所有 `WIRED` 配电箱各重算一次。
+- 配电箱拆掉、区块卸载、改成 `LEGACY_AREA`：它登记的索引一起撤掉。墙里的线和线头不动。
+
+**设备怎么找电**（`energy/BuildingSupply`，原来的六处查询都换成它）：
+1. 先查设备索引：命中而且那个配电箱已加载、是 `WIRED`，就是那一路；
+2. 没命中，再按范围找（`BuildingPowerZone.panelServing`），只认 `LEGACY_AREA` 配电箱。
+
+| 设备 | `WIRED` 下有电的条件 | 取电记在 |
+|---|---|---|
+| 灯（`BuildingLightBlock`：`industrial_utility_light`、`linear_light`、`wall_pack`、`canopy_downlight`、`porcelain_lampholder`） | 总闸合、没跳闸、这一路的断路器合、没有互连、缓冲里有电；拉线灯还要拉绳开着，户外灯天黑才亮（光控照旧） | 第 N 路 |
+| 应急灯 | 同上就充电 | 第 N 路 |
+| 墙上插座 | 同上；插线板、插头电器照旧插插座 | 第 N 路 |
+| 进线盒、电表箱 | 进线连到的配电箱就是送电的对象 | — |
+
+- 招牌字（`ChannelLetterBlock`，也是 `BuildingLightBlock`）不在 `wiring_devices` 里，接不了线头：`WIRED` 下永远不亮，只在 `LEGACY_AREA` 的范围里亮（A1 的招牌照旧）。
+- `WIRED` 下设备都按**自己的格子**查索引；`LEGACY_AREA` 下还按原来的位置查范围（外墙上的灯用它挂的那面墙，`wiringPosition`）。
+- 灯的取电量、"两个周期的电才点亮"、计划刻的节奏、查不到时亮着的灯等一次再灭，都和以前一样（[Building Lights V1](../models/building_lights_v1.md)）。
+- 过载跳闸还是整箱一个规则；每一路的负载分开统计、在界面上显示。
+
+**顶部外部馈线**：
+- `WIRED`：不占 4 个断路器，单独一行"外部馈线"，没有开关（点它没反应），只跟总闸和跳闸走；负载算进整箱。
+- `LEGACY_AREA`：不变，还是第 3 个断路器。
+
+**界面**（`client/DistributionPanelScreen`，[Building Power V1](../models/building_power_v1.md)）：
+- `WIRED`：支路是"第 1 路"到"第 4 路"，颜色就是线的颜色（红、蓝、绿、黄），再加"外部馈线"一行（紫色小色块代替开关）。没有"备用"那一行。互连的那一路，右边写"互连"（琥珀色），开关显示合着。
+- 状态词新增"线路互连"和"线路未加载"（琥珀色），排在"无进线"后面、"重复配电盘"前面。
+- `LEGACY_AREA`：和以前一样。
+
+**提示**：
+- Jade（`compat/jade/DistributionPanelJadeProvider`）：`LEGACY_AREA` 的配电箱显示"范围供电"；`WIRED` 的只在出问题时显示："第 N 路互连"、"线路未加载"。
+- 扳手面板（第 3.1 节）：对着配电箱时多一行状态，`LEGACY_AREA` 是"范围供电 · 暗线不生效"，`WIRED` 有互连时是"第 N 路互连"。客户端靠配电箱同步来的 `WiringConflict`（每一路一位，只在同步包里，不存档）。
+- 进线盒的 Jade "墙后没有配电盘"改成"没接配电盘"（两种模式都对）。
+
+### 5.2 灯光组和墙上开关（第 3 阶段，2026-10-14）
+
+**灯光组** = (配电箱, 第 N 路, 组 1–8)。一路上可以有几个互不相干的组。线头的分组（`WiringNode` 每个线头 4 位）决定设备跟哪个组：
+
+| 分组 | 灯 | 墙上开关 | 插座、应急灯 |
+|---|---|---|---|
+| 0 常亮 | 这一路有电就亮 | 什么也不管，只扳自己 | 一律按 0 算 |
+| 1–8 | 这个组开着才亮 | 扳它就是扳这个组 | （一律按 0 算） |
+| 15 光控 | 这一路有电、天黑（`!level.isDay()`）才亮 | 不能用（按 0 算） | （一律按 0 算） |
+
+- 设备实际跟的组是求解时算的（`WiringSupply#effectiveGroup`），存进设备索引 `Feed(panel, circuit, group, role)`；`role` 是灯 `LIGHT`（所有 `BuildingLightBlock`）、开关 `SWITCH`、别的 `OTHER`（插座、应急灯）。所以**开关关不掉插座**，应急灯照样充电。
+- **组的开关状态存在配电箱里**：`DistributionPanelBlockEntity` 的 `GroupOff`（4 路 × 8 位，第 (N − 1) × 8 + g − 1 位；默认全开，全开时不写这个字段）。存档，所以停电以后再来电还是原来的样子。`setMode` 换模式时清零。
+- 灯（`BuildingLights.period`）先看组：组关着、或者光控遇上白天，直接是 DARK，不取电；再看这一路有没有电。拉线瓷灯座的拉绳和灯自带的光控（壁灯、雨棚筒灯）叠在上面，都要开着才亮。`LEGACY_AREA` 没有组。
+
+**墙上开关 `wall_switch`**（`block/WallSwitchBlock`，没有方块实体）：
+- 北美单联扳动开关，白色尼龙面板，和墙上插座同一块板，实物 × 1.5（面板 69.9 × 114.3 mm、扳柄伸出 17 mm）。用户 2026-10-14 看过 A / B / C 三种概念图后选 A（`design/buildings/forest_start_home_v1/m2_sheets/m2_5_switch_concepts.png`，页面 `m2_source/switch_concepts.html`）。
+- 只能挂墙（`facing` 朝外），面板中心在格子里 0.2 m 高：装在地板上面第二格就是离地 1.2 m。
+- 方块状态：`facing`、`on`（扳柄朝上 = 开）、`wired`（它管着一个组）、`log_mount`（原木墙上站在垫块上，垫块种类 11）。
+- 右键：
+  - 管着组的开关：配电箱里这个组翻转（`toggleGroup`），同一组的所有开关一起扳过去，同一组的灯马上重新检查（`BuildingLightBlock#recheck`，一盏灯不用等下一个 40 tick 周期）。
+  - 停电也能扳：状态记在配电箱里，来电后按记住的状态亮。
+  - 没接线、或者线头是 0 组的开关：只扳自己，什么也不管。
+  - 声音暂时是原版拉杆声（要一条 Firefly 录音换掉）。
+- 没加载的开关：配电箱下一次求解（布线修订号变了，或者每 100 tick）时，把和组状态不一样的开关扳过去、标上 `wired`；不再管组的开关（剪了线、改成 0 组）去掉 `wired`。
+- Jade（`compat/jade/WallSwitchJadeProvider`，只用客户端的方块状态）：开 / 关；没有 `wired` 时加一行"未接线"。按键提示：开灯 / 关灯。
+- 挖掘：塑料小件，同插座：空手就能拆（硬度 0.3），不要求工具，不进 `mineable/*`，掉自身（爆炸后不掉）；没有碰撞。
+- 模型：`tools/build-power-outlets-v1.mjs`（和插座同一个生成器），开 / 关两个 OBJ，加原木墙垫块上的 `_log` 版本；可编辑源 `src/main/blockbench/wall_switch_v1.bbmodel`。
+
+**无开关瓷灯座 `keyless_lampholder`**：主屋用的灯，靠墙上开关的组开关；见 [Building Lights V1](../models/building_lights_v1.md)「F 无开关瓷灯座」。
+
+**配电箱界面**：`WIRED` 的每一路下面，只列这一路真的有灯或开关用着的组，一组一行：
+- 常亮：几盏灯，有插座或应急灯时加"其他 N"；
+- 组 N：几盏灯，右边"开 / 关"（只显示，扳要去开关那里）；
+- 光控：几盏灯。
+- 没用到的组不显示。数据走菜单同步（`DATA_GROUPS` 起，每一路 13 个数：用到的组、关着的组、其他设备数、每组的灯数）。
+
+**怎么设线头的组**：第 5 阶段扳手才有选组。现在用开发指令 `/afl dev wiring group <设备> <组>`（第 9 节）；扳手和 `lay` / `route` 铺出来的线头都是 0 组。
 
 ## 6. 拆除和清理
 
@@ -203,8 +298,16 @@
 | `clear <from> [<to>]` | 清空一格或一个范围里的所有线（最多 32,768 格） |
 | `read <pos>` | 读回一格：每一路的颜色、连线方向、线头方向和分组 |
 | `stats` | 周围 9 × 9 个区块的节点数，和自己扳手当前的回路 |
+| `group <device> <group>` | 第 3 阶段：把这个设备的线头改成第 `group` 组（0–15；插座、应急灯只能 0，开关不能 15；设备没有线头时报错）。改了算布线改动，配电箱下次求解就按新组 |
+| `feed <pos>` | 这个设备的电从哪来：`WIRED` 配电箱和第几路、分组，或者进线点接的配电箱，或者按范围找到的配电箱；后面写现在有没有电 |
 
 `circuit` 是 1–5，5 = 进线。指令都不返还铜线。
+
+`/afl dev panel_mode <pos> [wired|legacy_area]`（第 2 阶段，同样只在开发环境、2 级权限）：
+- 不带模式：读回配电箱的模式；`WIRED` 的再列出上一次求解里每一路接到几个设备（进线是几个进线点）、哪一路互连、有没有线走进没加载的区块，以及每一路用到的组：几盏灯、几个开关、开着还是关着（第 3 阶段）；
+- 带模式：改成这个模式（第 5.1 节）。
+
+开发桥 `place_fixture` 多一个参数 `supply_mode`（`wired` / `legacy_area`，`tools/afl_minecraft_mcp/models.mjs` 和 `src/dev/.../authoring/bridge/FixtureAdapter.java`）：只能给配电箱、负载中心用，别的方块报 `SUPPLY_MODE_NOT_A_PANEL`；不写就是新放的默认 `WIRED`。放完返回里带 `supply_mode`。撤销照旧一步。
 
 ## 10. 寻路
 
@@ -222,7 +325,7 @@
 ./gradlew runGameTestServer --offline -PaflWithoutShaders --init-script src/dev/wiring-gametest.init.gradle
 ```
 
-init 脚本用一个新的独立世界，跑完检查日志里八个 `[AFL WIRING TEST] PASS <名字>` 都在，少一个就让任务失败。
+init 脚本用一个新的独立世界，跑完检查日志里十个 `[AFL WIRING TEST] PASS <名字>` 都在，少一个就让任务失败。
 
 | 测试 | 内容 |
 |---|---|
@@ -234,12 +337,29 @@ init 脚本用一个新的独立世界，跑完检查日志里八个 `[AFL WIRIN
 | `slopes` | 8 个斜连线位各自能存能清、算作出线、不碰别的字段，8 位全开仍在 50 位内；用真的 AFL 屋顶方块搭一段 1:2 屋顶（下、上、高一层的下、上）：上半格到高一层下半格是斜坡，横着不是；寻路正好走这 4 格；铺线后普通连线和斜连线都对；剪掉上半格，两边邻格的连线都没了，再铺回来；高一层的下半格换成石头：线和普通连线留着，斜连线两头都删；三级楼梯一路斜连；拐角格里有这一路时只用普通连线 |
 | `corner` | 墙脚和地板之间：生存模式铺地板第一格，自动通过墙脚下的基础接上墙上的线，一共扣 2 个；只剩 1 个铜线时这一格照铺，拐角不接 |
 | `shapes` | 原木墙一段：选框到原木外凸（z 方向超出格子），仍是实心（各面能挂东西、挡视线、导红石、挡光），但不窒息，旁边那格不算"会窒息"（否则客户端会把站在那格的玩家推开一格；对照：石头那格算），生物不当它是空地，能铺线；墙角：两端露出的原木头只在两个空着的面伸出去；屋顶下半格是屋面板（屋檐那边低于格底），上半格离格底 0.3 格以上，墙上的上半格填到格底；屋顶底面仍能吸顶装灯；门：不是整格，关着时门洞中间有碰撞，开着时没有；窗：不是整格、生物不穿、不窒息；门廊栏杆：选框不到 1 格高，碰撞 1.5 格；命中网格（2026-10-13 晚）：向下的射线落在下半格屋面的斜面上（法线斜、高度在屋面板里），屋顶格的轮廓有边，水平射线停在原木弧顶（格子外），枪架没有命中网格 |
+| `supply` | 第 2 阶段：新放的负载中心是 `WIRED`；第 1 路接一个插座和一个拉线灯座，进线接进线盒：求解结果第 1 路 2 个设备、进线 1 个；插座有电、能取电，灯座点亮；线外面的插座没电；进线盒找到这个配电箱（它自己 tick 一次也找到）；第 1 路断路器分闸，插座和灯座都没电；外部馈线那一行切不了，顶部照样出电；第二个负载中心接到第 1 路上：互连（掩码第 1 位）、插座没电、索引里没有它，进线不受影响；第二个箱子拆掉、随便改一格线以后又有电；改成 `LEGACY_AREA`：索引撤掉，暗线上的插座没电；一间砖顶小屋里的 `LEGACY_AREA` 配电箱按范围给屋里的插座供电（不碰屋外那个），改回 `WIRED` 后没线的那个插座没电；存档写 `SupplyMode: wired`，去掉这个字段读回是 `LEGACY_AREA` |
+
+| `groups` | 第 3 阶段：一个负载中心第 1 路上接两盏无开关瓷灯座（组 1、组 2）、一个拉线瓷灯座（组 1）、一盏光控（15）、两个组 1 的开关、一个插座，另有一个没接线的开关：插座设不了组 1、开关设不了 15、没线头的开关设不了；求解数对（组 1 两盏灯、两个开关，组 2 一盏，光控一盏，其他 1 个，组 3 没用到），接线的开关标上 `wired`、没接的没有；全开时都亮，光控跟昼夜；扳一个开关：组 1 关、两个开关一起扳下、只有组 1 的灯灭、插座照样有电；另一个开关扳回来；拉绳拉灭只灭那一盏；总闸断开时开关照样能扳，`GroupOff` 存档、读回，来电后组 1 还关着、组 2 亮；没接线的开关只扳自己；后来放的开关下一次求解跟上组的状态 |
 
 2026-10-13 第二版结果：8/8 通过。A1 回归 `GasStation01GameTests`：通过（4 个旋转，91,380 项检查，512 种方块状态，邻格更新没有改变任何方块状态）。
 
+2026-10-14 第 2 阶段结果：9/9 通过。`GasStation01GameTests` 通过（同上的数字）。注意它只查 A1 结构的旋转和方块状态，不查供电；`LEGACY_AREA` 的范围供电靠 `supply` 里的小屋那一段查。
+
+2026-10-14 第 3 阶段结果：10/10 通过，服务器正常关闭（约 1 分钟）。第一次跑 10/10 通过，但服务器卡在 "Saving worlds" 不退出：光照引擎的工作线程问配电箱的形状，配电箱的形状要读邻格（接线盒），而邻格所在的区块要等主线程，主线程正在关服。改成配电箱直接回答"天光照下去"（`DistributionPanelBlock#propagatesSkylightDown` = true，不再读形状；配电箱本来就不占满格子，光照结果不变）。这一轮没有跑 `GasStation01GameTests`。
+
 ## 12. 已知问题和没做的
 
-- 暗线不供电（第 2 阶段）。
+- 第 2 阶段没有实机验证：配电箱界面（4 路颜色、外部馈线行、互连、两个新状态词）、Jade、扳手面板的配电箱行，以及暗线供电在真房子里的表现，都只在 GameTest 里查过代码路径。
+- 第 3 阶段没有实机验证：墙上开关和无开关瓷灯座的外观、垫块、选框、挖掘，扳开关时的手感，配电箱界面的分组行，Jade 和提示都没看过。
+- 墙上开关的声音暂时是原版拉杆声，要一条 Firefly 录音换掉。
+- 线头的组只能用开发指令 `group` 设，扳手铺出来的都是 0 组（第 5 阶段加选组）；开发桥也还没有铺线、设组的操作（第 4 阶段要用时再加）。
+- 配电箱界面的组只显示开 / 关，不能在界面上扳。
+- 光控看的是 `level.isDay()`，不看灯那一格的天光。
+- 「house test」里现在的负载中心是旧档、`LEGACY_AREA`：第 4 阶段接线前要先用 `/afl dev panel_mode` 改成 `wired`。
+- 任何布线改动都让所有 `WIRED` 配电箱各重算一次（没按 64 格范围标脏）；一栋房子几百个节点不算什么，大量配电箱时的开销没测。
+- 新装一个设备到已有线头上，最多 5 秒（100 tick）后才通电；拆掉的设备在下一次求解前还留在索引里（它已经不在了，没有人会来查）。
+- 线走进没加载的区块时，那边的设备没电，等区块加载、下一次求解后才恢复。
+- 招牌字（`ChannelLetterBlock`）接不了暗线，`WIRED` 房子里不会亮。
 - 没有配方，没有音效（要用 Firefly 录一条，不自己合成）。
 - 第二版的斜着走的线、只画当前回路、中键选回路、面板的米数和"选第 N 路"、小屋方块的新选框和碰撞，都没实机看过；扳手第一、第三人称的显示变换是估计值。
 - 别的回路的线在透视里看不见：两路线走同一格时，只能靠面板上的"选第 N 路"发现。第 5 阶段的"显示全部"会补上。
@@ -250,7 +370,7 @@ init 脚本用一个新的独立世界，跑完检查日志里八个 `[AFL WIRIN
 - 斜连线只认 `facing` 在坡向上的屋顶和楼梯；屋顶的屋脊格两边都是下半格时，那一段在透视里是平的。
 - 线形灯连成一排时，每一节都是一个设备，每一节都要自己的线头。
 - 别的模组如果用 `BreakEvent` 只是"问一下能不能拆"（没真的拆），这一格的线也会被清掉（生存模式还会掉铜线）。
-- WorldEdit 快速模式改掉的格子，只在透视同步第一次发那个区块时清理；第 2 阶段配电箱求解时会再查一次。
+- WorldEdit 快速模式改掉的格子，在透视同步第一次发那个区块时、和 `WIRED` 配电箱求解经过时清理；两样都没碰到的格子会一直留着。
 - 透视每帧重画、同步整列区块，线很多时的开销没测（第 7 阶段实测）。
 - `tools/check-item-mass.mjs` 本来就不通过：它只读 `AflItems.java`，不认 `CabinBlocks` 注册的物品，和这一轮无关。
 
@@ -271,7 +391,17 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `wiring/WiringSync.java`、`wiring/WiringPackets.java` | 透视同步、扳手的包 |
 | `wiring/client/WiringView.java` | 客户端的布线数据、每一路的长度、某一格里有哪几路 |
 | `wiring/client/WiringXray.java`、`WiringRenderTypes.java` | 透视渲染（只画当前回路，屋顶锚点，斜段） |
-| `wiring/client/WiringClient.java` | 左键剪线、蹲下滚轮换回路、中键选准星格里的别的回路、按键提示面板 |
+| `wiring/client/WiringClient.java` | 左键剪线、蹲下滚轮换回路、中键选准星格里的别的回路、按键提示面板（含对着配电箱时的状态行） |
+| `block/WallSwitchBlock.java`、`compat/jade/WallSwitchJadeProvider.java` | 第 3 阶段：墙上开关和它的 Jade |
+| `block/KeylessLampholderBlock.java` | 第 3 阶段：无开关瓷灯座 |
+| `wiring/WiringSupply.java` | 第 3 阶段加了线头的组和设备的角色（`Feed.group / role`、`effectiveGroup`、每组的灯和开关数）。第 2 阶段：`WIRED` 配电箱的求解、设备索引（设备 → 配电箱和回路、进线点 → 配电箱）、互连、未加载 |
+| `wiring/WiringStorage.java`（`revision()`） | 全局布线修订号，配电箱据此重算 |
+| `energy/BuildingSupply.java` | 设备找电的统一入口：先暗线索引（`WIRED`），再范围（`LEGACY_AREA`） |
+| `energy/BuildingLights.java`、`energy/PowerPlugs.java`、`blockentity/EmergencyLightBlockEntity.java`、`GeneratorInletBoxBlockEntity.java`、`ServiceMeterBoxBlockEntity.java`、`block/BuildingLightBlock.java`、`PorcelainLampholderBlock.java` | 原来的六处查询，改走 `BuildingSupply` |
+| `blockentity/DistributionPanelBlockEntity.java` | `SupplyMode`、两种模式的断路器、`circuitLive / drawCircuit`、求解时机、`WiringConflict` 同步；第 3 阶段 `GroupOff`、`toggleGroup`、开关对齐（`alignSwitches`）、界面的分组数据 |
+| `block/DistributionPanelBlock.java`（`propagatesSkylightDown`） | 第 3 阶段：光照不读配电箱的形状（关服卡死的修复，第 11 节） |
+| `client/DistributionPanelScreen.java` | 4 路和外部馈线行、互连、两个新状态；第 3 阶段每一路下面用到的组 |
+| `compat/jade/DistributionPanelJadeProvider.java` | 范围供电、第 N 路互连、线路未加载 |
 | `item/WiringWrenchItem.java` | 扳手物品（右键先于方块自己的右键，所以点灯座、配电箱也是铺线） |
 | `client/WorldInteractionHint.java` | 扳手在主手时不显示方块的世界提示 |
 | `cabin/CabinBlocks.java`（`Roof#wireHeight`） | 屋顶格里线的高度（透视用） |
@@ -281,11 +411,12 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - `data/apocalypse_firstlight/tags/blocks/no_wiring.json`、`wiring_devices.json`、`wiring_slopes.json`；
 - 两件物品的 `models/item`、`textures/item`、`geo`、`meshes` 和 Mesh 贴图，可编辑源在 `src/main/blockbench/insulated_copper_wire.bbmodel`、`wiring_wrench.bbmodel`；
 - 生成脚本 `tools/build-material-meshes-v1.mjs`（铜线）、`tools/build-equipment-meshes-v1.mjs`（扳手）；
-- 语言：`item.apocalypse_firstlight.insulated_copper_wire`、`wiring_wrench`；`message.apocalypse_firstlight.wiring.*`（回路名、四种颜色和进线的黑色、不能布线、导线不够、`length` 回路加米数）；`hint.apocalypse_firstlight.wiring.lay / cut / select / pick / pick_feeder`。
+- 语言：`item.apocalypse_firstlight.insulated_copper_wire`、`wiring_wrench`；`message.apocalypse_firstlight.wiring.*`（回路名、四种颜色和进线的黑色、不能布线、导线不够、`length` 回路加米数）；`hint.apocalypse_firstlight.wiring.lay / cut / select / pick / pick_feeder`；第 2 阶段：`message.apocalypse_firstlight.wiring.legacy_panel / conflict`、`screen.apocalypse_firstlight.distribution_panel.kind_4`–`kind_8`、`branch_conflict`、`status_conflict`、`status_partial`、`jade.apocalypse_firstlight.distribution_panel.legacy / conflict / partial`、`config.jade.plugin_apocalypse_firstlight.distribution_panel`；第 3 阶段：`block.apocalypse_firstlight.wall_switch`、`keyless_lampholder`、`hint.apocalypse_firstlight.wall_switch.on / off`、`jade.apocalypse_firstlight.wall_switch.on / off / unwired`、`config.jade.plugin_apocalypse_firstlight.wall_switch`、`screen.apocalypse_firstlight.distribution_panel.group_always / group_n / group_photocell / group_lights / group_others / group_on / group_off`。
+- 第 3 阶段的两个方块：`wiring_devices.json` 里加了，战利品表、`item_mass`（无开关瓷灯座 0.22 kg、开关 0.08 kg）；模型由 `tools/build-building-lights-v1.mjs`（F）和 `tools/build-power-outlets-v1.mjs`（开关）生成，可编辑源 `src/main/blockbench/keyless_lampholder_v1.bbmodel`、`wall_switch_v1.bbmodel`；原木墙垫块第 11 种由 `tools/build-cabin-exterior-v1.mjs` 生成。
 
-开发：`src/dev/java/com/antaurora/apofirstlight/dev/wiring/WiringCommands.java`、`dev/WiringGameTests.java`、`src/dev/wiring-gametest.init.gradle`。
+开发：`src/dev/java/com/antaurora/apofirstlight/dev/wiring/WiringCommands.java`（含 `panel_mode`）、`dev/WiringGameTests.java`、`src/dev/wiring-gametest.init.gradle`、`dev/authoring/bridge/FixtureAdapter.java`（`supply_mode`）、`AuthoringFixtureRegistry.java`（第 3 阶段登记开关和无开关瓷灯座）、`tools/afl_minecraft_mcp/models.mjs`、`fuel_stop_a1_store.mjs`。
 
 ## 相关文档
 - [建筑暗线 V1：技术设计](building_wiring_v1_design.md)：完整设计和第 2–7 阶段。
-- [Building Power V1](../models/building_power_v1.md)：配电箱、电表箱，现在还按范围供电。
+- [Building Power V1](../models/building_power_v1.md)：配电箱、电表箱；`LEGACY_AREA` 的范围供电就是它。
 - [Building Lights V1](../models/building_lights_v1.md)、[Power Outlets V1](../models/power_outlets_v1.md)、[Generator Inlet V1](../models/generator_inlet_v1.md)。

@@ -1,5 +1,7 @@
 # Generator Inlet V1：发电机进线盒和 15 m 发电机电缆
 
+> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；**未实机验证**）：进线盒（和电表箱）找配电盘改走 `energy/BuildingSupply#entryPanel`：先看进线（黑线，回路 5）接到哪个 `WIRED` 配电盘，没有再按范围找 `LEGACY_AREA` 配电盘（下面"供电"第一条写的规则）。Jade 的"墙后没有配电盘"改成"没接配电盘"。
+
 状态（2026-10-13）：**已实现，`compileJava` / `compileDevJava`（`--offline`）通过，未实机验证。**
 - 编译前确认游戏没开（只有 Gradle 守护进程）。
 - 生成器 `--check` 通过，没有共面重叠。
@@ -95,7 +97,7 @@
 - 潜行：插头提示（"拿起插头""拔下插头""放回插头"），和插线板、电器一样；
 - 拿着插头对着发电机的 L14-30R："插上插头"。
 
-**Jade**（`GeneratorInletJadeProvider`）：电缆"挂在钩上 / 插头在手上 / 插在发电机上"；插着时显示"供电 N FE/t"；墙后找不到配电盘时显示"墙后没有配电盘"。
+**Jade**（`GeneratorInletJadeProvider`）：电缆"挂在钩上 / 插头在手上 / 插在发电机上"；插着时显示"供电 N FE/t"；找不到配电盘时显示"没接配电盘"（2026-10-14 前是"墙后没有配电盘"）。
 
 **存档**：插头插在哪（`PlugHost` / `PlugSocket`）、找到的配电盘（`Panel`，相对位置）、供电平均都存在方块实体里。建筑 NBT 里 `Panel` 和 `PlugHost` 由 `AflBlockEntityProcessor` 跟着旋转、镜像转换。
 

@@ -284,6 +284,8 @@ public final class WorldInteractionHint {
         }
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.PorcelainLampholderBlock)
             return new Target(Component.translatable("hint.apocalypse_firstlight.porcelain_lampholder."+(s.getValue(com.antaurora.apofirstlight.block.PorcelainLampholderBlock.ON)?"off":"on")),null);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.WallSwitchBlock)
+            return new Target(Component.translatable("hint.apocalypse_firstlight.wall_switch."+(s.getValue(com.antaurora.apofirstlight.block.WallSwitchBlock.ON)?"off":"on")),null);
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.ServiceMeterBoxBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box."+(s.getValue(com.antaurora.apofirstlight.block.ServiceMeterBoxBlock.ON)?"turn_off":"turn_on")),null);
     }

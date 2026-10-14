@@ -3,7 +3,8 @@
 // new look of the existing industrial_utility_light; C: the linear LED light (80 x 70 mm, 1 m per block; sections in a row
 // join and only the row's ends carry end caps); D: the two-head emergency light (1.5 x real size, like the outlets; battery);
 // E (2026-10-13, forest start home F7, concept B): the porcelain pull-chain lampholder with a frosted A19 bulb, on a ceiling
-// or a wall. A, C and E are real size. Pure Mesh + LabPBR atlases, exported as Forge OBJ block models (chunk-baked).
+// or a wall; F (2026-10-14, Building Wiring V1 phase 3, forest start home concept A): the keyless porcelain lampholder, the
+// same porcelain and bulb without the chain, switched by a wall switch over its light group. A, C, E and F are real size. Pure Mesh + LabPBR atlases, exported as Forge OBJ block models (chunk-baked).
 //   node tools/build-building-lights-v1.mjs                -> writes sources, OBJ / MTL / block + item models, blockstates, atlases
 //   node tools/build-building-lights-v1.mjs --check        -> verifies every output is up to date
 //   node tools/build-building-lights-v1.mjs --preview DIR  -> writes only OBJ + maps into DIR (offline review)
@@ -13,7 +14,7 @@
 // - D: facing north as the wall outlet: front toward -Z, the wall at z = +8; body centre 7.2 px up (2.45 m in a wall's
 //   third cell). Heads on the top front, turned down and outward.
 // - E: modelled as mounted, since its pull chain hangs straight down either way: the ceiling model hangs from the cell's
-//   top centre; the wall model faces north as D, centred 420 mm up, the chain boss on the underside.
+//   top centre; the wall model faces north as D, centred 420 mm up, the chain boss on the underside. F the same frames.
 // Lit lenses, the emergency heads, the charge LED and the lit bulb are drawn full-bright (GLOW) and carry LabPBR emission
 // (EMISSION). Plain surfaces: no printed legends or logos. Dielectric materials only (painted steel and aluminium, PMMA,
 // ABS, porcelain), except E's nickel bead chain and brass pull.
@@ -192,6 +193,38 @@ function buildLampholder() {
   };
   return {PARTS, MATS, atlas: 256, startS: 48};
 }
+// ---------------- F: keyless porcelain lampholder (real size) ----------------
+// E's porcelain without the chain boss: a shorter neck (concept A, power_concepts.html BASE_A), 104 mm across, 149 mm out
+// with the bulb. The same frames and wall height as E (its log pad, kind 2, fits).
+export const KEYLESS = {
+  base: [[0, 52], [3, 52], [7, 51.5], [11, 50], [14.5, 48], [18.5, 44.5], [24, 38], [29, 30], [33, 22.5], [36, 20.5], [56, 20.5], [58, 18.5], [58.5, 14]],
+  shell: [56.5, 63, 13.6],
+};
+function buildKeyless() {
+  const PARTS = [], P = (name, bone, mat) => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
+  const L = LAMPHOLDER, K2 = KEYLESS;
+  const turned = (part, prof, seg) => { const loop = [[prof[0][0], 0], ...prof, [prof[prof.length - 1][0], 0]];
+    if (area2(loop) < 0) loop.reverse(); revolve(part, 0, 0, loop, seg); };
+  const MOUNT = {ceiling: ([x, y, z]) => [x, 1000 - z, y], wall: ([x, y, z]) => [-y, L.wallY - x, 500 - z]};
+  const at = (part, mount, build) => { const n0 = part.v.length; build(); for (let i = n0; i < part.v.length; i++) part.v[i] = MOUNT[mount](part.v[i]); };
+  for (const mount of ['ceiling', 'wall']) {
+    const body = P(mount + '_porcelain', mount + '_body', 'porcelain');
+    at(body, mount, () => turned(body, K2.base, L.seg));
+    const shell = P(mount + '_shell', mount + '_body', 'shell');
+    at(shell, mount, () => turned(shell, [[K2.shell[0], K2.shell[2]], [K2.shell[1], K2.shell[2]]], 24));
+    for (const look of ['off', 'lit']) {
+      const glass = P(mount + '_bulb_' + look, mount + '_bulb_' + look, 'bulb_' + look);
+      at(glass, mount, () => turned(glass, L.bulb.map(([d, r]) => [K2.shell[1] + d, r]), L.seg));
+    }
+  }
+  const MATS = {
+    porcelain: MAT([241, 237, 228], 6, 206, 220),
+    shell:     MAT([196, 196, 190], 6, 150, 160),
+    bulb_off:  MAT([236, 233, 226], 2, 150, 160),
+    bulb_lit:  MAT([255, 238, 206], 2, 150, 160),
+  };
+  return {PARTS, MATS, atlas: 256, startS: 48};
+}
 export const EMISSION = {lens_lit: 240, led_on: 220, head_on: 240, bulb_lit: 240};
 // materials drawn at full brightness (Forge OBJ emissive_ambient: their MTL material has Ka 1 1 1), so the lit parts glow
 // without shaders too
@@ -232,6 +265,7 @@ const B = {
   linear: bake('linear', 'linear_light', 'linear_light_v1', buildLinear),
   emergency: bake('emergency', 'emergency_light', 'emergency_light_v1', buildEmergency),
   lampholder: bake('lampholder', 'porcelain_lampholder', 'porcelain_lampholder_v1', buildLampholder),
+  keyless: bake('keyless', 'keyless_lampholder', 'keyless_lampholder_v1', buildKeyless),
 };
 const CAPS = {both: ['cap_neg', 'cap_pos'], neg: ['cap_neg'], pos: ['cap_pos'], none: []};
 const bonesOf = {
@@ -239,6 +273,7 @@ const bonesOf = {
   linear: (look, caps) => new Set(['body', 'lens_' + look, ...CAPS[caps]]),
   emergency: look => new Set(['body', look === 'charging' ? 'led_on' : 'led_off', look === 'on' ? 'head_on' : 'head_off']),
   lampholder: (look, mount) => new Set([mount + '_body', mount + '_chain', mount + '_bulb_' + look]),
+  keyless: (look, mount) => new Set([mount + '_body', mount + '_bulb_' + look]),
 };
 // coplanar faces, checked per exported look
 const LOOKS = {
@@ -246,6 +281,7 @@ const LOOKS = {
   ...Object.fromEntries(['off', 'lit'].flatMap(l => Object.keys(CAPS).map(c => [`linear_light_${l}_${c}`, [B.linear, bonesOf.linear(l, c)]]))),
   ...Object.fromEntries(['off', 'charging', 'on'].map(l => [`emergency_light_${l}`, [B.emergency, bonesOf.emergency(l)]])),
   ...Object.fromEntries(['off', 'lit'].flatMap(l => ['ceiling', 'wall'].map(mt => [`porcelain_lampholder_${mt}_${l}`, [B.lampholder, bonesOf.lampholder(l, mt)]]))),
+  ...Object.fromEntries(['off', 'lit'].flatMap(l => ['ceiling', 'wall'].map(mt => [`keyless_lampholder_${mt}_${l}`, [B.keyless, bonesOf.keyless(l, mt)]]))),
 };
 const coplanar = {};
 for (const [k, [b, bones]] of Object.entries(LOOKS)) { const zf = zFightLevels(b.PARTS.filter(p => bones.has(p.bone)), new Map()); if (zf.unresolved.length) coplanar[k] = zf.unresolved.slice(0, 6); }
@@ -301,7 +337,9 @@ const display = (b, bones, gui, guiScale, s) => ({
 export const SELECTION = {panel: [3.2, 0, 3.2, 12.8, 1.05, 12.8], linear: [0, 0, 7.35, 16, 1.07, 8.65], emergency: [4.3, 5.9, 14.0, 11.7, 10.0, 16],
   // E (PorcelainLampholderBlock): the porcelain and bulb, and the chain (widened to 0.6 px for aiming)
   lampholderCeiling: [7.16, 13.34, 7.16, 8.84, 16, 8.84], lampholderCeilingChain: [8.26, 10.1, 7.7, 8.86, 15.4, 8.3],
-  lampholderWall: [7.16, 5.88, 13.34, 8.84, 7.56, 16], lampholderWallChain: [7.7, 1.9, 14.95, 8.3, 6.2, 15.6]};
+  lampholderWall: [7.16, 5.88, 13.34, 8.84, 7.56, 16], lampholderWallChain: [7.7, 1.9, 14.95, 8.3, 6.2, 15.6],
+  // F (KeylessLampholderBlock): the porcelain and bulb
+  keylessCeiling: [7.16, 13.6, 7.16, 8.84, 16, 8.84], keylessWall: [7.16, 5.88, 13.6, 8.84, 7.56, 16]};
 const fitsIn = (b, box) => b.PARTS.every(p => p.v.every(q => [0, 1, 2].every(k => {
   const v = q[k] + (k === 1 ? 0 : 8); return v >= box[k] - 0.02 && v <= box[k + 3] + 0.02; })));
 assert(fitsIn(B.panel, SELECTION.panel), 'panel leaves its box');
@@ -312,6 +350,9 @@ assert(fitsIn(B.emergency, SELECTION.emergency), 'emergency light leaves its box
   assert(fitsIn(parts(/^ceiling_(chain|pull)/), SELECTION.lampholderCeilingChain), 'ceiling chain leaves its box');
   assert(fitsIn(parts(/^wall_(porcelain|boss|stem|shell|bulb)/), SELECTION.lampholderWall), 'wall lampholder leaves its box');
   assert(fitsIn(parts(/^wall_(chain|pull)/), SELECTION.lampholderWallChain), 'wall chain leaves its box'); }
+{ const parts = re => ({PARTS: B.keyless.PARTS.filter(p => re.test(p.name))});
+  assert(fitsIn(parts(/^ceiling_/), SELECTION.keylessCeiling), 'ceiling keyless lampholder leaves its box');
+  assert(fitsIn(parts(/^wall_/), SELECTION.keylessWall), 'wall keyless lampholder leaves its box'); }
 
 // editable Free Model sources (px, frames as the header): one group per bone
 const uuidOf = (ns, s) => { const h = createHash('sha256').update(`afl-building-lights-v1:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
@@ -416,12 +457,28 @@ for (const mt of ['ceiling', 'wall']) for (const look of ['off', 'lit'])
       gui: guiCentred(B.lampholder, off, [20, 225, 0], 2.6)}})]);
 }
 
+// F: keyless lampholder, ceiling / wall x off / lit (no ON: a wall switch works it over its light group)
+for (const mt of ['ceiling', 'wall']) for (const look of ['off', 'lit'])
+  model(`keyless_lampholder/${mt}_${look}`, `Building Lights V1 keyless lampholder (${mt}, ${look})`, B.keyless, bonesOf.keyless(look, mt), mt === 'wall' && 'front');
+{
+  const variants = {};
+  for (const f of ['down', 'north', 'east', 'south', 'west']) for (const lit of [false, true]) for (const lm of [false, true])
+    variants[`facing=${f},lit=${lit},log_mount=${lm}`] = {model: `apocalypse_firstlight:block/keyless_lampholder/${f === 'down' ? 'ceiling' : 'wall'}_${lit ? 'lit' : 'off'}${lm && f !== 'down' ? '_log' : ''}`,
+      ...(f !== 'down' && YROT[f] ? {y: YROT[f]} : {})};
+  outputs.push([path.join(assets, 'blockstates/keyless_lampholder.json'), json({variants})]);
+  const off = bonesOf.keyless('off', 'ceiling');
+  outputs.push([path.join(assets, 'models/item/keyless_lampholder.json'), json({parent: 'apocalypse_firstlight:block/keyless_lampholder/ceiling_off', gui_light: 'side',
+    display: {...heldDisplay(B.keyless.PARTS.filter(p => off.has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.5, rotations: {fixed: [0, 180, 0]}}),
+      gui: guiCentred(B.keyless, off, [20, 225, 0], 2.6)}})]);
+}
+
 const tris = (b, bones) => b.PARTS.filter(p => bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {
   panel: {triangles: tris(B.panel, bonesOf.panel('lit')), texelsPerPx: B.panel.UV.S},
   linear: {triangles: tris(B.linear, bonesOf.linear('lit', 'both')), texelsPerPx: B.linear.UV.S},
   emergency: {triangles: tris(B.emergency, bonesOf.emergency('on')), texelsPerPx: B.emergency.UV.S},
-  lampholder: {triangles: tris(B.lampholder, bonesOf.lampholder('lit', 'ceiling')), texelsPerPx: B.lampholder.UV.S}, coplanar};
+  lampholder: {triangles: tris(B.lampholder, bonesOf.lampholder('lit', 'ceiling')), texelsPerPx: B.lampholder.UV.S},
+  keyless: {triangles: tris(B.keyless, bonesOf.keyless('lit', 'ceiling')), texelsPerPx: B.keyless.UV.S}, coplanar};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   console.log(JSON.stringify(stats));

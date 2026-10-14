@@ -1,0 +1,608 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Wall switch concepts</title>
+<style>html,body{margin:0;background:#555;overflow:auto}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head><body>
+<script>
+// Building Wiring V1 phase 3 (docs/gameplay/building_wiring_v1_design.md 6, 13.1): concept round for wall_switch (user
+// 2026-10-14: "直接做第 3 阶段"; the switch needs a concept image first). Design use only, not a game asset. The house, the
+// materials and the sheet helpers are those of power_concepts.html (the real cells of forest_home_b_m1.mjs drawn with the
+// game's cabin pieces, the wall outlet its OBJ); new and procedural: three switches on a log pad (toggle, rocker, push buttons).
+// Served by m1_source/serve.cjs at /repo/design/buildings/forest_start_home_v1/m2_source/switch_concepts.html; renderSwitches()
+// saves to m1_sheets/ (moved to m2_sheets/ by hand).
+const A_ = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const CELLS = '/repo/build/authoring_checks/forest_home_b_m1/cells_m1.json';
+const FONT = '"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif';
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// ---------------------------------------------------------------- environment, light
+function envMap(stops, win) {
+  const env = new THREE.Scene(), c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  for (const [t, col] of stops) gr.addColorStop(t, col);
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({map: t, side: THREE.BackSide})));
+  if (win) { const w = new THREE.Mesh(new THREE.PlaneGeometry(5, 3), new THREE.MeshBasicMaterial({color: win})); w.position.set(6, 3, 6); w.lookAt(0, 0, 0); env.add(w); }
+  return new THREE.PMREMGenerator(renderer).fromScene(env, 0.02).texture;
+}
+const ENV_DAY = envMap([[0, '#dfe8ee'], [0.45, '#b9c6cc'], [0.55, '#5e624c'], [1, '#2d2a22']], 0xffffff);
+const ENV_NIGHT = envMap([[0, '#1a1f28'], [0.5, '#151820'], [0.55, '#14110d'], [1, '#0b0a08']], null);
+const hemi = new THREE.HemisphereLight(0xdfe8ee, 0x5d6a4a, 0.7); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.25);
+sun.target.position.set(14, 0, 1); sun.position.set(14 + 13, 24, 1 + 15);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+Object.assign(sun.shadow.camera, {left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90});
+scene.add(sun, sun.target);
+const fill = new THREE.PointLight(0xfff4e6, 0, 9, 2); scene.add(fill);     // interior views: a soft fill near the camera
+function day() { scene.background = new THREE.Color(0xa9bcc6); scene.environment = ENV_DAY; hemi.intensity = 0.7; hemi.color.setHex(0xdfe8ee); hemi.groundColor.setHex(0x5d6a4a); sun.visible = true; fill.intensity = 0; renderer.toneMappingExposure = 1.0; }
+function night() { scene.background = new THREE.Color(0x0d1016); scene.environment = ENV_NIGHT; hemi.intensity = 0.07; hemi.color.setHex(0x8899bb); hemi.groundColor.setHex(0x221d16); sun.visible = false; fill.intensity = 0; renderer.toneMappingExposure = 1.0; }
+
+// ---------------------------------------------------------------- ground (the grade, y 0)
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const groundTex = canvasTex(512, 512, (g, w, h) => {
+  const r = rng(9); g.fillStyle = '#4f5c35'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) { const v = r(); g.fillStyle = v < 0.45 ? 'rgba(98,112,62,0.5)' : v < 0.8 ? 'rgba(62,72,40,0.5)' : 'rgba(104,88,58,0.45)'; g.fillRect(r() * w, r() * h, 2 + r() * 5, 2 + r() * 5); }
+});
+groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping; groundTex.repeat.set(30, 30); groundTex.magFilter = THREE.NearestFilter;
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({map: groundTex, roughness: 1}));
+ground.rotation.x = -Math.PI / 2; ground.position.set(10, 0, 2); ground.receiveShadow = true; scene.add(ground);
+
+// ---------------------------------------------------------------- the house: cells -> cabin pieces (cabin_preview.html)
+const G = new Map(), K = (x, y, z) => x + ',' + y + ',' + z;
+const at = (x, y, z) => G.get(K(x, y, z));
+function parseState(s) { const m = s.match(/^([^\[]+)(?:\[(.*)\])?$/), p = {}; if (m[2]) for (const kv of m[2].split(',')) { const [k, v] = kv.split('='); p[k] = v; } return [m[1], p]; }
+function cellOf(id, p) {
+  const n = id.replace('apocalypse_firstlight:', '');
+  if (n === 'white_oak_log_wall') return {b: 'log', axis: p.axis};
+  if (n === 'fieldstone') return {b: 'stone'};
+  if (n === 'flagstone') return {b: 'flag'};
+  if (n === 'white_oak_planks') return {b: 'planks'};
+  if (n === 'brown_board_and_batten') return {b: 'bbB'};
+  if (n === 'grey_board_and_batten') return {b: 'bbG'};
+  const roof = {green_standing_seam_roof: 'green', galvanized_corrugated_roof: 'galvanized', rusty_corrugated_roof: 'rust'}[n];
+  if (roof) return {b: 'roof', mat: roof, shape: p.shape, facing: p.facing, beam: p.beam === 'true'};
+  if (n === 'white_oak_porch_post') return {b: 'post'};
+  if (n === 'white_oak_porch_railing') return {b: 'rail', axis: p.axis};
+  if (n === 'white_oak_porch_deck') return {b: 'deck', axis: p.axis};
+  if (n === 'stove_pipe') return {b: 'pipe'};
+  if (n === 'firewood_stack') return {b: 'fire', axis: p.axis};
+  if (n === 'white_oak_double_hung_window') return {b: 'win', facing: p.facing};
+  if (n === 'white_oak_cabin_door' || n === 'white_oak_board_door') return {b: n.includes('cabin') ? 'doorC' : 'doorB', facing: p.facing, half: p.half, hinge: p.hinge, open: false};
+  if (n === 'stove_heat_shield') return {b: 'shield', facing: p.facing};
+  if (n === 'wooden_chair') return {b: 'chair', facing: p.facing};
+  if (n === 'wooden_table') return {b: 'table', m: (p.north === 'true' ? 1 : 0) | (p.east === 'true' ? 2 : 0) | (p.south === 'true' ? 4 : 0) | (p.west === 'true' ? 8 : 0)};
+  if (n === 'minecraft:grass_block') return {b: 'grass'};
+  return null;   // vanilla stand-ins (bookshelves, lanterns, barrels, ladder, slabs) are left out
+}
+const DIRS = {north: [0, 0, -1], east: [1, 0, 0], south: [0, 0, 1], west: [-1, 0, 0]}, TURN = {north: 0, east: 1, south: 2, west: 3};
+const CW = {north: 'east', east: 'south', south: 'west', west: 'north'}, CCW = {north: 'west', west: 'south', south: 'east', east: 'north'}, OPP = {north: 'south', south: 'north', east: 'west', west: 'east'};
+const rot = (d, r) => { for (let i = 0; i < r; i++) d = CW[d]; return d; };
+const nb = (x, y, z, d, dy = 0) => { const v = DIRS[d]; return at(x + v[0], y + dy, z + v[2]); };
+const SOLID = new Set(['log', 'stone', 'bbB', 'bbG', 'planks', 'fire', 'flag', 'grass']);
+const flip = s => s === 'neg' ? 'pos' : s === 'pos' ? 'neg' : 'mid';
+const OPENING = new Set(['win', 'doorC', 'doorB']);
+function joins(x, y, z, d) { const o = nb(x, y, z, d); if (!o) return false; if (o.b === 'log') return true; return OPENING.has(o.b) && ((d === 'east' || d === 'west') === (o.facing === 'north' || o.facing === 'south')); }
+function logAxis(x, y, z, c) { const is = d => joins(x, y, z, d), ew = is('east') || is('west'), ns = is('north') || is('south'); return ew && ns ? 'corner' : ew ? 'x' : ns ? 'z' : c.axis; }
+const shieldy = o => o && (o.b === 'shield' || o.b === 'stove' || (o.b === 'pipe'));
+function shieldMask(x, y, z, facing) {   // frame x- = the facing's counter-clockwise neighbour; 1 x-, 2 x+, 4 up, 8 down
+  const sh = o => o && o.b === 'shield' && o.facing === facing;
+  let m = 0; if (shieldy(nb(x, y, z, CCW[facing]))) m |= 1; if (shieldy(nb(x, y, z, CW[facing]))) m |= 2;
+  if (sh(at(x, y + 1, z))) m |= 4; if (sh(at(x, y - 1, z))) m |= 8; return m;
+}
+function choose(x, y, z, c) {
+  const P = [];
+  if (c.b === 'log') {
+    const is = d => joins(x, y, z, d), n = is('north'), e = is('east'), s = is('south'), w = is('west'), ax = logAxis(x, y, z, c);
+    if (ax !== 'corner') return [['log_wall/run_' + ax, 0]];
+    P.push(['log_wall/core_x', 0], ['log_wall/core_z', 0]);
+    const zs = !n && s ? 'neg' : !s && n ? 'pos' : 'mid', xs = !w && e ? 'neg' : !e && w ? 'pos' : 'mid';
+    if (!w) P.push(['log_wall/stubx_' + zs, 0]); if (!e) P.push(['log_wall/stubx_' + flip(zs), 2]);
+    if (!n) P.push(['log_wall/stubz_' + xs, 0]); if (!s) P.push(['log_wall/stubz_' + flip(xs), 2]);
+    return P;
+  }
+  if (c.b === 'roof') {
+    const f = c.facing, r = TURN[f], m = c.mat, sh = c.shape, same = (o, shapes) => o && o.b === 'roof' && o.facing === f && shapes.includes(o.shape);
+    P.push([`roof/${m}_${sh}`, r], [`roof/under_${sh}`, r]);
+    let eave = false, top = false;
+    if (sh === 'lower') { eave = !same(nb(x, y, z, f, -1), ['upper']); top = !same(nb(x, y, z, OPP[f]), ['upper', 'ridge']); }
+    if (sh === 'upper') { eave = !same(nb(x, y, z, f), ['lower']); top = !same(nb(x, y, z, OPP[f], 1), ['lower']); }
+    const rn = !same(nb(x, y, z, rot('west', r)), [sh]), rp = !same(nb(x, y, z, rot('east', r)), [sh]);
+    if (eave) P.push([`roof/${m}_eave_${sh}`, r]); if (top) P.push([`roof/${m}_top_${sh}`, r]);
+    if (rn) P.push([`roof/${m}_rake_neg_${sh}`, r]); if (rp) P.push([`roof/${m}_rake_pos_${sh}`, r]);
+    if (eave && rn) P.push([`roof/${m}_eave_corner_neg_${sh}`, r]); if (eave && rp) P.push([`roof/${m}_eave_corner_pos_${sh}`, r]);
+    const below = at(x, y - 1, z);
+    if (below?.b === 'log') { const ax = logAxis(x, y - 1, z, below), along = f === 'north' || f === 'south' ? 'z' : 'x'; P.push([`roof/infill_log_${ax === 'corner' ? 'corner' : ax === along ? 'along' : 'across'}_${sh}`, r]); }
+    else if (below?.b === 'bbB' || below?.b === 'bbG') P.push([`roof/infill_board_${below.b === 'bbB' ? 'brown' : 'grey'}_${sh}`, r]);
+    if (c.beam && sh !== 'ridge') P.push([`roof/beam_${sh}`, r]);
+    if (below?.b === 'pipe' && sh !== 'ridge') P.push([`roof/${m}_pipe_${sh}`, r]);
+    return P;
+  }
+  if (c.b === 'doorC' || c.b === 'doorB') { const t = c.b === 'doorC' ? 'cabin' : 'board', r = TURN[c.facing]; return [[`door/${t}_frame_${c.half}`, r], [`door/${t}_panel_${c.half}_${c.hinge}_${c.open ? 'open' : 'closed'}`, r]]; }
+  if (c.b === 'win') { const up = at(x, y + 1, z), dn = at(x, y - 1, z), sw = o => o && o.b === 'win' && o.facing === c.facing; return [['window/' + (sw(up) ? 'bottom' : sw(dn) ? 'top' : 'single'), TURN[c.facing]]]; }
+  if (c.b === 'bbB' || c.b === 'bbG') {
+    const col = c.b === 'bbB' ? 'brown' : 'grey'; P.push([`siding/${col}_core`, 0]);
+    for (const d of ['north', 'east', 'south', 'west']) if (!SOLID.has(nb(x, y, z, d)?.b)) P.push([`siding/${col}_battens`, TURN[d]]);
+    return P;
+  }
+  if (c.b === 'post') { P.push(['porch/post', 0]); for (const d of ['north', 'east', 'south', 'west']) if (nb(x, y, z, d)?.b === 'rail') P.push(['porch/post_rail', TURN[d]]); return P; }
+  if (c.b === 'rail') return [['porch/railing', c.axis === 'x' ? 0 : 1]];
+  if (c.b === 'deck') {
+    const a = c.axis, S = ['n', 'e', 's', 'w'], C = ['ne', 'se', 'sw', 'nw'], D4 = ['north', 'east', 'south', 'west'];
+    const open = D4.map(d => { const o = nb(x, y, z, d); return !(o && (o.b === 'deck' || SOLID.has(o.b))); });
+    P.push(['porch/deck_' + a, 0]);
+    for (let i = 0; i < 4; i++) {
+      if (!open[i]) continue; const next = open[(i + 1) % 4], prev = open[(i + 3) % 4];
+      P.push(['porch/deck_rim_' + a + '_' + S[i], 0]);
+      if (next) P.push(['porch/deck_corner_' + a + '_' + C[i], 0], ['porch/pier_corner', i]);
+      const even = ((i & 1) === 0 ? x : z) % 2 === 0, post = at(x, y + 1, z)?.b === 'post';
+      if (!next && !prev && (even || post)) P.push(['porch/pier_edge', i]);
+    }
+    return P;
+  }
+  if (c.b === 'pipe') {
+    const up = at(x, y + 1, z), cap = !(up && (up.b === 'pipe' || up.b === 'roof'));
+    P.push([cap ? 'pipe/stove_pipe_cap' : 'pipe/stove_pipe', 0]);
+    for (const f of ['south', 'north', 'east', 'west']) {   // a shield either side: the pipe carries the sheet on behind it
+      const sh = o => o && o.b === 'shield' && o.facing === f;
+      if (sh(nb(x, y, z, CCW[f])) || sh(nb(x, y, z, CW[f]))) { let m = 3; if (at(x, y - 1, z)?.b === 'stove') m |= 8; P.push(['shield/panel_' + m, TURN[f]]); break; }
+    }
+    return P;
+  }
+  if (c.b === 'shield') return [['shield/panel_' + shieldMask(x, y, z, c.facing), TURN[c.facing]]];
+  if (c.b === 'stove') { const r = TURN[c.facing]; return [['stove/body', r], ['stove/door_closed', r], ['stove/load_2', r], ['shield/panel_7', r]]; }
+  if (c.b === 'chair') return [['furniture/chair', TURN[c.facing]]];
+  if (c.b === 'table') { const ns = (c.m & 5) !== 0, ew = (c.m & 10) !== 0; return [['furniture/table_' + (ns && !ew ? 'z' : 'x') + '_' + c.m, 0]]; }
+  if (c.b === 'counter') { const r = TURN[c.facing]; return [[c.sink ? 'furniture/sink_body' : 'furniture/counter_body', r], ['furniture/counter_doors_closed', r]]; }
+  if (c.b === 'rack') return [['furniture/gun_rack', TURN[c.facing]]];
+  return P;
+}
+
+// ---------------------------------------------------------------- textures and materials
+const loader = new THREE.TextureLoader(), texCache = new Map(), matCache = new Map(), pieceCache = new Map(), pending = [];
+function texture(id, flipY = false) {   // 'apocalypse_firstlight:block/cabin/x'
+  const key = id + (flipY ? '#f' : '');
+  if (!texCache.has(key)) {
+    const p = id.replace('apocalypse_firstlight:', A_ + 'textures/') + '.png';
+    const t = loader.load(p); t.flipY = flipY; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; texCache.set(key, t);
+    pending.push(new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = p; }));
+  }
+  return texCache.get(key);
+}
+function material(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop(), o = {map: texture(id), roughness: 0.82, metalness: 0};
+    if (/roof_green|stove_pipe|sash|iron|cast_iron|nickel|heat_shield/.test(n)) o.roughness = 0.5;
+    if (/galvanized|heat_shield|nickel/.test(n)) { o.roughness = 0.5; o.metalness = 0.4; }
+    if (/glass/.test(n)) Object.assign(o, {transparent: true, opacity: 0.5, roughness: 0.08, depthWrite: false});
+    matCache.set(id, new THREE.MeshStandardMaterial(o));
+  }
+  return matCache.get(id);
+}
+/** A LabPBR material: albedo, and _s (R perceptual smoothness, G F0 / metal >= 230) rebuilt as three.js roughness (G) / metal (B). */
+function pbrMaterial(texId) {
+  if (matCache.has(texId)) return matCache.get(texId);
+  const m = new THREE.MeshStandardMaterial({map: texture('apocalypse_firstlight:' + texId), roughness: 1, metalness: 1, envMapIntensity: 1});
+  matCache.set(texId, m);
+  pending.push(new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+      for (let i = 0; i < p.length; i += 4) { const s = p[i] / 255, rough = Math.max(0.05, (1 - s) * (1 - s)); p[i + 2] = p[i + 1] >= 230 ? 255 : 0; p[i] = 0; p[i + 1] = Math.round(rough * 255); p[i + 3] = 255; }
+      g.putImageData(d, 0, 0); const t = new THREE.CanvasTexture(c); t.flipY = false; t.magFilter = THREE.NearestFilter;
+      m.roughnessMap = t; m.metalnessMap = t; m.needsUpdate = true; res();
+    };
+    img.onerror = () => { m.metalness = 0; m.roughness = 0.6; res(); };
+    img.src = A_ + 'textures/' + texId + '_s.png';
+  }));
+  return m;
+}
+const buckets = new Map();
+function emit(texId, pts, uvs, nrm) {
+  if (!buckets.has(texId)) buckets.set(texId, {p: [], uv: [], n: []});
+  const b = buckets.get(texId);
+  for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(name, r, ox, oy, oz) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A_ + 'cabin_mesh/' + name + '.json').then(x => { if (!x.ok) throw new Error('missing piece ' + name); return x.json(); }));
+  const pc = await pieceCache.get(name);
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]], pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) { const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r); pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r)); }
+    emit(t, pts, uvs, nrm);
+  }
+}
+const FACES = {   // corners TL, BL, BR, TR as seen from outside
+  north: [[1, 1, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0]], south: [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]],
+  west: [[0, 1, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]], east: [[1, 1, 1], [1, 0, 1], [1, 0, 0], [1, 1, 0]],
+  up: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], down: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]],
+};
+const FN = {north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0], east: [1, 0, 0], up: [0, 1, 0], down: [0, -1, 0]};
+const FUV = [[0, 0], [0, 1], [1, 1], [1, 0]];
+function tileOf(face, x, y, z, rows = 2) {
+  const [u, v] = {north: [-x - 1, -y - 1], south: [x, -y - 1], west: [z, -y - 1], east: [-z - 1, -y - 1], up: [x, z], down: [x, -z - 1]}[face];
+  return (((v % rows) + rows) % rows) * 3 + (((u % 3) + 3) % 3);
+}
+const FULL = new Set(['stone', 'planks', 'bbB', 'bbG', 'fire', 'flag', 'grass']);
+function macroBlock(x, y, z, flag) {   // fieldstone / flagstone as MacroTileModel draws them (flagstone: a 3 x 3 top group)
+  for (const f of Object.keys(FACES)) {
+    const n = FN[f], o = at(x + n[0], y + n[1], z + n[2]);
+    if (o && FULL.has(o.b)) continue;
+    const t = flag && f === 'up' ? 'apocalypse_firstlight:block/stove/flagstone_top_' + tileOf(f, x, y, z, 3) : 'apocalypse_firstlight:block/cabin/fieldstone_' + tileOf(f, x, y, z);
+    emit(t, FACES[f].map(c => [x + c[0], y + c[1], z + c[2]]), FUV, FACES[f].map(() => n));
+  }
+}
+const house = new THREE.Group(); scene.add(house);
+function cube(x, y, z, mats) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mats); m.position.set(x + 0.5, y + 0.5, z + 0.5); m.castShadow = m.receiveShadow = true; house.add(m); }
+async function buildHouse() {
+  const data = await (await fetch(CELLS)).json();
+  for (const c of data.cells) { if (c.k < 0) continue; const [id, p] = parseState(c.s), cell = cellOf(id, p); if (cell) G.set(K(c.X, c.k, c.Z), cell); }
+  for (const f of data.fixtures) {
+    const n = f.block_id.replace('apocalypse_firstlight:', ''), [x, y, z] = f.at;
+    if (n === 'box_stove') G.set(K(x, y, z), {b: 'stove', facing: f.facing});
+    if (n === 'wooden_kitchen_counter' || n === 'wooden_sink_counter') G.set(K(x, y, z), {b: 'counter', facing: f.facing, sink: n.includes('sink')});
+    if (n === 'wooden_gun_rack') G.set(K(x, y, z), {b: 'rack', facing: f.facing});
+  }
+  const planks = material('apocalypse_firstlight:block/wood/white_oak_planks');
+  const grassTop = new THREE.MeshStandardMaterial({map: groundTex.clone(), roughness: 1}), dirt = new THREE.MeshStandardMaterial({color: new THREE.Color(0x5b4632).convertSRGBToLinear(), roughness: 1});
+  grassTop.map.repeat.set(0.25, 0.25);
+  const fe = 'apocalypse_firstlight:block/cabin/firewood_end', fs = 'apocalypse_firstlight:block/cabin/firewood_side';
+  const jobs = [];
+  for (const [k, c] of G) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (c.b === 'stone' || c.b === 'flag') { macroBlock(x, y, z, c.b === 'flag'); continue; }
+    if (c.b === 'planks') { cube(x, y, z, planks); continue; }
+    if (c.b === 'grass') { cube(x, y, z, [dirt, dirt, grassTop, dirt, dirt, dirt]); continue; }
+    if (c.b === 'fire') { const E = material(fe), S = material(fs); cube(x, y, z, c.axis === 'x' ? [E, E, S, S, S, S] : c.axis === 'z' ? [S, S, S, S, E, E] : [S, S, E, E, S, S]); continue; }
+    for (const [name, r] of choose(x, y, z, c)) jobs.push(addPiece(name, r, x, y, z));
+  }
+  await Promise.all(jobs);
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    const m = new THREE.Mesh(g, material(t)); m.castShadow = !/glass/.test(t); m.receiveShadow = true; house.add(m);
+  }
+}
+
+// ---------------------------------------------------------------- game meshes: aflmesh (genset, panel), OBJ (outlet)
+async function aflMesh(id, skip = null) {   // skip: a part-name pattern left out (parts the game hides)
+  const [m, geo] = await Promise.all([fetch(A_ + 'meshes/' + id + '.aflmesh.json').then(r => r.json()), fetch(A_ + 'geo/' + id + '.geo.json').then(r => r.json())]);
+  const bones = new Map(geo['minecraft:geometry'][0].bones.map(b => [b.name, b])), pos = [], uv = [], idx = [];
+  let base = 0;
+  for (const p of m.parts) {
+    if (skip && skip.test(p.name || "")) continue;
+    const b = bones.get(p.bone), pv = b ? [-b.pivot[0] / 16, b.pivot[1] / 16, b.pivot[2] / 16] : [0, 0, 0];
+    for (const v of p.vertices) { pos.push(pv[0] + v[0] + 0.5, pv[1] + v[1], pv[2] + v[2] + 0.5); uv.push(v[3], v[4]); }
+    for (const f of p.faces) for (let i = 1; i + 1 < f.length; i++) idx.push(base + f[0], base + f[i], base + f[i + 1]);
+    base += p.vertices.length;
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  const o = new THREE.Mesh(g, pbrMaterial('block/' + id)); o.castShadow = o.receiveShadow = true; return o;
+}
+async function objMesh(path, texId) {
+  const text = await (await fetch(A_ + 'models/block/' + path + '.obj')).text(), obj = new THREE.OBJLoader().parse(text);
+  const mat = new THREE.MeshStandardMaterial({map: texture('apocalypse_firstlight:' + texId, false), roughness: 0.4});
+  obj.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = o.receiveShadow = true; } });
+  return obj;
+}
+/** A block-frame object (0..1, front toward -z as the game's north) placed in cell (x, y, z) turned to `facing`. */
+function placeBlock(obj, x, y, z, facing) {
+  const g = new THREE.Group(); g.position.set(x + 0.5, y, z + 0.5); obj.position.set(-0.5, 0, -0.5); g.add(obj);
+  g.rotation.y = {north: 0, west: Math.PI / 2, south: Math.PI, east: -Math.PI / 2}[facing]; return g;
+}
+
+// ---------------------------------------------------------------- materials for the new pieces
+const C = hex => new THREE.Color(hex).convertSRGBToLinear();
+const M = {
+  grey: new THREE.MeshStandardMaterial({color: C(0xa7aba9), roughness: 0.62}),           // RAL 7035 powder coat, a little weathered
+  greyEdge: new THREE.MeshStandardMaterial({color: C(0x8e9290), roughness: 0.55}),
+  nylon: new THREE.MeshStandardMaterial({color: C(0x1d1e20), roughness: 0.42}),
+  nylonFace: new THREE.MeshStandardMaterial({color: C(0x252629), roughness: 0.5}),
+  slot: new THREE.MeshStandardMaterial({color: C(0x050505), roughness: 1}),
+  brass: new THREE.MeshStandardMaterial({color: C(0xcdb070), roughness: 0.32, metalness: 1}),
+  steel: new THREE.MeshStandardMaterial({color: C(0x8a8d90), roughness: 0.38, metalness: 1}),
+  zinc: new THREE.MeshStandardMaterial({color: C(0xb9bcbd), roughness: 0.3, metalness: 1}),
+  cord: new THREE.MeshStandardMaterial({color: C(0xdcae22), roughness: 0.62}),           // 10/4 SOOW, yellow jacket
+  rubber: new THREE.MeshStandardMaterial({color: C(0x19191a), roughness: 0.7}),
+  porcelain: new THREE.MeshStandardMaterial({color: C(0xf1ece2), roughness: 0.14, envMapIntensity: 1.1}),
+  bakelite: new THREE.MeshStandardMaterial({color: C(0x3b261a), roughness: 0.3}),
+  alu: new THREE.MeshStandardMaterial({color: C(0xd2d2cd), roughness: 0.3, metalness: 1}),
+  nickel: new THREE.MeshStandardMaterial({color: C(0xc4c2bc), roughness: 0.25, metalness: 1}),
+  glass: new THREE.MeshStandardMaterial({color: C(0xf7f4ee), roughness: 0.45, transparent: true, opacity: 0.94}),
+  glassLit: new THREE.MeshStandardMaterial({color: C(0xfff3dc), roughness: 0.45, emissive: new THREE.Color(0xffd9a6), emissiveIntensity: 2.4}),
+};
+const clothTex = canvasTex(64, 256, (g, w, h) => { g.fillStyle = '#2e2119'; g.fillRect(0, 0, w, h); for (let y = -w; y < h + w; y += 10) { g.strokeStyle = '#4a3627'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + w * 0.6); g.stroke(); } });
+clothTex.wrapS = clothTex.wrapT = THREE.RepeatWrapping; clothTex.repeat.set(1, 30);
+M.cloth = new THREE.MeshStandardMaterial({map: clothTex, roughness: 0.95});
+function mesh(g, m, shadow = true) { const o = new THREE.Mesh(g, m); o.castShadow = shadow; o.receiveShadow = true; return o; }
+function rbox(x0, x1, y0, y1, z0, z1, m, r = 0.002) {
+  const w = x1 - x0, h = y1 - y0, d = z1 - z0; r = Math.min(r, w / 3, h / 3, d / 3);
+  const s = new THREE.Shape(), x = w / 2 - r, y = h / 2 - r;
+  s.moveTo(-x, -y); s.lineTo(x, -y); s.lineTo(x, y); s.lineTo(-x, y); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth: Math.max(1e-4, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 2});
+  g.translate(0, 0, -(d - 2 * r) / 2);
+  const o = mesh(g, m); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); return o;
+}
+/** A turned part along +z of its frame: profile [[z, r], ...] from front to back (closed at both ends). */
+function lathe(profile, m, seg = 40) {
+  const pts = [new THREE.Vector2(0.0001, profile[0][0])];
+  for (const [z, r] of profile) pts.push(new THREE.Vector2(r, z));
+  pts.push(new THREE.Vector2(0.0001, profile[profile.length - 1][0]));
+  const g = new THREE.LatheGeometry(pts.reverse(), seg); g.rotateX(Math.PI / 2);   // lathe y -> +z
+  return mesh(g, m);
+}
+/** A turned part along -y (hanging from a ceiling at y 0): profile [[depth, r], ...] from the ceiling down. */
+function hang(profile, m, seg = 48) {
+  const pts = [new THREE.Vector2(0.0001, -profile[0][0])];
+  for (const [d, r] of profile) pts.push(new THREE.Vector2(r, -d));
+  pts.push(new THREE.Vector2(0.0001, -profile[profile.length - 1][0]));
+  return mesh(new THREE.LatheGeometry(pts.reverse(), seg), m);
+}
+/** A group whose local frame has its +z along dir and its origin at o (x stays horizontal). */
+function faceGroup(o, dir) {
+  const z = dir.clone().normalize(), up = Math.abs(z.y) > 0.99 ? V3(0, 0, -1) : V3(0, 1, 0);
+  const x = up.clone().cross(z).normalize(), y = z.clone().cross(x);
+  const g = new THREE.Group(); g.matrixAutoUpdate = false; g.matrix.makeBasis(x, y, z).setPosition(o); return g;
+}
+/** An arc blade or slot on a twist-lock face: radius r0..r1, centred at angle a (degrees from 12 o'clock, clockwise as seen), span. */
+function arcPiece(r0, r1, a, span, z0, z1, m) {
+  const s = new THREE.Shape(), A0 = (90 - a - span / 2) * Math.PI / 180, A1 = (90 - a + span / 2) * Math.PI / 180;
+  s.absarc(0, 0, r1, A0, A1, false); s.lineTo(r0 * Math.cos(A1), r0 * Math.sin(A1)); s.absarc(0, 0, r0, A1, A0, true); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth: z1 - z0, bevelEnabled: false, curveSegments: 12}); g.translate(0, 0, z0); return mesh(g, m);
+}
+function cylZ(r, z0, z1, m, seg = 40) { const g = new THREE.CylinderGeometry(r, r, z1 - z0, seg); g.rotateX(Math.PI / 2); g.translate(0, 0, (z0 + z1) / 2); return mesh(g, m); }
+function ringZ(ro, ri, z0, z1, m, seg = 48) {
+  const s = new THREE.Shape(); s.absarc(0, 0, ro, 0, Math.PI * 2, false); const h = new THREE.Path(); h.absarc(0, 0, ri, 0, Math.PI * 2, true); s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s, {depth: z1 - z0, bevelEnabled: false, curveSegments: seg}); g.translate(0, 0, z0); return mesh(g, m);
+}
+function label(text, w, h, sizePx, fg, bg) {
+  const t = canvasTex(Math.round(w * 4000), Math.round(h * 4000), (g, cw, ch) => {
+    if (bg) { g.fillStyle = bg; g.fillRect(0, 0, cw, ch); } g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const lines = text.split('\n'); g.font = 'bold ' + sizePx + 'px Arial';
+    lines.forEach((l, i) => g.fillText(l, cw / 2, ch / 2 + (i - (lines.length - 1) / 2) * sizePx * 1.15));
+  });
+  return mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: t, transparent: !bg, roughness: 0.5}), false);
+}
+
+// ---------------------------------------------------------------- cameras, overlays, sheets
+const persp = new THREE.PerspectiveCamera(42, 1.5, 0.02, 200);
+function shoot(w, h, cam) {
+  renderer.setSize(w, h); if (cam.isPerspectiveCamera) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  renderer.render(scene, cam);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c;
+}
+function look(pos, target, fov) { persp.position.set(...pos); persp.fov = fov; persp.lookAt(...target); persp.updateMatrixWorld(); persp.updateProjectionMatrix(); return persp; }
+/** Orthographic camera looking along `dir` ([x,y,z]) at center, vertical span m. */
+function ortho(dir, center, span, w, h) {
+  const a = w / h, cam = new THREE.OrthographicCamera(-span * a / 2, span * a / 2, span / 2, -span / 2, 0.01, 60), c = V3(...center);
+  cam.position.copy(c).addScaledVector(V3(...dir).normalize(), -20); cam.lookAt(c); cam.updateMatrixWorld(); cam.updateProjectionMatrix(); return cam;
+}
+function proj(cam, p, w, h) { const v = V3(...p).project(cam); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h]; }
+function dim(g, cam, w, h, p, q, ox, oy, text) {
+  const [x1, y1] = proj(cam, p, w, h), [x2, y2] = proj(cam, q, w, h), a = [x1 + ox, y1 + oy], b = [x2 + ox, y2 + oy];
+  g.strokeStyle = '#3a3530'; g.fillStyle = '#3a3530'; g.lineWidth = 1.6;
+  g.setLineDash([3, 4]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(...a); g.moveTo(x2, y2); g.lineTo(...b); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (const [pt, s] of [[a, 1], [b, -1]]) { g.beginPath(); g.moveTo(...pt); g.lineTo(pt[0] + s * 11 * Math.cos(ang - 0.35), pt[1] + s * 11 * Math.sin(ang - 0.35)); g.lineTo(pt[0] + s * 11 * Math.cos(ang + 0.35), pt[1] + s * 11 * Math.sin(ang + 0.35)); g.fill(); }
+  g.font = `bold 21px ${FONT}`; const tw = g.measureText(text).width, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  g.fillStyle = 'rgba(232,228,221,0.94)'; g.fillRect(mx - tw / 2 - 6, my - 15, tw + 12, 30); g.fillStyle = '#2b2622'; g.fillText(text, mx - tw / 2, my + 8);
+}
+function callout(g, cam, w, h, p, dx, dy, text) {
+  const [x, y] = proj(cam, p, w, h);
+  g.strokeStyle = 'rgba(255,248,236,0.95)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 5, 0, 7); g.stroke();
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + dy); g.stroke();
+  g.font = `20px ${FONT}`; const tw = g.measureText(text).width, tx = dx < 0 ? x + dx - tw - 12 : x + dx + 4;
+  g.fillStyle = 'rgba(28,24,20,0.8)'; g.fillRect(tx - 6, y + dy - 18, tw + 16, 32); g.fillStyle = '#f5efe4'; g.fillText(text, tx + 2, y + dy + 6);
+}
+function caption(g, x, y, text) { g.font = `bold 23px ${FONT}`; const tw = g.measureText(text).width; g.fillStyle = 'rgba(20,17,14,0.8)'; g.fillRect(x, y, tw + 28, 40); g.fillStyle = '#f5efe4'; g.fillText(text, x + 14, y + 28); }
+/** Wraps text at maxW: Latin words and numbers stay whole, closing punctuation never starts a line. */
+function wrapText(g, s, maxW, indent = '') {
+  const tokens = s.match(/[A-Za-z0-9.%°+\-–×=\/]+|[\s\S]/gu), close = /^[，。；：、）)」"！？,.;:]$/, out = [];
+  let line = '';
+  for (const t of tokens) {
+    if (line.trim() && !close.test(t) && g.measureText(line + t).width > maxW) { out.push(line); line = indent + (t === ' ' ? '' : t); continue; }
+    line += t;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function notes(g, x, y, w, hgt, title, lines) {
+  g.fillStyle = '#ece8e1'; g.fillRect(x, y, w, hgt); g.fillStyle = '#2b2622'; g.font = `bold 26px ${FONT}`; g.fillText(title, x + 24, y + 44);
+  let yy = y + 84;
+  for (const l of lines) {
+    if (l === '') { yy += 12; continue; }
+    const bold = l.startsWith('!'), s = bold ? l.slice(1) : l; g.font = `${bold ? 'bold ' : ''}21px ${FONT}`;
+    const ws = wrapText(g, s, w - 60, '  ');
+    ws.forEach((t, i) => g.fillText(t, x + 26, yy + i * 30)); yy += (ws.length - 1) * 30 + 32;
+  }
+  return yy;
+}
+async function save(c, name) { const blob = await new Promise(r => c.toBlob(r, 'image/png')); await fetch('/save?name=' + name, {method: 'POST', body: blob}); }
+function sheet(w, h, title, sub, foot) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = '#d8d3cb'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#26211c'; g.fillRect(0, 0, w, 90); g.fillStyle = '#f2ece2'; g.font = `bold 38px ${FONT}`; g.fillText(title, 32, 58);
+  g.font = `22px ${FONT}`; g.fillStyle = '#bdb3a4'; g.fillText(sub, w - 32 - g.measureText(sub).width, 56);
+  g.fillStyle = '#5f574d'; g.font = `18px ${FONT}`; g.fillText(foot, 32, h - 16);
+  return [c, g];
+}
+
+// ---------------------------------------------------------------- wall switch concepts (new, procedural)
+// Real millimetres x 1.5 (the outlet's scale, user 2026-10-08), in blocks: 1 mm = 0.0015. Frame: plate back at z 0, out +z,
+// centre at the origin, up +y.
+const S = v => v * 0.0015;
+const SW = {
+  plate: [69.9, 114.3], plateT: 5, plateR: 3, screwPitch: 60.3, screwR: 3.7,
+  centreY: 0.2,          // in the cell k 2: 1.2 m above the floor (the floor is the top of k 0)
+};
+Object.assign(M, {
+  nylonW: new THREE.MeshStandardMaterial({color: C(0xe9e8e1), roughness: 0.38}),            // the outlet's white nylon
+  nylonW2: new THREE.MeshStandardMaterial({color: C(0xf1f0ea), roughness: 0.3}),
+  recess: new THREE.MeshStandardMaterial({color: C(0xbdbbb2), roughness: 0.6}),
+  brassOld: new THREE.MeshStandardMaterial({color: C(0xb8955a), roughness: 0.42, metalness: 1}),
+  pearl: new THREE.MeshStandardMaterial({color: C(0xeee9df), roughness: 0.16, envMapIntensity: 1.2}),
+  ebony: new THREE.MeshStandardMaterial({color: C(0x151312), roughness: 0.28}),
+});
+function roundedRect(w, h, r, cx = 0, cy = 0, path = new THREE.Shape()) {
+  const x = cx - w / 2, y = cy - h / 2;
+  path.moveTo(x + r, y); path.lineTo(x + w - r, y); path.quadraticCurveTo(x + w, y, x + w, y + r); path.lineTo(x + w, y + h - r);
+  path.quadraticCurveTo(x + w, y + h, x + w - r, y + h); path.lineTo(x + r, y + h); path.quadraticCurveTo(x, y + h, x, y + h - r);
+  path.lineTo(x, y + r); path.quadraticCurveTo(x, y, x + r, y); return path;
+}
+/** The wall plate: a rounded rectangle with openings ([w, h, r, cy] in mm), chamfered front edge. */
+function plate(m, openings) {
+  const [w, h] = SW.plate, s = roundedRect(S(w), S(h), S(SW.plateR));
+  for (const [ow, oh, or, oy] of openings) s.holes.push(roundedRect(S(ow), S(oh), S(or), 0, S(oy), new THREE.Path()));
+  const b = S(1.2), g = new THREE.ExtrudeGeometry(s, {depth: S(SW.plateT) - b, bevelEnabled: true, bevelThickness: b, bevelSize: -b * 0.0 + b, bevelOffset: -b, bevelSegments: 2, curveSegments: 10});
+  return mesh(g, m);
+}
+/** A slotted plate screw at height y (mm), its head proud of the plate front. */
+function screw(m, y, angle = 0.3) {
+  const g = new THREE.Group(), z = S(SW.plateT);
+  const head = lathe([[0, S(SW.screwR)], [S(0.6), S(SW.screwR)], [S(1.4), S(SW.screwR) * 0.75], [S(1.6), 0.0001]], m, 28);
+  head.position.z = z; g.add(head);
+  const slot = rbox(-S(3.4), S(3.4), -S(0.45), S(0.45), z + S(0.7), z + S(1.8), M.slot, 0.0001); slot.rotation.z = angle; g.add(slot);
+  g.position.y = S(y); return g;
+}
+/** A: the standard single-pole toggle in a white nylon plate (matches the wall outlet). ON = handle up. */
+function switchToggle(on) {
+  const g = new THREE.Group(), z = S(SW.plateT);
+  g.add(plate(M.nylonW, [[10.3, 24.6, 2, 0]]));
+  g.add(rbox(-S(5), S(5), -S(12), S(12), z - S(4), z - S(0.6), M.recess, S(0.5)));          // the device face in the opening
+  // the handle: 8 x 6 mm at its root tapering to 6 x 4.4, 17 mm out, a rounded tip; pivots at the opening's centre
+  const len = S(17), box = new THREE.BoxGeometry(S(8), S(6), len, 1, 1, 4); box.translate(0, 0, len / 2);
+  const p = box.attributes.position;
+  for (let i = 0; i < p.count; i++) { const k = 1 - 0.26 * (p.getZ(i) / len); p.setX(i, p.getX(i) * k); p.setY(i, p.getY(i) * k); }
+  box.computeVertexNormals();
+  const handle = new THREE.Group(), h = mesh(box, M.nylonW2); handle.add(h);
+  const tip = mesh(new THREE.SphereGeometry(S(3.0), 18, 12), M.nylonW2); tip.scale.set(1, 0.72, 0.6); tip.position.z = len; handle.add(tip);
+  handle.position.z = z - S(2.5); handle.rotation.x = on ? -0.42 : 0.42; g.add(handle);
+  g.add(screw(M.nylonW, SW.screwPitch / 2, 0.2), screw(M.nylonW, -SW.screwPitch / 2, -0.5));
+  return g;
+}
+/** B: a decorator rocker (large paddle) in a screwless-look plate. ON = top pressed in. */
+function switchRocker(on) {
+  const g = new THREE.Group(), z = S(SW.plateT);
+  g.add(plate(M.nylonW, [[33.3, 66.7, 1.5, 0]]));
+  g.add(rbox(-S(16.4), S(16.4), -S(33), S(33), z - S(4), z - S(0.4), M.recess, S(0.4)));
+  const r = rbox(-S(15.6), S(15.6), -S(32), S(32), -S(3), S(3), M.nylonW2, S(1.6));
+  const pivot = new THREE.Group(); pivot.add(r); pivot.position.z = z + S(0.6); pivot.rotation.x = on ? 0.065 : -0.065; g.add(pivot);
+  g.add(screw(M.nylonW, 48.4, 0.1), screw(M.nylonW, -48.4, -0.6));
+  return g;
+}
+/** C: the old two-button push switch in a brass plate. ON = the upper (pearl) button pressed in, the lower (black) out. */
+function switchPush(on) {
+  const g = new THREE.Group(), z = S(SW.plateT);
+  g.add(plate(M.brassOld, [[12.6, 12.6, 6.3, 10.5], [12.6, 12.6, 6.3, -10.5]]));
+  for (const [y, m, pressed] of [[10.5, M.pearl, on], [-10.5, M.ebony, !on]]) {
+    const out = pressed ? S(1.0) : S(5.5);
+    const b = lathe([[0, S(5.6)], [out - S(1.0), S(5.6)], [out - S(0.2), S(5.1)], [out, S(4.2)], [out + 0.00005, 0.0001]], m, 32);
+    b.position.set(0, S(y), z - S(1)); g.add(b);
+    const ring = ringZ(S(6.9), S(6.0), z, z + S(0.5), M.brassOld, 36); ring.position.y = S(y); g.add(ring);
+  }
+  g.add(screw(M.brassOld, SW.screwPitch / 2 + 6, 0.9), screw(M.brassOld, -SW.screwPitch / 2 - 6, 0.1));
+  return g;
+}
+const VARIANTS = [
+  {key: 'A', name: 'A 扳动开关（推荐）', make: switchToggle},
+  {key: 'B', name: 'B 大翘板开关', make: switchRocker},
+  {key: 'C', name: 'C 老式双按钮开关', make: switchPush},
+];
+const sw = {group: new THREE.Group(), outlet: null};
+scene.add(sw.group);
+/** The switch on its log pad in cell (x, k, z), facing (away from the wall), on or off. */
+function setSwitch(variant, on, x = 9, k = 2, z = 9, facing = 'north') {
+  sw.group.clear();
+  if (!variant) return;
+  const holder = new THREE.Group(), inner = new THREE.Group();
+  const [pw, ph] = SW.plate, padW = S(pw) + 0.04, padH = S(ph) + 0.04;
+  const pad = rbox(-padW / 2, padW / 2, -padH / 2, padH / 2, -0.08, 0, material('apocalypse_firstlight:block/cabin/oak_trim_v'), 0.002);
+  inner.add(pad);
+  const dev = variant.make(on); inner.add(dev);
+  inner.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; } });
+  inner.rotation.y = Math.PI; inner.position.set(0.5, SW.centreY, 1 - 0.08);   // block frame: wall at z 1, front toward -z
+  holder.add(inner);
+  sw.group.add(placeBlock(holder, x, k, z, facing));
+}
+async function buildSwitchScene() {
+  await buildHouse();
+  sw.outlet = placeBlock(await objMesh('wall_outlet', 'block/wall_outlet'), 10, 1, 9, 'north');
+  sw.outlet.children[0].position.z -= 0.08;     // on the log pad (wall_outlet_log: 8 cm out)
+  scene.add(sw.outlet);
+  // the outlet's pad (log_wall/pad_1), as the wall draws it
+  const pad = rbox(6.8 / 16, 9.2 / 16, 3.9 / 16, 7.3 / 16, 0.92, 1.0, material('apocalypse_firstlight:block/cabin/oak_trim_v'), 0.002);
+  const ph = new THREE.Group(); ph.add(pad); scene.add(placeBlock(ph, 10, 1, 9, 'north'));
+  await Promise.all(pending);
+}
+const SUB = '森林开局 B 溪谷老宅 · 建筑暗线 V1 第 3 阶段 · 2026-10-14';
+const FOOT = '离线概念图：three.js 渲染。房子是搭建脚本里的真实格子和游戏网格，插座是游戏模型；开关和它的垫块是示意几何，不是游戏截图。尺寸是实物 × 1.5（和插座一样）。';
+window.dbg = {scene, look, ortho, day, night, setSwitch, sw, shoot, save, house, VARIANTS, fill};
+
+function interior(pos, target, fov, w, h, power = 1.4) {
+  const cam = look(pos, target, fov); fill.position.set(pos[0], pos[1] + 0.3, pos[2]); fill.intensity = power; fill.distance = 9;
+  return shoot(w, h, cam);
+}
+window.renderSwitches = async () => {
+  day(); house.visible = true; ground.visible = true;
+  const W = 2400, [c, g] = sheet(W, 1860, '墙上开关（wall_switch）概念：三选一', SUB, FOOT);
+  // 1. in the house: by the front door, A, on
+  setSwitch(VARIANTS[0], true);
+  let w = 1184, h = 790, cam, v;
+  v = interior([9.85, 2.05, 7.1], [8.95, 1.75, 10], 50, w, h, 1.6);
+  cam = persp; let vg = v.getContext('2d');
+  callout(vg, cam, w, h, [9.5, 2.2, 9.9], 120, -170, '开关：前门里侧，离地 1.2 m（第 2 格）');
+  callout(vg, cam, w, h, [10.5, 1.35, 9.9], 110, 120, '插座：0.35 m，同一种白色尼龙面板');
+  callout(vg, cam, w, h, [8.3, 1.6, 9.95], -80, -120, '前门');
+  g.drawImage(v, 16, 106); caption(g, 32, 122, '装在屋里：A，开着（扳柄朝上）');
+  // 2. the three, close, on, straight on
+  for (let i = 0; i < 3; i++) {
+    setSwitch(VARIANTS[i], true);
+    const pw = 384; v = interior([9.5, 2.2, 9.35], [9.5, 2.2, 10], 22, pw, h, 0.9);
+    g.drawImage(v, 1208 + i * (pw + 4), 106); caption(g, 1208 + i * (pw + 4) + 10, 122, VARIANTS[i].name);
+  }
+  // 3. each variant from the side: on / off
+  const y0 = 106 + 790 + 16, cw = 784, ih = 520, iw = 386;
+  for (let i = 0; i < 3; i++) {
+    const x0 = 16 + i * (cw + 8);
+    g.fillStyle = '#ece8e1'; g.fillRect(x0, y0, cw, ih + 380);
+    for (const [j, on] of [[0, true], [1, false]]) {
+      setSwitch(VARIANTS[i], on);
+      v = interior([9.27, 2.36, 9.52], [9.5, 2.2, 9.98], 26, iw, ih, 0.9);
+      g.drawImage(v, x0 + 4 + j * (iw + 4), y0 + 4); caption(g, x0 + 14 + j * (iw + 4), y0 + 14, on ? '开' : '关');
+    }
+    notes(g, x0, y0 + ih + 8, cw, 372, VARIANTS[i].name, NOTES[i]);
+  }
+  setSwitch(VARIANTS[0], true);
+  await save(c, 'm2_5_switch_concepts.png'); return 'saved';
+};
+const NOTES = [
+  ['北美最常见的单联扳动开关，往上扳是开，往下扳是关。',
+   '白色尼龙面板、面板螺丝，和屋里的插座是同一套：面板 69.9 × 114.3 mm × 1.5，扳柄伸出 17 mm × 1.5。',
+   '老房子后来重新布过线，用的就是这种；远远看就知道开着还是关着。',
+   '!推荐：和插座配套，一眼看得出开关状态。'],
+  ['大翘板（Decora），按上半边是开，按下半边是关。',
+   '同样的白色面板，中间一大块翘板，开关两态只差几度，远处看不出来。',
+   '是 1990 年代以后的新式样子，放在老木屋里偏新。'],
+  ['1920–40 年代的双按钮开关：按上面的白钮（珍珠贝）是开，下面的黑钮弹出来；按黑钮是关。',
+   '黄铜面板，两个按钮各凸出几毫米，开关状态看按钮哪个凸出来。',
+   '老房子味道最重，但和插座不配套（插座是现代白色的），而且按钮很小，游戏里不好认。'],
+];
+
+buildSwitchScene().then(() => { window.ready = true; });
+</script></body></html>

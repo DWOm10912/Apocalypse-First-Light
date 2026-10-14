@@ -152,6 +152,7 @@
 | 8 | 住宅配电箱 | 5.05, 4.5 → 10.95, 12.3 |
 | 9 | 电表箱（电表、隔离开关、进线一整块背板） | 1.2, 1.1 → 13.9, 11.7 |
 | 10 | 发电机进线盒和挂钩 | 6.3, 3.8 → 9.7, 10.2 |
+| 11 | 墙上开关（2026-10-14，暗线第 3 阶段） | 6.8, 1.5 → 9.2, 4.9 |
 
 - 挂件这边：
   - OBJ 挂件（插座、灯、壁灯）用第二个模型：同一个 OBJ，加一个 Forge 根变换往外移（`tools/afl-log-mount.mjs` 的 `logTwin`）。朝北画的模型沿 −Z 移；灯头朝上画、再转到墙上的模型沿 +Y 移。天花板上的状态不带垫块，和普通模型共用一个。
@@ -243,7 +244,7 @@
 
 ## 技术
 
-- 生成器 `tools/build-cabin-exterior-v1.mjs`（贴图 `tools/cabin/cabin-art.mjs`，几何 `tools/cabin/cabin-geo.mjs`）写出 139 个拼块，共 5051 个四边形（M1.2，支撑换成石块 + 木柱后；M1.1 第二轮门窗封闭后 5035 个；M1.1 第一轮 4416 个，M1 是 119 个拼块、3070 个；2026-10-13 壁挂件垫块另加 10 个拼块 log_wall/pad_1 … pad_10、50 个四边形），到 `assets/apocalypse_firstlight/cabin_mesh/<组>/<名>.json`。格式：`{"textures": [...], "quads": [[贴图序号, x, y, z, u, v, nx, ny, nz × 4], ...]}`，朝北画，按 1/4 圈顺时针转 `(x, z) → (1 − z, x)`。
+- 生成器 `tools/build-cabin-exterior-v1.mjs`（贴图 `tools/cabin/cabin-art.mjs`，几何 `tools/cabin/cabin-geo.mjs`）写出 139 个拼块，共 5051 个四边形（M1.2，支撑换成石块 + 木柱后；M1.1 第二轮门窗封闭后 5035 个；M1.1 第一轮 4416 个，M1 是 119 个拼块、3070 个；2026-10-13 壁挂件垫块另加 10 个拼块 log_wall/pad_1 … pad_10、50 个四边形；2026-10-14 加 pad_11，共 11 个、55 个四边形），到 `assets/apocalypse_firstlight/cabin_mesh/<组>/<名>.json`。格式：`{"textures": [...], "quads": [[贴图序号, x, y, z, u, v, nx, ny, nz × 4], ...]}`，朝北画，按 1/4 圈顺时针转 `(x, z) → (1 − z, x)`。
 - `solid(pc, boxes)`（`cabin-geo.mjs`，M1.1 第二轮）：几个轴对齐盒子的并集，只画和空气相接的面；盒子的坐标切成网格，每个面格取第一个占着它的盒子的贴图，同贴图相邻的面格合成矩形。门框、门板、窗都用它。
 - 开口检查 `node tools/cabin/audit-open-shells.mjs [名字过滤]`：每个拼块单独从 42 个方向用 1 cm 的软件深度缓冲画一遍，最近的面背对观察者就是开口（游戏剔除背面，那里是透的），按看进去的那一面（`n/s/w/e/u/d`，`out` 是落在格子外）汇总面积。`a+b@1+c@0,0,1` 查一个组合（b 转 1/4 圈，c 抬高一格），`--pts=out,d` 列出开口位置。屋面、原木墙、烟管的开口都在和相邻格接着的面上，属于设计。
 - Java，包 `com.antaurora.apofirstlight.cabin`：

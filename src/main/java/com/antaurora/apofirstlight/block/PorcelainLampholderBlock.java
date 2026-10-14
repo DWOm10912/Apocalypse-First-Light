@@ -86,7 +86,7 @@ public class PorcelainLampholderBlock extends BuildingLightBlock implements LogM
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (player.isSpectator()) return InteractionResult.PASS;
         if (!level.isClientSide()) {
-            boolean on = !state.getValue(ON), lit = on && BuildingLights.period(level, wiringPosition(state, pos), false, periodEnergy()) == BuildingLights.Check.LIT;
+            boolean on = !state.getValue(ON), lit = on && BuildingLights.period(level, pos, wiringPosition(state, pos), false, periodEnergy()) == BuildingLights.Check.LIT;
             level.setBlock(pos, state.setValue(ON, on).setValue(LIT, lit), Block.UPDATE_ALL);
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.3F, on ? 1.75F : 1.6F);   // placeholder for a recorded pull-chain click
             level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos);

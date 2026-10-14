@@ -24,8 +24,9 @@ public final class WiringNode {
     /** The panel's breakers (circuits 1-4); the feeder after them; CIRCUITS the highest circuit number. */
     public static final int BREAKERS = 4, FEEDER = 5, CIRCUITS = 5;
     public static final int RED = 0, BLUE = 1, GREEN = 2, YELLOW = 3, BLACK = 4;
-    public static final int ALWAYS = 0, PHOTOCELL = 15;
-    private static final int LINKS = 6, TAPS = 12, GROUPS = 18, SLOPES = 42;
+    /** Tap groups: 0 always on, 1-{@link #GROUPS} light groups (a wall switch's), 15 the photocell (lights only; phase 3). */
+    public static final int ALWAYS = 0, GROUPS = 8, PHOTOCELL = 15;
+    private static final int LINKS = 6, TAPS = 12, GROUP_BITS = 18, SLOPES = 42;
 
     private WiringNode() {}
 
@@ -68,17 +69,17 @@ public final class WiringNode {
 
     /** A tap toward d in the given group (it replaces an earlier tap there). */
     public static long tap(long node, Direction d, int group) {
-        int i = d.get3DDataValue(), shift = GROUPS + 4 * i;
+        int i = d.get3DDataValue(), shift = GROUP_BITS + 4 * i;
         return (node | 1L << TAPS + i) & ~(15L << shift) | (long) (group & 15) << shift;
     }
 
     public static long untap(long node, Direction d) {
         int i = d.get3DDataValue();
-        return node & ~(1L << TAPS + i) & ~(15L << GROUPS + 4 * i);
+        return node & ~(1L << TAPS + i) & ~(15L << GROUP_BITS + 4 * i);
     }
 
     public static int group(long node, Direction d) {
-        return (int) (node >> GROUPS + 4 * d.get3DDataValue() & 15);
+        return (int) (node >> GROUP_BITS + 4 * d.get3DDataValue() & 15);
     }
 
     /** The slope link bit for horizontal direction h and up / down (0..7). */

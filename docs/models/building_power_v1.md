@@ -1,5 +1,12 @@
 # Building Power V1：配电盘和电表箱
 
+> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；编译和 GameTest 通过，**未实机验证**）：配电盘和住宅配电箱多了供电模式 `SupplyMode`。
+> - `LEGACY_AREA`：下面写的全部规则（范围、照明 / 插座 / 外部馈线三路、界面）不变。没有这个存档字段的配电盘都是它：旧存档、旧模板、A1 加油站。A1 的建造脚本放配电盘时写明 `legacy_area`。
+> - `WIRED`（新放的配电盘和配电箱）：不算范围，只给暗线接到的灯、插座、应急灯供电，进线盒、电表箱用一段进线接到它。4 个分路开关是第 1–4 路（界面上用线的颜色：红、蓝、绿、黄），外部馈线单独一行、没有开关，只跟总闸和跳闸走；不显示"备用"。状态词多了"线路互连"（一路接到了两个配电箱，这一路不供电）和"线路未加载"。
+> - 模式只能用开发指令 `/afl dev panel_mode` 或开发桥 `supply_mode` 改。Jade 显示"范围供电"或问题。细节见那份文档第 5.1 节。
+
+> **2026-10-14 第 3 阶段**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.2 节；GameTest 通过，**未实机验证**）：`WIRED` 配电盘 / 配电箱记着每一路 8 个灯光组的开关（存档字段 `GroupOff`，默认全开），墙上开关扳的就是它；界面每一路下面只列用到的组（常亮、组 N 开 / 关、光控）。换供电模式时组全部回到开。另外配电盘不再让光照引擎读它的形状（`propagatesSkylightDown` 直接为真），修了关服时卡死；光照结果不变。
+
 > **2026-10-08 渲染改动**（渲染性能 V1，用户实机 PASS）：配电盘和电表箱改成 `RenderShape.MODEL`，方块模型改用加载器 `apocalypse_firstlight:static_mesh`。静止、可见、不发光的零件由区块画，正在动的零件、玻璃和发光件仍由方块实体渲染器画，见 [Animated Block Mesh Runtime](../rendering/animated_block_mesh_runtime_v1.md)"静止部件由区块画"。下文里的 `ENTITYBLOCK_ANIMATED` / `INVISIBLE` 和"方块模型只有粒子贴图"是改之前的记录。
 
 状态（2026-10-07）：**第一步写完，`compileJava --offline` 通过，未实机验证**。

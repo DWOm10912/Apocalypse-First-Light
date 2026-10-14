@@ -1,7 +1,7 @@
 package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.block.EmergencyLightBlock;
-import com.antaurora.apofirstlight.energy.BuildingLights;
+import com.antaurora.apofirstlight.energy.BuildingSupply;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /**
  * Emergency Light (Building Lights V1, docs/models/building_lights_v1.md): the battery. Every {@link #CHECK} ticks:
  * <ul>
- * <li>its building's lighting circuit has power ({@link BuildingLights}): MODE charging, the battery takes 1 FE/t from the
+ * <li>its circuit has power ({@link BuildingSupply}: the WIRED circuit tapping it, else its building's lighting circuit): MODE charging, the battery takes 1 FE/t from the
  * circuit until full ({@link #CAPACITY} = 10 min of charging);</li>
  * <li>a panel serves it but the circuit is dead (main off, branch off, empty buffer, tripped), or no panel answers for
  * {@link #GRACE_CHECKS} checks running (no building, or the panel gone): the heads run on the battery, 2 units a tick
@@ -43,11 +43,11 @@ public class EmergencyLightBlockEntity extends BlockEntity {
 
     private void check() {
         EmergencyLightBlock.Mode mode = getBlockState().getValue(EmergencyLightBlock.MODE), next;
-        DistributionPanelBlockEntity panel = BuildingLights.panel(level, worldPosition);
+        BuildingSupply.Source panel = BuildingSupply.lighting(level, worldPosition, worldPosition);
         misses = panel != null ? 0 : Math.min(GRACE_CHECKS, misses + 1);
-        if (panel != null && panel.lightingLive()) {
+        if (panel != null && panel.live()) {
             int room = CAPACITY - battery;
-            if (room > 0) { battery += panel.drawLighting(Math.min(room, CHECK * CHARGE), false); setChanged(); }
+            if (room > 0) { battery += panel.draw(Math.min(room, CHECK * CHARGE), false); setChanged(); }
             next = EmergencyLightBlock.Mode.CHARGING;
         } else {
             if (mode == EmergencyLightBlock.Mode.ON) { battery = Math.max(0, battery - CHECK * DRAIN); setChanged(); }

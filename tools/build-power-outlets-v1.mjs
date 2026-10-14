@@ -1,6 +1,7 @@
 // Power Outlets V1 (Building Power V1 step 2a, docs/models/power_outlets_v1.md): the NA duplex wall outlet (NEMA 5-15R on
 // a white nylon plate), the 3-outlet and the 2x3 (6-outlet) power strip in black ABS, and the NEMA 5-15P plug that the
-// strips' cords end in. Everything is 1.5 x real size (user 2026-10-08: real size is barely visible at 1 block = 1 m), so
+// strips' cords end in; the single-pole wall switch (2026-10-14, Building Wiring V1 phase 3, user concept A: a toggle in the
+// outlet's white nylon plate). Everything is 1.5 x real size (user 2026-10-08: real size is barely visible at 1 block = 1 m), so
 // the plug fits the sockets. Pure Mesh + LabPBR atlases, exported as Forge OBJ block models (chunk-baked); the plug is an
 // extra model the strip's renderer draws (client/PowerStripRenderer) with its cord, painted from this atlas' cord swatch.
 //   node tools/build-power-outlets-v1.mjs                -> writes sources, OBJ / MTL / block + item models, blockstates, atlases
@@ -10,6 +11,8 @@
 // library's minimum-size rules. Frames (px, block bottom centre at the origin, facing=north):
 // - wall outlet: front toward -Z, the wall at z = +8; plate centre 5.6 px up (0.35 m: a floor-cell outlet; in the cell
 //   above a counter it sits at 1.35 m). Ground hole down; the neutral (long) slot on the left seen from the room (+X).
+// - wall switch: as the outlet, its plate centre 3.2 px up (0.2 m: in the second cell above a floor, 1.2 m); the handle
+//   tilts up (ON) or down (OFF), two plate screws above and below the opening.
 // - power strips: long axis X, switch and cord at the +X end, flat on the cell floor (lowered: on the 13.5 px office desk).
 //   A red indicator beside the reset button; it and the rocker glow at full brightness in the lit state (GLOW).
 // - plug: its face (blade side) at z = 0 with the blades toward -Z, the head toward +Z, the cord leaving along +Z; centred
@@ -103,6 +106,39 @@ function buildOutlet() {
   const MATS = {
     plate:  {c: [233, 232, 225], hl: 6, sm: 150, se: 168, f0: 20},
     device: {c: [227, 226, 218], hl: 6, sm: 142, se: 160, f0: 20},
+    cavity: {c: [20, 20, 22], hl: 0, sm: 40, se: 40, f0: 20},
+    screw:  {c: [224, 223, 216], hl: 10, sm: 168, se: 186, f0: 20},
+  };
+  return {PARTS, MATS, atlas: 256, startS: 64};
+}
+
+// ---------------- wall switch (2026-10-14) ----------------
+// real mm x 1.5: the outlet's plate (69.9 x 114.3, 5 thick) with a 10.3 x 24.6 toggle opening, screws 60.3 apart; the
+// device face 2.5 mm behind the plate front; the handle 8 x 6 at its root to 6 x 4.4, 17 long with a rounded tip, pivoting
+// in the opening's centre, 24 deg up or down
+export const SWITCH = {opening: [m(10.3), m(24.6)], screwPitch: m(60.3), handle: m(17), tilt: 0.42, centreY: 200};
+function buildSwitch() {
+  const PARTS = [], P = (name, mat, bone = 'main') => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
+  const O = OUTLET, S = SWITCH, zb = O.wall, zf = zb - O.plateT, cy = S.centreY, [ow, oh] = S.opening, zd = zf + m(2.5);
+  extrude(P('plate', 'plate'), 'z', shapeOf(rrect(0, cy, ...O.plate, m(3)), [rrect(0, cy, ow, oh, m(1.5))]), zf, zb, m(1.5));
+  // the device's face behind the opening (its yoke under the plate, seen through the gap round the handle)
+  slab(P('device', 'device'), 'z', [-ow / 2 - m(1), cy - oh / 2 - m(1), zd], [ow / 2 + m(1), cy + oh / 2 + m(1), zd + m(0.5)]);
+  for (const [i, dy] of [[0, S.screwPitch / 2], [1, -S.screwPitch / 2]]) {
+    cyl(P('screw_' + i, 'screw'), 'z', 0, cy + dy, m(3.3), zf - m(0.9), zf + m(0.3), 14);
+    slab(P('screw_slot_' + i, 'cavity'), 'z', [-m(2.4), cy + dy - m(0.32), zf - m(1.05)], [m(2.4), cy + dy + m(0.32), zf - m(0.85)]);
+  }
+  // the handle, lofted out along its own axis from 1.4 mm inside the device face, then turned up (on) or down (off) about X:
+  // local (x, y, z) -> pivot + x X + y (0, -cos a, -sin a) + z (0, sin a, -cos a), a proper rotation (windings kept)
+  for (const look of ['on', 'off']) {
+    const h = P('handle_' + look, 'handle', 'handle_' + look), n0 = h.v.length, L = S.handle;
+    loftSections(h, [[-m(1.4), m(8), m(6), m(1.2)], [L * 0.82, m(6.4), m(4.6), m(1.2)], [L * 0.95, m(6), m(4.4), m(1.8)], [L, m(4.4), m(3), m(1.3)]]);
+    const a = look === 'on' ? S.tilt : -S.tilt, c = Math.cos(a), sn = Math.sin(a);
+    for (let i = n0; i < h.v.length; i++) { const [x, y, z] = h.v[i]; h.v[i] = [x, cy - y * c + z * sn, zd - y * sn - z * c]; }
+  }
+  const MATS = {
+    plate:  {c: [233, 232, 225], hl: 6, sm: 150, se: 168, f0: 20},
+    device: {c: [214, 213, 205], hl: 6, sm: 130, se: 150, f0: 20},
+    handle: {c: [238, 237, 231], hl: 6, sm: 166, se: 182, f0: 20},
     cavity: {c: [20, 20, 22], hl: 0, sm: 40, se: 40, f0: 20},
     screw:  {c: [224, 223, 216], hl: 10, sm: 168, se: 186, f0: 20},
   };
@@ -237,13 +273,15 @@ function bake(key, id, build) {
   }
   return {key, id, PARTS, MATS, atlas, UV, maps: maps.map(px => png(px, atlas, atlas))};
 }
-const B = {outlet: bake('outlet', 'wall_outlet', buildOutlet), strip: bake('strip', 'power_strip', buildStripsAndPlug)};
+const B = {outlet: bake('outlet', 'wall_outlet', buildOutlet), strip: bake('strip', 'power_strip', buildStripsAndPlug), switch: bake('switch', 'wall_switch', buildSwitch)};
+const switchBones = look => new Set(['main', 'handle_' + look]);
 // coplanar faces, checked per exported look (the strips' alternative rockers share their place on purpose)
 const LOOKS = {
   wall_outlet: [B.outlet, null],
   ...Object.fromEntries([3, 6].flatMap(n => ['off', 'on', 'lit'].map(l => [`power_strip_${n}_${l}`, [B.strip, new Set(['body' + n, `rocker${n}_${l}`, `led${n}_${l === 'lit' ? 'lit' : 'off'}`])]]))),
   power_plug: [B.strip, new Set(['plug'])],
   power_connector: [B.strip, new Set(['connector'])],
+  wall_switch_on: [B.switch, switchBones('on')], wall_switch_off: [B.switch, switchBones('off')],
 };
 const coplanar = {};
 for (const [k, [b, bones]] of Object.entries(LOOKS)) { const zf = zFightLevels(b.PARTS.filter(p => !bones || bones.has(p.bone)), new Map()); if (zf.unresolved.length) coplanar[k] = zf.unresolved.slice(0, 6); }
@@ -300,11 +338,12 @@ const display = (b, bones, gui, guiScale, size) => ({
   gui: guiCentred(b, bones, gui, guiScale)});
 
 // selection boxes (cell px, facing=north, before the desk sink), mirrored in WallOutletBlock / PowerStripBlock
-export const SELECTION = {wall_outlet: [6.9, 3.4, 15.5, 9.1, 7.8, 16], power_strip_3: [5.3, 0, 7.15, 10.7, 1.25, 8.85], power_strip_6: [4.9, 0, 6.5, 11.1, 1.25, 9.5]};
+export const SELECTION = {wall_outlet: [6.9, 3.4, 15.5, 9.1, 7.8, 16], wall_switch: [6.9, 1.6, 15.2, 9.1, 4.8, 16], power_strip_3: [5.3, 0, 7.15, 10.7, 1.25, 8.85], power_strip_6: [4.9, 0, 6.5, 11.1, 1.25, 9.5]};
 export const LOWERED = -2.5;   // px, on the 13.5 px office desk (as OfficeDesktopDecorationBlock)
 const fitsIn = (b, bones, box) => b.PARTS.filter(p => !bones || bones.has(p.bone)).every(p => p.v.every(q => [0, 1, 2].every(k => {
   const v = q[k] + (k === 1 ? 0 : 8); return v >= box[k] - 0.02 && v <= box[k + 3] + 0.02; })));
 assert(fitsIn(B.outlet, null, SELECTION.wall_outlet), 'outlet leaves its selection box');
+assert(fitsIn(B.switch, null, SELECTION.wall_switch), 'switch leaves its selection box');
 for (const n of [3, 6]) assert(fitsIn(B.strip, new Set(['body' + n, `rocker${n}_on`, `rocker${n}_off`]), SELECTION['power_strip_' + n]), n + '-outlet strip leaves its selection box');
 
 // editable Free Model sources (px, frames as the header): one group per bone
@@ -358,6 +397,19 @@ outputs.push([path.join(assets, 'models/block/wall_outlet_log.json'), json(logTw
   outputs.push([path.join(assets, 'models/item/wall_outlet.json'), json({parent: 'apocalypse_firstlight:block/wall_outlet', gui_light: 'side',
     display: display(B.outlet, null, [10, 200, 0], 4, 0.5)})]);   // 4 = vanilla's display scale limit (4.2 was drawn at 4, off-centre)
 }
+// wall switch: handle up (on) / down (off); wired (whether it works a light group) does not change the look
+for (const look of ['on', 'off']) {
+  model('wall_switch/' + look, `Building Wiring V1 wall switch (${look})`, B.switch, switchBones(look));
+  outputs.push([path.join(assets, `models/block/wall_switch/${look}_log.json`), json(logTwin(objModel('wall_switch/' + look, B.switch.id)))]);
+}
+{
+  const variants = {};
+  for (const [f, y] of Object.entries(YROT)) for (const lm of [false, true]) for (const on of [false, true]) for (const wired of [false, true])
+    variants[`facing=${f},log_mount=${lm},on=${on},wired=${wired}`] = {model: `apocalypse_firstlight:block/wall_switch/${on ? 'on' : 'off'}${lm ? '_log' : ''}`, ...(y ? {y} : {})};
+  outputs.push([path.join(assets, 'blockstates/wall_switch.json'), json({variants})]);
+  outputs.push([path.join(assets, 'models/item/wall_switch.json'), json({parent: 'apocalypse_firstlight:block/wall_switch/on', gui_light: 'side',
+    display: display(B.switch, switchBones('on'), [10, 200, 0], 4, 0.5)})]);
+}
 // strips: off / on (unlit) / lit (on with power), each also on the desk
 for (const n of [3, 6]) {
   const id = 'power_strip_' + n;
@@ -382,6 +434,7 @@ assert(m(CONNECTOR.mate[3]) * PX < INLET.proud, 'the connector seats in the inle
 const tris = (b, bones) => b.PARTS.filter(p => !bones || bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {
   outlet: {triangles: tris(B.outlet), texelsPerPx: B.outlet.UV.S, islands: B.outlet.UV.islands.length},
+  switch: {triangles: tris(B.switch, switchBones('on')), texelsPerPx: B.switch.UV.S, islands: B.switch.UV.islands.length},
   strip3: {triangles: tris(B.strip, new Set(['body3', 'rocker3_on'])), strip6: tris(B.strip, new Set(['body6', 'rocker6_on'])), plug: tris(B.strip, new Set(['plug'])), connector: tris(B.strip, new Set(['connector'])),
     texelsPerPx: B.strip.UV.S, islands: B.strip.UV.islands.length}, cordUV: CORD_UV, coplanar};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

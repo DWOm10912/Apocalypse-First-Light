@@ -10,6 +10,8 @@
     "apocalypse_firstlight:linear_light",
     "apocalypse_firstlight:emergency_light",
     "apocalypse_firstlight:porcelain_lampholder",
+    "apocalypse_firstlight:keyless_lampholder",
+    "apocalypse_firstlight:wall_switch",
     "apocalypse_firstlight:wall_pack",
     "apocalypse_firstlight:canopy_downlight"
   ]

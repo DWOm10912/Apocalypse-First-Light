@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.wiring.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity;
 import com.antaurora.apofirstlight.client.ui.AflKeyHint;
 import com.antaurora.apofirstlight.client.ui.AflKeyHintPanel;
 import com.antaurora.apofirstlight.network.AflNetwork;
@@ -34,7 +35,8 @@ import java.util.List;
  *   <li>sneak + scroll steps the circuit instead of the hotbar; the pick key (middle click) takes another circuit that has
  *   wire in the aimed cell (the view shows only the selected circuit, so this is how a wire of another one is found);</li>
  *   <li>top right, the circuit with its metres, the actions, and the pick row while the aimed cell holds another circuit
- *   (the shared key hint panel).</li>
+ *   (the shared key hint panel); aimed at a Distribution Panel, its supply: 范围供电 · 暗线不生效 (LEGACY_AREA), or the
+ *   circuits joined to another panel (phase 2).</li>
  * </ul>
  * Laying is the wrench's own use (WiringWrenchItem), repeated by the held use key.
  */
@@ -87,6 +89,16 @@ public final class WiringClient {
         return 0;
     }
 
+    /** Aimed at a Distribution Panel: LEGACY_AREA ignores its wires; a WIRED one's circuits joined to another panel. */
+    private static void panelRows(Minecraft mc, List<AflKeyHintPanel.Row> rows) {
+        if (mc.level == null || !(mc.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) return;
+        if (!(mc.level.getBlockEntity(hit.getBlockPos()) instanceof DistributionPanelBlockEntity panel)) return;
+        if (!panel.wired()) { rows.add(new AflKeyHintPanel.Row(null, null, Component.translatable("message.apocalypse_firstlight.wiring.legacy_panel"))); return; }
+        int conflict = panel.conflictMask();
+        for (int c = 1; c <= WiringNode.BREAKERS; c++)
+            if ((conflict & 1 << c) != 0) rows.add(new AflKeyHintPanel.Row(null, null, Component.translatable("message.apocalypse_firstlight.wiring.conflict", c)));
+    }
+
     @SubscribeEvent
     public static void scroll(InputEvent.MouseScrollingEvent event) {
         Minecraft mc = Minecraft.getInstance();
@@ -110,6 +122,7 @@ public final class WiringClient {
             rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyUse), Component.translatable("hint.apocalypse_firstlight.wiring.lay")));
             rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyAttack), Component.translatable("hint.apocalypse_firstlight.wiring.cut")));
             rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyShift), AflKeyHint.MOUSE_SCROLL, Component.translatable("hint.apocalypse_firstlight.wiring.select")));
+            if (visible) panelRows(mc, rows);
             int pick = visible ? pickable(mc) : 0;
             if (pick > 0) rows.add(new AflKeyHintPanel.Row(AflKeyHint.of(mc.options.keyPickItem), pick == WiringNode.FEEDER
                     ? Component.translatable("hint.apocalypse_firstlight.wiring.pick_feeder") : Component.translatable("hint.apocalypse_firstlight.wiring.pick", pick)));

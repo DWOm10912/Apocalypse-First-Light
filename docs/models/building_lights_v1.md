@@ -1,5 +1,9 @@
 # Building Lights V1：方形面板灯、线形灯、应急灯
 
+> **2026-10-14 第 3 阶段**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.2 节；GameTest 通过，**未实机验证**）：`WIRED` 下所有灯先看线头的组：组关着（墙上开关扳下）或者光控线头遇上白天，就不亮、不取电，再看这一路有没有电。E 的拉绳和壁灯、雨棚筒灯自带的光控叠在上面。加了 F 无开关瓷灯座（见下面"F 无开关瓷灯座"）。`LEGACY_AREA` 不变。
+
+> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；**未实机验证**）：灯和应急灯找电改走 `energy/BuildingSupply`。配电盘是 `WIRED` 的：灯要有暗线线头接到配电盘的第 1–4 路之一，那一路的断路器合着才有电，取电记在那一路上，按灯自己的格子查；配电盘是 `LEGACY_AREA` 的（A1 和所有旧档）：还是下面写的"照明"那一路、按范围。点亮、熄灭、等一次再灭的规则不变。招牌字接不了暗线，只在 `LEGACY_AREA` 下亮。
+
 状态（2026-10-08）：**写完，`compileJava --offline` 通过；A1 里接电后亮灯，用户实机确认"这下OK了"。**其余验收项（拉闸熄灯、应急灯、挖掘、灯排端盖等）还没逐项测。
 - 用户看过概念图（三种吸顶灯 + 应急灯，记录在 [建筑供电规划](../gameplay/building_power_v1_plan.md) 的"吸顶灯重做"）后选了 **A + C + D**。
 - 生成器 `--check` 通过，所有外观都没有共面重叠。网格和贴图在离线 three.js 预览里看过：天花板上、墙上、亮和灭、灯排两端。
@@ -129,6 +133,16 @@
   - 声音暂时是原版拉杆声（音量 0.3，开 1.75、关 1.6），等 Firefly 的拉线开关录音。
 - **方块**：没有碰撞；选择框是灯座加灯泡，再加一根加宽到 0.6 px 的珠链，好瞄准。支撑面没了会掉。硬度 0.3，玻璃声；0.25 kg（估计），叠 16；不进任何 `mineable/*` 标签（同墙上插座、应急灯）。
 - 创造栏建筑页，应急灯后面。建造工具登记成 SAFE_FIXTURE（`ATTACHED_OPPOSITE_FACING`，`on` 可以指定，`lit` 固定 false）。
+
+## F 无开关瓷灯座（2026-10-14）
+
+- 方块 `keyless_lampholder`（`block/KeylessLampholderBlock`），[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 3 阶段做的。森林开局 B 用户 2026-10-13 看过的灯座概念里的 A：E 拉线瓷灯座的白瓷座和 A19 磨砂灯泡，没有拉绳和拉绳凸台，瓷座颈短一些（Ø 10.4 cm，连灯泡伸出 14.9 cm）。
+- 自己没有开关：靠墙上开关的灯光组（线头分组 1–8），或者常亮、光控（建筑暗线第 5.2 节）。主屋都用它；储藏室、地窖留拉线瓷灯座。
+- 吸顶（`facing=down`，挂在格子顶面中心）或挂墙（`facing` 朝外，中心在格子里 0.42 m 高），和 E 一样。方块状态：`facing`、`lit`、`log_mount`。
+- 取电和 E 一样：60 W，每个周期 `BULB_60W_PERIOD` = 10 FE；亮度 14。`LEGACY_AREA` 下挂墙的按背后的墙找范围。
+- 挖掘和垫块同 E：空手能拆（硬度 0.3），不进 `mineable/*`，掉自身；没有碰撞；原木墙上站在垫块上（种类 2，和 E 挂墙同一块）。
+- 模型：`tools/build-building-lights-v1.mjs` 的 F（`KEYLESS`、`buildKeyless`），吸顶 / 挂墙 × 灭 / 亮 4 个 OBJ，加挂墙的 `_log` 版本；1696 个三角形；贴图 `textures/block/keyless_lampholder*.png`，可编辑源 `src/main/blockbench/keyless_lampholder_v1.bbmodel`。选框 `SELECTION.keylessCeiling / keylessWall`，和方块里的一致。
+- 没实机看过。
 
 ## 交互
 

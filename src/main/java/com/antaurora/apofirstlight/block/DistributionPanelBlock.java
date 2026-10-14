@@ -137,6 +137,16 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
+    /**
+     * A wall box never fills its cell: light and sky light pass. Answered without the shape, because the shape reads the
+     * neighbours (the pull boxes) and the light engine asks from its worker thread: a lamp lit beside a panel then waited on
+     * the main thread for a chunk, and a stopping server hung for good (Building Wiring V1 phase 3 GameTest, 2026-10-14).
+     */
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        return true;
+    }
+
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int k = (cabled(level, pos, Direction.DOWN) ? 1 : 0) | (cabled(level, pos, Direction.UP) ? 2 : 0);

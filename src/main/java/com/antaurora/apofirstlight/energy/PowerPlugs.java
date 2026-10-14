@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.energy;
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.PowerStripBlock;
 import com.antaurora.apofirstlight.block.WallOutletBlock;
-import com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity;
 import com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -29,8 +28,8 @@ import java.util.UUID;
 
 /**
  * Plugs and sockets (Power Outlets V1, docs/models/power_outlets_v1.md). Socket hosts: the wall outlet (2 sockets, flags
- * in its block state, live over the building's hidden wiring: in a Distribution Panel's building, main on, the outlet
- * circuit on, something in the buffer) and the power strips (3 / 6, flags in the block entity, live while switched on
+ * in its block state, live over the building's hidden wiring ({@link BuildingSupply}: a WIRED panel's circuit tapping it,
+ * else in a LEGACY_AREA panel's building, the outlet circuit; main on, the breaker on, something in the buffer) and the power strips (3 / 6, flags in the block entity, live while switched on
  * and plugged into a live outlet). Cords ({@link PlugCord}) belong to the strips and the plug-in appliances; a strip's
  * cord only goes into a wall outlet or a generator's sockets. The player carries a plug by hand (sneak + empty hand on the
  * device), then right-clicks a socket with an empty hand; the plug goes into the aimed socket, or the other free one.
@@ -47,17 +46,10 @@ public final class PowerPlugs {
 
     // ---- power ----
 
-    @Nullable
-    private static DistributionPanelBlockEntity panelFor(Level level, BlockPos outlet) {
-        BlockPos panel = BuildingPowerZone.panelServing(level, outlet);
-        if (panel == null || !level.isLoaded(panel)) return null;
-        return level.getBlockEntity(panel) instanceof DistributionPanelBlockEntity p ? p : null;
-    }
-
-    /** The wall outlet at {@code outlet} has power (its building's panel feeds the outlet circuit). */
+    /** The wall outlet at {@code outlet} has power (its circuit is live). */
     public static boolean outletLive(Level level, BlockPos outlet) {
-        DistributionPanelBlockEntity panel = panelFor(level, outlet);
-        return panel != null && panel.outletsLive();
+        BuildingSupply.Source source = BuildingSupply.outlet(level, outlet);
+        return source != null && source.live();
     }
 
     /** Draws up to {@code fe} through the socket host at {@code host}: a wall outlet (its panel) or a power strip (its switch and plug). */
@@ -65,8 +57,8 @@ public final class PowerPlugs {
         BlockState state = level.getBlockState(host);
         if (state.getBlock() instanceof PlugSocketHost h) return h.draw(level, host, fe, simulate);
         if (state.getBlock() instanceof WallOutletBlock) {
-            DistributionPanelBlockEntity panel = panelFor(level, host);
-            return panel == null ? 0 : panel.drawOutlets(fe, simulate);
+            BuildingSupply.Source source = BuildingSupply.outlet(level, host);
+            return source == null ? 0 : source.draw(fe, simulate);
         }
         if (state.getBlock() instanceof PowerStripBlock && level.getBlockEntity(host) instanceof PowerStripBlockEntity strip) return strip.draw(fe, simulate);
         return 0;

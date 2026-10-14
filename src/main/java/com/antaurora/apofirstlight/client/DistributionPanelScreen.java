@@ -1,5 +1,6 @@
 package com.antaurora.apofirstlight.client;
 
+import com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity;
 import com.antaurora.apofirstlight.client.ui.AflUiDraw;
 import com.antaurora.apofirstlight.client.ui.AflUiShapes;
 import com.antaurora.apofirstlight.client.ui.AflUiStyle;
@@ -29,6 +30,11 @@ import static com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEnti
  *   <li>the main breaker (合闸 / 分闸 / 脱扣), then the branches in use, each with a small bar and its share of the capacity,
  *   the spares as one count.</li>
  * </ul>
+ * A WIRED panel (Building Wiring V1 phase 2) lists its four circuits in their wire colours (red, blue, green, yellow; 互连 on
+ * a circuit joined to another panel) and the top cable's row without a switch (no breaker of its own), no spares line; the
+ * status adds 线路互连 and 线路未加载 (wire running into an unloaded chunk). Under each circuit one short line per light group
+ * in use on it (phase 3; only those, user decision 3): 常亮 with its lamps and the other loads, 组 N with its lamps and 开 /
+ * 关 (its wall switches set it; the panel shows it), 光控 with its lamps.
  * Readings are the panel's averages over a 6 s window (a whole number of every device's period, so they stand still); the
  * numbers here change twice a second, the bars ease toward them; 负载偏高 comes on at 80 % and goes off under 75 %.
  * The content under the header scrolls with the mouse wheel when the screen is too short. Each switch sends a menu
@@ -39,10 +45,10 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
     private static final int GREEN = 0x7CC46E, AMBER = AflUiStyle.ACCENT, RED = 0xE06A5A, TRACK = 0xE8E4DC;
     /** The empty bar (the headroom) must read against the translucent panel (user 2026-10-09: at 0.08 it vanished). */
     private static final float TRACK_ALPHA = 0.16F;
-    /** Branch colours by circuit kind (lighting, outlets, the feeder; device branches cycle the rest). */
-    private static final int[] KIND_COLOUR = {0x8A867E, 0xE8C35E, 0x6FB0D2, 0xBD8BD8, 0x8FC98A, 0xE38E6B, 0x7DC9C0, 0xD9A0B8};
+    /** Branch colours by kind: legacy lighting, outlets, the feeder; WIRED circuits 1-4 in their wire colours, the feeder. */
+    private static final int[] KIND_COLOUR = {0x8A867E, 0xE8C35E, 0x6FB0D2, 0xBD8BD8, 0xD9776A, 0x6F9FD8, 0x8FC98A, 0xE8C35E, 0xBD8BD8};
     /** Content y of the parts (under the header); the branch rows start at ROWS. */
-    private static final int MAIN_Y = 62, MAIN_H = 24, BRANCHES_Y = 92, ROWS = 104;
+    private static final int MAIN_Y = 62, MAIN_H = 24, BRANCHES_Y = 92, ROWS = 104, SUB_H = 11;
     private float scroll;
     // what is shown: numbers held for half a second, bars easing toward them
     private int shownLoad, shownCapacity, shownStored;
@@ -53,7 +59,7 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
     private boolean high;
     private boolean sampled;
     private long lastFrame = Util.getMillis();
-    private int laidOutRows = -1;
+    private int laidOutHeight = -1;
 
     public DistributionPanelScreen(DistributionPanelMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
@@ -63,7 +69,7 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
 
     @Override
     protected void init() {
-        laidOutRows = used().length;
+        laidOutHeight = contentHeight();
         imageHeight = Math.min(HEADER + contentHeight() + 6, height - 2 * MARGIN);
         super.init();
         scroll = Mth.clamp(scroll, 0, maxScroll());
@@ -71,9 +77,9 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
 
     /** The branch list comes with the first data sync, after init: fit the panel to it once it is known (or changes). */
     private void relayout() {
-        int rows = used().length;
-        if (rows == laidOutRows) return;
-        laidOutRows = rows;
+        int h = contentHeight();
+        if (h == laidOutHeight) return;
+        laidOutHeight = h;
         imageHeight = Math.min(HEADER + contentHeight() + 6, height - 2 * MARGIN);
         topPos = (height - imageHeight) / 2;
         scroll = Mth.clamp(scroll, 0, maxScroll());
@@ -84,7 +90,11 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
     private boolean main() { return (flags() & FLAG_MAIN) != 0; }
     private boolean tripped() { return (flags() & FLAG_TRIPPED) != 0; }
     private int kind(int s) { return menu.get(DATA_SLOTS + s * 3); }
-    private boolean off(int s) { return menu.get(DATA_SLOTS + s * 3 + 1) != 0; }
+    private boolean off(int s) { return menu.get(DATA_SLOTS + s * 3 + 1) == DistributionPanelBlockEntity.BRANCH_OFF; }
+    private boolean conflict(int s) { return menu.get(DATA_SLOTS + s * 3 + 1) == DistributionPanelBlockEntity.BRANCH_CONFLICT; }
+    /** The WIRED top cable's row: no breaker, no switch. */
+    private boolean fixed(int s) { return kind(s) == DistributionPanelBlockEntity.KIND_WIRED_CABLE; }
+    private boolean wired() { return (flags() & DistributionPanelBlockEntity.FLAG_WIRED) != 0; }
     private static int colour(int kind) { return KIND_COLOUR[Math.floorMod(kind, KIND_COLOUR.length)]; }
 
     /** The slots in use, in slot order (the panelboard's own order). */
@@ -94,8 +104,39 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
         for (int s = 0; s < SLOTS; s++) if (kind(s) != KIND_NONE) out[n++] = s;
         return java.util.Arrays.copyOf(out, n);
     }
-    private int spares() { return SLOTS - used().length; }
-    private int contentHeight() { return ROWS + used().length * (ROW_H + ROW_GAP) + 16; }
+    private int spares() { return wired() ? 0 : SLOTS - used().length; }
+
+    // ---- light groups under a WIRED circuit (phase 3) ----
+
+    /** The wire circuit (1-4) of a WIRED panel's branch slot, else 0. */
+    private int circuitOf(int s) {
+        int k = kind(s) - DistributionPanelBlockEntity.KIND_WIRE;
+        return wired() && k >= 0 && k < com.antaurora.apofirstlight.wiring.WiringNode.BREAKERS ? k + 1 : 0;
+    }
+    private int groupField(int circuit, int field) { return menu.get(DATA_GROUPS + (circuit - 1) * GROUP_DATA + field); }
+    /** The groups in use on the circuit, in order: bit 0 always on, 1-8 the light groups, PHOTOCELL_BIT. */
+    private int[] groupsOf(int s) {
+        int c = circuitOf(s);
+        if (c == 0) return new int[0];
+        int used = groupField(c, GROUP_USED), n = 0;
+        int[] out = new int[PHOTOCELL_BIT + 1];
+        for (int b = 0; b <= PHOTOCELL_BIT; b++) if ((used & 1 << b) != 0) out[n++] = b;
+        return java.util.Arrays.copyOf(out, n);
+    }
+    /** Each used branch row's content y, and the end of the list. */
+    private int[] rowTops(int[] used) {
+        int[] top = new int[used.length + 1];
+        int y = ROWS;
+        for (int i = 0; i < used.length; i++) {
+            top[i] = y;
+            y += ROW_H + ROW_GAP;
+            int g = groupsOf(used[i]).length;
+            if (g > 0) y += g * SUB_H + 3;
+        }
+        top[used.length] = y;
+        return top;
+    }
+    private int contentHeight() { return rowTops(used())[used().length] + 16; }
 
     // the scrolling area, in screen coordinates; content y 0 sits at its top
     private float areaTop() { return topPos + HEADER; }
@@ -132,6 +173,8 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
         int overload = menu.get(DATA_OVERLOAD);
         if (overload > 0) { colour[0] = RED; return tr("status_overload", Math.max(1, Mth.ceil((TRIP_TICKS - overload) / 20F))); }
         if (shownCapacity <= 0) { colour[0] = AflUiStyle.TEXT_DIM; return tr("status_no_supply"); }
+        if ((f & DistributionPanelBlockEntity.FLAG_CONFLICT) != 0) { colour[0] = AMBER; return tr("status_conflict"); }
+        if ((f & DistributionPanelBlockEntity.FLAG_PARTIAL) != 0) { colour[0] = AMBER; return tr("status_partial"); }
         if ((f & FLAG_DUPLICATE) != 0) { colour[0] = AMBER; return tr("status_duplicate"); }
         if ((f & FLAG_ZONE_OPEN) != 0) { colour[0] = AMBER; return tr("status_no_building"); }
         if (high || (f & FLAG_FALLING) != 0) { colour[0] = AMBER; return tr("status_high"); }
@@ -167,7 +210,7 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
         g.enableScissor(sx0, sy0, sx1, sy1);
         boolean hovering = inArea(mouseX, mouseY);
         boolean live = main() && !tripped() && shownCapacity > 0;
-        int[] used = used();
+        int[] used = used(), tops = rowTops(used);
         // the load ratio, load / capacity, the storage
         AflUiDraw.text(g, font, tr("load_ratio"), x + PAD, cy(6), AflUiStyle.TEXT_DIM, 1);
         if (live) {
@@ -210,18 +253,20 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
         AflUiDraw.text(g, font, tr("branches"), x + PAD, cy(BRANCHES_Y), AflUiStyle.TEXT_DIM, 1);
         for (int i = 0; i < used.length; i++) {
             int s = used[i];
-            float ry = cy(ROWS + i * (ROW_H + ROW_GAP)), rx = x + 10;
-            boolean on = !off(s), hover = hovering && inside(mouseX, mouseY, rx, ry, W - 20, ROW_H);
+            float ry = cy(tops[i]), rx = x + 10;
+            boolean on = !off(s) && !conflict(s), hover = hovering && !fixed(s) && inside(mouseX, mouseY, rx, ry, W - 20, ROW_H);
             if (hover) AflUiShapes.box(g, rx, ry, W - 20, ROW_H, AflUiStyle.RADIUS_TILE, TRACK, 0.04F, AflUiStyle.LINE, AflUiStyle.LINE_HOVER_ALPHA, 0, 0);
-            toggle(g, rx + 4, ry + 4, 18, 9, on, false);
+            if (fixed(s)) AflUiShapes.fill(g, rx + 9, ry + 6.5F, 8, 4, 2, colour(kind(s)), 0.92F);   // no breaker: a colour mark
+            else toggle(g, rx + 4, ry + 4, 18, 9, !off(s), false);
             AflUiDraw.text(g, font, tr("kind_" + kind(s)), rx + 28, ry + 5, on ? AflUiStyle.TEXT : AflUiStyle.TEXT_DIM, 1);
             float mx0 = rx + 100, mw = W - 20 - 100 - 40;
             AflUiShapes.fill(g, mx0, ry + 7, mw, 3, 1.5F, TRACK, TRACK_ALPHA);
             if (live && on && barSlot[s] > 0.05F) AflUiShapes.fill(g, mx0, ry + 7, Math.max(3, Math.min(mw, mw * barSlot[s] / shownCapacity)), 3, 1.5F, colour(kind(s)), 0.92F);
-            Component v = !on ? tr("branch_open") : live ? Component.literal(Math.round(100F * shownSlot[s] / shownCapacity) + "%") : Component.literal("—");
-            AflUiDraw.text(g, font, v, rx + W - 20 - 6 - font.width(v), ry + 5, on && live ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
+            Component v = conflict(s) ? tr("branch_conflict") : !on ? tr("branch_open") : live ? Component.literal(Math.round(100F * shownSlot[s] / shownCapacity) + "%") : Component.literal("—");
+            AflUiDraw.text(g, font, v, rx + W - 20 - 6 - font.width(v), ry + 5, conflict(s) ? AMBER : on && live ? AflUiStyle.TEXT : AflUiStyle.TEXT_DISABLED, 1);
+            groupLines(g, s, rx, ry + ROW_H + 1);
         }
-        if (spares() > 0) AflUiDraw.text(g, font, tr("spare", spares()), x + PAD, cy(ROWS + used.length * (ROW_H + ROW_GAP) + 3), AflUiStyle.TEXT_DISABLED, 1);
+        if (spares() > 0) AflUiDraw.text(g, font, tr("spare", spares()), x + PAD, cy(tops[used.length] + 3), AflUiStyle.TEXT_DISABLED, 1);
         g.disableScissor();
         // scroll bar, only when the content does not fit
         float max = maxScroll();
@@ -229,6 +274,28 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
             float track = areaHeight() - 4, thumb = Math.max(12, track * areaHeight() / contentHeight()), at = (track - thumb) * scroll / max;
             AflUiShapes.fill(g, x + W - 5, areaTop() + 2, 2, track, 1, TRACK, 0.08F);
             AflUiShapes.fill(g, x + W - 5, areaTop() + 2 + at, 2, thumb, 1, TRACK, 0.45F);
+        }
+    }
+
+    /** The circuit's light groups in use, one line each under its row: name, lamps (always on: also the other loads), 开 / 关. */
+    private void groupLines(GuiGraphics g, int s, float rx, float y0) {
+        int[] groups = groupsOf(s);
+        int c = circuitOf(s);
+        for (int i = 0; i < groups.length; i++) {
+            int b = groups[i];
+            float y = y0 + i * SUB_H;
+            int lamps = groupField(c, GROUP_LIGHTS + b);
+            Component name = b == 0 ? tr("group_always") : b == PHOTOCELL_BIT ? tr("group_photocell") : tr("group_n", b);
+            AflUiShapes.fill(g, rx + 12, y + 3.5F, 0.6F, 3, 0, AflUiStyle.LINE, AflUiStyle.LINE_ALPHA);   // a hairline tick: belongs to the row above
+            AflUiDraw.text(g, font, name, rx + 28, y + 1, AflUiStyle.TEXT_DIM, 1);
+            Component count = tr("group_lights", lamps);
+            if (b == 0 && groupField(c, GROUP_OTHERS) > 0) count = count.copy().append(" · ").append(tr("group_others", groupField(c, GROUP_OTHERS)));
+            AflUiDraw.text(g, font, count, rx + 100, y + 1, AflUiStyle.TEXT_DISABLED, 1);
+            if (b >= 1 && b < PHOTOCELL_BIT) {
+                boolean on = (groupField(c, GROUP_OFF) & 1 << b - 1) == 0;
+                Component st = tr(on ? "group_on" : "group_off");
+                AflUiDraw.text(g, font, st, rx + W - 20 - 6 - font.width(st), y + 1, on ? AflUiStyle.TEXT : AflUiStyle.TEXT_DIM, 1);
+            }
         }
     }
 
@@ -271,9 +338,9 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && inArea(mx, my)) {
             if (inside(mx, my, leftPos + 10, cy(MAIN_Y), W - 20, MAIN_H)) { press(DistributionPanelMenu.MAIN_BUTTON); return true; }
-            int[] used = used();
+            int[] used = used(), tops = rowTops(used);
             for (int i = 0; i < used.length; i++) {
-                if (inside(mx, my, leftPos + 10, cy(ROWS + i * (ROW_H + ROW_GAP)), W - 20, ROW_H)) { press(DistributionPanelMenu.BRANCH_BUTTON + used[i]); return true; }
+                if (!fixed(used[i]) && inside(mx, my, leftPos + 10, cy(tops[i]), W - 20, ROW_H)) { press(DistributionPanelMenu.BRANCH_BUTTON + used[i]); return true; }
             }
         }
         return super.mouseClicked(mx, my, button);

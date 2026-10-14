@@ -4,7 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.block.ServiceMeterBoxBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
-import com.antaurora.apofirstlight.energy.BuildingPowerZone;
+import com.antaurora.apofirstlight.energy.BuildingSupply;
 import com.antaurora.apofirstlight.registry.AflBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -78,7 +78,7 @@ public class ServiceMeterBoxBlockEntity extends AflAnimatedMeshBlockEntity {
         if (now >= nextLookup) {
             nextLookup = now + 40;
             BlockPos wall = worldPosition.relative(getBlockState().getValue(ServiceMeterBoxBlock.FACING).getOpposite());
-            BlockPos found = BuildingPowerZone.panelServing(level, wall);
+            BlockPos found = BuildingSupply.entryPanel(level, worldPosition, wall);
             if (!java.util.Objects.equals(found, panel)) { panel = found; sync(); }
         }
         if (panel == null || !level.isLoaded(panel)) return null;

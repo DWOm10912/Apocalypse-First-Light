@@ -197,6 +197,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> PORCELAIN_LAMPHOLDER = BLOCKS.register("porcelain_lampholder",
             () -> new com.antaurora.apofirstlight.block.PorcelainLampholderBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.GLASS).noCollission().noOcclusion()
                     .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? com.antaurora.apofirstlight.block.PorcelainLampholderBlock.LIGHT_LEVEL : 0)));
+    /** Building Lights V1 F / Building Wiring V1 phase 3 (2026-10-14): the keyless lampholder, worked by a wall switch; as the pull-chain one, hand-breakable. */
+    public static final RegistryObject<Block> KEYLESS_LAMPHOLDER = BLOCKS.register("keyless_lampholder",
+            () -> new com.antaurora.apofirstlight.block.KeylessLampholderBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.GLASS).noCollission().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? com.antaurora.apofirstlight.block.PorcelainLampholderBlock.LIGHT_LEVEL : 0)));
     /**
      * Site Lighting V1 (docs/models/site_lighting_v1.md): parking-lot poles (base, segments, head cell), the wall pack and the
      * canopy downlight are galvanized / die-cast steel and aluminium fixtures: pickaxe + diamond tier. The hidden light point
@@ -283,6 +287,9 @@ public final class AflBlocks {
     /** Power Outlets V1 (docs/models/power_outlets_v1.md): small plastic fittings, hand-breakable (as the office keyboard), no collision. */
     public static final RegistryObject<Block> WALL_OUTLET = BLOCKS.register("wall_outlet",
             () -> new com.antaurora.apofirstlight.block.WallOutletBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion()));
+    /** Building Wiring V1 phase 3 (2026-10-14): the wall switch, a small plastic fitting like the outlet. */
+    public static final RegistryObject<Block> WALL_SWITCH = BLOCKS.register("wall_switch",
+            () -> new com.antaurora.apofirstlight.block.WallSwitchBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion()));
     public static final RegistryObject<Block> POWER_STRIP_3 = BLOCKS.register("power_strip_3",
             () -> new com.antaurora.apofirstlight.block.PowerStripBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion(), 3));
     public static final RegistryObject<Block> POWER_STRIP_6 = BLOCKS.register("power_strip_6",

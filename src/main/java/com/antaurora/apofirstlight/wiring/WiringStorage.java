@@ -25,6 +25,11 @@ public final class WiringStorage {
         return ++revisions;
     }
 
+    /** The latest revision: it changes with every wiring edit and every chunk's wiring loaded (a WIRED panel solves again). */
+    public static int revision() {
+        return revisions;
+    }
+
     @SubscribeEvent
     public static void load(ChunkDataEvent.Load event) {
         if (!(event.getChunk() instanceof LevelChunk chunk) || !event.getData().contains(TAG, Tag.TAG_COMPOUND)) return;

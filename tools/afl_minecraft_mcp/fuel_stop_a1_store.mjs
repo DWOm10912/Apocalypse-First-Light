@@ -22,6 +22,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {storeCells} from './fuel_stop_a1_feeder.mjs';
 
+// Building Wiring V1 phase 2: A1 keeps the building-footprint supply (no hidden wires laid there), so its panel is placed
+// as LEGACY_AREA (a new panel would be WIRED and feed nothing).
+function supplyMode(id) {
+  return /(^|:)(distribution_panel|load_center)$/.test(id) ? {supply_mode: 'legacy_area'} : {};
+}
+
 export const ID = 'gas_station_02_store', SIZE = [31, 10, 20];
 // Ground Materials V1 (2026-10-08, docs/models/ground_materials_v1.md), paper boxes at k -1 (floor, sidewalk): the rooms
 // include the partitions and door cells on their side; the office takes the stock-room door cell (X 23). Sidewalk axis = the
@@ -182,7 +188,7 @@ async function build() {
   for (let pass = 0; pass < 2; pass++) report['reconcile_' + pass] = (await c.call('reconcile_shapes', {target: 'AUTHORING_SESSION'})).reconciled;
   for (const f of fixtures) {
     const args = {block_id: f.block_id, ...(f.tool === 'place_multiblock' ? {anchor: world(f.pos)} : {pos: world(f.pos)}), ...(f.facing ? {facing: f.facing} : {}),
-      ...(Object.keys(f.properties).length ? {properties: f.properties} : {})};
+      ...(Object.keys(f.properties).length ? {properties: f.properties} : {}), ...supplyMode(f.block_id)};
     try { const r = await c.call(f.tool, args); report.fixtures.push({id: f.block_id, at: args.anchor || args.pos, ok: true, warnings: r.warnings}); }
     catch (e) { report.failures.push({id: f.block_id, at: args.anchor || args.pos, facing: f.facing, error: String(e.message || e)}); }
   }
@@ -356,7 +362,7 @@ async function furnish() {
         await c.call('we_stack', {target: 'AUTHORING_SESSION', min: world(min), max: world(max), offset: [-s.d[0], s.d[1], -s.d[2]], count: s.count});
       } else {
         const pos = world(paper(...s.at)), args = {block_id: A(s.id), ...(s.kind === 'place_multiblock' ? {anchor: pos} : {pos}),
-          ...(s.facing ? {facing: turned(s.facing)} : {}), ...(Object.keys(s.properties).length ? {properties: s.properties} : {})};
+          ...(s.facing ? {facing: turned(s.facing)} : {}), ...(Object.keys(s.properties).length ? {properties: s.properties} : {}), ...supplyMode(s.id)};
         await c.call(s.kind, args);
       }
       prog.done.push(i); used++; log.push(i + ' ok ' + (s.id || 'stack'));
@@ -396,7 +402,7 @@ async function relayout(list = relayoutSteps(), report = 'relayout_sales_v2.json
       } else {
         const pos = world(paper(...st.at));
         await c.call(st.kind, {block_id: A(st.id), ...(st.kind === 'place_multiblock' ? {anchor: pos} : {pos}), facing: turned(st.facing),
-          ...(Object.keys(st.properties).length ? {properties: st.properties} : {})});
+          ...(Object.keys(st.properties).length ? {properties: st.properties} : {}), ...supplyMode(st.id)});
         log.push('ok ' + st.id);
       }
     } catch (e) { log.push('FAIL ' + (st.id || st.kind) + ' ' + String(e.message || e)); if (String(e.message || e).startsWith('HISTORY_LIMIT') || st.kind === 'clear' || st.kind === 'set') break; }
