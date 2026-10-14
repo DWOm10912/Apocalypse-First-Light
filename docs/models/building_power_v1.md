@@ -8,11 +8,17 @@
 - 网格和贴图在离线 three.js 预览里看过：A1 设备间（配电盘关门、开门、拉闸、两个接线盒）和后墙外（电表箱合上、断开、接能量单元）。
 - 第二步的前一半（墙上插座、插线板和插头电源线）2026-10-08 做了，见 [Power Outlets V1](power_outlets_v1.md)；配电盘加了"插座"那一路的取电接口 `outletsLive()` / `drawOutlets()`。小电器改插头 2026-10-08 也做了。吸顶灯（照明那一路）2026-10-08 做了，见 [Building Lights V1](building_lights_v1.md)：配电盘加了 `lightingLive()` / `drawLighting()`。
 
+> **2026-10-13 改动**（森林开局 B 的 E1，用户看过概念图后定；`compileJava` 通过，**未实机验证**）：
+> - `distribution_panel` 改名"商业配电盘 / Commercial Panelboard"，ID 不变；另做一个住宅配电箱 `load_center`，见下面"住宅配电箱"。
+> - 底部接线盒也改成接了电缆才画，和顶部一样（见"配电盘"的接口）。
+> - 新的进户点：[发电机进线盒](generator_inlet_v1.md) `generator_inlet_box`，作用同电表箱，电从便携式发电机经 15 m 电缆进来。
+
 ## 这一步做了什么
 
 | 方块 | ID | 作用 |
 |---|---|---|
-| 配电盘 | `distribution_panel` | 一栋楼的总闸和分路开关。底部进线，顶部出线接线缆设备 |
+| 商业配电盘（原名"配电盘"） | `distribution_panel` | 一栋楼的总闸和分路开关。底部进线，顶部出线接线缆设备 |
+| 住宅配电箱（2026-10-13） | `load_center` | 同上，住宅的小尺寸 |
 | 电表箱 | `service_meter_box` | 外墙进户点。底部接电，转送到同一栋楼的配电盘；红手柄是进户总开关 |
 
 两个都是工业设施：镐 + 钻石级，`requiresCorrectToolForDrops()`，掉落自身（`survives_explosion`）。挂墙放置：点在墙的侧面，背后要有结实的面，墙没了会掉下来。配电盘 14 kg、电表箱 10 kg（估计），各叠 4 个，算 `carry/bulky`（单格 5–20 kg 的家具，见 [weight_system_v1.md](../gameplay/weight_system_v1.md)；第一版写成叠 16 个，同日改正），在创造栏工业页电缆后面。
@@ -27,8 +33,9 @@
 - 门里是浅灰内盖：上面一个两极总闸，下面左右两列各 6 个分路开关。
 - 分路开关是黑色断路器加浅一点的拨杆：合闸时拨杆偏向中间，断开时偏向外侧，开门能看清哪一路断开了。没用到的备用位一直是断开。
 - 接口：线管从箱底、箱顶出来，拐到这一格底面中心、顶面中心的小接线盒；接线盒朝外那一面是标准钢接口（`tools/afl-power-port.mjs`）。这是接口规格要求的：插座要在面中心，电缆在方块正中。
-  - 顶部接线盒平时不画，上面接了电缆才出现（`meshPartVisible`）。
-- 骨骼和通道：`door`（`open`），`main`（`main_off`），`b0`..`b11`（`b0_off`..`b11_off`，b0..b5 是看过去左边一列、从上往下），`port_up`。拨杆的合闸角度写在 profile 的 `rest` 里。
+  - 两个接线盒平时都不画，那一面接了电缆才出现（`meshPartVisible`，`DistributionPanelBlock.cabled`）。选择框也跟着变（方块 `dynamicShape`）。
+  - 底部的原来一直画（2026-10-13 改）：挂在木墙上、楼从电表箱或进线盒进电时用不到它，它悬在格子正中，离墙 30–70 cm、离地板 1 m。
+- 骨骼和通道：`door`（`open`），`main`（`main_off`），`b0`..`b11`（`b0_off`..`b11_off`，b0..b5 是看过去左边一列、从上往下），`port_up`、`port_down`。拨杆的合闸角度写在 profile 的 `rest` 里。
 
 **功能**（`DistributionPanelBlock`、`DistributionPanelBlockEntity`）：
 - **进线**：底面接口收电，存进 4,096 FE 的缓冲，每 tick 最多收 512 FE。电表箱送来的电也进这里。
@@ -54,6 +61,20 @@
   - 每 5 秒重算一次。
 - **存档**：总闸、跳闸、各分路开关、缓冲电量都存在方块实体里，建筑 NBT 会保留。
 
+## 住宅配电箱（2026-10-13）
+
+`load_center`，住宅配电箱 / Load Center。为什么做：原来的配电盘 0.56 × 0.70 m 是商用尺寸，挂在森林开局的小屋里偏大（用户 2026-10-13："可以做小配电箱，之前的那个就当做商业配电箱"）。
+
+- **外形**（同一个生成器 `tools/build-building-power-v1.mjs`，常量 `LOAD_CENTER`）：同一套零件和骨骼，尺寸缩小：
+  - 0.33 × 0.45 m，深 1.6 px（约 10 cm），挂在那一格离地 0.3–0.75 m；
+  - 上面一个两极总闸，下面两列各 6 个分路开关（间距 0.66 px，商业版 1.18 px）；
+  - 门、合页、门锁、回路卡、两个接线盒按比例缩小；
+  - 同一种 ANSI 61 浅灰喷涂，同一张贴图的做法（自己的 `load_center{,_s,_n}.png`）。
+- **功能**：和商业配电盘完全一样（`DistributionPanelBlock.Kind.RESIDENTIAL`，同一个方块实体类型 `distribution_panel`，同一套回路、跳闸、范围、界面），只是换了网格（`block_mesh_profiles/load_center.json`）和选择框。界面标题用方块自己的名字。
+- **挖掘**：镐 + 钻石级，`requiresCorrectToolForDrops()`，掉落自身（`survives_explosion`）；硬度 4 / 抗爆 6。
+- 6 kg（估计），叠 4，`carry/bulky`；创造栏在商业配电盘后面；建造工具登记成 SAFE_FIXTURE，挂墙。
+- 界面菜单原来只认商业配电盘（`stillValid` 判断方块是不是 `distribution_panel`），住宅配电箱一打开就会关掉；现在认任何配电盘方块，8 格内有效。
+
 ## 电表箱
 
 **外形**：
@@ -71,7 +92,7 @@
 
 ## 文件
 
-- 生成器：`tools/build-building-power-v1.mjs`（`--check`、`--preview DIR`）；可编辑源 `src/main/blockbench/{distribution_panel,service_meter_box}_v1.bbmodel` 和贴图副本。
+- 生成器：`tools/build-building-power-v1.mjs`（`--check`、`--preview DIR`）；可编辑源 `src/main/blockbench/{distribution_panel,load_center,service_meter_box}_v1.bbmodel` 和贴图副本。
 - 运行时：`geo/`、`meshes/`、`block_mesh_profiles/`、`textures/block/*{,_s,_n}.png`、`models/block`（只有粒子）、`models/item`（`builtin/entity`）、`blockstates/`。
 - 代码：
   - `block/DistributionPanelBlock`、`block/ServiceMeterBoxBlock`；
@@ -119,7 +140,7 @@
 用户定的方向：概念图（草稿目录 `refs/panel_ui_concept.html`，第二版 `pages/panel_ui_concept_v2.png`）"设计可以"；文案"说明性太强……打算让玩家查wiki"、"术语最好专业一点"；第二版后"可以，按这个做"。界面只给状态和读数，不写解释句。
 
 **界面内容**（`client/DistributionPanelScreen`）：
-- 标题栏："配电盘"，右边一个状态词加圆点，按紧急程度取第一个：
+- 标题栏：方块的名字（2026-10-13 起："商业配电盘"或"住宅配电箱"；原来固定写"配电盘"），右边一个状态词加圆点，按紧急程度取第一个：
 
   | 状态 | 颜色 | 条件 |
   |---|---|---|
@@ -160,3 +181,4 @@
 4. A1：设备间换配电盘、后墙外换电表箱（建造脚本 `power` 模式已写好，还没运行），布置插座，接能量单元实测。
 5. 生存模式的电源：**备用柴油发电机组**（2026-10-09 实现，未实机验证，[diesel_standby_generator_v1.md](../machines/diesel_standby_generator_v1.md)）。额定 400 FE/t，从主格背面的标准接口出线；用户 2026-10-09 实机 PASS。A1 不放它（用户：以后由城市电网供电），原来的摆放脚本已删；A1 改放便携式柴油发电机。
 6. **便携式柴油发电机**（2026-10-09 实现，未实机验证，[portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md)）：20 FE/t，只有插座（两组 NEMA 5-15R 双联、4 个插孔），插头电器和插线板直接插在它上面；不接配电盘。
+7. **发电机进线盒**（2026-10-13 实现，未实机验证，[generator_inlet_v1.md](generator_inlet_v1.md)）：便携发电机加了一个 L14-30R，进线盒的 15 m 电缆插在上面，电送进这栋楼的配电盘。

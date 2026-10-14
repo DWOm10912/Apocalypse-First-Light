@@ -1,0 +1,4 @@
+# AFL Generator Inlet V1 L14-30P plug
+newmtl generator_inlet
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/generator_inlet_box

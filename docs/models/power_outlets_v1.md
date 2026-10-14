@@ -68,10 +68,19 @@
 ## 功能
 
 **别的插座宿主**（2026-10-09，[便携式柴油发电机](../machines/portable_diesel_generator_v1.md)）：方块实现 `energy/PlugSocketHost`，就能有自己的插孔。`PowerPlugs` 的每个方法都先问它：插孔数、占用、位置、朝向、瞄准哪个、收不收这根线、取电、有没有电；插拔、手拿插头、电线够不够长、电线渲染都不用改。
-- 第一个是便携发电机面板上的两组 NEMA 5-15R 双联插座（4 个插孔），和墙上插座同一种。游戏里只有一种插头（用户 2026-10-09："目前游戏里面的不就一种通用插头？"）。
+- 第一个是便携发电机面板上的两组 NEMA 5-15R 双联插座（4 个插孔），和墙上插座同一种。游戏里只有一种插头（用户 2026-10-09："目前游戏里面的不就一种通用插头？"）。2026-10-13 起多了第二种：发电机进线盒电缆的 L14-30P，发电机面板加了它的 L14-30R（第 5 个插孔），见下面"插头种类"。
 - 插线板现在也能插在发电机上。插线板有没有电（`PowerStripBlockEntity.live`）：插在墙上插座上看配电盘，插在插座宿主上问宿主（发电机运行中、没跳闸）。
 - 插线板插错地方的提示改成"插线板要插在墙上插座或发电机上"。
 - 空手右键宿主的插孔：`PowerPlugs.useSocketHost`，和墙上插座的 `useOutlet` 一样（拿着插头就插上，空手就拔出瞄准的那个）。
+
+**插头种类**（2026-10-13，[发电机进线盒](generator_inlet_v1.md)）：
+- `PlugCord.Kind`：`NEMA_5_15`（插线板、电器，原来唯一的一种）和 `L14_30`（进线盒的 15 m 电缆，旋锁插头 L14-30P）。
+- 插头只插得进同一种插座：`PlugSocketHost.socketFits` 说每个插孔收哪种（默认 NEMA 5-15），墙上插座和插线板只收 NEMA 5-15。便携发电机的第 5 个插孔（`L14_SOCKET` = 4）是 L14-30R。
+- 插错时提示"插头不匹配"（`hint.apocalypse_firstlight.plug.wrong_plug`），先于"插线板要插在……"的判断。瞄准的插孔种类不对时，按顺序找下一个种类对的空插孔。
+- 每秒检查时也查种类（`PowerPlugs.fits`）。
+- `PlugSocketHost.capacity`（默认 0）：宿主现在能给多少，发电机运行时是额定 20 FE/t。进线盒把它当作配电盘的容量。
+- **收起的电线**（`PlugCord.stowing()`）：插头不在插座、不在手里时，电线盘在主人身上（进线盒的挂钩），不躺在地上，渲染器不画拉出来的电线。走远掉回时提示"插头挂回钩上"。
+- 找"这个插孔插着哪根电线"（`PowerPlugs.pluggedInto`）原来逐格扫一个立方体（半径是最长电线 4 格 + 2），15 m 电缆来了以后是 35³ 格；现在按区块里的方块实体找，范围 15 + 2 格。
 
 **插座的电**（`energy/PowerPlugs`）：
 - 插座所在的格子在某个配电盘的"这栋楼"范围里，那个配电盘总闸合着、"插座"那一路没断开、缓冲里有电，插座就有电。这就是暗线，插座本身不接电缆。
@@ -163,9 +172,9 @@
 - 修法：同步数据里始终写上"谁拿着插头"（没人拿是 −1），数据就不会是空的（`PlugCord.writeSync`）。插线板和四台电器的同步都改用它。
 
 **共用代码**：
-- `energy/PlugCord`：插头在哪、谁拿着、每秒检查、存档同步。插线板和四台电器都用它。
+- `energy/PlugCord`：插头在哪、谁拿着、每秒检查、存档同步。插线板、四台电器、进线盒（2026-10-13）都用它。
 - `energy/PowerPlugs`：墙上插座和插线板都是"插孔宿主"，统一做插上、拔下、拿着走、取电。
-- `client/PlugCordRenderer`：插头模型和电线。
+- `client/PlugCordRenderer`：插头模型和电线。2026-10-13 起按电线种类取样式（`Style`：插头模型、贴图、色样、半径、尾巴长、插头半宽、最大下垂、光照取法）。NEMA 的不变（最多下垂 0.5 格，首尾两点插值光照）；L14 的半径 10.5 mm（真实尺寸，不放大）、最多下垂 3 格（长电缆落到地上沿地走）、每个点单独取光照。分段数改成每格至少 3 段、不少于原来的 18 段（6 格以内的电线不变；原来固定 18 段，15 m 电缆会成折线）。下垂后还压在方块里的点，抬升最多重复 4 轮。
 - `CompressorAppliance` 加了 `cord(...)`。燃油加油机这类固定设备仍然走电缆接口（`capability()`），每 tick 的上限和电源线共用。
 - 存档键：`PlugHost`、`PlugSocket`；插线板原来的 `Outlet` / `Socket` 读档时自动转过来。插线板插孔的占用存在 `UsedSockets`。
 
@@ -216,4 +225,4 @@
 
 ## 导出的建筑里（2026-10-09）
 
-插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱的 `Panel`；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。
+插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱和发电机进线盒（2026-10-13）的 `Panel`；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

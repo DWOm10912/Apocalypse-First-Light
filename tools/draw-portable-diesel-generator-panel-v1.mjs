@@ -1,7 +1,8 @@
 // Portable diesel generator V1 (docs/machines/portable_diesel_generator_v1.md): the control panel's printed face, drawn with a
 // browser canvas (concept round 1, user 2026-10-09: "都按你的建议来"). North American 60 Hz panel, English legends; its outlets
 // are the game's one socket, the NEMA 5-15R of the wall outlet (the concept's 5-20R, L14-30R twist-lock and 12 V DC posts are
-// gone: user, same day, "我们没有那么多插头吧，目前游戏里面的不就一种通用插头？"). Only what
+// gone: user, same day, "我们没有那么多插头吧，目前游戏里面的不就一种通用插头？"). 2026-10-13 (forest start home E1, user picked the
+// generator inlet with a 15 m cord): the L14-30R twist-lock comes back under the voltmeter, the cord's own socket. Only what
 // is printed: the plate, the voltmeter's dial face, the hour meter's black window, the legends, the receptacle faces (the
 // raised nylon receptacle bodies take their front faces from here) and the corner screws. The voltmeter's bezel, glass and
 // needle, the hour meter's drums, the oil lamp, the breaker buttons and the DC / ground posts are mesh parts
@@ -33,6 +34,9 @@ export const PANEL = {
   breakers: [{c: [372, 70], amps: 20}, {c: [414, 70], amps: 20}, {c: [458, 70], amps: 30}], breaker: {cap: 7.5, ring: 11}, breakersTitle: [415, 40],
   duplex: [{rect: [177, 214, 223, 306], sockets: [[200, 238], [200, 282]]}, {rect: [277, 214, 323, 306], sockets: [[300, 238], [300, 282]]}],
   duplexLabel: [[250, 330, '120V AC  20A'], [250, 345, 'GFCI']],
+  // the L14-30R (2026-10-13): a black nylon flange, the raised face (rim, face), its slots on a 23 mm circle (X 270, W 90,
+  // Y 180 degrees from 12 o'clock as seen, curved; G at 12 o'clock with a bent tip), two screws, the rating under it
+  l14: {c: [80, 262], flange: 52, rim: 45, face: 39, slot: [16.7, 21.8], arcs: [270, 90, 180], span: 44, screws: 41.7, label: [80, 327, '120/240V  30A']},
   ground: {c: [452, 256]},
   rating: [250, 382, '5.0 kW RATED  \u00b7  60 Hz  \u00b7  DIESEL ONLY'],
   screws: [[14, 14], [486, 14], [14, 386], [486, 386]],
@@ -88,6 +92,22 @@ function drawPanel(c, P, S, ST, K) {
     g.fillStyle = '#9c978d'; g.beginPath(); g.arc((x0 + x1) / 2 * u, (y0 + y1) / 2 * u, 2.2 * u, 0, 7); g.fill();   // the face screw
   }
   for (const [x, y, t] of P.duplexLabel) text(t, x, y, t === 'GFCI' ? 7.5 : 8.5, t === 'GFCI' ? K.dim : K.print);
+  // the L14-30R face: flange, rim, face, the four slots and the screws (the raised nylon body takes its front from here)
+  { const L = P.l14, [cx, cy] = L.c, f = L.flange;
+    g.fillStyle = '#1a1b1d'; g.beginPath(); g.roundRect((cx - f) * u, (cy - f) * u, 2 * f * u, 2 * f * u, 8 * u); g.fill();
+    g.fillStyle = '#202124'; g.beginPath(); g.arc(cx * u, cy * u, L.rim * u, 0, 7); g.fill();
+    g.fillStyle = '#26272a'; g.beginPath(); g.arc(cx * u, cy * u, L.face * u, 0, 7); g.fill();
+    g.fillStyle = K.slot;
+    for (const a of L.arcs) {   // degrees from 12 o'clock, clockwise as seen; canvas angles run clockwise from 3 o'clock
+      const m = (a - 90) * Math.PI / 180, h = L.span / 2 * Math.PI / 180;
+      g.beginPath(); g.arc(cx * u, cy * u, L.slot[1] * u, m - h, m + h); g.arc(cx * u, cy * u, L.slot[0] * u, m + h, m - h, true); g.closePath(); g.fill();
+    }
+    g.fillRect((cx - 2.8) * u, (cy - 25) * u, 5.6 * u, 11.7 * u);      // G, straight, at 12 o'clock
+    g.fillRect((cx - 2.8) * u, (cy - 18.8) * u, 10.8 * u, 5.5 * u);    // its bent tip
+    for (const s of [-1, 1]) { const x = cx + s * L.screws, y = cy - s * L.screws;
+      g.fillStyle = '#8d9093'; g.beginPath(); g.arc(x * u, y * u, 4.2 * u, 0, 7); g.fill();
+      g.strokeStyle = '#4e5154'; g.lineWidth = 1.1 * u; g.beginPath(); g.moveTo((x - 2.8) * u, (y - 0.9) * u); g.lineTo((x + 2.8) * u, (y + 0.9) * u); g.stroke(); }
+    text(L.label[2], L.label[0], L.label[1], 8.5); }
   // the ground terminal: a dark collar under the post, the earth symbol
   { const [x, y] = P.ground.c; g.fillStyle = '#18191b'; g.beginPath(); g.arc(x * u, y * u, 12 * u, 0, 7); g.fill();
     g.strokeStyle = K.print; g.lineWidth = 1.6 * u; g.beginPath();

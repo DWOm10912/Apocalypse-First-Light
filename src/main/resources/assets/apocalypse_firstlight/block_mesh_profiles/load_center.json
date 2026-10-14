@@ -1,0 +1,420 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/load_center.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/load_center.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.296875,
+    -0.015625,
+    0.296875,
+    0.795714,
+    1.015625,
+    1.015625
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "port_up": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "port_down": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "door": {
+      "pivot": [
+        0.16125,
+        0,
+        0.391875
+      ]
+    },
+    "main": {
+      "pivot": [
+        0,
+        0.696875,
+        0.4125
+      ],
+      "rest": {
+        "rotation": [
+          30,
+          0,
+          0
+        ]
+      }
+    },
+    "b0": {
+      "pivot": [
+        0.048125,
+        0.621875,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b1": {
+      "pivot": [
+        0.048125,
+        0.580625,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b2": {
+      "pivot": [
+        0.048125,
+        0.539375,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b3": {
+      "pivot": [
+        0.048125,
+        0.498125,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b4": {
+      "pivot": [
+        0.048125,
+        0.456875,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b5": {
+      "pivot": [
+        0.048125,
+        0.415625,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          20,
+          0
+        ]
+      }
+    },
+    "b6": {
+      "pivot": [
+        -0.048125,
+        0.621875,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    },
+    "b7": {
+      "pivot": [
+        -0.048125,
+        0.580625,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    },
+    "b8": {
+      "pivot": [
+        -0.048125,
+        0.539375,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    },
+    "b9": {
+      "pivot": [
+        -0.048125,
+        0.498125,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    },
+    "b10": {
+      "pivot": [
+        -0.048125,
+        0.456875,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    },
+    "b11": {
+      "pivot": [
+        -0.048125,
+        0.415625,
+        0.416875
+      ],
+      "rest": {
+        "rotation": [
+          0,
+          -20,
+          0
+        ]
+      }
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            0,
+            -110,
+            0
+          ]
+        }
+      }
+    },
+    "main_off": {
+      "duration_ticks": 3,
+      "easing": "ease_in_out",
+      "transforms": {
+        "main": {
+          "rotation": [
+            -60,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "b0_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b0": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b1_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b1": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b2_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b2": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b3_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b3": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b4_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b4": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b5_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b5": {
+          "rotation": [
+            0,
+            -40,
+            0
+          ]
+        }
+      }
+    },
+    "b6_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b6": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    "b7_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b7": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    "b8_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b8": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    "b9_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b9": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    "b10_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b10": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    },
+    "b11_off": {
+      "duration_ticks": 2,
+      "easing": "ease_in_out",
+      "transforms": {
+        "b11": {
+          "rotation": [
+            0,
+            40,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

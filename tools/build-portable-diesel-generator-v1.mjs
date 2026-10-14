@@ -14,8 +14,9 @@
 //   panel      printed face (tools/draw-portable-diesel-generator-panel-v1.mjs, in a reserved corner of the atlas), the
 //              voltmeter (bezel, glass, needle on the follower channel 'volts'), the hour meter (bezel, glass, five drums
 //              on wrapping channels 'h0'..'h4'), the oil lamp, three breaker buttons (channel 'trip': they pop out 5 mm and
-//              show a white band), two NEMA 5-15R duplex bodies (their faces from the art; the game's one socket, as the
-//              wall outlet's: user 2026-10-09, "目前游戏里面的不就一种通用插头？"), the ground post
+//              show a white band), two NEMA 5-15R duplex bodies (their faces from the art; the wall outlet's socket: user
+//              2026-10-09, "目前游戏里面的不就一种通用插头？"), since 2026-10-13 an L14-30R twist-lock under the voltmeter (the
+//              generator inlet cord's socket), the ground post
 //   tank       rounded 15 L tank on the top rails, float gauge (needle on the follower channel 'fuel'); the filler, built to be
 //              looked into with its cap open (2026-10-09, user: "打开盖子，里面的细节你又没有做"): a real opening through the tank
 //              top, its walls the tank's dark inside, a welded flange with four bolts, the neck, a strainer basket with its rim, and
@@ -305,6 +306,11 @@ export const EXHAUST = [G.muffler.x1 + 0.07, G.muffler.y - 0.045, G.muffler.z - 
   // receptacle bodies: the two duplexes, their fronts from the art (custom UVs), the rest plain nylon
   PANEL.duplex.forEach((D, i) => { const [x0, y1] = pan(D.rect[0], D.rect[1]), [x1, y0] = pan(D.rect[2], D.rect[3]);
     slabZ(P(`duplex_${i}`, 'body', 'black', {custom: 'art'}), rect(x0, y0, x1, y1), PZ - 0.001, PZ + 0.006); });
+  // the L14-30R (2026-10-13): the flange, the raised round body and its face step, fronts from the art, the rest black
+  { const Lk = PANEL.l14, [cx, cy] = pan(...Lk.c), f = u2m(Lk.flange);
+    slabZ(P('l14_flange', 'body', 'black', {custom: 'artDark'}), roundRect(cx - f, cy - f, cx + f, cy + f, u2m(8)), PZ - 0.001, PZ + 0.003, 0.0006);
+    cyl(P('l14_body', 'body', 'black', {custom: 'artDark'}), 'z', [cx, cy, 0], u2m(Lk.rim), PZ + 0.003, PZ + 0.0085, 32);
+    cyl(P('l14_face', 'body', 'black', {custom: 'artDark'}), 'z', [cx, cy, 0], u2m(Lk.face), PZ + 0.0085, PZ + 0.009, 32); }
   // the ground post: a brass body and nut
   { const [cx, cy] = pan(...PANEL.ground.c); cyl(P('ground_post', 'body', 'brass'), 'z', [cx, cy, 0], u2m(7), PZ - 0.001, PZ + 0.008, 16, 0.001);
     cyl(P('ground_post_nut', 'body', 'brass'), 'z', [cx, cy, 0], u2m(4.2), PZ + 0.008, PZ + 0.0125, 6); }
@@ -508,8 +514,8 @@ if (process.env.PACK) {
   const artUV = P3 => P3.map(q => [REGION.x + (mx0 - q[0]) / K / PU, REGION.y + (my1 - q[1]) / K / PU]);
   const plate = byName.get('panel_plate');
   faceUV.set(plate, new Map(plate.f.map(f => { const P3 = f.ids.map(i => plate.v[i]), n = norm(newell(P3)); return [f, n[2] < -0.99 ? artUV(P3) : plain(1, 10, P3)]; })));
-  for (const p of PARTS.filter(q => q.custom === 'art'))
-    faceUV.set(p, new Map(p.f.map(f => { const P3 = f.ids.map(i => p.v[i]), n = norm(newell(P3)); return [f, n[2] < -0.99 ? artUV(P3) : plain(0, 11, P3)]; })));
+  for (const p of PARTS.filter(q => q.custom === 'art' || q.custom === 'artDark'))
+    faceUV.set(p, new Map(p.f.map(f => { const P3 = f.ids.map(i => p.v[i]), n = norm(newell(P3)); return [f, n[2] < -0.99 ? artUV(P3) : plain(0, p.custom === 'art' ? 11 : 10, P3)]; })));
   for (let i = 0; i < PANEL.hours.drums.n; i++) {
     const p = byName.get(`drum_${i}_mesh`), row = i === PANEL.hours.drums.n - 1 ? 1 : 0, map = new Map();
     for (const f of p.f) {
@@ -663,7 +669,10 @@ const toStructure = q => [r3(q[0] + 8), r3(q[1]), r3(q[2] + 8)];
 const pt = q => toStructure(toModel(q.map(m)));
 const boxOf = (a, b) => { const p = pt(a), q = pt(b); return [0, 1, 2].map(k => Math.min(p[k], q[k])).concat([0, 1, 2].map(k => Math.max(p[k], q[k]))); };
 const restPts = PARTS.flatMap(p => p.v), REST = aabbOf(restPts);
-const sockets = PANEL.duplex.flatMap(D => D.sockets.map(s => { const [x, y] = pan(...s); return pt([x, y, PZ + 0.006]); }));
+// the four NEMA 5-15R faces, then the L14-30R's (socket 4, 2026-10-13)
+const sockets = [...PANEL.duplex.flatMap(D => D.sockets.map(s => { const [x, y] = pan(...s); return pt([x, y, PZ + 0.006]); })),
+  (() => { const [x, y] = pan(...PANEL.l14.c); return pt([x, y, PZ + 0.009]); })()];
+const [lx0, ly1] = pan(PANEL.l14.c[0] - PANEL.l14.flange, PANEL.l14.c[1] - PANEL.l14.flange), [lx1, ly0] = pan(PANEL.l14.c[0] + PANEL.l14.flange, PANEL.l14.c[1] + PANEL.l14.flange);
 const [bx0, by1] = pan(PANEL.breakers[0].c[0] - 14, PANEL.breakers[0].c[1] - 14), [bx1, by0] = pan(PANEL.breakers[2].c[0] + 14, PANEL.breakers[2].c[1] + 14);
 const [dx0, dy1] = pan(PANEL.duplex[0].rect[0] - 4, PANEL.duplex[0].rect[1] - 4), [dx1, dy0] = pan(PANEL.duplex[1].rect[2] + 4, PANEL.duplex[1].rect[3] + 4);
 export const FACTS = {
@@ -674,7 +683,7 @@ export const FACTS = {
   cap: boxOf([C.x - C.r - 0.015, G.tank.y1 - 0.01, C.z - C.r - 0.02], [C.x + C.r + 0.015, C.y1 + 0.03, C.z + C.r + 0.015]),
   pourOpening: pt([C.x, C.y0 - 0.005, C.z]),
   breakers: boxOf([bx0, by0, PZ - 0.002], [bx1, by1, PZ + 0.02]),
-  outlets: boxOf([dx0, dy0, PZ - 0.002], [dx1, dy1, PZ + 0.02]), sockets,
+  outlets: boxOf([dx0, dy0, PZ - 0.002], [dx1, dy1, PZ + 0.02]), l14: boxOf([lx0, ly0, PZ - 0.002], [lx1, ly1, PZ + 0.02]), sockets,
   panelMiddle: pt([0.15, 0.335, PZ]), engine: pt([-0.16, 0.30, 0]), exhaust: pt(EXHAUST),
 };
 const tris = parts => parts.reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);

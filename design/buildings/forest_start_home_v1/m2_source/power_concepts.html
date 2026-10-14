@@ -1,0 +1,874 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Genset inlet and bulb concepts</title>
+<style>html,body{margin:0;background:#555;overflow:auto}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head><body>
+<script>
+// Forest start home B, M2 E1 + F7 (docs/worldgen/forest_start_home_b_v1_plan.md): concept round for the generator inlet
+// (user 2026-10-13: "做E1+F7，先出概念图"). Design use only, not a game asset. The house is the real one: the cells of
+// tools/afl_minecraft_mcp/forest_home_b_m1.mjs (its `plan` mode writes build/authoring_checks/forest_home_b_m1/cells_m1.json)
+// drawn with the game's cabin pieces, picked as in m1_source/cabin_preview.html; the distribution panel and the portable
+// genset are their game meshes (meshes/*.aflmesh.json, LabPBR _s read as roughness / metal), the wall outlet its OBJ.
+// New, procedural: the 30 A generator inlet box (L14-30 inlet, hooded lid, cord hook), the 15 m 10/4 cord with its twist-lock
+// ends, the L14-30R added to the genset panel, three porcelain lampholders with an A19 bulb.
+// Frame: x = plan X (east), y = plan k (the cell k spans y k..k+1; the grade top is y 0), z = plan Z (south).
+// Served by m1_source/serve.cjs at /repo/design/buildings/forest_start_home_v1/m2_source/power_concepts.html; the
+// render functions at the end save to m1_sheets/ (moved to m2_sheets/ by hand).
+const A_ = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const CELLS = '/repo/build/authoring_checks/forest_home_b_m1/cells_m1.json';
+const FONT = '"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif';
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+
+// ---------------------------------------------------------------- environment, light
+function envMap(stops, win) {
+  const env = new THREE.Scene(), c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  for (const [t, col] of stops) gr.addColorStop(t, col);
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({map: t, side: THREE.BackSide})));
+  if (win) { const w = new THREE.Mesh(new THREE.PlaneGeometry(5, 3), new THREE.MeshBasicMaterial({color: win})); w.position.set(6, 3, 6); w.lookAt(0, 0, 0); env.add(w); }
+  return new THREE.PMREMGenerator(renderer).fromScene(env, 0.02).texture;
+}
+const ENV_DAY = envMap([[0, '#dfe8ee'], [0.45, '#b9c6cc'], [0.55, '#5e624c'], [1, '#2d2a22']], 0xffffff);
+const ENV_NIGHT = envMap([[0, '#1a1f28'], [0.5, '#151820'], [0.55, '#14110d'], [1, '#0b0a08']], null);
+const hemi = new THREE.HemisphereLight(0xdfe8ee, 0x5d6a4a, 0.7); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.25);
+sun.target.position.set(14, 0, 1); sun.position.set(14 + 13, 24, 1 + 15);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+Object.assign(sun.shadow.camera, {left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 90});
+scene.add(sun, sun.target);
+const fill = new THREE.PointLight(0xfff4e6, 0, 9, 2); scene.add(fill);     // interior views: a soft fill near the camera
+function day() { scene.background = new THREE.Color(0xa9bcc6); scene.environment = ENV_DAY; hemi.intensity = 0.7; hemi.color.setHex(0xdfe8ee); hemi.groundColor.setHex(0x5d6a4a); sun.visible = true; fill.intensity = 0; renderer.toneMappingExposure = 1.0; }
+function night() { scene.background = new THREE.Color(0x0d1016); scene.environment = ENV_NIGHT; hemi.intensity = 0.07; hemi.color.setHex(0x8899bb); hemi.groundColor.setHex(0x221d16); sun.visible = false; fill.intensity = 0; renderer.toneMappingExposure = 1.0; }
+
+// ---------------------------------------------------------------- ground (the grade, y 0)
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const groundTex = canvasTex(512, 512, (g, w, h) => {
+  const r = rng(9); g.fillStyle = '#4f5c35'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) { const v = r(); g.fillStyle = v < 0.45 ? 'rgba(98,112,62,0.5)' : v < 0.8 ? 'rgba(62,72,40,0.5)' : 'rgba(104,88,58,0.45)'; g.fillRect(r() * w, r() * h, 2 + r() * 5, 2 + r() * 5); }
+});
+groundTex.wrapS = groundTex.wrapT = THREE.RepeatWrapping; groundTex.repeat.set(30, 30); groundTex.magFilter = THREE.NearestFilter;
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), new THREE.MeshStandardMaterial({map: groundTex, roughness: 1}));
+ground.rotation.x = -Math.PI / 2; ground.position.set(10, 0, 2); ground.receiveShadow = true; scene.add(ground);
+
+// ---------------------------------------------------------------- the house: cells -> cabin pieces (cabin_preview.html)
+const G = new Map(), K = (x, y, z) => x + ',' + y + ',' + z;
+const at = (x, y, z) => G.get(K(x, y, z));
+function parseState(s) { const m = s.match(/^([^\[]+)(?:\[(.*)\])?$/), p = {}; if (m[2]) for (const kv of m[2].split(',')) { const [k, v] = kv.split('='); p[k] = v; } return [m[1], p]; }
+function cellOf(id, p) {
+  const n = id.replace('apocalypse_firstlight:', '');
+  if (n === 'white_oak_log_wall') return {b: 'log', axis: p.axis};
+  if (n === 'fieldstone') return {b: 'stone'};
+  if (n === 'flagstone') return {b: 'flag'};
+  if (n === 'white_oak_planks') return {b: 'planks'};
+  if (n === 'brown_board_and_batten') return {b: 'bbB'};
+  if (n === 'grey_board_and_batten') return {b: 'bbG'};
+  const roof = {green_standing_seam_roof: 'green', galvanized_corrugated_roof: 'galvanized', rusty_corrugated_roof: 'rust'}[n];
+  if (roof) return {b: 'roof', mat: roof, shape: p.shape, facing: p.facing, beam: p.beam === 'true'};
+  if (n === 'white_oak_porch_post') return {b: 'post'};
+  if (n === 'white_oak_porch_railing') return {b: 'rail', axis: p.axis};
+  if (n === 'white_oak_porch_deck') return {b: 'deck', axis: p.axis};
+  if (n === 'stove_pipe') return {b: 'pipe'};
+  if (n === 'firewood_stack') return {b: 'fire', axis: p.axis};
+  if (n === 'white_oak_double_hung_window') return {b: 'win', facing: p.facing};
+  if (n === 'white_oak_cabin_door' || n === 'white_oak_board_door') return {b: n.includes('cabin') ? 'doorC' : 'doorB', facing: p.facing, half: p.half, hinge: p.hinge, open: false};
+  if (n === 'stove_heat_shield') return {b: 'shield', facing: p.facing};
+  if (n === 'wooden_chair') return {b: 'chair', facing: p.facing};
+  if (n === 'wooden_table') return {b: 'table', m: (p.north === 'true' ? 1 : 0) | (p.east === 'true' ? 2 : 0) | (p.south === 'true' ? 4 : 0) | (p.west === 'true' ? 8 : 0)};
+  if (n === 'minecraft:grass_block') return {b: 'grass'};
+  return null;   // vanilla stand-ins (bookshelves, lanterns, barrels, ladder, slabs) are left out
+}
+const DIRS = {north: [0, 0, -1], east: [1, 0, 0], south: [0, 0, 1], west: [-1, 0, 0]}, TURN = {north: 0, east: 1, south: 2, west: 3};
+const CW = {north: 'east', east: 'south', south: 'west', west: 'north'}, CCW = {north: 'west', west: 'south', south: 'east', east: 'north'}, OPP = {north: 'south', south: 'north', east: 'west', west: 'east'};
+const rot = (d, r) => { for (let i = 0; i < r; i++) d = CW[d]; return d; };
+const nb = (x, y, z, d, dy = 0) => { const v = DIRS[d]; return at(x + v[0], y + dy, z + v[2]); };
+const SOLID = new Set(['log', 'stone', 'bbB', 'bbG', 'planks', 'fire', 'flag', 'grass']);
+const flip = s => s === 'neg' ? 'pos' : s === 'pos' ? 'neg' : 'mid';
+const OPENING = new Set(['win', 'doorC', 'doorB']);
+function joins(x, y, z, d) { const o = nb(x, y, z, d); if (!o) return false; if (o.b === 'log') return true; return OPENING.has(o.b) && ((d === 'east' || d === 'west') === (o.facing === 'north' || o.facing === 'south')); }
+function logAxis(x, y, z, c) { const is = d => joins(x, y, z, d), ew = is('east') || is('west'), ns = is('north') || is('south'); return ew && ns ? 'corner' : ew ? 'x' : ns ? 'z' : c.axis; }
+const shieldy = o => o && (o.b === 'shield' || o.b === 'stove' || (o.b === 'pipe'));
+function shieldMask(x, y, z, facing) {   // frame x- = the facing's counter-clockwise neighbour; 1 x-, 2 x+, 4 up, 8 down
+  const sh = o => o && o.b === 'shield' && o.facing === facing;
+  let m = 0; if (shieldy(nb(x, y, z, CCW[facing]))) m |= 1; if (shieldy(nb(x, y, z, CW[facing]))) m |= 2;
+  if (sh(at(x, y + 1, z))) m |= 4; if (sh(at(x, y - 1, z))) m |= 8; return m;
+}
+function choose(x, y, z, c) {
+  const P = [];
+  if (c.b === 'log') {
+    const is = d => joins(x, y, z, d), n = is('north'), e = is('east'), s = is('south'), w = is('west'), ax = logAxis(x, y, z, c);
+    if (ax !== 'corner') return [['log_wall/run_' + ax, 0]];
+    P.push(['log_wall/core_x', 0], ['log_wall/core_z', 0]);
+    const zs = !n && s ? 'neg' : !s && n ? 'pos' : 'mid', xs = !w && e ? 'neg' : !e && w ? 'pos' : 'mid';
+    if (!w) P.push(['log_wall/stubx_' + zs, 0]); if (!e) P.push(['log_wall/stubx_' + flip(zs), 2]);
+    if (!n) P.push(['log_wall/stubz_' + xs, 0]); if (!s) P.push(['log_wall/stubz_' + flip(xs), 2]);
+    return P;
+  }
+  if (c.b === 'roof') {
+    const f = c.facing, r = TURN[f], m = c.mat, sh = c.shape, same = (o, shapes) => o && o.b === 'roof' && o.facing === f && shapes.includes(o.shape);
+    P.push([`roof/${m}_${sh}`, r], [`roof/under_${sh}`, r]);
+    let eave = false, top = false;
+    if (sh === 'lower') { eave = !same(nb(x, y, z, f, -1), ['upper']); top = !same(nb(x, y, z, OPP[f]), ['upper', 'ridge']); }
+    if (sh === 'upper') { eave = !same(nb(x, y, z, f), ['lower']); top = !same(nb(x, y, z, OPP[f], 1), ['lower']); }
+    const rn = !same(nb(x, y, z, rot('west', r)), [sh]), rp = !same(nb(x, y, z, rot('east', r)), [sh]);
+    if (eave) P.push([`roof/${m}_eave_${sh}`, r]); if (top) P.push([`roof/${m}_top_${sh}`, r]);
+    if (rn) P.push([`roof/${m}_rake_neg_${sh}`, r]); if (rp) P.push([`roof/${m}_rake_pos_${sh}`, r]);
+    if (eave && rn) P.push([`roof/${m}_eave_corner_neg_${sh}`, r]); if (eave && rp) P.push([`roof/${m}_eave_corner_pos_${sh}`, r]);
+    const below = at(x, y - 1, z);
+    if (below?.b === 'log') { const ax = logAxis(x, y - 1, z, below), along = f === 'north' || f === 'south' ? 'z' : 'x'; P.push([`roof/infill_log_${ax === 'corner' ? 'corner' : ax === along ? 'along' : 'across'}_${sh}`, r]); }
+    else if (below?.b === 'bbB' || below?.b === 'bbG') P.push([`roof/infill_board_${below.b === 'bbB' ? 'brown' : 'grey'}_${sh}`, r]);
+    if (c.beam && sh !== 'ridge') P.push([`roof/beam_${sh}`, r]);
+    if (below?.b === 'pipe' && sh !== 'ridge') P.push([`roof/${m}_pipe_${sh}`, r]);
+    return P;
+  }
+  if (c.b === 'doorC' || c.b === 'doorB') { const t = c.b === 'doorC' ? 'cabin' : 'board', r = TURN[c.facing]; return [[`door/${t}_frame_${c.half}`, r], [`door/${t}_panel_${c.half}_${c.hinge}_${c.open ? 'open' : 'closed'}`, r]]; }
+  if (c.b === 'win') { const up = at(x, y + 1, z), dn = at(x, y - 1, z), sw = o => o && o.b === 'win' && o.facing === c.facing; return [['window/' + (sw(up) ? 'bottom' : sw(dn) ? 'top' : 'single'), TURN[c.facing]]]; }
+  if (c.b === 'bbB' || c.b === 'bbG') {
+    const col = c.b === 'bbB' ? 'brown' : 'grey'; P.push([`siding/${col}_core`, 0]);
+    for (const d of ['north', 'east', 'south', 'west']) if (!SOLID.has(nb(x, y, z, d)?.b)) P.push([`siding/${col}_battens`, TURN[d]]);
+    return P;
+  }
+  if (c.b === 'post') { P.push(['porch/post', 0]); for (const d of ['north', 'east', 'south', 'west']) if (nb(x, y, z, d)?.b === 'rail') P.push(['porch/post_rail', TURN[d]]); return P; }
+  if (c.b === 'rail') return [['porch/railing', c.axis === 'x' ? 0 : 1]];
+  if (c.b === 'deck') {
+    const a = c.axis, S = ['n', 'e', 's', 'w'], C = ['ne', 'se', 'sw', 'nw'], D4 = ['north', 'east', 'south', 'west'];
+    const open = D4.map(d => { const o = nb(x, y, z, d); return !(o && (o.b === 'deck' || SOLID.has(o.b))); });
+    P.push(['porch/deck_' + a, 0]);
+    for (let i = 0; i < 4; i++) {
+      if (!open[i]) continue; const next = open[(i + 1) % 4], prev = open[(i + 3) % 4];
+      P.push(['porch/deck_rim_' + a + '_' + S[i], 0]);
+      if (next) P.push(['porch/deck_corner_' + a + '_' + C[i], 0], ['porch/pier_corner', i]);
+      const even = ((i & 1) === 0 ? x : z) % 2 === 0, post = at(x, y + 1, z)?.b === 'post';
+      if (!next && !prev && (even || post)) P.push(['porch/pier_edge', i]);
+    }
+    return P;
+  }
+  if (c.b === 'pipe') {
+    const up = at(x, y + 1, z), cap = !(up && (up.b === 'pipe' || up.b === 'roof'));
+    P.push([cap ? 'pipe/stove_pipe_cap' : 'pipe/stove_pipe', 0]);
+    for (const f of ['south', 'north', 'east', 'west']) {   // a shield either side: the pipe carries the sheet on behind it
+      const sh = o => o && o.b === 'shield' && o.facing === f;
+      if (sh(nb(x, y, z, CCW[f])) || sh(nb(x, y, z, CW[f]))) { let m = 3; if (at(x, y - 1, z)?.b === 'stove') m |= 8; P.push(['shield/panel_' + m, TURN[f]]); break; }
+    }
+    return P;
+  }
+  if (c.b === 'shield') return [['shield/panel_' + shieldMask(x, y, z, c.facing), TURN[c.facing]]];
+  if (c.b === 'stove') { const r = TURN[c.facing]; return [['stove/body', r], ['stove/door_closed', r], ['stove/load_2', r], ['shield/panel_7', r]]; }
+  if (c.b === 'chair') return [['furniture/chair', TURN[c.facing]]];
+  if (c.b === 'table') { const ns = (c.m & 5) !== 0, ew = (c.m & 10) !== 0; return [['furniture/table_' + (ns && !ew ? 'z' : 'x') + '_' + c.m, 0]]; }
+  if (c.b === 'counter') { const r = TURN[c.facing]; return [[c.sink ? 'furniture/sink_body' : 'furniture/counter_body', r], ['furniture/counter_doors_closed', r]]; }
+  if (c.b === 'rack') return [['furniture/gun_rack', TURN[c.facing]]];
+  return P;
+}
+
+// ---------------------------------------------------------------- textures and materials
+const loader = new THREE.TextureLoader(), texCache = new Map(), matCache = new Map(), pieceCache = new Map(), pending = [];
+function texture(id, flipY = false) {   // 'apocalypse_firstlight:block/cabin/x'
+  const key = id + (flipY ? '#f' : '');
+  if (!texCache.has(key)) {
+    const p = id.replace('apocalypse_firstlight:', A_ + 'textures/') + '.png';
+    const t = loader.load(p); t.flipY = flipY; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; texCache.set(key, t);
+    pending.push(new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = p; }));
+  }
+  return texCache.get(key);
+}
+function material(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop(), o = {map: texture(id), roughness: 0.82, metalness: 0};
+    if (/roof_green|stove_pipe|sash|iron|cast_iron|nickel|heat_shield/.test(n)) o.roughness = 0.5;
+    if (/galvanized|heat_shield|nickel/.test(n)) { o.roughness = 0.5; o.metalness = 0.4; }
+    if (/glass/.test(n)) Object.assign(o, {transparent: true, opacity: 0.5, roughness: 0.08, depthWrite: false});
+    matCache.set(id, new THREE.MeshStandardMaterial(o));
+  }
+  return matCache.get(id);
+}
+/** A LabPBR material: albedo, and _s (R perceptual smoothness, G F0 / metal >= 230) rebuilt as three.js roughness (G) / metal (B). */
+function pbrMaterial(texId) {
+  if (matCache.has(texId)) return matCache.get(texId);
+  const m = new THREE.MeshStandardMaterial({map: texture('apocalypse_firstlight:' + texId), roughness: 1, metalness: 1, envMapIntensity: 1});
+  matCache.set(texId, m);
+  pending.push(new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+      for (let i = 0; i < p.length; i += 4) { const s = p[i] / 255, rough = Math.max(0.05, (1 - s) * (1 - s)); p[i + 2] = p[i + 1] >= 230 ? 255 : 0; p[i] = 0; p[i + 1] = Math.round(rough * 255); p[i + 3] = 255; }
+      g.putImageData(d, 0, 0); const t = new THREE.CanvasTexture(c); t.flipY = false; t.magFilter = THREE.NearestFilter;
+      m.roughnessMap = t; m.metalnessMap = t; m.needsUpdate = true; res();
+    };
+    img.onerror = () => { m.metalness = 0; m.roughness = 0.6; res(); };
+    img.src = A_ + 'textures/' + texId + '_s.png';
+  }));
+  return m;
+}
+const buckets = new Map();
+function emit(texId, pts, uvs, nrm) {
+  if (!buckets.has(texId)) buckets.set(texId, {p: [], uv: [], n: []});
+  const b = buckets.get(texId);
+  for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(name, r, ox, oy, oz) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A_ + 'cabin_mesh/' + name + '.json').then(x => { if (!x.ok) throw new Error('missing piece ' + name); return x.json(); }));
+  const pc = await pieceCache.get(name);
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]], pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) { const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r); pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r)); }
+    emit(t, pts, uvs, nrm);
+  }
+}
+const FACES = {   // corners TL, BL, BR, TR as seen from outside
+  north: [[1, 1, 0], [1, 0, 0], [0, 0, 0], [0, 1, 0]], south: [[0, 1, 1], [0, 0, 1], [1, 0, 1], [1, 1, 1]],
+  west: [[0, 1, 0], [0, 0, 0], [0, 0, 1], [0, 1, 1]], east: [[1, 1, 1], [1, 0, 1], [1, 0, 0], [1, 1, 0]],
+  up: [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]], down: [[0, 0, 1], [0, 0, 0], [1, 0, 0], [1, 0, 1]],
+};
+const FN = {north: [0, 0, -1], south: [0, 0, 1], west: [-1, 0, 0], east: [1, 0, 0], up: [0, 1, 0], down: [0, -1, 0]};
+const FUV = [[0, 0], [0, 1], [1, 1], [1, 0]];
+function tileOf(face, x, y, z, rows = 2) {
+  const [u, v] = {north: [-x - 1, -y - 1], south: [x, -y - 1], west: [z, -y - 1], east: [-z - 1, -y - 1], up: [x, z], down: [x, -z - 1]}[face];
+  return (((v % rows) + rows) % rows) * 3 + (((u % 3) + 3) % 3);
+}
+const FULL = new Set(['stone', 'planks', 'bbB', 'bbG', 'fire', 'flag', 'grass']);
+function macroBlock(x, y, z, flag) {   // fieldstone / flagstone as MacroTileModel draws them (flagstone: a 3 x 3 top group)
+  for (const f of Object.keys(FACES)) {
+    const n = FN[f], o = at(x + n[0], y + n[1], z + n[2]);
+    if (o && FULL.has(o.b)) continue;
+    const t = flag && f === 'up' ? 'apocalypse_firstlight:block/stove/flagstone_top_' + tileOf(f, x, y, z, 3) : 'apocalypse_firstlight:block/cabin/fieldstone_' + tileOf(f, x, y, z);
+    emit(t, FACES[f].map(c => [x + c[0], y + c[1], z + c[2]]), FUV, FACES[f].map(() => n));
+  }
+}
+const house = new THREE.Group(); scene.add(house);
+function cube(x, y, z, mats) { const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mats); m.position.set(x + 0.5, y + 0.5, z + 0.5); m.castShadow = m.receiveShadow = true; house.add(m); }
+async function buildHouse() {
+  const data = await (await fetch(CELLS)).json();
+  for (const c of data.cells) { if (c.k < 0) continue; const [id, p] = parseState(c.s), cell = cellOf(id, p); if (cell) G.set(K(c.X, c.k, c.Z), cell); }
+  for (const f of data.fixtures) {
+    const n = f.block_id.replace('apocalypse_firstlight:', ''), [x, y, z] = f.at;
+    if (n === 'box_stove') G.set(K(x, y, z), {b: 'stove', facing: f.facing});
+    if (n === 'wooden_kitchen_counter' || n === 'wooden_sink_counter') G.set(K(x, y, z), {b: 'counter', facing: f.facing, sink: n.includes('sink')});
+    if (n === 'wooden_gun_rack') G.set(K(x, y, z), {b: 'rack', facing: f.facing});
+  }
+  const planks = material('apocalypse_firstlight:block/wood/white_oak_planks');
+  const grassTop = new THREE.MeshStandardMaterial({map: groundTex.clone(), roughness: 1}), dirt = new THREE.MeshStandardMaterial({color: new THREE.Color(0x5b4632).convertSRGBToLinear(), roughness: 1});
+  grassTop.map.repeat.set(0.25, 0.25);
+  const fe = 'apocalypse_firstlight:block/cabin/firewood_end', fs = 'apocalypse_firstlight:block/cabin/firewood_side';
+  const jobs = [];
+  for (const [k, c] of G) {
+    const [x, y, z] = k.split(',').map(Number);
+    if (c.b === 'stone' || c.b === 'flag') { macroBlock(x, y, z, c.b === 'flag'); continue; }
+    if (c.b === 'planks') { cube(x, y, z, planks); continue; }
+    if (c.b === 'grass') { cube(x, y, z, [dirt, dirt, grassTop, dirt, dirt, dirt]); continue; }
+    if (c.b === 'fire') { const E = material(fe), S = material(fs); cube(x, y, z, c.axis === 'x' ? [E, E, S, S, S, S] : c.axis === 'z' ? [S, S, S, S, E, E] : [S, S, E, E, S, S]); continue; }
+    for (const [name, r] of choose(x, y, z, c)) jobs.push(addPiece(name, r, x, y, z));
+  }
+  await Promise.all(jobs);
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    const m = new THREE.Mesh(g, material(t)); m.castShadow = !/glass/.test(t); m.receiveShadow = true; house.add(m);
+  }
+}
+
+// ---------------------------------------------------------------- game meshes: aflmesh (genset, panel), OBJ (outlet)
+async function aflMesh(id, skip = null) {   // skip: a part-name pattern left out (parts the game hides)
+  const [m, geo] = await Promise.all([fetch(A_ + 'meshes/' + id + '.aflmesh.json').then(r => r.json()), fetch(A_ + 'geo/' + id + '.geo.json').then(r => r.json())]);
+  const bones = new Map(geo['minecraft:geometry'][0].bones.map(b => [b.name, b])), pos = [], uv = [], idx = [];
+  let base = 0;
+  for (const p of m.parts) {
+    if (skip && skip.test(p.name || "")) continue;
+    const b = bones.get(p.bone), pv = b ? [-b.pivot[0] / 16, b.pivot[1] / 16, b.pivot[2] / 16] : [0, 0, 0];
+    for (const v of p.vertices) { pos.push(pv[0] + v[0] + 0.5, pv[1] + v[1], pv[2] + v[2] + 0.5); uv.push(v[3], v[4]); }
+    for (const f of p.faces) for (let i = 1; i + 1 < f.length; i++) idx.push(base + f[0], base + f[i], base + f[i + 1]);
+    base += p.vertices.length;
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  const o = new THREE.Mesh(g, pbrMaterial('block/' + id)); o.castShadow = o.receiveShadow = true; return o;
+}
+async function objMesh(path, texId) {
+  const text = await (await fetch(A_ + 'models/block/' + path + '.obj')).text(), obj = new THREE.OBJLoader().parse(text);
+  const mat = new THREE.MeshStandardMaterial({map: texture('apocalypse_firstlight:' + texId, false), roughness: 0.4});
+  obj.traverse(o => { if (o.isMesh) { o.material = mat; o.castShadow = o.receiveShadow = true; } });
+  return obj;
+}
+/** A block-frame object (0..1, front toward -z as the game's north) placed in cell (x, y, z) turned to `facing`. */
+function placeBlock(obj, x, y, z, facing) {
+  const g = new THREE.Group(); g.position.set(x + 0.5, y, z + 0.5); obj.position.set(-0.5, 0, -0.5); g.add(obj);
+  g.rotation.y = {north: 0, west: Math.PI / 2, south: Math.PI, east: -Math.PI / 2}[facing]; return g;
+}
+
+// ---------------------------------------------------------------- materials for the new pieces
+const C = hex => new THREE.Color(hex).convertSRGBToLinear();
+const M = {
+  grey: new THREE.MeshStandardMaterial({color: C(0xa7aba9), roughness: 0.62}),           // RAL 7035 powder coat, a little weathered
+  greyEdge: new THREE.MeshStandardMaterial({color: C(0x8e9290), roughness: 0.55}),
+  nylon: new THREE.MeshStandardMaterial({color: C(0x1d1e20), roughness: 0.42}),
+  nylonFace: new THREE.MeshStandardMaterial({color: C(0x252629), roughness: 0.5}),
+  slot: new THREE.MeshStandardMaterial({color: C(0x050505), roughness: 1}),
+  brass: new THREE.MeshStandardMaterial({color: C(0xcdb070), roughness: 0.32, metalness: 1}),
+  steel: new THREE.MeshStandardMaterial({color: C(0x8a8d90), roughness: 0.38, metalness: 1}),
+  zinc: new THREE.MeshStandardMaterial({color: C(0xb9bcbd), roughness: 0.3, metalness: 1}),
+  cord: new THREE.MeshStandardMaterial({color: C(0xdcae22), roughness: 0.62}),           // 10/4 SOOW, yellow jacket
+  rubber: new THREE.MeshStandardMaterial({color: C(0x19191a), roughness: 0.7}),
+  porcelain: new THREE.MeshStandardMaterial({color: C(0xf1ece2), roughness: 0.14, envMapIntensity: 1.1}),
+  bakelite: new THREE.MeshStandardMaterial({color: C(0x3b261a), roughness: 0.3}),
+  alu: new THREE.MeshStandardMaterial({color: C(0xd2d2cd), roughness: 0.3, metalness: 1}),
+  nickel: new THREE.MeshStandardMaterial({color: C(0xc4c2bc), roughness: 0.25, metalness: 1}),
+  glass: new THREE.MeshStandardMaterial({color: C(0xf7f4ee), roughness: 0.45, transparent: true, opacity: 0.94}),
+  glassLit: new THREE.MeshStandardMaterial({color: C(0xfff3dc), roughness: 0.45, emissive: new THREE.Color(0xffd9a6), emissiveIntensity: 2.4}),
+};
+const clothTex = canvasTex(64, 256, (g, w, h) => { g.fillStyle = '#2e2119'; g.fillRect(0, 0, w, h); for (let y = -w; y < h + w; y += 10) { g.strokeStyle = '#4a3627'; g.lineWidth = 4; g.beginPath(); g.moveTo(0, y); g.lineTo(w, y + w * 0.6); g.stroke(); } });
+clothTex.wrapS = clothTex.wrapT = THREE.RepeatWrapping; clothTex.repeat.set(1, 30);
+M.cloth = new THREE.MeshStandardMaterial({map: clothTex, roughness: 0.95});
+function mesh(g, m, shadow = true) { const o = new THREE.Mesh(g, m); o.castShadow = shadow; o.receiveShadow = true; return o; }
+function rbox(x0, x1, y0, y1, z0, z1, m, r = 0.002) {
+  const w = x1 - x0, h = y1 - y0, d = z1 - z0; r = Math.min(r, w / 3, h / 3, d / 3);
+  const s = new THREE.Shape(), x = w / 2 - r, y = h / 2 - r;
+  s.moveTo(-x, -y); s.lineTo(x, -y); s.lineTo(x, y); s.lineTo(-x, y); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth: Math.max(1e-4, d - 2 * r), bevelEnabled: true, bevelThickness: r, bevelSize: r, bevelSegments: 2, curveSegments: 2});
+  g.translate(0, 0, -(d - 2 * r) / 2);
+  const o = mesh(g, m); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); return o;
+}
+/** A turned part along +z of its frame: profile [[z, r], ...] from front to back (closed at both ends). */
+function lathe(profile, m, seg = 40) {
+  const pts = [new THREE.Vector2(0.0001, profile[0][0])];
+  for (const [z, r] of profile) pts.push(new THREE.Vector2(r, z));
+  pts.push(new THREE.Vector2(0.0001, profile[profile.length - 1][0]));
+  const g = new THREE.LatheGeometry(pts.reverse(), seg); g.rotateX(Math.PI / 2);   // lathe y -> +z
+  return mesh(g, m);
+}
+/** A turned part along -y (hanging from a ceiling at y 0): profile [[depth, r], ...] from the ceiling down. */
+function hang(profile, m, seg = 48) {
+  const pts = [new THREE.Vector2(0.0001, -profile[0][0])];
+  for (const [d, r] of profile) pts.push(new THREE.Vector2(r, -d));
+  pts.push(new THREE.Vector2(0.0001, -profile[profile.length - 1][0]));
+  return mesh(new THREE.LatheGeometry(pts.reverse(), seg), m);
+}
+/** A group whose local frame has its +z along dir and its origin at o (x stays horizontal). */
+function faceGroup(o, dir) {
+  const z = dir.clone().normalize(), up = Math.abs(z.y) > 0.99 ? V3(0, 0, -1) : V3(0, 1, 0);
+  const x = up.clone().cross(z).normalize(), y = z.clone().cross(x);
+  const g = new THREE.Group(); g.matrixAutoUpdate = false; g.matrix.makeBasis(x, y, z).setPosition(o); return g;
+}
+/** An arc blade or slot on a twist-lock face: radius r0..r1, centred at angle a (degrees from 12 o'clock, clockwise as seen), span. */
+function arcPiece(r0, r1, a, span, z0, z1, m) {
+  const s = new THREE.Shape(), A0 = (90 - a - span / 2) * Math.PI / 180, A1 = (90 - a + span / 2) * Math.PI / 180;
+  s.absarc(0, 0, r1, A0, A1, false); s.lineTo(r0 * Math.cos(A1), r0 * Math.sin(A1)); s.absarc(0, 0, r0, A1, A0, true); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth: z1 - z0, bevelEnabled: false, curveSegments: 12}); g.translate(0, 0, z0); return mesh(g, m);
+}
+function cylZ(r, z0, z1, m, seg = 40) { const g = new THREE.CylinderGeometry(r, r, z1 - z0, seg); g.rotateX(Math.PI / 2); g.translate(0, 0, (z0 + z1) / 2); return mesh(g, m); }
+function ringZ(ro, ri, z0, z1, m, seg = 48) {
+  const s = new THREE.Shape(); s.absarc(0, 0, ro, 0, Math.PI * 2, false); const h = new THREE.Path(); h.absarc(0, 0, ri, 0, Math.PI * 2, true); s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s, {depth: z1 - z0, bevelEnabled: false, curveSegments: seg}); g.translate(0, 0, z0); return mesh(g, m);
+}
+function label(text, w, h, sizePx, fg, bg) {
+  const t = canvasTex(Math.round(w * 4000), Math.round(h * 4000), (g, cw, ch) => {
+    if (bg) { g.fillStyle = bg; g.fillRect(0, 0, cw, ch); } g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const lines = text.split('\n'); g.font = 'bold ' + sizePx + 'px Arial';
+    lines.forEach((l, i) => g.fillText(l, cw / 2, ch / 2 + (i - (lines.length - 1) / 2) * sizePx * 1.15));
+  });
+  return mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: t, transparent: !bg, roughness: 0.5}), false);
+}
+
+// ---------------------------------------------------------------- L14-30 twist-lock pieces (face frame: face at z 0, out +z)
+// blades / slots on a 23 mm circle: X 270, W 90 (curved), Y 180 (curved), G at 12 o'clock (straight with a bent tip)
+const L14 = [{a: 270, span: 38}, {a: 90, span: 38}, {a: 180, span: 38}];
+function bladesMale(z0, len) {
+  const g = new THREE.Group();
+  for (const b of L14) g.add(arcPiece(0.0104, 0.0126, b.a, b.span, z0, z0 + len, M.brass));
+  g.add(rbox(-0.0012, 0.0012, 0.0085, 0.0145, z0, z0 + len, M.brass, 0.0003));
+  g.add(rbox(-0.0012, 0.0042, 0.0085, 0.0109, z0 + len - 0.004, z0 + len, M.brass, 0.0003));   // the bent tip
+  return g;
+}
+function slotsFemale(z) {
+  const g = new THREE.Group();
+  for (const b of L14) g.add(arcPiece(0.0100, 0.0131, b.a, b.span + 6, z, z + 0.0004, M.slot));
+  g.add(rbox(-0.0017, 0.0017, 0.008, 0.015, z, z + 0.0004, M.slot, 0.0001));
+  g.add(rbox(-0.0017, 0.0048, 0.008, 0.0113, z, z + 0.0004, M.slot, 0.0001));
+  return g;
+}
+function grips(z0, z1, r, n = 10) { const g = new THREE.Group(); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, b = rbox(-0.0022, 0.0022, r - 0.001, r + 0.0018, z0, z1, M.rubber, 0.0008); b.rotation.z = a; const w = new THREE.Group(); w.add(b); w.rotation.z = a; g.add(w); b.rotation.z = 0; } return g; }
+/** The cord's connector body (female, at the inlet) or plug (male, at the genset), face at z 0, tail at TAIL. */
+const TAIL = 0.128;
+function cordEnd(kind) {
+  const g = new THREE.Group();
+  g.add(lathe([[0, 0.0244], [0.017, 0.0244], [0.0172, 0.0285], [0.02, 0.0292], [0.082, 0.0288], [0.094, 0.0255], [0.1, 0.0175], [0.104, 0.0162], [0.124, 0.0126], [TAIL, 0.0112]], M.rubber, 40));
+  g.add(grips(0.028, 0.078, 0.0288));
+  for (let i = 0; i < 4; i++) g.add(ringZ(0.0158 - i * 0.0008, 0.011, 0.106 + i * 0.0045, 0.1075 + i * 0.0045, M.rubber, 24));   // strain relief rings
+  if (kind === 'female') g.add(slotsFemale(-0.0002)); else g.add(bladesMale(-0.016, 0.016));
+  return g;
+}
+/** A cord through world points (10/4 SOOW, 21 mm). */
+function cord(points, r = 0.0105, seg) { const c = new THREE.CatmullRomCurve3(points, false, 'centripetal'); return mesh(new THREE.TubeGeometry(c, seg || Math.max(40, Math.round(c.getLength() * 90)), r, 12, false), M.cord); }
+
+// ---------------------------------------------------------------- the generator inlet box (box frame: wall at z 0, out +z)
+const BOX = {w: 0.085, h: 0.12, body: 0.05, depth: 0.16, tilt: 60, inlet: V3(0, -0.032, 0.075)};
+function inletDir() { const a = BOX.tilt * Math.PI / 180; return V3(0, -Math.sin(a), Math.cos(a)); }
+function inletBox(open, plugged) {
+  const g = new THREE.Group(), {w, h, body, depth} = BOX;
+  g.add(rbox(-w, w, -h, h, 0, body, M.grey, 0.005));
+  // the inlet: a black flange on an angled boss, the shroud, the male blades (recessed: they never stand proud of the shroud)
+  const F = faceGroup(BOX.inlet, inletDir()); g.add(F);
+  const boss = rbox(-0.03, 0.03, -0.03, 0.03, -0.03, 0.0, M.greyEdge, 0.004); F.add(boss);
+  F.add(cylZ(0.036, 0, 0.006, M.nylon)); F.add(ringZ(0.0305, 0.0255, 0.006, 0.026, M.nylon)); F.add(cylZ(0.0256, 0.006, 0.0064, M.nylonFace));
+  F.add(bladesMale(0.0064, 0.0155));
+  for (const a of [45, 225]) { const s = cylZ(0.0035, 0.006, 0.0075, M.zinc, 14); s.position.set(Math.cos(a * Math.PI / 180) * 0.0325, Math.sin(a * Math.PI / 180) * 0.0325, 0); F.add(s); }
+  let tail = null;
+  if (plugged) { const e = cordEnd('female'); e.position.z = 0.0066; F.add(e); tail = {F, z: 0.0066 + TAIL}; }
+  // the hood: hinged on the top edge of the body, a cord notch in its bottom
+  const hood = new THREE.Group(); hood.position.set(0, h, body); g.add(hood);
+  const W = w + 0.003, D = depth - body, Hh = 2 * h + 0.003, t = 0.003, N = 0.034, NZ = 0.018;
+  hood.add(rbox(-W, W, -t, 0.0, 0, D, M.grey, 0.0015));
+  for (const s of [-1, 1]) hood.add(rbox(s < 0 ? -W : W - t, s < 0 ? -W + t : W, -Hh, 0, 0, D, M.grey, 0.0012));
+  hood.add(rbox(-W, W, -Hh, 0, D - t, D, M.grey, 0.0015));
+  hood.add(rbox(-W, W, -Hh, -Hh + t, 0, NZ, M.grey, 0.001));
+  hood.add(rbox(-W, -N, -Hh, -Hh + t, NZ, D, M.grey, 0.001)); hood.add(rbox(N, W, -Hh, -Hh + t, NZ, D, M.grey, 0.001));
+  hood.add(rbox(-W + 0.01, W - 0.01, -Hh + 0.006, -Hh + 0.013, D, D + 0.0035, M.greyEdge, 0.001));          // the lip you lift it by
+  const lab = label('POWER INLET\n30A  125/250V', 0.11, 0.045, 54, '#1c1d1f', '#e9e6dc'); lab.position.set(0, -0.085, D + 0.0006); hood.add(lab);
+  hood.add(mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 2 * W - 0.01, 16).rotateZ(Math.PI / 2), M.greyEdge));   // hinge barrel
+  hood.rotation.x = -open;
+  // the cord hook under the box
+  const hook = new THREE.Group(); hook.position.set(0, -0.215, 0); g.add(hook);
+  hook.add(rbox(-0.02, 0.02, -0.03, 0.03, 0, 0.004, M.steel, 0.001));
+  const arc = new THREE.CatmullRomCurve3([V3(0, 0, 0.003), V3(0, 0, 0.05), V3(0, -0.012, 0.075), V3(0, 0.012, 0.088), V3(0, 0.03, 0.084)]);
+  hook.add(mesh(new THREE.TubeGeometry(arc, 24, 0.0042, 8), M.steel));
+  return {group: g, hood, F, tail};
+}
+
+// ---------------------------------------------------------------- the genset's new L14-30R (on the panel, below the voltmeter)
+function gensetSocket() {
+  const g = new THREE.Group();
+  g.add(rbox(-0.031, 0.031, -0.031, 0.031, 0, 0.003, M.nylon, 0.002));
+  g.add(cylZ(0.027, 0.003, 0.0085, M.nylon)); g.add(cylZ(0.0235, 0.0085, 0.009, M.nylonFace));
+  g.add(slotsFemale(0.009));
+  for (const [x, y] of [[-0.025, 0.025], [0.025, -0.025]]) { const s = cylZ(0.0026, 0.003, 0.0045, M.zinc, 12); s.position.set(x, y, 0); g.add(s); }
+  const lab = label('120/240V  30A', 0.06, 0.011, 34, '#e9e4d8', null); lab.position.set(0, -0.039, 0.0006); g.add(lab);
+  return g;
+}
+
+// ---------------------------------------------------------------- lampholders and the A19 bulb (ceiling frame: ceiling at y 0, hanging -y)
+const BULB = [[0, 0.0133], [0.004, 0.0133], [0.006, 0.0137], [0.017, 0.0165], [0.027, 0.021], [0.039, 0.0265], [0.049, 0.0295], [0.059, 0.030], [0.07, 0.0275], [0.079, 0.021], [0.084, 0.011], [0.086, 0.0001]];
+function bulb(depth, lit) {   // depth: where the socket mouth is
+  const g = new THREE.Group();
+  const shell = hang([[depth - 0.002, 0.0136], [depth + 0.0045, 0.0136]], M.alu, 32); g.add(shell);
+  const gl = hang(BULB.map(([d, r]) => [depth + 0.0045 + d, r]), lit ? M.glassLit : M.glass, 48); gl.castShadow = false; g.add(gl);
+  return g;
+}
+const BASE_A = [[0, 0.052], [0.003, 0.052], [0.007, 0.0515], [0.011, 0.050], [0.0145, 0.048], [0.0185, 0.0445], [0.024, 0.038], [0.029, 0.030], [0.033, 0.0225], [0.036, 0.0205], [0.056, 0.0205], [0.058, 0.0185], [0.0585, 0.014]];
+const BASE_B = [[0, 0.052], [0.003, 0.052], [0.007, 0.0515], [0.011, 0.050], [0.0145, 0.048], [0.0185, 0.0445], [0.024, 0.038], [0.029, 0.031], [0.033, 0.0265], [0.036, 0.026], [0.05, 0.026], [0.053, 0.0215], [0.056, 0.0205], [0.073, 0.0205], [0.075, 0.0185], [0.0755, 0.014]];
+function chain(x0, y0, len, z0 = 0) {
+  const g = new THREE.Group(), bead = new THREE.SphereGeometry(0.00125, 8, 6), n = Math.round(len / 0.0032);
+  for (let i = 0; i < n; i++) { const b = mesh(bead, M.nickel, false); b.position.set(x0, y0 - i * 0.0032, z0); g.add(b); }
+  const pull = hang([[0, 0.0016], [0.004, 0.0035], [0.014, 0.0058], [0.018, 0.006]], M.brass, 20); pull.position.set(x0, y0 - n * 0.0032, z0); g.add(pull);
+  return g;
+}
+/** variant 'A' keyless, 'B' pull chain, 'C' cord pendant. Returns {group, light, glow} (light at the bulb's centre). */
+function lamp(variant, lit, {wall = false} = {}) {
+  const g = new THREE.Group(); let mouth;
+  if (variant === 'A') { g.add(hang(BASE_A, M.porcelain)); mouth = 0.0585; }
+  if (variant === 'B') {
+    g.add(hang(BASE_B, M.porcelain)); mouth = 0.0755;
+    const boss = mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.008, 16).rotateZ(Math.PI / 2), M.porcelain); boss.position.set(0.0285, -0.043, 0); g.add(boss);
+    g.add(mesh(new THREE.CylinderGeometry(0.0022, 0.0022, 0.004, 12).rotateZ(Math.PI / 2), M.nickel)); g.children[g.children.length - 1].position.set(0.0335, -0.043, 0);
+    if (!wall) g.add(chain(0.035, -0.046, 0.30));
+  }
+  if (variant === 'C') {
+    g.add(hang([[0, 0.036], [0.003, 0.036], [0.012, 0.034], [0.018, 0.028], [0.021, 0.018], [0.022, 0.009], [0.023, 0.0045]], M.porcelain));
+    const c = mesh(new THREE.CylinderGeometry(0.0034, 0.0034, 0.46, 12), M.cloth); c.position.y = -0.022 - 0.23; g.add(c);
+    const sock = hang([[0, 0.0048], [0.004, 0.009], [0.012, 0.016], [0.02, 0.0198], [0.058, 0.0205], [0.062, 0.0185], [0.0625, 0.014]], M.porcelain); sock.position.y = -0.48; g.add(sock);
+    mouth = 0.48 + 0.0625;
+  }
+  const b = bulb(mouth, lit); g.add(b);
+  const light = new THREE.PointLight(0xffc488, lit ? 2.2 : 0, 14, 2); light.position.y = -(mouth + 0.05); light.castShadow = lit; light.shadow.mapSize.set(1024, 1024); light.shadow.bias = -0.002; light.shadow.camera.near = 0.06;
+  g.add(light);
+  return {group: g, light, depth: mouth + 0.09};
+}
+/** A lampholder on a wall: the ceiling frame turned so its -y points out of the wall (facing). */
+function wallLamp(variant, lit, facing) {
+  const L = lamp(variant, lit, {wall: true}), g = new THREE.Group(), inner = new THREE.Group();
+  L.group.rotation.y = Math.PI / 2;                      // the pull-chain boss to the underside
+  inner.add(L.group); inner.rotation.x = -Math.PI / 2;   // -y (out of the ceiling) -> +z (out of the wall)
+  g.add(inner); g.rotation.y = {south: 0, west: -Math.PI / 2, north: Math.PI, east: Math.PI / 2}[facing];
+  if (variant === 'B') { const ch = chain(0, -0.034, 0.24); ch.position.set(0, 0, 0.043); g.add(ch); }
+  return {group: g, light: L.light};
+}
+
+// ---------------------------------------------------------------- the E1 set: inlet on the addition's east wall, panel inside, genset in its bay
+const INLET = {x: 18.022, y: 1.5, z: 2.5};   // box centre on the battens of (17, 1, 2)'s east face: 1.38..1.62 m above grade
+const GEN = {x: 25, z: -3, facing: 'south'};
+const SOCK = V3(25.5 + 80 * 0.0006, 0.455 - 262 * 0.0006, -2 - 0.292);   // panel units (80, 262), the genset turned south
+const e1 = {inlet: null, inletWorld: new THREE.Group(), sockGroup: null, plug: null, cords: new THREE.Group(), coil: new THREE.Group(), genset: null, panel: null, outlet: null};
+scene.add(e1.inletWorld, e1.cords, e1.coil);
+function worldOf(F, z) { F.updateMatrixWorld(true); return V3(0, 0, z).applyMatrix4(F.matrixWorld); }
+function dirOf(F) { F.updateMatrixWorld(true); return V3(0, 0, 1).transformDirection(F.matrixWorld); }
+function setInlet(open, plugged) {
+  e1.inletWorld.clear();
+  e1.inlet = inletBox(open, plugged);
+  e1.inlet.group.position.set(INLET.x, INLET.y, INLET.z); e1.inlet.group.rotation.y = Math.PI / 2;
+  e1.inletWorld.add(e1.inlet.group); scene.updateMatrixWorld(true);
+}
+/** The cord: 'run' from the inlet to the genset's plug (in use), 'coil' on the hook, or none. */
+function setCord(mode) {
+  e1.cords.clear(); e1.coil.clear(); e1.plug.visible = mode === 'run';
+  if (!e1.inlet.tail) return;
+  const T = worldOf(e1.inlet.tail.F, e1.inlet.tail.z), d = dirOf(e1.inlet.tail.F), y0 = 0.0105;
+  const lead = [T, T.clone().addScaledVector(d, 0.025)];
+  if (mode === 'run') {
+    const P = worldOf(e1.plug.userData.F, TAIL), pd = dirOf(e1.plug.userData.F);
+    e1.cords.add(cord([...lead, V3(18.2, 1.2, 2.5), V3(18.29, 0.75, 2.53), V3(18.4, 0.3, 2.5), V3(18.52, 0.08, 2.43), V3(18.7, y0 + 0.004, 2.3), V3(18.95, y0, 2.12), V3(19.4, y0, 1.72),
+      V3(20.9, y0, 0.86), V3(22.4, y0, 0.18), V3(23.5, y0, -0.12), V3(24.3, y0, -0.62), V3(24.75, y0, -1.22), V3(25.05, y0, -1.55), V3(25.42, y0 + 0.004, -1.78),
+      V3(25.55, 0.06, -1.98), P.clone().addScaledVector(pd, 0.07).setY(0.2), P.clone().addScaledVector(pd, 0.025), P]));
+  } else if (mode === 'coil') {
+    const hook = V3(INLET.x + 0.075, INLET.y - 0.215 + 0.004, INLET.z), R = 0.19, loops = 6, pts = [...lead, V3(INLET.x + 0.13, INLET.y - 0.19, INLET.z - 0.01), hook.clone().add(V3(0, 0.005, 0.03))];
+    for (let i = 0; i <= loops * 24; i++) {   // loops hanging from the hook, bundled against the wall
+      const a = i / 24 * Math.PI * 2, k = i / (loops * 24), rr = R * (1 + 0.04 * Math.sin(i * 0.7)), out = 0.035 + 0.018 * Math.sin(k * Math.PI * 3);
+      pts.push(V3(INLET.x + out + 0.02, hook.y - rr + rr * Math.cos(a), INLET.z + rr * Math.sin(a) * 0.97 + 0.012 * Math.cos(k * 9)));
+    }
+    const last = pts[pts.length - 1];
+    pts.push(V3(INLET.x + 0.07, last.y - 0.06, INLET.z + 0.05), V3(INLET.x + 0.075, last.y - 0.16, INLET.z + 0.07));
+    e1.coil.add(cord(pts, 0.0105, 1600));
+    const end = cordEnd('male'), F = faceGroup(V3(INLET.x + 0.075, last.y - 0.16 - TAIL, INLET.z + 0.07), V3(0, 1, 0)); F.add(end); e1.coil.add(F);
+  }
+}
+async function buildE1() {
+  e1.genset = placeBlock(await aflMesh('portable_diesel_generator'), GEN.x, 0, GEN.z, GEN.facing); scene.add(e1.genset);
+  e1.sockGroup = gensetSocket(); e1.sockGroup.position.copy(SOCK); scene.add(e1.sockGroup);
+  const F = faceGroup(SOCK.clone().add(V3(0, 0, 0.0095)), V3(0, 0, 1)); F.add(cordEnd('male')); scene.add(F);
+  e1.plug = F; F.userData.F = F;
+  // inside the addition: the panel on the east wall right behind the inlet, an outlet over the counter (both stood off the
+  // boards by the battens' 22 mm, which the game does not do yet)
+  e1.panel = placeBlock(await aflMesh('distribution_panel', /^(port_up|conduit_up|pullbox_up|port_down|conduit_down|pullbox_down)/), 16, 2, 2, 'west'); e1.panel.position.x -= 0.022; scene.add(e1.panel);
+  e1.outlet = placeBlock(await objMesh('wall_outlet', 'block/wall_outlet'), 15, 2, 1, 'south'); e1.outlet.position.z += 0.022; scene.add(e1.outlet);
+  setInlet(0, true); setCord('run');
+}
+
+// ---------------------------------------------------------------- F7 set: one lamp at a time in the living room / kitchen
+const f7 = {group: new THREE.Group(), lights: []}; scene.add(f7.group);
+const LIVING = V3(9.5, 4.0, 4.5);   // under the attic floor (k 4) over the chairs by the stove
+function setLamp(variant, lit, where = LIVING) {
+  f7.group.clear();
+  if (!variant) return;
+  const L = lamp(variant, lit); L.group.position.copy(where); f7.group.add(L.group); return L;
+}
+
+// ---------------------------------------------------------------- cameras, overlays, sheets
+const persp = new THREE.PerspectiveCamera(42, 1.5, 0.02, 200);
+function shoot(w, h, cam) {
+  renderer.setSize(w, h); if (cam.isPerspectiveCamera) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  renderer.render(scene, cam);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c;
+}
+function look(pos, target, fov) { persp.position.set(...pos); persp.fov = fov; persp.lookAt(...target); persp.updateMatrixWorld(); persp.updateProjectionMatrix(); return persp; }
+/** Orthographic camera looking along `dir` ([x,y,z]) at center, vertical span m. */
+function ortho(dir, center, span, w, h) {
+  const a = w / h, cam = new THREE.OrthographicCamera(-span * a / 2, span * a / 2, span / 2, -span / 2, 0.01, 60), c = V3(...center);
+  cam.position.copy(c).addScaledVector(V3(...dir).normalize(), -20); cam.lookAt(c); cam.updateMatrixWorld(); cam.updateProjectionMatrix(); return cam;
+}
+function proj(cam, p, w, h) { const v = V3(...p).project(cam); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h]; }
+function dim(g, cam, w, h, p, q, ox, oy, text) {
+  const [x1, y1] = proj(cam, p, w, h), [x2, y2] = proj(cam, q, w, h), a = [x1 + ox, y1 + oy], b = [x2 + ox, y2 + oy];
+  g.strokeStyle = '#3a3530'; g.fillStyle = '#3a3530'; g.lineWidth = 1.6;
+  g.setLineDash([3, 4]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(...a); g.moveTo(x2, y2); g.lineTo(...b); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (const [pt, s] of [[a, 1], [b, -1]]) { g.beginPath(); g.moveTo(...pt); g.lineTo(pt[0] + s * 11 * Math.cos(ang - 0.35), pt[1] + s * 11 * Math.sin(ang - 0.35)); g.lineTo(pt[0] + s * 11 * Math.cos(ang + 0.35), pt[1] + s * 11 * Math.sin(ang + 0.35)); g.fill(); }
+  g.font = `bold 21px ${FONT}`; const tw = g.measureText(text).width, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  g.fillStyle = 'rgba(232,228,221,0.94)'; g.fillRect(mx - tw / 2 - 6, my - 15, tw + 12, 30); g.fillStyle = '#2b2622'; g.fillText(text, mx - tw / 2, my + 8);
+}
+function callout(g, cam, w, h, p, dx, dy, text) {
+  const [x, y] = proj(cam, p, w, h);
+  g.strokeStyle = 'rgba(255,248,236,0.95)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 5, 0, 7); g.stroke();
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + dy); g.stroke();
+  g.font = `20px ${FONT}`; const tw = g.measureText(text).width, tx = dx < 0 ? x + dx - tw - 12 : x + dx + 4;
+  g.fillStyle = 'rgba(28,24,20,0.8)'; g.fillRect(tx - 6, y + dy - 18, tw + 16, 32); g.fillStyle = '#f5efe4'; g.fillText(text, tx + 2, y + dy + 6);
+}
+function caption(g, x, y, text) { g.font = `bold 23px ${FONT}`; const tw = g.measureText(text).width; g.fillStyle = 'rgba(20,17,14,0.8)'; g.fillRect(x, y, tw + 28, 40); g.fillStyle = '#f5efe4'; g.fillText(text, x + 14, y + 28); }
+/** Wraps text at maxW: Latin words and numbers stay whole, closing punctuation never starts a line. */
+function wrapText(g, s, maxW, indent = '') {
+  const tokens = s.match(/[A-Za-z0-9.%°+\-–×=\/]+|[\s\S]/gu), close = /^[，。；：、）)」"！？,.;:]$/, out = [];
+  let line = '';
+  for (const t of tokens) {
+    if (line.trim() && !close.test(t) && g.measureText(line + t).width > maxW) { out.push(line); line = indent + (t === ' ' ? '' : t); continue; }
+    line += t;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function notes(g, x, y, w, hgt, title, lines) {
+  g.fillStyle = '#ece8e1'; g.fillRect(x, y, w, hgt); g.fillStyle = '#2b2622'; g.font = `bold 26px ${FONT}`; g.fillText(title, x + 24, y + 44);
+  let yy = y + 84;
+  for (const l of lines) {
+    if (l === '') { yy += 12; continue; }
+    const bold = l.startsWith('!'), s = bold ? l.slice(1) : l; g.font = `${bold ? 'bold ' : ''}21px ${FONT}`;
+    const ws = wrapText(g, s, w - 60, '  ');
+    ws.forEach((t, i) => g.fillText(t, x + 26, yy + i * 30)); yy += (ws.length - 1) * 30 + 32;
+  }
+  return yy;
+}
+async function save(c, name) { const blob = await new Promise(r => c.toBlob(r, 'image/png')); await fetch('/save?name=' + name, {method: 'POST', body: blob}); }
+function sheet(w, h, title, sub, foot) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = '#d8d3cb'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#26211c'; g.fillRect(0, 0, w, 90); g.fillStyle = '#f2ece2'; g.font = `bold 38px ${FONT}`; g.fillText(title, 32, 58);
+  g.font = `22px ${FONT}`; g.fillStyle = '#bdb3a4'; g.fillText(sub, w - 32 - g.measureText(sub).width, 56);
+  g.fillStyle = '#5f574d'; g.font = `18px ${FONT}`; g.fillText(foot, 32, h - 16);
+  return [c, g];
+}
+const FOOT = '离线概念图：three.js 渲染。房子是搭建脚本里的真实格子和游戏网格（原版占位方块没画），配电盘、发电机、插座是游戏模型；进线盒、电缆、发电机新插座、灯座灯泡是示意几何，不是游戏截图。';
+const SUB = '森林开局 B 溪谷老宅 · M2 E1 + F7 · 2026-10-13';
+window.shot = async (name, w, h, cam) => { await save(shoot(w, h, cam), name); return 'ok'; };
+window.dbg = {scene, look, ortho, day, night, setInlet, setCord, setLamp, e1, f7, shoot, save, wallLamp, house};
+
+// ---------------------------------------------------------------- sheet 1: E1 inlet + cord
+window.renderE1 = async () => {
+  day(); setLamp(null); house.visible = true; ground.visible = true; e1.genset.visible = e1.sockGroup.visible = true;
+  const [c, g] = sheet(2400, 1960, '发电机进户（E1）：进线盒 + 15 m 发电机电缆', SUB, FOOT);
+  // V1 overview
+  setInlet(0, true); setCord('run');
+  let cam = look([22.6, 2.25, 7.8], [21.6, 0.75, -0.3], 56), w = 1184, h = 790, v = shoot(w, h, cam), vg = v.getContext('2d');
+  callout(vg, cam, w, h, [18.1, 1.5, 2.5], 60, -190, '进线盒：加建东墙外，离地 1.4–1.6 m');
+  callout(vg, cam, w, h, [21.3, 0.02, 0.6], 20, 130, '电缆沿地面走，约 10 m（从车棚北边过）');
+  callout(vg, cam, w, h, [25.55, 0.5, -2.4], -60, -160, '发电机留在雨棚里（离门窗 > 5 m）');
+  g.drawImage(v, 16, 106); caption(g, 32, 122, '用的时候：发电机 → 电缆 → 进线盒 → 屋里配电盘（从车棚里看）');
+  // V2 eye level at the inlet, lid shut on the cord
+  cam = look([19.55, 1.72, 4.55], [18.35, 1.25, 1.9], 44); v = shoot(w, h, cam); vg = v.getContext('2d');
+  callout(vg, cam, w, h, [18.1, 1.56, 2.5], 80, -150, '盖子是深罩，插着电缆也能合上');
+  callout(vg, cam, w, h, [18.17, 1.33, 2.5], 110, 40, '电缆从盖子底下的缺口出来');
+  callout(vg, cam, w, h, [18.1, 1.28, 2.5], -150, 120, '空挂钩：电缆用完盘在这里');
+  g.drawImage(v, 1200, 106); caption(g, 1216, 122, '站在墙边看：盖子合着');
+  // V3 lid open, cord coiled on its hook (not in use)
+  setInlet(1.75, true); setCord('coil');
+  w = 784; h = 640; cam = look([19.05, 1.62, 3.45], [18.1, 1.26, 2.48], 40); v = shoot(w, h, cam); vg = v.getContext('2d');
+  callout(vg, cam, w, h, [18.1, 1.47, 2.5], 60, -120, 'L14-30 公口（30 A 四线旋锁）');
+  callout(vg, cam, w, h, [18.13, 1.39, 2.5], 100, -60, '电缆母头一直插在这里');
+  callout(vg, cam, w, h, [18.12, 1.0, 2.5], 90, 110, '不用时 15 m 电缆盘在挂钩上');
+  g.drawImage(v, 16, 912); caption(g, 32, 928, '打开盖子；电缆没接发电机');
+  // V4 genset panel
+  setInlet(0, true); setCord('run');
+  cam = look([25.12, 0.62, -1.48], [25.6, 0.32, -2.3], 38); v = shoot(w, h, cam); vg = v.getContext('2d');
+  callout(vg, cam, w, h, [SOCK.x, SOCK.y + 0.02, SOCK.z + 0.01], -60, -190, '新加：L14-30R 旋锁插座');
+  callout(vg, cam, w, h, [25.5 + 458 * 0.0006, 0.455 - 70 * 0.0006, SOCK.z], -40, -150, '面板上原有的 30 A 断路器管它');
+  callout(vg, cam, w, h, [SOCK.x, SOCK.y, SOCK.z + 0.07], 120, 150, '电缆公头：插进去转一下锁住');
+  g.drawImage(v, 808, 912); caption(g, 824, 928, '发电机面板');
+  // V5 orthographic: front (from the east) and side (from the south), the box alone, lid shut, cord out
+  house.visible = false; ground.visible = false; e1.genset.visible = false; e1.sockGroup.visible = false; e1.plug.visible = false; e1.panel.visible = false; e1.outlet.visible = false;
+  setInlet(0, true); e1.cords.clear(); e1.coil.clear();
+  const T = worldOf(e1.inlet.tail.F, e1.inlet.tail.z), d = dirOf(e1.inlet.tail.F);
+  e1.cords.add(cord([T, T.clone().addScaledVector(d, 0.03), V3(INLET.x + 0.17, INLET.y - 0.26, INLET.z), V3(INLET.x + 0.18, INLET.y - 0.36, INLET.z)]));
+  scene.background = new THREE.Color(0xdedad3);
+  const half = 392, ow = half, oh = 640, sp = 0.5;
+  let oc = ortho([-1, 0, 0], [INLET.x, INLET.y - 0.06, INLET.z], sp, ow, oh); const fv = shoot(ow, oh, oc), fg = fv.getContext('2d');
+  dim(fg, oc, ow, oh, [INLET.x, INLET.y + 0.122, INLET.z + 0.088], [INLET.x, INLET.y + 0.122, INLET.z - 0.088], 0, -36, '17.6 cm');
+  dim(fg, oc, ow, oh, [INLET.x, INLET.y - 0.122, INLET.z - 0.088], [INLET.x, INLET.y + 0.122, INLET.z - 0.088], 44, 0, '24.3');
+  oc = ortho([0, 0, -1], [INLET.x + 0.08, INLET.y - 0.06, INLET.z], sp, ow, oh); const sv = shoot(ow, oh, oc), sg = sv.getContext('2d');
+  dim(sg, oc, ow, oh, [INLET.x - 0.022, INLET.y + 0.122, INLET.z], [INLET.x + 0.16, INLET.y + 0.122, INLET.z], 0, -36, '深 16（含墙板条）');
+  const cv = document.createElement('canvas'); cv.width = 784; cv.height = 640; const cg = cv.getContext('2d'); cg.drawImage(fv, 0, 0); cg.drawImage(sv, 392, 0);
+  cg.strokeStyle = '#b9b2a6'; cg.beginPath(); cg.moveTo(392, 20); cg.lineTo(392, 620); cg.stroke();
+  g.drawImage(cv, 1600, 912); caption(g, 1616, 912 + 640 - 56, '正面（东） / 侧面（南）');
+  house.visible = true; ground.visible = true; e1.genset.visible = e1.sockGroup.visible = e1.panel.visible = e1.outlet.visible = true; day();
+  setInlet(0, true); setCord('run');
+  // notes
+  const NY = 1568, NH = 342;
+  notes(g, 16, NY, 784, NH, '进线盒（新方块）', [
+    '!北美常见的 30 A 发电机进线盒：防雨外壳，里面是 L14-30 公口（120/240 V 四线旋锁），盖子是深罩，插着电缆也能合上，电缆从底下缺口出来。',
+    '浅灰喷涂铝壳，约 17.6 × 24.3 × 16 cm，真实尺寸。进线口朝下斜 60°，雨水进不去。',
+    '挂墙放，背后要有结实的面；墙没了掉落自身。',
+    '作用同电表箱：当"这栋楼"的进户点，电送进同一栋楼的配电盘。任何建筑都能装。',
+    '挖掘：镐 + 钻石级，掉落自身（同电表箱，AGENTS 默认）。',
+  ]);
+  notes(g, 808, NY, 784, NH, '电缆和发电机插座', [
+    '!电缆 15 m（50 ft），10/4 SOOW 黄色橡胶护套，Ø 21 mm；进线盒那头是 L14-30 母头，发电机那头是 L14-30 公头，都是黑色模压。',
+    '为什么 15 m：雨棚里的发电机到东墙进线盒直线 8.8 m，沿地面走约 10 m；常见规格 25 / 30 / 50 ft，30 ft（9.1 m）不够。',
+    '!发电机面板加一个 L14-30R，放在电压表下面的空位；面板上原有的 30 A 断路器管它。原来两组 5-15R 不变。',
+    '电缆最多送发电机的额定 20 FE/t（5 kW）；带不动由配电盘跳闸（现有规则）。',
+  ]);
+  notes(g, 1600, NY, 784, NH, '怎么用（沿用插头电线的规则）', [
+    '!电缆属于进线盒：母头一直插在进线口里，不用时盘在下面挂钩上。',
+    '潜行右键进线盒：拿起插头（从挂钩上放开）；再潜行右键放回。',
+    '拿着插头右键发电机的 L14-30R：插上。拔下：空手右键发电机上那个插头，或潜行右键进线盒。',
+    '拿着走超过 16.5 m 插头掉回挂钩；插着的状态存档。',
+    '右键盖子：打开 / 关上（只是外观）。',
+    '!要你定：电缆长度 15 m 行不行；也可以做成单独的电缆物品（两头都要插，能带走），但要写新的两头连接规则。',
+  ]);
+  await save(c, 'm2_3_e1_inlet.png'); return 'saved';
+};
+
+// ---------------------------------------------------------------- sheet 2: F7 lampholders
+const ceilPatch = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.03, 0.9), material('apocalypse_firstlight:block/wood/white_oak_planks')); ceilPatch.visible = false; scene.add(ceilPatch);
+const LAMPS = [
+  {v: 'A', name: '方案 A：无开关瓷灯座', depth: 0.149, span: 0.34},
+  {v: 'B', name: '方案 B：拉线瓷灯座', depth: 0.166, span: 0.5},
+  {v: 'C', name: '方案 C：吊线瓷灯头', depth: 0.633, span: 0.8},
+];
+window.renderF7 = async () => {
+  const [c, g] = sheet(2400, 1700, '灯泡灯具（F7）：瓷灯座 + 灯泡，三种', SUB, FOOT);
+  // row 1: the living room at night, the bulb the only light
+  night();
+  for (let i = 0; i < 3; i++) {
+    setLamp(LAMPS[i].v, true);
+    const cam = look([11.35, 2.2, 8.65], [9.3, 2.62, 3.3], 54), v = shoot(784, 600, cam);
+    g.drawImage(v, 16 + i * 792, 106); caption(g, 32 + i * 792, 122, LAMPS[i].name + ' · 夜里');
+  }
+  // row 2: close up by day (unlit) + an elevation with sizes
+  for (let i = 0; i < 3; i++) {
+    const L = LAMPS[i], x0 = 16 + i * 792, y0 = 722;
+    day(); setLamp(L.v, false); house.visible = true;
+    const mid = LIVING.y - L.depth * 0.55;
+    let cam = look([LIVING.x + 0.36 + L.depth * 0.5, mid - 0.18 - L.depth * 0.25, LIVING.z + 0.52 + L.depth * 0.6], [LIVING.x, mid + 0.01, LIVING.z], 40);
+    fill.position.set(LIVING.x + 1.2, 2.6, LIVING.z + 1.6); fill.intensity = 1.6;
+    const pv = shoot(392, 560, cam);
+    house.visible = false; ground.visible = false; scene.background = new THREE.Color(0xdedad3); fill.intensity = 0;
+    ceilPatch.position.set(LIVING.x, LIVING.y + 0.015, LIVING.z); ceilPatch.visible = true;
+    const oc = ortho([0, 0, -1], [LIVING.x, LIVING.y - L.span / 2 + 0.075, LIVING.z], L.span, 392, 560), ov = shoot(392, 560, oc), og = ov.getContext('2d');
+    const top = LIVING.y, tip = LIVING.y - L.depth, X = LIVING.x, Z = LIVING.z;
+    if (L.v === 'C') {
+      dim(og, oc, 392, 560, [X + 0.036, top, Z], [X + 0.036, tip, Z], 70, 0, '63 cm');
+      dim(og, oc, 392, 560, [X - 0.036, top - 0.004, Z], [X + 0.036, top - 0.004, Z], 0, 26, 'Ø 7.2');
+      dim(og, oc, 392, 560, [X - 0.03, tip + 0.03, Z], [X + 0.03, tip + 0.03, Z], 0, 58, 'Ø 6');
+    } else {
+      dim(og, oc, 392, 560, [X - 0.052, top, Z], [X + 0.052, top, Z], 0, -30, 'Ø 10.4 cm');
+      dim(og, oc, 392, 560, [X + 0.052, top, Z], [X + 0.052, tip, Z], 60, 0, (L.depth * 100).toFixed(1));
+      dim(og, oc, 392, 560, [X - 0.03, tip + 0.03, Z], [X + 0.03, tip + 0.03, Z], 0, 52, 'Ø 6');
+      if (L.v === 'B') dim(og, oc, 392, 560, [X + 0.035, top - 0.046, Z], [X + 0.035, top - 0.046 - 0.318, Z], -110, 0, '拉链 30');
+    }
+    ceilPatch.visible = false; house.visible = true; ground.visible = true;
+    g.drawImage(pv, x0, y0); g.drawImage(ov, x0 + 392, y0);
+    g.strokeStyle = '#b9b2a6'; g.beginPath(); g.moveTo(x0 + 392, y0 + 16); g.lineTo(x0 + 392, y0 + 544); g.stroke();
+    caption(g, x0 + 16, y0 + 16, '白天、关着 / 尺寸（cm）');
+  }
+  setLamp(null); day();
+  const NY = 1298, NH = 300;
+  notes(g, 16, NY, 784, NH, LAMPS[0].name, [
+    '!参照：美国老房子地下室、阁楼、柴棚最常见的样子：白瓷底座直接装在顶上，裸灯泡。',
+    '底座 Ø 10.4 cm（4 英寸接线盒的盖板大小），连灯泡伸出 15 cm；A19 60 W 磨砂灯泡 Ø 6 cm。',
+    '没有开关：配电盘"照明"那一路有电就亮（同现有吸顶灯）。',
+    '天花板、墙上都能装。',
+  ]);
+  notes(g, 808, NY, 784, NH, LAMPS[1].name, [
+    '!参照：同 A，带拉线开关的那一种；老房子里每个房间各拉各的灯。',
+    '底座同 A，伸出 16.6 cm；镍色珠链 30 cm，下面一个铜坠，链尾离地约 2.6 m，伸手够得到。',
+    '右键拉一下：只开 / 关这一盏。有电并且拉开才亮。发电机电有限时只开要用的灯。',
+    '天花板、墙上都能装；要一段拉线开关"咔哒"的 Firefly 录音。',
+    '!我推荐 B：最像老屋，交互也最有用。',
+  ]);
+  notes(g, 1600, NY, 784, NH, LAMPS[2].name, [
+    '!参照：老式明线吊灯：顶上一个瓷线盒，布包电线垂下来，下面瓷灯头 + 灯泡。',
+    '顶上 Ø 7.2 cm，灯泡底离天花板 63 cm（3 m 层高下离地 2.37 m，不碰头）。',
+    '没有开关（也能像 B 一样加拉线）。',
+    '加建（厨房、门厅）是斜屋面、没有平顶：A、B 只能装墙上；C 在斜面下也竖直挂着。',
+  ]);
+  g.fillStyle = '#2b2622'; g.font = `21px ${FONT}`;
+  const common = '三种都是：真实尺寸（插座当时放大 1.5 倍是因为贴墙太小；灯泡是亮的、在头顶，真实尺寸也看得清，你看图定）；亮度 14（面板灯 15）；不开光影灯泡整只亮，开光影灯泡发光；空手能拆，掉落自身（同墙上插座）。';
+  wrapText(g, common, 2340).forEach((t, i) => g.fillText(t, 30, NY + NH + 40 + i * 30));
+  await save(c, 'm2_3_f7_lamps.png'); return 'saved';
+};
+
+// ---------------------------------------------------------------- sheet 3: where everything goes (plan) + the kitchen inside
+const PLAN = {x0: -1, x1: 27, z0: -8, z1: 14, s: 41};
+const BULBS = [[9.5, 4.5, '起居室'], [11.5, 8.5, '餐桌'], [2.5, 3.5, '卧室'], [2.5, 8.5, '储藏室'], [14.5, 1.0, '厨房（墙上）', -12, 28], [16.5, 7.0, '门厅（墙上）'], [9.5, 11.0, '门廊（墙上）', 12, 28]];
+const OUTLETS = [[15.5, 1.0, '柜台上方', 12, 28], [11.5, 9.85, '起居室', -12, -14]];
+function drawPlan(g, ox, oy) {
+  const {x0, x1, z0, z1, s} = PLAN, X = x => ox + (x - x0) * s, Y = z => oy + (z - z0) * s;
+  g.fillStyle = '#9aa77f'; g.fillRect(X(x0), Y(z0), (x1 - x0) * s, (z1 - z0) * s);
+  const top = (x, z) => { for (let k = 13; k >= 0; k--) { const c = at(x, k, z); if (c && c.b === "roof") return c; } return null; };
+  for (let x = x0; x < x1; x++) for (let z = z0; z < z1; z++) {
+    const f = at(x, 0, z), w = at(x, 1, z), r = top(x, z);
+    if (r) { g.fillStyle = r.mat === 'green' ? '#c9d3c3' : r.mat === 'rust' ? '#d8c5b6' : '#d9dcdc'; g.fillRect(X(x), Y(z), s, s); }
+    if (f && (f.b === 'planks' || f.b === 'flag')) { g.fillStyle = '#e6d6b4'; g.fillRect(X(x), Y(z), s, s); }
+    if (f && f.b === 'deck') { g.fillStyle = '#d7c096'; g.fillRect(X(x), Y(z), s, s); }
+    const wc = w || (f && f.b !== 'planks' && f.b !== 'deck' && f.b !== 'flag' ? f : null);
+    if (!wc) continue;
+    const col = {log: '#6f5235', bbB: '#6b4a32', bbG: '#8b8b82', planks: '#a8875c', stone: '#7f7f7a', doorC: '#c49a62', doorB: '#c49a62', win: '#8fb7cc', fire: '#a57d52', grass: null, pipe: '#333', post: '#b8955f', rail: null}[wc.b];
+    if (!col) continue;
+    g.fillStyle = col;
+    if (wc.b === 'post') g.fillRect(X(x + 0.38), Y(z + 0.38), s * 0.24, s * 0.24); else g.fillRect(X(x), Y(z), s, s);
+  }
+  g.strokeStyle = 'rgba(0,0,0,0.07)'; g.lineWidth = 1;
+  for (let x = x0; x <= x1; x++) { g.beginPath(); g.moveTo(X(x), Y(z0)); g.lineTo(X(x), Y(z1)); g.stroke(); }
+  for (let z = z0; z <= z1; z++) { g.beginPath(); g.moveTo(X(x0), Y(z)); g.lineTo(X(x1), Y(z)); g.stroke(); }
+  // the cellar (underground) outline
+  g.setLineDash([6, 5]); g.strokeStyle = '#5c544a'; g.lineWidth = 2; g.strokeRect(X(5), Y(-7), 6 * s, 3 * s); g.setLineDash([]);
+  // the genset, its 5 m ring, the cord
+  g.fillStyle = '#e1b52a'; g.fillRect(X(25.5 - 0.37), Y(-2.5 - 0.25), 0.74 * s, 0.5 * s); g.strokeStyle = '#222'; g.strokeRect(X(25.5 - 0.37), Y(-2.5 - 0.25), 0.74 * s, 0.5 * s);
+  g.setLineDash([8, 6]); g.strokeStyle = '#b5452f'; g.lineWidth = 2; g.beginPath(); g.arc(X(25.5), Y(-2.5), 5 * s, 0, 7); g.stroke(); g.setLineDash([]);
+  const route = [[18.0, 2.5], [18.62, 2.36], [19.4, 1.72], [20.9, 0.86], [22.4, 0.18], [23.5, -0.12], [24.3, -0.62], [24.75, -1.22], [25.05, -1.55], [25.42, -1.78], [25.55, -2.1]];
+  g.strokeStyle = '#2b2622'; g.lineWidth = 7; g.beginPath(); route.forEach(([x, z], i) => i ? g.lineTo(X(x), Y(z)) : g.moveTo(X(x), Y(z))); g.stroke();
+  g.strokeStyle = '#f0c22c'; g.lineWidth = 4; g.stroke();
+  // markers
+  const mark = (x, z, fillc, shape, text, dx, dy) => {
+    g.fillStyle = fillc; g.strokeStyle = '#1d1a16'; g.lineWidth = 2; g.beginPath();
+    if (shape === 'circle') g.arc(X(x), Y(z), 9, 0, 7); else g.rect(X(x) - 9, Y(z) - 9, 18, 18);
+    g.fill(); g.stroke();
+    if (text) { g.font = `bold 19px ${FONT}`; const tw = g.measureText(text).width, tx = dx < 0 ? X(x) + dx - tw : X(x) + dx, ty = Y(z) + dy; g.fillStyle = 'rgba(255,252,246,0.9)'; g.fillRect(tx - 4, ty - 17, tw + 8, 24); g.fillStyle = '#1d1a16'; g.fillText(text, tx, ty); }
+  };
+  mark(8.5, 1.5, '#2e2a27', 'rect', '柴炉', 14, 6);
+  for (const [x, z, t, dx = 12, dy = -10] of BULBS) mark(x, z, '#ffd75e', 'circle', t, dx, dy);
+  for (const [x, z, t, dx, dy] of OUTLETS) mark(x, z, '#5b8fd6', 'rect', '插座 · ' + t, dx, dy);
+  mark(18.05, 2.5, '#9aa0a3', 'rect', '进线盒（外墙）', 14, 6);
+  mark(16.85, 2.5, '#4a4f55', 'rect', '配电盘（内墙）', -12, 32);
+  // labels
+  g.font = `bold 22px ${FONT}`; g.fillStyle = '#3b332a';
+  for (const [x, z, t] of [[8.2, 6.2, '起居室'], [1.2, 4.6, '卧室'], [1.1, 9.4, '储藏室'], [13.3, 4.3, '厨房'], [13.3, 6.3, '门厅'], [4.5, 12.6, '门廊'], [19.3, -5.1, '柴棚'], [23.8, -5.1, '发电机雨棚'], [20.6, 6.6, '车棚'], [5.4, -6.2, '地窖（地下）']]) g.fillText(t, X(x), Y(z));
+  g.font = `19px ${FONT}`; g.fillStyle = '#7d2f20'; g.fillText('离发电机 5 m', X(21.2), Y(-6.0) + 4);
+  g.font = `bold 20px ${FONT}`; { const t = '电缆 15 m（路线约 10 m）', tw = g.measureText(t).width; g.fillStyle = 'rgba(255,252,246,0.9)'; g.fillRect(X(21.5) - 4, Y(1.75) - 18, tw + 8, 25); g.fillStyle = '#2b2622'; g.fillText(t, X(21.5), Y(1.75)); }
+  // north arrow, scale bar
+  const ax = X(x1) - 40, ay = Y(z0) + 60; g.fillStyle = '#1d1a16'; g.beginPath(); g.moveTo(ax, ay - 34); g.lineTo(ax - 12, ay); g.lineTo(ax + 12, ay); g.closePath(); g.fill(); g.font = `bold 22px ${FONT}`; g.fillText('北', ax - 11, ay + 26);
+  const bx = X(x0) + 24, by = Y(z1) - 24; g.fillStyle = '#1d1a16'; g.fillRect(bx, by, 5 * s, 6); g.font = `19px ${FONT}`; g.fillText('5 m', bx + 5 * s + 10, by + 8);
+}
+window.renderLayout = async () => {
+  const [c, g] = sheet(2400, 1460, '布置：电缆、进线盒、配电盘、插座、灯位', SUB, FOOT);
+  drawPlan(g, 16, 106); const PY = 106 + (PLAN.z1 - PLAN.z0) * PLAN.s;
+  g.fillStyle = '#ece8e1'; g.fillRect(16, PY + 8, 1148, 1460 - PY - 58);
+  g.fillStyle = '#2b2622'; g.font = `bold 24px ${FONT}`; g.fillText('图例', 40, PY + 46);
+  const leg = [['#ffd75e', 'circle', '灯（7 盏，按 B 方案）'], ['#5b8fd6', 'rect', '墙上插座（现有方块）'], ['#9aa0a3', 'rect', '进线盒（新方块）'], ['#4a4f55', 'rect', '配电盘（现有方块）'], ['#f0c22c', 'line', '发电机电缆'], ['#b5452f', 'dash', '离发电机 5 m（门窗都在圈外）']];
+  leg.forEach(([col, shape, t], i) => {
+    const x = 40 + (i % 2) * 560, y = PY + 90 + Math.floor(i / 2) * 46;
+    g.fillStyle = col; g.strokeStyle = '#1d1a16'; g.lineWidth = 2; g.beginPath();
+    if (shape === 'circle') { g.arc(x + 10, y - 7, 9, 0, 7); g.fill(); g.stroke(); }
+    else if (shape === 'rect') { g.rect(x + 1, y - 16, 18, 18); g.fill(); g.stroke(); }
+    else if (shape === 'line') { g.fillRect(x - 6, y - 10, 32, 6); }
+    else { g.setLineDash([8, 6]); g.strokeStyle = col; g.beginPath(); g.moveTo(x - 6, y - 7); g.lineTo(x + 28, y - 7); g.stroke(); g.setLineDash([]); }
+    g.fillStyle = '#2b2622'; g.font = `21px ${FONT}`; g.fillText(t, x + 40, y);
+  });
+  g.font = `20px ${FONT}`; g.fillStyle = '#5f574d';
+  g.fillText('格子按搭建脚本画；你在世界里挪过家具，放的时候我按世界里读回来的位置摆，灯位也可以你自己挑。', 40, PY + 260);
+  // the kitchen inside: panel behind the inlet, outlet over the counter, a B lamp on the wall over the window
+  day(); setLamp(null);
+  const WL = wallLamp('B', false, 'south'); WL.group.position.set(14.5, 3.42, 1.022); f7.group.add(WL.group);
+  fill.position.set(14.2, 2.6, 4.8); fill.intensity = 2.2;
+  const cam = look([13.55, 2.05, 6.1], [16.2, 2.0, 1.6], 58), v = shoot(1184, 790, cam), vg = v.getContext('2d');
+  callout(vg, cam, 1184, 790, [16.9, 2.45, 2.5], -40, 250, '配电盘（现有，0.56 × 0.70 m）：背后墙外就是进线盒');
+  callout(vg, cam, 1184, 790, [15.5, 2.35, 1.03], -120, 110, '墙上插座：柜台上方 1.35 m');
+  callout(vg, cam, 1184, 790, [14.5, 3.42, 1.1], 60, -120, '拉线瓷灯座装墙上（斜屋面下没有平顶）');
+  fill.intensity = 0; setLamp(null);
+  g.drawImage(v, 1200, 106); caption(g, 1216, 122, '厨房里（加建）：北墙柜台、东墙配电盘');
+  notes(g, 1200, 912, 1184, 498, '要点', [
+    '!路线：发电机在雨棚里（离门窗都 > 5 m）→ 电缆从车棚北边沿地面过来 → 加建东墙外的进线盒 → 墙里面的配电盘 → 照明、插座两路。',
+    '进线盒 (18, 1, 2) 朝东；配电盘 (16, 2, 2) 挂东墙内侧、朝西，在后门和东窗之间，箱子离地板 1.15–1.85 m。',
+    '插座 2 个：厨房柜台上方、起居室前墙。V1 屋里还没有插头电器（冷柜是占位），先预留。',
+    '灯 7 盏：起居室 2（炉边、餐桌）、卧室、储藏室在主屋平顶下；厨房、门厅在加建斜屋面下，装墙上；门廊装前墙上。',
+    '!地窖不在"这栋楼"的范围里：配电盘往上找屋顶，地窖上面是土堆，不算屋顶。地窖继续用灯笼；要通电得改范围规则，这一轮不做。',
+    '用电：7 盏 60 W 灯泡约 0.4 kW，按 1 FE/t = 0.25 kW 是 1.7 FE/t，只占发电机 20 FE/t 的 8%。现有灯每盏按 1 FE/t 算；灯泡建议按真实算（每 40 tick 取 10 FE）。',
+    '!配电盘底下的接线盒（接地面电缆的钢接口）现在一直画，挂在木墙上会悬在这一格正中、离墙 30–70 cm、离地板 1 m。进线盒从墙里直接进线，用不到它：建议改成和顶部一样，接了电缆才画（图里已经按这样画）。',
+    '配电盘偏大：现有的是 0.56 × 0.70 m 商用配电盘，放在小屋厨房里有点重。要更像住宅，可以另做一个小配电箱（约 0.33 × 0.45 m），多一个方块，你定。',
+  ]);
+  await save(c, 'm2_3_layout.png'); return 'saved';
+};
+
+(async () => { await buildHouse(); await buildE1(); await Promise.all(pending); day(); document.title = 'ready'; })()
+  .catch(e => { document.title = 'error ' + e.message; console.error(e); });
+</script>
+</body></html>

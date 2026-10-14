@@ -43,13 +43,17 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("commercial_glass_double_door", () ->
                     BlockEntityType.Builder.of(CommercialGlassDoubleDoorBlockEntity::new,
                             AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR.get(), AflBlocks.COMMERCIAL_GLASS_DOUBLE_DOOR_BLACK.get()).build(null));
-    /** Building Power V1: the panel (breakers, circuits) and the meter box (service entry). */
+    /** Building Power V1: the panels (breakers, circuits: the commercial panelboard and the load center) and the meter box (service entry). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity>> DISTRIBUTION_PANEL =
             BLOCK_ENTITIES.register("distribution_panel", () -> BlockEntityType.Builder.of(
-                    com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity::new, AflBlocks.DISTRIBUTION_PANEL.get()).build(null));
+                    com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity::new, AflBlocks.DISTRIBUTION_PANEL.get(), AflBlocks.LOAD_CENTER.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity>> SERVICE_METER_BOX =
             BLOCK_ENTITIES.register("service_meter_box", () -> BlockEntityType.Builder.of(
                     com.antaurora.apofirstlight.blockentity.ServiceMeterBoxBlockEntity::new, AflBlocks.SERVICE_METER_BOX.get()).build(null));
+    /** Generator Inlet V1: the inlet box with its 15 m cord (docs/models/generator_inlet_v1.md). */
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.GeneratorInletBoxBlockEntity>> GENERATOR_INLET_BOX =
+            BLOCK_ENTITIES.register("generator_inlet_box", () -> BlockEntityType.Builder.of(
+                    com.antaurora.apofirstlight.blockentity.GeneratorInletBoxBlockEntity::new, AflBlocks.GENERATOR_INLET_BOX.get()).build(null));
     /** Power Outlets V1: where a strip's plug is (docs/models/power_outlets_v1.md). */
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.PowerStripBlockEntity>> POWER_STRIP =
             BLOCK_ENTITIES.register("power_strip", () -> BlockEntityType.Builder.of(

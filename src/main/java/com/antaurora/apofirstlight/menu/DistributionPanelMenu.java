@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.menu;
 
 import com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity;
-import com.antaurora.apofirstlight.registry.AflBlocks;
 import com.antaurora.apofirstlight.registry.AflMenus;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -64,8 +63,10 @@ public final class DistributionPanelMenu extends AbstractContainerMenu {
 
     @Override public ItemStack quickMoveStack(Player player, int slot) { return ItemStack.EMPTY; }
 
+    /** Either panel (the commercial panelboard or the load center, 2026-10-13), within reach. */
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(access, player, AflBlocks.DISTRIBUTION_PANEL.get());
+        return access.evaluate((level, p) -> level.getBlockState(p).getBlock() instanceof com.antaurora.apofirstlight.block.DistributionPanelBlock
+                && player.distanceToSqr(p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5) <= 64.0, true);
     }
 }

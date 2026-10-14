@@ -210,6 +210,8 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.LINEAR_LIGHT.get(), new Item.Properties()));
     public static final RegistryObject<Item> EMERGENCY_LIGHT = ITEMS.register("emergency_light",
             () -> new BlockItem(AflBlocks.EMERGENCY_LIGHT.get(), new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> PORCELAIN_LAMPHOLDER = ITEMS.register("porcelain_lampholder",
+            () -> new BlockItem(AflBlocks.PORCELAIN_LAMPHOLDER.get(), new Item.Properties().stacksTo(16)));
     /** Fuel Stop A1 details V1 (docs/models/fuel_stop_a1_details_v1.md): one channel-letter item, the letter in its BlockStateTag. */
     public static final RegistryObject<Item> CHANNEL_LETTER = ITEMS.register("channel_letter",
             () -> new com.antaurora.apofirstlight.item.ChannelLetterBlockItem(AflBlocks.CHANNEL_LETTER.get(), new Item.Properties().stacksTo(16)));
@@ -438,8 +440,12 @@ public final class AflItems {
             () -> new BlockItem(AflBlocks.CHEMICAL_REACTOR.get(), new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> DISTRIBUTION_PANEL = ITEMS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.DISTRIBUTION_PANEL.get(), new Item.Properties().stacksTo(4), "distribution_panel"));
+    public static final RegistryObject<Item> LOAD_CENTER = ITEMS.register("load_center",
+            () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.LOAD_CENTER.get(), new Item.Properties().stacksTo(4), "load_center"));
     public static final RegistryObject<Item> SERVICE_METER_BOX = ITEMS.register("service_meter_box",
             () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.SERVICE_METER_BOX.get(), new Item.Properties().stacksTo(4), "service_meter_box"));
+    public static final RegistryObject<Item> GENERATOR_INLET_BOX = ITEMS.register("generator_inlet_box",
+            () -> new com.antaurora.apofirstlight.item.AflMeshBlockItem(AflBlocks.GENERATOR_INLET_BOX.get(), new Item.Properties().stacksTo(4), "generator_inlet_box"));
     public static final RegistryObject<Item> WALL_OUTLET = ITEMS.register("wall_outlet",
             () -> new BlockItem(AflBlocks.WALL_OUTLET.get(), new Item.Properties()));
     public static final RegistryObject<Item> POWER_STRIP_3 = ITEMS.register("power_strip_3",

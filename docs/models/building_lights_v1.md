@@ -13,6 +13,8 @@
 
 这是 Building Power V1 第二步的最后一项：照明。规则见 [building_power_v1.md](building_power_v1.md)，插座、电器见 [power_outlets_v1.md](power_outlets_v1.md)。
 
+> **2026-10-13 加了 E 拉线瓷灯座**（森林开局 B 的 F7，用户看过 A / B / C 三种概念后选 B；`compileJava` 通过，**未实机验证**），见下面"E 拉线瓷灯座"。灯泡按真实功率取电（用户："按真实功率算，因为是小灯"），A、C 还是每格每 tick 1 FE。
+
 ## 三个方块
 
 | | ID | 名字 | 尺寸 | 装在哪 | 亮度 | 挖掘 |
@@ -106,9 +108,31 @@
 - 新做的应急灯电池是空的。战前装在楼里、之后一直停电的也是空的，要先通电充一会儿。所以废弃建筑停电时，应急灯一般也不亮。
 - 电池电量存在方块实体里。拆下来电量就没了，这一版不带到物品上。
 
+## E 拉线瓷灯座（2026-10-13）
+
+| ID | 名字 | 装在哪 | 亮度 | 挖掘 |
+|---|---|---|---|---|
+| `porcelain_lampholder` | 拉线瓷灯座 / Porcelain Pull-Chain Lampholder | 天花板（`facing=down`）或墙上（`facing` 背离墙） | 有电并且拉线开着 14 | 空手能拆，掉落自身 |
+
+- **外形**（`tools/build-building-lights-v1.mjs` 的 `LAMPHOLDER`，真实尺寸，不放大）：
+  - 白瓷灯座 Ø 10.5 cm，侧面一个小凸台，拉线从这里出来；E26 灯口，A19 磨砂灯泡；
+  - 镍色珠链笔直往下垂，吸顶 30 cm、挂墙 24 cm，末端一个黄铜拉坠；
+  - 吸顶的从那一格顶面中心吊下来；挂墙的灯座中心离那一格底面 0.42 m，拉线凸台在下面；
+  - 珠链和拉坠是金属（镍、黄铜），其余都是非金属；灯泡亮时整只全亮（`Ka 1 1 1`），光影下 LabPBR 发光 240；
+  - 模型 `models/block/porcelain_lampholder/{ceiling,wall}_{off,lit}.{obj,mtl,json}`，烘焙进区块；2,152 个三角面。
+- **取电**：同 A、C 的那套检查（`BuildingLightBlock`），多了两条：
+  - 拉线关着（`on=false`）时直接灭，不向配电盘要电；
+  - 每个周期（40 tick）取 10 FE（`BuildingLights.BULB_60W_PERIOD`）：60 W = 0.24 FE/t（1 FE/t = 0.25 kW），40 tick 是 9.6，取整 10。A、C 还是一次 40 FE。
+  - 灭着的灯同样要配电盘能给两个周期（20 FE）才亮。
+  - 挂墙的按背后那面墙所在的格子找配电盘（门廊外墙上的灯，自己那一格可能在屋顶外面）；吸顶的用自己那一格。
+- **交互**：右键拉一下（空手、拿着东西都行）：`on` 切换，只管这一盏。拉开时如果"照明"那一路有电，当场取这一个周期的电点亮，不用等下一次检查；拉关马上灭。准星提示"开灯" / "关灯"。
+  - 声音暂时是原版拉杆声（音量 0.3，开 1.75、关 1.6），等 Firefly 的拉线开关录音。
+- **方块**：没有碰撞；选择框是灯座加灯泡，再加一根加宽到 0.6 px 的珠链，好瞄准。支撑面没了会掉。硬度 0.3，玻璃声；0.25 kg（估计），叠 16；不进任何 `mineable/*` 标签（同墙上插座、应急灯）。
+- 创造栏建筑页，应急灯后面。建造工具登记成 SAFE_FIXTURE（`ATTACHED_OPPOSITE_FACING`，`on` 可以指定，`lit` 固定 false）。
+
 ## 交互
 
-- 三种灯都没有右键交互。
+- A、C、D 都没有右键交互（E 的拉线见上）。
   - D 第一版有测试按钮（右键用电池亮 3 秒，准星提示"测试"），用户 2026-10-08 要求删掉。机身上的红色按钮只是外观。
 - **Jade**：看 D 时显示"电池 63%"（`EmergencyLightJadeProvider`）。
 
@@ -152,7 +176,8 @@
 ## 文件
 
 - 生成器：`tools/build-building-lights-v1.mjs`（`--check`、`--preview DIR`）。
-- 可编辑源：`src/main/blockbench/{square_panel_light,linear_light,emergency_light}_v1.bbmodel` 和 `textures/` 里的贴图副本。
+- 可编辑源：`src/main/blockbench/{square_panel_light,linear_light,emergency_light,porcelain_lampholder}_v1.bbmodel` 和 `textures/` 里的贴图副本。
+- E（2026-10-13）：`block/PorcelainLampholderBlock`；`BuildingLightBlock` 加了 `switchedOn()`、`periodEnergy()`，`BuildingLights.period` 多了一个按每周期用电量的重载；模型 `models/block/porcelain_lampholder/`，贴图 `textures/block/porcelain_lampholder{,_s,_n}.png`，掉落表、`item_mass`、中英文名和提示。
 - 运行时：
   - `models/block/industrial_utility_light/{off,lit}`；
   - `models/block/linear_light/{off,lit}_{both,neg,pos,none}`（哪一头带端盖）；
@@ -211,7 +236,8 @@
   - 电池空时停电不亮；
   - Jade 显示电量。
 - A1 残光：运行 `relight` 模式后，读回的方块光最大值是 0；接电合闸后灯亮，拉闸后再变暗。
-- 挖掘：A、C 要钻石镐才掉落；D 空手能拆，掉落自身；支撑没了会掉。
+- 挖掘：A、C 要钻石镐才掉落；D、E 空手能拆，掉落自身；支撑没了会掉。
+- E：吸顶和挂墙四个朝向的样子、珠链笔直下垂；拉线开关、提示；"照明"那一路有电时拉开马上亮，拉闸后 2 秒内灭；配电盘界面里每盏约 0.25 FE/t；光影下灯泡发光。
 - 地堡：墙上的 16 盏 C 位置、朝向对；天花板上的 A 正常。
 - 旧存档：已经放着的旧灯读档后变成 A，一分钟内按配电盘决定亮灭。
 

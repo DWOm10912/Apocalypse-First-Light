@@ -205,6 +205,10 @@
       "unit_mass_kg": 1.5,
       "estimated": true
     },
+    "apocalypse_firstlight:porcelain_lampholder": {
+      "unit_mass_kg": 0.25,
+      "estimated": true
+    },
     "apocalypse_firstlight:light_pole_base": {
       "unit_mass_kg": 6.0,
       "estimated": true
@@ -521,6 +525,10 @@
       "unit_mass_kg": 14,
       "estimated": true
     },
+    "apocalypse_firstlight:load_center": {
+      "unit_mass_kg": 6,
+      "estimated": true
+    },
     "apocalypse_firstlight:wall_outlet": {
       "unit_mass_kg": 0.1,
       "estimated": true
@@ -535,6 +543,10 @@
     },
     "apocalypse_firstlight:service_meter_box": {
       "unit_mass_kg": 10,
+      "estimated": true
+    },
+    "apocalypse_firstlight:generator_inlet_box": {
+      "unit_mass_kg": 7.5,
       "estimated": true
     },
     "apocalypse_firstlight:modern_office_chair": {

@@ -30,8 +30,9 @@ import net.minecraftforge.fluids.capability.templates.FluidTank;
 /**
  * Portable diesel generator V1 (docs/machines/portable_diesel_generator_v1.md): a 5 kW open-frame diesel set.
  * <ul>
- *   <li>{@link #RATED} FE/t (5 kW at 0.25 kW a FE/t, as the standby set) through the panel's four sockets, shared
- *   (block/PortableDieselGeneratorBlock is the socket host); nothing else: no cable port (V1, user 2026-10-09).</li>
+ *   <li>{@link #RATED} FE/t (5 kW at 0.25 kW a FE/t, as the standby set) through the panel's sockets, shared: four NEMA
+ *   5-15R and, since 2026-10-13, an L14-30R for the generator inlet's cord (block/PortableDieselGeneratorBlock is the socket
+ *   host); no cable port (V1, user 2026-10-09).</li>
  *   <li>A {@link #TANK} L diesel tank (1 mB = 1 L), filled by a jerry can poured into the open filler.</li>
  *   <li>Fuel {@link #IDLE_L} + {@link #L_PER_KW} x kW litres a game hour (1000 ticks): 1.75 L/h at full load (a 186F-class
  *   engine), 0.4 L/h idling; a full tank lasts about 8.6 game hours at full load.</li>
@@ -51,7 +52,7 @@ import net.minecraftforge.fluids.capability.templates.FluidTank;
  */
 public class PortableDieselGeneratorBlockEntity extends AflAnimatedMeshBlockEntity {
     public static final ResourceLocation PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/portable_diesel_generator.json");
-    public static final int RATED = 20, TANK = 15, HOUR_TICKS = 1000, SOCKETS = 4;
+    public static final int RATED = 20, TANK = 15, HOUR_TICKS = 1000, SOCKETS = 5;
     public static final double IDLE_L = 0.4, L_PER_KW = 0.27, KW_PER_FE_TICK = 0.25;
     /**
      * A pull: the handle out from YANK_AT, guided back from RELEASE_AT, the next pull from PULL_TICKS; it catches at CATCH_AT,

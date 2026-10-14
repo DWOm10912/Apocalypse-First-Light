@@ -1,0 +1,4 @@
+# AFL Building Lights V1 porcelain lampholder (wall, off)
+newmtl lampholder
+Kd 1 1 1
+map_Kd apocalypse_firstlight:block/porcelain_lampholder

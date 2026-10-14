@@ -260,6 +260,7 @@ public final class WorldInteractionHint {
     /** The cell of the block entity that keeps a device's power cord: a strip itself, an appliance's master / lower cell. */
     private static net.minecraft.core.BlockPos plugOwner(net.minecraft.core.BlockPos pos,net.minecraft.world.level.block.state.BlockState s) {
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.PowerStripBlock) return pos;
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.GeneratorInletBoxBlock) return pos;
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.BeverageCoolerBlock) return com.antaurora.apofirstlight.block.BeverageCoolerBlock.masterPosition(pos,s);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.ChestFreezerBlock) return com.antaurora.apofirstlight.block.ChestFreezerBlock.masterPosition(pos,s);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.VendingMachineBlock) return com.antaurora.apofirstlight.block.VendingMachineBlock.lower(s,pos);
@@ -268,11 +269,20 @@ public final class WorldInteractionHint {
         return null;
     }
 
-    /** Building Power V1: the panel opens its screen; the meter box names what right-click does to the disconnect. */
+    /**
+     * Building Power V1: the panel opens its screen; the meter box names what right-click does to the disconnect; the
+     * generator inlet box its hood (empty hand, not sneaking: sneaking is its plug, powerOutlets); a pull-chain lampholder on / off.
+     */
     private static Target buildingPower(Minecraft mc,BlockHitResult hit) {
         if(hit.getType()!=HitResult.Type.BLOCK) return null;
         var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.DistributionPanelBlock) return new Target(Component.translatable("hint.apocalypse_firstlight.distribution_panel.open"),null);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.GeneratorInletBoxBlock){
+            if(mc.player.isShiftKeyDown()||!mc.player.getMainHandItem().isEmpty()) return null;
+            return new Target(Component.translatable("hint.apocalypse_firstlight.generator_inlet_box."+(s.getValue(com.antaurora.apofirstlight.block.GeneratorInletBoxBlock.OPEN)?"close":"open")),null);
+        }
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.PorcelainLampholderBlock)
+            return new Target(Component.translatable("hint.apocalypse_firstlight.porcelain_lampholder."+(s.getValue(com.antaurora.apofirstlight.block.PorcelainLampholderBlock.ON)?"off":"on")),null);
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.ServiceMeterBoxBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.service_meter_box."+(s.getValue(com.antaurora.apofirstlight.block.ServiceMeterBoxBlock.ON)?"turn_off":"turn_on")),null);
     }

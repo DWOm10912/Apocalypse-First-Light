@@ -17,8 +17,11 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * A power cord ending in a NEMA 5-15P plug (Power Outlets V1, docs/models/power_outlets_v1.md): the power strips' and the
- * plug-in appliances' (Beverage Cooler, Chest Freezer, Vending Machine, Water Dispenser) way to power. The plug is in a
+ * A power cord ending in a plug (Power Outlets V1, docs/models/power_outlets_v1.md): the power strips' and the plug-in
+ * appliances' (Beverage Cooler, Chest Freezer, Vending Machine, Water Dispenser) way to power, a NEMA 5-15P; since
+ * 2026-10-13 also the generator inlet box's 15 m cord with an L14-30P twist-lock plug ({@link Kind}: a plug only goes into
+ * a socket of its own kind). A stowing cord ({@link #stowing()}, the inlet's) coils on its owner's hook while its plug is
+ * neither in a socket nor in a hand. The plug is in a
  * socket of a wall outlet or a power strip ({@link #host()} / {@link #socket()}), in a player's hand (not saved: it falls
  * back beside the device on reload, logout, dimension change, or when the carrier walks too far), or lying beside the
  * device. Strips plug into wall outlets only. Checked every second: the socket gone, its flag cleared, or out of the
@@ -45,8 +48,14 @@ public final class PlugCord {
         public static Geometry hardWired(Vec3 exit, Vec3 out) { return new Geometry(exit, out, null, null, null, null, null, null); }
     }
 
-    /** Cord lengths, blocks (straight line from the exit to the socket). Appliances: user 2026-10-08 asked for a longer cord. */
-    public static final double STRIP_LENGTH = 2.5, APPLIANCE_LENGTH = 4.0;
+    /** The plug (and the socket it fits): NEMA 5-15 (the outlets, strips and appliances), L14-30 (the generator cord, 2026-10-13). */
+    public enum Kind { NEMA_5_15, L14_30 }
+
+    /**
+     * Cord lengths, blocks (straight line from the exit to the socket). Appliances: user 2026-10-08 asked for a longer cord.
+     * The generator inlet's cord: 15 m (50 ft, user 2026-10-13), the longest; sockets look for cords this far.
+     */
+    public static final double STRIP_LENGTH = 2.5, APPLIANCE_LENGTH = 4.0, GENERATOR_LENGTH = 15.0, MAX_LENGTH = GENERATOR_LENGTH;
     /** Cord radius, px (1.5 x an 8 mm cord), for the routing points kept above the floor. */
     public static final double RADIUS_PX = 0.096;
     /** The C14 inlet's housing out of the appliance's back, and the C13 connector's length (px; tools/afl-iec-inlet.mjs, build-power-outlets-v1.mjs). */
@@ -54,6 +63,8 @@ public final class PlugCord {
     private static final String HOST_KEY = "PlugHost", SOCKET_KEY = "PlugSocket", CARRIER_KEY = "PlugCarrier";
 
     private final BlockEntity owner;
+    private final Kind kind;
+    private boolean stows;
     private final boolean strip;
     private final double length;
     private final Supplier<Geometry> geometry;
@@ -64,12 +75,23 @@ public final class PlugCord {
     private long nextCheck;
 
     public PlugCord(BlockEntity owner, boolean strip, double length, Supplier<Geometry> geometry) {
+        this(owner, Kind.NEMA_5_15, strip, length, geometry);
+    }
+
+    public PlugCord(BlockEntity owner, Kind kind, boolean strip, double length, Supplier<Geometry> geometry) {
         this.owner = owner;
+        this.kind = kind;
         this.strip = strip;
         this.length = length;
         this.geometry = geometry;
     }
 
+    /** The cord coils on its owner when its plug is free (the generator inlet's hook), instead of lying beside it. */
+    public PlugCord stowing() { stows = true; return this; }
+
+    public Kind kind() { return kind; }
+    /** Coiled on its owner: a stowing cord whose plug is in no socket and no hand (either side; the client knows the carrier by id). */
+    public boolean stowed() { return stows && host == null && carrier == null && carrierId < 0; }
     public boolean strip() { return strip; }
     public double length() { return length; }
     public Geometry geometry() { return geometry.get(); }
@@ -128,7 +150,7 @@ public final class PlugCord {
         if (carrier != null && level.getGameTime() % 5 == 0) {
             Player player = level.getPlayerByUUID(carrier);
             if (player == null || player.position().add(0, 1, 0).distanceTo(geometry.get().exit()) > length + 1.5) {
-                if (player != null) PowerPlugs.tell(player, "hint.apocalypse_firstlight.plug.dropped");
+                if (player != null) PowerPlugs.tell(player, stows ? "hint.apocalypse_firstlight.plug.stowed" : "hint.apocalypse_firstlight.plug.dropped");
                 PowerPlugs.forget(carrier, owner.getBlockPos());
                 setCarrier(null);
             }
@@ -136,7 +158,7 @@ public final class PlugCord {
         if (level.getGameTime() < nextCheck) return;
         nextCheck = level.getGameTime() + 20;
         if (host != null && level.isLoaded(host)) {
-            boolean ok = socket < PowerPlugs.sockets(level, host) && PowerPlugs.used(level, host, socket) && PowerPlugs.accepts(level, host, this)
+            boolean ok = socket < PowerPlugs.sockets(level, host) && PowerPlugs.used(level, host, socket) && PowerPlugs.fits(level, host, socket, this)
                     && PowerPlugs.socketPoint(level, host, socket).distanceTo(geometry.get().exit()) <= length + 0.05;
             if (!ok) {
                 if (PowerPlugs.sockets(level, host) > socket && PowerPlugs.used(level, host, socket)

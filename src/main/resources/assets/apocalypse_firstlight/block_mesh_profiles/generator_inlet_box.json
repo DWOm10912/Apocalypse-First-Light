@@ -1,0 +1,62 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/generator_inlet_box.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/generator_inlet_box.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.319558,
+    -0.034296,
+    0.666431,
+    0.679804,
+    0.793306,
+    1.015325
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "hood": {
+      "pivot": [
+        0,
+        0.62,
+        0.45
+      ]
+    },
+    "coil": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "hood": {
+          "rotation": [
+            100,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

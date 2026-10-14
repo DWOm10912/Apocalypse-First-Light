@@ -101,7 +101,12 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 
 电源（2026-10-09，[备用柴油发电机组 V1](../machines/diesel_standby_generator_v1.md)；还没实机验证）：
 - `diesel_generator`（`open=false`、`fill=false`）：3 × 1 × 2 格带罩柴油发电机组，`facing` 是正面（检修门、仪表盘）。用 `place_multiblock`，锚点 `c0r0`（列沿 `facing.getClockWise()`）；带方块实体的主格是中间那列下格 `c1r0`，它的背面中心是标准钢电源接口，电缆接在主格后面那一格。放下是空的、停机的。镐 + 钻石级。门往前开约 1 m，前面留空。散热端（`c2r0` 的端面，`facing` 顺时针那一面）是标准流体接口，外面那一格可以接流体管道进柴油；加油口盒在另一端的台阶上。
-- `portable_diesel_generator`（`cap=false`，2026-10-09，[便携式柴油发电机 V1](../machines/portable_diesel_generator_v1.md)，还没实机验证）：一格的开架式手拉柴油发电机，`facing` 是控制面板；放在地上，放下是空的、停机的、加油盖关着。面板上两组 NEMA 5-15R 双联插座，插头电器和插线板直接插在它上面。镐 + 钻石级。A1 打算放在库房后门旁。
+- `portable_diesel_generator`（`cap=false`，2026-10-09，[便携式柴油发电机 V1](../machines/portable_diesel_generator_v1.md)，还没实机验证）：一格的开架式手拉柴油发电机，`facing` 是控制面板；放在地上，放下是空的、停机的、加油盖关着。面板上两组 NEMA 5-15R 双联插座，插头电器和插线板直接插在它上面；2026-10-13 加了一个 L14-30R，只给进线盒的电缆用。镐 + 钻石级。A1 打算放在库房后门旁。
+- `generator_inlet_box`（`open=false`，2026-10-13，[Generator Inlet V1](../models/generator_inlet_v1.md)，还没实机验证）：外墙上的 30 A 发电机进线盒，`facing` 背离墙，盒子在那一格中间高度；15 m 电缆不用时盘在下面的挂钩上，挂钩下面那一格留空。作用同电表箱：把电送给它背后那面墙所在建筑的配电盘。电缆插发电机是生存玩法（方块实体），建造工具不写。镐 + 钻石级。
+
+楼里的配电和灯（2026-10-13，[Building Power V1](../models/building_power_v1.md)、[Building Lights V1](../models/building_lights_v1.md)；还没实机验证）：
+- `distribution_panel`（`open=false`）现在叫"商业配电盘"（0.56 × 0.70 m），用在商店、厂房；`load_center`（`open=false`）是住宅配电箱（0.33 × 0.45 m，离格子底 0.3–0.75 m），用在住宅、小屋。两个规则、回路、界面都一样，都挂墙（`facing` 背离墙），镐 + 钻石级。新放的总闸是断开的。
+- `porcelain_lampholder`（`facing=down` 吸顶或水平朝向挂墙，`on=true|false` 是拉线开关，`lit=false`）：白瓷拉线灯座 + 60 W 灯泡，老房子、地窖、棚屋用。走"照明"那一路，按真实功率取电；墙上的按背后那面墙找配电盘。珠链往下垂 24–30 cm。空手能拆。
 
 后续（2026-10-06）：按真实北美规划文件重新做了加油站设计稿 [AFL Fuel Stop A1](../worldgen/fuel_stop_a1_design_v1.md)，里面列了这栋楼需要补的外墙材料（P0 / P1 / P2）。还在等用户审方案，没有施工。
 

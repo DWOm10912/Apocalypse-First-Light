@@ -33,6 +33,15 @@
           "neverRender": true
         },
         {
+          "name": "port_down",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
           "name": "door",
           "pivot": [
             -4.42,

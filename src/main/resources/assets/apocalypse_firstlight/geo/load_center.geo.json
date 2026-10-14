@@ -1,0 +1,159 @@
+{
+  "format_version": "1.12.0",
+  "minecraft:geometry": [
+    {
+      "description": {
+        "identifier": "geometry.load_center",
+        "texture_width": 1024,
+        "texture_height": 1024,
+        "visible_bounds_width": 2,
+        "visible_bounds_height": 2,
+        "visible_bounds_offset": [
+          0,
+          0.5,
+          0
+        ]
+      },
+      "bones": [
+        {
+          "name": "body",
+          "pivot": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "port_up",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "port_down",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "door",
+          "pivot": [
+            -2.58,
+            0,
+            6.27
+          ]
+        },
+        {
+          "name": "main",
+          "pivot": [
+            0,
+            11.15,
+            6.6
+          ]
+        },
+        {
+          "name": "b0",
+          "pivot": [
+            -0.77,
+            9.95,
+            6.67
+          ]
+        },
+        {
+          "name": "b1",
+          "pivot": [
+            -0.77,
+            9.29,
+            6.67
+          ]
+        },
+        {
+          "name": "b2",
+          "pivot": [
+            -0.77,
+            8.629999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b3",
+          "pivot": [
+            -0.77,
+            7.969999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b4",
+          "pivot": [
+            -0.77,
+            7.309999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b5",
+          "pivot": [
+            -0.77,
+            6.649999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b6",
+          "pivot": [
+            0.77,
+            9.95,
+            6.67
+          ]
+        },
+        {
+          "name": "b7",
+          "pivot": [
+            0.77,
+            9.29,
+            6.67
+          ]
+        },
+        {
+          "name": "b8",
+          "pivot": [
+            0.77,
+            8.629999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b9",
+          "pivot": [
+            0.77,
+            7.969999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b10",
+          "pivot": [
+            0.77,
+            7.309999999999999,
+            6.67
+          ]
+        },
+        {
+          "name": "b11",
+          "pivot": [
+            0.77,
+            6.649999999999999,
+            6.67
+          ]
+        }
+      ]
+    }
+  ]
+}

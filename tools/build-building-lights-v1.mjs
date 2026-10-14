@@ -1,8 +1,9 @@
 // Building Lights V1 (Building Power V1 step 2b, docs/models/building_lights_v1.md): the lights on a building's lighting
 // circuit and the emergency light. A: the square LED panel light (a 600 x 600 mm flat panel in a 64 mm surface kit), the
 // new look of the existing industrial_utility_light; C: the linear LED light (80 x 70 mm, 1 m per block; sections in a row
-// join and only the row's ends carry end caps); D: the two-head emergency light (1.5 x real size, like the outlets; battery).
-// A and C are real size. Pure Mesh + LabPBR atlases, exported as Forge OBJ block models (chunk-baked).
+// join and only the row's ends carry end caps); D: the two-head emergency light (1.5 x real size, like the outlets; battery);
+// E (2026-10-13, forest start home F7, concept B): the porcelain pull-chain lampholder with a frosted A19 bulb, on a ceiling
+// or a wall. A, C and E are real size. Pure Mesh + LabPBR atlases, exported as Forge OBJ block models (chunk-baked).
 //   node tools/build-building-lights-v1.mjs                -> writes sources, OBJ / MTL / block + item models, blockstates, atlases
 //   node tools/build-building-lights-v1.mjs --check        -> verifies every output is up to date
 //   node tools/build-building-lights-v1.mjs --preview DIR  -> writes only OBJ + maps into DIR (offline review)
@@ -11,13 +12,16 @@
 //   (x 90 / 270), as the old light's blockstate did. C runs along X through the whole cell (-8..8 px).
 // - D: facing north as the wall outlet: front toward -Z, the wall at z = +8; body centre 7.2 px up (2.45 m in a wall's
 //   third cell). Heads on the top front, turned down and outward.
-// Lit lenses, the emergency heads and the charge LED are drawn full-bright (GLOW) and carry LabPBR emission (EMISSION).
-// Plain surfaces: no printed legends or logos. Dielectric materials only (painted steel and aluminium, PMMA, ABS).
+// - E: modelled as mounted, since its pull chain hangs straight down either way: the ceiling model hangs from the cell's
+//   top centre; the wall model faces north as D, centred 420 mm up, the chain boss on the underside.
+// Lit lenses, the emergency heads, the charge LED and the lit bulb are drawn full-bright (GLOW) and carry LabPBR emission
+// (EMISSION). Plain surfaces: no printed legends or logos. Dielectric materials only (painted steel and aluminium, PMMA,
+// ABS, porcelain), except E's nickel bead chain and brass pull.
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
+import {Part, AX, extrude, revolve, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 import {heldDisplay} from './item-held-display.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -137,10 +141,60 @@ function buildEmergency() {
   };
   return {PARTS, MATS, atlas: 256, startS: 48};
 }
-export const EMISSION = {lens_lit: 240, led_on: 220, head_on: 240};
+// ---------------- E: porcelain pull-chain lampholder (real size) ----------------
+// mm, the lamp frame: +Z out of the mounting (depth from the ceiling or wall), the chain boss toward +X. Profiles [depth, r].
+export const LAMPHOLDER = {
+  base: [[0, 52], [3, 52], [7, 51.5], [11, 50], [14.5, 48], [18.5, 44.5], [24, 38], [29, 31], [33, 26.5], [36, 26], [50, 26], [53, 21.5], [56, 20.5], [73, 20.5], [75, 18.5], [75.5, 14]],
+  shell: [73.5, 80, 13.6],   // the bulb's screw shell: depth range, radius
+  bulb: [[0, 13.3], [4, 13.3], [6, 13.7], [17, 16.5], [27, 21], [39, 26.5], [49, 29.5], [59, 30], [70, 27.5], [79, 21], [84, 11], [86, 0.1]],   // A19, from the shell's end
+  boss: {x: [26, 34], d: 43, r: 5.5}, stem: {x: [34, 37.5], r: 2.2},
+  chain: {r: 1.6, ceiling: 300, wall: 240}, pull: [[0, 1.6], [4, 3.5], [14, 5.8], [18, 6]],
+  wallY: 420, seg: 32,
+};
+function buildLampholder() {
+  const PARTS = [], P = (name, bone, mat) => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
+  const L = LAMPHOLDER;
+  // a closed lathe profile (depth, r) from the axis round to the axis, turned about the lamp frame's Z
+  const turned = (part, prof, seg) => { const loop = [[prof[0][0], 0], ...prof, [prof[prof.length - 1][0], 0]];
+    if (area2(loop) < 0) loop.reverse(); revolve(part, 0, 0, loop, seg); };
+  // the lamp frame into the cell (mm, block bottom centre at the origin): both are proper rotations (windings kept)
+  const MOUNT = {ceiling: ([x, y, z]) => [x, 1000 - z, y], wall: ([x, y, z]) => [-y, L.wallY - x, 500 - z]};
+  const at = (part, mount, build) => { const n0 = part.v.length; build(); for (let i = n0; i < part.v.length; i++) part.v[i] = MOUNT[mount](part.v[i]); };
+  for (const mount of ['ceiling', 'wall']) {
+    const body = P(mount + '_porcelain', mount + '_body', 'porcelain');
+    at(body, mount, () => turned(body, L.base, L.seg));
+    const boss = P(mount + '_boss', mount + '_body', 'porcelain');
+    at(boss, mount, () => cyl(boss, 'x', L.boss.d, 0, L.boss.r, L.boss.x[0], L.boss.x[1], 16));
+    const stem = P(mount + '_stem', mount + '_body', 'nickel');
+    at(stem, mount, () => cyl(stem, 'x', L.boss.d, 0, L.stem.r, L.stem.x[0], L.stem.x[1], 12));
+    const shell = P(mount + '_shell', mount + '_body', 'shell');
+    at(shell, mount, () => turned(shell, [[L.shell[0], L.shell[2]], [L.shell[1], L.shell[2]]], 24));
+    for (const look of ['off', 'lit']) {
+      const glass = P(mount + '_bulb_' + look, mount + '_bulb_' + look, 'bulb_' + look);
+      at(glass, mount, () => turned(glass, L.bulb.map(([d, r]) => [L.shell[1] + d, r]), L.seg));
+    }
+    // the bead chain (a thin rod) straight down from the stem's tip, the brass pull at its end
+    const top = MOUNT[mount]([L.stem.x[1] - 1.5, 0, L.boss.d]), len = L.chain[mount];
+    const chain = P(mount + '_chain', mount + '_chain', 'nickel');
+    cyl(chain, 'y', top[2], top[0], L.chain.r, top[1] - len, top[1] + 1, 6);
+    const pull = P(mount + '_pull', mount + '_chain', 'brass'), y0 = top[1] - len, n0 = pull.v.length;
+    turned(pull, L.pull, 16);
+    for (let i = n0; i < pull.v.length; i++) { const [x, y, z] = pull.v[i]; pull.v[i] = [top[0] + x, y0 - z, top[2] + y]; }
+  }
+  const MATS = {
+    porcelain: MAT([241, 237, 228], 6, 206, 220),
+    shell:     MAT([196, 196, 190], 6, 150, 160),
+    nickel:    {c: [192, 190, 184], hl: 8, sm: 186, se: 200, f0: 255},
+    brass:     {c: [200, 170, 104], hl: 8, sm: 170, se: 186, f0: 255},
+    bulb_off:  MAT([236, 233, 226], 2, 150, 160),
+    bulb_lit:  MAT([255, 238, 206], 2, 150, 160),
+  };
+  return {PARTS, MATS, atlas: 256, startS: 48};
+}
+export const EMISSION = {lens_lit: 240, led_on: 220, head_on: 240, bulb_lit: 240};
 // materials drawn at full brightness (Forge OBJ emissive_ambient: their MTL material has Ka 1 1 1), so the lit parts glow
 // without shaders too
-export const GLOW = new Set(['lens_lit', 'led_on', 'head_on']);   // LabPBR _s alpha (0..254 = emission strength, 255 = none)
+export const GLOW = new Set(['lens_lit', 'led_on', 'head_on', 'bulb_lit']);   // LabPBR _s alpha (0..254 = emission strength, 255 = none)
 
 // ---------------- bake ----------------
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
@@ -176,18 +230,21 @@ const B = {
   panel: bake('panel', 'industrial_utility_light', 'square_panel_light_v1', buildPanel),
   linear: bake('linear', 'linear_light', 'linear_light_v1', buildLinear),
   emergency: bake('emergency', 'emergency_light', 'emergency_light_v1', buildEmergency),
+  lampholder: bake('lampholder', 'porcelain_lampholder', 'porcelain_lampholder_v1', buildLampholder),
 };
 const CAPS = {both: ['cap_neg', 'cap_pos'], neg: ['cap_neg'], pos: ['cap_pos'], none: []};
 const bonesOf = {
   panel: look => new Set(['frame', 'lens_' + look]),
   linear: (look, caps) => new Set(['body', 'lens_' + look, ...CAPS[caps]]),
   emergency: look => new Set(['body', look === 'charging' ? 'led_on' : 'led_off', look === 'on' ? 'head_on' : 'head_off']),
+  lampholder: (look, mount) => new Set([mount + '_body', mount + '_chain', mount + '_bulb_' + look]),
 };
 // coplanar faces, checked per exported look
 const LOOKS = {
   ...Object.fromEntries(['off', 'lit'].map(l => [`industrial_utility_light_${l}`, [B.panel, bonesOf.panel(l)]])),
   ...Object.fromEntries(['off', 'lit'].flatMap(l => Object.keys(CAPS).map(c => [`linear_light_${l}_${c}`, [B.linear, bonesOf.linear(l, c)]]))),
   ...Object.fromEntries(['off', 'charging', 'on'].map(l => [`emergency_light_${l}`, [B.emergency, bonesOf.emergency(l)]])),
+  ...Object.fromEntries(['off', 'lit'].flatMap(l => ['ceiling', 'wall'].map(mt => [`porcelain_lampholder_${mt}_${l}`, [B.lampholder, bonesOf.lampholder(l, mt)]]))),
 };
 const coplanar = {};
 for (const [k, [b, bones]] of Object.entries(LOOKS)) { const zf = zFightLevels(b.PARTS.filter(p => bones.has(p.bone)), new Map()); if (zf.unresolved.length) coplanar[k] = zf.unresolved.slice(0, 6); }
@@ -240,12 +297,20 @@ const display = (b, bones, gui, guiScale, s) => ({
 
 // outline boxes (cell px, the model frames above), mirrored in IndustrialUtilityLightBlock / LinearLightBlock / EmergencyLightBlock
 // (their selection boxes are these, thickened toward the room so a thin fitting is easy to aim at)
-export const SELECTION = {panel: [3.2, 0, 3.2, 12.8, 1.05, 12.8], linear: [0, 0, 7.35, 16, 1.07, 8.65], emergency: [4.3, 5.9, 14.0, 11.7, 10.0, 16]};
+export const SELECTION = {panel: [3.2, 0, 3.2, 12.8, 1.05, 12.8], linear: [0, 0, 7.35, 16, 1.07, 8.65], emergency: [4.3, 5.9, 14.0, 11.7, 10.0, 16],
+  // E (PorcelainLampholderBlock): the porcelain and bulb, and the chain (widened to 0.6 px for aiming)
+  lampholderCeiling: [7.16, 13.34, 7.16, 8.84, 16, 8.84], lampholderCeilingChain: [8.26, 10.1, 7.7, 8.86, 15.4, 8.3],
+  lampholderWall: [7.16, 5.88, 13.34, 8.84, 7.56, 16], lampholderWallChain: [7.7, 1.9, 14.95, 8.3, 6.2, 15.6]};
 const fitsIn = (b, box) => b.PARTS.every(p => p.v.every(q => [0, 1, 2].every(k => {
   const v = q[k] + (k === 1 ? 0 : 8); return v >= box[k] - 0.02 && v <= box[k + 3] + 0.02; })));
 assert(fitsIn(B.panel, SELECTION.panel), 'panel leaves its box');
 assert(fitsIn(B.linear, [SELECTION.linear[0] - 0.01, ...SELECTION.linear.slice(1, 3), SELECTION.linear[3] + 0.01, ...SELECTION.linear.slice(4)]), 'linear light leaves its box');
 assert(fitsIn(B.emergency, SELECTION.emergency), 'emergency light leaves its box');
+{ const parts = re => ({PARTS: B.lampholder.PARTS.filter(p => re.test(p.name))});
+  assert(fitsIn(parts(/^ceiling_(porcelain|boss|stem|shell|bulb)/), SELECTION.lampholderCeiling), 'ceiling lampholder leaves its box');
+  assert(fitsIn(parts(/^ceiling_(chain|pull)/), SELECTION.lampholderCeilingChain), 'ceiling chain leaves its box');
+  assert(fitsIn(parts(/^wall_(porcelain|boss|stem|shell|bulb)/), SELECTION.lampholderWall), 'wall lampholder leaves its box');
+  assert(fitsIn(parts(/^wall_(chain|pull)/), SELECTION.lampholderWallChain), 'wall chain leaves its box'); }
 
 // editable Free Model sources (px, frames as the header): one group per bone
 const uuidOf = (ns, s) => { const h = createHash('sha256').update(`afl-building-lights-v1:${ns}:${s}`).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
@@ -328,11 +393,28 @@ for (const look of ['off', 'charging', 'on']) model(`emergency_light/${look}`, `
       gui: guiCentred(B.emergency, bonesOf.emergency('off'), [10, 200, 0], 1.6)}})]);   // held, dropped and framed fitted to the model's bounds (tools/item-held-display.mjs, 2026-10-09): the fixed contexts put this off-centre model beside or above the hand
 }
 
+// E: porcelain lampholder, ceiling / wall x off / lit; FACING down = the ceiling model, a horizontal FACING = the wall model
+// turned (it faces north as built); ON (the pull chain) does not change the look
+for (const mt of ['ceiling', 'wall']) for (const look of ['off', 'lit'])
+  model(`porcelain_lampholder/${mt}_${look}`, `Building Lights V1 porcelain lampholder (${mt}, ${look})`, B.lampholder, bonesOf.lampholder(look, mt));
+{
+  const variants = {};
+  for (const f of ['down', 'north', 'east', 'south', 'west']) for (const lit of [false, true]) for (const on of [false, true])
+    variants[`facing=${f},lit=${lit},on=${on}`] = {model: `apocalypse_firstlight:block/porcelain_lampholder/${f === 'down' ? 'ceiling' : 'wall'}_${lit ? 'lit' : 'off'}`,
+      ...(f !== 'down' && YROT[f] ? {y: YROT[f]} : {})};
+  outputs.push([path.join(assets, 'blockstates/porcelain_lampholder.json'), json({variants})]);
+  const off = bonesOf.lampholder('off', 'ceiling');
+  outputs.push([path.join(assets, 'models/item/porcelain_lampholder.json'), json({parent: 'apocalypse_firstlight:block/porcelain_lampholder/ceiling_off', gui_light: 'side',
+    display: {...heldDisplay(B.lampholder.PARTS.filter(p => off.has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.5, rotations: {fixed: [0, 180, 0]}}),
+      gui: guiCentred(B.lampholder, off, [20, 225, 0], 2.6)}})]);
+}
+
 const tris = (b, bones) => b.PARTS.filter(p => bones.has(p.bone)).reduce((s, p) => s + p.f.reduce((t, f) => t + f.ids.length - 2, 0), 0);
 export const stats = {
   panel: {triangles: tris(B.panel, bonesOf.panel('lit')), texelsPerPx: B.panel.UV.S},
   linear: {triangles: tris(B.linear, bonesOf.linear('lit', 'both')), texelsPerPx: B.linear.UV.S},
-  emergency: {triangles: tris(B.emergency, bonesOf.emergency('on')), texelsPerPx: B.emergency.UV.S}, coplanar};
+  emergency: {triangles: tris(B.emergency, bonesOf.emergency('on')), texelsPerPx: B.emergency.UV.S},
+  lampholder: {triangles: tris(B.lampholder, bonesOf.lampholder('lit', 'ceiling')), texelsPerPx: B.lampholder.UV.S}, coplanar};
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   console.log(JSON.stringify(stats));

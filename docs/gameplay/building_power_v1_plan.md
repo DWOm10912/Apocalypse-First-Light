@@ -3,6 +3,7 @@
 状态（2026-10-07）：**第一层定案，开始实现**（见下面"V1 定案"）。第二层电网仍是规划。
 - 第一步已写完、编译通过、未实机验证：配电盘、电表箱，见 [Building Power V1](../models/building_power_v1.md)。
 - 第二步 2026-10-08 写完：插座、插头电源线、小电器改插头（[Power Outlets V1](../models/power_outlets_v1.md)），吸顶灯和应急灯（[Building Lights V1](../models/building_lights_v1.md)）。
+- 2026-10-13（森林开局 B，未实机验证）：住宅配电箱 `load_center`，原配电盘改名商业配电盘；发电机进线盒 + 15 m 电缆接便携发电机（[Generator Inlet V1](../models/generator_inlet_v1.md)）；拉线瓷灯座，灯泡按真实功率取电（60 W 约 0.25 FE/t），LED 灯仍是每盏 1 FE/t。
 
 目标：有电、没电、拉闸后会发生什么，要合乎现实，玩家一看就懂；但不去模拟城市里的每一根电线，也不让建筑模板里到处都是电缆。
 

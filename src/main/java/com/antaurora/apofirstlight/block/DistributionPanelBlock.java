@@ -34,24 +34,60 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Distribution Panel (配电盘, Building Power V1, docs/models/building_power_v1.md): a North American panelboard hung on a
- * wall (FACING = away from the wall, like the Industrial Electrical Box). Power ports on the bottom face (in) and the top
- * face (out to cable devices), each the standard steel port on a pull box at the face centre. Right-click opens the
- * panel screen; OPEN (the door) stands open while someone looks. Mining: pickaxe + diamond tier (industrial
- * infrastructure), drops itself.
+ * Distribution panels (Building Power V1, docs/models/building_power_v1.md): North American panels hung on a wall
+ * (FACING = away from the wall, like the Industrial Electrical Box). {@link Kind#COMMERCIAL}: the commercial panelboard
+ * ({@code distribution_panel}, 商业配电盘); {@link Kind#RESIDENTIAL}: the residential load center ({@code load_center},
+ * 住宅配电箱, 2026-10-13, about 0.33 x 0.45 m). Same circuits, screen and rules. Power ports on the bottom face (in) and the
+ * top face (out to cable devices), each the standard steel port on a pull box at the face centre; a pull box (and its
+ * outline) only shows while a cable plugs into its port. Right-click opens the panel screen; OPEN (the door) stands open
+ * while someone looks. Mining: pickaxe + diamond tier (industrial infrastructure), drops itself.
  */
 public class DistributionPanelBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
-    // canonical (facing north: front -Z, wall at z 16), px: the enclosure on the wall, the bottom pull box at the face centre
-    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(Shapes.or(
-            Block.box(3.5, 2.4, 13.6, 12.5, 13.6, 16), Block.box(5, 0, 5, 11, 2.0, 11), Block.box(7.4, 1.0, 10.5, 8.6, 2.6, 15.0)));
 
-    public DistributionPanelBlock(Properties properties) {
+    /** Which panel: its mesh and its outline (canonical, facing north: front -Z, wall at z 16, px; tools/build-building-power-v1.mjs). */
+    public enum Kind {
+        COMMERCIAL(Block.box(3.5, 2.4, 13.6, 12.5, 13.6, 16),
+                Shapes.or(Block.box(5, 0, 5, 11, 2.0, 11), Block.box(7.4, 1.0, 10.5, 8.6, 2.6, 15.0)),
+                Shapes.or(Block.box(5, 14.0, 5, 11, 16, 11), Block.box(7.4, 13.4, 10.5, 8.6, 15.0, 15.0))),
+        RESIDENTIAL(Block.box(5.36, 4.8, 14.1, 10.64, 12.0, 16),
+                Shapes.or(Block.box(5, 0, 5, 11, 2.0, 11), Block.box(7.4, 1.0, 10.5, 8.6, 5.0, 15.4)),
+                Shapes.or(Block.box(5, 14.0, 5, 11, 16, 11), Block.box(7.4, 11.8, 10.5, 8.6, 15.0, 15.4)));
+
+        /** By the pull boxes shown: 0 none, 1 below, 2 above, 3 both. */
+        private final List<Map<Direction, VoxelShape>> shapes = new ArrayList<>();
+
+        Kind(VoxelShape body, VoxelShape below, VoxelShape above) {
+            for (int k = 0; k < 4; k++) {
+                VoxelShape s = body;
+                if ((k & 1) != 0) s = Shapes.or(s, below);
+                if ((k & 2) != 0) s = Shapes.or(s, above);
+                shapes.add(HorizontalShapeUtils.rotations(s));
+            }
+        }
+    }
+
+    private final Kind kind;
+
+    public DistributionPanelBlock(Properties properties, Kind kind) {
         super(properties);
+        this.kind = kind;
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
+    }
+
+    public Kind kind() {
+        return kind;
+    }
+
+    /** A cable plugs into the panel's bottom (or top) port: that pull box shows. */
+    public static boolean cabled(BlockGetter level, BlockPos pos, Direction side) {
+        BlockState next = level.getBlockState(pos.relative(side));
+        return next.getBlock() instanceof PowerCableBlock && PowerCableBlock.isConnected(next, side.getOpposite());
     }
 
     @Override
@@ -92,7 +128,8 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.get(state.getValue(FACING));
+        int k = (cabled(level, pos, Direction.DOWN) ? 1 : 0) | (cabled(level, pos, Direction.UP) ? 2 : 0);
+        return kind.shapes.get(k).get(state.getValue(FACING));
     }
 
     /** Moving, glass and lit parts: the AFL Animated Block Mesh Runtime renderer; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */

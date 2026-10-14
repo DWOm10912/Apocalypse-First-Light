@@ -223,10 +223,16 @@ final class AuthoringFixtureRegistry {
                     .notes("Building Lights V1 (2026-10-08): 1 m linear light; ceiling (down, the row along axis) or wall (along the wall). Neighbours of the same mounting join into a row; lit is runtime."),
             new Def(A+"emergency_light",safe,"utility").facing(H4).fixed("mode","off").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Building Lights V1 (2026-10-08): two-head battery unit, wall only (facing = away from the wall), 2.45 m up in its cell; a BlockEntity keeps the battery (starts flat)."),
+            new Def(A+"porcelain_lampholder",safe,"utility").facing(ATTACH5).variant("on","true","false").fixed("lit","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Lights V1 E (2026-10-13): porcelain pull-chain lampholder with a 60 W bulb; ceiling (down: hangs from the cell top centre) or wall (facing = away from the wall, centred 0.42 m up in its cell); the chain hangs 0.24..0.30 m straight down. on = its pull chain; lit is runtime (the building's lighting circuit, a wall lamp through the wall behind it)."),
             new Def(A+"distribution_panel",safe,"utility").facing(H4).fixed("open","false").support(Support.ATTACHED_OPPOSITE_FACING)
-                    .notes("Building Power V1 (2026-10-07): hangs on the wall behind it; a BlockEntity keeps the main / branch breakers (a new panel starts with the main off). Ports: bottom face in, top face out."),
+                    .notes("Building Power V1 (2026-10-07): the commercial panelboard (0.56 x 0.70 m); hangs on the wall behind it; a BlockEntity keeps the main / branch breakers (a new panel starts with the main off). Ports: bottom face in, top face out (each pull box only drawn while a cable plugs in there)."),
+            new Def(A+"load_center",safe,"utility").facing(H4).fixed("open","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Building Power V1 (2026-10-13): the residential load center (0.33 x 0.45 m, 0.3..0.75 m up in its cell); same circuits, rules and screen as distribution_panel."),
             new Def(A+"service_meter_box",safe,"utility").facing(H4).variant("on","true","false").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Building Power V1 (2026-10-07): the service entry on an outside wall; on = the disconnect. Bottom-face port; forwards to the panel of the building whose wall it hangs on."),
+            new Def(A+"generator_inlet_box",safe,"utility").facing(H4).fixed("open","false").support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Generator Inlet V1 (2026-10-13): 30 A inlet box on an outside wall, facing = away from the wall, the box centred 0.5 m up in its cell, its 15 m cord coiled on the hook below (keep the cell clear under it). Forwards what comes in through the cord (plugged into a portable_diesel_generator's L14-30R in survival play) to the panel of the building whose wall it hangs on."),
             new Def(A+"wall_outlet",safe,"utility").facing(H4).fixed("upper","false","lower","false").support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Power Outlets V1 (2026-10-08): wall only, facing = away from the wall; plate 0.35 m up in its cell (in the cell above a counter: 1.35 m). upper / lower record plugs at runtime."),
             new Def(A+"power_strip_3",safe,"utility").facing(H4).connect("lowered").fixed("on","true","lit","false").support(Support.FLOOR_OR_DESK)

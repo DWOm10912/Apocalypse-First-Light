@@ -9,7 +9,8 @@ import net.minecraft.world.phys.Vec3;
  * A block with sockets of its own that plugs go into (Power Outlets V1, docs/models/power_outlets_v1.md), besides the
  * wall outlet and the power strips that {@link PowerPlugs} knows by type: 2026-10-09 the portable diesel generator's two
  * NEMA 5-15R duplexes (docs/machines/portable_diesel_generator_v1.md), the same socket as the wall outlet's (the game has
- * one plug). PowerPlugs asks the block first; everything else about cords (carrying, reach, the renderer) is unchanged.
+ * one plug); since 2026-10-13 also its L14-30R twist-lock for the generator inlet's cord. PowerPlugs asks the block first;
+ * everything else about cords (carrying, reach, the renderer) is unchanged.
  */
 public interface PlugSocketHost {
     int sockets(Level level, BlockPos pos, BlockState state);
@@ -32,6 +33,16 @@ public interface PlugSocketHost {
 
     /** Whether this cord's plug may go in (a strip's cord, an appliance's). */
     boolean acceptsPlug(Level level, BlockPos pos, PlugCord cord);
+
+    /** Which plug the socket takes (a NEMA 5-15R unless the host says otherwise). */
+    default boolean socketFits(BlockState state, int socket, PlugCord.Kind kind) {
+        return kind == PlugCord.Kind.NEMA_5_15;
+    }
+
+    /** What its sockets could give now, FE/t (a generator inlet shows it as its panel's capacity); 0 if unknown. */
+    default int capacity(Level level, BlockPos pos) {
+        return 0;
+    }
 
     /** Draws up to fe through the socket host (what its sockets give this tick). */
     int draw(Level level, BlockPos pos, int fe, boolean simulate);

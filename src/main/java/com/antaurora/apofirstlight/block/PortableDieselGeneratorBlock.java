@@ -51,7 +51,8 @@ import java.util.Map;
  *   ({@link FuelPourTarget});</li>
  *   <li>right-click a breaker button while tripped: reset;</li>
  *   <li>the two NEMA 5-15R duplexes on the panel are sockets ({@link PlugSocketHost}): plugs of appliances and power strips go
- *   in as into a wall outlet (the game's one plug).</li>
+ *   in as into a wall outlet; the L14-30R under the voltmeter (socket 4, 2026-10-13) takes only the generator inlet cord's
+ *   L14-30P twist-lock plug (docs/models/generator_inlet_v1.md).</li>
  * </ul>
  * Regions in the structure frame (north-facing px: x from the west edge, y up, z 0 = the front face), from the generator's
  * FACTS; the mesh hit gives the point on the model, so small parts can be told apart.
@@ -68,8 +69,12 @@ public class PortableDieselGeneratorBlock extends HorizontalDirectionalBlock imp
     private static final double[] CAP_OPEN = {9.6, 10.0, 6.0, 11.9, 12.4, 9.8};
     private static final double[] BREAKERS = inflate(new double[]{3.469, 6.474, 4.352, 4.563, 6.742, 4.704}, 0.2);
     private static final double[] OUTLETS = inflate(new double[]{4.861, 4.304, 4.352, 6.339, 5.264, 4.704}, 0.15);
-    /** The four socket faces' centres (duplex 0 top, bottom; duplex 1 top, bottom). */
-    private static final Vec3[] SOCKETS = {new Vec3(6.08, 4.995, 4.576), new Vec3(6.08, 4.573, 4.576), new Vec3(5.12, 4.995, 4.576), new Vec3(5.12, 4.573, 4.576)};
+    private static final double[] L14 = inflate(new double[]{6.733, 4.266, 4.352, 7.731, 5.264, 4.704}, 0.1);
+    /** The socket faces' centres: duplex 0 top, bottom; duplex 1 top, bottom; the L14-30R. */
+    private static final Vec3[] SOCKETS = {new Vec3(6.08, 4.995, 4.576), new Vec3(6.08, 4.573, 4.576), new Vec3(5.12, 4.995, 4.576), new Vec3(5.12, 4.573, 4.576),
+            new Vec3(7.232, 4.765, 4.528)};
+    /** The L14-30R's socket index. */
+    public static final int L14_SOCKET = 4;
     /** The T handle's grip at rest, the pull (the grip's travel at full pull), the rope guide on the starter. */
     public static final Vec3 HANDLE_REST = new Vec3(13.702, 5.542, 7.135), PULL = new Vec3(7.352, 4.558, -1.617), GUIDE = new Vec3(13.408, 5.36, 7.2);
     public static final Vec3 POUR_OPENING = new Vec3(10.72, 10.304, 7.04), PANEL_MIDDLE = new Vec3(5.6, 5.36, 4.672),
@@ -127,7 +132,7 @@ public class PortableDieselGeneratorBlock extends HorizontalDirectionalBlock imp
             return in(p, CAP_OPEN) ? Action.POUR : null;
         if (in(p, open ? CAP_OPEN : CAP_SHUT)) return open ? Action.CLOSE_CAP : Action.OPEN_CAP;
         if (!held.isEmpty()) return null;
-        if (in(p, OUTLETS)) {
+        if (in(p, OUTLETS) || in(p, L14)) {
             if (carrying) return Action.PLUG_IN;
             return generator.socketUsed(aimedSocket(pos, state, hit)) ? Action.UNPLUG : null;
         }
@@ -205,7 +210,7 @@ public class PortableDieselGeneratorBlock extends HorizontalDirectionalBlock imp
         return "diesel_only";
     }
 
-    // ---- sockets: the panel's two NEMA 5-15R duplexes ----
+    // ---- sockets: the panel's two NEMA 5-15R duplexes and the L14-30R ----
 
     @Override
     public int sockets(Level level, BlockPos pos, BlockState state) {
@@ -248,6 +253,17 @@ public class PortableDieselGeneratorBlock extends HorizontalDirectionalBlock imp
     @Override
     public boolean acceptsPlug(Level level, BlockPos pos, PlugCord cord) {
         return !pos.equals(cord.ownerPos());
+    }
+
+    @Override
+    public boolean socketFits(BlockState state, int socket, PlugCord.Kind kind) {
+        return kind == (socket == L14_SOCKET ? PlugCord.Kind.L14_30 : PlugCord.Kind.NEMA_5_15);
+    }
+
+    /** Its rating while it runs (the sockets share it). */
+    @Override
+    public int capacity(Level level, BlockPos pos) {
+        return live(level, pos) ? PortableDieselGeneratorBlockEntity.RATED : 0;
     }
 
     @Override

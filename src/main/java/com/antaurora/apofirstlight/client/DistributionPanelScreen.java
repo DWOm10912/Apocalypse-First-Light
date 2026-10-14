@@ -154,7 +154,7 @@ public final class DistributionPanelScreen extends AbstractContainerScreen<Distr
         float x = leftPos, y = topPos;
         AflUiDraw.panel(g, x, y, W, imageHeight, 1);
         // header (fixed): title, status
-        AflUiDraw.text(g, font, tr("title"), x + PAD, y + 10, AflUiStyle.TEXT, 1);
+        AflUiDraw.text(g, font, title, x + PAD, y + 10, AflUiStyle.TEXT, 1);   // the block's name: commercial panel or load center
         int[] sc = new int[1];
         Component status = status(sc);
         float pulse = sc[0] == RED && !tripped() ? 0.55F + 0.45F * (float) Math.abs(Math.sin(now / 260.0)) : 1;

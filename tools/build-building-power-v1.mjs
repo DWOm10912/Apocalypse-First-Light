@@ -8,7 +8,7 @@
 // second one on the top face (facing up). The meter box: a round meter in its socket, the main disconnect with the red
 // handle on its right side (up = on), a generator inlet under the meter, a conduit to a pull box on the bottom face.
 // Bones / channels:
-//   panel: body; port_up (the top pull box, drawn only while a cable plugs in above); door ('open', -110 deg); main ('main_off'); b0..b11 ('b0_off'..'b11_off'): each handle swings away from
+//   panel / load center: body; port_up / port_down (the top / bottom pull box, each drawn only while a cable plugs in there); door ('open', -110 deg); main ('main_off'); b0..b11 ('b0_off'..'b11_off'): each handle swings away from
 //          the middle when its breaker is off; b0..b5 the column on the viewer's left (+X), top to bottom, b6..b11 the right.
 //   meter: body; handle ('off', the disconnect handle down).
 //   node tools/build-building-power-v1.mjs                 -> writes sources, geo / sidecars / profiles / maps / models / blockstates
@@ -64,10 +64,19 @@ function pullBox(P, side, bone, from) {   // side 'down' | 'up'; from: [x, y, z]
   cyl(c, 'y', fz, fx, COND_R + 0.12, down ? fy - 0.5 : fy, down ? fy : fy + 0.5, 12);    // connector at the device
 }
 
-// ---------------- the distribution panel ----------------
+// ---------------- the distribution panels ----------------
+// PANEL: the commercial panelboard (`distribution_panel`, 商业配电盘); LOAD_CENTER: the residential load center (`load_center`,
+// 住宅配电箱, 2026-10-13: about 0.33 x 0.45 m, the same twelve branches on a smaller pitch). Same rig, same channels.
+// brk: a branch breaker's half height; hx / hw / hh: the handle's offset from the inner end, half width, half height;
+// latch: the flush latch's x inset pair and y range; card: the directory card's side / top insets; hinges: y ranges; cz:
+// the conduits' z.
 export const PANEL = {x: 4.5, y: [2.4, 13.6], z: [5.6, 8.0], rim: 0.18, door: {z: [5.3, 5.6], hinge: [4.42, 0, 5.45], deg: -110},
-  dead: 6.4, main: {x: 1.5, y: [11.2, 12.7]}, rows: 6, pitch: 1.18, rowTop: 10.55, col: [0.35, 3.3], handleDeg: 20};
-function buildPanel() {
+  dead: 6.4, main: {x: 1.5, y: [11.2, 12.7]}, rows: 6, pitch: 1.18, rowTop: 10.55, col: [0.35, 3.3], handleDeg: 20,
+  brk: 0.48, hx: 0.85, hw: 0.26, hh: 0.22, latch: {x: [0.55, 1.05], y: [7.2, 8.8]}, card: [1.2, 1.2, 1.6], hinges: [[3.4, 4.6], [11.4, 12.6]], cz: 6.8};
+export const LOAD_CENTER = {x: 2.64, y: [4.8, 12.0], z: [6.4, 8.0], rim: 0.18, door: {z: [6.15, 6.4], hinge: [2.58, 0, 6.27], deg: -110},
+  dead: 6.85, main: {x: 0.95, y: [10.75, 11.55]}, rows: 6, pitch: 0.66, rowTop: 9.95, col: [0.22, 1.95], handleDeg: 20,
+  brk: 0.27, hx: 0.55, hw: 0.18, hh: 0.13, latch: {x: [0.32, 0.62], y: [7.85, 8.95]}, card: [0.55, 0.6, 0.9], hinges: [[5.6, 6.4], [10.4, 11.2]], cz: 7.2};
+function buildPanel(PANEL) {
   const PARTS = [], P = (name, bone, mat) => { const p = new Part(name, bone, mat); PARTS.push(p); return p; };
   const {x: X, y: [y0, y1], z: [z0, z1], rim} = PANEL;
   const shell = P('enclosure', 'body', 'ansi');
@@ -81,7 +90,7 @@ function buildPanel() {
   const slots = [];
   for (const side of [1, -1]) for (let i = 0; i < PANEL.rows; i++) {
     const yc = PANEL.rowTop - i * PANEL.pitch, xa = side * PANEL.col[0], xb = side * PANEL.col[1];
-    slab(brk, 'z', [Math.min(xa, xb), yc - 0.48, dz - 0.18], [Math.max(xa, xb), yc + 0.48, dz], 0.04);
+    slab(brk, 'z', [Math.min(xa, xb), yc - PANEL.brk, dz - 0.18], [Math.max(xa, xb), yc + PANEL.brk, dz], 0.04);
     slots.push({side, yc, bone: 'b' + (side > 0 ? i : 6 + i)});
   }
   // handles: the main (2-pole tie bar) pivots about X at its body centre; each branch handle about Y at its inner end
@@ -89,24 +98,26 @@ function buildPanel() {
   slab(hMain, 'z', [-PANEL.main.x + 0.2, (PANEL.main.y[0] + PANEL.main.y[1]) / 2 - 0.2, dz - 0.65], [PANEL.main.x - 0.2, (PANEL.main.y[0] + PANEL.main.y[1]) / 2 + 0.2, dz - 0.25], 0.05);
   const pivots = {main: [0, (PANEL.main.y[0] + PANEL.main.y[1]) / 2, dz - 0.25]};
   for (const s of slots) {
-    const h = P('handle_' + s.bone, s.bone, 'handle'), xi = s.side * (PANEL.col[0] + 0.85);
-    slab(h, 'z', [xi - 0.26, s.yc - 0.22, dz - 0.66], [xi + 0.26, s.yc + 0.22, dz - 0.18], 0.04);
+    const h = P('handle_' + s.bone, s.bone, 'handle'), xi = s.side * (PANEL.col[0] + PANEL.hx);
+    slab(h, 'z', [xi - PANEL.hw, s.yc - PANEL.hh, dz - 0.66], [xi + PANEL.hw, s.yc + PANEL.hh, dz - 0.18], 0.04);
     pivots[s.bone] = [xi, s.yc, dz - 0.18];
   }
   // door: steel cover, flush slot latch on the viewer's right, two hinges on the left; the directory card inside
   const {z: [dz0, dz1], hinge} = PANEL.door;
   slab(P('door_cover', 'door', 'ansi'), 'z', [-X + 0.06, y0 + 0.06, dz0], [X - 0.06, y1 - 0.06, dz1 - 0.02], 0.06);
-  slab(P('door_latch', 'door', 'chrome'), 'z', [-X + 0.55, 7.2, dz0 - 0.12], [-X + 1.05, 8.8, dz0], 0.04);
-  slab(P('door_card', 'door', 'card'), 'z', [-X + 1.2, y0 + 1.2, dz1], [X - 1.2, y1 - 1.6, dz1 + 0.04], 0);
+  slab(P('door_latch', 'door', 'chrome'), 'z', [-X + PANEL.latch.x[0], PANEL.latch.y[0], dz0 - 0.12], [-X + PANEL.latch.x[1], PANEL.latch.y[1], dz0], 0.04);
+  const [cs, cb, ct] = PANEL.card;
+  slab(P('door_card', 'door', 'card'), 'z', [-X + cs, y0 + cb, dz1], [X - cs, y1 - ct, dz1 + 0.04], 0);
   const hg = P('hinges', 'body', 'chrome');
-  for (const [a, b] of [[3.4, 4.6], [11.4, 12.6]]) cyl(hg, 'y', hinge[2], hinge[0], 0.2, a, b, 10);
-  // conduits to the two pull boxes
-  pullBox(P, 'down', 'body', [0, y0, 6.8]);
-  pullBox(P, 'up', 'port_up', [0, y1, 6.8]);
+  for (const [a, b] of PANEL.hinges) cyl(hg, 'y', hinge[2], hinge[0], 0.2, a, b, 10);
+  // conduits to the two pull boxes, each drawn only while a cable plugs into its port (2026-10-13: the bottom one too; it
+  // hung in mid-cell on a wooden wall when the building is fed through a meter box or a generator inlet instead)
+  pullBox(P, 'down', 'port_down', [0, y0, PANEL.cz]);
+  pullBox(P, 'up', 'port_up', [0, y1, PANEL.cz]);
   // rest = on: the main tie bar up 30 deg, each branch toggle 20 deg toward the middle; off swings them through the straight
   // position to the same angle the other way
   const D = PANEL.handleDeg;
-  const RIG = [['body', [0, 0, 0]], ['port_up', [0, 0, 0]], ['door', hinge], ['main', pivots.main, [30, 0, 0]], ...slots.map(s => [s.bone, pivots[s.bone], [0, s.side * D, 0]])];
+  const RIG = [['body', [0, 0, 0]], ['port_up', [0, 0, 0]], ['port_down', [0, 0, 0]], ['door', hinge], ['main', pivots.main, [30, 0, 0]], ...slots.map(s => [s.bone, pivots[s.bone], [0, s.side * D, 0]])];
   const ANIM = {open: {ticks: 10, transforms: {door: {rotation: [0, PANEL.door.deg, 0]}}},
     main_off: {ticks: 3, transforms: {main: {rotation: [-60, 0, 0]}}},
     ...Object.fromEntries(slots.map(s => [s.bone + '_off', {ticks: 2, transforms: {[s.bone]: {rotation: [0, -s.side * 2 * D, 0]}}}]))};
@@ -188,7 +199,8 @@ export const GLASS_ALPHA = 40;
 // ---------------- assets ----------------
 const ATLAS = 1024, PAD = 2;
 const DUMMY = 'data:image/png;base64,' + png(Buffer.from([0, 0, 0, 255]), 1, 1).toString('base64');
-const ASSETS = {panel: {id: 'distribution_panel', build: buildPanel}, meter: {id: 'service_meter_box', build: buildMeter}};
+const ASSETS = {panel: {id: 'distribution_panel', build: () => buildPanel(PANEL)}, loadCenter: {id: 'load_center', build: () => buildPanel(LOAD_CENTER)},
+  meter: {id: 'service_meter_box', build: buildMeter}};
 function asset(kind) {
   const {id, build} = ASSETS[kind], {PARTS, RIG, ANIM} = build();
   const UV = unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 20, stepS: 0.5});
@@ -224,7 +236,7 @@ function asset(kind) {
     animations: []};
   const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.' + id, texture_width: ATLAS, texture_height: ATLAS,
     visible_bounds_width: 2, visible_bounds_height: 2, visible_bounds_offset: [0, 0.5, 0]},
-    bones: RIG.map(([b, origin]) => ({name: b, pivot: [-origin[0] || 0, origin[1], origin[2]], ...(b === 'port_up' ? {neverRender: true} : {})}))}]};
+    bones: RIG.map(([b, origin]) => ({name: b, pivot: [-origin[0] || 0, origin[1], origin[2]], ...(b === 'port_up' || b === 'port_down' ? {neverRender: true} : {})}))}]};
   const LAYERS = Object.fromEntries(PARTS.filter(p => p.mat === 'glass').map(p => [p.name, 'translucent']));
   const sidecar = convert(source, geo, {}, id + '.bbmodel', 2, null, LAYERS);
   // bounds: every vertex through every channel's motion (Euler XYZ as the runtime: Rx, then Ry, then Rz about the pivot)

@@ -51,6 +51,7 @@ public final class AflBlockEntityRenderers {
                 AflBlockEntityRendering.wrap("distribution_panel", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         event.registerBlockEntityRenderer(AflBlockEntities.SERVICE_METER_BOX.get(),
                 AflBlockEntityRendering.wrap("service_meter_box", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        event.registerBlockEntityRenderer(AflBlockEntities.GENERATOR_INLET_BOX.get(), AflBlockEntityRendering.wrap("generator_inlet_box", GeneratorInletBoxRenderer::new));   // + its 15 m cord
         event.registerBlockEntityRenderer(AflBlockEntities.POWER_STRIP.get(), AflBlockEntityRendering.wrap("power_strip", PowerStripRenderer::new));   // Power Outlets V1: cord + plug
         // Steel-frame doors V1 (steel door, commercial wood door): generic AFL Animated Block Mesh Runtime
         event.registerBlockEntityRenderer(AflBlockEntities.STEEL_DOOR.get(),

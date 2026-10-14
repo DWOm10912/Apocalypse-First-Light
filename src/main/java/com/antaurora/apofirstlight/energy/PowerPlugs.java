@@ -14,6 +14,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -34,6 +35,8 @@ import java.util.UUID;
  * cord only goes into a wall outlet or a generator's sockets. The player carries a plug by hand (sneak + empty hand on the
  * device), then right-clicks a socket with an empty hand; the plug goes into the aimed socket, or the other free one.
  * Blocks with sockets of their own ({@link PlugSocketHost}, 2026-10-09: the portable diesel generator) are asked first.
+ * Plug kinds ({@link PlugCord.Kind}, 2026-10-13): a plug only goes into a socket that fits it (the generator inlet's
+ * L14-30P only into the generator's L14-30R; everything else is NEMA 5-15).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class PowerPlugs {
@@ -135,17 +138,43 @@ public final class PowerPlugs {
         return state.getBlock() instanceof PowerStripBlock && !cord.strip() && !host.equals(cord.ownerPos());
     }
 
+    /** The socket takes this kind of plug (the outlets and strips: NEMA 5-15R). */
+    public static boolean socketFits(Level level, BlockPos host, int socket, PlugCord.Kind kind) {
+        BlockState state = level.getBlockState(host);
+        if (state.getBlock() instanceof PlugSocketHost h) return h.socketFits(state, socket, kind);
+        return kind == PlugCord.Kind.NEMA_5_15;
+    }
+
+    /** This cord may be in this socket: the host takes it and the socket fits its plug. */
+    public static boolean fits(Level level, BlockPos host, int socket, PlugCord cord) {
+        return accepts(level, host, cord) && socketFits(level, host, socket, cord.kind());
+    }
+
+    /** What the socket host could give now, FE/t (a generator: its rating while running; 0 when unknown). */
+    public static int capacity(Level level, BlockPos host) {
+        BlockState state = level.getBlockState(host);
+        return state.getBlock() instanceof PlugSocketHost h ? h.capacity(level, host) : 0;
+    }
+
     @Nullable
     public static PlugCord owner(Level level, BlockPos pos) {
         return level.isLoaded(pos) && level.getBlockEntity(pos) instanceof PlugCord.Owner o ? o.plugCord() : null;
     }
 
-    /** The cord whose plug is in this socket (searched within the longest cord's reach). */
+    /**
+     * The cord whose plug is in this socket, searched among the block entities of the loaded chunks within the longest
+     * cord's reach (2026-10-13: the generator cord's 15 m made the old cell-by-cell cube 35^3 cells).
+     */
     @Nullable
     public static PlugCord pluggedInto(Level level, BlockPos host, int socket) {
-        int r = (int) Math.ceil(PlugCord.APPLIANCE_LENGTH) + 2;
-        for (BlockPos p : BlockPos.betweenClosed(host.offset(-r, -r, -r), host.offset(r, r, r)))
-            if (level.getBlockEntity(p) instanceof PlugCord.Owner o && host.equals(o.plugCord().host()) && o.plugCord().socket() == socket) return o.plugCord();
+        int r = (int) Math.ceil(PlugCord.MAX_LENGTH) + 2;
+        for (int cx = (host.getX() - r) >> 4; cx <= (host.getX() + r) >> 4; cx++)
+            for (int cz = (host.getZ() - r) >> 4; cz <= (host.getZ() + r) >> 4; cz++) {
+                if (!level.hasChunk(cx, cz)) continue;
+                for (BlockEntity entity : level.getChunk(cx, cz).getBlockEntities().values())
+                    if (entity instanceof PlugCord.Owner o && o.plugCord() != null && host.equals(o.plugCord().host()) && o.plugCord().socket() == socket)
+                        return o.plugCord();
+            }
         return null;
     }
 
@@ -213,10 +242,14 @@ public final class PowerPlugs {
         BlockPos from = carried(player);
         PlugCord cord = from == null ? null : owner(level, from);
         if (cord == null) { if (from != null) CARRIED.remove(player.getUUID()); return InteractionResult.PASS; }
-        if (!accepts(level, host, cord)) { tell(player, "hint.apocalypse_firstlight.plug.wrong_socket"); return InteractionResult.CONSUME; }
         int n = sockets(level, host), aimed = aimedSocket(level, host, hit), socket = -1;
+        boolean kindFits = false;
+        for (int i = 0; i < n; i++) kindFits |= socketFits(level, host, i, cord.kind());
+        if (!kindFits) { tell(player, "hint.apocalypse_firstlight.plug.wrong_plug"); return InteractionResult.CONSUME; }
+        if (!accepts(level, host, cord)) { tell(player, "hint.apocalypse_firstlight.plug.wrong_socket"); return InteractionResult.CONSUME; }
         for (int k = 0; k < n && socket < 0; k++) {
             int i = (aimed + k) % n;
+            if (!socketFits(level, host, i, cord.kind())) continue;
             if (!used(level, host, i)) socket = i;
             else if (pluggedInto(level, host, i) == null) { setUsed(level, host, i, false); socket = i; }   // stale flag
         }

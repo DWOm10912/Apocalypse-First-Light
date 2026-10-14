@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.DistributionPanelBlock;
-import com.antaurora.apofirstlight.block.PowerCableBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.BuildingPowerZone;
 import com.antaurora.apofirstlight.energy.PowerCableTransfer;
@@ -41,11 +40,14 @@ import org.jetbrains.annotations.Nullable;
  * panel feeds the circuits each tick: the building's hidden wiring (lights and outlets, Building Power V1 step 2) and the
  * top port, whose cable network it seeds like a producer ("外接电缆"). Overload: when the circuits want clearly more than the
  * supply delivers, with the buffer run dry, for 3 s, the main breaker trips. Drawn by the AFL Animated Block Mesh Runtime:
- * door 'open' while someone has the screen open, the main and twelve branch handles on their '*_off' channels, the top
- * pull box only while a cable plugs in above.
+ * door 'open' while someone has the screen open, the main and twelve branch handles on their '*_off' channels, each pull
+ * box only while a cable plugs into its port. The same block entity serves the commercial panelboard and the residential
+ * load center (their own mesh profiles).
  */
 public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity implements MenuProvider {
     public static final ResourceLocation PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/distribution_panel.json");
+    /** The residential load center's mesh (same rig and channels, 2026-10-13). */
+    public static final ResourceLocation LOAD_CENTER_PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/load_center.json");
     public static final int SLOTS = 12, CAPACITY = 4096, MAX_IN = 512, MAX_OUT = 512, ZONE_PERIOD = 100, TRIP_TICKS = 60;
     /** Circuit kinds; the fixed ones take the first slots, devices get dedicated slots after them (step 2). */
     public static final int KIND_NONE = 0, KIND_LIGHTING = 1, KIND_OUTLETS = 2, KIND_CABLE = 3;
@@ -142,10 +144,14 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     };
 
     public DistributionPanelBlockEntity(BlockPos pos, BlockState state) {
-        super(AflBlockEntities.DISTRIBUTION_PANEL.get(), pos, state, PROFILE);
+        super(AflBlockEntities.DISTRIBUTION_PANEL.get(), pos, state,
+                state.getBlock() instanceof DistributionPanelBlock b && b.kind() == DistributionPanelBlock.Kind.RESIDENTIAL ? LOAD_CENTER_PROFILE : PROFILE);
     }
 
     public IEnergyStorage input() { return inputStorage; }
+
+    /** The circuits' load, FE/t (about a 2 s average); a generator inlet asks its generator for this much when it is more than the rating. */
+    public float loadNow() { return loadAvg; }
 
     /** What the feeding network's sources could give this tick (SupplyProbe; summed if several networks feed it). */
     public void networkSupply(long gameTime, int available) {
@@ -251,7 +257,7 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
 
     // ---- menu: the door stands open while someone looks ----
 
-    @Override public Component getDisplayName() { return Component.translatable("block.apocalypse_firstlight.distribution_panel"); }
+    @Override public Component getDisplayName() { return Component.translatable(getBlockState().getBlock().getDescriptionId()); }
 
     @Override
     public @Nullable AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
@@ -287,13 +293,12 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         return false;
     }
 
-    /** The top pull box shows only while a cable plugs in above. */
+    /** Each pull box shows only while a cable plugs into its port (the top one above, the bottom one below). */
     @Override
     public boolean meshPartVisible(String part) {
-        if (!part.equals("port_up")) return true;
-        if (level == null) return false;
-        BlockState above = level.getBlockState(worldPosition.above());
-        return above.getBlock() instanceof PowerCableBlock && PowerCableBlock.isConnected(above, Direction.DOWN);
+        boolean up = part.equals("port_up");
+        if (!up && !part.equals("port_down")) return true;
+        return level != null && DistributionPanelBlock.cabled(level, worldPosition, up ? Direction.UP : Direction.DOWN);
     }
 
     @Override

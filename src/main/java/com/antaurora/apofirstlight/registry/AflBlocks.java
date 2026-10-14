@@ -193,6 +193,10 @@ public final class AflBlocks {
     public static final RegistryObject<Block> EMERGENCY_LIGHT = BLOCKS.register("emergency_light",
             () -> new com.antaurora.apofirstlight.block.EmergencyLightBlock(BlockBehaviour.Properties.of().strength(0.5F, 1.0F).sound(SoundType.STONE).noCollission().noOcclusion()
                     .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.EmergencyLightBlock.MODE) == com.antaurora.apofirstlight.block.EmergencyLightBlock.Mode.ON ? 10 : 0)));
+    /** Building Lights V1 E (2026-10-13): a porcelain pull-chain lampholder with a 60 W bulb, hand-breakable, drops itself; light 14. */
+    public static final RegistryObject<Block> PORCELAIN_LAMPHOLDER = BLOCKS.register("porcelain_lampholder",
+            () -> new com.antaurora.apofirstlight.block.PorcelainLampholderBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.GLASS).noCollission().noOcclusion()
+                    .lightLevel(state -> state.getValue(com.antaurora.apofirstlight.block.BuildingLightBlock.LIT) ? com.antaurora.apofirstlight.block.PorcelainLampholderBlock.LIGHT_LEVEL : 0)));
     /**
      * Site Lighting V1 (docs/models/site_lighting_v1.md): parking-lot poles (base, segments, head cell), the wall pack and the
      * canopy downlight are galvanized / die-cast steel and aluminium fixtures: pickaxe + diamond tier. The hidden light point
@@ -256,13 +260,26 @@ public final class AflBlocks {
     public static final RegistryObject<Block> PORTABLE_DIESEL_GENERATOR = BLOCKS.register("portable_diesel_generator",
             () -> new com.antaurora.apofirstlight.block.PortableDieselGeneratorBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(4.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
-    /** Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. */
+    /**
+     * Building Power V1 (docs/models/building_power_v1.md): industrial infrastructure, pickaxe + diamond tier. The commercial
+     * panelboard keeps the ID distribution_panel; the residential load center (2026-10-13) is the same panel, smaller. Their
+     * pull boxes show only where a cable plugs in (dynamic shape).
+     */
     public static final RegistryObject<Block> DISTRIBUTION_PANEL = BLOCKS.register("distribution_panel",
             () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
-                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+                    .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion().dynamicShape(),
+                    com.antaurora.apofirstlight.block.DistributionPanelBlock.Kind.COMMERCIAL));
+    public static final RegistryObject<Block> LOAD_CENTER = BLOCKS.register("load_center",
+            () -> new com.antaurora.apofirstlight.block.DistributionPanelBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(4.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion().dynamicShape(),
+                    com.antaurora.apofirstlight.block.DistributionPanelBlock.Kind.RESIDENTIAL));
     public static final RegistryObject<Block> SERVICE_METER_BOX = BLOCKS.register("service_meter_box",
             () -> new com.antaurora.apofirstlight.block.ServiceMeterBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    /** Generator Inlet V1 (docs/models/generator_inlet_v1.md): a steel power inlet box with its cord, pickaxe + diamond tier. */
+    public static final RegistryObject<Block> GENERATOR_INLET_BOX = BLOCKS.register("generator_inlet_box",
+            () -> new com.antaurora.apofirstlight.block.GeneratorInletBoxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 5.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion().dynamicShape()));
     /** Power Outlets V1 (docs/models/power_outlets_v1.md): small plastic fittings, hand-breakable (as the office keyboard), no collision. */
     public static final RegistryObject<Block> WALL_OUTLET = BLOCKS.register("wall_outlet",
             () -> new com.antaurora.apofirstlight.block.WallOutletBlock(BlockBehaviour.Properties.of().strength(0.3F, 0.8F).sound(SoundType.STONE).noCollission().noOcclusion()));

@@ -60,14 +60,25 @@ public abstract class BuildingLightBlock extends Block {
             schedule(level, pos, BuildingLights.PERIOD, ORDINARY);
             return;
         }
-        if (photocell() && level.isDay()) next = false;   // an outdoor fixture's photocell: dark by day, drawing nothing
-        else switch (BuildingLights.period(level, wiringPosition(state, pos), lit)) {
+        if (!switchedOn(state)) next = false;   // its own switch (a pull chain) is off: dark, drawing nothing
+        else if (photocell() && level.isDay()) next = false;   // an outdoor fixture's photocell: dark by day, drawing nothing
+        else switch (BuildingLights.period(level, wiringPosition(state, pos), lit, periodEnergy())) {
             case LIT -> next = true;
             case DARK -> next = false;
             default -> { next = lit && phase != SECOND_LOOK; retry = next; }   // a lit light waits once for its panel
         }
         if (next != lit) level.setBlock(pos, state.setValue(LIT, next), Block.UPDATE_CLIENTS);
         schedule(level, pos, retry ? BuildingLights.GRACE : BuildingLights.PERIOD, retry ? SECOND_LOOK : ORDINARY);
+    }
+
+    /** A light with a switch of its own (the porcelain lampholder's pull chain) is dark while it is off. */
+    protected boolean switchedOn(BlockState state) {
+        return true;
+    }
+
+    /** What the light takes from the lighting circuit a period, FE (the LED fixtures: 1 FE/t). */
+    protected int periodEnergy() {
+        return BuildingLights.PERIOD * BuildingLights.FE_PER_TICK;
     }
 
     /** Outdoor fixtures (Site Lighting V1: wall packs, canopy downlights) carry a photocell and stay dark by day. */

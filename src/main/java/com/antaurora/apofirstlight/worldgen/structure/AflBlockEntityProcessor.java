@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  * degrees, and the plug misses its socket.
  * <p>
  * Turned keys: {@code PlugHost} on any block entity (every plugged appliance), {@code Outlet} on a power strip (its V1 key,
- * read when there is no PlugHost), {@code Panel} on a service meter box. An offset turns as a direction: mirror, then rotate,
+ * read when there is no PlugHost), {@code Panel} on a service meter box and a generator inlet box. An offset turns as a direction: mirror, then rotate,
  * about the origin (the template's own transform, pivot zero). Socket numbers stay: they count in the host's own frame.
  * Add it to the placement settings of every AFL building ({@code settings.addProcessor(AflBlockEntityProcessor.INSTANCE)}),
  * or as {@code {"processor_type": "apocalypse_firstlight:block_entity"}} in a processor list.
@@ -44,7 +44,7 @@ public final class AflBlockEntityProcessor extends StructureProcessor {
         String id = nbt.getString("id");
         turn(nbt, "PlugHost", settings);
         if (id.equals(NS + "power_strip")) turn(nbt, "Outlet", settings);
-        if (id.equals(NS + "service_meter_box")) turn(nbt, "Panel", settings);
+        if (id.equals(NS + "service_meter_box") || id.equals(NS + "generator_inlet_box")) turn(nbt, "Panel", settings);
         return current;
     }
 

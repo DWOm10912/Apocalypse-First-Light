@@ -41,21 +41,40 @@ import java.util.List;
  * solid runs it down behind its back to the nearer free corner first (out of sight). From there a cubic enters the
  * plug's tail along its axis, drooping onto what it passes over and kept a radius above it (as the fuel hoses).
  * Used by the power strip renderer and the plug-in appliances' renderers, called with the pose at the block entity.
+ * <p>
+ * Per plug kind ({@link Style}, 2026-10-13): the NEMA 5-15 cords as above; the generator inlet's 15 m L14-30 cord with
+ * its own plug (block/l14_30_plug) and yellow swatch (tools/build-generator-inlet-v1.mjs), a 21 mm cord that sags up to
+ * 3 blocks, so it falls from the inlet and lies along the ground (lifted out of any block it would dip into) instead of
+ * hanging in the air, more segments for its length and the light taken at every point. Nothing is drawn while a stowing
+ * cord hangs coiled on its owner (its mesh draws the coil).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class PlugCordRenderer {
     private static final ResourceLocation PLUG = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/power_plug");
+    private static final ResourceLocation L14_PLUG = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/l14_30_plug");
     private static final ResourceLocation CONNECTOR = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/power_connector");
     private static final ResourceLocation ATLAS_TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/power_strip");
+    private static final ResourceLocation INLET_TEXTURE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/generator_inlet_box");
     /** The cord swatch, 0..1 of the strips' atlas (tools/build-power-outlets-v1.mjs CORD_UV). */
     static final float CORD_U = 0.448242F, CORD_V = 0.731445F;
-    private static final double RADIUS = 0.006;   // blocks: 6 mm, 1.5 x an 8 mm appliance cord
-    /** From the socket face to where the cord leaves the plug's strain relief, blocks. */
-    private static final double TAIL = 0.080;
-    /** Half the plug's height (lying on the floor), blocks. */
-    private static final double PLUG_HALF = 0.0263;
+    /** The yellow cord swatch, 0..1 of the inlet's atlas (tools/build-generator-inlet-v1.mjs CORD_UV). */
+    static final float L14_CORD_U = 0.299805F, L14_CORD_V = 0.762695F;
     private static final double SLACK = 0.3;
     private static final int SIDES = 8, SEGMENTS = 18;
+
+    /**
+     * A cord's look: its plug model, the atlas and swatch of its jacket, its radius, the plug's length from the socket face
+     * to where the cord leaves it (tail) and half its height lying down, how far the cord may sag (blocks), and whether the
+     * light is taken at every point (long cords) or only at the ends.
+     */
+    private record Style(ResourceLocation plug, ResourceLocation atlas, float u, float v, double radius, double tail, double plugHalf, double sag, boolean lightEach) {}
+    // NEMA: 6 mm (1.5 x an 8 mm appliance cord); L14-30: the 10/4 SOOW's 21 mm at real size
+    private static final Style NEMA = new Style(PLUG, ATLAS_TEXTURE, CORD_U, CORD_V, 0.006, 0.080, 0.0263, 0.5, false);
+    private static final Style L14 = new Style(L14_PLUG, INLET_TEXTURE, L14_CORD_U, L14_CORD_V, 0.0105, 0.128, 0.0292, 3.0, true);
+
+    private static Style style(PlugCord cord) {
+        return cord.kind() == PlugCord.Kind.L14_30 ? L14 : NEMA;
+    }
     /** The local player carries a plug (for the crosshair hint): when and whose. */
     private static long carriedSeen = Long.MIN_VALUE;
     private static BlockPos carriedOwner = BlockPos.ZERO;
@@ -65,6 +84,7 @@ public final class PlugCordRenderer {
     @SubscribeEvent
     public static void models(ModelEvent.RegisterAdditional event) {
         event.register(PLUG);
+        event.register(L14_PLUG);
         event.register(CONNECTOR);
     }
 
@@ -80,6 +100,7 @@ public final class PlugCordRenderer {
     }
 
     public static void render(PlugCord cord, Level level, BlockPos origin, float partialTick, PoseStack pose, MultiBufferSource buffers) {
+        if (cord.stowed()) return;   // coiled on its owner: the owner's mesh draws it
         long timing = AflRenderProfiler.begin();
         try {
             renderCord(cord, level, origin, partialTick, pose, buffers);
@@ -90,6 +111,7 @@ public final class PlugCordRenderer {
 
     private static void renderCord(PlugCord cord, Level level, BlockPos origin, float partialTick, PoseStack pose, MultiBufferSource buffers) {
         Minecraft mc = Minecraft.getInstance();
+        Style st = style(cord);
         PlugCord.Geometry geo = cord.geometry();
         BlockPos host = cord.host();
         Entity carrier = cord.carrierId() >= 0 ? level.getEntity(cord.carrierId()) : null;
@@ -103,27 +125,35 @@ public final class PlugCordRenderer {
             if (player == mc.player) { carriedSeen = level.getGameTime(); carriedOwner = cord.ownerPos(); }
             Vec3 look = player.getViewVector(partialTick), hand = hand(mc, player, partialTick, look);
             axis = look.scale(-1);   // the plug's face toward where the player looks
-            plugAt = hand.subtract(axis.scale(TAIL));
+            plugAt = hand.subtract(axis.scale(st.tail()));
         } else {
             Start s = start(level, geo, null);
             Vec3 at = s.point.add(s.dir.scale(0.24));
             axis = s.dir.scale(-1);   // lying on the floor, tail toward the device
-            plugAt = new Vec3(at.x, floor(level, at.add(0, 0.2, 0), 2) + PLUG_HALF, at.z);
+            plugAt = new Vec3(at.x, floor(level, at.add(0, 0.2, 0), 2) + st.plugHalf(), at.z);
         }
-        plug(mc, level, origin, pose, buffers, PLUG, plugAt, axis, up);
+        plug(mc, level, origin, pose, buffers, st.plug(), plugAt, axis, up);
         // an appliance's detachable cord: its C13 connector seated in the C14 inlet
         if (geo.inlet() != null) plug(mc, level, origin, pose, buffers, CONNECTOR, geo.inlet(), geo.out(), new Vec3(0, 1, 0));
-        Vec3 tail = plugAt.add(axis.scale(TAIL));
-        TextureAtlasSprite sprite = mc.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(ATLAS_TEXTURE);
+        Vec3 tail = plugAt.add(axis.scale(st.tail()));
+        TextureAtlasSprite sprite = mc.getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(st.atlas());
         List<Vec3> points = new ArrayList<>();
         Start s = start(level, geo, tail);
         points.addAll(s.lead);
-        curve(level, s.point, s.dir, tail, axis, points);
-        // light from where the cord comes into view (the lead may start inside the wall behind the appliance, at light 0)
-        int lightStart = LevelRenderer.getLightColor(level, BlockPos.containing(s.point.add(0, 0.05, 0))), lightEnd = LevelRenderer.getLightColor(level, BlockPos.containing(tail));
-        float[] uv = LiquidJetRenderer.texelCentre(sprite, CORD_U, CORD_V);
-        tube(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), points.toArray(Vec3[]::new), s.lead.size() - 1,
-                origin, lightStart, lightEnd, uv[0], uv[1]);
+        curve(level, s.point, s.dir, tail, axis, points, st);
+        Vec3[] path = points.toArray(Vec3[]::new);
+        int[] light = new int[path.length];
+        int from = Math.max(0, Math.min(s.lead.size() - 1, path.length - 2));
+        if (st.lightEach()) {   // a long cord: the light where each point lies (it crosses shade and open ground)
+            for (int i = 0; i < path.length; i++) light[i] = LevelRenderer.getLightColor(level, BlockPos.containing(path[Math.max(i, from)].add(0, 0.05, 0)));
+        } else {
+            // light from where the cord comes into view (the lead may start inside the wall behind the appliance, at light 0)
+            int lightStart = LevelRenderer.getLightColor(level, BlockPos.containing(s.point.add(0, 0.05, 0))), lightEnd = LevelRenderer.getLightColor(level, BlockPos.containing(tail));
+            int n = path.length - 1;
+            for (int i = 0; i < path.length; i++) light[i] = lerpLight(lightStart, lightEnd, Math.max(0, (double) (i - from) / Math.max(1, n - from)));
+        }
+        float[] uv = LiquidJetRenderer.texelCentre(sprite, st.u(), st.v());
+        tube(pose, buffers.getBuffer(RenderType.entityCutoutNoCull(TextureAtlas.LOCATION_BLOCKS)), path, origin, light, uv[0], uv[1], st.radius());
     }
 
     /** Where the free part of the cord starts, and the straight lead before it (along an appliance's back). */
@@ -221,20 +251,28 @@ public final class PlugCordRenderer {
         return Math.floor(p.y) - depth;
     }
 
-    /** The free cord: a cubic from a (leaving along dirA) to b (entering against dirB), drooping, kept above what it crosses. */
-    private static void curve(Level level, Vec3 a, Vec3 dirA, Vec3 b, Vec3 dirB, List<Vec3> out) {
-        double distance = a.distanceTo(b);
+    /**
+     * The free cord: a cubic from a (leaving along dirA) to b (entering against dirB), drooping (at most the style's sag),
+     * kept above what it crosses: a point that sagged into a block is lifted onto it, again while it is still inside one
+     * (a long cord's sag reaches into the ground).
+     */
+    private static void curve(Level level, Vec3 a, Vec3 dirA, Vec3 b, Vec3 dirB, List<Vec3> out, Style st) {
+        double distance = a.distanceTo(b), radius = st.radius();
         if (distance < 1e-3) { out.add(b); return; }
         double handle = Math.max(0.06, Math.min(0.6, Math.sqrt(3 * distance * SLACK / 8) / 0.75));
         Vec3 p1 = a.add(dirA.scale(handle * 0.5)), p2 = b.add(dirB.scale(handle));
         BlockPos.MutableBlockPos at = new BlockPos.MutableBlockPos();
-        for (int i = 1; i <= SEGMENTS; i++) {
-            double s = (double) i / SEGMENTS, r = 1 - s;
+        int segments = Math.max(SEGMENTS, (int) Math.ceil(distance * 3));
+        for (int i = 1; i <= segments; i++) {
+            double s = (double) i / segments, r = 1 - s;
             Vec3 q = a.scale(r * r * r).add(p1.scale(3 * r * r * s)).add(p2.scale(3 * r * s * s)).add(b.scale(s * s * s));
-            if (i < SEGMENTS) {   // the cord droops onto what it passes over, never through it
-                q = new Vec3(q.x, q.y - Math.sin(Math.PI * s) * Math.min(0.5, distance * 0.25), q.z);
-                double top = Math.max(surface(level, at, q, 0), surface(level, at, q, -1));
-                if (q.y < top + RADIUS) q = new Vec3(q.x, top + RADIUS, q.z);
+            if (i < segments) {   // the cord droops onto what it passes over, never through it
+                q = new Vec3(q.x, q.y - Math.sin(Math.PI * s) * Math.min(st.sag(), distance * 0.25), q.z);
+                for (int k = 0; k < 4; k++) {
+                    double top = Math.max(surface(level, at, q, 0, radius), surface(level, at, q, -1, radius));
+                    if (q.y >= top + radius) break;
+                    q = new Vec3(q.x, top + radius, q.z);
+                }
             }
             out.add(q);
         }
@@ -245,35 +283,33 @@ public final class PlugCordRenderer {
      * starting above it). Per box, not the cell's highest box: beside a narrow appliance (a water dispenser leaves 2.4 px of
      * its cell free on each side) a cord used to be lifted onto the appliance's top, a loop up and down (2026-10-08).
      */
-    private static double surface(Level level, BlockPos.MutableBlockPos at, Vec3 q, int dy) {
+    private static double surface(Level level, BlockPos.MutableBlockPos at, Vec3 q, int dy, double radius) {
         at.set(q.x, q.y + dy, q.z);
         VoxelShape shape = level.getBlockState(at).getCollisionShape(level, at);
         if (shape.isEmpty()) return Double.NEGATIVE_INFINITY;
         double lx = q.x - at.getX(), ly = q.y - at.getY(), lz = q.z - at.getZ();
         double top = Double.NEGATIVE_INFINITY;
         for (var box : shape.toAabbs())
-            if (lx > box.minX - RADIUS && lx < box.maxX + RADIUS && lz > box.minZ - RADIUS && lz < box.maxZ + RADIUS && box.minY <= ly + 0.3)
+            if (lx > box.minX - radius && lx < box.maxX + radius && lz > box.minZ - radius && lz < box.maxZ + radius && box.minY <= ly + 0.3)
                 top = Math.max(top, at.getY() + box.maxY);
         return top;
     }
 
-    /** The tube along the points; the lead (up to point {@code from}) takes lightA, the rest goes from lightA to lightB. */
-    private static void tube(PoseStack pose, VertexConsumer out, Vec3[] points, int from, BlockPos origin, int lightA, int lightB, float u, float v) {
+    /** The tube along the points, each ring at its light. */
+    private static void tube(PoseStack pose, VertexConsumer out, Vec3[] points, BlockPos origin, int[] light, float u, float v, double radius) {
         if (points.length < 2) return;
         Vec3[][] ring = LiquidJetRenderer.rings(points, SIDES);
         int n = points.length - 1;
-        from = Math.max(0, Math.min(from, n - 1));
         Matrix4f matrix = pose.last().pose();
         Matrix3f normals = pose.last().normal();
         for (int i = 0; i < n; i++) {
-            double t0 = Math.max(0, (double) (i - from) / (n - from)), t1 = Math.max(0, (double) (i + 1 - from) / (n - from));
-            int l0 = lerpLight(lightA, lightB, t0), l1 = lerpLight(lightA, lightB, t1);
+            int l0 = light[i], l1 = light[i + 1];
             for (int k = 0; k < SIDES; k++) {
                 int k2 = (k + 1) % SIDES;
-                vertex(out, matrix, normals, origin, points[i], ring[i][k], u, v, l0);
-                vertex(out, matrix, normals, origin, points[i], ring[i][k2], u, v, l0);
-                vertex(out, matrix, normals, origin, points[i + 1], ring[i + 1][k2], u, v, l1);
-                vertex(out, matrix, normals, origin, points[i + 1], ring[i + 1][k], u, v, l1);
+                vertex(out, matrix, normals, origin, points[i], ring[i][k], u, v, l0, radius);
+                vertex(out, matrix, normals, origin, points[i], ring[i][k2], u, v, l0, radius);
+                vertex(out, matrix, normals, origin, points[i + 1], ring[i + 1][k2], u, v, l1, radius);
+                vertex(out, matrix, normals, origin, points[i + 1], ring[i + 1][k], u, v, l1, radius);
             }
         }
     }
@@ -283,9 +319,9 @@ public final class PlugCordRenderer {
         return block | sky << 16;
     }
 
-    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, BlockPos origin, Vec3 centre, Vec3 direction, float u, float v, int light) {
-        out.vertex(matrix, (float) (centre.x - origin.getX() + direction.x * RADIUS), (float) (centre.y - origin.getY() + direction.y * RADIUS),
-                        (float) (centre.z - origin.getZ() + direction.z * RADIUS))
+    private static void vertex(VertexConsumer out, Matrix4f matrix, Matrix3f normals, BlockPos origin, Vec3 centre, Vec3 direction, float u, float v, int light, double radius) {
+        out.vertex(matrix, (float) (centre.x - origin.getX() + direction.x * radius), (float) (centre.y - origin.getY() + direction.y * radius),
+                        (float) (centre.z - origin.getZ() + direction.z * radius))
                 .color(255, 255, 255, 255).uv(u, v).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light)
                 .normal(normals, (float) direction.x, (float) direction.y, (float) direction.z).endVertex();
     }
