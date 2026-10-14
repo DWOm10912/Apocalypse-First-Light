@@ -4,6 +4,9 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -166,13 +169,115 @@ public final class Survivors {
         player.setRespawnPosition(Level.OVERWORLD, null, 0.0F, false, false);
         lineage.status = data.mode == SurvivorMode.HARD ? SurvivorLineage.Status.ENDED : SurvivorLineage.Status.AWAITING_SUCCESSOR;
         SurvivorCorpses.create(player, record);
+        if (lineage.status == SurvivorLineage.Status.AWAITING_SUCCESSOR) rollSuccessor(player.server, lineage, record);
         data.setDirty();
         flushPending = true;
-        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} (survivor #{} {}) died: {} at {} {} after {} days; lineage {}",
+        SurvivorRecord next = lineage.pending();
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} (survivor #{} {}) died: {} at {} {} after {} days; lineage {}{}",
                 player.getGameProfile().getName(), record.lifeIndex, record.fullName(), record.deathCauseId,
                 record.deathDimension, record.deathPos.toShortString(),
-                String.format(java.util.Locale.ROOT, "%.2f", record.daysSurvived(record.deathDayTime)), lineage.status);
+                String.format(java.util.Locale.ROOT, "%.2f", record.daysSurvived(record.deathDayTime)), lineage.status,
+                next == null ? "" : "; successor #" + next.lifeIndex + " " + next.fullName()
+                        + (next.hasSpawnPlan ? " planned at " + next.spawnPlanX + " " + next.spawnPlanZ : " (no planned start)"));
         return record;
+    }
+
+    /** NORMAL: the successor is decided at the death and stored, with its planned start column. */
+    private static void rollSuccessor(MinecraftServer server, SurvivorLineage lineage, @Nullable SurvivorRecord dead) {
+        SurvivorRecord next = roll(server, lineage);
+        SurvivorSpawns.plan(server, lineage, dead, next);
+        lineage.lives.add(next);
+    }
+
+    /**
+     * The respawn (server; not after the End credits): the pending successor takes over the new body. It is placed at its
+     * start (SurvivorSpawns), stamped into the player file, and greeted with its name as a title. Other cases:
+     * <ul>
+     * <li>a HARD lineage that ended never takes over: a respawn forced by other means is put back into the dead state;</li>
+     * <li>a creative / spectator respawn of a living survivor keeps that survivor;</li>
+     * <li>a survival death the survivor data never saw (server stopped before writing it) is recorded now, cause unknown
+     * and without a corpse (the items of that death are lost, never duplicated), and succession follows the mode.</li>
+     * </ul>
+     */
+    static void takeOver(ServerPlayer player) {
+        MinecraftServer server = player.server;
+        SurvivorWorldData data = SurvivorWorldData.get(server);
+        if (data.mode == SurvivorMode.UNSET) data.setMode(SurvivorMode.NORMAL);
+        SurvivorLineage lineage = data.lineage(player);
+        SurvivorRecord current = lineage.current();
+        if (lineage.status == SurvivorLineage.Status.ENDED) {
+            player.setHealth(0.0F);
+            ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] {} respawned after the end of a HARD run; back to the dead state",
+                    player.getGameProfile().getName());
+            return;
+        }
+        SurvivorRecord next = lineage.pending();
+        if (next == null) {
+            if (current == null || lineage.status == SurvivorLineage.Status.ACTIVE && !tracked(player)) {
+                ensureSurvivor(player);
+                if (current != null) player.getPersistentData().putUUID(PLAYER_SURVIVOR_KEY, current.id);
+                return;
+            }
+            if (current.state == SurvivorRecord.State.ALIVE) {
+                current.state = SurvivorRecord.State.DEAD;
+                current.deathGameTime = player.level().getGameTime();
+                current.deathDayTime = player.level().getDayTime();
+                current.deathCauseId = "unknown";
+                ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] {} respawned from a death the survivor data never recorded; "
+                        + "survivor #{} {} recorded dead now (cause unknown, no corpse)", player.getGameProfile().getName(),
+                        current.lifeIndex, current.fullName());
+                if (data.mode == SurvivorMode.HARD) {
+                    lineage.status = SurvivorLineage.Status.ENDED;
+                    data.setDirty();
+                    flushPending = true;
+                    player.setHealth(0.0F);
+                    return;
+                }
+            }
+            rollSuccessor(server, lineage, current);
+            next = lineage.pending();
+            if (next == null) return;
+        }
+        SurvivorSpawns.Start start = SurvivorSpawns.resolve(server, lineage, current, next);
+        float yaw = (float) ((SurvivorNames.stream(next.rollSeed, 999) >>> 40) % 360L);
+        if (start != null) {
+            player.teleportTo(start.level(), start.feet().getX() + 0.5, start.feet().getY(), start.feet().getZ() + 0.5, yaw, 0.0F);
+            next.spawnSource = start.source();
+        } else {
+            next.spawnSource = "fallback";
+            ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] no successor start passed the ground check for {}; world spawn fallback",
+                    player.getGameProfile().getName());
+        }
+        next.spawnDimension = player.level().dimension().location().toString();
+        next.spawnPos = player.blockPosition();
+        next.state = SurvivorRecord.State.ALIVE;
+        start(player, next);
+        lineage.status = SurvivorLineage.Status.ACTIVE;
+        player.getPersistentData().putUUID(PLAYER_SURVIVOR_KEY, next.id);
+        player.setRespawnPosition(Level.OVERWORLD, null, 0.0F, false, false);
+        data.setDirty();
+        flushPending = true;
+        announce(player, next);
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} continues as survivor #{} {} at {} {} ({})",
+                player.getGameProfile().getName(), next.lifeIndex, next.fullName(), next.spawnDimension,
+                next.spawnPos.toShortString(), next.spawnSource);
+    }
+
+    /** The new survivor's name as a title, the career index under it. */
+    private static void announce(ServerPlayer player, SurvivorRecord record) {
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 70, 20));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.literal(record.fullName())));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(
+                Component.translatable("survivor.apocalypse_firstlight.title.successor", record.lifeIndex)));
+    }
+
+    /**
+     * Server gate for the client's respawn request (mixin/SurvivorRespawnGateMixin): a player whose HARD run ended stays
+     * dead. The client can ask as often as it likes; nothing it sends changes this.
+     */
+    public static boolean respawnBlocked(ServerPlayer player) {
+        SurvivorLineage lineage = SurvivorWorldData.get(player.server).lineage(player.getUUID());
+        return lineage != null && lineage.status == SurvivorLineage.Status.ENDED;
     }
 
     /**

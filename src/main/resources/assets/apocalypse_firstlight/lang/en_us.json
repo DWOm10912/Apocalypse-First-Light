@@ -822,6 +822,7 @@
   "message.apocalypse_firstlight.wiring.conflict": "Circuit %s cross-fed",
 
   "survivor.apocalypse_firstlight.cause.unknown": "Cause unknown",
+  "survivor.apocalypse_firstlight.title.successor": "Survivor no. %s",
 
   "hint.apocalypse_firstlight.break_glass": "Break glass",
   "hint.apocalypse_firstlight.locker.open": "Open",

@@ -822,6 +822,7 @@
   "message.apocalypse_firstlight.wiring.conflict": "第 %s 路互连",
 
   "survivor.apocalypse_firstlight.cause.unknown": "死因不明",
+  "survivor.apocalypse_firstlight.title.successor": "第 %s 位幸存者",
 
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
   "hint.apocalypse_firstlight.locker.open": "打开",

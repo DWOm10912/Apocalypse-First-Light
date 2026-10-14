@@ -67,6 +67,13 @@ public final class SurvivorEvents {
         SurvivorCorpses.onClone(event);
     }
 
+    /** First, so every later respawn handler (radiation, weight, terrain sync) already sees the successor's start. */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.isEndConquered() || !(event.getEntity() instanceof ServerPlayer player)) return;
+        Survivors.takeOver(player);
+    }
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
