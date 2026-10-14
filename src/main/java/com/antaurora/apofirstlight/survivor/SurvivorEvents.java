@@ -1,0 +1,57 @@
+package com.antaurora.apofirstlight.survivor;
+
+import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.server.ServerStartedEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * Survivor Death and Succession V0: the Forge hooks (docs/gameplay/survivor_death_succession_v0.md 4). The death is
+ * handled at the lowest priority, after every other mod had its say (a cancelled death is never seen).
+ */
+@Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class SurvivorEvents {
+    private SurvivorEvents() {
+    }
+
+    /** Fires only when a world is created (Terrain V2 cancels it after choosing the spawn, hence receiveCanceled). */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onCreateWorld(LevelEvent.CreateSpawnPosition event) {
+        if (!(event.getLevel() instanceof ServerLevel level) || !Level.OVERWORLD.equals(level.dimension())) return;
+        SurvivorWorldData data = level.getDataStorage().computeIfAbsent(SurvivorWorldData::load, SurvivorWorldData::new,
+                SurvivorWorldData.NAME);
+        data.freshWorld = true;
+        data.setDirty();
+    }
+
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        Survivors.resolveStartMode(event.getServer());
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        Survivors.ensureSurvivor(player);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onDeath(LivingDeathEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player) || !Survivors.tracked(player)) return;
+        Survivors.recordDeath(player, event.getSource());
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Survivors.flush(event.getServer());
+    }
+}

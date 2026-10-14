@@ -818,6 +818,8 @@
   "message.apocalypse_firstlight.wiring.legacy_panel": "Area supply · wires unused",
   "message.apocalypse_firstlight.wiring.conflict": "Circuit %s cross-fed",
 
+  "survivor.apocalypse_firstlight.cause.unknown": "Cause unknown",
+
   "hint.apocalypse_firstlight.break_glass": "Break glass",
   "hint.apocalypse_firstlight.locker.open": "Open",
   "hint.apocalypse_firstlight.locker.search": "Search",

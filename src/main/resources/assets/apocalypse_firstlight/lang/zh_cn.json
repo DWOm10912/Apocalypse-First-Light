@@ -818,6 +818,8 @@
   "message.apocalypse_firstlight.wiring.legacy_panel": "范围供电 · 暗线不生效",
   "message.apocalypse_firstlight.wiring.conflict": "第 %s 路互连",
 
+  "survivor.apocalypse_firstlight.cause.unknown": "死因不明",
+
   "hint.apocalypse_firstlight.break_glass": "破坏玻璃",
   "hint.apocalypse_firstlight.locker.open": "打开",
   "hint.apocalypse_firstlight.locker.search": "搜索",

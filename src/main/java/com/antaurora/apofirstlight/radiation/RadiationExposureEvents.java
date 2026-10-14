@@ -31,16 +31,21 @@ public final class RadiationExposureEvents {
         }
     }
 
+    /**
+     * A death starts a new survivor (docs/gameplay/survivor_death_succession_v0.md 7): the successor's body has never been
+     * exposed, so dose and residual both start at zero. Returning from the End keeps both.
+     */
     @SubscribeEvent
     public static void copyOnClone(PlayerEvent.Clone event) {
         event.getOriginal().reviveCaps();
         event.getOriginal().getCapability(RadiationExposureProvider.CAPABILITY).ifPresent(original ->
                 event.getEntity().getCapability(RadiationExposureProvider.CAPABILITY)
                         .ifPresent(copy -> {
-                            copy.setDose(original.getDose());
                             if (event.isWasDeath()) {
+                                copy.resetDose();
                                 copy.resetResidualRadiation();
                             } else {
+                                copy.setDose(original.getDose());
                                 copy.setResidualRadiationRate(original.getResidualRadiationRate());
                             }
                         }));
