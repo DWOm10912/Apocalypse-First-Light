@@ -14,7 +14,7 @@ import java.util.Locale;
 
 /**
  * Testing and audits (permission 2), read only: {@code /afl survivor} (own lineage), {@code /afl survivor player <name>},
- * {@code /afl survivor list}. No command changes the mode, rolls a successor or revives anyone.
+ * {@code /afl survivor list}, {@code /afl survivor corpses}. No command changes the mode, rolls a successor or revives anyone.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class SurvivorCommands {
@@ -28,7 +28,8 @@ public final class SurvivorCommands {
                 .executes(c -> status(c.getSource(), c.getSource().getPlayerOrException()))
                 .then(Commands.literal("player").then(Commands.argument("target", EntityArgument.player())
                         .executes(c -> status(c.getSource(), EntityArgument.getPlayer(c, "target")))))
-                .then(Commands.literal("list").executes(c -> list(c.getSource())))));
+                .then(Commands.literal("list").executes(c -> list(c.getSource())))
+                .then(Commands.literal("corpses").executes(c -> corpses(c.getSource())))));
     }
 
     private static int status(CommandSourceStack source, ServerPlayer player) {
@@ -60,7 +61,7 @@ public final class SurvivorCommands {
     private static int list(CommandSourceStack source) {
         SurvivorWorldData data = SurvivorWorldData.get(source.getServer());
         StringBuilder out = new StringBuilder("mode=" + data.mode.id() + " fresh=" + data.freshWorld
-                + " lineages=" + data.lineages.size());
+                + " lineages=" + data.lineages.size() + " " + SurvivorCorpses.describe(source.getServer()));
         for (SurvivorLineage lineage : data.lineages.values()) {
             SurvivorRecord current = lineage.current();
             out.append("\n ").append(lineage.accountName).append(' ').append(lineage.status).append(" lives=")
@@ -70,5 +71,20 @@ public final class SurvivorCommands {
         String text = out.toString();
         source.sendSuccess(() -> Component.literal(text), false);
         return data.lineages.size();
+    }
+
+    private static int corpses(CommandSourceStack source) {
+        SurvivorWorldData data = SurvivorWorldData.get(source.getServer());
+        StringBuilder out = new StringBuilder(SurvivorCorpses.describe(source.getServer()));
+        for (SurvivorCorpseRecord corpse : data.corpses.values()) {
+            SurvivorCorpseContainer container = SurvivorCorpses.container(corpse);
+            out.append("\n ").append(corpse.survivorName).append(" #").append(corpse.lifeIndex).append(" @ ")
+                    .append(corpse.dimension).append(String.format(Locale.ROOT, " %.1f %.1f %.1f", corpse.x, corpse.y, corpse.z))
+                    .append(" stacks=").append(corpse.itemCount()).append('/').append(corpse.items.size())
+                    .append(" search: ").append(com.antaurora.apofirstlight.containersearch.AflContainerSearch.debugSummary(container));
+        }
+        String text = out.toString();
+        source.sendSuccess(() -> Component.literal(text), false);
+        return data.corpses.size();
     }
 }

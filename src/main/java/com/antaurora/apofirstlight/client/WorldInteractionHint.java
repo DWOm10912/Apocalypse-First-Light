@@ -97,6 +97,10 @@ public final class WorldInteractionHint {
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
+        // Survivor Death and Succession V0: a body to search, or to look through once searched
+        else if(!mc.player.isSpectator() && mc.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
+                && hit.getEntity() instanceof com.antaurora.apofirstlight.survivor.SurvivorCorpse corpse)
+            target=new Target(Component.translatable(corpse.searched()?"hint.apocalypse_firstlight.survivor_corpse.view":"hint.apocalypse_firstlight.survivor_corpse.search"),null);
         if(target!=null) {label=target.label();anchor=target.anchor();keys=keysFor(mc,label);}   // keep the last label while fading out
         fade=Math.max(0,Math.min(1,fade+(target!=null?step:-step)));
         if(fade<=.03f||label==null) return;

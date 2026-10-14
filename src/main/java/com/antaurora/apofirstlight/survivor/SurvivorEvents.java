@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
@@ -40,7 +41,13 @@ public final class SurvivorEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        SurvivorCorpses.reconcileStalePlayer(player);
         Survivors.ensureSurvivor(player);
+    }
+
+    @SubscribeEvent
+    public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        SurvivorCorpses.forget(event.getEntity().getUUID());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -49,9 +56,21 @@ public final class SurvivorEvents {
         Survivors.recordDeath(player, event.getSource());
     }
 
+    /** Every item of the death goes into the corpse; also seen when another mod cancelled the drops. */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onDrops(LivingDropsEvent event) {
+        SurvivorCorpses.onDrops(event);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onClone(PlayerEvent.Clone event) {
+        SurvivorCorpses.onClone(event);
+    }
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
+        SurvivorCorpses.tick(event.getServer());
         Survivors.flush(event.getServer());
     }
 }

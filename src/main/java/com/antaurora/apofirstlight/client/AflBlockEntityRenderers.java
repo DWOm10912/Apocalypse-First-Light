@@ -85,5 +85,8 @@ public final class AflBlockEntityRenderers {
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.BoxStove.STOVE, AflBlockEntityRendering.wrap("box_stove", BoxStoveRenderer::new));   // Box Stove V1: the cook top
         com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk
         event.registerEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.SEAT, net.minecraft.client.renderer.entity.NoopRenderer::new);
+        // Survivor Death and Succession V0: the placeholder body (owner's skin lying on its back)
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.SURVIVOR_CORPSE.get(),
+                com.antaurora.apofirstlight.client.survivor.SurvivorCorpseRenderer::new);
     }
 }

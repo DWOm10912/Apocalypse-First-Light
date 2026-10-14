@@ -34,6 +34,7 @@ public final class SurvivorWorldData extends SavedData {
     /** Set when this world was created with the survivor system present: the host is asked for the mode. */
     boolean freshWorld;
     final Map<UUID, SurvivorLineage> lineages = new LinkedHashMap<>();
+    final Map<UUID, SurvivorCorpseRecord> corpses = new LinkedHashMap<>();
 
     public static SurvivorWorldData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(SurvivorWorldData::load, SurvivorWorldData::new, NAME);
@@ -71,6 +72,20 @@ public final class SurvivorWorldData extends SavedData {
         }
     }
 
+    public Collection<SurvivorCorpseRecord> corpses() {
+        return Collections.unmodifiableCollection(corpses.values());
+    }
+
+    public SurvivorCorpseRecord corpse(UUID id) {
+        return corpses.get(id);
+    }
+
+    void addCorpse(SurvivorCorpseRecord corpse) {
+        corpses.put(corpse.id, corpse);
+        corpse.owner = this;
+        setDirty();
+    }
+
     /**
      * Writes this file now (only if dirty), outside the autosave: the death tick calls it before the player files are
      * written. Same thread as every other save (the server thread), so it never races the autosave.
@@ -89,6 +104,9 @@ public final class SurvivorWorldData extends SavedData {
         ListTag list = new ListTag();
         for (SurvivorLineage lineage : lineages.values()) list.add(lineage.save());
         tag.put("Lineages", list);
+        ListTag bodies = new ListTag();
+        for (SurvivorCorpseRecord corpse : corpses.values()) bodies.add(corpse.save());
+        tag.put("Corpses", bodies);
         return tag;
     }
 
@@ -99,6 +117,13 @@ public final class SurvivorWorldData extends SavedData {
         for (Tag t : tag.getList("Lineages", Tag.TAG_COMPOUND)) {
             SurvivorLineage lineage = SurvivorLineage.load((CompoundTag) t);
             if (lineage != null) data.lineages.put(lineage.playerId, lineage);
+        }
+        for (Tag t : tag.getList("Corpses", Tag.TAG_COMPOUND)) {
+            SurvivorCorpseRecord corpse = SurvivorCorpseRecord.load((CompoundTag) t);
+            if (corpse != null) {
+                corpse.owner = data;
+                data.corpses.put(corpse.id, corpse);
+            }
         }
         return data;
     }

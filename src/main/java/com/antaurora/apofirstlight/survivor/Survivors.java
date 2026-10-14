@@ -165,6 +165,7 @@ public final class Survivors {
         }
         player.setRespawnPosition(Level.OVERWORLD, null, 0.0F, false, false);
         lineage.status = data.mode == SurvivorMode.HARD ? SurvivorLineage.Status.ENDED : SurvivorLineage.Status.AWAITING_SUCCESSOR;
+        SurvivorCorpses.create(player, record);
         data.setDirty();
         flushPending = true;
         ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} (survivor #{} {}) died: {} at {} {} after {} days; lineage {}",
