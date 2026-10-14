@@ -98,6 +98,9 @@ import java.util.UUID;
  *   not an outlet off the wire; the top cable takes no breaker; LEGACY_AREA feeds nothing over wires; a second panel on the
  *   circuit joins them (no power) until it goes; the feeder gives the inlet box its panel; a load center saved without the
  *   field loads LEGACY_AREA.</li>
+ *   <li>groups (phase 3): light groups and wall switches (see the method).</li>
+ *   <li>route, picker (phase 5): the wrench's two-point route (preview, confirm, cost, changed route, waypoints, rate
+ *   limit, cancels) and the group picker's server side (see the methods).</li>
  * </ul>
  * Run with {@code src/dev/wiring-gametest.init.gradle} (and -PaflWithoutShaders).
  */
@@ -106,7 +109,7 @@ import java.util.UUID;
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class WiringGameTests {
     private static final String NS = "afl_wiring_tests", TOKEN = "[AFL WIRING TEST] PASS ";
-    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes", "supply", "groups"};
+    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes", "supply", "groups", "route", "picker"};
 
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void template(net.minecraftforge.event.server.ServerStartingEvent event) throws Exception {
@@ -146,6 +149,8 @@ public final class WiringGameTests {
             case "shapes" -> shapes(h);
             case "supply" -> supply(h);
             case "groups" -> groups(h);
+            case "route" -> route(h);
+            case "picker" -> picker(h);
             default -> throw new IllegalArgumentException(name);
         }
     }
@@ -855,6 +860,157 @@ public final class WiringGameTests {
         panel.serverTick();
         h.assertTrue(!level.getBlockState(s3).getValue(WallSwitchBlock.ON) && level.getBlockState(s3).getValue(WallSwitchBlock.WIRED), "a new switch takes its group's state");
         pass(h, "groups", "groups counted, switch sync, outlet unaffected, pull chain stacks, photocell, power loss kept + saved, loose switch, late switch");
+    }
+
+    // -------------------------------------------------------------------------------------------- route (phase 5)
+
+    /** Stands the player two blocks south of and one above pos (within reach), the wrench in hand. */
+    private static void near(ServerPlayer p, BlockPos pos) {
+        p.moveTo(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 2.5, 180, 30);
+        if (!WiringTool.holdsWrench(p)) p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AflItems.WIRING_WRENCH.get()));
+    }
+
+    private static void route(ServerPlayer p, int action, BlockPos pos) {
+        near(p, pos);
+        WiringTool.route(p, action, pos);
+    }
+
+    private static void wires(ServerPlayer p, int n) {
+        p.getInventory().clearContent();
+        p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AflItems.WIRING_WRENCH.get()));
+        if (n > 0) p.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(AflItems.INSULATED_COPPER_WIRE.get(), n));
+    }
+
+    /**
+     * Phase 5, the wrench's two-point route (draft 2): a start, a preview that lays nothing, the confirm that lays the same
+     * cells for one wire each (none without enough, the preview kept); a block changed after the preview gives a new preview
+     * instead; waypoints bend the route (at most four); at most four route searches in 20 ticks; attack, a cut and putting
+     * the wrench away cancel (a cut with a route cuts nothing).
+     */
+    private static void route(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        ServerPlayer p = player(h, "route", GameType.SURVIVAL);
+        for (int x = 2; x <= 12; x++) h.setBlock(new BlockPos(x, 1, 3), Blocks.DIRT);
+        for (int x = 2; x <= 8; x++) for (int z : new int[]{7, 8, 11, 12}) h.setBlock(new BlockPos(x, 1, z), Blocks.DIRT);
+        BlockPos a = h.absolutePos(new BlockPos(2, 1, 3)), b = h.absolutePos(new BlockPos(10, 1, 3)), c = h.absolutePos(new BlockPos(12, 1, 3));
+        wires(p, 20);
+        // a start, a preview: nothing laid yet; the same end again: laid, nine wires
+        route(p, WiringTool.ROUTE_MARK, a);
+        h.assertTrue(a.equals(WiringTool.routeStart(p)) && WiringTool.routePreview(p) == null, "sneak + use sets the start");
+        route(p, WiringTool.ROUTE_USE, b);
+        List<BlockPos> preview = WiringTool.routePreview(p);
+        h.assertTrue(preview != null && preview.size() == 9 && preview.get(0).equals(a) && preview.get(8).equals(b), "the preview runs a to b: " + preview);
+        h.assertTrue(BuildingWiring.node(level, a.east(4), 1) == 0 && WiringTool.wires(p) == 20, "a preview lays nothing");
+        route(p, WiringTool.ROUTE_USE, b);
+        for (int i = 0; i <= 8; i++) h.assertTrue(BuildingWiring.node(level, a.east(i), 1) != 0, "confirmed cell " + i);
+        h.assertTrue(WiringNode.linked(BuildingWiring.node(level, a.east(4), 1), Direction.EAST), "the laid cells are joined");
+        h.assertTrue(WiringTool.wires(p) == 11 && WiringTool.routeStart(p) == null, "nine wires, the route done (left " + WiringTool.wires(p) + ")");
+        // from the wire's end on: two new cells cost two; with one wire nothing is laid and the preview stays
+        route(p, WiringTool.ROUTE_MARK, b);
+        route(p, WiringTool.ROUTE_USE, c);
+        wires(p, 1);
+        route(p, WiringTool.ROUTE_USE, c);
+        h.assertTrue(BuildingWiring.node(level, c, 1) == 0 && WiringTool.routePreview(p) != null && WiringTool.wires(p) == 1, "not enough wire: nothing laid, the preview kept");
+
+        h.startSequence().thenExecuteAfter(21, () -> {
+            wires(p, 5);
+            route(p, WiringTool.ROUTE_USE, c);
+            h.assertTrue(BuildingWiring.node(level, c, 1) != 0 && BuildingWiring.node(level, c.west(), 1) != 0 && WiringTool.wires(p) == 3,
+                    "existing wire costs nothing: two wires for two cells (left " + WiringTool.wires(p) + ")");
+            // a block on the previewed route goes: the confirm shows the new route and lays nothing, the next one lays it
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 7)), e = h.absolutePos(new BlockPos(8, 1, 7));
+            wires(p, 20);
+            route(p, WiringTool.ROUTE_MARK, s);
+            route(p, WiringTool.ROUTE_USE, e);
+            List<BlockPos> straight = WiringTool.routePreview(p);
+            h.assertTrue(straight != null && straight.size() == 7, "the straight route: " + straight);
+            h.setBlock(new BlockPos(5, 1, 7), Blocks.AIR);
+            route(p, WiringTool.ROUTE_USE, e);
+            List<BlockPos> detour = WiringTool.routePreview(p);
+            h.assertTrue(detour != null && !detour.equals(straight) && BuildingWiring.node(level, s, 1) == 0, "changed: a new preview, nothing laid");
+            route(p, WiringTool.ROUTE_USE, e);
+            h.assertTrue(BuildingWiring.node(level, s, 1) != 0 && BuildingWiring.node(level, e, 1) != 0 && WiringTool.routeStart(p) == null
+                    && WiringTool.wires(p) == 20 - new HashSet<>(detour).size(), "the second confirm lays the detour");
+        }).thenExecuteAfter(21, () -> {
+            // a waypoint on the other row bends the route through it; four at most
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 11)), e = h.absolutePos(new BlockPos(8, 1, 11)), w = h.absolutePos(new BlockPos(5, 1, 12));
+            route(p, WiringTool.ROUTE_MARK, s);
+            route(p, WiringTool.ROUTE_USE, e);
+            h.assertTrue(!WiringTool.routePreview(p).contains(w), "without the waypoint the route stays on its row");
+            route(p, WiringTool.ROUTE_MARK, w);
+            h.assertTrue(WiringTool.routePreview(p).contains(w) && WiringTool.routeWaypoints(p).equals(List.of(w)), "the waypoint bends it");
+            for (int x = 3; x <= 7; x++) route(p, WiringTool.ROUTE_MARK, h.absolutePos(new BlockPos(x, 1, 12)));   // x 5 is already one: three more, x 7 refused
+            h.assertTrue(WiringTool.routeWaypoints(p).size() == WiringTool.WAYPOINTS, "four waypoints at most: " + WiringTool.routeWaypoints(p).size());
+            // attack cancels
+            WiringTool.route(p, WiringTool.ROUTE_CANCEL, BlockPos.ZERO);
+            h.assertTrue(WiringTool.routeStart(p) == null && WiringTool.routePreview(p) == null && WiringTool.routeWaypoints(p).isEmpty(), "cancelled");
+        }).thenExecuteAfter(21, () -> {
+            // four searches in 20 ticks: the fifth preview is not made
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 12));
+            route(p, WiringTool.ROUTE_MARK, s);
+            for (int x = 8; x >= 4; x--) route(p, WiringTool.ROUTE_USE, h.absolutePos(new BlockPos(x, 1, 12)));
+            List<BlockPos> last = WiringTool.routePreview(p);
+            h.assertTrue(last != null && last.get(last.size() - 1).equals(h.absolutePos(new BlockPos(5, 1, 12))), "the fifth search in a second is skipped: " + last);
+            // a cut with a route only cancels it
+            BlockPos laid = h.absolutePos(new BlockPos(4, 1, 3));
+            near(p, laid);
+            WiringTool.cut(p, laid);
+            h.assertTrue(WiringTool.routeStart(p) == null && BuildingWiring.node(level, laid, 1) != 0, "the cut cancelled the route and cut nothing");
+            // putting the wrench away cancels
+            route(p, WiringTool.ROUTE_MARK, s);
+            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            WiringTool.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END, p));
+            h.assertTrue(WiringTool.routeStart(p) == null, "the wrench put away cancels");
+            pass(h, "route", "start, preview, confirm 9 + cost 2, short of wire kept, changed route re-previewed, waypoint, 4 max, rate limit, cancels");
+        });
+    }
+
+    /**
+     * Phase 5, the group picker's server side (draft 3): a route from the panel to a keyless lamp taps both; the panel is
+     * found from the lamp's wire before any solve; setting a group re-solves at once (the counts, a switch lines up with its
+     * group); groups that do not fit (a switch's 0 or photocell, an outlet's 1) are refused.
+     */
+    private static void picker(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        ServerPlayer p = player(h, "picker", GameType.CREATIVE);
+        for (int x = 1; x <= 11; x++) for (int y = 2; y <= 3; y++) h.setBlock(new BlockPos(x, y, 15), Blocks.STONE);
+        h.setBlock(new BlockPos(2, 2, 16), AflBlocks.LOAD_CENTER.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(6, 3, 16), AflBlocks.KEYLESS_LAMPHOLDER.get().defaultBlockState().setValue(KeylessLampholderBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(8, 2, 16), AflBlocks.WALL_SWITCH.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(10, 2, 16), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        BlockPos panelPos = h.absolutePos(new BlockPos(2, 2, 16)), lamp = h.absolutePos(new BlockPos(6, 3, 16)),
+                sw = h.absolutePos(new BlockPos(8, 2, 16)), outlet = h.absolutePos(new BlockPos(10, 2, 16));
+        DistributionPanelBlockEntity panel = (DistributionPanelBlockEntity) level.getBlockEntity(panelPos);
+        // from the panel (its mount cell) to the lamp: both tapped
+        route(p, WiringTool.ROUTE_MARK, panelPos);
+        h.assertTrue(h.absolutePos(new BlockPos(2, 2, 15)).equals(WiringTool.routeStart(p)), "a panel starts from its mount cell");
+        route(p, WiringTool.ROUTE_USE, lamp);
+        route(p, WiringTool.ROUTE_USE, lamp);
+        BlockPos lampMount = h.absolutePos(new BlockPos(6, 3, 15));
+        h.assertTrue(WiringNode.tapped(BuildingWiring.node(level, lampMount, 1), Direction.SOUTH)
+                && WiringNode.tapped(BuildingWiring.node(level, h.absolutePos(new BlockPos(2, 2, 15)), 1), Direction.SOUTH), "the route tapped the lamp and the panel");
+        h.assertTrue(panelPos.equals(WiringSupply.panelOf(level, lampMount, 1)), "the panel is found along the wire from the lamp");
+        h.assertTrue(panel.wiring() != null && panel.wiring().lights[1][0] == 1, "the confirm's picker solved the panel at once: it counts the lamp");
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(6, 2, 15)), h.absolutePos(new BlockPos(7, 2, 15)), h.absolutePos(new BlockPos(8, 2, 15)),
+                h.absolutePos(new BlockPos(9, 2, 15)), h.absolutePos(new BlockPos(10, 2, 15))), 1);
+        // the picker's choices
+        near(p, lamp);
+        WiringTool.openGroups(p, lamp);   // sends the picker (nothing to read back on a fake player: it must not fail)
+        h.assertTrue(WiringTool.setGroup(p, lamp, 2), "a lamp takes group 2");
+        h.assertTrue(WiringNode.group(BuildingWiring.node(level, lampMount, 1), Direction.SOUTH) == 2, "the tap is in group 2");
+        WiringSupply.Result r = panel.wiring();
+        h.assertTrue(r != null && r.lights[1][2] == 1, "the panel solved at once and counts it");
+        panel.setGroup(1, 2, false);
+        near(p, sw);
+        h.assertTrue(WiringTool.setGroup(p, sw, 2), "a switch takes group 2");
+        h.assertTrue(level.getBlockState(sw).getValue(WallSwitchBlock.WIRED) && !level.getBlockState(sw).getValue(WallSwitchBlock.ON)
+                && panel.wiring().switches[1][2] == 1, "the switch lines up with its group (off) at once");
+        h.assertTrue(!WiringTool.setGroup(p, sw, WiringNode.ALWAYS) && !WiringTool.setGroup(p, sw, WiringNode.PHOTOCELL), "a switch takes no 0 and no photocell");
+        near(p, outlet);
+        h.assertTrue(!WiringTool.setGroup(p, outlet, 1), "an outlet stays always on");
+        near(p, lamp);
+        h.assertTrue(WiringTool.setGroup(p, lamp, WiringNode.PHOTOCELL) && panel.wiring().lights[1][WiringNode.PHOTOCELL] == 1, "a lamp takes the photocell");
+        pass(h, "picker", "route taps panel + lamp, panel found before solving, lamp group 2 counted at once, switch aligned at once, 0 / photocell / outlet refused");
     }
 
     private static void use(GameTestHelper h, BlockPos pos) {

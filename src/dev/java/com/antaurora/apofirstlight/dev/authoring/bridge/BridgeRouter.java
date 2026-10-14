@@ -11,6 +11,8 @@ final class BridgeRouter {
     /** One undo/redo history for WorldEdit and controlled fixture edits. */
     final BridgeHistory history=new BridgeHistory();
     private final FixtureAdapter fixtures=new FixtureAdapter(history);
+    /** Building Wiring V1 phase 4: lay / group / clear / read / panel main (WiringAdapter). */
+    private final WiringAdapter wiring=new WiringAdapter(history);
     final AuthoringCamera camera=new AuthoringCamera();
     static boolean hasWorldEdit(){return ModList.get().isLoaded("worldedit");}
     JsonObject call(String tool,JsonObject a,ServerPlayer p) throws Exception {
@@ -19,6 +21,7 @@ final class BridgeRouter {
         if(tool.equals("export_target_registry"))return RegistrySnapshot.export();
         if(tool.equals("describe_block"))return AuthoringFixtureRegistry.describe(string(a,"block_id",""));
         if(tool.equals("list_authoring_fixtures"))return AuthoringFixtureRegistry.list(a);
+        if(tool.startsWith("wiring_"))return wiring.call(tool,a,p);
         if(tool.equals("place_fixture")||tool.equals("place_multiblock")||tool.equals("reconcile_shapes")||tool.equals("relight_region"))return fixtures.call(tool,a,p);
         if(tool.equals("we_undo")||tool.equals("we_redo")){
             // History does not need WorldEdit: controlled fixture entries undo without it.

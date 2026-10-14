@@ -403,12 +403,7 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
             }
         } else if (wiring == null || solvedRevision != WiringStorage.revision() || now >= nextSolve) {
             // after any wiring edit or chunk load (the revision), else every 5 s (a device placed on a tap, a chunk unloaded)
-            wiring = WiringSupply.solve(server, worldPosition, getBlockState());
-            solvedRevision = WiringStorage.revision();
-            nextSolve = now + ZONE_PERIOD;
-            int conflict = conflictMask();
-            if (conflict != syncedConflict) { syncedConflict = conflict; sync(); }
-            alignSwitches(server);
+            solve(server, now);
         }
         // the top port seeds its cable network; the network pulls from outputStorage this tick (level END)
         if (live()) PowerCableTransfer.transferFrom(server, worldPosition, Direction.UP, outputStorage, MAX_OUT);
@@ -442,6 +437,23 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         if (live() && stored < CAPACITY / 20 && supplyAvg > 0.5F && loadAvg >= supplyAvg * 0.95F) {
             if (++overloadTicks >= TRIP_TICKS) trip(server);
         } else overloadTicks = 0;
+    }
+
+    private void solve(ServerLevel server, long now) {
+        wiring = WiringSupply.solve(server, worldPosition, getBlockState());
+        solvedRevision = WiringStorage.revision();
+        nextSolve = now + ZONE_PERIOD;
+        int conflict = conflictMask();
+        if (conflict != syncedConflict) { syncedConflict = conflict; sync(); }
+        alignSwitches(server);
+    }
+
+    /**
+     * WIRED: solves the wiring now instead of on the next tick (phase 5: the wrench's group picker counts a device tapped a
+     * moment ago; a group just set lines its switches up and lets its light look again at once).
+     */
+    public void solveNow() {
+        if (level instanceof ServerLevel server && mode == SupplyMode.WIRED) solve(server, server.getGameTime());
     }
 
     private void trip(ServerLevel server) {

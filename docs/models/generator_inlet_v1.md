@@ -1,6 +1,6 @@
 # Generator Inlet V1：发电机进线盒和 15 m 发电机电缆
 
-> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；**未实机验证**）：进线盒（和电表箱）找配电盘改走 `energy/BuildingSupply#entryPanel`：先看进线（黑线，回路 5）接到哪个 `WIRED` 配电盘，没有再按范围找 `LEGACY_AREA` 配电盘（下面"供电"第一条写的规则）。Jade 的"墙后没有配电盘"改成"没接配电盘"。
+> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；用户 2026-10-14 实机 PASS）：进线盒（和电表箱）找配电盘改走 `energy/BuildingSupply#entryPanel`：先看进线（黑线，回路 5）接到哪个 `WIRED` 配电盘，没有再按范围找 `LEGACY_AREA` 配电盘（下面"供电"第一条写的规则）。Jade 的"墙后没有配电盘"改成"没接配电盘"。
 
 状态（2026-10-13）：**已实现，`compileJava` / `compileDevJava`（`--offline`）通过，未实机验证。**
 - 编译前确认游戏没开（只有 Gradle 守护进程）。

@@ -87,6 +87,40 @@ public final class WiringSupply {
         return i == null ? null : i.entries.get(entry);
     }
 
+    /**
+     * The panel the circuit's wire through cell taps (walking its links and slope links in loaded chunks, as a solve does), or
+     * null: the wrench's group picker (phase 5) for a device tapped a moment ago, before any panel has solved it.
+     */
+    @Nullable
+    public static BlockPos panelOf(ServerLevel level, BlockPos cell, int circuit) {
+        if (BuildingWiring.node(level, cell, circuit) == 0) return null;
+        LongOpenHashSet seen = new LongOpenHashSet();
+        LongArrayFIFOQueue queue = new LongArrayFIFOQueue();
+        seen.add(cell.asLong());
+        queue.enqueue(cell.asLong());
+        while (!queue.isEmpty() && seen.size() <= MAX_NODES) {
+            BlockPos at = BlockPos.of(queue.dequeueLong());
+            long node = BuildingWiring.node(level, at, circuit);
+            if (node == 0) continue;
+            for (Direction d : Direction.values()) {
+                if (WiringNode.tapped(node, d)) {
+                    BlockPos dev = at.relative(d);
+                    if (BuildingWiring.chunk(level, dev) != null) {
+                        BlockState s = level.getBlockState(dev);
+                        if (BuildingWiring.kind(s) == BuildingWiring.Kind.PANEL && at.equals(BuildingWiring.mount(s, dev))) return dev.immutable();
+                    }
+                }
+                BlockPos o = at.relative(d);
+                if (WiringNode.linked(node, d) && BuildingWiring.chunk(level, o) != null && seen.add(o.asLong())) queue.enqueue(o.asLong());
+            }
+            for (Direction h : Direction.Plane.HORIZONTAL) for (boolean up : new boolean[]{true, false}) {
+                BlockPos o = BuildingWiring.slopeCell(at, h, up);
+                if (WiringNode.slopeLinked(node, h, up) && BuildingWiring.chunk(level, o) != null && seen.add(o.asLong())) queue.enqueue(o.asLong());
+            }
+        }
+        return null;
+    }
+
     /** The devices the panel feeds on the circuit that follow the group (lights and switches; phase 3), in loaded chunks. */
     public static List<BlockPos> members(Level level, BlockPos panel, int circuit, int group) {
         Index i = INDEX.get(level);
