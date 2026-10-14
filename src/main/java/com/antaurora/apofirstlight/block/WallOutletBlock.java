@@ -33,18 +33,19 @@ import java.util.Map;
  * real size, hung on a wall only (FACING = away from the wall); a floor-cell outlet sits 0.35 m up, one in the cell above
  * a counter 1.35 m. A static baked OBJ (tools/build-power-outlets-v1.mjs), no block entity: UPPER / LOWER only record
  * which socket a plug is in. Power comes over the building's hidden wiring (energy/PowerPlugs). No collision; any tool
- * or the hand breaks it (a small plastic fitting), drops itself.
+ * or the hand breaks it (a small plastic fitting), drops itself. On a round log wall it stands on a pad (LOG, {@link LogMount}).
  */
-public class WallOutletBlock extends HorizontalDirectionalBlock {
+public class WallOutletBlock extends HorizontalDirectionalBlock implements LogMount.Padded {
     public static final BooleanProperty UPPER = BooleanProperty.create("upper");
     public static final BooleanProperty LOWER = BooleanProperty.create("lower");
     /** px (facing north, the generator's frame): plate centre height, socket offset, the faces' front plane (from the cell's -Z side). */
     public static final double CENTRE_Y = 5.6, PITCH = 0.4572, FACE_Z = 15.8168;
-    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(Block.box(6.9, 3.4, 15.5, 9.1, 7.8, 16));
+    private static final VoxelShape NORTH = Block.box(6.9, 3.4, 15.5, 9.1, 7.8, 16);
+    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(NORTH), ON_LOGS = LogMount.rotationsOnPad(NORTH, LogMount.PAD_OUTLET);
 
     public WallOutletBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(UPPER, false).setValue(LOWER, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(UPPER, false).setValue(LOWER, false).setValue(LogMount.LOG, false));
     }
 
     public static boolean used(BlockState state, int socket) {
@@ -69,7 +70,7 @@ public class WallOutletBlock extends HorizontalDirectionalBlock {
 
     /** The centre of a socket's face (0 upper, 1 lower), world coordinates; the plug's axis is FACING. */
     public static Vec3 socket(BlockPos pos, BlockState state, int socket) {
-        return local(pos, state.getValue(FACING), 0, CENTRE_Y + (socket == 0 ? PITCH : -PITCH), FACE_Z - 8);
+        return local(pos, state.getValue(FACING), 0, CENTRE_Y + (socket == 0 ? PITCH : -PITCH), FACE_Z - 8 - LogMount.depth(state) * 16);
     }
 
     @Override
@@ -77,7 +78,7 @@ public class WallOutletBlock extends HorizontalDirectionalBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (!face.getAxis().isHorizontal()) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -91,7 +92,7 @@ public class WallOutletBlock extends HorizontalDirectionalBlock {
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     @Override
@@ -102,7 +103,12 @@ public class WallOutletBlock extends HorizontalDirectionalBlock {
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.get(state.getValue(FACING));
+        return (LogMount.mounted(state) ? ON_LOGS : SHAPES).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return LogMount.PAD_OUTLET;
     }
 
     @Override
@@ -122,6 +128,6 @@ public class WallOutletBlock extends HorizontalDirectionalBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, UPPER, LOWER);
+        builder.add(FACING, UPPER, LOWER, LogMount.LOG);
     }
 }

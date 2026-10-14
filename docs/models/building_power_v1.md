@@ -75,6 +75,16 @@
 - 6 kg（估计），叠 4，`carry/bulky`；创造栏在商业配电盘后面；建造工具登记成 SAFE_FIXTURE，挂墙。
 - 界面菜单原来只认商业配电盘（`stillValid` 判断方块是不是 `distribution_panel`），住宅配电箱一打开就会关掉；现在认任何配电盘方块，8 格内有效。
 
+## 原木墙（2026-10-13）
+
+配电盘、住宅配电箱、电表箱挂在圆木墙上时，状态 `log_mount=true`，整个网格往外移 8 cm（`AflAnimatedMeshHost#meshMountDepth`），站在原木墙画的垫块上（商用配电盘种类 7、住宅配电箱 8、电表箱 9），见 [cabin_exterior_v1.md](cabin_exterior_v1.md)"壁挂件垫块"。
+
+- 接线盒要接在格子面中心的钢接口上，不能跟着往外移。所以生成器给每个接线盒多做一套 `_log` 版本：盒子和接口往墙那边多做 8 cm（网格外移后正好落回格子面上），导管自己做、短 8 cm。盒子和接口是普通版本的拷贝（`copyOf`），共用 UV，不多占贴图。
+  - 配电盘 / 配电箱：骨骼 `port_up_log`、`port_down_log`，规则同 `port_up` / `port_down`（接了电缆才画），只在 `log_mount=true` 时画；普通的两个只在 `log_mount=false` 时画（`DistributionPanelBlockEntity#meshPartVisible`）。
+  - 电表箱：底部接线盒从 `body` 里拆成骨骼 `pull`（墙上）和 `pull_log`（垫块上），按 `log_mount` 二选一（`ServiceMeterBoxBlockEntity#meshPartVisible`）。
+  - 两套各自做 z-fight 检查（只比较会同时画出来的零件），贴图密度不变（三个都是 20 texel/px）；物品图标不画 `_log` 零件。
+- 选择框跟着外移并加上垫块；导管那一段在原木上短 8 cm。
+
 ## 电表箱
 
 **外形**：

@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.GeneratorInletBoxBlock;
+import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.BuildingPowerZone;
 import com.antaurora.apofirstlight.energy.PlugCord;
@@ -47,7 +48,8 @@ public class GeneratorInletBoxBlockEntity extends AflAnimatedMeshBlockEntity imp
 
     private PlugCord.Geometry cordGeometry() {
         Direction facing = meshFacing();
-        return PlugCord.Geometry.hardWired(PlugCord.at(worldPosition, facing, 0, EXIT_Y, EXIT_Z), PlugCord.dir(facing, 0, DIR_Y, DIR_Z));
+        double z = EXIT_Z - LogMount.depth(getBlockState()) * 16;   // on a log wall's pad the box stands out
+        return PlugCord.Geometry.hardWired(PlugCord.at(worldPosition, facing, 0, EXIT_Y, z), PlugCord.dir(facing, 0, DIR_Y, DIR_Z));
     }
 
     @Override public PlugCord plugCord() { return cord; }

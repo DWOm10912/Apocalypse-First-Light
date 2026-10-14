@@ -47,6 +47,8 @@ public abstract class AflAnimatedMeshBlockEntity extends BlockEntity implements 
     }
 
     @Override public AABB getRenderBoundingBox() {
-        return AflAnimatedMeshHost.renderBounds(worldPosition, meshProfile, meshFacing());
+        AABB box = AflAnimatedMeshHost.renderBounds(worldPosition, meshProfile, meshFacing());
+        double out = meshMountDepth();
+        return out == 0 ? box : box.expandTowards(meshFacing().getStepX() * out, 0, meshFacing().getStepZ() * out);
     }
 }

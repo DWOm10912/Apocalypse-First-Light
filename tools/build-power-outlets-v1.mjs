@@ -22,6 +22,7 @@ import {fileURLToPath} from 'node:url';
 import {iecOutline, INLET} from './afl-iec-inlet.mjs';
 import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 import {heldDisplay} from './item-held-display.mjs';
+import {logTwin} from './afl-log-mount.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -345,12 +346,14 @@ const model = (file, title, b, bones, offset) => {
 for (const b of Object.values(B)) outputs.push([path.join(bb, `${b.id}_v1.bbmodel`), JSON.stringify(sourceOf(b))],
   ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${b.id}_v1${k}.png`), b.maps[i]], [path.join(assets, `textures/block/${b.id}${k}.png`), b.maps[i]]]));
 const YROT = {north: 0, east: 90, south: 180, west: 270};
-// wall outlet: one model; the socket flags only record what is plugged in
+// wall outlet: one model; the socket flags only record what is plugged in; log_mount: the same OBJ out on a log wall's pad
+// (tools/afl-log-mount.mjs)
 model('wall_outlet', 'Power Outlets V1 wall outlet', B.outlet, null);
+outputs.push([path.join(assets, 'models/block/wall_outlet_log.json'), json(logTwin(objModel('wall_outlet', B.outlet.id)))]);
 {
   const variants = {};
-  for (const [f, y] of Object.entries(YROT)) for (const up of [false, true]) for (const lo of [false, true])
-    variants[`facing=${f},lower=${lo},upper=${up}`] = {model: 'apocalypse_firstlight:block/wall_outlet', ...(y ? {y} : {})};
+  for (const [f, y] of Object.entries(YROT)) for (const lm of [false, true]) for (const up of [false, true]) for (const lo of [false, true])
+    variants[`facing=${f},log_mount=${lm},lower=${lo},upper=${up}`] = {model: 'apocalypse_firstlight:block/wall_outlet' + (lm ? '_log' : ''), ...(y ? {y} : {})};
   outputs.push([path.join(assets, 'blockstates/wall_outlet.json'), json({variants})]);
   outputs.push([path.join(assets, 'models/item/wall_outlet.json'), json({parent: 'apocalypse_firstlight:block/wall_outlet', gui_light: 'side',
     display: display(B.outlet, null, [10, 200, 0], 4, 0.5)})]);   // 4 = vanilla's display scale limit (4.2 was drawn at 4, off-centre)

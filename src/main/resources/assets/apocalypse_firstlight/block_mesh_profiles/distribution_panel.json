@@ -43,6 +43,20 @@
         0
       ]
     },
+    "port_up_log": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "port_down_log": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
     "door": {
       "pivot": [
         0.27625,

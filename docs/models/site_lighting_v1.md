@@ -165,6 +165,10 @@ node tools/afl_minecraft_mcp/fuel_stop_a1_lighting.mjs build
   - 量过：5 个物品在第一人称、第三人称、掉落、展示框里中心偏移都是 0。
   - 同一类问题在其他物品上也查了、修了，见 [creative_inventory_framing.md](creative_inventory_framing.md) 的"手持、掉落、展示框"。
 
+## 原木墙上的壁灯（2026-10-13）
+
+壁灯（`wall_pack`）挂在圆木墙上时状态 `log_mount=true`，用 `models/block/wall_pack/{off,lit}_log.json`（同一个 OBJ 往外移 8 cm），站在原木墙画的垫块（种类 4）上；选择框跟着外移，加上垫块。方块状态的键是 `facing,lit,log_mount`。见 [cabin_exterior_v1.md](cabin_exterior_v1.md)"壁挂件垫块"。
+
 ## 已知问题和限制
 
 - 灯头大部分在相邻那一格里（臂伸出格子）。网格选框只在射线也经过灯头格时才查这格的模型，所以只看伸出去的灯头、射线不经过灯头格时，选不中。

@@ -42,6 +42,24 @@
           "neverRender": true
         },
         {
+          "name": "port_up_log",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
+          "name": "port_down_log",
+          "pivot": [
+            0,
+            0,
+            0
+          ],
+          "neverRender": true
+        },
+        {
           "name": "door",
           "pivot": [
             -4.42,

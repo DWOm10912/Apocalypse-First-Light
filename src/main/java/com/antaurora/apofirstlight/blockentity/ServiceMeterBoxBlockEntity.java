@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.block.ServiceMeterBoxBlock;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.BuildingPowerZone;
@@ -95,6 +96,14 @@ public class ServiceMeterBoxBlockEntity extends AflAnimatedMeshBlockEntity {
     @Override
     protected boolean meshAnimationTarget(String channel) {
         return channel.equals("off") && !isOn();
+    }
+
+    /** The bottom pull box and its conduit: pull on a wall, pull_log on a log wall's pad (the box stays at the face centre; LogMount). */
+    @Override
+    public boolean meshPartVisible(String part) {
+        if (part.equals("pull")) return !LogMount.mounted(getBlockState());
+        if (part.equals("pull_log")) return LogMount.mounted(getBlockState());
+        return true;
     }
 
     @Override

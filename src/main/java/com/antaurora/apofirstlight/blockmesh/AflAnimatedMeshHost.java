@@ -1,9 +1,11 @@
 package com.antaurora.apofirstlight.blockmesh;
 
+import com.antaurora.apofirstlight.block.LogMount;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.common.extensions.IForgeBlockEntity;
@@ -62,6 +64,14 @@ public interface AflAnimatedMeshHost extends IForgeBlockEntity {
      */
     default boolean meshPartVisible(String part) {
         return true;
+    }
+
+    /**
+     * How far the whole mesh stands out of its wall, toward its front (blocks): a wall fixture on a round log wall's pad
+     * (block/LogMount, 2026-10-13), read from the block state. The renderer, the chunk model and the render bounds move it.
+     */
+    default double meshMountDepth() {
+        return this instanceof BlockEntity entity ? LogMount.depth(entity.getBlockState()) : 0;
     }
 
     /** Parts drawn at full brightness instead of the block light (lit lamps, screens), read every frame. */

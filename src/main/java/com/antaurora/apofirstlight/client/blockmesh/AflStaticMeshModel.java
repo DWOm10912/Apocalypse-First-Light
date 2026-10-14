@@ -177,6 +177,7 @@ public final class AflStaticMeshModel {
         var layout = AflMeshChunking.layout(profile, mesh);
         var root = new Matrix4f().translate(0.5F, 0, 0.5F);
         if (profile.horizontalFacing()) root.rotateY((float) Math.toRadians(AflBlockMeshProfile.facingDegrees(v.facing())));
+        if (v.mount() != 0) root.translate(0, 0, -v.mount());   // on a log wall's pad (AflAnimatedMeshHost#meshMountDepth)
         root.translate((float) profile.origin().x, (float) profile.origin().y, (float) profile.origin().z);
         root.scale((float) profile.scale().x, (float) profile.scale().y, (float) profile.scale().z);
         int n = layout.parts.length;

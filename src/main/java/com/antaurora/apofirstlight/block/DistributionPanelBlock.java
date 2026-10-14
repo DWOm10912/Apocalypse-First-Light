@@ -45,30 +45,41 @@ import java.util.Map;
  * 住宅配电箱, 2026-10-13, about 0.33 x 0.45 m). Same circuits, screen and rules. Power ports on the bottom face (in) and the
  * top face (out to cable devices), each the standard steel port on a pull box at the face centre; a pull box (and its
  * outline) only shows while a cable plugs into its port. Right-click opens the panel screen; OPEN (the door) stands open
- * while someone looks. Mining: pickaxe + diamond tier (industrial infrastructure), drops itself.
+ * while someone looks. Mining: pickaxe + diamond tier (industrial infrastructure), drops itself. On a round log wall it
+ * stands on a pad (LOG, {@link LogMount}); its pull boxes stay at the face centres (where the cables meet them), the
+ * conduits to them come forward with the panel (the mesh's port_*_log bones).
  */
-public class DistributionPanelBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
+public class DistributionPanelBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, LogMount.Padded {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
     /** Which panel: its mesh and its outline (canonical, facing north: front -Z, wall at z 16, px; tools/build-building-power-v1.mjs). */
     public enum Kind {
-        COMMERCIAL(Block.box(3.5, 2.4, 13.6, 12.5, 13.6, 16),
-                Shapes.or(Block.box(5, 0, 5, 11, 2.0, 11), Block.box(7.4, 1.0, 10.5, 8.6, 2.6, 15.0)),
-                Shapes.or(Block.box(5, 14.0, 5, 11, 16, 11), Block.box(7.4, 13.4, 10.5, 8.6, 15.0, 15.0))),
-        RESIDENTIAL(Block.box(5.36, 4.8, 14.1, 10.64, 12.0, 16),
-                Shapes.or(Block.box(5, 0, 5, 11, 2.0, 11), Block.box(7.4, 1.0, 10.5, 8.6, 5.0, 15.4)),
-                Shapes.or(Block.box(5, 14.0, 5, 11, 16, 11), Block.box(7.4, 11.8, 10.5, 8.6, 15.0, 15.4)));
+        // the body, its pad on logs, and per pull box (below, above) the box at the face centre and the conduit to it
+        COMMERCIAL(Block.box(3.5, 2.4, 13.6, 12.5, 13.6, 16), LogMount.PAD_PANELBOARD,
+                Block.box(5, 0, 5, 11, 2.0, 11), new double[]{7.4, 1.0, 10.5, 8.6, 2.6, 15.0},
+                Block.box(5, 14.0, 5, 11, 16, 11), new double[]{7.4, 13.4, 10.5, 8.6, 15.0, 15.0}),
+        RESIDENTIAL(Block.box(5.36, 4.8, 14.1, 10.64, 12.0, 16), LogMount.PAD_LOAD_CENTER,
+                Block.box(5, 0, 5, 11, 2.0, 11), new double[]{7.4, 1.0, 10.5, 8.6, 5.0, 15.4},
+                Block.box(5, 14.0, 5, 11, 16, 11), new double[]{7.4, 11.8, 10.5, 8.6, 15.0, 15.4});
 
-        /** By the pull boxes shown: 0 none, 1 below, 2 above, 3 both. */
-        private final List<Map<Direction, VoxelShape>> shapes = new ArrayList<>();
+        /** By the pull boxes shown: 0 none, 1 below, 2 above, 3 both; on a wall, and on logs. */
+        private final List<Map<Direction, VoxelShape>> shapes = new ArrayList<>(), onLogs = new ArrayList<>();
+        private final int pad;
 
-        Kind(VoxelShape body, VoxelShape below, VoxelShape above) {
+        Kind(VoxelShape body, int pad, VoxelShape boxBelow, double[] below, VoxelShape boxAbove, double[] above) {
+            this.pad = pad;
             for (int k = 0; k < 4; k++) {
-                VoxelShape s = body;
-                if ((k & 1) != 0) s = Shapes.or(s, below);
-                if ((k & 2) != 0) s = Shapes.or(s, above);
+                VoxelShape s = body, l = LogMount.onPad(body, pad);
+                if ((k & 1) != 0) { s = Shapes.or(s, boxBelow, conduit(below, 0)); l = Shapes.or(l, boxBelow, conduit(below, LogMount.DEPTH_PX)); }
+                if ((k & 2) != 0) { s = Shapes.or(s, boxAbove, conduit(above, 0)); l = Shapes.or(l, boxAbove, conduit(above, LogMount.DEPTH_PX)); }
                 shapes.add(HorizontalShapeUtils.rotations(s));
+                onLogs.add(HorizontalShapeUtils.rotations(l));
             }
+        }
+
+        /** A conduit's box, its wall end brought forward by out px (with the panel on a pad). */
+        private static VoxelShape conduit(double[] b, double out) {
+            return Block.box(b[0], b[1], b[2], b[3], b[4], b[5] - out);
         }
     }
 
@@ -77,7 +88,7 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
     public DistributionPanelBlock(Properties properties, Kind kind) {
         super(properties);
         this.kind = kind;
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false).setValue(LogMount.LOG, false));
     }
 
     public Kind kind() {
@@ -100,7 +111,7 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (!face.getAxis().isHorizontal()) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -114,7 +125,7 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     @Override
@@ -129,7 +140,12 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         int k = (cabled(level, pos, Direction.DOWN) ? 1 : 0) | (cabled(level, pos, Direction.UP) ? 2 : 0);
-        return kind.shapes.get(k).get(state.getValue(FACING));
+        return (LogMount.mounted(state) ? kind.onLogs : kind.shapes).get(k).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return kind.pad;
     }
 
     /** Moving, glass and lit parts: the AFL Animated Block Mesh Runtime renderer; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
@@ -164,6 +180,6 @@ public class DistributionPanelBlock extends HorizontalDirectionalBlock implement
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, OPEN);
+        builder.add(FACING, OPEN, LogMount.LOG);
     }
 }

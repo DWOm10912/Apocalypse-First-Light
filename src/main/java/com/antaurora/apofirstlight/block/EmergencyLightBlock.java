@@ -35,8 +35,9 @@ import java.util.Map;
  * the unit charges and shows its green charge LED (MODE charging); when the power goes it lights its heads from the
  * battery (MODE on, light 10) until the battery is flat (MODE off). The battery is in the block entity. No interaction
  * (the test button was taken out, user 2026-10-08). A small plastic fitting: hand-breakable, drops itself, no collision.
+ * On a round log wall it stands on a pad (LOG, {@link LogMount}).
  */
-public class EmergencyLightBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public class EmergencyLightBlock extends HorizontalDirectionalBlock implements EntityBlock, LogMount.Padded {
     public enum Mode implements StringRepresentable {
         OFF("off"), CHARGING("charging"), ON("on");
         private final String name;
@@ -46,11 +47,12 @@ public class EmergencyLightBlock extends HorizontalDirectionalBlock implements E
 
     public static final EnumProperty<Mode> MODE = EnumProperty.create("mode", Mode.class);
     // tools/build-building-lights-v1.mjs SELECTION.emergency
-    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(Block.box(4.3, 5.9, 14.0, 11.7, 10.0, 16));
+    private static final VoxelShape NORTH = Block.box(4.3, 5.9, 14.0, 11.7, 10.0, 16);
+    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(NORTH), ON_LOGS = LogMount.rotationsOnPad(NORTH, LogMount.PAD_EMERGENCY);
 
     public EmergencyLightBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(MODE, Mode.OFF));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(MODE, Mode.OFF).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -58,7 +60,7 @@ public class EmergencyLightBlock extends HorizontalDirectionalBlock implements E
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (!face.getAxis().isHorizontal()) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -72,12 +74,17 @@ public class EmergencyLightBlock extends HorizontalDirectionalBlock implements E
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.get(state.getValue(FACING));
+        return (LogMount.mounted(state) ? ON_LOGS : SHAPES).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return LogMount.PAD_EMERGENCY;
     }
 
     @Override
@@ -102,7 +109,7 @@ public class EmergencyLightBlock extends HorizontalDirectionalBlock implements E
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, MODE);
+        builder.add(FACING, MODE, LogMount.LOG);
     }
 
     @Override

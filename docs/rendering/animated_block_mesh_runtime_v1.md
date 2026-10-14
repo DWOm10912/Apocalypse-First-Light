@@ -84,7 +84,8 @@ profile 最多 128 parts、32 channels、32 层深度；拒绝未知字段、非
 - native model space：**block 单位**，Y 向上、X 向东、Z 向南，NORTH 为前方 `-Z`；默认原点在方块底面中心。BB 的 16 units = 1 block。
 - sidecar corners 保持既有 `bone_pivot_local_blocks`，不在新 BER 中再反转 X 或再除 16。
 - profile pivot 是这个 native model space 的**绝对 pivot**；子节点使用 `childPivot - parentPivot`，继承父旋转/缩放。源 Free Mesh 的 group origin / 16 即该 pivot；现有 geo exporter 的 X 符号转换只属于 geo 文件，不能直接把 geo pivot 数值原样复制到 profile。
-- 变换链：BER 方块原点 → `[0.5,0,0.5]` → facing → origin → profile scale → parent → pivot 差/位移 → Rz·Ry·Rx → scale → pivot-local corners。列向量实际先受 X，再 Y，再 Z 旋转。
+- 变换链：BER 方块原点 → `[0.5,0,0.5]` → facing → mount → origin → profile scale → parent → pivot 差/位移 → Rz·Ry·Rx → scale → pivot-local corners。列向量实际先受 X，再 Y，再 Z 旋转。
+- mount（2026-10-13）：`AflAnimatedMeshHost#meshMountDepth()`，朝向旋转之后沿 −Z（网格前方）平移这么多格。默认按方块状态读 `block/LogMount`：挂在圆木墙垫块上的挂件（`log_mount=true`）是 0.08，其余 0。动画 BER（`AflAnimatedBlockMeshRenderer`）和烘焙进区块的静态网格（`AflStaticMeshModel.build`，`AflMeshChunking.Variant` 多了 `mount`，变了就重烘）用同一个平移；`getRenderBoundingBox` 朝前方扩出这么多。见 [cabin_exterior_v1.md](../models/cabin_exterior_v1.md)"壁挂件垫块"。
 - NORTH=0°、EAST=-90°、SOUTH=180°、WEST=90°，沿用 `HorizontalShapeUtils` 的方向约定。旋转发生在 part 之前，pivot、geometry 和 normal 同时转动。`facing: "none"` 可禁用；默认读取 `HORIZONTAL_FACING`，特殊方块覆盖 `meshFacing()`。
 - mesh loader 对 geo 只做既有骨骼名与 atlas 校验；**新 BER 的 rest、parent 和 pivot 以 profile 为准，不从 GeoBone 隐式补变换**。从既有资产迁移时必须把 authoring rest pose 显式写入 profile，不能重复烘焙。
 

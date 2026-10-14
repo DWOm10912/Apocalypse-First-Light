@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.cabin;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.LogMount;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -229,13 +230,25 @@ public final class CabinBlocks {
             return ew && ns ? 'c' : ew ? 'x' : ns ? 'z' : state.getValue(AXIS) == Direction.Axis.X ? 'x' : 'z';
         }
 
+        /**
+         * Bits 0..3: the joins (N, E, S, W); bits 4 + 4 i .. 7 + 4 i: the pad kind behind a wall fixture on side i that stands
+         * out on the logs (block/LogMount, 2026-10-13; pieces log_wall/pad_<kind>, tools/build-cabin-exterior-v1.mjs PADS).
+         */
         @Override
-        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) { return joinFlags(level, pos); }
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            int f = joinFlags(level, pos);
+            for (int i = 0; i < 4; i++) f |= LogMount.padToward(level, pos, SIDES[i]) << (4 + 4 * i);
+            return f;
+        }
 
         private static String flip(String s) { return s.equals("neg") ? "pos" : s.equals("pos") ? "neg" : "mid"; }
 
         @Override
         public void cabinPieces(BlockState state, int f, Sink sink) {
+            for (int i = 0; i < 4; i++) {
+                int pad = f >>> (4 + 4 * i) & 15;
+                if (pad != 0) sink.add("log_wall/pad_" + pad, turn(SIDES[i]));
+            }
             char look = look(state, f);
             if (look != 'c') {
                 sink.add("log_wall/run_" + look, 0);

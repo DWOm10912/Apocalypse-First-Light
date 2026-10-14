@@ -145,6 +145,10 @@
   - `joined_neg` / `joined_pos` 指世界坐标负方向 / 正方向那一侧有同一条灯排的下一节，自动计算。
   - 结构旋转、镜像时，这两个标记也一起换边。
 - **D**：只能点墙的侧面，朝外挂。
+- **原木墙**（2026-10-13）：A、C、D、E 挂在圆木墙上时状态 `log_mount=true`，整盏灯往外移 8 cm，站在原木墙画的垫块上（A 种类 5、C 种类 6、D 种类 3、E 种类 2），见 [cabin_exterior_v1.md](cabin_exterior_v1.md)"壁挂件垫块"。
+  - 模型：每个挂墙的模型多一个 `_log.json`（同一个 OBJ 加 Forge 根变换）。D、E 朝北画，沿 −Z 移；A、C 灯头朝上画、转到墙上，沿 +Y 移。
+  - 天花板上的 A、C、E 不带垫块：`facing=down` 时 `log_mount` 不会是 true，方块状态里两个值都指向普通模型。
+  - C 的一排灯只和 `log_mount` 相同的邻节连起来（一排灯不会一半在垫块上一半在墙上）。
 - 建造工具（开发用的 authoring bridge）：三个都登记为 SAFE_FIXTURE，挂在背后的支撑上（`ATTACHED_OPPOSITE_FACING`）。
   - `lit`、`mode` 是运行时状态，固定写 false / off。
   - C 可以指定 `axis`，`joined_*` 按邻居计算。

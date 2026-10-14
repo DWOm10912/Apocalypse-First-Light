@@ -41,20 +41,23 @@ import java.util.Map;
  * Service Meter Box (电表箱, Building Power V1, docs/models/building_power_v1.md): the building's service entry on an
  * outside wall: the meter, the main disconnect (ON; right-click throws the red handle) and a generator inlet. The bottom
  * port takes a cable from a generator / energy cell (later the city grid); the power goes on to the building's
- * Distribution Panel. No screen: the crosshair hint shows the state and the reading. Mining: pickaxe + diamond tier.
+ * Distribution Panel. No screen: the crosshair hint shows the state and the reading. Mining: pickaxe + diamond tier. On a
+ * round log wall it stands on a backboard (LOG, {@link LogMount}); the pull box stays at the bottom face centre (where the
+ * cable meets it), the conduit to it comes forward with the box (the mesh's pull_log bone).
  */
-public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock {
+public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements EntityBlock, AflPowerPortBlock, LogMount.Padded {
     public static final BooleanProperty ON = BooleanProperty.create("on");
     // canonical (facing north), px: the meter socket, the disconnect with its handle, the bottom pull box at the face centre
-    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(Shapes.or(
-            // from tools/build-building-power-v1.mjs METER (model x + 8; +X is the viewer's left): the meter socket with the
-            // glass dome, the disconnect, its handle on the viewer's right, the generator inlet, the pull box, the conduit
-            Block.box(9.2, 4.0, 12.3, 13.6, 10.8, 16), Block.box(2.2, 3.0, 13.4, 7.6, 11.4, 16), Block.box(1.5, 7.8, 13.9, 2.2, 11.2, 15.2),
-            Block.box(9.6, 1.4, 14.3, 13.2, 3.2, 16), Block.box(5, 0, 5, 11, 2.0, 11), Block.box(5.2, 1.0, 10.5, 6.0, 3.0, 14.9)));
+    // from tools/build-building-power-v1.mjs METER (model x + 8; +X is the viewer's left): the meter socket with the glass
+    // dome, the disconnect, its handle on the viewer's right, the generator inlet; the pull box; the conduit to it
+    private static final VoxelShape BOXES = Shapes.or(Block.box(9.2, 4.0, 12.3, 13.6, 10.8, 16), Block.box(2.2, 3.0, 13.4, 7.6, 11.4, 16),
+            Block.box(1.5, 7.8, 13.9, 2.2, 11.2, 15.2), Block.box(9.6, 1.4, 14.3, 13.2, 3.2, 16)), PULL_BOX = Block.box(5, 0, 5, 11, 2.0, 11);
+    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(Shapes.or(BOXES, PULL_BOX, Block.box(5.2, 1.0, 10.5, 6.0, 3.0, 14.9))),
+            ON_LOGS = HorizontalShapeUtils.rotations(Shapes.or(LogMount.onPad(BOXES, LogMount.PAD_METER), PULL_BOX, LogMount.cutBack(5.2, 1.0, 10.5, 6.0, 3.0, 14.9)));
 
     public ServiceMeterBoxBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ON, true));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(ON, true).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -67,7 +70,7 @@ public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements 
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (!face.getAxis().isHorizontal()) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -81,7 +84,7 @@ public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements 
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     /** Right-click: throw the disconnect (up = on). */
@@ -99,7 +102,12 @@ public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements 
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.get(state.getValue(FACING));
+        return (LogMount.mounted(state) ? ON_LOGS : SHAPES).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return LogMount.PAD_METER;
     }
 
     /** Moving, glass and lit parts: the AFL Animated Block Mesh Runtime renderer; resting parts: the chunk model (client/blockmesh/AflStaticMeshModel, docs/dev/render_performance_v1.md). */
@@ -134,6 +142,6 @@ public class ServiceMeterBoxBlock extends HorizontalDirectionalBlock implements 
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, ON);
+        builder.add(FACING, ON, LogMount.LOG);
     }
 }

@@ -328,7 +328,8 @@ final class AuthoringFixtureRegistry {
         var b=s.getBlock();
         return b instanceof CrossCollisionBlock||b instanceof WallBlock||b instanceof StairBlock||b instanceof FenceGateBlock
                 ||b instanceof OfficeCubiclePartitionBlock||b instanceof OfficeDesktopDecorationBlock||b instanceof ModernLcdMonitorBlock
-                ||b instanceof CheckoutCounterBlock||b instanceof StorageRackBlock||b instanceof CurbBlock||facade(b);
+                ||b instanceof CheckoutCounterBlock||b instanceof StorageRackBlock||b instanceof CurbBlock||facade(b)
+                ||b instanceof LogMount.Padded;   // wall fixtures: log_mount from the wall behind (2026-10-13), linear light joins
     }
     /**
      * Fuel Stop A1 facade blocks (2026-10-07): their computed states only follow neighbours and never drop or break, so

@@ -30,21 +30,23 @@ import java.util.Map;
  * along the row, and only the row's ends carry end caps (tools/build-building-lights-v1.mjs picks the model). A ceiling
  * light placed at the end of a row continues it; else it runs the way the player looks. LIT while the building's
  * lighting circuit has power ({@link BuildingLightBlock}), 1 FE/t per block. Aluminium fixture: pickaxe + diamond tier,
- * drops itself; no collision.
+ * drops itself; no collision. On a round log wall it stands on a pad (LOG, {@link LogMount}); a row joins only sections
+ * that stand the same way (on logs or not).
  */
-public class LinearLightBlock extends BuildingLightBlock {
+public class LinearLightBlock extends BuildingLightBlock implements LogMount.Padded {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", direction -> direction != Direction.UP);
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public static final BooleanProperty JOINED_NEG = BooleanProperty.create("joined_neg");
     public static final BooleanProperty JOINED_POS = BooleanProperty.create("joined_pos");
     // the outline (tools/build-building-lights-v1.mjs SELECTION.linear), widened to 2 px and thickened to 1.6 px for aiming
     private static final VoxelShape DOWN_X = Block.box(0, 14.4, 7, 16, 16, 9), DOWN_Z = Block.box(7, 14.4, 0, 9, 16, 16);
-    private static final Map<Direction, VoxelShape> WALL = HorizontalShapeUtils.rotations(Block.box(0, 7, 14.4, 16, 9, 16));
+    private static final VoxelShape WALL_NORTH = Block.box(0, 7, 14.4, 16, 9, 16);
+    private static final Map<Direction, VoxelShape> WALL = HorizontalShapeUtils.rotations(WALL_NORTH), WALL_ON_LOGS = LogMount.rotationsOnPad(WALL_NORTH, LogMount.PAD_LINEAR);
 
     public LinearLightBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(AXIS, Direction.Axis.X)
-                .setValue(JOINED_NEG, false).setValue(JOINED_POS, false).setValue(LIT, false));
+                .setValue(JOINED_NEG, false).setValue(JOINED_POS, false).setValue(LIT, false).setValue(LogMount.LOG, false));
     }
 
     /** The row's direction: AXIS on a ceiling, along the wall on a wall. */
@@ -61,7 +63,7 @@ public class LinearLightBlock extends BuildingLightBlock {
         LevelReader level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         Direction.Axis axis = face == Direction.DOWN ? ceilingAxis(level, pos, context.getHorizontalDirection().getAxis()) : face.getClockWise().getAxis();
-        BlockState state = defaultBlockState().setValue(FACING, face).setValue(AXIS, axis);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face).setValue(AXIS, axis), level, pos, face);
         return canSurvive(state, level, pos) ? joins(state, level, pos) : null;
     }
 
@@ -83,7 +85,7 @@ public class LinearLightBlock extends BuildingLightBlock {
     }
 
     private boolean sameRow(BlockState a, BlockState b) {
-        return b.is(this) && b.getValue(FACING) == a.getValue(FACING) && runAxis(b) == runAxis(a);
+        return b.is(this) && b.getValue(FACING) == a.getValue(FACING) && runAxis(b) == runAxis(a) && b.getValue(LogMount.LOG) == a.getValue(LogMount.LOG);
     }
 
     @Override
@@ -96,6 +98,8 @@ public class LinearLightBlock extends BuildingLightBlock {
     @Override
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
+        if (direction == state.getValue(FACING).getOpposite())
+            return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
         if (direction.getAxis() == runAxis(state))
             return state.setValue(direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? JOINED_POS : JOINED_NEG, sameRow(state, neighbor));
         return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
@@ -105,7 +109,12 @@ public class LinearLightBlock extends BuildingLightBlock {
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         Direction facing = state.getValue(FACING);
         if (facing == Direction.DOWN) return state.getValue(AXIS) == Direction.Axis.X ? DOWN_X : DOWN_Z;
-        return WALL.get(facing);
+        return (LogMount.mounted(state) ? WALL_ON_LOGS : WALL).get(facing);
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return state.getValue(FACING) == Direction.DOWN ? 0 : LogMount.PAD_LINEAR;
     }
 
     @Override
@@ -133,6 +142,6 @@ public class LinearLightBlock extends BuildingLightBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, AXIS, JOINED_NEG, JOINED_POS, LIT);
+        builder.add(FACING, AXIS, JOINED_NEG, JOINED_POS, LIT, LogMount.LOG);
     }
 }

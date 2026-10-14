@@ -1,0 +1,19 @@
+{
+  "loader": "forge:obj",
+  "model": "apocalypse_firstlight:models/block/porcelain_lampholder/wall_off.obj",
+  "automatic_culling": false,
+  "flip_v": true,
+  "shade_quads": true,
+  "emissive_ambient": true,
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "apocalypse_firstlight:block/porcelain_lampholder"
+  },
+  "transform": {
+    "translation": [
+      0,
+      0,
+      -0.08
+    ]
+  }
+}

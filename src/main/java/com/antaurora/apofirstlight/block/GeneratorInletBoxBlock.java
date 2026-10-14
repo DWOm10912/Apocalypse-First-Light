@@ -37,6 +37,8 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,9 +49,10 @@ import java.util.Map;
  * ({@link GeneratorInletBoxBlockEntity}), as the service meter box does. Right-click: the weather hood up or down (OPEN);
  * sneak right-click with an empty hand: take the plug off the hook (out of the genset if it is in one), or put it back.
  * Carried too far (the cord's length + 1.5 m) the plug drops back onto the hook. Mining: pickaxe + diamond tier
- * (industrial steel). The hood's sound is a placeholder vanilla sound until a recorded take replaces it.
+ * (industrial steel). The hood's sound is a placeholder vanilla sound until a recorded take replaces it. On a round log
+ * wall the box and its hook stand on a backboard (LOG, {@link LogMount}).
  */
-public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implements EntityBlock {
+public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implements EntityBlock, LogMount.Padded {
     public static final BooleanProperty OPEN = BooleanProperty.create("open");
     // canonical (facing north, the wall at z 16), px, tools/build-generator-inlet-v1.mjs SELECTION: the box with the shut
     // hood, the connector under it, the hook; the lifted hood; the coil while the cord hangs on the hook
@@ -57,12 +60,19 @@ public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implement
             Block.box(7.68, 4.08, 14.52, 8.32, 5.07, 16));
     private static final VoxelShape HOOD_OPEN = Block.box(6.59, 9.92, 11.37, 9.41, 12.45, 15.52);
     private static final VoxelShape COIL = Block.box(5.36, 0, 13.28, 10.63, 5.74, 15.87);
-    private static final Map<Direction, VoxelShape> SHUT = HorizontalShapeUtils.rotations(BODY), LIFTED = HorizontalShapeUtils.rotations(Shapes.or(BODY, HOOD_OPEN)),
-            SHUT_COILED = HorizontalShapeUtils.rotations(Shapes.or(BODY, COIL)), LIFTED_COILED = HorizontalShapeUtils.rotations(Shapes.or(BODY, HOOD_OPEN, COIL));
+    /** By hood (shut, lifted) x coil (none, coiled): on a wall, and on logs. */
+    private static final List<Map<Direction, VoxelShape>> SHAPES = new ArrayList<>(), ON_LOGS = new ArrayList<>();
+
+    static {
+        for (VoxelShape s : new VoxelShape[]{BODY, Shapes.or(BODY, COIL), Shapes.or(BODY, HOOD_OPEN), Shapes.or(BODY, HOOD_OPEN, COIL)}) {
+            SHAPES.add(HorizontalShapeUtils.rotations(s));
+            ON_LOGS.add(LogMount.rotationsOnPad(s, LogMount.PAD_INLET));
+        }
+    }
 
     public GeneratorInletBoxBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(OPEN, false).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -70,7 +80,7 @@ public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implement
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (!face.getAxis().isHorizontal()) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -86,7 +96,7 @@ public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implement
     @SuppressWarnings("deprecation")
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     /** Empty hand: the hood up or down; sneaking: the cord's plug off the hook / back onto it. */
@@ -112,8 +122,13 @@ public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implement
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        boolean open = state.getValue(OPEN), coil = coiled(level, pos);
-        return (open ? coil ? LIFTED_COILED : LIFTED : coil ? SHUT_COILED : SHUT).get(state.getValue(FACING));
+        int k = (state.getValue(OPEN) ? 2 : 0) | (coiled(level, pos) ? 1 : 0);
+        return (LogMount.mounted(state) ? ON_LOGS : SHAPES).get(k).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return LogMount.PAD_INLET;
     }
 
     /** A small wall fixture: nothing to bump into. */
@@ -165,6 +180,6 @@ public class GeneratorInletBoxBlock extends HorizontalDirectionalBlock implement
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, OPEN);
+        builder.add(FACING, OPEN, LogMount.LOG);
     }
 }

@@ -214,6 +214,7 @@ Result fields:
 - AFL storage racks (`left`, `right`; 2026-10-08, see below);
 - AFL curbs (`north`, `east`, `south`, `west`; 2026-10-09): updateShape only adds an edge where a road surface is beside it, never removes one (Curbs V1, docs/models/curbs_v1.md);
 - desktop items (`lowered`);
+- AFL wall fixtures that stand on a pad on round log walls (`block/LogMount.Padded`, 2026-10-13): wall outlet, building lights A / C / D / E, wall pack, panelboard and load center, service meter box, generator inlet box. Their `updateShape` sets `log_mount` (and the linear light's `joined_*`); the only other result is removal when the wall behind is gone, which is skipped like any removal. The block stays the same, so block entities (panel breakers, the inlet's cord) are kept. Fixtures placed before 2026-10-13 load with `log_mount=false`; one `reconcile_shapes` over the plot sets it (docs/models/cabin_exterior_v1.md "壁挂件垫块");
 - Fuel Stop A1 facade blocks (2026-10-07, see below): `storefront_glazing` (`left/right/up/down`), `ground_face_block` (`cap`, `shape`), `aluminum_cornice` (`shape`), `metal_wall_panel` (`cap`, four sides), `metal_panel_jamb` (`eyebrow`), `metal_eyebrow_canopy` (`left`, `right`).
 
 It computes every new state before writing anything. Results that would remove a block are skipped and reported. Doors, lights and most AFL fixtures are excluded on purpose, because their `updateShape` can drop items or remove blocks.

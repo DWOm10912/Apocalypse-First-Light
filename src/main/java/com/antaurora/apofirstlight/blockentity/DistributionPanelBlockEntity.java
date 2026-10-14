@@ -2,6 +2,7 @@ package com.antaurora.apofirstlight.blockentity;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.block.DistributionPanelBlock;
+import com.antaurora.apofirstlight.block.LogMount;
 import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshBlockEntity;
 import com.antaurora.apofirstlight.energy.BuildingPowerZone;
 import com.antaurora.apofirstlight.energy.PowerCableTransfer;
@@ -293,12 +294,17 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         return false;
     }
 
-    /** Each pull box shows only while a cable plugs into its port (the top one above, the bottom one below). */
+    /**
+     * Each pull box shows only while a cable plugs into its port (the top one above, the bottom one below); on a log wall's
+     * pad the port_*_log set (the same pull box at the face centre, the conduit to the panel standing out; LogMount).
+     */
     @Override
     public boolean meshPartVisible(String part) {
-        boolean up = part.equals("port_up");
-        if (!up && !part.equals("port_down")) return true;
-        return level != null && DistributionPanelBlock.cabled(level, worldPosition, up ? Direction.UP : Direction.DOWN);
+        boolean log = part.endsWith("_log");
+        String port = log ? part.substring(0, part.length() - 4) : part;
+        boolean up = port.equals("port_up");
+        if (!up && !port.equals("port_down")) return true;
+        return log == LogMount.mounted(getBlockState()) && level != null && DistributionPanelBlock.cabled(level, worldPosition, up ? Direction.UP : Direction.DOWN);
     }
 
     @Override

@@ -71,7 +71,7 @@ public final class AflMeshChunking {
     private static final double BETWEEN = 1e-4;
 
     /** What the chunk draws for one block entity: parts {@code lo/hi} (pre-order index bits), channels at 1 {@code ones}. */
-    record Variant(AflBlockMeshProfile profile, Direction facing, int shading, long lo, long hi, int ones) {
+    record Variant(AflBlockMeshProfile profile, Direction facing, float mount, int shading, long lo, long hi, int ones) {
         boolean has(int i) { return i < 64 ? (lo >>> i & 1L) != 0 : (hi >>> (i - 64) & 1L) != 0; }
         boolean empty() { return lo == 0 && hi == 0; }
     }
@@ -252,7 +252,7 @@ public final class AflMeshChunking {
             }
         }
         Direction facing = profile.horizontalFacing() ? host.meshFacing() : Direction.NORTH;
-        return new Variant(profile, facing, shading(entity.getLevel()), lo, hi, ones & used);
+        return new Variant(profile, facing, (float) host.meshMountDepth(), shading(entity.getLevel()), lo, hi, ones & used);
     }
 
     /** 0: a shader pack lights it (white, the chunk's own shading); 1: overworld entity lights; 2: nether entity lights. */
@@ -303,12 +303,12 @@ public final class AflMeshChunking {
     }
 
     private static Variant withParts(Variant v, long lo, long hi) {
-        return new Variant(v.profile(), v.facing(), v.shading(), lo, hi, v.ones());
+        return new Variant(v.profile(), v.facing(), v.mount(), v.shading(), lo, hi, v.ones());
     }
 
     /** The new variant drops a part, moves one, or draws differently: the chunk must change before the renderer can. */
     private static boolean removes(Variant old, Variant want) {
-        if (old.profile() != want.profile() || old.facing() != want.facing() || old.shading() != want.shading()) return true;
+        if (old.profile() != want.profile() || old.facing() != want.facing() || old.mount() != want.mount() || old.shading() != want.shading()) return true;
         if ((old.lo() & ~want.lo()) != 0 || (old.hi() & ~want.hi()) != 0) return true;   // a part leaves
         int diff = old.ones() ^ want.ones();
         if (diff == 0) return false;

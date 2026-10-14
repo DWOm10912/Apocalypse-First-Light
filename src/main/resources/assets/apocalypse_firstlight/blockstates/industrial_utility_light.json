@@ -1,46 +1,90 @@
 {
   "variants": {
-    "facing=down,lit=false": {
+    "facing=down,lit=false,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/off",
       "x": 180
     },
-    "facing=down,lit=true": {
+    "facing=down,lit=false,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off",
+      "x": 180
+    },
+    "facing=down,lit=true,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
       "x": 180
     },
-    "facing=north,lit=false": {
+    "facing=down,lit=true,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 180
+    },
+    "facing=north,lit=false,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/off",
       "x": 90
     },
-    "facing=north,lit=true": {
+    "facing=north,lit=false,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off_log",
+      "x": 90
+    },
+    "facing=north,lit=true,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
       "x": 90
     },
-    "facing=south,lit=false": {
+    "facing=north,lit=true,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit_log",
+      "x": 90
+    },
+    "facing=south,lit=false,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/off",
       "x": 270
     },
-    "facing=south,lit=true": {
+    "facing=south,lit=false,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off_log",
+      "x": 270
+    },
+    "facing=south,lit=true,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
       "x": 270
     },
-    "facing=east,lit=false": {
+    "facing=south,lit=true,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit_log",
+      "x": 270
+    },
+    "facing=east,lit=false,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/off",
       "x": 90,
       "y": 90
     },
-    "facing=east,lit=true": {
+    "facing=east,lit=false,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off_log",
+      "x": 90,
+      "y": 90
+    },
+    "facing=east,lit=true,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
       "x": 90,
       "y": 90
     },
-    "facing=west,lit=false": {
+    "facing=east,lit=true,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit_log",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west,lit=false,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/off",
       "x": 90,
       "y": 270
     },
-    "facing=west,lit=true": {
+    "facing=west,lit=false,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/off_log",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,lit=true,log_mount=false": {
       "model": "apocalypse_firstlight:block/industrial_utility_light/lit",
+      "x": 90,
+      "y": 270
+    },
+    "facing=west,lit=true,log_mount=true": {
+      "model": "apocalypse_firstlight:block/industrial_utility_light/lit_log",
       "x": 90,
       "y": 270
     }

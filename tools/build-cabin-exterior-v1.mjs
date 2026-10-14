@@ -149,8 +149,23 @@ function stub(name, along, side) {
   return pc;
 }
 
+/**
+ * Pads behind the wall fixtures that stand out on the logs (block/LogMount, 2026-10-13: outlets and the lampholder's pull
+ * chain sank into the 7 cm bulge). One flat white oak board per kind, from the wall face PAD_DEPTH out (1 cm in front of
+ * the log crests, so the two never fight at a distance), drawn by the wall on the fixture's side (CabinBlocks.LogWall
+ * flags: log_wall/pad_<kind>, turned to that side). x0, y0, x1, y1 in px of the north face (= the fixture's own frame),
+ * mirrored from LogMount.PADS (the fixtures' outlines include them; --check compares). No back face (it lies in the wall
+ * face, on the chinking); the sides run into the logs. The linear light's rail stops 0.1 px short of the cell sides: a
+ * run's cut log end lies in the side plane.
+ */
+export const PAD_DEPTH = 0.08;
+export const PADS = [[6.8, 3.9, 9.2, 7.3], [6.75, 5.47, 9.25, 7.97], [4.0, 5.6, 12.0, 10.3], [4.8, 7.0, 11.2, 11.7], [2.9, 2.9, 13.1, 13.1],
+  [0.1, 7.0, 15.9, 9.0], [3.2, 2.1, 12.8, 13.9], [5.05, 4.5, 10.95, 12.3], [1.2, 1.1, 13.9, 11.7], [6.3, 3.8, 9.7, 10.2]];
+const padPieces = () => PADS.map(([x0, y0, x1, y1], i) =>
+  box(new Piece('log_wall/pad_' + (i + 1)), y1 - y0 > x1 - x0 ? TRIM_V : TRIM, [x0 / 16, y0 / 16, -PAD_DEPTH], [x1 / 16, y1 / 16, 0], 'nweud'));
+
 function logWallPieces() {
-  const P = [];
+  const P = [...padPieces()];
   P.push(logsAlongX('log_wall/run_x', XC));
   P.push(alongZ('log_wall/run_z', {}));
   P.push(logsAlongX('log_wall/core_x', XC, {ends: false, tops: false}));
@@ -638,6 +653,12 @@ function audit() {
   }
   for (const [file, ids] of [['wooden_doors.json', ['white_oak_cabin_door', 'white_oak_board_door']], ['stairs.json', ['white_oak_stairs']], ['slabs.json', ['white_oak_slab']], ['fences.json', ['woven_wire_fence']]])
     for (const id of ids) if (!tagHas(tags + file, id)) errs.push(`${id}: missing from minecraft:${file}`);
+  // the log wall pads mirror block/LogMount (its PADS, DEPTH) and the walls that carry them (round_log_walls)
+  const lm = fs.readFileSync(path.join(ROOT, 'src/main/java/com/antaurora/apofirstlight/block/LogMount.java'), 'utf8');
+  const javaPads = [...lm.slice(lm.indexOf('PADS = {')).split('};')[0].matchAll(/\{([-\d.,\s]+)\}/g)].map(m => m[1].split(',').map(Number));
+  if (JSON.stringify(javaPads) !== JSON.stringify(PADS)) errs.push('log wall pads differ from LogMount.PADS');
+  if (+(/DEPTH = ([\d.]+)/.exec(lm) || [])[1] !== PAD_DEPTH) errs.push('PAD_DEPTH differs from LogMount.DEPTH');
+  if (!readJson('src/main/resources/data/apocalypse_firstlight/tags/blocks/round_log_walls.json').values.includes(NS + 'white_oak_log_wall')) errs.push('white_oak_log_wall: missing from round_log_walls');
   return errs;
 }
 

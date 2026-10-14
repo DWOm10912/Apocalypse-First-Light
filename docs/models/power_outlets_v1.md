@@ -32,6 +32,7 @@
 - **质量 / 堆叠**（估计）：插座 0.1 kg，叠 64（和灯、线缆这类电气配件一样）；插线板 0.5 kg / 0.9 kg，叠 16（5 kg 以下的桌面小件）。
 - **创造栏**：工业页，电表箱后面。
 - **建造工具**：都登记成 SAFE_FIXTURE。插座挂墙（`ATTACHED_OPPOSITE_FACING`），`upper` / `lower` 固定为 `false`；插线板 `FLOOR_OR_DESK`，`lowered` 自动算，固定 `on=true`、`lit=false`。
+- **原木墙**（2026-10-13）：插座挂在圆木墙上时状态 `log_mount=true`，用 `models/block/wall_outlet_log.json`（同一个 OBJ 往外移 8 cm），站在原木墙画的垫块（种类 1）上，插孔位置、选择框跟着外移；见 [cabin_exterior_v1.md](cabin_exterior_v1.md)"壁挂件垫块"。方块状态的键是 `facing,log_mount,lower,upper`。
 
 ## 外形（`tools/build-power-outlets-v1.mjs`）
 

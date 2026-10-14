@@ -23,6 +23,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, AX, extrude, revolve, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 import {heldDisplay} from './item-held-display.mjs';
+import {logTwin} from './afl-log-mount.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -342,10 +343,13 @@ function sourceOf(b) {
 const bb = path.join(ROOT, 'src/main/blockbench'), assets = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
 const json = v => JSON.stringify(v, null, 2) + '\n';
 const outputs = [], objs = [];
-const model = (file, title, b, bones) => {
+// log: also the `_log` twin (the same OBJ out on a log wall's pad, tools/afl-log-mount.mjs): 'front' for models built facing
+// north, 'lens' for the lens-up models turned onto a wall
+const model = (file, title, b, bones, log) => {
   const obj = objOf(title, file, b, bones);
   outputs.push([path.join(assets, `models/block/${file}.obj`), obj], [path.join(assets, `models/block/${file}.mtl`), mtlOf(title, b, bones)],
     [path.join(assets, `models/block/${file}.json`), json(objModel(file, b.id))]);
+  if (log) outputs.push([path.join(assets, `models/block/${file}_log.json`), json(logTwin(objModel(file, b.id), log === 'lens'))]);
   objs.push([file, obj]);
 };
 for (const b of Object.values(B)) outputs.push([path.join(bb, `${b.source}.bbmodel`), JSON.stringify(sourceOf(b))],
@@ -355,10 +359,12 @@ const MOUNT = {down: {x: 180}, north: {x: 90}, south: {x: 270}, east: {x: 90, y:
 const YROT = {north: 0, east: 90, south: 180, west: 270};
 const rot = r => ({...(r.x ? {x: r.x} : {}), ...(r.y ? {y: r.y} : {})});
 // A: square panel, off / lit
-for (const look of ['off', 'lit']) model(`industrial_utility_light/${look}`, `Building Lights V1 square panel light (${look})`, B.panel, bonesOf.panel(look));
+for (const look of ['off', 'lit']) model(`industrial_utility_light/${look}`, `Building Lights V1 square panel light (${look})`, B.panel, bonesOf.panel(look), 'lens');
 {
-  const variants = {};
-  for (const [f, r] of Object.entries(MOUNT)) for (const lit of [false, true]) variants[`facing=${f},lit=${lit}`] = {model: `apocalypse_firstlight:block/industrial_utility_light/${lit ? 'lit' : 'off'}`, ...rot(r)};
+  // log_mount (LogMount): on a log wall's pad; never set on the ceiling (that state shares the plain model)
+  const variants = {}, log = (f, lm) => lm && f !== 'down' ? '_log' : '';
+  for (const [f, r] of Object.entries(MOUNT)) for (const lit of [false, true]) for (const lm of [false, true])
+    variants[`facing=${f},lit=${lit},log_mount=${lm}`] = {model: `apocalypse_firstlight:block/industrial_utility_light/${lit ? 'lit' : 'off'}${log(f, lm)}`, ...rot(r)};
   outputs.push([path.join(assets, 'blockstates/industrial_utility_light.json'), json({variants})]);
   outputs.push([path.join(assets, 'models/item/industrial_utility_light.json'), json({parent: 'apocalypse_firstlight:block/industrial_utility_light/off', gui_light: 'side',
     display: display(B.panel, bonesOf.panel('off'), [30, 225, 0], 1.15, 0.55)})]);
@@ -366,16 +372,16 @@ for (const look of ['off', 'lit']) model(`industrial_utility_light/${look}`, `Bu
 // C: linear light, off / lit x which model ends carry caps. The row runs along AXIS (on a wall: along the wall); JOINED_NEG /
 // JOINED_POS = a section of the same row on the world's negative / positive side. Where the model's +X ends up decides
 // which cap is which: y 90 turns +X to +Z, y 270 to -Z (x turns keep X).
-for (const look of ['off', 'lit']) for (const caps of Object.keys(CAPS)) model(`linear_light/${look}_${caps}`, `Building Lights V1 linear light (${look}, caps ${caps})`, B.linear, bonesOf.linear(look, caps));
+for (const look of ['off', 'lit']) for (const caps of Object.keys(CAPS)) model(`linear_light/${look}_${caps}`, `Building Lights V1 linear light (${look}, caps ${caps})`, B.linear, bonesOf.linear(look, caps), 'lens');
 {
-  const variants = {};
+  const variants = {}, log = (f, lm) => lm && f !== 'down' ? '_log' : '';
   for (const [f, r0] of Object.entries(MOUNT)) for (const axis of ['x', 'z']) {
     const r = f === 'down' && axis === 'z' ? {x: 180, y: 90} : r0;
     const flip = (r.y || 0) === 270;   // the model's +X faces the world's negative side
-    for (const lit of [false, true]) for (const jn of [false, true]) for (const jp of [false, true]) {
+    for (const lit of [false, true]) for (const jn of [false, true]) for (const jp of [false, true]) for (const lm of [false, true]) {
       const capNeg = flip ? !jp : !jn, capPos = flip ? !jn : !jp;
       const caps = capNeg && capPos ? 'both' : capNeg ? 'neg' : capPos ? 'pos' : 'none';
-      variants[`axis=${axis},facing=${f},joined_neg=${jn},joined_pos=${jp},lit=${lit}`] = {model: `apocalypse_firstlight:block/linear_light/${lit ? 'lit' : 'off'}_${caps}`, ...rot(r)};
+      variants[`axis=${axis},facing=${f},joined_neg=${jn},joined_pos=${jp},lit=${lit},log_mount=${lm}`] = {model: `apocalypse_firstlight:block/linear_light/${lit ? 'lit' : 'off'}_${caps}${log(f, lm)}`, ...rot(r)};
     }
   }
   outputs.push([path.join(assets, 'blockstates/linear_light.json'), json({variants})]);
@@ -383,10 +389,11 @@ for (const look of ['off', 'lit']) for (const caps of Object.keys(CAPS)) model(`
     display: display(B.linear, bonesOf.linear('off', 'both'), [30, 135, 0], 0.75, 0.45)})]);
 }
 // D: emergency light, off / charging / on
-for (const look of ['off', 'charging', 'on']) model(`emergency_light/${look}`, `Building Lights V1 emergency light (${look})`, B.emergency, bonesOf.emergency(look));
+for (const look of ['off', 'charging', 'on']) model(`emergency_light/${look}`, `Building Lights V1 emergency light (${look})`, B.emergency, bonesOf.emergency(look), 'front');
 {
   const variants = {};
-  for (const [f, y] of Object.entries(YROT)) for (const look of ['off', 'charging', 'on']) variants[`facing=${f},mode=${look}`] = {model: `apocalypse_firstlight:block/emergency_light/${look}`, ...(y ? {y} : {})};
+  for (const [f, y] of Object.entries(YROT)) for (const lm of [false, true]) for (const look of ['off', 'charging', 'on'])
+    variants[`facing=${f},log_mount=${lm},mode=${look}`] = {model: `apocalypse_firstlight:block/emergency_light/${look}${lm ? '_log' : ''}`, ...(y ? {y} : {})};
   outputs.push([path.join(assets, 'blockstates/emergency_light.json'), json({variants})]);
   outputs.push([path.join(assets, 'models/item/emergency_light.json'), json({parent: 'apocalypse_firstlight:block/emergency_light/off', gui_light: 'side',
     display: {...heldDisplay(B.emergency.PARTS.filter(p => bonesOf.emergency('off').has(p.bone)).flatMap(p => p.v.map(([x, y, z]) => [x + 8, y, z + 8])), {size: 0.7, rotations: {fixed: [0, 180, 0]}}),
@@ -396,11 +403,11 @@ for (const look of ['off', 'charging', 'on']) model(`emergency_light/${look}`, `
 // E: porcelain lampholder, ceiling / wall x off / lit; FACING down = the ceiling model, a horizontal FACING = the wall model
 // turned (it faces north as built); ON (the pull chain) does not change the look
 for (const mt of ['ceiling', 'wall']) for (const look of ['off', 'lit'])
-  model(`porcelain_lampholder/${mt}_${look}`, `Building Lights V1 porcelain lampholder (${mt}, ${look})`, B.lampholder, bonesOf.lampholder(look, mt));
+  model(`porcelain_lampholder/${mt}_${look}`, `Building Lights V1 porcelain lampholder (${mt}, ${look})`, B.lampholder, bonesOf.lampholder(look, mt), mt === 'wall' && 'front');
 {
   const variants = {};
-  for (const f of ['down', 'north', 'east', 'south', 'west']) for (const lit of [false, true]) for (const on of [false, true])
-    variants[`facing=${f},lit=${lit},on=${on}`] = {model: `apocalypse_firstlight:block/porcelain_lampholder/${f === 'down' ? 'ceiling' : 'wall'}_${lit ? 'lit' : 'off'}`,
+  for (const f of ['down', 'north', 'east', 'south', 'west']) for (const lit of [false, true]) for (const lm of [false, true]) for (const on of [false, true])
+    variants[`facing=${f},lit=${lit},log_mount=${lm},on=${on}`] = {model: `apocalypse_firstlight:block/porcelain_lampholder/${f === 'down' ? 'ceiling' : 'wall'}_${lit ? 'lit' : 'off'}${lm && f !== 'down' ? '_log' : ''}`,
       ...(f !== 'down' && YROT[f] ? {y: YROT[f]} : {})};
   outputs.push([path.join(assets, 'blockstates/porcelain_lampholder.json'), json({variants})]);
   const off = bonesOf.lampholder('off', 'ceiling');

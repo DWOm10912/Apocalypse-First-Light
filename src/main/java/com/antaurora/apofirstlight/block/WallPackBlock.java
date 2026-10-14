@@ -18,22 +18,23 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
+
 /**
  * Site Lighting V1 wall pack (docs/models/site_lighting_v1.md, tools/build-site-lighting-v1.mjs): a 360 x 220 x 170 mm
  * full-cutoff LED wall pack on a building's outside wall, FACING away from the wall. On the building's lighting circuit like
  * the indoor lights ({@link BuildingLightBlock}), its wiring found through the wall behind it (its own cell is outdoors), and
- * dark by day (photocell). Light 15 when lit.
+ * dark by day (photocell). Light 15 when lit. On a round log wall it stands on a pad (LOG, {@link LogMount}).
  */
-public class WallPackBlock extends BuildingLightBlock {
+public class WallPackBlock extends BuildingLightBlock implements LogMount.Padded {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     // px, tools/build-site-lighting-v1.mjs WALLPACK (x +-180 mm, y 460..710 mm, z 330..500 mm from the cell's centre, facing north)
-    private static final VoxelShape[] SHAPES = {   // by Direction#get2DDataValue: south, west, north, east
-            Block.box(5.12, 7.36, 0, 10.88, 11.36, 2.72), Block.box(13.28, 7.36, 5.12, 16, 11.36, 10.88),
-            Block.box(5.12, 7.36, 13.28, 10.88, 11.36, 16), Block.box(0, 7.36, 5.12, 2.72, 11.36, 10.88)};
+    private static final VoxelShape NORTH = Block.box(5.12, 7.36, 13.28, 10.88, 11.36, 16);
+    private static final Map<Direction, VoxelShape> SHAPES = HorizontalShapeUtils.rotations(NORTH), ON_LOGS = LogMount.rotationsOnPad(NORTH, LogMount.PAD_WALL_PACK);
 
     public WallPackBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH).setValue(LIT, false).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -41,7 +42,7 @@ public class WallPackBlock extends BuildingLightBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         Direction facing = face.getAxis().isHorizontal() ? face : context.getHorizontalDirection().getOpposite();
-        BlockState state = defaultBlockState().setValue(FACING, facing);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, facing), context.getLevel(), context.getClickedPos(), facing);
         return state.canSurvive(context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -56,7 +57,8 @@ public class WallPackBlock extends BuildingLightBlock {
     @Override
     @SuppressWarnings("deprecation")
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        return direction == state.getValue(FACING).getOpposite() && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState() : state;
+        return direction == state.getValue(FACING).getOpposite() && !state.canSurvive(level, pos) ? Blocks.AIR.defaultBlockState()
+                : LogMount.updated(state, direction, neighbor, state.getValue(FACING));
     }
 
     @Override
@@ -73,7 +75,12 @@ public class WallPackBlock extends BuildingLightBlock {
     @Override
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES[state.getValue(FACING).get2DDataValue()];
+        return (LogMount.mounted(state) ? ON_LOGS : SHAPES).get(state.getValue(FACING));
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return LogMount.PAD_WALL_PACK;
     }
 
     @Override
@@ -90,6 +97,6 @@ public class WallPackBlock extends BuildingLightBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, LIT);
+        builder.add(FACING, LIT, LogMount.LOG);
     }
 }

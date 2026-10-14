@@ -10,7 +10,11 @@
 // Bones / channels:
 //   panel / load center: body; port_up / port_down (the top / bottom pull box, each drawn only while a cable plugs in there); door ('open', -110 deg); main ('main_off'); b0..b11 ('b0_off'..'b11_off'): each handle swings away from
 //          the middle when its breaker is off; b0..b5 the column on the viewer's left (+X), top to bottom, b6..b11 the right.
-//   meter: body; handle ('off', the disconnect handle down).
+//          port_up_log / port_down_log: the same pull boxes for a panel on a log wall's pad (block/LogMount, 2026-10-13):
+//          the runtime moves the whole mesh LOG_DEPTH out, so these are built that far toward the wall (the box lands on
+//          the face centre where the cable meets it) and their conduits run on to the moved panel.
+//   meter: body; handle ('off', the disconnect handle down); pull / pull_log (the bottom pull box and its conduit, on a
+//          wall / on a log wall's pad, as the panels' ports).
 //   node tools/build-building-power-v1.mjs                 -> writes sources, geo / sidecars / profiles / maps / models / blockstates
 //   node tools/build-building-power-v1.mjs --check         -> verifies every output is up to date
 //   node tools/build-building-power-v1.mjs --preview DIR   -> writes only geo / sidecars / maps into DIR
@@ -23,6 +27,7 @@ import {fileURLToPath} from 'node:url';
 import {convert, serializeCompact} from './export-afl-mesh.mjs';
 import {Part, AX, extrude, mul, area2, unwrap, paint, png, readPng, zFightLevels} from './cube-slab-mesh-lib.mjs';
 import {addPowerPort, PORT} from './afl-power-port.mjs';
+import {LOG_DEPTH} from './afl-log-mount.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -51,17 +56,29 @@ const portDown = q => [q[0], 8 - q[2], q[1]], portUp = q => [q[0], 8 + q[2], -q[
 // ---------------- shared: pull box + conduit to a cell face ----------------
 // a 6 x 6 px pull box centred on the bottom (or top) face; its outer face carries the standard port; a 3/4" EMT conduit
 // (r 0.32 px) from the device's bottom (or top) runs to the box's back at mid height.
-const BOX_H = 1.4, COND_R = 0.32;
-function pullBox(P, side, bone, from) {   // side 'down' | 'up'; from: [x, y, z] where the conduit leaves the device
-  const down = side === 'down', y0 = down ? PORT.depth : 16 - PORT.depth - BOX_H, y1 = y0 + BOX_H, ym = (y0 + y1) / 2;
-  slab(P(`pullbox_${side}`, bone, 'ansi'), 'z', [-3, y0, -3], [3, y1, 3], 0.08);
+// The _log set (a device on a log wall's pad, which the runtime moves LOG out): the box and its port are copies of the
+// plain ones built LOG toward the wall (they land on the face centre again; same UVs, no extra atlas space), the conduit
+// is its own, its horizontal leg LOG shorter.
+const BOX_H = 1.4, COND_R = 0.32, LOG = LOG_DEPTH * 16;
+function conduit(c, side, from, back) {
+  const down = side === 'down', y0 = down ? PORT.depth : 16 - PORT.depth - BOX_H, ym = y0 + BOX_H / 2, [fx, fy, fz] = from;
+  assert(3 + back + 0.5 < fz, 'pull box conduit too short');
+  cyl(c, 'y', fz, fx, COND_R, Math.min(fy, ym), Math.max(fy, ym), 12);                  // vertical leg out of the device
+  cyl(c, 'z', fx, ym, COND_R, 3 + back - 0.05, fz, 12);                                  // horizontal leg into the box back
+  cyl(c, 'z', fx, ym, COND_R + 0.12, 3 + back - 0.05, 3.5 + back, 12);                   // connector at the box
+  cyl(c, 'y', fz, fx, COND_R + 0.12, down ? fy - 0.5 : fy, down ? fy : fy + 0.5, 12);    // connector at the device
+}
+const copyPart = (P, o, name, bone, fn) => { const c = P(name, bone, o.mat); c.v = o.v.map(fn); c.f = o.f.map(q => ({...q, ids: q.ids.slice()})); c.copyOf = o; return c; };
+function pullBox(P, side, bone, from, logBone) {   // side 'down' | 'up'; from: [x, y, z] where the conduit leaves the device
+  const down = side === 'down', y0 = down ? PORT.depth : 16 - PORT.depth - BOX_H, y1 = y0 + BOX_H;
+  const box = P(`pullbox_${side}`, bone, 'ansi');
+  slab(box, 'z', [-3, y0, -3], [3, y1, 3], 0.08);
   const ports = {plate: P(`port_${side}_plate`, bone, 'port'), socket: P(`port_${side}_socket`, bone, 'socket'), pin: P(`port_${side}_pin`, bone, 'portdark')};
   turned([ports.plate, ports.socket, ports.pin], down ? portDown : portUp, () => addPowerPort(ports, 0, 0));
-  const c = P(`conduit_${side}`, bone, 'emt'), [fx, fy, fz] = from;
-  cyl(c, 'y', fz, fx, COND_R, Math.min(fy, ym), Math.max(fy, ym), 12);                  // vertical leg out of the device
-  cyl(c, 'z', fx, ym, COND_R, 3 - 0.05, fz, 12);                                         // horizontal leg into the box back
-  cyl(c, 'z', fx, ym, COND_R + 0.12, 3 - 0.05, 3.5, 12);                                 // connector at the box
-  cyl(c, 'y', fz, fx, COND_R + 0.12, down ? fy - 0.5 : fy, down ? fy : fy + 0.5, 12);    // connector at the device
+  conduit(P(`conduit_${side}`, bone, 'emt'), side, from, 0);
+  if (!logBone) return;
+  for (const o of [box, ports.plate, ports.socket, ports.pin]) copyPart(P, o, o.name + '_log', logBone, q => [q[0], q[1], q[2] + LOG]);
+  conduit(P(`conduit_${side}_log`, logBone, 'emt'), side, from, LOG);
 }
 
 // ---------------- the distribution panels ----------------
@@ -112,12 +129,12 @@ function buildPanel(PANEL) {
   for (const [a, b] of PANEL.hinges) cyl(hg, 'y', hinge[2], hinge[0], 0.2, a, b, 10);
   // conduits to the two pull boxes, each drawn only while a cable plugs into its port (2026-10-13: the bottom one too; it
   // hung in mid-cell on a wooden wall when the building is fed through a meter box or a generator inlet instead)
-  pullBox(P, 'down', 'port_down', [0, y0, PANEL.cz]);
-  pullBox(P, 'up', 'port_up', [0, y1, PANEL.cz]);
+  pullBox(P, 'down', 'port_down', [0, y0, PANEL.cz], 'port_down_log');
+  pullBox(P, 'up', 'port_up', [0, y1, PANEL.cz], 'port_up_log');
   // rest = on: the main tie bar up 30 deg, each branch toggle 20 deg toward the middle; off swings them through the straight
   // position to the same angle the other way
   const D = PANEL.handleDeg;
-  const RIG = [['body', [0, 0, 0]], ['port_up', [0, 0, 0]], ['port_down', [0, 0, 0]], ['door', hinge], ['main', pivots.main, [30, 0, 0]], ...slots.map(s => [s.bone, pivots[s.bone], [0, s.side * D, 0]])];
+  const RIG = [['body', [0, 0, 0]], ['port_up', [0, 0, 0]], ['port_down', [0, 0, 0]], ['port_up_log', [0, 0, 0]], ['port_down_log', [0, 0, 0]], ['door', hinge], ['main', pivots.main, [30, 0, 0]], ...slots.map(s => [s.bone, pivots[s.bone], [0, s.side * D, 0]])];
   const ANIM = {open: {ticks: 10, transforms: {door: {rotation: [0, PANEL.door.deg, 0]}}},
     main_off: {ticks: 3, transforms: {main: {rotation: [-60, 0, 0]}}},
     ...Object.fromEntries(slots.map(s => [s.bone + '_off', {ticks: 2, transforms: {[s.bone]: {rotation: [0, -s.side * 2 * D, 0]}}}]))};
@@ -150,8 +167,8 @@ function buildMeter() {
   slab(P('inlet_cover', 'body', 'ansidk'), 'z', [ix0 + 0.3, iy0 + 0.25, 6.3], [ix1 - 0.3, iy1 - 0.25, 6.5], 0.04);
   // nipple meter -> disconnect, conduit disconnect -> the bottom pull box
   cyl(P('nipple', 'body', 'emt'), 'x', 7.2, 7.4, 0.36, dx1 - 0.05, sx0 + 0.05, 12);
-  pullBox(P, 'down', 'body', [-2.4, dy0, 6.7]);
-  const RIG = [['body', [0, 0, 0]], ['handle', METER.handle.pivot]];
+  pullBox(P, 'down', 'pull', [-2.4, dy0, 6.7], 'pull_log');
+  const RIG = [['body', [0, 0, 0]], ['pull', [0, 0, 0]], ['pull_log', [0, 0, 0]], ['handle', METER.handle.pivot]];
   const ANIM = {off: {ticks: 4, transforms: {handle: {rotation: [METER.handle.deg, 0, 0]}}}};   // lever from up (on) toward down (off)
   return {PARTS, RIG, ANIM};
 }
@@ -204,7 +221,7 @@ const ASSETS = {panel: {id: 'distribution_panel', build: () => buildPanel(PANEL)
 function asset(kind) {
   const {id, build} = ASSETS[kind], {PARTS, RIG, ANIM} = build();
   const UV = unwrap(PARTS, {atlas: ATLAS, pad: PAD, startS: 20, stepS: 0.5});
-  for (const p of PARTS) assert(p.f.every(f => UV.faceUV.get(p)?.has(f)), 'unmapped face in ' + p.name);
+  for (const p of PARTS) assert((p.copyOf || p).f.every(f => UV.faceUV.get(p.copyOf || p)?.has(f)), 'unmapped face in ' + p.name);
   const painted = paint({PARTS, islands: UV.islands, S: UV.S, uvOf: UV.uvOf, atlas: ATLAS, pad: PAD, MATS, ZONED: new Set(), groupInfo: new Map(),
     sourceGroups: () => [], refTexture: {source: DUMMY}, refUvWidth: 1, background: {c: [...ANSI, 255], s: [98, 20, 0, 255], n: [128, 128, 255, 255]}});
   const M = painted.PNG.map(b => readPng(b).px);
@@ -214,9 +231,10 @@ function asset(kind) {
   const uuid = k => { const h = createHash('sha256').update('afl-building-power-v1:' + id + ':' + k).digest('hex'); return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`; };
   const nodes = new Map(RIG.map(([b]) => [b, {uuid: uuid('group:' + b), isOpen: true, children: []}])), elements = [];
   for (const p of PARTS) {
-    const key = i => i.toString(36).padStart(4, '0'), vertices = {}, faces = {}, uvs = UV.faceUV.get(p);
+    // a copy (the _log pull boxes) takes its original's UVs, face by index
+    const key = i => i.toString(36).padStart(4, '0'), vertices = {}, faces = {}, uvs = UV.faceUV.get(p.copyOf || p);
     p.v.forEach((q, i) => { vertices[key(i)] = q.map(r12); });
-    p.f.forEach((f, fi) => { const uv = uvs.get(f); faces['f' + key(fi)] = {uv: Object.fromEntries(f.ids.map((vid, j) => [key(vid), uv[j].map(r12)])), vertices: f.ids.map(key), texture: 0}; });
+    p.f.forEach((f, fi) => { const uv = uvs.get((p.copyOf || p).f[fi]); faces['f' + key(fi)] = {uv: Object.fromEntries(f.ids.map((vid, j) => [key(vid), uv[j].map(r12)])), vertices: f.ids.map(key), texture: 0}; });
     const eid = uuid('mesh:' + p.name);
     elements.push({name: p.name, color: 0, origin: [0, 0, 0], rotation: [0, 0, 0], shading: 'flat', export: true, visibility: true, locked: false,
       render_order: 'default', scope: 0, allow_mirror_modeling: true, vertices, faces, type: 'mesh', uuid: eid});
@@ -236,7 +254,7 @@ function asset(kind) {
     animations: []};
   const geo = {format_version: '1.12.0', 'minecraft:geometry': [{description: {identifier: 'geometry.' + id, texture_width: ATLAS, texture_height: ATLAS,
     visible_bounds_width: 2, visible_bounds_height: 2, visible_bounds_offset: [0, 0.5, 0]},
-    bones: RIG.map(([b, origin]) => ({name: b, pivot: [-origin[0] || 0, origin[1], origin[2]], ...(b === 'port_up' || b === 'port_down' ? {neverRender: true} : {})}))}]};
+    bones: RIG.map(([b, origin]) => ({name: b, pivot: [-origin[0] || 0, origin[1], origin[2]], ...(b.startsWith('port_') || b.endsWith('_log') ? {neverRender: true} : {})}))}]};
   const LAYERS = Object.fromEntries(PARTS.filter(p => p.mat === 'glass').map(p => [p.name, 'translucent']));
   const sidecar = convert(source, geo, {}, id + '.bbmodel', 2, null, LAYERS);
   // bounds: every vertex through every channel's motion (Euler XYZ as the runtime: Rx, then Ry, then Rz about the pivot)
@@ -253,7 +271,9 @@ function asset(kind) {
     origin: [0, 0, 0], scale: [1, 1, 1], facing: 'horizontal', bounds,
     parts: Object.fromEntries(RIG.map(([b, origin, rest]) => [b, {pivot: origin.map(v => r6(v / 16)), ...(rest ? {rest: {rotation: rest}} : {})}])),
     animations: Object.fromEntries(Object.entries(ANIM).map(([ch, a]) => [ch, {duration_ticks: a.ticks, easing: 'ease_in_out', transforms: a.transforms}]))};
-  const zf = zFightLevels(PARTS, new Map());
+  // coplanar faces per drawn set: the plain one and the log-pad one (their pull boxes are alternatives, never drawn together)
+  const logBones = new Set(RIG.map(([b]) => b).filter(b => b.endsWith('_log'))), plainOf = new Set([...logBones].map(b => b.slice(0, -4)));
+  const zf = {unresolved: [PARTS.filter(p => !logBones.has(p.bone)), PARTS.filter(p => !plainOf.has(p.bone))].flatMap(set => zFightLevels(set, new Map()).unresolved)};
   const aabb = ps => [0, 1, 2].map(k => Math.min(...ps.map(q => q[k]))).concat([0, 1, 2].map(k => Math.max(...ps.map(q => q[k])))).map(r3);
   return {kind, id, PARTS, UV, PNGS, source, geo, sidecar, meshText: serializeCompact(sidecar), profile, bounds, zf, closed: aabb(PARTS.flatMap(p => p.v)), channels: Object.keys(ANIM)};
 }
@@ -276,7 +296,7 @@ for (const d of Object.values(BUILT)) {
   const {id} = d;
   outputs.push([path.join(bb, `${id}_v1.bbmodel`), JSON.stringify(d.source)], [path.join(assets, `geo/${id}.geo.json`), JSON.stringify(d.geo, null, 2) + '\n'],
     [path.join(assets, `meshes/${id}.aflmesh.json`), d.meshText], [path.join(assets, `block_mesh_profiles/${id}.json`), JSON.stringify(d.profile, null, 2) + '\n'],
-    [path.join(assets, `models/item/${id}.json`), JSON.stringify({parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${id}`}, display: itemDisplay(d.PARTS)}, null, 2) + '\n'],
+    [path.join(assets, `models/item/${id}.json`), JSON.stringify({parent: 'builtin/entity', gui_light: 'side', textures: {particle: `apocalypse_firstlight:block/${id}`}, display: itemDisplay(d.PARTS.filter(p => !p.bone.endsWith('_log')))}, null, 2) + '\n'],
     [path.join(assets, `models/block/${id}.json`), JSON.stringify({loader: 'apocalypse_firstlight:static_mesh', textures: {particle: `apocalypse_firstlight:block/${id}`}}, null, 2) + '\n'],
     [path.join(assets, `blockstates/${id}.json`), JSON.stringify({variants: {'': {model: `apocalypse_firstlight:block/${id}`}}}, null, 2) + '\n'],
     ...['', '_s', '_n'].flatMap((k, i) => [[path.join(bb, `textures/${id}${k}.png`), d.PNGS[i]], [path.join(assets, `textures/block/${id}${k}.png`), d.PNGS[i]]]));

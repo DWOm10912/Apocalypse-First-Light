@@ -55,6 +55,8 @@ public final class AflAnimatedBlockMeshRenderer<T extends BlockEntity & AflAnima
         try {
             pose.translate(0.5, 0, 0.5);
             if (profile.horizontalFacing()) pose.mulPose(Axis.YP.rotationDegrees(AflBlockMeshProfile.facingDegrees(entity.meshFacing())));
+            double mount = entity.meshMountDepth();   // a wall fixture on a log wall's pad: out toward its front (-Z)
+            if (mount != 0) pose.translate(0, 0, -mount);
             pose.translate(profile.origin().x, profile.origin().y, profile.origin().z);
             pose.scale((float)profile.scale().x, (float)profile.scale().y, (float)profile.scale().z);
             var cutout = RenderType.entityCutoutNoCull(profile.texture());

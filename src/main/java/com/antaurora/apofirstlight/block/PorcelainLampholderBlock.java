@@ -37,21 +37,23 @@ import java.util.Map;
  * chain: ON toggles this one lamp. LIT while the chain is on and the building's lighting circuit has power
  * ({@link BuildingLightBlock}); the bulb takes its real wattage, {@link BuildingLights#BULB_60W_PERIOD} FE a period
  * (0.24 FE/t). A wall lamp finds its wiring through the wall behind it (a porch wall lamp's own cell may be outdoors).
- * Light 14. A small porcelain fitting: hand-breakable, drops itself (like the wall outlet), no collision.
+ * Light 14. A small porcelain fitting: hand-breakable, drops itself (like the wall outlet), no collision. On a round log
+ * wall it stands on a pad (LOG, {@link LogMount}), its chain clear of the logs.
  * The chain's click is a placeholder vanilla sound until a recorded take replaces it.
  */
-public class PorcelainLampholderBlock extends BuildingLightBlock {
+public class PorcelainLampholderBlock extends BuildingLightBlock implements LogMount.Padded {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", direction -> direction != Direction.UP);
     public static final BooleanProperty ON = BooleanProperty.create("on");
     public static final int LIGHT_LEVEL = 14;
     // px, tools/build-building-lights-v1.mjs SELECTION: the porcelain and bulb, and the chain (widened for aiming)
     private static final VoxelShape CEILING = Shapes.or(Block.box(7.16, 13.34, 7.16, 8.84, 16, 8.84), Block.box(8.26, 10.1, 7.7, 8.86, 15.4, 8.3));
-    private static final Map<Direction, VoxelShape> WALL = HorizontalShapeUtils.rotations(
-            Shapes.or(Block.box(7.16, 5.88, 13.34, 8.84, 7.56, 16), Block.box(7.7, 1.9, 14.95, 8.3, 6.2, 15.6)));
+    private static final VoxelShape WALL_NORTH = Shapes.or(Block.box(7.16, 5.88, 13.34, 8.84, 7.56, 16), Block.box(7.7, 1.9, 14.95, 8.3, 6.2, 15.6));
+    private static final Map<Direction, VoxelShape> WALL = HorizontalShapeUtils.rotations(WALL_NORTH),
+            WALL_ON_LOGS = LogMount.rotationsOnPad(WALL_NORTH, LogMount.PAD_LAMPHOLDER);
 
     public PorcelainLampholderBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(ON, true).setValue(LIT, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(ON, true).setValue(LIT, false).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -59,7 +61,7 @@ public class PorcelainLampholderBlock extends BuildingLightBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction face = context.getClickedFace();
         if (face == Direction.UP) return null;
-        BlockState state = defaultBlockState().setValue(FACING, face);
+        BlockState state = LogMount.placed(defaultBlockState().setValue(FACING, face), context.getLevel(), context.getClickedPos(), face);
         return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
     }
 
@@ -75,7 +77,7 @@ public class PorcelainLampholderBlock extends BuildingLightBlock {
     @SuppressWarnings("deprecation")
     public BlockState updateShape(BlockState state, Direction direction, BlockState neighbor, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) return Blocks.AIR.defaultBlockState();
-        return super.updateShape(state, direction, neighbor, level, pos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
     /** Pull the chain: on lights the lamp at once when the lighting circuit has power (that period drawn), off darkens it. */
@@ -112,7 +114,12 @@ public class PorcelainLampholderBlock extends BuildingLightBlock {
     @SuppressWarnings("deprecation")
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         Direction facing = state.getValue(FACING);
-        return facing == Direction.DOWN ? CEILING : WALL.get(facing);
+        return facing == Direction.DOWN ? CEILING : (LogMount.mounted(state) ? WALL_ON_LOGS : WALL).get(facing);
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return state.getValue(FACING) == Direction.DOWN ? 0 : LogMount.PAD_LAMPHOLDER;
     }
 
     @Override
@@ -135,6 +142,6 @@ public class PorcelainLampholderBlock extends BuildingLightBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, ON, LIT);
+        builder.add(FACING, ON, LIT, LogMount.LOG);
     }
 }

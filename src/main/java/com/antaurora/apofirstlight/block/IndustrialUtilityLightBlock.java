@@ -22,6 +22,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -30,22 +31,21 @@ import java.util.Set;
  * ceiling (FACING down); walls stay allowed for the buildings that already hang the old light there (the linear light is
  * the wall light). LIT while the building's lighting circuit has power ({@link BuildingLightBlock}). Industrial salvage:
  * pickaxe + diamond tier; it drops itself when its support goes (and in explosions, IndustrialMaterialExplosionDrops).
- * No collision.
+ * No collision. On a round log wall it stands on a pad (LOG, {@link LogMount}).
  */
-public class IndustrialUtilityLightBlock extends BuildingLightBlock {
+public class IndustrialUtilityLightBlock extends BuildingLightBlock implements LogMount.Padded {
     public static final DirectionProperty FACING = DirectionProperty.create("facing", direction -> direction != Direction.UP);
     // the outline (tools/build-building-lights-v1.mjs SELECTION.panel), thickened to 1.6 px so the thin panel is easy to aim at
     private static final VoxelShape CEILING_SHAPE = Block.box(3.2, 14.4, 3.2, 12.8, 16, 12.8);
     private static final VoxelShape NORTH_SHAPE = Block.box(3.2, 3.2, 14.4, 12.8, 12.8, 16);
-    private static final VoxelShape SOUTH_SHAPE = Block.box(3.2, 3.2, 0, 12.8, 12.8, 1.6);
-    private static final VoxelShape EAST_SHAPE = Block.box(0, 3.2, 3.2, 1.6, 12.8, 12.8);
-    private static final VoxelShape WEST_SHAPE = Block.box(14.4, 3.2, 3.2, 16, 12.8, 12.8);
+    private static final Map<Direction, VoxelShape> WALL = HorizontalShapeUtils.rotations(NORTH_SHAPE),
+            WALL_ON_LOGS = LogMount.rotationsOnPad(NORTH_SHAPE, LogMount.PAD_PANEL_LIGHT);
     private static final Set<BlockPos> PLAYER_DESTROYING = new HashSet<>();
     private static final Set<BlockPos> EXPLOSION_DESTROYING = new HashSet<>();
 
     public IndustrialUtilityLightBlock(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(LIT, false));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.DOWN).setValue(LIT, false).setValue(LogMount.LOG, false));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class IndustrialUtilityLightBlock extends BuildingLightBlock {
         if (clickedFace == Direction.UP || !canAttach(context.getLevel(), context.getClickedPos(), clickedFace)) {
             return null;
         }
-        return defaultBlockState().setValue(FACING, clickedFace);
+        return LogMount.placed(defaultBlockState().setValue(FACING, clickedFace), context.getLevel(), context.getClickedPos(), clickedFace);
     }
 
     @Override
@@ -88,19 +88,18 @@ public class IndustrialUtilityLightBlock extends BuildingLightBlock {
             }
             return Blocks.AIR.defaultBlockState();
         }
-        return super.updateShape(state, direction, neighborState, level, currentPos, neighborPos);
+        return LogMount.updated(super.updateShape(state, direction, neighborState, level, currentPos, neighborPos), direction, neighborState, state.getValue(FACING));
     }
 
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos position, CollisionContext context) {
-        return switch (state.getValue(FACING)) {
-            case DOWN -> CEILING_SHAPE;
-            case NORTH -> NORTH_SHAPE;
-            case SOUTH -> SOUTH_SHAPE;
-            case EAST -> EAST_SHAPE;
-            case WEST -> WEST_SHAPE;
-            default -> Shapes.empty();
-        };
+        Direction facing = state.getValue(FACING);
+        return facing == Direction.DOWN ? CEILING_SHAPE : (LogMount.mounted(state) ? WALL_ON_LOGS : WALL).get(facing);
+    }
+
+    @Override
+    public int logPad(BlockState state) {
+        return state.getValue(FACING) == Direction.DOWN ? 0 : LogMount.PAD_PANEL_LIGHT;
     }
 
     @Override
@@ -136,6 +135,6 @@ public class IndustrialUtilityLightBlock extends BuildingLightBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, LIT);
+        builder.add(FACING, LIT, LogMount.LOG);
     }
 }

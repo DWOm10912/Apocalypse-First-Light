@@ -23,6 +23,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Part, AX, extrude, unwrap, paint, png, readPng, zFightLevels, area2, add, sub, mul, dot, cross, norm, newell} from './cube-slab-mesh-lib.mjs';
 import {heldDisplay} from './item-held-display.mjs';
+import {logTwin} from './afl-log-mount.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function assert(c, m) { if (!c) throw new Error(m); }
@@ -454,10 +455,12 @@ outputs.push([path.join(assets, 'models/item/area_light.json'), json({parent: NS
 // wall pack and downlight: off / lit
 for (const look of ['off', 'lit']) {
   model(`wall_pack/${look}`, `Site Lighting V1 wall pack (${look})`, ...LOOKS['wallpack_' + look]);
+  // on a log wall's pad (LogMount): the same OBJ moved out (tools/afl-log-mount.mjs)
+  outputs.push([path.join(assets, `models/block/wall_pack/${look}_log.json`), json(logTwin(objModel(`wall_pack/${look}`, LOOKS['wallpack_' + look][0].id)))]);
   model(`canopy_downlight/${look}`, `Site Lighting V1 canopy downlight (${look})`, ...LOOKS['downlight_' + look]);
 }
-outputs.push([path.join(assets, 'blockstates/wall_pack.json'), json({variants: Object.fromEntries(Object.entries(YROT).flatMap(([f, y]) => [false, true].map(lit =>
-  [`facing=${f},lit=${lit}`, {model: NS + `wall_pack/${lit ? 'lit' : 'off'}`, ...yr(y)}])))})]);
+outputs.push([path.join(assets, 'blockstates/wall_pack.json'), json({variants: Object.fromEntries(Object.entries(YROT).flatMap(([f, y]) => [false, true].flatMap(lit => [false, true].map(lm =>
+  [`facing=${f},lit=${lit},log_mount=${lm}`, {model: NS + `wall_pack/${lit ? 'lit' : 'off'}${lm ? '_log' : ''}`, ...yr(y)}]))))})]);
 outputs.push([path.join(assets, 'models/item/wall_pack.json'), json({parent: NS + 'wall_pack/off', gui_light: 'side', display: display(guiFit(...LOOKS.wallpack_off, [20, 205, 0]), ...LOOKS.wallpack_off, 0.75)})]);
 outputs.push([path.join(assets, 'blockstates/canopy_downlight.json'), json({variants: {'lit=false': {model: NS + 'canopy_downlight/off'}, 'lit=true': {model: NS + 'canopy_downlight/lit'}}})]);
 outputs.push([path.join(assets, 'models/item/canopy_downlight.json'), json({parent: NS + 'canopy_downlight/off', gui_light: 'side', display: display(guiFit(...LOOKS.downlight_off, [30, 225, 0], 13), ...LOOKS.downlight_off, 0.6)})]);
