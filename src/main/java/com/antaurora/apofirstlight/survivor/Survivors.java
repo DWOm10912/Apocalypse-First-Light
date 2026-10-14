@@ -1,6 +1,8 @@
 package com.antaurora.apofirstlight.survivor;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.network.AflNetwork;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
@@ -179,6 +181,7 @@ public final class Survivors {
                 String.format(java.util.Locale.ROOT, "%.2f", record.daysSurvived(record.deathDayTime)), lineage.status,
                 next == null ? "" : "; successor #" + next.lifeIndex + " " + next.fullName()
                         + (next.hasSpawnPlan ? " planned at " + next.spawnPlanX + " " + next.spawnPlanZ : " (no planned start)"));
+        sendSummary(player);
         return record;
     }
 
@@ -207,6 +210,7 @@ public final class Survivors {
         SurvivorRecord current = lineage.current();
         if (lineage.status == SurvivorLineage.Status.ENDED) {
             player.setHealth(0.0F);
+            sendSummary(player);
             ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] {} respawned after the end of a HARD run; back to the dead state",
                     player.getGameProfile().getName());
             return;
@@ -231,6 +235,7 @@ public final class Survivors {
                     data.setDirty();
                     flushPending = true;
                     player.setHealth(0.0F);
+                    sendSummary(player);
                     return;
                 }
             }
@@ -261,6 +266,36 @@ public final class Survivors {
         ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} continues as survivor #{} {} at {} {} ({})",
                 player.getGameProfile().getName(), next.lifeIndex, next.fullName(), next.spawnDimension,
                 next.spawnPos.toShortString(), next.spawnSource);
+    }
+
+    /**
+     * The death summary for the AFL death screen (client SurvivorClient), when the player's newest survivor is dead:
+     * at the death, on login while dead, and when a respawn is refused or undone.
+     */
+    static void sendSummary(ServerPlayer player) {
+        SurvivorLineage lineage = SurvivorWorldData.get(player.server).lineage(player.getUUID());
+        SurvivorRecord dead = lineage == null ? null : lineage.current();
+        if (dead == null || dead.state != SurvivorRecord.State.DEAD || lineage.status == SurvivorLineage.Status.ACTIVE) return;
+        BlockPos at = dead.deathPos != null ? dead.deathPos : BlockPos.ZERO;
+        AflNetwork.survivor(player, new SurvivorPackets.Summary(dead.fullName(), dead.lifeIndex,
+                dead.daysSurvived(dead.deathDayTime), dead.deathCause(), dead.deathDimension != null ? dead.deathDimension : "",
+                at.getX(), at.getY(), at.getZ(), lineage.status == SurvivorLineage.Status.ENDED));
+    }
+
+    /** Login: the host of a fresh single-player world chooses the mode first; a dead player sees the summary again. */
+    static void onLogin(ServerPlayer player) {
+        if (mustChooseMode(player)) AflNetwork.survivor(player, new SurvivorPackets.ModePrompt(true));
+        if (player.isDeadOrDying()) sendSummary(player);
+    }
+
+    /** The host's choice (packet): checked, locked, persisted at once; the prompt closes. */
+    static void onModeChoice(ServerPlayer player, SurvivorMode choice) {
+        if (chooseMode(player, choice)) {
+            flushPending = true;
+            AflNetwork.survivor(player, new SurvivorPackets.ModePrompt(false));
+        } else if (SurvivorWorldData.get(player.server).mode != SurvivorMode.UNSET) {
+            AflNetwork.survivor(player, new SurvivorPackets.ModePrompt(false));
+        }
     }
 
     /** The new survivor's name as a title, the career index under it. */

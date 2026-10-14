@@ -43,6 +43,7 @@ public final class SurvivorEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SurvivorCorpses.reconcileStalePlayer(player);
         Survivors.ensureSurvivor(player);
+        Survivors.onLogin(player);
     }
 
     @SubscribeEvent
