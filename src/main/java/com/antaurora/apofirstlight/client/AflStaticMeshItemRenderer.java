@@ -84,6 +84,24 @@ public final class AflStaticMeshItemRenderer extends BlockEntityWithoutLevelRend
         if (context == ItemDisplayContext.GUI && buffers instanceof MultiBufferSource.BufferSource source) source.endBatch();
     }
 
+    /**
+     * Draws a baked mesh where the pose stands, without the item offsets: worn gear on a body part (ClientEquipmentSlots,
+     * CarriedWeaponsLayer) and mesh parts of first-person rigs. Baked meshes rest on y = 0 centred on X / Z: callers
+     * translate by minus the bake shift (the build's printed origin) to put an authored frame back.
+     */
+    public static void drawMesh(ResourceLocation geometry, ResourceLocation texture, PoseStack pose,
+                                MultiBufferSource buffers, int light, int overlay) {
+        MeshModel mesh = VextrisMeshes.byGeometry(geometry);
+        var geo = GeckoLibCache.getBakedModels().get(geometry);
+        if (mesh == null || geo == null) return;
+        if (mesh.hasTranslucent()) {
+            GeckoMeshRenderer.render(geometry, texture, pose, buffers, light, overlay);
+            return;
+        }
+        VertexConsumer vertices = buffers.getBuffer(RenderType.entityCutoutNoCull(texture));
+        for (GeoBone bone : geo.topLevelBones()) renderBone(mesh, bone, pose, vertices, light, overlay);
+    }
+
     /** Bones flagged {@code neverRender} in the geo (e.g. a block's lit lamp set) are block-only and skipped here. */
     private static void renderBone(MeshModel mesh, GeoBone bone, PoseStack pose,
                                    VertexConsumer vertices, int light, int overlay) {

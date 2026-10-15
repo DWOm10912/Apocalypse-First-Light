@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "apocalypse_firstlight:crowbar",
+    "#minecraft:swords",
+    "#minecraft:axes"
+  ]
+}

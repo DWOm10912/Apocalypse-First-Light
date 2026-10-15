@@ -89,6 +89,7 @@ public final class SurvivorCorpses {
         event.setCanceled(true);
         sweepInventory(player.getInventory(), taken);
         sweepCurios(player, taken);
+        sweepPockets(player, taken);
         store(player.serverLevel(), corpse, taken);
         Survivors.markFlush();
     }
@@ -102,6 +103,7 @@ public final class SurvivorCorpses {
         List<ItemStack> left = new ArrayList<>();
         sweepInventory(player.getInventory(), left);
         sweepCurios(player, left);
+        sweepPockets(player, left);
         if (left.isEmpty()) return;
         ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] {} stacks reached {}'s new body; moved to corpse {}", left.size(),
                 player.getGameProfile().getName(), corpse.id);
@@ -152,6 +154,19 @@ public final class SurvivorCorpses {
                 take(slots.getCosmeticStacks(), out);
             }
         });
+    }
+
+    /** Takes everything out of the pockets (Grid Inventory V0; the rig's and backpack's contents travel inside them). */
+    private static void sweepPockets(ServerPlayer player, List<ItemStack> out) {
+        var pockets = com.antaurora.apofirstlight.inventory.grid.Pockets.of(player);
+        if (pockets == null || pockets.items().isEmpty()) return;
+        var storage = com.antaurora.apofirstlight.inventory.grid.GridStorage.load(
+                com.antaurora.apofirstlight.inventory.grid.Pockets.LAYOUT, pockets.items(), false);
+        for (ItemStack stack : storage.stacks()) {
+            if (!stack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(stack)) out.add(stack);
+        }
+        pockets.set(new net.minecraft.nbt.ListTag());
+        com.antaurora.apofirstlight.inventory.grid.GridPackets.sendPockets(player);
     }
 
     private static void take(IDynamicStackHandler handler, List<ItemStack> out) {
@@ -250,6 +265,7 @@ public final class SurvivorCorpses {
         List<ItemStack> stale = new ArrayList<>();
         sweepInventory(player.getInventory(), stale);
         sweepCurios(player, stale);
+        sweepPockets(player, stale);
         player.setHealth(0.0F);
         ApocalypseFirstLight.LOGGER.warn("[AFL Survivor] {}'s player file predates the death of survivor #{} {}; "
                         + "removed {} stale stacks (they are in corpse {}) and restored the dead state",

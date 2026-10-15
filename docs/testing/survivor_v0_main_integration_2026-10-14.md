@@ -1,6 +1,6 @@
 # 集成审核报告：幸存者死亡与继任 V0 同步最新 Main（2026-10-14）
 
-状态：**分支内集成完成，编译通过，GameTest 没有新回归（第 5 节）；实机回归等用户做（第 6 节）。合并进 master 由 Main 会话做，见第 8 节。**
+状态：**已合并进 master `47140c87` 并推送（Main 会话做，用户批准，2026-10-14，见第 8 节）。编译通过，GameTest 没有新回归（第 5 节）；第 6 节的实机回归用户 2026-10-14 报告通过。**
 
 - 分支：`feature/survivor-v0`，工作区 `D:/Minecraft Modding/AFL-survivor-v0`。Main 工作目录没有动。
 - 同步的 Main：`a650e8d6`（联邦六州设为新建普通世界默认，含 C1/C2 合并 `082ebd77`、收音机 V1、暗线 V1 第 5–7 阶段）。分叉点 `f08982d0`。
@@ -86,7 +86,9 @@ GameTest 服务器的测试世界是 r1（Main 的 C3 特意保留），所以�
 
 日志在会话的临时目录里（`gametest.log`、`gametest-master.log`），没有放进仓库。
 
-## 6. 实机回归（等用户做，没做之前不算通过）
+## 6. 实机回归（用户 2026-10-14 报告通过）
+
+合并进 master 以后，用户用这个工作区的 `runClient`（代码和 master `47140c87` 相同）按下面的清单测过，回复“main 的测试通过”。没有逐项的详细记录。
 
 用这个工作区的 `runClient`（`D:/Minecraft Modding/AFL-survivor-v0`），它的存档在这个工作区自己的 `run/` 里，不碰 PCL 正式测试世界。
 
@@ -99,12 +101,11 @@ GameTest 服务器的测试世界是 r1（Main 的 C3 特意保留），所以�
 
 ## 7. 没做 / 已知限制
 
-- 第 6 节的实机回归。
-- 联邦世界里的继任出生是第 3 节修过的代码，没有实机测过。
+- 联邦世界里的继任出生（第 3 节修过的代码）只在第 6 节的回归里测过一次 `/kill`。
 - 多人联机没有重测（之前在协议 42 上测过）。
 - 名册用尽、回归没有测过（和之前一样）。
 - 开局模板池只有设计文档。
-- 网格背包：只有概念图。Main 集成通过以后，从最新 Main 开 `feature/inventory-grid-v0` 继续。
+- 网格背包：只有概念图。合并以后已在这个工作区从 master `47140c87` 开 `feature/inventory-grid-v0` 继续。
 
 ## 8. 合并进 master
 
@@ -112,3 +113,8 @@ GameTest 服务器的测试世界是 r1（Main 的 C3 特意保留），所以�
 - 合并在 Main 的工作目录里做（`git merge --no-ff feature/survivor-v0`）。Main 工作目录的状态由 Main 会话自己确认；D 会话不碰它。
 - 合并以后要核对的：`git merge-base --is-ancestor feature/survivor-v0 master` 成立；如果 master 在这期间没有新提交，合并后 master 的文件树和这个分支完全相同（`git diff feature/survivor-v0 master` 为空），这份报告的编译和 GameTest 结果就直接适用；如果 master 有新提交，要在 master 上重新编译一次。
 - 没有推送。推送要用户另外确认。
+
+结果（2026-10-14）：
+- 用户在 Main 会话批准后，Main 在 `a650e8d6` 打检查点 `checkpoint/pre-survivor-merge-20261014`，再 `--no-ff` 合并：新 master = **`47140c87`**（父提交 `a650e8d6`、`9391e6f3`）。
+- 推送：`origin/master` `a650e8d6..47140c87`，由 Main 做，用户批准。D 会话没有推送。
+- D 会话在自己的工作区只读核对过：`feature/survivor-v0` 是 master 的祖先；`git diff feature/survivor-v0 master` 为 0 字节；master 里协议是 `43`，`SurvivorPackets` 在 `WiringPackets` 之后注册，`SurvivorSpawns` 读绑定的规划，`survivor/` 代码、62 张皮肤和 4 份文档都在。所以第 5 节的编译和 GameTest 结果直接适用于 master，没有在 master 上重新编译。

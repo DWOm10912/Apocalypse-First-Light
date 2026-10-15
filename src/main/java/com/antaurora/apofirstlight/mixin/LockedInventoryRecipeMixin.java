@@ -13,15 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LockedInventoryRecipeMixin {
     @Shadow protected Inventory inventory;
 
-    /** The recipe book must not count locked empties as room for returning grid ingredients. */
+    /**
+     * The recipe book's room for returning grid ingredients: in Survival / Adventure the free cells of the grids, where
+     * returned items go (InventoryGridMixin); the vanilla slots take nothing then (HotbarRoles).
+     */
     @Inject(method = "getAmountOfFreeSlotsInInventory", at = @At("HEAD"), cancellable = true)
     private void afl$countUsableStorage(CallbackInfoReturnable<Integer> cir) {
-        int capacity = PlayerStorageCapacity.getUnlockedInventorySlots(inventory.player);
-        if (capacity >= inventory.items.size()) return;
-        int free = 0;
-        for (int slot = 0; slot < capacity; slot++) {
-            if (inventory.getItem(slot).isEmpty()) free++;
-        }
-        cir.setReturnValue(free);
+        if (PlayerStorageCapacity.unrestricted(inventory.player)) return;
+        cir.setReturnValue(com.antaurora.apofirstlight.inventory.grid.PlayerGrids.view(inventory.player).freeCells());
     }
 }

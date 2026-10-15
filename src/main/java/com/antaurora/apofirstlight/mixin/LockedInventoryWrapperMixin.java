@@ -19,14 +19,14 @@ public abstract class LockedInventoryWrapperMixin {
     @Inject(method = "insertItem", at = @At("HEAD"), cancellable = true)
     private void afl$denyLockedInsertion(int slot, ItemStack stack, boolean simulate,
             CallbackInfoReturnable<ItemStack> cir) {
-        if (getInv() instanceof Inventory inventory && PlayerStorageCapacity.isLocked(inventory, slot)) {
+        if (getInv() instanceof Inventory inventory && PlayerStorageCapacity.rejects(inventory, slot, stack)) {
             cir.setReturnValue(stack);
         }
     }
 
     @Inject(method = "isItemValid", at = @At("HEAD"), cancellable = true)
     private void afl$lockedItemValidity(int slot, ItemStack stack, CallbackInfoReturnable<Boolean> cir) {
-        if (getInv() instanceof Inventory inventory && PlayerStorageCapacity.isLocked(inventory, slot)) {
+        if (getInv() instanceof Inventory inventory && PlayerStorageCapacity.rejects(inventory, slot, stack)) {
             cir.setReturnValue(false);
         }
     }

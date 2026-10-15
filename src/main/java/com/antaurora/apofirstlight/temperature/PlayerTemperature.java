@@ -69,10 +69,10 @@ public final class PlayerTemperature {
                    double insulation, double felt, double target) {}
 
     private static final class State {
-        double core = Double.NaN, wet, exertion, ambient = Double.NaN, target = Double.NaN, damageTimer;
+        double core = Double.NaN, wet, exertion, ambient = Double.NaN, target = Double.NaN, comfortMin = Double.NaN, damageTimer;
         int coldStage, heatStage, lastUpdate = Integer.MIN_VALUE, lastSyncTick = Integer.MIN_VALUE;
         boolean forceSync = true;
-        float sentCore = Float.NaN, sentAmbient, sentCold, sentHeat, sentDanger, sentSway, sentTrend, sentTarget;
+        float sentCore = Float.NaN, sentAmbient, sentCold, sentHeat, sentDanger, sentSway, sentTrend, sentTarget, sentComfort;
         Reading reading;
     }
     private PlayerTemperature() {}
@@ -211,6 +211,7 @@ public final class PlayerTemperature {
         s.core = Mth.clamp(s.core + (target - s.core) * (1 - Math.exp(-dt / tau)), c.coreMin, c.coreMax);
         s.ambient = shown;
         s.target = target;
+        s.comfortMin = c.comfortLow - insulation;
         s.reading = new Reading(climate, mean, amp, water, precipitation, day, outdoor, sheltered, cover, heat + cold, env, shown,
                 submersion, exertionHeat, insulation, felt, target);
     }
@@ -356,14 +357,15 @@ public final class PlayerTemperature {
         double aim = Double.isNaN(s.target) ? core : s.target;
         float target = (float)(Mth.clamp((aim - h.heatStart) / (h.heatFull - h.heatStart), 0, 1)
                 - Mth.clamp((h.coldStart - aim) / (h.coldStart - h.coldFull), 0, 1));
+        float comfort = Double.isNaN(s.comfortMin) ? (float)c.comfortLow : (float)s.comfortMin;
         boolean changed = s.forceSync || Float.isNaN(s.sentCore) || Math.abs((float)core - s.sentCore) >= 0.05f
                 || Math.abs(ambient - s.sentAmbient) >= 0.05f || Math.abs(coldness - s.sentCold) >= 0.01f
                 || Math.abs(heat - s.sentHeat) >= 0.01f || Math.abs(danger - s.sentDanger) >= 0.01f
-                || Math.abs(sway - s.sentSway) >= 0.01f || Math.abs(trend - s.sentTrend) >= 0.05f || Math.abs(target - s.sentTarget) >= 0.02f || now - s.lastSyncTick >= SYNC_KEEP_ALIVE;
+                || Math.abs(sway - s.sentSway) >= 0.01f || Math.abs(trend - s.sentTrend) >= 0.05f || Math.abs(target - s.sentTarget) >= 0.02f || Math.abs(comfort - s.sentComfort) >= 0.1f || now - s.lastSyncTick >= SYNC_KEEP_ALIVE;
         if (!changed) return;
-        AflNetwork.temperatureState(player, new TemperaturePackets.State((float)core, ambient, coldness, heat, danger, sway, trend, target));
+        AflNetwork.temperatureState(player, new TemperaturePackets.State((float)core, ambient, coldness, heat, danger, sway, trend, target, comfort));
         s.sentCore = (float)core; s.sentAmbient = ambient; s.sentCold = coldness; s.sentHeat = heat; s.sentDanger = danger;
-        s.sentSway = sway; s.sentTrend = trend; s.sentTarget = target; s.lastSyncTick = now; s.forceSync = false;
+        s.sentSway = sway; s.sentTrend = trend; s.sentTarget = target; s.sentComfort = comfort; s.lastSyncTick = now; s.forceSync = false;
     }
 
     // ---- lifecycle

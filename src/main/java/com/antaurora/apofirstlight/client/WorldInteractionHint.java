@@ -64,7 +64,10 @@ public final class WorldInteractionHint {
         Target target=null;
         if(PortableGeneratorPull.active()) {fade=0;return;}   // the recoil QTE draws its own prompt
         Vec3 nozzleIn=NozzleFillView.localOpening();   // the fuel nozzle in an opening: a click takes it out
+        // ground items (GroundItemPick): an item lying nearer than the block looked at comes before the block's own action
+        var ground=nozzleIn==null?GroundItemPick.offer(mc):null;
         if(nozzleIn!=null) target=new Target(Component.translatable("hint.apocalypse_firstlight.fuel_nozzle.pull"),nozzleIn.add(0,0.3,0));
+        else if(ground!=null) target=new Target(ground.label(),ground.anchor());
         // the wiring wrench acts before every block's use (WiringWrenchItem), so no block offers its own action while it is held
         else if(!mc.player.isSpectator() && !mc.player.getMainHandItem().is(AflItems.WIRING_WRENCH.get()) && mc.hitResult instanceof BlockHitResult hit) {
             // sneaking with an empty hand on a plug-in appliance acts on its plug: that hint comes before the doors and lids
@@ -118,6 +121,7 @@ public final class WorldInteractionHint {
     private static java.util.List<com.antaurora.apofirstlight.client.ui.AflKeyHint> keysFor(Minecraft mc,Component label) {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
+        if(key.contains(".ground_item.")&&mc.player.isShiftKeyDown()) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
         if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);

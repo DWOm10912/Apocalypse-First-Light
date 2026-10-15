@@ -22,14 +22,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(InventoryMenu.class)
 public abstract class InventoryMenuEquipmentMixin extends AbstractContainerMenu {
-    private static final String[] AFL_ICONS = {"empty_slot_back", "empty_slot_wrist", "empty_slot_ears"};
+    private static final String[] AFL_ICONS = {"empty_slot_back", "empty_slot_wrist", "empty_slot_ears", "empty_slot_rig", "empty_slot_holster"};
 
     protected InventoryMenuEquipmentMixin(MenuType<?> type, int id) { super(type, id); }
 
+    /**
+     * Back, wrist and ears in the vanilla page's column; the chest rig and the holster (Grid Inventory V0) have no place
+     * on the vanilla page and sit far outside it (the AFL inventory page draws and clicks every slot by its own layout).
+     */
     @Inject(method = "<init>", at = @At("TAIL"))
     private void afl$addEquipmentSlots(Inventory inventory, boolean active, Player owner, CallbackInfo ci) {
-        for (int i = 0; i < AflEquipmentSlots.INVENTORY_PAGE.size(); i++)
-            this.addSlot(new AflEquipmentSlot(owner, AflEquipmentSlots.INVENTORY_PAGE.get(i), AFL_ICONS[i], 77, 8 + i * 18));
+        for (int i = 0; i < AflEquipmentSlots.INVENTORY_PAGE.size(); i++) {
+            boolean vanillaPage = i < 3;
+            this.addSlot(new AflEquipmentSlot(owner, AflEquipmentSlots.INVENTORY_PAGE.get(i), AFL_ICONS[i],
+                    vanillaPage ? 77 : -2000, vanillaPage ? 8 + i * 18 : -2000));
+        }
     }
 
     /** From the main inventory, hotbar or off-hand (9..45): one item into the first empty AFL slot that takes it. */

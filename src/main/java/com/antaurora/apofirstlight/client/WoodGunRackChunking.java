@@ -168,24 +168,82 @@ public final class WoodGunRackChunking {
 
         /** Slot k's leftovers at the renderer's pose (the block's origin); drawn light where the drawing left it unset. */
         void replay(int k, PoseStack pose, MultiBufferSource buffers, int light, boolean shadowPass) {
-            Matrix4f m = pose.last().pose();
-            Matrix3f n = pose.last().normal();
-            for (Leftover l : leftovers[k]) {
-                if (shadowPass && !l.shadow()) continue;
-                VertexConsumer out = buffers.getBuffer(l.type());
-                float[] v = l.vertices();
-                for (int i = 0, c = 0; i < v.length; i += 8, c++) {
-                    float x = v[i], y = v[i + 1], z = v[i + 2], nx = v[i + 5], ny = v[i + 6], nz = v[i + 7];
-                    int color = l.colors()[c];
-                    out.vertex(m.m00() * x + m.m10() * y + m.m20() * z + m.m30(), m.m01() * x + m.m11() * y + m.m21() * z + m.m31(),
-                            m.m02() * x + m.m12() * y + m.m22() * z + m.m32(),
-                            (color >> 16 & 0xFF) / 255.0F, (color >> 8 & 0xFF) / 255.0F, (color & 0xFF) / 255.0F, (color >>> 24) / 255.0F,
-                            v[i + 3], v[i + 4], OverlayTexture.NO_OVERLAY, l.lights()[c] == 0 ? light : l.lights()[c],
-                            n.m00() * nx + n.m10() * ny + n.m20() * nz, n.m01() * nx + n.m11() * ny + n.m21() * nz,
-                            n.m02() * nx + n.m12() * ny + n.m22() * nz);
-                }
+            WoodGunRackChunking.replay(leftovers[k], pose, buffers, light, shadowPass);
+        }
+    }
+
+    /** Recorded draws at the pose; drawn light where the drawing left it unset; in a shadow pass only those that cast one. */
+    private static void replay(Leftover[] parts, PoseStack pose, MultiBufferSource buffers, int light, boolean shadowPass) {
+        Matrix4f m = pose.last().pose();
+        Matrix3f n = pose.last().normal();
+        for (Leftover l : parts) {
+            if (shadowPass && !l.shadow()) continue;
+            VertexConsumer out = buffers.getBuffer(l.type());
+            float[] v = l.vertices();
+            for (int i = 0, c = 0; i < v.length; i += 8, c++) {
+                float x = v[i], y = v[i + 1], z = v[i + 2], nx = v[i + 5], ny = v[i + 6], nz = v[i + 7];
+                int color = l.colors()[c];
+                out.vertex(m.m00() * x + m.m10() * y + m.m20() * z + m.m30(), m.m01() * x + m.m11() * y + m.m21() * z + m.m31(),
+                        m.m02() * x + m.m12() * y + m.m22() * z + m.m32(),
+                        (color >> 16 & 0xFF) / 255.0F, (color >> 8 & 0xFF) / 255.0F, (color & 0xFF) / 255.0F, (color >>> 24) / 255.0F,
+                        v[i + 3], v[i + 4], OverlayTexture.NO_OVERLAY, l.lights()[c] == 0 ? light : l.lights()[c],
+                        n.m00() * nx + n.m10() * ny + n.m20() * nz, n.m01() * nx + n.m11() * ny + n.m21() * nz,
+                        n.m02() * nx + n.m12() * ny + n.m22() * nz);
             }
         }
+    }
+
+    /**
+     * A drawing recorded once and replayed at any pose (the ground guns, {@link GroundItemRenderer}): a mesh gun's bind pose
+     * re-walked every frame costs its whole bone tree; the replay only moves the recorded vertices. Draws of opaque and
+     * cutout entity types cast a shadow in a shader pack's shadow pass, the rest (translucent, glint) do not.
+     */
+    static final class Replay {
+        private final Leftover[] parts;
+        final long generation;
+
+        private Replay(Leftover[] parts, long generation) {
+            this.parts = parts;
+            this.generation = generation;
+        }
+
+        void draw(PoseStack pose, MultiBufferSource buffers, int light, boolean shadowPass) {
+            replay(parts, pose, buffers, light, shadowPass);
+        }
+
+        /** The recorded geometry's bounds {minX, minY, minZ, maxX, maxY, maxZ}, or null when nothing was drawn. */
+        @Nullable float[] bounds() {
+            float[] b = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+            boolean any = false;
+            for (Leftover l : parts) {
+                float[] v = l.vertices();
+                for (int i = 0; i < v.length; i += 8) {
+                    if (!Float.isFinite(v[i]) || !Float.isFinite(v[i + 1]) || !Float.isFinite(v[i + 2])) continue;
+                    any = true;
+                    for (int a = 0; a < 3; a++) {
+                        b[a] = Math.min(b[a], v[i + a]);
+                        b[a + 3] = Math.max(b[a + 3], v[i + a]);
+                    }
+                }
+            }
+            return any ? b : null;
+        }
+    }
+
+    /** Records a drawing (at an identity pose, light 0: a vertex's light afterwards was set by the drawing itself). */
+    static Replay record(java.util.function.BiConsumer<PoseStack, MultiBufferSource> drawing) {
+        var recorder = new Recorder();
+        drawing.accept(new PoseStack(), recorder);
+        var parts = new ArrayList<Leftover>();
+        for (var e : recorder.streams.entrySet()) {
+            Stream st = e.getValue();
+            int count = st.count - st.count % 4;
+            if (count == 0) continue;
+            Kind kind = kind(e.getKey());
+            parts.add(new Leftover(e.getKey(), kind.chunk() || kind.shadow(), java.util.Arrays.copyOf(st.v, count * 8),
+                    java.util.Arrays.copyOf(st.color, count), java.util.Arrays.copyOf(st.light, count)));
+        }
+        return new Replay(parts.toArray(Leftover[]::new), VextrisMeshes.generation());
     }
 
     // ------------------------------------------------------------------------------------------ bookkeeping

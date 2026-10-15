@@ -225,7 +225,7 @@ core  += (target − core)·(1 − e^(−dt/τ))，限制在 [33, 41]       变�
 
 ## 同步和保存
 
-- 包 `TemperaturePackets.State`：core、ambient（T_env）、coldness、heat、danger、swayScale、trend、target，只发给本人。核心体温变化 ≥ 0.05、环境温度变化 ≥ 0.05、表盘的输入变化 ≥ 0.01、趋势变化 ≥ 0.05、目标变化 ≥ 0.02，或者距上次已过 40 tick 时发送。
+- 包 `TemperaturePackets.State`：core、ambient（T_env）、coldness、heat、danger、swayScale、trend、target，以及 comfortMin（2026-10-14 网格背包 V0 分支加：comfortLow − 当前保暖，°C，背包界面显示“舒适 ≥ X °C”；变化 ≥ 0.1 也触发发送；协议 43 → 44），只发给本人。核心体温变化 ≥ 0.05、环境温度变化 ≥ 0.05、表盘的输入变化 ≥ 0.01、趋势变化 ≥ 0.05、目标变化 ≥ 0.02，或者距上次已过 40 tick 时发送。
 - target：目标体温在刻度上的位置，`clamp((目标 − 37.2)/2.8) − clamp((36.8 − 目标)/2.8)`，和实心指针（热 − 冷）用同一个刻度。
 - 表盘的输入由服务端算好，客户端不需要配置文件：
   - `coldness = clamp((36.8 − core)/2.8)`：36.8 及以上为 0，34.0 为 1；

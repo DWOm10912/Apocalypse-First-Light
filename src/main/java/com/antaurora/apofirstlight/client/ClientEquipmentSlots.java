@@ -4,14 +4,16 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.inventory.AflEquipmentSlot;
 import com.antaurora.apofirstlight.registry.AflItems;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.model.EntityModel;
-import net.minecraft.client.model.HeadedModel;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
-import net.minecraft.client.renderer.entity.layers.CustomHeadLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -30,9 +32,9 @@ import top.theillusivec4.curios.api.type.ISlotType;
 
 /**
  * The client side of AFL's equipment slots: their slot frames on the inventory page (the vanilla background has none
- * in that column), Curios' own panel button hidden while every slot the player has lives on AFL's page, and the
- * hearing protection drawn on the head from the ears slot (like vanilla's head item layer), the wrist thermometer on the
- * left wrist.
+ * in that column), Curios' own panel button hidden while every slot the player has lives on AFL's page, and worn gear
+ * drawn on the body: the hearing protection over the ears, chest rig and backpacks on the torso, the pistol holster on
+ * the right thigh (their meshes, {@link WornMeshRenderer}), the wrist thermometer on the left wrist.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientEquipmentSlots {
@@ -44,7 +46,17 @@ public final class ClientEquipmentSlots {
         MinecraftForge.EVENT_BUS.addListener(ClientEquipmentSlots::frames);
         MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, ClientEquipmentSlots::hideCuriosButton);
         event.enqueueWork(() -> {
-            CuriosRendererRegistry.register(AflItems.SIMPLE_HEARING_PROTECTION.get(), HeadItemRenderer::new);
+            // origins: the bake shifts printed by tools/build-equipment-meshes-v1.mjs
+            CuriosRendererRegistry.register(AflItems.SIMPLE_HEARING_PROTECTION.get(),
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.HEAD, "simple_hearing_protection", 0F, -1.7504F, 0.2F));
+            CuriosRendererRegistry.register(AflItems.FIELD_CHEST_RIG.get(),
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "field_chest_rig", 0F, 10.175F, -0.73F));
+            CuriosRendererRegistry.register(AflItems.CANVAS_BACKPACK.get(),
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "canvas_backpack", 0F, 9.3F, 1.58F));
+            CuriosRendererRegistry.register(AflItems.HIKING_BACKPACK.get(),
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.BODY, "hiking_backpack", 0F, 11.6F, 1.855F));
+            CuriosRendererRegistry.register(AflItems.PISTOL_HOLSTER.get(),
+                    () -> new WornMeshRenderer(WornMeshRenderer.Part.RIGHT_LEG, "pistol_holster", -0.605F, 7.6F, 0F));
             CuriosRendererRegistry.register(AflItems.WRIST_THERMOMETER.get(), WristItemRenderer::new);
         });
     }
@@ -86,7 +98,7 @@ public final class ClientEquipmentSlots {
         public <T extends LivingEntity, M extends EntityModel<T>> void render(ItemStack stack, SlotContext slotContext, PoseStack poseStack,
                 RenderLayerParent<T, M> parent, MultiBufferSource buffer, int light, float limbSwing, float limbSwingAmount,
                 float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-            if (!(parent.getModel() instanceof net.minecraft.client.model.HumanoidModel<?> humanoid)) return;
+            if (!(parent.getModel() instanceof HumanoidModel<?> humanoid)) return;
             var entity = slotContext.entity();
             boolean slim = entity instanceof net.minecraft.client.player.AbstractClientPlayer p && "slim".equals(p.getModelName());
             float armCentre = slim ? 0.5F : 1.0F, sx = slim ? 0.8F : 1.0F;   // left arm box: x -1..3 (slim -1..2) from its pivot
@@ -100,25 +112,54 @@ public final class ClientEquipmentSlots {
         }
     }
 
-    /** Draws a worn curio on the head the way vanilla draws a non-armour head item (CustomHeadLayer). */
-    private static final class HeadItemRenderer implements ICurioRenderer {
+    /**
+     * Worn gear drawn as its mesh on the body part it sits on (tools/build-equipment-meshes-v1.mjs authors each piece in
+     * that part's frame: BODY and HEAD +X the player's left, +Y up, +Z to the front, origin at the part's pivot; RIGHT_LEG
+     * +X outward, +Y up, +Z to the back, origin at the hip joint). The bake rests the mesh on y = 0 centred on X / Z; the
+     * build prints that shift as "origin", undone here. Moves with the part (crouching, walking, looking around).
+     */
+    public static final class WornMeshRenderer implements ICurioRenderer {
+        public enum Part { BODY, HEAD, RIGHT_LEG }
+
+        private final Part part;
+        private final ResourceLocation geometry, texture;
+        private final float ox, oy, oz;
+
+        public WornMeshRenderer(Part part, String model, float ox, float oy, float oz) {
+            this.part = part;
+            this.geometry = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "geo/" + model + ".geo.json");
+            this.texture = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "textures/item/" + model + "_mesh.png");
+            this.ox = ox;
+            this.oy = oy;
+            this.oz = oz;
+        }
+
         @Override
         public <T extends LivingEntity, M extends EntityModel<T>> void render(ItemStack stack, SlotContext slotContext, PoseStack poseStack,
                 RenderLayerParent<T, M> parent, MultiBufferSource buffer, int light, float limbSwing, float limbSwingAmount,
                 float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-            if (!(parent.getModel() instanceof HeadedModel headed)) return;
-            var entity = slotContext.entity();
+            if (!(parent.getModel() instanceof HumanoidModel<?> humanoid)) return;
             poseStack.pushPose();
-            if (entity.isBaby()) {
-                poseStack.translate(0.0F, 0.03125F, 0.0F);
-                poseStack.scale(0.7F, 0.7F, 0.7F);
-                poseStack.translate(0.0F, 1.0F, 0.0F);
-            }
-            headed.getHead().translateAndRotate(poseStack);
-            CustomHeadLayer.translateToHead(poseStack, false);
-            Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer()
-                    .renderItem(entity, stack, ItemDisplayContext.HEAD, false, poseStack, buffer, light);
+            apply(humanoid, part, poseStack);
+            draw(poseStack, buffer, light);
             poseStack.popPose();
+        }
+
+        /** Draws the mesh in the frame {@link #apply} set up. */
+        public void draw(PoseStack poseStack, MultiBufferSource buffer, int light) {
+            poseStack.pushPose();
+            poseStack.translate(-ox / 16F, -oy / 16F, -oz / 16F);
+            AflStaticMeshItemRenderer.drawMesh(geometry, texture, poseStack, buffer, light, OverlayTexture.NO_OVERLAY);
+            poseStack.popPose();
+        }
+
+        /** Moves the pose from model space into a part's authoring frame. */
+        public static void apply(HumanoidModel<?> humanoid, Part part, PoseStack poseStack) {
+            switch (part) {
+                case BODY -> { humanoid.body.translateAndRotate(poseStack); poseStack.scale(1F, -1F, -1F); }
+                case HEAD -> { humanoid.head.translateAndRotate(poseStack); poseStack.scale(1F, -1F, -1F); }
+                case RIGHT_LEG -> { humanoid.rightLeg.translateAndRotate(poseStack); poseStack.mulPose(Axis.ZP.rotationDegrees(180)); }
+            }
         }
     }
 }
