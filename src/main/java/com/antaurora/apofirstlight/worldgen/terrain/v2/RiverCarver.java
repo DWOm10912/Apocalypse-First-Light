@@ -16,6 +16,13 @@ package com.antaurora.apofirstlight.worldgen.terrain.v2;
  *   bank is sealed down to 6 below the lowest level in reach.</li>
  *   <li>POOL (tidal marsh, TerrainPlanSurface.poolAt, only where the generated top is the marsh flat Y63): water at the
  *   sea level Y62 over a bed at Y61.</li>
+ *   <li>LAKE (federal plans, C2): a column inside a lake's cells (any share of a lake cell among the four round it)
+ *   whose generated top lies under the lake's top water block holds water up to it, so the shore follows the
+ *   ground's contour; it comes before the river rules (a river through a lake runs at the lake's level, and its banks
+ *   must not stand up inside the water); the two blocks under the bed are sealed.</li>
+ *   <li>RIM (federal lakes, after the river rules, so an outlet river keeps its channel): a column just outside a
+ *   lake's cells, beside one inside them, whose generated top lies under that lake's top water block is raised to it,
+ *   so no lake water stands beside air (the offline audit found one-block faces where the cell share ends).</li>
  *   <li>Open sea and estuary water (generated ground under Y62) is left to its own sea-level fill
  *   (NoiseChunkMacroWaterMixin); dry ground inside a sea or estuary cell takes the rules above (Phase 2b fix: the river
  *   used to stop at the estuary cell's edge, leaving a straight wall across its mouth).</li>
@@ -25,7 +32,7 @@ public final class RiverCarver {
     private RiverCarver() {
     }
 
-    public static final int NONE = 0, RIVER = 1, BANK = 2, POOL = 3;
+    public static final int NONE = 0, RIVER = 1, BANK = 2, POOL = 3, LAKE = 4, RIM = 5;
     public static final int MARSH_TOP = 63, POOL_WATER = 62;
 
     /** One column's edit. */
@@ -37,13 +44,16 @@ public final class RiverCarver {
         public int water;
         /** Cave air from the ground top down to this Y (inclusive) becomes stone. */
         public int sealTo;
-        /** The column's river level (RIVER only; for the riffle check between neighbours). */
+        /** The column's river or lake level (RIVER, LAKE; for the riffle check between neighbours). */
         public int level;
+        /** Scratch for the lake share (TerrainPlanSurface.lakeTopAt). */
+        final double[] share = new double[1];
     }
 
     /**
      * The lowest Y a carver must leave alone in this column because of river water: 8 below the lowest water level
-     * within reach (beds are at most 4 deep), 4 below a marsh pool's water; Integer.MAX_VALUE where no water is near.
+     * within reach (beds are at most 4 deep), 4 below a marsh pool's water, 10 below the deepest lake bed within two
+     * cells (federal lakes); Integer.MAX_VALUE where no water is near.
      * Cached per column for the carving thread (carvers ask for every block they cut).
      */
     public static int carveCeiling(TerrainPlanSurface s, int x, int z) {
@@ -57,6 +67,10 @@ public final class RiverCarver {
                 if (c.col.kind != RiverNetwork.Column.NONE) ceiling = c.col.lowLevel - 8;
             }
             if (ceiling == Integer.MAX_VALUE && s.poolAt(x, z)) ceiling = POOL_WATER - 4;
+            if (s.layers != null) {
+                double floor = s.lakeFloorNear(x + 0.5, z + 0.5);
+                if (floor != Double.POSITIVE_INFINITY) ceiling = Math.min(ceiling, (int) Math.floor(floor) - 10);
+            }
             c.ceiling[i] = ceiling;
             c.key[i] = key;
             c.owner[i] = s;
@@ -73,6 +87,22 @@ public final class RiverCarver {
         final RiverNetwork.Column col = new RiverNetwork.Column();
     }
 
+    /** RIM: the highest lake top among the four neighbours inside a lake's cells, if it stands over this column's top. */
+    private static boolean rim(TerrainPlanSurface s, int x, int z, int top, Edit e) {
+        int near = s.lakeNear(x + 0.5, z + 0.5);
+        if (near == Integer.MIN_VALUE || top >= near) return false;
+        int wall = Integer.MIN_VALUE;
+        for (int d = 0; d < 4; d++) {
+            int lake = s.lakeTopAt(x + 0.5 + (d == 0 ? 1 : d == 1 ? -1 : 0), z + 0.5 + (d == 2 ? 1 : d == 3 ? -1 : 0), e.share);
+            if (lake != Integer.MIN_VALUE && e.share[0] > 0 && lake > top) wall = Math.max(wall, lake);
+        }
+        if (wall == Integer.MIN_VALUE) return false;
+        e.kind = RIM;
+        e.ground = wall;
+        e.sealTo = top - 2;
+        return true;
+    }
+
     public static void plan(TerrainPlanSurface s, int x, int z, int top, RiverNetwork.Column col, Edit e) {
         e.kind = NONE;
         e.ground = top;
@@ -83,6 +113,16 @@ public final class RiverCarver {
         // open water (ground under the sea's top water block) keeps its own fill; dry ground inside a sea or estuary
         // cell takes the river rules, so a river is cut all the way to the water instead of stopping at the cell edge
         if ((wc == 1 || wc == 2) && top < RiverNetwork.SEA_WATER_TOP) return;
+        if (s.layers != null) {
+            int lake = s.lakeTopAt(x + 0.5, z + 0.5, e.share);
+            if (lake != Integer.MIN_VALUE && e.share[0] > 0 && top < lake) {
+                e.kind = LAKE;
+                e.water = lake;
+                e.level = lake;
+                e.sealTo = top - 2;
+                return;
+            }
+        }
         if (s.rivers != null) s.rivers.column(x, z, col);
         else col.kind = RiverNetwork.Column.NONE;
         if (col.kind == RiverNetwork.Column.RIVER) {
@@ -106,5 +146,7 @@ public final class RiverCarver {
             e.water = POOL_WATER;
             e.sealTo = POOL_WATER - 3;
         }
+        // federal lakes: dry ground outside the lake's cells, beside water inside them, stands at least at its top
+        if (e.kind == NONE && s.layers != null && e.share[0] == 0) rim(s, x, z, top, e);
     }
 }

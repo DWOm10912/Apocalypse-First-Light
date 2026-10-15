@@ -1,0 +1,12 @@
+// C2 federal world generation test client (docs/worldgen/federal_six_state_c2.md, tests). Dev only.
+// gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create;world=NAME;preset=ID;seed=N;tag=T"
+// Its own run directory under build/ (never the main run/ folder), its own fresh test saves; the harness creates or opens
+// the world by itself, probes it, saves and quits (C2Harness, C2HarnessClient, C2Probe).
+allprojects {
+    afterEvaluate {
+        minecraft.runs.client {
+            workingDirectory project.file('build/federal-c2-client')
+            property 'afl.c2', (project.findProperty('c2') ?: '')
+        }
+    }
+}

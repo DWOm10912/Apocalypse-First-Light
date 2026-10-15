@@ -9,7 +9,7 @@
 - **SOFT 变化**（树木）：记录后放行。
 - **锁出现之前的世界**：被领养为 LEGACY 基线。
 
-本条只覆盖 Terrain V2 地形链。Highway、道路施工快照、结构资产 digest 仍按下文 ADR-11 的原则另行实现。同一分支的[联邦六州 C1](federal_six_state_c1.md)是不接入正式生成的原型。
+本条只覆盖 Terrain V2 地形链。Highway、道路施工快照、结构资产 digest 仍按下文 ADR-11 的原则另行实现。同一分支的[联邦六州 C1](federal_six_state_c1.md)是不接入正式生成的原型；[C2](federal_six_state_c2.md)（2026-10-14）加了一个独立的实验世界类型"AFL 联邦（实验）"，有自己的锁 profile `afl_federal_experimental`，默认世界仍是 r1。
 
 ## 2026-10-07 Terrain V2 研究建议（设计，未激活）
 

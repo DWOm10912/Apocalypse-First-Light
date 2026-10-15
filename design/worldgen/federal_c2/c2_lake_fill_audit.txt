@@ -1,0 +1,4 @@
+federal surface 13.3 s
+lake cells 12159 (3.1 km2), audited cells 18101
+lake water columns 2892154 (2.89 km2), river columns near lakes 2191, bank columns inside a lake (share >= 0.5) 513
+dry water faces 0 (2+ blocks: 0, worst 0), steps down to lower water 0 (13.8 s)

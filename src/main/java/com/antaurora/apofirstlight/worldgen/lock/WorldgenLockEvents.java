@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.worldgen.lock;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
@@ -31,8 +30,11 @@ import java.util.List;
  *   <li>same output: nothing is written;</li>
  *   <li>SOFT change: logged, recorded in the history, baseline moved;</li>
  *   <li>HARD change: the world is NOT opened (WorldgenLockException ends the load; the crash report and the log carry
- *   the reason and the token); nothing is written, no chunk is generated, the save is not migrated or deleted. The
- *   token in the world's serverconfig/apocalypse_firstlight-worldgen.toml accepts exactly that change.</li>
+ *   the reason and the token); nothing is written, no chunk is generated, the save is not migrated or deleted (C2:
+ *   the stop that follows saves nothing either, WorldgenLockSaveMixin; before it, the crash path rewrote level.dat
+ *   and rotated level.dat_old. Not preventable here: the singleplayer client rewrites level.dat (LastPlayed only) when
+ *   it opens any world, before the server starts; the original stays as level.dat_old). The token in the
+ *   world's serverconfig/apocalypse_firstlight-worldgen.toml accepts exactly that change.</li>
  * </ul>
  * Only AFL Terrain V2 overworlds are locked; another generator (flat, a data-pack world) is left alone.
  */
@@ -45,6 +47,18 @@ public final class WorldgenLockEvents {
 
     record Status(MinecraftServer server, WorldgenLockRecord record, WorldgenFingerprint current, WorldgenLockPolicy.Verdict verdict) {}
 
+    /** The server whose world was refused (weak: the dead server is not kept). */
+    private static volatile java.lang.ref.WeakReference<MinecraftServer> blocked = new java.lang.ref.WeakReference<>(null);
+
+    /** True for a server whose world the lock refused: it must not save anything while it stops (WorldgenLockSaveMixin). */
+    public static boolean blocked(MinecraftServer server) {
+        return server != null && blocked.get() == server;
+    }
+
+    private static void refuse(MinecraftServer server) {
+        blocked = new java.lang.ref.WeakReference<>(server);
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLoad(LevelEvent.Load event) {
         if (!(event.getLevel() instanceof ServerLevel level) || !Level.OVERWORLD.equals(level.dimension())) return;
@@ -55,18 +69,22 @@ public final class WorldgenLockEvents {
             return;
         }
         long seed = access.apocalypse$getSeed();
-        TerrainPlanSurface plan = TerrainPlanStore.get(seed);    // already in memory: the router bound it a moment ago
+        // the plan the router bound a moment ago, and its profile (C2: r1, or the federal experimental preset)
+        TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
+        var profile = access.apocalypse$terrainProfile();
         long t0 = System.nanoTime();
-        WorldgenFingerprint current = WorldgenProbe.current(level, seed, plan);
+        WorldgenFingerprint current = WorldgenProbe.current(level, seed, plan, profile);
         long ms = (System.nanoTime() - t0) / 1_000_000;
         boolean initialized = ((ServerLevelData) level.getLevelData()).isInitialized();
         MinecraftServer server = level.getServer();
         Path file = server.getWorldPath(LevelResource.ROOT).resolve("data").resolve(WorldgenLockData.NAME + ".dat");
         WorldgenLockData data = level.getDataStorage().get(WorldgenLockData::load, WorldgenLockData.NAME);
-        if (data == null && Files.exists(file))
+        if (data == null && Files.exists(file)) {
+            refuse(level.getServer());
             throw block("the world's lock record " + file + " exists but cannot be read; it was left untouched");
+        }
         WorldgenLockRecord stored = data == null ? null : data.record();
-        List<WorldgenSystem> rules = WorldgenRules.current(forestEnabled());
+        List<WorldgenSystem> rules = WorldgenRules.current(profile, forestEnabled());
         WorldgenLockPolicy.Verdict v = WorldgenLockPolicy.evaluate(stored, current, rules, initialized, WorldgenLockConfig.acceptToken());
         long now = System.currentTimeMillis();
         String report = WorldgenLockPolicy.describe(v);
@@ -97,6 +115,7 @@ public final class WorldgenLockEvents {
                     v.token(), report);
             case BLOCK -> {
                 last = new Status(server, stored, current, v);
+                refuse(server);
                 throw block(blockMessage(stored, current, v, server));
             }
         }

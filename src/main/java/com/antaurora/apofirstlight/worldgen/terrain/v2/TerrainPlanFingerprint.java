@@ -72,9 +72,9 @@ public final class TerrainPlanFingerprint {
     static String planDigest(TerrainPlanSurface s) {
         Sha d = new Sha();
         d.text("afl-plan-values-1");
-        d.i(TerrainPlanSurface.N);
+        d.i(s.gridN);
         d.d(TerrainPlanSurface.CELL);
-        d.d(TerrainPlanSurface.ORIGIN);
+        d.d(s.gridOrigin);
         d.l(s.noiseSeed);
         d.floats(s.h);
         d.bytes(s.water);
@@ -93,6 +93,14 @@ public final class TerrainPlanFingerprint {
         for (short v : r.vl) d.i(v);
         d.bytes(s.ecology.zone());
         d.bytes(s.ecology.hand());
+        if (s.layers != null) {                      // federal layers (C2); an r1 surface has none, its digest is unchanged
+            d.text("federal-layers-1");
+            d.i(s.layers.lakeTop().length);
+            for (short v : s.layers.lakeTop()) d.i(v);
+            d.bytes(s.layers.terrace());
+            d.bytes(s.layers.rough());
+            d.bytes(s.layers.open());
+        }
         return d.hex();
     }
 
@@ -101,12 +109,12 @@ public final class TerrainPlanFingerprint {
         Sha d = new Sha();
         d.text("afl-plan-queries-1");
         RiverNetwork.Column col = new RiverNetwork.Column();
-        double span = TerrainPlanSurface.N * TerrainPlanSurface.CELL;
+        double span = s.gridN * TerrainPlanSurface.CELL;
         for (int j = 0; j < PROBES; j++) for (int i = 0; i < PROBES; i++) {
             // off the cell centres and the chunk grid: a constant irrational offset per lattice point
             double fx = (i + 0.5 + 0.37 * frac(i * 0.6180339887 + j * 0.4142135623)) / PROBES;
             double fz = (j + 0.5 + 0.37 * frac(i * 0.7320508075 + j * 0.2360679774)) / PROBES;
-            int x = (int) Math.floor(TerrainPlanSurface.ORIGIN + fx * span), z = (int) Math.floor(TerrainPlanSurface.ORIGIN + fz * span);
+            int x = (int) Math.floor(s.gridOrigin + fx * span), z = (int) Math.floor(s.gridOrigin + fz * span);
             probe(d, s, col, x, z);
         }
         RiverNetwork r = s.rivers;
@@ -134,13 +142,19 @@ public final class TerrainPlanFingerprint {
         d.i(col.maxTop);
         d.i(col.lowLevel);
         d.l(col.edge > 1e6f ? Long.MAX_VALUE : Math.round(col.edge * 16));
+        if (s.layers != null) {                      // federal: the lake a column fills to and the lake rim rule
+            double[] share = new double[1];
+            d.i(s.lakeTopAt(px, pz, share));
+            d.l(Math.round(share[0] * 1024));
+            d.i(s.lakeNear(px, pz));
+        }
     }
 
     private static double frac(double v) { return v - Math.floor(v); }
 
     // ------------------------------------------------------------------ tiles
     static Tiles tiles(TerrainPlanSurface s) {
-        int n = TerrainPlanSurface.N, cols = (n + TILE - 1) / TILE, rows = cols;
+        int n = s.gridN, cols = (n + TILE - 1) / TILE, rows = cols;
         double[] sum = new double[cols * rows];
         int[] count = new int[cols * rows], wet = new int[cols * rows], river = new int[cols * rows], zone = new int[cols * rows];
         for (int r = 0; r < n; r++) for (int c = 0; c < n; c++) {
@@ -152,7 +166,7 @@ public final class TerrainPlanFingerprint {
         }
         RiverNetwork rv = s.rivers;
         for (int v = 0; v < rv.vertices(); v++) {
-            int c = TerrainPlanSurface.cellOf(rv.vx[v]) / TILE, r = TerrainPlanSurface.cellOf(rv.vz[v]) / TILE;
+            int c = s.cellOfCoord(rv.vx[v]) / TILE, r = s.cellOfCoord(rv.vz[v]) / TILE;
             river[r * cols + c]++;
         }
         int[] mean = new int[cols * rows];
@@ -184,9 +198,20 @@ public final class TerrainPlanFingerprint {
         return new TileComparison(true, changed, large, maxShift, minC, minR, maxC, maxR);
     }
 
-    /** World X / Z of a tile corner (for messages). */
+    /** World X / Z of a tile corner of the r1 grid (for messages). */
     public static int tileOrigin(int tileIndex) {
-        return (int) (TerrainPlanSurface.ORIGIN + (double) tileIndex * TILE * TerrainPlanSurface.CELL);
+        return tileOrigin(TerrainPlanSurface.ORIGIN, tileIndex);
+    }
+
+    /** World X / Z of a tile corner of the grid a tile summary was made on (for messages). Every AFL plan grid is centred
+     *  on 0 and a whole number of tiles wide (r1 44 x 32 cells, federal 55 x 32), so the origin follows from the width. */
+    public static int tileOrigin(Tiles tiles, int tileIndex) {
+        return tileOrigin(-tiles.cols() * TILE * TerrainPlanSurface.CELL / 2, tileIndex);
+    }
+
+    /** World X / Z of a tile corner on a grid starting at gridOrigin (for messages). */
+    public static int tileOrigin(double gridOrigin, int tileIndex) {
+        return (int) (gridOrigin + (double) tileIndex * TILE * TerrainPlanSurface.CELL);
     }
 
     // ------------------------------------------------------------------ digest helper

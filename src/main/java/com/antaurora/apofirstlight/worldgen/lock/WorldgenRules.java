@@ -4,6 +4,9 @@ import com.antaurora.apofirstlight.tree.ForestPlan;
 import com.antaurora.apofirstlight.worldgen.geography.MacroGeography;
 import com.antaurora.apofirstlight.worldgen.lock.WorldgenSystem.Severity;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanV2;
+import com.antaurora.apofirstlight.worldgen.terrain.v2.FederalTerrainPlan;
+import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile;
+import com.antaurora.apofirstlight.worldgen.federal.FederalTemplate;
 
 import java.util.List;
 
@@ -24,7 +27,7 @@ import java.util.List;
 public final class WorldgenRules {
     private WorldgenRules() {}
 
-    /** Profile of every overworld this build generates with Terrain V2 (the r1 national map). */
+    /** Profile of every r1 overworld this build generates with Terrain V2 (the r1 national map). */
     public static final String PROFILE = "afl_terrain_v2";
 
     // national template: the land / sea layout the plan starts from (MacroGeography.VERSION 3: fixed three islands)
@@ -39,8 +42,37 @@ public final class WorldgenRules {
     // ecology: EcologyBiomes mapping, the AFL biome JSONs, the overworld surface rule
     static final int ECOLOGY = 1;
 
-    /** The rules of this build for an overworld with a Terrain V2 plan; forestEnabled is the world's mesh forest switch. */
+    // C2 (2026-10-14): the federal experimental profile (world preset apocalypse_firstlight:federal_experimental). Its own
+    // systems, so an r1 world and a federal world never share a baseline (the profile itself is a HARD finding too).
+    // federal template: FederalTemplate.VERSION (C1 layout: coast, six states, provinces, climate)
+    static final int FEDERAL_TEMPLATE = 1;
+    // federal plan output: FederalTerrainPlan (provinces, landforms, lakes, layers, ecology zones)
+    static final int FEDERAL_PLAN_OUTPUT = 1;
+    // federal chunk terrain: noise_settings/federal_experimental.json, density_function/federal/*, raised top slide
+    static final int FEDERAL_DENSITY = 1;
+    // federal water in chunks: RiverCarver / RiverWaterFill with lakes
+    static final int FEDERAL_WATER = 1;
+    // federal ecology: FederalEcology zones, FederalEcologyBiomes mapping, federal biome JSONs, surface rule branch
+    static final int FEDERAL_ECOLOGY = 1;
+
+    /** The rules of this build for an r1 overworld; forestEnabled is the world's mesh forest switch. */
     public static List<WorldgenSystem> current(boolean forestEnabled) {
+        return current(TerrainProfile.R1, forestEnabled);
+    }
+
+    /** The rules of this build for an overworld on a Terrain V2 plan of the given profile. */
+    public static List<WorldgenSystem> current(TerrainProfile profile, boolean forestEnabled) {
+        if (profile == TerrainProfile.FEDERAL) return List.of(
+                new WorldgenSystem("national_template", "federal_template#" + FederalTemplate.VERSION + "#" + FEDERAL_TEMPLATE, Severity.HARD,
+                        "federal coast, six states, provinces and climate"),
+                new WorldgenSystem("terrain_plan", FederalTerrainPlan.VERSION + "#" + FEDERAL_PLAN_OUTPUT, Severity.HARD,
+                        "planned heights, water, lakes, rivers and ecology zones"),
+                new WorldgenSystem("terrain_density", "federal_density#" + FEDERAL_DENSITY, Severity.HARD,
+                        "chunk terrain shape, caves and aquifers"),
+                new WorldgenSystem("river_carving", "federal_water#" + FEDERAL_WATER, Severity.HARD, "river and lake water and banks in chunks"),
+                new WorldgenSystem("ecology", "ecology_federal#" + FEDERAL_ECOLOGY, Severity.HARD, "biomes and surface blocks"),
+                new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
+                        "natural trees"));
         return List.of(
                 new WorldgenSystem("national_template", NATIONAL_TEMPLATE, Severity.HARD, "land / sea layout and satellite islands"),
                 new WorldgenSystem("terrain_plan", TerrainPlanV2.VERSION + "#" + TERRAIN_PLAN_OUTPUT, Severity.HARD,

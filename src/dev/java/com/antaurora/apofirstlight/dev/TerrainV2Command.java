@@ -5,7 +5,6 @@ import com.antaurora.apofirstlight.worldgen.terrain.v2.PlanStabilityDensity;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverCarver;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverNetwork;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanMaps;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainV2TestPoints;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -67,7 +66,7 @@ public final class TerrainV2Command {
 
     static TerrainPlanSurface plan(ServerLevel level) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) level.getChunkSource().randomState();
-        return access.apocalypse$hasTerrainPlan() ? TerrainPlanStore.peek(access.apocalypse$getSeed()) : null;
+        return access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null;
     }
 
     private static final String[] WATER = {"land", "sea", "estuary", "marsh"};
@@ -98,7 +97,7 @@ public final class TerrainV2Command {
                 .ecologyBiome(plan, x >> 2 << 2, z >> 2 << 2).location().toString();
         int zone = plan.ecology == null ? -1 : plan.ecology.zone()[TerrainPlanSurface.cellIndex(plan, x, z)];
         c.getSource().sendSuccess(() -> Component.literal(String.format("Ecology: biome %s (plan %s) | r1 zone %s",
-                actual, planned, zone < 0 ? "water" : com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyPlan.NAMES[zone])), false);
+                actual, planned, com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcology.name(zone))), false);
         return 1;
     }
 
@@ -331,21 +330,21 @@ public final class TerrainV2Command {
             String msg;
             try {
                 Files.createDirectories(dir);
-                double ext = TerrainPlanSurface.N * TerrainPlanSurface.CELL, mpp = 8;
+                double ext = plan.gridN * TerrainPlanSurface.CELL, mpp = 8, o = plan.gridOrigin;
                 int n = (int) (ext / mpp);
-                BufferedImage nat = TerrainPlanMaps.render(plan, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, n, n, mpp);
+                BufferedImage nat = TerrainPlanMaps.render(plan, o, o, n, n, mpp);
                 List<TerrainV2TestPoints.Point> pts = TerrainV2TestPoints.rivers(plan);
-                for (TerrainV2TestPoints.Point pt : pts) TerrainPlanMaps.mark(nat, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pt.x(), pt.z(), 0xFFE0402A);
-                TerrainPlanMaps.mark(nat, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pos.getX(), pos.getZ(), 0xFFFFFFFF);
+                for (TerrainV2TestPoints.Point pt : pts) TerrainPlanMaps.mark(nat, o, o, mpp, pt.x(), pt.z(), 0xFFE0402A);
+                TerrainPlanMaps.mark(nat, o, o, mpp, pos.getX(), pos.getZ(), 0xFFFFFFFF);
                 ImageIO.write(nat, "png", dir.resolve("national_8m.png").toFile());
                 BufferedImage win = TerrainPlanMaps.render(plan, pos.getX() - 256, pos.getZ() - 256, 512, 512, 1.0);
                 TerrainPlanMaps.mark(win, pos.getX() - 256, pos.getZ() - 256, 1.0, pos.getX(), pos.getZ(), 0xFFFFFFFF);
                 String name = "window_" + pos.getX() + "_" + pos.getZ() + "_1m.png";
                 ImageIO.write(win, "png", dir.resolve(name).toFile());
-                BufferedImage eco = TerrainPlanMaps.renderEcology(plan, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, n, n, mpp);
+                BufferedImage eco = TerrainPlanMaps.renderEcology(plan, o, o, n, n, mpp);
                 List<TerrainV2TestPoints.Point> ecoPts = TerrainV2TestPoints.ecology(plan);
-                for (TerrainV2TestPoints.Point pt : ecoPts) TerrainPlanMaps.mark(eco, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pt.x(), pt.z(), 0xFFE0402A);
-                TerrainPlanMaps.mark(eco, TerrainPlanSurface.ORIGIN, TerrainPlanSurface.ORIGIN, mpp, pos.getX(), pos.getZ(), 0xFFFFFFFF);
+                for (TerrainV2TestPoints.Point pt : ecoPts) TerrainPlanMaps.mark(eco, o, o, mpp, pt.x(), pt.z(), 0xFFE0402A);
+                TerrainPlanMaps.mark(eco, o, o, mpp, pos.getX(), pos.getZ(), 0xFFFFFFFF);
                 ImageIO.write(eco, "png", dir.resolve("ecology_8m.png").toFile());
                 BufferedImage ecoWin = TerrainPlanMaps.renderEcology(plan, pos.getX() - 256, pos.getZ() - 256, 512, 512, 1.0);
                 TerrainPlanMaps.mark(ecoWin, pos.getX() - 256, pos.getZ() - 256, 1.0, pos.getX(), pos.getZ(), 0xFFFFFFFF);
@@ -353,7 +352,7 @@ public final class TerrainV2Command {
                 pts = new java.util.ArrayList<>(pts);
                 pts.addAll(ecoPts);
                 StringBuilder txt = new StringBuilder("Terrain V2 " + plan.version + " seed " + plan.seed + "\n");
-                txt.append("national_8m.png: x/z ").append((int) TerrainPlanSurface.ORIGIN).append(" .. ").append((int) (TerrainPlanSurface.ORIGIN + ext))
+                txt.append("national_8m.png: x/z ").append((int) o).append(" .. ").append((int) (o + ext))
                         .append(", 8 m per pixel, north up; white = the player, red = river acceptance points\n");
                 txt.append(name).append(": 512 m round the player at 1 m per pixel (river water and marsh pools column by column)\n");
                 txt.append("ecology_8m.png / ecology_<x>_<z>_1m.png: the natural biomes (colours in docs/worldgen/terrain_v2_ecology_v1.md), red = ecology points\n");

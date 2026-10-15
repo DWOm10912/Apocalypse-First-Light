@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -26,7 +25,7 @@ public abstract class LakeFeatureStabilityMixin {
                                             CallbackInfoReturnable<Boolean> cir) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) context.level().getLevel().getChunkSource().randomState();
         if (!access.apocalypse$hasTerrainPlan()) return;
-        TerrainPlanSurface plan = TerrainPlanStore.peek(access.apocalypse$getSeed());
+        TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         if (plan == null) return;
         BlockPos o = context.origin();
         int airTop = o.getY() + 3;

@@ -35,33 +35,35 @@ final class WorldgenProbe {
     static final int[] DENSITY_Y = {-40, 0, 40, 60, 70, 90, 130};
     static final int[] BIOME_QY = {0, 16, 20};
 
-    static WorldgenFingerprint current(ServerLevel level, long seed, TerrainPlanSurface plan) {
-        var rules = WorldgenRules.current(ForestGate.enabled());
+    static WorldgenFingerprint current(ServerLevel level, long seed, TerrainPlanSurface plan,
+                                       com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile profile) {
+        var rules = WorldgenRules.current(profile, ForestGate.enabled());
         TerrainPlanFingerprint.Result pf = TerrainPlanFingerprint.of(plan);
         Map<String, String> probes = new LinkedHashMap<>();
         probes.put(WorldgenFingerprint.PROBE_PLAN, pf.queryDigest());
-        probes.put(WorldgenFingerprint.PROBE_DENSITY, density(level));
-        probes.put(WorldgenFingerprint.PROBE_BIOMES, biomes(level));
-        return new WorldgenFingerprint(WorldgenRules.PROFILE, seed, WorldgenSystem.versions(rules), TerrainPlanSurface.FORMAT,
+        probes.put(WorldgenFingerprint.PROBE_DENSITY, density(level, plan));
+        probes.put(WorldgenFingerprint.PROBE_BIOMES, biomes(level, plan));
+        return new WorldgenFingerprint(profile.lockProfile, seed, WorldgenSystem.versions(rules),
+                plan.federal() ? TerrainPlanSurface.FORMAT_LAYERS : TerrainPlanSurface.FORMAT,
                 pf.planDigest(), probes, pf.tiles());
     }
 
-    /** Lattice point (i, j) of an n x n lattice over the plan grid, off the chunk grid. */
-    static int lattice(int i, int j, int n, boolean zAxis) {
-        double span = TerrainPlanSurface.N * TerrainPlanSurface.CELL;
+    /** Lattice point (i, j) of an n x n lattice over the plan's grid, off the chunk grid. */
+    static int lattice(TerrainPlanSurface s, int i, int j, int n, boolean zAxis) {
+        double span = s.gridN * TerrainPlanSurface.CELL;
         double f = zAxis ? (j + 0.5 + 0.29 * frac(i * 0.5772156649 + j * 0.6931471805)) / n
                 : (i + 0.5 + 0.29 * frac(i * 0.3010299956 + j * 0.8414709848)) / n;
-        return (int) Math.floor(TerrainPlanSurface.ORIGIN + f * span);
+        return (int) Math.floor(s.gridOrigin + f * span);
     }
 
     private static double frac(double v) { return v - Math.floor(v); }
 
-    static String density(ServerLevel level) {
+    static String density(ServerLevel level, TerrainPlanSurface s) {
         RandomState rs = level.getChunkSource().randomState();
         DensityFunction f = rs.router().finalDensity();
         Sha d = new Sha("afl-density-probe-1");
         for (int j = 0; j < 16; j++) for (int i = 0; i < 16; i++) {
-            int x = lattice(i, j, 16, false), z = lattice(i, j, 16, true);
+            int x = lattice(s, i, j, 16, false), z = lattice(s, i, j, 16, true);
             for (int y : DENSITY_Y) {
                 double v = f.compute(new DensityFunction.SinglePointContext(x, y, z));
                 d.add(Double.isNaN(v) ? "nan" : Long.toString(Math.round(Math.max(-1e6, Math.min(1e6, v)) * 1024)));
@@ -70,13 +72,13 @@ final class WorldgenProbe {
         return d.hex();
     }
 
-    static String biomes(ServerLevel level) {
+    static String biomes(ServerLevel level, TerrainPlanSurface s) {
         RandomState rs = level.getChunkSource().randomState();
         BiomeSource source = level.getChunkSource().getGenerator().getBiomeSource();
         Climate.Sampler sampler = rs.sampler();
         Sha d = new Sha("afl-biome-probe-1");
         for (int j = 0; j < 32; j++) for (int i = 0; i < 32; i++) {
-            int x = lattice(i, j, 32, false), z = lattice(i, j, 32, true);
+            int x = lattice(s, i, j, 32, false), z = lattice(s, i, j, 32, true);
             for (int qy : BIOME_QY) {
                 Holder<Biome> b = source.getNoiseBiome(x >> 2, qy, z >> 2, sampler);
                 d.add(b.unwrapKey().map(k -> k.location().toString()).orElse("?"));

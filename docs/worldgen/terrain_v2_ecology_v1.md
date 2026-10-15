@@ -2,6 +2,14 @@
 
 日期：2026-10-10。状态：**用户实机验收 PASS**（"Terrain V2 Phase 2B - Biome"）。验收中发现内陆大块白沙，已在"验收修正 1"处理。实现时没有跑游戏、GameTest 或服务器，下文的覆盖率和性能数字来自离线工具；实机数字以 `/afl dev terrain_v2 ecology` 为准。
 
+## C2 联邦实验世界（2026-10-14）
+
+联邦实验世界（[federal_six_state_c2.md](federal_six_state_c2.md)）复用本文的分区与群系规则，另加 8 个联邦分区和 8 个群系。对 r1 的影响只在代码结构上，**r1 的输出不变**（C2 实测：同种子 r1 世界 256/256 区块地形签名一致，锁指纹相同）：
+
+- `EcologyBiomes.biomeAt` 对联邦规划转给 `FederalEcologyBiomes`；`EcologyBiomes.id(index)` / `colour(index)` 覆盖联邦序号（≥ 13）；
+- `ForestPlan` 的林分表按 `FederalEcologyBiomes.COUNT` 分配，多了两个过渡林分（山地针叶林、湖岸混交林），r1 群系的林分没变；
+- 群系 JSON 由 `tools/federal-worldgen/build_federal_data.py` 追加生成；**重新运行 r1 的 `build_ecology_data.py` 会重写 `is_overworld` 标签和 `mesh_forest.json`，之后必须再跑一次联邦的生成器**。
+
 ## 验收修正 1：内陆的大块白沙（2026-10-10）
 
 **用户反馈**：小地图上树林里有大块连续的浅色区域。海边沙丘、低缓沙质平原、松林里的小沙地空地都可以接受；离海岸很远的普通树林里出现大片白沙不行。如果是刻意生成的沙地疏林，要缩小最大斑块，让沙地和草地、灌木逐渐混合，而不是颜色鲜明的独立色块。

@@ -1,0 +1,61 @@
+federal plan afl_federal_plan_c2_v1 seed -295378578869149513 grid 1760 x 1760 (28160 m) origin -14080
+build: planner 8.8 s, surface + ecology 2.0 s, peak heap 1126 MB (baseline 1 MB)
+  report frame = [D@722c41f4
+  report ms_setup = 2041
+  report drowned_cells = 14499
+  report marsh_cells = 7954
+  report pit_cells_filled = 12187
+  report ms_drainage = 6641
+  report channel_cells_A1km2 = 7644
+  report uphill_steps_A1km2 = 13
+  report closed_pits_16m = 1095
+  report lakes = 27
+  report lake_cells = 12159
+  report ms_rivers = 457
+  report river_lines = 71
+  report river_vertices = 72031
+  report ms_ecology = 988
+runtime surface retained: 142 MB of heap above the baseline
+plan cache (deflated, as TerrainPlanStore writes it): 12.2 MB
+digests 05c318c57fca5c3a/7abaa9b3ad95dae0 (0.1 s)
+
+per state (land sampled every 32 m; heights in Y; shares of the state's land)
+S1  land 62 km2  centre 4852 -1216  Y p10 74 p50 94 p90 124 p99 185 max 237  slope>0.3 4.8%  Y>160 3.0%  lake 0.0%  forest 64.8%
+    oak_hickory_woodland 34.8%  temperate_grassland 34.3%  ridge_oak_forest 9.5%  mixed_mesophytic_forest 8.8%  coastal_pine_oak_forest 3.4%  riparian_forest 3.0%  montane_conifer_forest 2.8%  hemlock_hollow 1.4%  lakeshore_mixed_forest 0.7%  
+    climate t 0.44 m 0.64  physiography mountain 0.00 plateau 0.00 plains 0.31 lake_lowland 0.02 hills 0.67 coastal_lowland 0.00
+    zones (open -0.70): agri_plain 65.1%  riparian 7.1%  slope_forest 8.8%  ridge_oak 9.5%  hollow_conifer 1.4%  coastal_pine 3.9%  montane_conifer 2.8%  lakeshore_forest 0.7%  
+S2  land 41 km2  centre -2850 1945  Y p10 71 p50 78 p90 115 p99 141 max 153  slope>0.3 2.1%  Y>160 0.0%  lake 0.0%  forest 12.0%
+    temperate_grassland 70.7%  wet_prairie 8.0%  plateau_steppe 7.4%  riparian_forest 4.9%  oak_hickory_woodland 2.8%  mixed_mesophytic_forest 2.4%  canyon_badlands 1.5%  coastal_pine_oak_forest 1.2%  montane_conifer_forest 0.7%  
+    climate t 0.57 m 0.32  physiography mountain 0.07 plateau 0.06 plains 0.85 lake_lowland 0.00 hills 0.02 coastal_lowland 0.00
+    zones (open 0.89): agri_plain 58.2%  riparian 21.5%  slope_forest 2.4%  coastal_pine 1.3%  wet_prairie 6.7%  montane_conifer 0.6%  steppe 7.2%  canyon 1.5%  
+S3  land 23 km2  centre -7103 -4000  Y p10 69 p50 172 p90 229 p99 249 max 262  slope>0.3 15.1%  Y>160 54.6%  lake 0.1%  forest 51.8%
+    montane_conifer_forest 29.4%  alpine_meadow 21.8%  alpine_peaks 14.7%  mixed_mesophytic_forest 13.7%  temperate_grassland 10.4%  coastal_pine_oak_forest 5.1%  oak_hickory_woodland 1.5%  riparian_forest 1.2%  lakeshore_mixed_forest 0.7%  tidal_marsh 0.5%  
+    climate t 0.09 m 0.35  physiography mountain 0.76 plateau 0.00 plains 0.23 lake_lowland 0.01 hills 0.00 coastal_lowland 0.00
+    zones (open 0.22): agri_plain 10.2%  riparian 2.8%  slope_forest 13.8%  coastal_pine 5.5%  tidal_marsh 0.5%  montane_conifer 29.5%  alpine_meadow 21.8%  alpine_rock 14.7%  lakeshore_forest 0.7%  
+S4  land 47 km2  centre 908 -5521  Y p10 68 p50 84 p90 98 p99 102 max 120  slope>0.3 0.4%  Y>160 0.0%  lake 6.4%  forest 61.4%
+    temperate_grassland 29.8%  lakeshore_mixed_forest 29.5%  oak_hickory_woodland 17.6%  coastal_pine_oak_forest 10.6%  freshwater_lake 6.4%  mixed_mesophytic_forest 1.3%  coastal_swamp_forest 1.2%  riparian_forest 1.1%  coastal_sandy_clearing 1.0%  tidal_marsh 0.6%  lake_fen 0.5%  
+    climate t 0.25 m 0.58  physiography mountain 0.00 plateau 0.00 plains 0.30 lake_lowland 0.66 hills 0.04 coastal_lowland 0.00
+    zones (open -0.41): agri_plain 42.8%  riparian 6.2%  slope_forest 1.3%  coastal_pine 11.6%  swamp_forest 1.3%  tidal_marsh 0.5%  lakeshore_forest 29.5%  lake 6.5%  
+S5  land 54 km2  centre 3989 4461  Y p10 67 p50 72 p90 80 p99 87 max 91  slope>0.3 0.0%  Y>160 0.0%  lake 0.0%  forest 77.0%
+    coastal_pine_oak_forest 53.4%  coastal_swamp_forest 18.5%  temperate_grassland 16.0%  coastal_sandy_clearing 5.2%  oak_hickory_woodland 3.8%  tidal_marsh 1.6%  mixed_mesophytic_forest 0.8%  riparian_forest 0.6%  
+    climate t 0.71 m 0.77  physiography mountain 0.00 plateau 0.00 plains 0.28 lake_lowland 0.00 hills 0.00 coastal_lowland 0.72
+    zones (open -0.64): agri_plain 18.4%  riparian 1.7%  slope_forest 0.8%  coastal_pine 58.8%  swamp_forest 18.5%  tidal_marsh 1.5%  
+S6  land 40 km2  centre -7039 2526  Y p10 73 p50 138 p90 153 p99 240 max 265  slope>0.3 9.3%  Y>160 8.6%  lake 0.0%  forest 13.4%
+    plateau_steppe 74.0%  montane_conifer_forest 6.8%  canyon_badlands 5.0%  coastal_pine_oak_forest 4.3%  alpine_meadow 2.7%  temperate_grassland 2.4%  alpine_peaks 1.8%  mixed_mesophytic_forest 1.2%  riparian_forest 0.5%  
+    climate t 0.52 m 0.07  physiography mountain 0.14 plateau 0.72 plains 0.14 lake_lowland 0.00 hills 0.00 coastal_lowland 0.00
+    zones (open 0.15): agri_plain 2.4%  riparian 0.8%  slope_forest 1.2%  coastal_pine 4.6%  montane_conifer 6.7%  alpine_meadow 2.7%  alpine_rock 1.8%  steppe 74.3%  canyon 5.0%  
+
+state borders: biome change across a 96 m step on the border vs the same step 1 km to either side
+  S1|S2  steps 152  change on border 23.7%  beside 29.3%  ratio 0.81   |dY| on 1.2 beside 2.0
+  S1|S4  steps 289  change on border 51.6%  beside 46.8%  ratio 1.10   |dY| on 1.6 beside 2.1
+  S1|S5  steps 263  change on border 35.4%  beside 31.0%  ratio 1.14   |dY| on 1.1 beside 2.0
+  S2|S3  steps 50  change on border 40.0%  beside 14.0%  ratio 2.86   |dY| on 5.5 beside 3.9
+  S2|S4  steps 62  change on border 21.0%  beside 35.5%  ratio 0.59   |dY| on 2.0 beside 1.3
+  S2|S5  steps 122  change on border 18.0%  beside 19.7%  ratio 0.92   |dY| on 1.1 beside 0.9
+  S2|S6  steps 298  change on border 24.8%  beside 18.2%  ratio 1.36   |dY| on 6.5 beside 2.4
+  S3|S4  steps 142  change on border 23.9%  beside 39.5%  ratio 0.61   |dY| on 5.8 beside 3.3
+  S3|S6  steps 70  change on border 30.0%  beside 28.6%  ratio 1.05   |dY| on 8.7 beside 8.1
+  all borders: change on 31.9% beside 30.3% ratio 1.05
+
+query cost (single thread, random columns): heightAt 0.54 us, biomeAt 1.09 us, lakeTopAt 0.14 us (ok)
+maps: D:\Minecraft Modding\AFL-federal-worldgen-v1\build\federal-worldgen\c2

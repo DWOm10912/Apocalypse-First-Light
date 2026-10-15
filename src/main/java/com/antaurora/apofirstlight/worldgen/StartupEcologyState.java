@@ -14,14 +14,15 @@ public record StartupEcologyState(long seed, Holder<Biome> plains, Holder<Biome>
                                   Holder<Biome> ocean, Holder<Biome> deepOcean, Holder<Biome> beach,
                                   MacroGeography geography, DensityFunction preliminarySurface,
                                   MainNationBiomeRegionPlan regionPlan, net.minecraft.core.Registry<Biome> registry,
-                                  java.util.concurrent.ConcurrentHashMap<net.minecraft.resources.ResourceKey<Biome>, Holder<Biome>> holders) {
+                                  java.util.concurrent.ConcurrentHashMap<net.minecraft.resources.ResourceKey<Biome>, Holder<Biome>> holders,
+                                  com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan) {
     public StartupEcologyState {
         java.util.Objects.requireNonNull(plains,"Startup plains holder");
         java.util.Objects.requireNonNull(fallout,"Startup fallout holder");
         java.util.Objects.requireNonNull(preliminarySurface,"Startup preliminary surface density");
     }
     public Holder<Biome> resolve(int quartX,int quartY,int quartZ,Holder<Biome> original) {
-        var override = regionPlan.biomeAt(quartX << 2, quartY << 2, quartZ << 2,
+        var override = regionPlan.biomeAt(plan, quartX << 2, quartY << 2, quartZ << 2,
                 original.unwrapKey().orElse(null), preliminarySurface);
         if (Biomes.OCEAN.equals(override)) return ocean;
         if (Biomes.DEEP_OCEAN.equals(override)) return deepOcean;

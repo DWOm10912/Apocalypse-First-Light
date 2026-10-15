@@ -61,7 +61,7 @@ public final class WorldgenLockPolicy {
         boolean noise = false;
         if (!was.planDigest().equals(current.planDigest())) {
             TerrainPlanFingerprint.TileComparison cmp = TerrainPlanFingerprint.compare(was.tiles(), current.tiles());
-            String where = where(cmp);
+            String where = where(cmp, current.tiles());
             if (planDeclared) {
                 notes.add("plan values differ, as the declared terrain_plan / national_template change says" + where);
             } else if (cmp.noiseOnly(current.tiles() == null ? 0 : current.tiles().size())) {
@@ -124,10 +124,10 @@ public final class WorldgenLockPolicy {
         };
     }
 
-    private static String where(TerrainPlanFingerprint.TileComparison c) {
-        if (!c.comparable() || c.changedTiles() <= 0) return "";
-        return "; around x " + TerrainPlanFingerprint.tileOrigin(c.minCol()) + ".." + TerrainPlanFingerprint.tileOrigin(c.maxCol() + 1)
-                + ", z " + TerrainPlanFingerprint.tileOrigin(c.minRow()) + ".." + TerrainPlanFingerprint.tileOrigin(c.maxRow() + 1);
+    private static String where(TerrainPlanFingerprint.TileComparison c, TerrainPlanFingerprint.Tiles tiles) {
+        if (!c.comparable() || c.changedTiles() <= 0 || tiles == null) return "";
+        return "; around x " + TerrainPlanFingerprint.tileOrigin(tiles, c.minCol()) + ".." + TerrainPlanFingerprint.tileOrigin(tiles, c.maxCol() + 1)
+                + ", z " + TerrainPlanFingerprint.tileOrigin(tiles, c.minRow()) + ".." + TerrainPlanFingerprint.tileOrigin(tiles, c.maxRow() + 1);
     }
 
     /** The token that accepts exactly this change (stored baseline -> running rules), 8 hex digits. */

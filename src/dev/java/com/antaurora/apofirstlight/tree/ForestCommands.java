@@ -65,7 +65,7 @@ final class ForestCommands {
         int px = player.getBlockX(), pz = player.getBlockZ(), cx = px >> 4, cz = pz >> 4;
         int b = plan.biome(px, pz);
         var st = ForestPlan.stand(b);
-        say(x, "Mesh forest " + (ForestGate.enabled() ? "ON" : "off (" + ForestGate.reason() + ")") + "; here " + EcologyBiomes.IDS[b] + ": "
+        say(x, "Mesh forest " + (ForestGate.enabled() ? "ON" : "off (" + ForestGate.reason() + ")") + "; here " + EcologyBiomes.id(b) + ": "
                 + (st != null ? st.name() + String.format(", target %.2f trees per chunk, mix %s", st.target(), mixText(st))
                 : ForestPlan.VANILLA_TREES[b] ? "keeps its vanilla trees" : "no trees"));
         int planned = 0, standing = 0;

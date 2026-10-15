@@ -24,7 +24,7 @@ public final class TerrainV2TestPoints {
         List<Point> out = new ArrayList<>();
         int[] spawn = s.naturalSpawn(4096);
         int cx = spawn == null ? 0 : spawn[0], cz = spawn == null ? 0 : spawn[1];
-        int n = EcologyBiomes.IDS.length;
+        int n = s.federal() ? FederalEcologyBiomes.COUNT : EcologyBiomes.IDS.length;
         int[][] found = new int[n][];
         int left = n - 1;                                   // all but the sea
         for (int ring = 0; ring * 48 <= 9000 && left > 0; ring++)
@@ -41,8 +41,8 @@ public final class TerrainV2TestPoints {
                 left--;
             }
         for (int b = 1; b < n; b++) if (found[b] != null)
-            out.add(new Point("eco_" + EcologyBiomes.IDS[b], found[b][0], found[b][1], b == EcologyBiomes.BEACH ? "minecraft:beach"
-                    : "apocalypse_firstlight:" + EcologyBiomes.IDS[b]));
+            out.add(new Point("eco_" + EcologyBiomes.id(b), found[b][0], found[b][1], b == EcologyBiomes.BEACH ? "minecraft:beach"
+                    : "apocalypse_firstlight:" + EcologyBiomes.id(b)));
         return out;
     }
 
@@ -95,19 +95,19 @@ public final class TerrainV2TestPoints {
         }
         // the marsh cell with the most open water on the generated flat
         int bestCell = -1, bestCount = -1;
-        int N = TerrainPlanSurface.N;
+        int N = s.gridN;
         for (int i = 0; i < N * N; i++) {
             if (s.water[i] != 3) continue;
             int c = i % N, row = i / N;
-            int x0 = (int) (TerrainPlanSurface.ORIGIN + c * TerrainPlanSurface.CELL), z0 = (int) (TerrainPlanSurface.ORIGIN + row * TerrainPlanSurface.CELL);
+            int x0 = (int) (s.gridOrigin + c * TerrainPlanSurface.CELL), z0 = (int) (s.gridOrigin + row * TerrainPlanSurface.CELL);
             int count = 0;
             for (int k = 0; k < 16; k += 2) for (int j = 0; j < 16; j += 2)
                 if (s.poolAt(x0 + j, z0 + k) && (int) Math.ceil(s.heightAt(x0 + j, z0 + k)) - 1 == RiverCarver.MARSH_TOP) count++;
             if (count > bestCount && count < 40) { bestCount = count; bestCell = i; }   // mixed water and marsh, not a lake
         }
         if (bestCell >= 0) {
-            int x = (int) (TerrainPlanSurface.ORIGIN + (bestCell % N + 0.5) * TerrainPlanSurface.CELL);
-            int z = (int) (TerrainPlanSurface.ORIGIN + (bestCell / N + 0.5) * TerrainPlanSurface.CELL);
+            int x = (int) (s.gridOrigin + (bestCell % N + 0.5) * TerrainPlanSurface.CELL);
+            int z = (int) (s.gridOrigin + (bestCell / N + 0.5) * TerrainPlanSurface.CELL);
             out.add(new Point("wetland", x, z, "tidal marsh flat Y63 with pools at Y62"));
         }
         return out;

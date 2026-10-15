@@ -38,8 +38,20 @@ public final class EcologyBiomes {
 
     static final double ECO_A0 = 40, ECO_L0 = 380, ECO_A1 = 16, ECO_L1 = 110, ECO_A2 = 6, ECO_L2 = 37;
 
-    /** The biome index at a column from the surface's own ecology zones (GRASSLAND when the surface has none). */
+    /** Id of any ecology biome index: r1 (0..12) or federal (13.., FederalEcologyBiomes, C2). */
+    public static String id(int index) {
+        return index < IDS.length ? IDS[index] : FederalEcologyBiomes.IDS[index - IDS.length];
+    }
+
+    /** Map colour of any ecology biome index (r1 or federal). */
+    public static int colour(int index) {
+        return index < COLOURS.length ? COLOURS[index] : FederalEcologyBiomes.COLOURS[index - COLOURS.length];
+    }
+
+    /** The biome index at a column from the surface's own ecology zones (GRASSLAND when the surface has none). A federal
+     *  surface (C2) maps its own zones (FederalEcologyBiomes); an r1 surface never reaches that branch. */
     public static int biomeAt(TerrainPlanSurface s, double x, double z) {
+        if (s.federal() && s.ecology != null) return FederalEcologyBiomes.biomeAt(s, s.ecology, x, z);
         if (s.ecology == null) {
             double h = s.heightAt(x, z);
             if (h < 63 && s.seaFloodAt(x, z, h)) return SEA;
@@ -98,12 +110,12 @@ public final class EcologyBiomes {
 
     /** The zone with the largest bilinear weight among the four cells round (wx, wz), each zone nudged by its own noise. */
     static int softZone(TerrainPlanSurface s, byte[] zone, double wx, double wz, double x, double z) {
-        double gx = (wx - TerrainPlanSurface.ORIGIN) / TerrainPlanSurface.CELL - 0.5, gz = (wz - TerrainPlanSurface.ORIGIN) / TerrainPlanSurface.CELL - 0.5;
+        double gx = (wx - s.gridOrigin) / TerrainPlanSurface.CELL - 0.5, gz = (wz - s.gridOrigin) / TerrainPlanSurface.CELL - 0.5;
         int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
         double fx = gx - c0, fz = gz - r0;
         double[] w = new double[EcologyPlan.NAMES.length];
         for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++) {
-            int k = zone[TerrainPlanSurface.idx(TerrainPlanSurface.clampI(c0 + a), TerrainPlanSurface.clampI(r0 + b))];
+            int k = zone[s.cellIdx(s.clampCell(c0 + a), s.clampCell(r0 + b))];
             if (k < 0) k = EcologyPlan.AGRI_PLAIN;          // a water cell next to land: its weight goes to the shore land
             w[k] += (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
         }
@@ -118,11 +130,11 @@ public final class EcologyBiomes {
     }
 
     static double bilinearHand(TerrainPlanSurface s, byte[] hand, double x, double z) {
-        double gx = (x - TerrainPlanSurface.ORIGIN) / TerrainPlanSurface.CELL - 0.5, gz = (z - TerrainPlanSurface.ORIGIN) / TerrainPlanSurface.CELL - 0.5;
+        double gx = (x - s.gridOrigin) / TerrainPlanSurface.CELL - 0.5, gz = (z - s.gridOrigin) / TerrainPlanSurface.CELL - 0.5;
         int c0 = (int) Math.floor(gx), r0 = (int) Math.floor(gz);
         double fx = gx - c0, fz = gz - r0, v = 0;
         for (int b = 0; b < 2; b++) for (int a = 0; a < 2; a++)
-            v += hand[TerrainPlanSurface.idx(TerrainPlanSurface.clampI(c0 + a), TerrainPlanSurface.clampI(r0 + b))]
+            v += hand[s.cellIdx(s.clampCell(c0 + a), s.clampCell(r0 + b))]
                     * (a == 0 ? 1 - fx : fx) * (b == 0 ? 1 - fz : fz);
         return v;
     }
