@@ -51,6 +51,10 @@
 | `river_carving` | `federal_water#1` | HARD | 区块里的河水、湖水、河岸与湖岸 |
 | `ecology` | `ecology_federal#1` | HARD | 联邦分区、地表群系映射、联邦群系 JSON、地表规则分支 |
 | `forest` | 同 r1 | SOFT | 天然树木 |
+| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.2#interstate_ew:county_seat-valley_town#surface1` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10 节） |
+| `terrain_works`（开关，C3.2） | `road_works_r4#1` | HARD | 道路挖填、边坡、边沟进入地形 |
+
+联邦世界还有探针 `road_network`：路网 JSON 的摘要（开关子系统的探针，世界没有这个开关时去掉）。第一次加载一个种子会规划一次路网（约 8 s），之后读 `afl_cache/road_network/` 的缓存。
 
 `terrain_plan` 的历史版本：#1 Phase 2 r1 高度，#2 Phase 2b 河流，#3 岸线扭曲，#4 生态阶段。这几次都发生在 2026-10-10，当时还没有版本锁。规划器标签一直是 r1，所以早期世界无法事后区分是哪个版本，只能按旧世界（LEGACY）处理。
 
@@ -112,7 +116,7 @@
 - 生成代码查询：`WorldgenGateState.enabled(level, WorldgenGates.ROAD_NETWORK)`，或者区块生成里拿得到的 `RandomState`；
 - `/afl worldgen lock` 多一行"gated systems on"。
 
-**现在的状态**：C3.1 只提供了机制，`WorldgenRules` 还没有声明任何开关子系统（`road_network`、`terrain_works` 在 C3.2 真正影响区块时声明；`start_area` 由 Main 登记）。所以目前所有世界的开关都是关的，行为和以前完全一样。
+**现在的状态**（C3.2，2026-10-14）：联邦规则声明了 `road_network` 和 `terrain_works`。C3.2 之后新建的联邦世界两者都打开并记录；之前建的联邦世界（记录里没有）照旧关闭，加载时只多一条说明；r1 世界没有这两个子系统。`start_area` 由 Main 登记。绑定开关时同时绑定路网（`RoadNetworkRuntime.bind`）：施工层挂到这个世界的 RandomState 上，在第一个区块之前。
 
 ## 拦截之后怎么办
 
@@ -199,7 +203,7 @@
 - **覆盖不到的规则**：雕刻器、地表规则、地物（features）只靠声明的版本号覆盖，探针测不到。
 - **旧世界领养**：领养不等于验证。2026-10-14 之前的 Terrain V2 世界（包括用户的测试世界）在第一次用新构建打开时会被领养，数据目录里多一个小文件，其他都不动。如果它们是在 `terrain_plan` #1–#3 时期生成的，旧区块与新区块之间的接缝早已存在，锁无法发现。
 - **ADR-11 的其他部分还没有接这套锁**：Highway、道路施工快照、结构资产 digest。
-- **开关的实机流程**没有测过（C3.1 只编译和离线判定表）；要等 C3.2 声明 `road_network` 以后，在隔离客户端里用新世界和旧世界各测一次。
+- **开关的实机流程**：C3.2 在隔离客户端里测了新建联邦世界（开关打开、道路生成）和重开；C3.2 之前建的联邦世界重开（开关应保持关闭）见 [C3](federal_highways_c3.md) 10.8。
 
 ## 实机验收建议（由用户决定是否进行；新建、重开、LEGACY、BLOCK 已由 C2 测试客户端测过）
 

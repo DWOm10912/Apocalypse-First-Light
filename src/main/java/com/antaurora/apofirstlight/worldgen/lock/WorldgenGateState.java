@@ -17,6 +17,8 @@ public final class WorldgenGateState {
 
     static void bind(RandomState state, Set<String> on) {
         ((RandomStateSeedAccess) (Object) state).apocalypse$setWorldgenGates(on);
+        // C3.2: the road network and its terrain works follow their gates (both off: the planned ground unchanged)
+        com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.bind(state, on);
     }
 
     public static Set<String> on(RandomState state) {

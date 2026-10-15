@@ -603,6 +603,12 @@ public final class AflBlocks {
     public static final RegistryObject<Block> GRADED_TURF = BLOCKS.register("graded_turf",
             () -> new com.antaurora.apofirstlight.block.GradedTurfBlock(BlockBehaviour.Properties.copy(Blocks.DIRT)
                     .mapColor(net.minecraft.world.level.material.MapColor.GRASS).strength(0.6F).sound(SoundType.GRASS).noOcclusion()));
+    // Road pavement collision (C3.2, 2026-10-14, docs/worldgen/federal_highways_c3.md 10): invisible 1/32-step collision
+    // under the generated road mesh. Mined like the asphalt: pickaxe, stone tier; no loot, no item.
+    public static final RegistryObject<Block> ROAD_SURFACE = BLOCKS.register("road_surface",
+            () -> new com.antaurora.apofirstlight.block.RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",

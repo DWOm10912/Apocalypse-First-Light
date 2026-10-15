@@ -30,6 +30,9 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$planProfile;
     // C3 (2026-10-14): the gated generation systems on for this world (WorldgenGates), bound by the version lock at load
     @Unique private volatile java.util.Set<String> apocalypse$gates = java.util.Set.of();
+    // C3.2 (2026-10-14): the terrain works the plan densities apply, and the road network bound by the version lock
+    @Unique private com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef apocalypse$worksRef;
+    @Unique private volatile com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$network;
 
     /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -37,6 +40,7 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     private NoiseRouter apocalypse$bindMacroSeed(NoiseGeneratorSettings owner, NoiseGeneratorSettings settings,
                                                  HolderGetter<NormalNoise.NoiseParameters> noises, long seed) {
         java.util.Map<LandTerrainRelief, DensityFunction> resolved = new java.util.HashMap<>();
+        if (apocalypse$worksRef == null) apocalypse$worksRef = new com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef();
         return owner.noiseRouter().mapAll(function -> {
             if (function instanceof MacroHeightDensity height) {
                 apocalypse$macroGeography = true;
@@ -57,13 +61,13 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
             // Terrain V2: the plan is fetched (memory / disk cache / one build) here, at world load, never per chunk
             if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanHeightDensity height) {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
-                var bound = height.withSeed(seed);
+                var bound = height.withSeed(seed, apocalypse$worksRef);
                 apocalypse$bindPlan(bound.profile(), bound.surface());
                 return bound;
             }
             if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanStabilityDensity stability) {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
-                var bound = stability.withSeed(seed);
+                var bound = stability.withSeed(seed, apocalypse$worksRef);
                 apocalypse$bindPlan(bound.profile(), bound.surface());
                 return bound;
             }
@@ -114,4 +118,15 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     @Override public java.util.Set<String> apocalypse$worldgenGates() { return apocalypse$gates; }
 
     @Override public void apocalypse$setWorldgenGates(java.util.Set<String> on) { apocalypse$gates = java.util.Set.copyOf(on); }
+
+    @Override public com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef apocalypse$roadWorksRef() {
+        if (apocalypse$worksRef == null) apocalypse$worksRef = new com.antaurora.apofirstlight.worldgen.network.road.RoadWorksRef();
+        return apocalypse$worksRef;
+    }
+
+    @Override public com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network apocalypse$roadNetwork() { return apocalypse$network; }
+
+    @Override public void apocalypse$setRoadNetwork(com.antaurora.apofirstlight.worldgen.network.RoadNetworkRuntime.Network network) {
+        apocalypse$network = network;
+    }
 }

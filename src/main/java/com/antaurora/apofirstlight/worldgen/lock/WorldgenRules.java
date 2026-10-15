@@ -71,6 +71,14 @@ public final class WorldgenRules {
                         "chunk terrain shape, caves and aquifers"),
                 new WorldgenSystem("river_carving", "federal_water#" + FEDERAL_WATER, Severity.HARD, "river and lake water and banks in chunks"),
                 new WorldgenSystem("ecology", "ecology_federal#" + FEDERAL_ECOLOGY, Severity.HARD, "biomes and surface blocks"),
+                // C3.2 (gated: only worlds created with them have them, WorldgenGates)
+                new WorldgenSystem(WorldgenGates.ROAD_NETWORK,
+                        com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkStage.networkVersion(
+                                com.antaurora.apofirstlight.worldgen.network.route.RoadNetworkPlan.VERSION), Severity.HARD,
+                        "public road routes, pavement, collision and bridges"),
+                new WorldgenSystem(WorldgenGates.TERRAIN_WORKS,
+                        com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkStage.worksVersion(), Severity.HARD,
+                        "road cuts, fills, slopes and ditches in the terrain"),
                 new WorldgenSystem("forest", forestEnabled ? "mesh_forest#" + ForestPlan.VERSION : "vanilla_trees", Severity.SOFT,
                         "natural trees"));
         return List.of(

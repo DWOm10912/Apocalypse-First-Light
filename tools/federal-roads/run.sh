@@ -3,6 +3,7 @@
 # Reads a cached federal C2 plan (the isolated dev client writes it on first world load); output under build/federal-roads/.
 #
 #   tools/federal-roads/run.sh routes [seed] [plan-cache]   C3.1 route recomputation: report, JSON, maps, profiles
+#   tools/federal-roads/run.sh works  [seed] [plan-cache]   C3.2 terrain works + pavement mesh check of the built routes
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="$ROOT/build/federal-roads"
@@ -18,5 +19,8 @@ case "$what" in
   routes) seed="${1:--295378578869149513}"
           cache="${2:-build/federal-c2-client/afl_cache/terrain_plan/afl_federal_plan_c2_v1_$(java -cp "$CLS" com.antaurora.apofirstlight.worldgen.network.route.RoadsPreview unsigned "$seed" 2>/dev/null || echo 18151365494840402103).bin}"
           java -Xmx4g -cp "$CLS" com.antaurora.apofirstlight.worldgen.network.route.RoadsPreview "$seed" "$cache" "$OUT/routes" ;;
-  *)      echo "usage: run.sh routes [seed] [plan-cache]" >&2; exit 2 ;;
+  works)  seed="${1:--295378578869149513}"
+          cache="${2:-build/federal-c2-client/afl_cache/terrain_plan/afl_federal_plan_c2_v1_$(java -cp "$CLS" com.antaurora.apofirstlight.worldgen.network.route.RoadsPreview unsigned "$seed" 2>/dev/null || echo 18151365494840402103).bin}"
+          java -Xmx4g -cp "$CLS" com.antaurora.apofirstlight.worldgen.network.road.RoadWorksCheck "$seed" "$cache" "$OUT/works" ;;
+  *)      echo "usage: run.sh routes|works [seed] [plan-cache]" >&2; exit 2 ;;
 esac
