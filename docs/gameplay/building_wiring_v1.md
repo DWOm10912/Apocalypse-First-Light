@@ -6,7 +6,8 @@
 - **第 3 阶段「灯光组和开关」**：用户提交了（f08982d0）（第 5.2 节）：编译通过；布线 GameTest 10/10 通过（新增 `groups`）。用户 2026-10-14 实机 PASS（原话"2,3PASS"，没有逐项说明看了哪些）。
 - **第 4 阶段「溪谷老宅接线」**：开发桥的代码用户提交了（cb00b636），线在「house test」的世界里（第 5.3 节）：「house test」里的老宅接好进线和三路线、5 个开关、换了灯座；数据读回全部对上（16 个设备的回路和组、147 个节点、没有互连）。用户 2026-10-14 实机验收："我看没问题了"（没有逐项说明看了哪些）。
 - **第 5 阶段「布线工具和透视」**：用户提交了（cb00b636）（第 3–3.3、8 节）：两点连线（起点、途经点、预览、确认）、给灯和开关选组的小面板、透视的墙后变暗、"显示全部"、设备标记和组号、连线预览。编译通过；布线 GameTest 12/12 通过（新增 `route`、`picker`）。用户 2026-10-14 实机验收："已关游戏，测完了，第 5 阶段 PASS"（没有逐项说明看了哪些）。我没有截图。
-- **第 6 阶段「结构模板带线」已实现，没有提交**（第 5.4 节）：导出时把线打包进配电箱，放模板时跟着转、放好后写回墙里；开发指令 `/afl dev template`。用户 2026-10-14 确认草案（"可以，按推荐来，开始做第 6 阶段"）。编译通过；布线 GameTest 13/13 通过（新增 `template`）；`GasStation01GameTests`、`ExportStateGameTests`、`BuildingAuthoringGameTests` 回归通过。实机验收进行中：用户 2026-10-14 导出老宅、在超平坦世界放了两份，我读回存档，两份的暗线都和模板逐格一样；通电等用户确认（第 5.4 节最后）。
+- **第 6 阶段「结构模板带线」已实现，没有提交**（第 5.4 节）：导出时把线打包进配电箱，放模板时跟着转、放好后写回墙里；开发指令 `/afl dev template`。用户 2026-10-14 确认草案（"可以，按推荐来，开始做第 6 阶段"）。编译通过；布线 GameTest 13/13 通过（新增 `template`）；`GasStation01GameTests`、`ExportStateGameTests`、`BuildingAuthoringGameTests` 回归通过。实机验收：用户 2026-10-14 导出老宅、在超平坦世界放了两份，我读回存档，两份的暗线都和模板逐格一样；用户 2026-10-14 实机 PASS（"灯和开关都正常，第 6 阶段 PASS"）（第 5.4 节最后）。
+- **第 7 阶段「收尾」**（2026-10-14，没有提交）：性能实测（第 11 节"性能"：真老宅求解 71 μs、寻路 0.73 ms、透视同步 1.7 KB；最坏情况求解 4,096 个节点 1.6 ms、寻路放弃 10.7 ms），A1 回归通过，文档和记忆同步。新增 `WiringPerfGameTests` 和 `src/dev/wiring-perf-gametest.init.gradle`，游戏代码没改。
 - 设计、取舍和后面各阶段的计划见 [建筑暗线 V1：技术设计](building_wiring_v1_design.md)。本文只写游戏里现在的实际行为。
 
 **暗线现在能供电了，但只对 `WIRED` 配电箱**（第 5.1 节）：
@@ -397,7 +398,7 @@
 
 **不带线的放法**：WorldEdit 复制粘贴（开发桥 `we_copy` / `we_paste`，或者 `//copy`、`//paste`）。线在区块里，WorldEdit 抄不到：复制过去的房子要用扳手重接，或者导出成模板再放。
 
-**实机验收（2026-10-14，进行中）**：
+**实机验收（2026-10-14，用户 PASS）**：
 1. 用户在「house test」里 resume、export，得到 `run/afl_authoring_exports/forest_home_b_m1.nbt`（37 × 13 × 26，12,506 格，8 个方块实体，1 个负载中心打包了 147 个节点，`PackedFacing` west）；
 2. 用户在一个超平坦创造世界里放了两份：`place forest_home_b_m1 8 -60 8 clockwise_90` 和 `place_raw forest_home_b_m1 80 -60 8 180`；
 3. 我离线读了那个世界的存档（18:39 自动存档；脚本在会话草稿目录，没进仓库），把模板转到位后逐格对比：
@@ -405,7 +406,7 @@
    - 方块实体 8 / 8，进线盒指向配电箱的偏移两份都对；
    - 方块：`place` 12,491 / 12,506 格一样，`place_raw` 12,488 格一样。不一样的：铁丝网围栏的立柱（直段每 3 格一根，按世界坐标 x + z 取模，放到别处就挪位置，是规则本身）、两扇门开着（用户开的）、`place` 那份的发电机朝西不是朝南（`place_raw` 那份朝向对；发电机的朝向只在放下时设，那份的进线盒已经插上了线，看起来是用户接线时重放过）、`place_raw` 地块边上一格草变成了泥土；
    - 导出时发电机没插线（「house test」里也没插），所以这份模板里没有插头偏移，`place_raw` 不会掉插头。
-4. 通电（开发电机、灯亮、开关）存档里读不出来，等用户确认。
+4. 通电（开发电机、灯亮、开关）存档里读不出来，用户在两份里试过："灯和开关都正常，第 6 阶段 PASS"。
 
 ## 6. 拆除和清理
 
@@ -558,12 +559,38 @@ init 脚本用一个新的独立世界，跑完检查日志里十三个 `[AFL WI
 
 2026-10-14 第 6 阶段结果：13/13 通过（新增 `template`，第一次跑就过），服务器正常关闭。回归：`GasStation01GameTests`（A1 带处理器放 4 个旋转）、`ExportStateGameTests`、`BuildingAuthoringGameTests`（导出流程）都通过。
 
+### 性能（第 7 阶段，2026-10-14）
+
+`src/dev/java/com/antaurora/apofirstlight/dev/WiringPerfGameTests.java`，命名空间 `afl_wiring_perf`，两个测试 `house`、`worst`。`house` 用真老宅的导出（init 脚本把 `run/afl_authoring_exports/forest_home_b_m1.nbt` 的路径传进系统属性 `afl.perf.template`，没有这个文件就失败）：
+
+```bash
+./gradlew runGameTestServer --offline -PaflWithoutShaders --init-script src/dev/wiring-perf-gametest.init.gradle
+```
+
+都在服务端线程上量，先预热再取平均。GameTest 服务器不是客户端里的内置服务器，跑的时候另外两个工作树的客户端也开着，所以数字只是参考量级。
+
+| 环节 | 真老宅（147 个节点、138 格、17 个设备） | 最坏情况 | 设计估计 |
+|---|---|---|---|
+| 配电箱求解 `WiringSupply.solve` | 71 μs | 一路 4,096 个节点（上限，16 × 16 × 16 的石块一笔走完，没超限）：1.6 ms | 0.1 ms 以内（一栋房子） |
+| 设备找配电箱 `WiringSupply.feed` | 31 ns | — | 可忽略 |
+| 寻路（扳手预览，`ROUTE_MARGIN` 8、`ROUTE_VISITS` 20,000、`ROUTE_CELLS` 96） | 从配电箱安装格到 30 格外：0.73 ms | 28 × 28 × 28 的实心石块里横穿 55 格：0.99 ms；去一个够不着的格子，看满 20,000 格才放弃：**10.7 ms** | 一般 1 ms 以内，最坏几毫秒 |
+| 改方块的钩子 `WiringRemoval.changed` | 区块没布线 13 ns；有线的区块里没线的格子 14 ns；有线的格子换成还能布线的方块 76 ns | — | 可忽略 |
+| 透视同步（`ChunkWires` 包，按区块） | 4 个区块共 1,751 字节 | 4,096 个节点 4 个区块共 45 KB | 几十 KB 以内 |
+| 铺线 `WiringCommands.layAll`（开发指令；模板展开走同样的写入） | — | 4,096 个节点 17 ms | — |
+
+- 除了寻路的最坏情况，都在设计估计以内。寻路放弃前最多看 20,000 格，约 0.5 μs 一格；只有终点够不着、起终点周围又是一大片能布线的实心方块（山体、大块混凝土）时才会看满。每个玩家每秒最多预览 4 次，最坏每秒约 43 ms。先不改：一次 10 ms 是一个 tick 的五分之一；要压低就把 `WiringTool.ROUTE_VISITS` 减半（约 5 ms）。
+- 求解只在标脏后和每 100 tick 跑一次：4,096 个节点 1.6 ms，平摊到每个 tick 不到 0.02 ms。
+- 透视渲染在客户端，这一轮没有量。
+
+A1 回归 `GasStation01GameTests`（2026-10-14，第 7 阶段）：通过，4 个旋转，91,380 项检查，512 种方块状态，邻格更新没有改变任何方块状态。
+
 ## 12. 已知问题和没做的
 
 - 第 4 阶段（老宅接线）用户 2026-10-14 实机整体通过，没有逐项说明；断电再来电保持、光控在天黑时亮，有没有专门看过不知道。
-- 第 6 阶段（结构模板带线）：真老宅导出、放两份（转 90° 带处理器、转 180° 不带）读回一致（第 5.4 节最后）；通电还等用户确认。老宅的正式模板 `forest_home_b`、新世界里放老宅都在森林开局 M4。
+- 第 6 阶段（结构模板带线）：真老宅导出、放两份（转 90° 带处理器、转 180° 不带）读回一致（第 5.4 节最后），用户 2026-10-14 实机 PASS。老宅的正式模板 `forest_home_b`、新世界里放老宅都在森林开局 M4。
 - 不带 AFL 处理器的镜像放置（原版 `/place template` 带 `mirror`）线会错位，补不回来（第 5.4 节）。原版放置时插头、进线盒、电表箱的相对偏移也不转（原来就有的问题）。
 - WorldEdit 复制粘贴不带线（第 5.4 节）。
+- 寻路的最坏情况 10.7 ms（终点够不着、周围一大片实心方块，看满 20,000 格），比设计估计的"几毫秒"高，先接受（第 11 节"性能"）。透视渲染（客户端）没量过。
 - 模板展开时区块没加载的那部分，每 20 tick 试一次，直到那个区块加载；那段时间配电箱的 Jade 是「线路待展开」，那边的设备没电。
 - 放模板时不能铺线、被丢掉的格子只记在服务端日志里，游戏里看不到。
 - 打包的线存在配电箱的方块实体里，每个节点 16 字节（第 4 阶段老宅的 147 个节点约 2.3 KB），写完就删。
@@ -645,6 +672,8 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - `authoring/BuildingAuthoringService.java`（`Capture` / `Exported` 多了 `wiring`）、`BuildingAuthoringCommands.java`（`VALIDATED` / `EXPORTED` 那行的报告）、`src/dev/.../authoring/bridge/AuthoringAdapter.java`（`authoring_validate` 的 `wiring_*`）；
 - `compat/jade/DistributionPanelJadeProvider.java` 和语言键 `jade.apocalypse_firstlight.distribution_panel.packed`（Wiring pending / 线路待展开）；
 - 开发：`src/dev/.../dev/wiring/TemplateCommands.java`（`/afl dev template`）、`dev/WiringGameTests.java` 的 `template`、`src/dev/wiring-gametest.init.gradle` 的名单。
+
+第 7 阶段（只有开发代码）：`src/dev/.../dev/WiringPerfGameTests.java`（`house`、`worst`，第 11 节"性能"）、`src/dev/wiring-perf-gametest.init.gradle`（传老宅导出的路径 `afl.perf.template`）。
 
 第 5 阶段的 GameTest：`dev/WiringGameTests.java` 的 `route`、`picker`，`src/dev/wiring-gametest.init.gradle` 的名单加了这两个；`WiringTool` 有三个只给测试读的 `routeStart / routeWaypoints / routePreview`。
 
