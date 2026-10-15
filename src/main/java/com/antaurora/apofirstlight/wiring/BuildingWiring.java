@@ -338,4 +338,14 @@ public final class BuildingWiring {
         if (!WiringNode.tapped(node, d)) return false;
         return write(level, cell, circuit, WiringNode.tap(node, d, group));
     }
+
+    /**
+     * Writes one node exactly as given, 0 removing it (phase 4: the authoring bridge's undo and redo of its own wiring
+     * edits, which record every node an edit changed, both ends of each link). False when the chunk is not loaded.
+     */
+    public static boolean restore(ServerLevel level, BlockPos cell, int circuit, long node) {
+        if (chunk(level, cell) == null) return false;
+        write(level, cell.immutable(), circuit, node);
+        return node(level, cell, circuit) == node;
+    }
 }

@@ -38,17 +38,26 @@ public abstract class ClimateParameterListMixin {
         // TerraBlender supplies registries/seed, not the world's RandomState here. Bind the SAME
         // resource graph once per ParameterList with vanilla's wiring, not per biome query.
         // This creates no level/chunks and avoids a separate approximate surface-height model.
-        var terrainDepth = RandomState.create(
-                registries.registryOrThrow(Registries.NOISE_SETTINGS)
-                        .getHolderOrThrow(NoiseGeneratorSettings.OVERWORLD).value(),
-                registries.registryOrThrow(Registries.NOISE).asLookup(), seed)
-                .router().initialDensityWithoutJaggedness();
+        // C2 (2026-10-14): a world made with the federal experimental preset binds ITS noise settings (the federal plan);
+        // every other world keeps the r1 overworld settings, exactly as before
+        NoiseGeneratorSettings federal = com.antaurora.apofirstlight.worldgen.federal.FederalPreset.federalOverworldSettings(registries);
+        RandomState bound = RandomState.create(federal != null ? federal
+                        : registries.registryOrThrow(Registries.NOISE_SETTINGS).getHolderOrThrow(NoiseGeneratorSettings.OVERWORLD).value(),
+                registries.registryOrThrow(Registries.NOISE).asLookup(), seed);
+        var terrainDepth = bound.router().initialDensityWithoutJaggedness();
+        var access = (com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess) (Object) bound;
+        var plan = access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null;
         apocalypse$ecology=new StartupEcologyState(seed,biomes.getHolderOrThrow(Biomes.PLAINS),
                 biomes.getHolderOrThrow(AflBiomes.FALLOUT_BARRENS), biomes.getHolderOrThrow(Biomes.OCEAN),
                 biomes.getHolderOrThrow(Biomes.DEEP_OCEAN), biomes.getHolderOrThrow(Biomes.BEACH),
                 MacroGeography.forSeed(seed), terrainDepth,
                 com.antaurora.apofirstlight.world.biome.MainNationBiomeRegionPlan.forSeed(seed),
-                biomes, new java.util.concurrent.ConcurrentHashMap<>());
+                biomes, new java.util.concurrent.ConcurrentHashMap<>(), plan);
+        if (federal != null) {
+            ApocalypseFirstLight.LOGGER.info("[AFL federal C2] experimental six-state world: seed={} plan={} grid={} from {}",
+                    seed, plan == null ? "none" : plan.version, plan == null ? 0 : plan.gridN, plan == null ? 0 : (int) plan.gridOrigin);
+            return;
+        }
         var geography = apocalypse$ecology.geography();
         ApocalypseFirstLight.LOGGER.info("[AFL MACRO GEO] version={} seed={} mainlandAxes={}x{} startupReserve={} mainlandCore={} inlandSeaCount={} bayCount={} strategicIslandCount={} foreignLand=false",
                 MacroGeography.VERSION, seed, geography.majorAxis(), geography.minorAxis(),

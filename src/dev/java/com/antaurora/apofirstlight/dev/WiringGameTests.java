@@ -24,7 +24,9 @@ import com.antaurora.apofirstlight.wiring.WiringChunkHolder;
 import com.antaurora.apofirstlight.wiring.WiringNode;
 import com.antaurora.apofirstlight.wiring.WiringRouter;
 import com.antaurora.apofirstlight.wiring.WiringStorage;
+import com.antaurora.apofirstlight.wiring.WiringTemplate;
 import com.antaurora.apofirstlight.wiring.WiringTool;
+import com.antaurora.apofirstlight.worldgen.structure.AflTemplatePlacer;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -51,6 +53,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,6 +62,7 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -98,6 +103,12 @@ import java.util.UUID;
  *   not an outlet off the wire; the top cable takes no breaker; LEGACY_AREA feeds nothing over wires; a second panel on the
  *   circuit joins them (no power) until it goes; the feeder gives the inlet box its panel; a load center saved without the
  *   field loads LEGACY_AREA.</li>
+ *   <li>groups (phase 3): light groups and wall switches (see the method).</li>
+ *   <li>route, picker (phase 5): the wrench's two-point route (preview, confirm, cost, changed route, waypoints, rate
+ *   limit, cancels) and the group picker's server side (see the methods).</li>
+ *   <li>template (phase 6): a house exported by the real capture carries its wiring in the panel; placed 8 ways with the AFL
+ *   processor and 4 turns without it, across chunk borders, it unpacks node for node, solves, lights and switches as before;
+ *   it merges with wire already there, keeps cells in unloaded chunks (saved, not synced) and drops cells that hold no wire.</li>
  * </ul>
  * Run with {@code src/dev/wiring-gametest.init.gradle} (and -PaflWithoutShaders).
  */
@@ -106,7 +117,7 @@ import java.util.UUID;
 @net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID)
 public final class WiringGameTests {
     private static final String NS = "afl_wiring_tests", TOKEN = "[AFL WIRING TEST] PASS ";
-    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes", "supply", "groups"};
+    static final String[] NAMES = {"nodes", "save", "survival", "creative", "cleanup", "slopes", "corner", "shapes", "supply", "groups", "route", "picker", "template"};
 
     @net.minecraftforge.eventbus.api.SubscribeEvent
     public static void template(net.minecraftforge.event.server.ServerStartingEvent event) throws Exception {
@@ -146,6 +157,11 @@ public final class WiringGameTests {
             case "shapes" -> shapes(h);
             case "supply" -> supply(h);
             case "groups" -> groups(h);
+            case "route" -> route(h);
+            case "picker" -> picker(h);
+            case "template" -> {
+                try { templates(h); } catch (Exception e) { throw new RuntimeException(e); }
+            }
             default -> throw new IllegalArgumentException(name);
         }
     }
@@ -856,6 +872,328 @@ public final class WiringGameTests {
         h.assertTrue(!level.getBlockState(s3).getValue(WallSwitchBlock.ON) && level.getBlockState(s3).getValue(WallSwitchBlock.WIRED), "a new switch takes its group's state");
         pass(h, "groups", "groups counted, switch sync, outlet unaffected, pull chain stacks, photocell, power loss kept + saved, loose switch, late switch");
     }
+
+    // -------------------------------------------------------------------------------------------- route (phase 5)
+
+    /** Stands the player two blocks south of and one above pos (within reach), the wrench in hand. */
+    private static void near(ServerPlayer p, BlockPos pos) {
+        p.moveTo(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 2.5, 180, 30);
+        if (!WiringTool.holdsWrench(p)) p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AflItems.WIRING_WRENCH.get()));
+    }
+
+    private static void route(ServerPlayer p, int action, BlockPos pos) {
+        near(p, pos);
+        WiringTool.route(p, action, pos);
+    }
+
+    private static void wires(ServerPlayer p, int n) {
+        p.getInventory().clearContent();
+        p.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(AflItems.WIRING_WRENCH.get()));
+        if (n > 0) p.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(AflItems.INSULATED_COPPER_WIRE.get(), n));
+    }
+
+    /**
+     * Phase 5, the wrench's two-point route (draft 2): a start, a preview that lays nothing, the confirm that lays the same
+     * cells for one wire each (none without enough, the preview kept); a block changed after the preview gives a new preview
+     * instead; waypoints bend the route (at most four); at most four route searches in 20 ticks; attack, a cut and putting
+     * the wrench away cancel (a cut with a route cuts nothing).
+     */
+    private static void route(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        ServerPlayer p = player(h, "route", GameType.SURVIVAL);
+        for (int x = 2; x <= 12; x++) h.setBlock(new BlockPos(x, 1, 3), Blocks.DIRT);
+        for (int x = 2; x <= 8; x++) for (int z : new int[]{7, 8, 11, 12}) h.setBlock(new BlockPos(x, 1, z), Blocks.DIRT);
+        BlockPos a = h.absolutePos(new BlockPos(2, 1, 3)), b = h.absolutePos(new BlockPos(10, 1, 3)), c = h.absolutePos(new BlockPos(12, 1, 3));
+        wires(p, 20);
+        // a start, a preview: nothing laid yet; the same end again: laid, nine wires
+        route(p, WiringTool.ROUTE_MARK, a);
+        h.assertTrue(a.equals(WiringTool.routeStart(p)) && WiringTool.routePreview(p) == null, "sneak + use sets the start");
+        route(p, WiringTool.ROUTE_USE, b);
+        List<BlockPos> preview = WiringTool.routePreview(p);
+        h.assertTrue(preview != null && preview.size() == 9 && preview.get(0).equals(a) && preview.get(8).equals(b), "the preview runs a to b: " + preview);
+        h.assertTrue(BuildingWiring.node(level, a.east(4), 1) == 0 && WiringTool.wires(p) == 20, "a preview lays nothing");
+        route(p, WiringTool.ROUTE_USE, b);
+        for (int i = 0; i <= 8; i++) h.assertTrue(BuildingWiring.node(level, a.east(i), 1) != 0, "confirmed cell " + i);
+        h.assertTrue(WiringNode.linked(BuildingWiring.node(level, a.east(4), 1), Direction.EAST), "the laid cells are joined");
+        h.assertTrue(WiringTool.wires(p) == 11 && WiringTool.routeStart(p) == null, "nine wires, the route done (left " + WiringTool.wires(p) + ")");
+        // from the wire's end on: two new cells cost two; with one wire nothing is laid and the preview stays
+        route(p, WiringTool.ROUTE_MARK, b);
+        route(p, WiringTool.ROUTE_USE, c);
+        wires(p, 1);
+        route(p, WiringTool.ROUTE_USE, c);
+        h.assertTrue(BuildingWiring.node(level, c, 1) == 0 && WiringTool.routePreview(p) != null && WiringTool.wires(p) == 1, "not enough wire: nothing laid, the preview kept");
+
+        h.startSequence().thenExecuteAfter(21, () -> {
+            wires(p, 5);
+            route(p, WiringTool.ROUTE_USE, c);
+            h.assertTrue(BuildingWiring.node(level, c, 1) != 0 && BuildingWiring.node(level, c.west(), 1) != 0 && WiringTool.wires(p) == 3,
+                    "existing wire costs nothing: two wires for two cells (left " + WiringTool.wires(p) + ")");
+            // a block on the previewed route goes: the confirm shows the new route and lays nothing, the next one lays it
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 7)), e = h.absolutePos(new BlockPos(8, 1, 7));
+            wires(p, 20);
+            route(p, WiringTool.ROUTE_MARK, s);
+            route(p, WiringTool.ROUTE_USE, e);
+            List<BlockPos> straight = WiringTool.routePreview(p);
+            h.assertTrue(straight != null && straight.size() == 7, "the straight route: " + straight);
+            h.setBlock(new BlockPos(5, 1, 7), Blocks.AIR);
+            route(p, WiringTool.ROUTE_USE, e);
+            List<BlockPos> detour = WiringTool.routePreview(p);
+            h.assertTrue(detour != null && !detour.equals(straight) && BuildingWiring.node(level, s, 1) == 0, "changed: a new preview, nothing laid");
+            route(p, WiringTool.ROUTE_USE, e);
+            h.assertTrue(BuildingWiring.node(level, s, 1) != 0 && BuildingWiring.node(level, e, 1) != 0 && WiringTool.routeStart(p) == null
+                    && WiringTool.wires(p) == 20 - new HashSet<>(detour).size(), "the second confirm lays the detour");
+        }).thenExecuteAfter(21, () -> {
+            // a waypoint on the other row bends the route through it; four at most
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 11)), e = h.absolutePos(new BlockPos(8, 1, 11)), w = h.absolutePos(new BlockPos(5, 1, 12));
+            route(p, WiringTool.ROUTE_MARK, s);
+            route(p, WiringTool.ROUTE_USE, e);
+            h.assertTrue(!WiringTool.routePreview(p).contains(w), "without the waypoint the route stays on its row");
+            route(p, WiringTool.ROUTE_MARK, w);
+            h.assertTrue(WiringTool.routePreview(p).contains(w) && WiringTool.routeWaypoints(p).equals(List.of(w)), "the waypoint bends it");
+            for (int x = 3; x <= 7; x++) route(p, WiringTool.ROUTE_MARK, h.absolutePos(new BlockPos(x, 1, 12)));   // x 5 is already one: three more, x 7 refused
+            h.assertTrue(WiringTool.routeWaypoints(p).size() == WiringTool.WAYPOINTS, "four waypoints at most: " + WiringTool.routeWaypoints(p).size());
+            // attack cancels
+            WiringTool.route(p, WiringTool.ROUTE_CANCEL, BlockPos.ZERO);
+            h.assertTrue(WiringTool.routeStart(p) == null && WiringTool.routePreview(p) == null && WiringTool.routeWaypoints(p).isEmpty(), "cancelled");
+        }).thenExecuteAfter(21, () -> {
+            // four searches in 20 ticks: the fifth preview is not made
+            BlockPos s = h.absolutePos(new BlockPos(2, 1, 12));
+            route(p, WiringTool.ROUTE_MARK, s);
+            for (int x = 8; x >= 4; x--) route(p, WiringTool.ROUTE_USE, h.absolutePos(new BlockPos(x, 1, 12)));
+            List<BlockPos> last = WiringTool.routePreview(p);
+            h.assertTrue(last != null && last.get(last.size() - 1).equals(h.absolutePos(new BlockPos(5, 1, 12))), "the fifth search in a second is skipped: " + last);
+            // a cut with a route only cancels it
+            BlockPos laid = h.absolutePos(new BlockPos(4, 1, 3));
+            near(p, laid);
+            WiringTool.cut(p, laid);
+            h.assertTrue(WiringTool.routeStart(p) == null && BuildingWiring.node(level, laid, 1) != 0, "the cut cancelled the route and cut nothing");
+            // putting the wrench away cancels
+            route(p, WiringTool.ROUTE_MARK, s);
+            p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            WiringTool.tick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(net.minecraftforge.event.TickEvent.Phase.END, p));
+            h.assertTrue(WiringTool.routeStart(p) == null, "the wrench put away cancels");
+            pass(h, "route", "start, preview, confirm 9 + cost 2, short of wire kept, changed route re-previewed, waypoint, 4 max, rate limit, cancels");
+        });
+    }
+
+    /**
+     * Phase 5, the group picker's server side (draft 3): a route from the panel to a keyless lamp taps both; the panel is
+     * found from the lamp's wire before any solve; setting a group re-solves at once (the counts, a switch lines up with its
+     * group); groups that do not fit (a switch's 0 or photocell, an outlet's 1) are refused.
+     */
+    private static void picker(GameTestHelper h) {
+        ServerLevel level = h.getLevel();
+        ServerPlayer p = player(h, "picker", GameType.CREATIVE);
+        for (int x = 1; x <= 11; x++) for (int y = 2; y <= 3; y++) h.setBlock(new BlockPos(x, y, 15), Blocks.STONE);
+        h.setBlock(new BlockPos(2, 2, 16), AflBlocks.LOAD_CENTER.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(6, 3, 16), AflBlocks.KEYLESS_LAMPHOLDER.get().defaultBlockState().setValue(KeylessLampholderBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(8, 2, 16), AflBlocks.WALL_SWITCH.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(new BlockPos(10, 2, 16), AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        BlockPos panelPos = h.absolutePos(new BlockPos(2, 2, 16)), lamp = h.absolutePos(new BlockPos(6, 3, 16)),
+                sw = h.absolutePos(new BlockPos(8, 2, 16)), outlet = h.absolutePos(new BlockPos(10, 2, 16));
+        DistributionPanelBlockEntity panel = (DistributionPanelBlockEntity) level.getBlockEntity(panelPos);
+        // from the panel (its mount cell) to the lamp: both tapped
+        route(p, WiringTool.ROUTE_MARK, panelPos);
+        h.assertTrue(h.absolutePos(new BlockPos(2, 2, 15)).equals(WiringTool.routeStart(p)), "a panel starts from its mount cell");
+        route(p, WiringTool.ROUTE_USE, lamp);
+        route(p, WiringTool.ROUTE_USE, lamp);
+        BlockPos lampMount = h.absolutePos(new BlockPos(6, 3, 15));
+        h.assertTrue(WiringNode.tapped(BuildingWiring.node(level, lampMount, 1), Direction.SOUTH)
+                && WiringNode.tapped(BuildingWiring.node(level, h.absolutePos(new BlockPos(2, 2, 15)), 1), Direction.SOUTH), "the route tapped the lamp and the panel");
+        h.assertTrue(panelPos.equals(WiringSupply.panelOf(level, lampMount, 1)), "the panel is found along the wire from the lamp");
+        h.assertTrue(panel.wiring() != null && panel.wiring().lights[1][0] == 1, "the confirm's picker solved the panel at once: it counts the lamp");
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(6, 2, 15)), h.absolutePos(new BlockPos(7, 2, 15)), h.absolutePos(new BlockPos(8, 2, 15)),
+                h.absolutePos(new BlockPos(9, 2, 15)), h.absolutePos(new BlockPos(10, 2, 15))), 1);
+        // the picker's choices
+        near(p, lamp);
+        WiringTool.openGroups(p, lamp);   // sends the picker (nothing to read back on a fake player: it must not fail)
+        h.assertTrue(WiringTool.setGroup(p, lamp, 2), "a lamp takes group 2");
+        h.assertTrue(WiringNode.group(BuildingWiring.node(level, lampMount, 1), Direction.SOUTH) == 2, "the tap is in group 2");
+        WiringSupply.Result r = panel.wiring();
+        h.assertTrue(r != null && r.lights[1][2] == 1, "the panel solved at once and counts it");
+        panel.setGroup(1, 2, false);
+        near(p, sw);
+        h.assertTrue(WiringTool.setGroup(p, sw, 2), "a switch takes group 2");
+        h.assertTrue(level.getBlockState(sw).getValue(WallSwitchBlock.WIRED) && !level.getBlockState(sw).getValue(WallSwitchBlock.ON)
+                && panel.wiring().switches[1][2] == 1, "the switch lines up with its group (off) at once");
+        h.assertTrue(!WiringTool.setGroup(p, sw, WiringNode.ALWAYS) && !WiringTool.setGroup(p, sw, WiringNode.PHOTOCELL), "a switch takes no 0 and no photocell");
+        near(p, outlet);
+        h.assertTrue(!WiringTool.setGroup(p, outlet, 1), "an outlet stays always on");
+        near(p, lamp);
+        h.assertTrue(WiringTool.setGroup(p, lamp, WiringNode.PHOTOCELL) && panel.wiring().lights[1][WiringNode.PHOTOCELL] == 1, "a lamp takes the photocell");
+        pass(h, "picker", "route taps panel + lamp, panel found before solving, lamp group 2 counted at once, switch aligned at once, 0 / photocell / outlet refused");
+    }
+
+    // ----------------------------------------------------------------------------------------- template (phase 6)
+
+    /**
+     * Phase 6: structure templates carry the wiring. A small house in the box (1, 1, 0) .. (10, 6, 9): a stone wall along
+     * z 5 with, facing south, the load center, the inlet box, outlet A, a switch and a lamp (both group 1); a roof north of
+     * the wall's east end, its outlet B under the top cell. Circuit 1 to the switch, the lamp, outlet A and on past the box
+     * (x 11); the feeder to the inlet; circuit 2 along the wall's foot, up and over the roof slope to outlet B; a circuit 3
+     * node no panel reaches. Captured by the real export (BuildingAuthoringService#capture), placed 8 ways with the AFL
+     * processor and 4 turns without it, each with the panel and outlet B in different chunks on both axes.
+     */
+    private static void templates(GameTestHelper h) throws Exception {
+        ServerLevel level = h.getLevel();
+        for (int x = 2; x <= 11; x++) for (int y = 1; y <= 3; y++) if (x <= 9 || y == 2) h.setBlock(new BlockPos(x, y, 5), Blocks.STONE);
+        BlockPos[] roofCells = {new BlockPos(9, 3, 4), new BlockPos(9, 3, 3), new BlockPos(9, 4, 2), new BlockPos(9, 4, 1)};
+        CabinBlocks.RoofShape[] roofShapes = {CabinBlocks.RoofShape.LOWER, CabinBlocks.RoofShape.UPPER, CabinBlocks.RoofShape.LOWER, CabinBlocks.RoofShape.UPPER};
+        for (int i = 0; i < 4; i++) h.setBlock(roofCells[i], roof(roofShapes[i]));
+        BlockPos panelRel = new BlockPos(3, 2, 6), inletRel = new BlockPos(5, 2, 6), outletARel = new BlockPos(7, 2, 6), switchRel = new BlockPos(4, 3, 6),
+                lampRel = new BlockPos(6, 3, 6), outletBRel = new BlockPos(9, 4, 0);
+        h.setBlock(panelRel, AflBlocks.LOAD_CENTER.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(inletRel, AflBlocks.GENERATOR_INLET_BOX.get().defaultBlockState().setValue(GeneratorInletBoxBlock.FACING, Direction.SOUTH));
+        h.setBlock(outletARel, AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(switchRel, AflBlocks.WALL_SWITCH.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.SOUTH));
+        h.setBlock(lampRel, AflBlocks.KEYLESS_LAMPHOLDER.get().defaultBlockState().setValue(KeylessLampholderBlock.FACING, Direction.SOUTH));
+        h.setBlock(outletBRel, AflBlocks.WALL_OUTLET.get().defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.NORTH));
+        List<BlockPos> red = new ArrayList<>(), feeder = new ArrayList<>(), blue = new ArrayList<>();
+        for (int x = 3; x <= 11; x++) red.add(h.absolutePos(new BlockPos(x, 2, 5)));
+        for (int x = 4; x <= 6; x++) red.add(h.absolutePos(new BlockPos(x, 3, 5)));
+        for (int x = 3; x <= 5; x++) feeder.add(h.absolutePos(new BlockPos(x, 2, 5)));
+        blue.add(h.absolutePos(new BlockPos(3, 2, 5)));
+        for (int x = 3; x <= 9; x++) blue.add(h.absolutePos(new BlockPos(x, 1, 5)));
+        blue.add(h.absolutePos(new BlockPos(9, 2, 5)));
+        blue.add(h.absolutePos(new BlockPos(9, 3, 5)));
+        for (BlockPos r : roofCells) blue.add(h.absolutePos(r));
+        WiringCommands.layAll(level, red, 1);
+        WiringCommands.layAll(level, feeder, WiringNode.FEEDER);
+        WiringCommands.layAll(level, blue, 2);
+        WiringCommands.layAll(level, List.of(h.absolutePos(new BlockPos(2, 2, 5))), 3);   // reaches no panel
+        h.assertTrue(WiringCommands.setGroup(level, h.absolutePos(lampRel), 1) == null && WiringCommands.setGroup(level, h.absolutePos(switchRel), 1) == null, "lamp and switch on group 1");
+        DistributionPanelBlockEntity original = (DistributionPanelBlockEntity) level.getBlockEntity(h.absolutePos(panelRel));
+        original.toggleMain(null);
+        original.input().receiveEnergy(4000, false);
+        original.serverTick();
+        WiringSupply.Result before = original.wiring();
+        h.assertTrue(before.devices[1] == 3 && before.devices[2] == 1 && before.devices[WiringNode.FEEDER] == 1 && !before.wired[3] && !before.partial,
+                "the house: circuit 1 three loads, circuit 2 outlet B over the roof, the feeder the inlet (" + before.devices[1] + " " + before.devices[2] + ")");
+        h.assertTrue(WiringNode.slopes(BuildingWiring.node(level, h.absolutePos(roofCells[1]), 2)) != 0, "circuit 2 crosses the roof slope");
+
+        // export: the real capture
+        BlockPos origin = h.absolutePos(new BlockPos(1, 1, 0));
+        BoxSize size = new BoxSize(10, 6, 10);
+        var session = new com.antaurora.apofirstlight.authoring.BuildingAuthoringSession(UUID.nameUUIDFromBytes("afl-wiring-template".getBytes()), level.dimension(), origin,
+                new com.antaurora.apofirstlight.authoring.BuildingMetadata("wiring_template_test", size.x(), size.z(), size.y(), 1,
+                        com.antaurora.apofirstlight.authoring.BuildingMetadata.Category.FILLER, Set.of(com.antaurora.apofirstlight.authoring.BuildingMetadata.Zone.EDGE), true, true));
+        var capture = com.antaurora.apofirstlight.authoring.BuildingAuthoringService.capture(level, session, true);
+        WiringTemplate.Report report = capture.wiring();
+        h.assertTrue(report.nodes() == 28 && report.panels() == 1 && report.orphans() == 1 && report.orphanCells().equals(List.of(h.absolutePos(new BlockPos(2, 2, 5))))
+                && report.clipped() == 1 && report.joined() == 0 && !report.capped(), "the pack report: " + report.text());
+        CompoundTag packedPanel = null;
+        for (Tag t : capture.nbt().getList("blocks", Tag.TAG_COMPOUND)) {
+            CompoundTag b = (CompoundTag) t;
+            ListTag p = b.getList("pos", Tag.TAG_INT);
+            if (new BlockPos(p.getInt(0), p.getInt(1), p.getInt(2)).equals(panelRel.subtract(new BlockPos(1, 1, 0)))) packedPanel = b.getCompound("nbt");
+        }
+        h.assertTrue(packedPanel != null && packedPanel.getLongArray(WiringTemplate.KEY).length == 56 && "south".equals(packedPanel.getString(WiringTemplate.FACING_KEY))
+                && packedPanel.getInt("EnergyStored") == 0 && packedPanel.getBoolean("MainOn"), "the template's panel carries 28 nodes, its facing, no energy, main on");
+        h.assertTrue(BuildingWiring.node(level, h.absolutePos(new BlockPos(2, 2, 5)), 3) != 0 && original.packedLeft() == 0, "the world is not changed");
+        // what the template should bring back: every node the panel reaches, links out of the box cut
+        List<BlockPos> rels = new ArrayList<>();
+        List<Integer> circuits = new ArrayList<>();
+        List<Long> nodes = new ArrayList<>();
+        for (int x = 0; x < size.x(); x++) for (int y = 0; y < size.y(); y++) for (int z = 0; z < size.z(); z++) for (int c = 1; c <= WiringNode.CIRCUITS; c++) {
+            if (c == 3) continue;
+            long n = BuildingWiring.node(level, origin.offset(x, y, z), c);
+            if (n == 0) continue;
+            for (Direction d : Direction.values()) {
+                BlockPos o = new BlockPos(x, y, z).relative(d);
+                if (o.getX() < 0 || o.getX() >= size.x() || o.getY() < 0 || o.getY() >= size.y() || o.getZ() < 0 || o.getZ() >= size.z()) n = WiringNode.link(n, d, false);
+            }
+            rels.add(new BlockPos(x, y, z));
+            circuits.add(c);
+            nodes.add(n);
+        }
+        h.assertTrue(nodes.size() == 28, "28 nodes to bring back (" + nodes.size() + ")");
+        StructureTemplate template = capture.template();
+
+        // 4 turns x (no mirror, mirror) with the AFL processor, 4 turns raw; the panel and outlet B in different chunks
+        ChunkPos home = new ChunkPos(h.absolutePos(BlockPos.ZERO));
+        BlockPos panelBox = panelRel.subtract(new BlockPos(1, 1, 0)), outletBBox = outletBRel.subtract(new BlockPos(1, 1, 0));
+        int k = 0;
+        List<String> done = new ArrayList<>();
+        for (boolean raw : new boolean[]{false, true}) for (Mirror m : raw ? new Mirror[]{Mirror.NONE} : new Mirror[]{Mirror.NONE, Mirror.FRONT_BACK}) for (Rotation r : Rotation.values()) {
+            String label = (raw ? "raw " : "") + r.getSerializedName() + "/" + m.getSerializedName();
+            BlockPos dp = StructureTemplate.transform(panelBox, m, r, BlockPos.ZERO), db = StructureTemplate.transform(outletBBox, m, r, BlockPos.ZERO);
+            int lx = db.getX() > dp.getX() ? 12 : 3, lz = db.getZ() > dp.getZ() ? 12 : 3;
+            BlockPos corner = new BlockPos((home.x + 3 * k++) * 16, 100, (home.z + 8) * 16);
+            BlockPos target = corner.offset(lx - dp.getX(), 0, lz - dp.getZ());
+            BlockPos panelPos = target.offset(dp), outletB = target.offset(db);
+            h.assertTrue(panelPos.getX() >> 4 != outletB.getX() >> 4 && panelPos.getZ() >> 4 != outletB.getZ() >> 4, label + ": the panel and outlet B in different chunks");
+            // the first placement lands on wire already there: circuit 1 down the wall cell at (8, 2, 5), linked up
+            BlockPos merged = target.offset(StructureTemplate.transform(new BlockPos(7, 1, 5), m, r, BlockPos.ZERO));
+            if (k == 1) {
+                level.getChunk(merged);
+                level.setBlock(merged, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+                level.setBlock(merged.above(), Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+                WiringCommands.layAll(level, List.of(merged, merged.above()), 1);
+            }
+            h.assertTrue(AflTemplatePlacer.place(level, template, target, r, m, raw), label + ": placed");
+            h.assertTrue(level.getBlockEntity(panelPos) instanceof DistributionPanelBlockEntity, label + ": the panel is where it turned to");
+            DistributionPanelBlockEntity panel = (DistributionPanelBlockEntity) level.getBlockEntity(panelPos);
+            Direction facing = level.getBlockState(panelPos).getValue(HorizontalDirectionalBlock.FACING);
+            h.assertTrue(panel.packedLeft() == 28 && (raw ? (panel.packedFacing() == Direction.SOUTH) : panel.packedFacing() == facing),
+                    label + ": the panel carries the wiring, packed facing " + panel.packedFacing() + ", block " + facing);
+            h.assertTrue(level.getBlockEntity(panelPos).getUpdateTag().contains(WiringTemplate.KEY) == false, label + ": the packed wiring is not synced");
+            panel.input().receiveEnergy(4000, false);
+            panel.serverTick();
+            h.assertTrue(panel.packedLeft() == 0 && panel.packedFacing() == null && !panel.saveWithoutMetadata().contains(WiringTemplate.KEY), label + ": written, the keys gone");
+            Rotation turn = raw ? WiringTemplate.between(Direction.SOUTH, facing) : r;
+            for (int i = 0; i < nodes.size(); i++) {
+                BlockPos cell = target.offset(StructureTemplate.transform(rels.get(i), m, r, BlockPos.ZERO));
+                long want = WiringTemplate.transform(nodes.get(i), raw ? Mirror.NONE : m, turn);
+                if (k == 1 && cell.equals(merged) && circuits.get(i) == 1) want = WiringNode.link(want, Direction.UP, true);
+                long got = BuildingWiring.node(level, cell, circuits.get(i));
+                h.assertTrue(got == want, label + ": node " + rels.get(i).toShortString() + " circuit " + circuits.get(i) + " " + Long.toHexString(got) + " want " + Long.toHexString(want));
+            }
+            var box = template.getBoundingBox(AflTemplatePlacer.settings(r, m, raw), target);
+            int count = 0;
+            for (BlockPos p : BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())) count += BuildingWiring.circuits(level, p).length;
+            h.assertTrue(count == 28 + (k == 1 ? 1 : 0), label + ": no other wire in the box (" + count + ")");
+            WiringSupply.Result after = panel.wiring();
+            h.assertTrue(after != null && after.devices[1] == 3 && after.devices[2] == 1 && after.devices[WiringNode.FEEDER] == 1 && !after.partial && panel.conflictMask() == 0,
+                    label + ": solves as the house did");
+            BlockPos lamp = target.offset(StructureTemplate.transform(lampRel.subtract(new BlockPos(1, 1, 0)), m, r, BlockPos.ZERO)),
+                    sw = target.offset(StructureTemplate.transform(switchRel.subtract(new BlockPos(1, 1, 0)), m, r, BlockPos.ZERO)),
+                    outletA = target.offset(StructureTemplate.transform(outletARel.subtract(new BlockPos(1, 1, 0)), m, r, BlockPos.ZERO)),
+                    inlet = target.offset(StructureTemplate.transform(inletRel.subtract(new BlockPos(1, 1, 0)), m, r, BlockPos.ZERO));
+            recheck(level, lamp);
+            h.assertTrue(lit(level, lamp) && PowerPlugs.outletLive(level, outletA) && PowerPlugs.outletLive(level, outletB), label + ": the lamp lights, both outlets live");
+            h.assertTrue(panelPos.equals(WiringSupply.entryPanel(level, inlet)), label + ": the feeder gives the inlet box its panel");
+            use(h, sw);
+            h.assertTrue(!panel.groupOn(1, 1) && !lit(level, lamp) && PowerPlugs.outletLive(level, outletA), label + ": the switch works its group");
+            use(h, sw);
+            h.assertTrue(lit(level, lamp), label + ": and back on");
+
+            if (k == 1) {
+                // saved halfway: two linked nodes in a chunk not loaded yet stay packed (saved, never synced); once it loads, the one
+                // in stone is written, the one in air dropped with the link to it
+                BlockPos far = new BlockPos(4000 + 7 - (panelPos.getX() + 4000 & 15), 0, 0), farCell = panelPos.offset(far);   // its east neighbour in the same chunk
+                h.assertTrue(level.getChunkSource().getChunkNow(farCell.getX() >> 4, farCell.getZ() >> 4) == null, "the far chunk is not loaded");
+                CompoundTag tag = panel.saveWithoutMetadata();
+                tag.putLongArray(WiringTemplate.KEY, new long[]{far.asLong(), WiringNode.link(WiringNode.of(3), Direction.EAST, true),
+                        far.east().asLong(), WiringNode.link(WiringNode.of(3), Direction.WEST, true)});
+                tag.putString(WiringTemplate.FACING_KEY, facing.getName());
+                panel.load(tag);
+                panel.serverTick();
+                CompoundTag saved = panel.saveWithoutMetadata();
+                h.assertTrue(panel.packedLeft() == 2 && saved.getLongArray(WiringTemplate.KEY).length == 4 && saved.contains(WiringTemplate.FACING_KEY), "unloaded: kept and saved");
+                h.assertTrue(!panel.getUpdateTag().contains(WiringTemplate.KEY) && !panel.getUpdateTag().contains(WiringTemplate.FACING_KEY), "never synced");
+                level.getChunk(farCell);
+                level.setBlock(farCell, Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+                panel.load(saved);   // read back, as after a restart
+                panel.serverTick();
+                h.assertTrue(panel.packedLeft() == 0 && BuildingWiring.node(level, farCell, 3) == WiringNode.of(3) && BuildingWiring.node(level, farCell.east(), 3) == 0
+                        && !panel.saveWithoutMetadata().contains(WiringTemplate.KEY), "loaded: the stone cell written without the link, the air cell dropped, the keys gone");
+            }
+            done.add(label);
+        }
+        pass(h, "template", "pack report (" + report.text() + "), " + done.size() + " placements " + done + ", merge, unloaded kept + saved, dropped cell unlinked");
+    }
+
+    private record BoxSize(int x, int y, int z) {}
 
     private static void use(GameTestHelper h, BlockPos pos) {
         ServerPlayer p = player(h, "switch", GameType.SURVIVAL);

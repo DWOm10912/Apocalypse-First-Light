@@ -2,22 +2,27 @@
 
 状态（2026-10-14）：
 - **第 1 阶段「数据核心和拆除」**：用户提交了（add28f3d "暗线 V1 第 1 阶段"）。用户实机测过，4 路 PASS（第 1.2 节）。
-- **第 2 阶段「配电箱模式和供电」已实现，没有提交**（第 5.1 节）：编译通过；布线 GameTest 9/9 通过（新增 `supply`）；A1 结构回归 `GasStation01GameTests` 通过。**没有实机验证**：配电箱界面的 4 路和外部馈线行、互连和未加载状态、Jade、扳手面板的配电箱行，都没在游戏里看过。
-- **第 3 阶段「灯光组和开关」已实现，没有提交**（第 5.2 节）：编译通过；布线 GameTest 10/10 通过（新增 `groups`）。**没有实机验证**：墙上开关、无开关瓷灯座、配电箱界面的分组行都没在游戏里看过。
+- **第 2 阶段「配电箱模式和供电」**：用户提交了（f08982d0）（第 5.1 节）：编译通过；布线 GameTest 9/9 通过（新增 `supply`）；A1 结构回归 `GasStation01GameTests` 通过。用户 2026-10-14 实机 PASS（原话"2,3PASS"，没有逐项说明看了哪些）。
+- **第 3 阶段「灯光组和开关」**：用户提交了（f08982d0）（第 5.2 节）：编译通过；布线 GameTest 10/10 通过（新增 `groups`）。用户 2026-10-14 实机 PASS（原话"2,3PASS"，没有逐项说明看了哪些）。
+- **第 4 阶段「溪谷老宅接线」**：开发桥的代码用户提交了（cb00b636），线在「house test」的世界里（第 5.3 节）：「house test」里的老宅接好进线和三路线、5 个开关、换了灯座；数据读回全部对上（16 个设备的回路和组、147 个节点、没有互连）。用户 2026-10-14 实机验收："我看没问题了"（没有逐项说明看了哪些）。
+- **第 5 阶段「布线工具和透视」**：用户提交了（cb00b636）（第 3–3.3、8 节）：两点连线（起点、途经点、预览、确认）、给灯和开关选组的小面板、透视的墙后变暗、"显示全部"、设备标记和组号、连线预览。编译通过；布线 GameTest 12/12 通过（新增 `route`、`picker`）。用户 2026-10-14 实机验收："已关游戏，测完了，第 5 阶段 PASS"（没有逐项说明看了哪些）。我没有截图。
+- **第 6 阶段「结构模板带线」已实现，没有提交**（第 5.4 节）：导出时把线打包进配电箱，放模板时跟着转、放好后写回墙里；开发指令 `/afl dev template`。用户 2026-10-14 确认草案（"可以，按推荐来，开始做第 6 阶段"）。编译通过；布线 GameTest 13/13 通过（新增 `template`）；`GasStation01GameTests`、`ExportStateGameTests`、`BuildingAuthoringGameTests` 回归通过。实机验收：用户 2026-10-14 导出老宅、在超平坦世界放了两份，我读回存档，两份的暗线都和模板逐格一样；用户 2026-10-14 实机 PASS（"灯和开关都正常，第 6 阶段 PASS"）（第 5.4 节最后）。
+- **第 7 阶段「收尾」**（2026-10-14，没有提交）：性能实测（第 11 节"性能"：真老宅求解 71 μs、寻路 0.73 ms、透视同步 1.7 KB；最坏情况求解 4,096 个节点 1.6 ms、寻路放弃 10.7 ms），A1 回归通过，文档和记忆同步。新增 `WiringPerfGameTests` 和 `src/dev/wiring-perf-gametest.init.gradle`，游戏代码没改。
 - 设计、取舍和后面各阶段的计划见 [建筑暗线 V1：技术设计](building_wiring_v1_design.md)。本文只写游戏里现在的实际行为。
 
 **暗线现在能供电了，但只对 `WIRED` 配电箱**（第 5.1 节）：
 - 新放的配电箱是 `WIRED`，只给暗线接到的灯、插座、应急灯供电，进线盒、电表箱用进线接到它；
-- 旧存档、旧模板里的配电箱（A1 加油站、现在「house test」里那个）没有模式字段，是 `LEGACY_AREA`，还按原来的"范围暗线"（`BuildingPowerZone`）供电，墙里的暗线对它不起作用。
-- 灯光组和墙上开关（第 5.2 节）：线头分 0 常亮、1–8 灯光组、15 光控；墙上开关扳的是配电箱里记着的组，插座不受影响。线头的组现在只能用开发指令设。
+- 旧存档、旧模板里的配电箱（A1 加油站；「house test」里原来那个，用户 2026-10-14 拆了重放，现在是 `WIRED`）没有模式字段，是 `LEGACY_AREA`，还按原来的"范围暗线"（`BuildingPowerZone`）供电，墙里的暗线对它不起作用。
+- 灯光组和墙上开关（第 5.2 节）：线头分 0 常亮、1–8 灯光组、15 光控；墙上开关扳的是配电箱里记着的组，插座不受影响。线头的组用扳手选（第 3.2 节，第 5 阶段），开发指令 `group` 也能设。
+- 结构模板（第 5.4 节）：`/afl_author` 导出的模板带线，放下后配电箱把线写回墙里；WorldEdit 复制粘贴不带线。
 
 ## 1. 用户的要求和这一轮的取舍
 
 - 用户 2026-10-13 确认设计第二稿，要求按第 18 节做第 1 阶段，并且"加一个类似泰拉瑞亚里面放电线的扳手"。
 - 我的取舍（用户没有反对）：
   - 工具是**扳手**，铜线只是耗材。设计稿里"拿着绝缘铜线就是布线工具"改成：扳手负责操作；扳手或铜线拿在任意一只手上，都能看见暗线。
-  - 操作照泰拉瑞亚：按住右键扫过去就铺，左键剪，蹲下滚轮换回路。设计稿第 7.2 节的"起点 → 终点 → 预览 → 确认"流程没有做，放到第 5 阶段。
-  - 透视提前做了一个基础版，不然铺了线看不见。"显示全部"、设备接线标记、选颜色、给线头选组，都还在第 5 阶段。
+  - 操作照泰拉瑞亚：按住右键扫过去就铺，左键剪，蹲下滚轮换回路。设计稿第 7.2 节的"起点 → 终点 → 预览 → 确认"流程没有做，放到第 5 阶段（2026-10-14 按第 5 阶段草案做了，第 3.3 节）。
+  - 透视提前做了一个基础版，不然铺了线看不见。"显示全部"、设备接线标记、选颜色、给线头选组，都还在第 5 阶段（2026-10-14 做了，第 3.2、8 节；选颜色作废，第 1.2 节）。
 
 ### 1.2 改成 4 路，颜色就是回路（2026-10-13 晚）
 
@@ -41,14 +46,14 @@
 | 视频里只显示准星对着的一段，"切换到某个颜色才显示那个颜色的一整段，但同时也显示其他颜色的线" | 当前选的第 11 路是空的，别的回路只在准星格里画，看上去像只剩准星那一段；切到某一路时那一路全画，别的回路仍在准星格里画 | 同第一行：只画当前回路 |
 | 小屋很多方块没有精确选框和 Mesh 碰撞 | 原来是整格或粗略的盒子 | 原木墙、屋顶、门、窗、门廊、烟囱、桌子的选框和碰撞改成跟 Mesh 走，见 [Cabin Exterior V1](../models/cabin_exterior_v1.md) 的"选框和碰撞" |
 
-另外：扳手在主手时，右键永远是铺线（扳手先于方块自己的右键），所以准星下的世界提示（开门、开柜子……）这时都不显示了。
+另外：扳手在主手时，右键永远是扳手的操作（铺线；第 5 阶段起还有选组和两点连线），扳手先于方块自己的右键，所以准星下的世界提示（开门、开柜子……）这时都不显示了。
 
 ## 2. 物品
 
 | ID | 名称 | 叠放 | 重量 | 说明 |
 |---|---|---|---|---|
 | `apocalypse_firstlight:insulated_copper_wire` | 绝缘铜线 / Insulated Copper Wire | 64 | 0.1 kg（估计） | 1 个 = 1 m = 一格里一路线。没有配方 |
-| `apocalypse_firstlight:wiring_wrench` | 布线扳手 / Wiring Wrench | 1 | 0.35 kg（估计） | 铺线、剪线、换回路。没有配方 |
+| `apocalypse_firstlight:wiring_wrench` | 布线扳手 / Wiring Wrench | 1 | 0.35 kg（估计） | 铺线、剪线、换回路；第 5 阶段起还有两点连线、选组。没有配方 |
 
 - 都在创造栏「工业」里，紧跟在 `power_cable` 后面。
 - 重量写在 `data/apocalypse_firstlight/item_mass/afl_content_v1.json`，两项都标了 `estimated`。铜线按用户决定 4 取 0.1 kg。
@@ -62,15 +67,18 @@
 |---|---|
 | 右键一格方块 | 把当前回路的线铺进这一格 |
 | 右键一个设备 | 把线铺进这个设备的安装格（第 5 节），并给设备接线头 |
+| 右键一个灯或开关（第 5 阶段） | 还没有线头：照样铺线、接线头，松开右键时弹选组（第 3.2 节）；按住右键扫过去、离开了这个设备就不弹。已经有线头：不铺线，只弹选组 |
+| 潜行 + 右键（第 5 阶段） | 两点连线的起点；有起点以后是途经点（第 3.3 节） |
 | 按住右键扫过去 | 连续铺线。两次铺线相隔不超过 8 tick 算同一笔；同一笔里新的一格和上一格不挨着，就用寻路补上中间的格子（最多 24 格，包围盒外扩 2 格，最多访问 4,000 格）。补不上就只铺这一格 |
-| 左键一格方块 | 剪掉当前回路在这一格的线。方块不动，扳手永远不挖方块 |
+| 左键一格方块 | 剪掉当前回路在这一格的线。方块不动，扳手永远不挖方块。有起点时左键只取消两点连线，不剪线（第 3.3 节） |
 | 左键一个设备 | 剪掉指向这个设备的线头（线留在墙里，不返还，线头不耗线） |
 | 蹲下 + 滚轮 | 换回路：1–4 路和进线循环（换回路就是换颜色）。选择记在玩家身上（存档），不写进物品，所以扳手照样能叠放、交换 |
 | 中键（选取方块键） | 准星格（对着设备时是它的安装格）里有别的回路的线时，换到那一路：从当前回路往后找下一路，到头绕回来。没有就什么都不做。拿着扳手时中键永远不会把方块放进快捷栏 |
+| 潜行 + 中键（第 5 阶段） | 显示全部 / 只看本路（第 8 节）。换下扳手就回到只看本路 |
 
 - 每铺一格新线：
   - 和六个邻格里同一路的线自动连上（双向），也顺着屋顶坡和楼梯和斜上、斜下的那一格连上（第 4.1 节）；
-  - 给装在这一格上、还没有线头的设备自动接线头。线头分组一律是 0（常亮）；
+  - 给装在这一格上、还没有线头的设备自动接线头，分组是 0（常亮）；灯和开关再用选组改（第 3.2 节）；
   - 进线只接配电箱和进线点（进线盒、电表箱），1–4 路只接配电箱和用电设备。每个设备只接一个线头，配电箱每一路一个。
 - **拐角自动接线**（`BuildingWiring#cornerJoin`）：这一笔铺完以后，每一格新线如果是线头（最多一根线出去），并且隔一条棱（两个轴上各差一格）有同一路的另一个线头，两格之间的两个拐角格都没有这一路，两格也不是一条斜连线的两头，就在第一个能铺线的拐角格里铺一格，把两头接上。典型情况：墙上的线铺到墙脚，地板上的线从墙边开始，拐角格是墙脚下的基础。
   - 先试的拐角格：从新线头沿 x、y、z 里排在前面的那条轴挪一步的格子，不能铺线（比如空气）就用另一格。墙和地板的情况，先试的是新线头正上方或正下方那一格：新线头在地板上时上方是屋里的空气，于是用墙脚那一格。
@@ -85,21 +93,90 @@
 
 ### 3.1 按键提示
 
-扳手在主手、没打开界面、没隐藏 HUD 时，右上角的按键提示面板（[AFL Overlay UI Style V1](../ui/afl_overlay_ui_style_v1.md) 第 8 节）显示：
+扳手在主手、没打开界面、没隐藏 HUD 时，右上角的按键提示面板（[AFL Overlay UI Style V1](../ui/afl_overlay_ui_style_v1.md) 第 8 节）显示下面的内容；第 5 阶段起按两点连线（第 3.3 节）的状态分三套。
+
+**平时**：
 
 | 行 | 内容 |
 |---|---|
-| 状态行（没有键帽） | 当前回路和它的长度，比如"第 1 路 · 红 · 12 m" |
-| 使用键 | 布线 |
+| 状态行（没有键帽） | 当前回路和它的长度，比如"第 1 路 · 红 · 12 m"；开着"显示全部"时后面加" · 全部" |
+| 使用键 | 布线；对着已经有线头的灯或开关时是"选组"（第 3.2 节） |
+| 潜行 + 使用键 | 起点 |
 | 攻击键 | 剪线 |
 | 潜行 + 滚轮 | 换回路 |
-| 选取方块键（只在能用时出现） | 选第 5 路 / 选进线 |
 | 状态行（只在对着配电箱时出现，第 5.1 节） | 范围供电 · 暗线不生效 / 第 N 路互连 |
+| 选取方块键（只在能用时出现） | 选第 N 路 / 选进线 |
+| 潜行 + 选取方块键 | 显示全部；开着时是"只看本路" |
+
+**选了起点**：
+
+| 行 | 内容 |
+|---|---|
+| 状态行 | 起点和回路，比如"起点 · 第 1 路 · 红" |
+| 使用键 | 预览 |
+| 攻击键 | 取消 |
+
+**有预览**：
+
+| 行 | 内容 |
+|---|---|
+| 状态行 | "预览 14 m · 新线 9"：路线一共几格，其中几格这一路还没有线（要扣铜线的） |
+| 使用键 | 对着预览的终点时是"确认"，对着别处是"预览" |
+| 潜行 + 使用键 | 途经点 |
+| 攻击键 | 取消 |
 
 - 键帽跟着玩家改过的键位显示。
 - 长度是客户端知道的这一路的节点数（1 个节点 = 1 m）：只算同步到客户端的区块（玩家周围半径 2 个区块），线走得更远的部分不算。
-- 最后一行只在准星格里有别的回路时出现，写的是按下去会换到的那一路。
-- 扳手在主手时，准星下的世界提示（开门、开柜子、插头……，`client/WorldInteractionHint`）都不显示，因为右键只会铺线。
+- "选第 N 路"那一行只在准星格里有别的回路时出现，写的是按下去会换到的那一路。
+- 扳手在主手时，准星下的世界提示（开门、开柜子、插头……，`client/WorldInteractionHint`）都不显示，因为右键只会铺线、选组或连线。
+
+### 3.2 选组（第 5 阶段，2026-10-14）
+
+灯（所有 `BuildingLightBlock`）和墙上开关的线头分组用扳手选：弹一个小面板（`wiring/client/WiringGroupScreen`）。
+
+**什么时候弹**：
+- 右键一个还没有线头的灯或开关：照样铺线、接线头（0 组）；松开右键时这一下还停在这个设备上（按住扫到别处就不算），弹选组。扫线经过的设备不弹，照样是 0 组，回头再单独点一下改。
+- 右键一个已经有线头的灯或开关：不铺线，马上弹选组。所以"右键灯"就是改组。按住不放不会反复弹。
+- 两点连线确认后（第 3.3 节）：确认时点的是灯或开关（或者预览的终点是），铺完接着弹。
+- 插座、应急灯、配电箱、进线点不弹（插座、应急灯只能常亮）。
+- "有没有线头"客户端按同步来的线判断：设备安装格里有没有指向它的线头，先看当前回路，再看别的回路。服务端打开前再查一次，没有线头就什么也不发。
+
+**面板**：屏幕中间一个小面板，[AFL Overlay UI Style V1](../ui/afl_overlay_ui_style_v1.md) 的深色半透明底、暖色细线，不暂停游戏、不压暗世界。
+- 标题行：设备名，右边是线头那一路的颜色点和回路名（"第 1 路 · 红"）；
+- 一行一项，顺序：常亮（只有灯）→ 这一路用着的组（加上设备现在的组）→ "新组 N"（这一路还没用的最小组号，8 个都用了就没有这一项）→ 光控（只有灯）；
+- 每一项后面写这一组有几盏灯、几个开关，比如"2 灯 1 开关"，是 0 的那一半不写；
+- 现在的组右边一个琥珀色的小圆点；
+- 点一项马上生效、关掉面板（点的就是现在的组时只关面板），带一声界面点击声；点面板外面或者按 Esc 关掉，什么也不改。没有"确定"按钮。
+
+**数字从哪来**：服务端打开面板时先找这个设备的配电箱：设备索引里有就用它，没有就顺着线找接配电箱的那一格（`WiringSupply#panelOf`）；找到 `WIRED` 配电箱就让它马上重算一次（`DistributionPanelBlockEntity#solveNow`），刚接上的这个设备也算在里面。找不到时数字都是 0：灯只列"常亮、新组 1、光控"，开关只列"新组 1"。
+
+**改组**（服务端 `WiringTool#setGroup`）：
+- 灯能选 0 常亮、1–8、15 光控；开关只能选 1–8；别的值、插座、应急灯、没有线头的设备都拒绝；
+- 要能在这里建造、在够得着的距离内；
+- 写进线头（和开发指令 `group` 一样算布线改动），配电箱马上重算一次：开关跟上组的开关状态、标上 `wired`；这盏灯马上重新检查（`BuildingLightBlock#recheck`）。
+
+### 3.3 两点连线（第 5 阶段，2026-10-14）
+
+隔着墙、距离远的一段，不用一格一格扫。
+
+1. **起点**：潜行 + 右键一格能铺线的方块，或者一个设备（配电箱、灯……取它的安装格）。回路就是扳手当前的那一路。那一格不能铺线时提示"这里不能布线"。提示面板的状态行写"起点 · 第 1 路 · 红"。
+2. **预览**：右键终点（一格能铺线的方块，或者一个设备，同样取安装格）。
+   - 服务端寻路（第 10 节）：每一段最多 96 格，包围盒外扩 8 格，最多访问 20,000 格，和开发指令 `route` 一样；
+   - 什么也不铺、不扣线；透视里画一条当前回路颜色的虚线（第 8 节）；
+   - 状态行写"预览 14 m · 新线 9"：一共几格，其中几格这一路还没有线；
+   - 右键别处，就重新预览到那里；
+   - 找不到路，提示"找不到路线"，预览没了，起点和途经点留着。
+3. **途经点**（可选）：有起点以后潜行 + 右键一格，路线按点的顺序经过它们，最多 4 个（再点提示"途经点最多 4 个"）；点起点或已经点过的格子不算。有预览时马上重新预览。每一段（起点 → 途经点 → … → 终点）各自寻路，各自受上面的上限。
+4. **确认**：右键同一个终点再点一次（对着设备时比的是它的安装格）。
+   - 服务端重新寻路一次：和预览一样才铺；不一样（这期间改了方块）就提示"路线变了"，换成新的预览，不铺，再点一次才铺；
+   - 铺法和扫线一样：每格新线扣 1 个铜线（这一路已经有线的格子不扣），自动连邻格和斜连线、给设备接线头（0 组）、拐角自动接线；铜线不够就整段不铺，提示"导线不够"，预览留着；
+   - 铺完两点连线就结束；终点是灯或开关时接着弹选组（第 3.2 节）。
+5. **取消**：左键（对着哪里都行，这一下不剪线），或者换下扳手、换维度。
+
+- 换回路（潜行 + 滚轮、中键）时有预览，就按新回路重新预览。
+- 有起点时扳手的普通铺线不起作用；按住右键也不会连着确认：客户端只把新按下的那一下发给服务端，按住时的重复都吞掉。
+- 预览和确认每个玩家每 20 tick 最多寻路 4 次，多出来的点击不处理、没有提示；换回路、加途经点引起的重新预览被限住时，等到能做时自动补上。
+- 起点、途经点、终点都要能在这里建造、在够得着的距离内。两点连线的状态只在服务端内存里，不存档，下线就没了。
 
 ## 4. 哪些格子能铺线
 
@@ -236,7 +313,100 @@
 - 光控：几盏灯。
 - 没用到的组不显示。数据走菜单同步（`DATA_GROUPS` 起，每一路 13 个数：用到的组、关着的组、其他设备数、每组的灯数）。
 
-**怎么设线头的组**：第 5 阶段扳手才有选组。现在用开发指令 `/afl dev wiring group <设备> <组>`（第 9 节）；扳手和 `lay` / `route` 铺出来的线头都是 0 组。
+**怎么设线头的组**：扳手选组（第 3.2 节，第 5 阶段），或者开发指令 `/afl dev wiring group <设备> <组>`（第 9 节）。扳手铺线、两点连线、`lay` / `route` 新接上的线头都是 0 组。
+
+### 5.3 溪谷老宅接线（第 4 阶段，2026-10-14）
+
+在「house test」里已经建好的老宅上做的，只加新东西，没有重跑布置脚本。用户先把屋里的住宅配电箱拆了重放，新放的就是 `WIRED`，所以没用 `panel_mode` 改模式。脚本 `tools/afl_minecraft_mcp/forest_home_b_wiring.mjs`：
+
+| 模式 | 作用 |
+|---|---|
+| `plan` | 不进游戏：列出设备、每段线、每路的格数；查每段线都接着本回路已有的线，每个设备的安装格只有它自己那一路经过 |
+| `fixtures` | 先逐格读回、和计划对上才动手；把 5 盏拉线瓷灯座换成无开关瓷灯座，放新灯和开关，每个放完单格 `reconcile_shapes`（原木墙上的站上垫块），最后支撑审计 |
+| `wire` | 每段线一次 `wiring_lay`，再 `wiring_group` 设组，`wiring_panel` 合上总闸 |
+| `check` | `wiring_read` 读回每个设备的供电（配电箱、第几路、第几组），和计划对比 |
+
+坐标是地块平面坐标 (X, k, Z)，「house test」里世界坐标 = (X − 775, k + 86, Z − 134)；k 0 是地板和石基那一层。
+
+**设备**（灯光组见第 5.2 节）：
+
+| 回路 | 组 | 设备 |
+|---|---|---|
+| 进线 | — | 进线盒 (18,1,2) → 配电箱 (16,2,2)，经墙格 (17,1,2)、(17,2,2) |
+| 第 1 路 主屋照明 | 1 | 客厅吸顶 (9,3,4)、餐桌壁灯 (11,3,9)，开关在前门里侧 (9,2,9) |
+| | 2 | 卧室吸顶 (2,3,3)，开关在卧室门里侧的隔墙上 (4,2,6) |
+| | 3 | 阁楼灯（新加，西山墙上 (1,6,3) 朝东），开关在阁楼梯脚 (6,2,2) |
+| 第 2 路 附屋和外面 | 1 | 厨房壁灯 (14,3,1)、门厅壁灯 (16,3,6)，两个开关：附屋前门里侧 (14,2,6)、厨房过道门边 (13,2,1) |
+| | 0 | 储藏室拉线灯 (2,3,8)、地窖拉线灯（新加，(7,−1,−6)），各自拉绳 |
+| | 15 | 门廊壁灯 (9,3,11)，光控 |
+| 第 3 路 插座 | 0 | 厨台上方 (15,2,1)、餐桌旁 (10,1,9) |
+
+- 客厅、餐桌、卧室、厨房、门厅原来是拉线瓷灯座，换成了无开关瓷灯座（设计第 13.1 节第 4 条：主屋都用它），位置和朝向不变。储藏室、门廊的拉线灯没动；新加的地窖灯拉绳是关的。
+- 开关都在离地 1.2 m（k 2），放在门铰链的对面那一侧（按原版门的铰链规则推的，没实机看过）；阁楼的在梯脚，因为阁楼里离地第二格都已经是屋顶斜面。
+- 开关一共 5 个，比设计第 13.2 节多一个：厨房过道门边的那个，和附屋前门的管同一组，这样能验收"同组两个开关同步"。
+
+**线怎么走**（一共 147 格：进线 2、第 1 路 53、第 2 路 67、第 3 路 25）：
+- 第 1 路：配电箱背后的墙格往下进附屋地板，沿 Z 2 的地板往西到隔墙 X 5，顺隔墙上到天花板；天花板上分到客厅灯、卧室灯，再从西墙上到阁楼灯；隔墙里一段到卧室开关；另一支沿 X 11 的地板往南到南墙石基，上到餐桌壁灯，再沿石基到前门开关。
+- 第 2 路：配电箱背后往上，沿北墙第三层往西到厨房壁灯和过道门开关；在 X 13 下到北墙石基往西，一支从石基底下穿过院子的土到地窖顶，一支进地板，上储藏室和卧室之间的隔墙到储藏室灯，再一支沿 X 7 的地板到南墙，上到门廊壁灯；东墙底层一段往南到门厅壁灯和附屋前门开关。
+- 第 3 路：配电箱背后往下到北墙石基，上到厨台插座；再沿附屋地板 X 15 往南、附屋南墙和 X 12 的石基到餐桌旁插座。
+- 每段线都避开别的设备的安装格（铺线会给安装在这一格上、还没有线头的设备接线头，先到先得），所以每个设备的线头都来自计划的那一路。几处两路线共用一格（地板、石基），同一格里不同回路互不相连。
+
+**结果（2026-10-14，只是数据读回，没有截图）**：
+- `fixtures`：12 件全部放好；原木墙上的灯和开关 `log_mount=true`，隔墙（木板）上的两个开关是 `false`；支撑审计 0 个问题。
+- `wire`：15 段全部铺上，每段接上的线头正好是计划里的设备，没有多接；12 个分组都设上。
+- `check`：16 个设备的回路和组全部对上；进线盒找到这个配电箱；配电箱 `WIRED`、总闸合着，4 路都没有互连、没有线走进未加载的区块；5 个开关都标上了 `wired`。
+- 总闸合着，发电机我没有动（加油、拉绳、插电缆是生存玩法），用户自己开。
+- 用户 2026-10-14 实机验收："我看没问题了"（没有逐项说明看了哪些）。
+
+### 5.4 结构模板带线（第 6 阶段，2026-10-14）
+
+暗线存在区块里，方块和方块实体里都没有。所以导出时把线打包进配电箱，放下以后配电箱再写回墙里（`wiring/WiringTemplate`；草案见 [第 6 阶段草案](building_wiring_v1_phase6_draft.md)）。
+
+**导出**（`/afl_author validate`、`export`，开发桥 `authoring_validate`；都走 `authoring/BuildingAuthoringService#capture`）：
+- 对地块里每个配电箱、负载中心：从安装格里接着它的每一路（1–4 路和进线）出发，像求解一样沿连线和斜连线走，只走地块里的格子。
+- 走到的节点写进模板里这个配电箱的方块实体数据：
+  - `PackedWiring`：`long[]`，两个一组，格子相对配电箱的偏移（`BlockPos#asLong`）和节点值；
+  - `PackedFacing`：配电箱当时的朝向（`south` 这样的名字）。
+- 指向地块外的连线、斜连线、线头去掉（报告里的"出界剪掉"）。
+- 一路走过 4,096 个节点（`WiringSupply.MAX_NODES`）就停，报告写"没打包全"。
+- 两个配电箱连在同一路上（互连）：这一路只打包进先找到的那个，报告写"互连 N 路"。放下来还是互连，和原来一样。
+- 地块里哪个配电箱都连不到的节点不打包，报告写数量和前 5 个格子。
+- 没有线的配电箱不加这两项，所以 A1 的 `LEGACY_AREA` 配电盘导出不变。
+- 只改模板的副本，世界不动。导出状态（`ExportState`）照旧：电量清零，总闸、分路、灯光组照原样。
+- 聊天栏 `VALIDATED` / `EXPORTED` 那一行末尾加一段，例如 `暗线 147 个节点 · 配电箱 1 个 · 没打包 0 个`，后面按情况跟"（格子……）""互连 N 路""出界剪掉 N 处"。
+- 开发桥 `authoring_validate` 多返回 `wiring`（这一段文字）、`wiring_nodes`、`wiring_panels`、`wiring_orphans`、`wiring_orphan_cells`、`wiring_joined`、`wiring_clipped`。
+- 导出本来就不许有物品和实体，所以导出的房子里没有物资。
+
+**放置**：
+- **带 AFL 处理器**（`worldgen/structure/AflBlockEntityProcessor`；`worldgen/structure/AflTemplatePlacer` 和 `/afl dev template place` 都带）：
+  - 偏移先镜像、再旋转（原版模板的顺序）；
+  - 每个节点的连线、线头（连同分组）、斜连线，水平方向跟着转，上下不变；回路号、组号不变；
+  - `PackedFacing` 改成转后的朝向。
+- **不带处理器**（原版 `/place template`、`/afl dev template place_raw`）：配电箱的方块会转，打包的线不会。展开时配电箱的朝向和 `PackedFacing` 不一样，就按两者之间的旋转把线转过来。
+- **镜像这样补不回来**：镜像后的朝向和转 180° 一样。不带处理器镜像放置时，线会接到错的位置。
+- 插头、进线盒、电表箱存的相对偏移，不带处理器时还是不转。这是原来就有的问题，和暗线无关。
+
+**展开**（`DistributionPanelBlockEntity#serverTick`，两种模式都做）：
+- 配电箱放好后的第一个 tick，把能写的写进区块：
+  - 那一格能铺线：写进去；这一路原来就有线就合并（`WiringNode#merge`：连线、斜连线取并集，线头先用原来的）；
+  - 那一格的区块没加载：留着，每 20 tick（`UNPACK_PERIOD`）再试；
+  - 那一格不能铺线（放的地方成了空气、玻璃、水……）：丢掉，邻格指向它的连线一起去掉（已经写进去的和还留着的都去），服务端日志记一条 `[AFL wiring] template at panel …`。
+- 写进去算布线改动：所有 `WIRED` 配电箱这一 tick 重新求解，灯、插座、开关接上；扳手的透视照常同步。
+- 剩下的随配电箱存档（同样两个键），读回后下一个 tick 接着写；写完两个键都删掉。
+- 这两个键不发给客户端（`getUpdateTag` 里去掉）。还没写完时，配电箱的 Jade 多一行「线路待展开」。
+- 原地再放一次：原来的线不删，能铺线的格子里同一路合在一起。
+
+**不带线的放法**：WorldEdit 复制粘贴（开发桥 `we_copy` / `we_paste`，或者 `//copy`、`//paste`）。线在区块里，WorldEdit 抄不到：复制过去的房子要用扳手重接，或者导出成模板再放。
+
+**实机验收（2026-10-14，用户 PASS）**：
+1. 用户在「house test」里 resume、export，得到 `run/afl_authoring_exports/forest_home_b_m1.nbt`（37 × 13 × 26，12,506 格，8 个方块实体，1 个负载中心打包了 147 个节点，`PackedFacing` west）；
+2. 用户在一个超平坦创造世界里放了两份：`place forest_home_b_m1 8 -60 8 clockwise_90` 和 `place_raw forest_home_b_m1 80 -60 8 180`；
+3. 我离线读了那个世界的存档（18:39 自动存档；脚本在会话草稿目录，没进仓库），把模板转到位后逐格对比：
+   - 暗线：两份都是 147 / 147 个节点逐格一样（连线、线头、分组、斜连线都按旋转转对），没有多出来的线，配电箱身上没有剩下没写的 `PackedWiring`；`place_raw` 靠朝向差转回来的结果和 `place` 一样；
+   - 方块实体 8 / 8，进线盒指向配电箱的偏移两份都对；
+   - 方块：`place` 12,491 / 12,506 格一样，`place_raw` 12,488 格一样。不一样的：铁丝网围栏的立柱（直段每 3 格一根，按世界坐标 x + z 取模，放到别处就挪位置，是规则本身）、两扇门开着（用户开的）、`place` 那份的发电机朝西不是朝南（`place_raw` 那份朝向对；发电机的朝向只在放下时设，那份的进线盒已经插上了线，看起来是用户接线时重放过）、`place_raw` 地块边上一格草变成了泥土；
+   - 导出时发电机没插线（「house test」里也没插），所以这份模板里没有插头偏移，`place_raw` 不会掉插头。
+4. 通电（开发电机、灯亮、开关）存档里读不出来，用户在两份里试过："灯和开关都正常，第 6 阶段 PASS"。
 
 ## 6. 拆除和清理
 
@@ -263,9 +433,9 @@
 - 只有完整的 `LevelChunk` 带布线数据，世界生成中的 `ProtoChunk` 不带。
 - 每个区块有一个修订号（只在内存里，给透视同步用）。
 
-## 8. 透视（基础版）
+## 8. 透视
 
-**同步**（`wiring/WiringSync`、`wiring/client/WiringView`，包在 `wiring/WiringPackets`，AFL 主频道协议 38 → 39）：
+**同步**（`wiring/WiringSync`、`wiring/client/WiringView`，包在 `wiring/WiringPackets`，AFL 主频道协议 38 → 39，第 5 阶段 39 → 40）：
 - 扳手或铜线拿在任意一只手上，客户端发 Hello；服务端回当前回路，和玩家周围 5 × 5 个区块（半径 2）的线。
 - 之后每 5 tick 检查一次，修订号变了的区块整块重发。
 - 离玩家超过 3 个区块的，两边都丢掉，回来时重发。
@@ -274,7 +444,7 @@
 - 每个区块第一次发给某个玩家时，顺便检查一遍里面的线：所在格子已经不能铺线的（比如 WorldEdit 快速模式绕过了改方块钩子），删掉，不返还。
 
 **画法**（`wiring/client/WiringXray`、`WiringRenderTypes`）：
-- **只画当前回路**：附近所有的线都画，墙后面的也画，不透明度 0.95。别的回路一概不画（2026-10-13 起；以前准星格里会画别的回路，和当前回路混在一起像断线）。找别的回路的线：对着它按中键（第 3 节）。
+- **当前回路**：附近所有的线都画，墙后面的也画（变暗，见下）。别的回路平时不画（2026-10-13 起；以前准星格里会画别的回路，和当前回路混在一起像断线）；找别的回路的线：对着它按中键（第 3 节），或者开"显示全部"。
 - 线是 2 cm 粗的 8 边形圆管，颜色是回路的颜色（红、蓝、绿、黄，进线黑），按朝向打一点固定的明暗。
   - 每个节点有一个**锚点**：一般是格子中心；屋顶格是屋面板厚度的中间（`CabinBlocks.Roof#wireHeight`：下半格离格底 0.15 格，上半格和屋脊格 0.65 格），所以屋顶上的线顺着坡斜着走；
   - 从锚点画到每个连着的邻格（普通连线和斜连线）的锚点的一半（邻格画另一半），所以两格锚点高度不同时这一段是斜的；锚点上有一个稍粗的小方块当接头；
@@ -282,9 +452,19 @@
   - 既没连线、斜连线，也没线头的节点画成一个小短桩。
 - 每一路在 x、y、z 上各有一个固定偏移（±1.5 cm、±4.5 cm 四档，加在锚点上），每一格都一样，所以两半对得上。
 - 只画 48 格以内的。
-- 关深度测试、不写深度，按远近排序后画（`sortOnUpload`），所以墙后面的线和看得见的一样亮，设计稿说的"墙后暗 50 %"没做。
+- **墙后变暗**（第 5 阶段）：当前回路画两遍。第一遍关深度测试、不写深度，不透明度 40 %，墙后面的也画；第二遍开深度测试（`WiringRenderTypes.XRAY_IN_SIGHT`，LEQUAL，不写深度），全亮，只盖住看得见的部分。线本来就在墙里、地板里，直接做深度测试会全被挡住，所以第二遍每个顶点沿视线往镜头拉近 1 格（`PULL`，画面上的位置不变，只改深度；离镜头不到 1 格的拉到 0.06 格）：眼前那面墙、那层地板里的线算看得见，隔了更多方块的还是暗的。两遍都按远近排序（`sortOnUpload`）。
+- **显示全部**（潜行 + 中键，第 3 节）：别的回路也画出来，粗细和亮度都是一半，只在第二遍画，所以只画看得见的、不透墙。当前回路照常透墙。换下扳手就关。
+- **设备标记**：玩家周围 5 × 5 个区块、上下 48 格里的接线设备（`wiring_devices`），在设备选框中心画一个朝着镜头的小环：
+  - 有线头：环和中间的小圆点是线头那一路的颜色（进线用比线浅一点的灰黑）；
+  - 没线头：灰色空心环；
+  - 配电箱、负载中心、进线盒、电表箱：外面再加一圈；
+  - 32 格以内看得见的画全亮，16 格以内的也透墙画（40 %）；
+  - 小字（16 格以内，在环的上方，透墙 40 %、看得见时全亮）：当前回路的灯和开关写"组 N""常亮""光控"（开着"显示全部"时任何回路的都写）；没线头的设备写"未接线"；有线头的插座、应急灯、配电箱、进线点不写；
+  - 标记只表示接线和组，**不表示有没有电**（有没有电看 Jade）；
+  - 线头和组按客户端同步来的线算，组按求解的规则（`WiringSupply#effectiveGroup`：开关的光控算常亮）；每 10 tick 重扫一次（只读调色板里有接线设备的子区块），线变了也马上重扫。
+- **两点连线的预览**（第 3.3 节）：预览的路线是当前回路颜色的虚线（每一步两段，比线粗一点），起点一个大一点的环，每个途经点一个菱形，都透墙、全亮。
 - 在 `AFTER_TRANSLUCENT_BLOCKS` 画；光影的阴影 pass 跳过（`AflShaderCompat.activeShadowPass()`）。
-- 每帧直接重画，没有缓存顶点缓冲。性能没测。
+- 线和预览的几何体缓存起来（相对一个原点的坐标和颜色），只在线、当前回路、显示全部、两点连线变了，或者玩家离原点超过 16 格时重建；每帧只按镜头位置、这一遍的透明度和拉近距离把顶点交出去。设备标记的环和字每帧画（数量少）。性能没测（第 7 阶段实测）。
 
 ## 9. 开发指令
 
@@ -307,6 +487,32 @@
 - 不带模式：读回配电箱的模式；`WIRED` 的再列出上一次求解里每一路接到几个设备（进线是几个进线点）、哪一路互连、有没有线走进没加载的区块，以及每一路用到的组：几盏灯、几个开关、开着还是关着（第 3 阶段）；
 - 带模式：改成这个模式（第 5.1 节）。
 
+开发桥的布线操作（第 4 阶段，2026-10-14；`src/dev/.../authoring/bridge/WiringAdapter.java`，定义在 `tools/afl_minecraft_mcp/models.mjs`），都只在当前搭建地块里：
+
+| 操作 | 作用 |
+|---|---|
+| `wiring_lay {cells, circuit, dry_run?}` | 按顺序铺给定的格子，和 `lay` 一样连线、给装在这一格上还没有线头的设备接线头（0 组）；有一格在地块外或不能铺线，就整段不铺并列出原因；返回新铺几格、接上了哪些设备 |
+| `wiring_group {device, group}` | 和 `group` 指令一样设线头的组 |
+| `wiring_clear {min, max, dry_run?}` | 清掉一个范围里的所有节点（最多 32,768 格） |
+| `wiring_read {min?, max?}` | 读回节点（回路、连线、线头和组）、每个设备的供电（配电箱、第几路、第几组）、进线点接的配电箱、配电箱的模式和上一次求解 |
+| `wiring_panel {pos, main?}` | 读配电箱；`main` 合上或断开总闸（像玩家扳一样，不进撤销） |
+
+`wiring_lay`、`wiring_group`、`wiring_clear` 各是一步撤销（`we_undo` / `we_redo`，和别的编辑同一个历史）：记下改动的每个节点改前改后的值（动到的格子和它周围 26 格），撤销时值不对（之后又改过）就拒绝。为此 `BuildingWiring` 多了 `restore`（按原值写回一个节点）。铜线不收也不退。
+
+`/afl dev template`（第 6 阶段，同样只在开发环境、2 级权限；`src/dev/.../dev/wiring/TemplateCommands.java`）：
+
+| 指令 | 作用 |
+|---|---|
+| `place <template> <pos> [rotation] [mirror]` | 按 AFL 的放法放（带 `AflBlockEntityProcessor`，`worldgen/structure/AflTemplatePlacer#place`） |
+| `place_raw <template> <pos> [rotation] [mirror]` | 不带 AFL 处理器放，和原版 `/place template` 一样（原版指令读不到导出目录） |
+| `info <pos>` | 读一个配电箱：模式、还有几个节点没写、`PackedFacing` |
+
+- `<template>` 不写命名空间时，先找导出 `afl_authoring_exports/<id>.nbt`（补全列出导出目录里的文件），没有再找资源；写了命名空间（`apocalypse_firstlight:gas_station_01`）就只找资源。
+- `rotation`、`mirror` 和原版一样：`none`、`clockwise_90`、`180`、`counterclockwise_90`；`none`、`front_back`、`left_right`。
+- 模板的原点角落放在 `<pos>`，绕它转和镜像（`/place template` 也是这样）。先加载模板盖到的区块；放方块时不发邻格更新（标志位 2，和 `/place template` 一样）。
+- 模板整块盖下去，地块里的空气也算，所以要放在空地上。老宅的地块从地面往下 3 格（`surface_offset_y` 3），默认超平坦世界（草在 Y -61）放在 Y -63。
+- 放完聊天栏写放到哪、转向、模板盖到的范围。线在配电箱的下一个 tick 写回。
+
 开发桥 `place_fixture` 多一个参数 `supply_mode`（`wired` / `legacy_area`，`tools/afl_minecraft_mcp/models.mjs` 和 `src/dev/.../authoring/bridge/FixtureAdapter.java`）：只能给配电箱、负载中心用，别的方块报 `SUPPLY_MODE_NOT_A_PANEL`；不写就是新放的默认 `WIRED`。放完返回里带 `supply_mode`。撤销照旧一步。
 
 ## 10. 寻路
@@ -325,7 +531,7 @@
 ./gradlew runGameTestServer --offline -PaflWithoutShaders --init-script src/dev/wiring-gametest.init.gradle
 ```
 
-init 脚本用一个新的独立世界，跑完检查日志里十个 `[AFL WIRING TEST] PASS <名字>` 都在，少一个就让任务失败。
+init 脚本用一个新的独立世界，跑完检查日志里十三个 `[AFL WIRING TEST] PASS <名字>` 都在，少一个就让任务失败。
 
 | 测试 | 内容 |
 |---|---|
@@ -338,8 +544,10 @@ init 脚本用一个新的独立世界，跑完检查日志里十个 `[AFL WIRIN
 | `corner` | 墙脚和地板之间：生存模式铺地板第一格，自动通过墙脚下的基础接上墙上的线，一共扣 2 个；只剩 1 个铜线时这一格照铺，拐角不接 |
 | `shapes` | 原木墙一段：选框到原木外凸（z 方向超出格子），仍是实心（各面能挂东西、挡视线、导红石、挡光），但不窒息，旁边那格不算"会窒息"（否则客户端会把站在那格的玩家推开一格；对照：石头那格算），生物不当它是空地，能铺线；墙角：两端露出的原木头只在两个空着的面伸出去；屋顶下半格是屋面板（屋檐那边低于格底），上半格离格底 0.3 格以上，墙上的上半格填到格底；屋顶底面仍能吸顶装灯；门：不是整格，关着时门洞中间有碰撞，开着时没有；窗：不是整格、生物不穿、不窒息；门廊栏杆：选框不到 1 格高，碰撞 1.5 格；命中网格（2026-10-13 晚）：向下的射线落在下半格屋面的斜面上（法线斜、高度在屋面板里），屋顶格的轮廓有边，水平射线停在原木弧顶（格子外），枪架没有命中网格 |
 | `supply` | 第 2 阶段：新放的负载中心是 `WIRED`；第 1 路接一个插座和一个拉线灯座，进线接进线盒：求解结果第 1 路 2 个设备、进线 1 个；插座有电、能取电，灯座点亮；线外面的插座没电；进线盒找到这个配电箱（它自己 tick 一次也找到）；第 1 路断路器分闸，插座和灯座都没电；外部馈线那一行切不了，顶部照样出电；第二个负载中心接到第 1 路上：互连（掩码第 1 位）、插座没电、索引里没有它，进线不受影响；第二个箱子拆掉、随便改一格线以后又有电；改成 `LEGACY_AREA`：索引撤掉，暗线上的插座没电；一间砖顶小屋里的 `LEGACY_AREA` 配电箱按范围给屋里的插座供电（不碰屋外那个），改回 `WIRED` 后没线的那个插座没电；存档写 `SupplyMode: wired`，去掉这个字段读回是 `LEGACY_AREA` |
-
 | `groups` | 第 3 阶段：一个负载中心第 1 路上接两盏无开关瓷灯座（组 1、组 2）、一个拉线瓷灯座（组 1）、一盏光控（15）、两个组 1 的开关、一个插座，另有一个没接线的开关：插座设不了组 1、开关设不了 15、没线头的开关设不了；求解数对（组 1 两盏灯、两个开关，组 2 一盏，光控一盏，其他 1 个，组 3 没用到），接线的开关标上 `wired`、没接的没有；全开时都亮，光控跟昼夜；扳一个开关：组 1 关、两个开关一起扳下、只有组 1 的灯灭、插座照样有电；另一个开关扳回来；拉绳拉灭只灭那一盏；总闸断开时开关照样能扳，`GroupOff` 存档、读回，来电后组 1 还关着、组 2 亮；没接线的开关只扳自己；后来放的开关下一次求解跟上组的状态 |
+| `route` | 第 5 阶段，生存模式：起点、预览（9 格，什么都没铺、没扣线）、对着同一个终点确认（9 格铺上、连好，扣 9 个，两点连线结束）；从这段线的末端再连 2 格：只有 1 个铜线时不铺、预览留着，有 5 个时铺上、扣 2 个（已有线的那格不扣）；预览以后把路线上的一格挖成空气：确认只换成绕路的新预览、不铺，再确认才铺，扣的是绕路的格数；途经点让路线拐过去，最多 4 个；取消清掉起点、途经点、预览；20 tick 里第 5 次寻路不做；有起点时剪线只取消、不剪；换下扳手取消 |
+| `picker` | 第 5 阶段，创造模式：从负载中心（起点取它的安装格）连到一盏无开关瓷灯座，两头都接上线头；顺着灯的线找到这个配电箱（`panelOf`）；确认后的选组已经让配电箱重算、算上了这盏灯；给假玩家打开选组不出错；灯选组 2：线头是 2、配电箱马上重算、组 2 有 1 盏灯；组 2 关着时开关选组 2：马上标上 `wired`、扳到关；开关选 0、光控被拒绝；插座选组 1 被拒绝；灯能选光控 |
+| `template` | 第 6 阶段：测试场里一栋小房子（10 × 6 × 10 的地块）：石墙上朝南装负载中心、进线盒、插座 A、开关、无开关瓷灯座（灯和开关组 1）；墙东头北边一段 1:2 屋顶，最高那格下面朝北装插座 B。第 1 路接开关、灯、插座 A，还伸出地块 1 格；进线接进线盒；第 2 路沿墙脚、上墙、过屋顶斜坡到插座 B；另有一个哪个配电箱都连不到的第 3 路节点。用真正的导出（`BuildingAuthoringService#capture`）抄成模板：报告 28 个节点、1 个配电箱、没打包 1 个（坐标对）、出界剪掉 1 处；模板里的配电箱带 56 个 long、朝向 `south`、电量 0、总闸合着；世界不变。然后放 12 次：4 个旋转 × 不镜像 / 前后镜像带处理器，4 个旋转不带处理器；每次配电箱和插座 B 在 x、z 两个方向都不在同一个区块。每次查：放下时配电箱带着 28 个节点、朝向对（不带处理器的还是 `south`），更新包里没有；一个 tick 后全写完、两个键没了；28 个节点每个的位置、连线、线头、分组、斜连线都等于原来的转过去；地块里没有多出来的线；求解和原房子一样（第 1 路 3 个设备、第 2 路 1 个、进线 1 个、没有未加载、没有互连）；灯亮、两个插座有电、进线盒找到配电箱；扳开关灭灯、插座照样有电，再扳回来。第一次放的地方原来就有两格第 1 路的线：合并（多一个向上的连线），上面那格留着。第一次放完再查存档：塞两个连着的节点到 4,000 格外没加载的区块：一个 tick 后都留着、存档里有、更新包里没有；加载那个区块、一格放石头一格是空气，读回存档再 tick：石头那格写进去、指向空气那格的连线去掉了，空气那格丢掉，两个键没了 |
 
 2026-10-13 第二版结果：8/8 通过。A1 回归 `GasStation01GameTests`：通过（4 个旋转，91,380 项检查，512 种方块状态，邻格更新没有改变任何方块状态）。
 
@@ -347,22 +555,62 @@ init 脚本用一个新的独立世界，跑完检查日志里十个 `[AFL WIRIN
 
 2026-10-14 第 3 阶段结果：10/10 通过，服务器正常关闭（约 1 分钟）。第一次跑 10/10 通过，但服务器卡在 "Saving worlds" 不退出：光照引擎的工作线程问配电箱的形状，配电箱的形状要读邻格（接线盒），而邻格所在的区块要等主线程，主线程正在关服。改成配电箱直接回答"天光照下去"（`DistributionPanelBlock#propagatesSkylightDown` = true，不再读形状；配电箱本来就不占满格子，光照结果不变）。这一轮没有跑 `GasStation01GameTests`。
 
+2026-10-14 第 5 阶段结果：12/12 通过（新增 `route`、`picker`），服务器正常关闭。这一轮没有跑 `GasStation01GameTests`。
+
+2026-10-14 第 6 阶段结果：13/13 通过（新增 `template`，第一次跑就过），服务器正常关闭。回归：`GasStation01GameTests`（A1 带处理器放 4 个旋转）、`ExportStateGameTests`、`BuildingAuthoringGameTests`（导出流程）都通过。
+
+### 性能（第 7 阶段，2026-10-14）
+
+`src/dev/java/com/antaurora/apofirstlight/dev/WiringPerfGameTests.java`，命名空间 `afl_wiring_perf`，两个测试 `house`、`worst`。`house` 用真老宅的导出（init 脚本把 `run/afl_authoring_exports/forest_home_b_m1.nbt` 的路径传进系统属性 `afl.perf.template`，没有这个文件就失败）：
+
+```bash
+./gradlew runGameTestServer --offline -PaflWithoutShaders --init-script src/dev/wiring-perf-gametest.init.gradle
+```
+
+都在服务端线程上量，先预热再取平均。GameTest 服务器不是客户端里的内置服务器，跑的时候另外两个工作树的客户端也开着，所以数字只是参考量级。
+
+| 环节 | 真老宅（147 个节点、138 格、17 个设备） | 最坏情况 | 设计估计 |
+|---|---|---|---|
+| 配电箱求解 `WiringSupply.solve` | 71 μs | 一路 4,096 个节点（上限，16 × 16 × 16 的石块一笔走完，没超限）：1.6 ms | 0.1 ms 以内（一栋房子） |
+| 设备找配电箱 `WiringSupply.feed` | 31 ns | — | 可忽略 |
+| 寻路（扳手预览，`ROUTE_MARGIN` 8、`ROUTE_VISITS` 20,000、`ROUTE_CELLS` 96） | 从配电箱安装格到 30 格外：0.73 ms | 28 × 28 × 28 的实心石块里横穿 55 格：0.99 ms；去一个够不着的格子，看满 20,000 格才放弃：**10.7 ms** | 一般 1 ms 以内，最坏几毫秒 |
+| 改方块的钩子 `WiringRemoval.changed` | 区块没布线 13 ns；有线的区块里没线的格子 14 ns；有线的格子换成还能布线的方块 76 ns | — | 可忽略 |
+| 透视同步（`ChunkWires` 包，按区块） | 4 个区块共 1,751 字节 | 4,096 个节点 4 个区块共 45 KB | 几十 KB 以内 |
+| 铺线 `WiringCommands.layAll`（开发指令；模板展开走同样的写入） | — | 4,096 个节点 17 ms | — |
+
+- 除了寻路的最坏情况，都在设计估计以内。寻路放弃前最多看 20,000 格，约 0.5 μs 一格；只有终点够不着、起终点周围又是一大片能布线的实心方块（山体、大块混凝土）时才会看满。每个玩家每秒最多预览 4 次，最坏每秒约 43 ms。先不改：一次 10 ms 是一个 tick 的五分之一；要压低就把 `WiringTool.ROUTE_VISITS` 减半（约 5 ms）。
+- 求解只在标脏后和每 100 tick 跑一次：4,096 个节点 1.6 ms，平摊到每个 tick 不到 0.02 ms。
+- 透视渲染在客户端，这一轮没有量。
+
+A1 回归 `GasStation01GameTests`（2026-10-14，第 7 阶段）：通过，4 个旋转，91,380 项检查，512 种方块状态，邻格更新没有改变任何方块状态。
+
 ## 12. 已知问题和没做的
 
-- 第 2 阶段没有实机验证：配电箱界面（4 路颜色、外部馈线行、互连、两个新状态词）、Jade、扳手面板的配电箱行，以及暗线供电在真房子里的表现，都只在 GameTest 里查过代码路径。
-- 第 3 阶段没有实机验证：墙上开关和无开关瓷灯座的外观、垫块、选框、挖掘，扳开关时的手感，配电箱界面的分组行，Jade 和提示都没看过。
+- 第 4 阶段（老宅接线）用户 2026-10-14 实机整体通过，没有逐项说明；断电再来电保持、光控在天黑时亮，有没有专门看过不知道。
+- 第 6 阶段（结构模板带线）：真老宅导出、放两份（转 90° 带处理器、转 180° 不带）读回一致（第 5.4 节最后），用户 2026-10-14 实机 PASS。老宅的正式模板 `forest_home_b`、新世界里放老宅都在森林开局 M4。
+- 不带 AFL 处理器的镜像放置（原版 `/place template` 带 `mirror`）线会错位，补不回来（第 5.4 节）。原版放置时插头、进线盒、电表箱的相对偏移也不转（原来就有的问题）。
+- WorldEdit 复制粘贴不带线（第 5.4 节）。
+- 寻路的最坏情况 10.7 ms（终点够不着、周围一大片实心方块，看满 20,000 格），比设计估计的"几毫秒"高，先接受（第 11 节"性能"）。透视渲染（客户端）没量过。
+- 模板展开时区块没加载的那部分，每 20 tick 试一次，直到那个区块加载；那段时间配电箱的 Jade 是「线路待展开」，那边的设备没电。
+- 放模板时不能铺线、被丢掉的格子只记在服务端日志里，游戏里看不到。
+- 打包的线存在配电箱的方块实体里，每个节点 16 字节（第 4 阶段老宅的 147 个节点约 2.3 KB），写完就删。
+- 第 2、3 阶段用户 2026-10-14 实机整体 PASS，没有逐项说明看了哪些。没确认过的大概有：互连和"线路未加载"两个状态词、原木墙上开关的垫块、生存模式拆开关和灯座的掉落；暗线供电在真房子里的表现第 4 阶段才看得到。
 - 墙上开关的声音暂时是原版拉杆声，要一条 Firefly 录音换掉。
-- 线头的组只能用开发指令 `group` 设，扳手铺出来的都是 0 组（第 5 阶段加选组）；开发桥也还没有铺线、设组的操作（第 4 阶段要用时再加）。
+- 第 5 阶段（两点连线、选组、墙后变暗、显示全部、设备标记、预览）用户 2026-10-14 实机验收："已关游戏，测完了，第 5 阶段 PASS"（没有逐项说明看了哪些）。验收方法是在老宅里挪灯、开关、插座再接上，无光影下看透视（第 5 阶段草案第 6 节）；途经点、"路线变了"、导线不够、限次这些少见的情况有没有碰到不知道，只有 GameTest 查过。
+- "有没有线头"客户端按同步来的线判断：线头所在的区块没同步到时，已经接好的灯会被当成没接，右键照样去铺线（已有线的格子不收费），松开再弹选组，结果一样。
+- 两点连线的终点按格子比：对着设备时比的是安装格，所以预览到一面墙那一格、再点装在这一格上的设备，也算确认（并弹它的选组）。
+- 选组面板每次打开、每次改组，那个配电箱都马上重算一次（`solveNow`）；一栋房子不算什么，大量设备时没测。
+- 开发桥的 `wiring_lay` 不弹选组，组还是用 `wiring_group` 设。
+- 开着光影（Oculus，非 Sundial）时第二遍的深度判断、Fabulous 画质下的透视，都没看过。
 - 配电箱界面的组只显示开 / 关，不能在界面上扳。
 - 光控看的是 `level.isDay()`，不看灯那一格的天光。
-- 「house test」里现在的负载中心是旧档、`LEGACY_AREA`：第 4 阶段接线前要先用 `/afl dev panel_mode` 改成 `wired`。
 - 任何布线改动都让所有 `WIRED` 配电箱各重算一次（没按 64 格范围标脏）；一栋房子几百个节点不算什么，大量配电箱时的开销没测。
 - 新装一个设备到已有线头上，最多 5 秒（100 tick）后才通电；拆掉的设备在下一次求解前还留在索引里（它已经不在了，没有人会来查）。
 - 线走进没加载的区块时，那边的设备没电，等区块加载、下一次求解后才恢复。
 - 招牌字（`ChannelLetterBlock`）接不了暗线，`WIRED` 房子里不会亮。
 - 没有配方，没有音效（要用 Firefly 录一条，不自己合成）。
 - 第二版的斜着走的线、只画当前回路、中键选回路、面板的米数和"选第 N 路"、小屋方块的新选框和碰撞，都没实机看过；扳手第一、第三人称的显示变换是估计值。
-- 别的回路的线在透视里看不见：两路线走同一格时，只能靠面板上的"选第 N 路"发现。第 5 阶段的"显示全部"会补上。
+- "看得见"是估计：沿视线拉近 1 格再做深度测试。斜着看一面墙时，墙里的线离表面超过 1 格，会画成墙后的样子（变暗）；紧贴在 1 格厚的墙背面的设备，可能被当成看得见。
 - 面板上的米数只算客户端周围的区块。
 - 4 路（第 1.2 节）用户 2026-10-14 PASS；进线的黑色在暗处、深色原木前面可能不好认（没看过）。版本 1 存档的合并只在 GameTest 里用手写的数据查过。
 - Sundial 下透视的线不显示（用户 2026-10-13 实机）。不修：用户在同步开发自己的光影包。原版下正常。
@@ -371,7 +619,7 @@ init 脚本用一个新的独立世界，跑完检查日志里十个 `[AFL WIRIN
 - 线形灯连成一排时，每一节都是一个设备，每一节都要自己的线头。
 - 别的模组如果用 `BreakEvent` 只是"问一下能不能拆"（没真的拆），这一格的线也会被清掉（生存模式还会掉铜线）。
 - WorldEdit 快速模式改掉的格子，在透视同步第一次发那个区块时、和 `WIRED` 配电箱求解经过时清理；两样都没碰到的格子会一直留着。
-- 透视每帧重画、同步整列区块，线很多时的开销没测（第 7 阶段实测）。
+- 透视的线缓存了几何体，但每帧仍要逐个顶点算拉近和透明度、画两遍；设备标记每 10 tick 扫一次附近有接线设备的子区块；同步的还是整列区块。线和设备很多时的开销没测（第 7 阶段实测）。
 - `tools/check-item-mass.mjs` 本来就不通过：它只读 `AflItems.java`，不认 `CabinBlocks` 注册的物品，和这一轮无关。
 
 ## 13. 文件
@@ -386,23 +634,24 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | `wiring/WiringStorage.java` | 区块存档事件 |
 | `wiring/BuildingWiring.java` | 可布线规则、斜坡、设备种类和安装格、所有改动（铺、连、斜连、拐角接线、接线头、剪、清格、检查斜连线） |
 | `wiring/WiringRouter.java` | A* 寻路（含斜坡走法） |
-| `wiring/WiringTool.java` | 扳手服务端：铺、拐角接线、剪、换回路（滚轮和中键）、扣线和返还 |
+| `wiring/WiringTool.java` | 扳手服务端：铺、拐角接线、剪、换回路（滚轮和中键）、扣线和返还；第 5 阶段两点连线的会话（起点、途经点、预览、确认、取消、每 20 tick 4 次寻路）、选组（`openGroups`、`setGroup`） |
 | `wiring/WiringRemoval.java`、`mixin/WiringServerLevelMixin.java` | 拆除和清理 |
-| `wiring/WiringSync.java`、`wiring/WiringPackets.java` | 透视同步、扳手的包 |
-| `wiring/client/WiringView.java` | 客户端的布线数据、每一路的长度、某一格里有哪几路 |
-| `wiring/client/WiringXray.java`、`WiringRenderTypes.java` | 透视渲染（只画当前回路，屋顶锚点，斜段） |
-| `wiring/client/WiringClient.java` | 左键剪线、蹲下滚轮换回路、中键选准星格里的别的回路、按键提示面板（含对着配电箱时的状态行） |
+| `wiring/WiringSync.java`、`wiring/WiringPackets.java` | 透视同步、扳手的包；第 5 阶段 `Route`、`RouteAction`、`GroupsOpen`、`Groups`、`SetGroup`（`network/AflNetwork` 协议 40） |
+| `wiring/client/WiringView.java` | 客户端的布线数据、每一路的长度、某一格里有哪几路；第 5 阶段两点连线的状态、显示全部、版本号（透视据此重建）、按格查节点、收到选组数据时开面板 |
+| `wiring/client/WiringXray.java`、`WiringRenderTypes.java` | 透视渲染（屋顶锚点，斜段）；第 5 阶段墙后变暗的两遍画法（`XRAY`、`XRAY_IN_SIGHT`）、缓存的几何体、显示全部、设备标记和字、两点连线的预览 |
+| `wiring/client/WiringClient.java` | 左键剪线、蹲下滚轮换回路、中键选准星格里的别的回路、按键提示面板（含对着配电箱时的状态行）；第 5 阶段潜行 + 右键起点 / 途经点、有起点时右键预览 / 确认、左键取消、右键灯和开关要选组面板、潜行 + 中键显示全部、按状态换内容的提示面板 |
+| `wiring/client/WiringGroupScreen.java` | 第 5 阶段选组面板 |
 | `block/WallSwitchBlock.java`、`compat/jade/WallSwitchJadeProvider.java` | 第 3 阶段：墙上开关和它的 Jade |
 | `block/KeylessLampholderBlock.java` | 第 3 阶段：无开关瓷灯座 |
-| `wiring/WiringSupply.java` | 第 3 阶段加了线头的组和设备的角色（`Feed.group / role`、`effectiveGroup`、每组的灯和开关数）。第 2 阶段：`WIRED` 配电箱的求解、设备索引（设备 → 配电箱和回路、进线点 → 配电箱）、互连、未加载 |
+| `wiring/WiringSupply.java` | 第 5 阶段加了 `panelOf`（顺着线找接配电箱的那一格）。第 3 阶段加了线头的组和设备的角色（`Feed.group / role`、`effectiveGroup`、每组的灯和开关数）。第 2 阶段：`WIRED` 配电箱的求解、设备索引（设备 → 配电箱和回路、进线点 → 配电箱）、互连、未加载 |
 | `wiring/WiringStorage.java`（`revision()`） | 全局布线修订号，配电箱据此重算 |
 | `energy/BuildingSupply.java` | 设备找电的统一入口：先暗线索引（`WIRED`），再范围（`LEGACY_AREA`） |
 | `energy/BuildingLights.java`、`energy/PowerPlugs.java`、`blockentity/EmergencyLightBlockEntity.java`、`GeneratorInletBoxBlockEntity.java`、`ServiceMeterBoxBlockEntity.java`、`block/BuildingLightBlock.java`、`PorcelainLampholderBlock.java` | 原来的六处查询，改走 `BuildingSupply` |
-| `blockentity/DistributionPanelBlockEntity.java` | `SupplyMode`、两种模式的断路器、`circuitLive / drawCircuit`、求解时机、`WiringConflict` 同步；第 3 阶段 `GroupOff`、`toggleGroup`、开关对齐（`alignSwitches`）、界面的分组数据 |
+| `blockentity/DistributionPanelBlockEntity.java` | `SupplyMode`、两种模式的断路器、`circuitLive / drawCircuit`、求解时机、`WiringConflict` 同步；第 3 阶段 `GroupOff`、`toggleGroup`、开关对齐（`alignSwitches`）、界面的分组数据；第 5 阶段 `solveNow`（马上重算，选组用） |
 | `block/DistributionPanelBlock.java`（`propagatesSkylightDown`） | 第 3 阶段：光照不读配电箱的形状（关服卡死的修复，第 11 节） |
 | `client/DistributionPanelScreen.java` | 4 路和外部馈线行、互连、两个新状态；第 3 阶段每一路下面用到的组 |
-| `compat/jade/DistributionPanelJadeProvider.java` | 范围供电、第 N 路互连、线路未加载 |
-| `item/WiringWrenchItem.java` | 扳手物品（右键先于方块自己的右键，所以点灯座、配电箱也是铺线） |
+| `compat/jade/DistributionPanelJadeProvider.java` | 范围供电、第 N 路互连、线路未加载；第 6 阶段线路待展开 |
+| `item/WiringWrenchItem.java` | 扳手物品（右键先于方块自己的右键，所以点灯座、配电箱也是扳手的操作：铺线，第 5 阶段起还有选组、两点连线） |
 | `client/WorldInteractionHint.java` | 扳手在主手时不显示方块的世界提示 |
 | `cabin/CabinBlocks.java`（`Roof#wireHeight`） | 屋顶格里线的高度（透视用） |
 | `registry/AflItems`、`AflCreativeTabs`、`client/AflStaticMeshItemClient` | 注册、创造栏、3D 物品绑定 |
@@ -411,8 +660,22 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - `data/apocalypse_firstlight/tags/blocks/no_wiring.json`、`wiring_devices.json`、`wiring_slopes.json`；
 - 两件物品的 `models/item`、`textures/item`、`geo`、`meshes` 和 Mesh 贴图，可编辑源在 `src/main/blockbench/insulated_copper_wire.bbmodel`、`wiring_wrench.bbmodel`；
 - 生成脚本 `tools/build-material-meshes-v1.mjs`（铜线）、`tools/build-equipment-meshes-v1.mjs`（扳手）；
-- 语言：`item.apocalypse_firstlight.insulated_copper_wire`、`wiring_wrench`；`message.apocalypse_firstlight.wiring.*`（回路名、四种颜色和进线的黑色、不能布线、导线不够、`length` 回路加米数）；`hint.apocalypse_firstlight.wiring.lay / cut / select / pick / pick_feeder`；第 2 阶段：`message.apocalypse_firstlight.wiring.legacy_panel / conflict`、`screen.apocalypse_firstlight.distribution_panel.kind_4`–`kind_8`、`branch_conflict`、`status_conflict`、`status_partial`、`jade.apocalypse_firstlight.distribution_panel.legacy / conflict / partial`、`config.jade.plugin_apocalypse_firstlight.distribution_panel`；第 3 阶段：`block.apocalypse_firstlight.wall_switch`、`keyless_lampholder`、`hint.apocalypse_firstlight.wall_switch.on / off`、`jade.apocalypse_firstlight.wall_switch.on / off / unwired`、`config.jade.plugin_apocalypse_firstlight.wall_switch`、`screen.apocalypse_firstlight.distribution_panel.group_always / group_n / group_photocell / group_lights / group_others / group_on / group_off`。
+- 语言：`item.apocalypse_firstlight.insulated_copper_wire`、`wiring_wrench`；`message.apocalypse_firstlight.wiring.*`（回路名、四种颜色和进线的黑色、不能布线、导线不够、`length` 回路加米数）；`hint.apocalypse_firstlight.wiring.lay / cut / select / pick / pick_feeder`；第 2 阶段：`message.apocalypse_firstlight.wiring.legacy_panel / conflict`、`screen.apocalypse_firstlight.distribution_panel.kind_4`–`kind_8`、`branch_conflict`、`status_conflict`、`status_partial`、`jade.apocalypse_firstlight.distribution_panel.legacy / conflict / partial`、`config.jade.plugin_apocalypse_firstlight.distribution_panel`；第 3 阶段：`block.apocalypse_firstlight.wall_switch`、`keyless_lampholder`、`hint.apocalypse_firstlight.wall_switch.on / off`、`jade.apocalypse_firstlight.wall_switch.on / off / unwired`、`config.jade.plugin_apocalypse_firstlight.wall_switch`、`screen.apocalypse_firstlight.distribution_panel.group_always / group_n / group_photocell / group_lights / group_others / group_on / group_off`；第 5 阶段：`message.apocalypse_firstlight.wiring.all / route_start / route_preview / no_route / route_changed / waypoints_full / marker.group / marker.always / marker.photocell / marker.untapped`、`hint.apocalypse_firstlight.wiring.start / preview / confirm / waypoint / cancel / group / show_all / show_one`、`screen.apocalypse_firstlight.wiring_group.title / always / group / new_group / photocell / lights / switches`。
 - 第 3 阶段的两个方块：`wiring_devices.json` 里加了，战利品表、`item_mass`（无开关瓷灯座 0.22 kg、开关 0.08 kg）；模型由 `tools/build-building-lights-v1.mjs`（F）和 `tools/build-power-outlets-v1.mjs`（开关）生成，可编辑源 `src/main/blockbench/keyless_lampholder_v1.bbmodel`、`wall_switch_v1.bbmodel`；原木墙垫块第 11 种由 `tools/build-cabin-exterior-v1.mjs` 生成。
+
+第 4 阶段：`src/dev/.../authoring/bridge/WiringAdapter.java`（开发桥的五个布线操作）、`BridgeRouter.java`（转给它）、`wiring/BuildingWiring.java`（`restore`）、`tools/afl_minecraft_mcp/models.mjs`（操作定义）、`tools/afl_minecraft_mcp/forest_home_b_wiring.mjs`（老宅接线脚本，报告在 `build/authoring_checks/forest_home_b_m1/wiring_*.json`）。
+
+第 6 阶段：
+- `wiring/WiringTemplate.java`：导出打包（`pack`、报告 `Report`）、转向和镜像（`transform`、`between`）、展开（`unpack`）；
+- `blockentity/DistributionPanelBlockEntity.java`：`PackedWiring` / `PackedFacing` 的存读、更新包去掉、tick 里展开（`UNPACK_PERIOD` 20）、`packedLeft`、`packedFacing`；
+- `worldgen/structure/AflBlockEntityProcessor.java`：转 `PackedWiring`；`worldgen/structure/AflTemplatePlacer.java`：读导出或资源模板、按 AFL 的放法放；
+- `authoring/BuildingAuthoringService.java`（`Capture` / `Exported` 多了 `wiring`）、`BuildingAuthoringCommands.java`（`VALIDATED` / `EXPORTED` 那行的报告）、`src/dev/.../authoring/bridge/AuthoringAdapter.java`（`authoring_validate` 的 `wiring_*`）；
+- `compat/jade/DistributionPanelJadeProvider.java` 和语言键 `jade.apocalypse_firstlight.distribution_panel.packed`（Wiring pending / 线路待展开）；
+- 开发：`src/dev/.../dev/wiring/TemplateCommands.java`（`/afl dev template`）、`dev/WiringGameTests.java` 的 `template`、`src/dev/wiring-gametest.init.gradle` 的名单。
+
+第 7 阶段（只有开发代码）：`src/dev/.../dev/WiringPerfGameTests.java`（`house`、`worst`，第 11 节"性能"）、`src/dev/wiring-perf-gametest.init.gradle`（传老宅导出的路径 `afl.perf.template`）。
+
+第 5 阶段的 GameTest：`dev/WiringGameTests.java` 的 `route`、`picker`，`src/dev/wiring-gametest.init.gradle` 的名单加了这两个；`WiringTool` 有三个只给测试读的 `routeStart / routeWaypoints / routePreview`。
 
 开发：`src/dev/java/com/antaurora/apofirstlight/dev/wiring/WiringCommands.java`（含 `panel_mode`）、`dev/WiringGameTests.java`、`src/dev/wiring-gametest.init.gradle`、`dev/authoring/bridge/FixtureAdapter.java`（`supply_mode`）、`AuthoringFixtureRegistry.java`（第 3 阶段登记开关和无开关瓷灯座）、`tools/afl_minecraft_mcp/models.mjs`、`fuel_stop_a1_store.mjs`。
 

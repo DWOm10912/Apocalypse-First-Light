@@ -1,0 +1,9 @@
+BLOCK test 2026-10-14 (final code): sha1 of every file of the refused copy fed_block, before vs after the attempt
+files: 156
+32,33c32,33
+< 0efc7f1981e9d27ffe4493eb677b40d1d863a5a1 *./level.dat
+< f9c8c7332c0a8844bea1da021407f4f127516262 *./level.dat_old
+---
+> 75e0bda4d88e609bfe5d0ea6d6d95d0efe7f8f45 *./level.dat
+> 0efc7f1981e9d27ffe4493eb677b40d1d863a5a1 *./level.dat_old
+level.dat field diff vs the original: /Data/LastPlayed only (vanilla client rewrite when opening a world); level.dat_old = original bytes

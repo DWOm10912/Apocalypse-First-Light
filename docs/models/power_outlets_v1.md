@@ -1,8 +1,8 @@
 # Power Outlets V1：墙上插座和插线板
 
-> **2026-10-14 第 3 阶段**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.2 节；**未实机验证**）：墙上开关 `wall_switch` 用这个生成器（`SWITCH`、`buildSwitch`），和插座同一块白色面板。插座的线头一律按常亮算，墙上开关关不掉插座。插座、插线板的输出没有改动。
+> **2026-10-14 第 3 阶段**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.2 节；用户 2026-10-14 实机 PASS）：墙上开关 `wall_switch` 用这个生成器（`SWITCH`、`buildSwitch`），和插座同一块白色面板。插座的线头一律按常亮算，墙上开关关不掉插座。插座、插线板的输出没有改动。
 
-> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；**未实机验证**）：插座有没有电改走 `energy/BuildingSupply`。`WIRED` 配电盘：插座要有暗线线头接到第 1–4 路之一，那一路有电插座就有电；`LEGACY_AREA`（A1 和所有旧档）：还是下面写的范围和"插座"那一路。插线板、插头电器不变。
+> **2026-10-14 改动**（[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 2 阶段；用户 2026-10-14 实机 PASS）：插座有没有电改走 `energy/BuildingSupply`。`WIRED` 配电盘：插座要有暗线线头接到第 1–4 路之一，那一路有电插座就有电；`LEGACY_AREA`（A1 和所有旧档）：还是下面写的范围和"插座"那一路。插线板、插头电器不变。
 
 状态（2026-10-08）：**已实现，用户实机 PASS**。
 - 用户看过：插座贴墙、两款插线板放在地上、两根电线插在同一个插座的上下两个插孔里，从墙上垂下来再沿地面接到插线板。
@@ -11,6 +11,7 @@
 - 生成器 `--check` 通过，各个外观都没有共面重叠。
 - 网格和贴图在离线 three.js 预览里看过：插座贴墙、插头插在插座上、两款插线板在地上（关、开、亮）和桌上。
 - 游戏里的外观、插拔、电线、生存模式挖掘和掉落都还没看过。
+- 2026-10-14 M2 收尾的 GameTest（`ForestHomeM2GameTests`）验过墙上插座的挖掘：不在任何工具标签、不要求用对工具，生存模式空手拆掉自己。墙上开关、两种瓷灯座同样；进线盒、住宅配电箱是镐 + 钻石级，铁镐拆不掉东西、钻石镐掉自己。
 
 属于 [Building Power V1](building_power_v1.md) 第二步的前一半，规则见 [建筑供电规划](../gameplay/building_power_v1_plan.md) 的"V1 定案"。
 
@@ -230,4 +231,4 @@
 
 ## 导出的建筑里（2026-10-09）
 
-插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱和发电机进线盒（2026-10-13）的 `Panel`；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。
+插头连接会跟着建筑一起保存（`PlugHost` 是插座相对电器的偏移）。原版放结构时不旋转方块实体数据，所以放 AFL 建筑时要加结构处理器 `worldgen/structure/AflBlockEntityProcessor`，它按放置的旋转、镜像转换 `PlugHost`、插线板旧版的 `Outlet`、电表箱和发电机进线盒（2026-10-13）的 `Panel`，还有配电箱打包的暗线 `PackedWiring`（2026-10-14，[建筑暗线 V1](../gameplay/building_wiring_v1.md) 第 5.4 节）；插孔编号按插座自己的方向数，不用改。导出时去掉 `PlugCarrier`（拿在手里的插头）。见 《A1 设计》"导出 NBT 时的状态"（[fuel_stop_a1_design_v1.md](../worldgen/fuel_stop_a1_design_v1.md)）。GameTest PASS（`dev/ExportStateGameTests`、`dev/GasStation01GameTests`，2026-10-10）。

@@ -1,0 +1,125 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Emergency Radio preview</title>
+<style>html,body{margin:0;background:#9fb0b8;overflow:hidden}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head><body>
+<script>
+// Emergency Radio V1, M2 F4 (docs/models/emergency_radio_v1.md): an offline look at the generated radio pieces
+// (tools/build-emergency-radio-v1.mjs) on two joined wooden tables (design use only, not a game asset). Served by
+// m1_source/serve.cjs at /repo/design/buildings/forest_start_home_v1/m2_source/radio_preview.html; saves go to m1_sheets/
+// and are moved to m2_sheets/.
+// Left radio off (slider at OFF, crank down), right radio on (slider at FM, dial lit, crank a quarter on), both lowered
+// 0.24 from the cell over the 76 cm tables as the block does. The "lit" views darken the sun; the glow textures draw
+// unlit (MeshBasicMaterial) like the game's full-light glow quads. Plain sun + sky, no normal maps; nearest texels.
+const A = '/repo/src/main/resources/assets/apocalypse_firstlight/';
+const W = 1600, H = 1000, SINK = -0.24;
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setSize(W, H); renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xa9bcc6);
+const hemi = new THREE.HemisphereLight(0xe6ecef, 0x6a5e4c, 0.8);
+const sun = new THREE.DirectionalLight(0xfff1dc, 0.95); sun.position.set(-3, 6, -4); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096); Object.assign(sun.shadow.camera, {left: -2, right: 2, top: 2, bottom: -2, near: 0.5, far: 20}); sun.shadow.bias = -0.0002;
+sun.target.position.set(1, 0.8, 0.5); scene.add(hemi, sun, sun.target);
+
+const P = [   // [piece, turn, x, y, z]
+  ['furniture/table_x_2', 0, 0, 0, 0], ['furniture/table_x_8', 0, 1, 0, 0],
+  ['radio/body', 0, 0, 1 + SINK, 0], ['radio/dial_off', 0, 0, 1 + SINK, 0], ['radio/slider_off', 0, 0, 1 + SINK, 0], ['radio/crank_0', 0, 0, 1 + SINK, 0],
+  ['radio/body', 0, 1, 1 + SINK, 0], ['radio/dial_lit', 0, 1, 1 + SINK, 0], ['radio/slider_fm', 0, 1, 1 + SINK, 0], ['radio/crank_1', 0, 1, 1 + SINK, 0],
+];
+
+const loader = new THREE.TextureLoader(), texCache = new Map(), matCache = new Map(), pieceCache = new Map();
+const texPath = id => id.replace('apocalypse_firstlight:', A + 'textures/') + '.png';
+function texture(id) {
+  if (!texCache.has(id)) {
+    const t = loader.load(texPath(id)); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.LinearMipmapLinearFilter; texCache.set(id, t);
+  }
+  return texCache.get(id);
+}
+function material(id) {
+  if (!matCache.has(id)) {
+    const n = id.split('/').pop();
+    let m;
+    if (n.endsWith('_glow')) m = new THREE.MeshBasicMaterial({map: texture(id)});
+    else {
+      const opts = {map: texture(id), roughness: 0.8, metalness: 0};
+      if (n === 'case_paint') opts.roughness = 0.62;
+      if (n === 'case_edge' || n === 'steel') { opts.roughness = 0.45; opts.metalness = 0.55; }
+      if (n === 'chrome') { opts.roughness = 0.22; opts.metalness = 0.7; }
+      if (n === 'trim') opts.roughness = 0.6;
+      if (n === 'knob' || n === 'lamp' || n === 'dial') opts.roughness = 0.35;
+      if (n === 'cloth') opts.roughness = 0.97;
+      m = new THREE.MeshStandardMaterial(opts);
+    }
+    matCache.set(id, m);
+  }
+  return matCache.get(id);
+}
+async function piece(name) {
+  if (!pieceCache.has(name)) pieceCache.set(name, fetch(A + 'cabin_mesh/' + name + '.json').then(r => { if (!r.ok) throw new Error('missing piece ' + name); return r.json(); }));
+  return pieceCache.get(name);
+}
+const buckets = new Map();
+function emit(texId, pts, uvs, nrm) {
+  if (!buckets.has(texId)) buckets.set(texId, {p: [], uv: [], n: []});
+  const b = buckets.get(texId);
+  for (const i of [0, 1, 2, 0, 2, 3]) { b.p.push(...pts[i]); b.uv.push(...uvs[i]); b.n.push(...nrm[i]); }
+}
+function turnP([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [1 - z, x]; return [x, y, z]; }
+function turnN([x, y, z], r) { for (let i = 0; i < r; i++) [x, z] = [-z, x]; return [x, y, z]; }
+async function addPiece(name, r, ox, oy, oz) {
+  const pc = await piece(name);
+  for (const q of pc.quads) {
+    const t = pc.textures[q[0]], pts = [], uvs = [], nrm = [];
+    for (let i = 0; i < 4; i++) {
+      const o = 1 + i * 8, p = turnP([q[o], q[o + 1], q[o + 2]], r);
+      pts.push([p[0] + ox, p[1] + oy, p[2] + oz]); uvs.push([q[o + 3], q[o + 4]]); nrm.push(turnN([q[o + 5], q[o + 6], q[o + 7]], r));
+    }
+    emit(t, pts, uvs, nrm);
+  }
+}
+async function build() {
+  await Promise.all(P.map(([n, r, x, y, z]) => addPiece(n, r, x, y, z)));
+  for (const [t, b] of buckets) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(b.p, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2)); g.setAttribute('normal', new THREE.Float32BufferAttribute(b.n, 3));
+    const m = new THREE.Mesh(g, material(t)); m.castShadow = m.receiveShadow = true; scene.add(m);
+  }
+  const fl = material('apocalypse_firstlight:block/wood/white_oak_planks');
+  fl.map.wrapS = fl.map.wrapT = THREE.RepeatWrapping; fl.map.repeat.set(6, 4);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), fl); floor.rotation.x = -Math.PI / 2; floor.position.set(1, 0, 0.5); floor.receiveShadow = true; scene.add(floor);
+}
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.005, 50);
+// [camera, target, fov, night], framed for the 20 cm first draft and scaled S about the radio's foot (fx, table top, 0.5):
+// 2026-10-14 the radio became 40 cm (S 2)
+const S = 2;
+const fit = (p, t, fov, night, fx) => {
+  const f = [fx, 0.76, 0.5], T = t.map((v, i) => f[i] + S * (v - f[i]));
+  return [T.map((v, i) => v + S * (p[i] - t[i])), T, fov, night];
+};
+const VIEWS = {
+  pair: fit([1.0, 1.25, -0.55], [1.0, 0.82, 0.5], 40, false, 1.0),
+  front34: fit([0.18, 0.93, -0.06], [0.5, 0.825, 0.5], 32, false, 0.5),
+  front: fit([0.5, 0.84, 0.12], [0.5, 0.82, 0.5], 34, false, 0.5),
+  back34: fit([0.85, 0.95, 0.95], [0.5, 0.82, 0.5], 32, false, 0.5),
+  crank: fit([0.98, 0.9, 0.28], [0.58, 0.81, 0.5], 32, false, 0.5),
+  top: fit([0.58, 1.15, 0.2], [0.5, 0.84, 0.5], 32, false, 0.5),
+  lit: fit([1.5, 0.86, 0.14], [1.5, 0.82, 0.5], 34, true, 1.5),
+  lit34: fit([1.2, 0.96, 0.02], [1.5, 0.83, 0.5], 34, true, 1.5),
+};
+function view(name) {
+  const [p, t, fov, night] = VIEWS[name];
+  hemi.intensity = night ? 0.12 : 0.8; sun.intensity = night ? 0.06 : 0.95; scene.background.set(night ? 0x1a1f26 : 0xa9bcc6);
+  camera.position.set(...p); camera.fov = fov; camera.updateProjectionMatrix(); camera.lookAt(...t); renderer.render(scene, camera);
+}
+async function save(name) {
+  const blob = await new Promise(r => renderer.domElement.toBlob(r, 'image/png'));
+  await fetch('/save?name=' + name, {method: 'POST', body: blob});
+}
+window.renderAll = async (prefix = 'm2_f4_radio_') => { for (const v of Object.keys(VIEWS)) { view(v); await save(prefix + v + '.png'); } return 'saved'; };
+window.view = view;
+build().then(() => setTimeout(() => { view('front34'); document.title = 'ready'; }, 1500)).catch(e => { document.title = 'error ' + e.message; console.error(e); });
+</script>
+</body></html>

@@ -3,7 +3,6 @@ package com.antaurora.apofirstlight.dev.highway.r4;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.roads.construction.RoadConstructionProtection;
 import com.antaurora.apofirstlight.worldgen.spatial.BoundsXZ;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.server.level.ServerLevel;
 
@@ -22,7 +21,7 @@ final class R4Site {
 
     static TerrainPlanSurface plan(ServerLevel level) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) level.getChunkSource().randomState();
-        return access.apocalypse$hasTerrainPlan() ? TerrainPlanStore.peek(access.apocalypse$getSeed()) : null;
+        return access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null;
     }
 
     static Found find(ServerLevel level, double cx, double cz, int radius, double length) {

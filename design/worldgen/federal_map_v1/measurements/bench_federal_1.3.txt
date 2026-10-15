@@ -1,0 +1,40 @@
+label federal_1.3  mask federal  scale 1.30  seed -295378578869149513  N=2208 (35.3 km, 4.88 M cells)  cores 20  max heap 10240 MB
+time: plan 24.5 s + surface (rivers, ecology) 3.9 s = 28.3 s
+planner report: frame=[-35, -63, 2, 12787, 9909]  ms_setup=2130  drowned_cells=21017  marsh_cells=15783  pit_cells_filled=18270  ms_drainage=22220  channel_cells_A1km2=15534  uphill_steps_A1km2=0  closed_pits_16m=329  ms_rivers=794  river_lines=115  river_vertices=148117  ms_ecology=2316
+land 450.6 km2: mainland 445.7 km2, islands 1.35 / 1.78 / 1.69 km2; land within 1 km of the grid edge: 0 cells; nearest land to edge 2464 m
+land heights Y: p10 68.1  p50 74.7  p90 102.8  p99 167.6  max 230.9;  > Y100 11.3%, > Y130 3.68%;  slope > 30%: 1.98%
+  s1 TEMPERATE_FOREST_VALLEY        mean Y 82.6  max Y 226.8
+  s2 AGRICULTURAL_PLAINS            mean Y 74.6  max Y 108.1
+  s3 COLD_MOUNTAIN_CONIFER          mean Y 83.1  max Y 192.1
+  s4 INDUSTRIAL_LAKES_MIXED_FOREST  mean Y 100.9  max Y 230.6
+  s5 SOUTHERN_WETLAND_COAST         mean Y 71.9  max Y 84.7
+  s6 WESTERN_DESERT_PLATEAU         mean Y 73.3  max Y 89.9
+  (the r1 planner places its own provinces from the mainland's axes; the federal provinces are not wired yet: C2)
+heap: peak used during build 1712 MB above baseline (sampled every 10 ms); retained after build (surface + caches) 239 MB; surface grid arrays 60 MB; plan cache file 19.2 MB
+fingerprint 6bb87fbba459960c / ffd0629bdd72ea27 in 0.12 s
+road plan routed on the planned heights in 0.4 s
+road plan national_road_plan_v1_proto (graded on plan heights): interstate 39.4 km, state highways 81.2 km, island links 13.1 km, 23 corridors, 70 nodes
+  interstate_ew:desert_town-county_seat          INTERSTATE       5.51 km  borders 1  range   0%  wet   0%  min radius  2519 m  grade max 1.5% mean 0.4%  water 2
+  interstate_ew:county_seat-valley_town          INTERSTATE       7.94 km  borders 1  range   0%  wet   0%  min radius   411 m  grade max 1.8% mean 0.4%  water 0
+  interstate_ew:valley_town-river_city           INTERSTATE       6.61 km  borders 0  range   0%  wet   0%  min radius   667 m  grade max 1.8% mean 0.5%  water 8
+  interstate_ns:industrial_city-valley_town      INTERSTATE       8.95 km  borders 1  range   0%  wet   0%  min radius    31 m  grade max 19.4% mean 2.3%  water 2
+  interstate_ns:valley_town-port_city            INTERSTATE      10.37 km  borders 1  range   0%  wet  36%  min radius  1720 m  grade max 1.7% mean 0.4%  water 3
+  sh_mountain:mining_town-pass_village           STATE_HIGHWAY    3.51 km  borders 0  range  92%  wet   0%  min radius   959 m  grade max 6.0% mean 1.5%  water 1
+  sh_mountain:pass_village-farm_town_north       STATE_HIGHWAY    2.77 km  borders 1  range  45%  wet   0%  min radius   700 m  grade max 0.9% mean 0.2%  water 2
+  sh_range_front:pass_village-desert_town        STATE_HIGHWAY   12.98 km  borders 2  range  11%  wet   0%  min radius   504 m  grade max 2.1% mean 0.4%  water 6
+  sh_canyon:desert_town-canyon_outpost           STATE_HIGHWAY    3.53 km  borders 0  range   0%  wet   0%  min radius  4741 m  grade max 3.0% mean 0.5%  water 3
+  sh_lakes:mill_town-industrial_city             STATE_HIGHWAY    4.35 km  borders 0  range   0%  wet   0%  min radius   787 m  grade max 19.7% mean 2.6%  water 0
+  sh_lakes:industrial_city-port_town             STATE_HIGHWAY    8.15 km  borders 0  range   0%  wet   0%  min radius   199 m  grade max 9.9% mean 2.5%  water 2
+  sh_farm_north:farm_town_north-mill_town        STATE_HIGHWAY    6.95 km  borders 1  range   0%  wet   0%  min radius    36 m  grade max 15.6% mean 2.9%  water 1
+  sh_farm_belt:farm_town_north-county_seat       STATE_HIGHWAY    5.77 km  borders 0  range   3%  wet   0%  min radius   709 m  grade max 2.1% mean 0.6%  water 4
+  sh_farm_belt:county_seat-farm_town_south       STATE_HIGHWAY    5.24 km  borders 0  range   0%  wet   0%  min radius  2489 m  grade max 1.8% mean 0.4%  water 3
+  sh_gulf:farm_town_south-bayou_village          STATE_HIGHWAY    6.07 km  borders 1  range   0%  wet  54%  min radius   653 m  grade max 5.1% mean 0.8%  water 4
+  sh_gulf:bayou_village-port_city                STATE_HIGHWAY    5.66 km  borders 0  range   0%  wet  95%  min radius   680 m  grade max 1.3% mean 0.4%  water 1
+  sh_gulf:port_city-shore_town                   STATE_HIGHWAY    3.47 km  borders 0  range   0%  wet  95%  min radius  3162 m  grade max 4.5% mean 0.7%  water 1
+  sh_gulf:shore_town-river_city                  STATE_HIGHWAY    3.67 km  borders 1  range   0%  wet  63%  min radius 10990 m  grade max 3.5% mean 0.8%  water 2
+  sh_hills:valley_town-hill_village              STATE_HIGHWAY    3.41 km  borders 0  range   0%  wet   0%  min radius  2111 m  grade max 1.7% mean 0.4%  water 2
+  sh_hills:hill_village-port_town                STATE_HIGHWAY    5.69 km  borders 1  range   0%  wet   0%  min radius   191 m  grade max 9.9% mean 2.1%  water 2
+  island_bridge:1                                ISLAND_BRIDGE    6.40 km  borders 0  range   0%  wet   0%  min radius   227 m  grade max 7.7% mean 1.5%  water 4
+  island_bridge:2                                ISLAND_BRIDGE    3.77 km  borders 0  range   0%  wet   0%  min radius   142 m  grade max 7.3% mean 1.3%  water 2
+  island_bridge:3                                ISLAND_BRIDGE    2.90 km  borders 0  range   0%  wet  75%  min radius   378 m  grade max 7.6% mean 2.0%  water 2
+  nodes {INTERCHANGE=6, CITY=6, JUNCTION=4, BORDER_CROSSING=9, BRIDGE=42, PASS=3}

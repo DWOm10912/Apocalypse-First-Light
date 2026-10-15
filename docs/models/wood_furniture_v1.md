@@ -1,13 +1,13 @@
 # Wood Furniture V1（通用木家具，2026-10-13）
 
-森林开局 B「溪谷老宅」M2.1 的第一批家具（[实现计划](../worldgen/forest_start_home_b_v1_plan.md) 包 F 的 F2 枪架、F3 木家具）：木桌、木椅、木橱柜、木水槽柜、木枪架。
+森林开局 B「溪谷老宅」M2.1 的第一批家具（[实现计划](../worldgen/forest_start_home_b_v1_plan.md) 包 F 的 F2 枪架、F3 木家具）：木桌、木椅、木质橱柜、木质水槽柜、木质枪架。
 
 状态：
 - 代码、资源、离线检查、编译都完成，离线网页预览看过几何和颜色；
 - 2026-10-13 已经摆进「house test」的老宅，截图看过外观；
 - 2026-10-13 用户实机：枪架挂放、取下、提示、枪的显示都正常，但挂满后 Sundial 下掉到 36–47 FPS；
-  - 已改成由区块画静止的枪（见"木枪架 → 性能"），用户同日实机 PASS："完全不卡了"，搁板上的枪也有 PBR 反光；
-- **还没验证**：坐、开柜、生存挖掘和掉落，等用户实机测。
+  - 已改成由区块画静止的枪（见"木质枪架 → 性能"），用户同日实机 PASS："完全不卡了"，搁板上的枪也有 PBR 反光；
+- 2026-10-14 M2 收尾：坐、开柜、生存挖掘和掉落由 GameTest（`ForestHomeM2GameTests`）在服务端验过（见第 8 节）；**还没在游戏里实机测**。
 
 ## 1. 木头怎么分（用户 2026-10-13 定）
 
@@ -27,9 +27,9 @@
 |---|---|---|---|---|
 | `apocalypse_firstlight:wooden_table` | 木桌 / Wooden Table | 76 cm 餐桌；和旁边的桌子拼成一张 | 12 kg | `carry/oversized` |
 | `apocalypse_firstlight:wooden_chair` | 木椅 / Wooden Chair | 梯背椅，座高 46.5 cm，能坐 | 5 kg | `carry/bulky` |
-| `apocalypse_firstlight:wooden_kitchen_counter` | 木橱柜 / Wooden Kitchen Counter | 地柜，一个抽屉两扇门，18 格 | 30 kg | `carry/oversized` |
-| `apocalypse_firstlight:wooden_sink_counter` | 木水槽柜 / Wooden Sink Counter | 同样的地柜，嵌搪瓷水槽 + 铸铁手压泵，9 格 | 38 kg | `carry/oversized` |
-| `apocalypse_firstlight:wooden_gun_rack` | 木枪架 / Wooden Gun Rack | 挂墙：两个支架三道槽 + 一块小搁板 | 4 kg | `carry/bulky` |
+| `apocalypse_firstlight:wooden_kitchen_counter` | 木质橱柜 / Wooden Kitchen Counter | 地柜，一个抽屉两扇门，18 格 | 30 kg | `carry/oversized` |
+| `apocalypse_firstlight:wooden_sink_counter` | 木质水槽柜 / Wooden Sink Counter | 同样的地柜，嵌搪瓷水槽 + 铸铁手压泵，9 格 | 38 kg | `carry/oversized` |
+| `apocalypse_firstlight:wooden_gun_rack` | 木质枪架 / Wooden Gun Rack | 挂墙：两个支架三道槽 + 一块小搁板 | 4 kg | `carry/bulky` |
 
 其他注册：
 - 方块实体类型：
@@ -66,7 +66,7 @@
   - 起身位置：先前面，再两侧，再后面，都不行就落在椅子上方。
 - 坐高沿用办公椅的标定：骑乘偏移 0.228，大腿正好在 0.465 的座面上。
 
-### 木橱柜、木水槽柜
+### 木质橱柜、木质水槽柜
 
 - 地柜尺寸：
   - 高 90 cm，台面 0.862..0.9（3.8 cm 拼板台面），台面伸到 z 0.37；
@@ -81,7 +81,7 @@
   - 没人开着了，`tick` 复查后关上，像原版木桶；
   - 开关声用原版木桶的，在门的位置。
 - 存储：
-  - 原版箱子界面：木橱柜 9 × 2 = 18 格，水槽柜 9 × 1 = 9 格；
+  - 原版箱子界面：木质橱柜 9 × 2 = 18 格，水槽柜 9 × 1 = 9 格；
   - 物品改过名，放下后柜子沿用这个名字；
   - 比较器读满度；
   - 拆掉时东西掉出来。
@@ -99,7 +99,7 @@
   - 选框：0..14.4 px 高，从 z 5.92 起；水槽柜的选框多一个泵体的框；
   - 碰撞不含泵。
 
-### 木枪架
+### 木质枪架
 
 - 挂法：
   - 挂在墙上，`facing` = 背对墙的方向；身后那格要有朝这边的结实面；
@@ -198,7 +198,7 @@
   - 柜子把东西掉出来；
   - 枪架把挂着的东西掉出来。
 - 都在 `apocalypse_firstlight:noise_wood_blocks`（木头噪声）。
-- **生存挖掘和掉落还没在游戏里确认。**
+- 2026-10-14 GameTest 验过：五件都只在斧标签、不在等级标签、`requiresCorrectToolForDrops` 为否；生存模式空手和木斧拆都掉自己。**还没在游戏里实机确认。**
 
 ## 5. 接入
 
@@ -315,4 +315,9 @@
   - 计时器：`wooden_gun_rack` 每帧 0.008–0.023 ms 正常 + 0.010–0.025 ms 阴影（改前 7.2 + 7.2 ms），单帧最高 1.94 ms，应该是录的那一帧；整帧 9.6–11.3 ms（88–104 FPS）；
   - 日志里没有 `[AFL gun rack] ... not in the block atlas`：用到的贴图都进了区块；
   - 挂上、取下时有没有闪一下，用户没单独报告。
-- **还没测**：坐、开关柜门、生存挖掘掉落，等用户实机测。
+- 2026-10-14（M2 收尾，游戏关着）：`ForestHomeM2GameTests`（`src/dev/forest-home-m2-gametest.init.gradle`）PASS，服务端假玩家：
+  - 坐：右键椅子返回 CONSUME，玩家骑在 `furniture_seat` 上；第二个人右键返回 PASS、不上座；站起来后座位实体被删掉；
+  - 开柜：右键木质橱柜开出 18 格的箱子界面，木质水槽柜 9 格；
+  - 生存挖掘：五件家具的工具 / 等级标签、`requiresCorrectToolForDrops` 和空手、木斧拆的掉落都对（和其他 M2 方块一起，16 个方块 37 次拆）；
+  - 没测：开门动画、关门的 `tick` 复查、起身位置、头部转角，这些要客户端看。
+- **还没实机测**：坐、开关柜门、生存挖掘掉落，等用户实机测。

@@ -71,6 +71,9 @@ import java.util.function.Function;
  * <li>Flat light, no ambient occlusion; without a shader pack the direction shading is baked by the normal (vanilla's
  * values), with one (and for items) plain colour and the pack or the item lighting shade by the normal.</li>
  * <li>Glass quads draw in the translucent layer, all else solid; an item with glass draws translucent.</li>
+ * <li>Glow quads (a texture whose path ends in "_glow"; Emergency Radio V1, 2026-10-14: the lit dial and power lamp) carry
+ * full light (block and sky 15) in a group of their own and no direction shading, so they read lit in the dark without a
+ * shader pack; with one, their texture's LabPBR emission (the _s alpha) lights them.</li>
  * <li>A block entity may add quads of its own in the cutout layer through its model data ({@link #EXTRA}): the guns on a
  * gun rack (Wood Furniture V1, client WoodGunRackChunking).</li>
  * </ul>
@@ -187,8 +190,11 @@ public final class CabinMeshModel {
 
     // ------------------------------------------------------------------------------------------- assemblies
 
-    /** One quad turned into place: 4 x (x, y, z), 4 x (u, v) in the sprite, 4 x normal; glass draws translucent. */
-    private record Quad(float[] p, float[] uv, float[] n, TextureAtlasSprite sprite, boolean glass) {}
+    /** One quad turned into place: 4 x (x, y, z), 4 x (u, v) in the sprite, 4 x normal; glass draws translucent, glow at full light. */
+    private record Quad(float[] p, float[] uv, float[] n, TextureAtlasSprite sprite, boolean glass, boolean glow) {}
+
+    /** The light group of the glow quads: its light is always full (sky and block 15). */
+    private static final int GLOW_KEY = 1 << 12;
 
     /**
      * The quads of one look: per face the culled ones, the unculled ones grouped by light cell (keys: offset index
@@ -209,11 +215,11 @@ public final class CabinMeshModel {
             for (Quad q : quads) {
                 anyGlass |= q.glass();
                 Direction main = mainNormal(q.n());
-                if (!item && onFace(q.p(), main)) {
+                if (!item && !q.glow() && onFace(q.p(), main)) {
                     faceLists.get(main.ordinal()).add(q);
                     continue;
                 }
-                int key = item ? 0 : lightKey(q, main);
+                int key = item ? 0 : q.glow() ? GLOW_KEY : lightKey(q, main);
                 grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(q);
             }
             for (int d = 0; d < 6; d++) faces[d] = faceLists.get(d).toArray(Quad[]::new);
@@ -233,7 +239,7 @@ public final class CabinMeshModel {
                 Quad[] qs = which < 6 ? faces[which] : groups[which - 6];
                 int packed = which < 6 ? 0 : (light & 0xF) << 4 | (light >>> 4) << 20;    // LightTexture.pack(block, sky)
                 var out = new ArrayList<BakedQuad>(qs.length);
-                for (Quad q : qs) if (layer == 2 || q.glass() == (layer == 1)) out.add(bake(q, shade, packed));
+                for (Quad q : qs) if (layer == 2 || q.glass() == (layer == 1)) out.add(bake(q, q.glow() ? 2 : shade, packed));
                 return List.copyOf(out);
             });
         }
@@ -268,6 +274,7 @@ public final class CabinMeshModel {
 
     /** The light a group's quads take: the cell they face, else the cell along their main normal, else the block's own. */
     private static int light(BlockAndTintGetter level, BlockPos pos, int key) {
+        if (key == GLOW_KEY) return 0xFF;
         int o = key / 6;
         var at = new BlockPos.MutableBlockPos(pos.getX() + o / 9 - 1, pos.getY() + o / 3 % 3 - 1, pos.getZ() + o % 3 - 1);
         if (level.getBlockState(at).isSolidRender(level, at)) {
@@ -277,6 +284,7 @@ public final class CabinMeshModel {
         return level.getBrightness(LightLayer.SKY, at) << 4 | level.getBrightness(LightLayer.BLOCK, at);
     }
 
+    /** shade: 0 the renderer's direction shading (a shader pack, items), 1 vanilla's baked by the normal, 2 none (glow). */
     private static BakedQuad bake(Quad q, int shade, int lightmap) {
         TextureAtlasSprite s = q.sprite();
         float u0 = s.getU0(), du = s.getU1() - u0, v0 = s.getV0(), dv = s.getV1() - v0, fx = 0, fy = 0, fz = 0;
@@ -343,7 +351,7 @@ public final class CabinMeshModel {
                 ResourceLocation tex = piece.textures()[piece.tex()[i]];
                 TextureAtlasSprite sprite = atlas.get(tex);
                 if (sprite == null) sprite = particle;
-                out.add(new Quad(p, uv, n, sprite, tex.getPath().contains("glass")));
+                out.add(new Quad(p, uv, n, sprite, tex.getPath().contains("glass"), tex.getPath().endsWith("_glow")));
             }
         }
 
@@ -352,7 +360,7 @@ public final class CabinMeshModel {
                 BlockState state = Block.stateById((int) (k >>> 32));
                 var quads = new ArrayList<Quad>();
                 if (state.getBlock() instanceof CabinPieces block)
-                    block.cabinPieces(state, (int) (long) k, (name, turn) -> add(quads, name, turn, 0, 0, 0));
+                    block.cabinPieces(state, (int) (long) k, (name, turn, dy) -> add(quads, name, turn, 0, dy, 0));
                 return new Assembly(quads, false);
             });
         }

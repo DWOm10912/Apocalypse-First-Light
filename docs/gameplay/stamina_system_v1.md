@@ -46,6 +46,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | 换弹 | 1；HR55 2 | 是 | 服务端接受的换弹 |
 | 拉起动绳 | 6（`costs.recoil_pull`） | 是 | 便携式柴油发电机的拉绳 QTE，服务端接受的每一下（2026-10-09，[portable_diesel_generator_v1.md](../machines/portable_diesel_generator_v1.md)） |
 | 砍树 | 4（`costs.chop`） | 是 | Mesh 树木：斧头砍立着的树，服务端接受的每一下，冷却内被忽略的不算（2026-10-12，[mesh_trees_p4_formal.md](../rendering/mesh_trees_p4_formal.md) V1 节） |
+| 摇手摇柄 | 0.4（`costs.crank`） | 是 | 手摇应急收音机：按住右键时每 4 tick 转四分之一圈，服务端接受的每一下；连续摇每秒 2 点，和挖掘一样（2026-10-14，[emergency_radio_v1.md](../models/emergency_radio_v1.md)） |
 
 骑乘时不算移动消耗（坐骑自己出力），办公椅例外：坐着滑行是用脚蹬，算低强度活动（上表），坐着不动不扣、照常恢复，也不产生运动热。
 - 滑行消耗 = `office_chair` × (1 + (负重的移动类倍率 − 1) × `office_chair_load`)，配置为 0.5 和 0.6667，即负重倍率只取超出 1 的三分之二：30 kg 约 0.6、50 kg 约 0.83、≥ 60 kg 为 1.0 / 秒。
@@ -67,7 +68,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 | ≥ 60 kg | 2.5 | 1.75 | 0.4 |
 
 - 移动类：走、潜行、跑、跳、游、踩水、爬。
-- 其它动作：挖、砍树、近战、开枪、换弹、拉起动绳。
+- 其它动作：挖、砍树、近战、开枪、换弹、拉起动绳、摇手摇柄。
 
 ### 砍树为什么是 4
 
@@ -85,6 +86,7 @@ Java 路径前缀：`src/main/java/com/antaurora/apofirstlight/`。
 - 近战（`PLAYER_ATTACK` 伤害）×0.6；
 - 挖掘速度 ×0.8，客户端和服务端同时乘，挖掘进度动画不会对不上；
 - 砍树每一下的功 ×0.8（同一个 `winded.dig_speed`，2026-10-12），砍倒一棵树要多砍几下；
+- 摇收音机每一下充进的电 ×0.8（同一个 `winded.dig_speed`，2026-10-14：60 tick 变 48 tick）；
 - 重喘息声。
 
 不额外减速，不禁止跳跃，不扣血。

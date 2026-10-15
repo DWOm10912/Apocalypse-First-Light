@@ -46,9 +46,10 @@ public final class RiverWaterFill {
         int x0 = cp.getMinBlockX(), z0 = cp.getMinBlockZ();
         RiverNetwork.Column col = new RiverNetwork.Column();
         // water levels of the chunk and a one-column ring round it (riffle check): a river's level, the sea's Y62 in sea
-        // and estuary columns, MIN_VALUE elsewhere
+        // and estuary columns, a federal lake's top inside its cells, MIN_VALUE elsewhere
         int[] level = new int[18 * 18];
-        boolean any = false;
+        double[] share = new double[1];
+        boolean any = plan.layers != null && nearLake(plan, x0, z0);
         for (int dz = -1; dz <= 16; dz++) for (int dx = -1; dx <= 16; dx++) {
             int x = x0 + dx, z = z0 + dz, wc = plan.waterClass(x, z);
             int l = wc == 1 || wc == 2 ? RiverNetwork.SEA_WATER_TOP : Integer.MIN_VALUE;
@@ -56,6 +57,10 @@ public final class RiverWaterFill {
                 plan.rivers.column(x, z, col);
                 if (col.kind == RiverNetwork.Column.RIVER) l = wc == 1 || wc == 2 ? Math.min(l, col.level) : col.level;
                 if (col.kind != RiverNetwork.Column.NONE && dx >= 0 && dz >= 0 && dx < 16 && dz < 16) any = true;
+            }
+            if (plan.layers != null) {
+                int lake = plan.lakeTopAt(x + 0.5, z + 0.5, share);
+                if (lake != Integer.MIN_VALUE && share[0] > 0) l = l == Integer.MIN_VALUE ? lake : Math.min(l, lake);
             }
             level[(dz + 1) * 18 + dx + 1] = l;
         }
@@ -88,8 +93,9 @@ public final class RiverWaterFill {
                 BlockState old = chunk.getBlockState(pos.set(x, y, z));
                 if (old.isAir() || !old.getFluidState().isEmpty()) set(chunk, lx, y, lz, stone, ocean, surface);
             }
-            // riffle: lower water beside this source (the next reach, the sea at a mouth) flows once the chunk is live
-            if (e.kind == RiverCarver.RIVER) {
+            // riffle: lower water beside this source (the next reach, the sea at a mouth, a lake's outlet) flows once
+            // the chunk is live
+            if (e.kind == RiverCarver.RIVER || e.kind == RiverCarver.LAKE) {
                 int i = (lz + 1) * 18 + lx + 1;
                 boolean step = false;
                 for (int nb : new int[]{level[i - 1], level[i + 1], level[i - 18], level[i + 18]})
@@ -97,6 +103,12 @@ public final class RiverWaterFill {
                 if (step) chunk.markPosForPostprocessing(new BlockPos(x, e.water, z));
             }
         }
+    }
+
+    /** A federal lake within two cells of the chunk (corners, edge middles and centre). */
+    private static boolean nearLake(TerrainPlanSurface plan, int x0, int z0) {
+        for (int k = 0; k < 9; k++) if (plan.lakeNear(x0 + (k % 3) * 7.5 + 0.5, z0 + (k / 3) * 7.5 + 0.5) != Integer.MIN_VALUE) return true;
+        return false;
     }
 
     private static boolean nearMarsh(TerrainPlanSurface plan, int x0, int z0) {

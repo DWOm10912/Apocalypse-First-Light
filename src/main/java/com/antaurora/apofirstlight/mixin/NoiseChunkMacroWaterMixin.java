@@ -40,7 +40,7 @@ public abstract class NoiseChunkMacroWaterMixin {
             apocalypse$columns = new MacroGeographySample[256];
             apocalypse$columnKeys = new long[256];
             if (access.apocalypse$hasTerrainPlan()) {
-                apocalypse$plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(access.apocalypse$getSeed());
+                apocalypse$plan = access.apocalypse$terrainPlanSurface();
                 apocalypse$estuaryFloor = new double[256];
             }
         }

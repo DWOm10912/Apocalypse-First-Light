@@ -32,9 +32,26 @@ public final class AflBiomes {
             MIXED_MESOPHYTIC_FOREST, RIDGE_OAK_FOREST, HEMLOCK_HOLLOW, RIPARIAN_FOREST, COASTAL_PINE_OAK_FOREST,
             COASTAL_SANDY_CLEARING, COASTAL_SWAMP_FOREST, TIDAL_MARSH, WET_PRAIRIE);
 
-    /** The natural biome for an EcologyBiomes land index (GRASSLAND .. WET_PRAIRIE). */
+    // C2 federal experimental biomes (2026-10-14, docs/worldgen/federal_six_state_c2.md): placed only in worlds made with
+    // the "AFL Federation (experimental)" preset; possible biomes of that world's source only (BiomeSourceFederalMixin),
+    // never of an r1 world (ECOLOGY and the TerraBlender region stay as they were)
+    public static final ResourceKey<Biome> MONTANE_CONIFER_FOREST = key("montane_conifer_forest");
+    public static final ResourceKey<Biome> ALPINE_MEADOW = key("alpine_meadow");
+    public static final ResourceKey<Biome> ALPINE_PEAKS = key("alpine_peaks");
+    public static final ResourceKey<Biome> LAKESHORE_MIXED_FOREST = key("lakeshore_mixed_forest");
+    public static final ResourceKey<Biome> LAKE_FEN = key("lake_fen");
+    public static final ResourceKey<Biome> FRESHWATER_LAKE = key("freshwater_lake");
+    public static final ResourceKey<Biome> PLATEAU_STEPPE = key("plateau_steppe");
+    public static final ResourceKey<Biome> CANYON_BADLANDS = key("canyon_badlands");
+
+    /** The federal biomes, in FederalEcologyBiomes index order from MONTANE_CONIFER (index 13) on. */
+    public static final List<ResourceKey<Biome>> FEDERAL = List.of(MONTANE_CONIFER_FOREST, ALPINE_MEADOW, ALPINE_PEAKS,
+            LAKESHORE_MIXED_FOREST, LAKE_FEN, FRESHWATER_LAKE, PLATEAU_STEPPE, CANYON_BADLANDS);
+
+    /** The natural biome for an EcologyBiomes land index (GRASSLAND .. WET_PRAIRIE, then the federal biomes). */
     public static ResourceKey<Biome> ecology(int index) {
-        return ECOLOGY.get(index - EcologyBiomes.GRASSLAND);
+        int k = index - EcologyBiomes.GRASSLAND;
+        return k < ECOLOGY.size() ? ECOLOGY.get(k) : FEDERAL.get(k - ECOLOGY.size());
     }
 
     private static ResourceKey<Biome> key(String path) {

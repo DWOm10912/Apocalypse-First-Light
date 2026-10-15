@@ -13,8 +13,9 @@ public final class StartupSurfaceBiomeContext {
     private StartupSurfaceBiomeContext() {
     }
 
-    public static void begin(long seed, Registry<Biome> registry, DensityFunction preliminarySurface) {
-        CURRENT.set(new Context(registry, MainNationBiomeRegionPlan.forSeed(seed), preliminarySurface));
+    public static void begin(long seed, Registry<Biome> registry, DensityFunction preliminarySurface,
+                             com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan) {
+        CURRENT.set(new Context(registry, MainNationBiomeRegionPlan.forSeed(seed), preliminarySurface, plan));
     }
 
     public static void end() {
@@ -25,7 +26,7 @@ public final class StartupSurfaceBiomeContext {
         Context context = CURRENT.get();
         if (context == null) return original;
         ResourceKey<Biome> key = original.unwrapKey().orElse(null);
-        ResourceKey<Biome> target = context.plan().biomeAt(x, y, z, key, context.preliminarySurface());
+        ResourceKey<Biome> target = context.plan().biomeAt(context.terrainPlan(), x, y, z, key, context.preliminarySurface());
         if (target == null) return original;
         return context.registry().getHolder(target)
                 .map(holder -> (Holder<Biome>) holder)
@@ -33,6 +34,7 @@ public final class StartupSurfaceBiomeContext {
     }
 
     private record Context(Registry<Biome> registry, MainNationBiomeRegionPlan plan,
-                           DensityFunction preliminarySurface) {
+                           DensityFunction preliminarySurface,
+                           com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface terrainPlan) {
     }
 }

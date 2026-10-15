@@ -1,0 +1,322 @@
+world r1_c2 tag c2new seed -295378578869149513
+plan afl_terrain_plan_v2_r1 rivers 37
+spawn 1112 79 1112
+heap_used_mb_at_start 2466
+sites 8
+site spawn at 1112 1112: 81 chunks in 0 ms (0.0 ms/chunk)
+  ground vs plan: 20034 land columns, mean |diff| 0.54, within 1 block 97.0%
+  steps inside chunks: mean 0.073, >=4: 0 of 38880, max 3
+  steps across chunk borders: mean 0.071, >=4: 0 of 2304, max 3
+  water faces 0, water over air 0, flowing fluid 11, snow blocks 0
+  biomes afl:riparian_forest 45%, afl:temperate_grassland 45%, afl:oak_hickory_woodland 10%
+  plan: height 78.5, water class 0, shore 127, stable 12, slope 0.026
+site ne1536 at 2648 -424: 25 chunks in 2204 ms (88.2 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.48, within 1 block 98.1%
+  steps inside chunks: mean 0.030, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.017, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 99%, afl:oak_hickory_woodland 2%
+  plan: height 84.0, water class 0, shore 127, stable 12, slope 0.016
+site se1536 at 2648 2648: 25 chunks in 2068 ms (82.7 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.48, within 1 block 97.1%
+  steps inside chunks: mean 0.046, >=4: 0 of 12000, max 1
+  steps across chunk borders: mean 0.039, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 100%
+  plan: height 75.1, water class 0, shore 127, stable 12, slope 0.015
+site sw1536 at -424 2648: 25 chunks in 1947 ms (77.9 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.51, within 1 block 95.1%
+  steps inside chunks: mean 0.053, >=4: 0 of 12000, max 2
+  steps across chunk borders: mean 0.058, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:temperate_grassland 55%, afl:oak_hickory_woodland 45%
+  plan: height 75.0, water class 0, shore 127, stable 12, slope 0.081
+site nw1536 at -424 -424: 25 chunks in 2349 ms (94.0 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.43, within 1 block 99.3%
+  steps inside chunks: mean 0.091, >=4: 0 of 12000, max 2
+  steps across chunk borders: mean 0.091, >=4: 0 of 640, max 1
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:mixed_mesophytic_forest 45%, afl:oak_hickory_woodland 29%, afl:ridge_oak_forest 26%
+  plan: height 114.7, water class 0, shore 127, stable 4, slope 0.108
+site highest at -1192 -2088: 25 chunks in 2901 ms (116.0 ms/chunk)
+  ground vs plan: 6400 land columns, mean |diff| 0.43, within 1 block 96.5%
+  steps inside chunks: mean 0.196, >=4: 0 of 12000, max 2
+  steps across chunk borders: mean 0.205, >=4: 0 of 640, max 2
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:ridge_oak_forest 100%
+  plan: height 225.4, water class 0, shore 127, stable 4, slope 0.164
+site marsh at 4312 2648: 25 chunks in 1898 ms (75.9 ms/chunk)
+  ground vs plan: 5286 land columns, mean |diff| 0.59, within 1 block 92.7%
+  steps inside chunks: mean 0.186, >=4: 0 of 12000, max 3
+  steps across chunk borders: mean 0.177, >=4: 0 of 640, max 3
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:coastal_swamp_forest 39%, afl:coastal_pine_oak_forest 34%, afl:tidal_marsh 20%, afl:mixed_mesophytic_forest 8%
+  plan: height 63.5, water class 3, shore 127, stable 12, slope 0.000
+site river at 1368 1304: 25 chunks in 1921 ms (76.8 ms/chunk)
+  ground vs plan: 5731 land columns, mean |diff| 0.56, within 1 block 99.7%
+  steps inside chunks: mean 0.123, >=4: 15 of 12000, max 4
+  steps across chunk borders: mean 0.128, >=4: 1 of 640, max 4
+  water faces 0, water over air 0, flowing fluid 0, snow blocks 0
+  biomes afl:riparian_forest 90%, afl:temperate_grassland 10%
+  plan: height 77.4, water class 0, shore 127, stable 12, slope 0.003
+total probe time ms 15883
+heap_used_mb_after_gc 1752
+verify against r1_base_c1.txt: same 162, different 94, not in baseline 0 first different [-25 -28, -25 163, -26 163, -26 164, -28 -26, -28 164, -29 -25, -29 -26, -29 -27, -29 164, -29 165, -73 -132]
+VERIFY FAIL
+lock record present, 7811 bytes
+chunk -25 -25 6a88f1d3c9ab61d9
+chunk -25 -26 b8e594de104ab7e5
+chunk -25 -27 51872c60d8b60922
+chunk -25 -28 ccd826faacecbde5
+chunk -25 -29 3459a65d419cdaf4
+chunk -25 163 a7ba22156a13b9b2
+chunk -25 164 fbc9895bdd0b1c40
+chunk -25 165 4b5a65778b35c9c4
+chunk -25 166 5880d5dc649e4ccb
+chunk -25 167 4ec758754670c78a
+chunk -26 -25 ef76d46026e145fe
+chunk -26 -26 156267f9b8f3186e
+chunk -26 -27 78b274fefe5f9a64
+chunk -26 -28 d646684ddc1bacc3
+chunk -26 -29 a910f5eb8c27f6f6
+chunk -26 163 2e85f7be423d1b62
+chunk -26 164 53abc63632eb7724
+chunk -26 165 5e360898c5439a7b
+chunk -26 166 84ab89828128773e
+chunk -26 167 11299fbe57c1c9ae
+chunk -27 -25 38349ea6e07ed27e
+chunk -27 -26 48a65944af8e2ef7
+chunk -27 -27 42e3d3eeb295fc9f
+chunk -27 -28 81ff8cbc8009484d
+chunk -27 -29 5e983e2c56176af1
+chunk -27 163 720a0a6e76f7fe1
+chunk -27 164 569e977f298ee451
+chunk -27 165 d71dbc2cdeb3d023
+chunk -27 166 7a79a63013f443fa
+chunk -27 167 169eb72ace9a8e77
+chunk -28 -25 b4dc464675909388
+chunk -28 -26 f0e60bf4c1dbd84d
+chunk -28 -27 7a6f334a7d18e396
+chunk -28 -28 f1d3bef9292b9c1e
+chunk -28 -29 fea185b70b2bcffd
+chunk -28 163 9d48a913b34af876
+chunk -28 164 26fad4f42002a287
+chunk -28 165 581529ae97810f2a
+chunk -28 166 c3e848ed35814f39
+chunk -28 167 468a9583c5c23
+chunk -29 -25 bdf284fcfba27a68
+chunk -29 -26 9b646f2cbaa7228e
+chunk -29 -27 657de673b9f2c7e4
+chunk -29 -28 dea62c9f8fc8d842
+chunk -29 -29 6f67b07dfa4f95d6
+chunk -29 163 acaad307b4fdae24
+chunk -29 164 516b6a68363c35be
+chunk -29 165 a7b22f906ccc48a6
+chunk -29 166 5ac0d0aee3b084fc
+chunk -29 167 2781abcdbb470ad5
+chunk -73 -129 8b139a9bbe4221d6
+chunk -73 -130 cf595f783e0b5f75
+chunk -73 -131 5b1ae77a6453c983
+chunk -73 -132 b133548be65b77b8
+chunk -73 -133 845e8a7cae297095
+chunk -74 -129 3aa993efe3c79c7e
+chunk -74 -130 f0c00901f839d3ce
+chunk -74 -131 b12fbcaecb7492cb
+chunk -74 -132 36e63e9dc3085eec
+chunk -74 -133 ce2b8fe863db6b73
+chunk -75 -129 438ab6bab1ee056b
+chunk -75 -130 a05fd529b970c21f
+chunk -75 -131 68f871fd20582295
+chunk -75 -132 c71071b9f7b162dc
+chunk -75 -133 fad94c8e60a27b6b
+chunk -76 -129 a43861ca86ad2137
+chunk -76 -130 576fa30888dd6364
+chunk -76 -131 86335e92601dd41b
+chunk -76 -132 47e0c9d93354832d
+chunk -76 -133 efb85974daa4bb8
+chunk -77 -129 9646da42b197161d
+chunk -77 -130 3646024029cecb57
+chunk -77 -131 cb938ab5b6c06262
+chunk -77 -132 93c0b4e194a0be33
+chunk -77 -133 908b252a7afe862e
+chunk 163 -25 511a913ebba1c90b
+chunk 163 -26 88f3617ff7327be
+chunk 163 -27 7d193ffe548bc994
+chunk 163 -28 cbb12f1ecf6c8228
+chunk 163 -29 264df201de1b09b1
+chunk 163 163 9a6b153187b2657f
+chunk 163 164 242fef3760d62c00
+chunk 163 165 8c6bd3f584393556
+chunk 163 166 1e86f943beb13b36
+chunk 163 167 2ab30012c4b71bf
+chunk 164 -25 4591ff6b05ae4f2b
+chunk 164 -26 13eb2e077930fa07
+chunk 164 -27 12fbad9a072400cc
+chunk 164 -28 261cc002f7449c9a
+chunk 164 -29 ef2a825d08df7e6e
+chunk 164 163 7d166770b35d771e
+chunk 164 164 6e6ec07bcef08a63
+chunk 164 165 4a9851621f84dffe
+chunk 164 166 eaaa50eda8927222
+chunk 164 167 ce20bcde838ae3c3
+chunk 165 -25 882697602c33cbe9
+chunk 165 -26 8948c49d9c4fb9ab
+chunk 165 -27 9903869a7487b40c
+chunk 165 -28 da2dfbcea3e5924f
+chunk 165 -29 aaa49440b6a6b276
+chunk 165 163 9457eb0eef89a071
+chunk 165 164 a959336e262d202e
+chunk 165 165 8fa82cf27532d655
+chunk 165 166 c6c875c23c57ec5f
+chunk 165 167 5a733b170febe667
+chunk 166 -25 14ef79c9bba17e4b
+chunk 166 -26 737759ea44672c1b
+chunk 166 -27 3a6e0490bc2684f4
+chunk 166 -28 1702b9c8be794b5
+chunk 166 -29 6f92d2c12a9070a9
+chunk 166 163 af63d6e13fe174f7
+chunk 166 164 5ea3c24a1eed1ad2
+chunk 166 165 ff0d9fc65db6b018
+chunk 166 166 6bc13a75db252356
+chunk 166 167 811f650bb90c4ea7
+chunk 167 -25 2e6db9013c2bb866
+chunk 167 -26 5e8da3b0f917e912
+chunk 167 -27 9a287fb3eec8bfbf
+chunk 167 -28 e898764dd405b838
+chunk 167 -29 875adaba6230e498
+chunk 167 163 8d5153c15bb506c1
+chunk 167 164 d2217f85fbc774ce
+chunk 167 165 5e286786f010b5af
+chunk 167 166 2e2c0b1830ec080e
+chunk 167 167 3ea54770b663a4f5
+chunk 267 163 96665c58ae7e6546
+chunk 267 164 f67a603491336260
+chunk 267 165 ea6eec696f9cd4c9
+chunk 267 166 76821a7b7d940d10
+chunk 267 167 4a69e4438780fcf0
+chunk 268 163 a5a417bfc39ffd30
+chunk 268 164 fba484d4ba2de5a8
+chunk 268 165 2ac0a47f1984da9
+chunk 268 166 e6ed87e1366175b
+chunk 268 167 5af85a657edb8651
+chunk 269 163 86dddf0f83e5bad8
+chunk 269 164 689be3c9d4eddc88
+chunk 269 165 531c4fc341a1722e
+chunk 269 166 ac5a4352d3434c1a
+chunk 269 167 f790aa6eafc0f5c7
+chunk 270 163 fc1d490c1b932704
+chunk 270 164 4e6f3a1341cad688
+chunk 270 165 ecde3f89fa98567d
+chunk 270 166 7b51a54671310c7d
+chunk 270 167 95a56f29faa7336b
+chunk 271 163 c3a1994ab816eee4
+chunk 271 164 99ea1afca2b62deb
+chunk 271 165 c0ac94f85cb69b0b
+chunk 271 166 f015def5a3b53dfa
+chunk 271 167 35b67d0aee0ec6f7
+chunk 65 65 10e69f345f470f67
+chunk 65 66 53e4c00cd427f80a
+chunk 65 67 ad242b5be2890e6c
+chunk 65 68 751ba7a829c19c55
+chunk 65 69 391b77ec0d8f71ee
+chunk 65 70 5f92d38f4a89b420
+chunk 65 71 d96ab0dd5815549b
+chunk 65 72 6ccff6704e9b3bbd
+chunk 65 73 9d1f61a68bc57fa8
+chunk 66 65 145efe1f4080f8d2
+chunk 66 66 450d6d5c696551d
+chunk 66 67 6734ee4fa77c8d30
+chunk 66 68 7ba988d59f5b709c
+chunk 66 69 eacc3d4a20d20427
+chunk 66 70 bfba898142f33da4
+chunk 66 71 8f9c53f6290b0389
+chunk 66 72 9c15d35674e34323
+chunk 66 73 24474e16a46e7e64
+chunk 67 65 84102e8301d0dd3d
+chunk 67 66 b624f2d9d565012d
+chunk 67 67 18213cc1c37fca0d
+chunk 67 68 a0770f55053b9e7a
+chunk 67 69 76fd77ac65634ded
+chunk 67 70 2113ac93622ab166
+chunk 67 71 1fab787d2f24efcb
+chunk 67 72 8ea1e2005a102695
+chunk 67 73 fcc6490219673e50
+chunk 68 65 f96edb7ea1eadf8f
+chunk 68 66 26713bf5e6e5796b
+chunk 68 67 a939037fe0a21b7c
+chunk 68 68 612d61c97315549f
+chunk 68 69 5ae57372785d32bf
+chunk 68 70 3cd27f9afe5cbf9
+chunk 68 71 87f80e065953283b
+chunk 68 72 d1e6aefcfc0d8ad4
+chunk 68 73 3e8f7dd38b80d49a
+chunk 69 65 c69f59fc6d3caee4
+chunk 69 66 607732ec8198f9f4
+chunk 69 67 3d72312aa11738c7
+chunk 69 68 ebc6859e27fe496f
+chunk 69 69 ef33247b137cda32
+chunk 69 70 e6130f450714f376
+chunk 69 71 dc2545f185f01852
+chunk 69 72 d572c611854d25ec
+chunk 69 73 46e49a958505878d
+chunk 70 65 9051c1b59fda2904
+chunk 70 66 904cc7f75f90218a
+chunk 70 67 90cc224086278f2e
+chunk 70 68 735906fe910d5bab
+chunk 70 69 aebc74457ca03742
+chunk 70 70 56664bba0a5219b5
+chunk 70 71 9e161cd43aefebdd
+chunk 70 72 3c36fba51ecc3bf8
+chunk 70 73 591c640d54a83476
+chunk 71 65 e0c3370fb41d75dd
+chunk 71 66 d561a16f7237f30b
+chunk 71 67 8e5ff925b93a755f
+chunk 71 68 edbf83d94734ee47
+chunk 71 69 d30e0bdf4087a7df
+chunk 71 70 d310a204b6b723a3
+chunk 71 71 20b56fa48786b98a
+chunk 71 72 5bda949ef1f9c9ee
+chunk 71 73 a3f043ade730ebd
+chunk 72 65 f1a1930c3aaf205b
+chunk 72 66 b3e4f2a2da4309c1
+chunk 72 67 d3b68c3d97abd11d
+chunk 72 68 4a42d349c77106e8
+chunk 72 69 e1f0c86c8bf1e3fc
+chunk 72 70 c8623206959eec61
+chunk 72 71 fabb557619c89d63
+chunk 72 72 a933f81dc8ee30c0
+chunk 72 73 7c840ed8d7724493
+chunk 73 65 d16d0460d74e0f55
+chunk 73 66 db92e8dd77840f77
+chunk 73 67 5780e5724291194c
+chunk 73 68 376cb32a596a7b44
+chunk 73 69 aae543bf1c187a2c
+chunk 73 70 ef5d105c6937a59c
+chunk 73 71 6dade63ed32e9444
+chunk 73 72 7a760a9583cde182
+chunk 73 73 36019325bf78625e
+chunk 83 79 29ebd0f13f664056
+chunk 83 80 e7d69764663ee09e
+chunk 83 81 7be0c539a15ce161
+chunk 83 82 6bb55349ccf76d98
+chunk 83 83 f885a0a9c59d2019
+chunk 84 79 6f8679f273c16d39
+chunk 84 80 d4f28e9874d9eff7
+chunk 84 81 742efdde6abcf613
+chunk 84 82 9addda29a27c1494
+chunk 84 83 a273efc7fdac250b
+chunk 85 79 59b7eb302eb7abff
+chunk 85 80 38c3b8d952e86823
+chunk 85 81 c40077680929add7
+chunk 85 82 e2380a661b4f2a68
+chunk 85 83 129411a6dad91cf0
+chunk 86 79 477f5cd7057e265f
+chunk 86 80 fcbc9d4653878d29
+chunk 86 81 49bd5a72acad7b85
+chunk 86 82 ce1b38eb54bfae6c
+chunk 86 83 d54fdf2f78b3d0a1
+chunk 87 79 3a9a26cbb319b12c
+chunk 87 80 a547475c337609ff
+chunk 87 81 f22ef41c70c36cc6
+chunk 87 82 fdc0fd2d761c6598
+chunk 87 83 4c7dbc081fe6947b

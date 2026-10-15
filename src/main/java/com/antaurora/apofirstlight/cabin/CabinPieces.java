@@ -19,6 +19,13 @@ public interface CabinPieces {
     void cabinPieces(BlockState state, int flags, Sink sink);
 
     interface Sink {
-        void add(String piece, int turn);
+        /**
+         * A piece turned {@code turn} quarters and moved {@code dy} blocks up (negative: down; Emergency Radio V1, 2026-10-14:
+         * a radio on a 76 cm table sinks from the cell above onto the table top). Keep |dy| within about 0.3 like the rest of
+         * the geometry outside the cell.
+         */
+        void add(String piece, int turn, float dy);
+
+        default void add(String piece, int turn) { add(piece, turn, 0); }
     }
 }

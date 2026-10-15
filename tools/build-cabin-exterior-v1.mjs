@@ -9,8 +9,9 @@
 //     green_standing_seam_roof     1:2 roof (26.6 degrees) in half-block steps: lower / upper / ridge cells, 20 cm thick,
 //     galvanized_corrugated_roof   ceiling boards underneath, fascia + drip at the eave, barge board + rake trim at a
 //     rusty_corrugated_roof        gable edge, flashing at a top edge against a wall, ridge cap; under a roof cell above
-//                                  a wall it fills down to the wall (logs or boards, cut to the slope); a header beam and
-//                                  a stove pipe boot on request
+//                                  a wall it fills down to the wall (logs or boards, cut to the slope; 2026-10-14: logs
+//                                  for a roof turned a quarter in _q pieces, the boards' battens per side); a header beam
+//                                  and a stove pipe boot on request
 //     white_oak_cabin_door         two-tall doors in a lined opening with casings both sides (exterior: glazed top half,
 //     white_oak_board_door         interior: ledged boards, strap hinges)
 //     white_oak_double_hung_window one or two blocks tall, lined, cased, sill and stool, two sashes, glass
@@ -312,9 +313,19 @@ function roofPieces() {
     P.push(clipped(alongZ('x', {}), planes, 'roof/infill_log_along_' + shape));
     P.push(clipped(logsAlongX('x', XC), planes, 'roof/infill_log_across_' + shape));
     P.push(clipped(logsAlongX('x', XC, {ends: false, tops: false}).merge(alongZ('x', {ends: false})), planes, 'roof/infill_log_corner_' + shape));
+    // 2026-10-14 (user: the logs under the addition's east-falling roof sat half a course off the wall): a roof facing
+    // east / west is turned a quarter in game, which turned the X logs' courses (1/6, 1/2, 5/6) onto Z logs and back. Its
+    // fill (_q) is drawn with the courses swapped, so once turned it is the wall's own run_x / run_z / core again.
+    P.push(clipped(turned(logsAlongX('x', XC), 1), planes, `roof/infill_log_along_${shape}_q`));
+    P.push(clipped(logsAlongX('x', ZC, {off: 1 / 6}), planes, `roof/infill_log_across_${shape}_q`));
+    P.push(clipped(turned(logsAlongX('x', XC, {ends: false, tops: false}), 1).merge(logsAlongX('x', ZC, {ends: false, off: 1 / 6})), planes,
+      `roof/infill_log_corner_${shape}_q`));
     for (const c of ['brown', 'grey']) {
       const b = box(new Piece('x'), c + '_board_siding', [0, 0, 0], [1, 1, 1], 'nsewd');
       P.push(clipped(b, planes, `roof/infill_board_${c}_${shape}`));
+      // 2026-10-14: the wall's battens carry on up the fill (per side of the roof's north frame, CabinBlocks.Roof picks the
+      // sides the wall below has them on)
+      SIDES.forEach((s, r) => P.push(clipped(turned(battens(c), r), planes, `roof/infill_battens_${c}_${shape}_${s}`)));
     }
   }
   return P;
@@ -418,14 +429,17 @@ function windowPiece(part) {
 }
 
 // =============================================================================================== siding, porch, pipe
+/** The north face's battens over the board joints. */
+function battens(c, name = 'x') {
+  const b = new Piece(name), t = c + '_board_siding';
+  for (let k = 0; k < 4; k++) { const x = 0.125 + 0.25 * k; box(b, t, [x - 0.025, 0, -0.022], [x + 0.025, 1, 0], 'nweud'); }
+  return b;
+}
 function sidingPieces() {
   const P = [];
   for (const c of ['brown', 'grey']) {
-    const t = c + '_board_siding';
-    P.push(box(new Piece(`siding/${c}_core`), t, [0, 0, 0], [1, 1, 1], 'nsewud'));
-    const b = new Piece(`siding/${c}_battens`);   // the north face's battens over the board joints
-    for (let k = 0; k < 4; k++) { const x = 0.125 + 0.25 * k; box(b, t, [x - 0.025, 0, -0.022], [x + 0.025, 1, 0], 'nweud'); }
-    P.push(b);
+    P.push(box(new Piece(`siding/${c}_core`), c + '_board_siding', [0, 0, 0], [1, 1, 1], 'nsewud'));
+    P.push(battens(c, `siding/${c}_battens`));
   }
   return P;
 }

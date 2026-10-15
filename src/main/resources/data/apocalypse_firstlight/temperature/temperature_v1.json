@@ -28,7 +28,15 @@
     "apocalypse_firstlight:coastal_sandy_clearing": { "mean": 12, "amp": 6, "water": 11 },
     "apocalypse_firstlight:coastal_swamp_forest": { "mean": 12, "amp": 4, "water": 12 },
     "apocalypse_firstlight:tidal_marsh": { "mean": 12, "amp": 4, "water": 11 },
-    "apocalypse_firstlight:wet_prairie": { "mean": 12, "amp": 5, "water": 11 }
+    "apocalypse_firstlight:wet_prairie": { "mean": 12, "amp": 5, "water": 11 },
+    "apocalypse_firstlight:montane_conifer_forest": { "mean": 7, "amp": 6, "water": 8 },
+    "apocalypse_firstlight:alpine_meadow": { "mean": 3, "amp": 7, "water": 6 },
+    "apocalypse_firstlight:alpine_peaks": { "mean": -3, "amp": 7, "water": 2 },
+    "apocalypse_firstlight:lakeshore_mixed_forest": { "mean": 9, "amp": 6, "water": 10 },
+    "apocalypse_firstlight:lake_fen": { "mean": 9, "amp": 5, "water": 10 },
+    "apocalypse_firstlight:freshwater_lake": { "mean": 9, "amp": 5, "water": 10 },
+    "apocalypse_firstlight:plateau_steppe": { "mean": 14, "amp": 10, "water": 13 },
+    "apocalypse_firstlight:canyon_badlands": { "mean": 17, "amp": 11, "water": 15 }
   },
   "fallback": { "mean_base": 1, "mean_per_temperature": 14, "amp_base": 3, "amp_per_dryness": 8, "water_below_mean": 1 },
   "dimensions": {

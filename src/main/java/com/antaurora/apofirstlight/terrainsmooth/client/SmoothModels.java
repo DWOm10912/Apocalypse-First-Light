@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BushBlock;
 import net.minecraft.world.level.block.WaterlilyBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,8 +22,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Terrain Smooth V1: wraps the vanilla block models of the natural ground blocks (TerrainSmooth.GROUND, SmoothSurfaceModel) and of the small
- * plants (SinkPlantModel) at every model bake (F3+T included). The wrappers return the vanilla model unchanged while the
+ * Terrain Smooth V1: wraps the vanilla block models of the natural ground blocks (TerrainSmooth.GROUND, SmoothSurfaceModel), of the small
+ * plants (SinkPlantModel) and of the snow layers (SnowSkinModel, 2026-10-14) at every model bake (F3+T included). The wrappers return the vanilla model unchanged while the
  * feature is off and for every block that is not a sloped natural surface top; no block, item or model file changes.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
@@ -39,7 +40,8 @@ public final class SmoothModels {
         for (Block block : ForgeRegistries.BLOCKS) {
             if (block instanceof BushBlock && !(block instanceof WaterlilyBlock)) plants += wrap(models, block, SinkPlantModel::new);
         }
-        LOGGER.info("[AFL terrain smooth] wrapped {} ground block states and {} plant states", surface, plants);
+        int snow = wrap(models, Blocks.SNOW, SnowSkinModel::new);
+        LOGGER.info("[AFL terrain smooth] wrapped {} ground block states, {} plant states and {} snow layer states", surface, plants, snow);
     }
 
     private static int wrap(Map<ResourceLocation, BakedModel> models, Block block, Function<BakedModel, BakedModel> wrapper) {
@@ -47,7 +49,7 @@ public final class SmoothModels {
         for (BlockState state : block.getStateDefinition().getPossibleStates()) {
             ResourceLocation key = BlockModelShaper.stateToModelLocation(state);
             BakedModel model = models.get(key);
-            if (model == null || model instanceof SmoothSurfaceModel || model instanceof SinkPlantModel) continue;
+            if (model == null || model instanceof SmoothSurfaceModel || model instanceof SinkPlantModel || model instanceof SnowSkinModel) continue;
             models.put(key, wrapper.apply(model));
             n++;
         }

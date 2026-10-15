@@ -6,7 +6,6 @@ import com.antaurora.apofirstlight.radiation.RadiationZone;
 import com.antaurora.apofirstlight.tree.TreeBlocks;
 import com.antaurora.apofirstlight.tree.TreeLogBlock;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -144,11 +143,12 @@ public final class SurvivorSpawns {
         return dx * dx + dz * dz < (long) min * min;
     }
 
+    /** The plan this world's router is bound to, never looked up by seed: r1 and federal worlds of one seed differ. */
     @Nullable
     private static TerrainPlanSurface terrainPlan(ServerLevel level) {
         Object state = level.getChunkSource().randomState();
         if (!(state instanceof RandomStateSeedAccess access) || !access.apocalypse$hasTerrainPlan()) return null;
-        return TerrainPlanStore.peek(access.apocalypse$getSeed());
+        return access.apocalypse$terrainPlanSurface();
     }
 
     /**

@@ -16,13 +16,13 @@ import snownee.jade.api.config.IPluginConfig;
 /**
  * Jade for the Distribution Panel and the load center (Building Wiring V1 phase 2, docs/gameplay/building_wiring_v1.md):
  * 范围供电 for a LEGACY_AREA panel; for a WIRED one only what is wrong: a circuit joined to another panel, wire running into
- * unloaded chunks.
+ * unloaded chunks; for either a structure template's wiring not yet written into the walls (phase 6, 线路待展开).
  */
 public enum DistributionPanelJadeProvider implements IServerDataProvider<BlockAccessor>, IBlockComponentProvider {
     INSTANCE;
 
     public static final ResourceLocation UID = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "distribution_panel");
-    private static final String LEGACY = "AflPanelLegacy", CONFLICT = "AflPanelConflict", PARTIAL = "AflPanelPartial";
+    private static final String LEGACY = "AflPanelLegacy", CONFLICT = "AflPanelConflict", PARTIAL = "AflPanelPartial", PACKED = "AflPanelPacked";
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
@@ -31,6 +31,7 @@ public enum DistributionPanelJadeProvider implements IServerDataProvider<BlockAc
         data.putInt(CONFLICT, panel.conflictMask());
         WiringSupply.Result r = panel.wiring();
         data.putBoolean(PARTIAL, r != null && r.partial);
+        data.putInt(PACKED, panel.packedLeft());
     }
 
     @Override
@@ -38,6 +39,7 @@ public enum DistributionPanelJadeProvider implements IServerDataProvider<BlockAc
         CompoundTag data = accessor.getServerData();
         if (!data.contains(LEGACY)) return;
         String k = "jade.apocalypse_firstlight.distribution_panel.";
+        if (data.getInt(PACKED) > 0) tooltip.add(Component.translatable(k + "packed"));
         if (data.getBoolean(LEGACY)) { tooltip.add(Component.translatable(k + "legacy")); return; }
         int conflict = data.getInt(CONFLICT);
         for (int c = 1; c <= WiringNode.BREAKERS; c++) if ((conflict & 1 << c) != 0) tooltip.add(Component.translatable(k + "conflict", c));

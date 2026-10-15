@@ -13,8 +13,10 @@ import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoorBlock;
@@ -73,7 +75,7 @@ public final class CabinBlocks {
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
-            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone"};
+            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio"};
 
     private CabinBlocks() {}
 
@@ -98,9 +100,11 @@ public final class CabinBlocks {
             // whole cell back from the wall
             case "white_oak_log_wall" -> new LogWall(wood(MapColor.WOOD, 2.0F)
                     .isSuffocating((s, l, p) -> false).isViewBlocking((s, l, p) -> true).isRedstoneConductor((s, l, p) -> true));
-            case "green_standing_seam_roof" -> new Roof("green", metal(MapColor.COLOR_GREEN, SoundType.METAL));
-            case "galvanized_corrugated_roof" -> new Roof("galvanized", metal(MapColor.METAL, SoundType.METAL));
-            case "rusty_corrugated_roof" -> new Roof("rust", metal(MapColor.TERRACOTTA_ORANGE, SoundType.METAL));
+            // dynamic (2026-10-14): no state cache, so the occlusion shape is asked per getter (Roof#getOcclusionShape); solid
+            // forced on, as the cache made it (its bare slab's bounds): it still stops rain, snow and the motion heightmap
+            case "green_standing_seam_roof" -> new Roof("green", metal(MapColor.COLOR_GREEN, SoundType.METAL).dynamicShape().forceSolidOn());
+            case "galvanized_corrugated_roof" -> new Roof("galvanized", metal(MapColor.METAL, SoundType.METAL).dynamicShape().forceSolidOn());
+            case "rusty_corrugated_roof" -> new Roof("rust", metal(MapColor.TERRACOTTA_ORANGE, SoundType.METAL).dynamicShape().forceSolidOn());
             case "white_oak_cabin_door" -> new CabinDoor("cabin", wood(MapColor.WOOD, 3.0F).noOcclusion().pushReaction(PushReaction.DESTROY));
             case "white_oak_board_door" -> new CabinDoor("board", wood(MapColor.WOOD, 3.0F).noOcclusion().pushReaction(PushReaction.DESTROY));
             case "white_oak_double_hung_window" -> new Window(wood(MapColor.WOOD, 1.5F).noOcclusion()
@@ -129,6 +133,9 @@ public final class CabinBlocks {
             case "stove_heat_shield" -> new BoxStove.HeatShield(metal(MapColor.METAL, SoundType.METAL).noOcclusion());
             case "flagstone" -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM)
                     .strength(2.0F, 6.0F).requiresCorrectToolForDrops().sound(SoundType.STONE));
+            // Emergency Radio V1 (EmergencyRadio): a small appliance, breaks by hand (no correct-tool requirement)
+            case "emergency_radio" -> new EmergencyRadio.Radio(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(1.0F, 3.0F)
+                    .sound(SoundType.METAL).noOcclusion().pushReaction(PushReaction.DESTROY).lightLevel(EmergencyRadio.Radio::light));
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -159,6 +166,7 @@ public final class CabinBlocks {
         });
         WoodFurniture.register(event);
         BoxStove.register(event);
+        EmergencyRadio.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */
@@ -362,17 +370,21 @@ public final class CabinBlocks {
      * A 1:2 roof (26.6 degrees) in half-block steps: a lower cell (surface 0 .. 1/2 up the slope), an upper cell (1/2 .. 1)
      * and a ridge cell (an odd-width roof's top, 1/2 .. 3/4 .. 1/2); facing is the downslope side (the eave). Light occlusion
      * and support are four steps under the surface: the cell keeps its sky light, its bottom shuts the light out of the room
-     * below and holds a ceiling fixture. Outline and collision (2026-10-13) are the 20 cm slab itself in eight steps (the
+     * below and holds a ceiling fixture. Face culling gets no occlusion at all (2026-10-14, {@link #getOcclusionShape}).
+     * Outline and collision (2026-10-13) are the 20 cm slab itself in eight steps (the
      * ceiling boards underneath, the lower cell's dipping below the cell at the eave), down to the cell's bottom where the
      * roof fills down to a wall, with a stove pipe through it. Flags (from the neighbours): eave, top edge, the two rake
-     * (gable) edges, the fill down to a wall below (logs along / across / corner, brown or grey boards), a stove pipe below
-     * (a boot round it). The header beam under the eave is the state's {@code beam} (set by the builder).
+     * (gable) edges, the fill down to a wall below (logs along / across / corner, brown or grey boards; 2026-10-14 also over
+     * a window or a door's upper half, and the boards' battens on the sides the wall has them), a stove pipe below (a boot
+     * round it). The header beam under the eave is the state's {@code beam} (set by the builder).
      */
     public static final class Roof extends Block implements CabinPieces {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final EnumProperty<RoofShape> SHAPE = EnumProperty.create("shape", RoofShape.class);
         public static final BooleanProperty BEAM = BooleanProperty.create("beam");
-        static final int EAVE = 1, TOP = 2, RAKE_NEG = 4, RAKE_POS = 8, PIPE = 128, INFILL_SHIFT = 4;
+        static final int EAVE = 1, TOP = 2, RAKE_NEG = 4, RAKE_POS = 8, PIPE = 128, INFILL_SHIFT = 4, BATTENS_SHIFT = 8;
+        /** The pieces' north frame sides (clockwise from north, as {@link CabinBlocks#turn} counts). */
+        private static final String[] SIDE = {"n", "e", "s", "w"};
         /** The steel's height at the middle of a lower cell, an upper or ridge cell (block units); the roof's thickness. */
         public static final double LOWER_MID = 0.25, UPPER_MID = 0.75, THICKNESS = 0.2;
         private static final String[] INFILL = {null, "log_along", "log_across", "log_corner", "board_brown", "board_grey"};
@@ -418,12 +430,12 @@ public final class CabinBlocks {
 
         /**
          * The slab (CabinShapeData.ROOF), its fill down to a wall below (as cabinFlags' infill), a stove pipe below running
-         * through it. Not a dynamic shape: collision and outline ask the block every time; vanilla's cached shape (no
-         * neighbours) is the bare slab, which reaches below the cell at a lower cell's eave and so counts as large.
+         * through it. Collision and outline ask the block every time (a dynamic shape since 2026-10-14, see
+         * getOcclusionShape: no state cache; the bare slab reaches below the cell at a lower cell's eave, large either way).
          */
         private static VoxelShape slab(BlockState s, BlockGetter level, BlockPos pos) {
             BlockState below = level.getBlockState(pos.below());
-            boolean fill = isLogWall(below) || below.getBlock() instanceof BoardAndBatten;
+            boolean fill = fills(below);
             boolean pipe = below.getBlock() instanceof StovePipe && s.getValue(SHAPE) != RoofShape.RIDGE;
             int sh = s.getValue(SHAPE).ordinal(), r = turn(s.getValue(FACING)), key = (sh * 4 + r) * 4 + (fill ? 1 : 0) + (pipe ? 2 : 0);
             VoxelShape v = SLABS[key];
@@ -439,9 +451,32 @@ public final class CabinBlocks {
         @SuppressWarnings("deprecation")
         public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return slab(state, level, pos); }
 
+        /**
+         * The four steps under the surface for light only (2026-10-14). The roof has a dynamic shape, so its states keep no
+         * cached occlusion and every caller asks here: the light engine (the level; a chunk while sky light sources are
+         * worked out) gets the steps; chunk meshing (a render region: vanilla RenderChunkRegion, Embeddium WorldSlice, neither
+         * a LevelReader) gets nothing. The steps fill the cell down to its bottom, but the roof is open under its 20 cm slab:
+         * they culled the faces against it (the user saw a woodshed wall's boards gone under the eave, only the battens left,
+         * and a log wall's chinking gone next to a roof cell, both walls see-through) and the roof's own fill against the
+         * next roof cell. With no occlusion nothing is culled against a roof, and its own quads are never culled.
+         */
         @Override
         @SuppressWarnings("deprecation")
-        public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) { return shape(state); }
+        public VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+            return level instanceof BlockAndTintGetter && !(level instanceof LevelReader) ? Shapes.empty() : shape(state);
+        }
+
+        // as the state cache held them before the roof became dynamic (constants: the light engine asks off thread)
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) { return true; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) { return 1.0F; }
 
         @Override
         @SuppressWarnings("deprecation")
@@ -498,15 +533,44 @@ public final class CabinBlocks {
             if (!same(level.getBlockState(pos.relative(right)), f, sh)) flags |= RAKE_POS;
             BlockPos belowPos = pos.below();
             BlockState below = level.getBlockState(belowPos);
-            int infill = 0;
-            if (isLogWall(below)) {
-                char look = LogWall.look(below, LogWall.joinFlags(level, belowPos));
-                char along = f.getAxis() == Direction.Axis.Z ? 'z' : 'x';
-                infill = look == 'c' ? 3 : look == along ? 1 : 2;
-            } else if (below.getBlock() instanceof BoardAndBatten bb) infill = bb.colour.equals("brown") ? 4 : 5;
-            flags |= infill << INFILL_SHIFT;
+            flags |= infill(level, belowPos, below, f);
             if (below.getBlock() instanceof StovePipe) flags |= PIPE;
             return flags;
+        }
+
+        /** Whether the roof fills down to this block below it (the wall it sits on, or a window / door top in that wall). */
+        private static boolean fills(BlockState below) {
+            return isLogWall(below) || below.getBlock() instanceof BoardAndBatten || below.getBlock() instanceof Window
+                    || below.getBlock() instanceof CabinDoor && below.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER;
+        }
+
+        /**
+         * The fill's flags: the INFILL kind (logs along the slope 1, across it 2, a corner 3, brown 4 or grey 5 boards) and for
+         * boards the BATTENS sides (bits N, E, S, W of the world: the sides the wall below has battens on). A window or a door's
+         * upper half below (2026-10-14: the gable window under the ridge, the addition's east window under its eave cell) fills
+         * as the wall it stands in, along that wall: boards when a neighbour along it is board and batten (battens on its two
+         * open faces), logs otherwise.
+         */
+        private static int infill(BlockGetter level, BlockPos at, BlockState below, Direction f) {
+            if (!fills(below)) return 0;
+            char along = f.getAxis() == Direction.Axis.Z ? 'z' : 'x';
+            if (isLogWall(below)) {
+                char look = LogWall.look(below, LogWall.joinFlags(level, at));
+                return (look == 'c' ? 3 : look == along ? 1 : 2) << INFILL_SHIFT;
+            }
+            if (below.getBlock() instanceof BoardAndBatten bb)
+                return (bb.colour.equals("brown") ? 4 : 5) << INFILL_SHIFT | bb.cabinFlags(below, level, at) << BATTENS_SHIFT;
+            Direction out = below.getValue(HorizontalDirectionalBlock.FACING), run = out.getClockWise();
+            for (Direction d : new Direction[]{run, run.getOpposite()}) {
+                if (!(level.getBlockState(at.relative(d)).getBlock() instanceof BoardAndBatten bb)) continue;
+                int battens = 0;
+                for (Direction o : new Direction[]{out, out.getOpposite()}) {
+                    BlockPos n = at.relative(o);
+                    if (!level.getBlockState(n).isSolidRender(level, n)) battens |= 1 << turn(o);
+                }
+                return (bb.colour.equals("brown") ? 4 : 5) << INFILL_SHIFT | battens << BATTENS_SHIFT;
+            }
+            return ((run.getAxis() == Direction.Axis.Z ? 'z' : 'x') == along ? 1 : 2) << INFILL_SHIFT;
         }
 
         @Override
@@ -523,7 +587,15 @@ public final class CabinBlocks {
             if (eave && rn) sink.add("roof/" + m + "_eave_corner_neg_" + sh, r);
             if (eave && rp) sink.add("roof/" + m + "_eave_corner_pos_" + sh, r);
             int infill = flags >>> INFILL_SHIFT & 7;
-            if (infill > 0 && infill < INFILL.length) sink.add("roof/infill_" + INFILL[infill] + "_" + sh, r);
+            // logs: a quarter-turned roof (facing east / west) takes the _q pieces, drawn with the courses swapped, so the
+            // logs line up with the wall's runs once turned (2026-10-14)
+            if (infill > 0 && infill <= 3) sink.add("roof/infill_" + INFILL[infill] + "_" + sh + ((r & 1) == 1 ? "_q" : ""), r);
+            else if (infill > 3 && infill < INFILL.length) {
+                sink.add("roof/infill_" + INFILL[infill] + "_" + sh, r);
+                String colour = infill == 4 ? "brown" : "grey";
+                for (int w = 0; w < 4; w++)
+                    if ((flags >>> BATTENS_SHIFT & 1 << w) != 0) sink.add("roof/infill_battens_" + colour + "_" + sh + "_" + SIDE[(w - r) & 3], r);
+            }
             boolean ridge = state.getValue(SHAPE) == RoofShape.RIDGE;
             if (state.getValue(BEAM) && !ridge) sink.add("roof/beam_" + sh, r);
             if ((flags & PIPE) != 0 && !ridge) sink.add("roof/" + m + "_pipe_" + sh, r);

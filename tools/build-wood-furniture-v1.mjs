@@ -34,9 +34,9 @@ const json = v => JSON.stringify(v, null, 2) + '\n';
 export const BLOCKS = [
   {id: 'wooden_table', mass: 12, carry: 'oversized', en: 'Wooden Table', zh: '木桌'},
   {id: 'wooden_chair', mass: 5, carry: 'bulky', en: 'Wooden Chair', zh: '木椅'},
-  {id: 'wooden_kitchen_counter', mass: 30, carry: 'oversized', en: 'Wooden Kitchen Counter', zh: '木橱柜'},
-  {id: 'wooden_sink_counter', mass: 38, carry: 'oversized', en: 'Wooden Sink Counter', zh: '木水槽柜'},
-  {id: 'wooden_gun_rack', mass: 4, carry: 'bulky', en: 'Wooden Gun Rack', zh: '木枪架'},
+  {id: 'wooden_kitchen_counter', mass: 30, carry: 'oversized', en: 'Wooden Kitchen Counter', zh: '木质橱柜'},
+  {id: 'wooden_sink_counter', mass: 38, carry: 'oversized', en: 'Wooden Sink Counter', zh: '木质水槽柜'},
+  {id: 'wooden_gun_rack', mass: 4, carry: 'bulky', en: 'Wooden Gun Rack', zh: '木质枪架'},
 ];
 
 const TRIM = 'wood', TRIM_V = 'wood_v', TOP = 'wood_top', INSIDE = 'wood_inside', PANEL = 'wood_panel';

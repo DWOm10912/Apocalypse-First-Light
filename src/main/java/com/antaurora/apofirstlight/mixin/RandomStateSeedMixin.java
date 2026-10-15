@@ -25,6 +25,9 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     private long apocalypse$seed;
     @Unique private boolean apocalypse$macroGeography;
     @Unique private boolean apocalypse$terrainPlan;
+    // C2 (2026-10-14): the plan this router was bound to, and its profile (r1 or the federal experimental plan)
+    @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$planSurface;
+    @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$planProfile;
 
     /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -52,15 +55,21 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
             // Terrain V2: the plan is fetched (memory / disk cache / one build) here, at world load, never per chunk
             if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanHeightDensity height) {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
-                return height.withSeed(seed);
+                var bound = height.withSeed(seed);
+                apocalypse$bindPlan(bound.profile(), bound.surface());
+                return bound;
             }
             if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanStabilityDensity stability) {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
-                return stability.withSeed(seed);
+                var bound = stability.withSeed(seed);
+                apocalypse$bindPlan(bound.profile(), bound.surface());
+                return bound;
             }
             if (function instanceof com.antaurora.apofirstlight.worldgen.terrain.v2.PlanTerrainDensity terrain) {
                 apocalypse$macroGeography = apocalypse$terrainPlan = true;
-                return terrain.withSeed(seed);
+                var bound = terrain.withSeed(seed);
+                apocalypse$bindPlan(bound.profile(), bound.surface());
+                return bound;
             }
             if (function instanceof MacroTerrainDensity macro) {
                 apocalypse$macroGeography = true;
@@ -68,6 +77,16 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
             }
             return function;
         });
+    }
+
+    /** One router, one plan: a noise settings file that mixes r1 and federal plan functions is a data error. */
+    @Unique
+    private void apocalypse$bindPlan(com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile profile,
+                                     com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface surface) {
+        if (apocalypse$planProfile != null && apocalypse$planProfile != profile)
+            throw new IllegalStateException("AFL noise router mixes Terrain V2 profiles " + apocalypse$planProfile + " and " + profile);
+        apocalypse$planProfile = profile;
+        apocalypse$planSurface = surface;
     }
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -85,4 +104,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     @Override public boolean apocalypse$hasMacroGeography() { return apocalypse$macroGeography; }
 
     @Override public boolean apocalypse$hasTerrainPlan() { return apocalypse$terrainPlan; }
+
+    @Override public com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$terrainPlanSurface() { return apocalypse$planSurface; }
+
+    @Override public com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$terrainProfile() { return apocalypse$planProfile; }
 }

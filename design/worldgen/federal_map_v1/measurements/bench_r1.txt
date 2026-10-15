@@ -1,0 +1,7 @@
+label r1  mask r1  scale 1.00  seed -295378578869149513  N=1408 (22.5 km, 1.98 M cells)  cores 20  max heap 6144 MB
+time: plan 8.3 s + surface (rivers, ecology) 1.5 s = 9.8 s
+planner report: frame=[-86, 49, -42, 7547, 5517]  ms_setup=807  drowned_cells=7821  marsh_cells=5103  pit_cells_filled=4519  ms_drainage=7395  channel_cells_A1km2=3942  uphill_steps_A1km2=0  closed_pits_16m=67  ms_rivers=228  river_lines=37  river_vertices=38438  ms_ecology=940
+land 142.8 km2: mainland 140.3 km2, islands 0.76 / 0.90 / 0.80 km2; land within 1 km of the grid edge: 0 cells; nearest land to edge 2272 m
+land heights Y: p10 67.6  p50 79.0  p90 116.0  p99 172.6  max 227.7;  > Y100 22.1%, > Y130 6.11%;  slope > 30%: 3.41%
+heap: peak used during build 511 MB above baseline (sampled every 10 ms); retained after build (surface + caches) 88 MB; surface grid arrays 25 MB; plan cache file 7.6 MB
+fingerprint 8d712b1dd53f3bd3 / 90287ece05fe7a5c in 0.07 s

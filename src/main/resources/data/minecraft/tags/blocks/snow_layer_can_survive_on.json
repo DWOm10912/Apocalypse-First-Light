@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:grass_block",
+    "minecraft:dirt",
+    "minecraft:coarse_dirt",
+    "minecraft:sand",
+    "minecraft:gravel",
+    "minecraft:stone",
+    "minecraft:podzol",
+    "minecraft:clay",
+    "minecraft:snow_block",
+    "minecraft:red_sand",
+    "minecraft:terracotta",
+    "minecraft:white_terracotta",
+    "minecraft:orange_terracotta",
+    "minecraft:yellow_terracotta",
+    "minecraft:brown_terracotta",
+    "minecraft:red_terracotta",
+    "minecraft:light_gray_terracotta"
+  ]
+}

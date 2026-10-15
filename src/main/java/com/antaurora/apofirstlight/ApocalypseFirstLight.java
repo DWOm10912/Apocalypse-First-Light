@@ -53,6 +53,10 @@ public class ApocalypseFirstLight {
         net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
                 net.minecraftforge.fml.config.ModConfig.Type.SERVER,
                 com.antaurora.apofirstlight.survivor.SurvivorConfig.SPEC, "apocalypse_firstlight-survivor.toml");
+        // World generation version lock: per world (serverconfig), the token that accepts one recorded terrain-rule change
+        net.minecraftforge.fml.ModLoadingContext.get().registerConfig(
+                net.minecraftforge.fml.config.ModConfig.Type.SERVER,
+                com.antaurora.apofirstlight.worldgen.lock.WorldgenLockConfig.SPEC, "apocalypse_firstlight-worldgen.toml");
 
         AflBlocks.BLOCKS.register(modEventBus);
         AflFluids.FLUID_TYPES.register(modEventBus);

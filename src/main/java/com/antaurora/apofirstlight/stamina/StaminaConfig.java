@@ -30,6 +30,8 @@ public final class StaminaConfig {
         public double recoilPull = 6;
         /** One accepted axe chop on a standing tree (Mesh Trees felling, 2026-10-12): a full swing like a melee hit, a bit less. */
         public double chop = 4;
+        /** One quarter turn of a hand crank (the emergency radio, 2026-10-14; a step every 4 ticks of holding: 2 a second). */
+        public double crank = 0.4;
         /** item id → cost per swing */
         public Map<String, Double> meleeItems = Map.of("apocalypse_firstlight:crowbar", 8.0);
         /** ammo item id → cost per shot */

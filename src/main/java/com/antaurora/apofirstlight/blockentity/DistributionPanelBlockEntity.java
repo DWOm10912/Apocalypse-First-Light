@@ -14,9 +14,11 @@ import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.wiring.WiringNode;
 import com.antaurora.apofirstlight.wiring.WiringStorage;
 import com.antaurora.apofirstlight.wiring.WiringSupply;
+import com.antaurora.apofirstlight.wiring.WiringTemplate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -61,6 +63,11 @@ import org.jetbrains.annotations.Nullable;
  * ({@link #groupOn}; saved as GroupOff, all on by default), so it survives a power loss. A wall switch on the group flips it
  * ({@link #toggleGroup}): every switch of the group turns with it and the group's lights look again at once. After each solve
  * the switches that disagree with their group (placed or loaded since) are set to it.
+ * <p>
+ * Structure templates (phase 6, wiring/WiringTemplate): a panel placed from a template brings its building's wiring packed
+ * ({@code PackedWiring}, {@code PackedFacing}); its server tick writes it into the chunks, the first tick and then every
+ * {@link #UNPACK_PERIOD} ticks for cells in unloaded chunks, keeping (and saving) what is left. Neither key goes to the
+ * client. A panel placed without the AFL processor (its facing differs from the packed one) turns the wiring by the difference.
  */
 public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity implements MenuProvider {
     public static final ResourceLocation PROFILE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block_mesh_profiles/distribution_panel.json");
@@ -96,6 +103,8 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
      * stand still (user 2026-10-09: with ~5 s exponential averages they still swung 111..117 FE/t, the storage 90..100 %).
      */
     public static final int VIEW_WINDOW = 120;
+    /** Phase 6: how often a template's wiring left in unloaded chunks is tried again, ticks. */
+    public static final int UNPACK_PERIOD = 20;
     private static final String MAIN_KEY = "MainOn", TRIP_KEY = "Tripped", OFF_KEY = "BranchOff", ENERGY_KEY = "EnergyStored", MODE_KEY = "SupplyMode", CONFLICT_KEY = "WiringConflict", GROUP_KEY = "GroupOff";
 
     private boolean mainOn;
@@ -119,6 +128,10 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     private long nextSolve;
     /** The circuits joined to another panel (bit n = circuit n), as last synced: the wrench's view and Jade on the client. */
     private int syncedConflict;
+    /** Phase 6 (saved, server only): a template's wiring still to write (WiringTemplate pairs), the facing it was packed at. */
+    @Nullable private long[] packed;
+    @Nullable private Direction packedFacing;
+    private long nextUnpack;
     private final float[] slotLoad = new float[SLOTS];
     private float supplyAvg, loadAvg, capacityAvg;
     private long capacityTick = Long.MIN_VALUE;
@@ -396,6 +409,7 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
     public void serverTick() {
         if (!(level instanceof ServerLevel server)) return;
         long now = server.getGameTime();
+        if (packed != null && now >= nextUnpack) unpack(server, now);
         if (mode == SupplyMode.LEGACY_AREA) {
             if (footprint == null || now >= nextZone) {
                 footprint = BuildingPowerZone.register(server, worldPosition, BuildingPowerZone.compute(server, worldPosition));
@@ -403,12 +417,7 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
             }
         } else if (wiring == null || solvedRevision != WiringStorage.revision() || now >= nextSolve) {
             // after any wiring edit or chunk load (the revision), else every 5 s (a device placed on a tap, a chunk unloaded)
-            wiring = WiringSupply.solve(server, worldPosition, getBlockState());
-            solvedRevision = WiringStorage.revision();
-            nextSolve = now + ZONE_PERIOD;
-            int conflict = conflictMask();
-            if (conflict != syncedConflict) { syncedConflict = conflict; sync(); }
-            alignSwitches(server);
+            solve(server, now);
         }
         // the top port seeds its cable network; the network pulls from outputStorage this tick (level END)
         if (live()) PowerCableTransfer.transferFrom(server, worldPosition, Direction.UP, outputStorage, MAX_OUT);
@@ -442,6 +451,50 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         if (live() && stored < CAPACITY / 20 && supplyAvg > 0.5F && loadAvg >= supplyAvg * 0.95F) {
             if (++overloadTicks >= TRIP_TICKS) trip(server);
         } else overloadTicks = 0;
+    }
+
+    private void solve(ServerLevel server, long now) {
+        wiring = WiringSupply.solve(server, worldPosition, getBlockState());
+        solvedRevision = WiringStorage.revision();
+        nextSolve = now + ZONE_PERIOD;
+        int conflict = conflictMask();
+        if (conflict != syncedConflict) { syncedConflict = conflict; sync(); }
+        alignSwitches(server);
+    }
+
+    /**
+     * WIRED: solves the wiring now instead of on the next tick (phase 5: the wrench's group picker counts a device tapped a
+     * moment ago; a group just set lines its switches up and lets its light look again at once).
+     */
+    public void solveNow() {
+        if (level instanceof ServerLevel server && mode == SupplyMode.WIRED) solve(server, server.getGameTime());
+    }
+
+    /**
+     * Phase 6: writes the template's wiring into the chunks (wiring/WiringTemplate#unpack; a wiring edit, so the panel solves
+     * again this tick). Placed without the AFL processor, the block turned and the packed wiring did not: it turns by the
+     * difference first (a mirror looks like a turn and stays wrong, draft 3).
+     */
+    private void unpack(ServerLevel server, long now) {
+        BlockState s = getBlockState();
+        Direction facing = s.hasProperty(DistributionPanelBlock.FACING) ? s.getValue(DistributionPanelBlock.FACING) : null;
+        if (packedFacing != null && facing != null && facing != packedFacing)
+            WiringTemplate.transform(packed, net.minecraft.world.level.block.Mirror.NONE, WiringTemplate.between(packedFacing, facing));
+        if (facing != null) packedFacing = facing;
+        packed = WiringTemplate.unpack(server, worldPosition, packed).left();
+        if (packed == null) packedFacing = null;
+        nextUnpack = now + UNPACK_PERIOD;
+        setChanged();
+    }
+
+    /** Phase 6: the template's wiring nodes still to write (0 when none; server side). */
+    public int packedLeft() {
+        return packed == null ? 0 : packed.length / 2;
+    }
+
+    /** Phase 6: the facing the template's wiring was packed at, or turned to (null when none is left). */
+    @Nullable public Direction packedFacing() {
+        return packedFacing;
     }
 
     private void trip(ServerLevel server) {
@@ -561,6 +614,10 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         tag.putInt(ENERGY_KEY, stored);
         tag.putString(MODE_KEY, mode == SupplyMode.WIRED ? "wired" : "legacy_area");
         if (groupOff != 0) tag.putInt(GROUP_KEY, groupOff);
+        if (packed != null) {
+            tag.putLongArray(WiringTemplate.KEY, packed);
+            if (packedFacing != null) tag.putString(WiringTemplate.FACING_KEY, packedFacing.getName());
+        }
     }
 
     @Override
@@ -575,11 +632,19 @@ public class DistributionPanelBlockEntity extends AflAnimatedMeshBlockEntity imp
         mode = "wired".equals(tag.getString(MODE_KEY)) ? SupplyMode.WIRED : SupplyMode.LEGACY_AREA;
         applyMode();
         syncedConflict = tag.getInt(CONFLICT_KEY);   // only in the update tag (the client); a save has none
+        // phase 6: a template's wiring (a placed template, or a save in the middle of writing it); tried on the next tick
+        packed = tag.contains(WiringTemplate.KEY, Tag.TAG_LONG_ARRAY) ? tag.getLongArray(WiringTemplate.KEY).clone() : null;
+        if (packed != null && packed.length < 2) packed = null;
+        Direction f = Direction.byName(tag.getString(WiringTemplate.FACING_KEY));
+        packedFacing = packed != null && f != null && f.getAxis().isHorizontal() ? f : null;
+        nextUnpack = 0;
     }
 
     @Override public CompoundTag getUpdateTag() {
         CompoundTag tag = saveWithoutMetadata();
         tag.putInt(CONFLICT_KEY, conflictMask());
+        tag.remove(WiringTemplate.KEY);   // server only (draft 4)
+        tag.remove(WiringTemplate.FACING_KEY);
         return tag;
     }
     @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }

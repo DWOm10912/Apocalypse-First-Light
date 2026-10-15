@@ -9,7 +9,9 @@
     "apocalypse_firstlight:coastal_sandy_clearing",
     "apocalypse_firstlight:mixed_mesophytic_forest",
     "apocalypse_firstlight:riparian_forest",
-    "apocalypse_firstlight:coastal_swamp_forest"
+    "apocalypse_firstlight:coastal_swamp_forest",
+    "apocalypse_firstlight:montane_conifer_forest",
+    "apocalypse_firstlight:lakeshore_mixed_forest"
   ],
   "remove": [
     "apocalypse_firstlight:eco_trees_grassland",
@@ -20,7 +22,9 @@
     "apocalypse_firstlight:eco_trees_clearing",
     "apocalypse_firstlight:eco_trees_mesophytic",
     "apocalypse_firstlight:eco_trees_riparian",
-    "minecraft:trees_swamp"
+    "minecraft:trees_swamp",
+    "apocalypse_firstlight:eco_trees_montane",
+    "apocalypse_firstlight:eco_trees_lakeshore"
   ],
   "feature": "apocalypse_firstlight:mesh_forest"
 }

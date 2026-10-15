@@ -27,7 +27,8 @@ public abstract class SurfaceSystemStartupBiomeMixin {
                                                         CallbackInfo callbackInfo) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) randomState;
         if (access.apocalypse$hasMacroGeography()) StartupSurfaceBiomeContext.begin(access.apocalypse$getSeed(), registry,
-                randomState.router().initialDensityWithoutJaggedness());
+                randomState.router().initialDensityWithoutJaggedness(),
+                access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null);
     }
 
     @Inject(method = "buildSurface", at = @At("RETURN"))

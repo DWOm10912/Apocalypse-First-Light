@@ -139,7 +139,7 @@
    - 世界边界内且离边界 ≥ 32 格；
    - 离死亡点 ≥ 192 格，离旧床 ≥ 128 格；
    - 自然辐射区不是重度沉降或极端；
-   - 有 Terrain V2 规划时：干地（水类 0）、离岸 ≥ 24 格、坡度 ≤ 0.25；
+   - 有 Terrain V2 规划时：干地（水类 0）、离岸 ≥ 24 格、坡度 ≤ 0.25。规划取这个世界生成器绑定的那一份（`RandomStateSeedAccess.apocalypse$terrainPlanSurface()`），不按种子查：同一个种子的 r1 世界和联邦世界规划不同（2026-10-14 同步 Main 时改的，以前按种子查，联邦世界会读到 r1 的规划；联邦世界里的继任出生还没有实机测过）；
    - 生物群系（噪声采样）不是海洋、深海、河流、沙滩。
    第一个通过的列存为规划点。
 2. 接手时（重生）精确落地：加载 / 生成该列区块，取最高的非树叶实心方块：不是液体、树叶、原木、AFL 树、火、营火、岩浆块、仙人掌、细雪、甜浆果丛；站立空间无碰撞，身体周围 0.5 格内无液体。规划点不行就继续后面的候选，最多 8 次落地检查。
@@ -223,7 +223,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 ## 11. 死亡结算界面与模式选择（客户端）
 
-客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ **42**（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）。
+客户端只显示服务器发来的内容，不做任何判定（`survivor/SurvivorPackets`，`client/survivor/`）。网络协议版本 `AflNetwork.PROTOCOL` 39 → 40（阶段 D，新增前 3 个包）→ 41（外貌原型，新增 `Appearance`）→ 42（身份：`Appearance` 换成 `Identity`，新增 `NamePrompt`、`NameChoice`）→ **43**（2026-10-14 同步最新 Main：Main 那边暗线第 5 阶段也把 39 升到了 40，两边包集合不同，合并后的版本和两边都不能互连，所以取 43）。
 
 | 包 | 方向 | 内容 |
 |---|---|---|
@@ -407,7 +407,7 @@ V0 唯一的提供器 `wilderness_ring`：世界出生点周围 `successorRingMi
 
 同步：
 
-- `Identity` 包（第 11 节），协议 42：姓名、皮肤 ID、手臂类型一起发。
+- `Identity` 包（第 11 节），协议 42 加入（同步 Main 后为 43）：姓名、皮肤 ID、手臂类型一起发。
 - 登录时：把其他在线玩家的外貌发给他，再把他的外貌广播给所有人。
 - 继任者接手时、首位幸存者确认姓名时：广播一次。
 - 客户端 `client/survivor/SurvivorIdentityClient` 按账号 UUID 存姓名和外貌，只由这个包写入，退出世界时清空；姓名变了就让对应玩家重新计算显示名。
