@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    private static final String PROTOCOL = "40";
+    private static final String PROTOCOL = "43";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -132,6 +132,22 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.wiring.WiringPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.survivor.SurvivorPackets.register(channel, nextId);
+    }
+
+    /** Survivor Death and Succession V0: the death summary, the mode and name prompts, identities, to one player. */
+    public static void survivor(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Survivor Death and Succession V0: a player's survivor identity (name and look), to every client. */
+    public static void survivorToAll(Object packet) {
+        if (channel != null) channel.send(PacketDistributor.ALL.noArg(), packet);
+    }
+
+    /** Survivor Death and Succession V0 (client): the host's mode choice, the first survivor's name choice. */
+    public static void survivorToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** Building Wiring V1: the wiring view (nodes near the player, the wrench's selection), to one player. */

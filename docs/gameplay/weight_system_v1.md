@@ -347,7 +347,7 @@ ratio = 负担 / 舒适负重。点之间线性，60 kg 以上不再加重：
 
 所有玩家重量重算合并在 ServerTick END（LOWEST），每玩家每tick最多一次，不因每个物品重复更新。Debug held 仅按需读一件物品，不改玩家缓存。没有复杂增量账本，没有每tick全量扫描。第三方不发通知的变化存在最多10ticks兜底延迟（以正常tick进度计）。
 
-Login、Respawn、Clone、Dimension Change、Death 标记强制；clone清旧玩家缓存，按新玩家真实物品重算，不复制旧质量。模式变化每tick检查并强制重算/同步。死亡/keepInventory由原逻辑决定实际物品；最终清理完成后失效/兜底复核。Logout拆菜单listener并清缓存；ServerStopped清玩家缓存、sequence与mass data，下一次世界重开重新加载。没有修改辐射capability生命周期。
+Login、Respawn、Clone、Dimension Change、Death 标记强制；clone清旧玩家缓存，按新玩家真实物品重算，不复制旧质量。模式变化每tick检查并强制重算/同步。死亡/keepInventory由原逻辑决定实际物品（2026-10-14 起生存/冒险死亡的物品全部进入尸体、新玩家空手，见 [survivor_death_succession_v0.md](survivor_death_succession_v0.md)；按新玩家真实物品重算的逻辑不变）；最终清理完成后失效/兜底复核。Logout拆菜单listener并清缓存；ServerStopped清玩家缓存、sequence与mass data，下一次世界重开重新加载。没有修改辐射capability生命周期。
 
 ## EncumbranceState 与网络
 

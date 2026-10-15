@@ -17,6 +17,16 @@ public final class AflEntities {
             () -> EntityType.Builder.<OfficeChairEntity>of(OfficeChairEntity::new, MobCategory.MISC)
                     .sized(0.85F, 1.15F).clientTrackingRange(10).build("modern_office_chair"));
 
+    /**
+     * A dead survivor's body (docs/gameplay/survivor_death_succession_v0.md 6): never saved, never summoned (the corpse
+     * record in the survivor data puts it back), no physics, 1.2 x 0.4 blocks for the click.
+     */
+    public static final RegistryObject<EntityType<com.antaurora.apofirstlight.survivor.SurvivorCorpse>> SURVIVOR_CORPSE =
+            ENTITY_TYPES.register("survivor_corpse", () -> EntityType.Builder.<com.antaurora.apofirstlight.survivor.SurvivorCorpse>of(
+                            com.antaurora.apofirstlight.survivor.SurvivorCorpse::new, MobCategory.MISC)
+                    .sized(1.2F, 0.4F).noSave().noSummon().fireImmune().clientTrackingRange(8).updateInterval(100)
+                    .build("survivor_corpse"));
+
     private AflEntities() {
     }
 }
