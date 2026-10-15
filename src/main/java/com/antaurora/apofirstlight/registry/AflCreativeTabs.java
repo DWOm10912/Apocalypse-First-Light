@@ -144,6 +144,8 @@ public final class AflCreativeTabs {
             AflItems.VENDING_MACHINE,
             AflItems.WATER_DISPENSER,
             AflItems.METAL_TRASH_CAN,
+            AflItems.RURAL_MAILBOX,
+            AflItems.TUBE_FARM_GATE,
             AflItems.COMMERCIAL_DUMPSTER,
             AflItems.COMMERCIAL_DUMPSTER_BLUE,
             AflItems.COMMERCIAL_DUMPSTER_BROWN,

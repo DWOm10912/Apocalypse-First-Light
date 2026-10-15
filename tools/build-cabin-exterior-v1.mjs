@@ -517,7 +517,30 @@ function pipePieces() {
   }
   polyOut(cap, S, Array.from({length: 16}, (_, i) => { const a = i / 16 * Math.PI * 2; return [0.5 + Math.cos(a) * R, y0, 0.5 + Math.sin(a) * R]; }), [0, -1, 0], {proj: 'y'});
   for (let k = 0; k < 3; k++) { const a = k / 3 * Math.PI * 2, x = 0.5 + Math.cos(a) * 0.09, z = 0.5 + Math.sin(a) * 0.09; box(cap, S, [x - 0.007, 0.55, z - 0.007], [x + 0.007, y0, z + 0.007], 'nswe'); }
-  return [pipe, cap];
+  return [pipe, cap, floorPipe()];
+}
+/**
+ * 2026-10-14 (M2 wrap-up): the pipe through a plank floor (the old house's attic floor at (8, 4, 1) was a 1 m square
+ * hole round it). The cell is drawn as the floor: white oak plank faces (the planks block's own texture, projected like a
+ * cube face, so they run on from the neighbours) round a FLOOR_BOX square shaft; under the ceiling a black steel trim
+ * plate, on the attic floor a firestop plate, both FLOOR_PLATE square with the pipe through; the shaft is closed by them.
+ */
+const FLOOR_BOX = 0.15, FLOOR_PLATE = 0.2, FLOOR_GAP = 0.004, PLANKS = NS + 'block/wood/white_oak_planks';
+function floorPipe() {
+  const pc = cylinder(new Piece('pipe/stove_pipe_floor'), 'stove_pipe', 'stove_pipe', 'y', [0.5, 0.5], 0, 1, PIPE_R, 16);
+  const a = 0.5 - FLOOR_BOX, b = 0.5 + FLOOR_BOX;
+  box(pc, PLANKS, [0, 0, 0], [1, 1, 1], 'nsew');
+  for (const [y, f] of [[1, 'u'], [0, 'd']])
+    for (const [x0, z0, x1, z1] of [[0, 0, 1, a], [0, b, 1, 1], [0, a, a, b], [b, a, 1, b]]) box(pc, PLANKS, [x0, y, z0], [x1, y, z1], f);
+  const p0 = 0.5 - FLOOR_PLATE, p1 = 0.5 + FLOOR_PLATE;
+  for (const [y, s] of [[1 + FLOOR_GAP, 1], [-FLOOR_GAP, -1]]) {
+    // a square ring: 16 corners on the square (its corners among them) to 16 on the pipe
+    const sq = i => { const t = i / 16 * Math.PI * 2, c = Math.cos(t), n = Math.sin(t), k = FLOOR_PLATE / Math.max(Math.abs(c), Math.abs(n)); return [0.5 + c * k, y, 0.5 + n * k]; };
+    const rd = i => { const t = i / 16 * Math.PI * 2; return [0.5 + Math.cos(t) * (PIPE_R + FLOOR_GAP), y, 0.5 + Math.sin(t) * (PIPE_R + FLOOR_GAP)]; };
+    for (let i = 0; i < 16; i++) polyOut(pc, 'stove_pipe', [sq(i), sq(i + 1), rd(i + 1), rd(i)], [0, s, 0]);
+    box(pc, 'stove_pipe', [p0, Math.min(y, y - s * FLOOR_GAP), p0], [p1, Math.max(y, y - s * FLOOR_GAP), p1], 'nsew');
+  }
+  return pc;
 }
 
 export function pieces() {

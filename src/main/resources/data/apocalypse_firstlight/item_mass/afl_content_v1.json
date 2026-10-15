@@ -253,6 +253,14 @@
       "unit_mass_kg": 30,
       "estimated": true
     },
+    "apocalypse_firstlight:tube_farm_gate": {
+      "unit_mass_kg": 45,
+      "estimated": true
+    },
+    "apocalypse_firstlight:rural_mailbox": {
+      "unit_mass_kg": 8,
+      "estimated": true
+    },
     "apocalypse_firstlight:roof_tpo": {
       "unit_mass_kg": 0.6,
       "estimated": true

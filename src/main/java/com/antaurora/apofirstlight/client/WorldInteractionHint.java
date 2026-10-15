@@ -76,6 +76,7 @@ public final class WorldInteractionHint {
             if(target==null) target=retailContents(mc,hit);
             if(target==null) target=counterGate(mc,hit);
             if(target==null) target=enclosureGate(mc,hit);
+            if(target==null) target=ruralDriveway(mc,hit);
             if(target==null) target=dieselGenerator(mc,hit);
             if(target==null) target=portableGenerator(mc,hit);
             if(target==null) target=storefrontGlazing(mc,hit);
@@ -119,7 +120,7 @@ public final class WorldInteractionHint {
         String key=label.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t?t.getKey():"";
         var use=com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyUse);
         if(key.endsWith(".cannot_charge")||key.endsWith(".needs_crowbar")||key.endsWith(".needs_container")) return java.util.List.of();
-        if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
+        if(key.endsWith("fuel_container.pick_up")||key.contains(".storefront_glazing.")||key.contains(".aluminum_cornice.")||key.contains(".curb.level.")||key.contains(".metal_eyebrow_canopy.")||key.contains(".tube_farm_gate.sign.")||key.contains(".rural_mailbox.flag.")) return java.util.List.of(com.antaurora.apofirstlight.client.ui.AflKeyHint.of(mc.options.keyShift),use);
         return java.util.List.of(use);
     }
 
@@ -318,6 +319,22 @@ public final class WorldInteractionHint {
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.EnclosureGateBlock)) return null;
         return new Target(Component.translatable("hint.apocalypse_firstlight.enclosure_gate."
                 +(s.getValue(com.antaurora.apofirstlight.block.EnclosureGateBlock.OPEN)?"close":"open")),null);
+    }
+
+    /** Rural Driveway V1: the tube gate (open / close; sneak, empty hand: the sign) and the mailbox (open; sneak: the flag). */
+    private static Target ruralDriveway(Minecraft mc,BlockHitResult hit) {
+        if(hit.getType()!=HitResult.Type.BLOCK) return null;
+        var s=mc.level.getBlockState(hit.getBlockPos());String k="hint.apocalypse_firstlight.";
+        boolean sneak=mc.player.isSecondaryUseActive();
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.block.TubeFarmGateBlock) {
+            if(!sneak) return new Target(Component.translatable(k+"tube_farm_gate."+(s.getValue(com.antaurora.apofirstlight.block.TubeFarmGateBlock.OPEN)?"close":"open")),null);
+            return mc.player.getMainHandItem().isEmpty()?new Target(Component.translatable(k+"tube_farm_gate.sign."
+                    +s.getValue(com.antaurora.apofirstlight.block.TubeFarmGateBlock.SIGN).next().getSerializedName()),null):null;
+        }
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.block.RuralMailboxBlock)) return null;
+        if(!sneak) return new Target(Component.translatable(k+"rural_mailbox.open"),null);
+        return mc.player.getMainHandItem().isEmpty()?new Target(Component.translatable(k+"rural_mailbox.flag."
+                +(s.getValue(com.antaurora.apofirstlight.block.RuralMailboxBlock.FLAG)?"lower":"raise")),null):null;
     }
 
     /**

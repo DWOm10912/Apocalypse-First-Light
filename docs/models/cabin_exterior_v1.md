@@ -123,7 +123,7 @@
 | `white_oak_porch_post` | 白栎门廊立柱 | Mesh | 斧 | — | 16 cm 立柱；连着栏杆的那面加栏杆接头，接头的碰撞 1.5 m（同栏杆） |
 | `white_oak_porch_railing` | 白栎门廊栏杆 | Mesh | 斧 | `axis` x / z | 选框 0.94 m 高；碰撞 1.5 m（同栅栏） |
 | `white_oak_porch_deck` | 白栎门廊地板（M1.1） | Mesh | 斧，无等级 | `axis` x / z（板的方向） | 碰撞、选框：顶上 3 cm 的板（0.97 → 1）、格栅、开着的边上的边梁和板头、每个支撑（M1.2：石块 + 木柱，见"门廊地板"）；挡光只按板：上面走起来和整格一样高，下面除了支撑是空的；天光不往下漏 |
-| `stove_pipe` | 炉子烟管 | Mesh | 镐 + 石级 | — | 15 cm 管；有防雨帽时加上帽子（32 cm 宽） |
+| `stove_pipe` | 炉子烟管 | Mesh | 镐 + 石级 | — | 15 cm 管；有防雨帽时加上帽子（32 cm 宽）；穿木板楼板时那格画成楼板 + 钢支撑盒（2026-10-14，见 [Box Stove V1](box_stove_v1.md) 第 8 节） |
 | `fieldstone` | 毛石 | 原版立方体，贴图按坐标选块（`MacroTileModel`） | 镐（任意），需要正确工具 | — | 整格 |
 | `firewood_stack` | 柴垛 | JSON | 斧 | `axis` | 整格 |
 | `white_oak_stairs` | 白栎楼梯 | JSON（门廊地板贴图） | 斧 | 原版楼梯 | 原版 |

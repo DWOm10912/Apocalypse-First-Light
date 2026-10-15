@@ -60,6 +60,7 @@
 - 必须加结构处理器 `worldgen/structure/AflBlockEntityProcessor`（插头和电表箱的偏移跟着转）。
 - 灌油：油罐和发电机第一次在服务端加载时按规则掷（`fluid/FuelFill`）。
 - Mirror 固定 NONE（V1 规范）；另一手的转角要另做镜像资产。
+- 2026-10-14 的计划（还没做）：首发路线里 A1 放在 C3 县道的沿路地块上，离老宅的连接节点 `H` 沿路约 0.8–1.5 km，由 Main 选位；`main_entrance`、`side_entrance` 两个 `DRIVEWAY` 接口算出连接节点，交给 C 接路（[Main ↔ C3 接口契约](main_c3_interface_contract_v1.md) 第 8、11 节）。
 
 ## 验证（2026-10-10，GameTest，`-PaflWithoutShaders`：Oculus 不能在专用服务器上加载）
 

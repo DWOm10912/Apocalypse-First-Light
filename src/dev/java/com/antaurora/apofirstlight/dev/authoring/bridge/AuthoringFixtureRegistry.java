@@ -96,6 +96,11 @@ final class AuthoringFixtureRegistry {
     /** The enclosure gate: cells c<col>r<row>, 2 x 2, anchor c0r0, columns along facing.getClockWise(). */
     private static final Multiblock ENCLOSURE_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c0r1","c1r1"),
             (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The tube farm gate: cells c<col>r<row>, 4 x 2, anchor c0r0 (the hinge post), columns along facing.getClockWise(). */
+    private static final Multiblock TUBE_FARM_GATE=new Multiblock("cell",List.of("c0r0","c1r0","c2r0","c3r0","c0r1","c1r1","c2r1","c3r1"),
+            (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
+    /** The rural mailbox: cells r0 (anchor, master) and r1 above it. */
+    private static final Multiblock RURAL_MAILBOX=new Multiblock("cell",List.of("r0","r1"),(a,f,p)->a.above(p.charAt(1)-'0'));
     /** The diesel generator: cells c<col>r<row>, 3 x 2, anchor c0r0 (the block's master, holding the block entity, is c1r0), columns along facing.getClockWise(). */
     private static final Multiblock DIESEL_GENERATOR=new Multiblock("cell",List.of("c0r0","c1r0","c2r0","c0r1","c1r1","c2r1"),
             (a,f,p)->a.relative(f.getClockWise(),p.charAt(1)-'0').above(p.charAt(3)-'0'));
@@ -259,6 +264,10 @@ final class AuthoringFixtureRegistry {
                     .notes("Fuel Stop A1 details V1 (2026-10-09): a packaged rooftop unit, 2 long x 1 deep x 2 high on its roof curb; anchor c0r0, the second column at facing.getClockWise(). The rain hood sticks 0.19 m out of the west (counter-clockwise) end. Look only (no power) in V1."),
             new Def(A+"enclosure_gate",safe,"utility").facing(H4).multi(ENCLOSURE_GATE).variant("hinge","right","left").fixed("open","false").support(Support.NONE)
                     .notes("Trash enclosure V1 (2026-10-09): one steel gate leaf with its own hinge post, 2 wide x 2 high; facing = the outside (the leaf opens toward it), the leaf hangs at the back of its cells. hinge=right: the post in the anchor column c0; hinge=left: in c1 (facing.getClockWise()). A pair closes a 4-cell opening between cmu_screen_wall runs that start in the cells behind."),
+            new Def(A+"tube_farm_gate",safe,"utility").facing(H4).multi(TUBE_FARM_GATE).variant("sign","none","front","back").fixed("open","false").fixed("swing","back").support(Support.NONE)
+                    .notes("Rural Driveway V1 (2026-10-14): a 12 ft five-rail galvanised tube gate on two round wood posts, 4 wide x 2 high; facing = the front (toward the road). Hinge post in the anchor column c0, latch post + chain in c3 (facing.getClockWise()). The leaf hangs across the cells' middle and opens 90 degrees away from the player who uses it; open is runtime. sign = the PRIVATE DRIVE sign on the leaf, readable from the front / back, or none."),
+            new Def(A+"rural_mailbox",storage,"storage").facing(H4).multi(RURAL_MAILBOX).fixed("open","false").variant("flag","false","true").inventory().support(Support.FLOOR)
+                    .notes("Rural Driveway V1 (2026-10-14): a black steel rural mailbox on a 4 x 4 post, 1 cell, 2 high; facing = the door (toward the road). 5 slots (hopper screen), plain storage. flag = the red flag up. Set beside the drive mouth on the right as seen from the road, about 0.5 m off the shoulder."),
             new Def(A+"diesel_generator",safe,"utility").facing(H4).multi(DIESEL_GENERATOR).fixed("open","false").fixed("fill","false").support(Support.NONE)
                     .notes("Diesel standby generator V1 (2026-10-09): a canopy genset on its sub-base fuel tank, 3 long x 1 deep x 2 high; facing = the front (service doors, instrument panel). Anchor c0r0; the master and its block entity are c1r0 (the middle column), whose back face centre is the standard steel power port (a power cable in the cell behind it). Placed off and empty (0 L): fuel with a jerry can at the fill box on the tank step."),
             new Def(A+"portable_diesel_generator",safe,"utility").facing(H4).fixed("cap","false").support(Support.FLOOR)

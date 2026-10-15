@@ -1000,32 +1000,55 @@ public final class CabinBlocks {
 
     // --------------------------------------------------------------------------------------------- stove pipe
 
-    /** A 15 cm black stove pipe; a rain cap on top unless it goes on (another pipe, or a roof it passes through). */
+    /**
+     * A 15 cm black stove pipe; a rain cap on top unless it goes on (another pipe, or a roof it passes through). Through a
+     * plank floor (2026-10-14, M2 wrap-up: the old house's attic floor was a 1 m square hole round it) the cell is drawn as
+     * the floor, planks round a steel support box with a trim plate under the ceiling and a firestop plate on top, and is
+     * a full block to walk on and pick.
+     */
     public static final class StovePipe extends Block implements CabinPieces {
         private static final VoxelShape SHAPE = turned(0, CabinShapeData.PIPE), CAPPED = turned(0, CabinShapeData.PIPE_CAPPED);
+        private static final int FLOOR = 1 << 8;
 
         StovePipe(Properties p) { super(p); }
 
-        /** The pipe, or the pipe ending in its rain cap (the cap is wider than the pipe). */
+        /** The pipe, or the pipe ending in its rain cap (the cap is wider than the pipe); in a floor the whole cell. */
         @Override
         @SuppressWarnings("deprecation")
-        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) { return goesOn(level, pos) ? SHAPE : CAPPED; }
+        public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+            if (inFloor(level, pos)) return Shapes.block();
+            return goesOn(level, pos) ? SHAPE : CAPPED;
+        }
 
         private static boolean goesOn(BlockGetter level, BlockPos pos) {
             BlockState up = level.getBlockState(pos.above());
             return up.getBlock() instanceof StovePipe || up.getBlock() instanceof Roof && up.getValue(Roof.SHAPE) != RoofShape.RIDGE;
         }
 
-        @Override
-        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
-            return (goesOn(level, pos) ? 0 : 1) | BoxStove.pipePanel(level, pos) << 1;
+        /**
+         * In a plank floor: a pipe goes on above and below, and at least two sides at the same height are planks (AFL's
+         * species planks, which are not in minecraft:planks, or the vanilla tag). Two walls of a corner do not count.
+         */
+        private static boolean inFloor(BlockGetter level, BlockPos pos) {
+            if (!(level.getBlockState(pos.above()).getBlock() instanceof StovePipe) || !(level.getBlockState(pos.below()).getBlock() instanceof StovePipe)) return false;
+            int planks = 0;
+            for (Direction f : Direction.Plane.HORIZONTAL) {
+                BlockState s = level.getBlockState(pos.relative(f));
+                if (s.getBlock() instanceof com.antaurora.apofirstlight.tree.WoodBlocks.Planks || s.is(net.minecraft.tags.BlockTags.PLANKS)) planks++;
+            }
+            return planks >= 2;
         }
 
-        /** Flags: bit 0 the rain cap (nothing above takes the pipe on); Box Stove V1: bits 1.. a heat shield's sheet behind it. */
+        @Override
+        public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {
+            return (goesOn(level, pos) ? 0 : 1) | BoxStove.pipePanel(level, pos) << 1 | (inFloor(level, pos) ? FLOOR : 0);
+        }
+
+        /** Flags: bit 0 the rain cap (nothing above takes the pipe on); Box Stove V1: bits 1..7 a heat shield's sheet behind it; bit 8 in a plank floor. */
         @Override
         public void cabinPieces(BlockState state, int flags, Sink sink) {
-            sink.add((flags & 1) == 0 ? "pipe/stove_pipe" : "pipe/stove_pipe_cap", 0);
-            int panel = flags >> 1;
+            sink.add((flags & FLOOR) != 0 ? "pipe/stove_pipe_floor" : (flags & 1) == 0 ? "pipe/stove_pipe" : "pipe/stove_pipe_cap", 0);
+            int panel = flags >> 1 & 127;
             if ((panel & 1) != 0) sink.add("shield/panel_" + (panel >> 3 & 15), panel >> 1 & 3);
         }
     }

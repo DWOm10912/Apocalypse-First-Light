@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>PRIVATE DRIVE sign art</title></head><body style="margin:0;background:#555">
+<script>
+// The face art of the PRIVATE DRIVE sign (M3a, docs/models/rural_driveway_v1.md): a 450 x 300 mm white aluminium sign,
+// black border and letters, 2 px a millimetre. Rendered once through m1_source/serve.cjs (saves to m1_sheets/) and kept
+// as src/main/blockbench/textures/private_drive_sign_art.png, which tools/build-rural-driveway-v1.mjs samples onto the
+// sign's face. White is the sign's own paint (the generator lights it like any texel).
+const W = 900, H = 600, c = document.createElement('canvas'); c.width = W; c.height = H;
+const g = c.getContext('2d');
+g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+// border: 10 mm black band, 12 mm in from the edge, rounded like a stock sign
+const round = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+g.lineWidth = 20; g.strokeStyle = '#141414'; round(34, 34, W - 68, H - 68, 36); g.stroke();
+g.fillStyle = '#141414'; g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+g.font = 'bold 178px Arial, Helvetica, sans-serif';
+const fit = (s, y) => { const w = g.measureText(s).width, k = Math.min(1, 700 / w); g.save(); g.translate(W / 2, y); g.scale(k, 1); g.fillText(s, 0, 0); g.restore(); };
+fit('PRIVATE', 278); fit('DRIVE', 480);
+document.body.appendChild(c);
+window.renderArt = async () => {
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  await fetch('/save?name=private_drive_sign_art.png', {method: 'POST', body: blob});
+  return 'saved';
+};
+</script></body></html>

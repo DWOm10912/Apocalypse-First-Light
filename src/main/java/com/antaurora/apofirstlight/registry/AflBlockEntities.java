@@ -143,6 +143,14 @@ public final class AflBlockEntities {
             BLOCK_ENTITIES.register("enclosure_gate", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.EnclosureGateBlockEntity::new,
                             AflBlocks.ENCLOSURE_GATE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.TubeFarmGateBlockEntity>> TUBE_FARM_GATE =
+            BLOCK_ENTITIES.register("tube_farm_gate", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.TubeFarmGateBlockEntity::new,
+                            AflBlocks.TUBE_FARM_GATE.get()).build(null));
+    public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.RuralMailboxBlockEntity>> RURAL_MAILBOX =
+            BLOCK_ENTITIES.register("rural_mailbox", () ->
+                    BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.RuralMailboxBlockEntity::new,
+                            AflBlocks.RURAL_MAILBOX.get()).build(null));
     public static final RegistryObject<BlockEntityType<com.antaurora.apofirstlight.blockentity.LightPoleBaseBlockEntity>> LIGHT_POLE_BASE =
             BLOCK_ENTITIES.register("light_pole_base", () ->
                     BlockEntityType.Builder.of(com.antaurora.apofirstlight.blockentity.LightPoleBaseBlockEntity::new,

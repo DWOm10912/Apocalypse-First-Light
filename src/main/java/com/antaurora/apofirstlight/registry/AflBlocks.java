@@ -250,6 +250,16 @@ public final class AflBlocks {
     public static final RegistryObject<Block> ENCLOSURE_GATE = BLOCKS.register("enclosure_gate",
             () -> new com.antaurora.apofirstlight.block.EnclosureGateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    /**
+     * Rural Driveway V1 (forest start home M3a): the tube farm gate (galvanised tube on wood posts) and the roadside mailbox
+     * (steel box on a wood post). Pickaxe + stone for now: AFL mining tiers are to be redone (user, 2026-10-14).
+     */
+    public static final RegistryObject<Block> TUBE_FARM_GATE = BLOCKS.register("tube_farm_gate",
+            () -> new com.antaurora.apofirstlight.block.TubeFarmGateBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(3.0F, 6.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
+    public static final RegistryObject<Block> RURAL_MAILBOX = BLOCKS.register("rural_mailbox",
+            () -> new com.antaurora.apofirstlight.block.RuralMailboxBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
+                    .strength(2.0F, 3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));
     public static final RegistryObject<Block> ROOFTOP_UNIT = BLOCKS.register("rooftop_unit",
             () -> new com.antaurora.apofirstlight.block.RooftopUnitBlock(BlockBehaviour.Properties.copy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 8.0F).sound(SoundType.METAL).requiresCorrectToolForDrops().noOcclusion()));

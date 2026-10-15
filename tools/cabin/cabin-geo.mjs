@@ -226,7 +226,8 @@ const R5 = v => Math.round(v * 1e5) / 1e5 || 0;
 /** A piece as {textures: [...], quads: [[tex, x, y, z, u, v, nx, ny, nz] x 4, ...]} (convex polygons fanned into quads). */
 export function serialise(piece, texPrefix) {
   const texList = [], texIdx = new Map(), quads = [];
-  const T = t => { if (!texIdx.has(t)) { texIdx.set(t, texList.length); texList.push(texPrefix + t); } return texIdx.get(t); };
+  // a name with a namespace ("apocalypse_firstlight:block/wood/white_oak_planks") is another block's texture, used as is
+  const T = t => { if (!texIdx.has(t)) { texIdx.set(t, texList.length); texList.push(t.includes(':') ? t : texPrefix + t); } return texIdx.get(t); };
   for (const rec of piece.polys) {
     const parts = rec.uv ? [rec] : tiles(rec);
     for (const p of parts) {

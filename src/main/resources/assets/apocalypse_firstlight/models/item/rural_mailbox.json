@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/rural_mailbox/item",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0.024,
+        1.113,
+        -2.499
+      ],
+      "scale": [
+        0.946,
+        0.946,
+        0.946
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0.024,
+        1.113,
+        -2.499
+      ],
+      "scale": [
+        0.946,
+        0.946,
+        0.946
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0.011,
+        -1.046,
+        0.011
+      ],
+      "scale": [
+        0.435,
+        0.435,
+        0.435
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        -0.011,
+        -1.046,
+        -0.011
+      ],
+      "scale": [
+        0.435,
+        0.435,
+        0.435
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0.018,
+        2.538,
+        0.012
+      ],
+      "scale": [
+        0.192,
+        0.192,
+        0.192
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        -0.035,
+        -0.923,
+        -0.023
+      ],
+      "scale": [
+        0.384,
+        0.384,
+        0.384
+      ]
+    },
+    "gui": {
+      "rotation": [
+        20,
+        225,
+        0
+      ],
+      "translation": [
+        -0.018,
+        -1.985,
+        0
+      ],
+      "scale": [
+        0.738,
+        0.738,
+        0.738
+      ]
+    }
+  }
+}

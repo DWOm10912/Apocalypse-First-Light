@@ -37,6 +37,11 @@ public final class AflBlockEntityRenderers {
         // Trash enclosure V1 gate: the leaf swings (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.ENCLOSURE_GATE.get(),
                 AflBlockEntityRendering.wrap("enclosure_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // Rural Driveway V1: the tube farm gate's leaf (either way) and the mailbox's door and flag (generic runtime)
+        event.registerBlockEntityRenderer(AflBlockEntities.TUBE_FARM_GATE.get(),
+                AflBlockEntityRendering.wrap("tube_farm_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        event.registerBlockEntityRenderer(AflBlockEntities.RURAL_MAILBOX.get(),
+                AflBlockEntityRendering.wrap("rural_mailbox", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 AflBlockEntityRendering.wrap("energy_cell", EnergyCellBlockEntityRenderer::new));
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(),
