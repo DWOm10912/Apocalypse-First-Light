@@ -72,6 +72,9 @@ final class AuthoringFixtureRegistry {
     // CommercialGlassDoubleDoorBlock keeps its helper private; this mirrors it: second leaf at facing.getClockWise().
     private static final Multiblock GLASS_DOOR=new Multiblock("part",List.of("lower_left","lower_right","upper_left","upper_right"),
             (a,f,p)->{BlockPos column=p.endsWith("right")?a.relative(f.getClockWise()):a;return p.startsWith("upper")?column.above():column;});
+    // Wood Furniture V2 (2026-10-15): the bed's head the way it faces (foot to head); the vintage freezer's right half at facing.getClockWise()
+    private static final Multiblock BED=new Multiblock("part",List.of("foot","head"),(a,f,p)->p.equals("head")?a.relative(f):a);
+    private static final Multiblock VINTAGE_FREEZER=new Multiblock("part",List.of("left","right"),(a,f,p)->p.equals("right")?a.relative(f.getClockWise()):a);
     private static final Multiblock DUMPSTER=new Multiblock("part",List.of("master","secondary"),
             (a,f,p)->CommercialDumpsterBlock.partPosition(a,f,CommercialDumpsterBlock.Part.valueOf(constant(p))));
     private static final Multiblock FUEL_DISPENSER=new Multiblock("cell",List.of("a0","b0","a1","b1","a2","b2"),
@@ -180,6 +183,18 @@ final class AuthoringFixtureRegistry {
                     .notes("Wood Furniture V1 (2026-10-13): the cabinet with an enamel sink and a cast-iron pitcher pump (looks only), 9 slots; the pump handle reaches 12 cm over the cell at facing.getClockWise() (keep a counter or air there, not a wall)."),
             new Def(A+"wooden_gun_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
                     .notes("Wood Furniture V1 (2026-10-13): wall rack, facing = away from the wall; three notches for long guns and a two-place shelf, items kept in its BlockEntity (starts empty). Long guns overhang its cell up to 20 cm each side."),
+            new Def(A+"wooden_bed",safe,"furniture").facing(H4).multi(BED).fixed("occupied","false").support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): a vanilla bed (BedBlock) drawn as a mesh, 2 long. Anchor = foot; facing = foot to head (the head at anchor.relative(facing)). No BlockEntity is created."),
+            new Def(A+"wooden_wardrobe",storage,"storage").facing(H4).multi(TWO_TALL).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 2 tall, 27 slots on the lower half; facing = the doors, its back against a wall. Doors start shut; open is runtime."),
+            new Def(A+"wooden_nightstand",storage,"storage").facing(H4).fixed("open","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 9 slots, top at 0.66 (an emergency radio on it sinks to the top); facing = the drawer."),
+            new Def(A+"wooden_tool_rack",storage,"storage").facing(H4).inventory().support(Support.ATTACHED_OPPOSITE_FACING)
+                    .notes("Wood Furniture V2 (2026-10-15): wall rack, facing = away from the wall; three peg pairs for long tools and a two-place shelf (the gun rack's BlockEntity, starts empty). log is computed from the wall (on round logs it stands on pad 12)."),
+            new Def(A+"wooden_storage_chest",storage,"storage").facing(H4).fixed("type","single","waterlogged","false","open","false").inventory().support(Support.NONE)
+                    .notes("Wood Furniture V2 (2026-10-15): a vanilla chest (ChestBlock, 27 slots) with its own ID and mesh. Single only; double-chest pairing is not authored."),
+            new Def(A+"vintage_chest_freezer",storage,"storage").facing(H4).multi(VINTAGE_FREEZER).fixed("open","false","lit","false").inventory().support(Support.FLOOR)
+                    .notes("Wood Furniture V2 (2026-10-15): 2 wide, 27 slots, a plug-in appliance (cord from the back). Anchor = left master (BlockEntity); right at facing.getClockWise(); lit is runtime (power)."),
             new Def(A+"modern_office_desk",safe,"office").facing(H4).multi(DESK).support(Support.FLOOR)
                     .notes("3 wide. Anchor = center; left at facing.getCounterClockWise(), right at facing.getClockWise()."),
             new Def(A+"modern_office_chair",safe,"office").facing(H4),

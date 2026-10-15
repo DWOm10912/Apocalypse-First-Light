@@ -20,7 +20,9 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Wood Furniture V1 (docs/models/wood_furniture_v1.md): the storage of a {@link WoodFurniture.Counter}, 18 slots (the
- * kitchen counter, a 9 x 2 chest screen) or 9 (under the sink, 9 x 1). Like a vanilla barrel: {@code open} while anyone has
+ * kitchen counter, a 9 x 2 chest screen) or 9 (under the sink, 9 x 1); since V2 (docs/models/wood_furniture_v2.md,
+ * 2026-10-15) of any {@link WoodFurniture.Storage} (the wardrobe 27, the nightstand 9; the vintage chest freezer's 27 in
+ * its subclass), its slots, sounds and open look from the block. Like a vanilla barrel: {@code open} while anyone has
  * it open (the doors swing out), its own open / close sounds at the doors (3 blocks, with their noise), a loot table rolled on first opening. Not a
  * Progressive Container Search container: the start home's own cabinets open as plain storage (plan P5, user 2026-10-12);
  * one placed in a searched world structure would need that integration first.
@@ -30,13 +32,13 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity {
     private final ContainerOpenersCounter openers = new ContainerOpenersCounter() {
         @Override
         protected void onOpen(Level level, BlockPos pos, BlockState state) {
-            sound(state, com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_OPEN.get());
+            if (state.getBlock() instanceof WoodFurniture.Storage s) sound(state, s.openSound(), s);
             setOpen(state, true);
         }
 
         @Override
         protected void onClose(Level level, BlockPos pos, BlockState state) {
-            sound(state, com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_CLOSE.get());
+            if (state.getBlock() instanceof WoodFurniture.Storage s) sound(state, s.closeSound(), s);
             setOpen(state, false);
         }
 
@@ -49,12 +51,14 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity {
         }
     };
 
-    public WoodCounterBlockEntity(BlockPos pos, BlockState state) {
-        super(WoodFurniture.COUNTER, pos, state);
+    public WoodCounterBlockEntity(BlockPos pos, BlockState state) { this(WoodFurniture.COUNTER, pos, state); }
+
+    protected WoodCounterBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
         items = NonNullList.withSize(slots(state), ItemStack.EMPTY);
     }
 
-    private static int slots(BlockState state) { return state.getBlock() instanceof WoodFurniture.Counter c ? c.slots() : 18; }
+    private static int slots(BlockState state) { return state.getBlock() instanceof WoodFurniture.Storage s ? s.slots() : 18; }
 
     @Override
     public int getContainerSize() { return items.size(); }
@@ -71,7 +75,7 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity {
     @Override
     protected AbstractContainerMenu createMenu(int id, Inventory inventory) {
         int rows = getContainerSize() / 9;
-        return new ChestMenu(rows == 1 ? MenuType.GENERIC_9x1 : MenuType.GENERIC_9x2, id, inventory, this, rows);
+        return new ChestMenu(rows == 1 ? MenuType.GENERIC_9x1 : rows == 2 ? MenuType.GENERIC_9x2 : MenuType.GENERIC_9x3, id, inventory, this, rows);
     }
 
     @Override
@@ -103,19 +107,20 @@ public class WoodCounterBlockEntity extends RandomizableContainerBlockEntity {
     }
 
     private void setOpen(BlockState state, boolean open) {
-        if (level != null && state.hasProperty(WoodFurniture.Counter.OPEN)) level.setBlock(worldPosition, state.setValue(WoodFurniture.Counter.OPEN, open), 3);
+        if (level != null && state.getBlock() instanceof WoodFurniture.Storage s && state.hasProperty(WoodFurniture.Counter.OPEN)
+                && state.getValue(WoodFurniture.Counter.OPEN) != open) s.setOpen(level, worldPosition, state, open);
     }
 
     /** Heard as far as the infected hear the doors (blocks; forest home sounds V1, 2026-10-14). */
     public static final double DOOR_RADIUS = 3;
 
-    /** At the doors: the cell's front, low (they sit under the worktop); the sound and its noise reach DOOR_RADIUS. */
-    private void sound(BlockState state, SoundEvent sound) {
+    /** At the doors: the cell's front at the furniture's door height; the sound and its noise reach DOOR_RADIUS. */
+    private void sound(BlockState state, SoundEvent sound, WoodFurniture.Storage storage) {
         if (!(level instanceof net.minecraft.server.level.ServerLevel server)) return;
         Vec3i n = state.getValue(WoodFurniture.Counter.FACING).getNormal();
         com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, null,
-                new net.minecraft.world.phys.Vec3(worldPosition.getX() + 0.5 + n.getX() * 0.4, worldPosition.getY() + 0.4, worldPosition.getZ() + 0.5 + n.getZ() * 0.4),
-                sound, DOOR_RADIUS, 0.97F + level.random.nextFloat() * 0.06F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION,
+                new net.minecraft.world.phys.Vec3(worldPosition.getX() + 0.5 + n.getX() * 0.4, worldPosition.getY() + storage.soundHeight(), worldPosition.getZ() + 0.5 + n.getZ() * 0.4),
+                sound, DOOR_RADIUS, storage.soundPitch() * (0.97F + level.random.nextFloat() * 0.06F), com.antaurora.apofirstlight.noise.NoiseType.INTERACTION,
                 net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(state.getBlock()));
     }
 }

@@ -65,7 +65,9 @@ import java.util.List;
  * the wire fence on a stone pickaxe ({@code minecraft:needs_stone_tool}, correct tool required). Each drops itself (the
  * doors from the lower half, a double slab two). Assets and data: tools/build-cabin-exterior-v1.mjs.
  * <p>Also registered here (same mesh loader, same creative tab run): the generic {@link WoodFurniture} (Wood Furniture V1,
- * docs/models/wood_furniture_v1.md, tools/build-wood-furniture-v1.mjs), on the axe without a tier like the wood above.
+ * docs/models/wood_furniture_v1.md, tools/build-wood-furniture-v1.mjs), on the axe without a tier like the wood above, and
+ * {@link WoodFurnitureV2} (Wood Furniture V2, docs/models/wood_furniture_v2.md, tools/build-wood-furniture-v2.mjs: bed, wardrobe,
+ * nightstand, tool rack, storage chest on the axe; the vintage chest freezer on an iron pickaxe).
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class CabinBlocks {
@@ -75,7 +77,8 @@ public final class CabinBlocks {
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
-            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio"};
+            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio",
+            "wooden_bed", "wooden_wardrobe", "wooden_nightstand", "wooden_tool_rack", "wooden_storage_chest", "vintage_chest_freezer"};
 
     private CabinBlocks() {}
 
@@ -136,6 +139,14 @@ public final class CabinBlocks {
             // Emergency Radio V1 (EmergencyRadio): a small appliance, breaks by hand (no correct-tool requirement)
             case "emergency_radio" -> new EmergencyRadio.Radio(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(1.0F, 3.0F)
                     .sound(SoundType.METAL).noOcclusion().pushReaction(PushReaction.DESTROY).lightLevel(EmergencyRadio.Radio::light));
+            // Wood Furniture V2 (WoodFurnitureV2): bedroom and storage furniture; the vintage freezer as the commercial one
+            case "wooden_bed" -> new WoodFurnitureV2.Bed(wood(MapColor.WOOD, 0.8F).noOcclusion().pushReaction(PushReaction.DESTROY));
+            case "wooden_wardrobe" -> new WoodFurnitureV2.Wardrobe(wood(MapColor.WOOD, 2.5F).noOcclusion().pushReaction(PushReaction.BLOCK));
+            case "wooden_nightstand" -> new WoodFurnitureV2.Nightstand(wood(MapColor.WOOD, 2.0F).noOcclusion());
+            case "wooden_tool_rack" -> new WoodFurnitureV2.ToolRack(wood(MapColor.WOOD, 2.0F).noOcclusion().pushReaction(PushReaction.DESTROY));
+            case "wooden_storage_chest" -> new WoodFurnitureV2.StorageChest(wood(MapColor.WOOD, 2.5F).noOcclusion());
+            case "vintage_chest_freezer" -> new WoodFurnitureV2.VintageFreezer(metal(MapColor.SNOW, SoundType.METAL).strength(3.0F, 6.0F).noOcclusion()
+                    .pushReaction(PushReaction.BLOCK));
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -159,7 +170,9 @@ public final class CabinBlocks {
             ITEMS.clear();
             for (int i = 0; i < IDS.length; i++) {
                 Block b = BLOCKS.get(i);
-                Item item = b instanceof DoorBlock ? new DoubleHighBlockItem(b, new Item.Properties()) : new BlockItem(b, new Item.Properties());
+                Item item = b instanceof DoorBlock || b instanceof WoodFurnitureV2.Wardrobe ? new DoubleHighBlockItem(b, new Item.Properties())
+                        : b instanceof net.minecraft.world.level.block.BedBlock ? new net.minecraft.world.item.BedItem(b, new Item.Properties().stacksTo(1))
+                        : new BlockItem(b, new Item.Properties());
                 ITEMS.add(item);
                 helper.register(id(IDS[i]), item);
             }
@@ -167,6 +180,7 @@ public final class CabinBlocks {
         WoodFurniture.register(event);
         BoxStove.register(event);
         EmergencyRadio.register(event);
+        WoodFurnitureV2.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */
@@ -782,6 +796,15 @@ public final class CabinBlocks {
         public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
             return COLLISIONS[cabinFlags(state, level, pos)];
         }
+
+        // constants, as the roof's: the post has a dynamic shape, so the light engine would ask its shape off thread, with the
+        // level: reading a neighbour of a chunk still generating there deadlocked world generation (M4, 2026-10-15)
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) { return true; }
+
+        @Override
+        @SuppressWarnings("deprecation")
+        public int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) { return 0; }
 
         @Override
         public int cabinFlags(BlockState state, BlockGetter level, BlockPos pos) {

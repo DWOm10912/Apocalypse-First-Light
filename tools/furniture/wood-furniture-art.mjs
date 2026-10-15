@@ -8,7 +8,9 @@ import {N, hash, sstep, mul, mix, vn} from '../mesh-trees/hd-art.mjs';
 import {grain, iron} from '../cabin/cabin-art.mjs';
 
 /** The stained face and its latewood (sRGB). */
-export const FACE = [142, 112, 82], LATE = [112, 86, 62];
+export let FACE = [142, 112, 82], LATE = [112, 86, 62];
+/** Design studies only (design/.../m4_source/wood_finish_swatches.mjs): another finish for the textures made after it. */
+export function setFinish(face, late) { FACE = face; LATE = late; }
 const wood = (late, k = 0.45) => mix(FACE, LATE, late * k);
 
 /** Planed stock (rails, aprons, seats, slats, drawer fronts, the brackets): grain along u (vertical: along v), satin. */

@@ -1,0 +1,13 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/wood_v"
+  },
+  "item": [
+    [
+      "furniture/tool_rack",
+      0
+    ]
+  ]
+}

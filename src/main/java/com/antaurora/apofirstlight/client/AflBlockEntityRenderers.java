@@ -88,6 +88,9 @@ public final class AflBlockEntityRenderers {
         // the chair's seat is an invisible rider anchor
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.GUN_RACK, AflBlockEntityRendering.wrap("wooden_gun_rack", WoodGunRackRenderer::new));
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.BoxStove.STOVE, AflBlockEntityRendering.wrap("box_stove", BoxStoveRenderer::new));   // Box Stove V1: the cook top
+        // Wood Furniture V2: the tool rack's tools (the gun rack's renderer and chunk drawing); the vintage freezer's cord
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.TOOL_RACK, AflBlockEntityRendering.wrap("wooden_tool_rack", WoodGunRackRenderer::new));
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.FREEZER, AflBlockEntityRendering.wrap("vintage_chest_freezer", VintageFreezerRenderer::new));
         com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk
         event.registerEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.SEAT, net.minecraft.client.renderer.entity.NoopRenderer::new);
         // Survivor Death and Succession V0: the placeholder body (owner's skin lying on its back)

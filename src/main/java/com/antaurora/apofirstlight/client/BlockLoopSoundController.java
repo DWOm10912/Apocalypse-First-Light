@@ -87,6 +87,11 @@ public final class BlockLoopSoundController {
                     freezer -> ChestFreezerBlock.compressorPosition(freezer.getBlockPos(),
                             freezer.getBlockState().getValue(ChestFreezerBlock.FACING)),
                     AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, ChestFreezerBlockEntity.COMPRESSOR_PITCH),
+            // Wood Furniture V2: the vintage chest freezer's compressor (the same loop, deeper)
+            new Source<>(com.antaurora.apofirstlight.cabin.VintageFreezerBlockEntity.class,
+                    com.antaurora.apofirstlight.cabin.VintageFreezerBlockEntity::compressorRunning,
+                    com.antaurora.apofirstlight.cabin.VintageFreezerBlockEntity::compressorPosition,
+                    AflSounds.BEVERAGE_COOLER_COMPRESSOR_LOOP, com.antaurora.apofirstlight.cabin.VintageFreezerBlockEntity.COMPRESSOR_PITCH),
             // the intake pump's motor while it pumps (the status lamp green): the cooler compressor loop, higher, until it has its own
             new Source<>(IntakePumpBlockEntity.class,
                     pump -> pump.getBlockState().getBlock() instanceof IntakePumpBlock

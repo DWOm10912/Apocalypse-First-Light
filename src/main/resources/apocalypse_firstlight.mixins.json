@@ -13,6 +13,7 @@
   "mixins": ["OverworldBiomeBuilderMixin", "MultiNoiseBiomeSourceMixin", "ClimateParameterListMixin", "BiomeSourceFederalMixin", "NoiseBasedChunkGeneratorAquiferMixin", "NoiseChunkMacroWaterMixin", "WorldCarverStabilityMixin", "LakeFeatureStabilityMixin", "NoiseFillRiverMixin", "RandomStateSeedMixin", "WorldgenLockSaveMixin", "DedicatedServerFederalDefaultMixin", "SurfaceSystemStartupBiomeMixin", "BiomeManagerStartupSurfaceMixin", "ZombieSunlightMixin", "EntityIndustrialWasteSoundMixin", "ExplosionAccessor", "LockedInventoryMixin", "LockedInventorySlotMixin", "LockedInventoryMenuMixin", "LockedInventoryWrapperMixin", "LockedInventoryRecipeMixin", "FoodDataThirstMixin", "InventoryMenuEquipmentMixin", "LivingEntityFuelSlipMixin",
     "TerrainSmoothBlockStateMixin", "TerrainSmoothBlockCollisionsMixin", "TerrainSmoothLevelMixin", "TerrainSmoothServerLevelMixin", "TerrainSmoothLevelChunkMixin",
     "TerrainSmoothMoveControlMixin", "TerrainSmoothPathNavigationMixin",
-    "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin"],
+    "WiringLevelChunkMixin", "WiringServerLevelMixin", "SurvivorRespawnGateMixin", "AflDifficultyLockMixin",
+    "ChunkGeneratorForestHomeMixin", "WorldGenRegionForestHomeGuardMixin"],
   "injectors": {"defaultRequire": 1}
 }

@@ -270,6 +270,7 @@ public final class WorldInteractionHint {
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.GeneratorInletBoxBlock) return pos;
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.BeverageCoolerBlock) return com.antaurora.apofirstlight.block.BeverageCoolerBlock.masterPosition(pos,s);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.ChestFreezerBlock) return com.antaurora.apofirstlight.block.ChestFreezerBlock.masterPosition(pos,s);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer) return com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer.masterPosition(pos,s);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.VendingMachineBlock) return com.antaurora.apofirstlight.block.VendingMachineBlock.lower(s,pos);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.block.WaterDispenserBlock)
             return s.getValue(com.antaurora.apofirstlight.block.WaterDispenserBlock.HALF)==net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER?pos.below():pos;
@@ -517,6 +518,18 @@ public final class WorldInteractionHint {
             return mc.player.isSecondaryUseActive()||mc.player.isPassenger()||com.antaurora.apofirstlight.cabin.FurnitureSeat.occupied(mc.level,pos)
                     ?null:new Target(Component.translatable(k+"chair.sit"),null);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Counter) return new Target(Component.translatable(k+"cabinet.open"),null);
+        // Wood Furniture V2: the wardrobe, nightstand, storage chest and vintage freezer open; the bed sleeps; the tool rack as the gun rack
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Wardrobe||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Nightstand
+                ||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.StorageChest||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer)
+            return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"cabinet.open"),null);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Bed) return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"bed.sleep"),null);
+        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack&&mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity tools){
+            var held=mc.player.getMainHandItem();
+            int aimed=com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotAt(s,pos,hit.getLocation());
+            if(held.isEmpty()) return tools.item(aimed).isEmpty()?null:new Target(Component.translatable(k+"gun_rack.take"),com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotPoint(s,pos,aimed));
+            int slot=com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.target(tools,held,aimed);
+            return slot<0?null:new Target(Component.translatable(k+(slot<3?"gun_rack.hang":"gun_rack.put")),com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack.slotPoint(s,pos,slot));
+        }
         if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.GunRack)
                 ||!(mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity rack)) return null;
         var held=mc.player.getMainHandItem();

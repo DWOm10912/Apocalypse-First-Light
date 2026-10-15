@@ -914,6 +914,30 @@
     "apocalypse_firstlight:emergency_radio": {
       "unit_mass_kg": 3.0,
       "estimated": true
+    },
+    "apocalypse_firstlight:wooden_bed": {
+      "unit_mass_kg": 40,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wooden_wardrobe": {
+      "unit_mass_kg": 55,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wooden_nightstand": {
+      "unit_mass_kg": 9,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wooden_tool_rack": {
+      "unit_mass_kg": 3,
+      "estimated": true
+    },
+    "apocalypse_firstlight:wooden_storage_chest": {
+      "unit_mass_kg": 16,
+      "estimated": true
+    },
+    "apocalypse_firstlight:vintage_chest_freezer": {
+      "unit_mass_kg": 75,
+      "estimated": true
     }
   },
   "carry_factors": [

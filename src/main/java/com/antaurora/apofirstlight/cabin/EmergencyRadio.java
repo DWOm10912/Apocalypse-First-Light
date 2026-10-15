@@ -88,7 +88,8 @@ public final class EmergencyRadio {
 
     /** What it stands on: the floor of its cell (a full top under it), or a piece of furniture whose top is lower. */
     public enum Surface implements StringRepresentable {
-        FLOOR(0), TABLE(0.24F), COUNTER(0.10F), DESK(2.5F / 16);
+        // NIGHTSTAND: Wood Furniture V2 (2026-10-15), the nightstand top at 0.66
+        FLOOR(0), TABLE(0.24F), COUNTER(0.10F), DESK(2.5F / 16), NIGHTSTAND(1 - WoodFurnitureV2.Nightstand.TOP);
 
         /** How far the radio sinks into the cell under it (blocks). */
         public final float sink;
@@ -105,6 +106,7 @@ public final class EmergencyRadio {
         Block b = level.getBlockState(below).getBlock();
         if (b instanceof WoodFurniture.Table) return Surface.TABLE;
         if (b instanceof WoodFurniture.Counter) return Surface.COUNTER;
+        if (b instanceof WoodFurnitureV2.Nightstand) return Surface.NIGHTSTAND;
         if (b instanceof ModernOfficeDeskBlock) return Surface.DESK;
         return Block.canSupportCenter(level, below, Direction.UP) ? Surface.FLOOR : null;
     }
