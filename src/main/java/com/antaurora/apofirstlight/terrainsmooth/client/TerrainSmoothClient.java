@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.terrainsmooth.client;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.GradedTurfBlock;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothChunkData;
 import com.antaurora.apofirstlight.terrainsmooth.SmoothRules;
 import com.antaurora.apofirstlight.terrainsmooth.TerrainSmooth;
@@ -184,17 +185,26 @@ public final class TerrainSmoothClient {
     static int underSides(BlockAndTintGetter region, BlockPos pos, long g) {
         float[] c = SmoothRules.corners(g);
         int mask = 0;
+        boolean above = false;
         BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
         for (int s = 0; s < 4; s++) {
-            float la = Math.min(Math.min((g >>> (16 + 8 * s) & 15) / 4F, c[SIDE_CORNERS[s][0]]), 1);
-            float lb = Math.min(Math.min((g >>> (20 + 8 * s) & 15) / 4F, c[SIDE_CORNERS[s][1]]), 1);
+            float ua = c[SIDE_CORNERS[s][0]], ub = c[SIDE_CORNERS[s][1]];
+            float la = Math.min((g >>> (16 + 8 * s) & 15) / 4F, ua), lb = Math.min((g >>> (20 + 8 * s) & 15) / 4F, ub);
+            // a band above the block's cell (SmoothSurfaceModel draws it unculled) takes the light baked here
+            if ((ua > 1 + 1e-4F || ub > 1 + 1e-4F) && (ua > la + 1e-4F || ub > lb + 1e-4F)) above = true;
+            la = Math.min(la, 1);
+            lb = Math.min(lb, 1);
             if (la <= 1e-4F && lb <= 1e-4F) continue;   // the whole side is a band
             n.setWithOffset(pos, SIDE_DIRS[s]);
             BlockState neighbour = region.getBlockState(n);
             int k = TerrainSmooth.cell(neighbour);
             if ((k == SmoothRules.NATURAL || k == SmoothRules.OTHER || k == SmoothRules.TREE) && !neighbour.isSolidRender(region, n)) mask |= 1 << s;
+            // a graded_turf column one level down: its top line may cross this block's floor along the edge, where the
+            // band's straight foot and the turf's edge part; the part below the band closes that (2026-10-15, C3.3a seams)
+            else if ((k == SmoothRules.AIR || k == SmoothRules.COVER) && region.getBlockState(n.move(Direction.DOWN)).getBlock() instanceof GradedTurfBlock)
+                mask |= 1 << s;
         }
-        if (mask == 0) return 0;
+        if (mask == 0 && !above) return 0;
         int light = LevelRenderer.getLightColor(region, pos.above());
         return mask | (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 4;
     }
