@@ -3,7 +3,8 @@
 //    change hook above all: P1's stale server cache), the jar keeps the formal package and drops the dev one, and the
 //    common package never touches client classes (a dedicated server must not load them).
 // 2. Compiles src/main/.../terrainsmooth/SmoothRules.java (pure Java, no Minecraft) with tools/terrain-smooth/SmoothCheck.java
-//    into a temporary folder and runs it.
+//    and SeamAudit.java into a temporary folder and runs them: the rules' checks, then the seam audit's synthetic
+//    earthworks scenes (graded_turf beside smoothed ground must leave no see-through hole).
 //   node tools/terrain-smooth/check.mjs
 // Needs a JDK 17 (JAVA_HOME, or javac on PATH).
 import fs from 'node:fs';
@@ -45,14 +46,15 @@ require(/TerrainSmoothStatePacket::handle/.test(read('src/main/java/com/antauror
 console.log(failures === 0 ? 'static audit: release wiring OK' : `static audit: ${failures} failures`);
 
 // ---- 2. rules
-const sources = [formal + '/SmoothRules.java', 'tools/terrain-smooth/SmoothCheck.java'].map(p => path.join(ROOT, p));
+const sources = [formal + '/SmoothRules.java', 'tools/terrain-smooth/SmoothCheck.java', 'tools/terrain-smooth/SeamAudit.java'].map(p => path.join(ROOT, p));
 const exe = n => (process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', n) : n) + (process.platform === 'win32' && process.env.JAVA_HOME ? '.exe' : '');
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-smoothcheck-'));
 const run = (cmd, a) => { const r = spawnSync(cmd, a, {stdio: 'inherit'}); if (r.error) throw r.error; return r.status; };
 try {
   if (run(exe('javac'), ['-encoding', 'UTF-8', '-nowarn', '-d', out, ...sources]) !== 0) process.exit(2);
   const status = run(exe('java'), ['-cp', out, 'com.antaurora.apofirstlight.terrainsmooth.SmoothCheck']);
-  process.exitCode = status !== 0 ? status : failures === 0 ? 0 : 1;
+  const seams = run(exe('java'), ['-cp', out, 'com.antaurora.apofirstlight.terrainsmooth.SeamAudit']);
+  process.exitCode = status !== 0 ? status : seams !== 0 ? seams : failures === 0 ? 0 : 1;
 } finally {
   fs.rmSync(out, {recursive: true, force: true});
 }

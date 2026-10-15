@@ -16,8 +16,9 @@ package com.antaurora.apofirstlight.terrainsmooth;
  * changes the answer.
  * <p>
  * A graded_turf column (the road's earthworks, docs/worldgen/federal_highways_c3.md 10.4) has its own corner heights:
- * a corner point it touches takes the turf's height there (clamped to what each natural block can draw), so the natural
- * ground meets the earthworks without a step (2026-10-15).
+ * a corner point it touches takes the turf's height there, so the natural ground meets the earthworks without a step,
+ * when the turf passes the same spread test as a natural column and every natural block there can draw that height;
+ * else the point is pinned like any other (#corner; a band then closes the step down to the turf's edge).
  * <p>
  * Geometry key (long, -1 = the block keeps its vanilla shape): corner heights nw, ne, sw, se above B's floor in quarters
  * (bits 0-15, 4 each, 0..8), then for the N, S, W, E sides the neighbour's surface at the two ends of that edge (bottom of
@@ -107,23 +108,36 @@ public final class SmoothRules {
 
     /**
      * Height of the corner whose four columns are col[(oj + b) * 3 + oi + a], a, b in {0, 1}; NaN when pinned. A turf
-     * column among them (turf[index], its four absolute corner heights) gives its height at this point.
+     * column among them (turf[index], its four absolute corner heights) gives its height at this point, on the same terms
+     * as the natural columns (2026-10-15, the see-through seams of the C3.3a check): it counts with its block top in the
+     * spread test (so every block at the point reads all four columns inside its window and answers alike), all turf
+     * columns at the point must give the same height, and that height must lie where every natural block at the point can
+     * draw it (0..2 above its floor); otherwise the point is pinned for everyone.
      */
     static float corner(long[] col, float[][] turf, int oi, int oj, int mode) {
-        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0;
+        int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE, sum = 0, nlo = Integer.MAX_VALUE, nhi = Integer.MIN_VALUE;
         float t = Float.NaN;
         boolean pinned = false;
         for (int j = oj; j <= oj + 1; j++) for (int i = oi; i <= oi + 1; i++) {
             long c = col[j * 3 + i];
-            if (turf[j * 3 + i] != null) { if (Float.isNaN(t)) t = turf[j * 3 + i][(oi + 1 - i) + 2 * (oj + 1 - j)]; continue; }
+            if (turf[j * 3 + i] != null) {
+                float v = turf[j * 3 + i][(oi + 1 - i) + 2 * (oj + 1 - j)];
+                if (Float.isNaN(t)) t = v;
+                else if (Math.abs(t - v) > 1e-4F) pinned = true;
+                lo = Math.min(lo, height(c));
+                hi = Math.max(hi, height(c));
+                continue;
+            }
             if (kind(c) != K_NAT) { pinned = true; continue; }
             int h = height(c);
             lo = Math.min(lo, h);
             hi = Math.max(hi, h);
+            nlo = Math.min(nlo, h);
+            nhi = Math.max(nhi, h);
             sum += h;
         }
-        if (!Float.isNaN(t)) return t;
         if (pinned || hi - lo > 1) return Float.NaN;
+        if (!Float.isNaN(t)) return t >= nhi - 1 && t <= nlo + 1 ? t : Float.NaN;
         return mode == MODE_A ? lo : sum * 0.25F;
     }
 
@@ -176,7 +190,10 @@ public final class SmoothRules {
     /** Bottom of B's side band at a corner, in quarters above B's floor: the neighbour column's surface there. */
     private static int lower(long n, long[] col, float[][] turf, int index, int cornerIndex, int mode, int y) {
         int oi = CORNER[cornerIndex][0], oj = CORNER[cornerIndex][1];
-        if (turf[index] != null) return q(turf[index][(oi + 1 - index % 3) + 2 * (oj + 1 - index / 3)] - y);
+        // a turf neighbour: rounded down, so the band starts at or below the turf's edge (turf corners are eighths, the
+        // block's own corners quarters rounded half up: the block may stand 1/8 above the turf, and its band closes that)
+        if (turf[index] != null)
+            return Math.max(0, Math.min(8, (int) Math.floor((turf[index][(oi + 1 - index % 3) + 2 * (oj + 1 - index / 3)] - y) * 4 + 1e-4F)));
         return switch (kind(n)) {
             case K_NAT -> { float v = corner(col, turf, oi, oj, mode); yield q((Float.isNaN(v) ? height(n) : v) - y); }
             case K_FIXED, K_HIGH -> q(height(n) - y);
