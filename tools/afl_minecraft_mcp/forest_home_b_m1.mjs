@@ -61,6 +61,12 @@ const vfence = M('spruce_fence[east=false,north=false,south=false,waterlogged=fa
 
 const MX = 12, MZ = 10, RIDGE_Z = 5;
 
+// Plan F8 (M3a, 2026-10-14; docs/worldgen/forest_start_home_b_v1_plan.md): where the start pickup will park. Data only, no
+// block and no vehicle yet: the carport's ground centre, the first air cell over the worn pad (paper X 22, k 0, Z 5; plot
+// x 32, y 3, z 15, cell origin), the cab toward the drive (south). A 1990s single cab is about 1.9 x 5.2 m: the clear bay
+// is X 21..23 x Z 1..9, k 0..2 (checks()).
+export const VEHICLE_ANCHOR = {paper: [22, 0, 5], plot: [32, 3, 15], heading: 'south', bay: {x: [21, 23], k: [0, 2], z: [1, 9]}};
+
 /**
  * A 1:2 slope of roof cells from its top: d = 1 is the cell next to the ridge (or the high edge), alternating lower / upper
  * going down. Returns {k, shape} for a cell d steps down from a ridge at layer kr (ridge cell d = 0: shape ridge).
@@ -300,6 +306,11 @@ export function checks({cells, tags, fixtures}) {
   }
   for (const [X, k, Z] of [[14, 0, -6], [13, -1, -6]]) if (!clear(X, k + 1, Z) || (k === -1 && !clear(12, 0, Z))) out.push('cellar head room ' + [X, k, Z]);
   // porch clearance under the beam row: posts k 1..2 -> 2.0 m over the deck
+  // the pickup's bay under the carport (plan F8): clear, on the worn pad
+  const {bay, paper: [AX, AK, AZ]} = VEHICLE_ANCHOR;
+  for (let X = bay.x[0]; X <= bay.x[1]; X++) for (let k = bay.k[0]; k <= bay.k[1]; k++) for (let Z = bay.z[0]; Z <= bay.z[1]; Z++)
+    if (get(X, k, Z) || fx.has([X, k, Z].join(','))) out.push('vehicle bay blocked ' + [X, k, Z]);
+  if (get(AX, AK - 1, AZ) !== M('dirt_path')) out.push('vehicle anchor off the pad');
   return {issues: out, roofs, cells: cells.size};
 }
 

@@ -1,0 +1,75 @@
+{
+  "format_version": 1,
+  "geometry": "apocalypse_firstlight:geo/rural_mailbox.geo.json",
+  "texture": "apocalypse_firstlight:textures/block/rural_mailbox.png",
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "scale": [
+    1,
+    1,
+    1
+  ],
+  "facing": "horizontal",
+  "bounds": [
+    0.388875,
+    -0.015625,
+    0.00913,
+    0.599625,
+    1.391122,
+    0.757125
+  ],
+  "parts": {
+    "body": {
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    "door": {
+      "pivot": [
+        0,
+        1.0685,
+        -0.2435
+      ]
+    },
+    "flag": {
+      "pivot": [
+        -0.0905,
+        1.14,
+        0.17
+      ]
+    }
+  },
+  "animations": {
+    "open": {
+      "duration_ticks": 8,
+      "easing": "ease_in_out",
+      "transforms": {
+        "door": {
+          "rotation": [
+            -95,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "flag": {
+      "duration_ticks": 10,
+      "easing": "ease_in_out",
+      "transforms": {
+        "flag": {
+          "rotation": [
+            90,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

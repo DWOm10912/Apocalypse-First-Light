@@ -1,0 +1,21 @@
+allprojects {
+    afterEvaluate {
+        def testDir = project.file("build/forest-home-m4-gametest-${System.currentTimeMillis()}")
+        minecraft.runs.gameTestServer {
+            workingDirectory testDir
+            property 'forge.enabledGameTestNamespaces', 'afl_m4_tests'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+            doLast {
+                def log = new File(testDir, 'logs/latest.log')
+                def text = log.exists() ? log.getText('UTF-8') : ''
+                def missing = ['planner', 'placement'].findAll { !text.contains("[AFL FOREST HOME M4 TEST] PASS ${it}:") }
+                if (!missing.isEmpty()) {
+                    throw new GradleException("Forest home M4 tests did not pass: ${missing}")
+                }
+            }
+        }
+    }
+}

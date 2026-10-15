@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/wood_v"
+  },
+  "item": [
+    [
+      "furniture/nightstand_body",
+      0
+    ],
+    [
+      "furniture/nightstand_drawer_closed",
+      0
+    ]
+  ]
+}

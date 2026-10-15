@@ -230,6 +230,12 @@ public final class AflItems {
     public static final RegistryObject<Item> ENCLOSURE_GATE = ITEMS.register("enclosure_gate",
             () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
                     (com.antaurora.apofirstlight.block.EnclosureGateBlock) AflBlocks.ENCLOSURE_GATE.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TUBE_FARM_GATE = ITEMS.register("tube_farm_gate",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.TubeFarmGateBlock) AflBlocks.TUBE_FARM_GATE.get(), new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> RURAL_MAILBOX = ITEMS.register("rural_mailbox",
+            () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
+                    (com.antaurora.apofirstlight.block.RuralMailboxBlock) AflBlocks.RURAL_MAILBOX.get(), new Item.Properties().stacksTo(4)));
     public static final RegistryObject<Item> ROOFTOP_UNIT = ITEMS.register("rooftop_unit",
             () -> new com.antaurora.apofirstlight.item.RectMultiblockBlockItem(
                     (com.antaurora.apofirstlight.block.RooftopUnitBlock) AflBlocks.ROOFTOP_UNIT.get(), new Item.Properties().stacksTo(1)));

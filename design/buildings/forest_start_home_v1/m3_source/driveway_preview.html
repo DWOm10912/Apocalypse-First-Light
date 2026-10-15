@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Rural driveway preview</title>
+<style>html,body{margin:0;background:#555}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+</head><body>
+<script>
+// Rural Driveway V1 (docs/models/rural_driveway_v1.md) game-asset preview: the OBJs tools/build-rural-driveway-v1.mjs
+// --preview writes (the gate shut with its front sign, open either way; the mailbox shut and open with the flag up) on
+// the generated atlases. Design use only; served by m1_source/serve.cjs, render() saves m1_sheets/m3a_game_preview.png (moved to m3_sheets/).
+const DIR = '/repo/design/buildings/forest_start_home_v1/m3_source/preview/';
+const FONT = '"Microsoft YaHei","PingFang SC",sans-serif';
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const env = new THREE.Scene(), ec = document.createElement('canvas'); ec.width = 16; ec.height = 256;
+{ const g = ec.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); [[0, '#dfe8ee'], [0.45, '#b9c6cc'], [0.55, '#5e624c'], [1, '#2d2a22']].forEach(([t, c]) => gr.addColorStop(t, c)); g.fillStyle = gr; g.fillRect(0, 0, 16, 256); }
+const et = new THREE.CanvasTexture(ec); et.encoding = THREE.sRGBEncoding;
+env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({map: et, side: THREE.BackSide})));
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(env, 0.02).texture;
+scene.background = new THREE.Color(0xa9bcc6);
+scene.add(new THREE.HemisphereLight(0xdfe8ee, 0x5d6a4a, 0.55));
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.3); sun.position.set(-6, 12, -9); sun.target.position.set(3, 0, 0);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004;
+Object.assign(sun.shadow.camera, {left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 40}); scene.add(sun, sun.target);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshStandardMaterial({color: 0x56613b, roughness: 1}));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground); ground.material.color.set(0x4a5634);
+// block grid lines on the ground, so the cells read
+const grid = new THREE.GridHelper(60, 60, 0x3d4529, 0x3d4529); grid.position.y = 0.002; scene.add(grid);
+const tex = {}, loadTex = id => tex[id] ||= new Promise(r => new THREE.TextureLoader().load(DIR + id + '.png', t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; r(t); }));
+async function put(file, atlas, x, z) {
+  const [obj, map] = await Promise.all([new Promise(r => new THREE.OBJLoader().load(DIR + file + '.obj', r)), loadTex(atlas)]);
+  obj.traverse(o => { if (o.isMesh) { o.material = new THREE.MeshStandardMaterial({map, roughness: 0.62, metalness: 0}); o.castShadow = o.receiveShadow = true; } });
+  obj.position.set(x, 0, z); scene.add(obj); return obj;
+}
+const cam = new THREE.PerspectiveCamera(40, 1, 0.02, 200);
+function shoot(w, h, pos, at, fov) {
+  renderer.setSize(w, h); cam.aspect = w / h; cam.fov = fov; cam.position.set(...pos); cam.lookAt(...at); cam.updateProjectionMatrix();
+  renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c;
+}
+function caption(g, x, y, t) { g.font = `bold 24px ${FONT}`; const w = g.measureText(t).width; g.fillStyle = 'rgba(20,17,14,0.8)'; g.fillRect(x, y, w + 28, 40); g.fillStyle = '#f5efe4'; g.fillText(t, x + 14, y + 28); }
+window.render = async () => {
+  await put('gate_shut', 'tube_farm_gate', 0, 0);
+  await put('gate_front', 'tube_farm_gate', 0, 10);
+  await put('gate_back', 'tube_farm_gate', 6, 10);
+  await put('rural_mailbox_item', 'rural_mailbox', -4, 0);
+  await put('mailbox_open', 'rural_mailbox', -5, 0);
+  const W = 2400, H = 1500, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.fillStyle = '#d8d3cb'; g.fillRect(0, 0, W, H);
+  // the structure frame: facing north, the front at -z; the first column (hinge) at x 0..1
+  g.drawImage(shoot(1560, 900, [1.4, 1.5, -4.2], [2.0, 0.75, 0.5], 46), 16, 16); caption(g, 32, 32, '管式大门：关着，前面挂 PRIVATE DRIVE 牌（从前面看）');
+  g.drawImage(shoot(808, 900, [-3.2, 1.6, -1.7], [-4.0, 1.1, 0.5], 40), 1576, 16); caption(g, 1592, 32, '信箱：关着 / 开门、红旗竖起');
+  g.drawImage(shoot(1180, 552, [15.5, 3.6, 3.2], [4.6, 0.7, 10.6], 36), 16, 932); caption(g, 32, 948, '往前开（左）、往后开（右）');
+  g.drawImage(shoot(1188, 552, [1.4, 1.3, 1.6], [0.2, 0.8, 0.5], 50), 1212, 932); caption(g, 1228, 948, '合页和链子（从后面看）');
+  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+  await fetch('/save?name=m3a_game_preview.png', {method: 'POST', body: blob});
+  return 'saved';
+};
+window.ready = true;
+</script></body></html>

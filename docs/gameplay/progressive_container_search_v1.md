@@ -25,7 +25,9 @@ AFL 的储物分为两类：
 
 2026-10-01 用户决定：除了武器架（挂的是哪把枪很重要），货架、饮料冷柜、售货机都改用搜索 + 通用货物；玩家不再能在货架上摆自己的东西展示。
 
-只有显式实现 `AflSearchableContainer` 的 AFL 容器才使用本系统。原版箱子、木桶以及其它 AFL 容器行为完全不变，没有做全局替换。
+只有显式实现 `AflSearchableContainer` 的 AFL 容器才使用本系统。
+
+2026-10-14：幸存者尸体（`survivor/SurvivorCorpseContainer`）是第一个**实体宿主**。契约里方块实体式的方法由尸体记录回答：`getLevel` 按记录的维度取服务器世界，`getBlockPos` 是尸体所在方块，`getBlockState` 固定为空气（只有噪声日志读取；尸体 V0 不发搜索噪声），`isRemoved` 看记录是否还在世界数据里。每格 16 tick（±15%），所有格子一开始都隐藏；搜索状态和物品一起存在世界幸存者数据的尸体记录里，不在实体上。见 [survivor_death_succession_v0.md](survivor_death_succession_v0.md)。原版箱子、木桶以及其它 AFL 容器行为完全不变，没有做全局替换。
 
 ## 3. 代码位置
 

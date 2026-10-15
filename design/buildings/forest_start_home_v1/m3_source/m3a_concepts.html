@@ -1,0 +1,357 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>M3a yard concepts</title>
+<style>html,body{margin:0;background:#555;overflow:auto}canvas{display:block}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head><body>
+<script>
+// Forest start home B M3a (docs/worldgen/forest_start_home_b_v1_plan.md section 3, package F: F6 mailbox, tube gate,
+// PRIVATE DRIVE sign; F8 the carport's vehicle anchor). User 2026-10-14: "可以，先出M3a概念图", one recommended scheme
+// (fewer rounds). Design use only, not a game asset: procedural geometry in real metres; the county road is a stand-in
+// (C3 builds public roads). Served by m1_source/serve.cjs at
+// /repo/design/buildings/forest_start_home_v1/m3_source/m3a_concepts.html; renderAll() saves to m1_sheets/ (moved to
+// m3_sheets/ by hand). Helpers as in m2_source/switch_concepts.html.
+const FONT = '"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif';
+const renderer = new THREE.WebGLRenderer({antialias: true, preserveDrawingBuffer: true});
+renderer.setPixelRatio(1); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const C = hex => new THREE.Color(hex).convertSRGBToLinear();
+
+function envMap(stops) {
+  const env = new THREE.Scene(), c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  for (const [t, col] of stops) gr.addColorStop(t, col);
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  env.add(new THREE.Mesh(new THREE.SphereGeometry(10, 32, 16), new THREE.MeshBasicMaterial({map: t, side: THREE.BackSide})));
+  return new THREE.PMREMGenerator(renderer).fromScene(env, 0.02).texture;
+}
+scene.environment = envMap([[0, '#dfe8ee'], [0.45, '#b9c6cc'], [0.55, '#5e624c'], [1, '#2d2a22']]);
+scene.background = new THREE.Color(0xa9bcc6);
+scene.add(new THREE.HemisphereLight(0xdfe8ee, 0x5d6a4a, 0.7));
+const sun = new THREE.DirectionalLight(0xfff1dc, 1.25);
+sun.target.position.set(0, 0, 10); sun.position.set(-14, 22, -6);
+sun.castShadow = true; sun.shadow.mapSize.set(4096, 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02;
+Object.assign(sun.shadow.camera, {left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 90});
+scene.add(sun, sun.target);
+
+function canvasTex(w, h, draw, srgb = true) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); if (srgb) t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+}
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function speckle(base, dots, n, seed, rep) {
+  const t = canvasTex(512, 512, (g, w, h) => { const r = rng(seed); g.fillStyle = base; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < n; i++) { const d = dots[Math.floor(r() * dots.length)]; g.fillStyle = d; g.fillRect(r() * w, r() * h, 2 + r() * 5, 2 + r() * 5); } });
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); return t;
+}
+function mesh(g, m, shadow = true) { const o = new THREE.Mesh(g, m); o.castShadow = shadow; o.receiveShadow = true; return o; }
+const M = {
+  grass: new THREE.MeshStandardMaterial({map: speckle('#4f5c35', ['rgba(98,112,62,0.5)', 'rgba(62,72,40,0.5)', 'rgba(104,88,58,0.45)'], 9000, 9, [40, 40]), roughness: 1}),
+  gravel: new THREE.MeshStandardMaterial({map: speckle('#8a8478', ['rgba(120,114,104,0.8)', 'rgba(160,154,142,0.8)', 'rgba(92,86,78,0.8)'], 14000, 4, [3, 12]), roughness: 1}),
+  asphalt: new THREE.MeshStandardMaterial({map: speckle('#3d3c3a', ['rgba(70,68,64,0.6)', 'rgba(30,30,29,0.6)'], 9000, 5, [16, 2]), roughness: 0.95}),
+  yellow: new THREE.MeshStandardMaterial({color: C(0xc9a43a), roughness: 0.8}),
+  white: new THREE.MeshStandardMaterial({color: C(0xd8d6cf), roughness: 0.8}),
+  galv: new THREE.MeshStandardMaterial({color: C(0x8f9695), roughness: 0.5, metalness: 0.35}),      // dull galvanised, coated look
+  hinge: new THREE.MeshStandardMaterial({color: C(0x4a3e35), roughness: 0.7, metalness: 0.3}),        // rusty steel
+  post: new THREE.MeshStandardMaterial({color: C(0x7c6a55), roughness: 0.9}),                        // weathered treated wood
+  postEnd: new THREE.MeshStandardMaterial({color: C(0x9a8366), roughness: 0.9}),
+  boxPaint: new THREE.MeshStandardMaterial({color: C(0x1f2021), roughness: 0.55, metalness: 0.2}),    // black painted steel
+  flag: new THREE.MeshStandardMaterial({color: C(0xb5281f), roughness: 0.6}),
+  sign: null,
+  leaf: new THREE.MeshStandardMaterial({color: C(0x3c5130), roughness: 1}),
+  fir: new THREE.MeshStandardMaterial({color: C(0x2d4029), roughness: 1}),
+  bark: new THREE.MeshStandardMaterial({color: C(0x4b3f33), roughness: 1}),
+  wire: new THREE.MeshStandardMaterial({color: C(0x777b78), roughness: 0.6, metalness: 0.3}),
+  tpost: new THREE.MeshStandardMaterial({color: C(0x3b5a3a), roughness: 0.6, metalness: 0.2}),
+  carport: new THREE.MeshStandardMaterial({color: C(0x8c8f8c), roughness: 0.6, metalness: 0.3}),
+  truck: new THREE.MeshStandardMaterial({color: C(0x6d7f8a), roughness: 0.6, transparent: true, opacity: 0.35}),
+};
+
+// ---------------------------------------------------------------- the site: county road stand-in along X, driveway +Z
+const ROAD_HALF = 3.3, SHOULDER = 1.0, EDGE = ROAD_HALF + SHOULDER;   // asphalt 2 x 3.3 m, gravel shoulders
+const DRIVE_HALF = 1.5, GATE_Z = 12.0, GATE_L = 3.66, GATE_H = 1.27, GATE_Y0 = 0.15, POST_R = 0.08, POST_H = 1.65;
+const HINGE_X = -(GATE_L / 2 + POST_R + 0.03), LATCH_X = GATE_L / 2 + POST_R + 0.03;
+const ground = mesh(new THREE.PlaneGeometry(140, 140), M.grass, false); ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.001, 20); scene.add(ground);
+function strip(x0, x1, z0, z1, m, y = 0) { const o = mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), m, false); o.rotation.x = -Math.PI / 2; o.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); scene.add(o); return o; }
+strip(-60, 60, -ROAD_HALF, ROAD_HALF, M.asphalt, 0.02);
+strip(-60, 60, -EDGE, -ROAD_HALF, M.gravel, 0.012); strip(-60, 60, ROAD_HALF, EDGE, M.gravel, 0.012);
+for (let x = -60; x < 60; x += 0.6) strip(x, x + 0.6, -0.06, 0.06, M.yellow, 0.025);                 // double yellow as one band
+strip(-60, 60, -ROAD_HALF + 0.12, -ROAD_HALF + 0.24, M.white, 0.025); strip(-60, 60, ROAD_HALF - 0.24, ROAD_HALF - 0.12, M.white, 0.025);
+// driveway: a 3 m gravel lane with two worn wheel tracks, flaring at the road (an apron)
+strip(-DRIVE_HALF, DRIVE_HALF, EDGE, 40, M.gravel, 0.01);
+const apron = mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(-DRIVE_HALF - 2.5, 0), new THREE.Vector2(DRIVE_HALF + 2.5, 0), new THREE.Vector2(DRIVE_HALF, -3), new THREE.Vector2(-DRIVE_HALF, -3)])), M.gravel, false);
+apron.rotation.x = Math.PI / 2; apron.position.set(0, 0.011, EDGE); scene.add(apron);
+const rut = new THREE.MeshStandardMaterial({color: C(0x6f6a60), roughness: 1});
+for (const x of [-0.8, 0.8]) strip(x - 0.18, x + 0.18, EDGE, 40, rut, 0.013);
+
+// ---------------------------------------------------------------- tube farm gate (closed: along X; open: swung +Z)
+function tube(m, a, b, r) {
+  const d = new THREE.Vector3().subVectors(b, a), len = d.length(), o = mesh(new THREE.CylinderGeometry(r, r, len, 14), m);
+  o.position.copy(a).addScaledVector(d, 0.5); o.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize()); return o;
+}
+const BARS = [0.0, 0.2, 0.42, 0.68, 1.0];                        // of the height, frame top and bottom included (5-bar gate)
+let SIGN_TEX = null;
+function signTexture() {
+  return canvasTex(900, 600, (g, w, h) => {
+    g.fillStyle = '#f2f1ec'; g.fillRect(0, 0, w, h); g.strokeStyle = '#151515'; g.lineWidth = 22; g.strokeRect(34, 34, w - 68, h - 68);
+    g.fillStyle = '#151515'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 170px Arial';
+    g.fillText('PRIVATE', w / 2, h * 0.36); g.fillText('DRIVE', w / 2, h * 0.68);
+    const r = rng(3); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(120,110,90,${0.05 + r() * 0.08})`; g.fillRect(r() * w, r() * h, 3 + r() * 9, 2 + r() * 4); }
+  });
+}
+function gateLeaf(withSign) {
+  const g = new THREE.Group(), R = 0.021, L = GATE_L, H = GATE_H;
+  for (const f of BARS) g.add(tube(M.galv, V3(0, GATE_Y0 + f * H, 0), V3(L, GATE_Y0 + f * H, 0), f === 0 || f === 1 ? R : R * 0.8));
+  g.add(tube(M.galv, V3(0, GATE_Y0 - 0.02, 0), V3(0, GATE_Y0 + H + 0.02, 0), R));
+  g.add(tube(M.galv, V3(L, GATE_Y0 - 0.02, 0), V3(L, GATE_Y0 + H + 0.02, 0), R));
+  for (const x of [L / 3, 2 * L / 3]) g.add(tube(M.galv, V3(x, GATE_Y0, 0), V3(x, GATE_Y0 + H, 0), R * 0.6));
+  g.add(tube(M.galv, V3(0.05, GATE_Y0 + 0.05, 0), V3(L / 2, GATE_Y0 + H - 0.03, 0), R * 0.6));        // N-brace from the hinge foot
+  for (const y of [0.32, 1.2]) {                                                                  // hinge straps round the upright
+    const ring = mesh(new THREE.TorusGeometry(0.03, 0.008, 8, 16), M.hinge); ring.rotation.x = Math.PI / 2; ring.position.set(0, GATE_Y0 + y, 0); g.add(ring);
+  }
+  if (withSign) {
+    SIGN_TEX = SIGN_TEX || signTexture();
+    const s = mesh(new THREE.BoxGeometry(0.46, 0.305, 0.003), [M.galv, M.galv, M.galv, M.galv, M.galv, new THREE.MeshStandardMaterial({map: SIGN_TEX, roughness: 0.55})]);
+    s.position.set(L / 2, GATE_Y0 + 0.55 * H, -0.03); g.add(s);                                   // face 5 (-z) faces the road
+    // two U-bolts over the bars it hangs on
+    for (const dx of [-0.17, 0.17]) for (const f of [BARS[2], BARS[3]]) { const u = mesh(new THREE.TorusGeometry(0.026, 0.004, 6, 12, Math.PI), M.hinge); u.position.set(L / 2 + dx, GATE_Y0 + f * H, -0.004); u.rotation.y = Math.PI / 2; g.add(u); }
+  }
+  return g;
+}
+function gatePost(x, z, hardware) {
+  const g = new THREE.Group(), p = mesh(new THREE.CylinderGeometry(POST_R, POST_R * 1.04, POST_H, 18), M.post);
+  p.position.set(0, POST_H / 2, 0); g.add(p);
+  const cap = mesh(new THREE.CylinderGeometry(POST_R * 0.98, POST_R, 0.01, 18), M.postEnd); cap.position.set(0, POST_H + 0.004, 0); g.add(cap);
+  if (hardware === 'hinge') for (const y of [0.32, 1.2]) { const pin = tube(M.hinge, V3(0, GATE_Y0 + y, 0), V3(POST_R + 0.06, GATE_Y0 + y, 0), 0.009); g.add(pin); }
+  if (hardware === 'latch') {                                                                        // a chain round the post and the gate's end
+    for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, l = mesh(new THREE.TorusGeometry(0.014, 0.0035, 6, 10), M.hinge);
+      l.position.set(Math.cos(a) * (POST_R + 0.012) - 0.07 * (Math.cos(a) < 0 ? 1 : 0), GATE_Y0 + 1.05, Math.sin(a) * (POST_R + 0.012)); l.rotation.set(Math.PI / 2, 0, a + (i % 2) * Math.PI / 2); g.add(l); }
+    const lock = mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), M.hinge); lock.position.set(-POST_R - 0.04, GATE_Y0 + 0.99, 0.0); g.add(lock);
+  }
+  g.position.set(x, 0, z); return g;
+}
+const gate = new THREE.Group(); scene.add(gate);
+const leaf = gateLeaf(true), leafHolder = new THREE.Group(); leafHolder.add(leaf);
+leaf.position.set(POST_R + 0.03, 0, 0); leafHolder.position.set(HINGE_X, 0, GATE_Z);
+gate.add(leafHolder, gatePost(HINGE_X, GATE_Z, 'hinge'), gatePost(LATCH_X, GATE_Z, 'latch'));
+function setGate(open) { leafHolder.rotation.y = open ? -Math.PI / 2 : 0; }      // swings in, away from the road
+
+// barbed wire either side (context only): steel T-posts every 3 m, 3 strands
+const fence = new THREE.Group(); scene.add(fence);
+for (const side of [-1, 1]) {
+  const x0 = side < 0 ? HINGE_X - POST_R : LATCH_X + POST_R, x1 = side * 22;
+  for (let x = x0 + side * 3; side * x <= side * x1; x += side * 3) {
+    const t = mesh(new THREE.BoxGeometry(0.035, 1.25, 0.035), M.tpost); t.position.set(x, 0.62, GATE_Z); fence.add(t);
+  }
+  for (const y of [0.55, 0.85, 1.15]) fence.add(tube(M.wire, V3(x0, y, GATE_Z), V3(x1, y, GATE_Z), 0.003));
+}
+
+// ---------------------------------------------------------------- rural mailbox (USPS #1 size) on a 4x4 post
+const MB = {L: 0.483, W: 0.165, H: 0.229, bottom: 1.07};
+function mailbox(flagUp) {
+  const g = new THREE.Group(), r = MB.W / 2, wall = MB.H - r;
+  const s = new THREE.Shape(); s.moveTo(-r, 0); s.lineTo(r, 0); s.lineTo(r, wall); s.absarc(0, wall, r, 0, Math.PI, false); s.lineTo(-r, 0);
+  const body = mesh(new THREE.ExtrudeGeometry(s, {depth: MB.L, bevelEnabled: false, curveSegments: 20}), M.boxPaint);
+  body.position.set(0, MB.bottom, -MB.L / 2); g.add(body);                                          // door end at z -L/2 (the road)
+  const door = mesh(new THREE.ExtrudeGeometry(s, {depth: 0.006, bevelEnabled: false, curveSegments: 20}), M.boxPaint);
+  door.scale.set(1.04, 1.03, 1); door.position.set(0, MB.bottom - 0.003, -MB.L / 2 - 0.006); g.add(door);
+  const latch = mesh(new THREE.BoxGeometry(0.03, 0.02, 0.012), M.galv); latch.position.set(0, MB.bottom + MB.H - 0.03, -MB.L / 2 - 0.012); g.add(latch);
+  // the red flag on the right side as seen from the road (looking +z, right is -x), pivot near the back
+  const flag = new THREE.Group(), arm = mesh(new THREE.BoxGeometry(0.004, 0.022, 0.2), M.flag), plate = mesh(new THREE.BoxGeometry(0.004, 0.07, 0.09), M.flag);
+  arm.position.set(0, 0, -0.1); plate.position.set(0, 0.024, -0.19); flag.add(arm, plate);
+  flag.position.set(-r - 0.006, MB.bottom + 0.08, MB.L / 2 - 0.06); flag.rotation.x = flagUp ? Math.PI / 2 : 0; g.add(flag);
+  // 4x4 post and a 2x6 cradle under the box
+  const post = mesh(new THREE.BoxGeometry(0.089, MB.bottom - 0.04, 0.089), M.post); post.position.set(0, (MB.bottom - 0.04) / 2, 0.05); g.add(post);
+  const cradle = mesh(new THREE.BoxGeometry(0.14, 0.038, 0.42), M.post); cradle.position.set(0, MB.bottom - 0.019, 0); g.add(cradle);
+  const num = mesh(new THREE.PlaneGeometry(0.2, 0.06), new THREE.MeshStandardMaterial({map: canvasTex(400, 120, (c, w, h) => { c.fillStyle = '#1f2021'; c.fillRect(0, 0, w, h); c.fillStyle = '#e8e2cf'; c.font = 'bold 92px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('1462', w / 2, h / 2 + 4); }), roughness: 0.6}), false);
+  num.position.set(0, MB.bottom + 0.055, -MB.L / 2 - 0.0135); num.rotation.y = Math.PI; g.add(num);   // on the door
+  return g;
+}
+const MB_X = -(DRIVE_HALF + 2.9), MB_Z = EDGE + 0.45;            // right-hand side seen from the road (-x)
+let mbox = mailbox(true); mbox.position.set(MB_X, 0, MB_Z); scene.add(mbox);
+function setFlag(up) { scene.remove(mbox); mbox = mailbox(up); mbox.position.set(MB_X, 0, MB_Z); scene.add(mbox); }
+
+// ---------------------------------------------------------------- trees (context)
+const trees = new THREE.Group(); scene.add(trees);
+{ const r = rng(21);
+  for (let i = 0; i < 70; i++) {
+    const x = (r() - 0.5) * 90, z = 16 + r() * 40; if (Math.abs(x) < 6 && z < 42) continue;
+    const h = 7 + r() * 9, fir = r() < 0.4, t = new THREE.Group();
+    const trunk = mesh(new THREE.CylinderGeometry(0.12, 0.2, h * 0.5, 8), M.bark); trunk.position.y = h * 0.25; t.add(trunk);
+    if (fir) { const c = mesh(new THREE.ConeGeometry(h * 0.18, h * 0.75, 9), M.fir); c.position.y = h * 0.6; t.add(c); }
+    else { const c = mesh(new THREE.SphereGeometry(h * 0.22, 10, 8), M.leaf); c.scale.y = 1.2; c.position.y = h * 0.72; t.add(c); }
+    t.position.set(x, 0, z); trees.add(t);
+  }
+  for (let i = 0; i < 30; i++) { const x = (r() - 0.5) * 100, z = -9 - r() * 30, h = 8 + r() * 8, t = new THREE.Group();
+    const trunk = mesh(new THREE.CylinderGeometry(0.12, 0.2, h * 0.5, 8), M.bark); trunk.position.y = h * 0.25; t.add(trunk);
+    const c = mesh(new THREE.SphereGeometry(h * 0.22, 10, 8), M.leaf); c.scale.y = 1.2; c.position.y = h * 0.72; t.add(c); t.position.set(x, 0, z); trees.add(t); }
+}
+
+// ---------------------------------------------------------------- cameras, overlays, sheets
+const persp = new THREE.PerspectiveCamera(42, 1.5, 0.02, 300);
+function shoot(w, h, cam) {
+  renderer.setSize(w, h); if (cam.isPerspectiveCamera) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  renderer.render(scene, cam);
+  const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c;
+}
+function look(pos, target, fov) { persp.position.set(...pos); persp.fov = fov; persp.lookAt(...target); persp.updateMatrixWorld(); persp.updateProjectionMatrix(); return persp; }
+function ortho(dir, center, span, w, h, up = [0, 1, 0]) {
+  const a = w / h, cam = new THREE.OrthographicCamera(-span * a / 2, span * a / 2, span / 2, -span / 2, 0.01, 80), c = V3(...center);
+  cam.up.set(...up); cam.position.copy(c).addScaledVector(V3(...dir).normalize(), -30); cam.lookAt(c); cam.updateMatrixWorld(); cam.updateProjectionMatrix(); return cam;
+}
+function proj(cam, p, w, h) { const v = V3(...p).project(cam); return [(v.x + 1) / 2 * w, (1 - v.y) / 2 * h]; }
+function dim(g, cam, w, h, p, q, ox, oy, text) {
+  const [x1, y1] = proj(cam, p, w, h), [x2, y2] = proj(cam, q, w, h), a = [x1 + ox, y1 + oy], b = [x2 + ox, y2 + oy];
+  g.strokeStyle = '#3a3530'; g.fillStyle = '#3a3530'; g.lineWidth = 1.6;
+  g.setLineDash([3, 4]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(...a); g.moveTo(x2, y2); g.lineTo(...b); g.stroke(); g.setLineDash([]);
+  g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke();
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  for (const [pt, s] of [[a, 1], [b, -1]]) { g.beginPath(); g.moveTo(...pt); g.lineTo(pt[0] + s * 11 * Math.cos(ang - 0.35), pt[1] + s * 11 * Math.sin(ang - 0.35)); g.lineTo(pt[0] + s * 11 * Math.cos(ang + 0.35), pt[1] + s * 11 * Math.sin(ang + 0.35)); g.fill(); }
+  g.font = `bold 21px ${FONT}`; const tw = g.measureText(text).width, mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  g.fillStyle = 'rgba(232,228,221,0.94)'; g.fillRect(mx - tw / 2 - 6, my - 15, tw + 12, 30); g.fillStyle = '#2b2622'; g.fillText(text, mx - tw / 2, my + 8);
+}
+function callout(g, cam, w, h, p, dx, dy, text) {
+  const [x, y] = proj(cam, p, w, h);
+  g.strokeStyle = 'rgba(255,248,236,0.95)'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 5, 0, 7); g.stroke();
+  g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + dy); g.stroke();
+  g.font = `20px ${FONT}`; const tw = g.measureText(text).width, tx = dx < 0 ? x + dx - tw - 12 : x + dx + 4;
+  g.fillStyle = 'rgba(28,24,20,0.8)'; g.fillRect(tx - 6, y + dy - 18, tw + 16, 32); g.fillStyle = '#f5efe4'; g.fillText(text, tx + 2, y + dy + 6);
+}
+function caption(g, x, y, text) { g.font = `bold 23px ${FONT}`; const tw = g.measureText(text).width; g.fillStyle = 'rgba(20,17,14,0.8)'; g.fillRect(x, y, tw + 28, 40); g.fillStyle = '#f5efe4'; g.fillText(text, x + 14, y + 28); }
+function wrapText(g, s, maxW, indent = '') {
+  const tokens = s.match(/[A-Za-z0-9.%°+\-–×=\/]+|[\s\S]/gu), close = /^[，。；：、）)」"！？,.;:]$/, out = [];
+  let line = '';
+  for (const t of tokens) {
+    if (line.trim() && !close.test(t) && g.measureText(line + t).width > maxW) { out.push(line); line = indent + (t === ' ' ? '' : t); continue; }
+    line += t;
+  }
+  if (line) out.push(line);
+  return out;
+}
+function notes(g, x, y, w, hgt, title, lines) {
+  g.fillStyle = '#ece8e1'; g.fillRect(x, y, w, hgt); g.fillStyle = '#2b2622'; g.font = `bold 26px ${FONT}`; g.fillText(title, x + 24, y + 44);
+  let yy = y + 84;
+  for (const l of lines) {
+    if (l === '') { yy += 12; continue; }
+    const bold = l.startsWith('!'), s = bold ? l.slice(1) : l; g.font = `${bold ? 'bold ' : ''}21px ${FONT}`;
+    const ws = wrapText(g, s, w - 60, '  ');
+    ws.forEach((t, i) => g.fillText(t, x + 26, yy + i * 30)); yy += (ws.length - 1) * 30 + 32;
+  }
+  return yy;
+}
+async function save(c, name) { const blob = await new Promise(r => c.toBlob(r, 'image/png')); await fetch('/save?name=' + name, {method: 'POST', body: blob}); }
+function sheet(w, h, title, sub, foot) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = '#d8d3cb'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#26211c'; g.fillRect(0, 0, w, 90); g.fillStyle = '#f2ece2'; g.font = `bold 38px ${FONT}`; g.fillText(title, 32, 58);
+  g.font = `22px ${FONT}`; g.fillStyle = '#bdb3a4'; g.fillText(sub, w - 32 - g.measureText(sub).width, 56);
+  g.fillStyle = '#5f574d'; g.font = `18px ${FONT}`; g.fillText(foot, 32, h - 16);
+  return [c, g];
+}
+
+// ---------------------------------------------------------------- the carport plan (2-D): F8 vehicle anchor
+function carportPlan(w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.fillStyle = '#ece8e1'; g.fillRect(0, 0, w, h);
+  const s = 62, ox = (w - 6 * s) / 2, oy = 70;                         // 6 m wide (x) x 7 m deep (y), 1 m = s px
+  g.fillStyle = '#b9b2a6'; g.fillRect(ox, oy, 6 * s, 7 * s);           // gravel floor
+  g.strokeStyle = '#4a443d'; g.lineWidth = 3; g.strokeRect(ox, oy, 6 * s, 7 * s);
+  for (const [px, py] of [[0, 0], [6, 0], [0, 3.5], [6, 3.5], [0, 7], [6, 7]]) { g.fillStyle = '#5b4a3a'; g.fillRect(ox + px * s - 7, oy + py * s - 7, 14, 14); }
+  // pickup footprint 5.2 x 1.9, nose out (toward the open side, y = 7), centred
+  const tx = ox + 3 * s, L = 5.2 * s, W = 1.9 * s, ty0 = oy + 0.6 * s;
+  g.setLineDash([10, 7]); g.strokeStyle = '#2c3e4a'; g.lineWidth = 3; g.strokeRect(tx - W / 2, ty0, W, L); g.setLineDash([]);
+  g.fillStyle = 'rgba(44,62,74,0.12)'; g.fillRect(tx - W / 2, ty0, W, L);
+  for (const fy of [0.85, 4.05]) for (const fx of [-1, 1]) { g.fillStyle = '#2c3e4a'; g.fillRect(tx + fx * (W / 2) - (fx > 0 ? 10 : 0), ty0 + fy * s - 18, 10, 36); }
+  // the anchor: ground point at the footprint centre, heading arrow
+  const ay = ty0 + L / 2; g.fillStyle = '#b5281f'; g.beginPath(); g.arc(tx, ay, 9, 0, 7); g.fill();
+  g.strokeStyle = '#b5281f'; g.lineWidth = 4; g.beginPath(); g.moveTo(tx, ay); g.lineTo(tx, ay + 1.6 * s); g.stroke();
+  g.beginPath(); g.moveTo(tx - 12, ay + 1.6 * s - 14); g.lineTo(tx, ay + 1.6 * s + 4); g.lineTo(tx + 12, ay + 1.6 * s - 14); g.fill();
+  g.fillStyle = '#2b2622'; g.font = `bold 22px ${FONT}`;
+  g.fillText('车棚 6 × 7 m（M1 已搭）', ox, oy - 22);
+  g.font = `20px ${FONT}`;
+  g.fillText('↓ 敞开的一面，车道', tx - 80, oy + 7 * s + 34);
+  g.fillText('皮卡 5.2 × 1.9 m（以后的车）', ox + 6 * s + 18, ty0 + 30);
+  g.fillText('左右各 2.05 m，前后各约 0.6–1.2 m', ox + 6 * s + 18, ty0 + 62);
+  g.fillStyle = '#b5281f'; g.fillText('● 车辆锚点：地面中心 + 车头朝向', ox + 6 * s + 18, ay + 6);
+  g.fillStyle = '#2b2622'; g.fillText('锚点不是方块，是老宅模板里的一个命名点', ox + 6 * s + 18, ay + 40);
+  return c;
+}
+
+const SUB = '森林开局 B 溪谷老宅 · M3a 院落设施 · 2026-10-14';
+const FOOT = '离线概念图：three.js 渲染，几何是示意（真实米），不是游戏截图。公路是占位：公共县道由 C3 修。门牌号 1462 是占位。';
+window.dbg = {scene, look, ortho, shoot, save, setGate, setFlag, gate, mbox, trees, fence};
+
+window.renderAll = async () => {
+  // ---------------- sheet 1: the driveway mouth
+  const W = 2400, [c, g] = sheet(W, 1760, 'M3a 车道口：信箱、管式大门、PRIVATE DRIVE 牌（推荐方案）', SUB, FOOT);
+  setGate(false); setFlag(true);
+  let w = 1560, h = 1230, cam = look([-5.6, 1.75, -1.6], [-0.2, 0.95, 9.5], 40), v = shoot(w, h, cam), vg = v.getContext('2d');
+  callout(vg, cam, w, h, [MB_X, MB.bottom + 0.15, MB_Z - 0.2], -30, -320, '信箱：路边，车道右手，门朝公路');
+  callout(vg, cam, w, h, [0, GATE_Y0 + 0.75, GATE_Z - 0.05], -240, -230, '管式大门：车道往里约 8 m，关着');
+  callout(vg, cam, w, h, [0.2, GATE_Y0 + 0.69, GATE_Z - 0.04], 230, -150, 'PRIVATE DRIVE 牌：挂在大门中间');
+  callout(vg, cam, w, h, [-2.0, 0.03, 2.4], 300, -20, '县道（C3 修，这里是占位）');
+  callout(vg, cam, w, h, [0.6, 0.02, 6.0], 200, 90, '碎石车道 3 m，路口放宽成小喇叭口');
+  g.drawImage(v, 16, 106); caption(g, 32, 122, '从县道看车道口');
+  // right column: the gate open, from the yard side; the mailbox close
+  setGate(true);
+  const rw = 800, rh = 607;
+  v = shoot(rw, rh, look([4.2, 1.9, 19], [-0.6, 0.8, 11.4], 46)); vg = v.getContext('2d');
+  g.drawImage(v, 1584, 106); caption(g, 1600, 122, '大门开着（往院子里转 90°）');
+  setGate(false);
+  cam = look([MB_X - 1.0, 1.5, MB_Z - 1.2], [MB_X, 1.15, MB_Z], 34); v = shoot(rw, rh, cam); vg = v.getContext('2d');
+  callout(vg, cam, rw, rh, [MB_X - MB.W / 2 - 0.01, MB.bottom + 0.25, MB_Z + MB.L / 2 - 0.08], -90, -90, '红旗：竖起 = 有信要寄');
+  callout(vg, cam, rw, rh, [MB_X, MB.bottom + 0.15, MB_Z - MB.L / 2 - 0.01], 110, 110, '前门往下开，门上是门牌号');
+  g.drawImage(v, 1584, 106 + rh + 16); caption(g, 1600, 122 + rh + 16, '信箱特写');
+  // notes
+  notes(g, 16, 1352, 1180, 368, '布置', [
+    '!车道口按北美乡下的习惯：信箱在公路边，大门往里退一段，车能整辆停下再下车开门，不堵公路。',
+    '信箱：车道右手（从公路看），离路肩边约 0.5 m，箱底离地 1.07 m（美国邮政要求 41–45 英寸），门朝公路，邮差不用下车。',
+    '大门：离路肩边约 8 m（一辆皮卡 5.2 m + 余量），两根圆木门柱，往院子里开，开到 90° 贴在车道边上。',
+    '两边一小段带刺铁丝围栏只是示意，不在这一包里；大门单独立着也成立。',
+    '新世界里（M4）这一套放在车道末端的连接节点 H 旁边：信箱在 H 的私人一侧，大门在车道上往里约 8 m。C3 之前 H 是碎石回车场，信箱照样立着。',
+  ]);
+  notes(g, 1204, 1352, 1180, 368, '做成什么方块（推荐）', [
+    '!1. rural_mailbox：信箱一格（连木柱），按朝向放；右键开门，里面 3 格小储物；潜行右键扳红旗。Mesh + 240 px。',
+    '!2. tube_farm_gate：管式大门 4 格宽 × 2 格高的多格方块，门柱算在里面（门扇 3.66 m + 两根 16 cm 门柱 ≈ 4 m）。右键开关，往远离玩家那边转 90°，碰撞跟着门扇。合页在左还是右按放的方向。',
+    '!3. PRIVATE DRIVE 牌：是大门的一个状态（sign=true），不单独做方块。以后路边的牌子走 C 的路边锚点。',
+    '挖掘：AGENTS 规则里钢件默认钻石级，除非明确做成低级内容。我的默认是把这两样当乡下低级金属件：镐 + 石级。你要钻石级就说一声。',
+  ]);
+  await save(c, 'm3a_driveway_mouth.png');
+
+  // ---------------- sheet 2: dimensions + the carport anchor
+  const [c2, g2] = sheet(W, 1420, 'M3a 尺寸与车辆锚点（F8）', SUB, FOOT);
+  trees.visible = false; fence.visible = false;
+  w = 1180; h = 620;
+  cam = ortho([0, 0, 1], [0, 0.9, GATE_Z], 2.9, w, h); v = shoot(w, h, cam); vg = v.getContext('2d');
+  dim(vg, cam, w, h, [HINGE_X + POST_R + 0.03, GATE_Y0, GATE_Z], [HINGE_X + POST_R + 0.03 + GATE_L, GATE_Y0, GATE_Z], 0, 60, '门扇 3.66 m（12 英尺，5 道横管）');
+  dim(vg, cam, w, h, [LATCH_X + 0.22, GATE_Y0, GATE_Z], [LATCH_X + 0.22, GATE_Y0 + GATE_H, GATE_Z], -30, 0, '1.27 m');
+  dim(vg, cam, w, h, [HINGE_X - 0.22, 0, GATE_Z], [HINGE_X - 0.22, POST_H, GATE_Z], 30, 0, '门柱 1.65 m');
+  g2.drawImage(v, 16, 106); caption(g2, 32, 122, '大门正面（从公路看），关着');
+  cam = ortho([0, -1, 0], [0, 0, GATE_Z + 1.4], 6.6, w, h, [0, 0, -1]); setGate(true); v = shoot(w, h, cam); vg = v.getContext('2d');
+  { const [hx, hy] = proj(cam, [HINGE_X, 0, GATE_Z], w, h), [ex] = proj(cam, [HINGE_X + GATE_L + 0.1, 0, GATE_Z], w, h), r = ex - hx;
+    vg.strokeStyle = 'rgba(181,40,31,0.85)'; vg.lineWidth = 3; vg.setLineDash([9, 7]); vg.beginPath(); vg.arc(hx, hy, r, 0, Math.PI / 2); vg.stroke(); vg.setLineDash([]); }
+  callout(vg, cam, w, h, [HINGE_X, 0, GATE_Z], 70, -60, '合页柱');
+  callout(vg, cam, w, h, [LATCH_X, 0, GATE_Z], 60, -80, '锁柱：铁链 + 挂锁');
+  callout(vg, cam, w, h, [0, 0, GATE_Z - 1.3], 140, 0, '↑ 公路这边');
+  g2.drawImage(v, 1204, 106); caption(g2, 1220, 122, '俯视：开门往院子里转 90°'); setGate(false);
+  cam = ortho([-1, 0, 0], [MB_X, 0.75, MB_Z], 1.8, 560, 620); v = shoot(560, 620, cam); vg = v.getContext('2d');
+  dim(vg, cam, 560, 620, [MB_X, 0, MB_Z + 0.4], [MB_X, MB.bottom, MB_Z + 0.4], 40, 0, '1.07 m');
+  dim(vg, cam, 560, 620, [MB_X, MB.bottom + MB.H, MB_Z - MB.L / 2], [MB_X, MB.bottom + MB.H, MB_Z + MB.L / 2], 0, -40, '48 cm');
+  dim(vg, cam, 560, 620, [MB_X, MB.bottom, MB_Z - MB.L / 2 - 0.15], [MB_X, MB.bottom + MB.H, MB_Z - MB.L / 2 - 0.15], -30, 0, '23 cm');
+  g2.drawImage(v, 16, 742); caption(g2, 32, 758, '信箱侧面（右边是公路）');
+  const plan = carportPlan(1240, 620); g2.drawImage(plan, 592, 742);
+  notes(g2, 1848, 742, 536, 620, 'F8 车辆锚点', [
+    '!不做方块，也不放车。',
+    '老宅模板里记一个命名点：车棚里的地面中心 + 车头朝向（朝车道）。',
+    '车辆系统做好后，新世界在这里放皮卡；已经有老宅的世界，锚点加载时换成真车，按版本只做一次。',
+    '开发命令能显示它，方便核对。',
+  ]);
+  trees.visible = true; fence.visible = true;
+  await save(c2, 'm3a_dimensions_anchor.png');
+  return 'saved';
+};
+window.ready = true;
+</script></body></html>

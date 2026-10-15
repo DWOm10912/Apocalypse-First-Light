@@ -2,7 +2,10 @@ package com.antaurora.apofirstlight.client;
 
 import com.antaurora.apofirstlight.blockmesh.AflBlockMeshProfile;
 import com.antaurora.apofirstlight.cabin.WoodFurniture;
+import com.antaurora.apofirstlight.block.LogMount;
+import com.antaurora.apofirstlight.cabin.WoodFurnitureV2;
 import com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity;
+import com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity;
 import com.antaurora.apofirstlight.weapon.NativeGunItem;
 import com.antaurora.apofirstlight.weapon.client.AflShaderCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -15,6 +18,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 import java.util.List;
@@ -31,7 +36,11 @@ import java.util.Map;
  * <li>Shelf (3, 4): a pistol lies on its left side, muzzle +x, grip toward the wall; anything else lies flat (its
  * display-frame model at 25 cm).</li>
  * </ul>
- * Resting items are drawn by the chunk ({@link WoodGunRackChunking}, a recording of this drawing): a slot is drawn here
+ * <p>Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15): the wooden tool rack's block entity is this one's
+ * ({@link WoodToolRackBlockEntity}), drawn here too in its own frame (tools/build-wood-furniture-v2.mjs, moved out onto its
+ * pad on round logs): pegs (0..2) hang a tool by its handle, head up, the item sprite's diagonal plumb (its model at
+ * {@link WoodFurnitureV2.ToolRack#TOOL_SCALE}); the shelf (3, 4) as the gun rack's.
+ * <p>Resting items are drawn by the chunk ({@link WoodGunRackChunking}, a recording of this drawing): a slot is drawn here
  * only until the chunk shows it, plus whatever the chunk cannot take.
  */
 public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRackBlockEntity> {
@@ -46,25 +55,32 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
         boolean shadowPass = AflShaderCompat.activeShadowPass();
         WoodGunRackChunking.Copy chunk = WoodGunRackChunking.shown(rack, shadowPass);   // main pass: also keeps the chunk's copy current
         if (rack.isEmpty()) return;
-        Direction facing = rack.getBlockState().getValue(WoodFurniture.GunRack.FACING);
+        BlockState state = rack.getBlockState();
         for (int k = 0; k < WoodGunRackBlockEntity.SLOTS; k++) {
             ItemStack s = rack.item(k);
             if (s.isEmpty()) continue;
-            if (chunk != null && chunk.has(k, s, facing)) {
+            if (chunk != null && chunk.has(k, s, state)) {
                 chunk.replay(k, pose, buffers, light, shadowPass);
                 continue;
             }
             pose.pushPose();
-            slot(k, s, facing, pose, buffers, light, rack.getBlockPos().hashCode() + k);
+            slot(k, s, state, pose, buffers, light, rack.getBlockPos().hashCode() + k);
             pose.popPose();
         }
     }
 
     /** Slot k's item in block space (pose at the block's origin), the rack turned to its facing; also the chunk's recording. */
-    static void slot(int k, ItemStack s, Direction facing, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
+    static void slot(int k, ItemStack s, BlockState state, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
+        Direction facing = state.getValue(HorizontalDirectionalBlock.FACING);
         pose.translate(0.5, 0, 0.5);
         pose.mulPose(Axis.YP.rotationDegrees(AflBlockMeshProfile.facingDegrees(facing)));
         pose.translate(-0.5, 0, -0.5);
+        if (state.getBlock() instanceof WoodFurnitureV2.ToolRack) {
+            pose.translate(0, 0, -LogMount.depth(state));
+            if (k < 3) tool(s, WoodFurnitureV2.ToolRack.TOOL_X[k], pose, buffers, light, seed);
+            else flat(s, WoodFurnitureV2.ToolRack.SHELF_X[k - 3], WoodFurnitureV2.ToolRack.SHELF_Y, WoodFurnitureV2.ToolRack.SHELF_Z, pose, buffers, light, seed);
+            return;
+        }
         if (k < 3) longGun(s, WoodFurniture.GunRack.NOTCH_Y[k], pose, buffers, light);
         else shelf(s, WoodFurniture.GunRack.SHELF_X[k - 3], pose, buffers, light, seed);
     }
@@ -123,9 +139,27 @@ public final class WoodGunRackRenderer implements BlockEntityRenderer<WoodGunRac
             MaintenanceGunRendering.renderBindPose(s, pose, buffers, light);
             return;
         }
-        pose.translate(x, WoodFurniture.GunRack.SHELF_Y + 0.01, WoodFurniture.GunRack.SHELF_Z - 0.02);
+        flat(s, x, WoodFurniture.GunRack.SHELF_Y, WoodFurniture.GunRack.SHELF_Z, pose, buffers, light, seed);
+    }
+
+    /** An item lying flat on a shelf (top at y, its middle at x, z): its display-frame model at 25 cm. */
+    private static void flat(ItemStack s, double x, double y, double z, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
+        pose.translate(x, y + 0.01, z - 0.02);
         pose.mulPose(Axis.XP.rotationDegrees(90));
         pose.scale(0.25F, 0.25F, 0.25F);
+        Minecraft.getInstance().getItemRenderer().renderStatic(s, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, pose, buffers, null, seed);
+    }
+
+    /**
+     * A tool hung on a peg pair at x, flat against the board: the item sprite's handle-to-head diagonal (bottom left to top
+     * right) turned plumb, head up, the handle's top resting between the pegs.
+     */
+    private static void tool(ItemStack s, double x, PoseStack pose, MultiBufferSource buffers, int light, int seed) {
+        pose.translate(x, WoodFurnitureV2.ToolRack.TOOL_MID_Y, WoodFurnitureV2.ToolRack.TOOL_Z);
+        pose.mulPose(Axis.YP.rotationDegrees(180));   // the sprite's face to the room (north, -z)
+        pose.mulPose(Axis.ZP.rotationDegrees(-45));
+        float scale = (float) WoodFurnitureV2.ToolRack.TOOL_SCALE;
+        pose.scale(scale, scale, scale);
         Minecraft.getInstance().getItemRenderer().renderStatic(s, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, pose, buffers, null, seed);
     }
 }

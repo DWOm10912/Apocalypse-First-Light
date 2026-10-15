@@ -23,8 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public final class AflNetwork {
-    // "40-c3.2": C3 branch (2026-10-14) adds RoadNetworkS2CPacket; on merging into Main take Main's next number
-    private static final String PROTOCOL = "40-c3.2";
+    private static final String PROTOCOL = "45";
     private static SimpleChannel channel;
     private static int nextId;
 
@@ -133,12 +132,28 @@ public final class AflNetwork {
                 com.antaurora.apofirstlight.terrainsmooth.TerrainSmoothStatePacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         nextId = com.antaurora.apofirstlight.wiring.WiringPackets.register(channel, nextId);
+        nextId = com.antaurora.apofirstlight.survivor.SurvivorPackets.register(channel, nextId);
         // C3.2 road network: the built routes, for the client's pavement mesh
         channel.registerMessage(nextId++, com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket.class,
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::encode,
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::decode,
                 com.antaurora.apofirstlight.worldgen.network.RoadNetworkS2CPacket::handle,
                 java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
+    }
+
+    /** Survivor Death and Succession V0: the death summary, the mode and name prompts, identities, to one player. */
+    public static void survivor(ServerPlayer player, Object packet) {
+        if (channel != null) channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    /** Survivor Death and Succession V0: a player's survivor identity (name and look), to every client. */
+    public static void survivorToAll(Object packet) {
+        if (channel != null) channel.send(PacketDistributor.ALL.noArg(), packet);
+    }
+
+    /** Survivor Death and Succession V0 (client): the host's mode choice, the first survivor's name choice. */
+    public static void survivorToServer(Object packet) {
+        if (channel != null) channel.sendToServer(packet);
     }
 
     /** C3.2: the overworld's built routes, to one player (login). */

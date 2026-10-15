@@ -37,6 +37,11 @@ public final class AflBlockEntityRenderers {
         // Trash enclosure V1 gate: the leaf swings (generic AFL Animated Block Mesh Runtime)
         event.registerBlockEntityRenderer(AflBlockEntities.ENCLOSURE_GATE.get(),
                 AflBlockEntityRendering.wrap("enclosure_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        // Rural Driveway V1: the tube farm gate's leaf (either way) and the mailbox's door and flag (generic runtime)
+        event.registerBlockEntityRenderer(AflBlockEntities.TUBE_FARM_GATE.get(),
+                AflBlockEntityRendering.wrap("tube_farm_gate", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
+        event.registerBlockEntityRenderer(AflBlockEntities.RURAL_MAILBOX.get(),
+                AflBlockEntityRendering.wrap("rural_mailbox", com.antaurora.apofirstlight.client.blockmesh.AflAnimatedBlockMeshRenderer::new));
         event.registerBlockEntityRenderer(AflBlockEntities.ENERGY_CELL.get(),
                 AflBlockEntityRendering.wrap("energy_cell", EnergyCellBlockEntityRenderer::new));
         event.registerBlockEntityRenderer(AflBlockEntities.LEAD_CHEST.get(),
@@ -83,7 +88,13 @@ public final class AflBlockEntityRenderers {
         // the chair's seat is an invisible rider anchor
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.GUN_RACK, AflBlockEntityRendering.wrap("wooden_gun_rack", WoodGunRackRenderer::new));
         event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.BoxStove.STOVE, AflBlockEntityRendering.wrap("box_stove", BoxStoveRenderer::new));   // Box Stove V1: the cook top
+        // Wood Furniture V2: the tool rack's tools (the gun rack's renderer and chunk drawing); the vintage freezer's cord
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.TOOL_RACK, AflBlockEntityRendering.wrap("wooden_tool_rack", WoodGunRackRenderer::new));
+        event.registerBlockEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurnitureV2.FREEZER, AflBlockEntityRendering.wrap("vintage_chest_freezer", VintageFreezerRenderer::new));
         com.antaurora.apofirstlight.cabin.WoodGunRackBlockEntity.chunkData = WoodGunRackChunking::modelData;   // resting guns: drawn by the chunk
         event.registerEntityRenderer(com.antaurora.apofirstlight.cabin.WoodFurniture.SEAT, net.minecraft.client.renderer.entity.NoopRenderer::new);
+        // Survivor Death and Succession V0: the placeholder body (owner's skin lying on its back)
+        event.registerEntityRenderer(com.antaurora.apofirstlight.registry.AflEntities.SURVIVOR_CORPSE.get(),
+                com.antaurora.apofirstlight.client.survivor.SurvivorCorpseRenderer::new);
     }
 }

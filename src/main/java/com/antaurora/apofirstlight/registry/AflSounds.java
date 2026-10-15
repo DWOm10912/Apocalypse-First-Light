@@ -144,6 +144,33 @@ public final class AflSounds {
     public static final RegistryObject<SoundEvent> JERRY_CAN_CAP_CLOSE = simple("jerry_can_cap_close");
     public static final RegistryObject<SoundEvent> DRUM_BUNG_OPEN = simple("drum_bung_open");
     public static final RegistryObject<SoundEvent> DRUM_BUNG_CLOSE = simple("drum_bung_close");
+    /**
+     * The forest start home's own pieces (docs/audio/forest_home_sounds_v1.md, tools/build-forest-home-sounds-v1.mjs; the
+     * user's takes, 2026-10-14). All play on noise/RangedSound with their noise radius; variants are sounds.json entries.
+     */
+    public static final RegistryObject<SoundEvent> BOX_STOVE_DOOR_OPEN = simple("box_stove_door_open");
+    public static final RegistryObject<SoundEvent> BOX_STOVE_DOOR_CLOSE = simple("box_stove_door_close");
+    public static final RegistryObject<SoundEvent> BOX_STOVE_ADD_WOOD = simple("box_stove_add_wood");
+    public static final RegistryObject<SoundEvent> BOX_STOVE_FIRE_LOOP = simple("box_stove_fire_loop");
+    public static final RegistryObject<SoundEvent> BOX_STOVE_BOIL_LOOP = simple("box_stove_boil_loop");
+    public static final RegistryObject<SoundEvent> BOX_STOVE_FRY_LOOP = simple("box_stove_fry_loop");
+    public static final RegistryObject<SoundEvent> EMERGENCY_RADIO_SWITCH_ON = simple("emergency_radio_switch_on");
+    public static final RegistryObject<SoundEvent> EMERGENCY_RADIO_SWITCH_OFF = simple("emergency_radio_switch_off");
+    public static final RegistryObject<SoundEvent> EMERGENCY_RADIO_CRANK = simple("emergency_radio_crank");
+    public static final RegistryObject<SoundEvent> EMERGENCY_RADIO_STATIC_LOOP = simple("emergency_radio_static_loop");
+    public static final RegistryObject<SoundEvent> WOOD_CABINET_OPEN = simple("wood_cabinet_open");
+    public static final RegistryObject<SoundEvent> WOOD_CABINET_CLOSE = simple("wood_cabinet_close");
+    public static final RegistryObject<SoundEvent> LAMP_PULL_CHAIN = simple("lamp_pull_chain");
+    public static final RegistryObject<SoundEvent> WALL_SWITCH_CLICK = simple("wall_switch_click");
+    public static final RegistryObject<SoundEvent> POWER_PLUG_IN = simple("power_plug_in");
+    public static final RegistryObject<SoundEvent> POWER_PLUG_OUT = simple("power_plug_out");
+    public static final RegistryObject<SoundEvent> RURAL_MAILBOX_FLAG_UP = simple("rural_mailbox_flag_up");
+    public static final RegistryObject<SoundEvent> RURAL_MAILBOX_FLAG_DOWN = simple("rural_mailbox_flag_down");
+    public static final RegistryObject<SoundEvent> TUBE_FARM_GATE_OPEN = simple("tube_farm_gate_open");
+    public static final RegistryObject<SoundEvent> TUBE_FARM_GATE_CLOSE = simple("tube_farm_gate_close");
+    public static final RegistryObject<SoundEvent> TREE_CHOP = simple("tree_chop");
+    public static final RegistryObject<SoundEvent> TREE_CRACK = simple("tree_crack");
+    public static final RegistryObject<SoundEvent> TREE_CRASH = simple("tree_crash");
 
     private static RegistryObject<SoundEvent> simple(String name) {
         return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(ApocalypseFirstLight.MOD_ID, name)));

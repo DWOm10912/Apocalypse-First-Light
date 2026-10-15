@@ -25,6 +25,9 @@ import java.util.function.Function;
  * <p>
  * On a client the guns are drawn by the chunk (client WoodGunRackChunking, through the model data): new contents from the
  * server ask for fresh model data and a rebuild of the section.
+ * <p>
+ * Wood Furniture V2 (2026-10-15): also the wooden tool rack's ({@link WoodToolRackBlockEntity}: three pegs for long tools,
+ * two shelf places), the same five slots, drawing and chunk path.
  */
 public class WoodGunRackBlockEntity extends BlockEntity {
     public static final int SLOTS = 5;
@@ -32,7 +35,9 @@ public class WoodGunRackBlockEntity extends BlockEntity {
     public static volatile Function<WoodGunRackBlockEntity, ModelData> chunkData = rack -> ModelData.EMPTY;
     private final NonNullList<ItemStack> items = NonNullList.withSize(SLOTS, ItemStack.EMPTY);
 
-    public WoodGunRackBlockEntity(BlockPos pos, BlockState state) { super(WoodFurniture.GUN_RACK, pos, state); }
+    public WoodGunRackBlockEntity(BlockPos pos, BlockState state) { this(WoodFurniture.GUN_RACK, pos, state); }
+
+    protected WoodGunRackBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, BlockState state) { super(type, pos, state); }
 
     public ItemStack item(int slot) { return items.get(slot); }
 

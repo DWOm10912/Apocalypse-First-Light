@@ -79,7 +79,7 @@
 - 开门：
   - 有人打开时方块状态 `open=true`，两扇门绕外侧前边各转 90° 朝外开，看得到柜体、隔板、柜底；
   - 没人开着了，`tick` 复查后关上，像原版木桶；
-  - 开关声用原版木桶的，在门的位置。
+  - 开关声 `wood_cabinet_open` / `_close`（用户的素材，2026-10-14，[老宅音效 V1](../audio/forest_home_sounds_v1.md)），在门的位置，3 格，同时发同半径的感染者噪声；原来是原版木桶声。
 - 存储：
   - 原版箱子界面：木质橱柜 9 × 2 = 18 格，水槽柜 9 × 1 = 9 格；
   - 物品改过名，放下后柜子沿用这个名字；
@@ -239,13 +239,13 @@
   - `src/main/java/com/antaurora/apofirstlight/cabin/`：
     - `WoodFurniture.java`：四个方块类 + 方块实体类型和座位实体的注册；
     - `FurnitureSeat.java`；
-    - `WoodCounterBlockEntity.java`；
+    - `WoodCounterBlockEntity.java`（2026-10-15 起格数和开关声从 `WoodFurniture.Storage` 接口读，V2 的衣柜、床头柜、老式冷柜共用它，见 [Wood Furniture V2](wood_furniture_v2.md)）；
     - `WoodGunRackBlockEntity.java`；
     - 注册接在 `CabinBlocks`（同一个 Mesh 加载器、同一串 ID）；
     - `CabinMeshModel.EXTRA`：方块实体可以经模型数据往小屋方块的区块里加 cutout 层的四边形（现在只有枪架用）。
   - `src/main/java/com/antaurora/apofirstlight/client/`：
     - `WoodGunRackRenderer.java`；
-    - `WoodGunRackChunking.java`（录下挂着的东西交给区块，记账哪一份已经在区块里）；
+    - `WoodGunRackChunking.java`（录下挂着的东西交给区块，记账哪一份已经在区块里；2026-10-15 起录制按整个方块状态记，不只按朝向，V2 工具架在原木墙上外移也算进去）；
     - `MaintenanceGunRendering#renderBindPose`（新加：不带维修台变换画绑定姿态的枪）、`ClosedFaces`（录的时候告诉记录器哪些面属于封闭零件）；
     - `blockmesh/AflStaticMeshModel`：`atlasSprite`、`diffuse`（实体光照系数）改成公开，枪架共用；
     - `AflBlockEntityRenderers`（枪架 BER，座位用 `NoopRenderer`）；
@@ -290,7 +290,7 @@
 - 枪的贴图在方块图集里有 mipmap，远处可能在 UV 岛之间渗色。
 - 搁板上的普通物品用展示框模型缩小。显示设置特殊的 3D 物品可能别扭，没验证。
 - 手压泵手柄顶到 1.52 m，超过 Embeddium 视锥的 1.125 格余量。区段最上一层的水槽柜，下面的区段不在视野里时，手柄可能闪掉。这只是推算的边角情况，没看到过。
-- 扶手椅、边桌、床、搁架、木箱等其余通用家具还没做。
+- 扶手椅、边桌、搁架还没做。床、衣柜、床头柜、工具架、木储物箱 2026-10-15 在 [Wood Furniture V2](wood_furniture_v2.md) 里做了。
 
 ## 8. 验证记录
 

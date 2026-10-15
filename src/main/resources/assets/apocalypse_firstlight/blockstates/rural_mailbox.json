@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "cell=r0": {
+      "model": "apocalypse_firstlight:block/rural_mailbox/mesh"
+    },
+    "cell=r1": {
+      "model": "apocalypse_firstlight:block/rural_mailbox/cell"
+    }
+  }
+}

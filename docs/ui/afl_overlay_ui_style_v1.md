@@ -234,3 +234,13 @@
 - 全部没有实机看过：圆角在界面缩放 2、3、4 下的边缘，描边粗细，投影浓淡，动画手感，按键提示的位置会不会挡到别的东西。
 - 没有在 Oculus 光影下看过（界面不经过光影，但没确认）。
 - 其它 mod 如果在原版快捷栏 overlay 的 Post 事件里往快捷栏上画东西，原版 overlay 被取消后它们收不到 Post。
+
+### 10.6 死亡结算与模式选择（2026-10-14，独立分支 `feature/survivor-v0`，未合并）
+
+幸存者死亡与随机继任 V0 的两个整屏界面直接用本样式的 `AflUiDraw` / `AflUiShapes`，不用原版按钮：
+
+- `client/survivor/AflDeathScreen`（替换原版死亡界面）：屏幕自上而下的暗色渐变，中间一块面板（宽 280，窄屏留 16 边距），姓名放大 1.6 倍，其余为暖白 / 暖灰短行，结束语用唯一的强调色；按钮是本样式的圆角按钮，1 秒后才能点，面板 12 tick 渐入。
+- `client/survivor/AflSurvivorModeScreen`（单人新世界的模式选择）：两块可选的圆角格（选中的用强调色细线和强调色标题），下面两行规则说明和一个“开始”按钮。
+- 准星提示：尸体“搜索” / “查看”（`hint.apocalypse_firstlight.survivor_corpse.*`），按“使用”键。
+
+行为见 [幸存者死亡与随机继任 V0](../gameplay/survivor_death_succession_v0.md) 第 11 节。都没有实机看过。

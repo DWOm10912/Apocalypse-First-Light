@@ -72,8 +72,9 @@ public final class WoodFurniture {
     /** Called from CabinBlocks#register: the block entity types (after the blocks) and the seat entity. */
     static void register(RegisterEvent event) {
         event.register(net.minecraftforge.registries.ForgeRegistries.Keys.BLOCK_ENTITY_TYPES, helper -> {
+            // Wood Furniture V2 (2026-10-15): the wardrobe and nightstand keep their things the same way
             COUNTER = BlockEntityType.Builder.of(WoodCounterBlockEntity::new, CabinBlocks.block("wooden_kitchen_counter"),
-                    CabinBlocks.block("wooden_sink_counter")).build(null);
+                    CabinBlocks.block("wooden_sink_counter"), CabinBlocks.block("wooden_wardrobe"), CabinBlocks.block("wooden_nightstand")).build(null);
             GUN_RACK = BlockEntityType.Builder.of(WoodGunRackBlockEntity::new, CabinBlocks.block("wooden_gun_rack")).build(null);
             helper.register(CabinBlocks.id("wooden_counter"), COUNTER);
             helper.register(CabinBlocks.id("wooden_gun_rack"), GUN_RACK);
@@ -86,6 +87,27 @@ public final class WoodFurniture {
     }
 
     private static final double[][] NONE = {};
+
+    /**
+     * Furniture whose things a {@link WoodCounterBlockEntity} keeps (the counters; Wood Furniture V2, 2026-10-15: the
+     * wardrobe, the nightstand, the vintage chest freezer): its slot count (9, 18 or 27: a 9 x 1, 2 or 3 chest screen),
+     * where and how its doors sound, and how it shows open.
+     */
+    public interface Storage {
+        int slots();
+
+        /** Sets the open look of the furniture at pos (every cell it has). */
+        void setOpen(Level level, BlockPos pos, BlockState state, boolean open);
+
+        /** Height of the doors' sound over the block entity's cell (blocks); it plays 0.4 out of the front. */
+        default double soundHeight() { return 0.4; }
+
+        default net.minecraft.sounds.SoundEvent openSound() { return com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_OPEN.get(); }
+
+        default net.minecraft.sounds.SoundEvent closeSound() { return com.antaurora.apofirstlight.registry.AflSounds.WOOD_CABINET_CLOSE.get(); }
+
+        default float soundPitch() { return 1.0F; }
+    }
 
     // ---------------------------------------------------------------------------------------------------- table
 
@@ -248,7 +270,7 @@ public final class WoodFurniture {
      * kitchen counter (a drawer over two doors, 18 slots) or the sink counter (a drop-in enamel sink and a cast-iron pitcher
      * pump, 9 slots under the sink; the pump is looks only in V1). {@code open} while someone has the cabinet open.
      */
-    public static final class Counter extends BaseEntityBlock implements CabinPieces {
+    public static final class Counter extends BaseEntityBlock implements CabinPieces, Storage {
         public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
         public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
         private static final VoxelShape[] SHAPES = new VoxelShape[4], SINK_SHAPES = new VoxelShape[4];
@@ -272,7 +294,11 @@ public final class WoodFurniture {
         public boolean sink() { return sink; }
 
         /** Slots of this cabinet: 18 (the kitchen counter) or 9 (under the sink). */
+        @Override
         public int slots() { return sink ? 9 : 18; }
+
+        @Override
+        public void setOpen(Level level, BlockPos pos, BlockState state, boolean open) { level.setBlock(pos, state.setValue(OPEN, open), 3); }
 
         @Override
         protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, OPEN); }

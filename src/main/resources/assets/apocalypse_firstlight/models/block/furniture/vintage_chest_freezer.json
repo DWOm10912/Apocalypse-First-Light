@@ -1,0 +1,148 @@
+{
+  "parent": "minecraft:block/block",
+  "loader": "apocalypse_firstlight:cabin",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/enamel"
+  },
+  "item": [
+    [
+      "furniture/freezer_body_left",
+      0,
+      -0.5,
+      0,
+      0
+    ],
+    [
+      "furniture/freezer_lid_closed_left",
+      0,
+      -0.5,
+      0,
+      0
+    ],
+    [
+      "furniture/freezer_body_right",
+      0,
+      0.5,
+      0,
+      0
+    ],
+    [
+      "furniture/freezer_lid_closed_right",
+      0,
+      0.5,
+      0,
+      0
+    ],
+    [
+      "furniture/freezer_lamp_off",
+      0,
+      -0.5,
+      0,
+      0
+    ]
+  ],
+  "display": {
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.36,
+        0.36,
+        0.36
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.18,
+        0.18,
+        0.18
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        2,
+        0
+      ],
+      "scale": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.26,
+        0.26,
+        0.26
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        0.26,
+        0.26,
+        0.26
+      ]
+    }
+  }
+}

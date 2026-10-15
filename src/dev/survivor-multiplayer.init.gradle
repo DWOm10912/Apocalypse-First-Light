@@ -1,0 +1,21 @@
+// Survivor V0 local multiplayer test (docs/gameplay/survivor_death_succession_v0.md, "多人测试"): one dedicated server
+// and a second real client on this machine, isolated under build/survivor-multiplayer-live. The first client is the
+// normal runClient (run/, user Dev) and joins with Multiplayer -> Direct Connection 127.0.0.1:25577.
+//   .\gradlew.bat runServer -I src/dev/survivor-multiplayer.init.gradle -PaflWithoutShaders --offline
+//   .\gradlew.bat runClient -I src/dev/survivor-multiplayer.init.gradle -PmpRole=B --offline
+// Start the server first, then the clients one after another (they share ForgeGradle's prepare outputs).
+allprojects {
+    afterEvaluate {
+        def base = project.file('build/survivor-multiplayer-live')
+        minecraft.runs.server {
+            workingDirectory new File(base, 'server')
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
+        }
+        minecraft.runs.client {
+            def role = project.findProperty('mpRole') ?: 'B'
+            workingDirectory new File(base, 'client' + role)
+            args '--username', 'Tester' + role, '--quickPlayMultiplayer', '127.0.0.1:25577', '--width', '1280', '--height', '720'
+        }
+    }
+}

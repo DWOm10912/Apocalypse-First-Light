@@ -63,15 +63,16 @@ export function writeOgg(x, file) {
 /**
  * sources: {name: sha256 prefix} (name.wav in srcDir, or the file itself when the name ends in .wav / .ogg); outputs: {key: {file, reference, offset, layers}} with file and
  * reference relative to soundsDir. A layer is {src, at (where its peak sample lands, s), gain (dB), rate?, trim? (cut the
- * start of the source, s), fadeFrom? / fadeTo? (linear fade-out window in the trimmed source, s)}. Returns a report.
+ * start of the source, s), fadeFrom? / fadeTo? (linear fade-out window in the trimmed source, s), fadeIn? (linear fade-in
+ * at the cut, s)}. prepare: {name: fn} applied to a source once decoded (a high-pass). Returns a report.
  */
-export function buildSounds({srcDir, soundsDir, sources, outputs}) {
+export function buildSounds({srcDir, soundsDir, sources, outputs, prepare = {}}) {   // prepare: {name: fn(decoded) -> decoded}, e.g. a high-pass
   const src = {}, level = {};
   for (const [name, sha] of Object.entries(sources)) {
     const file = path.join(srcDir, /\.(wav|ogg)$/i.test(name) ? name : name + '.wav');
     const h = createHash('sha256').update(fs.readFileSync(file)).digest('hex').slice(0, 16);
     if (h !== sha) throw new Error(`${name}.wav changed (sha ${h}, expected ${sha})`);
-    src[name] = decode(file);
+    src[name] = prepare[name] ? prepare[name](decode(file)) : decode(file);
     level[name] = maxLoudness(src[name], 0.1);
   }
   const report = {};
@@ -80,6 +81,7 @@ export function buildSounds({srcDir, soundsDir, sources, outputs}) {
       let x = src[L.src];
       if (L.trim) x = x.slice(Math.round(L.trim * SR));
       if (L.fadeFrom !== undefined) { x = x.slice(0, Math.round(L.fadeTo * SR)); const a = Math.round(L.fadeFrom * SR), b = x.length; for (let i = a; i < b; i++) x[i] *= 1 - (i - a) / (b - a); }
+      if (L.fadeIn) { x = x.slice(); const F = Math.round(L.fadeIn * SR); for (let i = 0; i < F && i < x.length; i++) x[i] *= i / F; }   // a cut inside a continuous sound
       if (L.rate) x = resample(x, L.rate);
       x = trimTail(trimHead(x));
       const g = db(TARGET_ELEMENT - level[L.src] + L.gain), start = Math.round(L.at * SR) - peakAt(x);
@@ -155,6 +157,13 @@ export function buildLoop({srcDir, soundsDir, source, file, from, period, period
     maxMomentaryLUFS: +maxLoudness(enc, 0.4).toFixed(1), peakDbfs: +(20 * Math.log10(peak(enc))).toFixed(1), peakLimited: pk > PEAK_CEILING,
     sourceSwingDb: +(20 * Math.log10(Math.max(...rms) / Math.min(...rms))).toFixed(1), seamJump: +seam.toFixed(5), largestStep: +step.toFixed(5),
     ...(declick !== undefined ? {highExcessBeforeDb: +excessBefore.toFixed(1), highExcessAfterDb: +maxHighExcess(out).toFixed(1)} : {})};
+}
+
+/** 4th-order Butterworth high-pass (two RBJ biquads), for rumble under door and click recordings. */
+export function highPass(x, fc) {
+  const w = 2 * Math.PI * fc / SR, c = Math.cos(w);
+  return [0.5412, 1.3066].reduce((y, q) => { const al = Math.sin(w) / (2 * q), a0 = 1 + al;
+    return biquad(y, [(1 + c) / 2 / a0, -(1 + c) / a0, (1 + c) / 2 / a0], [1, -2 * c / a0, (1 - al) / a0]); }, x);
 }
 
 export const DECLICK = {cutoff: 400, block: 0.0025, around: 0.08};

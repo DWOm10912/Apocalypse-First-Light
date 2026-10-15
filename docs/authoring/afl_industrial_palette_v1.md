@@ -98,6 +98,8 @@ V1.1B 已实现 steel_cable 斜向状态与桥索规划，仍只有原 Item；�
 - `rooftop_unit`：屋顶空调机组，2 × 1 × 2 格（主格 `c0r0`），放在屋面上，女儿墙要挡得住它（A1 离前女儿墙 8 m）。
 - `cmu_screen_wall`（`north` / `east` / `south` / `west` 哪几边有墙，`cap` 上面不是围墙时为 true）：200 mm 磨面砌块围墙，贴格子边，和勒脚同一套贴图。镐，无等级。直接写状态时把 `cap` 写对（最上面一层 true）。
 - `enclosure_gate`（`hinge=right|left`、`open=false`）：2 × 2 格钢门，自带立柱，往 `facing` 那边开；门扇在格子后边线上，围墙从门后面那排开始。一对门关 4 格宽的口子：`right` 立柱在锚点那列，`left` 在第二列。
+- `tube_farm_gate`（`sign=none|front|back`、`open=false`、`swing=back`；2026-10-14，[Rural Driveway V1](../models/rural_driveway_v1.md)，还没实机验证）：4 × 2 格镀锌管农场大门，两根圆木门柱自带。用 `place_multiblock`，锚点 `c0r0` 是合页柱，列沿 `facing.getClockWise()`，第 4 列是门扣柱。`facing` 是前面（朝公路），门扇在格子中线，往离人远的一边开 90°，开着时伸出格子 3.2 m，两边都要留空。`sign` 是门扇上的 PRIVATE DRIVE 牌朝哪面。镐 + 石级（临时）。
+- `rural_mailbox`（`flag=false|true`、`open=false`；2026-10-14，同上，还没实机验证）：1 × 2 格乡村信箱（木柱 + 黑钢箱，箱底 1.07 m），锚点 `r0`，放在地上，`facing` 是门（朝公路）。放在车道口右手边（从公路看）、路肩外约 0.5 m。5 格普通储物。镐 + 石级（临时）。
 
 电源（2026-10-09，[备用柴油发电机组 V1](../machines/diesel_standby_generator_v1.md)；还没实机验证）：
 - `diesel_generator`（`open=false`、`fill=false`）：3 × 1 × 2 格带罩柴油发电机组，`facing` 是正面（检修门、仪表盘）。用 `place_multiblock`，锚点 `c0r0`（列沿 `facing.getClockWise()`）；带方块实体的主格是中间那列下格 `c1r0`，它的背面中心是标准钢电源接口，电缆接在主格后面那一格。放下是空的、停机的。镐 + 钻石级。门往前开约 1 m，前面留空。散热端（`c2r0` 的端面，`facing` 顺时针那一面）是标准流体接口，外面那一格可以接流体管道进柴油；加油口盒在另一端的台阶上。

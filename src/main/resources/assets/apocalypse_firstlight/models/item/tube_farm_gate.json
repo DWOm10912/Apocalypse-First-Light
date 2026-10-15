@@ -1,0 +1,125 @@
+{
+  "parent": "apocalypse_firstlight:block/tube_farm_gate/item",
+  "gui_light": "side",
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        -3.241,
+        -0.882,
+        -0.117
+      ],
+      "scale": [
+        0.191,
+        0.191,
+        0.191
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        75,
+        45,
+        0
+      ],
+      "translation": [
+        3.241,
+        5.379,
+        -1.794
+      ],
+      "scale": [
+        0.191,
+        0.191,
+        0.191
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "translation": [
+        -3.343,
+        -1.024,
+        3.343
+      ],
+      "scale": [
+        0.197,
+        0.197,
+        0.197
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        -3.343,
+        -1.024,
+        3.343
+      ],
+      "scale": [
+        0.197,
+        0.197,
+        0.197
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -1.512,
+        2.672,
+        0
+      ],
+      "scale": [
+        0.063,
+        0.063,
+        0.063
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        3,
+        -0.65,
+        0
+      ],
+      "scale": [
+        0.125,
+        0.125,
+        0.125
+      ]
+    },
+    "gui": {
+      "rotation": [
+        20,
+        200,
+        0
+      ],
+      "translation": [
+        5.683,
+        -0.517,
+        0
+      ],
+      "scale": [
+        0.252,
+        0.252,
+        0.252
+      ]
+    }
+  }
+}
