@@ -45,7 +45,10 @@ public final class SurvivorCommands {
         out.append("mode=").append(data.mode.id()).append(" player=").append(lineage.accountName)
                 .append(" lineage=").append(lineage.status);
         for (SurvivorRecord r : lineage.lives) {
-            out.append("\n #").append(r.lifeIndex).append(' ').append(r.fullName()).append(' ').append(r.state)
+            out.append("\n #").append(r.lifeIndex).append(' ').append(r.fullName()).append(r.named ? "" : " (unnamed)")
+                    .append(' ').append(r.state)
+                    .append(" look=").append(r.skin).append('/').append(r.arms.id())
+                    .append(r.sex != null ? " sex=" + r.sex.name().toLowerCase(Locale.ROOT) : "")
                     .append(String.format(Locale.ROOT, " days=%.2f", r.daysSurvived(day)));
             if (r.deathPos != null) out.append(" died=").append(r.deathCauseId).append(" @ ").append(r.deathDimension)
                     .append(' ').append(r.deathPos.toShortString());
@@ -78,7 +81,8 @@ public final class SurvivorCommands {
         StringBuilder out = new StringBuilder(SurvivorCorpses.describe(source.getServer()));
         for (SurvivorCorpseRecord corpse : data.corpses.values()) {
             SurvivorCorpseContainer container = SurvivorCorpses.container(corpse);
-            out.append("\n ").append(corpse.survivorName).append(" #").append(corpse.lifeIndex).append(" @ ")
+            out.append("\n ").append(corpse.survivorName).append(" #").append(corpse.lifeIndex)
+                    .append(" look=").append(corpse.skin).append('/').append(corpse.arms.id()).append(" @ ")
                     .append(corpse.dimension).append(String.format(Locale.ROOT, " %.1f %.1f %.1f", corpse.x, corpse.y, corpse.z))
                     .append(" stacks=").append(corpse.itemCount()).append('/').append(corpse.items.size())
                     .append(" search: ").append(com.antaurora.apofirstlight.containersearch.AflContainerSearch.debugSummary(container));

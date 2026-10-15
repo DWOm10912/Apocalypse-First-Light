@@ -14,7 +14,8 @@ import net.minecraft.util.FormattedCharSequence;
 import java.util.List;
 
 /**
- * The one-time mode choice of a new single-player world (docs/gameplay/survivor_death_succession_v0.md 2, 11): NORMAL
+ * The one-time mode choice of a new single-player world on the host's first join (docs/gameplay/survivor_death_succession_v0.md
+ * 2, 11): the fallback for a world created without the Create World screen's pick (SurvivorCreateWorldClient). NORMAL
  * or HARD, then "start". Also states the item rule up front (everything stays on the body, keepInventory keeps
  * nothing). Pauses single player, cannot be closed; the server confirms the choice and closes it, and checks that it
  * came from the host of a world without a mode.

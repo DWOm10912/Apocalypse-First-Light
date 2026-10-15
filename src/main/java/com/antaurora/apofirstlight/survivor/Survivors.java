@@ -29,6 +29,12 @@ public final class Survivors {
 
     /** Set by a death: write the survivor file, then the player files, at the end of this server tick. */
     private static boolean flushPending;
+    /**
+     * The mode picked on the Create World screen (client, single player), waiting for that world's creation; null when
+     * there is none (the host then chooses on first join). Written by the client thread, taken by the server thread.
+     */
+    @Nullable
+    private static volatile SurvivorMode createScreenChoice;
 
     private Survivors() {
     }
@@ -82,6 +88,26 @@ public final class Survivors {
         return true;
     }
 
+    /** Client: the Create World screen's current pick (null clears it when the player leaves that screen). */
+    public static void setCreateScreenChoice(@Nullable SurvivorMode mode) {
+        createScreenChoice = mode;
+    }
+
+    /**
+     * World creation (LevelEvent.CreateSpawnPosition): a fresh single-player world takes the mode picked on the Create
+     * World screen, if any (vanilla hardcore stays HARD). The pick is used once.
+     */
+    static void applyCreateScreenChoice(MinecraftServer server, SurvivorWorldData data) {
+        SurvivorMode chosen = createScreenChoice;
+        createScreenChoice = null;
+        if (chosen == null || chosen == SurvivorMode.UNSET || server.isDedicatedServer() || data.mode != SurvivorMode.UNSET) {
+            return;
+        }
+        SurvivorMode mode = server.getWorldData().isHardcore() ? SurvivorMode.HARD : chosen;
+        data.setMode(mode);
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] mode {} (chosen on the Create World screen)", mode);
+    }
+
     /** Whether this player is the one who has to choose the mode now. */
     static boolean mustChooseMode(ServerPlayer player) {
         MinecraftServer server = player.server;
@@ -94,7 +120,7 @@ public final class Survivors {
         SurvivorWorldData data = SurvivorWorldData.get(player.server);
         SurvivorLineage lineage = data.lineage(player);
         if (lineage.current() == null && lineage.pending() == null) {
-            SurvivorRecord first = roll(player.server, lineage);
+            SurvivorRecord first = firstSurvivor(player, lineage);
             first.state = SurvivorRecord.State.ALIVE;
             first.spawnSource = "initial";
             start(player, first);
@@ -111,21 +137,33 @@ public final class Survivors {
         }
     }
 
-    /** A new survivor record for the next career index (name only; reserved fields stay empty). */
+    /**
+     * The first survivor of a lineage is the player as they arrive: named after the account (until the player's one-time
+     * choice of the account name or a nickname, SurvivorIdentity) and wearing the account's skin. Only successors are
+     * rolled.
+     */
+    static SurvivorRecord firstSurvivor(ServerPlayer player, SurvivorLineage lineage) {
+        int index = lineage.nextLifeIndex();
+        long seed = SurvivorNames.rollSeed(player.server.getWorldData().worldGenOptions().seed(), lineage.playerId, index);
+        SurvivorRecord record = new SurvivorRecord(UUID.nameUUIDFromBytes(longBytes(seed, lineage.playerId)), index,
+                player.getGameProfile().getName(), "", seed, SurvivorRecord.State.PENDING);
+        record.named = false;
+        return record;
+    }
+
+    /**
+     * A new successor for the next career index: a person from the roster (SurvivorRoster) not yet seen in this world,
+     * with that person's name, sex and skin; reserved fields stay empty.
+     */
     static SurvivorRecord roll(MinecraftServer server, SurvivorLineage lineage) {
         int index = lineage.nextLifeIndex();
         long seed = SurvivorNames.rollSeed(server.getWorldData().worldGenOptions().seed(), lineage.playerId, index);
-        String first = SurvivorNames.first(seed);
-        String last = SurvivorNames.last(seed);
-        SurvivorRecord previous = lineage.current();
-        // never the same full name twice in a row (deterministic re-roll)
-        for (int i = 0; previous != null && previous.firstName.equals(first) && previous.lastName.equals(last) && i < 8; i++) {
-            long again = SurvivorNames.stream(seed, 100 + i);
-            first = SurvivorNames.first(again);
-            last = SurvivorNames.last(again);
-        }
-        return new SurvivorRecord(UUID.nameUUIDFromBytes(longBytes(seed, lineage.playerId)), index, first, last, seed,
-                SurvivorRecord.State.PENDING);
+        SurvivorRoster.Person person = SurvivorRoster.pick(SurvivorWorldData.get(server), seed);
+        SurvivorRecord record = new SurvivorRecord(UUID.nameUUIDFromBytes(longBytes(seed, lineage.playerId)), index,
+                person.first(), person.last(), seed, SurvivorRecord.State.PENDING);
+        record.sex = person.sex();
+        record.setAppearance(SurvivorSkins.of(person));
+        return record;
     }
 
     /** The survivor begins now (world day and game time). */
@@ -156,6 +194,11 @@ public final class Survivors {
         }
         ServerLevel level = player.serverLevel();
         record.state = SurvivorRecord.State.DEAD;
+        if (!record.named) {
+            // died before choosing: the name it carried is final, and the choice is gone
+            record.named = true;
+            AflNetwork.survivor(player, new SurvivorPackets.NamePrompt(false, ""));
+        }
         record.deathGameTime = level.getGameTime();
         record.deathDayTime = level.getDayTime();
         record.deathDimension = level.dimension().location().toString();
@@ -246,7 +289,15 @@ public final class Survivors {
         SurvivorSpawns.Start start = SurvivorSpawns.resolve(server, lineage, current, next);
         float yaw = (float) ((SurvivorNames.stream(next.rollSeed, 999) >>> 40) % 360L);
         if (start != null) {
-            player.teleportTo(start.level(), start.feet().getX() + 0.5, start.feet().getY(), start.feet().getZ() + 0.5, yaw, 0.0F);
+            double x = start.feet().getX() + 0.5, y = start.feet().getY(), z = start.feet().getZ() + 0.5;
+            if (start.level() == player.level()) {
+                // inside the respawn event the connection still holds the old body (vanilla swaps it after respawn()
+                // returns), so teleportTo would move the old body: place the new one directly, then sync the client
+                player.moveTo(x, y, z, yaw, 0.0F);
+                player.connection.teleport(x, y, z, yaw, 0.0F);
+            } else {
+                player.teleportTo(start.level(), x, y, z, yaw, 0.0F);
+            }
             next.spawnSource = start.source();
         } else {
             next.spawnSource = "fallback";
@@ -263,9 +314,10 @@ public final class Survivors {
         data.setDirty();
         flushPending = true;
         announce(player, next);
-        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} continues as survivor #{} {} at {} {} ({})",
+        SurvivorIdentity.changed(player);
+        ApocalypseFirstLight.LOGGER.info("[AFL Survivor] {} continues as survivor #{} {} at {} {} ({}), look {}/{} ({})",
                 player.getGameProfile().getName(), next.lifeIndex, next.fullName(), next.spawnDimension,
-                next.spawnPos.toShortString(), next.spawnSource);
+                next.spawnPos.toShortString(), next.spawnSource, next.skin, next.arms.id(), next.sex);
     }
 
     /**
@@ -282,9 +334,13 @@ public final class Survivors {
                 at.getX(), at.getY(), at.getZ(), lineage.status == SurvivorLineage.Status.ENDED));
     }
 
-    /** Login: the host of a fresh single-player world chooses the mode first; a dead player sees the summary again. */
+    /**
+     * Login: identities (and the first survivor's name choice); the host of a fresh single-player world chooses the mode
+     * first (the client opens the mode choice before the name choice); a dead player sees the summary again.
+     */
     static void onLogin(ServerPlayer player) {
         if (mustChooseMode(player)) AflNetwork.survivor(player, new SurvivorPackets.ModePrompt(true));
+        SurvivorIdentity.onLogin(player);
         if (player.isDeadOrDying()) sendSummary(player);
     }
 
@@ -302,8 +358,8 @@ public final class Survivors {
     private static void announce(ServerPlayer player, SurvivorRecord record) {
         player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 70, 20));
         player.connection.send(new ClientboundSetTitleTextPacket(Component.literal(record.fullName())));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(
-                Component.translatable("survivor.apocalypse_firstlight.title.successor", record.lifeIndex)));
+        // the name alone; an empty subtitle so no earlier one lingers (no career number, user 2026-10-14)
+        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.empty()));
     }
 
     /**

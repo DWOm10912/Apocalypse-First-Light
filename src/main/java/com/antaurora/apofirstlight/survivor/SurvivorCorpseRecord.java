@@ -35,6 +35,9 @@ public final class SurvivorCorpseRecord {
     final float yaw;
     final long deathGameTime;
     final long deathDayTime;
+    /** The dead survivor's own look (SurvivorSkins), copied at the death: later successors never change it. */
+    String skin = SurvivorSkins.ACCOUNT;
+    SurvivorSkins.Arms arms = SurvivorSkins.Arms.ACCOUNT;
     NonNullList<ItemStack> items = NonNullList.withSize(9, ItemStack.EMPTY);
     final AflContainerSearchState search = new AflContainerSearchState();
 
@@ -119,6 +122,8 @@ public final class SurvivorCorpseRecord {
         tag.putFloat("Yaw", yaw);
         tag.putLong("DeathGame", deathGameTime);
         tag.putLong("DeathDay", deathDayTime);
+        tag.putString("Skin", skin);
+        tag.putString("Arms", arms.id());
         tag.putInt("Size", items.size());
         ContainerHelper.saveAllItems(tag, items, true);
         search.save(tag);
@@ -131,6 +136,10 @@ public final class SurvivorCorpseRecord {
         SurvivorCorpseRecord r = new SurvivorCorpseRecord(tag.getUUID("Id"), tag.getUUID("Player"), tag.getUUID("Survivor"),
                 tag.getString("Name"), tag.getInt("Life"), tag.getString("Dim"), tag.getDouble("X"), tag.getDouble("Y"),
                 tag.getDouble("Z"), tag.getFloat("Yaw"), tag.getLong("DeathGame"), tag.getLong("DeathDay"));
+        if (tag.contains("Skin", Tag.TAG_STRING)) {
+            r.skin = tag.getString("Skin");
+            r.arms = SurvivorSkins.Arms.byId(tag.getString("Arms"));
+        }
         int size = tag.contains("Size", Tag.TAG_INT) ? tag.getInt("Size") : 9;
         size = Math.max(9, Math.min(MAX_SLOTS, size / 9 * 9));
         r.items = NonNullList.withSize(size, ItemStack.EMPTY);

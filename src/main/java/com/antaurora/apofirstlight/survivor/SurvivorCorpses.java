@@ -63,6 +63,8 @@ public final class SurvivorCorpses {
         SurvivorCorpseRecord corpse = new SurvivorCorpseRecord(UUID.randomUUID(), player.getUUID(), record.id,
                 record.fullName(), record.lifeIndex, level.dimension().location().toString(), at.x, at.y, at.z,
                 player.yBodyRot, record.deathGameTime, record.deathDayTime);
+        corpse.skin = record.skin;
+        corpse.arms = record.arms;
         data.addCorpse(corpse);
         record.corpseId = corpse.id;
         PENDING.put(player.getUUID(), corpse.id);

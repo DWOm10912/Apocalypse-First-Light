@@ -36,6 +36,9 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
     private UUID ownerPlayer = new UUID(0L, 0L);
     private String survivorName = "";
     private float bodyYaw;
+    /** The dead survivor's look (SurvivorSkins id and arm model). */
+    private String skin = SurvivorSkins.ACCOUNT;
+    private SurvivorSkins.Arms arms = SurvivorSkins.Arms.ACCOUNT;
 
     public SurvivorCorpse(EntityType<? extends SurvivorCorpse> type, Level level) {
         super(type, level);
@@ -48,6 +51,8 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
         ownerPlayer = record.playerId;
         survivorName = record.survivorName;
         bodyYaw = record.yaw;
+        skin = record.skin;
+        arms = record.arms;
         moveTo(record.x, record.y, record.z, record.yaw, 0.0F);
     }
 
@@ -69,6 +74,15 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
 
     public float bodyYaw() {
         return bodyYaw;
+    }
+
+    /** The dead survivor's skin id, or SurvivorSkins.ACCOUNT for the owner's account skin. */
+    public String skin() {
+        return skin;
+    }
+
+    public SurvivorSkins.Arms arms() {
+        return arms;
     }
 
     @Override
@@ -158,6 +172,8 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
         b.writeUUID(ownerPlayer);
         b.writeUtf(survivorName, 64);
         b.writeFloat(bodyYaw);
+        b.writeUtf(skin, 64);
+        b.writeUtf(arms.id(), 16);
     }
 
     @Override
@@ -165,6 +181,8 @@ public final class SurvivorCorpse extends Entity implements IEntityAdditionalSpa
         ownerPlayer = b.readUUID();
         survivorName = b.readUtf(64);
         bodyYaw = b.readFloat();
+        skin = b.readUtf(64);
+        arms = SurvivorSkins.Arms.byId(b.readUtf(16));
     }
 
     @Override

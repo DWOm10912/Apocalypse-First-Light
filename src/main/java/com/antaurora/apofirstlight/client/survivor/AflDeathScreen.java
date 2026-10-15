@@ -81,7 +81,7 @@ public final class AflDeathScreen extends Screen {
 
         panelW = Math.min(PANEL_W, width - 32);
         float textW = panelW - 2 * PAD;
-        Component life = Component.translatable("survivor.apocalypse_firstlight.death.life", summary.lifeIndex(), days());
+        Component life = days();   // no career number: "survivor no. n" read as staged (user, 2026-10-14)
         List<FormattedCharSequence> cause = font.split(
                 Component.translatable("survivor.apocalypse_firstlight.death.cause", summary.cause()), (int) textW);
         List<FormattedCharSequence> place = font.split(Component.translatable("survivor.apocalypse_firstlight.death.place",

@@ -1,6 +1,7 @@
 package com.antaurora.apofirstlight.client.survivor;
 
 import com.antaurora.apofirstlight.survivor.SurvivorCorpse;
+import com.antaurora.apofirstlight.survivor.SurvivorSkins;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -19,7 +20,8 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Survivor Death and Succession V0: the placeholder body (docs/gameplay/survivor_death_succession_v0.md 6). The vanilla
  * player model in its bind pose, lying on its back along the death yaw, centred on the corpse position, darkened. Skin:
- * the owner's while the owner is in the tab list, else the default skin of the owner's UUID. No animation, no decay;
+ * the dead survivor's own look (section 13), whatever the owner wears now; a first survivor's body shows the owner's
+ * account skin (the default skin of the owner's UUID while the owner is not in the tab list). No animation, no decay;
  * the mesh character replaces this later.
  */
 public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse> {
@@ -50,9 +52,14 @@ public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse>
 
     @Override
     public void render(SurvivorCorpse corpse, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers, int light) {
-        PlayerInfo info = playerInfo(corpse);
-        boolean slimArms = info != null ? "slim".equals(info.getModelName())
-                : "slim".equals(DefaultPlayerSkin.getSkinModelName(corpse.ownerPlayer()));
+        boolean slimArms;
+        if (accountLook(corpse)) {
+            PlayerInfo info = playerInfo(corpse);
+            slimArms = info != null ? "slim".equals(SurvivorIdentityClient.account(info::getModelName))
+                    : "slim".equals(DefaultPlayerSkin.getSkinModelName(corpse.ownerPlayer()));
+        } else {
+            slimArms = corpse.arms() == SurvivorSkins.Arms.SLIM;
+        }
         PlayerModel<LivingEntity> model = slimArms ? slim : wide;
         pose.pushPose();
         pose.translate(0.0F, LIFT, 0.0F);
@@ -69,10 +76,20 @@ public final class SurvivorCorpseRenderer extends EntityRenderer<SurvivorCorpse>
         super.render(corpse, yaw, partialTick, pose, buffers, light);
     }
 
+    /**
+     * The dead survivor's own look: a pool skin, or for a first survivor the owner's account skin read past the living
+     * successor's look (never the current survivor's).
+     */
     @Override
     public ResourceLocation getTextureLocation(SurvivorCorpse corpse) {
+        if (!accountLook(corpse)) return SurvivorSkins.texture(corpse.skin());
         PlayerInfo info = playerInfo(corpse);
-        return info != null ? info.getSkinLocation() : DefaultPlayerSkin.getDefaultSkin(corpse.ownerPlayer());
+        return info != null ? SurvivorIdentityClient.account(info::getSkinLocation)
+                : DefaultPlayerSkin.getDefaultSkin(corpse.ownerPlayer());
+    }
+
+    private static boolean accountLook(SurvivorCorpse corpse) {
+        return SurvivorSkins.ACCOUNT.equals(corpse.skin());
     }
 
     private static PlayerInfo playerInfo(SurvivorCorpse corpse) {

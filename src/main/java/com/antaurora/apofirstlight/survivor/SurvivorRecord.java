@@ -23,15 +23,36 @@ import java.util.UUID;
 public final class SurvivorRecord {
     public enum State { PENDING, ALIVE, DEAD }
 
+    /** A rolled successor's sex: it picks the given-name pool and the skin (and with it the arm model). */
+    public enum Sex { FEMALE, MALE }
+
     public static final long DAY_TICKS = 24000L;
 
     final UUID id;
     /** Career index inside the player's lineage: the n-th survivor this player has played in this world, from 1. */
     final int lifeIndex;
-    final String firstName;
-    final String lastName;
+    /** Not final only for the first survivor's one-time name choice (SurvivorIdentity); fixed once {@link #named}. */
+    String firstName;
+    String lastName;
+    /**
+     * Whether the name is final. A rolled successor is named at the roll; the first survivor of a lineage waits for the
+     * player's one-time choice (the account name or a nickname, docs/gameplay/survivor_death_succession_v0.md 13).
+     */
+    boolean named = true;
     /** The roll that made this survivor (name, spawn plan); kept for audits. */
     final long rollSeed;
+
+    /**
+     * Appearance (SurvivorSkins), fixed when the survivor is rolled and never re-rolled: a pool skin id and its arm
+     * model, or ACCOUNT for a survivor who looks like the account (the first one).
+     */
+    String skin = SurvivorSkins.ACCOUNT;
+    SurvivorSkins.Arms arms = SurvivorSkins.Arms.ACCOUNT;
+    /**
+     * Rolled with the successor, before its name and skin; null for the first survivor (the player as they arrive, never
+     * guessed from the account) and for successors saved before the sex roll existed.
+     */
+    @Nullable Sex sex;
 
     // Reserved for later systems; never filled in V0.
     @Nullable String originState;
@@ -80,8 +101,22 @@ public final class SurvivorRecord {
         return lifeIndex;
     }
 
+    /** "First Last", or the single name of a survivor named after the account. */
     public String fullName() {
-        return firstName + " " + lastName;
+        return lastName.isEmpty() ? firstName : firstName + " " + lastName;
+    }
+
+    public String skin() {
+        return skin;
+    }
+
+    public SurvivorSkins.Arms arms() {
+        return arms;
+    }
+
+    void setAppearance(SurvivorSkins.Skin look) {
+        skin = look.id();
+        arms = look.arms();
     }
 
     public State state() {
@@ -113,8 +148,12 @@ public final class SurvivorRecord {
         tag.putInt("Life", lifeIndex);
         tag.putString("First", firstName);
         tag.putString("Last", lastName);
+        tag.putBoolean("Named", named);
         tag.putLong("Roll", rollSeed);
         tag.putString("State", state.name());
+        tag.putString("Skin", skin);
+        tag.putString("Arms", arms.id());
+        if (sex != null) tag.putString("Sex", sex.name());
         putString(tag, "OriginState", originState);
         putString(tag, "Background", background);
         putString(tag, "Profession", profession);
@@ -154,6 +193,23 @@ public final class SurvivorRecord {
         }
         SurvivorRecord r = new SurvivorRecord(tag.getUUID("Id"), Math.max(1, tag.getInt("Life")), tag.getString("First"),
                 tag.getString("Last"), tag.getLong("Roll"), state);
+        // saved before the name choice existed: the name it has is final
+        r.named = !tag.contains("Named", Tag.TAG_BYTE) || tag.getBoolean("Named");
+        if (tag.contains("Skin", Tag.TAG_STRING)) {
+            r.skin = tag.getString("Skin");
+            r.arms = SurvivorSkins.Arms.byId(tag.getString("Arms"));
+        } else if (r.lifeIndex > 1) {
+            // a successor saved before appearances existed: its look follows from its roll seed, as the roll of that
+            // time would have given it
+            r.setAppearance(SurvivorSkins.legacyRoll(r.rollSeed));
+        }
+        if (tag.contains("Sex", Tag.TAG_STRING)) {
+            try {
+                r.sex = Sex.valueOf(tag.getString("Sex"));
+            } catch (IllegalArgumentException ignored) {
+                // an unknown value stays unset, like an older save
+            }
+        }
         r.originState = getString(tag, "OriginState");
         r.background = getString(tag, "Background");
         r.profession = getString(tag, "Profession");

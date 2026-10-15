@@ -23,13 +23,17 @@ public final class SurvivorEvents {
     private SurvivorEvents() {
     }
 
-    /** Fires only when a world is created (Terrain V2 cancels it after choosing the spawn, hence receiveCanceled). */
+    /**
+     * Fires only when a world is created (Terrain V2 cancels it after choosing the spawn, hence receiveCanceled): marks
+     * the world fresh and takes the mode picked on the Create World screen.
+     */
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void onCreateWorld(LevelEvent.CreateSpawnPosition event) {
         if (!(event.getLevel() instanceof ServerLevel level) || !Level.OVERWORLD.equals(level.dimension())) return;
         SurvivorWorldData data = level.getDataStorage().computeIfAbsent(SurvivorWorldData::load, SurvivorWorldData::new,
                 SurvivorWorldData.NAME);
         data.freshWorld = true;
+        Survivors.applyCreateScreenChoice(level.getServer(), data);
         data.setDirty();
     }
 

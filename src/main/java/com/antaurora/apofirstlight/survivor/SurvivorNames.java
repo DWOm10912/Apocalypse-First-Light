@@ -1,32 +1,19 @@
 package com.antaurora.apofirstlight.survivor;
 
-import java.util.List;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.UUID;
 
 /**
- * Survivor name rolls (docs/gameplay/survivor_death_succession_v0.md 5). V0 rolls only a name: there is no profession,
- * trait, body or origin system yet, so a random name is not a character build. Names are common North American given
- * names and surnames (the Columbian Federation's mixed population); the player never picks one.
+ * Survivor roll seeds and name rules (docs/gameplay/survivor_death_succession_v0.md 5 and 13). Successors come from the
+ * fixed roster (SurvivorRoster: one name and one skin per person); this class keeps the deterministic roll seed, the sex
+ * roll that steers the roster pick, the further roll streams, and the nickname rules for the first survivor of a lineage
+ * (shared by the client field and the server check). The player never picks a successor's name.
  *
- * <p>Deterministic: the roll seed comes from the world seed, the account UUID and the career index, so the same death
- * always yields the same successor, and the result is stored at the death anyway.
+ * <p>Deterministic: the roll seed comes from the world seed, the account UUID and the career index, and the result is
+ * stored at the death anyway.
  */
 public final class SurvivorNames {
-    static final List<String> FIRST = List.of(
-            "Aaron", "Abigail", "Alex", "Alicia", "Andre", "Angela", "Ben", "Bianca", "Caleb", "Carmen",
-            "Chris", "Claire", "Dale", "Dana", "Daniel", "Denise", "Eli", "Elena", "Eric", "Erin",
-            "Frank", "Gloria", "Grace", "Hank", "Hector", "Holly", "Isaac", "Ivy", "Jake", "Janet",
-            "Jesse", "Joanna", "Kevin", "Kim", "Lena", "Leon", "Lucas", "Maria", "Marcus", "Megan",
-            "Miguel", "Nadia", "Nathan", "Nina", "Owen", "Paula", "Ray", "Rosa", "Ryan", "Sam",
-            "Sandra", "Sean", "Tara", "Terry", "Tom", "Vanessa", "Victor", "Wade", "Wendy", "Zoe");
-    static final List<String> LAST = List.of(
-            "Alvarez", "Anderson", "Baker", "Bell", "Brooks", "Campbell", "Carter", "Castillo", "Chen", "Collins",
-            "Cooper", "Cruz", "Davis", "Diaz", "Dubois", "Edwards", "Fischer", "Flores", "Foster", "Garcia",
-            "Gray", "Hayes", "Hughes", "Jensen", "Kelly", "Kim", "Kowalski", "Lambert", "Larsen", "Lee",
-            "Martin", "Mendez", "Miller", "Morgan", "Murphy", "Nguyen", "Novak", "O'Brien", "Ortiz", "Parker",
-            "Patel", "Price", "Ramirez", "Reed", "Reyes", "Riley", "Russo", "Sanders", "Schmidt", "Shaw",
-            "Silva", "Sullivan", "Tanaka", "Torres", "Turner", "Walker", "Ward", "Webb", "Young", "Zimmer");
-
     private SurvivorNames() {
     }
 
@@ -38,15 +25,34 @@ public final class SurvivorNames {
         return mix(h ^ lifeIndex * 0x9E3779B97F4A7C15L);
     }
 
-    static String first(long seed) {
-        return FIRST.get((int) Long.remainderUnsigned(mix(seed ^ 0x46L), FIRST.size()));
+    /** Longest nickname, in characters. */
+    public static final int NICKNAME_MAX = 20;
+
+    /** Characters a nickname may hold: letters and digits of any script, space, hyphen, apostrophe, period, underscore. */
+    public static boolean nicknameChar(int cp) {
+        return Character.isLetterOrDigit(cp) || cp == ' ' || cp == '-' || cp == '\'' || cp == '.' || cp == '_';
     }
 
-    static String last(long seed) {
-        return LAST.get((int) Long.remainderUnsigned(mix(seed ^ 0x4CL), LAST.size()));
+    /**
+     * The nickname as stored (trimmed, runs of spaces made single), or null when it is empty, longer than
+     * {@link #NICKNAME_MAX}, holds no letter or holds any other character (formatting codes, symbols, emoji).
+     */
+    @Nullable
+    public static String nickname(String raw) {
+        String name = raw.strip().replaceAll(" {2,}", " ");
+        if (name.isEmpty() || name.codePointCount(0, name.length()) > NICKNAME_MAX) return null;
+        if (!name.codePoints().allMatch(SurvivorNames::nicknameChar) || name.codePoints().noneMatch(Character::isLetter)) {
+            return null;
+        }
+        return name;
     }
 
-    /** A further independent value from the roll seed (spawn angle, distance, candidate order). */
+    /** The successor's sex, rolled before the roster pick (even odds; never taken from the account). */
+    static SurvivorRecord.Sex sex(long seed) {
+        return stream(seed, 9) < 0 ? SurvivorRecord.Sex.FEMALE : SurvivorRecord.Sex.MALE;
+    }
+
+    /** A further independent value from the roll seed (roster pick, spawn angle, distance, candidate order). */
     static long stream(long seed, int index) {
         return mix(seed ^ (index + 1L) * 0xD1B54A32D192ED03L);
     }
