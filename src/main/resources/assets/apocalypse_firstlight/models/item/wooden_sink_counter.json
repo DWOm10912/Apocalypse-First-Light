@@ -1,3 +1,94 @@
 {
-  "parent": "apocalypse_firstlight:block/furniture/wooden_sink_counter"
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/wood_v"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        1.398,
+        -1.031,
+        0.469
+      ],
+      "scale": [
+        0.668,
+        0.668,
+        0.668
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.209,
+        2.179,
+        -0.568
+      ],
+      "scale": [
+        0.192,
+        0.192,
+        0.192
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -0.376,
+        -1.476,
+        -1.021
+      ],
+      "scale": [
+        0.345,
+        0.345,
+        0.345
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        0.481,
+        1.984,
+        -0.782
+      ],
+      "scale": [
+        0.23,
+        0.23,
+        0.23
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        0.578,
+        -0.181,
+        0.578
+      ],
+      "scale": [
+        0.276,
+        0.276,
+        0.276
+      ]
+    }
+  }
 }

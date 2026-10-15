@@ -517,11 +517,8 @@ public final class WorldInteractionHint {
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Chair)
             return mc.player.isSecondaryUseActive()||mc.player.isPassenger()||com.antaurora.apofirstlight.cabin.FurnitureSeat.occupied(mc.level,pos)
                     ?null:new Target(Component.translatable(k+"chair.sit"),null);
-        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurniture.Counter) return new Target(Component.translatable(k+"cabinet.open"),null);
-        // Wood Furniture V2: the wardrobe, nightstand, storage chest and vintage freezer open; the bed sleeps; the tool rack as the gun rack
-        if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Wardrobe||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Nightstand
-                ||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.StorageChest||s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.VintageFreezer)
-            return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"cabinet.open"),null);
+        // the counters, wardrobe, nightstand, storage chest and vintage freezer: their Mesh Shape regions (cabin/FurnitureOpening), in meshInteraction below
+        // Wood Furniture V2: the bed sleeps; the tool rack as the gun rack
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.Bed) return mc.player.isSecondaryUseActive()?null:new Target(Component.translatable(k+"bed.sleep"),null);
         if(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.WoodFurnitureV2.ToolRack&&mc.level.getBlockEntity(pos) instanceof com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity tools){
             var held=mc.player.getMainHandItem();

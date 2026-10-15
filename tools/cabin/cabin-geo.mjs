@@ -222,6 +222,18 @@ function tiles(rec) {
   return out;
 }
 
+// ------------------------------------------------------------------------------------------- baked UVs
+
+/**
+ * A copy with its projected UVs fixed now (split into whole tiles, explicit UVs): turned or moved afterwards it keeps its
+ * texture, as a real door keeps its grain (tools/furniture/furniture-mesh.mjs exports such pieces as animated meshes).
+ */
+export function baked(piece, name = piece.name) {
+  const out = new Piece(name);
+  for (const rec of piece.polys) for (const p of rec.uv ? [rec] : tiles(rec)) out.polys.push({...p, proj: null});
+  return out;
+}
+
 const R5 = v => Math.round(v * 1e5) / 1e5 || 0;
 /** A piece as {textures: [...], quads: [[tex, x, y, z, u, v, nx, ny, nz] x 4, ...]} (convex polygons fanned into quads). */
 export function serialise(piece, texPrefix) {

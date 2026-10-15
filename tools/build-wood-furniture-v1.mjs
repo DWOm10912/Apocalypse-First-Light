@@ -22,7 +22,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {renderX} from './cabin/cabin-art.mjs';
 import {FURNITURE_TEXTURES} from './furniture/wood-furniture-art.mjs';
+import {bounds, state, profile} from './furniture/furniture-shapes.mjs';
 import {Piece, box, solid, cylinder, mirroredX, serialise, newell, dot, sub, cross, norm, add, scl} from './cabin/cabin-geo.mjs';
+import {furnitureMesh} from './furniture/furniture-mesh.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = path.join(ROOT, 'src/main/resources/assets/apocalypse_firstlight');
@@ -133,12 +135,32 @@ function swungOut(pc, hx, hz, name) {
   const out = new Piece(name);
   return out.merge(pc, ([x, y, z]) => [hx + (z - hz), y, hz - (x - hx)], ([nx, ny, nz]) => [nz, ny, -nx]);
 }
-function doorPieces() {
-  const d = door(), closed = new Piece('furniture/counter_doors_closed'), open = new Piece('furniture/counter_doors_open');
-  closed.merge(d).merge(mirroredX(d));
-  const sw = swungOut(d, DOOR[0], DZ, 'x');
-  open.merge(sw).merge(mirroredX(sw));
-  return [closed, open];
+/**
+ * The counters' Mesh Shape profile (wooden_counter, both counters; cabin/FurnitureOpening): closed, the doors (open them);
+ * open, the two swung doors (close them) and the opening between them (search / view). The worktop is no region.
+ */
+function counterShapes() {
+  const d = door(), sw = swungOut(d, DOOR[0], DZ, 'x');
+  const body = [[0, 0, TZ], [1, WORKTOP_Y, 1]], [lo, hi] = bounds(d), left = bounds(sw), right = bounds(mirroredX(sw));
+  const g = ([a, b], e) => [a.map(v => v - e), b.map(v => v + e)];
+  const knob = [DOOR[2] - 0.036, 0.609, DZ - 0.011], swung = ([x, y, z]) => [DOOR[0] + (z - DZ), y, DZ - (x - DOOR[0])];
+  return profile({
+    closed: state({physical: [body], regions: {door: [[g([[lo[0], lo[1], lo[2]], [1 - lo[0], hi[1], hi[2]]], 0.01)], [0.5, knob[1], knob[2]]]}}),
+    open: state({physical: [body], selection: [body, left, right], regions: {
+      door: [[g(left, 0.01), g(right, 0.01)], swung(knob)],
+      interior: [[[[left[1][0], lo[1], TZ - 0.01], [right[0][0], hi[1], CZ + 0.03]]], [0.5, 0.42, DZ]]}}),
+  });
+}
+/**
+ * The counters as AFL Animated Block Meshes (tools/furniture/furniture-mesh.mjs, 2026-10-15; the cabin pieces swapped the
+ * doors closed / open in one frame): the body, and each door its own bone hinged on its outer stile at the front (x
+ * DOOR[0] and mirrored, z DZ); 'open' swings both a quarter out, 8 ticks.
+ */
+function counterMesh(id, body) {
+  const d = door();
+  return {id, bones: [{name: 'body', pivot: [0.5, 0, 0.5], pieces: [body]},
+    {name: 'door_left', pivot: [DOOR[0], 0, DZ], pieces: [d]}, {name: 'door_right', pivot: [1 - DOOR[0], 0, DZ], pieces: [mirroredX(d)]}],
+    open: {ticks: 8, transforms: {door_left: {rotation: [0, 90, 0]}, door_right: {rotation: [0, -90, 0]}}}};
 }
 // the sink: a drop-in enamel basin (outer 64 x 42 cm, 19 cm deep under its rim, 2 cm walls, a 1.2 cm rolled rim 2 cm
 // over the worktop) left of the middle, the worktop round it; on the strip to its right a cast-iron pitcher pump, the spout
@@ -195,16 +217,19 @@ function gunRack() {
 export function pieces() {
   const P = [];
   for (const axis of ['x', 'z']) for (let m = 0; m < 16; m++) P.push(table(m, axis));
-  P.push(chair(), counter(), ...doorPieces(), sink(), gunRack());
+  P.push(chair(), gunRack());
   return P;
+}
+export const MESH_IDS = ['wooden_kitchen_counter', 'wooden_sink_counter'];
+export function meshes() {
+  return [counterMesh('wooden_kitchen_counter', counter()), counterMesh('wooden_sink_counter', sink())]
+    .map(m => furnitureMesh(ROOT, {...m, dir: 'furniture', texPrefix: TEX, particle: TEX + PARTICLE[m.id]}));
 }
 
 // =============================================================================================== models, states, loot
 const ITEMS = {
   wooden_table: [['furniture/table_x_0', 0]],
   wooden_chair: [['furniture/chair', 0]],
-  wooden_kitchen_counter: [['furniture/counter_body', 0], ['furniture/counter_doors_closed', 0]],
-  wooden_sink_counter: [['furniture/sink_body', 0], ['furniture/counter_doors_closed', 0]],
   wooden_gun_rack: [['furniture/gun_rack', 0]],
 };
 const PARTICLE = {wooden_table: TOP, wooden_chair: TRIM, wooden_kitchen_counter: TRIM_V, wooden_sink_counter: TRIM_V, wooden_gun_rack: TRIM_V};
@@ -216,13 +241,17 @@ export function outputs() {
   const texOut = (name, maps) => maps.forEach((m, i) => out.push([path.join(ASSETS, 'textures/block/furniture', name + ['', '_s', '_n'][i] + '.png'), m]));
   for (const [name, [make, height]] of Object.entries(FURNITURE_TEXTURES)) texOut(name, renderX(make(), {height}));
   for (const pc of pieces()) out.push([path.join(ASSETS, 'cabin_mesh', pc.name + '.json'), JSON.stringify(serialise(pc, TEX)) + '\n']);
+  out.push([path.join(DATA, 'apocalypse_firstlight/mesh_shapes/wooden_counter.json'), counterShapes()]);
   const bm = id => `${NS}block/furniture/${id}`;
   for (const {id} of BLOCKS) {
-    out.push([path.join(ASSETS, 'models/block/furniture', id + '.json'), json({parent: 'minecraft:block/block', loader: NS + 'cabin', textures: {particle: TEX + PARTICLE[id]}, item: ITEMS[id]})]);
+    if (!MESH_IDS.includes(id)) {
+      out.push([path.join(ASSETS, 'models/block/furniture', id + '.json'), json({parent: 'minecraft:block/block', loader: NS + 'cabin', textures: {particle: TEX + PARTICLE[id]}, item: ITEMS[id]})]);
+      out.push([path.join(ASSETS, 'models/item', id + '.json'), json({parent: bm(id)})]);
+    }
     out.push([path.join(ASSETS, 'blockstates', id + '.json'), json({variants: {'': {model: bm(id)}}})]);
-    out.push([path.join(ASSETS, 'models/item', id + '.json'), json({parent: bm(id)})]);
     out.push([path.join(DATA, 'apocalypse_firstlight/loot_tables/blocks', id + '.json'), loot(id)]);
   }
+  for (const m of meshes()) out.push(...m.outputs);
   return out;
 }
 

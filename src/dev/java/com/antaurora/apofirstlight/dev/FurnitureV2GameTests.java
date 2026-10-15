@@ -9,11 +9,14 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost;
 import com.antaurora.apofirstlight.cabin.CabinPieces;
 import com.antaurora.apofirstlight.cabin.EmergencyRadio;
 import com.antaurora.apofirstlight.cabin.WoodFurnitureV2;
 import com.antaurora.apofirstlight.cabin.WoodToolRackBlockEntity;
 import com.mojang.authlib.GameProfile;
+import com.antaurora.apofirstlight.containersearch.AflContainerSearchMenu;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestAssertException;
@@ -31,6 +34,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.BlockItem;
@@ -39,11 +43,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -59,9 +65,12 @@ import net.minecraftforge.registries.ForgeRegistries;
  * Wood Furniture V2 (docs/models/wood_furniture_v2.md, 2026-10-15):
  * <ul>
  * <li>Placement from the item: the bed (foot where clicked, head the way the player looks), the wardrobe (its upper
- * half), the vintage freezer (its right half), two storage chests side by side joining into one.</li>
- * <li>Screens: wardrobe 27 (from either half), nightstand 9, freezer 27 (from either half), chest 27 / joined 54; {@code
- * open} on every cell while open, off again when closed.</li>
+ * half), the vintage freezer and the storage chest (their right halves).</li>
+ * <li>Opening in two steps (cabin/FurnitureOpening, aimed along the player's view): the doors / drawer / lid open (no
+ * screen; {@code open} on every cell), the open interior gives the screen (wardrobe 27 from either half, nightstand 9,
+ * freezer 27 from either half), the screen closed leaves them open, the doors / drawer / lid aimed at again close them; the
+ * nightstand's top is no region (PASS: the radio goes there). A nightstand with a loot table that no player placed is
+ * searched. The storage chest (two cells, 2026-10-15) the same: the lid, then 27 from either half.</li>
  * <li>Breaking one half takes the other: one item and the contents drop.</li>
  * <li>Tool rack: a tool on the aimed peg, a small item on the shelf, a block refused, taking back; its wall gone, it drops
  * with what hangs on it.</li>
@@ -130,6 +139,27 @@ public final class FurnitureV2GameTests {
         check(((BlockItem) block(id).asItem()).place(context).consumesAction(), id + " not placed at " + at);
     }
 
+    /**
+     * Right-clicks the cell with an empty hand, aimed: the player's eyes `up` above and `back` north of the point (x, y, z
+     * from the cell's corner), looking at it (cabin/FurnitureOpening takes the region from the view ray).
+     */
+    static InteractionResult aim(ServerLevel level, FakePlayer p, BlockPos cell, double x, double y, double z, double up, double back) {
+        Vec3 target = new Vec3(cell.getX() + x, cell.getY() + y, cell.getZ() + z);
+        p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        p.setPos(target.x, target.y + up - p.getEyeHeight(), target.z - back);
+        p.lookAt(EntityAnchorArgument.Anchor.EYES, target);
+        p.setYHeadRot(p.getYRot());
+        return level.getBlockState(cell).use(level, p, InteractionHand.MAIN_HAND, new BlockHitResult(target, Direction.NORTH, cell, false));
+    }
+
+    /** {@link #aim} into the open interior: expects a chest screen of `slots`, returns its container (the screen left open). */
+    private static Container view(ServerLevel level, FakePlayer p, BlockPos cell, double x, double y, double z, double up, double back, int slots, String what) {
+        check(aim(level, p, cell, x, y, z, up, back).consumesAction(), what + ": the interior not used");
+        check(p.containerMenu instanceof ChestMenu menu && menu.getContainer().getContainerSize() == slots,
+                what + ": menu " + p.containerMenu + " (want " + slots + " slots)");
+        return ((ChestMenu) p.containerMenu).getContainer();
+    }
+
     /** Right-clicks the cell (empty hand), expects a chest screen of `slots`, returns its container (the screen left open). */
     private static Container open(ServerLevel level, FakePlayer p, BlockPos at, int slots, String what) {
         p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
@@ -177,19 +207,35 @@ public final class FurnitureV2GameTests {
         check(upper.getBlock() instanceof WoodFurnitureV2.Wardrobe && upper.getValue(WoodFurnitureV2.Wardrobe.HALF) == DoubleBlockHalf.UPPER
                 && upper.getValue(BlockStateProperties.HORIZONTAL_FACING) == Direction.NORTH, "wardrobe upper " + upper);
         check(level.getBlockEntity(wardrobe.above()) == null, "the wardrobe's upper half has a block entity");
-        Container things = open(level, p, wardrobe.above(), 27, "wardrobe (upper)");
+        check(aim(level, p, wardrobe.above(), 0.3, 0.2, 0.34, 0, 1.5).consumesAction(), "wardrobe doors not used");
         check(open(level, wardrobe) && open(level, wardrobe.above()), "wardrobe doors not open on both halves");
+        check(p.containerMenu == p.inventoryMenu, "wardrobe: a screen on opening the doors " + p.containerMenu);
+        Container things = view(level, p, wardrobe.above(), 0.5, 0.2, 0.37, 0, 1.5, 27, "wardrobe (upper)");
         things.setItem(0, new ItemStack(Items.LEATHER_CHESTPLATE));
         p.closeContainer();
+        check(open(level, wardrobe), "wardrobe doors shut with the screen");
+        view(level, p, wardrobe, 0.5, 0.8, 0.37, 0, 1.5, 27, "wardrobe (lower)");
+        p.closeContainer();
+        check(aim(level, p, wardrobe.above(), 0.042, 0.2, 0.1, 0, 1.5).consumesAction(), "wardrobe left door not used");
         check(!open(level, wardrobe) && !open(level, wardrobe.above()), "wardrobe still open after closing");
 
         // ---- nightstand: 9 slots; the radio stands on it
         BlockPos stand = helper.absolutePos(new BlockPos(7, 1, 1));
         place(level, p, "wooden_nightstand", stand, 0);
-        open(level, p, stand, 9, "nightstand");
-        check(open(level, stand), "nightstand drawer not open");
+        check(!aim(level, p, stand, 0.5, 0.66, 0.7, 1.0, 0.3).consumesAction(), "the nightstand's top took the click");
+        check(aim(level, p, stand, 0.5, 0.58, 0.5, 0, 1.5).consumesAction() && open(level, stand), "nightstand drawer not pulled out");
+        view(level, p, stand, 0.5, 0.6, 0.42, 1.0, 0.42, 9, "nightstand");
         p.closeContainer();
-        check(!open(level, stand), "nightstand still open");
+        check(aim(level, p, stand, 0.5, 0.55, 0.26, 0, 1.5).consumesAction() && !open(level, stand), "nightstand still open");
+        // one with a loot table no player placed: searched
+        BlockPos lootStand = helper.absolutePos(new BlockPos(7, 1, 4));
+        level.setBlock(lootStand, block("wooden_nightstand").defaultBlockState(), 3);
+        check(level.getBlockEntity(lootStand) instanceof RandomizableContainerBlockEntity, "nightstand block entity");
+        ((RandomizableContainerBlockEntity) level.getBlockEntity(lootStand)).setLootTable(BuiltInLootTables.SIMPLE_DUNGEON, 7L);
+        check(aim(level, p, lootStand, 0.5, 0.58, 0.5, 0, 1.5).consumesAction() && open(level, lootStand), "loot nightstand drawer not pulled out");
+        check(aim(level, p, lootStand, 0.5, 0.6, 0.42, 1.0, 0.42).consumesAction() && p.containerMenu instanceof AflContainerSearchMenu,
+                "loot nightstand: menu " + p.containerMenu + " (want the search)");
+        p.closeContainer();
         check(EmergencyRadio.surface(level, stand.above()) == EmergencyRadio.Surface.NIGHTSTAND, "radio surface on the nightstand: " + EmergencyRadio.surface(level, stand.above()));
         place(level, p, "emergency_radio", stand.above(), 0);
         check(level.getBlockState(stand.above()).getValue(EmergencyRadio.Radio.SURFACE) == EmergencyRadio.Surface.NIGHTSTAND, "radio placed " + level.getBlockState(stand.above()));
@@ -201,28 +247,33 @@ public final class FurnitureV2GameTests {
         check(right.getBlock() instanceof WoodFurnitureV2.VintageFreezer && right.getValue(WoodFurnitureV2.VintageFreezer.PART) == WoodFurnitureV2.VintageFreezer.Part.RIGHT,
                 "freezer right half " + right);
         check(WoodFurnitureV2.VintageFreezer.masterPosition(freezer.east(), right).equals(freezer), "freezer master position");
-        Container frozen = open(level, p, freezer.east(), 27, "freezer (right)");
+        check(aim(level, p, freezer.east(), 0.3, 0.9, 0.5, 1.0, 0.8).consumesAction(), "freezer lid not used");
         check(open(level, freezer) && open(level, freezer.east()), "freezer lid not open on both halves");
+        check(p.containerMenu == p.inventoryMenu, "freezer: a screen on lifting the lid " + p.containerMenu);
+        Container frozen = view(level, p, freezer.east(), 0.3, 0.83, 0.5, 1.0, 0.5, 27, "freezer (right)");
         frozen.setItem(3, new ItemStack(Items.BEEF, 5));
         p.closeContainer();
+        view(level, p, freezer, 0.8, 0.83, 0.5, 1.0, 0.5, 27, "freezer (left)");
+        p.closeContainer();
+        check(aim(level, p, freezer, 0.8, 1.3, 0.85, 0, 1.5).consumesAction(), "open freezer lid not used");
         check(!open(level, freezer) && !open(level, freezer.east()), "freezer still open");
         check(!level.getBlockState(freezer).getValue(BlockStateProperties.LIT), "unplugged freezer lit");
 
-        // ---- storage chests: one alone 27; a second to its west joins (left / right as vanilla), 54, both lids up
-        BlockPos chestB = helper.absolutePos(new BlockPos(13, 1, 1)), chestA = chestB.west();
-        place(level, p, "wooden_storage_chest", chestB, 0);
-        open(level, p, chestB, 27, "single chest");
-        check(open(level, chestB), "single chest lid down while open");
+        // ---- storage chest (the blanket chest): the right half to +x (east, facing north); the lid, then 27 from either half
+        BlockPos chest = helper.absolutePos(new BlockPos(12, 1, 4));
+        place(level, p, "wooden_storage_chest", chest, 0);
+        BlockState chestRight = level.getBlockState(chest.east());
+        check(chestRight.getBlock() instanceof WoodFurnitureV2.StorageChest && chestRight.getValue(WoodFurnitureV2.Wide.PART) == WoodFurnitureV2.Wide.Part.RIGHT,
+                "chest right half " + chestRight);
+        check(level.getBlockEntity(chest.east()) == null && WoodFurnitureV2.Wide.masterPosition(chest.east(), chestRight).equals(chest), "chest master");
+        check(aim(level, p, chest.east(), 0.2, 0.6, 0.5, 1.0, 0.8).consumesAction() && open(level, chest) && open(level, chest.east()), "chest lid not raised");
+        check(p.containerMenu == p.inventoryMenu, "chest: a screen on raising the lid " + p.containerMenu);
+        Container chestThings = view(level, p, chest, 0.7, 0.56, 0.5, 1.0, 0.5, 27, "chest (left)");
+        chestThings.setItem(5, new ItemStack(Items.ARROW, 16));
         p.closeContainer();
-        check(!open(level, chestB), "single chest lid up after closing");
-        place(level, p, "wooden_storage_chest", chestA, 0);
-        check(level.getBlockState(chestA).getValue(BlockStateProperties.CHEST_TYPE) == ChestType.LEFT
-                && level.getBlockState(chestB).getValue(BlockStateProperties.CHEST_TYPE) == ChestType.RIGHT, "chests not joined " + level.getBlockState(chestA) + " / " + level.getBlockState(chestB));
-        Container both = open(level, p, chestA, 54, "joined chest");
-        check(open(level, chestA) && open(level, chestB), "joined chest lids not both up");
-        both.setItem(40, new ItemStack(Items.ARROW, 16));
+        view(level, p, chest.east(), 0.3, 0.56, 0.5, 1.0, 0.5, 27, "chest (right)");
         p.closeContainer();
-        check(!open(level, chestA) && !open(level, chestB), "joined chest lids still up");
+        check(aim(level, p, chest, 0.8, 0.9, 0.75, 0, 1.5).consumesAction() && !open(level, chest) && !open(level, chest.east()), "chest lid still up");
 
         // ---- tool rack on a stone wall (rack facing north, the wall to its south)
         BlockPos rack = helper.absolutePos(new BlockPos(2, 2, 6));
@@ -285,23 +336,31 @@ public final class FurnitureV2GameTests {
         check(level.getBlockState(foot.south()).isAir() && dropped(level, foot, block("wooden_bed").asItem()) == 1, "bed: head left or drops "
                 + dropped(level, foot, block("wooden_bed").asItem()));
         clearDrops(level, foot);
-        clearDrops(level, chestB);
-        check(p.gameMode.destroyBlock(chestB), "chest not broken");
-        check(level.getBlockState(chestA).getValue(BlockStateProperties.CHEST_TYPE) == ChestType.SINGLE, "the other chest still joined");
-        clearDrops(level, chestB);
+        clearDrops(level, chest);
+        p.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        check(p.gameMode.destroyBlock(chest.east()), "chest right not broken");
+        check(level.getBlockState(chest).isAir() && dropped(level, chest, block("wooden_storage_chest").asItem()) == 1 && dropped(level, chest, Items.ARROW) == 16,
+                "chest: " + level.getBlockState(chest) + ", chests " + dropped(level, chest, block("wooden_storage_chest").asItem()) + ", arrows " + dropped(level, chest, Items.ARROW));
+        clearDrops(level, chest);
 
-        // ---- every piece of every state exists
+        // ---- every piece of every state exists (bed, tool rack: cabin pieces); the rest are animated meshes (Furniture
+        // Mesh V1): profile, geo, sidecar and atlas in the jar, the master's block entity their host
         var modFile = ModList.get().getModFileById(ApocalypseFirstLight.MOD_ID).getFile();
         Set<String> seen = new TreeSet<>();
+        List<String> missing = new ArrayList<>();
         for (String id : IDS) {
             Block b = block(id);
-            for (BlockState any : b.getStateDefinition().getPossibleStates())
-                ((CabinPieces) b).cabinPieces(any, 0, (name, turn, dy) -> seen.add(name));
+            if (b instanceof CabinPieces cabin) {
+                for (BlockState any : b.getStateDefinition().getPossibleStates()) cabin.cabinPieces(any, 0, (name, turn, dy) -> seen.add("cabin_mesh/" + name + ".json"));
+                continue;
+            }
+            for (String file : new String[]{"block_mesh_profiles/" + id + ".json", "geo/" + id + ".geo.json", "meshes/" + id + ".aflmesh.json", "textures/block/furniture/" + id + ".png"})
+                seen.add(file);
+            check(b instanceof EntityBlock e && e.newBlockEntity(BlockPos.ZERO, b.defaultBlockState()) instanceof AflAnimatedMeshHost, id + ": the master is no animated mesh host");
         }
-        List<String> missing = new ArrayList<>();
         for (String name : seen)
-            if (!Files.exists(modFile.findResource(("assets/" + ApocalypseFirstLight.MOD_ID + "/cabin_mesh/" + name + ".json").split("/")))) missing.add(name);
-        check(seen.size() == 30 && missing.isEmpty(), "pieces " + seen.size() + " " + seen + ", missing " + missing);
+            if (!Files.exists(modFile.findResource(("assets/" + ApocalypseFirstLight.MOD_ID + "/" + name).split("/")))) missing.add(name);
+        check(seen.size() == 20 && missing.isEmpty(), "pieces / mesh files " + seen.size() + " " + seen + ", missing " + missing);
 
         // ---- survival mining
         String report = mining(helper);

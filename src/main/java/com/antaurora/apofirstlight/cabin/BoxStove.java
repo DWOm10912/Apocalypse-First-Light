@@ -55,7 +55,9 @@ import java.util.Optional;
  * Box Stove V1 (docs/models/box_stove_v1.md, 2026-10-13): the cast-iron box stove and its heat shield, the forest start
  * home B's heating and cooking (docs/worldgen/forest_start_home_b_v1_plan.md, M2 F1; user 2026-10-13: stove A, the heat
  * shield a block of its own). Mesh blocks ({@link CabinPieces}, pieces cabin_mesh/stove/ and cabin_mesh/shield/,
- * tools/build-box-stove-v1.mjs), drawn facing north (front at z 0, the wall at z 1; the stove's door end at x 0).
+ * tools/build-box-stove-v1.mjs), drawn facing north (front at z 0, the wall at z 1; the stove's door end at x 0). The
+ * loading door is an AFL Animated Block Mesh (box_stove_door, 2026-10-15): it swings, drawn by the block entity renderer
+ * ({@link BoxStoveBlockEntity} its host); the rest are pieces drawn by the chunk.
  * <ul>
  * <li>{@link Stove}: burns wood (item tags {@code apocalypse_firstlight:stove_fuel/logs | wood | kindling}); the door opens
  * on a right-click (fuel goes in, a flint and steel or fire charge lights it), the top takes two things to cook (anything
@@ -343,8 +345,7 @@ public final class BoxStove {
         @Override
         public void cabinPieces(BlockState state, int flags, Sink sink) {
             int r = CabinBlocks.turn(state.getValue(FACING)), load = state.getValue(LOAD);
-            sink.add("stove/body", r);
-            sink.add(state.getValue(OPEN) ? "stove/door_open" : "stove/door_closed", r);
+            sink.add("stove/body", r);   // the door: an animated mesh (BoxStoveBlockEntity)
             if (load > 0) sink.add("stove/load_" + load, r);
             if ((flags & 1) != 0) sink.add("shield/panel_" + (flags >> 1 & 15), r);
         }

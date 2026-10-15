@@ -1,14 +1,16 @@
 // Wood Furniture V1 (docs/models/wood_furniture_v1.md, 2026-10-13): the textures of the generic wood furniture
-// (tools/build-wood-furniture-v1.mjs). User 2026-10-13: furniture is not made per species; one set, any planks make it
-// (recipes later), in a neutral finished wood that matches no species. The building materials (logs, planks, timber,
+// (tools/build-wood-furniture-v1.mjs). User 2026-10-13: furniture is not made per species; one set in one finish that
+// matches no species; user 2026-10-15: made later at the carpenter table from any AFL species wood + paint (no recipes yet). The building materials (logs, planks, timber,
 // beams, stairs, slabs, firewood) stay per species (memory one-wood-per-species).
-// The finish: a mid-brown stain under an oil / satin coat, L ~ 48 against the six species' planks at 62..85, so it reads as
-// stained furniture beside any of them, not as a seventh wood. 240 texels = 1 m, LabPBR like cabin-art (renderX).
+// The finish (user 2026-10-15, docs/models/wood_furniture_v2.md "家具木色"): a walnut oil finish, chocolate brown, face
+// CIELAB L 37 / a 7 / b 15, against the six species' planks at 62..85 and the light log walls, so it reads as finished
+// furniture beside any of them. Until 2026-10-15 a neutral mid-brown [142,112,82] / [112,86,62] (L 49, C 22.5) that looked muddy.
+// 240 texels = 1 m, LabPBR like cabin-art (renderX).
 import {N, hash, sstep, mul, mix, vn} from '../mesh-trees/hd-art.mjs';
 import {grain, iron} from '../cabin/cabin-art.mjs';
 
 /** The stained face and its latewood (sRGB). */
-export let FACE = [142, 112, 82], LATE = [112, 86, 62];
+export let FACE = [106, 82, 63], LATE = [80, 57, 38];
 /** Design studies only (design/.../m4_source/wood_finish_swatches.mjs): another finish for the textures made after it. */
 export function setFinish(face, late) { FACE = face; LATE = late; }
 const wood = (late, k = 0.45) => mix(FACE, LATE, late * k);

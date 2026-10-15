@@ -1,3 +1,94 @@
 {
-  "parent": "apocalypse_firstlight:block/furniture/wooden_storage_chest"
+  "parent": "builtin/entity",
+  "gui_light": "side",
+  "textures": {
+    "particle": "apocalypse_firstlight:block/furniture/wood"
+  },
+  "display": {
+    "gui": {
+      "rotation": [
+        25,
+        225,
+        0
+      ],
+      "translation": [
+        4.037,
+        3.859,
+        -2.844
+      ],
+      "scale": [
+        0.729,
+        0.729,
+        0.729
+      ]
+    },
+    "ground": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -1.816,
+        3.73,
+        0.02
+      ],
+      "scale": [
+        0.227,
+        0.227,
+        0.227
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        -3.272,
+        1.315,
+        0.036
+      ],
+      "scale": [
+        0.409,
+        0.409,
+        0.409
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        75,
+        225,
+        0
+      ],
+      "translation": [
+        1.506,
+        4.205,
+        0.436
+      ],
+      "scale": [
+        0.272,
+        0.272,
+        0.272
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        225,
+        0
+      ],
+      "translation": [
+        1.811,
+        2.052,
+        -1.889
+      ],
+      "scale": [
+        0.327,
+        0.327,
+        0.327
+      ]
+    }
+  }
 }

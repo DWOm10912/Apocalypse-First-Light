@@ -208,7 +208,8 @@ renderer 默认原样传递 dispatcher 的 `packedLight`（sky + block light）�
 - **开关**：开发开关 `static_mesh off`，或方块模型不是这个模型时，渲染器照旧画全部。
 - **PBR**：区块路径由 Oculus 按图集 sprite 读同名 `_n` / `_s`，所以贴图必须放在 `textures/block/`。原版会自动把这个目录拼进方块图集。
 - **可见距离**：区块在任何距离都画静止零件，所以网格渲染器的可见距离从 64 格改成 128 格（`AflAnimatedBlockMeshRenderer.VIEW_DISTANCE`），玻璃、发光件和货物跟得更远一点。
-- **使用者**（2026-10-08 全部接入，生成器已同步）：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机；之后新增的围栏钢门、柴油发电机组（2026-10-09）也是。冷柜的第一版原型是在 profile 里手写 `baked` 列表，已删除。
+- **使用者**（2026-10-08 全部接入，生成器已同步）：饮料冷柜、收银机、充电站、柜台通道门、冰柜、四色垃圾箱、两色玻璃双开门、配电盘、工业储物柜、铅箱、金属垃圾桶、电表箱、钢门、商用木门、自动售货机、饮水机；之后新增的围栏钢门、柴油发电机组（2026-10-09）也是；2026-10-15 的木家具（Furniture Mesh V1：木质橱柜、木质水槽柜、木衣柜、木床头柜、木储物箱、老式冷柜，共用导出器 `tools/furniture/furniture-mesh.mjs`，见 [Wood Furniture V2](../models/wood_furniture_v2.md) 第 2 节）也是，没在客户端看过。
+- **只有活动件是网格**（2026-10-15）：箱式柴炉的炉门（`box_stove_door`）、应急收音机的摇柄（`emergency_radio_crank`，环绕通道，按摆放高度每种一份 profile，只差 `origin`）。这两件的静止部分是小屋拼块（`CabinPieces`，炉子背后的钢板要看邻居），方块模型是 `cabin` 加载器，不是 `static_mesh`，所以按上面"开关"一条，渲染器一直画这一件，区块不画它。命中网格把拼块和这一件合在一起（[mesh_hit_runtime_v1.md](mesh_hit_runtime_v1.md) 0.7 节）。没在客户端看过。冷柜的第一版原型是在 profile 里手写 `baked` 列表，已删除。
 - **实机**：用户 2026-10-08 在 Sundial 下 PASS（外观、开关门、动画正常，性能"好太多"），数字见 [render_performance_v1.md](../dev/render_performance_v1.md)"结果"。仍属理论上的差异：区块的面按自己贴着的那一格取光照，渲染器只在主格取一次；开光影时区块可能被按图集 mipmap 采样；动画开始那一两帧可能有重影。
 
 ## Bounds、缓存与 reload

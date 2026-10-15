@@ -205,8 +205,22 @@ public final class ForestHomeM2GameTests {
         List<String> missing = new ArrayList<>();
         for (String name : seen)
             if (!Files.exists(modFile.findResource(("assets/" + ApocalypseFirstLight.MOD_ID + "/cabin_mesh/" + name + ".json").split("/")))) missing.add(name);
-        check(seen.size() == 9 && missing.isEmpty(), "radio pieces " + seen + ", missing " + missing);
+        check(seen.size() == 5 && missing.isEmpty(), "radio pieces " + seen + ", missing " + missing);
         check(wrongLift.isEmpty(), "pieces not sunk onto the surface " + wrongLift);
+        // the crank (an animated mesh since 2026-10-15): a profile per surface, its origin sunk as the pieces, the arm's
+        // mesh and atlas; the stove's door: its profile, mesh and atlas; the radio's block entity the crank's host
+        for (EmergencyRadio.Surface sf : EmergencyRadio.Surface.values()) {
+            var file = modFile.findResource(("assets/" + ApocalypseFirstLight.MOD_ID + "/block_mesh_profiles/emergency_radio_crank_" + sf.getSerializedName() + ".json").split("/"));
+            check(Files.exists(file), "no crank profile for " + sf);
+            try (var in = Files.newBufferedReader(file)) {
+                float y = com.google.gson.JsonParser.parseReader(in).getAsJsonObject().getAsJsonArray("origin").get(1).getAsFloat();
+                check(Math.abs(y + sf.sink) < 1e-5, "crank profile " + sf + " origin y " + y + ", the pieces sink " + sf.sink);
+            } catch (java.io.IOException e) { throw new GameTestAssertException("crank profile " + sf + ": " + e); }
+        }
+        for (String name : new String[]{"geo/emergency_radio_crank.geo.json", "meshes/emergency_radio_crank.aflmesh.json", "textures/block/radio/emergency_radio_crank.png",
+                "block_mesh_profiles/box_stove_door.json", "geo/box_stove_door.geo.json", "meshes/box_stove_door.aflmesh.json", "textures/block/stove/box_stove_door.png"})
+            check(Files.exists(modFile.findResource(("assets/" + ApocalypseFirstLight.MOD_ID + "/" + name).split("/"))), "missing " + name);
+        check(level.getBlockEntity(at) instanceof com.antaurora.apofirstlight.blockmesh.AflAnimatedMeshHost, "the radio's block entity is no mesh host");
 
         // ---- chair: sit, a second player cannot, standing up ends the seat
         helper.setBlock(new BlockPos(2, 1, 6), block("wooden_chair"));
@@ -228,11 +242,15 @@ public final class ForestHomeM2GameTests {
             helper.setBlock(new BlockPos(5 + 3 * i, 1, 6), counters[i]);
             BlockPos cAt = helper.absolutePos(new BlockPos(5 + 3 * i, 1, 6));
             FakePlayer user = player(level, "counter_test_" + i, cAt.north());
-            check(level.getBlockState(cAt).use(level, user, InteractionHand.MAIN_HAND, new BlockHitResult(Vec3.atCenterOf(cAt), Direction.NORTH, cAt, false))
-                    == InteractionResult.CONSUME, "counter used");
+            // two steps (cabin/FurnitureOpening): the doors open, the opening between them gives the screen, the doors close
+            check(FurnitureV2GameTests.aim(level, user, cAt, 0.3, 0.4, 0.37, 0, 1.5) == InteractionResult.CONSUME
+                    && level.getBlockState(cAt).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN) && user.containerMenu == user.inventoryMenu, "counter doors not opened");
+            check(FurnitureV2GameTests.aim(level, user, cAt, 0.5, 0.4, 0.37, 0, 1.5) == InteractionResult.CONSUME, "counter interior used");
             check(user.containerMenu instanceof ChestMenu menu && menu.getContainer().getContainerSize() == slots[i],
                     "counter menu " + user.containerMenu + " (want " + slots[i] + " slots)");
             user.closeContainer();
+            check(FurnitureV2GameTests.aim(level, user, cAt, 0.01, 0.4, 0.1, 0, 1.5) == InteractionResult.CONSUME
+                    && !level.getBlockState(cAt).getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN), "counter doors not closed");
         }
 
         // ---- survival mining
