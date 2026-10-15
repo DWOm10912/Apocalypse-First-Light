@@ -160,15 +160,15 @@ public final class RoadWorks {
     public enum Kind {
         /** natural: nothing to do */
         NONE,
-        /** pavement: collision layers at y (and y + 1 when upper > 0), asphalt, gravel, stone below, fill to the ground */
+        /** pavement: collision layers at y (and y + 1 when upper > 0), asphalt, gravel, cobblestone below, fill to the ground */
         PAVED,
         /** graded turf block at y (data: corners), fill below or clear above */
         TURF,
-        /** bridge deck: collision layers at y (upper as PAVED), reinforced concrete from bottom to y - 1 */
+        /** bridge deck: collision layers at y (upper as PAVED), road_structure from bottom to y - 1 */
         DECK,
-        /** bridge deck end: a deck column whose concrete continues down to the ground (the abutment wall) */
+        /** bridge deck end: a deck column whose structure continues down to the ground (the abutment wall) */
         ABUTMENT,
-        /** bridge parapet or wing wall: reinforced concrete from bottom up to y (at the span's ends from the ground) */
+        /** bridge parapet or wing wall: road_structure from bottom up to y, y cut to layers (at the span's ends from the ground) */
         BARRIER,
         /** under a bridge, off the deck: natural ground; only clear what the density's interpolation left above it */
         OPEN
@@ -176,7 +176,8 @@ public final class RoadWorks {
 
     /**
      * One column's finish. y: the collision / turf / barrier top block; layers, upper: collision layers (1..32) of y and
-     * y + 1 (0: none); data: turf corners (nw | ne << 4 | sw << 8 | se << 12 | shift << 16); bottom: the lowest deck
+     * y + 1 (0: none; BARRIER: layers of y); data: turf corners (nw | ne << 4 | sw << 8 | se << 12 | shift << 16), for
+     * a BARRIER BridgeMesh.WING when it is a wing wall rather than a parapet; bottom: the lowest deck
      * block (DECK, ABUTMENT, BARRIER) or the natural ground the clearing stops at (OPEN); paveLo / paveHi: the column's
      * pavement height range (PAVED, DECK, ABUTMENT).
      */
@@ -219,31 +220,72 @@ public final class RoadWorks {
             int data = fit[2] | fit[3] << 4 | fit[4] << 8 | fit[5] << 12 | fit[1] << 16;
             return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
         }
-        // on a bridge span
-        double v = centre.v(), sc = centre.sc();
+        // on a bridge span: the collision of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre
+        double v = centre.v(), sc = centre.sc(), u = centre.u();
         double deckTop = d.datum(sc);
-        int bottom = (int) Math.floor(deckTop - span.depth());
-        boolean end = sc - span.s0() < 1.0 || span.s1() - sc < 1.0;
+        boolean end = band(d, span, x, z);
+        // under the girder the deck goes down to its soffit (rounded up: the collision stays inside the mesh), under the
+        // slab's overhangs only the slab
+        boolean girder = v >= R4CrossSection.HALF_MEDIAN + BridgeMesh.GIRDER_INSET && v <= R4CrossSection.EDGE - BridgeMesh.GIRDER_INSET;
         if (pave != null) {
             Column c = paved(end ? Kind.ABUTMENT : Kind.DECK, pave, 0);
-            return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, bottom, c.paveLo(), c.paveHi());
+            int bottom = girder ? (int) Math.ceil(deckTop - span.depth()) : (int) Math.ceil(pave[0] - BridgeMesh.SLAB);
+            return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, Math.min(bottom, c.y()), c.paveLo(), c.paveHi());
         }
-        boolean outer = v >= R4CrossSection.EDGE - 0.5 && v <= R4CrossSection.EDGE + 1.5;
-        boolean inner = v >= R4CrossSection.HALF_MEDIAN - 1.5 && v <= R4CrossSection.HALF_MEDIAN + 0.5;
+        double outerW = v - R4CrossSection.EDGE, innerW = R4CrossSection.HALF_MEDIAN - v;
+        boolean outer = outerW >= BridgeMesh.CELL_IN && outerW <= BridgeMesh.CELL_OUT;
+        boolean inner = innerW >= BridgeMesh.CELL_IN && innerW <= BridgeMesh.CELL_OUT;
         if (outer || inner) {
-            double edge = d.pavementY(sc, Math.copySign(outer ? R4CrossSection.EDGE : R4CrossSection.HALF_MEDIAN, centre.u()));
-            // a 1 m concrete parapet above the pavement edge; at the span's ends it stands on the ground (the abutment)
+            // the parapet, its top block cut to the parapet's height; at the span's ends it stands on the ground
+            double edge = d.pavementY(sc, Math.copySign(outer ? R4CrossSection.EDGE : R4CrossSection.HALF_MEDIAN, u));
+            double top = edge + BridgeMesh.PARAPET_HEIGHT;
+            int y = (int) Math.ceil(top) - 1, layers = Math.max(1, Math.min(32, (int) Math.round((top - y) * 32)));
+            int bottom = Math.min(y, (int) Math.ceil(edge - BridgeMesh.SLAB));
             int foot = end ? Math.min(bottom, (int) Math.floor(ground.at(x + 0.5, z + 0.5))) : bottom;
-            return new Column(Kind.BARRIER, (int) Math.round(edge + 1.0) - 1, 0, 0, 0, foot, edge, edge);
+            return new Column(Kind.BARRIER, y, layers, 0, 0, foot, edge, edge);
+        }
+        if (outerW > -1 && outerW < BridgeMesh.CELL_IN || innerW > -1 && innerW < BridgeMesh.CELL_IN) {
+            // a deck edge column between the pavement and the parapet's toe: the pavement edge's height on the slab
+            double e = d.pavementY(sc, Math.copySign(Math.max(R4CrossSection.HALF_MEDIAN, Math.min(R4CrossSection.EDGE, v)), u));
+            Column c = paved(end ? Kind.ABUTMENT : Kind.DECK, new double[]{e, e}, 0);
+            return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, Math.min(c.y(), (int) Math.ceil(e - BridgeMesh.SLAB)), e, e);
         }
         double g = ground.at(x + 0.5, z + 0.5);
-        if (end) {
-            // wing wall: the roadside earthworks just outside the span, retained by concrete at the span's end
-            double sOut = sc - span.s0() < 1.0 ? span.s0() - 0.01 : span.s1() + 0.01;
-            double f = surface(new Hit(d, sOut, centre.u()), x + 0.5, z + 0.5, g);
-            if (!Double.isNaN(f) && f > g + 0.5) return new Column(Kind.BARRIER, (int) Math.floor(f), 0, 0, 0, (int) Math.floor(g), f, f);
+        if (end && !water.wet(x + 0.5, z + 0.5)) {
+            // wing wall: the embankment just outside the span, retained by a wall in line with the abutment; its top is the
+            // embankment's design (the median, or the fill template beside the road), pure, so the client knows it too. The
+            // chunk pass leaves it out where the actual ground already reaches its top (the valley's terrain is the noise's,
+            // metres off the planned ground at a river), so it is decided there, not here
+            double sOut = sc - span.s0() <= span.s1() - sc ? span.s0() : span.s1(), sgn = sOut == span.s0() ? 1 : -1;
+            // the highest point of the coping over the square (the collision follows the mesh below it: BridgeMesh.solid)
+            double f = Double.NaN;
+            for (int b = 0; b <= 4; b++) for (int a = 0; a <= 4; a++) {
+                double[] l = d.local(x + a * 0.25, z + b * 0.25, REACH + 2);
+                if (l == null) continue;
+                double t = sgn * (l[0] - sOut);
+                if (t < -BridgeMesh.TAIL || t > 1) continue;
+                double w = BridgeMesh.wingStrip(d, sOut, l[1]);
+                if (!Double.isNaN(w) && !(w <= f)) f = w;
+            }
+            if (!Double.isNaN(f)) {
+                int y = (int) Math.ceil(f) - 1, layers = Math.max(1, Math.min(32, (int) Math.round((f - y) * 32)));
+                return new Column(Kind.BARRIER, y, layers, 0, BridgeMesh.WING, Math.min(y, (int) Math.floor(g)), f, f);
+            }
         }
         return new Column(Kind.OPEN, (int) Math.floor(deckTop), 0, 0, 0, (int) Math.floor(g), 0, 0);
+    }
+
+    /**
+     * Whether column (x, z) of a span belongs to the abutment band: its square reaches into the first metre of the span
+     * from either end (not only its centre: on a skewed crossing a square reaches 0.71 m beyond its centre, and a cell
+     * whose square reaches the walls must stand on the ground with them; 2026-10-15).
+     */
+    public static boolean band(RoadDesign d, RoadDesign.Span span, int x, int z) {
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            double[] l = d.local(x + a, z + b, REACH + 2);
+            if (l != null && Math.min(l[0] - span.s0(), span.s1() - l[0]) < 1.0) return true;
+        }
+        return false;
     }
 
     /** A paved (or deck) column: the asphalt / deck top 2 cm under the lowest pavement point, collision to the mean. */

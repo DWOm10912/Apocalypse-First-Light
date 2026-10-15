@@ -133,6 +133,12 @@ public final class C2Probe {
                 + C2Plan.serverDefault(level.getServer(), "minecraft:flat"));
         line("heap_used_mb_at_start " + usedMb(false));
         sites = new ArrayList<>();
+        // the bridge's hit meshes as a bullet meets them (collision context), around the look point (2026-10-15)
+        if (C3RoadProbe.active() && C2Harness.ARGS.containsKey("look")) {
+            String[] xz = C2Harness.arg("look", "").split(",");
+            line("road hits (server, bullets): " + C3HitCheck.run(level, Integer.parseInt(xz[0].trim()), Integer.parseInt(xz[1].trim()), 24,
+                    net.minecraft.world.level.ClipContext.Block.COLLIDER));
+        }
         if (C3RoadProbe.active()) sites.addAll(C3RoadProbe.sites(level));
         else {
             sites.add(new Site("spawn", spawn.getX(), spawn.getZ(), 4));

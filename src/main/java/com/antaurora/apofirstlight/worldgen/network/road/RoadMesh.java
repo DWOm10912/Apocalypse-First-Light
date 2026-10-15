@@ -15,7 +15,7 @@ import java.util.TreeSet;
  * </ul>
  * Stations come from one global lattice (2 m, plus the dash ends), the same in every chunk; each triangle is generated
  * once in world space and clipped to the chunk, so neighbouring chunks meet without gaps or overlaps whatever the load
- * order. Coordinates are relative to the chunk's origin (x, z), heights absolute.
+ * order. Coordinates are relative to the chunk's origin (x, z), heights absolute. Bridges: BridgeMesh (CONCRETE).
  */
 public final class RoadMesh {
     public static final double STEP = 2, TEXTURE = 4, LINE = 0.15, DASH = 3, DASH_PERIOD = 12;
@@ -26,7 +26,7 @@ public final class RoadMesh {
     /** Lateral reach of the mesh from the centreline (the edge plus its safety bevel), m. */
     public static final double HALF_WIDTH = R4CrossSection.EDGE + R4CrossSection.BEVEL_RUN;
 
-    public enum Material { ASPHALT, WHITE, YELLOW }
+    public enum Material { ASPHALT, WHITE, YELLOW, CONCRETE }
 
     public record Vertex(double x, double y, double z, double u, double v) {
         Vertex lerp(Vertex b, double t) { return new Vertex(x + (b.x - x) * t, y + (b.y - y) * t, z + (b.z - z) * t, u + (b.u - u) * t, v + (b.v - v) * t); }
@@ -160,10 +160,12 @@ public final class RoadMesh {
     // ------------------------------------------------------------------ clipping
 
     /** Clip a world-space triangle to [x0, x0 + 16] x [z0, z0 + 16] and add the pieces relative to (x0, z0). */
-    static void clipInto(List<Triangle> out, Triangle t, double x0, double z0) {
+    public static void clipInto(List<Triangle> out, Triangle t, double x0, double z0) {
         double minX = Math.min(t.a().x(), Math.min(t.b().x(), t.c().x())), maxX = Math.max(t.a().x(), Math.max(t.b().x(), t.c().x()));
         double minZ = Math.min(t.a().z(), Math.min(t.b().z(), t.c().z())), maxZ = Math.max(t.a().z(), Math.max(t.b().z(), t.c().z()));
-        if (maxX <= x0 || minX >= x0 + 16 || maxZ <= z0 || minZ >= z0 + 16) return;
+        // half-open ownership: a face lying in a chunk's boundary plane (a vertical bridge face) belongs to the chunk on its + side
+        if (maxX - minX < 1e-9 ? minX < x0 || minX >= x0 + 16 : maxX <= x0 || minX >= x0 + 16) return;
+        if (maxZ - minZ < 1e-9 ? minZ < z0 || minZ >= z0 + 16 : maxZ <= z0 || minZ >= z0 + 16) return;
         List<Vertex> p = List.of(t.a(), t.b(), t.c());
         p = plane(p, true, x0, true);
         p = plane(p, true, x0 + 16, false);
@@ -171,21 +173,21 @@ public final class RoadMesh {
         p = plane(p, false, z0 + 16, false);
         for (int i = 1; i + 1 < p.size(); i++) {
             Vertex a = rel(p.get(0), x0, z0), b = rel(p.get(i), x0, z0), c = rel(p.get(i + 1), x0, z0);
-            double area = (b.x() - a.x()) * (c.z() - a.z()) - (b.z() - a.z()) * (c.x() - a.x());
-            if (Math.abs(area) <= 1e-9) continue;
+            if (area3(a, b, c) <= 1e-9) continue;
             out.add(new Triangle(t.material(), a, b, c, t.nx(), t.ny(), t.nz()));
         }
     }
 
     /**
      * A chunk's triangles (chunk-relative) without their parts over the removed block cells (removed[lx | lz << 4]):
-     * a triangle touching one is cut into its per-cell pieces and those over removed cells are dropped.
+     * a triangle touching one is cut into its per-cell pieces and those over removed cells are dropped (a vertical face in
+     * a cell boundary belongs to the cell on its + side).
      */
     public static List<Triangle> without(List<Triangle> tris, boolean[] removed) {
         List<Triangle> out = new ArrayList<>(tris.size());
         for (Triangle t : tris) {
-            int x0 = cell(Math.min(t.a().x(), Math.min(t.b().x(), t.c().x()))), x1 = cell(Math.max(t.a().x(), Math.max(t.b().x(), t.c().x())) - 1e-9);
-            int z0 = cell(Math.min(t.a().z(), Math.min(t.b().z(), t.c().z()))), z1 = cell(Math.max(t.a().z(), Math.max(t.b().z(), t.c().z())) - 1e-9);
+            int x0 = cell(Math.min(t.a().x(), Math.min(t.b().x(), t.c().x()))), x1 = Math.max(x0, cell(Math.max(t.a().x(), Math.max(t.b().x(), t.c().x())) - 1e-9));
+            int z0 = cell(Math.min(t.a().z(), Math.min(t.b().z(), t.c().z()))), z1 = Math.max(z0, cell(Math.max(t.a().z(), Math.max(t.b().z(), t.c().z())) - 1e-9));
             boolean touches = false;
             for (int z = z0; z <= z1 && !touches; z++) for (int x = x0; x <= x1; x++) if (removed[x | z << 4]) { touches = true; break; }
             if (!touches) { out.add(t); continue; }
@@ -198,13 +200,19 @@ public final class RoadMesh {
                 p = plane(p, false, z + 1, false);
                 for (int i = 1; i + 1 < p.size(); i++) {
                     Vertex a = p.get(0), b = p.get(i), c = p.get(i + 1);
-                    double area = (b.x() - a.x()) * (c.z() - a.z()) - (b.z() - a.z()) * (c.x() - a.x());
-                    if (Math.abs(area) <= 1e-9) continue;
+                    if (area3(a, b, c) <= 1e-9) continue;
                     out.add(new Triangle(t.material(), a, b, c, t.nx(), t.ny(), t.nz()));
                 }
             }
         }
         return out;
+    }
+
+    /** Twice the triangle's area in space (vertical faces have none in plan but are kept). */
+    static double area3(Vertex a, Vertex b, Vertex c) {
+        double ux = b.x() - a.x(), uy = b.y() - a.y(), uz = b.z() - a.z(), vx = c.x() - a.x(), vy = c.y() - a.y(), vz = c.z() - a.z();
+        double nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        return Math.sqrt(nx * nx + ny * ny + nz * nz);
     }
 
     private static int cell(double v) { return Math.max(0, Math.min(15, (int) Math.floor(v))); }

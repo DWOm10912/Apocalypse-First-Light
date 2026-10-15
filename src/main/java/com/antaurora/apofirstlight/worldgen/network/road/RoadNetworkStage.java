@@ -20,11 +20,15 @@ public final class RoadNetworkStage {
 
     public static Set<String> built() { return Set.copyOf(BUILT); }
 
-    /** The terrain works rules (RoadWorks, R4CrossSection, the chunk finish); bump when finished columns change. */
+    /** The terrain works rules (RoadWorks.surface, R4CrossSection, the earthworks columns); bump when they change. */
     public static final int WORKS_VERSION = 1;
 
-    /** The pavement mesh and collision rules seen by players (RoadMesh, the collision columns). */
-    public static final int SURFACE_VERSION = 1;
+    /**
+     * What players see and touch: RoadMesh, BridgeMesh, the collision and bridge structure columns (2: bridge mesh,
+     * road_structure; 3: the natural ground under and beside a bridge kept, walls with copings and tails, collision shapes
+     * from the mesh; 4: the structure stands on the ground's top block instead of replacing it).
+     */
+    public static final int SURFACE_VERSION = 4;
 
     /** The road_network system version: the plan's rules, the stage and the built list. */
     public static String networkVersion(String planVersion) {

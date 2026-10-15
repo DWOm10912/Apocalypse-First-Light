@@ -51,7 +51,7 @@
 | `river_carving` | `federal_water#1` | HARD | 区块里的河水、湖水、河岸与湖岸 |
 | `ecology` | `ecology_federal#1` | HARD | 联邦分区、地表群系映射、联邦群系 JSON、地表规则分支 |
 | `forest` | 同 r1 | SOFT | 天然树木 |
-| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.2#interstate_ew:county_seat-valley_town#surface1` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10 节） |
+| `road_network`（开关，C3.2） | `afl_road_network_c3_v1#c3.2#interstate_ew:county_seat-valley_town#surface4` | HARD | 公共道路路线、路面、碰撞、桥（[C3](federal_highways_c3.md) 第 10 节；surface2 = 桥改成网格 + `road_structure` 碰撞，2026-10-14；surface3 = 桥下天然地面保留、碰撞跟网格、翼墙压顶，2026-10-15；surface4 = 结构方块站在地面顶块上，不再顶掉它，2026-10-15） |
 | `terrain_works`（开关，C3.2） | `road_works_r4#1` | HARD | 道路挖填、边坡、边沟进入地形 |
 
 联邦世界还有探针 `road_network`：路网 JSON 的摘要（开关子系统的探针，世界没有这个开关时去掉）。第一次加载一个种子会规划一次路网（约 8 s），之后读 `afl_cache/road_network/` 的缓存。

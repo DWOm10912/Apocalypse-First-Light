@@ -1,8 +1,10 @@
 package com.antaurora.apofirstlight.worldgen.network;
 
 import com.antaurora.apofirstlight.block.GradedTurfBlock;
+import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks.Column;
 import net.minecraft.core.BlockPos;
@@ -26,10 +28,13 @@ import java.util.Set;
  *   rule replaces it: ores write past the guard, through BulkSectionAccess), then dirt down to the
  *   natural ground;</li>
  *   <li>TURF: one graded_turf block on the shared corners, dirt below;</li>
- *   <li>DECK / ABUTMENT: collision on reinforced concrete (the deck slab, 1.8 m), the abutment wall down to the ground;</li>
- *   <li>BARRIER: the concrete parapets, and at the span's ends the wing walls on the ground;</li>
- *   <li>OPEN: the natural valley under the deck (water untouched; only solid blocks the density's interpolation left above
- *   the planned ground are cleared).</li>
+ *   <li>DECK / ABUTMENT: collision on road_structure (the deck down to its slab's or girder's underside), the abutment
+ *   wall down to the ground; structure never replaces natural ground (it only fills above it);</li>
+ *   <li>BARRIER: road_structure for the parapets (the top block cut to the parapet's height), and at the span's ends the
+ *   parapets and wing walls on the actual ground (a wing wall is left out where that ground already reaches its top);</li>
+ *   <li>the bridge's look is the client's mesh (BridgeMesh): road_structure is invisible collision that holds light;</li>
+ *   <li>OPEN: beside and between the decks, the natural ground as the noise made it (only what rises above the deck level
+ *   is cleared; water untouched).</li>
  * </ul>
  * Everything above a finished column is cleared up to the chunk's surface. Later writes into a road column at or above
  * its guard height (trees, snow, structure pieces from this or a neighbouring chunk) are refused by
@@ -89,7 +94,7 @@ public final class RoadChunkPass {
         if (cols == null) return;
         BlockState dirt = Blocks.DIRT.defaultBlockState(), base = Blocks.COBBLESTONE.defaultBlockState(),
                 gravel = Blocks.GRAVEL.defaultBlockState(), asphalt = AflBlocks.ASPHALT.get().defaultBlockState(),
-                concrete = AflBlocks.REINFORCED_CONCRETE.get().defaultBlockState();
+                structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
         for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
             Column c = cols[lx | lz << 4];
@@ -114,22 +119,40 @@ public final class RoadChunkPass {
                     clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
                 }
                 case DECK, ABUTMENT -> {
+                    int solid = solidTop(chunk, lx, lz);
                     collision(chunk, p, x, z, c);
-                    for (int y = c.bottom(); y < c.y(); y++) set(chunk, p, x, y, z, concrete);
-                    if (c.kind() == RoadWorks.Kind.ABUTMENT) fill(chunk, p, x, c.bottom() - 1, z, concrete, ground - 2);
-                    else clear(chunk, p, x, ground + 1, c.bottom() - 1, z, false);
+                    // the structure never replaces the natural ground (a cell's square reaches beyond the mesh: through the
+                    // invisible block the ground must still be there); the abutment stands on it
+                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) set(chunk, p, x, y, z, structure);
+                    if (c.kind() == RoadWorks.Kind.ABUTMENT) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
                     clear(chunk, p, x, c.top() + 1, surf + 1, z, true);
                 }
                 case BARRIER -> {
-                    for (int y = c.bottom(); y <= c.y(); y++) set(chunk, p, x, y, z, concrete);
-                    if (c.bottom() <= ground + 1) fill(chunk, p, x, c.bottom() - 1, z, concrete, ground - 2);
-                    else clear(chunk, p, x, ground + 1, c.bottom() - 1, z, false);
+                    int solid = solidTop(chunk, lx, lz);
+                    // a wing wall where the actual ground already reaches its top is left out (the client finds no structure
+                    // there and closes the wall beside it)
+                    if (c.data() == BridgeMesh.WING && solid >= c.y()) break;
+                    for (int y = Math.max(c.bottom(), solid + 1); y < c.y(); y++) set(chunk, p, x, y, z, structure);
+                    set(chunk, p, x, c.y(), z, structure.setValue(RoadStructureBlock.LAYERS, c.layers()));
+                    if (c.bottom() <= Math.max(ground, solid) + 1) fill(chunk, p, x, c.bottom() - 1, z, structure, Math.min(ground, solid) - 2);
                     clear(chunk, p, x, c.y() + 1, surf + 1, z, true);
                 }
-                case OPEN -> clear(chunk, p, x, ground + 1, surf + 1, z, false);
+                // beside and between the decks: the natural ground stays (cut to the planned ground it left bare stone and
+                // dirt pits in front of the walls, 2026-10-15); only what rises above the deck level goes
+                case OPEN -> clear(chunk, p, x, c.y() + 1, surf + 1, z, false);
                 default -> { }
             }
         }
+    }
+
+    /**
+     * The top solid (non-fluid) block of a column as the noise made it: the actual ground, under water its bed.
+     * ChunkAccess#getHeight is that block's y already (the heightmap's first free cell less one); one less again put the
+     * structure on the ground's top block, so a band cell's grass gave way to a bare dirt pit wherever the mesh does not
+     * cover the cell (2026-10-15, surface4).
+     */
+    private static int solidTop(ChunkAccess chunk, int lx, int lz) {
+        return chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, lx, lz);
     }
 
     private static void collision(ChunkAccess chunk, BlockPos.MutableBlockPos p, int x, int z, Column c) {

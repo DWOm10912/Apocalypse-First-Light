@@ -29,7 +29,8 @@ import java.util.function.Consumer;
  * sites are windows along the built sample route, and every column of a window is compared with what the road's
  * chunk pass must have built there (RoadChunkPass.columns, the same pure function):
  * <ul>
- *   <li>collision columns (road_surface and its layers), asphalt, turf states, bridge concrete;</li>
+ *   <li>collision columns (road_surface and its layers), asphalt, turf states, the bridge's road_structure (deck under its
+ *   collision, parapet and wing tops with their layers);</li>
  *   <li>nothing standing above a finished column (trees, plants, snow, structure pieces);</li>
  *   <li>the collision top the server sees (block collision shapes) against the designed pavement;</li>
  *   <li>under the bridge: water present and no solid block between the planned ground and the deck;</li>
@@ -40,6 +41,11 @@ import java.util.function.Consumer;
  */
 final class C3RoadProbe {
     private C3RoadProbe() {}
+
+    /** A natural solid block (the pass leaves the ground under a deck as it is, 2026-10-15). */
+    private static boolean naturalGround(BlockState b) {
+        return !b.isAir() && b.getFluidState().isEmpty() && b.isSolid() && !b.is(AflBlocks.ROAD_STRUCTURE.get()) && !b.is(AflBlocks.ROAD_SURFACE.get());
+    }
 
     static boolean active() { return "1".equals(C2Harness.arg("roads", "")); }
 
@@ -75,11 +81,12 @@ final class C3RoadProbe {
         if (n == null) { line.accept("  roads: none bound"); return; }
         int r = s.radius();
         int[] byKind = new int[RoadWorks.Kind.values().length], bad = new int[RoadWorks.Kind.values().length];
+        int wingsSkipped = 0;
         int above = 0, underSolid = 0, underWater = 0, waterTop = Integer.MIN_VALUE;
         double maxCollision = 0;
         List<String> examples = new ArrayList<>();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
-        BlockState asphalt = AflBlocks.ASPHALT.get().defaultBlockState(), concrete = AflBlocks.REINFORCED_CONCRETE.get().defaultBlockState();
+        BlockState asphalt = AflBlocks.ASPHALT.get().defaultBlockState(), structure = AflBlocks.ROAD_STRUCTURE.get().defaultBlockState();
         for (int cz = 0; cz < 2 * r + 1; cz++) for (int cx = 0; cx < 2 * r + 1; cx++) {
             LevelChunk c = chunks[cx][cz];
             int ccx = c.getPos().x, ccz = c.getPos().z;
@@ -92,6 +99,7 @@ final class C3RoadProbe {
                 int x = ccx * 16 + lx, z = ccz * 16 + lz;
                 byKind[col.kind().ordinal()]++;
                 String why = null;
+                boolean natural = false;
                 switch (col.kind()) {
                     case PAVED, DECK, ABUTMENT -> {
                         BlockState b = c.getBlockState(p.set(x, col.y(), z));
@@ -99,7 +107,8 @@ final class C3RoadProbe {
                         else if (col.upper() > 0 && c.getBlockState(p.set(x, col.y() + 1, z)).getOptionalValue(RoadSurfaceBlock.LAYERS).orElse(-1) != col.upper())
                             why = "upper collision";
                         else if (col.kind() == RoadWorks.Kind.PAVED && c.getBlockState(p.set(x, col.y() - 1, z)) != asphalt) why = "no asphalt";
-                        else if (col.kind() != RoadWorks.Kind.PAVED && c.getBlockState(p.set(x, col.y() - 1, z)) != concrete) why = "no deck";
+                        else if (col.kind() != RoadWorks.Kind.PAVED && col.bottom() < col.y() && c.getBlockState(p.set(x, col.y() - 1, z)) != structure
+                                && !naturalGround(c.getBlockState(p))) why = "no deck";
                         if (why == null) {
                             double top = col.y() + c.getBlockState(p.set(x, col.top(), z)).getCollisionShape(level, p).max(net.minecraft.core.Direction.Axis.Y)
                                     + (col.upper() > 0 ? 1 : 0);
@@ -113,7 +122,12 @@ final class C3RoadProbe {
                         if (!b.is(AflBlocks.GRADED_TURF.get())) why = "turf " + b;
                     }
                     case BARRIER -> {
-                        if (c.getBlockState(p.set(x, col.y(), z)) != concrete) why = "barrier " + c.getBlockState(p);
+                        BlockState top = c.getBlockState(p.set(x, col.y(), z));
+                        // a wing wall the pass left out stands in ground that reaches its top
+                        boolean skipped = col.data() == com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh.WING && !top.is(AflBlocks.ROAD_STRUCTURE.get())
+                                && !top.isAir() && top.getFluidState().isEmpty();
+                        if (skipped) { wingsSkipped++; natural = true; }
+                        else if (top != structure.setValue(com.antaurora.apofirstlight.block.RoadStructureBlock.LAYERS, col.layers())) why = "barrier " + top;
                     }
                     case OPEN -> {
                         int g = (int) Math.floor(n.plan().heightAt(x + 0.5, z + 0.5));
@@ -131,7 +145,7 @@ final class C3RoadProbe {
                 }
                 // nothing above the finish (OPEN: above the deck level)
                 int topY = col.kind() == RoadWorks.Kind.OPEN ? col.y() + 1 : col.top() + 1;
-                for (int y = topY; y < topY + 12; y++) if (!c.getBlockState(p.set(x, y, z)).isAir()) { above++; break; }
+                if (!natural) for (int y = topY; y < topY + 12; y++) if (!c.getBlockState(p.set(x, y, z)).isAir()) { above++; break; }
                 // from the guard height up: below it the natural ground follows vanilla decoration, whose ores depend on
                 // the order chunks generate in (air exposure); OPEN: from the deck level
                 for (int y = col.kind() == RoadWorks.Kind.OPEN ? col.y() : RoadChunkPass.guard(col); y <= col.top() + 6; y++)
@@ -150,7 +164,7 @@ final class C3RoadProbe {
         StringBuilder k = new StringBuilder();
         for (RoadWorks.Kind kind : RoadWorks.Kind.values())
             if (byKind[kind.ordinal()] > 0) k.append(String.format(Locale.ROOT, " %s %d/%d", kind, byKind[kind.ordinal()] - bad[kind.ordinal()], byKind[kind.ordinal()]));
-        line.accept("  roads: columns as built / expected:" + k);
+        line.accept("  roads: columns as built / expected:" + k + (wingsSkipped > 0 ? " (wing walls left out in ground reaching their top: " + wingsSkipped + ")" : ""));
         line.accept(String.format(Locale.ROOT, "  roads: blocks above a finished column %d; collision top vs design max %.3f m; under the deck: water %d (top %s m vs planned ground), solid %d",
                 above, maxCollision, underWater, waterTop == Integer.MIN_VALUE ? "-" : String.valueOf(waterTop), underSolid));
         if (!examples.isEmpty()) line.accept("  roads: first mismatches " + examples);

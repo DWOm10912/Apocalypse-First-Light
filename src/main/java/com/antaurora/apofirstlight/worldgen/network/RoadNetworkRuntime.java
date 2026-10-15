@@ -124,6 +124,8 @@ public final class RoadNetworkRuntime {
         access.apocalypse$setRoadNetwork(active ? n : null);
         if (active) ACTIVE.put(access.apocalypse$getSeed(), n.works());
         else ACTIVE.remove(access.apocalypse$getSeed());
+        // road_structure's collision follows the bridge mesh of this network (other dimensions bind nothing: keep it)
+        if (active) com.antaurora.apofirstlight.block.RoadStructureBlock.works(n.works());
         if (active) ApocalypseFirstLight.LOGGER.info("[AFL roads] built routes for this world: {} ({} m)", RoadNetworkStage.BUILT,
                 String.format(Locale.ROOT, "%.0f", n.works().roads().stream().mapToDouble(d -> d.length).sum()));
     }

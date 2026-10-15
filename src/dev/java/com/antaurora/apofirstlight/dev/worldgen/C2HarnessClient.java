@@ -121,6 +121,11 @@ public final class C2HarnessClient {
         Minecraft mc = Minecraft.getInstance();
         mc.tell(() -> {
             C2Harness.log("probe done: saving and quitting");
+            C2Harness.log("road client: " + com.antaurora.apofirstlight.client.road.RoadClient.status());
+            // the bridge's hit meshes as the crosshair meets them (outline context), around the player (2026-10-15)
+            if (mc.level != null && mc.player != null && C3RoadProbe.active())
+                C2Harness.log("road hits (client, crosshair): " + C3HitCheck.run(mc.level, mc.player.getBlockX(), mc.player.getBlockZ(), 24,
+                        net.minecraft.world.level.ClipContext.Block.OUTLINE));
             C2Harness.log("terrain smooth client meshes: " + TerrainSmoothClient.candidates.sum() + " natural surface tops, "
                     + TerrainSmoothClient.sloped.sum() + " sloped, " + TerrainSmoothClient.quadBuilds.sum() + " slope meshes built, "
                     + TerrainSmoothClient.plantsMoved.sum() + " plants moved, " + TerrainSmoothClient.snowSkins.sum() + " snow skins");

@@ -120,6 +120,12 @@ public final class TerrainSmoothClient {
         public int cell(int x, int y, int z) { return TerrainSmooth.cell(region.getBlockState(pos.set(x, y, z))); }
 
         @Override
+        public float turf(int x, int y, int z, int k) {
+            net.minecraft.world.level.block.state.BlockState s = region.getBlockState(pos.set(x, y, z));
+            return s != null && s.getBlock() instanceof com.antaurora.apofirstlight.block.GradedTurfBlock ? y + com.antaurora.apofirstlight.block.GradedTurfBlock.corners(s)[k] : Float.NaN;
+        }
+
+        @Override
         public int surface(int x, int z) {
             LevelChunk c = level.getChunkSource().getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
             if (c == null) return SmoothRules.NO_SURFACE;

@@ -609,6 +609,13 @@ public final class AflBlocks {
             () -> new com.antaurora.apofirstlight.block.RoadSurfaceBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
                     .mapColor(net.minecraft.world.level.material.MapColor.COLOR_GRAY).requiresCorrectToolForDrops().noLootTable().noOcclusion()
                     .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
+    public static final RegistryObject<Block> ROAD_STRUCTURE = BLOCKS.register("road_structure",
+            () -> new com.antaurora.apofirstlight.block.RoadStructureBlock(BlockBehaviour.Properties.copy(Blocks.STONE)
+                    .strength(6.0F, 15.0F).sound(SoundType.STONE)
+                    .mapColor(net.minecraft.world.level.material.MapColor.STONE).requiresCorrectToolForDrops().noLootTable().noOcclusion()
+                    // the shape follows the bridge mesh per position (RoadStructureBlock); still solid for heightmaps and fills
+                    .dynamicShape().forceSolidOn()
+                    .isSuffocating((st, l, p) -> false).isViewBlocking((st, l, p) -> false)));
     public static final RegistryObject<Block> SEALED_CONCRETE_FLOOR = BLOCKS.register("sealed_concrete_floor",
             () -> new Block(BlockBehaviour.Properties.copy(Blocks.STONE).strength(2.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final RegistryObject<Block> PORCELAIN_FLOOR_TILE = BLOCKS.register("porcelain_floor_tile",

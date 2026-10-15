@@ -1,8 +1,10 @@
 package com.antaurora.apofirstlight.client.road;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.RoadStructureBlock;
 import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
 import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.worldgen.network.road.BridgeMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadCells;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadMesh;
@@ -42,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -56,12 +59,20 @@ import java.util.concurrent.CompletableFuture;
  * Where the collision blocks of a paved cell are gone (dug out, blown up), the mesh leaves that cell open and lines the
  * hole with asphalt walls (RoadCells): each finished mesh is compared with the world once, the chunks around the player
  * every tick and the others a few per tick.
+ * <p>
+ * Bridges (docs 10.11) are concrete meshes too (BridgeMesh, drawn with the asphalt): the world holds only their
+ * invisible collision (road_structure). A chunk near a span is built twice: first the decks and parapets, then, once its
+ * structure cells were scanned on the main thread (the foot of every column, which cells are broken), the abutment and
+ * wing walls and the repairs of broken cells; the same comparison rebuilds it when a structure cell changes. Faces are
+ * shaded by direction like blocks (not with a shader pack, which shades by the normal itself) and lit from the block in
+ * front of them.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class RoadClient {
     static final ResourceLocation ASPHALT = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/asphalt"),
             WHITE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/paint_white"),
-            YELLOW = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/paint_yellow");
+            YELLOW = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/road/paint_yellow"),
+            CONCRETE = new ResourceLocation(ApocalypseFirstLight.MOD_ID, "block/reinforced_concrete");
     /** Floats per vertex: x, y, z (chunk-relative, absolute y), u, v (atlas), nx, ny, nz. */
     static final int STRIDE = 8;
     /** Mesh builds started per tick (each about 0.3 ms of worker time per road). */
@@ -72,14 +83,28 @@ public final class RoadClient {
     private static final Map<Long, ChunkMesh> MESHES = new HashMap<>();
     private static final Map<Long, CompletableFuture<ChunkMesh>> PENDING = new HashMap<>();
 
-    /** One chunk's pavement: asphalt and marking vertices (four per triangle: a, b, c, c), and its height range. */
-    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float minY, float maxY, Map<Integer, RoadCells.Cell> cells, BitSet dug) {}
+    /**
+     * One chunk's pavement and bridges: solid (asphalt, concrete) and marking vertices (four per triangle: a, b, c, c), its
+     * height range, the paved cells and the dug ones, the expected bridge structure cells and the found ones (null: not
+     * scanned yet).
+     */
+    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float minY, float maxY, Map<Integer, RoadCells.Cell> cells, BitSet dug,
+                     Map<Integer, BridgeMesh.Expect> bridge, Map<Integer, BridgeMesh.Found> found) {}
 
     /** Meshes compared with the world per tick besides the 3 x 3 chunks around the player. */
     static final int CHECKS_PER_TICK = 8;
     private static int checkCursor;
 
     private RoadClient() {}
+
+    static {
+        // road_structure hits on what is drawn (meshhit/RoadStructureHits): a chunk's solid vertices once its structure cells
+        // were scanned (before that the walls are missing: the blocks keep their boxes)
+        com.antaurora.apofirstlight.meshhit.RoadStructureHits.client((cx, cz) -> {
+            ChunkMesh m = MESHES.get(key(cx, cz));
+            return m == null || m.found() == null ? null : new com.antaurora.apofirstlight.meshhit.RoadStructureHits.Drawn(m.asphalt(), STRIDE, 4);
+        });
+    }
 
     public static void receive(String json) {
         clear();
@@ -89,6 +114,8 @@ public final class RoadClient {
             for (var r : RoadNetworkJson.routes(json)) ids.add(r.id());
             roads = RoadNetworkJson.designs(json, ids);
             index = new RoadWorks(roads, RoadWorks.Water.NONE);
+            // road_structure's collision follows the bridge mesh (a dedicated server's client has only this copy)
+            com.antaurora.apofirstlight.block.RoadStructureBlock.works(index);
         } catch (RuntimeException e) {
             ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot read the road network from the server; no pavement is drawn", e);
             roads = List.of();
@@ -113,7 +140,8 @@ public final class RoadClient {
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (!active(level) || mc.player == null) { if (!MESHES.isEmpty() || !PENDING.isEmpty()) clear(); return; }
-        // finished builds
+        // finished builds; compared with the world after the loop (a recheck may start a new build in PENDING)
+        List<Long> finished = new ArrayList<>();
         for (var it = PENDING.entrySet().iterator(); it.hasNext(); ) {
             var e = it.next();
             if (!e.getValue().isDone()) continue;
@@ -122,12 +150,13 @@ public final class RoadClient {
                 ChunkMesh m = e.getValue().join();
                 if (level.getChunkSource().hasChunk(m.cx(), m.cz())) {
                     MESHES.put(e.getKey(), m);
-                    recheck(level, e.getKey(), m);
+                    finished.add(e.getKey());
                 }
             } catch (RuntimeException ex) {
                 ApocalypseFirstLight.LOGGER.error("[AFL roads] pavement mesh failed for a chunk", ex);
             }
         }
+        for (long k : finished) recheck(level, k, MESHES.get(k));
         // unloaded chunks
         MESHES.values().removeIf(m -> !level.getChunkSource().hasChunk(m.cx(), m.cz()));
         // dug-out pavement: the chunks around the player every tick, the others round robin
@@ -151,24 +180,37 @@ public final class RoadClient {
             int cx = pcx + dx, cz = pcz + dz;
             long k = key(cx, cz);
             if (MESHES.containsKey(k) || PENDING.containsKey(k) || !index.touches(cx, cz) || !level.getChunkSource().hasChunk(cx, cz)) continue;
-            if (uv == null) uv = Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW));
+            if (uv == null) uv = atlas();
             Map<String, float[]> atlas = uv;
             List<RoadDesign> rs = roads;
             RoadWorks works = index;
-            PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, cx, cz, atlas, new BitSet())));
+            PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, cx, cz, atlas, new BitSet(), null, null)));
             started++;
         }
     }
 
-    /** Compare a mesh's paved cells with the world; rebuild it when the set of dug cells changed. */
+    private static Map<String, float[]> atlas() {
+        return Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW), "concrete", sprite(CONCRETE));
+    }
+
+    /** Compare a mesh's paved and structure cells with the world; rebuild it when the dug or the found cells changed. */
     private static void recheck(ClientLevel level, long k, ChunkMesh m) {
         if (m == null || PENDING.containsKey(k)) return;
         BitSet dug = dug(level, m);
-        if (dug.equals(m.dug())) return;
-        Map<String, float[]> atlas = Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW));
+        Map<Integer, BridgeMesh.Found> found = scan(level, m);
+        if (dug.equals(m.dug()) && Objects.equals(found, m.found())) return;
+        Map<String, float[]> atlas = atlas();
         List<RoadDesign> rs = roads;
         RoadWorks works = index;
-        PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, m.cx(), m.cz(), atlas, dug)));
+        PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, m.cx(), m.cz(), atlas, dug, m.bridge(), found)));
+    }
+
+    /**
+     * The bridge structure cells (chunk and ring) as they are in the world: from the expected top down at most 3 blocks
+     * to the first structure block (road_surface or road_structure), then down to the lowest one of the run.
+     */
+    static Map<Integer, BridgeMesh.Found> scan(ClientLevel level, ChunkMesh m) {
+        return RoadStructureBlock.scan(level, m.cx(), m.cz(), m.bridge());
     }
 
     /**
@@ -195,25 +237,27 @@ public final class RoadClient {
         return s.is(AflBlocks.ROAD_SURFACE.get()) && s.getValue(RoadSurfaceBlock.LAYERS) == layers;
     }
 
-    static ChunkMesh build(List<RoadDesign> rs, RoadWorks works, int cx, int cz, Map<String, float[]> uv, BitSet dug) {
+    /**
+     * Build a chunk's mesh: pavement, bridges (expect null: computed here), the dug paved cells cut out and lined, the
+     * broken structure cells cut out and repaired (found null: not scanned yet; no walls, no repairs).
+     */
+    static ChunkMesh build(List<RoadDesign> rs, RoadWorks works, int cx, int cz, Map<String, float[]> uv, BitSet dug,
+                           Map<Integer, BridgeMesh.Expect> expect, Map<Integer, BridgeMesh.Found> found) {
         List<RoadMesh.Triangle> tris = new ArrayList<>();
         for (RoadDesign d : rs) tris.addAll(RoadMesh.chunk(d, cx, cz));
         Map<Integer, RoadCells.Cell> cells = tris.isEmpty() ? Map.of() : RoadCells.of(rs, works, cx, cz);
-        if (!dug.isEmpty()) {
-            boolean[] removed = new boolean[256];
-            for (int i = dug.nextSetBit(0); i >= 0; i = dug.nextSetBit(i + 1))
-                if (RoadCells.inner(i)) removed[RoadCells.lx(i) | RoadCells.lz(i) << 4] = true;
-            tris = RoadMesh.without(tris, removed);
-            tris.addAll(RoadCells.walls(rs, cells, dug, cx, cz));
-        }
+        if (expect == null) expect = BridgeMesh.expected(works, cx, cz);
+        // no structure cells: nothing to scan (an empty scan then equals it, so the mesh is not rebuilt for it)
+        if (expect.isEmpty()) found = Map.of();
+        tris = BridgeMesh.finish(tris, rs, works, cx, cz, cells, dug, expect, found);
         int na = 0, nm = 0;
-        for (RoadMesh.Triangle t : tris) if (t.material() == RoadMesh.Material.ASPHALT) na++; else nm++;
+        for (RoadMesh.Triangle t : tris) if (solid(t.material())) na++; else nm++;
         float[] a = new float[na * 4 * STRIDE], m = new float[nm * 4 * STRIDE];
         int ia = 0, im = 0;
         float lo = Float.POSITIVE_INFINITY, hi = Float.NEGATIVE_INFINITY;
         for (RoadMesh.Triangle t : tris) {
-            boolean asphalt = t.material() == RoadMesh.Material.ASPHALT;
-            float[] r = uv.get(switch (t.material()) { case ASPHALT -> "asphalt"; case WHITE -> "white"; case YELLOW -> "yellow"; });
+            boolean asphalt = solid(t.material());
+            float[] r = uv.get(switch (t.material()) { case ASPHALT -> "asphalt"; case WHITE -> "white"; case YELLOW -> "yellow"; case CONCRETE -> "concrete"; });
             float[] out = asphalt ? a : m;
             int i = asphalt ? ia : im;
             for (RoadMesh.Vertex v : new RoadMesh.Vertex[]{t.a(), t.b(), t.c(), t.c()}) {
@@ -230,8 +274,24 @@ public final class RoadClient {
             }
             if (asphalt) ia = i; else im = i;
         }
-        // an empty mesh marks a chunk the index reaches but the pavement misses (never rebuilt while loaded)
-        return tris.isEmpty() ? new ChunkMesh(cx, cz, a, m, 0, 0, cells, dug) : new ChunkMesh(cx, cz, a, m, lo, hi, cells, dug);
+        // an empty mesh marks a chunk the index reaches but the road misses (never rebuilt while loaded)
+        return tris.isEmpty() ? new ChunkMesh(cx, cz, a, m, 0, 0, cells, dug, expect, found) : new ChunkMesh(cx, cz, a, m, lo, hi, cells, dug, expect, found);
+    }
+
+    /** Drawn in the solid pass (the asphalt render type); the paint goes in the marking pass. */
+    private static boolean solid(RoadMesh.Material material) {
+        return material == RoadMesh.Material.ASPHALT || material == RoadMesh.Material.CONCRETE;
+    }
+
+    /** A block that holds the light it stands in (no light of its own to give a face in front of it). */
+    private static boolean occludes(ClientLevel level, BlockPos p) {
+        BlockState s = level.getBlockState(p);
+        return s.is(AflBlocks.ROAD_STRUCTURE.get()) || s.isSolidRender(level, p);
+    }
+
+    /** Vanilla's directional block shade (up 1, down 0.5, north / south 0.8, east / west 0.6), blended by the normal. */
+    static float shade(float nx, float ny, float nz) {
+        return nx * nx * 0.6f + nz * nz * 0.8f + ny * ny * (ny > 0 ? 1.0f : 0.5f);
     }
 
     @SubscribeEvent
@@ -254,6 +314,8 @@ public final class RoadClient {
         Map<Long, Integer> lights = new HashMap<>();
         PoseStack pose = event.getPoseStack();
         BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        // a shader pack shades by the normal itself
+        boolean shaded = !com.antaurora.apofirstlight.weapon.client.AflShaderCompat.shaderPackInUse();
         for (boolean asphalt : new boolean[]{true, false}) {
             RenderType type = asphalt ? RoadRenderTypes.ASPHALT : RoadRenderTypes.MARKING;
             VertexConsumer out = buffers.getBuffer(type);
@@ -265,15 +327,21 @@ public final class RoadClient {
                 Matrix4f mat = pose.last().pose();
                 Matrix3f nor = pose.last().normal();
                 for (int i = 0; i < v.length; i += STRIDE) {
-                    int bx = m.cx() * 16 + (int) Math.floor(Math.min(15.999f, Math.max(0, v[i]))), by = (int) Math.floor(v[i + 1] + 0.05f),
-                            bz = m.cz() * 16 + (int) Math.floor(Math.min(15.999f, Math.max(0, v[i + 2])));
+                    // the light of the block in front of the face (half a block along the normal): a wall's own block is dark
+                    int bx = m.cx() * 16 + (int) Math.floor(v[i] + v[i + 5] * 0.5f), by = (int) Math.floor(v[i + 1] + v[i + 6] * 0.5f),
+                            bz = m.cz() * 16 + (int) Math.floor(v[i + 2] + v[i + 7] * 0.5f);
                     long lk = BlockPos.asLong(bx, by, bz);
                     Integer light = lights.get(lk);
                     if (light == null) {
-                        light = LevelRenderer.getLightColor(mc.level, p.set(bx, by, bz));
+                        // that block may itself hold the light (a parapet's own partial top block, the ground a wall's foot is
+                        // buried in): its light is 0, which would smear black across the face; take the first open block above
+                        p.set(bx, by, bz);
+                        for (int up = 0; up < 4 && occludes(mc.level, p); up++) p.move(0, 1, 0);
+                        light = LevelRenderer.getLightColor(mc.level, p);
                         lights.put(lk, light);
                     }
-                    out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(1f, 1f, 1f, 1f).uv(v[i + 3], v[i + 4]).uv2(light)
+                    float sh = shaded ? shade(v[i + 5], v[i + 6], v[i + 7]) : 1f;
+                    out.vertex(mat, v[i], v[i + 1], v[i + 2]).color(sh, sh, sh, 1f).uv(v[i + 3], v[i + 4]).uv2(light)
                             .normal(nor, v[i + 5], v[i + 6], v[i + 7]).endVertex();
                 }
                 pose.popPose();
@@ -282,9 +350,24 @@ public final class RoadClient {
         }
     }
 
-    /** Built and drawn pavement chunks, for /afl roads. */
+    /** Built and drawn pavement chunks and the bridge chunks among them, for /afl roads and the dev harness. */
     public static String status() {
-        return index == null ? "no roads from the server" : roads.size() + " route(s), " + MESHES.size() + " chunk meshes, " + PENDING.size() + " building";
+        if (index == null) return "no roads from the server";
+        int bridge = 0, scanned = 0, broken = 0, absent = 0;
+        for (ChunkMesh m : MESHES.values()) {
+            if (m.bridge() == null || m.bridge().isEmpty()) continue;
+            bridge++;
+            if (m.found() == null) continue;
+            scanned++;
+            for (BridgeMesh.Expect e : m.bridge().values()) {
+                if (!RoadCells.inner(e.index())) continue;
+                BridgeMesh.State st = BridgeMesh.state(e, m.found().get(e.index()));
+                if (st == BridgeMesh.State.BROKEN) broken++;
+                else if (st == BridgeMesh.State.ABSENT) absent++;
+            }
+        }
+        return roads.size() + " route(s), " + MESHES.size() + " chunk meshes, " + PENDING.size() + " building; bridge chunks " + bridge
+                + " (scanned " + scanned + ", broken cells " + broken + ", absent wing cells " + absent + ")";
     }
 
     private static void clear() {
