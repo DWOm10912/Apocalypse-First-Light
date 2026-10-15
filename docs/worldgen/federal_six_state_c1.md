@@ -8,6 +8,8 @@
 
 **C1 完成，等待验收。没有接入正式世界生成**：默认主世界仍是 r1（MacroGeography + TerrainPlanV2），输出不变。离线 r1 规划指纹验证过，见 §5。
 
+> 2026-10-14 更新：C2 把 C1 接进了一个世界类型，用户实机验收后合并进 master，**新建普通世界默认是联邦六州**（[C2](federal_six_state_c2.md) 第 12 节）。本文其余部分是 C1 当时的记录。M4 怎么用 `start()`，见[老宅计划](forest_start_home_b_v1_plan.md)第 6 节"M4 选址与道路接口"。
+
 六州相关的东西全部是原型或离线工具：
 - 地图数据：`FederalMap`；
 - 公路走廊数据：`NationalRoadPlan`；

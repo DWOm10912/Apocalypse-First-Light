@@ -4,10 +4,10 @@
 
 ## 状态
 
-**C2 完成；用户 2026-10-14 实机验收：雪峰、峡谷复验通过，其余此前已确认"基本上没问题"（实机反馈 1）。没有合并 Main，没有推送。C3 没有开始。**
+**C2 完成；用户 2026-10-14 实机验收：雪峰、峡谷复验通过，其余此前已确认"基本上没问题"（实机反馈 1）。同日用户批准集成：合并进 master（`082ebd77`），新建普通世界默认是联邦六州（§12）。C3 没有开始。**
 
-- 新增一个独立的世界类型 **"AFL 联邦（实验）"**（`apocalypse_firstlight:federal_experimental`），只在新建世界时手动选择。
-- **默认世界不变**：默认仍是 r1（`minecraft:normal` → AFL r1 噪声设置）；`overworld.json` 没有修改；Main 的测试世界和用户存档都没碰过。
+- 世界类型 **"AFL 联邦六州"**（`apocalypse_firstlight:federal_experimental`；C2 时叫"AFL 联邦（实验）"，只能手动选）。
+- **默认世界（2026-10-14 起）**：新建普通世界默认联邦六州；r1（`minecraft:normal` → AFL r1 噪声设置，按钮上叫"AFL r1（旧地形）"）、超平坦、其他模组的类型都还能手动选；`overworld.json` 没有修改；已有的 r1 世界照旧按 r1 打开（§12）。
 - r1 回归在隔离的开发客户端里实测过：C1 构建和 C2 构建生成的 r1 世界地形 256/256 区块一致，锁指纹相同（§7）。
 - 所有游戏内测试都在 worktree 的 `build/federal-c2-client/` 运行目录里进行，用全新测试存档。没有访问 Main 的 `run/`，没有预生成整个国家。
 
@@ -32,7 +32,7 @@
 
 | 部分 | 做法 | 文件 |
 |---|---|---|
-| 世界类型 | 数据包预设：主世界用联邦噪声设置 + `minecraft:overworld` 多噪声群系源；下界、末地原版。加入 `#minecraft:normal` 世界类型标签，所以应当出现在"世界类型"按钮里，默认选项仍是原版的 `minecraft:normal`（按数据推断；测试客户端直接按预设键建世界，**没有在界面上确认过**） | `data/apocalypse_firstlight/worldgen/world_preset/federal_experimental.json`、`data/minecraft/tags/worldgen/world_preset/normal.json` |
+| 世界类型 | 数据包预设：主世界用联邦噪声设置 + `minecraft:overworld` 多噪声群系源；下界、末地原版。加入 `#minecraft:normal` 世界类型标签，出现在"世界类型"按钮里。2026-10-14 起是建世界界面的默认选项（§12，测试客户端从界面数据确认过） | `data/apocalypse_firstlight/worldgen/world_preset/federal_experimental.json`、`data/minecraft/tags/worldgen/world_preset/normal.json` |
 | 噪声设置 | `minecraft:overworld` 的副本：密度函数改指 `federal/plan_*`，地表规则在第 1 位插入联邦分支，顶部 slide 240/256 → 296/312（给 S3 的山留空间） | `worldgen/noise_settings/federal_experimental.json`、`worldgen/density_function/federal/`（8 个） |
 | profile | 密度函数 JSON 带 `"profile": "federal"`（缺省 r1）。`RandomStateSeedMixin` 按 profile 给每个 RandomState 绑定一份规划，混用两种 profile 直接报错 | `TerrainProfile`、`Plan*Density`、`RandomStateSeedMixin`、`TerrainPlanStore`（缓存键 = profile + 种子） |
 | 群系源 | TerraBlender 的延迟群系列表只能追加一次，所以联邦的 8 个新群系不走 TerraBlender：`ServerAboutToStartEvent` 时，只对**联邦世界**的主世界群系源，把它们并进 `possibleBiomes()`（特征排序、装饰都靠它） | `mixin/BiomeSourceFederalMixin`、`worldgen/federal/FederalPreset`、`FederalBiomeSourceAccess` |
@@ -115,7 +115,7 @@ r1 区：agri_plain、riparian、slope_forest、ridge_oak、hollow_conifer、coa
 | plateau_steppe | 高原干草原 | 0.95 / 0.1 | 粗泥、红沙；陡处层状陶瓦 | 无 |
 | canyon_badlands | 峡谷劣地 | 1.2 / 0.0（无降水） | 红沙、层状陶瓦（`minecraft:bandlands`） | 无 |
 
-- 名字：`lang` 群系段落里对齐加入，`generator.apocalypse_firstlight.federal_experimental` = "AFL Federation (Experimental)" / "AFL 联邦（实验）"。
+- 名字：`lang` 群系段落里对齐加入，`generator.apocalypse_firstlight.federal_experimental` = "AFL Federation" / "AFL 联邦六州"（C2 时是"AFL Federation (Experimental)" / "AFL 联邦（实验）"，2026-10-14 设为默认时改名，§12）。
 - 体感温度（`temperature/temperature_v1.json`）已加 8 条。
 - 只有 alpine_peaks 会下雪（原版雪线公式：温度 −0.3 时整个高山岩峰都在雪线以上）。
 - 生物：新增 alpine、peak、lake、steppe、canyon 五种刷怪表。
@@ -205,7 +205,7 @@ S1 与 S2 的差别不只是边界数据：地形起伏（Y p90 124 vs 115，坡
 
 ## 7. 实测（隔离开发客户端，2026-10-14）
 
-运行方式：`gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create|open;world=名字;preset=预设;seed=种子;tag=标记;minutes=超时;verify=基线报告"`。
+运行方式：`gradlew runClient --offline -PaflWithoutShaders -I src/dev/federal-c2-client.init.gradle -Pc2="mode=create|open;world=名字;preset=预设;seed=种子;tag=标记;minutes=超时;verify=基线报告"`。2026-10-14 加了 `mode=ui`（走原版建世界界面，可加 `type=` 切类型，§12.3）。
 
 - 运行目录 `build/federal-c2-client/`，存档全部是新建的测试存档；
 - 客户端自己建 / 开世界，服务器端探针（`dev/worldgen/C2Probe`）在玩家进入后逐个生成测点（阻塞 FULL 区块），写报告到 `afl_c2_probe/`，存盘退出；看门狗超时强退；
@@ -265,7 +265,7 @@ S1 与 S2 的差别不只是边界数据：地形起伏（Y p90 124 vs 115，坡
 2. 在 C2 地形上重新评估 C1 的国家公路走廊和城市候选点：C1 的走廊是在 r1 地貌上画的，S3/S6 段的坡度（18%–30.9%）不能驾驶，需要重新选线（绕行、隧道、桥）。
 3. R4 正式接入所需的东西（C1 §8.4）：道路实体、路基与地形的接合、版本锁里的公路子系统。
 4. 决定 S3–S6 资产的先后（§6），资产到位前公路规划不依赖这些州的最终生态。
-5. 决定联邦世界是否、何时取代默认世界（目前不取代）。
+5. ~~决定联邦世界是否、何时取代默认世界~~：2026-10-14 用户决定取代，新建普通世界默认联邦（§12）。
 
 ## 11. 实机验收要求（用户）
 
@@ -275,7 +275,7 @@ S1 与 S2 的差别不只是边界数据：地形起伏（Y p90 124 vs 115，坡
 cd "D:/Minecraft Modding/AFL-federal-worldgen-v1" && ./gradlew.bat runClient --offline
 ```
 
-1. 新建世界 → "世界类型"按钮切到 **AFL 联邦（实验）**，种子 `-295378578869149513`；确认默认选项仍是"默认"。
+1. 新建世界 → "世界类型"按钮切到 **AFL 联邦（实验）**，种子 `-295378578869149513`；确认默认选项仍是"默认"。（C2 当时的步骤；2026-10-14 起默认就是"AFL 联邦六州"，见 §12。）
 2. 进入后在 S1 出生点（404 −408）附近：森林丘陵、河谷。
 3. `/tp` 到 §7 的测点，逐个看：
    - S2 开阔平原（−3657 1167）：大片草原、零星树林，和 S1 明显不同；
@@ -287,6 +287,77 @@ cd "D:/Minecraft Modding/AFL-federal-worldgen-v1" && ./gradlew.bat runClient --o
 4. 退出重进一次：日志应为 `world matches its recorded rules`。
 5. 用测试世界，不要用正式存档；不要一次跑遍整个国家。
 
+## 12. 集成 Main 与默认世界（用户正式决策，2026-10-14）
+
+用户实机验收 C2 后批准："C2 联邦六州地形已经通过我的实机验收。现在批准将 C1+C2 集成到 AFL Main，并正式调整默认世界生成行为。"
+
+### 12.1 Git
+
+- 合并前 master 工作区干净（收音机 V1 已由用户提交为 `2bae125d`），安全检查点：分支 `checkpoint/pre-federal-merge-20261014` → `2bae125d`；
+- `git merge --no-ff feature/federal-worldgen-v1`，合并提交 `082ebd77`。两边只有两个语言文件都改了，自动合并没有冲突；合并后两边的键都在（956 个键），en/zh 逐行对齐；合并后 `compileJava` 通过；
+- 默认世界的改动在合并之后另做（下节）。
+
+### 12.2 默认世界（现在的行为）
+
+| 情况 | 行为 | 实现 |
+|---|---|---|
+| 单人"创建新世界" | 界面一打开就选中 **AFL 联邦六州**（`apocalypse_firstlight:federal_experimental`），主世界维度也一起换成联邦的，直接按"创建"就是联邦世界 | `mixin/client/CreateWorldFederalDefaultMixin`：`WorldCreationUiState` 构造末尾，只当传进来的默认类型正好是 `minecraft:normal`（原版 `CreateWorldScreen.openFresh` 就是这样传的）时，用 `setWorldType` 换成联邦（会同时换维度） |
+| 专用服务器 | `server.properties` 没写 `level-type` 时新世界用联邦，并把它写进生成的 `server.properties`；写了的照写的用（`minecraft:normal` 还是 r1，`minecraft:flat` 还是超平坦） | `mixin/DedicatedServerFederalDefaultMixin`：只换 `level-type` 的缺省值 |
+| 开发用 GameTest 服务器 | **仍用 r1**：Forge 的 `GameTestMain` 用专用服务器那套代码、在新的 `server.properties` 上建测试世界，现有 GameTest 都是在 r1 地形上写、在 r1 地形上实测的；只在开发环境出现，正式版里永远不成立 | `FederalPreset.defaultLevelType`：`ForgeGameTestHooks.isGametestServer()` 时不换 |
+| 超平坦 | 原版行为：`FlatLevelSource`，没有联邦地形、河流、生态，不上锁 | 没改；联邦群系只并进联邦主世界的群系源（`FederalPreset.onServerAboutToStart` 先看噪声设置） |
+| r1 | 还能手动选：按钮上原版的"默认"改名为 **"AFL r1（旧地形）"**（`generator.minecraft.normal`，在 AFL 里它本来就是 r1） | 语言文件 |
+| 其他模组的世界类型 | 不替换：它们照旧在 `#minecraft:normal` 里；别的模组如果自己把默认换成了别的类型，传进来的就不是 `minecraft:normal`，这里不动 | `FederalPreset.replacesDefault` |
+| 重建世界（编辑世界 → 重新创建） | 不动：原版传的是那个世界自己的类型 | 同上 |
+| 已有世界 | 不变：生成器存在各自的 level.dat 里；版本锁照旧比对，不迁移、不覆盖、不删除 | 版本锁（§7、[版本锁文档](worldgen_version_lock_v1.md)） |
+
+- 名字：`generator.apocalypse_firstlight.federal_experimental` 从"AFL 联邦（实验）/ AFL Federation (Experimental)"改成 **"AFL 联邦六州" / "AFL Federation"**。
+- id 不改：预设和噪声设置的 id、锁的 profile `afl_federal_experimental` 都留着"experimental"。已有的 C2 测试世界的 level.dat 和锁记录写的就是这些 id，改了就打不开。
+- 按钮顺序：AFL r1（旧地形）、超平坦、巨型生物群系、放大化、单一生物群系、AFL 联邦六州（`replace: false` 追加在标签最后；没有用 `replace: true` 往前排，因为那样会把别的模组加进这个标签的类型挤掉）。默认选中的是联邦，点按钮从它往后转。
+- 创建时没有弹出"实验性设置"确认框（测试客户端记录：按"创建"后直接进入）。
+
+### 12.3 实测（隔离开发客户端，2026-10-14）
+
+测试客户端加了 `mode=ui`：走原版"创建新世界"界面（`CreateWorldScreen.openFresh`），记下界面默认选中的类型和主世界，可选像按钮那样切类型（`type=minecraft:flat`），再按"创建"。探针每个世界多记两行：主世界生成器和群系源（含几个联邦群系），以及用 `server.properties` 的同一段解析代码（`DedicatedServerProperties`）算出的三种 `level-type` 结果。运行目录是 Main 的 `build/federal-c2-client/`，存档全是新建的测试存档，或从联邦 worktree 的测试目录**复制**过来的 r1 测试存档；没有碰 `run/` 和用户存档，没有截图、没有接管用户的客户端。
+
+| # | 测试 | 结果 |
+|---|---|---|
+| 1 | **普通世界默认联邦**：`mode=ui`，界面不动，直接按"创建"（`fd_default`，种子 −295378578869149513） | **PASS**。界面默认类型 `AFL Federation [apocalypse_firstlight:federal_experimental]`，主世界 `NoiseBasedChunkGenerator apocalypse_firstlight:federal_experimental`；没有确认框；锁 CREATE，profile `afl_federal_experimental`，指纹 `b7ba3090bb2309d7`（和 C2 的联邦新建相同）；出生点 404 106 −408（S1）；主世界群系源 25 个可能群系，8/8 个联邦群系都在 |
+| 2 | **六州地形和群系**：同一个世界对用户验收过的 C2 世界 `fed_c2`（`fed_c2_final`，19 个测点） | **PASS**：地形签名 500/500 一致（方块哈希 192 个不同，是 §7 说的原版装饰顺序噪声，不作判定）；测点水贴空气 0、水悬空 0，跨区块台阶最大 2 |
+| 3 | **存盘与重开**：`fd_default` 存盘退出，再用 `mode=open` 打开 | **PASS**：锁 MATCH（`b7ba3090bb2309d7`）；地形签名 500/500 和第 1 次一致（23 个方块哈希差异在出生点常加载区，随机刻，和 C2 一样）；正常存盘退出 |
+| 4 | **超平坦保持原版**：`mode=ui`，按钮切到超平坦再创建（`fd_flat`） | **PASS**：主世界 `FlatLevelSource`，`FixedBiomeSource` 只有平原，联邦群系 0/8；不上锁（`not locked`，没有锁文件）；出生点 0 −60 0（原版）；81 个区块方块全一样，没有台阶、没有水 |
+| 5 | **旧 r1 存档受保护**：C1 构建建的 r1 测试世界 `r1_base` 的副本（`r1_old`） | **PASS**：锁 MATCH，profile r1，指纹 `49c55f90d2a4677a`（和 C1/C2 时一样）；主世界仍是 `minecraft:overworld`（r1 规划 `afl_terrain_plan_v2_r1`），联邦群系 0/8；地形签名对 C2 时打开它的报告 256/256 一致；没有被改成联邦、没有迁移 |
+| 6 | **锁出现之前的 r1 存档**：同一份 r1 测试世界的副本删掉锁文件（`r1_pre_lock`） | **PASS**：ADOPT_LEGACY（日志警告），按 r1 的规则领养，指纹 `49c55f90d2a4677a`；主世界仍是 r1，联邦群系 0/8；地形签名 256/256 一致 |
+| 7 | **专用服务器默认**（在测试客户端里用 `DedicatedServerProperties` 的同一段解析代码） | **PASS**：没写 `level-type` → 联邦；`level-type=minecraft:normal` → r1（`minecraft:overworld`）；`level-type=minecraft:flat` → 超平坦 |
+
+- 5 个测试客户端都正常存盘退出（exit 0），日志里没有 AFL 的错误（只有原有的 `dev_search_crate` 模型警告）。
+- 报告：`design/worldgen/federal_c2/probe/default_20261014/`。
+- 测试世界：联邦和超平坦是这次新建的；两个 r1 世界是从联邦 worktree 的测试目录复制的副本，原件没动。
+- 回归 GameTest：见 §12.6。
+
+### 12.4 没做 / 没验证
+
+- **没有启动玩家用的专用服务器**：要接受 EULA，没有替用户接受。证据只有两条：
+  - 客户端里用同一段解析代码验了结果（上表第 7 项）；
+  - 开发用 GameTest 服务器走的就是专用服务器的启动流程。第一次回归时，它在新的 `server.properties` 里写下了联邦，也建了联邦世界（§12.6），说明这个默认值在真实的启动流程里生效。
+- 正式版 jar 用 SRG 名，没有在里面跑过；只检查了 refmap，`DedicatedServerProperties.get` 映射到 `m_139817_`。
+- 界面上的按钮文字、按钮顺序是从界面数据读出来的，没有截图看。
+- 世界类型里的"AFL r1（旧地形）"只是改名，r1 本身没变。
+- **C3（全国高速）没有开始。**
+
+### 12.5 给 M4（溪谷老宅自动生成）的约束
+
+见[老宅计划](forest_start_home_b_v1_plan.md)第 6 节"M4 选址与道路接口"。要点：
+- 选址在 S1 森林州的开局区 `FederalMap.start()`；
+- 每个世界按种子挑一处合格址，不固定在原点；
+- 写一条"道路接入口"记录，留给 C3 接；
+- M4 不依赖还没做的道路生成器。
+
+### 12.6 回归 GameTest（合并 + 默认改动之后）
+
+- 第一次跑（还没加 GameTest 例外）：`ForestHomeM2GameTests`（收音机、椅子、柜子、16 个方块的生存挖掘）PASS，木屋屋顶 PASS；暗线 13 项里 12 项 PASS，`template` 失败："loaded: the stone cell written without the link, the air cell dropped, the keys gone"；
+- 原因：GameTest 服务器的测试世界跟着专用服务器的默认变成了联邦。它新生成的 `server.properties` 里写的是 `level-type=apocalypse_firstlight:federal_experimental`，锁记了联邦 profile，出生点 308 85 −392；合并前同一测试的世界是 r1，出生点 904 71 904。`template` 在 4000 格外加载一个区块，假设和配电箱同高的那格是空气，在联邦测试世界里不是。暗线本身没有改动。这次也顺带在真正的专用服务器流程里证明了默认值会写进 `server.properties`；
+- 处理：GameTest 服务器保持 r1（上表）。加了例外之后**没有重跑**：用户 2026-10-14 叫停（"先不用gametest了，我等会自己去测"），由用户自己测。
+
 ## 文件
 
 | 文件 | 作用 |
@@ -297,7 +368,8 @@ cd "D:/Minecraft Modding/AFL-federal-worldgen-v1" && ./gradlew.bat runClient --o
 | `worldgen/terrain/v2/TerrainPlanV2.java` | 两个钩子（`shoreSpread`、`floatRelax`），r1 行为不变 |
 | `worldgen/terrain/v2/TerrainPlanSurface.java` | 联邦层、`lakeTopAt`、`lakeNear`、`lakeFloorNear` |
 | `worldgen/terrain/v2/RiverCarver.java` / `RiverWaterFill.java` / `RiverNetwork.java` | 湖水、湖岸、穿湖河流水位 |
-| `worldgen/federal/FederalPreset.java`、`mixin/BiomeSourceFederalMixin.java` | 预设识别、联邦群系并入群系源 |
+| `worldgen/federal/FederalPreset.java`、`mixin/BiomeSourceFederalMixin.java` | 预设识别、联邦群系并入群系源；默认世界的判断（`replacesDefault`、`defaultLevelType`） |
+| `mixin/client/CreateWorldFederalDefaultMixin.java`、`mixin/DedicatedServerFederalDefaultMixin.java` | 新建普通世界默认联邦（建世界界面 / 专用服务器，§12） |
 | `mixin/WorldgenLockSaveMixin.java` | 被锁拦截的服务器不存盘 |
 | `worldgen/lock/WorldgenRules.java` | 联邦 profile 的五个子系统 |
 | `registry/AflBiomes.java` | 8 个联邦群系键 |
@@ -308,6 +380,8 @@ cd "D:/Minecraft Modding/AFL-federal-worldgen-v1" && ./gradlew.bat runClient --o
 | `design/worldgen/federal_c2/` | 全国 / 各州地图、统计、湖泊审计、实测报告 |
 
 ## 与 Main 的可能冲突
+
+（2026-10-14 已合并，自动合并无冲突，§12.1。下面是合并前的提醒，留作记录。）
 
 C2 改了几处 Main 也会改的共享文件，合并时要注意：
 

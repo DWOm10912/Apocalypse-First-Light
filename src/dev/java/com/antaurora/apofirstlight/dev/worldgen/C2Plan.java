@@ -7,13 +7,23 @@ import com.antaurora.apofirstlight.worldgen.terrain.v2.EcologyBiomes;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedServerProperties;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.dimension.LevelStem;
+import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.storage.LevelResource;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
 /** The plan side of the C2 probe (dev only): which plan the world runs on, where the probe sites are, what the plan says there. */
 final class C2Plan {
@@ -22,6 +32,39 @@ final class C2Plan {
     static TerrainPlanSurface surface(ServerLevel level) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) level.getChunkSource().randomState();
         return access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null;
+    }
+
+    /** A chunk generator: class and noise settings id (federal default checks, 2026-10-14). */
+    static String generator(ChunkGenerator g) {
+        String s = g.getClass().getSimpleName();
+        if (g instanceof NoiseBasedChunkGenerator n)
+            s += " " + n.generatorSettings().unwrapKey().map(k -> k.location().toString()).orElse("inline");
+        return s;
+    }
+
+    /** The overworld of a dimension set (what the create-world screen or a dedicated server would make). */
+    static String overworld(WorldDimensions dims) {
+        LevelStem stem = dims.dimensions().get(LevelStem.OVERWORLD);
+        return stem == null ? "no overworld" : generator(stem.generator());
+    }
+
+    /** The running overworld: generator, biome source, and how many of the federal biomes its source may place. */
+    static String generator(ServerLevel level) {
+        ChunkGenerator g = level.getChunkSource().getGenerator();
+        Set<Holder<Biome>> possible = g.getBiomeSource().possibleBiomes();
+        int federal = 0;
+        for (var key : com.antaurora.apofirstlight.registry.AflBiomes.FEDERAL)
+            if (possible.stream().anyMatch(h -> h.is(key))) federal++;
+        return generator(g) + ", biome source " + g.getBiomeSource().getClass().getSimpleName() + " with " + possible.size()
+                + " possible biomes, federal " + federal + "/" + com.antaurora.apofirstlight.registry.AflBiomes.FEDERAL.size();
+    }
+
+    /** What a dedicated server makes from a server.properties with this level-type line (null: no such line). */
+    static String serverDefault(MinecraftServer server, String levelType) {
+        Properties p = new Properties();
+        if (levelType != null) p.setProperty("level-type", levelType);
+        return (levelType == null ? "no level-type" : "level-type=" + levelType) + " -> "
+                + overworld(new DedicatedServerProperties(p).createDimensions(server.registryAccess()));
     }
 
     static String describe(TerrainPlanSurface s) {

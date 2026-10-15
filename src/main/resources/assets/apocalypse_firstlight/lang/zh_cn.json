@@ -625,7 +625,8 @@
   "biome.apocalypse_firstlight.freshwater_lake": "淡水湖",
   "biome.apocalypse_firstlight.plateau_steppe": "高原干草原",
   "biome.apocalypse_firstlight.canyon_badlands": "峡谷劣地",
-  "generator.apocalypse_firstlight.federal_experimental": "AFL 联邦（实验）",
+  "generator.apocalypse_firstlight.federal_experimental": "AFL 联邦六州",
+  "generator.minecraft.normal": "AFL r1（旧地形）",
 
   "effect.apocalypse_firstlight.radiation_sickness": "辐射病",
   "effect.apocalypse_firstlight.gastroenteritis": "肠胃感染",

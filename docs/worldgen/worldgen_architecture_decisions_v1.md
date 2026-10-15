@@ -1,5 +1,13 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-14 新建普通世界默认联邦六州（用户正式决策）
+
+用户实机验收 C2 后批准：`feature/federal-worldgen-v1`（C1 + C2）合并进 master（合并提交 `082ebd77`），新建普通世界默认用联邦六州（[C2 文档](federal_six_state_c2.md) 第 12 节）。
+- 建世界界面一打开就选中"AFL 联邦六州"（`apocalypse_firstlight:federal_experimental`）；专用服务器 `server.properties` 没写 `level-type` 时也用它。
+- 不再默认 r1。r1（原版的 `minecraft:normal`，按钮上改叫"AFL r1（旧地形）"）、超平坦、其他模组的世界类型都还能手动选，没有被替换。
+- 已有世界不变：生成器在各自的 level.dat 里，版本锁照旧比对；不自动迁移、不覆盖、不删除。
+- C3（全国高速）没有开始。
+
 ## 2026-10-14 ADR-11 世界层实现：世界生成版本锁（C1 分支，已编译，未实机）
 
 [世界生成版本锁 V1](worldgen_version_lock_v1.md)：
@@ -9,7 +17,7 @@
 - **SOFT 变化**（树木）：记录后放行。
 - **锁出现之前的世界**：被领养为 LEGACY 基线。
 
-本条只覆盖 Terrain V2 地形链。Highway、道路施工快照、结构资产 digest 仍按下文 ADR-11 的原则另行实现。同一分支的[联邦六州 C1](federal_six_state_c1.md)是不接入正式生成的原型；[C2](federal_six_state_c2.md)（2026-10-14）加了一个独立的实验世界类型"AFL 联邦（实验）"，有自己的锁 profile `afl_federal_experimental`，默认世界仍是 r1。
+本条只覆盖 Terrain V2 地形链。Highway、道路施工快照、结构资产 digest 仍按下文 ADR-11 的原则另行实现。同一分支的[联邦六州 C1](federal_six_state_c1.md)是不接入正式生成的原型；[C2](federal_six_state_c2.md)（2026-10-14）加了一个独立的实验世界类型"AFL 联邦（实验）"，有自己的锁 profile `afl_federal_experimental`；当时默认世界仍是 r1，同日合并后改成默认联邦（见上一条）。
 
 ## 2026-10-07 Terrain V2 研究建议（设计，未激活）
 

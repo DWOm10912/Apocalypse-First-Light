@@ -625,7 +625,8 @@
   "biome.apocalypse_firstlight.freshwater_lake": "Freshwater Lake",
   "biome.apocalypse_firstlight.plateau_steppe": "Plateau Steppe",
   "biome.apocalypse_firstlight.canyon_badlands": "Canyon Badlands",
-  "generator.apocalypse_firstlight.federal_experimental": "AFL Federation (Experimental)",
+  "generator.apocalypse_firstlight.federal_experimental": "AFL Federation",
+  "generator.minecraft.normal": "AFL r1 (Legacy)",
 
   "effect.apocalypse_firstlight.radiation_sickness": "Radiation Sickness",
   "effect.apocalypse_firstlight.gastroenteritis": "Stomach Bug",

@@ -4,7 +4,7 @@
 
 ## C2 联邦实验世界（2026-10-14）
 
-联邦实验世界（[federal_six_state_c2.md](federal_six_state_c2.md)）复用本文的分区与群系规则，另加 8 个联邦分区和 8 个群系。对 r1 的影响只在代码结构上，**r1 的输出不变**（C2 实测：同种子 r1 世界 256/256 区块地形签名一致，锁指纹相同）：
+联邦世界（[federal_six_state_c2.md](federal_six_state_c2.md)；2026-10-14 起是新建普通世界的默认，本文的 r1 生态只用于已有的 r1 世界和手动选 r1 的新世界）复用本文的分区与群系规则，另加 8 个联邦分区和 8 个群系。对 r1 的影响只在代码结构上，**r1 的输出不变**（C2 实测：同种子 r1 世界 256/256 区块地形签名一致，锁指纹相同）：
 
 - `EcologyBiomes.biomeAt` 对联邦规划转给 `FederalEcologyBiomes`；`EcologyBiomes.id(index)` / `colour(index)` 覆盖联邦序号（≥ 13）；
 - `ForestPlan` 的林分表按 `FederalEcologyBiomes.COUNT` 分配，多了两个过渡林分（山地针叶林、湖岸混交林），r1 群系的林分没变；

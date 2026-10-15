@@ -18,11 +18,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The "AFL Federation (experimental)" world preset (C2, 2026-10-14; docs/worldgen/federal_six_state_c2.md): an
- * overworld on the noise settings {@code apocalypse_firstlight:federal_experimental}, whose plan density functions
- * carry {@code "profile": "federal"} (the six-state FederalTerrainPlan). Data:
+ * The "AFL Federation" world preset (C2, 2026-10-14; docs/worldgen/federal_six_state_c2.md): an overworld on the noise
+ * settings {@code apocalypse_firstlight:federal_experimental}, whose plan density functions carry
+ * {@code "profile": "federal"} (the six-state FederalTerrainPlan). Data:
  * data/apocalypse_firstlight/worldgen/world_preset/federal_experimental.json, listed in the world-type button through
- * data/minecraft/tags/worldgen/world_preset/normal.json. The default preset stays r1; nothing switches to this one.
+ * data/minecraft/tags/worldgen/world_preset/normal.json. The ids keep "experimental" from C2: a world's level.dat and
+ * its version lock (profile afl_federal_experimental) name them, so they never change.
+ *
+ * <p>Since the user's decision of 2026-10-14 (section 12 of the C2 doc) this is the default for a NEW normal world:
+ * the create-world screen opens on it (client.CreateWorldFederalDefaultMixin) and a dedicated server without a
+ * level-type uses it (DedicatedServerFederalDefaultMixin). Existing worlds keep the generator in their level.dat (an r1
+ * world stays r1, guarded by the version lock); superflat, minecraft:normal (r1) and other mods' types stay selectable.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class FederalPreset {
@@ -32,6 +38,26 @@ public final class FederalPreset {
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "federal_experimental"));
     public static final ResourceKey<NoiseGeneratorSettings> NOISE_SETTINGS = ResourceKey.create(Registries.NOISE_SETTINGS,
             new ResourceLocation(ApocalypseFirstLight.MOD_ID, "federal_experimental"));
+
+    /**
+     * True for the create-world screen's own default (CreateWorldScreen#openFresh passes exactly minecraft:normal):
+     * that one becomes the federal preset. A screen opened on any other type (re-create, another mod's default) is left.
+     */
+    public static boolean replacesDefault(java.util.Optional<ResourceKey<WorldPreset>> preset) {
+        return preset.isPresent() && preset.get().equals(net.minecraft.world.level.levelgen.presets.WorldPresets.NORMAL);
+    }
+
+    /**
+     * server.properties level-type fallback: vanilla's minecraft:normal becomes the federal preset, anything else stays.
+     * Not on the development GameTest server (GameTestMain runs the dedicated server on a fresh server.properties): its
+     * test world stays r1, the terrain every GameTest was written and measured on (the wiring "template" test loads a
+     * chunk 4000 blocks out and expects air there, which failed in a federal test world, measured 2026-10-14). Never true in production.
+     */
+    public static Object defaultLevelType(Object fallback) {
+        if (net.minecraftforge.gametest.ForgeGameTestHooks.isGametestServer()) return fallback;
+        return net.minecraft.world.level.levelgen.presets.WorldPresets.NORMAL.location().toString().equals(fallback)
+                ? PRESET.location().toString() : fallback;
+    }
 
     /** The overworld's noise settings when the world's overworld runs on the federal settings; otherwise null. */
     public static NoiseGeneratorSettings federalOverworldSettings(RegistryAccess registries) {

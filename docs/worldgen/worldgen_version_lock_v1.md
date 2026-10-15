@@ -4,6 +4,8 @@
 
 这是 [ADR-11](worldgen_architecture_decisions_v1.md)（版本与旧世界）在世界层面的第一个实现，范围是 AFL Terrain V2 主世界。
 
+2026-10-14 联邦分支合并进 master，**新建普通世界默认是联邦六州**（[C2](federal_six_state_c2.md) 第 12 节）：新世界记录的 profile 是 `afl_federal_experimental`（id 里的"experimental"是 C2 留下的，已有世界的记录和 level.dat 都写着它，所以不改名）。r1 的 profile `afl_terrain_v2` 照旧：已有的 r1 世界在 level.dat 里存着自己的生成器（`minecraft:overworld` 噪声设置），默认改了也还是按 r1 打开，锁照常比对 r1 的规则；世界类型按钮里的"AFL r1（旧地形）"（原版的 `minecraft:normal`）也还能手动选。
+
 ## 解决什么问题
 
 - **以前的问题**：Terrain V2 的规划缓存有版本号，即 `TerrainPlanV2.VERSION`、`TerrainPlanSurface.FORMAT` 和缓存文件名。但世界存档本身不记录"用哪套规则生成"。
@@ -20,7 +22,7 @@
 |---|---|
 | `schema` / `origin` | 记录格式 1；`created`（新世界）或 `adopted_legacy`（锁出现之前的旧世界） |
 | `created` / `createdBy` | 时间、AFL 与 Minecraft 版本 |
-| `profile` / `seed` | `afl_terrain_v2`（r1）或 `afl_federal_experimental`（C2 联邦实验世界）；世界种子 |
+| `profile` / `seed` | `afl_terrain_v2`（r1）或 `afl_federal_experimental`（联邦六州，2026-10-14 起新建普通世界的默认）；世界种子 |
 | `systems` | 各子系统声明的**世界兼容版本**（见下表） |
 | `planCacheFormat` | 规划缓存的存储格式，**只作参考**，不参与判定 |
 | `planDigest` | 规划数值摘要：高度、水面、山带、稳定层、离岸、河网、生态分区，SHA-256 前 16 位 |
@@ -39,7 +41,7 @@
 | `ecology` | `ecology_r1#1` | HARD | 群系映射、AFL 群系 JSON、主世界地表规则 |
 | `forest` | `mesh_forest#<ForestPlan.VERSION>` 或 `vanilla_trees` | SOFT | 天然树木 |
 
-联邦实验世界（C2，profile `afl_federal_experimental`，[federal_six_state_c2.md](federal_six_state_c2.md)）有自己的一套子系统 id，和 r1 的同名但取值不同，所以两种世界永远不会共用基线（profile 本身也是 HARD）：
+联邦世界（C2，profile `afl_federal_experimental`，[federal_six_state_c2.md](federal_six_state_c2.md)；2026-10-14 起是新建普通世界的默认）有自己的一套子系统 id，和 r1 的同名但取值不同，所以两种世界永远不会共用基线（profile 本身也是 HARD）：
 
 | 子系统 | 当前版本 | 级别 | 含义 |
 |---|---|---|---|
@@ -156,7 +158,7 @@
 
 ## 未验证 / 已知缺口
 
-- **专用服务器**没有测（需要接受 EULA，C2 没做）。
+- **专用服务器**没有实际启动过（需要接受 EULA，没有替用户接受）。2026-10-14 只在测试客户端里用 `server.properties` 的同一段解析代码验了默认 `level-type`；开发用 GameTest 服务器（专用服务器的启动流程）也按默认建了联邦世界，之后改成 GameTest 服务器保持 r1（[C2](federal_six_state_c2.md) 第 12 节）。
 - **集成服务器**（单人游戏）里拦截会让服务器启动失败，客户端随之崩溃退出并写崩溃报告（C2 实测），而不是一个友好的提示框。后续可以加客户端侧的打开前检查界面（未做）。
 - **ACCEPT_HARD 的实机流程**（填令牌后打开）没有实测，只有离线判定表测试。
 - **覆盖不到的规则**：雕刻器、地表规则、地物（features）只靠声明的版本号覆盖，探针测不到。

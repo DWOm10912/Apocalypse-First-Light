@@ -117,6 +117,10 @@ public final class C2Probe {
         line("world " + C2Harness.arg("world", "?") + " tag " + C2Harness.arg("tag", "?") + " seed " + level.getSeed());
         line("plan " + (plan == null ? "none" : C2Plan.describe(plan)));
         line("spawn " + spawn.getX() + " " + spawn.getY() + " " + spawn.getZ());
+        line("generator " + C2Plan.generator(level));
+        line("dedicated server: " + C2Plan.serverDefault(level.getServer(), null) + "; "
+                + C2Plan.serverDefault(level.getServer(), "minecraft:normal") + "; "
+                + C2Plan.serverDefault(level.getServer(), "minecraft:flat"));
         line("heap_used_mb_at_start " + usedMb(false));
         sites = new ArrayList<>();
         sites.add(new Site("spawn", spawn.getX(), spawn.getZ(), 4));
