@@ -94,6 +94,7 @@ public final class WorldInteractionHint {
             if(target==null) target=powerCable(mc,hit);
             if(target==null) target=fluidPipe(mc,hit);
             if(target==null) target=boxStove(mc,hit);
+            if(target==null) target=emergencyRadio(mc,hit);
             if(target==null) target=woodFurniture(mc,hit);
             if(target==null) target=meshInteraction(mc,hit);
         }
@@ -478,6 +479,15 @@ public final class WorldInteractionHint {
             case TAKE -> new Target(Component.translatable(k+"take"),com.antaurora.apofirstlight.cabin.BoxStove.Stove.spotPoint(s,pos,stove.takeSpot(spot)));
             default -> null;
         };
+    }
+
+    /** Emergency Radio V1: the slide switch (on / off), the crank (its end), as EmergencyRadio.Radio#use. */
+    private static Target emergencyRadio(Minecraft mc,BlockHitResult hit) {
+        var pos=hit.getBlockPos();var s=mc.level.getBlockState(pos);
+        if(!(s.getBlock() instanceof com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio)) return null;
+        var a=com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio.action(s,pos,hit.getLocation());
+        return new Target(Component.translatable("hint.apocalypse_firstlight.emergency_radio."+a.name().toLowerCase(java.util.Locale.ROOT)),
+                com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio.promptPoint(s,pos,a));
     }
 
     private static Target woodFurniture(Minecraft mc,BlockHitResult hit) {

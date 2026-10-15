@@ -20,20 +20,24 @@ const SS = 3, MM = 1000 / N;
 
 /**
  * Rasterises f(x, y) -> {c, s (smoothness 0..255), f0 (LabPBR G, default 10: dielectric), p (porosity 0..64), h (mm),
- * ao (0..1), a (alpha 0..255, default 255)}, supersampled SS x SS, slopes wrapping. Like hd-art render, with F0 and alpha.
+ * ao (0..1), a (alpha 0..255, default 255), e (emission 0..1; 2026-10-14, the emergency radio's lit dial: LabPBR _s alpha
+ * 0..254, left at 255 = none when no sample gives one)}, supersampled SS x SS, slopes wrapping. Like hd-art render, with F0
+ * and alpha.
  * height false: _n alpha 255 (no parallax; for curved meshes and cut-outs).
  */
 export function renderX(f, {height = true} = {}) {
   const col = Buffer.alloc(N * N * 4), spec = Buffer.alloc(N * N * 4), nrm = Buffer.alloc(N * N * 4), H = new Float64Array(N * N);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    let c = [0, 0, 0], s = 0, f0 = 0, p = 0, h = 0, ao = 0, a = 0;
+    let c = [0, 0, 0], s = 0, f0 = 0, p = 0, h = 0, ao = 0, a = 0, e = 0, lit = false;
     for (let sy = 0; sy < SS; sy++) for (let sx = 0; sx < SS; sx++) {
       const r = f(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS);
       c = c.map((v, i) => v + r.c[i]); s += r.s; f0 += r.f0 ?? 10; p += r.p ?? 0; h += r.h ?? 0; ao += r.ao ?? 1; a += r.a ?? 255;
+      if (r.e != null) { e += r.e; lit = true; }
     }
     const k = SS * SS, o = (y * N + x) * 4;
     c.forEach((v, i) => { col[o + i] = clamp(Math.round(v / k), 0, 255); }); col[o + 3] = clamp(Math.round(a / k), 0, 255);
-    spec[o] = clamp(Math.round(s / k), 0, 255); spec[o + 1] = clamp(Math.round(f0 / k), 0, 255); spec[o + 2] = clamp(Math.round(p / k), 0, 64); spec[o + 3] = 255;
+    spec[o] = clamp(Math.round(s / k), 0, 255); spec[o + 1] = clamp(Math.round(f0 / k), 0, 255); spec[o + 2] = clamp(Math.round(p / k), 0, 64);
+    spec[o + 3] = lit ? clamp(Math.round(254 * e / k), 0, 254) : 255;
     H[y * N + x] = h / k; nrm[o + 2] = clamp(Math.round(255 * ao / k), 0, 255);
   }
   const at = (i, j) => H[((j + N) % N) * N + ((i + N) % N)];

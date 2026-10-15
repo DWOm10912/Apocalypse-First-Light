@@ -902,6 +902,10 @@
     "apocalypse_firstlight:flagstone": {
       "unit_mass_kg": 0.25,
       "estimated": true
+    },
+    "apocalypse_firstlight:emergency_radio": {
+      "unit_mass_kg": 3.0,
+      "estimated": true
     }
   },
   "carry_factors": [

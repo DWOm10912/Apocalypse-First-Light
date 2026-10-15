@@ -35,6 +35,7 @@
     "reload": 1,
     "recoil_pull": 6,
     "chop": 4,
+    "crank": 0.4,
     "reloads_by_gun": {
       "apocalypse_firstlight:hr55": 2
     }

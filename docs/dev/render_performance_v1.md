@@ -224,7 +224,7 @@
 
 ## 2026-10-13：枪架上的枪也交给区块
 
-[木枪架](../models/wood_furniture_v1.md)（Wood Furniture V1）挂上 3 把 `silverwood_12` + 搁板上 2 把 `blackridge_50` 后，用户在 Sundial 下从 100+ FPS 掉到 36–47 FPS。
+[木质枪架](../models/wood_furniture_v1.md)（Wood Furniture V1）挂上 3 把 `silverwood_12` + 搁板上 2 把 `blackridge_50` 后，用户在 Sundial 下从 100+ FPS 掉到 36–47 FPS。
 
 - 计时器实测（`run/logs/latest.log`，挂满 5 把时）：`wooden_gun_rack` 每帧 7.2 ms 正常渲染 + 7.2 ms 阴影，最高 10.7 + 10.7 ms；整帧 21–29 ms，空场景 9.6 ms。掉的帧几乎全是它。
 - 原因和冷柜一样：Mesh 枪每把 1.1–1.4 万个顶点（`silverwood_12` 13,972，`blackridge_50` 11,054），渲染器每帧整把重提交，开光影再提交一遍阴影。枪架在屋里，但屋顶和窗户不全是完整不透明方块，阴影剔除省不掉。

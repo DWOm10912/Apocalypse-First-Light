@@ -54,11 +54,13 @@ final class CabinMeshHits {
     private static Optional<MeshHitModels.Shape> build(CabinPieces block, Key key) {
         List<float[]> parts = new ArrayList<>();
         List<Integer> turns = new ArrayList<>();
-        block.cabinPieces(key.state(), key.flags(), (name, turn) -> {
+        List<Float> lifts = new ArrayList<>();
+        block.cabinPieces(key.state(), key.flags(), (name, turn, dy) -> {
             float[] tri = piece(name);
             if (tri == null) return;
             parts.add(tri);
             turns.add(Math.floorMod(turn, 4));
+            lifts.add(dy);
         });
         int total = 0;
         for (float[] t : parts) total += t.length;
@@ -68,11 +70,12 @@ final class CabinMeshHits {
         for (int i = 0; i < parts.size(); i++) {
             float[] t = parts.get(i);
             int r = turns.get(i);
+            float dy = lifts.get(i);
             for (int j = 0; j + 2 < t.length; j += 3) {
                 float x = t[j], z = t[j + 2];
                 for (int k = 0; k < r; k++) { float w = x; x = 1.0F - z; z = w; }   // a clockwise quarter: (x, z) to (1 - z, x)
                 out[at++] = x;
-                out[at++] = t[j + 1];
+                out[at++] = t[j + 1] + dy;
                 out[at++] = z;
             }
         }

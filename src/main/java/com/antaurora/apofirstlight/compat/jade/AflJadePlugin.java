@@ -66,6 +66,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(GeneratorInletJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.GeneratorInletBoxBlockEntity.class);
         registration.registerBlockDataProvider(DistributionPanelJadeProvider.INSTANCE, com.antaurora.apofirstlight.blockentity.DistributionPanelBlockEntity.class);
         registration.registerBlockDataProvider(BoxStoveJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.BoxStoveBlockEntity.class);
+        registration.registerBlockDataProvider(EmergencyRadioJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.EmergencyRadioBlockEntity.class);
     }
 
     @Override
@@ -114,6 +115,7 @@ public final class AflJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(WallSwitchJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.WallSwitchBlock.class);
         registration.registerBlockComponent(GeneratorInletJadeProvider.INSTANCE, com.antaurora.apofirstlight.block.GeneratorInletBoxBlock.class);
         registration.registerBlockComponent(BoxStoveJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.BoxStove.Stove.class);
+        registration.registerBlockComponent(EmergencyRadioJadeProvider.INSTANCE, com.antaurora.apofirstlight.cabin.EmergencyRadio.Radio.class);
         for (Class<? extends net.minecraft.world.level.block.Block> trunk : java.util.List.of(com.antaurora.apofirstlight.tree.TreeBlocks.Root.class,
                 com.antaurora.apofirstlight.tree.TreeBlocks.Wood.class, com.antaurora.apofirstlight.tree.TreeBlocks.Stump.class)) {
             registration.registerBlockComponent(TreeSpeciesJadeProvider.INSTANCE, trunk);

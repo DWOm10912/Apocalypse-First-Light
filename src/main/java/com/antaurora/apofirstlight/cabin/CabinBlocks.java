@@ -75,7 +75,7 @@ public final class CabinBlocks {
             "white_oak_cabin_door", "white_oak_board_door", "white_oak_double_hung_window", "brown_board_and_batten", "grey_board_and_batten",
             "white_oak_porch_post", "white_oak_porch_railing", "white_oak_porch_deck", "stove_pipe", "fieldstone", "firewood_stack", "white_oak_stairs",
             "white_oak_slab", "woven_wire_fence", "wooden_table", "wooden_chair", "wooden_kitchen_counter", "wooden_sink_counter",
-            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone"};
+            "wooden_gun_rack", "box_stove", "stove_heat_shield", "flagstone", "emergency_radio"};
 
     private CabinBlocks() {}
 
@@ -133,6 +133,9 @@ public final class CabinBlocks {
             case "stove_heat_shield" -> new BoxStove.HeatShield(metal(MapColor.METAL, SoundType.METAL).noOcclusion());
             case "flagstone" -> new Block(BlockBehaviour.Properties.of().mapColor(MapColor.STONE).instrument(NoteBlockInstrument.BASEDRUM)
                     .strength(2.0F, 6.0F).requiresCorrectToolForDrops().sound(SoundType.STONE));
+            // Emergency Radio V1 (EmergencyRadio): a small appliance, breaks by hand (no correct-tool requirement)
+            case "emergency_radio" -> new EmergencyRadio.Radio(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GREEN).strength(1.0F, 3.0F)
+                    .sound(SoundType.METAL).noOcclusion().pushReaction(PushReaction.DESTROY).lightLevel(EmergencyRadio.Radio::light));
             default -> throw new IllegalArgumentException(id);
         };
     }
@@ -163,6 +166,7 @@ public final class CabinBlocks {
         });
         WoodFurniture.register(event);
         BoxStove.register(event);
+        EmergencyRadio.register(event);
     }
 
     /** Creative tab (AFL Building Blocks): after the wood building blocks (called from WoodBlocks#tabs with its last stack). */

@@ -111,7 +111,7 @@ public final class CabinRoofGameTests {
         BlockState state = level.getBlockState(at);
         Roof roof = (Roof) state.getBlock();
         Set<String> out = new TreeSet<>();
-        roof.cabinPieces(state, roof.cabinFlags(state, level, at), (name, turn) -> out.add(name));
+        roof.cabinPieces(state, roof.cabinFlags(state, level, at), (name, turn, dy) -> out.add(name));
         return out;
     }
 
@@ -180,7 +180,7 @@ public final class CabinRoofGameTests {
                 BlockState s = roof(id, f, shape).setValue(Roof.BEAM, true);
                 int edges = shape == RoofShape.RIDGE ? RAKES : EAVE | TOP | RAKES;
                 int flags = edges | PIPE | infill << INFILL_SHIFT | (infill >= 4 ? 15 << BATTENS_SHIFT : 0);
-                ((Roof) s.getBlock()).cabinPieces(s, flags, (name, turn) -> seen.add(name));
+                ((Roof) s.getBlock()).cabinPieces(s, flags, (name, turn, dy) -> seen.add(name));
             }
         for (String name : seen) {
             names++;
