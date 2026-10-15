@@ -1,0 +1,182 @@
+seed -295378578869149513  plan cache 0.7 s  network build 6.9 s
+route digest c62c13a4f793bd65, second build c62c13a4f793bd65  identical
+afl_road_network_c3_v1: 20 routes, 60 nodes, 0 unrouted
+interstate_ew:desert_town-county_seat          interstate   6298 m  grade max  5.0% mean  1.9% (> design grade  988 m)  Rmin   666  Kmin    31 (< 30:    0 m)  round 2 score  13044
+                                               cut max  6.1 m  fill max 13.8 m  earthworks    751 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 rounds 0:13448(6302m b0/0 v0/0 t0/0) 1:16783(6294m b0/0 v1/86 t0/0) 2:13044(6298m b0/0 v0/0 t0/0) 3:13456(6306m b0/0 v0/0 t0/0) 4:13167(6302m b0/0 v0/0 t0/0) 5:47376(6138m b0/0 v1/944 t0/0) 6:31635(6354m b0/0 v1/520 t0/0) 7:15768(6990m b2/94 v0/0 t0/0) 8:15768(6990m b2/94 v0/0 t0/0) 9:15768(6990m b2/94 v0/0 t0/0) 10:15768(6990m b2/94 v0/0 t0/0) 11:15768(6990m b2/94 v0/0 t0/0)
+interstate_ew:county_seat-valley_town          interstate   6598 m  grade max  2.0% mean  0.9% (> design grade    0 m)  Rmin   667  Kmin    30 (< 30:    2 m)  round 1 score   9683
+                                               cut max  5.0 m  fill max  4.6 m  earthworks    281 k m3  bridges 1 (  20 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     1620..  1640     20 m  h  3.9  river, water 10 m, widest 7.0 m
+                                                 rounds 0:34421(6442m b9/754 v0/0 t0/0) 1:9683(6598m b1/20 v0/0 t0/0)
+interstate_ew:valley_town-river_city           interstate   5536 m  grade max  3.0% mean  1.3% (> design grade    0 m)  Rmin   660  Kmin    31 (< 30:    0 m)  round 2 score   9070
+                                               cut max  4.7 m  fill max 11.2 m  earthworks    281 k m3  bridges 1 (  38 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     2938..  2976     38 m  h  2.8  river, water 28 m, widest 5.2 m
+                                                 rounds 0:9801(5380m b1/58 v0/0 t0/0) 1:9687(5392m b1/54 v0/0 t0/0) 2:9070(5536m b1/38 v0/0 t0/0) 3:9070(5536m b1/38 v0/0 t0/0) 4:9070(5536m b1/38 v0/0 t0/0) 5:9070(5536m b1/38 v0/0 t0/0) 6:9070(5536m b1/38 v0/0 t0/0) 7:9070(5536m b1/38 v0/0 t0/0) 8:9070(5536m b1/38 v0/0 t0/0) 9:9070(5536m b1/38 v0/0 t0/0) 10:9070(5536m b1/38 v0/0 t0/0) 11:9070(5536m b1/38 v0/0 t0/0)
+interstate_ns:industrial_city-valley_town      interstate   5184 m  grade max  3.0% mean  0.9% (> design grade    0 m)  Rmin   661  Kmin    32 (< 30:    0 m)  round 0 score   7058
+                                               cut max  9.5 m  fill max 10.1 m  earthworks    295 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 ends on interstate_ew:county_seat-valley_town at 4060 m (247, -999)
+                                                 rounds 0:7058(5184m b0/0 v0/0 t0/0) 1:7072(5182m b0/0 v0/0 t0/0) 2:7072(5182m b0/0 v0/0 t0/0) 3:7072(5182m b0/0 v0/0 t0/0) 4:7072(5182m b0/0 v0/0 t0/0) 5:7072(5182m b0/0 v0/0 t0/0) 6:7072(5182m b0/0 v0/0 t0/0) 7:7072(5182m b0/0 v0/0 t0/0) 8:7072(5182m b0/0 v0/0 t0/0) 9:7072(5182m b0/0 v0/0 t0/0) 10:7072(5182m b0/0 v0/0 t0/0) 11:7072(5182m b0/0 v0/0 t0/0)
+interstate_ns:valley_town-port_city            interstate   5876 m  grade max  2.6% mean  0.8% (> design grade    0 m)  Rmin   668  Kmin    33 (< 30:    0 m)  round 2 score   7057
+                                               cut max  0.8 m  fill max  3.4 m  earthworks    186 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 starts on interstate_ew:valley_town-river_city at 2461 m (4411, 458)
+                                                 rounds 0:17730(5622m b4/256 v0/0 t0/0) 1:11214(5668m b2/82 v0/0 t0/0) 2:7057(5876m b0/0 v0/0 t0/0)
+sh_mountain:mining_town-pass_village           state        2664 m  grade max  6.5% mean  1.9% (> design grade   66 m)  Rmin   277  Kmin    16 (< 15:    0 m)  round 0 score   3560
+                                               cut max  3.2 m  fill max  5.6 m  earthworks     37 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 rounds 0:3560(2664m b0/0 v0/0 t0/0)
+sh_mountain:pass_village-farm_town_north       state        4240 m  grade max  7.0% mean  3.6% (> design grade 1264 m)  Rmin   273  Kmin    16 (< 15:    0 m)  round 7 score   7916
+                                               cut max  2.8 m  fill max  7.8 m  earthworks     56 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 rounds 0:52231(2598m b0/0 v2/1636 t0/0) 1:44746(2718m b0/0 v3/1350 t0/0) 2:38977(2758m b1/114 v1/1078 t0/0) 3:57244(2640m b0/0 v2/1828 t0/0) 4:30970(3174m b0/0 v1/854 t0/0) 5:22890(3444m b0/0 v1/546 t0/0) 6:32035(4748m b0/0 v1/848 t0/0) 7:7916(4240m b0/0 v0/0 t0/0) 8:30590(4208m b0/0 v1/824 t0/0) 9:58711(2978m b0/0 v1/1888 t0/0) 10:31624(4922m b0/0 v2/810 t0/0) 11:38143(4564m b0/0 v1/1080 t0/0)
+sh_range_front:pass_village-desert_town        state        1954 m  grade max  6.9% mean  1.9% (> design grade  192 m)  Rmin   275  Kmin    16 (< 15:    0 m)  round 0 score   2896
+                                               cut max  4.0 m  fill max  5.0 m  earthworks     27 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 starts on sh_mountain:pass_village-farm_town_north at 1215 m (-5125, -1331)
+                                                 ends on interstate_ew:desert_town-county_seat at 2961 m (-5520, 497)
+                                                 rounds 0:2896(1954m b0/0 v0/0 t0/0)
+sh_canyon:desert_town-canyon_outpost           state        4472 m  grade max  3.5% mean  1.3% (> design grade    0 m)  Rmin   275  Kmin    15 (< 15:    0 m)  round 1 score   5648
+                                               cut max  6.1 m  fill max 11.5 m  earthworks     56 k m3  bridges 0 (   0 m)  culverts 1  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 CULVERT    3168..  3174      6 m  h 11.3  river, water 8 m, widest 3.2 m
+                                                 rounds 0:7336(4294m b0/0 v1/62 t0/0) 1:5648(4472m b0/0 v0/0 t0/0) 2:5648(4472m b0/0 v0/0 t0/0) 3:5648(4472m b0/0 v0/0 t0/0) 4:5648(4472m b0/0 v0/0 t0/0) 5:5648(4472m b0/0 v0/0 t0/0) 6:5648(4472m b0/0 v0/0 t0/0) 7:5648(4472m b0/0 v0/0 t0/0) 8:5648(4472m b0/0 v0/0 t0/0) 9:5648(4472m b0/0 v0/0 t0/0) 10:5648(4472m b0/0 v0/0 t0/0) 11:5648(4472m b0/0 v0/0 t0/0)
+sh_lakes:mill_town-industrial_city             state        4516 m  grade max  3.4% mean  0.9% (> design grade    0 m)  Rmin   275  Kmin    16 (< 15:    0 m)  round 1 score   8532
+                                               cut max  1.0 m  fill max  6.3 m  earthworks     46 k m3  bridges 2 ( 122 m)  culverts 2  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     1002..  1030     28 m  h  2.1  river, water 18 m, widest 4.1 m
+                                                 CULVERT    2380..  2384      4 m  h  1.7  river, water 6 m, widest 3.7 m
+                                                 CULVERT    3134..  3144     10 m  h  2.9  river, water 12 m, widest 3.9 m
+                                                 BRIDGE     3294..  3388     94 m  h  7.5  lake, water 14 m
+                                                 rounds 0:11674(4498m b2/308 v0/0 t0/0) 1:8532(4516m b2/122 v0/0 t0/0) 2:10308(4516m b2/224 v0/0 t0/0) 3:8790(4602m b2/128 v0/0 t0/0) 4:8656(4516m b2/130 v0/0 t0/0) 5:8656(4516m b2/130 v0/0 t0/0) 6:8656(4516m b2/130 v0/0 t0/0) 7:8656(4516m b2/130 v0/0 t0/0) 8:8656(4516m b2/130 v0/0 t0/0) 9:8656(4516m b2/130 v0/0 t0/0) 10:8656(4516m b2/130 v0/0 t0/0) 11:8656(4516m b2/130 v0/0 t0/0)
+sh_lakes:industrial_city-port_town             state        5484 m  grade max  4.0% mean  0.9% (> design grade    0 m)  Rmin   288  Kmin    15 (< 15:    0 m)  round 1 score   6282
+                                               cut max  0.7 m  fill max  1.9 m  earthworks     39 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 starts on interstate_ns:industrial_city-valley_town at 2197 m (769, -3628)
+                                                 rounds 0:8102(5474m b1/62 v0/0 t0/0) 1:6282(5484m b0/0 v0/0 t0/0)
+sh_farm_north:farm_town_north-mill_town        state        3888 m  grade max  2.6% mean  0.9% (> design grade    0 m)  Rmin   285  Kmin    19 (< 15:    0 m)  round 0 score   6500
+                                               cut max  0.2 m  fill max  3.6 m  earthworks     39 k m3  bridges 2 (  56 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE      302..   338     36 m  h  3.9  river, water 26 m, widest 11.8 m
+                                                 BRIDGE      774..   794     20 m  h  3.7  river, water 10 m, widest 6.3 m
+                                                 ends on sh_lakes:mill_town-industrial_city at 40 m (-3288, -6143)
+                                                 rounds 0:6500(3888m b2/56 v0/0 t0/0)
+sh_farm_belt:farm_town_north-county_seat       state        2530 m  grade max  3.0% mean  1.4% (> design grade    0 m)  Rmin   291  Kmin    16 (< 15:    0 m)  round 0 score   3842
+                                               cut max  0.5 m  fill max  3.5 m  earthworks     22 k m3  bridges 1 (  26 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     1316..  1342     26 m  h  3.7  river, water 16 m, widest 9.8 m
+                                                 starts on sh_mountain:pass_village-farm_town_north at 3400 m (-3355, -1524)
+                                                 ends on interstate_ew:county_seat-valley_town at 2251 m (-1284, -102)
+                                                 rounds 0:3842(2530m b1/26 v0/0 t0/0)
+sh_farm_belt:county_seat-farm_town_south       state        4088 m  grade max  3.9% mean  1.1% (> design grade    0 m)  Rmin   278  Kmin    15 (< 15:    0 m)  round 0 score   7785
+                                               cut max  0.7 m  fill max  3.6 m  earthworks     39 k m3  bridges 3 (  94 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     1170..  1202     32 m  h  3.3  river, water 22 m, widest 7.0 m
+                                                 BRIDGE     2732..  2768     36 m  h  3.9  river, water 26 m, widest 10.6 m
+                                                 BRIDGE     3946..  3972     26 m  h  3.4  river, water 16 m, widest 12.0 m
+                                                 starts on interstate_ew:desert_town-county_seat at 6069 m (-2932, 1696)
+                                                 rounds 0:7785(4088m b3/94 v0/0 t0/0)
+sh_gulf:farm_town_south-bayou_village          state        5414 m  grade max  2.6% mean  0.6% (> design grade    0 m)  Rmin   275  Kmin    20 (< 15:    0 m)  round 0 score   7238
+                                               cut max  0.6 m  fill max  4.4 m  earthworks     48 k m3  bridges 1 (  22 m)  culverts 1  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 CULVERT    1658..  1668     10 m  h  2.0  river, water 12 m, widest 3.2 m
+                                                 BRIDGE     1936..  1958     22 m  h  4.4  river, water 12 m, widest 11.3 m
+                                                 starts on sh_farm_belt:county_seat-farm_town_south at 3792 m (-2389, 5363)
+                                                 rounds 0:7238(5414m b1/22 v0/0 t0/0)
+sh_gulf:bayou_village-port_city                state        3952 m  grade max  1.4% mean  0.2% (> design grade    0 m)  Rmin   294  Kmin    56 (< 15:    0 m)  round 0 score   4516
+                                               cut max  0.0 m  fill max  1.0 m  earthworks     28 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 ends on interstate_ns:valley_town-port_city at 4487 m (6333, 4105)
+                                                 rounds 0:4516(3952m b0/0 v0/0 t0/0)
+sh_gulf:port_city-shore_town                   state        2402 m  grade max  4.9% mean  0.5% (> design grade    0 m)  Rmin   293  Kmin    21 (< 15:    0 m)  round 0 score   2745
+                                               cut max  0.8 m  fill max  2.5 m  earthworks     17 k m3  bridges 0 (   0 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 starts on interstate_ns:valley_town-port_city at 4430 m (6307, 4054)
+                                                 rounds 0:2745(2402m b0/0 v0/0 t0/0)
+sh_gulf:shore_town-river_city                  state        2814 m  grade max  4.5% mean  1.4% (> design grade    0 m)  Rmin   295  Kmin    15 (< 15:    0 m)  round 0 score   4417
+                                               cut max  2.2 m  fill max  4.5 m  earthworks     34 k m3  bridges 1 (  28 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE      390..   418     28 m  h  4.7  river, water 18 m, widest 8.6 m
+                                                 ends on interstate_ew:valley_town-river_city at 5264 m (6926, 838)
+                                                 rounds 0:4417(2814m b1/28 v0/0 t0/0)
+sh_hills:valley_town-hill_village              state        3768 m  grade max  4.2% mean  1.5% (> design grade    0 m)  Rmin   274  Kmin    15 (< 15:    0 m)  round 0 score   4570
+                                               cut max  2.2 m  fill max  4.4 m  earthworks     37 k m3  bridges 0 (   0 m)  culverts 1  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 CULVERT    1506..  1518     12 m  h  2.5  river, water 14 m, widest 4.1 m
+                                                 starts on interstate_ns:industrial_city-valley_town at 3008 m (896, -2832)
+                                                 rounds 0:4570(3768m b0/0 v0/0 t0/0)
+sh_hills:hill_village-port_town                state        3010 m  grade max  4.7% mean  1.5% (> design grade    0 m)  Rmin   278  Kmin    23 (< 15:    0 m)  round 0 score   4398
+                                               cut max  2.2 m  fill max  3.8 m  earthworks     29 k m3  bridges 1 (  22 m)  culverts 0  viaducts 0 (   0 m)  tunnels 0 (   0 m)  deep cuts 0
+                                                 BRIDGE     1142..  1164     22 m  h  3.8  river, water 12 m, widest 7.0 m
+                                                 ends on sh_lakes:industrial_city-port_town at 4287 m (4489, -5533)
+                                                 rounds 0:4398(3010m b1/22 v0/0 t0/0)
+total interstate    29.5 km
+total state         55.2 km
+node INTERCHANGE      valley_town                                                    2608    -1057  s1 TOWN
+node INTERCHANGE      river_city                                                     7197      842  s1 CITY
+node CITY             hill_village                                                   4582    -2749  s1 VILLAGE
+node INTERCHANGE      county_seat                                                   -2718     1614  s2 TOWN
+node CITY             farm_town_north                                               -3022    -2283  s2 VILLAGE
+node CITY             farm_town_south                                               -2221     5607  s2 VILLAGE
+node CITY             mining_town                                                   -7215    -4228  s3 MINING
+node CITY             pass_village                                                  -5473    -2433  s3 VILLAGE
+node INTERCHANGE      industrial_city                                                -230    -5582  s4 INDUSTRIAL
+node CITY             port_town                                                      5478    -6201  s4 PORT
+node CITY             mill_town                                                     -3323    -6125  s4 VILLAGE
+node INTERCHANGE      port_city                                                      7065     5281  s5 PORT
+node CITY             bayou_village                                                  2786     5848  s5 VILLAGE
+node CITY             shore_town                                                     8483     3044  s5 TOWN
+node INTERCHANGE      desert_town                                                   -6957     2543  s6 TOWN
+node CITY             canyon_outpost                                                -7355     4543  s6 OUTPOST
+node INTERCHANGE      interstate_ns:industrial_city-valley_town/join/end              247     -999  interstate_ns:industrial_city-valley_town meets interstate_ew:county_seat-valley_town at 4060 m
+node INTERCHANGE      interstate_ns:valley_town-port_city/join/start                 4411      458  interstate_ns:valley_town-port_city meets interstate_ew:valley_town-river_city at 2461 m
+node JUNCTION         sh_range_front:pass_village-desert_town/join/start            -5125    -1331  sh_range_front:pass_village-desert_town meets sh_mountain:pass_village-farm_town_north at 1215 m
+node INTERCHANGE      sh_range_front:pass_village-desert_town/join/end              -5520      497  sh_range_front:pass_village-desert_town meets interstate_ew:desert_town-county_seat at 2961 m
+node INTERCHANGE      sh_lakes:industrial_city-port_town/join/start                   769    -3628  sh_lakes:industrial_city-port_town meets interstate_ns:industrial_city-valley_town at 2197 m
+node JUNCTION         sh_farm_north:farm_town_north-mill_town/join/end              -3288    -6143  sh_farm_north:farm_town_north-mill_town meets sh_lakes:mill_town-industrial_city at 40 m
+node JUNCTION         sh_farm_belt:farm_town_north-county_seat/join/start           -3355    -1524  sh_farm_belt:farm_town_north-county_seat meets sh_mountain:pass_village-farm_town_north at 3400 m
+node INTERCHANGE      sh_farm_belt:farm_town_north-county_seat/join/end             -1284     -102  sh_farm_belt:farm_town_north-county_seat meets interstate_ew:county_seat-valley_town at 2251 m
+node INTERCHANGE      sh_farm_belt:county_seat-farm_town_south/join/start           -2932     1696  sh_farm_belt:county_seat-farm_town_south meets interstate_ew:desert_town-county_seat at 6069 m
+node JUNCTION         sh_gulf:farm_town_south-bayou_village/join/start              -2389     5363  sh_gulf:farm_town_south-bayou_village meets sh_farm_belt:county_seat-farm_town_south at 3792 m
+node INTERCHANGE      sh_gulf:bayou_village-port_city/join/end                       6333     4105  sh_gulf:bayou_village-port_city meets interstate_ns:valley_town-port_city at 4487 m; sh_gulf:port_city-shore_town meets interstate_ns:valley_town-port_city at 4430 m
+node INTERCHANGE      sh_gulf:shore_town-river_city/join/end                         6926      838  sh_gulf:shore_town-river_city meets interstate_ew:valley_town-river_city at 5264 m
+node INTERCHANGE      sh_hills:valley_town-hill_village/join/start                    896    -2832  sh_hills:valley_town-hill_village meets interstate_ns:industrial_city-valley_town at 3008 m
+node JUNCTION         sh_hills:hill_village-port_town/join/end                       4489    -5533  sh_hills:hill_village-port_town meets sh_lakes:industrial_city-port_town at 4287 m
+node BORDER_CROSSING  interstate_ew:desert_town-county_seat/border/s6-s2            -4744      457  s6 -> s2
+node PASS             interstate_ew:desert_town-county_seat/pass                    -5434      473  summit Y159.2
+node BORDER_CROSSING  interstate_ew:county_seat-valley_town/border/s2-s1             -777     -541  s2 -> s1
+node BRIDGE           interstate_ew:county_seat-valley_town/bridge/0                -1633      410  20 m, river, water 10 m, widest 7.0 m
+node BRIDGE           interstate_ew:valley_town-river_city/bridge/0                  4777      780  38 m, river, water 28 m, widest 5.2 m
+node BORDER_CROSSING  interstate_ns:industrial_city-valley_town/border/s4-s1          865    -3238  s4 -> s1
+node BORDER_CROSSING  interstate_ns:valley_town-port_city/border/s1-s5               4664     2071  s1 -> s5
+node PASS             sh_mountain:mining_town-pass_village/pass                     -5723    -3019  summit Y243.5
+node BORDER_CROSSING  sh_mountain:pass_village-farm_town_north/border/s3-s6         -5234    -1632  s3 -> s6
+node BORDER_CROSSING  sh_mountain:pass_village-farm_town_north/border/s6-s2         -4747     -976  s6 -> s2
+node PASS             sh_mountain:pass_village-farm_town_north/pass                 -5311    -2191  summit Y209.2
+node PASS             sh_range_front:pass_village-desert_town/pass                  -5271      168  summit Y176.2
+node PASS             sh_canyon:desert_town-canyon_outpost/pass                     -6154     5080  summit Y143.9
+node BRIDGE           sh_lakes:mill_town-industrial_city/bridge/0                   -2453    -6644  28 m, river, water 18 m, widest 4.1 m
+node BRIDGE           sh_lakes:mill_town-industrial_city/bridge/1                    -172    -6727  94 m, lake, water 14 m
+node BORDER_CROSSING  sh_lakes:industrial_city-port_town/border/s4-s1                2701    -4206  s4 -> s1
+node BORDER_CROSSING  sh_lakes:industrial_city-port_town/border/s1-s4                3205    -4511  s1 -> s4
+node BORDER_CROSSING  sh_farm_north:farm_town_north-mill_town/border/s2-s4          -3043    -3246  s2 -> s4
+node BRIDGE           sh_farm_north:farm_town_north-mill_town/bridge/0              -3010    -2602  36 m, river, water 26 m, widest 11.8 m
+node BRIDGE           sh_farm_north:farm_town_north-mill_town/bridge/1              -3012    -3063  20 m, river, water 10 m, widest 6.3 m
+node BRIDGE           sh_farm_belt:farm_town_north-county_seat/bridge/0             -2204     -866  26 m, river, water 16 m, widest 9.8 m
+node BRIDGE           sh_farm_belt:county_seat-farm_town_south/bridge/0             -2559     2780  32 m, river, water 22 m, widest 7.0 m
+node BRIDGE           sh_farm_belt:county_seat-farm_town_south/bridge/1             -2525     4343  36 m, river, water 26 m, widest 10.6 m
+node BRIDGE           sh_farm_belt:county_seat-farm_town_south/bridge/2             -2295     5501  26 m, river, water 16 m, widest 12.0 m
+node BORDER_CROSSING  sh_gulf:farm_town_south-bayou_village/border/s2-s5             -782     5023  s2 -> s5
+node BRIDGE           sh_gulf:farm_town_south-bayou_village/bridge/0                 -503     4969  22 m, river, water 12 m, widest 11.3 m
+node BORDER_CROSSING  sh_gulf:shore_town-river_city/border/s5-s1                     7360     1808  s5 -> s1
+node BRIDGE           sh_gulf:shore_town-river_city/bridge/0                         8142     2847  28 m, river, water 18 m, widest 8.6 m
+node BORDER_CROSSING  sh_hills:hill_village-port_town/border/s1-s4                   4752    -4515  s1 -> s4
+node BRIDGE           sh_hills:hill_village-port_town/bridge/0                       4879    -3747  22 m, river, water 12 m, widest 7.0 m
+
+C1 corridors vs C3 routes on the C2 terrain (ground-following grade, 10 m steps):
+leg                                              C1 len  C1 max   C1 >G m  C1 >Gm m |   C3 len  C3 max   C3 >G m  C3 >Gm m | C3 dsgn
+interstate_ew:desert_town-county_seat              4472   29.4%       800       560 |     6301    7.6%      1520       710 |    5.0%
+interstate_ew:county_seat-valley_town              6279    7.5%       390       200 |     6601    7.2%       410        70 |    2.0%
+interstate_ew:valley_town-river_city               4997   11.4%      1140       610 |     5538    8.9%       970       360 |    3.0%
+interstate_ns:industrial_city-valley_town          6760    9.0%      1420       600 |     5185   12.4%       450       190 |    3.0%
+interstate_ns:valley_town-port_city                8483   11.2%       990       380 |     5877    2.9%         0         0 |    2.6%
+sh_mountain:mining_town-pass_village               2577   10.6%       830       340 |     2669   10.6%       320       110 |    6.5%
+sh_mountain:pass_village-farm_town_north           2479   17.5%      1300       870 |     4245   13.2%      1080       620 |    7.0%
+sh_range_front:pass_village-desert_town            5787   35.5%      2010      1430 |     1957   12.5%       400       170 |    6.9%
+sh_canyon:desert_town-canyon_outpost               2080   49.9%       420       330 |     4476   20.9%       330       200 |    3.5%
+sh_lakes:mill_town-industrial_city                 4359   10.0%       210        80 |     4521    6.1%        60         0 |    3.4%
+sh_lakes:industrial_city-port_town                 6072    7.8%        60        40 |     5487    4.8%         0         0 |    4.0%
+sh_farm_north:farm_town_north-mill_town            3865    4.8%         0         0 |     3891    2.7%         0         0 |    2.6%
+sh_farm_belt:farm_town_north-county_seat           4203    3.7%         0         0 |     2532    3.4%         0         0 |    3.0%
+sh_farm_belt:county_seat-farm_town_south           4058    7.0%        60        10 |     4090    3.6%         0         0 |    3.9%
+sh_gulf:farm_town_south-bayou_village              5076    7.6%        90        30 |     5417    5.2%        20         0 |    2.6%
+sh_gulf:bayou_village-port_city                    4365    3.6%         0         0 |     3953    1.7%         0         0 |    1.4%
+sh_gulf:port_city-shore_town                       2656    7.1%        40        10 |     2404    6.8%        50         0 |    4.9%
+sh_gulf:shore_town-river_city                      2561   12.8%       480       260 |     2816    8.6%       250        60 |    4.5%
+sh_hills:valley_town-hill_village                  2840   38.7%      1290      1080 |     3772   10.5%        90        60 |    4.2%
+sh_hills:hill_village-port_town                    3621    8.8%       180        40 |     3013    6.6%        60         0 |    4.7%
+output: D:\Minecraft Modding\AFL-federal-worldgen-v1\build\federal-roads\routes
