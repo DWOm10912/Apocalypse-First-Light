@@ -36,7 +36,7 @@ public final class RoadCells {
         Map<Integer, Cell> out = new java.util.HashMap<>();
         for (int lz = -1; lz <= 16; lz++) for (int lx = -1; lx <= 16; lx++) {
             int x = cx * 16 + lx, z = cz * 16 + lz;
-            RoadWorks.Hit h = works.hit(x + 0.5, z + 0.5, R4CrossSection.EDGE + 2);
+            RoadWorks.Hit h = works.hit(x + 0.5, z + 0.5, CrossSection.R4.edge + 2);
             if (h == null) continue;
             double[] pave = RoadWorks.pavedRange(h.road(), x, z);
             if (pave == null) continue;
@@ -84,7 +84,7 @@ public final class RoadCells {
     }
 
     private static double top(RoadDesign d, double x, double z) {
-        double[] l = d.local(x, z, R4CrossSection.EDGE + 4);
+        double[] l = d.local(x, z, d.section.edge + 4);
         return l == null ? Double.NaN : d.pavementY(l[0], l[1]);
     }
 

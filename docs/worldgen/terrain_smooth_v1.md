@@ -192,6 +192,7 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
     - 配置和状态包已注册。
   - 规则：直坡；角点一致；无缝；2 / 4 / 8 碰撞盒；编辑影响范围（含屋顶）；地下洞穴；树冠；屋顶；炸坑（重建标记覆盖、共用边、悬空下的侧面，见 Q 节）；透光邻格（树干、树桩、原木、透光方块旁的侧面，见 S 节）；关闭和未加载区块。
   - 结果：全部通过。
+  - 2026-10-15 加接缝审计 `SeamAudit`（X 节）：108 个合成土方场景，草皮和平滑地面之间不许有透天缝。
 - `node tools/terrain-smooth/physics.mjs`（真实碰撞代码 + 正式版底层大形状规则）：上坡、冲刺、下坡、斜走、站立、三种脚边编辑、64 条起伏路线，全部通过。
   - V1.1 加了第 4 部分“生物”：僵尸追逐，按原版 `MoveControl` 的跳跃判断和 `getGroundY`。结果见 R 节。
 - `physics.mjs world`（`AFL_R4_01` 测试区，树干单独分类后重新导出）：
@@ -214,6 +215,7 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
   - `tools/terrain-smooth/SmoothCheck.java` 加 `seeThroughNeighbours`。
 - **开发包**：`SmoothCommands` 重写；新增 `SmoothDevClient`；`SmoothProbe` 改用正式接口。删除已迁移的 8 个类、3 个开发 mixin 和开发 mixin 配置。
 - **工具**：`tools/terrain-smooth/` 下 `check.mjs`、`SmoothCheck.java`、`PhysicsCheck.java`、`physics.mjs`、`export-area.mjs`。
+- **草皮接缝修复**（2026-10-15，X 节）：`SmoothRules`（`corner`、`lower`）、`SmoothSurfaceModel`、`TerrainSmoothClient#underSides`；新增 `tools/terrain-smooth/SeamAudit.java`、`export-states.mjs`，`check.mjs` 加跑 `SeamAudit`。
 
 ## N. 尚未实测的风险
 
@@ -436,6 +438,7 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
   - 侧面带的下沿遇到草皮邻列，也取草皮在那个点的高度。
   - 结果：天然草皮的顶面在交界处和路基草皮共用同一个高度，网格接上。
 - **限制**：路基外缘的角点是按**规划地面**算的，实际地形（噪声）和规划差得多时（超过天然方块能画的 2 格），夹住后还会留台阶。
+- **2026-10-15 被 X 节修订**：“碰到草皮就取草皮高度、按天然方块的范围夹住”在 C3.3a 全国主线上留下大量透天缝，现在的规则见 X 节。
 - 没有改：别的人工方块旁边照旧钉住；碰撞和画面用同一套规则，服务端和客户端一致。
 - **验证**：编译通过；隔离客户端在 C3 测试世界 c33bo 桥附近停 60 s 建网格，没有报错（地形平滑客户端计数：5363 个斜顶）。用户 2026-10-15 在 c33br 看过桥头一带（和 W 节一起），PASS（没有光影）；`tools/terrain-smooth` 的离线检查没有加草皮场景。
 
@@ -447,3 +450,28 @@ Mixin 在 `src/main/java/com/antaurora/apofirstlight/mixin/`，都在正式配�
 - **配合**：平滑后的地面最多比方块顶低一格，桥的墙面画到扫描到的墙脚下 1 格（`BridgeMesh.FOOT_SINK`），不会露缝。
 - **不影响**：桥面列顶上是 `road_surface`（仍是 OTHER），桥面下的地面照旧不平滑；路面、`graded_turf` 的规则不变。护栏格（桥面边，结构下面是空的）下面的河谷地面现在也参与平滑。
 - **验证**：编译通过；隔离客户端结果见 C3 文档 10.8（c33br，c33bq 的客户端因命中网格的另一个问题崩溃过，已修）。用户 2026-10-15 在 c33br 看过：墙面前面没有坑，PASS（没有光影）。
+
+## X. 路基草皮和平滑地面之间的透天缝（2026-10-15，C3.3a，C3 工作树）
+
+- **问题**：用户 C3.3a 实机验收，州际、州道、山区、平原路段的土方附近到处是透天的缝和洞（C3.3a 验收问题的 A 组；C3.3a 在分支 `feature/federal-highways-c3.3` 上，[C3](federal_highways_c3.md) 文档的 11.11 节记着 A–E 组）。
+- **单独集成**：这一节的改动从 C3.3a 里单独拆出（分支 `fix/c3.3a-turf-seams`，基于 master），不含 C3.3a 的道路改动。master 上已有的 C3.2 示范段（州际 R4）路基草皮交界一样适用。
+- **量法**：从 C3.3a 测试世界导出 8 块区域（湖区桥、湖区涵洞、州际中段、22 m 填方、峡谷起点、山区、平原、峡谷涵洞，各半径 96），逐条检查相邻两列之间的台阶有没有面盖住。一共 356 条透天的边，全部在土方 8 格以内，离土方远的 0 条。主要原因四种：
+  1. **1/8 和 1/4**（161 条）：草皮的角按 1/8 格，天然方块按 1/4 格取整，两边差 1/8 格，谁都不画这条缝。
+  2. **读取窗口**（45 条）：一个共用角点上的草皮只有一个天然方块读到（每块只读自己 y-1..y+2），另一个钉在自己格顶。
+  3. **夹住**（99 条）：草皮高度超出天然方块能画的范围（地板以上 0–2 格），被夹住后和草皮对不上。
+  4. **草皮之间不一致**（45 条）：同一点上几块草皮的角不同（填方陡于 1:1 时 `RoadWorks.fit` 抬高低角），天然方块只取了其中一个。
+  - 另外：侧面带高出自己格顶的部分（角被抬到草皮边上），跟格内的部分一起被同层的整块邻居剔除。
+- **改法**：
+  - `SmoothRules.corner`：草皮列按自己的方块高度一起做跨度检查（点上四列最高和最低差不超过 1 格）。点上所有草皮的值必须一样，而且必须在每个天然方块能画的范围里（它的格顶上下各 1 格）；满足就取草皮的值，否则这个点钉住，每块按自己的格顶画，侧面带补台阶。
+  - `SmoothRules.lower`：侧面带的下沿遇到草皮邻列时按 1/4 格向下取整（原来四舍五入），带子的脚不会高过草皮边。
+  - `SmoothSurfaceModel`：高出自己格顶的侧面带放进不剔除的列表，光照用上面一格的（`underSides` 一起算好）。
+  - `TerrainSmoothClient#underSides`：同层邻格是空气或植物、下面一格是 `graded_turf` 时，补画带子以下的部分（草皮顶线可能穿过本块地板）。
+- **碰撞**：碰撞和画面用同一套 `SmoothRules`，交界处的碰撞跟着画面一起变；服务端和客户端一致。服务端的几何缓存只在运行时（`SmoothChunkData`），没有存档里的旧数据。
+- **没改**：`graded_turf` 方块和模型、`RoadWorks`、道路施工、世界生成版本锁（这是渲染和碰撞规则，旧的测试世界重新进入就按新规则画）。
+- **自动检查**（`node tools/terrain-smooth/check.mjs` 最后一步，`tools/terrain-smooth/SeamAudit.java`）：
+  - 用正式的 `SmoothRules`，加上客户端 `SmoothSurfaceModel`、`underSides`、`GradedTurfModel` 和原版剔除的同款逻辑，逐条检查共用边。改客户端这几处时要同步改它。
+  - 合成场景 108 个：随机自然地面（起伏 0.8 / 3 / 7 格）、一条路（铺面 + 两边草皮边坡，坡度 0.5 / 1.0 / 1.6 格每格，路面比地面低 6 / 齐平 / 高 6 格，两个方向），规划地面和实际地面差 0 或最多 1.2 格；草皮按 `RoadWorks.fit` 量化。
+  - 结果：改前的规则 108 个场景全部有缝（7311 条边），改后 0 条。
+  - 实际区域：`node tools/terrain-smooth/export-states.mjs <存档> <中心 x> <中心 z> <半径> <minY> <maxY> <输出>`（只读存档），再 `java ... SeamAudit <输出> <名字> <目录>` 出汇总和逐条清单。上面 8 块区域改前 356 条，改后 0 条。
+  - `check.mjs` 其余检查、`physics.mjs` 步行检查都通过；`compileJava` 通过。
+- **实机**：用户 2026-10-15 在 C3.3a 测试世界复验 PASS。这次只修透天缝（A 组）；草皮颜色和朝向、边坡和挡墙、涵洞和桥墩是后面的 B–E 组。

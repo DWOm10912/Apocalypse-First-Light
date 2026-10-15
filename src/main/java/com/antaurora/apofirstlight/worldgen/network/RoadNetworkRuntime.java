@@ -4,6 +4,7 @@ import com.antaurora.apofirstlight.ApocalypseFirstLight;
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.federal.FederalMap;
 import com.antaurora.apofirstlight.worldgen.lock.WorldgenGates;
+import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkBuild;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkJson;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkStage;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadWorks;
@@ -81,12 +82,30 @@ public final class RoadNetworkRuntime {
                 ApocalypseFirstLight.LOGGER.warn("[AFL roads] cannot write the road network cache {}", file, e);
             }
         }
-        Set<String> built = RoadNetworkStage.built();
         RoadWorks.Water water = (x, z) -> {
             int w = terrain.water(x, z);
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
-        n = new Network(json, digest(json), RoadNetworkJson.subset(json, built), new RoadWorks(RoadNetworkJson.designs(json, built), water), plan);
+        // C3.3a: the whole plan, legs through towns joined, ends trimmed (RoadNetworkBuild); the server's works read the
+        // same JSON the clients get
+        long t1 = System.nanoTime();
+        // whatever the seed plans, the world loads: a route the stage cannot build is left out (RoadNetworkBuild), and an
+        // error building the network leaves the world without roads (logged), never a crash at world load (2026-10-15)
+        String builtJson;
+        java.util.List<com.antaurora.apofirstlight.worldgen.network.road.RoadDesign> designs;
+        try {
+            RoadNetworkBuild.Result b = RoadNetworkBuild.build(json);
+            for (String line : b.report()) ApocalypseFirstLight.LOGGER.info("[AFL roads] {}", line);
+            if (b.conflicts() > 0) ApocalypseFirstLight.LOGGER.warn("[AFL roads] {} stations where two built roads' works still meet", b.conflicts());
+            ApocalypseFirstLight.LOGGER.info("[AFL roads] built network: {} roads in {} ms", b.routes().size(), (System.nanoTime() - t1) / 1_000_000);
+            builtJson = b.json();
+            designs = RoadNetworkJson.designs(builtJson);
+        } catch (RuntimeException e) {
+            ApocalypseFirstLight.LOGGER.error("[AFL roads] cannot build the road network for seed {}; this world gets no roads", seed, e);
+            builtJson = RoadNetworkJson.write(RoadNetworkPlan.VERSION, RoadNetworkBuild.STAGE, java.util.List.of());
+            designs = java.util.List.of();
+        }
+        n = new Network(json, digest(json), builtJson, new RoadWorks(designs, water), plan);
         CACHE.put(plan, n);
         return n;
     }
@@ -126,8 +145,8 @@ public final class RoadNetworkRuntime {
         else ACTIVE.remove(access.apocalypse$getSeed());
         // road_structure's collision follows the bridge mesh of this network (other dimensions bind nothing: keep it)
         if (active) com.antaurora.apofirstlight.block.RoadStructureBlock.works(n.works());
-        if (active) ApocalypseFirstLight.LOGGER.info("[AFL roads] built routes for this world: {} ({} m)", RoadNetworkStage.BUILT,
-                String.format(Locale.ROOT, "%.0f", n.works().roads().stream().mapToDouble(d -> d.length).sum()));
+        if (active) ApocalypseFirstLight.LOGGER.info("[AFL roads] built routes for this world: {}, {} roads ({} m)", RoadNetworkStage.BUILT,
+                n.works().roads().size(), String.format(Locale.ROOT, "%.0f", n.works().roads().stream().mapToDouble(d -> d.length).sum()));
     }
 
     /** The network bound to a noise state, or null (no roads in that world or dimension). */

@@ -24,10 +24,13 @@ import java.util.TreeSet;
 import java.util.zip.InflaterInputStream;
 
 /**
- * C3.2 offline check of the terrain works and the pavement mesh of the built routes (docs/worldgen/federal_highways_c3.md,
- * 10.6): the same pure classes the server's chunk pass and the client use, on the cached federal plan.
+ * C3.2 / C3.3a offline check of the terrain works and the pavement mesh of the built roads
+ * (docs/worldgen/federal_highways_c3.md, 10.6 and 11): the same pure classes the server's chunk pass and the client use,
+ * on the cached federal plan; since C3.3a the whole built network (RoadNetworkBuild).
  * <ul>
- *   <li>determinism: two independent builds (JSON parse, designs, works) give the same column digest;</li>
+ *   <li>the built network: roads, through towns, trims, remaining conflicts, the build time;</li>
+ *   <li>determinism: two independent builds (network build, JSON parse, designs, works) give the same column digest
+ *   (on every 8th chunk);</li>
  *   <li>collision: every paved / deck column's collision top against the pavement over its square;</li>
  *   <li>turf under the asphalt: no turf corner above the pavement within the paved band and its bevels;</li>
  *   <li>mesh: random points on the pavement are covered by exactly one asphalt triangle of exactly one chunk (no gap,
@@ -42,7 +45,6 @@ import java.util.zip.InflaterInputStream;
 public final class RoadWorksCheck {
     private RoadWorksCheck() {}
 
-    static final Set<String> BUILT = Set.of("interstate_ew:county_seat-valley_town");
 
     public static void main(String[] a) throws Exception {
         long seed = Long.parseLong(a[0]);
@@ -61,17 +63,37 @@ public final class RoadWorksCheck {
         long t1 = System.nanoTime();
         Files.writeString(new File(out, "network.json").toPath(), json, StandardCharsets.UTF_8);
         say(log, "network build %.1f s, json %d bytes", (t1 - t0) / 1e9, json.length());
-        String sub = RoadNetworkJson.subset(json, BUILT);
-        say(log, "built subset json %d bytes (the client packet)", sub.length());
+        long t2 = System.nanoTime();
+        RoadNetworkBuild.Result built = RoadNetworkBuild.build(json);
+        long t3 = System.nanoTime();
+        say(log, "built network (%s): %d roads in %.2f s, json %d bytes (the client packet), remaining conflict stations %d",
+                RoadNetworkBuild.STAGE, built.routes().size(), (t3 - t2) / 1e9, built.json().length(), built.conflicts());
+        for (String line : built.report()) say(log, "  %s", line);
+        Files.writeString(new File(out, "built.json").toPath(), built.json(), StandardCharsets.UTF_8);
         RoadWorks.Ground ground = plan::heightAt;
         RoadWorks.Water water = (x, z) -> {
             int w = terrain.water(x, z);
             return w == RouteTerrain.RIVER || w == RouteTerrain.LAKE || w == RouteTerrain.SEA;
         };
-        RoadWorks w1 = new RoadWorks(RoadNetworkJson.designs(json, BUILT), water);
-        RoadWorks w2 = new RoadWorks(RoadNetworkJson.designs(sub, BUILT), water);
-        RoadDesign d = w1.roads().get(0);
-        say(log, "route %s length %.1f m, spans %s", d.id, d.length, d.spans);
+        RoadWorks w1 = new RoadWorks(RoadNetworkJson.designs(built.json()), water);
+        RoadWorks w2 = new RoadWorks(RoadNetworkJson.designs(RoadNetworkBuild.build(json).json()), water);
+        List<RoadDesign> roads = w1.roads();
+        double total = 0;
+        for (RoadDesign d : roads) {
+            total += d.length;
+            int np = 0, run = 0;
+            double noPass = 0;
+            for (double s = 0; s < d.length; s += 2) if (d.noPassing(s)) noPass += 2;
+            StringBuilder sp = new StringBuilder();
+            for (RoadDesign.Span s : d.spans) {
+                sp.append(String.format(Locale.ROOT, " %.0f..%.0f", s.s0(), s.s1()));
+                if (s.depth() == RoadNetworkJson.CULVERT_DEPTH) sp.append("(culvert)");
+                if (s.piers().length > 0) sp.append("(").append(s.piers().length).append(" piers)");
+            }
+            say(log, "road %-48s %s %7.0f m  no-passing %4.0f %%  spans%s", d.id, d.section, d.length, d.section.divided ? 0 : 100 * noPass / d.length,
+                    sp.length() == 0 ? " -" : sp);
+        }
+        say(log, "built length %.1f km", total / 1000);
         String probe = System.getenv("AFL_PROBE");
         if (probe != null && !probe.isEmpty()) {
             for (String p : probe.split(";")) {
@@ -86,14 +108,20 @@ public final class RoadWorksCheck {
             }
             return;
         }
+        if ("1".equals(System.getenv("AFL_BRIDGES_ONLY"))) {   // the bridge checks alone (a quick rerun)
+            markings(log, roads);
+            bridges(log, roads, w1, ground);
+            return;
+        }
 
         // chunks the works touch
         TreeSet<Long> chunks = new TreeSet<>();
-        for (double s = -RoadDesign.END; s <= d.length + RoadDesign.END; s += 4)
-            for (double u = -RoadWorks.REACH; u <= RoadWorks.REACH; u += 4) {
-                double[] p = d.point(s, u);
-                chunks.add(RoadWorks.key(Math.floorDiv((int) Math.floor(p[0]), 16), Math.floorDiv((int) Math.floor(p[1]), 16)));
-            }
+        for (RoadDesign d : roads)
+            for (double s = -RoadDesign.END; s <= d.length + RoadDesign.END; s += 4)
+                for (double u = -RoadWorks.REACH; u <= RoadWorks.REACH; u += 4) {
+                    double[] p = d.point(s, u);
+                    chunks.add(RoadWorks.key(Math.floorDiv((int) Math.floor(p[0]), 16), Math.floorDiv((int) Math.floor(p[1]), 16)));
+                }
         say(log, "chunks with works: %d", chunks.size());
 
         MessageDigest h1 = MessageDigest.getInstance("SHA-256"), h2 = MessageDigest.getInstance("SHA-256");
@@ -101,18 +129,20 @@ public final class RoadWorksCheck {
         double maxCollision = 0, sumCollision = 0, maxCut = 0, maxFill = 0;
         int nCollision = 0, turfAbove = 0, clamped = 0, wetWorks = 0;
         double worstTurf = 0;
+        int[] cutAt = new int[2], fillAt = new int[2];
+        int fill10 = 0;
+        List<String> wetAt = new ArrayList<>();
         long colNanos = 0, meshNanos = 0;
-        int meshTris = 0, meshChunks = 0;
-        List<RoadMesh.Triangle>[] meshes = new List[chunks.size()];
-        long[] keys = new long[chunks.size()];
+        int meshTris = 0, meshChunks = 0, yellow = 0;
+        List<Long> paved = new ArrayList<>();
         int ci = 0;
         for (long key : chunks) {
             int cx = (int) (key >> 32), cz = (int) key;
+            boolean det = ci++ % 8 == 0;
             long b = System.nanoTime();
             for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++) {
                 int x = cx * 16 + dx, z = cz * 16 + dz;
                 RoadWorks.Column c = w1.column(x, z, ground);
-                feed(h1, c);
                 kinds[c.kind().ordinal()]++;
                 double g = plan.heightAt(x + 0.5, z + 0.5);
                 switch (c.kind()) {
@@ -122,7 +152,11 @@ public final class RoadWorksCheck {
                         maxCollision = Math.max(maxCollision, err);
                         sumCollision += err;
                         nCollision++;
-                        if (c.kind() == RoadWorks.Kind.PAVED) { maxCut = Math.max(maxCut, g - top); maxFill = Math.max(maxFill, top - g); }
+                        if (c.kind() == RoadWorks.Kind.PAVED) {
+                            if (g - top > maxCut) { maxCut = g - top; cutAt = new int[]{x, z}; }
+                            if (top - g > maxFill) { maxFill = top - g; fillAt = new int[]{x, z}; }
+                            if (top - g > 10) fill10++;
+                        }
                     }
                     case TURF -> {
                         int[] q = {c.data() & 15, c.data() >> 4 & 15, c.data() >> 8 & 15, c.data() >> 12 & 15};
@@ -130,56 +164,68 @@ public final class RoadWorksCheck {
                         double base = c.y() + shift * 0.5;
                         double[][] corners = {{x, z}, {x + 1, z}, {x, z + 1}, {x + 1, z + 1}};
                         for (int k = 0; k < 4; k++) {
-                            RoadWorks.Hit hit = w1.hit(corners[k][0], corners[k][1], R4CrossSection.EDGE + 1);
-                            if (hit == null || hit.beyond() > 0 || hit.v() < R4CrossSection.HALF_MEDIAN || hit.v() > R4CrossSection.EDGE) continue;
+                            RoadWorks.Hit hit = w1.hit(corners[k][0], corners[k][1], CrossSection.R4.edge + 1);
+                            if (hit == null || hit.beyond() > 0 || !hit.road().section.paved(hit.v())) continue;
                             double over = base + q[k] / 8.0 - hit.road().pavementY(hit.sc(), hit.u());
                             worstTurf = Math.max(worstTurf, over);
                             if (over > 1e-6) turfAbove++;
                         }
                         double f = base + Math.max(Math.max(q[0], q[1]), Math.max(q[2], q[3])) / 8.0;
-                        maxCut = Math.max(maxCut, g - f);
-                        maxFill = Math.max(maxFill, f - g);
+                        if (g - f > maxCut) { maxCut = g - f; cutAt = new int[]{x, z}; }
+                        if (f - g > maxFill) { maxFill = f - g; fillAt = new int[]{x, z}; }
                     }
                     default -> { }
                 }
                 if (c.kind() == RoadWorks.Kind.TURF && water.wet(x + 0.5, z + 0.5)) {
                     RoadWorks.Hit hit = w1.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
-                    if (hit != null && (hit.v() > R4CrossSection.EDGE + 0.5 || hit.beyond() > 0)) wetWorks++;
+                    if (hit != null && (hit.v() > hit.road().section.edge + 0.5 || hit.beyond() > 0)) {
+                        wetWorks++;
+                        if (wetAt.size() < 6) wetAt.add(String.format(Locale.ROOT, "%d %d (%s s %.0f v %.1f)", x, z, hit.road().id, hit.sc(), hit.v()));
+                    }
                 }
-                feed(h2, w2.column(x, z, ground));
+                if (det) { feed(h1, c); feed(h2, w2.column(x, z, ground)); }
             }
             colNanos += System.nanoTime() - b;
             b = System.nanoTime();
-            List<RoadMesh.Triangle> m = RoadMesh.chunk(d, cx, cz);
+            List<RoadMesh.Triangle> m = mesh(roads, cx, cz);
             meshNanos += System.nanoTime() - b;
-            meshes[ci] = m;
-            keys[ci++] = key;
-            if (!m.isEmpty()) { meshChunks++; meshTris += m.size(); }
+            if (!m.isEmpty()) {
+                meshChunks++;
+                meshTris += m.size();
+                paved.add(key);
+                for (RoadMesh.Triangle t : m) if (t.material() == RoadMesh.Material.YELLOW) yellow++;
+            }
         }
         String d1 = hex(h1.digest()), d2 = hex(h2.digest());
-        say(log, "column digest %s, independent build %s  %s", d1, d2, d1.equals(d2) ? "IDENTICAL" : "DIFFERENT");
+        say(log, "column digest (every 8th chunk) %s, independent build %s  %s", d1, d2, d1.equals(d2) ? "IDENTICAL" : "DIFFERENT");
         for (RoadWorks.Kind k : RoadWorks.Kind.values()) say(log, "  %-9s %8d columns", k, kinds[k.ordinal()]);
         say(log, "collision: %d columns, max error %.4f m, mean %.4f m (1/32 block = %.4f)", nCollision, maxCollision, sumCollision / Math.max(1, nCollision), 1 / 32.0);
         say(log, "turf corners above the pavement: %d (worst %+.4f m)", turfAbove, worstTurf);
-        say(log, "works on planned water outside the formation: %d columns", wetWorks);
-        say(log, "max cut %.2f m, max fill %.2f m (finished top against the planned ground, paved and turf columns)", maxCut, maxFill);
+        say(log, "works on planned water outside the formation: %d columns %s", wetWorks, wetAt);
+        say(log, "max cut %.2f m at %d %d %s, max fill %.2f m at %d %d %s (finished top against the planned ground, paved and turf columns); pavement filled over 10 m: %d columns",
+                maxCut, cutAt[0], cutAt[1], near(w1, cutAt), maxFill, fillAt[0], fillAt[1], near(w1, fillAt), fill10);
         say(log, "columns: %.2f ms per chunk (%d chunks); mesh: %.2f ms per chunk, %d chunks with pavement, %d triangles (%.0f per chunk)",
                 colNanos / 1e6 / chunks.size(), chunks.size(), meshNanos / 1e6 / chunks.size(), meshChunks, meshTris, meshTris / (double) Math.max(1, meshChunks));
+        say(log, "yellow line triangles %d", yellow);
+        markings(log, roads);
 
-        // mesh coverage: random points on the paved band
+        // mesh coverage: random points on the paved band of random roads (all roads' meshes of the chunk: no overlap between roads either)
         Random r = new Random(12345);
-        int samples = 20000, gaps = 0, overlaps = 0, crossChunk = 0;
+        int samples = 40000, gaps = 0, overlaps = 0, crossChunk = 0;
         double worstMesh = 0;
+        java.util.Map<Long, List<RoadMesh.Triangle>> meshCache = new java.util.HashMap<>();
         for (int i = 0; i < samples; i++) {
+            RoadDesign d = roads.get(r.nextInt(roads.size()));
+            CrossSection sec = d.section;
             double s = r.nextDouble() * d.length, side = r.nextBoolean() ? 1 : -1;
-            double u = side * (R4CrossSection.HALF_MEDIAN + 0.01 + r.nextDouble() * (R4CrossSection.EDGE - R4CrossSection.HALF_MEDIAN - 0.02));
+            double u = side * (sec.halfMedian + 0.01 + r.nextDouble() * (sec.edge - sec.halfMedian - 0.02));
             double[] p = d.point(s, u);
             int cx = Math.floorDiv((int) Math.floor(p[0]), 16), cz = Math.floorDiv((int) Math.floor(p[1]), 16);
-            int idx = java.util.Arrays.binarySearch(keys, RoadWorks.key(cx, cz));
-            if (idx < 0) { gaps++; continue; }
+            if (meshCache.size() > 4000) meshCache.clear();
+            List<RoadMesh.Triangle> chunkMesh = meshCache.computeIfAbsent(RoadWorks.key(cx, cz), k -> mesh(roads, cx, cz));
             int cover = 0;
             double y = Double.NaN;
-            for (RoadMesh.Triangle t : meshes[idx]) {
+            for (RoadMesh.Triangle t : chunkMesh) {
                 if (t.material() != RoadMesh.Material.ASPHALT) continue;
                 double[] bc = bary(t, p[0] - cx * 16, p[1] - cz * 16);
                 if (bc == null) continue;
@@ -196,10 +242,10 @@ public final class RoadWorksCheck {
         // dug cells (client): predicted collision blocks against the chunk pass, mesh cut, hole walls
         int cellChunks = 0, cellsChecked = 0, cellMismatch = 0, cutBad = 0, inHole = 0, walls = 0, wallBad = 0;
         double worstSplit = 0;
-        for (int i = 0; i < meshes.length; i++) {
-            if (meshes[i].isEmpty()) continue;
-            int cx = (int) (keys[i] >> 32), cz = (int) keys[i];
-            java.util.Map<Integer, RoadCells.Cell> cells = RoadCells.of(List.of(d), w1, cx, cz);
+        for (int i = 0; i < paved.size(); i += Math.max(1, paved.size() / 2000)) {
+            int cx = (int) (paved.get(i) >> 32), cz = (int) (long) paved.get(i);
+            List<RoadMesh.Triangle> chunkMesh = mesh(roads, cx, cz);
+            java.util.Map<Integer, RoadCells.Cell> cells = RoadCells.of(roads, w1, cx, cz);
             for (RoadCells.Cell c : cells.values()) {
                 RoadWorks.Column col = w1.column(cx * 16 + RoadCells.lx(c.index()), cz * 16 + RoadCells.lz(c.index()), ground);
                 cellsChecked++;
@@ -216,15 +262,15 @@ public final class RoadWorksCheck {
             if (dug.isEmpty()) continue;
             cellChunks++;
             for (int k = 0; k < 256; k++) kept[k] = !removed[k];
-            List<RoadMesh.Triangle> cut = RoadMesh.without(meshes[i], removed), rest = RoadMesh.without(meshes[i], kept);
-            double split = Math.abs(area(cut) + area(rest) - area(meshes[i]));
+            List<RoadMesh.Triangle> cut = RoadMesh.without(chunkMesh, removed), rest = RoadMesh.without(chunkMesh, kept);
+            double split = Math.abs(area(cut) + area(rest) - area(chunkMesh));
             worstSplit = Math.max(worstSplit, split);
             if (split > 1e-6) cutBad++;
             for (RoadMesh.Triangle t : cut) {
                 double mx = (t.a().x() + t.b().x() + t.c().x()) / 3, mz = (t.a().z() + t.b().z() + t.c().z()) / 3;
                 if (removed[(int) Math.floor(mx) | (int) Math.floor(mz) << 4]) inHole++;
             }
-            for (RoadMesh.Triangle t : RoadCells.walls(List.of(d), cells, dug, cx, cz)) {
+            for (RoadMesh.Triangle t : RoadCells.walls(roads, cells, dug, cx, cz)) {
                 walls++;
                 double lo = Math.min(t.a().y(), Math.min(t.b().y(), t.c().y())), hi = Math.max(t.a().y(), Math.max(t.b().y(), t.c().y()));
                 if (hi - lo > 2.5 || Math.abs(t.ny()) > 1e-9) wallBad++;
@@ -233,13 +279,14 @@ public final class RoadWorksCheck {
         say(log, "dug cells: predicted collision blocks %d, different from the chunk pass %d; %d chunks dug (every 7th paved cell): cut not a partition %d (worst %.2e m2), pieces left in a hole %d, wall triangles %d (bad %d)",
                 cellsChecked, cellMismatch, cellChunks, cutBad, worstSplit, inHole, walls, wallBad);
 
-        bridges(log, d, w1, ground, chunks);
+        bridges(log, roads, w1, ground);
 
-        // field calls: what the density pays per column (surface over the planned ground)
+        // field calls: what the density pays per column (surface over the planned ground), on every 8th chunk
         long b = System.nanoTime();
-        int calls = 0;
+        int calls = 0, cj = 0;
         double sink = 0;
         for (long key : chunks) {
+            if (cj++ % 8 != 0) continue;
             int cx = (int) (key >> 32), cz = (int) key;
             for (int dz = 0; dz < 16; dz++) for (int dx = 0; dx < 16; dx++) {
                 double g = plan.heightAt(cx * 16 + dx, cz * 16 + dz);
@@ -253,16 +300,68 @@ public final class RoadWorksCheck {
         log.close();
     }
 
+    /** All roads' pavement mesh of one chunk. */
+    static List<RoadMesh.Triangle> mesh(List<RoadDesign> roads, int cx, int cz) {
+        List<RoadMesh.Triangle> out = new ArrayList<>();
+        for (RoadDesign d : roads) out.addAll(RoadMesh.chunk(d, cx, cz));
+        return out;
+    }
+
+    /** The R2 centre line: no-passing zones on curves, crests and bridges, their lengths and the passing zones'. */
+    /** The road nearest a column, with its station. */
+    static String near(RoadWorks w, int[] xz) {
+        RoadWorks.Hit hit = w.hit(xz[0] + 0.5, xz[1] + 0.5, RoadWorks.REACH);
+        return hit == null ? "(no road)" : String.format(Locale.ROOT, "(%s s %.0f)", hit.road().id, hit.sc());
+    }
+
+    /** A curve this tight is reported where passing stays allowed on it (informative), m. */
+    static final double TIGHT = 300;
+
+    static void markings(PrintStream log, List<RoadDesign> roads) {
+        int zones = 0, shortPass = 0, shortNo = 0, spanOpen = 0, tightOpen = 0;
+        for (RoadDesign d : roads) {
+            if (d.section.divided) continue;
+            boolean prev = d.noPassing(0);
+            double start = 0;
+            for (double s = 2; s <= d.length + 1e-9; s += 2) {
+                boolean v = d.noPassing(Math.min(d.length, s));
+                if (v != prev || s >= d.length - 1e-9) {
+                    double len = s - start;
+                    if (start > 0 && s < d.length - 1e-9) { if (prev && len < RoadDesign.MIN_NO_PASS - 2) shortNo++; if (!prev && len < RoadDesign.MIN_PASS - 2) shortPass++; }
+                    if (prev) zones++;
+                    start = s;
+                    prev = v;
+                }
+            }
+            for (double s = 0; s <= d.length; s += 2) {
+                if (!d.noPassing(s) && d.span(s) != null) spanOpen++;
+                if (!d.noPassing(s) && Math.abs(d.curvature(s)) * TIGHT > 1) tightOpen++;
+            }
+        }
+        say(log, "R2 centre line (sight %.0f m): %d no-passing zones; short passing zones %d, short no-passing zones %d (inside the route); passing allowed on a bridge %d / on a curve under %.0f m %d stations (short curves keep the sight)",
+                RoadDesign.NO_PASS_SIGHT, zones, shortPass, shortNo, spanOpen, TIGHT, tightOpen);
+    }
+
     /** The bridge checks: expectations, collision against the mesh, the mesh, a damage run. */
-    static void bridges(PrintStream log, RoadDesign d, RoadWorks w, RoadWorks.Ground ground, TreeSet<Long> chunks) {
+    static void bridges(PrintStream log, List<RoadDesign> roads, RoadWorks w, RoadWorks.Ground ground) {
+        // the chunks near a span
+        TreeSet<Long> chunks = new TreeSet<>();
+        for (RoadDesign d : roads)
+            for (RoadDesign.Span sp : d.spans)
+                for (double s = sp.s0() - 8; s <= sp.s1() + 8; s += 2)
+                    for (double u = -BridgeMesh.WALL_REACH - 4; u <= BridgeMesh.WALL_REACH + 4; u += 4) {
+                        double[] p = d.point(s, u);
+                        chunks.add(RoadWorks.key(Math.floorDiv((int) Math.floor(p[0]), 16), Math.floorDiv((int) Math.floor(p[1]), 16)));
+                    }
+        int pierCells = 0;
         double worstProtrude = 0;
         int chunksNear = 0, expected = 0, serverOnly = 0, mismatch = 0, missing = 0, wings = 0, notPresent = 0, deckOut = 0, parapets = 0;
         double worstParapet = 0;
         int tris = 0, vertical = 0, badTri = 0, damagedChunks = 0, damaged = 0, brokenSeen = 0, leftInCell = 0, repairTris = 0;
         int solidPoints = 0, solidNone = 0, solidUncovered = 0;
         double worstTopDiff = 0;
-        List<String> uncoveredExamples = new ArrayList<>(), topOffExamples = new ArrayList<>();
-        int topOff = 0, parapetOverPaved = 0;
+        List<String> uncoveredExamples = new ArrayList<>(), topOffExamples = new ArrayList<>(), badExamples = new ArrayList<>();
+        int topOff = 0, parapetOverPaved = 0, onEdge = 0;
         long nanos = 0;
         for (long key : chunks) {
             int cx = (int) (key >> 32), cz = (int) key;
@@ -279,6 +378,11 @@ public final class RoadWorksCheck {
                 BridgeMesh.Expect e = exp.get(i);
                 boolean structure = c.kind() == RoadWorks.Kind.DECK || c.kind() == RoadWorks.Kind.ABUTMENT || c.kind() == RoadWorks.Kind.BARRIER;
                 if (e != null) expected++;
+                if (c.kind() == RoadWorks.Kind.ABUTMENT) {
+                    RoadWorks.Hit ph = w.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
+                    RoadDesign.Span psp = ph == null ? null : ph.road().span(ph.sc());
+                    if (psp != null && RoadCells.inner(i) && !RoadWorks.band(ph.road(), psp, x, z)) pierCells++;
+                }
                 if (!structure) {
                     if (e != null && !e.wing()) missing++;
                     continue;
@@ -295,7 +399,8 @@ public final class RoadWorksCheck {
                 if (e.wing()) wings++;
                 RoadWorks.Hit h = w.hit(x + 0.5, z + 0.5, RoadWorks.REACH);
                 if (c.kind() == RoadWorks.Kind.BARRIER && !e.wing()) {
-                    double edge = h.v() > R4CrossSection.EDGE ? R4CrossSection.EDGE : R4CrossSection.HALF_MEDIAN;
+                    CrossSection sec = h.road().section;
+                    double edge = h.v() > sec.edge ? sec.edge : sec.halfMedian;
                     double design = h.road().pavementY(h.sc(), Math.copySign(edge, h.u())) + BridgeMesh.PARAPET_HEIGHT;
                     worstParapet = Math.max(worstParapet, Math.abs(c.y() + c.layers() / 32.0 - design));
                     parapets++;
@@ -318,12 +423,17 @@ public final class RoadWorksCheck {
                 for (RoadMesh.Vertex v : new RoadMesh.Vertex[]{t.a(), t.b(), t.c()})
                     bad |= !Double.isFinite(v.x() + v.y() + v.z()) || v.u() < -1e-6 || v.u() > 1 + 1e-6 || v.v() < -1e-6 || v.v() > 1 + 1e-6
                             || v.x() < -1e-6 || v.x() > 16 + 1e-6 || v.z() < -1e-6 || v.z() > 16 + 1e-6;
-                if (bad) badTri++;
+                if (bad) {
+                    badTri++;
+                    if (badExamples.size() < 4) badExamples.add(String.format(java.util.Locale.ROOT, "chunk %d %d n %.3f %.3f %.3f a %.3f %.3f %.3f uv %.3f %.3f b %.3f %.3f %.3f uv %.3f %.3f c %.3f %.3f %.3f uv %.3f %.3f",
+                            cx, cz, t.nx(), t.ny(), t.nz(), t.a().x(), t.a().y(), t.a().z(), t.a().u(), t.a().v(), t.b().x(), t.b().y(), t.b().z(), t.b().u(), t.b().v(),
+                            t.c().x(), t.c().y(), t.c().z(), t.c().u(), t.c().v()));
+                }
             }
             // collision inside the mesh: on 8 x 8 points of every intact structure cell, where BridgeMesh.solid (the
             // collision) has a top, an upward face of the mesh (bridge or pavement) lies there at that height
             List<RoadMesh.Triangle> all = new ArrayList<>(mesh);
-            all.addAll(RoadMesh.chunk(d, cx, cz));
+            all.addAll(mesh(roads, cx, cz));
             for (BridgeMesh.Expect e : exp.values()) {
                 if (!RoadCells.inner(e.index()) || BridgeMesh.state(e, found.get(e.index())) != BridgeMesh.State.PRESENT) continue;
                 int lx = RoadCells.lx(e.index()), lz = RoadCells.lz(e.index());
@@ -341,7 +451,20 @@ public final class RoadWorksCheck {
                         double y = b3[0] * t.a().y() + b3[1] * t.b().y() + b3[2] * t.c().y();
                         if (Double.isNaN(best) || Math.abs(y - top) < Math.abs(best - top)) best = y;
                     }
-                    if (Double.isNaN(best)) { solidUncovered++; if (uncoveredExamples.size() < 6) uncoveredExamples.add(String.format(java.util.Locale.ROOT, "%.2f %.2f %s", cx * 16 + px, cz * 16 + pz, e.kind())); }
+                    if (Double.isNaN(best) && upAt(all, px + 0.002, pz) | upAt(all, px - 0.002, pz) | upAt(all, px, pz + 0.002) | upAt(all, px, pz - 0.002)) {
+                        // the point lies on the mesh's edge (a wall face at t = 1 of an integer span end, a parapet's
+                        // outer edge on an axis-aligned road): covered within 2 mm
+                        onEdge++;
+                        continue;
+                    }
+                    if (Double.isNaN(best)) {
+                        solidUncovered++;
+                        if (uncoveredExamples.size() < 6) {
+                            RoadWorks.Hit hh = w.hit(cx * 16 + px, cz * 16 + pz, RoadWorks.REACH);
+                            uncoveredExamples.add(String.format(java.util.Locale.ROOT, "%.2f %.2f %s wing %s top %d (%s)", cx * 16 + px, cz * 16 + pz, e.kind(), e.wing(), e.top(),
+                                    hh == null ? "no road" : String.format(java.util.Locale.ROOT, "%s s %.1f u %.2f beyond %.1f", hh.road().id, hh.sc(), hh.u(), hh.beyond())));
+                        }
+                    }
                     else if (e.surface()) {
                         // a paved cell's top block is road_surface (its layers' box, not the mesh's solid): a parapet
                         // reaching over it has no collision above the pavement there
@@ -383,18 +506,18 @@ public final class RoadWorksCheck {
                 int c = Math.min(15, (int) Math.floor(mx)) | Math.min(15, (int) Math.floor(mz)) << 4;
                 if (broken[c] && mx - Math.floor(mx) > 1e-6 && mz - Math.floor(mz) > 1e-6) leftInCell++;
             }
-            repairTris += BridgeMesh.repairs(exp, hit, RoadCells.of(List.of(d), w, cx, cz)).size();
+            repairTris += BridgeMesh.repairs(exp, hit, RoadCells.of(roads, w, cx, cz)).size();
         }
-        say(log, "bridges: %d chunks near a span; %d expected structure cells (client), built by the server but not expected %d, expected deck / parapet cells the server does not build %d, different top / layers / kind %d",
-                chunksNear, expected, serverOnly, missing, mismatch);
+        say(log, "bridges: %d chunks near a span; %d expected structure cells (client), built by the server but not expected %d, expected deck / parapet cells the server does not build %d, different top / layers / kind %d; pier cells %d",
+                chunksNear, expected, serverOnly, missing, mismatch, pierCells);
         say(log, "  wing cells built %d; undamaged cells not intact %d; parapet collision against the parapet mesh: %d cells, worst %.4f m; deck structure blocks below the mesh underside %d (the collision block itself under the 0.3 m slab: worst %.2f m)",
                 wings, notPresent, parapets, worstParapet, deckOut, worstProtrude);
-        say(log, "  concrete mesh: %d triangles (%d vertical), bad (normal, uv, NaN, outside the chunk) %d; expectations + mesh %.2f ms per near chunk",
-                tris, vertical, badTri, nanos / 1e6 / Math.max(1, chunksNear));
+        say(log, "  concrete mesh: %d triangles (%d vertical), bad (normal, uv, NaN, outside the chunk) %d %s; expectations + mesh %.2f ms per near chunk",
+                tris, vertical, badTri, badExamples, nanos / 1e6 / Math.max(1, chunksNear));
         say(log, "  damage: %d chunks, %d cells broken (every 5th), seen broken %d, mesh left over a broken cell %d, repair triangles %d",
                 damagedChunks, damaged, brokenSeen, leftInCell, repairTris);
-        say(log, "  collision inside the mesh: %d points of intact cells with collision (%d without), no mesh above %d %s; mesh top vs collision top worst %.3f m",
-                solidPoints, solidNone, solidUncovered, uncoveredExamples, worstTopDiff);
+        say(log, "  collision inside the mesh: %d points of intact cells with collision (%d without), no mesh above %d %s (on the mesh's edge, covered within 2 mm: %d); mesh top vs collision top worst %.3f m",
+                solidPoints, solidNone, solidUncovered, uncoveredExamples, onEdge, worstTopDiff);
         say(log, "    structure-topped points more than 0.1 m off: %d %s; paved-cell points under a parapet (no collision above the pavement) %d",
                 topOff, topOffExamples, parapetOverPaved);
     }
@@ -404,6 +527,12 @@ public final class RoadWorksCheck {
         for (RoadMesh.Triangle t : tris)
             s += Math.abs((t.b().x() - t.a().x()) * (t.c().z() - t.a().z()) - (t.b().z() - t.a().z()) * (t.c().x() - t.a().x())) / 2;
         return s;
+    }
+
+    /** An upward face of the mesh lies over (x, z). */
+    static boolean upAt(List<RoadMesh.Triangle> all, double x, double z) {
+        for (RoadMesh.Triangle t : all) if (t.ny() >= 0.15 && bary(t, x, z) != null) return true;
+        return false;
     }
 
     static double[] bary(RoadMesh.Triangle t, double x, double z) {

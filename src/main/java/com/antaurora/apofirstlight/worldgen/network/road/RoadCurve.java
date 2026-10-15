@@ -12,6 +12,9 @@ import java.util.Arrays;
  * Pure Java, immutable, deterministic: the arc-length table and every query depend only on the control points, never
  * on chunks or load order. Lateral offset u is positive to the right of the direction of travel: (-tz, tx), the R4
  * convention; signed curvature is positive when the road turns towards +u.
+ * <p>
+ * A trimmed curve (C3.3a: a route stopped short of a junction or a town) is the station window [from, to] of the full
+ * spline, renumbered 0 .. to - from; its straight extensions continue from the trimmed ends.
  */
 public final class RoadCurve {
     private static final int SUB = 32;   // arc-length table subdivisions per span
@@ -19,6 +22,8 @@ public final class RoadCurve {
     private final int spans;
     private final double[] arc;           // spans * SUB + 1 cumulative lengths
     public final double length;
+    /** Station of this curve's 0 on the full spline (the start trim), and the full spline's length. */
+    public final double offset, fullLength;
     private final double[] ctrlX, ctrlZ;
     // projection index: a sample every STEP m, bucketed by BUCKET m cells
     private static final double STEP = 2, BUCKET = 32;
@@ -26,7 +31,10 @@ public final class RoadCurve {
     private final int bx0, bz0, nbx, nbz;
     private final int[] bucketStart, bucketSample;
 
-    public RoadCurve(double[] xs, double[] zs) {
+    public RoadCurve(double[] xs, double[] zs) { this(xs, zs, 0, Double.POSITIVE_INFINITY); }
+
+    /** The window [from, to] of the spline through the control points (to clamped to its length). */
+    public RoadCurve(double[] xs, double[] zs, double from, double to) {
         int n = xs.length;
         if (n < 2 || zs.length != n) throw new IllegalArgumentException("ROAD_CURVE_POINTS");
         for (int i = 0; i < n; i++) if (!Double.isFinite(xs[i]) || !Double.isFinite(zs[i])) throw new IllegalArgumentException("ROAD_CURVE_NON_FINITE");
@@ -46,7 +54,9 @@ public final class RoadCurve {
                 double a = (double) k / SUB, b = (double) (k + 1) / SUB;
                 arc[sp * SUB + k + 1] = arc[sp * SUB + k] + simpson(sp, a, b);
             }
-        length = arc[arc.length - 1];
+        fullLength = arc[arc.length - 1];
+        offset = Math.max(0, from);
+        length = Math.min(fullLength, to) - offset;
         if (!(length > 1e-6)) throw new IllegalArgumentException("ROAD_CURVE_ZERO_LENGTH");
         int m = (int) Math.ceil(length / STEP) + 1;
         sx = new double[m];
@@ -105,9 +115,9 @@ public final class RoadCurve {
         return (6 * (1 - t) * p[sp] + (18 * t - 12) * p[sp + 1] + (-18 * t + 6) * p[sp + 2] + 6 * t * p[sp + 3]) / 6;
     }
 
-    /** Span and parameter of a station (0 <= s <= length): table search, then Newton steps on the true arc length. */
+    /** Span and parameter of a full-spline station (0 <= s <= fullLength): table search, then Newton steps on the true arc length. */
     private double param(double s, int[] spanOut) {
-        s = Math.max(0, Math.min(length, s));
+        s = Math.max(0, Math.min(fullLength, s));
         int k = Arrays.binarySearch(arc, s);
         if (k < 0) k = -k - 2;
         k = Math.max(0, Math.min(arc.length - 2, k));
@@ -138,7 +148,7 @@ public final class RoadCurve {
             return;
         }
         int[] sp = new int[1];
-        double t = param(s, sp);
+        double t = param(s + offset, sp);
         double x = pos(px, sp[0], t), z = pos(pz, sp[0], t);
         double vx = d1(px, sp[0], t), vz = d1(pz, sp[0], t), ax = d2(px, sp[0], t), az = d2(pz, sp[0], t);
         double v = Math.sqrt(vx * vx + vz * vz);

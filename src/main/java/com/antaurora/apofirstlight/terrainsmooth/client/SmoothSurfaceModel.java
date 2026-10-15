@@ -31,7 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>each side: only the band between the neighbour's surface and this top, with the vanilla side layers (grass side
  *   and its tinted overlay) mapped down from the band's top edge, so the grass fringe follows the slope; below the band
  *   the neighbour cell is counted on, and where that cell hides nothing (a mesh trunk, a log, glass, a slab...;
- *   TerrainSmoothClient#underSides) the part below the band too, culled like a vanilla face (2026-10-12);</li>
+ *   TerrainSmoothClient#underSides) the part below the band too, culled like a vanilla face (2026-10-12); a band
+ *   reaching above the block's cell is unculled, lit with the light of the cell above (2026-10-15);</li>
  *   <li>the bottom: the vanilla one.</li>
  * </ul>
  * Lighting: vanilla smooth lighting (and Forge's per-quad flat path inside it) samples a quad that is not flush with its
@@ -104,6 +105,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
         out[Direction.UP.ordinal()] = List.copyOf(tops);
         // side bands, and where a neighbour that hides nothing was counted on for the part below a band, that part too
         int underLight = LightTexture.pack(under >> 4 & 15, under >> 8 & 15);
+        List<BakedQuad> free = new ArrayList<>();
         for (int s = 0; s < 4; s++) {
             float la = (g >>> (16 + 8 * s) & 15) / 4F, lb = (g >>> (20 + 8 * s) & 15) / 4F;
             float ua = c[SIDE_CORNERS[s][0]], ub = c[SIDE_CORNERS[s][1]];
@@ -118,7 +120,13 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
                 float[][] p = {{a[0], la, a[1]}, {b[0], lb, b[1]}, {b[0], ub, b[1]}, {a[0], ua, a[1]}};
                 // v measured down from the band's top edge: the side texture's top rows (the grass fringe) follow the slope
                 float[][] uv = {{0, Math.min(1, ua - la)}, {1, Math.min(1, ub - lb)}, {1, 0}, {0, 0}};
-                for (BakedQuad o : layers) side.add(quad(p, uv, o.getSprite(), o.getTintIndex(), SIDES[s], -1, 0));
+                // a band reaching above the block's own cell is not hidden by the neighbour at the block's level (that
+                // stops at the cell's top): unculled, or the part above would go with it (the C3.3a seams: a corner raised
+                // to a turf edge beside a full block). Lit from the neighbour cell like a culled side, which is that full
+                // block here: the light of the cell above (TerrainSmoothClient#underSides) is baked in.
+                boolean above = ua > 1 + 1e-4F || ub > 1 + 1e-4F;
+                for (BakedQuad o : layers)
+                    (above ? free : side).add(quad(p, uv, o.getSprite(), o.getTintIndex(), SIDES[s], -1, above ? underLight : 0));
             }
             if (hasUnder) {
                 // from the floor to the band (within this cell), the texture continuing the band's; in the culled list, so a
@@ -130,6 +138,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
             }
             out[SIDES[s].ordinal()] = List.copyOf(side);
         }
+        out[6] = List.copyOf(free);
         out[Direction.DOWN.ordinal()] = originalModel.getQuads(state, Direction.DOWN, random, ModelData.EMPTY, renderType);
         TerrainSmoothClient.quadBuilds.increment();
         TerrainSmoothClient.quadNanos.add(System.nanoTime() - begin);

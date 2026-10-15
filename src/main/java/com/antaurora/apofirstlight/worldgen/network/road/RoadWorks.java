@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The terrain works of the built roads of one world (C3.2; docs/worldgen/federal_highways_c3.md, 10): the finished
+ * The terrain works of the built roads of one world (C3.2, C3.3a; docs/worldgen/federal_highways_c3.md, 10): the finished
  * surface the road body makes of the planned ground, and what every block column of the road becomes. Pure Java over
  * the road designs and a natural ground function (the Terrain V2 planned surface); no world, no block, no chunk order.
  * The same functions serve
@@ -21,7 +21,7 @@ import java.util.Map;
  * Rules (the accepted R4 sample's earthworks, R4Earthworks, on the planned ground instead of surveyed blocks):
  * <ul>
  *   <li>formation (|u| <= EDGE): the median swale, or the turf just under the paved band;</li>
- *   <li>roadside: the shoulder hinge plus R4CrossSection.roadside (1:4 foreslope, 1 m ditch, 1:3 backslope, or the
+ *   <li>roadside: the shoulder hinge plus CrossSection.roadside (1:4 foreslope, 1 m ditch, 1:3 backslope, or the
  *   1:4 / 1:3 fill slope), which meets the ground at the daylight line by construction; beyond MAX_HALF_WIDTH - 4 the
  *   surface is blended into the ground so it never ends in a step;</li>
  *   <li>beyond the route's ends: the end cross-section approaching the ground at 1:4;</li>
@@ -30,8 +30,10 @@ import java.util.Map;
  *   <li>roadside works never enter water (a river, lake or the sea beside the road, as at a skewed crossing): the
  *   water keeps its natural bed and flows on; over the formation itself water is always bridged (the route design).</li>
  * </ul>
- * Where two roads are near, the one with the smaller lateral offset wins (C3.2 builds one route; junction geometry is
- * C3.3).
+ * Where two roads are near (C3.3a: the trimmed ends at a junction or a town, before C3.3b builds the junctions), a
+ * point on a road's formation belongs to that road; elsewhere the roadside works of all the roads reaching the point
+ * combine: the highest fill and the deepest cut over the ground, so the finished surface stays continuous where one road's
+ * slopes run into another's.
  */
 public final class RoadWorks {
     public static final double NATURAL_TOLERANCE = 0.03, MAX_HALF_WIDTH = 48, BLEND = 4, END_SLOPE = 0.25;
@@ -96,42 +98,85 @@ public final class RoadWorks {
         return null;
     }
 
-    /** The road a point lies on within maxDist of a centreline (the smallest lateral offset), or null. */
+    private RoadDesign[] near(double x, double z) {
+        return byChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
+    }
+
+    /** On the road's formation (on the route, within its paved edge plus the shoulder rounding). */
+    static boolean onFormation(Hit h) { return h.beyond() == 0 && h.v() <= h.road().section.edge + 0.5; }
+
+    /**
+     * The road a point lies on within maxDist of a centreline, or null: a road whose formation holds the point (the
+     * smallest lateral offset of those), else the smallest lateral offset.
+     */
     public Hit hit(double x, double z, double maxDist) {
-        RoadDesign[] near = byChunk.get(key(Math.floorDiv((int) Math.floor(x), 16), Math.floorDiv((int) Math.floor(z), 16)));
+        RoadDesign[] near = near(x, z);
         if (near == null) return null;
         Hit best = null;
+        boolean bestOn = false;
         for (RoadDesign d : near) {
             double[] l = d.local(x, z, maxDist);
-            if (l != null && (best == null || Math.abs(l[1]) < best.v())) best = new Hit(d, l[0], l[1]);
+            if (l == null) continue;
+            Hit h = new Hit(d, l[0], l[1]);
+            boolean on = onFormation(h);
+            if (best == null || on && !bestOn || on == bestOn && h.v() < best.v()) { best = h; bestOn = on; }
         }
         return best;
     }
 
-    /** Finished surface at (x, z) over the natural ground g there; NaN where the works leave the ground natural. */
+    /**
+     * Finished surface at (x, z) over the natural ground g there; NaN where the works leave the ground natural. A point
+     * on a formation takes that road's; elsewhere the works of every road reaching it combine (the class comment).
+     */
     public double surface(double x, double z, double g) {
-        Hit h = hit(x, z, REACH);
-        return h == null ? Double.NaN : surface(h, x, z, g);
+        RoadDesign[] near = near(x, z);
+        if (near == null) return Double.NaN;
+        if (near.length == 1) {
+            double[] l = near[0].local(x, z, REACH);
+            return l == null ? Double.NaN : surface(new Hit(near[0], l[0], l[1]), x, z, g);
+        }
+        Hit[] hs = new Hit[near.length];
+        int n = 0;
+        Hit on = null;
+        for (RoadDesign d : near) {
+            double[] l = d.local(x, z, REACH);
+            if (l == null) continue;
+            Hit h = hs[n++] = new Hit(d, l[0], l[1]);
+            if (onFormation(h) && (on == null || h.v() < on.v())) on = h;
+        }
+        if (on != null) return surface(on, x, z, g);
+        if (n <= 1) return n == 0 ? Double.NaN : surface(hs[0], x, z, g);
+        double up = 0, down = 0;
+        boolean any = false;
+        for (int i = 0; i < n; i++) {
+            double f = surface(hs[i], x, z, g);
+            if (Double.isNaN(f)) continue;
+            any = true;
+            up = Math.max(up, f - g);
+            down = Math.max(down, g - f);
+        }
+        return any ? g + up - down : Double.NaN;
     }
 
     /** The finished surface of a point already located on a road (h at world x, z). */
     public double surface(Hit h, double x, double z, double g) {
         RoadDesign d = h.road();
+        CrossSection sec = d.section;
         double v = h.v(), sc = h.sc(), beyond = h.beyond();
         if (v > MAX_HALF_WIDTH) return Double.NaN;
         if (beyond == 0 && d.span(sc) != null) return Double.NaN;   // under a bridge: the natural valley
         double design;
-        if (v <= R4CrossSection.EDGE) design = d.formationY(sc, h.u());
+        if (v <= sec.edge) design = d.formationY(sc, h.u());
         else {
-            double h0 = d.formationY(sc, Math.copySign(R4CrossSection.EDGE, h.u()));
-            design = h0 + R4CrossSection.roadside(v - R4CrossSection.EDGE, g - h0);
+            double h0 = d.formationY(sc, Math.copySign(sec.edge, h.u()));
+            design = h0 + sec.roadside(v - sec.edge, g - h0);
         }
         if (beyond > 0) design = approach(g, design, beyond * END_SLOPE);
         if (v > MAX_HALF_WIDTH - BLEND) {
-            double t = R4CrossSection.smooth((v - (MAX_HALF_WIDTH - BLEND)) / BLEND);
+            double t = CrossSection.smooth((v - (MAX_HALF_WIDTH - BLEND)) / BLEND);
             design += (g - design) * t;
         }
-        boolean formation = v <= R4CrossSection.EDGE + 0.5 && beyond == 0;
+        boolean formation = onFormation(h);
         if (!formation && Math.abs(design - g) < NATURAL_TOLERANCE) return Double.NaN;
         if (!formation && water.wet(x, z)) return Double.NaN;
         return design;
@@ -202,6 +247,8 @@ public final class RoadWorks {
         if (span == null) {
             // a column touching a span from outside belongs to the earthworks; one inside a span is handled below
             if (pave != null) return paved(Kind.PAVED, pave, 0);
+            // a column on planned water stays water even where a dry corner reaches the works (a stream beside the road, C3.3a)
+            if (!onFormation(centre) && water.wet(x + 0.5, z + 0.5)) return Column.NONE;
             double[] q = new double[4];
             boolean any = false;
             int k = 0;
@@ -221,23 +268,26 @@ public final class RoadWorks {
             return new Column(Kind.TURF, fit[0], 0, 0, data, 0, 0, 0);
         }
         // on a bridge span: the collision of the bridge mesh (BridgeMesh; docs 10.11), every column chosen by its centre
+        CrossSection sec = d.section;
         double v = centre.v(), sc = centre.sc(), u = centre.u();
         double deckTop = d.datum(sc);
         boolean end = band(d, span, x, z);
+        // a column whose square reaches a pier's footprint stands on the ground like the abutment band (C3.3a)
+        boolean pier = !end && pier(d, span, x, z);
         // under the girder the deck goes down to its soffit (rounded up: the collision stays inside the mesh), under the
         // slab's overhangs only the slab
-        boolean girder = v >= R4CrossSection.HALF_MEDIAN + BridgeMesh.GIRDER_INSET && v <= R4CrossSection.EDGE - BridgeMesh.GIRDER_INSET;
+        boolean girder = BridgeMesh.girder(sec, v);
         if (pave != null) {
-            Column c = paved(end ? Kind.ABUTMENT : Kind.DECK, pave, 0);
+            Column c = paved(end || pier ? Kind.ABUTMENT : Kind.DECK, pave, 0);
             int bottom = girder ? (int) Math.ceil(deckTop - span.depth()) : (int) Math.ceil(pave[0] - BridgeMesh.SLAB);
             return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, Math.min(bottom, c.y()), c.paveLo(), c.paveHi());
         }
-        double outerW = v - R4CrossSection.EDGE, innerW = R4CrossSection.HALF_MEDIAN - v;
+        double outerW = v - sec.edge, innerW = sec.divided ? sec.halfMedian - v : Double.NaN;
         boolean outer = outerW >= BridgeMesh.CELL_IN && outerW <= BridgeMesh.CELL_OUT;
         boolean inner = innerW >= BridgeMesh.CELL_IN && innerW <= BridgeMesh.CELL_OUT;
         if (outer || inner) {
             // the parapet, its top block cut to the parapet's height; at the span's ends it stands on the ground
-            double edge = d.pavementY(sc, Math.copySign(outer ? R4CrossSection.EDGE : R4CrossSection.HALF_MEDIAN, u));
+            double edge = d.pavementY(sc, Math.copySign(outer ? sec.edge : sec.halfMedian, u));
             double top = edge + BridgeMesh.PARAPET_HEIGHT;
             int y = (int) Math.ceil(top) - 1, layers = Math.max(1, Math.min(32, (int) Math.round((top - y) * 32)));
             int bottom = Math.min(y, (int) Math.ceil(edge - BridgeMesh.SLAB));
@@ -246,8 +296,8 @@ public final class RoadWorks {
         }
         if (outerW > -1 && outerW < BridgeMesh.CELL_IN || innerW > -1 && innerW < BridgeMesh.CELL_IN) {
             // a deck edge column between the pavement and the parapet's toe: the pavement edge's height on the slab
-            double e = d.pavementY(sc, Math.copySign(Math.max(R4CrossSection.HALF_MEDIAN, Math.min(R4CrossSection.EDGE, v)), u));
-            Column c = paved(end ? Kind.ABUTMENT : Kind.DECK, new double[]{e, e}, 0);
+            double e = d.pavementY(sc, Math.copySign(Math.max(sec.halfMedian, Math.min(sec.edge, v)), u));
+            Column c = paved(end || pier ? Kind.ABUTMENT : Kind.DECK, new double[]{e, e}, 0);
             return new Column(c.kind(), c.y(), c.layers(), c.upper(), 0, Math.min(c.y(), (int) Math.ceil(e - BridgeMesh.SLAB)), e, e);
         }
         double g = ground.at(x + 0.5, z + 0.5);
@@ -288,6 +338,27 @@ public final class RoadWorks {
         return false;
     }
 
+    /**
+     * Whether column (x, z) of a span reaches a pier's footprint (C3.3a): the (station, lateral) box of its square meets
+     * the pier's band (BridgeMesh.PIER thick) under a girder.
+     */
+    public static boolean pier(RoadDesign d, RoadDesign.Span span, int x, int z) {
+        if (span.piers().length == 0) return false;
+        double s0 = Double.POSITIVE_INFINITY, s1 = Double.NEGATIVE_INFINITY, u0 = Double.POSITIVE_INFINITY, u1 = Double.NEGATIVE_INFINITY;
+        for (int b = 0; b <= 1; b++) for (int a = 0; a <= 1; a++) {
+            double[] l = d.local(x + a, z + b, REACH + 2);
+            if (l == null) return false;
+            s0 = Math.min(s0, l[0]); s1 = Math.max(s1, l[0]); u0 = Math.min(u0, l[1]); u1 = Math.max(u1, l[1]);
+        }
+        boolean band = false;
+        for (double p : span.piers()) band |= s0 <= p + BridgeMesh.PIER / 2 && s1 >= p - BridgeMesh.PIER / 2;
+        if (!band) return false;
+        CrossSection sec = d.section;
+        double gi = sec.edge - BridgeMesh.GIRDER_INSET, ga = sec.divided ? sec.halfMedian + BridgeMesh.GIRDER_INSET : -gi;
+        // the girder's lateral range on each side (undivided: one girder across the centre)
+        return u1 >= ga && u0 <= gi || u1 >= -gi && u0 <= -ga;
+    }
+
     /** A paved (or deck) column: the asphalt / deck top 2 cm under the lowest pavement point, collision to the mean. */
     public static Column paved(Kind kind, double[] pave, int bottom) {
         int top32 = (int) Math.round((pave[0] + pave[1]) * 0.5 * 32), yc = (int) Math.floor(pave[0] - 0.02);
@@ -300,21 +371,26 @@ public final class RoadWorks {
     /** Under the pavement or its bevels (the turf there rounds down). */
     static boolean underPavement(Hit h) {
         double v = h.v(), s = h.s();
-        return v >= R4CrossSection.HALF_MEDIAN - R4CrossSection.BEVEL_RUN && v <= R4CrossSection.EDGE + R4CrossSection.BEVEL_RUN
-                && s >= -R4CrossSection.BEVEL_RUN && s <= h.road().length + R4CrossSection.BEVEL_RUN;
+        CrossSection sec = h.road().section;
+        return v >= sec.halfMedian - CrossSection.BEVEL_RUN && v <= sec.edge + CrossSection.BEVEL_RUN
+                && s >= -CrossSection.BEVEL_RUN && s <= h.road().length + CrossSection.BEVEL_RUN;
     }
 
-    /** min / max pavement height over the column when the whole 1 x 1 square is paved (one side, on the route), else null. */
+    /**
+     * min / max pavement height over the column when the whole 1 x 1 square is paved (on the route; on a divided road on
+     * one carriageway), else null.
+     */
     public static double[] pavedRange(RoadDesign d, int x, int z) {
         double lo = Double.POSITIVE_INFINITY, hi = Double.NEGATIVE_INFINITY;
+        CrossSection sec = d.section;
         int side = 0;
         for (int a = 0; a <= 2; a++) for (int b = 0; b <= 2; b++) {
-            double[] l = d.local(x + a * 0.5, z + b * 0.5, R4CrossSection.EDGE + 2);
+            double[] l = d.local(x + a * 0.5, z + b * 0.5, sec.edge + 2);
             if (l == null) return null;
             double s = l[0], u = l[1], v = Math.abs(u);
-            if (s < 0 || s > d.length || v <= R4CrossSection.HALF_MEDIAN || v >= R4CrossSection.EDGE) return null;
+            if (s < 0 || s > d.length || sec.divided && v <= sec.halfMedian || v >= sec.edge) return null;
             int sg = u < 0 ? -1 : 1;
-            if (side != 0 && sg != side) return null;
+            if (sec.divided && side != 0 && sg != side) return null;
             side = sg;
             double y = d.pavementY(s, u);
             lo = Math.min(lo, y);

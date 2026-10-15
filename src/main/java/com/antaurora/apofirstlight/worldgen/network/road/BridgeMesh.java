@@ -17,9 +17,12 @@ import java.util.TreeSet;
  * client draws, while the world holds only the invisible collision (road_structure, road_surface; RoadWorks.column).
  * Pure Java on a RoadDesign, like RoadMesh.
  * <ul>
- *   <li>deck: each carriageway its own deck, swept along the span: a 0.3 m slab with 0.6 m overhangs on a box girder down
- *   to the span's soffit, and on both edges an F-shape-like concrete parapet 1.07 m above the pavement edge, 0.6 m wide,
- *   its road face battered 0.2 m; the open median between the two decks; parapet end caps at the span's ends;</li>
+ *   <li>deck: each carriageway its own deck (a divided road, R4; an undivided one, R2, one deck across the centreline),
+ *   swept along the span: a 0.3 m slab with 0.6 m overhangs on a box girder down to the span's soffit, and on both edges
+ *   an F-shape-like concrete parapet 1.07 m above the pavement edge, 0.6 m wide, its road face battered 0.2 m; the open
+ *   median between the two decks; parapet end caps at the span's ends;</li>
+ *   <li>piers (C3.3a): a span longer than MAX_SPAN rests on intermediate wall piers, PIER thick, as wide as the girder,
+ *   from the ground (the scanned foot of their cells, which stand on the ground like the abutment band) to the soffit;</li>
  *   <li>abutments: in the first and last metre of a span, a wall across the whole formation, from the ground (the
  *   scanned foot of the collision) up to the slab's or the girder's underside, and beyond the decks the wing walls up to
  *   the embankment's design (the median, the fill template), with their tops and their lateral ends;</li>
@@ -51,7 +54,8 @@ public final class BridgeMesh {
      * slit under a face that stopped at the foot; inside the ground the face is hidden (2026-10-15).
      */
     public static final double FOOT_SINK = 1.0;
-    private static final double HM = R4CrossSection.HALF_MEDIAN, EDGE = R4CrossSection.EDGE;
+    /** C3.3a: the longest span without a pier, and a wall pier's thickness along the road, m. */
+    public static final double MAX_SPAN = 40, PIER = 1.2;
     /** The ground the client assumes for its expectations: below everything, so every possible wing cell is expected. */
     private static final RoadWorks.Ground LOW = (x, z) -> -1e9;
 
@@ -62,10 +66,27 @@ public final class BridgeMesh {
      * fill template from the shoulder hinge; NaN on a deck or beyond the walls' reach.
      */
     public static double wingTop(RoadDesign d, double sOut, double u) {
+        CrossSection sec = d.section;
         double v = Math.abs(u);
-        if (v < HM) return d.formationY(sOut, u) + COPING;
-        if (v <= EDGE || v > WALL_REACH) return Double.NaN;
-        return d.formationY(sOut, Math.copySign(EDGE, u)) + R4CrossSection.roadside(v - EDGE, -1e9) + COPING;
+        if (sec.divided && v < sec.halfMedian) return d.formationY(sOut, u) + COPING;
+        if (v <= sec.edge || v > WALL_REACH) return Double.NaN;
+        return d.formationY(sOut, Math.copySign(sec.edge, u)) + sec.roadside(v - sec.edge, -1e9) + COPING;
+    }
+
+    /** Within the decks' footprint: between the parapets' outer faces (a divided road's open median excluded). */
+    public static boolean footprint(CrossSection sec, double v) {
+        return (!sec.divided || v > sec.halfMedian - PARAPET_WIDTH) && v < sec.edge + PARAPET_WIDTH;
+    }
+
+    /** Under a deck's box girder (between the slab's overhangs; an undivided road's girder runs across the centre). */
+    public static boolean girder(CrossSection sec, double v) {
+        return (!sec.divided || v >= sec.halfMedian + GIRDER_INSET) && v <= sec.edge - GIRDER_INSET;
+    }
+
+    /** Whether station s lies in one of the span's pier bands. */
+    static boolean atPier(RoadDesign.Span sp, double s) {
+        for (double p : sp.piers()) if (Math.abs(s - p) <= PIER / 2) return true;
+        return false;
     }
 
     /**
@@ -74,14 +95,15 @@ public final class BridgeMesh {
      */
     public static double wingStrip(RoadDesign d, double sOut, double u) {
         double v = Math.abs(u);
-        if (v > HM - PARAPET_WIDTH && v < EDGE + PARAPET_WIDTH || v > WALL_REACH) return Double.NaN;
-        int k = Arrays.binarySearch(BREAKS, u);
+        if (footprint(d.section, v) || v > WALL_REACH) return Double.NaN;
+        double[] breaks = breaks(d.section);
+        int k = Arrays.binarySearch(breaks, u);
         if (k >= 0) return wingTop(d, sOut, u);
         int i = -k - 2;
-        if (i < 0 || i + 1 >= BREAKS.length) return Double.NaN;
-        double a = wingTop(d, sOut, BREAKS[i]), b = wingTop(d, sOut, BREAKS[i + 1]);
+        if (i < 0 || i + 1 >= breaks.length) return Double.NaN;
+        double a = wingTop(d, sOut, breaks[i]), b = wingTop(d, sOut, breaks[i + 1]);
         if (Double.isNaN(a) || Double.isNaN(b)) return wingTop(d, sOut, u);
-        return a + (b - a) * (u - BREAKS[i]) / (BREAKS[i + 1] - BREAKS[i]);
+        return a + (b - a) * (u - breaks[i]) / (breaks[i + 1] - breaks[i]);
     }
 
     /**
@@ -108,15 +130,19 @@ public final class BridgeMesh {
             break;
         }
         if (sp == null) return null;
-        if (v > HM - PARAPET_WIDTH && v < EDGE + PARAPET_WIDTH) {
+        CrossSection sec = d.section;
+        double hm = sec.halfMedian, edge = sec.edge;
+        if (footprint(sec, v)) {
             int side = u < 0 ? -1 : 1;
             double top;
-            if (v >= HM && v <= EDGE) top = d.pavementY(s, u);
-            else if (v > EDGE) top = d.pavementY(s, side * EDGE) + PARAPET_HEIGHT * Math.min(1, (v - EDGE) / PARAPET_BATTER);
-            else top = d.pavementY(s, side * HM) + PARAPET_HEIGHT * Math.min(1, (HM - v) / PARAPET_BATTER);
+            if (sec.paved(v)) top = d.pavementY(s, u);
+            else if (v > edge) top = d.pavementY(s, side * edge) + PARAPET_HEIGHT * Math.min(1, (v - edge) / PARAPET_BATTER);
+            else top = d.pavementY(s, side * hm) + PARAPET_HEIGHT * Math.min(1, (hm - v) / PARAPET_BATTER);
             if (t <= 1) return new double[]{Double.NEGATIVE_INFINITY, top};
-            double bottom = v >= HM + GIRDER_INSET && v <= EDGE - GIRDER_INSET ? soffit(d, sp, s, side)
-                    : d.pavementY(s, side * (v > (HM + EDGE) * 0.5 ? EDGE : HM)) - SLAB;
+            boolean girder = girder(sec, v);
+            // a pier: from the ground up to the girder
+            if (girder && atPier(sp, s)) return new double[]{Double.NEGATIVE_INFINITY, top};
+            double bottom = girder ? soffit(d, sp, s, side) : d.pavementY(s, side * (v > (hm + edge) * 0.5 ? edge : hm)) - SLAB;
             return new double[]{bottom, top};
         }
         if (t > 1) return null;
@@ -155,8 +181,11 @@ public final class BridgeMesh {
 
     /** The soffit (girder underside) of the deck on one side at station s: the span's depth, kept under the slab. */
     static double soffit(RoadDesign d, RoadDesign.Span sp, double s, int side) {
-        double slab = Math.min(d.pavementY(s, side * EDGE), d.pavementY(s, side * HM)) - SLAB - 0.2;
-        return Math.min(d.datum(s) - sp.depth(), slab);
+        CrossSection sec = d.section;
+        // an undivided deck's one girder: the same soffit on both halves (the lower pavement edge)
+        double low = sec.divided ? Math.min(d.pavementY(s, side * sec.edge), d.pavementY(s, side * sec.halfMedian))
+                : Math.min(d.pavementY(s, sec.edge), d.pavementY(s, -sec.edge));
+        return Math.min(d.datum(s) - sp.depth(), low - SLAB - 0.2);
     }
 
     // ------------------------------------------------------------------ expected and found cells
@@ -202,7 +231,7 @@ public final class BridgeMesh {
             double v = h.v();
             switch (c.kind()) {
                 case DECK, ABUTMENT -> {
-                    boolean girder = v >= HM + GIRDER_INSET && v <= EDGE - GIRDER_INSET;
+                    boolean girder = girder(d.section, v);
                     double bottom = c.kind() == RoadWorks.Kind.ABUTMENT ? Double.NaN
                             : girder ? soffit(d, sp, h.sc(), side) : c.paveLo() - SLAB;
                     out.put(i, new Expect(i, c.kind(), c.y(), c.top(), true, c.upper() > 0 ? c.upper() : c.layers(), false, c.paveLo(), bottom));
@@ -306,8 +335,9 @@ public final class BridgeMesh {
             sq = clip(clip(sq, 2, -TAIL, false), 2, 1, true);
             if (sq.size() < 3) continue;
             double[] tan = tangent(d, sOut + sgn * 0.5), lat = lateral(d, sOut + sgn * 0.5);
-            for (int k = 0; k + 1 < BREAKS.length; k++) {
-                double ua = BREAKS[k], ub = BREAKS[k + 1];
+            double[] breaks = breaks(d.section);
+            for (int k = 0; k + 1 < breaks.length; k++) {
+                double ua = breaks[k], ub = breaks[k + 1];
                 if (Double.isNaN(wingStrip(d, sOut, (ua + ub) * 0.5))) continue;
                 List<double[]> p = clip(clip(sq, 3, ua, false), 3, ub, true);
                 if (p.size() < 3) continue;
@@ -384,17 +414,27 @@ public final class BridgeMesh {
         return lo > hi ? null : new double[]{lo - 4, hi + 4};
     }
 
-    /** The cross-section of one deck (w outward from the centreline, y), clockwise from the pavement's outer edge. */
+    /**
+     * The cross-section of one deck (w outward from the centreline, y), clockwise from the pavement's outer edge. An
+     * undivided road's half section ends on the centreline (its girder's bottom, then the centre plane, never drawn).
+     */
     private static double[][] section(RoadDesign d, RoadDesign.Span sp, double s, int side) {
-        double hE = d.pavementY(s, side * EDGE), hM = d.pavementY(s, side * HM), so = soffit(d, sp, s, side);
+        double hm = d.section.halfMedian, edge = d.section.edge;
+        double hE = d.pavementY(s, side * edge), hM = d.pavementY(s, side * hm), so = soffit(d, sp, s, side);
         double top = PARAPET_HEIGHT;
+        if (!d.section.divided)
+            return new double[][]{
+                    {edge, hE}, {edge + PARAPET_BATTER, hE + top}, {edge + PARAPET_WIDTH, hE + top}, {edge + PARAPET_WIDTH, hE - SLAB},
+                    {edge - GIRDER_INSET, hE - SLAB}, {edge - GIRDER_INSET, so}, {0, so}, {0, hM}};
         return new double[][]{
-                {EDGE, hE}, {EDGE + PARAPET_BATTER, hE + top}, {EDGE + PARAPET_WIDTH, hE + top}, {EDGE + PARAPET_WIDTH, hE - SLAB},
-                {EDGE - GIRDER_INSET, hE - SLAB}, {EDGE - GIRDER_INSET, so}, {HM + GIRDER_INSET, so}, {HM + GIRDER_INSET, hM - SLAB},
-                {HM - PARAPET_WIDTH, hM - SLAB}, {HM - PARAPET_WIDTH, hM + top}, {HM - PARAPET_BATTER, hM + top}, {HM, hM}};
+                {edge, hE}, {edge + PARAPET_BATTER, hE + top}, {edge + PARAPET_WIDTH, hE + top}, {edge + PARAPET_WIDTH, hE - SLAB},
+                {edge - GIRDER_INSET, hE - SLAB}, {edge - GIRDER_INSET, so}, {hm + GIRDER_INSET, so}, {hm + GIRDER_INSET, hM - SLAB},
+                {hm - PARAPET_WIDTH, hM - SLAB}, {hm - PARAPET_WIDTH, hM + top}, {hm - PARAPET_BATTER, hM + top}, {hm, hM}};
     }
 
     private static void deck(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi) {
+        double hm = d.section.halfMedian, edge = d.section.edge;
+        boolean divided = d.section.divided;
         double a = Math.max(sp.s0(), lo), b = Math.min(sp.s1(), hi);
         if (b - a < 1e-6) return;
         List<Double> st = new ArrayList<>();
@@ -406,8 +446,9 @@ public final class BridgeMesh {
                 double sa = st.get(k), sb = st.get(k + 1), base = Math.floor(sa + 1e-9);
                 double[][] pa = section(d, sp, sa, side), pb = section(d, sp, sb, side);
                 double[] lat = lateral(d, (sa + sb) * 0.5);
-                // the pavement (P11 -> P0) is RoadMesh's
+                // the pavement (last point -> P0) is RoadMesh's; an undivided deck's centre plane is inside the girder
                 for (int i = 0; i + 1 < pa.length; i++) {
+                    if (Math.abs(pa[i][0]) < 1e-9 && Math.abs(pa[i + 1][0]) < 1e-9) continue;
                     double dw = (pa[i + 1][0] + pb[i + 1][0] - pa[i][0] - pb[i][0]) * 0.5, dy = (pa[i + 1][1] + pb[i + 1][1] - pa[i][1] - pb[i][1]) * 0.5;
                     double len = Math.hypot(dw, dy);
                     if (len < 1e-6) continue;
@@ -438,9 +479,11 @@ public final class BridgeMesh {
                     double[][] pa = section(d, sp, ta, side), pb = section(d, sp, tb, side);
                     double base = Math.floor(ta + 1e-9);
                     // outer: road face, top, outer face, underside; inner: underside, median face, top, road face
-                    double[][][] outer = {{pa[0], pa[1], pa[2], pa[3], {EDGE, pa[0][1] - SLAB}}, {pb[0], pb[1], pb[2], pb[3], {EDGE, pb[0][1] - SLAB}}};
-                    double[][][] inner = {{{HM, pa[11][1] - SLAB}, pa[8], pa[9], pa[10], pa[11]}, {{HM, pb[11][1] - SLAB}, pb[8], pb[9], pb[10], pb[11]}};
-                    for (double[][][] q : new double[][][][]{outer, inner})
+                    double[][][] outer = {{pa[0], pa[1], pa[2], pa[3], {edge, pa[0][1] - SLAB}}, {pb[0], pb[1], pb[2], pb[3], {edge, pb[0][1] - SLAB}}};
+                    double[][][][] parts = divided
+                            ? new double[][][][]{outer, {{{hm, pa[11][1] - SLAB}, pa[8], pa[9], pa[10], pa[11]}, {{hm, pb[11][1] - SLAB}, pb[8], pb[9], pb[10], pb[11]}}}
+                            : new double[][][][]{outer};
+                    for (double[][][] q : parts)
                         for (int i = 0; i + 1 < q[0].length; i++) {
                             double dw = (q[0][i + 1][0] + q[1][i + 1][0] - q[0][i][0] - q[1][i][0]) * 0.5, dy = (q[0][i + 1][1] + q[1][i + 1][1] - q[0][i][1] - q[1][i][1]) * 0.5;
                             double len = Math.hypot(dw, dy);
@@ -460,8 +503,9 @@ public final class BridgeMesh {
                 double[] t = tangent(d, sEnd);
                 double sg = e == 0 ? -1 : 1;
                 double[][] p = section(d, sp, sEnd, side);
-                cap(out, d, sEnd, side, new double[][]{p[0], p[1], p[2], p[3], {EDGE, p[0][1] - SLAB}}, EDGE, p[1][1], sg * t[0], sg * t[1]);
-                cap(out, d, sEnd, side, new double[][]{p[8], p[9], p[10], p[11], {HM, p[11][1] - SLAB}}, HM - PARAPET_WIDTH, p[9][1], sg * t[0], sg * t[1]);
+                cap(out, d, sEnd, side, new double[][]{p[0], p[1], p[2], p[3], {edge, p[0][1] - SLAB}}, edge, p[1][1], sg * t[0], sg * t[1]);
+                if (divided)
+                    cap(out, d, sEnd, side, new double[][]{p[8], p[9], p[10], p[11], {hm, p[11][1] - SLAB}}, hm - PARAPET_WIDTH, p[9][1], sg * t[0], sg * t[1]);
             }
         }
     }
@@ -483,30 +527,34 @@ public final class BridgeMesh {
 
     private enum Zone { MEDIAN, INNER, GIRDER, OUTER, WING }
 
-    private static Zone zone(double v) {
-        if (v < HM - PARAPET_WIDTH) return Zone.MEDIAN;
-        if (v < HM + GIRDER_INSET) return Zone.INNER;
-        if (v < EDGE - GIRDER_INSET) return Zone.GIRDER;
-        if (v < EDGE + PARAPET_WIDTH) return Zone.OUTER;
+    private static Zone zone(CrossSection sec, double v) {
+        if (sec.divided && v < sec.halfMedian - PARAPET_WIDTH) return Zone.MEDIAN;
+        if (sec.divided && v < sec.halfMedian + GIRDER_INSET) return Zone.INNER;
+        if (v < sec.edge - GIRDER_INSET) return Zone.GIRDER;
+        if (v < sec.edge + PARAPET_WIDTH) return Zone.OUTER;
         return Zone.WING;
     }
 
-    /** Lateral strip edges of the end walls: every 0.5 m, plus the parapets' and girders' faces. */
-    private static final double[] BREAKS;
+    /** Lateral strip edges of the end walls and piers: every 0.5 m, plus the parapets' and girders' faces; per section. */
+    private static final double[] BREAKS_R4 = makeBreaks(CrossSection.R4), BREAKS_R2 = makeBreaks(CrossSection.R2);
 
-    static {
+    static double[] breaks(CrossSection sec) { return sec == CrossSection.R4 ? BREAKS_R4 : sec == CrossSection.R2 ? BREAKS_R2 : makeBreaks(sec); }
+
+    private static double[] makeBreaks(CrossSection sec) {
         TreeSet<Double> set = new TreeSet<>();
         for (int k = (int) Math.round(-WALL_REACH * 2); k <= (int) Math.round(WALL_REACH * 2); k++) set.add(k * 0.5);
-        for (double b : new double[]{HM - PARAPET_WIDTH, HM + GIRDER_INSET, EDGE - GIRDER_INSET, EDGE + PARAPET_WIDTH}) { set.add(b); set.add(-b); }
-        BREAKS = set.stream().mapToDouble(Double::doubleValue).toArray();
+        List<Double> faces = new ArrayList<>(List.of(sec.edge - GIRDER_INSET, sec.edge + PARAPET_WIDTH));
+        if (sec.divided) { faces.add(sec.halfMedian - PARAPET_WIDTH); faces.add(sec.halfMedian + GIRDER_INSET); }
+        for (double b : faces) { set.add(b); set.add(-b); }
+        return set.stream().mapToDouble(Double::doubleValue).toArray();
     }
 
     private static double wallTop(RoadDesign d, RoadDesign.Span sp, Zone z, double sOut, double sf, double u, int side) {
         return switch (z) {
             case MEDIAN, WING -> wingTop(d, sOut, u);
-            case INNER -> d.pavementY(sf, side * HM) - SLAB;
+            case INNER -> d.pavementY(sf, side * d.section.halfMedian) - SLAB;
             case GIRDER -> soffit(d, sp, sf, side);
-            case OUTER -> d.pavementY(sf, side * EDGE) - SLAB;
+            case OUTER -> d.pavementY(sf, side * d.section.edge) - SLAB;
         };
     }
 
@@ -514,19 +562,21 @@ public final class BridgeMesh {
     private static void walls(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi, int cx, int cz,
                               Map<Integer, Expect> expect, Map<Integer, Found> found) {
         if (sp.s1() - sp.s0() < 2) return;
+        double[] breaks = breaks(d.section);
+        piers(out, d, sp, lo, hi, cx, cz, expect, found, breaks);
         for (int e = 0; e < 2; e++) {
             double sOut = e == 0 ? sp.s0() : sp.s1(), sgn = e == 0 ? 1 : -1, sf = sOut + sgn;
             if (sOut < lo || sOut > hi) continue;
             double[] t = tangent(d, sf), lat = lateral(d, sf);
-            int n = BREAKS.length - 1;
+            int n = breaks.length - 1;
             State[] state = new State[n];
             double[] foot = new double[n];
             double[] ta = new double[n], tb = new double[n];
             Zone[] zones = new Zone[n];
             for (int i = 0; i < n; i++) {
-                double ua = BREAKS[i], ub = BREAKS[i + 1], um = (ua + ub) * 0.5;
+                double ua = breaks[i], ub = breaks[i + 1], um = (ua + ub) * 0.5;
                 int side = um < 0 ? -1 : 1;
-                zones[i] = zone(Math.abs(um));
+                zones[i] = zone(d.section, Math.abs(um));
                 ta[i] = wallTop(d, sp, zones[i], sOut, sf, ua, side);
                 tb[i] = wallTop(d, sp, zones[i], sOut, sf, ub, side);
                 int idx = stripCell(d, sOut, sgn, um, cx, cz);
@@ -538,7 +588,7 @@ public final class BridgeMesh {
             for (int i = 0; i < n; i++) {
                 // the median and wing walls are drawn cell by cell (wings())
                 if (state[i] != State.PRESENT || zones[i] == Zone.MEDIAN || zones[i] == Zone.WING) continue;
-                double ua = BREAKS[i], ub = BREAKS[i + 1], tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+                double ua = breaks[i], ub = breaks[i + 1], tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
                 double[] fa = d.point(sf, ua), fb = d.point(sf, ub);
                 wall(out, fa[0], fa[1], fb[0], fb[1], foot[i], foot[i], ta[i], tb[i], tu0, tu1, sgn * t[0], 0, sgn * t[1]);
                 // a lateral end of a run: the next strip has no wall (no expected cell, or a wing the pass left out)
@@ -549,6 +599,51 @@ public final class BridgeMesh {
                 if (i == n - 1 || state[i + 1] == State.ABSENT) {
                     double[] o = d.point(sOut, ub);
                     wall(out, o[0], o[1], fb[0], fb[1], foot[i], foot[i], tb[i], tb[i], 0, 1, lat[0], 0, lat[1]);
+                }
+            }
+        }
+    }
+
+    /**
+     * The wall piers of a span (C3.3a), strip by strip under the girders: both faces across the road from the scanned foot
+     * of the strip's cell (FOOT_SINK into the ground) to the soffit, and the lateral ends of each girder's pier.
+     */
+    private static void piers(List<Triangle> out, RoadDesign d, RoadDesign.Span sp, double lo, double hi, int cx, int cz,
+                              Map<Integer, Expect> expect, Map<Integer, Found> found, double[] breaks) {
+        int n = breaks.length - 1;
+        for (double p : sp.piers()) {
+            if (p < lo || p > hi) continue;
+            double sa = p - PIER / 2, sb = p + PIER / 2;
+            double[] t = tangent(d, p), lat = lateral(d, p);
+            boolean[] on = new boolean[n];
+            double[] foot = new double[n];
+            for (int i = 0; i < n; i++) {
+                double um = (breaks[i] + breaks[i + 1]) * 0.5;
+                if (zone(d.section, Math.abs(um)) != Zone.GIRDER) continue;
+                int idx = stripCell(d, p, 0, um, cx, cz);
+                if (idx < 0) continue;
+                Found f = found.get(idx);
+                if (state(expect.get(idx), f) != State.PRESENT) continue;
+                on[i] = true;
+                foot[i] = f.foot() - FOOT_SINK;
+            }
+            for (int i = 0; i < n; i++) {
+                if (!on[i]) continue;
+                double ua = breaks[i], ub = breaks[i + 1], tu0 = ua - Math.floor(ua + 1e-9), tu1 = tu0 + (ub - ua);
+                int side = ua + ub < 0 ? -1 : 1;
+                for (int k = 0; k < 2; k++) {
+                    double s = k == 0 ? sa : sb, sg = k == 0 ? -1 : 1;
+                    double[] a = d.point(s, ua), b = d.point(s, ub);
+                    double top = soffit(d, sp, s, side);
+                    wall(out, a[0], a[1], b[0], b[1], foot[i], foot[i], top, top, tu0, tu1, sg * t[0], 0, sg * t[1]);
+                }
+                // the pier's lateral ends: no pier strip beside this one
+                for (int k = 0; k < 2; k++) {
+                    if (k == 0 ? i > 0 && on[i - 1] : i + 1 < n && on[i + 1]) continue;
+                    double u = k == 0 ? ua : ub, sg = k == 0 ? -1 : 1;
+                    double[] a = d.point(sa, u), b = d.point(sb, u);
+                    wall(out, a[0], a[1], b[0], b[1], foot[i], foot[i], soffit(d, sp, sa, side), soffit(d, sp, sb, side), 0, PIER,
+                            sg * lat[0], 0, sg * lat[1]);
                 }
             }
         }
@@ -607,10 +702,21 @@ public final class BridgeMesh {
 
     /**
      * A vertical face over the ground line a -> b (x, z), bottom and top heights at both ends, split into 1 m bands of
-     * height for the texture (tu along the line, tv down from each band's top).
+     * height for the texture (tu along the line, tv down from each band's top); a line longer than the texture's metre
+     * (a pier's 1.2 m end) is cut where tu crosses a whole metre, so tu stays within 0 .. 1 (C3.3a).
      */
     static void wall(List<Triangle> out, double ax, double az, double bx, double bz, double botA, double botB, double topA, double topB,
                      double tuA, double tuB, double nx, double ny, double nz) {
+        double fl = Math.floor(Math.min(tuA, tuB) + 1e-9);
+        if (Math.max(tuA, tuB) > fl + 1 + 1e-9) {
+            double cut = fl + 1, q = (cut - tuA) / (tuB - tuA);
+            double mx = ax + (bx - ax) * q, mz = az + (bz - az) * q, mb = botA + (botB - botA) * q, mt = topA + (topB - topA) * q;
+            wall(out, ax, az, mx, mz, botA, mb, topA, mt, tuA, cut, nx, ny, nz);
+            wall(out, mx, mz, bx, bz, mb, botB, mt, topB, cut, tuB, nx, ny, nz);
+            return;
+        }
+        tuA -= fl;
+        tuB -= fl;
         double lo = Math.min(botA, botB), hi = Math.max(topA, topB);
         if (!(hi > lo)) return;
         for (int k = (int) Math.floor(lo); k < hi; k++) {
