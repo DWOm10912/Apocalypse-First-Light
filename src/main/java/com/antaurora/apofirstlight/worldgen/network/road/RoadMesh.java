@@ -177,6 +177,38 @@ public final class RoadMesh {
         }
     }
 
+    /**
+     * A chunk's triangles (chunk-relative) without their parts over the removed block cells (removed[lx | lz << 4]):
+     * a triangle touching one is cut into its per-cell pieces and those over removed cells are dropped.
+     */
+    public static List<Triangle> without(List<Triangle> tris, boolean[] removed) {
+        List<Triangle> out = new ArrayList<>(tris.size());
+        for (Triangle t : tris) {
+            int x0 = cell(Math.min(t.a().x(), Math.min(t.b().x(), t.c().x()))), x1 = cell(Math.max(t.a().x(), Math.max(t.b().x(), t.c().x())) - 1e-9);
+            int z0 = cell(Math.min(t.a().z(), Math.min(t.b().z(), t.c().z()))), z1 = cell(Math.max(t.a().z(), Math.max(t.b().z(), t.c().z())) - 1e-9);
+            boolean touches = false;
+            for (int z = z0; z <= z1 && !touches; z++) for (int x = x0; x <= x1; x++) if (removed[x | z << 4]) { touches = true; break; }
+            if (!touches) { out.add(t); continue; }
+            for (int z = z0; z <= z1; z++) for (int x = x0; x <= x1; x++) {
+                if (removed[x | z << 4]) continue;
+                List<Vertex> p = List.of(t.a(), t.b(), t.c());
+                p = plane(p, true, x, true);
+                p = plane(p, true, x + 1, false);
+                p = plane(p, false, z, true);
+                p = plane(p, false, z + 1, false);
+                for (int i = 1; i + 1 < p.size(); i++) {
+                    Vertex a = p.get(0), b = p.get(i), c = p.get(i + 1);
+                    double area = (b.x() - a.x()) * (c.z() - a.z()) - (b.z() - a.z()) * (c.x() - a.x());
+                    if (Math.abs(area) <= 1e-9) continue;
+                    out.add(new Triangle(t.material(), a, b, c, t.nx(), t.ny(), t.nz()));
+                }
+            }
+        }
+        return out;
+    }
+
+    private static int cell(double v) { return Math.max(0, Math.min(15, (int) Math.floor(v))); }
+
     private static Vertex rel(Vertex v, double x0, double z0) { return new Vertex(v.x() - x0, v.y(), v.z() - z0, v.u(), v.v()); }
 
     private static List<Vertex> plane(List<Vertex> in, boolean x, double edge, boolean lower) {

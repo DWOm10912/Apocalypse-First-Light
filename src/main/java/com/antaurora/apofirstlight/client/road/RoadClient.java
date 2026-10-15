@@ -1,6 +1,9 @@
 package com.antaurora.apofirstlight.client.road;
 
 import com.antaurora.apofirstlight.ApocalypseFirstLight;
+import com.antaurora.apofirstlight.block.RoadSurfaceBlock;
+import com.antaurora.apofirstlight.registry.AflBlocks;
+import com.antaurora.apofirstlight.worldgen.network.road.RoadCells;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadDesign;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadMesh;
 import com.antaurora.apofirstlight.worldgen.network.road.RoadNetworkJson;
@@ -20,6 +23,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -33,6 +37,7 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +52,10 @@ import java.util.concurrent.CompletableFuture;
  * the chunk) built on a worker thread, a bounded number per tick, and dropped when the chunk unloads. Drawn after the
  * solid terrain with the terrain solid program and the block atlas (RoadRenderTypes), lit per vertex from the world's
  * light, in the main pass only (never in a shader pack's shadow pass).
+ * <p>
+ * Where the collision blocks of a paved cell are gone (dug out, blown up), the mesh leaves that cell open and lines the
+ * hole with asphalt walls (RoadCells): each finished mesh is compared with the world once, the chunks around the player
+ * every tick and the others a few per tick.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class RoadClient {
@@ -64,7 +73,11 @@ public final class RoadClient {
     private static final Map<Long, CompletableFuture<ChunkMesh>> PENDING = new HashMap<>();
 
     /** One chunk's pavement: asphalt and marking vertices (four per triangle: a, b, c, c), and its height range. */
-    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float minY, float maxY) {}
+    record ChunkMesh(int cx, int cz, float[] asphalt, float[] marking, float minY, float maxY, Map<Integer, RoadCells.Cell> cells, BitSet dug) {}
+
+    /** Meshes compared with the world per tick besides the 3 x 3 chunks around the player. */
+    static final int CHECKS_PER_TICK = 8;
+    private static int checkCursor;
 
     private RoadClient() {}
 
@@ -107,15 +120,31 @@ public final class RoadClient {
             it.remove();
             try {
                 ChunkMesh m = e.getValue().join();
-                if (level.getChunkSource().hasChunk(m.cx(), m.cz())) MESHES.put(e.getKey(), m);
+                if (level.getChunkSource().hasChunk(m.cx(), m.cz())) {
+                    MESHES.put(e.getKey(), m);
+                    recheck(level, e.getKey(), m);
+                }
             } catch (RuntimeException ex) {
                 ApocalypseFirstLight.LOGGER.error("[AFL roads] pavement mesh failed for a chunk", ex);
             }
         }
         // unloaded chunks
         MESHES.values().removeIf(m -> !level.getChunkSource().hasChunk(m.cx(), m.cz()));
-        // new chunks, nearest first is not needed: a bounded number per tick in scan order
+        // dug-out pavement: the chunks around the player every tick, the others round robin
         int pcx = mc.player.chunkPosition().x, pcz = mc.player.chunkPosition().z, r = mc.options.getEffectiveRenderDistance() + 1;
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            long k = key(pcx + dx, pcz + dz);
+            ChunkMesh m = MESHES.get(k);
+            if (m != null) recheck(level, k, m);
+        }
+        if (!MESHES.isEmpty()) {
+            List<Long> keys = new ArrayList<>(MESHES.keySet());
+            for (int i = 0; i < Math.min(CHECKS_PER_TICK, keys.size()); i++) {
+                long k = keys.get(Math.floorMod(checkCursor++, keys.size()));
+                recheck(level, k, MESHES.get(k));
+            }
+        }
+        // new chunks, nearest first is not needed: a bounded number per tick in scan order
         int started = 0;
         Map<String, float[]> uv = null;
         for (int dz = -r; dz <= r && started < BUILDS_PER_TICK; dz++) for (int dx = -r; dx <= r && started < BUILDS_PER_TICK; dx++) {
@@ -125,14 +154,58 @@ public final class RoadClient {
             if (uv == null) uv = Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW));
             Map<String, float[]> atlas = uv;
             List<RoadDesign> rs = roads;
-            PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, cx, cz, atlas)));
+            RoadWorks works = index;
+            PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, cx, cz, atlas, new BitSet())));
             started++;
         }
     }
 
-    static ChunkMesh build(List<RoadDesign> rs, int cx, int cz, Map<String, float[]> uv) {
+    /** Compare a mesh's paved cells with the world; rebuild it when the set of dug cells changed. */
+    private static void recheck(ClientLevel level, long k, ChunkMesh m) {
+        if (m == null || PENDING.containsKey(k)) return;
+        BitSet dug = dug(level, m);
+        if (dug.equals(m.dug())) return;
+        Map<String, float[]> atlas = Map.of("asphalt", sprite(ASPHALT), "white", sprite(WHITE), "yellow", sprite(YELLOW));
+        List<RoadDesign> rs = roads;
+        RoadWorks works = index;
+        PENDING.put(k, CompletableFuture.supplyAsync(() -> build(rs, works, m.cx(), m.cz(), atlas, dug)));
+    }
+
+    /**
+     * The paved cells (chunk and ring) whose collision blocks are not the ones the chunk pass put there; empty when no
+     * cell of the chunk itself is dug (the ring only shapes the walls of a hole in this chunk).
+     */
+    static BitSet dug(ClientLevel level, ChunkMesh m) {
+        BitSet out = new BitSet();
+        if (m.cells() == null || m.cells().isEmpty()) return out;
+        BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+        boolean inner = false;
+        for (RoadCells.Cell c : m.cells().values()) {
+            int x = m.cx() * 16 + RoadCells.lx(c.index()), z = m.cz() * 16 + RoadCells.lz(c.index());
+            if (!surface(level.getBlockState(p.set(x, c.y(), z)), c.layers())
+                    || (c.upper() > 0 && !surface(level.getBlockState(p.set(x, c.y() + 1, z)), c.upper()))) {
+                out.set(c.index());
+                inner |= RoadCells.inner(c.index());
+            }
+        }
+        return inner ? out : new BitSet();
+    }
+
+    private static boolean surface(BlockState s, int layers) {
+        return s.is(AflBlocks.ROAD_SURFACE.get()) && s.getValue(RoadSurfaceBlock.LAYERS) == layers;
+    }
+
+    static ChunkMesh build(List<RoadDesign> rs, RoadWorks works, int cx, int cz, Map<String, float[]> uv, BitSet dug) {
         List<RoadMesh.Triangle> tris = new ArrayList<>();
         for (RoadDesign d : rs) tris.addAll(RoadMesh.chunk(d, cx, cz));
+        Map<Integer, RoadCells.Cell> cells = tris.isEmpty() ? Map.of() : RoadCells.of(rs, works, cx, cz);
+        if (!dug.isEmpty()) {
+            boolean[] removed = new boolean[256];
+            for (int i = dug.nextSetBit(0); i >= 0; i = dug.nextSetBit(i + 1))
+                if (RoadCells.inner(i)) removed[RoadCells.lx(i) | RoadCells.lz(i) << 4] = true;
+            tris = RoadMesh.without(tris, removed);
+            tris.addAll(RoadCells.walls(rs, cells, dug, cx, cz));
+        }
         int na = 0, nm = 0;
         for (RoadMesh.Triangle t : tris) if (t.material() == RoadMesh.Material.ASPHALT) na++; else nm++;
         float[] a = new float[na * 4 * STRIDE], m = new float[nm * 4 * STRIDE];
@@ -158,7 +231,7 @@ public final class RoadClient {
             if (asphalt) ia = i; else im = i;
         }
         // an empty mesh marks a chunk the index reaches but the pavement misses (never rebuilt while loaded)
-        return tris.isEmpty() ? new ChunkMesh(cx, cz, a, m, 0, 0) : new ChunkMesh(cx, cz, a, m, lo, hi);
+        return tris.isEmpty() ? new ChunkMesh(cx, cz, a, m, 0, 0, cells, dug) : new ChunkMesh(cx, cz, a, m, lo, hi, cells, dug);
     }
 
     @SubscribeEvent

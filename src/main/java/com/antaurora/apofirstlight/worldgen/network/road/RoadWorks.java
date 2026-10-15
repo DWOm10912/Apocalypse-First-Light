@@ -247,7 +247,7 @@ public final class RoadWorks {
     }
 
     /** A paved (or deck) column: the asphalt / deck top 2 cm under the lowest pavement point, collision to the mean. */
-    static Column paved(Kind kind, double[] pave, int bottom) {
+    public static Column paved(Kind kind, double[] pave, int bottom) {
         int top32 = (int) Math.round((pave[0] + pave[1]) * 0.5 * 32), yc = (int) Math.floor(pave[0] - 0.02);
         int layers = top32 - yc * 32, upper = 0;
         if (layers > 32) { upper = layers - 32; layers = 32; }

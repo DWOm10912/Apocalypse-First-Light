@@ -37,10 +37,10 @@ public final class RoadNetworkCommand {
             source.sendSuccess(() -> Component.literal("AFL roads: no roads are generated in this world (not a federal world, or created before C3.2)."), false);
             return 0;
         }
-        StringBuilder b = new StringBuilder(String.format(Locale.ROOT, "AFL roads: stage %s, network digest %s%n", RoadNetworkStage.STAGE, n.digest()));
+        StringBuilder b = new StringBuilder(String.format(Locale.ROOT, "AFL roads: stage %s, network digest %s\n", RoadNetworkStage.STAGE, n.digest()));
         double lane = R4CrossSection.CROWN + R4CrossSection.LANE;
         for (RoadDesign d : n.works().roads()) {
-            b.append(String.format(Locale.ROOT, "%s  %.0f m%n", d.id, d.length));
+            b.append(String.format(Locale.ROOT, "%s  %.0f m\n", d.id, d.length));
             b.append("  start ").append(at(d, 0, lane)).append("   end ").append(at(d, d.length, lane)).append('\n');
             for (RoadDesign.Span s : d.spans)
                 b.append(String.format(Locale.ROOT, "  bridge %.0f..%.0f m at ", s.s0(), s.s1())).append(at(d, (s.s0() + s.s1()) / 2, lane)).append('\n');

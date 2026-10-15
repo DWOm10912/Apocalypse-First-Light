@@ -176,6 +176,46 @@ public final class RoadWorksCheck {
         }
         say(log, "mesh coverage: %d points, gaps %d, overlaps %d, near a chunk border %d, worst height vs design %.4f m", samples, gaps, overlaps, crossChunk, worstMesh);
 
+        // dug cells (client): predicted collision blocks against the chunk pass, mesh cut, hole walls
+        int cellChunks = 0, cellsChecked = 0, cellMismatch = 0, cutBad = 0, inHole = 0, walls = 0, wallBad = 0;
+        double worstSplit = 0;
+        for (int i = 0; i < meshes.length; i++) {
+            if (meshes[i].isEmpty()) continue;
+            int cx = (int) (keys[i] >> 32), cz = (int) keys[i];
+            java.util.Map<Integer, RoadCells.Cell> cells = RoadCells.of(List.of(d), w1, cx, cz);
+            for (RoadCells.Cell c : cells.values()) {
+                RoadWorks.Column col = w1.column(cx * 16 + RoadCells.lx(c.index()), cz * 16 + RoadCells.lz(c.index()), ground);
+                cellsChecked++;
+                if (col.kind() == RoadWorks.Kind.TURF || col.kind() == RoadWorks.Kind.NONE || col.y() != c.y() || col.layers() != c.layers() || col.upper() != c.upper())
+                    cellMismatch++;
+            }
+            if (cellChunks >= 300) continue;
+            // dig every 7th inner paved cell
+            java.util.BitSet dug = new java.util.BitSet();
+            boolean[] removed = new boolean[256], kept = new boolean[256];
+            int n = 0;
+            for (RoadCells.Cell c : cells.values())
+                if (RoadCells.inner(c.index()) && n++ % 7 == 0) { dug.set(c.index()); removed[RoadCells.lx(c.index()) | RoadCells.lz(c.index()) << 4] = true; }
+            if (dug.isEmpty()) continue;
+            cellChunks++;
+            for (int k = 0; k < 256; k++) kept[k] = !removed[k];
+            List<RoadMesh.Triangle> cut = RoadMesh.without(meshes[i], removed), rest = RoadMesh.without(meshes[i], kept);
+            double split = Math.abs(area(cut) + area(rest) - area(meshes[i]));
+            worstSplit = Math.max(worstSplit, split);
+            if (split > 1e-6) cutBad++;
+            for (RoadMesh.Triangle t : cut) {
+                double mx = (t.a().x() + t.b().x() + t.c().x()) / 3, mz = (t.a().z() + t.b().z() + t.c().z()) / 3;
+                if (removed[(int) Math.floor(mx) | (int) Math.floor(mz) << 4]) inHole++;
+            }
+            for (RoadMesh.Triangle t : RoadCells.walls(List.of(d), cells, dug, cx, cz)) {
+                walls++;
+                double lo = Math.min(t.a().y(), Math.min(t.b().y(), t.c().y())), hi = Math.max(t.a().y(), Math.max(t.b().y(), t.c().y()));
+                if (hi - lo > 2.5 || Math.abs(t.ny()) > 1e-9) wallBad++;
+            }
+        }
+        say(log, "dug cells: predicted collision blocks %d, different from the chunk pass %d; %d chunks dug (every 7th paved cell): cut not a partition %d (worst %.2e m2), pieces left in a hole %d, wall triangles %d (bad %d)",
+                cellsChecked, cellMismatch, cellChunks, cutBad, worstSplit, inHole, walls, wallBad);
+
         // field calls: what the density pays per column (surface over the planned ground)
         long b = System.nanoTime();
         int calls = 0;
@@ -192,6 +232,13 @@ public final class RoadWorksCheck {
         say(log, "works surface: %.2f us per column (%d columns, incl. the planned ground) [%s]", (System.nanoTime() - b) / 1e3 / calls, calls, sink > 0 ? "ok" : "-");
         say(log, "output: %s", out);
         log.close();
+    }
+
+    static double area(List<RoadMesh.Triangle> tris) {
+        double s = 0;
+        for (RoadMesh.Triangle t : tris)
+            s += Math.abs((t.b().x() - t.a().x()) * (t.c().z() - t.a().z()) - (t.b().z() - t.a().z()) * (t.c().x() - t.a().x())) / 2;
+        return s;
     }
 
     static double[] bary(RoadMesh.Triangle t, double x, double z) {
