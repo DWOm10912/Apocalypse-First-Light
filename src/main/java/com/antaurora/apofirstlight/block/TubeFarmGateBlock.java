@@ -4,7 +4,6 @@ import com.antaurora.apofirstlight.blockentity.TubeFarmGateBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -99,7 +98,8 @@ public class TubeFarmGateBlock extends RectMultiblockBlock<TubeFarmGateBlock.Cel
             if (!player.getItemInHand(hand).isEmpty()) return InteractionResult.PASS;
             Sign sign = state.getValue(SIGN).next();
             setAll(level, origin, facing, s -> s.setValue(SIGN, sign));
-            level.playSound(player, master, SoundEvents.CHAIN_PLACE, SoundSource.BLOCKS, 0.6F, 1.3F);
+            if (level instanceof net.minecraft.server.level.ServerLevel server) com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, leafMiddle(origin, facing),
+                    net.minecraft.sounds.SoundEvents.CHAIN_PLACE, SIGN_RADIUS, 1.3F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this));
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
         boolean open = !state.getValue(OPEN);
@@ -107,11 +107,20 @@ public class TubeFarmGateBlock extends RectMultiblockBlock<TubeFarmGateBlock.Cel
         double side = (player.getX() - (master.getX() + 0.5)) * facing.getStepX() + (player.getZ() - (master.getZ() + 0.5)) * facing.getStepZ();
         Swing swing = open ? (side >= 0 ? Swing.BACK : Swing.FRONT) : state.getValue(SWING);
         setAll(level, origin, facing, s -> s.setValue(OPEN, open).setValue(SWING, swing));
-        level.playSound(player, master, open ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS,
-                0.9F, 0.75F + (level.getRandom().nextFloat() - 0.5F) * PITCH_SPREAD);
-        level.playSound(player, master, SoundEvents.CHAIN_HIT, SoundSource.BLOCKS, 0.5F, 1.0F);
+        // the chain and the swing; closing, the clang lands as the leaf stops (24 ticks); heard as far as its noise
+        if (level instanceof net.minecraft.server.level.ServerLevel server) com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, leafMiddle(origin, facing),
+                open ? com.antaurora.apofirstlight.registry.AflSounds.TUBE_FARM_GATE_OPEN.get() : com.antaurora.apofirstlight.registry.AflSounds.TUBE_FARM_GATE_CLOSE.get(), SWING_RADIUS,
+                1.0F + (level.getRandom().nextFloat() - 0.5F) * PITCH_SPREAD, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this));
         level.gameEvent(player, open ? GameEvent.BLOCK_OPEN : GameEvent.BLOCK_CLOSE, master);
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    /** Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the gate swinging, the sign hung or turned. */
+    public static final double SWING_RADIUS = 8, SIGN_RADIUS = 3;
+
+    /** The middle of the closed leaf (between the posts, 0.7 m up). */
+    private net.minecraft.world.phys.Vec3 leafMiddle(BlockPos origin, Direction facing) {
+        return cellPosition(origin, facing, Cell.C0R0).getCenter().add(cellPosition(origin, facing, Cell.C3R0).getCenter()).scale(0.5).add(0, 0.2, 0);
     }
 
     private void setAll(Level level, BlockPos origin, Direction facing, java.util.function.UnaryOperator<BlockState> change) {

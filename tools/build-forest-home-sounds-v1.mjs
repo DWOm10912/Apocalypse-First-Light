@@ -43,7 +43,7 @@ function own(k, cut = {}) {
   let x = prepare[name(k)](decode(path.join(SRC, name(k))));
   if (cut.trim) x = x.slice(Math.round(cut.trim * SR));
   if (cut.fadeFrom !== undefined) x = x.slice(0, Math.round(cut.fadeTo * SR));
-  return {src: name(k), at: +(peakAt(trimTail(trimHead(x))) / SR).toFixed(4), gain: 0, ...cut};
+  return {src: name(k), at: Math.ceil(peakAt(trimTail(trimHead(x))) / SR * 1e4) / 1e4, gain: 0, ...cut};
 }
 const at = (k, t, cut = {}) => ({src: name(k), at: t, gain: 0, ...cut});
 const one = (file, offset, layer) => ({file, reference: DOOR_REF, offset, layers: [layer]});

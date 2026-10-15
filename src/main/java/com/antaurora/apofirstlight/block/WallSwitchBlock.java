@@ -6,8 +6,6 @@ import com.antaurora.apofirstlight.wiring.WiringSupply;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -82,6 +80,9 @@ public class WallSwitchBlock extends HorizontalDirectionalBlock implements LogMo
         return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
+    /** Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14). */
+    public static final double CLICK_RADIUS = 2;
+
     /** Flip the switch: its light group in the panel (every switch of the group follows), else only itself. */
     @Override
     @SuppressWarnings("deprecation")
@@ -99,7 +100,9 @@ public class WallSwitchBlock extends HorizontalDirectionalBlock implements LogMo
                 on = !state.getValue(ON);
                 set(server, pos, state, on, false);
             }
-            level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.3F, on ? 1.9F : 1.75F);   // placeholder for a recorded switch click
+            // the toggle, heard as far as its noise (2 blocks; forest home sounds V1, 2026-10-14)
+            com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, pos.getCenter(), com.antaurora.apofirstlight.registry.AflSounds.WALL_SWITCH_CLICK.get(),
+                    CLICK_RADIUS, on ? 1.03F : 0.97F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this));
             level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide());

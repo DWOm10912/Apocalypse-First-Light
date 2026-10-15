@@ -1,14 +1,13 @@
 package com.antaurora.apofirstlight.cabin;
 
 import com.antaurora.apofirstlight.block.ModernOfficeDeskBlock;
+import com.antaurora.apofirstlight.registry.AflSounds;
 import com.antaurora.apofirstlight.meshhit.MeshHitReachesDown;
 import com.antaurora.apofirstlight.stamina.PlayerStamina;
 import com.antaurora.apofirstlight.stamina.StaminaConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -71,6 +70,11 @@ public final class EmergencyRadio {
     public static final int CAPACITY = 24000, WIND = 60;
     /** In the north frame: the crank's end begins here (the case runs x 0.3..0.7, the crank stands out to 0.74). */
     public static final double CRANK_X = 0.696;
+    /**
+     * Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the switch, the crank, and the static
+     * while it plays (client BlockLoopSoundController; EmergencyRadioBlockEntity's machine noise every 2 s).
+     */
+    public static final double SWITCH_RADIUS = 2, CRANK_RADIUS = 3, STATIC_RADIUS = 12;
 
     private EmergencyRadio() {}
 
@@ -209,18 +213,25 @@ public final class EmergencyRadio {
                     BlockState next = state.setValue(ON, a == Action.ON);
                     level.setBlock(pos, next, 3);
                     radio.switched(next);
-                    level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.25F, a == Action.ON ? 1.8F : 1.6F);
+                    noisy(level, player, state, pos, a, a == Action.ON ? AflSounds.EMERGENCY_RADIO_SWITCH_ON.get() : AflSounds.EMERGENCY_RADIO_SWITCH_OFF.get(), SWITCH_RADIUS);
                 }
                 case CRANK -> {
                     level.setBlock(pos, state.cycle(CRANK), 2);
                     boolean winded = player instanceof ServerPlayer sp && PlayerStamina.winded(sp);
                     radio.wind(winded ? Math.round(WIND * (float) StaminaConfig.get().winded.digSpeed) : WIND);
                     if (player instanceof ServerPlayer sp) PlayerStamina.spend(sp, StaminaConfig.get().costs.crank, false);
-                    level.playSound(null, pos, SoundEvents.CROSSBOW_LOADING_MIDDLE, SoundSource.BLOCKS, 0.2F, 1.5F + 0.1F * state.getValue(CRANK));
+                    noisy(level, player, state, pos, a, AflSounds.EMERGENCY_RADIO_CRANK.get(), CRANK_RADIUS);
                 }
                 default -> { return InteractionResult.PASS; }
             }
             return InteractionResult.CONSUME;
+        }
+
+        /** At the switch or the crank, heard as far as its noise (the crank: one of eight 0.2 s ratchet slices a quarter). */
+        private static void noisy(Level level, Player player, BlockState state, BlockPos pos, Action a, net.minecraft.sounds.SoundEvent sound, double radius) {
+            if (level instanceof net.minecraft.server.level.ServerLevel server)
+                com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, promptPoint(state, pos, a), sound, radius,
+                        0.98F + level.random.nextFloat() * 0.04F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, ForgeRegistries.BLOCKS.getKey(state.getBlock()));
         }
 
         @Override

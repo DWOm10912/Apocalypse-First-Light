@@ -4,8 +4,6 @@ import com.antaurora.apofirstlight.blockentity.RuralMailboxBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.Containers;
@@ -63,6 +61,9 @@ public class RuralMailboxBlock extends RectMultiblockBlock<RuralMailboxBlock.Cel
     @Override public Cell master() { return Cell.R0; }
     @Override protected double[][] boxes() { return BOXES; }
 
+    /** Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14): the flag, the door (vanilla, no take yet). */
+    public static final double FLAG_RADIUS = 3, DOOR_RADIUS = 4;
+
     @Override
     @SuppressWarnings("deprecation")
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
@@ -78,7 +79,9 @@ public class RuralMailboxBlock extends RectMultiblockBlock<RuralMailboxBlock.Cel
                 BlockState other = level.getBlockState(at);
                 if (other.is(this) && other.getValue(CELL) == cell) level.setBlock(at, other.setValue(FLAG, flag), UPDATE_CLIENTS);
             }
-            level.playSound(player, master.above(), SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.35F, flag ? 1.5F : 1.35F);
+            if (level instanceof net.minecraft.server.level.ServerLevel server)   // its click lands as the flag stops (0.42 s)
+                com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, RuralMailboxBlockEntity.doorPoint(master, facing),
+                        flag ? com.antaurora.apofirstlight.registry.AflSounds.RURAL_MAILBOX_FLAG_UP.get() : com.antaurora.apofirstlight.registry.AflSounds.RURAL_MAILBOX_FLAG_DOWN.get(), FLAG_RADIUS, 0.98F + level.random.nextFloat() * 0.04F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this));
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
         if (!level.isClientSide && level.getBlockEntity(master) instanceof RuralMailboxBlockEntity mailbox) player.openMenu(mailbox);

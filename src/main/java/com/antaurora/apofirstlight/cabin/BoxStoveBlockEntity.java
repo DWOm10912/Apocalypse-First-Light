@@ -41,6 +41,21 @@ public class BoxStoveBlockEntity extends BlockEntity {
     /** The cook progress of a spot, 0..1 (0 when nothing cooks there). */
     public float cooked(int spot) { return total[spot] <= 0 ? 0 : Math.min(1F, progress[spot] / (float) total[spot]); }
 
+    /**
+     * What the cook top sounds like while the fire burns (both sides: the client's loops, the server's noise): water
+     * boiling (a dirty-water item cooking), a pan frying (anything else cooking). A finished result is quiet.
+     */
+    public boolean boiling() { return cooking(true); }
+
+    public boolean frying() { return cooking(false); }
+
+    private boolean cooking(boolean water) {
+        if (!getBlockState().getValue(BoxStove.Stove.LIT)) return false;
+        for (int k = 0; k < items.size(); k++)
+            if (total[k] > 0 && !items.get(k).isEmpty() && items.get(k).getItem() instanceof com.antaurora.apofirstlight.thirst.ThirstWaterItem == water) return true;
+        return false;
+    }
+
     /** Whether {@code ticks} more fuel goes in (it must fit by half at least). */
     public boolean fits(int ticks) { return fuel + ticks / 2 <= BoxStove.CAPACITY; }
 
@@ -113,7 +128,17 @@ public class BoxStoveBlockEntity extends BlockEntity {
             done = true;
         }
         if (done) changed();
+        // the loops' noise, every 2 s while they run (the loudest one; heard as far as the client's loop carries)
+        if (state.getValue(BoxStove.Stove.LIT) && level instanceof net.minecraft.server.level.ServerLevel server
+                && server.getGameTime() % NOISE_INTERVAL == Math.floorMod(worldPosition.asLong(), NOISE_INTERVAL)) {
+            double radius = frying() ? BoxStove.FRY_RADIUS : boiling() ? BoxStove.BOIL_RADIUS : BoxStove.FIRE_RADIUS;
+            com.antaurora.apofirstlight.noise.NoiseSystem.emit(new com.antaurora.apofirstlight.noise.NoiseEvent(null, worldPosition.getCenter(),
+                    com.antaurora.apofirstlight.noise.NoiseType.MACHINE, server.getGameTime(),
+                    net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(state.getBlock()), radius), server);
+        }
     }
+
+    private static final int NOISE_INTERVAL = 40;
 
     /** Client: the fuel burns down here too (for the prompt). */
     public void clientBurn(BlockState state) {

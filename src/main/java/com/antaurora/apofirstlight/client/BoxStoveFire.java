@@ -11,8 +11,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -35,7 +33,7 @@ import java.util.Map;
  * <li>Smoke: soft wood-smoke puffs (FireFx, not vanilla pixel smoke) from the chimney's top: up the stove pipes (through
  * a roof they pass), out of the gap under the rain cap round its brim; a bare stove smokes from its pipe stub. Thicker
  * for a while after lighting.</li>
- * <li>Sound: the campfire crackle, louder with the door open.</li>
+ * <li>Sound: not here: the fire loop (and the cook top's boiling / frying) are client BlockLoopSoundController's.</li>
  * </ul>
  * The lit stoves come from their client ticks (a stove not ticked for a few ticks is dropped: unloaded or gone).
  */
@@ -57,7 +55,7 @@ public final class BoxStoveFire {
 
     static boolean isEmpty() { return LIVE.isEmpty(); }
 
-    /** The block entity's client tick: follow the fire, smoke, crackle, sparks. */
+    /** The block entity's client tick: follow the fire, smoke, sparks. */
     public static void tick(BoxStoveBlockEntity stove) {
         if (!(stove.getLevel() instanceof ClientLevel level)) return;
         follow(level);
@@ -96,10 +94,7 @@ public final class BoxStoveFire {
             FireFx.smoke(level, x, top.y, z, 0.1F, FireFx.WOOD_SMOKE, kindling ? 0.5F : 0.32F, 110, 0.045);
         }
         if (pos.distToCenterSqr(player.position()) > RANGE * RANGE) return;
-        if (r.nextFloat() < (open ? 0.025F : 0.012F)) {
-            Vec3 at = BoxStove.world(facing, pos, 0.3, 0.3, 0.46);
-            level.playLocalSound(at.x, at.y, at.z, SoundEvents.CAMPFIRE_CRACKLE, SoundSource.BLOCKS, open ? 0.7F : 0.35F, 0.9F + r.nextFloat() * 0.2F, false);
-        }
+        // the fire's sound is its loop now (client BlockLoopSoundController, heard 4 blocks; was a random campfire crackle)
         if (open && r.nextFloat() < 0.02F) {   // a spark spits out onto the hearth
             Vec3 at = BoxStove.world(facing, pos, -0.01, 0.3, 0.4 + 0.12 * r.nextDouble());
             Vec3 v = BoxStove.world(facing, BlockPos.ZERO, -0.04 - 0.03 * r.nextDouble(), 0.03, 0.5 + (r.nextDouble() - 0.5) * 0.04)

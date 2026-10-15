@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -101,12 +100,16 @@ public class RuralMailboxBlockEntity extends RandomizableContainerBlockEntity im
         if (level != null && state.hasProperty(RuralMailboxBlock.OPEN)) level.setBlock(worldPosition, state.setValue(RuralMailboxBlock.OPEN, open), 3);
     }
 
-    /** At the door: the box's front, 1.1 m up. */
+    /** The box's front, 1.1 m up (the door, the flag beside it). */
+    public static net.minecraft.world.phys.Vec3 doorPoint(BlockPos master, Direction facing) {
+        return new net.minecraft.world.phys.Vec3(master.getX() + 0.5 + facing.getStepX() * 0.25, master.getY() + 1.1, master.getZ() + 0.5 + facing.getStepZ() * 0.25);
+    }
+
+    /** At the door, heard as far as its noise (RuralMailboxBlock.DOOR_RADIUS; the vanilla trapdoor sound, small and high, until a take). */
     private void sound(SoundEvent sound) {
-        if (level == null) return;
-        Direction facing = meshFacing();
-        level.playSound(null, worldPosition.getX() + 0.5 + facing.getStepX() * 0.25, worldPosition.getY() + 1.1, worldPosition.getZ() + 0.5 + facing.getStepZ() * 0.25,
-                sound, SoundSource.BLOCKS, 0.4F, level.random.nextFloat() * 0.1F + 1.35F);
+        if (!(level instanceof net.minecraft.server.level.ServerLevel server)) return;
+        com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, null, doorPoint(worldPosition, meshFacing()), sound, RuralMailboxBlock.DOOR_RADIUS,
+                level.random.nextFloat() * 0.1F + 1.35F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(getBlockState().getBlock()));
     }
 
     // ---- AFL Animated Block Mesh Runtime ----

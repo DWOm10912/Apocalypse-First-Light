@@ -32,4 +32,15 @@ public final class RangedSound {
             if (player.distanceToSqr(at) <= (double) r * r) AflNetwork.rangedSound(player, packet);
         }
     }
+
+    /**
+     * The sound and its noise in one call, both {@code radius} blocks (forest home sounds V1, 2026-10-14): what the player
+     * hears is what the infected hear. {@code source} is who made it (null for a machine), {@code id} the block or item.
+     */
+    public static void playWithNoise(ServerLevel level, @org.jetbrains.annotations.Nullable net.minecraft.world.entity.Entity source,
+                                     Vec3 at, SoundEvent sound, double radius, float pitch, NoiseType type,
+                                     @org.jetbrains.annotations.Nullable net.minecraft.resources.ResourceLocation id) {
+        play(level, at, sound, SoundSource.BLOCKS, radius, 1.0F, pitch);
+        NoiseSystem.emit(new NoiseEvent(source, at, type, level.getGameTime(), id, radius), level);
+    }
 }

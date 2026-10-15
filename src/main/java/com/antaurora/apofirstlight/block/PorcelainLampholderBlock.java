@@ -3,8 +3,6 @@ package com.antaurora.apofirstlight.block;
 import com.antaurora.apofirstlight.energy.BuildingLights;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -80,6 +78,9 @@ public class PorcelainLampholderBlock extends BuildingLightBlock implements LogM
         return LogMount.updated(super.updateShape(state, direction, neighbor, level, pos, neighborPos), direction, neighbor, state.getValue(FACING));
     }
 
+    /** Heard as far as the infected hear it (blocks; forest home sounds V1, 2026-10-14). */
+    public static final double PULL_CHAIN_RADIUS = 2;
+
     /** Pull the chain: on lights the lamp at once when the lighting circuit has power (that period drawn), off darkens it. */
     @Override
     @SuppressWarnings("deprecation")
@@ -88,7 +89,9 @@ public class PorcelainLampholderBlock extends BuildingLightBlock implements LogM
         if (!level.isClientSide()) {
             boolean on = !state.getValue(ON), lit = on && BuildingLights.period(level, pos, wiringPosition(state, pos), false, periodEnergy()) == BuildingLights.Check.LIT;
             level.setBlock(pos, state.setValue(ON, on).setValue(LIT, lit), Block.UPDATE_ALL);
-            level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.3F, on ? 1.75F : 1.6F);   // placeholder for a recorded pull-chain click
+            if (level instanceof net.minecraft.server.level.ServerLevel server)   // the pull chain, heard as far as its noise (2 blocks; 2026-10-14)
+                com.antaurora.apofirstlight.noise.RangedSound.playWithNoise(server, player, pos.getCenter(), com.antaurora.apofirstlight.registry.AflSounds.LAMP_PULL_CHAIN.get(),
+                        PULL_CHAIN_RADIUS, on ? 1.02F : 0.98F, com.antaurora.apofirstlight.noise.NoiseType.INTERACTION, net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(this));
             level.gameEvent(player, GameEvent.BLOCK_CHANGE, pos);
         }
         return InteractionResult.sidedSuccess(level.isClientSide());

@@ -46,6 +46,11 @@ public class EmergencyRadioBlockEntity extends BlockEntity {
         charge = Math.max(0, charge - 1);
         if (charge == 0) { follow(state); changed(); }
         else if (level.getGameTime() % 20 == 0) setChanged();
+        // the static's noise every 2 s while it plays, as far as the client's loop carries (forest home sounds V1)
+        if (level instanceof net.minecraft.server.level.ServerLevel server && server.getGameTime() % 40 == Math.floorMod(worldPosition.asLong(), 40))
+            com.antaurora.apofirstlight.noise.NoiseSystem.emit(new com.antaurora.apofirstlight.noise.NoiseEvent(null, worldPosition.getCenter(),
+                    com.antaurora.apofirstlight.noise.NoiseType.MACHINE, server.getGameTime(),
+                    net.minecraftforge.registries.ForgeRegistries.BLOCKS.getKey(state.getBlock()), EmergencyRadio.STATIC_RADIUS), server);
     }
 
     /** Client: the charge plays down here too (for the prompt and Jade between updates). */

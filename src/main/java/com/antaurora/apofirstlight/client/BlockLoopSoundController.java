@@ -9,6 +9,10 @@ import com.antaurora.apofirstlight.blockentity.BeverageCoolerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChargingStationBlockEntity;
 import com.antaurora.apofirstlight.blockentity.ChestFreezerBlockEntity;
 import com.antaurora.apofirstlight.blockentity.IntakePumpBlockEntity;
+import com.antaurora.apofirstlight.cabin.BoxStove;
+import com.antaurora.apofirstlight.cabin.BoxStoveBlockEntity;
+import com.antaurora.apofirstlight.cabin.EmergencyRadio;
+import com.antaurora.apofirstlight.cabin.EmergencyRadioBlockEntity;
 import com.antaurora.apofirstlight.registry.AflSounds;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -36,7 +40,7 @@ import java.util.function.Supplier;
 /**
  * Quiet block loops driven by a block entity's synced state (seamless loops from tools/sound-mix-lib.mjs buildLoop; their
  * attenuation distance, 8, is set in sounds.json): the charging station hum while it charges, the beverage cooler's and
- * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (its own loop; it waits for the start sound's wind-up and fades in), the diesel generator's engine while it runs (heard to 24). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
+ * the chest freezer's compressor while it runs (the freezer's the same loop, deeper), the intake pump's motor while it pumps (its own loop; it waits for the start sound's wind-up and fades in), the diesel generator's engine while it runs (heard to 24), the box stove's fire / boiling / frying and the crank radio's static (2026-10-14; a block can play several sources at once). Same scan as CrusherSoundController (every 5 ticks, loaded chunks around the player); each
  * sound stops itself when its condition ends, the block entity is gone, or the player leaves the range.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -103,8 +107,29 @@ public final class BlockLoopSoundController {
                     com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity::running,
                     com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity::engineWorld,
                     AflSounds.PORTABLE_GENERATOR_RUN, 1.0F, com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.LOOP_FADE_IN[0],
-                    com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.LOOP_FADE_IN[1], PORTABLE_RADIUS));
-    private static final Map<BlockPos, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
+                    com.antaurora.apofirstlight.blockentity.PortableDieselGeneratorBlockEntity.LOOP_FADE_IN[1], PORTABLE_RADIUS),
+            // the start home (forest home sounds V1, 2026-10-14), each heard as far as its noise: the box stove's fire while
+            // it burns, over it a pot boiling or a pan frying while something cooks (a stove can play all three); the crank
+            // radio's static while it plays. Each fades in over half a second.
+            new Source<>(BoxStoveBlockEntity.class, stove -> stove.getBlockState().getValue(BoxStove.Stove.LIT),
+                    stove -> BoxStove.Stove.doorPoint(stove.getBlockState(), stove.getBlockPos()),
+                    AflSounds.BOX_STOVE_FIRE_LOOP, 1.0F, 0, 10, BoxStove.FIRE_RADIUS),
+            new Source<>(BoxStoveBlockEntity.class, BoxStoveBlockEntity::boiling, BlockLoopSoundController::stoveTop,
+                    AflSounds.BOX_STOVE_BOIL_LOOP, 1.0F, 0, 10, BoxStove.BOIL_RADIUS),
+            new Source<>(BoxStoveBlockEntity.class, BoxStoveBlockEntity::frying, BlockLoopSoundController::stoveTop,
+                    AflSounds.BOX_STOVE_FRY_LOOP, 1.0F, 0, 10, BoxStove.FRY_RADIUS),
+            new Source<>(EmergencyRadioBlockEntity.class, radio -> radio.getBlockState().getBlock() instanceof EmergencyRadio.Radio
+                            && radio.getBlockState().getValue(EmergencyRadio.Radio.LIT), radio -> radio.getBlockPos().getCenter(),
+                    AflSounds.EMERGENCY_RADIO_STATIC_LOOP, 1.0F, 0, 10, EmergencyRadio.STATIC_RADIUS));
+    /** One loop per block and source (a stove plays its fire and its cooking together). */
+    private record Key(BlockPos position, Source<?> source) {
+    }
+
+    private static final Map<Key, LoopSound> ACTIVE_SOUNDS = new HashMap<>();
+
+    private static Vec3 stoveTop(BoxStoveBlockEntity stove) {
+        return stove.getBlockPos().getCenter().add(0, BoxStove.TOP - 0.5 + 0.1, 0);
+    }
 
     private static ClientLevel trackedLevel;
     private static int scanDelay;
@@ -127,15 +152,14 @@ public final class BlockLoopSoundController {
                 LevelChunk chunk = level.getChunkSource().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
                 if (chunk == null) continue;
                 chunk.getBlockEntities().forEach((position, blockEntity) -> {
-                    if (ACTIVE_SOUNDS.containsKey(position)) return;
                     for (Source<?> source : SOURCES) {
-                        if (!source.activeOn(blockEntity)) continue;
+                        Key key = new Key(position.immutable(), source);
+                        if (ACTIVE_SOUNDS.containsKey(key) || !source.activeOn(blockEntity)) continue;
                         Vec3 at = source.positionOf(blockEntity);
-                        if (minecraft.player.distanceToSqr(at) > source.radius() * source.radius()) return;
-                        LoopSound sound = new LoopSound(level, position.immutable(), source, at);
+                        if (minecraft.player.distanceToSqr(at) > source.radius() * source.radius()) continue;
+                        LoopSound sound = new LoopSound(level, key.position(), source, at);
                         minecraft.getSoundManager().play(sound);
-                        ACTIVE_SOUNDS.put(position.immutable(), sound);
-                        return;
+                        ACTIVE_SOUNDS.put(key, sound);
                     }
                 });
             }
