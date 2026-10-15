@@ -19,19 +19,20 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * terrain/plan_initial_land, the water branch the plain surface density.
  */
 public record PlanTerrainDensity(DensityFunction land, DensityFunction terrain, DensityFunction underground,
-                                 boolean initial, TerrainPlanSurface surface) implements DensityFunction {
+                                 boolean initial, TerrainProfile profile, TerrainPlanSurface surface) implements DensityFunction {
     public static final KeyDispatchDataCodec<PlanTerrainDensity> CODEC = KeyDispatchDataCodec.of(
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("land").forGetter(PlanTerrainDensity::land),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("terrain").forGetter(PlanTerrainDensity::terrain),
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("underground").forGetter(PlanTerrainDensity::underground),
-                    Codec.BOOL.optionalFieldOf("initial", false).forGetter(PlanTerrainDensity::initial)
-            ).apply(instance, (l, t, u, i) -> new PlanTerrainDensity(l, t, u, i, null))));
+                    Codec.BOOL.optionalFieldOf("initial", false).forGetter(PlanTerrainDensity::initial),
+                    TerrainProfile.CODEC.optionalFieldOf("profile", TerrainProfile.R1).forGetter(PlanTerrainDensity::profile)
+            ).apply(instance, (l, t, u, i, p) -> new PlanTerrainDensity(l, t, u, i, p, null))));
 
     static final double SHORE_BAND = 48;
 
     public PlanTerrainDensity withSeed(long seed) {
-        return new PlanTerrainDensity(land, terrain, underground, initial, TerrainPlanStore.get(seed));
+        return new PlanTerrainDensity(land, terrain, underground, initial, profile, TerrainPlanStore.get(profile, seed));
     }
 
     @Override public double compute(FunctionContext context) {
@@ -58,7 +59,7 @@ public record PlanTerrainDensity(DensityFunction land, DensityFunction terrain, 
     @Override public void fillArray(double[] values, ContextProvider context) { context.fillAllDirectly(values, this); }
     @Override public DensityFunction mapAll(Visitor visitor) {
         return visitor.apply(new PlanTerrainDensity(land.mapAll(visitor), terrain.mapAll(visitor),
-                underground.mapAll(visitor), initial, surface));
+                underground.mapAll(visitor), initial, profile, surface));
     }
     @Override public double minValue() {
         return Math.min(land.minValue(), initial ? terrain.minValue() : Math.min(-1, underground.minValue()));

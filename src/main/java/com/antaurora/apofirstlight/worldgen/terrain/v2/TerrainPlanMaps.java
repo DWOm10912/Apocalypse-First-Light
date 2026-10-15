@@ -72,7 +72,7 @@ public final class TerrainPlanMaps {
             for (int px = 0; px < w; px++) {
                 double x = x0 + (px + 0.5) * mpp, z = z0 + (py + 0.5) * mpp;
                 int b = EcologyBiomes.biomeAt(s, x, z);
-                int c = 0xFF000000 | EcologyBiomes.COLOURS[b];
+                int c = 0xFF000000 | EcologyBiomes.colour(b);
                 if (b != EcologyBiomes.SEA) {
                     double gx = (row0[px + 1] - row0[px] + row1[px + 1] - row1[px]) / (2 * mpp);
                     double gz = (row1[px] - row0[px] + row1[px + 1] - row0[px + 1]) / (2 * mpp);

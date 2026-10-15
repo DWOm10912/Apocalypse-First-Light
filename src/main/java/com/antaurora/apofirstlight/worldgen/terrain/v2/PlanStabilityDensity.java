@@ -22,16 +22,17 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * </ul>
  * The carvers get the same depth in mixin/WorldCarverStabilityMixin, lava lakes in mixin/LakeFeatureStabilityMixin.
  */
-public record PlanStabilityDensity(DensityFunction height, boolean hard, TerrainPlanSurface surface) implements DensityFunction {
+public record PlanStabilityDensity(DensityFunction height, boolean hard, TerrainProfile profile, TerrainPlanSurface surface) implements DensityFunction {
     public static final KeyDispatchDataCodec<PlanStabilityDensity> CODEC = KeyDispatchDataCodec.of(
             RecordCodecBuilder.mapCodec(instance -> instance.group(
                     DensityFunction.HOLDER_HELPER_CODEC.fieldOf("height").forGetter(PlanStabilityDensity::height),
-                    Codec.BOOL.optionalFieldOf("hard", false).forGetter(PlanStabilityDensity::hard)
-            ).apply(instance, (h, hard) -> new PlanStabilityDensity(h, hard, null))));
+                    Codec.BOOL.optionalFieldOf("hard", false).forGetter(PlanStabilityDensity::hard),
+                    TerrainProfile.CODEC.optionalFieldOf("profile", TerrainProfile.R1).forGetter(PlanStabilityDensity::profile)
+            ).apply(instance, (h, hard, p) -> new PlanStabilityDensity(h, hard, p, null))));
 
     static final double FLOOR = 0.2, NONE = -1_000_000;
 
-    public PlanStabilityDensity withSeed(long seed) { return new PlanStabilityDensity(height, hard, TerrainPlanStore.get(seed)); }
+    public PlanStabilityDensity withSeed(long seed) { return new PlanStabilityDensity(height, hard, profile, TerrainPlanStore.get(profile, seed)); }
 
     /** Blocks below the planned surface that the hard floor keeps solid. */
     public static int hardDepth(int stable) { return Math.max(0, Math.min(stable, 2 * (stable - 6))); }
@@ -51,7 +52,7 @@ public record PlanStabilityDensity(DensityFunction height, boolean hard, Terrain
     }
     @Override public void fillArray(double[] values, ContextProvider context) { context.fillAllDirectly(values, this); }
     @Override public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new PlanStabilityDensity(height.mapAll(visitor), hard, surface));
+        return visitor.apply(new PlanStabilityDensity(height.mapAll(visitor), hard, profile, surface));
     }
     @Override public double minValue() { return hard ? NONE : 0; }
     @Override public double maxValue() { return hard ? FLOOR : 1.5 * (127 + 2); }

@@ -1,0 +1,6 @@
+{
+  "type": "apocalypse_firstlight:plan_stability",
+  "height": "apocalypse_firstlight:federal/plan_height",
+  "hard": true,
+  "profile": "federal"
+}

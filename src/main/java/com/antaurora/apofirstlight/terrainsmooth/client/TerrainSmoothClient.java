@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * Terrain Smooth V1, the client half (docs/worldgen/terrain_smooth_v1.md): follows the server's state, re-meshes what a
  * block change re-shapes, lifts the local player out of a slope an edit raised under the feet, and answers the chunk
- * models (SmoothSurfaceModel, SinkPlantModel) from the render region plus the chunks' natural surfaces.
+ * models (SmoothSurfaceModel, SinkPlantModel, SnowSkinModel) from the render region plus the chunks' natural surfaces.
  */
 @Mod.EventBusSubscriber(modid = ApocalypseFirstLight.MOD_ID, value = Dist.CLIENT)
 public final class TerrainSmoothClient {
@@ -38,7 +38,7 @@ public final class TerrainSmoothClient {
     public static long lifts, sectionsMarked;
     // chunk-builder counters (worker threads), natural surface tops only
     public static final LongAdder candidates = new LongAdder(), candidateNanos = new LongAdder(), sloped = new LongAdder(),
-            quadBuilds = new LongAdder(), quadNanos = new LongAdder(), plantsMoved = new LongAdder();
+            quadBuilds = new LongAdder(), quadNanos = new LongAdder(), plantsMoved = new LongAdder(), snowSkins = new LongAdder();
 
     static {
         TerrainSmooth.clientHooks = TerrainSmoothClient::blockChanged;
@@ -193,7 +193,7 @@ public final class TerrainSmoothClient {
         return mask | (LightTexture.sky(light) << 4 | LightTexture.block(light)) << 4;
     }
 
-    /** Geometry of a plant's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */
+    /** Geometry of a plant's or a snow layer's support block (render threads), -1 = none or flat; does not touch the AO hand-over. */
     static long supportGeometry(BlockAndTintGetter region, BlockPos support) {
         RegionCells c = REGION.get();
         BlockState kept = c.slopedState;

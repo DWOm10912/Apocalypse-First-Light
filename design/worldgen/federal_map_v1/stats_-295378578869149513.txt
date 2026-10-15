@@ -1,0 +1,53 @@
+template federal_template_v1_proto  seed -295378578869149513  scale 1.00
+land 272.2 km2 (mainland 269.1 km2)  bounds x -10250..11798  z -8177..8897  (22.0 x 17.1 km)
+  s1 TEMPERATE_FOREST_VALLEY         62.6 km2  PLAINS 32% HILLS 66%
+  s2 AGRICULTURAL_PLAINS             41.7 km2  MOUNTAIN 7% PLATEAU 6% PLAINS 85%
+  s3 COLD_MOUNTAIN_CONIFER           24.0 km2  MOUNTAIN 74% PLAINS 25%
+  s4 INDUSTRIAL_LAKES_MIXED_FOREST   48.0 km2  PLAINS 30% LAKE_LOWLAND 66%
+  s5 SOUTHERN_WETLAND_COAST          55.5 km2  PLAINS 28% COASTAL_LOWLAND 71%
+  s6 WESTERN_DESERT_PLATEAU          40.4 km2  MOUNTAIN 14% PLATEAU 71% PLAINS 15%
+  island 1 LARGE_PRISON  centre 10091 -6046  state S4
+  island 2 MILITARY_BASE centre -7789 8064  state S6
+  island 3 VIRUS_LAB     centre 11037 2824  state S5
+  city valley_town      s1 TOWN       rank 2 at 2608 -1057 
+  city river_city       s1 CITY       rank 1 at 7197 842 
+  city hill_village     s1 VILLAGE    rank 3 at 4582 -2749 
+  city county_seat      s2 TOWN       rank 2 at -2718 1614 
+  city farm_town_north  s2 VILLAGE    rank 3 at -3022 -2283 
+  city farm_town_south  s2 VILLAGE    rank 3 at -2221 5607 
+  city mining_town      s3 MINING     rank 3 at -7215 -4228 
+  city pass_village     s3 VILLAGE    rank 3 at -5473 -2433 
+  city industrial_city  s4 INDUSTRIAL rank 1 at -230 -5582 
+  city port_town        s4 PORT       rank 3 at 5478 -6201 
+  city mill_town        s4 VILLAGE    rank 3 at -3323 -6125 
+  city port_city        s5 PORT       rank 2 at 7065 5281 
+  city bayou_village    s5 VILLAGE    rank 3 at 2786 5848 
+  city shore_town       s5 TOWN       rank 3 at 8483 3044 
+  city desert_town      s6 TOWN       rank 2 at -6957 2543 
+  city canyon_outpost   s6 OUTPOST    rank 3 at -7355 4543 
+  start s1 at 300 -400 r 2000  dominant province HILLS
+road plan national_road_plan_v1_proto (template cost only): interstate 28.9 km, state highways 59.5 km, island links 10.1 km, 23 corridors, 31 nodes
+  interstate_ew:desert_town-county_seat          INTERSTATE       4.42 km  borders 1  range   0%  wet   0%  min radius   548 m
+  interstate_ew:county_seat-valley_town          INTERSTATE       5.96 km  borders 1  range   0%  wet   0%  min radius straight
+  interstate_ew:valley_town-river_city           INTERSTATE       4.99 km  borders 0  range   0%  wet   0%  min radius   499 m
+  interstate_ns:industrial_city-valley_town      INTERSTATE       5.36 km  borders 1  range   0%  wet   0%  min radius  3094 m
+  interstate_ns:valley_town-port_city            INTERSTATE       8.18 km  borders 1  range   0%  wet  36%  min radius  1024 m
+  sh_mountain:mining_town-pass_village           STATE_HIGHWAY    2.50 km  borders 0  range  93%  wet   0%  min radius straight
+  sh_mountain:pass_village-farm_town_north       STATE_HIGHWAY    2.48 km  borders 1  range  45%  wet   0%  min radius   949 m
+  sh_range_front:pass_village-desert_town        STATE_HIGHWAY   10.53 km  borders 2  range  11%  wet   0%  min radius   325 m
+  sh_canyon:desert_town-canyon_outpost           STATE_HIGHWAY    2.08 km  borders 0  range   0%  wet   0%  min radius  1377 m
+  sh_lakes:mill_town-industrial_city             STATE_HIGHWAY    3.19 km  borders 0  range   0%  wet   0%  min radius  2095 m
+  sh_lakes:industrial_city-port_town             STATE_HIGHWAY    5.81 km  borders 0  range   0%  wet   0%  min radius  1936 m
+  sh_farm_north:farm_town_north-mill_town        STATE_HIGHWAY    3.88 km  borders 1  range   0%  wet   0%  min radius   483 m
+  sh_farm_belt:farm_town_north-county_seat       STATE_HIGHWAY    4.12 km  borders 0  range   2%  wet   0%  min radius   645 m
+  sh_farm_belt:county_seat-farm_town_south       STATE_HIGHWAY    4.08 km  borders 0  range   0%  wet   0%  min radius  1722 m
+  sh_gulf:farm_town_south-bayou_village          STATE_HIGHWAY    5.03 km  borders 1  range   0%  wet  56%  min radius   394 m
+  sh_gulf:bayou_village-port_city                STATE_HIGHWAY    4.35 km  borders 0  range   0%  wet  95%  min radius  1601 m
+  sh_gulf:port_city-shore_town                   STATE_HIGHWAY    2.66 km  borders 0  range   0%  wet  95%  min radius  4040 m
+  sh_gulf:shore_town-river_city                  STATE_HIGHWAY    2.56 km  borders 1  range   0%  wet  53%  min radius  3672 m
+  sh_hills:valley_town-hill_village              STATE_HIGHWAY    2.61 km  borders 0  range   0%  wet   0%  min radius  2097 m
+  sh_hills:hill_village-port_town                STATE_HIGHWAY    3.63 km  borders 1  range   0%  wet   0%  min radius  2624 m
+  island_bridge:1                                ISLAND_BRIDGE    4.76 km  borders 0  range   0%  wet   0%  min radius   503 m
+  island_bridge:2                                ISLAND_BRIDGE    3.21 km  borders 0  range   0%  wet   0%  min radius   361 m
+  island_bridge:3                                ISLAND_BRIDGE    2.13 km  borders 0  range   0%  wet  76%  min radius   838 m
+  nodes {INTERCHANGE=6, CITY=6, JUNCTION=4, BORDER_CROSSING=9, PASS=3, BRIDGE=3}

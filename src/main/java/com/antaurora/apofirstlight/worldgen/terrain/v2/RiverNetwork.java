@@ -70,7 +70,7 @@ public final class RiverNetwork {
 
     // ------------------------------------------------------------------ build
     static RiverNetwork build(TerrainPlanV2 p, TerrainPlanSurface s) {
-        final int N = TerrainPlanV2.N, n = N * N;
+        final int n = p.n;
         boolean[] river = new boolean[n];
         for (int i = 0; i < n; i++) river[i] = (p.water[i] == 0 || p.water[i] == 3) && p.area[i] >= A_MIN;
         // donors (upstream river cells) in CSR form, ascending cell index
@@ -126,8 +126,8 @@ public final class RiverNetwork {
             double[] px = new double[m], pz = new double[m], pa = new double[m];
             for (int k = 0; k < m; k++) {
                 int c = cells[k];
-                px[k] = TerrainPlanV2.cx(c % TerrainPlanV2.N);
-                pz[k] = TerrainPlanV2.cx(c / TerrainPlanV2.N);
+                px[k] = p.cellX(c % p.gridN);
+                pz[k] = p.cellX(c / p.gridN);
                 pa[k] = p.area[c];
             }
             if (m >= 2) pa[m - 1] = pa[m - 2];          // the junction / mouth vertex carries this line's own flow
@@ -207,11 +207,11 @@ public final class RiverNetwork {
                 if (tl < 1e-9 || count <= 2) continue;
                 nxs[k] = -tz / tl;
                 nzs[k] = tx / tl;
-                int cell = TerrainPlanV2.idx(TerrainPlanV2.clampI((int) Math.floor((rx[k] - TerrainPlanV2.ORIGIN) / TerrainPlanV2.CELL)),
-                        TerrainPlanV2.clampI((int) Math.floor((rz[k] - TerrainPlanV2.ORIGIN) / TerrainPlanV2.CELL)));
-                double fp = ra[k] >= 1e6 ? 35 * Math.sqrt(ra[k] / 1e6) : 0;
+                int cell = p.cellIdx(p.clampCell((int) Math.floor((rx[k] - p.gridOrigin) / TerrainPlanV2.CELL)),
+                        p.clampCell((int) Math.floor((rz[k] - p.gridOrigin) / TerrainPlanV2.CELL)));
+                double fp = p.floodplain(cell, ra[k]);
                 double amp = Math.max(0, Math.min(1.6 * w, 0.45 * fp - 0.5 * w))
-                        * (1 - 0.8 * Math.min(1, p.wBelt[cell] + 0.5 * p.wFoot[cell]));
+                        * p.meanderFactor(cell);
                 double taper = TerrainPlanV2.smooth((total - rs[k]) / (lambda * (pinEnd ? 0.75 : 0.25)));
                 double grow = TerrainPlanV2.smooth(0.45 + 1.1 * PlanNoise.noise(s.noiseSeed, rs[k] / (2 * lambda), line * 7.31, 311));
                 double skew = PlanNoise.noise(s.noiseSeed, rs[k] / (4 * lambda), line * 9.13 + 20, 314);
@@ -262,6 +262,7 @@ public final class RiverNetwork {
                 int wc = s.waterClass(fx[k], fz[k]);
                 int cand;
                 if (wc == 1 || wc == 2) cand = SEA_WATER_TOP;
+                else if (wc == TerrainPlanSurface.LAKE) cand = Math.max(SEA_WATER_TOP, s.lakeTopAt(fx[k], fz[k], null));   // federal lakes: the lake is the base level
                 else {
                     int a = Math.max(0, k - 1), c = Math.min(count - 1, k + 1);
                     double tx = fx[c] - fx[a], tz = fz[c] - fz[a], tl = Math.max(1e-9, Math.hypot(tx, tz));
@@ -273,6 +274,16 @@ public final class RiverNetwork {
                 }
                 cand = Math.max(SEA_WATER_TOP, cand);
                 fl[k] = (short) (k == 0 ? cand : Math.min(cand, fl[k - 1]));
+            }
+            // federal lakes (C2): a river runs at the lake's level from where it meets the lake's cells (the shore band,
+            // whose ground dips under the lake's top, used to pull it a block or more under the lake water)
+            if (s.layers != null) {
+                double[] share = new double[1];
+                for (int k = 0; k < count; k++) {
+                    int lake = s.lakeTopAt(fx[k], fz[k], share);
+                    if (lake == Integer.MIN_VALUE || share[0] <= 0 || fl[k] >= lake) continue;
+                    for (int j = k; j >= 0 && fl[j] < lake; j--) fl[j] = (short) lake;
+                }
             }
             if (parentLevel != Integer.MIN_VALUE && fl[count - 1] < parentLevel) {
                 fl[count - 1] = (short) parentLevel;

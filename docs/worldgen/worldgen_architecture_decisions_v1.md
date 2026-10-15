@@ -1,5 +1,16 @@
 # AFL Worldgen Architecture Decisions V1
 
+## 2026-10-14 ADR-11 世界层实现：世界生成版本锁（C1 分支，已编译，未实机）
+
+[世界生成版本锁 V1](worldgen_version_lock_v1.md)：
+- Terrain V2 主世界在第一个区块之前记录 profile、种子、各子系统的世界兼容版本和输出指纹；以后每次加载都比对。
+- **规划缓存版本**（`TerrainPlanSurface.FORMAT`、缓存文件名）只表示本机怎么存，不参与兼容判定。
+- **HARD 变化**：不打开世界，不写入、不迁移、不删除。只有该世界 serverconfig 里填了这一次变化的令牌才放行。
+- **SOFT 变化**（树木）：记录后放行。
+- **锁出现之前的世界**：被领养为 LEGACY 基线。
+
+本条只覆盖 Terrain V2 地形链。Highway、道路施工快照、结构资产 digest 仍按下文 ADR-11 的原则另行实现。同一分支的[联邦六州 C1](federal_six_state_c1.md)是不接入正式生成的原型；[C2](federal_six_state_c2.md)（2026-10-14）加了一个独立的实验世界类型"AFL 联邦（实验）"，有自己的锁 profile `afl_federal_experimental`，默认世界仍是 r1。
+
 ## 2026-10-07 Terrain V2 研究建议（设计，未激活）
 
 详细证据见[Terrain V2 研究](columbian_federation_terrain_v2_research.md)，阶段与回退见[迁移计划](terrain_v2_migration_plan.md)。建议大幅重构 LAND 地貌与近地表/生态政策，但不替换 NoiseBasedChunkGenerator，不重写 Highway 或 Road。主岛/三卫星岛拓扑保留，地貌、生态、灾难分层；全国默认 Fallout 与“小 Plains pockets 即正常生态”的旧政策在未来生态阶段退役，本轮未改变生效行为。

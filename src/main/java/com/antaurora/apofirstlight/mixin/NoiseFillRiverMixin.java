@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverWaterFill;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -28,7 +27,7 @@ public abstract class NoiseFillRiverMixin {
                                        CallbackInfoReturnable<ChunkAccess> cir) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) randomState;
         if (!access.apocalypse$hasTerrainPlan()) return;
-        TerrainPlanSurface plan = TerrainPlanStore.peek(access.apocalypse$getSeed());
+        TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         if (plan == null || plan.rivers == null) return;
         RiverWaterFill.apply(plan, cir.getReturnValue(),
                 ((NoiseBasedChunkGenerator) (Object) this).generatorSettings().value().defaultBlock());

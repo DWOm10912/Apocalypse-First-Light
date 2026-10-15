@@ -1,0 +1,5 @@
+r1: fails with -Xmx256m (OutOfMemoryError: Java heap space)
+r1: builds with -Xmx384m (time: plan 10.6 s + surface (rivers, ecology) 1.8 s = 12.4 s)
+federal_1.0: fails with -Xmx256m (OutOfMemoryError: Java heap space)
+federal_1.0: fails with -Xmx384m (OutOfMemoryError: Java heap space)
+federal_1.0: builds with -Xmx512m (time: plan 11.3 s + surface (rivers, ecology) 3.6 s = 14.8 s)

@@ -75,9 +75,9 @@ final class SmoothDevClient {
         message(String.format(Locale.ROOT, "9 x 9 chunks around you: %d columns, natural surface %d, none (water, built on, overhang) %d, chunks without data %d; sloped tops %d (%.1f %% of the natural surface), of which rising above their cell %d (counted in %.0f ms)",
                 columns, natural, none, missing, sloped, natural == 0 ? 0 : 100.0 * sloped / natural, raised, ms));
         long n = TerrainSmoothClient.candidates.sum();
-        message(String.format(Locale.ROOT, "client chunk builds: %d natural surface tops %.1f ms (%.2f us each), %d sloped, %d slope meshes built %.1f ms, %d plants moved; sections marked by edits %d; player lifted %d times",
+        message(String.format(Locale.ROOT, "client chunk builds: %d natural surface tops %.1f ms (%.2f us each), %d sloped, %d slope meshes built %.1f ms, %d plants moved, %d snow skins; sections marked by edits %d; player lifted %d times",
                 n, TerrainSmoothClient.candidateNanos.sum() / 1e6, n == 0 ? 0 : TerrainSmoothClient.candidateNanos.sum() / 1e3 / n, TerrainSmoothClient.sloped.sum(),
-                TerrainSmoothClient.quadBuilds.sum(), TerrainSmoothClient.quadNanos.sum() / 1e6, TerrainSmoothClient.plantsMoved.sum(),
+                TerrainSmoothClient.quadBuilds.sum(), TerrainSmoothClient.quadNanos.sum() / 1e6, TerrainSmoothClient.plantsMoved.sum(), TerrainSmoothClient.snowSkins.sum(),
                 TerrainSmoothClient.sectionsMarked, TerrainSmoothClient.lifts));
         int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, p.getBlockX(), p.getBlockZ());
         LevelChunk here = level.getChunkSource().getChunk(px, pz, ChunkStatus.FULL, false);

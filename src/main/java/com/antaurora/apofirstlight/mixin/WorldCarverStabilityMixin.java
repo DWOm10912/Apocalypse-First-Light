@@ -2,7 +2,6 @@ package com.antaurora.apofirstlight.mixin;
 
 import com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.RiverCarver;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -39,7 +38,7 @@ public abstract class WorldCarverStabilityMixin<C extends CarverConfiguration> {
                                             Aquifer aquifer, MutableBoolean grass, CallbackInfoReturnable<Boolean> cir) {
         RandomStateSeedAccess access = (RandomStateSeedAccess) (Object) context.randomState();
         if (!access.apocalypse$hasTerrainPlan()) return;
-        TerrainPlanSurface plan = TerrainPlanStore.peek(access.apocalypse$getSeed());
+        TerrainPlanSurface plan = access.apocalypse$terrainPlanSurface();
         if (plan == null) return;
         int stable = plan.stableDepth(pos.getX(), pos.getZ());
         if (stable > 0) {

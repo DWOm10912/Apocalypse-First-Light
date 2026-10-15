@@ -108,10 +108,16 @@ public final class MainNationBiomeRegionPlan {
         return Region.DEFAULT_LAND;
     }
 
-    /** Shared final surface policy. Water/coast always win over the land region plan. */
+    /** Shared final surface policy without a Terrain V2 plan (unit tests, pre-plan worlds). */
     public ResourceKey<Biome> surfaceBiome(int x, int z, ResourceKey<Biome> original) {
+        return surfaceBiome(null, x, z, original);
+    }
+
+    /** Shared final surface policy. Water/coast always win over the land region plan. plan: the Terrain V2 plan the
+     *  world's noise router was bound to (C2: passed in, never looked up by seed), or null. */
+    public ResourceKey<Biome> surfaceBiome(com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan, int x, int z,
+                                           ResourceKey<Biome> original) {
         // Terrain V2: the plan's water mask and ground decide water, sea floor and beach (the macro coast is another line)
-        var plan = com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore.peek(seed);
         if (plan != null) return planSurfaceBiome(plan, x, z);
         var sample = geography.sample(x, z);
         if (sample.isWater() || sample.surfaceClass() == MacroGeographySample.SurfaceClass.COAST)
@@ -158,20 +164,31 @@ public final class MainNationBiomeRegionPlan {
                 new com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface[4096];
     }
 
+    /** The resolver without a Terrain V2 plan (unit tests). */
+    public ResourceKey<Biome> biomeAt(int x, int y, int z, ResourceKey<Biome> original, DensityFunction preliminarySurface) {
+        return biomeAt(null, x, y, z, original, preliminarySurface);
+    }
+
     /** Both biome filling and SurfaceSystem call this resolver on the same quart lattice. */
-    public ResourceKey<Biome> biomeAt(int x, int y, int z, ResourceKey<Biome> original,
-                                     DensityFunction preliminarySurface) {
+    public ResourceKey<Biome> biomeAt(com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface plan, int x, int y, int z,
+                                     ResourceKey<Biome> original, DensityFunction preliminarySurface) {
         x = x >> 2 << 2;
         y = y >> 2 << 2;
         z = z >> 2 << 2;
         if (Biomes.DEEP_DARK.equals(original)) return Biomes.PLAINS;     // filtered anyway; never Fallout (2026-10-10)
         if (AflVanillaBiomePolicy.isAllowedUndergroundBiome(original)) {
+            if (plan != null && plan.federal()) {
+                // the federal map is not MacroGeography: the preliminary surface alone (the planned ground, sea floor
+                // included) decides what is under the surface
+                if (preliminarySurface.compute(new DensityFunction.SinglePointContext(x, y + 12, z)) > .390625) return original;
+                return surfaceBiome(plan, x, z, original);
+            }
             var sample = geography.sample(x, z);
             boolean belowSurface = sample.isWater() ? sample.surfaceHeight() - y > 12
                     : preliminarySurface.compute(new DensityFunction.SinglePointContext(x, y + 12, z)) > .390625;
             if (belowSurface) return original;
         }
-        return surfaceBiome(x, z, original);
+        return surfaceBiome(plan, x, z, original);
     }
 
     public record Pocket(int x, int z, int radius, int amplitude, double phase) {

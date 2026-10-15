@@ -46,10 +46,10 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     static final ModelProperty<Long> GEOMETRY = new ModelProperty<>();
     /** TerrainSmoothClient#underSides: sides whose part below the band this model draws itself, and that part's light */
     static final ModelProperty<Integer> UNDER = new ModelProperty<>();
-    private static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
-    /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them */
-    private static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
-    private static final int[][] SIDE_CORNERS = {{1, 0}, {2, 3}, {0, 2}, {3, 1}};
+    static final Direction[] SIDES = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+    /** floor points a (left) and b (right) of each side seen from outside, and which corners stand above them (also SnowSkinModel) */
+    static final float[][] SIDE_A = {{1, 0}, {0, 1}, {0, 0}, {1, 1}}, SIDE_B = {{0, 0}, {1, 1}, {0, 1}, {1, 0}};
+    static final int[][] SIDE_CORNERS = {{1, 0}, {2, 3}, {0, 2}, {3, 1}};
     private final Map<Long, List<BakedQuad>[]> cache = new ConcurrentHashMap<>();
 
     SmoothSurfaceModel(BakedModel original) {
@@ -137,12 +137,12 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     }
 
     /** Vanilla-like directional shading of a tilted top: 1.0 up, 0.8 north / south, 0.6 east / west, blended by the normal. */
-    private static float tiltShade(float[][] p) {
+    static float tiltShade(float[][] p) {
         float[] n = normal(p, Direction.UP);
         return n[1] * n[1] + 0.6F * n[0] * n[0] + 0.8F * n[2] * n[2];
     }
 
-    private static int gray(float f) {
+    static int gray(float f) {
         int c = Math.max(0, Math.min(255, Math.round(255 * f)));
         return 0xFF000000 | c << 16 | c << 8 | c;
     }
@@ -162,7 +162,7 @@ final class SmoothSurfaceModel extends BakedModelWrapper<BakedModel> {
     }
 
     /** light: baked lightmap (LightTexture#pack), merged with the computed one by maximum; 0 for none */
-    private static BakedQuad quad(float[][] p, float[][] uv, TextureAtlasSprite sprite, int tint, Direction dir, int color, int light) {
+    static BakedQuad quad(float[][] p, float[][] uv, TextureAtlasSprite sprite, int tint, Direction dir, int color, int light) {
         float[] n = normal(p, dir);
         int packed = (((byte) (n[0] * 127)) & 0xFF) | ((((byte) (n[1] * 127)) & 0xFF) << 8) | ((((byte) (n[2] * 127)) & 0xFF) << 16);
         int[] data = new int[32];

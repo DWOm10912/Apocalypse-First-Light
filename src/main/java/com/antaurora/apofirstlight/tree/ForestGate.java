@@ -1,7 +1,6 @@
 package com.antaurora.apofirstlight.tree;
 
 import com.antaurora.apofirstlight.tree.TreeForms.Species;
-import com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanStore;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -127,9 +126,10 @@ public final class ForestGate {
     static ForestPlan plan(WorldGenLevel level) {
         if (!enabled() || !level.getLevel().dimension().equals(Level.OVERWORLD)) return null;
         long seed = level.getSeed();
+        // the plan the overworld's noise router was bound to (C2: r1 or the federal experimental plan, never by seed)
+        var surface = boundSurface(level.getLevel());
         ForestPlan p = plan;
-        if (p != null && p.seed == seed) return p;
-        var surface = TerrainPlanStore.peek(seed);
+        if (p != null && p.seed == seed && p.surface == surface) return p;
         if (surface == null || surface.ecology == null) { ForestFeature.NO_PLAN.increment(); return null; }
         p = new ForestPlan(surface, seed);
         plan = p;
@@ -139,10 +139,15 @@ public final class ForestGate {
     /** The plan of a running server's overworld (commands), or null. */
     static ForestPlan plan(MinecraftServer server) {
         long seed = server.getWorldData().worldGenOptions().seed();
+        var surface = server.overworld() == null ? null : boundSurface(server.overworld());
         ForestPlan p = plan;
-        if (p != null && p.seed == seed) return p;
-        var surface = TerrainPlanStore.peek(seed);
+        if (p != null && p.seed == seed && p.surface == surface) return p;
         return surface == null || surface.ecology == null ? null : new ForestPlan(surface, seed);
+    }
+
+    private static com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface boundSurface(net.minecraft.server.level.ServerLevel level) {
+        var access = (com.antaurora.apofirstlight.worldgen.RandomStateSeedAccess) (Object) level.getChunkSource().randomState();
+        return access.apocalypse$hasTerrainPlan() ? access.apocalypse$terrainPlanSurface() : null;
     }
 
     private static void prewarm() {

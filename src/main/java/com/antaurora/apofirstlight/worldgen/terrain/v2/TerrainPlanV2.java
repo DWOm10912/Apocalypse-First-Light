@@ -22,7 +22,7 @@ import java.util.Arrays;
  *    a little diffusion rounds shoulders and crests; then the network is re-routed on the result and rebuilt once.
  * Rivers, drainage areas and heights all come from this one computation. Everything is deterministic and bounded.
  */
-public final class TerrainPlanV2 {
+public class TerrainPlanV2 {
     public static final String VERSION = "afl_terrain_plan_v2_r1";   // frozen 2026-10-10 for the user's map review
     public static final int N = 1408;
     public static final double CELL = 16, ORIGIN = -11264;
@@ -31,33 +31,69 @@ public final class TerrainPlanV2 {
     public static final double THETA = 0.45;                           // concavity (Flint): S = ks A^-theta, A in m2
 
     public final long seed;
+    /** The r1 national map the mask is sampled from; null for a plan on another map (FederalTerrainPlan). */
     public final MacroGeography geo;
-    public final int n = N * N;
-    public final byte[] water = new byte[n];          // 0 land, 1 macro sea, 2 drowned valley (estuary), 3 tidal marsh
-    public final short[] landmass = new short[n];
-    public final float[] dCoast = new float[n];       // m to the macro coast (land > 0, sea < 0)
-    public final float[] seaFloor = new float[n];
-    public final float[] wPlain = new float[n], wCoastal = new float[n], wFoot = new float[n], wBelt = new float[n];
-    public final float[] resist = new float[n];       // resistant (ridge-forming) rock 0..1
-    public final float[] h0 = new float[n];           // initial surface
-    public final float[] h0NoRidge = new float[n];    // the same before the fold ridges stood up (trunk routing)
-    public final float[] h = new float[n];            // planned surface Y
-    public final float[] cap = new float[n];          // the filled initial surface: no incision rises above it
-    public final int[] recv = new int[n];             // D8 receiver on the final surface (-1: sink)
-    public final float[] area = new float[n];         // drainage area m2
-    public final float[] chanY = new float[n];        // channel bed Y (NaN: not a channel)
-    public final byte[] strahler = new byte[n];
-    public final boolean[] trunk = new boolean[n];
+    /** This plan's grid (C2, 2026-10-14): gridN x gridN cells of CELL m from gridOrigin. r1: N and ORIGIN. */
+    public final int gridN;
+    public final double gridOrigin;
+    public final int n;
+    public final byte[] water;          // 0 land, 1 macro sea, 2 drowned valley (estuary), 3 tidal marsh (4 lake: federal only)
+    public final short[] landmass;
+    public final float[] dCoast;        // m to the macro coast (land > 0, sea < 0)
+    public final float[] seaFloor;
+    public final float[] wPlain, wCoastal, wFoot, wBelt;
+    public final float[] resist;        // resistant (ridge-forming) rock 0..1
+    public final float[] h0;            // initial surface
+    public final float[] h0NoRidge;     // the same before the fold ridges stood up (trunk routing)
+    public final float[] h;             // planned surface Y
+    public final float[] cap;           // the filled initial surface: no incision rises above it
+    public final int[] recv;            // D8 receiver on the final surface (-1: sink)
+    public final float[] area;          // drainage area m2
+    public final float[] chanY;         // channel bed Y (NaN: not a channel)
+    public final byte[] strahler;
+    public final boolean[] trunk;
     public double frameCx, frameCz, frameAngle, halfU, halfV;
     public int beltSide;
     public final java.util.LinkedHashMap<String, Object> report = new java.util.LinkedHashMap<>();
 
-    private final long noiseSeed;
+    protected final long noiseSeed;
 
+    /** The r1 plan of a seed: the r1 grid over the r1 national map (MacroGeography). */
     public TerrainPlanV2(long seed) {
+        this(seed, N, ORIGIN, MacroGeography.forSeed(seed));
+        build();
+    }
+
+    /** A plan on its own grid; the subclass sets itself up, then calls {@link #build()}. */
+    protected TerrainPlanV2(long seed, int gridN, double gridOrigin, MacroGeography geo) {
         this.seed = seed;
-        this.geo = MacroGeography.forSeed(seed);
+        this.geo = geo;
+        this.gridN = gridN;
+        this.gridOrigin = gridOrigin;
+        this.n = gridN * gridN;
+        water = new byte[n];
+        landmass = new short[n];
+        dCoast = new float[n];
+        seaFloor = new float[n];
+        wPlain = new float[n];
+        wCoastal = new float[n];
+        wFoot = new float[n];
+        wBelt = new float[n];
+        resist = new float[n];
+        h0 = new float[n];
+        h0NoRidge = new float[n];
+        h = new float[n];
+        cap = new float[n];
+        recv = new int[n];
+        area = new float[n];
+        chanY = new float[n];
+        strahler = new byte[n];
+        trunk = new boolean[n];
         this.noiseSeed = mix(seed ^ 0x7E44A1C3B5L);
+    }
+
+    /** The planning stages, in order (the r1 sequence; a subclass overrides single stages, never the order). */
+    protected final void build() {
         long t0 = System.nanoTime();
         sampleMask();
         coastDistance();
@@ -101,14 +137,20 @@ public final class TerrainPlanV2 {
         java.util.stream.IntStream.range(from, to).parallel().forEach(body);
     }
 
+    /** r1 grid helpers (static, for the offline r1 tools); the planner itself uses its own grid ({@link #cellX} ...). */
     public static double cx(int col) { return ORIGIN + (col + 0.5) * CELL; }
     public static int idx(int col, int row) { return row * N + col; }
 
-    private void sampleMask() {
-        rows(0, N, r -> {
-            for (int c = 0; c < N; c++) {
-                MacroGeographySample s = geo.sample((int) Math.floor(cx(c)), (int) Math.floor(cx(r)));
-                int i = idx(c, r);
+    /** Centre coordinate (x or z) of a column or row of this plan's grid. */
+    public double cellX(int col) { return gridOrigin + (col + 0.5) * CELL; }
+    public int cellIdx(int col, int row) { return row * gridN + col; }
+    public int clampCell(int v) { return Math.max(0, Math.min(gridN - 1, v)); }
+
+    protected void sampleMask() {
+        rows(0, gridN, r -> {
+            for (int c = 0; c < gridN; c++) {
+                MacroGeographySample s = geo.sample((int) Math.floor(cellX(c)), (int) Math.floor(cellX(r)));
+                int i = cellIdx(c, r);
                 landmass[i] = (short) s.landmassId();
                 water[i] = (byte) (s.isLand() ? 0 : 1);
                 seaFloor[i] = (float) s.surfaceHeight();
@@ -128,20 +170,20 @@ public final class TerrainPlanV2 {
         double inf = 1e20;
         double[] g = new double[n];
         for (int i = 0; i < n; i++) g[i] = target.at(i) ? 0 : inf;
-        rows(0, N, c -> {                            // columns
-            double[] f = new double[N], d = new double[N], zz = new double[N + 1];
-            int[] v = new int[N];
-            for (int r = 0; r < N; r++) f[r] = g[idx(c, r)];
+        rows(0, gridN, c -> {                            // columns
+            double[] f = new double[gridN], d = new double[gridN], zz = new double[gridN + 1];
+            int[] v = new int[gridN];
+            for (int r = 0; r < gridN; r++) f[r] = g[cellIdx(c, r)];
             dt1(f, d, v, zz);
-            for (int r = 0; r < N; r++) g[idx(c, r)] = d[r];
+            for (int r = 0; r < gridN; r++) g[cellIdx(c, r)] = d[r];
         });
         float[] out = new float[n];
-        rows(0, N, r -> {                            // rows
-            double[] f = new double[N], d = new double[N], zz = new double[N + 1];
-            int[] v = new int[N];
-            for (int c = 0; c < N; c++) f[c] = g[idx(c, r)];
+        rows(0, gridN, r -> {                            // rows
+            double[] f = new double[gridN], d = new double[gridN], zz = new double[gridN + 1];
+            int[] v = new int[gridN];
+            for (int c = 0; c < gridN; c++) f[c] = g[cellIdx(c, r)];
             dt1(f, d, v, zz);
-            for (int c = 0; c < N; c++) out[idx(c, r)] = (float) (Math.sqrt(d[c]) * CELL);
+            for (int c = 0; c < gridN; c++) out[cellIdx(c, r)] = (float) (Math.sqrt(d[c]) * CELL);
         });
         return out;
     }
@@ -171,20 +213,20 @@ public final class TerrainPlanV2 {
     }
 
     /** The mainland's own principal axes (from its cells), independent of MacroGeography internals. */
-    private void frame() {
+    protected void frame() {
         double sx = 0, sz = 0, cnt = 0;
-        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) if (landmass[idx(c, r)] == 0) { sx += cx(c); sz += cx(r); cnt++; }
+        for (int r = 0; r < gridN; r++) for (int c = 0; c < gridN; c++) if (landmass[cellIdx(c, r)] == 0) { sx += cellX(c); sz += cellX(r); cnt++; }
         frameCx = sx / cnt;
         frameCz = sz / cnt;
         double xx = 0, xz = 0, zz = 0;
-        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) if (landmass[idx(c, r)] == 0) {
-            double dx = cx(c) - frameCx, dz = cx(r) - frameCz;
+        for (int r = 0; r < gridN; r++) for (int c = 0; c < gridN; c++) if (landmass[cellIdx(c, r)] == 0) {
+            double dx = cellX(c) - frameCx, dz = cellX(r) - frameCz;
             xx += dx * dx; xz += dx * dz; zz += dz * dz;
         }
         frameAngle = 0.5 * Math.atan2(2 * xz, xx - zz);
         double[] us = new double[(int) cnt], vs = new double[(int) cnt];
         int k = 0;
-        for (int r = 0; r < N; r++) for (int c = 0; c < N; c++) if (landmass[idx(c, r)] == 0) { us[k] = u(cx(c), cx(r)); vs[k] = v(cx(c), cx(r)); k++; }
+        for (int r = 0; r < gridN; r++) for (int c = 0; c < gridN; c++) if (landmass[cellIdx(c, r)] == 0) { us[k] = u(cellX(c), cellX(r)); vs[k] = v(cellX(c), cellX(r)); k++; }
         Arrays.sort(us);
         Arrays.sort(vs);
         halfU = (us[(int) (cnt * .995)] - us[(int) (cnt * .005)]) / 2;
@@ -206,7 +248,7 @@ public final class TerrainPlanV2 {
     static final double FOLD_WAVE = 3200;            // across strike: limb ridges every half wave, 1.6 km (0.55 x PA)
     double beltPhase, beltBend, beltPlunge, beltShift, dividePhase;
 
-    private void provinces() {
+    protected void provinces() {
         java.util.SplittableRandom rnd = new java.util.SplittableRandom(mix(seed ^ 0x51DE5EEDL));
         beltSide = rnd.nextBoolean() ? 1 : -1;
         beltPhase = rnd.nextDouble() * Math.PI * 2;
@@ -214,10 +256,10 @@ public final class TerrainPlanV2 {
         beltPlunge = rnd.nextDouble() * Math.PI * 2;
         beltShift = (rnd.nextDouble() - 0.5) * 0.24;
         dividePhase = rnd.nextDouble() * Math.PI * 2;
-        rows(0, N, r -> { for (int c = 0; c < N; c++) {
-            int i = idx(c, r);
+        rows(0, gridN, r -> { for (int c = 0; c < gridN; c++) {
+            int i = cellIdx(c, r);
             if (water[i] != 0) continue;
-            double x = cx(c), z = cx(r), uu = u(x, z), vv = v(x, z);
+            double x = cellX(c), z = cellX(r), uu = u(x, z), vv = v(x, z);
             double dc = dCoast[i];
             if (landmass[i] != 0) {                  // satellite islands: coastal plain and low till plain
                 double cw = 1 - smooth((dc - 250) / 500);
@@ -273,7 +315,7 @@ public final class TerrainPlanV2 {
     }
 
     // ------------------------------------------------------------------ initial surface
-    private void initialSurface() {
+    protected void initialSurface() {
         java.util.SplittableRandom rnd = new java.util.SplittableRandom(mix(seed ^ 0x40AA1E5L));
         // end moraines: 1-2 broad arcs across the till plain, 8-14 m high, 700-1200 m wide (Bloomington / Darby type)
         int moraines = 1 + rnd.nextInt(2);
@@ -287,10 +329,10 @@ public final class TerrainPlanV2 {
         // with the distance to the coast, tilted along the long axis (seed) and warped at 5-8 km, so the basins differ
         // in size and the main divide is not the island's centre line; the provinces add their own relief to it
         double tilt = (rnd.nextBoolean() ? 1 : -1) * (2 + 2 * rnd.nextDouble());
-        rows(0, N, r -> { for (int c = 0; c < N; c++) {
-            int i = idx(c, r);
+        rows(0, gridN, r -> { for (int c = 0; c < gridN; c++) {
+            int i = cellIdx(c, r);
             if (water[i] != 0) { h0[i] = h0NoRidge[i] = seaFloor[i]; continue; }
-            double x = cx(c), z = cx(r), uu = u(x, z), vv = v(x, z), dc = dCoast[i];
+            double x = cellX(c), z = cellX(r), uu = u(x, z), vv = v(x, z), dc = dCoast[i];
             double regional = landmass[i] == 0 ? regional(x, z, uu, vv, dc, tilt)
                     : SEA + 2.5 + 14 * smooth(dc / 900) + 2 * fbm(x, z, 1200, 2, 0.5, 9);
             // till plain: broad swells (km scale), hummocky ground moraine (100-300 m), end moraines
@@ -357,13 +399,17 @@ public final class TerrainPlanV2 {
     }
 
     // ------------------------------------------------------------------ routing
-    static final class Routing {
+    protected static final class Routing {
         int[] recv; double[] area; int[] order;   // order: downstream first (pop order)
         float[] filled;
+
+        public float[] filled() { return filled; }
+        public double[] area() { return area; }
+        public int[] recv() { return recv; }
     }
 
     /** Priority-flood (+epsilon) from the sea, jittered D8 on the filled surface, accumulation. */
-    Routing route(float[] surf, double jitter) {
+    protected Routing route(float[] surf, double jitter) {
         Routing R = new Routing();
         float[] zf = surf.clone();
         boolean[] done = new boolean[n];
@@ -371,17 +417,17 @@ public final class TerrainPlanV2 {
         int[] order = new int[n];
         int k = 0;
         for (int i = 0; i < n; i++) {
-            int c = i % N, r = i / N;
-            if (water[i] == 1 || water[i] == 2 || c == 0 || r == 0 || c == N - 1 || r == N - 1) { heap.push(zf[i], i); done[i] = true; }
+            int c = i % gridN, r = i / gridN;
+            if (water[i] == 1 || water[i] == 2 || c == 0 || r == 0 || c == gridN - 1 || r == gridN - 1) { heap.push(zf[i], i); done[i] = true; }
         }
         while (heap.size > 0) {
             int i = heap.popId();
             order[k++] = i;
-            int c = i % N, r = i / N;
+            int c = i % gridN, r = i / gridN;
             for (int d = 0; d < 8; d++) {
                 int cc = c + DC[d], rr = r + DR[d];
-                if (cc < 0 || rr < 0 || cc >= N || rr >= N) continue;
-                int j = rr * N + cc;
+                if (cc < 0 || rr < 0 || cc >= gridN || rr >= gridN) continue;
+                int j = rr * gridN + cc;
                 if (done[j]) continue;
                 done[j] = true;
                 if (zf[j] <= zf[i]) zf[j] = Math.nextUp(zf[i]) + 1e-4f;
@@ -390,12 +436,12 @@ public final class TerrainPlanV2 {
         }
         int[] rv = new int[n];
         rows(0, n, i -> {
-            int c = i % N, r = i / N;
-            if (water[i] == 1 || water[i] == 2 || c == 0 || r == 0 || c == N - 1 || r == N - 1) { rv[i] = -1; return; }
+            int c = i % gridN, r = i / gridN;
+            if (water[i] == 1 || water[i] == 2 || c == 0 || r == 0 || c == gridN - 1 || r == gridN - 1) { rv[i] = -1; return; }
             double best = 0;
             int bj = -1;
             for (int d = 0; d < 8; d++) {
-                int j = (r + DR[d]) * N + c + DC[d];
+                int j = (r + DR[d]) * gridN + c + DC[d];
                 double drop = (zf[i] - zf[j]) / DIST[d];
                 if (drop <= 0) continue;
                 if (jitter > 0) drop *= 1 + jitter * (hash01(i * 8L + d) - 0.5);
@@ -412,10 +458,10 @@ public final class TerrainPlanV2 {
 
     /** Routing-only irregularity on the flat provinces (60-160 m), so channels wander and converge instead of running
      *  straight down a planar slope along a grid direction; the carved surface follows the network it produces. */
-    double routingNoise(int i) {
+    protected double routingNoise(int i) {
         double flat = wPlain[i] + wCoastal[i] + 0.6 * wFoot[i] + 0.8 * wBelt[i] * (1 - Math.min(1, resist[i] * 2));
         if (flat < 0.01) return 0;
-        double x = cx(i % N), z = cx(i / N);
+        double x = cellX(i % gridN), z = cellX(i / gridN);
         return flat * (1.1 * fbm(x, z, 170, 2, 0.5, 71) + 0.45 * fbm(x, z, 60, 2, 0.5, 72));
     }
 
@@ -424,13 +470,13 @@ public final class TerrainPlanV2 {
     }
 
     // ------------------------------------------------------------------ carving
-    double ks(int i) {      // channel steepness index by rock / province (S = ks A^-0.45, A in m2)
+    protected double ks(int i) {      // channel steepness index by rock / province (S = ks A^-0.45, A in m2)
         return wPlain[i] * 3.0 + wCoastal[i] * 4.0 + wFoot[i] * 4 + wBelt[i] * 3.6 + 36 * resist[i];
     }
 
     /** Deepest incision below the old surface: the till plain and coastal plain are young (post-glacial / post-
      *  lowstand), so valleys deepen only with the log of the area; the belt and foothills are not limited. */
-    double depthCap(int i, double a) {
+    protected double depthCap(int i, double a) {
         double young = wPlain[i] + wCoastal[i];
         if (young < 0.02) return 1e9;
         double lg = Math.log10(Math.max(1, a / 5e4));
@@ -438,9 +484,9 @@ public final class TerrainPlanV2 {
         return young > 0.98 ? d : d / young;     // blends out toward the old landscapes
     }
 
-    double channelThreshold(int i) { return 5e4 + (3e4 - 5e4) * (wBelt[i] + wFoot[i]); }
+    protected double channelThreshold(int i) { return 5e4 + (3e4 - 5e4) * (wBelt[i] + wFoot[i]); }
 
-    double sideSlope(int i, double aChan, double incision) {
+    protected double sideSlope(int i, double aChan, double incision) {
         double lg = Math.log10(Math.max(1e4, aChan) / 1e4);
         double plain = Math.min(0.36, 0.035 + 0.016 * incision + 0.01 * lg);
         double coastal = Math.min(0.40, 0.05 + 0.018 * incision + 0.01 * lg);
@@ -462,7 +508,7 @@ public final class TerrainPlanV2 {
             int i = R.order[t];
             if (!isChan[i]) continue;
             int j = R.recv[i];
-            double step = stepLen(i, j);
+            double step = stepLength(i, j);
             double below = j < 0 || water[j] != 0 ? LOWSTAND : chanY[j];
             if (j >= 0 && water[j] == 0 && !isChan[j]) below = h[j];
             double s = Math.min(0.55, ks(i) * Math.pow(R.area[i], -THETA));
@@ -490,7 +536,7 @@ public final class TerrainPlanV2 {
             shoreSlope = new float[n];
             float[] ss = shoreSlope;
             rows(0, n, i -> { if (water[i] == 0 && dCoast[i] < 900)
-                ss[i] = (float) (0.05 + 0.20 * smooth(0.5 + 0.6 * fbm(cx(i % N), cx(i / N), 900, 2, 0.5, 61))); });
+                ss[i] = (float) (0.05 + 0.20 * smooth(0.5 + 0.6 * fbm(cellX(i % gridN), cellX(i / gridN), 900, 2, 0.5, 61))); });
         }
         float[] val = new float[n], fpd = new float[n];
         int[] src = new int[n];
@@ -499,34 +545,35 @@ public final class TerrainPlanV2 {
         for (int i = 0; i < n; i++) {
             if (water[i] != 0) continue;
             if (isChan[i]) { val[i] = chanY[i]; src[i] = i; heap.push(val[i], i); continue; }
-            int c = i % N, r = i / N;
+            int c = i % gridN, r = i / gridN;
             for (int d = 0; d < 8; d++) {
                 int cc = c + DC[d], rr = r + DR[d];
-                if (cc >= 0 && rr >= 0 && cc < N && rr < N && water[rr * N + cc] == 1) {
+                if (cc >= 0 && rr >= 0 && cc < gridN && rr < gridN && water[rr * gridN + cc] == 1) {
                     val[i] = (float) (SEA + 0.5); src[i] = -2; heap.push(val[i], i); break;
                 }
             }
         }
         float[] sideOf = new float[n];
+        final boolean floatRelax = floatRelax();
         while (heap.size > 0) {
             int i = heap.popId();
             if (heap.lastKey > val[i]) continue;          // superseded entry
             double vi = val[i];
-            int c = i % N, r = i / N, sc = src[i];
+            int c = i % gridN, r = i / gridN, sc = src[i];
             double fp = 0, side;
-            if (sc >= 0) { double a = R.area[sc]; fp = a >= 1e6 ? 35 * Math.sqrt(a / 1e6) : 0; }
+            if (sc >= 0) fp = floodplain(sc, R.area[sc]);
             for (int d = 0; d < 16; d++) {
                 int cc = c + NC[d], rr = r + NR[d];
-                if (cc < 0 || rr < 0 || cc >= N || rr >= N) continue;
-                int k = rr * N + cc;
+                if (cc < 0 || rr < 0 || cc >= gridN || rr >= gridN) continue;
+                int k = rr * gridN + cc;
                 if (water[k] != 0 || isChan[k]) continue;
                 double step = ND[d] * CELL, dist = fpd[i] + step;
                 double sl;
-                if (sc == -2) sl = shoreSlope[k];                       // shore: marshy edges / bluffs alternate
+                if (sc == -2) sl = shoreSpread(k);                      // shore: marshy edges / bluffs alternate
                 else if (dist <= fp) sl = 0.012;
                 else sl = sideSlope(k, R.area[sc], Math.max(0, h0[sc] - chanY[sc]));
                 double nv = vi + sl * step;
-                if (nv < val[k]) { val[k] = (float) nv; src[k] = sc; fpd[k] = (float) dist; heap.push(val[k], k); }
+                if (floatRelax ? (float) nv < val[k] : nv < val[k]) { val[k] = (float) nv; src[k] = sc; fpd[k] = (float) dist; heap.push(val[k], k); }
             }
         }
         rows(0, n, i -> {
@@ -541,6 +588,15 @@ public final class TerrainPlanV2 {
 
     private float[] shoreSlope;
 
+    /** Hillslope spread: compare a candidate in the stored float precision (C2 federal plan). r1 compares the double
+     *  and keeps that (a candidate within float rounding of the stored value re-enters the queue; harmless at r1's size,
+     *  a cascade on the federal plan's wide floodplains). */
+    protected boolean floatRelax() { return false; }
+
+    /** Side slope of the shore's spread into cell k (r1: the shore band's slope, 0 beyond 900 m). C2: the federal plan
+     *  stops the shore spread at the band's edge (its highlands would otherwise be levelled to the band's top). */
+    protected double shoreSpread(int k) { return shoreSlope[k]; }
+
     /** Rounds the carved valleys (floor, walls and the channel line in them): a D8 channel runs in straight runs with
      *  sharp bends, and the valley drawn around it would keep those corners; a few passes over the carved cells only
      *  (h below the old surface) round them off. Drainage is restored by the pit fill afterwards. */
@@ -548,12 +604,12 @@ public final class TerrainPlanV2 {
         float[] t = new float[n];
         for (int it = 0; it < iterations; it++) {
             System.arraycopy(h, 0, t, 0, n);
-            rows(1, N - 1, r -> { for (int c = 1; c < N - 1; c++) {
-                int i = r * N + c;
+            rows(1, gridN - 1, r -> { for (int c = 1; c < gridN - 1; c++) {
+                int i = r * gridN + c;
                 if (water[i] != 0 || h0[i] - t[i] < 0.4 || resist[i] > 0.15) continue;
                 double s = 0;
                 int m = 0;
-                for (int d = 0; d < 8; d++) { int j = (r + DR[d]) * N + c + DC[d]; if (water[j] == 0) { s += t[j]; m++; } }
+                for (int d = 0; d < 8; d++) { int j = (r + DR[d]) * gridN + c + DC[d]; if (water[j] == 0) { s += t[j]; m++; } }
                 if (m > 0) h[i] = (float) Math.min(h0[i], t[i] + 0.3 * (s / m - t[i]));
             } });
         }
@@ -563,12 +619,12 @@ public final class TerrainPlanV2 {
         float[] t = new float[n];
         for (int it = 0; it < iterations; it++) {
             System.arraycopy(h, 0, t, 0, n);
-            rows(1, N - 1, r -> { for (int c = 1; c < N - 1; c++) {
-                int i = r * N + c;
+            rows(1, gridN - 1, r -> { for (int c = 1; c < gridN - 1; c++) {
+                int i = r * gridN + c;
                 if (water[i] != 0 || !Float.isNaN(chanY[i])) continue;
                 double s = 0;
                 int m = 0;
-                for (int d = 0; d < 8; d++) { int j = (r + DR[d]) * N + c + DC[d]; if (water[j] == 0) { s += t[j]; m++; } }
+                for (int d = 0; d < 8; d++) { int j = (r + DR[d]) * gridN + c + DC[d]; if (water[j] == 0) { s += t[j]; m++; } }
                 if (m == 0) continue;
                 double nh = t[i] + 0.25 * (s / m - t[i]);
                 h[i] = (float) nh;
@@ -577,7 +633,7 @@ public final class TerrainPlanV2 {
     }
 
     /** Fill the remaining closed hollows (ponds the carving left) so every land cell drains to the sea. */
-    private void fillPits() {
+    protected void fillPits() {
         Routing f = route(h.clone(), 0.0);
         int filled = 0;
         for (int i = 0; i < n; i++) if (water[i] == 0 && f.filled[i] > h[i] + 1e-3f) { h[i] = f.filled[i]; filled++; }
@@ -589,18 +645,18 @@ public final class TerrainPlanV2 {
         float[] t = new float[n];
         for (int it = 0; it < iterations; it++) {
             System.arraycopy(h, 0, t, 0, n);
-            rows(1, N - 1, r -> { for (int c = 1; c < N - 1; c++) {
-                int i = r * N + c;
+            rows(1, gridN - 1, r -> { for (int c = 1; c < gridN - 1; c++) {
+                int i = r * gridN + c;
                 if (water[i] != 0 || resist[i] < 0.15 || !Float.isNaN(chanY[i])) continue;
                 double s = 0;
-                for (int d = 0; d < 8; d++) s += t[(r + DR[d]) * N + c + DC[d]];
+                for (int d = 0; d < 8; d++) s += t[(r + DR[d]) * gridN + c + DC[d]];
                 h[i] = (float) (t[i] + 0.3 * Math.min(1, resist[i] * 2) * (s / 8 - t[i]));
             } });
         }
     }
 
     /** Sea level back to Y63: the lowest valley floors drown (estuaries); shallow, sheltered ones silt up into marsh. */
-    private void drown() {
+    protected void drown() {
         int est = 0, marsh = 0;
         for (int i = 0; i < n; i++) {
             if (water[i] != 0 || h[i] > SEA + 0.25) continue;
@@ -630,10 +686,10 @@ public final class TerrainPlanV2 {
             if (water[i] != 0) continue;
             int j = R.recv[i];
             if (R.area[i] >= 1e6 && water[i] == 0) { chan++; if (j >= 0 && water[j] == 0 && h[j] > h[i] + 0.05) uphill++; }
-            int c = i % N, r = i / N;
-            if (c > 0 && r > 0 && c < N - 1 && r < N - 1) {
+            int c = i % gridN, r = i / gridN;
+            if (c > 0 && r > 0 && c < gridN - 1 && r < gridN - 1) {
                 boolean low = true;
-                for (int d = 0; d < 8 && low; d++) { int k = (r + DR[d]) * N + c + DC[d]; if (h[k] <= h[i] || water[k] != 0) low = false; }
+                for (int d = 0; d < 8 && low; d++) { int k = (r + DR[d]) * gridN + c + DC[d]; if (h[k] <= h[i] || water[k] != 0) low = false; }
                 if (low) pits++;
             }
         }
@@ -656,22 +712,43 @@ public final class TerrainPlanV2 {
             boolean wet = water[i] == 1 || water[i] == 2;
             double d = wet ? -toLand[i] : toWater[i];
             shore[i] = (byte) Math.max(-127, Math.min(127, Math.round(d)));
-            double depth = wet ? 6 : water[i] == 3 ? 12 : 12 * (wPlain[i] + wCoastal[i]) + 6 * wFoot[i] + 4 * wBelt[i];
+            double depth = stableDepth(i, wet);
             stable[i] = (byte) Math.round(depth);
         });
-        TerrainPlanSurface bare = new TerrainPlanSurface(VERSION, seed, noiseSeed, h.clone(), water.clone(), wBelt.clone(), stable, shore, null, null);
+        TerrainPlanSurface bare = new TerrainPlanSurface(version(), seed, noiseSeed, gridN, gridOrigin, h.clone(), water.clone(),
+                wBelt.clone(), stable, shore, null, null, layers());
         long t0 = System.nanoTime();
         RiverNetwork rivers = RiverNetwork.build(this, bare);      // Phase 2b: river water on the frozen r1 network
         report.put("ms_rivers", (System.nanoTime() - t0) / 1_000_000);
         report.put("river_lines", rivers.lines());
         report.put("river_vertices", rivers.vertices());
         long t1 = System.nanoTime();
-        EcologyPlan.Zones ecology = EcologyPlan.classify(this);   // ecology stage: the r1 zones, cached with the plan
+        EcologyPlan.Zones ecology = ecology();   // ecology stage: the r1 zones, cached with the plan (federal: its own)
         report.put("ms_ecology", (System.nanoTime() - t1) / 1_000_000);
         s = bare.withRivers(rivers, ecology);
         surface = s;
         return s;
     }
+
+    /** The plan version the surface carries (the cache key and the lock's plan label). */
+    protected String version() { return VERSION; }
+
+    /** Stable near-surface depth of a cell (r1: plains / coastal plain 12, foothills 6, fold belt 4, water floors 6). */
+    protected double stableDepth(int i, boolean wet) {
+        return wet ? 6 : water[i] == 3 ? 12 : 12 * (wPlain[i] + wCoastal[i]) + 6 * wFoot[i] + 4 * wBelt[i];
+    }
+
+    /** Extra runtime layers (federal plans); none for r1. */
+    protected TerrainPlanSurface.Layers layers() { return null; }
+
+    /** The ecology zones stored with the plan (r1: EcologyPlan). */
+    protected EcologyPlan.Zones ecology() { return EcologyPlan.classify(this); }
+
+    /** How much a river may meander at a cell, 0..1 (r1: less in the foothills and the fold belt). */
+    protected double meanderFactor(int cell) { return 1 - 0.8 * Math.min(1, wBelt[cell] + 0.5 * wFoot[cell]); }
+
+    /** Floodplain half-width beside a channel of drainage area a (r1: 35 sqrt(A km2) from 1 km2). */
+    protected double floodplain(int i, double a) { return a >= 1e6 ? 35 * Math.sqrt(a / 1e6) : 0; }
 
     /** Planned surface at any point (delegates to the runtime surface: one formula for maps and the game). */
     public double heightAt(double x, double z) { return toSurface().heightAt(x, z); }
@@ -679,9 +756,9 @@ public final class TerrainPlanV2 {
     public boolean waterAt(double x, double z) { return toSurface().waterAt(x, z); }
 
     double slopeAt(int i) {
-        int c = i % N, r = i / N;
-        if (c < 1 || r < 1 || c > N - 2 || r > N - 2) return 0;
-        double gx = (h[i + 1] - h[i - 1]) / (2 * CELL), gz = (h[i + N] - h[i - N]) / (2 * CELL);
+        int c = i % gridN, r = i / gridN;
+        if (c < 1 || r < 1 || c > gridN - 2 || r > gridN - 2) return 0;
+        double gx = (h[i + 1] - h[i - 1]) / (2 * CELL), gz = (h[i + gridN] - h[i - gridN]) / (2 * CELL);
         return Math.hypot(gx, gz);
     }
 
@@ -705,15 +782,21 @@ public final class TerrainPlanV2 {
         return d == 1 || d == N ? CELL : Math.sqrt(2) * CELL;
     }
 
-    static double smooth(double t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+    double stepLength(int i, int j) {
+        if (j < 0) return CELL;
+        int d = Math.abs(j - i);
+        return d == 1 || d == gridN ? CELL : Math.sqrt(2) * CELL;
+    }
+
+    protected static double smooth(double t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
 
     static long mix(long z) { return PlanNoise.mix(z); }
 
-    double hash01(long k) { return PlanNoise.hash01(noiseSeed, k); }
+    protected double hash01(long k) { return PlanNoise.hash01(noiseSeed, k); }
 
-    double noise(double x, double z, int salt) { return PlanNoise.noise(noiseSeed, x, z, salt); }
+    protected double noise(double x, double z, int salt) { return PlanNoise.noise(noiseSeed, x, z, salt); }
 
-    double fbm(double x, double z, double wavelength, int octaves, double gain, int salt) {
+    protected double fbm(double x, double z, double wavelength, int octaves, double gain, int salt) {
         return PlanNoise.fbm(noiseSeed, x, z, wavelength, octaves, gain, salt);
     }
 

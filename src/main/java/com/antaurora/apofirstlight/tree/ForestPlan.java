@@ -64,9 +64,9 @@ public final class ForestPlan {
     }
 
     /** By EcologyBiomes index; null: not a mesh forest biome. */
-    static final Stand[] STANDS = new Stand[EcologyBiomes.IDS.length];
+    static final Stand[] STANDS = new Stand[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.COUNT];
     /** Biomes that keep their vanilla trees (mesh trees keep BUFFER blocks away from them). */
-    static final boolean[] VANILLA_TREES = new boolean[EcologyBiomes.IDS.length];
+    static final boolean[] VANILLA_TREES = new boolean[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.COUNT];
 
     static {
         // the sample trees are mature with wide crowns (oak radius 7-10 m, pine 6-8.4 m): a closed stand is about one
@@ -89,6 +89,13 @@ public final class ForestPlan {
         STANDS[EcologyBiomes.COASTAL_PINE] = new Stand("white pine - red oak - red maple (20)", 7.0, 1.3, mix(0.15, 0.45, 0.25, 0, 0.15, 0), 0.55, 0);
         STANDS[EcologyBiomes.COASTAL_CLEARING] = new Stand("sandy clearing, scattered", 2.0, 0.12, mix(0.20, 0.50, 0.20, 0, 0.10, 0), 0.8, 0.6);
         STANDS[EcologyBiomes.SWAMP_FOREST] = new Stand("red maple swamp (108; hemlock on the swamp borders)", 5.0, 1.45, mix(0, 0.08, 0, 0, 0.80, 0.12), 0.5, 0);
+        // C2 federal experimental biomes (2026-10-14): INTERIM mixes from the six existing species; the real stands need
+        // red spruce / balsam fir (montane) and sugar maple / yellow birch (lakeshore), listed in federal_six_state_c2.md
+        STANDS[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.MONTANE_CONIFER] = new Stand(
+                "montane conifer, interim white pine - hemlock (spruce-fir pending)", 7.0, 1.5, mix(0, 0.45, 0.05, 0, 0.10, 0.40), 0.5, 0);
+        STANDS[com.antaurora.apofirstlight.worldgen.terrain.v2.FederalEcologyBiomes.LAKESHORE_FOREST] = new Stand(
+                "northern mixed forest, interim hemlock - white pine - red maple (sugar maple, birch pending)", 7.0, 1.5,
+                mix(0.05, 0.30, 0.15, 0, 0.25, 0.25), 0.5, 0);
     }
 
     /** Some biome keeps its vanilla trees (P3: none; the buffer rule stays for later species that are not mesh yet). */
@@ -103,7 +110,7 @@ public final class ForestPlan {
     /** The biomes whose vanilla tree features the dev biome modifier replaces (EcologyBiomes ids). */
     public static List<String> coveredBiomes() {
         var out = new ArrayList<String>();
-        for (int b = 0; b < STANDS.length; b++) if (STANDS[b] != null) out.add(EcologyBiomes.IDS[b]);
+        for (int b = 0; b < STANDS.length; b++) if (STANDS[b] != null) out.add(EcologyBiomes.id(b));
         return out;
     }
 

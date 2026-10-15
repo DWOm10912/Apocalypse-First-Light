@@ -1,0 +1,30 @@
+[19:16:03] [Server thread/ERROR] [co.an.ap.ApocalypseFirstLight/]: [AFL worldgen lock] WORLD NOT OPENED
+AFL world generation lock: this world was generated with other terrain rules than this build of Apocalypse: First Light.
+Opening it would generate new chunks that do not fit the old ones (cliffs, cut rivers, biome seams). The world was not opened and nothing was written to it.
+Recorded: profile afl_terrain_v2, fingerprint 49c55f90d2a4677a (created by AFL 1.0.0-alpha / Minecraft 1.20.1, 2026-10-14T22:13:24.827Z)
+This build: fingerprint b7ba3090bb2309d7
+Changes:
+  [HARD] profile: afl_terrain_v2 -> afl_federal_experimental (another world generation profile)
+  [HARD] ecology: ecology_r1#1 -> ecology_federal#1 (biomes and surface blocks)
+  [HARD] national_template: macro_geography#3 -> federal_template#federal_template_v1_proto#1 (federal coast, six states, provinces and climate)
+  [HARD] river_carving: river_carver#1 -> federal_water#1 (river and lake water and banks in chunks)
+  [HARD] terrain_density: overworld_density#1 -> federal_density#1 (chunk terrain shape, caves and aquifers)
+  [HARD] terrain_plan: afl_terrain_plan_v2_r1#4 -> afl_federal_plan_c2_v1#1 (planned heights, water, lakes, rivers and ecology zones)
+  note: plan values differ, as the declared terrain_plan / national_template change says
+  note: probe biomes differs, as the declared changes say
+  note: probe density differs, as the declared changes say
+  note: probe plan_queries differs, as the declared changes say
+  note: plan cache format 4 -> 5 (storage only, not a change)
+To keep the world as it is, open it with the AFL build it was made with.
+To open it anyway, back it up first, then set  acceptWorldgenChange = "3430a542"  in
+  .\saves\fed_block\.\serverconfig\apocalypse_firstlight-worldgen.toml
+and open it again. Only this exact change is accepted, and it is recorded in the world.
+[19:16:03] [Server thread/ERROR] [ne.mi.ev.EventBus/EVENTBUS]: Exception caught during firing event: AFL world generation lock: this world was generated with other terrain rules than this build of Apocalypse: First Light.
+Opening it would generate new chunks that do not fit the old ones (cliffs, cut rivers, biome seams). The world was not opened and nothing was written to it.
+Recorded: profile afl_terrain_v2, fingerprint 49c55f90d2a4677a (created by AFL 1.0.0-alpha / Minecraft 1.20.1, 2026-10-14T22:13:24.827Z)
+This build: fingerprint b7ba3090bb2309d7
+Changes:
+  [HARD] profile: afl_terrain_v2 -> afl_federal_experimental (another world generation profile)
+  [HARD] ecology: ecology_r1#1 -> ecology_federal#1 (biomes and surface blocks)
+  [HARD] national_template: macro_geography#3 -> federal_template#federal_template_v1_proto#1 (federal coast, six states, provinces and climate)
+  [HARD] river_carving: river_carver#1 -> federal_water#1 (river and lake water and banks in chunks)

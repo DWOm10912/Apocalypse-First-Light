@@ -63,7 +63,7 @@ public final class EcologyPlan {
     }
 
     public static Zones classify(TerrainPlanV2 p) {
-        final int N = TerrainPlanV2.N;
+        final int N = p.gridN;
         float[] hand = hand(p, 2e6);
         byte[] z = new byte[p.n], hb = new byte[p.n];
         for (int i = 0; i < p.n; i++) hb[i] = (byte) Math.max(0, Math.min(120, Math.round(hand[i])));
@@ -79,10 +79,10 @@ public final class EcologyPlan {
             double north = -gy / Math.max(sl, 1e-6);
             double plain = p.wPlain[i], coastal = p.wCoastal[i], foot = p.wFoot[i], belt = p.wBelt[i], res = p.resist[i];
             byte k = AGRI_PLAIN;
-            double thr = 0.08 * (1 + 0.25 * Math.max(-1.6, Math.min(1.6, p.fbm(TerrainPlanV2.cx(c), TerrainPlanV2.cx(r), 300, 2, 0.5, 640))));
+            double thr = 0.08 * (1 + 0.25 * Math.max(-1.6, Math.min(1.6, p.fbm(p.cellX(c), p.cellX(r), 300, 2, 0.5, 640))));
             // gentle slopes just over the threshold carry forest in patches (about 60 %, 250 m noise), steeper ones always
-            if (sl > thr && (sl > 0.12 || p.fbm(TerrainPlanV2.cx(c), TerrainPlanV2.cx(r), 250, 2, 0.5, 642) > -0.25)) k = SLOPE_FOREST;
-            double coastThr = 0.5 + 0.2 * Math.max(-1, Math.min(1, p.fbm(TerrainPlanV2.cx(c), TerrainPlanV2.cx(r), 500, 2, 0.5, 641) / 1.6));
+            if (sl > thr && (sl > 0.12 || p.fbm(p.cellX(c), p.cellX(r), 250, 2, 0.5, 642) > -0.25)) k = SLOPE_FOREST;
+            double coastThr = 0.5 + 0.2 * Math.max(-1, Math.min(1, p.fbm(p.cellX(c), p.cellX(r), 500, 2, 0.5, 641) / 1.6));
             if (coastal > coastThr && sl <= thr) k = COASTAL_PINE;
             if (res > 0.2 || (belt > 0.5 && sl > 0.15)) k = RIDGE_OAK;
             if (belt + foot > 0.5 && sl > 0.12 && north > 0.5 && hand[i] < 25) k = HOLLOW_CONIFER;
