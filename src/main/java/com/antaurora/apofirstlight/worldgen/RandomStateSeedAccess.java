@@ -10,4 +10,7 @@ public interface RandomStateSeedAccess {
     com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$terrainPlanSurface();
     /** The profile of that plan (null without a plan). */
     com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$terrainProfile();
+    /** The gated generation systems on for this world (WorldgenGates; empty until the version lock binds them). C3. */
+    java.util.Set<String> apocalypse$worldgenGates();
+    void apocalypse$setWorldgenGates(java.util.Set<String> on);
 }

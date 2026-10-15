@@ -28,6 +28,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     // C2 (2026-10-14): the plan this router was bound to, and its profile (r1 or the federal experimental plan)
     @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$planSurface;
     @Unique private com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$planProfile;
+    // C3 (2026-10-14): the gated generation systems on for this world (WorldgenGates), bound by the version lock at load
+    @Unique private volatile java.util.Set<String> apocalypse$gates = java.util.Set.of();
 
     /** Expand terrain recipes before vanilla traverses/seeds the resulting spline/noise graph. */
     @Redirect(method = "<init>", at = @At(value = "INVOKE",
@@ -108,4 +110,8 @@ public abstract class RandomStateSeedMixin implements RandomStateSeedAccess {
     @Override public com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainPlanSurface apocalypse$terrainPlanSurface() { return apocalypse$planSurface; }
 
     @Override public com.antaurora.apofirstlight.worldgen.terrain.v2.TerrainProfile apocalypse$terrainProfile() { return apocalypse$planProfile; }
+
+    @Override public java.util.Set<String> apocalypse$worldgenGates() { return apocalypse$gates; }
+
+    @Override public void apocalypse$setWorldgenGates(java.util.Set<String> on) { apocalypse$gates = java.util.Set.copyOf(on); }
 }
